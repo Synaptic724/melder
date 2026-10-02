@@ -1073,12 +1073,15 @@ def test_single_many_purge_failure_leaves_other_entries_for_later_disposal(
     assert events == [2, 3, 1]
 
 
-def test_single_many_purge_preserves_sparse_disposal_records() -> None:
+def test_single_many_purge_keeps_the_record_over_the_remaining_entries() -> None:
     """
-    Purpose: Retire a live entry when not every entry has disposal metadata.
-    Contract: Removing an undisposable entry does not remove the next object's
-        metadata; later single/full purges dispose the correct objects exactly once.
-    Returns: None; the native store remains reusable after its last entry is purged.
+    Purpose: Retire live entries one at a time from a disposal-bearing many key.
+    Contract: One many key carries one disposal declaration (2026-10-01): a plain
+        registration under a disposal-bearing key is refused and leaves the key as
+        it was; each single purge disposes exactly its object, the record keeps
+        covering the rest, and the store is reusable after the last entry goes.
+        Before, disposal metadata could be sparse and this test pinned that shape.
+    Returns: None.
     """
     book = _make_spellbook()
     spell_id = book.bind(spell=PurgeResource, existence=Existence.many)
@@ -1086,21 +1089,23 @@ def test_single_many_purge_preserves_sparse_disposal_records() -> None:
     try:
         spell = book._spells_by_id[spell_id]
         first, second, third = PurgeResource(), PurgeResource(), PurgeResource()
-        root._creations.add_many_creations(spell_id, first)
+        root._creations.add_many_creations(
+            spell_id, first, has_disposal_methods=True, disposal_methods=["cleanup"],
+        )
         root._creations.add_many_creations(
             spell_id, second, has_disposal_methods=True, disposal_methods=["cleanup"],
         )
-        root._creations.add_many_creations(
-            spell_id, third, has_disposal_methods=True, disposal_methods=["cleanup"],
-        )
+        with pytest.raises(ValueError, match="one disposal declaration"):
+            root._creations.add_many_creations(spell_id, third)
+        assert root._creations._creations[spell_id] == [first, second]
         assert root._creations.purge(spell, purge_all=False, creation=first) == 1
-        assert first.cleanup_calls == second.cleanup_calls == third.cleanup_calls == 0
+        assert first.cleanup_calls == 1
+        assert second.cleanup_calls == third.cleanup_calls == 0
         assert root.purge(second, purge_all=False) == 1
         assert second.cleanup_calls == 1
-        assert third.cleanup_calls == 0
-        assert root.purge(third) == 1
-        assert third.cleanup_calls == 1
-        assert root.purge(third) == 0
+        assert spell_id not in root._creations._creations
+        assert spell_id not in root._creations._disposable_creations
+        assert root.purge(second) == 0
     finally:
         root.permanent_cleanup()
 

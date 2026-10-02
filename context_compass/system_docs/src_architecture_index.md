@@ -12,10 +12,10 @@ Line numbers are 1-based and inclusive on both ends.
 | --- | --- |
 | document | `src_architecture.md` |
 | index_version | 1.1.0 |
-| generated_at | 2026-10-01T11:07:12Z |
-| line_count | 3495 |
+| generated_at | 2026-10-02T17:57:56Z |
+| line_count | 3511 |
 | line_ending | lf |
-| content_sha256 | `0b00fac34a9ca1e7e2e1a5bf6e0c4dbaddb792845dd505f6f6147d20fc3b13ea` |
+| content_sha256 | `82ace75312b6e780a954e801488cb7e5a5eaee6e5d3858eef38c94da91be34fc` |
 | sections | 58 |
 
 Recompute all three of `line_count`, `line_ending`, and `content_sha256`
@@ -56,32 +56,32 @@ which you did.
 | 848-874 | 3 | Data Flows and Sequences > Sequence: Cleanup |
 | 875-901 | 2 | Runtime Type Names (Concrete, No Interface Layer) |
 | 902-912 | 2 | Extension Points |
-| 913-1422 | 2 | Operational Invariants |
-| 1423-1574 | 2 | Failure Modes and Error Paths |
-| 1575-1761 | 2 | Promoted Patch Decisions (re-absorbed 2026-08-02) |
-| 1596-1645 | 3 | Promoted Patch Decisions (re-absorbed 2026-08-02) > Persistence & Restore Architecture (promoted from patch restore_engine_2026_07_07 + successor lanes, 2026-07-07) |
-| 1646-1688 | 3 | Promoted Patch Decisions (re-absorbed 2026-08-02) > Persistence Subsystem Topology (promoted from patch crystallizer_decomposition_2026_07_09, 2026-07-10) |
-| 1689-1738 | 3 | Promoted Patch Decisions (re-absorbed 2026-08-02) > V3 Horizon Architecture (promoted 2026-07-12 from six patch dirs; owner-run full-tree green) |
-| 1739-1761 | 3 | Promoted Patch Decisions (re-absorbed 2026-08-02) > Three-Lane Tail (promoted 2026-07-11; owner-directed finish of the public_cloud_seams, source_drift_preflight, and spell_index_graft lanes) |
-| 1762-2724 | 2 | C1 Code Map (Core Only) |
-| 2725-3034 | 2 | Diagrams |
-| 2726-2740 | 3 | Diagrams > Creation Cache Compatibility |
-| 2741-2759 | 3 | Diagrams > Named Scope Discovery and Replay |
-| 2760-2776 | 3 | Diagrams > Pooled Hook Lifecycle |
-| 2777-2792 | 3 | Diagrams > Bind Lifecycle |
-| 2793-2805 | 3 | Diagrams > Scoped Purge |
-| 2806-2824 | 3 | Diagrams > Registration Capability Foundation |
-| 2825-2844 | 3 | Diagrams > Unresolved Input Resolution |
-| 2845-2862 | 3 | Diagrams > Override Key-Set Plans |
-| 2863-2879 | 3 | Diagrams > Conduit Lookup Coverage |
-| 2880-2902 | 3 | Diagrams > Frame Lookups |
-| 2903-2927 | 3 | Diagrams > Scope Exit and Pool Return |
-| 2928-2944 | 3 | Diagrams > ASCII Context Diagram (C4) |
-| 2945-2961 | 3 | Diagrams > Mermaid Context Diagram (C4) |
-| 2962-2973 | 3 | Diagrams > ASCII Conjure Pipeline Diagram |
-| 2974-2991 | 3 | Diagrams > Mermaid Meld Flow |
-| 2992-3011 | 3 | Diagrams > Mermaid Conduit Upgrade |
-| 3012-3034 | 3 | Diagrams > Ordered Disposal Data Flow |
-| 3035-3174 | 2 | Information Sources |
-| 3175-3495 | 2 | Context / Handoff Summary |
-| 3460-3495 | 3 | Context / Handoff Summary > Carried forward from the previous revision (2026-07-25) |
+| 913-1433 | 2 | Operational Invariants |
+| 1434-1585 | 2 | Failure Modes and Error Paths |
+| 1586-1772 | 2 | Promoted Patch Decisions (re-absorbed 2026-08-02) |
+| 1607-1656 | 3 | Promoted Patch Decisions (re-absorbed 2026-08-02) > Persistence & Restore Architecture (promoted from patch restore_engine_2026_07_07 + successor lanes, 2026-07-07) |
+| 1657-1699 | 3 | Promoted Patch Decisions (re-absorbed 2026-08-02) > Persistence Subsystem Topology (promoted from patch crystallizer_decomposition_2026_07_09, 2026-07-10) |
+| 1700-1749 | 3 | Promoted Patch Decisions (re-absorbed 2026-08-02) > V3 Horizon Architecture (promoted 2026-07-12 from six patch dirs; owner-run full-tree green) |
+| 1750-1772 | 3 | Promoted Patch Decisions (re-absorbed 2026-08-02) > Three-Lane Tail (promoted 2026-07-11; owner-directed finish of the public_cloud_seams, source_drift_preflight, and spell_index_graft lanes) |
+| 1773-2735 | 2 | C1 Code Map (Core Only) |
+| 2736-3045 | 2 | Diagrams |
+| 2737-2751 | 3 | Diagrams > Creation Cache Compatibility |
+| 2752-2770 | 3 | Diagrams > Named Scope Discovery and Replay |
+| 2771-2787 | 3 | Diagrams > Pooled Hook Lifecycle |
+| 2788-2803 | 3 | Diagrams > Bind Lifecycle |
+| 2804-2816 | 3 | Diagrams > Scoped Purge |
+| 2817-2835 | 3 | Diagrams > Registration Capability Foundation |
+| 2836-2855 | 3 | Diagrams > Unresolved Input Resolution |
+| 2856-2873 | 3 | Diagrams > Override Key-Set Plans |
+| 2874-2890 | 3 | Diagrams > Conduit Lookup Coverage |
+| 2891-2913 | 3 | Diagrams > Frame Lookups |
+| 2914-2938 | 3 | Diagrams > Scope Exit and Pool Return |
+| 2939-2955 | 3 | Diagrams > ASCII Context Diagram (C4) |
+| 2956-2972 | 3 | Diagrams > Mermaid Context Diagram (C4) |
+| 2973-2984 | 3 | Diagrams > ASCII Conjure Pipeline Diagram |
+| 2985-3002 | 3 | Diagrams > Mermaid Meld Flow |
+| 3003-3022 | 3 | Diagrams > Mermaid Conduit Upgrade |
+| 3023-3045 | 3 | Diagrams > Ordered Disposal Data Flow |
+| 3046-3185 | 2 | Information Sources |
+| 3186-3511 | 2 | Context / Handoff Summary |
+| 3476-3511 | 3 | Context / Handoff Summary > Carried forward from the previous revision (2026-07-25) |

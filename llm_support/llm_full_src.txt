@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: src
-SOURCE FINGERPRINT: 06969a0325c96c4d3e1ac1d11ebdda0997131ed8a8d5f6d9794491d8281c9619
+SOURCE FINGERPRINT: 13d135708ae5838513093ffd9c1f3fa63552c4b54e02d74b9bd832291faac28c
 FILE COUNT: 576
 
 ================================================================================
@@ -599,7 +599,7 @@ END FILE: src/melder/__melder_cache__/__melder_cache__.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/__version__.py
-CONTENT SHA256: 94aa38278b4f5db93fe51472eb69e6feeedca0876f0b6aff12492db849608b3f
+CONTENT SHA256: 6f510eed67ddfacccf634f8f51c3a54b67aa9f80c7bc3ff4b38b5421ec6d3481
 SOURCE ENCODING: utf-8
 ================================================================================
 
@@ -613,7 +613,7 @@ Contract:
   negotiation or runtime compatibility checks by itself.
 """
 
-__version__ = "0.2.8215"
+__version__ = "0.2.8216"
 ================================================================================
 END FILE: src/melder/__version__.py
 ================================================================================
@@ -59249,7 +59249,7 @@ END FILE: src/melder/aether/conduit/creations/conduit_creations.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/conduit/creations/creations.py
-CONTENT SHA256: 85663e5386c779d1ff7b541c054753307778ba36a4ce8a9fa6a1a8db36459758
+CONTENT SHA256: 0b94427c1cec8484b197d895b586638cefd83956ee495766e4a3ab3b6e24964d
 SOURCE ENCODING: utf-8
 ================================================================================
 from threading import RLock
@@ -59261,8 +59261,51 @@ from melder.utilities.general_base.cleanable import Cleanable
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell import Spell
 
+class ManyDisposalBucket:
+    """
+    Cleanup-only record of one `many` key that declared disposal methods.
+
+    Purpose:
+        Replace the per-entry `(object, disposal_methods)` tuples a many key
+        used to mirror into `_disposable_creations` with one record per key
+        (2026-10-01): the key's live bucket, aliased, plus the Spell-owned
+        method list recorded once. A warm registration is then one list append
+        instead of a tuple allocation and two appends.
+
+    Contract:
+        - `entries` IS the live many bucket held in `_creations` - the same
+          list object, never a copy - so the live and disposal views cannot
+          diverge and a single-object purge needs one removal.
+        - `methods` is the Spell's established ordered disposal list, retained
+          by reference (never matched, reordered or copied), identical for
+          every entry of the key: a spell id hashes its resolved disposal
+          names, so one key carries one declaration.
+        - Both fields are borrowed. The owning `Creations` store detaches the
+          record (cleanup, clear, purge, extract) and disposes from it; the
+          record itself owns nothing and needs no cleanup.
+
+    AGENT_ACCESS: internal
+    """
+
+    __slots__ = ("entries", "methods")
+
+    def __init__(self, entries: List[object], methods: List[str]) -> None:
+        """
+        Bind the key's live bucket and its disposal list.
+
+        Args:
+            entries: The live many bucket of the key (aliased, not copied).
+            methods: The Spell-owned ordered disposal method names.
+
+        Returns:
+            None.
+        """
+        self.entries = entries
+        self.methods = methods
+
+
 StoredDisposalEntry = Tuple[object, List[str]]
-StoredDisposalValue = Union[StoredDisposalEntry, List[StoredDisposalEntry]]
+StoredDisposalValue = Union[StoredDisposalEntry, ManyDisposalBucket]
 
 
 class Creations(Cleanable):
@@ -59283,7 +59326,14 @@ class Creations(Cleanable):
         - Disposal metadata mirrors only entries that declared disposal
           methods:
           - unique: `spell_id -> (object, disposal_methods)`
-          - many: `spell_id -> list[(object, disposal_methods)]`
+          - many: `spell_id -> ManyDisposalBucket` whose `entries` IS the
+            live many bucket (the same list object, never a copy) and
+            whose `methods` is the Spell-owned list recorded once, at the
+            key's first registration (2026-10-01; before, a second list of
+            `(object, methods)` tuples was appended in step with the live
+            bucket, a tuple and a second append per creation). A many key
+            therefore carries one disposal declaration: every entry of the
+            key is disposal-bearing or none is.
         - Cleanup and reusable clearing are explicit, idempotent, and aggregate
           disposal failures.
         - Disposal names are the established Spell-owned list, retained directly
@@ -59579,27 +59629,30 @@ class Creations(Cleanable):
 
     def _dispose_many_creations(
             self,
-            entries: List[StoredDisposalEntry],
+            bucket: ManyDisposalBucket,
     ) -> List[Exception]:
         """
-        Dispose every recorded object in one detached many bucket.
+        Dispose every object of one detached many record.
 
         Purpose:
-            Share the existing multi-object disposal loop between targeted purge
-            and whole-store cleanup without constructing a temporary registry.
+            Share the multi-object disposal loop between targeted purge and
+            whole-store cleanup without constructing a temporary registry.
 
         Contract:
-            - Visit entries newest-first, preserving existing many disposal order.
-            - Delegate each object to `_attempt_cleanup`, which runs every method
-              name in order and returns one error per failing method.
+            - Visit `bucket.entries` newest-first, preserving many disposal
+              order.
+            - Delegate each object to `_attempt_cleanup` paired with the key's
+              one method list (`bucket.methods`), which runs every method name
+              in order and returns one error per failing method.
             - Collect every failure and continue with the other objects.
-            - Do not mutate entries, clear borrowed method-name lists, or reach
-              into a live creation store.
+            - Do not mutate the record, clear its borrowed method-name list, or
+              reach into a live creation store.
 
         Args:
-            entries:
-                Detached `(object, disposal_method_names)` records for one many
-                target, still ordered by their original registration.
+            bucket:
+                The detached `ManyDisposalBucket` of one many target: its
+                `entries` is the detached live bucket, still in registration
+                order.
 
         Returns:
             List[Exception]:
@@ -59607,13 +59660,14 @@ class Creations(Cleanable):
                 raises them after processing its selected retirement set.
 
         Threading / Lifecycle:
-            The caller has already detached these records under the appropriate
+            The caller has already detached the record under the appropriate
             writer lock. This helper takes no lock and owns no scope policy;
             user disposal methods run after the removal locks are released.
         """
         errors: List[Exception] = []
-        for entry in reversed(entries):
-            errors.extend(self._attempt_cleanup(entry))
+        methods = bucket.methods
+        for item in reversed(bucket.entries):
+            errors.extend(self._attempt_cleanup((item, methods)))
         return errors
 
     def _dispose_disposable_registry(
@@ -59662,7 +59716,7 @@ class Creations(Cleanable):
             if isinstance(value, tuple):
                 errors.extend(self._attempt_cleanup(value))
                 continue
-            if isinstance(value, list):
+            if isinstance(value, ManyDisposalBucket):
                 errors.extend(self._dispose_many_creations(value))
         return errors
 
@@ -59861,19 +59915,23 @@ class Creations(Cleanable):
 
         Contract:
             - Appends the live object into `_creations[key]`.
-            - Appends cleanup metadata into `_disposable_creations[key]` only
-              when disposal methods were declared.
-            - Rejects collisions with non-list slots.
-            - Preserves insertion order inside both the live many bucket and
-              the matching disposable metadata bucket.
-            - Retains the supplied disposal list directly for each entry;
-              omitted names use an empty list when disposal is enabled.
-            - First-use bucket creation and both appends are atomic with
-              respect to competing resolutions (BUG-073, 2026-07-17 audit):
-              the whole live+disposable mutation runs under `_lock`, so two
-              threads first-resolving the same key can never overwrite each
-              other's bucket and strand a successfully returned creation
-              outside lifetime and disposal tracking.
+            - For a disposal-bearing key, records the Spell-owned method list
+              ONCE, at the key's first registration, in a `ManyDisposalBucket`
+              under `_disposable_creations[key]` whose `entries` is the live
+              bucket itself; later registrations of the key append only.
+            - Rejects collisions with non-list slots, and a registration whose
+              disposal declaration disagrees with the key's existing entries:
+              one many key carries one declaration (the spell id hashes the
+              resolved disposal names, so a live world cannot produce a mix).
+            - Preserves insertion order; the disposal view is the live bucket,
+              so the two cannot diverge (BUG-073, 2026-07-17 audit, now by
+              construction: the first-use bucket and its record are created
+              in one critical section under `_lock`).
+            - Retains the supplied disposal list directly; omitted names use
+              an empty list when disposal is enabled.
+            - Emitted plans and executors call `register_many` instead: the
+              same shape without the keyword marshaling and the checks this
+              public verb keeps (2026-10-01).
 
         Threading:
             - Runs under `_lock` (re-entrant, shared with extract/restore/
@@ -59884,7 +59942,8 @@ class Creations(Cleanable):
 
         Raises:
             ValueError:
-                If the key already holds a non-list slot.
+                If the key already holds a non-list slot, or if the disposal
+                declaration disagrees with the key's existing entries.
             RuntimeError:
                 If this store was cleaned while the object was being built.
 
@@ -59907,6 +59966,79 @@ class Creations(Cleanable):
             disposal_methods=disposal_methods,
         )
 
+    def register_many(
+            self,
+            key: str,
+            item: object,
+            disposal_methods: List[str],
+    ) -> None:
+        """
+        Register one disposal-bearing `many` creation on the warm path.
+
+        Purpose:
+            The registration emitted plans and executors run on every creation
+            of a disposal-bearing `many` root (2026-10-01). It is the
+            `add_many_creations` shape without the keyword marshaling and the
+            checks that verb keeps for callers it cannot trust: one lock, one
+            dict read, one list append (measured 204 -> 104 ns per
+            registration on 3.14t, GIL off).
+
+        Contract:
+            - Precondition, guaranteed by the emitters and NOT checked here:
+              `key` is a `many` spell id whose Spell declares disposal methods,
+              and `disposal_methods` is that Spell's own ordered list, the same
+              object on every call for the key. A spell id hashes its resolved
+              disposal names, so one key cannot carry two declarations, and one
+              Existence per Spell means the key's live slot is a list or absent.
+              Callers that cannot promise this use `add_many_creations`.
+            - The first registration of the key creates the live bucket and
+              its `ManyDisposalBucket` record (the bucket itself plus the
+              method list) in one critical section; every later one appends.
+            - Refuses a cleaned store exactly like `add_many_creations`: the
+              object's disposal methods run and `RuntimeError` is raised.
+
+        Args:
+            key: The many spell id.
+            item: The just-built object.
+            disposal_methods: The Spell-owned ordered disposal method names.
+
+        Raises:
+            RuntimeError:
+                If this store was cleaned while the object was being built.
+
+        Threading:
+            `_lock` is a leaf here: only the dict read, the first-use stores
+            and the append run under it. A build that finishes after
+            `cleanup()` observes `_cleaned` through the tombstone lock and is
+            refused outside it, with no lock held while its methods run.
+
+        Returns:
+            None.
+        """
+        # Explicit acquire/release: the with-statement costs ~14 ns per call
+        # on 3.14t (measured 2026-10-01), a tenth of this verb.
+        lock = self._lock
+        lock.acquire()
+        try:
+            if not self._cleaned:
+                bucket = self._creations.get(key)
+                if bucket is None:
+                    bucket = []
+                    self._creations[key] = bucket
+                    self._disposable_creations[key] = ManyDisposalBucket(
+                        bucket, disposal_methods,
+                    )
+                bucket.append(item)
+                return
+        finally:
+            lock.release()
+        self._refuse_publish_into_cleaned_store(
+            key,
+            item,
+            has_disposal_methods=True,
+            disposal_methods=disposal_methods,
+        )
+
     def _append_many_locked(
             self,
             key: str,
@@ -59916,44 +60048,55 @@ class Creations(Cleanable):
             disposal_methods: Optional[List[str]],
     ) -> None:
         """
-        Append one many creation and its disposal record; caller holds `_lock`.
+        Append one many creation through the checked public verb; caller holds `_lock`.
 
         Contract:
             - The caller holds `_lock` and has checked the store is not cleaned.
-            - Creates first-use buckets and appends to both registries in one
-              critical section (BUG-073 invariant).
+            - Validates before it appends, so a refused registration leaves the
+              store untouched.
+            - Creates the first-use bucket and, for a disposal-bearing key, its
+              `ManyDisposalBucket` record in one critical section. The record
+              IS the live bucket, so the live and disposal views cannot diverge
+              (the BUG-073 invariant, now by construction).
 
         Raises:
             ValueError:
-                If the key already holds a non-list live or disposable slot.
+                If the key already holds a non-list live slot or a non-many
+                disposable slot, or if this registration's disposal declaration
+                disagrees with the key's existing entries: one many key carries
+                one declaration (the spell id fixes it).
         """
-        live_value = self._creations.get(key)
-        if live_value is None:
-            self._creations[key] = []
-            live_value = self._creations[key]
-        if not isinstance(live_value, list):
+        bucket = self._creations.get(key)
+        if bucket is not None and not isinstance(bucket, list):
             raise ValueError(
                 f"Key {key} already exists in creations with non-list slot."
             )
-        live_value.append(item)
-
-        if not has_disposal_methods:
-            return
-
-        disposable_value = self._disposable_creations.get(key)
-        if disposable_value is None:
-            self._disposable_creations[key] = []
-            disposable_value = self._disposable_creations[key]
-        if not isinstance(disposable_value, list):
+        record = self._disposable_creations.get(key)
+        if has_disposal_methods:
+            if record is None:
+                if bucket:
+                    raise ValueError(
+                        f"Key {key} already holds many creations registered without disposal "
+                        f"methods; one many key carries one disposal declaration."
+                    )
+            elif not isinstance(record, ManyDisposalBucket):
+                raise ValueError(
+                    f"Key {key} already exists in disposable creations with non-list slot."
+                )
+        elif record is not None:
             raise ValueError(
-                f"Key {key} already exists in disposable creations with non-list slot."
+                f"Key {key} already holds many creations registered with disposal "
+                f"methods; one many key carries one disposal declaration."
             )
-        disposable_value.append(
-            (
-                item,
+        if bucket is None:
+            bucket = []
+            self._creations[key] = bucket
+        if has_disposal_methods and record is None:
+            self._disposable_creations[key] = ManyDisposalBucket(
+                bucket,
                 disposal_methods if disposal_methods is not None else [],
             )
-        )
+        bucket.append(item)
 
     def get_creation(self, spell_id: str) -> Optional[Any]:
         """
@@ -60061,7 +60204,7 @@ class Creations(Cleanable):
         errors: List[Exception] = []
         if isinstance(disposal, tuple):
             errors = self._attempt_cleanup(disposal)
-        elif isinstance(disposal, list):
+        elif isinstance(disposal, ManyDisposalBucket):
             errors = self._dispose_many_creations(disposal)
         # Keep non-disposable objects alive until the removal locks are released.
         del retired
@@ -60145,9 +60288,12 @@ class Creations(Cleanable):
             - The caller holds this store's lock and established key presence.
             - Search only this target's bucket, using object identity so custom
               equality cannot select a different creation or invoke user code.
-            - Remove one retained entry and its disposal metadata, if recorded.
-              Metadata may be sparse, so its position is found independently.
-            - Preserve remaining order and remove buckets only when empty.
+            - Remove one retained entry. The disposal record aliases the live
+              bucket, so that one removal retires it from both views; the
+              returned disposal entry pairs the object with the key's method
+              list when the key is disposal-bearing.
+            - Preserve remaining order and remove the bucket, and its record,
+              only when empty.
             - Missing references return zero; no disposal callback runs here.
 
         Args:
@@ -60163,25 +60309,22 @@ class Creations(Cleanable):
             Called only inside `_detach_purge_entries`' locked critical section.
             This helper owns no scope policy, additional lock or disposal action.
         """
-        for index, retired in enumerate(self._creations[spell_id]):
+        bucket = self._creations[spell_id]
+        for index, retired in enumerate(bucket):
             if retired is creation:
                 break
         else:
             return 0, None, None
 
-        self._creations[spell_id].pop(index)
-        if not self._creations[spell_id]:
+        bucket.pop(index)
+        record = self._disposable_creations.get(spell_id)
+        if not bucket:
             del self._creations[spell_id]
-
-        disposal: Optional[StoredDisposalEntry] = None
-        if spell_id in self._disposable_creations:
-            for index, entry in enumerate(self._disposable_creations[spell_id]):
-                if entry[0] is creation:
-                    disposal = self._disposable_creations[spell_id].pop(index)
-                    break
-            if not self._disposable_creations[spell_id]:
+            if record is not None:
                 del self._disposable_creations[spell_id]
-        return 1, retired, disposal
+        if record is None:
+            return 1, retired, None
+        return 1, retired, (retired, record.methods)
 
     def extract_spell_creations(
             self,
@@ -60211,19 +60354,22 @@ class Creations(Cleanable):
 
             if isinstance(live_value, list):
                 live_many = self._creations.pop(spell_id)
-                disposable_many = (
+                record = (
                     self._disposable_creations.pop(spell_id)
-                    if isinstance(disposable_value, list)
+                    if isinstance(disposable_value, ManyDisposalBucket)
                     else None
                 )
-                for index, stored_value in enumerate(live_many):
+                # One record per key: every row of a disposal-bearing many
+                # key carries the same Spell-owned list object.
+                methods = None if record is None else record.methods
+                for stored_value in live_many:
                     entry = {
                         "scope": "many",
-                        "disposable": disposable_many is not None,
+                        "disposable": methods is not None,
                         "stored": stored_value,
                     }
-                    if disposable_many is not None:
-                        entry["disposal_methods"] = disposable_many[index][1]
+                    if methods is not None:
+                        entry["disposal_methods"] = methods
                     extracted.append(entry)
             elif live_value is not None and not isinstance(live_value, dict):
                 stored_value = self._creations.pop(spell_id)
@@ -60254,8 +60400,10 @@ class Creations(Cleanable):
         Contract:
             - Rebuilds this scoped store from the extracted payload only.
             - Replaces any current local state for the spell id.
-            - Restores both live entries and disposal metadata.
-            - Raises when the payload does not match the local slot shape.
+            - Restores both live entries and disposal metadata; a many key's
+              rows rebuild one `ManyDisposalBucket` over the restored bucket.
+            - Raises when the payload does not match the local slot shape, or
+              when the rows of one many key disagree on `disposable`.
             - Restores the same raw object references that were extracted; it
               does not clone or rehydrate them.
             - Retains the extracted disposal lists directly, without copying
@@ -60296,28 +60444,34 @@ class Creations(Cleanable):
                 if scope == "many":
                     existing = self._creations.get(spell_id)
                     if existing is None:
-                        self._creations[spell_id] = []
-                        existing = self._creations[spell_id]
-                    if not isinstance(existing, list):
+                        existing = []
+                        self._creations[spell_id] = existing
+                    elif not isinstance(existing, list):
                         raise RuntimeError(
                             f"Cannot restore many creations for spell '{spell_id}' into non-list slot."
                         )
-                    existing.append(stored_value)
+                    record = self._disposable_creations.get(spell_id)
                     if is_disposable:
-                        disposable_many = self._disposable_creations.get(spell_id)
-                        if disposable_many is None:
-                            self._disposable_creations[spell_id] = []
-                            disposable_many = self._disposable_creations[spell_id]
-                        if not isinstance(disposable_many, list):
+                        if record is None:
+                            if existing:
+                                raise RuntimeError(
+                                    f"Cannot restore a disposable many creation for spell '{spell_id}' "
+                                    f"beside entries restored without disposal methods."
+                                )
+                            self._disposable_creations[spell_id] = ManyDisposalBucket(
+                                existing,
+                                disposal_methods if disposal_methods is not None else [],
+                            )
+                        elif not isinstance(record, ManyDisposalBucket):
                             raise RuntimeError(
                                 f"Cannot restore many creations for spell '{spell_id}' into non-list slot."
                             )
-                        disposable_many.append(
-                            (
-                                stored_value,
-                                disposal_methods if disposal_methods is not None else [],
-                            )
+                    elif record is not None:
+                        raise RuntimeError(
+                            f"Cannot restore a many creation without disposal methods for spell "
+                            f"'{spell_id}' beside disposable entries."
                         )
+                    existing.append(stored_value)
                     continue
 
                 raise RuntimeError(
@@ -81642,7 +81796,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/sha
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py
-CONTENT SHA256: b3bc6588ce783cec33d8d1821bfc150b8018b300b5076d70b2a725d8eb533be8
+CONTENT SHA256: 4ef811b7a4575b3aabe1e8f3c8187354a402978de4a4b7262d6f4303058279ea
 SOURCE ENCODING: utf-8
 ================================================================================
 from types import FunctionType, MethodType
@@ -82969,10 +83123,9 @@ class SitePlanEmission(Cleanable):
             return False
         sid_name = self._bind(f"sid{index}", step.spell.spell_id)
         disposal_name = self._bind(f"dm{index}", step.spell.disposal_method_names)
-        lines.append(
-            f"{indent}many_store.add_many_creations({sid_name}, v{index}, "
-            f"has_disposal_methods=True, disposal_methods={disposal_name})"
-        )
+        # `register_many` (2026-10-01): the positional hot verb; the key's
+        # disposal list is recorded once by the store, not carried per entry.
+        lines.append(f"{indent}many_store.register_many({sid_name}, v{index}, {disposal_name})")
         return True
 
     def _emit_shared_hit(self, index: int, step: SitePlanStep, indent: str, lines: List[str]) -> None:
@@ -83786,7 +83939,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/str
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_no_overrides_compiler.py
-CONTENT SHA256: 83e34e1a31881bc1bb86b2a78596b60ed1b74eb05435aef6828e5a4f1698b0ba
+CONTENT SHA256: 78aca5c4d7aa0d3fbe4274671fc56a9d913e57062f486b64906e8a6bc5824699
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -83926,8 +84079,9 @@ def _append_step_resolution_source(
         if has_disposal_methods:
             # `many` is transient (a new instance per meld, never cached), so
             # there is no build guard. The append goes through
-            # `add_many_creations`, which takes the store lock as a leaf (the
-            # former lockless inline append could lose a first-use bucket).
+            # `register_many`, which takes the store lock as a leaf (the
+            # former lockless inline append could lose a first-use bucket)
+            # and records the step's disposal list once per key (2026-10-01).
             _append_register_source(
                 lines=lines,
                 step_index=step_index,
@@ -84297,9 +84451,10 @@ def _append_register_source(
           duplicate check are needed (the same reasoning as the lock-free
           branch of `Creations.add_creation`; measured to matter on the cold
           path). A store retired by `cleanup()` fails on its missing registry.
-        - Singleton entries WITH disposal methods, and every disposal-bearing
-          `many` append, go through `add_creation` / `add_many_creations`,
-          which take the store lock as a LEAF so the live and disposal writes
+        - Singleton entries WITH disposal methods go through `add_creation`,
+          and every disposal-bearing `many` append through `register_many`
+          (positional; the key's disposal list is recorded once, 2026-10-01);
+          both take the store lock as a LEAF so the live and disposal writes
           land together, and refuse a store cleaned during the build.
         - Both storage shapes retain the bound Spell disposal list directly,
           matching Creations registration without allocating a copied policy.
@@ -84335,12 +84490,13 @@ def _append_register_source(
         return
 
     if existence is Existence.many:
-        # Callers emit this block only when disposal truth is present.
+        # Callers emit this block only when disposal truth is present, so the
+        # positional hot verb takes the step's bound method list directly.
         lines.extend([
-            f"{indent}creations_{step_index}.add_many_creations(",
+            f"{indent}creations_{step_index}.register_many(",
             f"{indent}    spell_id_{step_index},",
             f"{indent}    instance_{step_index},",
-            *disposal_arguments,
+            f"{indent}    disposal_methods_{step_index},",
             f"{indent})",
         ])
         return
@@ -89501,7 +89657,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/str
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/compilers/solo_no_overrides_codegen_creation_compiler.py
-CONTENT SHA256: a712cb67eca5a7a9916197df4b9724c227ca758d7b79957dc3805411eba5c6d5
+CONTENT SHA256: 8086e50a6bcdbc36cee11b375c53191044359944dc76b53045fe41cbfb6b6ecb
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import Any, Callable, Optional, Tuple, Union
@@ -89617,12 +89773,7 @@ def _build_source(
     many_creations = meld._spellspace_creations
     if many_creations is None:
         many_creations = meld._conduit_creations
-    many_creations.add_many_creations(
-        spell_id,
-        instance,
-        has_disposal_methods=True,
-        disposal_methods=disposal_methods,
-    )
+    many_creations.register_many(spell_id, instance, disposal_methods)
     return instance
 """
         return """def _solo_no_overrides_codegen_creation_executor(meld):
@@ -89836,7 +89987,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/str
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/compilers/solo_overrides_codegen_creation_compiler.py
-CONTENT SHA256: 669475a10fbf686c591c25e7a1f4284e2dab27d68889cf8a73f148fb0422e758
+CONTENT SHA256: 58b437b238c97c3bd94aeec709a0d05966d4d054de5d1f0254904cc6d306d930
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import Any, Callable, Dict, Optional, Tuple, Union
@@ -89950,12 +90101,7 @@ def _build_source(
     many_creations = meld._spellspace_creations
     if many_creations is None:
         many_creations = meld._conduit_creations
-    many_creations.add_many_creations(
-        spell_id,
-        instance,
-        has_disposal_methods=True,
-        disposal_methods=disposal_methods,
-    )
+    many_creations.register_many(spell_id, instance, disposal_methods)
     return instance
 """
         return """def _solo_overrides_codegen_creation_executor(meld, overrides):
@@ -253645,7 +253791,7 @@ END FILE: src/melder/utilities/caching_system/asset_cache.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/utilities/caching_system/caching_system.py
-CONTENT SHA256: c7d2ea294421f69cb40c9307906907e32880229eff76aa891c7a315021357942
+CONTENT SHA256: 40cad943d2e55d17569c4afac7a53ecb5b3dd68ff766dd3541def1beeac337e1
 SOURCE ENCODING: utf-8
 ================================================================================
 import logging
@@ -253814,6 +253960,9 @@ class CachingSystem(Cleanable):
     # (GC-untracked resident cache; see class contract). Version 2 carried
     # decoded manifest-package dicts; version 1 carried legacy executor
     # shapes. Older bundles are treated as cold cache and regenerated.
+    # Version 16 retires executors emitted before the many registration
+    # trim (2026-10-01): they still call the public `add_many_creations`
+    # and stay correct, but pay the old keyword call per creation.
     CACHE_VERSION_HISTORY: ClassVar[Mapping[int, str]] = MappingProxyType({
         1: "legacy_executor_payloads",
         2: "decoded_manifest_package_payloads",
@@ -253830,6 +253979,7 @@ class CachingSystem(Cleanable):
         13: "collection_member_paths",
         14: "override_site_plan_lanes",
         15: "structural_snapshot_rows",
+        16: "many_registration_per_key_methods",
     })
     CURRENT_VERSION: ClassVar[int] = max(CACHE_VERSION_HISTORY)
 

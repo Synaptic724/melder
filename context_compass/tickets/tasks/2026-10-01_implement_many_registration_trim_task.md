@@ -3,12 +3,12 @@
 ## Metadata
 - Task ID: TASK-2026-10-01-implement-many-registration-trim
 - Story: STORY-2026-09-27-many-registration-trim
-- Status: in_progress
+- Status: review
 - Owner: cowork
 - Agent Name: fable_0
 - Priority: p1
 - Created: 2026-10-01T00:59:42Z
-- Updated: 2026-10-01T00:59:42Z
+- Updated: 2026-10-02T18:01:21Z
 
 ## Objective
 A disposal-bearing `many` creation registers with one `list.append` into one per-key bucket; the spell's disposal
@@ -51,6 +51,10 @@ bumped so executors emitted with the old call are retired.
 - from_state: draft
 - to_state: in_progress
 - transition_reason: Opened on the owner's split (2026-10-01T00:59:42Z); S1 is the first static lane.
+- from_state: in_progress
+- to_state: review
+- transition_reason: Landed at 0.2.8216 with docs, graph, patch docs, assets and bundles (2026-10-02T18:01:21Z); owner-run suites and
+  gauntlet pending.
 
 ## Steps / Checklist
 - [x] Re-sync the VM copy from the tree (0.2.8215) before any run.
@@ -59,11 +63,11 @@ bumped so executors emitted with the old call are retired.
 - [x] Read `_emit_many`, `_many_store_prologue` and the hydrators' `dmN`/`sidN` constants; find every caller of
       `add_many_creations` in src and tests (search, then open each).
 - [x] Patch docs (architecture, component x2, code description) and the mapping note; link them here.
-- [ ] Propose the exact edit (files, symbols, the new verb's signature, the generation bump) and wait for the
-      owner's confirmation.
-- [ ] Implement on the VM copy; unit, component and differential tests; run the touched suites sharded.
-- [ ] Re-run the certification harness and `commandops_shape_probe.py`; MEASURE note.
-- [ ] Land on the tree (CRLF), notch above `__version__` (0.2.8215 now), release-note section, docs, graph
+- [x] Propose the exact edit (files, symbols, the new verb's signature, the generation bump) and wait for the
+      owner's confirmation (owner: test it in your space first).
+- [x] Implement on the VM copy; unit, component and differential tests; run the touched suites sharded.
+- [x] Re-run the certification harness and `commandops_shape_probe.py`; MEASURE note (interleaved A/B).
+- [x] Land on the tree (CRLF), notch above `__version__` (0.2.8215 now), release-note section, docs, graph
       descriptors; promote and archive the patch docs; rebuild assets and LLM bundles LAST; both checks OK.
 - [ ] Run Ticket Microcycle during execution:
       `Investigate -> Document -> Strategy/Plan -> Document -> Implement ->
@@ -86,7 +90,9 @@ bumped so executors emitted with the old call are retired.
 - release_docs/next_version_release.md, src/melder/__version__.py
 
 ## Validation
-- Not run.
+- Working copy (not the tree): unit/component/integration shards green, see the MEASURE note; re-synced from the
+  landed tree: creations+caching 125, spell_compiler+component conduit 1269, integration conduit+spellbook 875
+  passed; the owner's full-tree suites and the gauntlet: Not run.
 - Recommended commands:
   - `python -X gil=0 -m pytest tests/unit/melder/aether/conduit/creations -q`
   - `python -X gil=0 -m pytest tests/component -q -k "creations or many or disposal or purge"`
@@ -281,6 +287,158 @@ bumped so executors emitted with the old call are retired.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-10-02T14:50:45Z
+  TYPE: DECISION
+  CLAIM: Owner (2026-10-02): "clone it and test it in your space before you proceed". The space is the VM working
+    copy `$HOME/work/melder_cc` (a plain copy of src/ and tests/, re-synced from the tree at 0.2.8215; the
+    private repo stays on the owner's machine - the cloud sandbox stays off-limits as ruled earlier). This is
+    the confirmation to implement S1 there with its tests and measure before any tree landing; the landing
+    itself still waits for the owner's word. A1 vs A3 is decided by an in-situ A/B on the real plan (not the
+    stand-in): A3 only if it clears the noise band.
+  EVIDENCE:
+  - tickets/tasks/2026-10-01_implement_many_registration_trim_task.md:1-60
+  - system_docs/patches/active/many_registration_trim_2026_10_01/architecture_patch.md:1-90
+  IMPACT: The code-edit tranche opens on the working copy; the tree is untouched until "land".
+  NEXT: harness "before" run on the 0.2.8215 copy, then the apply script (store, three emitters, generation).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-02T14:51:50Z
+  TYPE: FACT
+  CLAIM: Mailbox consumed (five blocks, M0-160/163/166/169/172, all NOTICE): melder_0 ran an owner-scheduled docs pass
+    (0.2.8208 frame lookups promoted into the system documents, scopes.md, the graph, one release-note bullet)
+    and a citation audit (src_architecture/src_components re-cited, bind-guard count 619 at 0.2.8215, the C1
+    core set equals the Key Files union); both turned in; assets and LLM bundles current at 0.2.8215 with both
+    checks OK; melder_0 holds no melder_private file now. No src change, no notch, so S1 still notches above
+    0.2.8215; the system documents are current, so S1's promotion edits them from a fresh base.
+  EVIDENCE:
+  - tickets/tasks/completed/2026-10-01_audit_remaining_system_document_citations_task.md:1-30
+  - src/melder/__version__.py:12-12
+  IMPACT: No claim on any file in this lane's boundary; the tree copy at 0.2.8215 is still the base.
+  NEXT: the harness "before" run on the working copy, then the apply script.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
+- DATETIME: 2026-10-02T15:19:38Z
+  TYPE: FACT
+  CLAIM: S1 implemented on the working copy (`$HOME/work/melder_cc`, tree untouched) by the anchored apply script
+    `artifacts/many_registration_trim_20261001/apply_s1.py` (re-runnable against the tree; per-line line endings
+    preserved, creations.py is mixed CRLF/LF). Src: `ManyDisposalBucket` (entries = the live bucket aliased,
+    methods = the Spell list once) and `Creations.register_many(key, item, disposal_methods)`;
+    `_append_many_locked` validates before it appends and refuses a mixed disposal declaration (fail-fast on a
+    state the spell id makes impossible); `_dispose_many_creations` takes the record; purge, single purge,
+    extract and restore read it (restore refuses mixed rows); the emitted line is
+    `many_store.register_many(sidN, vN, dmN)` in the site plan, `many_creations.register_many(spell_id,
+    instance, disposal_methods)` in both solo templates, `creations_i.register_many(...)` in the specializer;
+    cache generation 16. Tests: a new unit file (19 tests) and a new component file (5 tests through real
+    conjures: conduit, solo leaf, SpellSpace exit, single purge); four existing tests re-pinned to the new
+    shape (two of them pinned sparse disposal metadata, which the record makes impossible); emitter fakes grew
+    `register_many`; the cache-history pin grew 16.
+  EVIDENCE:
+  - artifacts/many_registration_trim_20261001/apply_s1.py:1-120
+  - artifacts/many_registration_trim_20261001/vm_s1_in_situ_ab_gil0_20261002.md:1-60
+  IMPACT: The exact edit exists as a script; landing is one run of it on the tree plus the notch, note, docs
+    and assets.
+  NEXT: MEASURE note, then the owner's go for the landing (and A1 vs A3).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-02T15:19:38Z
+  TYPE: MEASURE
+  CLAIM: Interleaved A/B on the real emitted plans (pristine 0.2.8215 copy vs the S1 copy, five reps each,
+    medians; VM load 0.9-1.4 so single runs are not comparable - paths S1 does not touch moved +8..+12% between
+    two runs minutes apart): plan worker 377 -> 249 (-34%), context_root 674 -> 559 (-17%), wide8_unique 682 ->
+    527 (-23%), wide8_existing 866 -> 740 (-15%), chain8 804 -> 639 (-21%); whole meld by name worker 536 -> 414
+    (-23%), context_root 927 -> 762 (-18%), wide8_unique 962 -> 765 (-20%), wide8_existing 1168 -> 1082 (-7%),
+    chain8 882 -> 737 (-16%). A3 (explicit acquire/release) vs A1 (with-statement), same method: plan -2..-12%,
+    meld -4..-7% (one +0%), nine of ten rows in A3's favour. Suites green on the working copy (unit minus the
+    repository-layout tests the src+tests copy cannot satisfy; component 2257; integration 2009); the A3 copy
+    passes the store and component files (175). Not run: the owner's full-tree suites and the gauntlet.
+  EVIDENCE:
+  - artifacts/many_registration_trim_20261001/vm_s1_in_situ_ab_gil0_20261002.md:1-60
+  - artifacts/many_registration_trim_20261001/logs/ab_medians_a1.md:1-12
+  - artifacts/many_registration_trim_20261001/logs/ab_medians_a1_vs_a3.md:1-12
+  IMPACT: The story's bar (>= 25% off a Worker-shaped many meld on the VM) is met on the plan (-34%) and
+    close on the whole meld (-23%, the door is the rest); S1 is ready to land on the owner's word.
+  NEXT: owner picks A1 or A3 and says land; then: apply on the tree, notch above 0.2.8215, release note,
+    docs, graph descriptors, patch docs promoted, assets last.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-02T17:28:23Z
+  TYPE: DECISION
+  CLAIM: Owner (2026-10-02): "land all that ... give me the recommended" - land S1 with the recommended verb shape,
+    A3 (explicit acquire/release; plan -2..-12% and meld -4..-7% over A1 in the interleaved A/B, same
+    semantics, the store and component files pass on the A3 copy). Landing order: apply script on the tree
+    (--verb a3), notch above 0.2.8215 (read at that moment), release-note section, system documents and
+    indexes, graph descriptors, patch docs promoted and archived, NOTICE to the active agents, assets and LLM
+    bundles rebuilt last; then the working copy is re-synced from the landed tree and the shards re-run.
+  EVIDENCE:
+  - artifacts/many_registration_trim_20261001/logs/ab_medians_a1_vs_a3.md:1-12
+  - special_instructions/agent_contribution_guide.md:1-97
+  IMPACT: First src landing of the static epic; 0.2.8215 -> 0.2.8216 if nobody lands in between (mailbox
+    clear at 2026-10-02T17:28:23Z).
+  NEXT: apply on the tree.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-02T17:50:04Z
+  TYPE: FACT
+  CLAIM: Landed on the tree (owner 2026-10-02: "land all that ... give me the recommended" = A3). `apply_s1.py --root
+    <tree> --verb a3` applied its 17 anchored edits plus the two new test files with per-line line endings kept
+    (creations.py stays mixed CRLF/LF); `__version__` 0.2.8215 -> 0.2.8216; `release_docs/next_version_release.md`
+    header `# Melder 0.2.8216`, the new section "Transient creations with disposal methods register faster" and the
+    packaging bullets; `src_components.md` edited (Creations and SpellSpace: dated 0.2.8216 paragraph, the
+    Responsibilities bullet, the single-purge sentence, EVIDENCE creations.py:376-468 and the observability
+    citations 119-134 / 277-293 / 295-374; Disposal Pipeline data structure + lock note; the SpellCompiler emission
+    sentence names `register_many`). CORRECTION: that components edit was written after a context compaction and
+    before the REONBOARD (disclosed in the attestation, re-certified 2026-10-02); nothing else was touched then and
+    `src_architecture.md` was not written (anchor mismatch). The owner's Codex MCP instruction
+    (`special_instructions/codex_mcp.md`, 2026-10-02) retires the file mailbox: this landing's notice goes through
+    `codex_bridge` and no mailbox row is written.
+  EVIDENCE:
+  - src/melder/__version__.py:12-12
+  - src/melder/aether/conduit/creations/creations.py:715-857
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1313-1329
+  - src/melder/utilities/caching_system/caching_system.py:186-186
+  - release_docs/next_version_release.md:1-3
+  - special_instructions/codex_mcp.md:1-20
+  IMPACT: Src, tests, version, release note and the component map are on the tree; the architecture map, both
+    indexes, the graph, the patch-doc promotion, the MCP notice, the asset rebuild and the re-synced shards remain.
+  NEXT: `src_architecture.md` (invariant, C1 code map, handoff) and both indexes regenerated with --check.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-02T18:01:21Z
+  TYPE: MEASURE
+  CLAIM: Landing validated and finished. Docs: `src_architecture.md` (0.2.8216 invariant, C1 code map creations.py
+    1343 / site_plan_lowering.py 1500 / caching_system.py 810 / bind_guard_manifest.py 642, the Entrypoints count
+    620, handoff entry) and `src_components.md`; both indexes regenerated, `--check` OK, no `context_compass/`
+    path in either. Graph: extracted `--strict`, `ManyDisposalBucket` authored (role, responsibilities,
+    owns_state, phases) and the Creations/module prose updated to the record and `register_many`; assembled
+    (1212 nodes, 1394 edges) and the three creations nodes accepted after the read. Patch docs moved to
+    `system_docs/patches/completed/many_registration_trim_2026_10_01/`; artifact board rows updated. Assets
+    rebuilt in a VM mirror (src + system_docs + release_docs; the VM disk was full, 481 MB freed) and copied
+    back with CRLF kept: bind guard 619 -> 620 entries (`ManyDisposalBucket`), noted in the release note's
+    packaging section; `_build_asset_runner.py --check` and `llm_support/_builder.py --check --include-untracked`
+    print only OK; no `.git/index.lock` left. Working copy re-synced from the landed tree: unit creations +
+    caching 125 passed, spell_compiler unit + component conduit 1269 passed, integration conduit + spellbook
+    875 passed (2 skipped, 2 xpassed). Notice: `codex_bridge.list_threads` shows no chat for melder_0, melder_2
+    or muse_0 (the reachable "Muse" threads are MelderOps agents), so no MCP notice was delivered and, per
+    `codex_mcp.md`, none was written to the mailbox; this ticket, the board row and the release note carry the
+    notch for their re-entry. Not run: the owner's full-tree suites and the gauntlet.
+  EVIDENCE:
+  - artifacts/many_registration_trim_20261001/logs/landing/shard_unit_creations_caching.log:1-3
+  - artifacts/many_registration_trim_20261001/logs/landing/shard_unit_spell_compiler_component_conduit.log:1-3
+  - artifacts/many_registration_trim_20261001/logs/landing/shard_integration_conduit_spellbook.log:1-3
+  - system_docs/src_architecture_index.md:14-20
+  - system_docs/graph/melder/aether/conduit/creations/creations.json:1-60
+  - release_docs/next_version_release.md:334-337
+  IMPACT: S1 is landed and documented at 0.2.8216; the lane is owner-owed: full suites, the gauntlet, turn-in.
+  NEXT: owner runs the full-tree suites and the gauntlet on the tree and turns the task in; then S8 opens.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 ## Context / Handoff Summary
 STATE 2026-10-01T00:59:42Z: IN_PROGRESS. Opened; nothing read or edited yet. Resume from the latest note's NEXT.
 
@@ -290,6 +448,14 @@ note's NEXT.
 
 STATE 2026-10-01T01:25:50Z: IN_PROGRESS (waiting). Owner reviewing the non-PGO catalogue and the recommendation;
 the S1 edit is proposed, not implemented. Resume from the latest note's NEXT.
+
+STATE 2026-10-02T15:19:38Z: IN_PROGRESS (ready to land). S1 implemented and measured on the working copy;
+waiting for the owner's A1/A3 pick and the landing word. Resume from the latest note's NEXT.
+
+STATE 2026-10-02T18:01:21Z: REVIEW. S1 landed on the tree at 0.2.8216 (A3): src, tests, release note, both system
+documents and indexes, graph, patch docs archived, assets and LLM bundles rebuilt with both checks OK; shards
+green on the re-synced copy. Owner-owed: full-tree suites, gauntlet, turn-in. Then S8. Resume from the latest
+note's NEXT.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

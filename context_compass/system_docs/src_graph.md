@@ -228,7 +228,7 @@ descriptors and reassemble.
 
 ## src/melder/__version__.py
 
-- source_sha256: `210bb61722c1cb217b1f7dc16ac745f126ea82a5190d8525371d15947f111b04`
+- source_sha256: `5f15987188957bffa008a25a198ca37a65203a6bbe2fd13bac5674407d1bc64b`
 - nodes: 1
 
 ### Nodes
@@ -317,7 +317,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_agent_documentation/manifest/agent_documentation_manifest.py
 
-- source_sha256: `2178f58c96be5a54efb7c342a47b954509684e1fa487121676cb1a018e31aebf`
+- source_sha256: `18ae66360ce357fd8af81be069c6612fda475ffa4534dc1bec0f3d9bb14b6376`
 - nodes: 1
 
 ### Nodes
@@ -396,7 +396,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py
 
-- source_sha256: `7d79c5d2c5fb621071e891c2d15b7382efa5d7d2b821743fef8fc264c543a146`
+- source_sha256: `89e35af2b473742057140c311ff9149707ef689546ec087a8d118e25a1a774d2`
 - nodes: 1
 
 ### Nodes
@@ -474,7 +474,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/graph_adjacency_manifest.py
 
-- source_sha256: `baa76e08224019b403089ba11d9e81c37b8fc124f92cfd1bb35615ca808edbb5`
+- source_sha256: `aa7cb743466b4d07d2f5af9b51540d1ecf690ff768a46079be52475584e4e22f`
 - nodes: 1
 
 ### Nodes
@@ -491,7 +491,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_index.py
 
-- source_sha256: `0223a7cef98d33bea88bbc288e488164917ca479b16d93a9f2136ec52d8aa56b`
+- source_sha256: `6a6bcf624c138d383c33e4c832e4dd39a95a5f28da7ec6439937dc142e77d0e6`
 - nodes: 1
 
 ### Nodes
@@ -508,7 +508,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_manifest.py
 
-- source_sha256: `22b891e09c6df971e2e666147d26967093151c2387c3492ff22bb25fc3df3f60`
+- source_sha256: `e76558811ff8f83ff60ade2de7d0e1f383ba7c06e11afc88042f57029023d73c`
 - nodes: 1
 
 ### Nodes
@@ -528,7 +528,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_architecture_payload.py
 
-- source_sha256: `1216165fa5a6dbaa0be9c315eac545ebd05ede4dd0415bf16c443485d4b020a3`
+- source_sha256: `2078e096fdf91e204d098e5ef6effb15a37e0800033a896db69a5ad989eed354`
 - nodes: 1
 
 ### Nodes
@@ -545,7 +545,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_components_payload.py
 
-- source_sha256: `3ab90b115caa77a5565f0357c0ef1e6f33a19dd9a0e8d7d687c5400b8a170948`
+- source_sha256: `0d3e504105c877be50d781b58b5724d4e75aa745faf0846560bbea483d4a58c0`
 - nodes: 1
 
 ### Nodes
@@ -562,7 +562,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_graph_payload.py
 
-- source_sha256: `f0371add58e27ada11928d544be938e05539a65abb2038dbf5fe0930d09d8b7e`
+- source_sha256: `fa18d806b624d72b90c44742044a6c609e57fb7dd3c28787f07a6195c37a946d`
 - nodes: 1
 
 ### Nodes
@@ -5130,8 +5130,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/creations/creations.py
 
-- source_sha256: `41f5312cdace218eb83494700b7a7c78ad503e49e2f947036c24f53d664c1936`
-- nodes: 2
+- source_sha256: `9dc5cdd28f457d2532a3f3131af11fcbcdd84df5ee9a86dbe1b044385785f150`
+- nodes: 3
 
 ### Nodes
 
@@ -5142,18 +5142,31 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - role: Generic scoped live-object store: the storage layer beneath Meld.
 - responsibilities:
   - hold live objects for exactly one scope
-  - keep disposal metadata apart so resolution never pays for it
+  - keep disposal metadata apart so resolution never pays for it: one record per disposal-bearing many key, aliasing the live bucket, instead of a mirror appended per entry
   - traverse registry keys and many buckets in reverse while executing each established method list in order
+- phases: `runtime`, `cleanup`
+
+#### `ManyDisposalBucket` (class)
+
+- id: `melder.aether.conduit.creations.creations.ManyDisposalBucket`
+- defined at: `src/melder/aether/conduit/creations/creations.py:10`
+- role: Cleanup record of one disposal-bearing many key: the key's live bucket, aliased, plus the Spell's disposal list recorded once.
+- responsibilities:
+  - entries IS the key's live bucket (the same list object the registry holds), never a copy, so one append serves both views
+  - methods is the Spell-owned disposal list retained by reference at the key's first registration and never matched, reordered or cleared by the store
+  - read by the disposal walk, purge, extract and restore in place of the former per-entry (object, methods) tuples; a many key carries one declaration, so sparse disposal metadata is impossible
+- owns_state: `entries`, `methods`
 - phases: `runtime`, `cleanup`
 
 #### `Creations` (class)
 
 - id: `melder.aether.conduit.creations.creations.Creations`
-- defined at: `src/melder/aether/conduit/creations/creations.py:14`
+- defined at: `src/melder/aether/conduit/creations/creations.py:57`
 - extends: `Cleanable`
-- role: Generic scoped live-object registry with separate disposal metadata.
+- role: Generic scoped live-object registry with disposal metadata kept beside it: a (object, methods) tuple per unique key, a ManyDisposalBucket per disposal-bearing many key.
 - responsibilities:
-  - stores raw objects in one scoped live registry and cleanup entries in a separate registry
+  - stores raw objects in one scoped live registry and cleanup records in a separate registry: unique keys hold (object, methods), disposal-bearing many keys hold a ManyDisposalBucket that aliases the live bucket and records the key's method list once
+  - register_many(spell_id, instance, disposal_methods) is the hot verb emitted plans and executors call (0.2.8216): explicit store-lock acquire/release, cleaned check, one dict read, first use creates the bucket and its record, one append; add_many_creations keeps its signature, writes the same shape and refuses a non-list slot or a disposal declaration that disagrees with the key's entries
   - retains established Spell disposal lists through registration and in-memory transfer
   - invokes every declared method in list order even after one fails; collects one RuntimeError per failing method, chained from the raised exception, and never lets one failing object strand the rest
   - supports reusable clear/reset and terminal cleanup without clearing borrowed method lists
@@ -5162,7 +5175,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - purges a whole selected target or one supplied creation under the slot's build lock then the store lock, with paired registry removal and shared disposal helpers; no scope discovery or authorization
 - owns_state: `_creations`, `_disposable_creations`, `_slot_guards`, `_owner_conduit_id`, `_id`, `_lock`
 - phases: `init`, `runtime`, `cleanup`
-- public methods: `add_creation`, `add_many_creations`, `cleanup`, `clear_all`, `extract_spell_creations`, `get_creation`, `id`, `owner_conduit_id`, `purge`, `reset_for_pool`, `reset_for_pool_unlocked`, `restore_spell_creations` (+1 more)
+- public methods: `add_creation`, `add_many_creations`, `cleanup`, `clear_all`, `extract_spell_creations`, `get_creation`, `id`, `owner_conduit_id`, `purge`, `register_many`, `reset_for_pool`, `reset_for_pool_unlocked` (+2 more)
 
 ### Edges out
 
@@ -5170,7 +5183,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 | --- | --- | --- | --- | --- | --- |
 | `melder.aether.conduit.creations.creations.Creations` | specializes | `melder.utilities.general_base.cleanable.Cleanable` | - | - | derived |
 
-### Edge candidates (4, unconfirmed)
+### Edge candidates (5, unconfirmed)
 
 Instantiation guesses from the AST. Over-generated roughly 8x against the reference graph; confirm or drop before relying on them.
 
@@ -5178,6 +5191,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - `melder.aether.conduit.creations.creations.Creations` creates `RuntimeError`
 - `melder.aether.conduit.creations.creations.Creations` creates `ValueError`
 - `melder.aether.conduit.creations.creations.Creations` creates `ExceptionGroup`
+- `melder.aether.conduit.creations.creations.Creations` creates `ManyDisposalBucket`
 
 <!-- END FILE: src/melder/aether/conduit/creations/creations.py -->
 
@@ -7886,7 +7900,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py
 
-- source_sha256: `b3bc6588ce783cec33d8d1821bfc150b8018b300b5076d70b2a725d8eb533be8`
+- source_sha256: `4ef811b7a4575b3aabe1e8f3c8187354a402978de4a4b7262d6f4303058279ea`
 - nodes: 5
 
 ### Nodes
@@ -8168,7 +8182,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_no_overrides_compiler.py
 
-- source_sha256: `21af7b586f0bdaf0015df2e0a71b71ae75e8c2a248df36f7c8ba86cb21516ddb`
+- source_sha256: `3d0b84324e3c1fa83c1531b971d4b692af929b036324e1623bd8550e6c7191bb`
 - nodes: 1
 
 ### Nodes
@@ -9081,7 +9095,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/compilers/solo_no_overrides_codegen_creation_compiler.py
 
-- source_sha256: `f4c9d2720eb41c87fe486f12114e876254ba05d46218b05457c83cb17dbf1168`
+- source_sha256: `7d2ea21681ca272ab69955e7cfe63960309a21899f2328a5078b946c3f191dbe`
 - nodes: 1
 
 ### Nodes
@@ -9112,7 +9126,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/compilers/solo_overrides_codegen_creation_compiler.py
 
-- source_sha256: `e40ab2e561cc381b3edb06a127bd50328515c7400203f3824ab87d1d1de1d4cb`
+- source_sha256: `77d9d1b67b5ddc3858fc9e4177a490f8400d586bd90960ca71c693018ee9364a`
 - nodes: 1
 
 ### Nodes
@@ -25527,7 +25541,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/utilities/caching_system/caching_system.py
 
-- source_sha256: `138732c435edc526936956f2de8bd1ae4958df93c968e74f56618c07ab29aa80`
+- source_sha256: `50000338eb483e2b9e7a05a64181f86b55d33caec20c99062a93a79e5972830d`
 - nodes: 2
 
 ### Nodes

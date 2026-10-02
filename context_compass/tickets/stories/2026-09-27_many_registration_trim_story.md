@@ -4,12 +4,12 @@
 - Story ID: STORY-2026-09-27-many-registration-trim
 - Epic: EPIC-2026-10-01-static-codegen-and-door-strategies (moved from EPIC-2026-09-27-adaptive-creation-contexts
   on the owner's split, 2026-10-01)
-- Status: in_progress
+- Status: review
 - Owner: cowork
 - Agent Name: fable_0
 - Priority: p1
 - Created: 2026-09-27T23:42:45Z
-- Updated: 2026-10-01T00:56:50Z
+- Updated: 2026-10-02T18:01:21Z
 
 ## User Narrative
 As the Melder owner, I want a `many` creation with disposal methods to register with one append into one
@@ -99,6 +99,7 @@ errors. It ships before any probe because it needs no data to be right.
 
 ## Open Questions
 - Is the disposable mirror kept at all, or is the live bucket plus the per-key method list the whole record?
+  ANSWERED 2026-10-02: the live bucket (aliased) plus the key's method list is the whole record (`ManyDisposalBucket`).
 
 ## Decision Log
 - 2026-09-27T23:42:45Z (owner): idea collected into the epic; one story per idea. Ranked first: measured,
@@ -137,6 +138,19 @@ errors. It ships before any probe because it needs no data to be right.
   REREAD: HELPFUL
   SCORE_0_TO_10: 7
 
+- DATETIME: 2026-10-02T18:01:21Z
+  TYPE: FACT
+  CLAIM: The implementation task landed S1 at 0.2.8216 in the A3 shape; the open question is answered: the mirror
+    is gone, the record is the live bucket (aliased) plus the key's method list. Plan -15..-34% and whole meld
+    -7..-23% on the VM (interleaved medians); the >= 25% bar is met on the plan and the gauntlet is owner-owed.
+  EVIDENCE:
+  - tickets/tasks/2026-10-01_implement_many_registration_trim_task.md:260-330
+  - src/melder/aether/conduit/creations/creations.py:10-56
+  IMPACT: Story's exit gate waits on the owner-run gauntlet and the turn-in of the task.
+  NEXT: owner runs the suites and the gauntlet; story closes with the task; S8 story opens next.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Acceptance criteria confirmed by user
@@ -157,6 +171,9 @@ STATE 2026-09-28T00:57:27Z: PARKED (backlog_by_owner) with the epic; reopen on t
 
 STATE 2026-10-01T00:56:50Z: IN_PROGRESS. Moved to tickets/stories/ under the static epic; the implementation task is the
 active lane. Resume from its latest STATE line.
+
+STATE 2026-10-02T18:01:21Z: REVIEW. S1 landed at 0.2.8216; owner-run suites and gauntlet pending. Resume from the task's
+latest STATE line.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

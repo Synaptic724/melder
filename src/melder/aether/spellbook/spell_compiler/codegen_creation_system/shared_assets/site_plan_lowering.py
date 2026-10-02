@@ -1322,10 +1322,9 @@ class SitePlanEmission(Cleanable):
             return False
         sid_name = self._bind(f"sid{index}", step.spell.spell_id)
         disposal_name = self._bind(f"dm{index}", step.spell.disposal_method_names)
-        lines.append(
-            f"{indent}many_store.add_many_creations({sid_name}, v{index}, "
-            f"has_disposal_methods=True, disposal_methods={disposal_name})"
-        )
+        # `register_many` (2026-10-01): the positional hot verb; the key's
+        # disposal list is recorded once by the store, not carried per entry.
+        lines.append(f"{indent}many_store.register_many({sid_name}, v{index}, {disposal_name})")
         return True
 
     def _emit_shared_hit(self, index: int, step: SitePlanStep, indent: str, lines: List[str]) -> None:

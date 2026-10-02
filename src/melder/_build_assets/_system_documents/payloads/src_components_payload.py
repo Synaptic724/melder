@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_components.md'
-LINE_COUNT = 10548
-CONTENT_SHA256 = 'b59bfbad82e0a1cad4ccda5b869b61c189bc4927f20e9de27c17e532d00d40ce'
+LINE_COUNT = 10577
+CONTENT_SHA256 = '30f3795327cd9eb18e9094863054be260ca5733632eb93a1f0efd012862b51e8'
 
 TEXT = """# Src Components (C3/C2/C1)
 
@@ -24,7 +24,7 @@ TEXT = """# Src Components (C3/C2/C1)
 - Status: in_progress
 - Owner:
 - Created: 2026-01-17
-- Updated: 2026-10-01
+- Updated: 2026-10-02
 
 ## Scope
 This document defines C3 components, C2 subcomponents, and C1 code references
@@ -2919,6 +2919,30 @@ Text is preserved as authored; only its location changed.
 Purpose:
 - Instance lifecycle registry for Conduits and scoped spellspaces.
 
+Many registration trim (2026-10-02, 0.2.8216): a disposal-bearing `many` key holds ONE cleanup record, `ManyDisposalBucket`,
+whose `entries` IS the key's live bucket (the same list object, aliased, never a copy) and whose `methods` is the
+Spell-owned disposal list recorded once, at the key's first registration. Emitted plans and executors call
+`Creations.register_many(spell_id, instance, disposal_methods)`: explicit store-lock acquire/release, the cleaned
+check, one dict read, first use creates the bucket and the record, one append (204 -> 100 ns per registration
+standalone; plan -15..-34% and whole meld -7..-23% on the real shapes, interleaved medians on the 2-core VM).
+`add_many_creations` keeps its signature, writes the same shape and keeps the checks the hot verb drops: a
+non-list slot, and a registration whose disposal declaration disagrees with the key's existing entries, raise
+ValueError. One many key carries one declaration - the spell id hashes its resolved disposal names - so sparse
+disposal metadata is impossible (before, the mirror was a second list of `(object, methods)` tuples appended in
+step with the live bucket, and it could be sparse). Every reader takes the record: the disposal walk
+(`_dispose_many_creations` pairs each object with `methods`, newest-first), purge (a whole target pops both; a
+single purge removes the object from the aliased bucket and returns `(object, methods)`; bucket and record go
+together when empty), extract (one row per object, each carrying the key's list) and restore (one record over the
+restored bucket; rows of one key that disagree on `disposable` raise RuntimeError). The emitted line is
+`many_store.register_many(sidN, vN, dmN)` in the site plan, `many_creations.register_many(spell_id, instance,
+disposal_methods)` in the solo templates and `creations_i.register_many(...)` in the specializer; cache
+generation 16 (`many_registration_per_key_methods`) retires executors emitted with the old keyword call.
+EVIDENCE: `src/melder/aether/conduit/creations/creations.py:ManyDisposalBucket`, `Creations.register_many`,
+`Creations._append_many_locked`, `Creations._dispose_many_creations`, `Creations._detach_single_many_creation`,
+`Creations.extract_spell_creations`, `Creations.restore_spell_creations`,
+`src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:SitePlanEmission._emit_many`
+and `src/melder/utilities/caching_system/caching_system.py:CachingSystem.CACHE_VERSION_HISTORY`.
+
 Scope lease and finished exits (2026-09-27, 0.2.8203): a SpellSpace carries one lease flag, `_released`.
 `SpellSpacePool.release` sets it first, before the idle append; `acquire`/`prepare_object` and
 `acquire_untracked` clear it; `_cleanup_for_destroy` sets it and keeps it True as a documented tombstone.
@@ -2953,8 +2977,9 @@ EVIDENCE: `src/melder/aether/conduit/spell_space/spell_space.py:SpellSpace.recyc
 Native purge (2026-09-21): Creations.purge receives the discovered definition, purge_all and the
 original creation for single removal; it does not discover or authorize scopes. _detach_purge_entries
 removes a full target or the supplied singleton under the store lock. For single many removal,
-_detach_single_many_creation searches only that target's bucket and removes its paired disposal
-record, preserving other entries and deleting empty buckets. The slot's build lock is taken first:
+_detach_single_many_creation searches only that target's bucket; since 0.2.8216 the disposal record
+aliases that bucket, so the one removal retires both views, and the record goes with the bucket when
+it empties. Other entries keep their order. The slot's build lock is taken first:
 Spell._lock for unique, the store's slot_guard for the other slotted lifetimes (2026-09-25).
 Key membership and Existence distinguish absence, falsey singletons and many buckets. An unretained
 reference returns zero. Detached references survive lock release, then _attempt_cleanup or the
@@ -2995,7 +3020,8 @@ EVIDENCE: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/sh
 
 Responsibilities:
 - Track live objects in `_creations`.
-- Track cleanup-only disposal metadata in `_disposable_creations`.
+- Track cleanup-only disposal metadata in `_disposable_creations`: unique `spell_id -> (object, methods)`;
+  many `spell_id -> ManyDisposalBucket` aliasing the live bucket plus the key's method list (0.2.8216).
 - Store unique entries as `spell_id -> object`.
 - Store many entries as `spell_id -> list[object]`.
 - Dispose tracked entries during cleanup using only the detached disposable
@@ -3034,7 +3060,7 @@ Lifecycle/Cleanup:
   ordering structure was added: `_disposable_creations` is a plain dict, dict
   iteration is insertion-ordered by language guarantee, and insertion happens at
   creation time, so the registry already IS the creation-order record.
-  EVIDENCE: src/melder/aether/conduit/creations/creations.py:365-413.
+  EVIDENCE: src/melder/aether/conduit/creations/creations.py:376-468.
 - That covers ordering WITHIN one scope. Ordering BETWEEN scopes (lesser conduit
   before root, narrower existence before broader) remains owned by the conduit
   cleanup cascade, so the two axes compose without any graph walk.
@@ -3096,9 +3122,9 @@ Observability:
   Since 0.2.80 this holds per method as well, and every error keeps the original
   exception as its cause, so the logged or raised group shows what actually failed.
   EVIDENCE:
-  - src/melder/aether/conduit/creations/creations.py:69-84
-  - src/melder/aether/conduit/creations/creations.py:227-243
-  - src/melder/aether/conduit/creations/creations.py:245-324
+  - src/melder/aether/conduit/creations/creations.py:119-134
+  - src/melder/aether/conduit/creations/creations.py:277-293
+  - src/melder/aether/conduit/creations/creations.py:295-374
 
 Extension Points:
 - Disposal method names in `SpellbookConfiguration`. The registry calls a
@@ -3925,7 +3951,8 @@ Site-plan runtime for normal and override melds (2026-09-26, override design v2)
   shared site's children are therefore not built (B2), and a plan holds one build lock at a time, never across
   another site's constructor. A shared site with a winning key is pinned to the top level, so a key that targets
   a stored instance keeps today's "already exists" refusal (P2). Disposal-bearing many sites register in the
-  innermost scope store, and every registration passes the Spell's live `disposal_method_names` list.
+  innermost scope store through `many_store.register_many(sidN, vN, dmN)` (0.2.8216; the positional hot verb
+  of Creations and SpellSpace), and every registration passes the Spell's live `disposal_method_names` list.
 - Door-held root (2026-09-26, 0.2.73): the runtime passes `door_route_key` to its normal plan only; the
   generalized hydrator passes the manifest's route key and the many_only hydrator none (its roots are `many`).
   For "unique_per_conduit" or "spellspace" with a root of that existence
@@ -6202,8 +6229,10 @@ Contract/Interface:
   aggregated into one `ExceptionGroup` (0.2.80).
 Data Structures:
 - Existence maps for unique/many/scope.
+- `ManyDisposalBucket` per disposal-bearing many key: the live bucket aliased plus the key's one method
+  list (0.2.8216); unique keys keep their `(object, methods)` tuple.
 Concurrency/Threading:
-- RLock.
+- RLock (a leaf; `register_many` takes it with explicit acquire/release, the public verbs with `with`).
 Key Files (C1):
 - `src/melder/aether/conduit/creations/creations.py`
 - `src/melder/aether/conduit/creations/conduit_creations.py`

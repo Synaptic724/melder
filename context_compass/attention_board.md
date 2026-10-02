@@ -148,19 +148,14 @@ Message alert rules
 - NEW MESSAGE for melder_2 (from melder_0, 2026-09-30T20:21:52Z)
 - NEW MESSAGE for muse_0 (from melder_0, 2026-09-30T21:18:29Z)
 - NEW MESSAGE for melder_2 (from melder_0, 2026-09-30T21:18:29Z)
-- NEW MESSAGE for fable_0 (from melder_0, 2026-10-01T10:15:59Z)
 - NEW MESSAGE for melder_2 (from melder_0, 2026-10-01T10:15:59Z)
 - NEW MESSAGE for muse_0 (from melder_0, 2026-10-01T10:15:59Z)
-- NEW MESSAGE for fable_0 (from melder_0, 2026-10-01T10:47:49Z)
 - NEW MESSAGE for melder_2 (from melder_0, 2026-10-01T10:47:49Z)
 - NEW MESSAGE for muse_0 (from melder_0, 2026-10-01T10:47:49Z)
-- NEW MESSAGE for fable_0 (from melder_0, 2026-10-01T10:56:27Z)
 - NEW MESSAGE for melder_2 (from melder_0, 2026-10-01T10:56:27Z)
 - NEW MESSAGE for muse_0 (from melder_0, 2026-10-01T10:56:27Z)
-- NEW MESSAGE for fable_0 (from melder_0, 2026-10-01T11:10:44Z)
 - NEW MESSAGE for melder_2 (from melder_0, 2026-10-01T11:10:44Z)
 - NEW MESSAGE for muse_0 (from melder_0, 2026-10-01T11:10:44Z)
-- NEW MESSAGE for fable_0 (from melder_0, 2026-10-01T11:26:16Z)
 - NEW MESSAGE for melder_2 (from melder_0, 2026-10-01T11:26:16Z)
 - NEW MESSAGE for muse_0 (from melder_0, 2026-10-01T11:26:16Z)
 <!-- END USER-DEFINED: alerts -->
@@ -172,7 +167,7 @@ Message alert rules
 | gauntlet_runtime_speed | in_progress | discovery | claude | melder_2 | none | Owner decides whether an open lever (thread-affine pools, one-lock anonymous link, single-check fast door) is worth a task. | Per-scope-cycle cost map vs dishka and dependency-injector, with ranked and prototyped candidates. | Next lever validated and its task opened, or the owner redirects. | tickets/tasks/2026-09-26_measure_gauntlet_scope_cycle_costs_task.md | 2026-09-26T23:01:16Z | REQUIRED |
 | defect_hunting_spellbook | in_progress | discovery | opencode | muse_0 | none | Slice spellbook component sections then read the surface behind each claim. | Contradiction list with evidence; meaty issues flagged apart from polish. | Sweep list triaged or owner redirects to conduit/meld or arch diffs. | tickets/tasks/2026-09-27_spellbook_sweep_task.md | 2026-09-27T15:56:49Z | REQUIRED |
 | defect_hunting_fixes_1 | in_progress | implementation | opencode | muse_0 | none | Re-slice each target fresh then repair findings 1-8 in order. | Corrected blocks with verified ranges; index check clean. | Batch repaired with gates passing or owner redirects scope. | tickets/tasks/2026-09-27_sweep_fixes_batch_1_task.md | 2026-09-27T16:07:16Z | REQUIRED |
-| static_codegen_strategies | in_progress | discovery | claude | fable_0 | none | Owner reviews the non-PGO catalogue and the recommended order in the static epic; S1's exact edit is proposed and waits for the owner's go. | S1 (registration trim) landed: one append per disposal-bearing many creation, same disposal order and errors, notched, measured on the VM and owner-run. | S1 lands and the owner turns it in (S8 next), or a DECISION_REQUEST on the cleaned-store refusal blocks it. | tickets/tasks/2026-10-01_implement_many_registration_trim_task.md | 2026-10-01T01:25:50Z | REQUIRED |
+| static_codegen_strategies | review | handoff | claude | fable_0 | none | Owner runs the full-tree suites and the gauntlet on the tree (0.2.8216, A3) and turns S1 in; then the S8 task opens with its patch docs. | S1 (registration trim) landed at 0.2.8216: one append per disposal-bearing many creation, same disposal order and errors, docs/graph/assets current; plan -15..-34% and meld -7..-23% on the VM. | Owner turns S1 in (S8 next) or reports a red suite or gauntlet number. | tickets/tasks/2026-10-01_implement_many_registration_trim_task.md | 2026-10-02T18:01:21Z | REQUIRED |
 <!-- END USER-DEFINED: active_items -->
 
 ## Recently Closed Anchors
@@ -200,8 +195,8 @@ Message alert rules
 - gauntlet_runtime_speed: SWITCH_TRIGGER is the owner's pick among the open levers, or the owner's
   answer on the SpellSpace scope RISK; P1, P4, the tail, build locks and nested slot guard are turned in. The lever-1 lifecycle is closed as measured (21:15Z). RESUME_HIERARCHY: tickets/stories/2026-09-26_gauntlet_runtime_speed_story.md ->
   tickets/tasks/2026-09-26_measure_gauntlet_scope_cycle_costs_task.md.
-- static_codegen_strategies: SWITCH_TRIGGER is S1 landed and turned in (then S8, S2a, the door harness), or a
-  DECISION_REQUEST on the cleaned-store refusal. The PGO epic
+- static_codegen_strategies: SWITCH_TRIGGER is the owner's turn-in of the landed S1 (then S8, S2a, the door
+  harness), or a red owner-run suite/gauntlet on 0.2.8216. The PGO epic
   (tickets/epics/2026-09-27_adaptive_creation_contexts_epic.md) is queued behind this one with no row.
   RESUME_HIERARCHY:
   tickets/epics/2026-10-01_static_codegen_and_door_strategies_epic.md ->

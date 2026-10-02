@@ -1,4 +1,4 @@
-# Melder 0.2.8215
+# Melder 0.2.8216
 
 **Unreleased**
 
@@ -305,8 +305,36 @@ conjure cache on. What stays the same: melding the dependency first, or binding 
 as before; warm melds, validation verdicts and conjure do no extra work. A dependency marked this way pays one
 resolution pass on its first direct meld.
 
+## Transient creations with disposal methods register faster
+
+A `many` spell whose instances declare disposal methods (through the Spellbook's disposal configuration or a
+bind's own candidates) is registered into its scope's store on every meld, so that the scope's exit can dispose
+it. That registration used to allocate a `(instance, methods)` record and append to two lists under the store
+lock on every creation; it is now one list append, and the Spell's disposal list is recorded once per spell and
+scope, at the first registration. Compiled plans and executors call the store's new positional verb,
+`Creations.register_many(spell_id, instance, disposal_methods)`, which takes and releases the store lock
+explicitly; `add_many_creations` keeps its signature for other callers.
+
+Nothing changes in what is disposed or when: the same objects, newest first, each method in its declared order,
+one chained error per failing method in the same `ExceptionGroup`, and a scope cleaned while an instance was
+still being built still disposes that instance and raises. One rule is now enforced that the runtime already
+guaranteed: all registrations of one spell id in one scope carry the same disposal declaration, since the spell
+id hashes its resolved disposal names; a direct `add_many_creations` call that mixes declarations is refused with
+`ValueError` instead of leaving sparse disposal metadata.
+
+Directional numbers on a 2-core VM (Python 3.14t, free-threaded), interleaved before/after medians on the real
+compiled plans: the plan of a transient with one singleton dependency 377 -> 249 ns per creation, of a wide
+transient over eight singletons 682 -> 527 ns, of an eight-deep transient tree 804 -> 639 ns; the whole meld by
+name of those roots 536 -> 414 ns, 962 -> 765 ns and 882 -> 737 ns. Melds of singletons and of transients
+without disposal methods are unchanged.
+
+The creation-cache format generation is 16: an existing `__melder_cache__` built by an earlier version is
+rebuilt on the next conjure, as before; nothing else changes on disk.
+
 ## Packaging and documentation
 
+- The internal-bind guard manifest holds 620 entries at 0.2.8216 (619 at 0.2.8215): `ManyDisposalBucket`, the
+  cleanup record of a `many` key, is Melder-internal and cannot be bound as a spell.
 - The packaged system documents (`melder.__components__`, `melder.__architecture__`) are regenerated: the Meld
   Resolution Runtime entry describes the name/class registry, its mint rule, its readers and its invalidation,
   and the meld sequence names both door registries.
@@ -337,4 +365,7 @@ resolution pass on its first direct meld.
   frame-lookup flow and diagram), and `docs/intermediate/scopes.md` shows them. Line citations those additions
   moved, and the stale ones into `aether.py`, are remeasured; the Aether singleton invariant now says that
   teardown resets unconditionally and only a failed construction checks identity.
-- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8215.
+- The packaged system documents describe the per-key disposal record behind `register_many`, the store's
+  one-declaration rule and the emitted registration line; the Creations entries' line citations are
+  remeasured.
+- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8216.

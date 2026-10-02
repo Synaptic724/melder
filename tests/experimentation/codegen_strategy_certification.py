@@ -181,7 +181,9 @@ class TrimmedStore:
 # ---------------------------------------------------------------------------------------------------------------
 
 SITE_ALIAS = re.compile(r"^    c(\d+) = spells\[(\d+)\]\._owner_creations$")
-REGISTER = re.compile(r"^    many_store\.add_many_creations\(sid(\d+), v(\d+), has_disposal_methods=True, disposal_methods=dm(\d+)\)$", re.M)
+# The emitted registration line since the trim landed (2026-10-01): the positional hot verb. The S1 transform
+# now measures the real `register_many` against its stand-in, which should be a wash.
+REGISTER = re.compile(r"^    many_store\.register_many\(sid(\d+), v(\d+), dm(\d+)\)$", re.M)
 PROLOGUE = ["    many_store = meld._spellspace_creations", "    if many_store is None:", "        many_store = meld._conduit_creations"]
 
 

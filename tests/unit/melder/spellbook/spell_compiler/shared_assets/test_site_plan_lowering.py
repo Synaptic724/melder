@@ -55,6 +55,10 @@ class FakeStore:
         """Record one disposal-bearing many instance."""
         self.disposal_adds.append((key, item))
 
+    def register_many(self, key: str, item: Any, disposal_methods: List[str]) -> None:
+        """Record one disposal-bearing many instance registered through the hot verb (2026-10-01)."""
+        self.disposal_adds.append((key, item))
+
 
 def _factory(name: str, built: Counter) -> Callable[..., Any]:
     """Return a constructor that counts builds and keeps its arguments."""
@@ -1118,6 +1122,11 @@ class _DisposalRecordingStore(FakeStore):
         super().add_many_creations(
             key, item, has_disposal_methods=has_disposal_methods, disposal_methods=disposal_methods,
         )
+        self.disposal_lists.append((key, disposal_methods))
+
+    def register_many(self, key: str, item: Any, disposal_methods: List[str]) -> None:
+        """Record the hot-verb many registration and the list passed (2026-10-01)."""
+        super().register_many(key, item, disposal_methods)
         self.disposal_lists.append((key, disposal_methods))
 
 

@@ -1,8 +1,8 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: tests
-SOURCE FINGERPRINT: b132fe002afb501dd1df52d508a04f8b23d1bca41ffe48d94ac24f6af9f97f5e
-FILE COUNT: 1047
+SOURCE FINGERPRINT: 7986fefff7f8f4a9b59bd6e7f6ea3928fc26cafb3185912472792fcbf314d0a3
+FILE COUNT: 1049
 
 ================================================================================
 BEGIN FILE: tests/_annotation_audit_support.py
@@ -9951,6 +9951,203 @@ def test_remeld_is_idempotent() -> None:
 END FILE: tests/component/melder/aether/conduit/test_conduit_component_lineage.py
 ================================================================================
 ================================================================================
+BEGIN FILE: tests/component/melder/aether/conduit/test_conduit_component_many_registration_trim.py
+CONTENT SHA256: 1a1a349daac7d29e04cca3cda8d93fb140038fe4247c48ea16a1855efb3fc478
+SOURCE ENCODING: utf-8
+================================================================================
+"""
+Component tests of the many registration trim through real conjures (2026-10-01).
+
+Scope:
+    The registration line the emitters write for a disposal-bearing `many` step now calls
+    `Creations.register_many(sid, instance, dm)`; these tests meld such roots through a real
+    Conduit and a real SpellSpace (the solo family for a leaf without dependencies, the
+    generalized family for a root with one) and check the store shape and the disposal
+    order at scope exit.
+"""
+
+from typing import List, Optional, Tuple
+
+import pytest
+
+from melder.aether.aether import Aether
+from melder.aether.conduit.conduit import Conduit
+from melder.aether.conduit.creations.creations import ManyDisposalBucket
+from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spellbook import Spellbook
+from tests._frame_posture_test_support import (
+    set_frame_system_state_for_spellbook_configuration,
+)
+
+
+class _Log:
+    """Shared disposal order log, one per test."""
+
+    def __init__(self) -> None:
+        self.entries: List[str] = []
+
+
+class Leaf:
+    """Disposal-bearing transient with no dependencies (solo family)."""
+
+    log: Optional[_Log] = None
+
+    def __init__(self) -> None:
+        self.serial = 0
+
+    def cleanup(self) -> None:
+        """Record the disposal."""
+        assert Leaf.log is not None
+        Leaf.log.entries.append(f"leaf{self.serial}")
+
+
+class Root:
+    """Disposal-bearing transient that depends on a Leaf (generalized family)."""
+
+    log: Optional[_Log] = None
+
+    def __init__(self, leaf: Leaf) -> None:
+        self.leaf = leaf
+        self.serial = 0
+
+    def cleanup(self) -> None:
+        """Record the disposal."""
+        assert Root.log is not None
+        Root.log.entries.append(f"root{self.serial}")
+
+
+@pytest.fixture(autouse=True)
+def reset_aether_singleton() -> None:
+    """Fresh Aether per test, as the other component conduit tests do."""
+    Aether._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+    yield
+    Aether._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+
+
+def _spellbook_with_disposal() -> Spellbook:
+    """A Spellbook whose configuration declares `cleanup` as the disposal method."""
+    configuration = SpellbookConfiguration()
+    set_frame_system_state_for_spellbook_configuration(configuration, "automatic")
+    configuration.set_property("disposal", True)
+    configuration.set_property("disposal_method_names", ["cleanup"])
+    configuration.load_default_dictionary()
+    configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
+    return Spellbook(configuration=configuration)
+
+
+def _bind_world() -> Tuple[Spellbook, str, str, _Log]:
+    """Bind Leaf and Root as disposal-bearing many spells; return (spellbook, leaf_id, root_id, log)."""
+    log = _Log()
+    Leaf.log = log
+    Root.log = log
+    spellbook = _spellbook_with_disposal()
+    leaf_id = spellbook.bind(spell=Leaf, existence=Existence.many, permissions="create")
+    root_id = spellbook.bind(spell=Root, existence=Existence.many, permissions="create")
+    return spellbook, leaf_id, root_id, log
+
+
+def test_conduit_meld_registers_one_record_per_key_aliasing_the_bucket() -> None:
+    """Two melds of the root register leaf and root into one record each, aliased to the live buckets."""
+    spellbook, leaf_id, root_id, _log = _bind_world()
+    conduit = spellbook.conjure(name="root")
+    try:
+        first = conduit.meld(spell_id=root_id)
+        second = conduit.meld(spell_id=root_id)
+        store = conduit._creations
+        for spell_id, expected in ((root_id, [first, second]), (leaf_id, [first.leaf, second.leaf])):
+            record = store._disposable_creations[spell_id]
+            assert isinstance(record, ManyDisposalBucket)
+            assert record.entries is store._creations[spell_id]
+            assert record.entries == expected
+            spell = spellbook.find_spell_by_id(spell_id)
+            assert spell is not None
+            assert record.methods is spell.disposal_method_names
+            assert record.methods == ["cleanup"]
+    finally:
+        conduit.permanent_cleanup()
+
+
+def test_conduit_cleanup_disposes_roots_then_leaves_newest_first() -> None:
+    """Teardown walks the registry newest key first and each bucket newest entry first."""
+    spellbook, _leaf_id, root_id, log = _bind_world()
+    conduit = spellbook.conjure(name="root")
+    first = conduit.meld(spell_id=root_id)
+    second = conduit.meld(spell_id=root_id)
+    first.serial, first.leaf.serial = 1, 1
+    second.serial, second.leaf.serial = 2, 2
+
+    conduit.permanent_cleanup()
+
+    assert log.entries == ["root2", "root1", "leaf2", "leaf1"]
+
+
+def test_solo_leaf_registers_through_the_hot_verb_and_is_disposed() -> None:
+    """A leaf melded on its own (solo family) is registered and disposed like any many root."""
+    spellbook, leaf_id, _root_id, log = _bind_world()
+    conduit = spellbook.conjure(name="root")
+    leaf_a = conduit.meld(spell_id=leaf_id)
+    leaf_b = conduit.meld(spell_id=leaf_id)
+    leaf_a.serial, leaf_b.serial = 1, 2
+    record = conduit._creations._disposable_creations[leaf_id]
+    assert record.entries == [leaf_a, leaf_b]
+
+    conduit.permanent_cleanup()
+
+    assert log.entries == ["leaf2", "leaf1"]
+
+
+def test_spellspace_exit_disposes_the_space_store_only() -> None:
+    """A space-scoped meld registers in the space store; its exit disposes those and nothing else."""
+    spellbook, leaf_id, root_id, log = _bind_world()
+    conduit = spellbook.conjure(name="root")
+    try:
+        outer = conduit.meld(spell_id=root_id)
+        outer.serial, outer.leaf.serial = 9, 9
+        with conduit.enter_spellspace() as space:
+            inner = space.meld(spell_id=root_id)
+            inner.serial, inner.leaf.serial = 1, 1
+            record = space._creations._disposable_creations[root_id]
+            assert record.entries is space._creations._creations[root_id]
+            assert record.entries == [inner]
+            assert conduit._creations._disposable_creations[root_id].entries == [outer]
+        assert log.entries == ["root1", "leaf1"]
+        assert leaf_id not in space._creations._creations
+    finally:
+        conduit.permanent_cleanup()
+    assert log.entries == ["root1", "leaf1", "root9", "leaf9"]
+
+
+def test_purge_one_transient_from_a_live_conduit_keeps_the_others() -> None:
+    """Purging one instance of a many root disposes it alone and keeps the record over the rest."""
+    spellbook, _leaf_id, root_id, log = _bind_world()
+    conduit = spellbook.conjure(name="root")
+    try:
+        first = conduit.meld(spell_id=root_id)
+        second = conduit.meld(spell_id=root_id)
+        first.serial, first.leaf.serial = 1, 1
+        second.serial, second.leaf.serial = 2, 2
+
+        removed = conduit.purge(first, purge_all=False)
+
+        assert removed == 1
+        assert log.entries == ["root1"]
+        record = conduit._creations._disposable_creations[root_id]
+        assert record.entries == [second]
+        assert record.entries is conduit._creations._creations[root_id]
+    finally:
+        conduit.permanent_cleanup()
+    assert log.entries == ["root1", "root2", "leaf2", "leaf1"]
+================================================================================
+END FILE: tests/component/melder/aether/conduit/test_conduit_component_many_registration_trim.py
+================================================================================
+================================================================================
 BEGIN FILE: tests/component/melder/aether/conduit/test_conduit_component_meld_gating.py
 CONTENT SHA256: 8e53d0c9e6326df8dc1157f8c3ab2a58a966683b371e25b95a652ff818e3aa93
 SOURCE ENCODING: utf-8
@@ -12516,7 +12713,7 @@ END FILE: tests/component/melder/aether/conduit/test_conduit_component_policy_re
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/aether/conduit/test_conduit_component_purge.py
-CONTENT SHA256: b726640518194a6cd6f17b76b5c61b49c130986886229b89ce6b14aab4d1c46b
+CONTENT SHA256: 898d58bd70018752b37d76e2ff9e29b272ba054ecda102ddd5d197279bbe74e4
 SOURCE ENCODING: utf-8
 ================================================================================
 """Contracts for scoped purge, native disposal and creation-writer synchronization."""
@@ -13594,12 +13791,15 @@ def test_single_many_purge_failure_leaves_other_entries_for_later_disposal(
     assert events == [2, 3, 1]
 
 
-def test_single_many_purge_preserves_sparse_disposal_records() -> None:
+def test_single_many_purge_keeps_the_record_over_the_remaining_entries() -> None:
     """
-    Purpose: Retire a live entry when not every entry has disposal metadata.
-    Contract: Removing an undisposable entry does not remove the next object's
-        metadata; later single/full purges dispose the correct objects exactly once.
-    Returns: None; the native store remains reusable after its last entry is purged.
+    Purpose: Retire live entries one at a time from a disposal-bearing many key.
+    Contract: One many key carries one disposal declaration (2026-10-01): a plain
+        registration under a disposal-bearing key is refused and leaves the key as
+        it was; each single purge disposes exactly its object, the record keeps
+        covering the rest, and the store is reusable after the last entry goes.
+        Before, disposal metadata could be sparse and this test pinned that shape.
+    Returns: None.
     """
     book = _make_spellbook()
     spell_id = book.bind(spell=PurgeResource, existence=Existence.many)
@@ -13607,21 +13807,23 @@ def test_single_many_purge_preserves_sparse_disposal_records() -> None:
     try:
         spell = book._spells_by_id[spell_id]
         first, second, third = PurgeResource(), PurgeResource(), PurgeResource()
-        root._creations.add_many_creations(spell_id, first)
+        root._creations.add_many_creations(
+            spell_id, first, has_disposal_methods=True, disposal_methods=["cleanup"],
+        )
         root._creations.add_many_creations(
             spell_id, second, has_disposal_methods=True, disposal_methods=["cleanup"],
         )
-        root._creations.add_many_creations(
-            spell_id, third, has_disposal_methods=True, disposal_methods=["cleanup"],
-        )
+        with pytest.raises(ValueError, match="one disposal declaration"):
+            root._creations.add_many_creations(spell_id, third)
+        assert root._creations._creations[spell_id] == [first, second]
         assert root._creations.purge(spell, purge_all=False, creation=first) == 1
-        assert first.cleanup_calls == second.cleanup_calls == third.cleanup_calls == 0
+        assert first.cleanup_calls == 1
+        assert second.cleanup_calls == third.cleanup_calls == 0
         assert root.purge(second, purge_all=False) == 1
         assert second.cleanup_calls == 1
-        assert third.cleanup_calls == 0
-        assert root.purge(third) == 1
-        assert third.cleanup_calls == 1
-        assert root.purge(third) == 0
+        assert spell_id not in root._creations._creations
+        assert spell_id not in root._creations._disposable_creations
+        assert root.purge(second) == 0
     finally:
         root.permanent_cleanup()
 
@@ -62908,7 +63110,7 @@ END FILE: tests/experimentation/activation_footprint_insert_only_probe.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/experimentation/codegen_strategy_certification.py
-CONTENT SHA256: 72ea40e166e9e5b8fe510eebce35c43085dfaad8a812c65834e8d5eae4e42e81
+CONTENT SHA256: 89908116ec29a59fb568720c02c1b21a6b8631b4dfd770ed52ef2119bab8f9a4
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -63094,7 +63296,9 @@ class TrimmedStore:
 # ---------------------------------------------------------------------------------------------------------------
 
 SITE_ALIAS = re.compile(r"^    c(\d+) = spells\[(\d+)\]\._owner_creations$")
-REGISTER = re.compile(r"^    many_store\.add_many_creations\(sid(\d+), v(\d+), has_disposal_methods=True, disposal_methods=dm(\d+)\)$", re.M)
+# The emitted registration line since the trim landed (2026-10-01): the positional hot verb. The S1 transform
+# now measures the real `register_many` against its stand-in, which should be a wash.
+REGISTER = re.compile(r"^    many_store\.register_many\(sid(\d+), v(\d+), dm(\d+)\)$", re.M)
 PROLOGUE = ["    many_store = meld._spellspace_creations", "    if many_store is None:", "        many_store = meld._conduit_creations"]
 
 
@@ -75523,7 +75727,7 @@ END FILE: tests/experimentation/test_existing_instance_injection_experiment.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/experimentation/test_forced_phase10_phase11_creation_context_comparison_harness.py
-CONTENT SHA256: 757d10125fed4d4e5ad2708055a430a4841375ffd71fc150f03b8412f8095475
+CONTENT SHA256: c7edd026b0cfbc2b9fe918c432f0a7bc7c9173caf56e86c21099c1cc6491822c
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -75671,6 +75875,16 @@ class _FreshCreationsProbe:
             disposal_methods: Optional[Sequence[str]] = None,
     ) -> None:
         _ = has_disposal_methods
+        _ = disposal_methods
+        self._disposable_creations.setdefault(spell_id, []).append(instance)
+
+    def register_many(
+            self,
+            spell_id: str,
+            instance: Any,
+            disposal_methods: Sequence[str],
+    ) -> None:
+        """Stand-in for the positional hot verb emitted since 2026-10-01."""
         _ = disposal_methods
         self._disposable_creations.setdefault(spell_id, []).append(instance)
 
@@ -107280,7 +107494,7 @@ END FILE: tests/integration/melder/conduit/test_conduit_integration_contract_tra
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/conduit/test_conduit_integration_creations.py
-CONTENT SHA256: 7ea9f9640c47a9f09e1ab6715251686172f28944d1c551ea55671932f67baeee
+CONTENT SHA256: cfe6a8ba8d476dd75f90baa9b25891a121fa8c3fb43db815f2eaf63707fabf8c
 SOURCE ENCODING: utf-8
 ================================================================================
 from __future__ import annotations
@@ -107503,7 +107717,7 @@ def test_conduit_integration_upgrade_transfers_lesser_creations() -> None:
             lesser.meld(spell_id=many_id)
         bucket = lesser._creations._disposable_creations.get(many_id)
         assert bucket is not None
-        values = [entry[0] for entry in bucket]
+        values = list(bucket.entries)
         assert values == [many_instance]
     finally:
         lesser.cleanup()
@@ -116292,7 +116506,7 @@ END FILE: tests/integration/melder/conduit/test_conduit_integration_transfer_own
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/conduit/test_ordered_disposal_runtime.py
-CONTENT SHA256: fb1a01ab7cba51bb7284bf6afd76daf1fa37394a0a406f1a89db22082c39a69f
+CONTENT SHA256: ea3124627d356ca42f90042e8937ec2094d85a61383ce935ebd99b338151f756
 SOURCE ENCODING: utf-8
 ================================================================================
 """Real binding-to-cleanup method order and reference ownership across compiler families."""
@@ -116411,10 +116625,13 @@ def test_real_compiled_disposal_uses_established_order(
             spell = book.find_spell_by_id(spell_id)
             assert spell is not None
             raw_entry = conduit._creations._disposable_creations[spell_id]
-            entry = (
-                next(row for row in raw_entry if row[0] is value)
-                if spell.existence is Existence.many else raw_entry
-            )
+            if spell.existence is Existence.many:
+                # One record per many key (2026-10-01): the bucket plus the
+                # key's one method list.
+                assert any(item is value for item in raw_entry.entries)
+                entry = (value, raw_entry.methods)
+            else:
+                entry = raw_entry
             assert entry[0] is value
             assert entry[1] == expected
             assert entry[1] is spell.disposal_method_names
@@ -128717,7 +128934,7 @@ END FILE: tests/integration/melder/spellbook/test_cache_runtime_integration.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/spellbook/test_cache_schema_version_integration.py
-CONTENT SHA256: 62db5756df6791e253bd3566840af704e28a153c2f5532a8c8fb6d08a8d6149f
+CONTENT SHA256: 9e73480152f645f89ea15cc10f073677238702b18911cb5a649d4eb8f3ec3748
 SOURCE ENCODING: utf-8
 ================================================================================
 import logging
@@ -128747,6 +128964,7 @@ EXPECTED_CACHE_VERSION_HISTORY = {
     13: "collection_member_paths",
     14: "override_site_plan_lanes",
     15: "structural_snapshot_rows",
+    16: "many_registration_per_key_methods",
 }
 
 
@@ -178547,14 +178765,14 @@ END FILE: tests/unit/melder/aether/conduit/creations/test_conduit_creations.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/conduit/creations/test_creations.py
-CONTENT SHA256: 6058b7e702ee1e04207a4222216e048d3ace2833bff6343a6f7b65175d07abe0
+CONTENT SHA256: 8ceb5a320953bad212a295bb284bf9391e9e5f8b5ea66c07207dc464e444b6d8
 SOURCE ENCODING: utf-8
 ================================================================================
 from unittest.mock import patch
 
 import pytest
 
-from melder.aether.conduit.creations.creations import Creations
+from melder.aether.conduit.creations.creations import Creations, ManyDisposalBucket
 
 
 class Probe:
@@ -178686,10 +178904,10 @@ def test_add_many_creations_records_disposal_metadata(creations: Creations) -> N
     )
 
     assert creations._creations["spell-many"] == [obj]
-    assert creations._disposable_creations["spell-many"][0] == _disposable_entry(
-        obj,
-        "dispose",
-    )
+    record = creations._disposable_creations["spell-many"]
+    assert isinstance(record, ManyDisposalBucket)
+    assert record.entries is creations._creations["spell-many"]
+    assert record.methods == ["dispose"]
 
 
 def test_add_creation_duplicate_key_raises(creations: Creations) -> None:
@@ -179859,7 +180077,7 @@ END FILE: tests/unit/melder/aether/conduit/creations/test_creations_disposal_rev
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/conduit/creations/test_creations_many_first_use_atomicity_regression.py
-CONTENT SHA256: 5ec9972dc993f770cf9e1fd2a7af4eb49c943536635349a7820b6335a71b6554
+CONTENT SHA256: ffe4d352b2145d1fda7f8eca921ae1482085e4e807661773e4828f3d958ef6eb
 SOURCE ENCODING: utf-8
 ================================================================================
 """Regression: BUG-073 (2026-07-17 audit) - Existence.many first use is atomic.
@@ -179882,6 +180100,8 @@ Contract under test:
 
 import threading
 from typing import Any, Dict, List, Optional
+
+import pytest
 
 from melder.aether.conduit.creations.creations import Creations
 
@@ -180031,7 +180251,7 @@ def test_concurrent_first_use_retains_both_creations_and_disposals() -> None:
         "(the audited BUG-073 loss)"
     )
     disposal_bucket = store._disposable_creations["spell-many"]
-    assert len(disposal_bucket) == len(bucket) == 2, (
+    assert disposal_bucket.entries is bucket and len(bucket) == 2, (
         "disposal tracking does not mirror the live bucket"
     )
 
@@ -180045,28 +180265,408 @@ def test_sequential_many_registrations_preserve_order_and_metadata() -> None:
 
     Contract assertions:
         - Repeated registrations append in order to one bucket.
-        - Disposal metadata is recorded only for disposal-declaring entries.
+        - One many key carries one disposal declaration (2026-10-01): a
+          registration without disposal methods under a disposal-bearing
+          key is refused and leaves the bucket untouched. Before, the
+          disposal metadata was allowed to be sparse.
     """
     store = Creations(owner_conduit_id="conduit-1", id="conduit-1")
     probe = DisposalProbe("tracked")
+    second = DisposalProbe("second")
     plain = object()
 
     store.add_many_creations(
         "spell-seq", probe,
         has_disposal_methods=True, disposal_methods=["dispose"],
     )
-    store.add_many_creations("spell-seq", plain)
+    store.add_many_creations(
+        "spell-seq", second,
+        has_disposal_methods=True, disposal_methods=["dispose"],
+    )
+    with pytest.raises(ValueError, match="one disposal declaration"):
+        store.add_many_creations("spell-seq", plain)
 
     bucket = store._creations["spell-seq"]
-    assert bucket == [probe, plain]
+    assert bucket == [probe, second]
     disposal_bucket = store._disposable_creations["spell-seq"]
-    assert len(disposal_bucket) == 1
-    assert disposal_bucket[0][0] is probe
+    assert disposal_bucket.entries is bucket
+    assert disposal_bucket.methods == ["dispose"]
 
     store.cleanup()
     assert probe.dispose_calls == 1
+    assert second.dispose_calls == 1
 ================================================================================
 END FILE: tests/unit/melder/aether/conduit/creations/test_creations_many_first_use_atomicity_regression.py
+================================================================================
+================================================================================
+BEGIN FILE: tests/unit/melder/aether/conduit/creations/test_creations_many_registration_trim.py
+CONTENT SHA256: d1824c7a18d92840f7fcf371ddd52ed7843666fdce977efc9d88fed2c7b294f5
+SOURCE ENCODING: utf-8
+================================================================================
+"""
+Unit tests of the many registration trim (2026-10-01).
+
+Scope:
+    `Creations.register_many` (the positional hot verb emitted plans call) and the
+    `ManyDisposalBucket` record it writes: one record per disposal-bearing many key whose
+    `entries` IS the live bucket and whose `methods` is the Spell-owned list recorded once.
+    Every reader of that record is exercised through the public store surface: whole-store
+    cleanup, reusable clear, whole-target and single-object purge, extract/restore, and the
+    refusal of a build that finishes after cleanup.
+"""
+
+from typing import List
+
+import pytest
+
+from melder.aether.conduit.creations.creations import Creations, ManyDisposalBucket
+from melder.aether.spellbook.existence.existence import Existence
+
+
+class _Probe:
+    """Disposal probe that records the order its methods ran in a shared log."""
+
+    def __init__(self, label: str, log: List[str]) -> None:
+        self.label = label
+        self.log = log
+
+    def close(self) -> None:
+        """First declared method."""
+        self.log.append(f"{self.label}:close")
+
+    def dispose(self) -> None:
+        """Second declared method."""
+        self.log.append(f"{self.label}:dispose")
+
+
+class _Raising(_Probe):
+    """Probe whose first method raises so aggregation can be observed."""
+
+    def close(self) -> None:
+        """Raise, then the second method must still run."""
+        self.log.append(f"{self.label}:close")
+        raise ValueError(self.label)
+
+
+class _ManySpell:
+    """Minimal spell stand-in for purge: an id and an Existence."""
+
+    def __init__(self, spell_id: str, existence: Existence = Existence.many) -> None:
+        self.spell_id = spell_id
+        self.existence = existence
+
+
+@pytest.fixture
+def store() -> Creations:
+    """A fresh store per test."""
+    return Creations(owner_conduit_id="conduit-1", id="conduit-1")
+
+
+@pytest.fixture
+def methods() -> List[str]:
+    """One Spell-owned method list, shared by every registration of a key."""
+    return ["close", "dispose"]
+
+
+def test_register_many_first_use_creates_bucket_and_record(store: Creations, methods: List[str]) -> None:
+    """The first registration creates the live bucket and one record aliasing it."""
+    log: List[str] = []
+    first = _Probe("a", log)
+
+    store.register_many("spell-many", first, methods)
+
+    bucket = store._creations["spell-many"]
+    record = store._disposable_creations["spell-many"]
+    assert bucket == [first]
+    assert isinstance(record, ManyDisposalBucket)
+    assert record.entries is bucket
+    assert record.methods is methods
+
+
+def test_register_many_later_registrations_append_only(store: Creations, methods: List[str]) -> None:
+    """Later registrations append to the bucket; the record is unchanged and still aliases it."""
+    log: List[str] = []
+    probes = [_Probe(label, log) for label in "abc"]
+    for probe in probes:
+        store.register_many("spell-many", probe, methods)
+
+    bucket = store._creations["spell-many"]
+    record = store._disposable_creations["spell-many"]
+    assert bucket == probes
+    assert record.entries is bucket
+    assert len(record.entries) == 3
+    assert record.methods is methods
+
+
+def test_register_many_public_verb_writes_the_same_shape(store: Creations, methods: List[str]) -> None:
+    """`add_many_creations` with disposal and `register_many` interleave on one record."""
+    log: List[str] = []
+    first = _Probe("a", log)
+    second = _Probe("b", log)
+
+    store.add_many_creations("spell-many", first, has_disposal_methods=True, disposal_methods=methods)
+    store.register_many("spell-many", second, methods)
+
+    record = store._disposable_creations["spell-many"]
+    assert record.entries == [first, second]
+    assert record.entries is store._creations["spell-many"]
+    assert record.methods is methods
+
+
+def test_cleanup_disposes_newest_first_with_the_keys_methods(store: Creations, methods: List[str]) -> None:
+    """Whole-store cleanup runs every object of the record newest-first, methods in declared order."""
+    log: List[str] = []
+    for label in "abc":
+        store.register_many("spell-many", _Probe(label, log), methods)
+
+    store.cleanup()
+
+    assert log == ["c:close", "c:dispose", "b:close", "b:dispose", "a:close", "a:dispose"]
+
+
+def test_cleanup_orders_keys_newest_first_and_buckets_within(store: Creations, methods: List[str]) -> None:
+    """Across keys the registry is walked newest key first; inside a key newest entry first."""
+    log: List[str] = []
+    store.register_many("leaf", _Probe("leaf1", log), methods)
+    store.register_many("root", _Probe("root1", log), methods)
+    store.register_many("leaf", _Probe("leaf2", log), methods)
+    store.register_many("root", _Probe("root2", log), methods)
+
+    store.cleanup()
+
+    assert [entry.split(":")[0] for entry in log if entry.endswith(":close")] == [
+        "root2", "root1", "leaf2", "leaf1",
+    ]
+
+
+def test_cleanup_aggregates_one_error_per_failing_method(store: Creations, methods: List[str]) -> None:
+    """A failing method yields one chained RuntimeError and the other methods and objects still run."""
+    log: List[str] = []
+    store.register_many("spell-many", _Probe("a", log), methods)
+    store.register_many("spell-many", _Raising("b", log), methods)
+
+    with pytest.raises(ExceptionGroup) as caught:
+        store.cleanup()
+
+    assert len(caught.value.exceptions) == 1
+    error = caught.value.exceptions[0]
+    assert isinstance(error, RuntimeError)
+    assert isinstance(error.__cause__, ValueError)
+    assert log == ["b:close", "b:dispose", "a:close", "a:dispose"]
+
+
+def test_clear_all_disposes_and_leaves_the_store_reusable(store: Creations, methods: List[str]) -> None:
+    """A reusable clear disposes the record's objects and a later registration starts a new record."""
+    log: List[str] = []
+    store.register_many("spell-many", _Probe("a", log), methods)
+    old_record = store._disposable_creations["spell-many"]
+
+    store.clear_all()
+    assert log == ["a:close", "a:dispose"]
+    assert store._creations == {}
+    assert store._disposable_creations == {}
+
+    store.register_many("spell-many", _Probe("b", log), methods)
+    new_record = store._disposable_creations["spell-many"]
+    assert new_record is not old_record
+    assert new_record.entries is store._creations["spell-many"]
+
+
+def test_purge_all_disposes_the_bucket_and_removes_both_keys(store: Creations, methods: List[str]) -> None:
+    """Whole-target purge detaches the bucket and its record and disposes newest-first."""
+    log: List[str] = []
+    for label in "ab":
+        store.register_many("spell-many", _Probe(label, log), methods)
+
+    count = store.purge(_ManySpell("spell-many"))
+
+    assert count == 2
+    assert "spell-many" not in store._creations
+    assert "spell-many" not in store._disposable_creations
+    assert log == ["b:close", "b:dispose", "a:close", "a:dispose"]
+
+
+def test_purge_single_disposes_only_that_object_with_the_keys_methods(
+        store: Creations, methods: List[str],
+) -> None:
+    """Single-object purge removes one entry from the aliased bucket and disposes it alone."""
+    log: List[str] = []
+    probes = [_Probe(label, log) for label in "abc"]
+    for probe in probes:
+        store.register_many("spell-many", probe, methods)
+
+    count = store.purge(_ManySpell("spell-many"), purge_all=False, creation=probes[1])
+
+    assert count == 1
+    assert log == ["b:close", "b:dispose"]
+    bucket = store._creations["spell-many"]
+    record = store._disposable_creations["spell-many"]
+    assert bucket == [probes[0], probes[2]]
+    assert record.entries is bucket
+    assert record.methods is methods
+
+
+def test_purge_single_of_last_entry_removes_bucket_and_record(store: Creations, methods: List[str]) -> None:
+    """Retiring the last object of a key removes the live bucket and the record together."""
+    log: List[str] = []
+    probe = _Probe("a", log)
+    store.register_many("spell-many", probe, methods)
+
+    assert store.purge(_ManySpell("spell-many"), purge_all=False, creation=probe) == 1
+    assert "spell-many" not in store._creations
+    assert "spell-many" not in store._disposable_creations
+    assert log == ["a:close", "a:dispose"]
+
+
+def test_purge_single_absent_reference_changes_nothing(store: Creations, methods: List[str]) -> None:
+    """An object that is not retained under the key returns zero and disposes nothing."""
+    log: List[str] = []
+    store.register_many("spell-many", _Probe("a", log), methods)
+
+    assert store.purge(_ManySpell("spell-many"), purge_all=False, creation=_Probe("x", log)) == 0
+    assert log == []
+    assert len(store._creations["spell-many"]) == 1
+
+
+def test_extract_rows_carry_the_keys_methods_and_restore_rebuilds_one_record(
+        store: Creations, methods: List[str],
+) -> None:
+    """Extract yields one row per object with the key's list; restore rebuilds the aliased record."""
+    log: List[str] = []
+    probes = [_Probe(label, log) for label in "ab"]
+    for probe in probes:
+        store.register_many("spell-many", probe, methods)
+
+    rows = store.extract_spell_creations("spell-many")
+
+    assert [row["stored"] for row in rows] == probes
+    assert all(row["scope"] == "many" and row["disposable"] for row in rows)
+    assert all(row["disposal_methods"] is methods for row in rows)
+    assert "spell-many" not in store._creations
+    assert "spell-many" not in store._disposable_creations
+
+    target = Creations(owner_conduit_id="conduit-2", id="conduit-2")
+    target.restore_spell_creations("spell-many", rows)
+
+    bucket = target._creations["spell-many"]
+    record = target._disposable_creations["spell-many"]
+    assert bucket == probes
+    assert record.entries is bucket
+    assert record.methods is methods
+    target.cleanup()
+    assert log == ["b:close", "b:dispose", "a:close", "a:dispose"]
+
+
+def test_extract_restore_of_a_plain_many_key_keeps_it_plain(store: Creations) -> None:
+    """A many key registered without disposal round-trips with no record."""
+    first = object()
+    store.add_many_creations("spell-plain", first)
+
+    rows = store.extract_spell_creations("spell-plain")
+    assert rows == [{"scope": "many", "disposable": False, "stored": first}]
+
+    store.restore_spell_creations("spell-plain", rows)
+    assert store._creations["spell-plain"] == [first]
+    assert "spell-plain" not in store._disposable_creations
+
+
+def test_restore_refuses_rows_that_disagree_on_disposable(store: Creations, methods: List[str]) -> None:
+    """Rows of one many key must agree on `disposable`; a mix is refused loudly."""
+    first = object()
+    second = object()
+    mixed = [
+        {"scope": "many", "disposable": True, "stored": first, "disposal_methods": methods},
+        {"scope": "many", "disposable": False, "stored": second},
+    ]
+    with pytest.raises(RuntimeError, match="without disposal methods"):
+        store.restore_spell_creations("spell-many", mixed)
+
+    reversed_mix = [
+        {"scope": "many", "disposable": False, "stored": second},
+        {"scope": "many", "disposable": True, "stored": first, "disposal_methods": methods},
+    ]
+    with pytest.raises(RuntimeError, match="beside entries restored without"):
+        store.restore_spell_creations("spell-other", reversed_mix)
+
+
+def test_public_verb_refuses_mixed_declarations_both_ways(store: Creations, methods: List[str]) -> None:
+    """The checked verb refuses a plain registration under a disposal-bearing key and the reverse."""
+    log: List[str] = []
+    store.register_many("spell-a", _Probe("a", log), methods)
+    with pytest.raises(ValueError, match="one disposal declaration"):
+        store.add_many_creations("spell-a", object())
+    assert len(store._creations["spell-a"]) == 1
+
+    store.add_many_creations("spell-b", object())
+    with pytest.raises(ValueError, match="one disposal declaration"):
+        store.add_many_creations("spell-b", _Probe("b", log), has_disposal_methods=True, disposal_methods=methods)
+    assert len(store._creations["spell-b"]) == 1
+    assert "spell-b" not in store._disposable_creations
+
+
+def test_public_verb_refuses_a_singleton_slot_before_appending(store: Creations, methods: List[str]) -> None:
+    """A many registration under a singleton key is refused and the slot is untouched."""
+    singleton = object()
+    store.add_creation("spell-s", singleton)
+
+    with pytest.raises(ValueError, match="non-list slot"):
+        store.add_many_creations("spell-s", object(), has_disposal_methods=True, disposal_methods=methods)
+    assert store._creations["spell-s"] is singleton
+    assert "spell-s" not in store._disposable_creations
+
+
+def test_register_many_into_cleaned_store_disposes_and_raises(store: Creations, methods: List[str]) -> None:
+    """A build that finishes after cleanup is refused through the hot verb and its methods run."""
+    log: List[str] = []
+    store.cleanup()
+
+    with pytest.raises(RuntimeError, match="was cleaned while creation"):
+        store.register_many("spell-many", _Probe("late", log), methods)
+
+    assert log == ["late:close", "late:dispose"]
+
+
+def test_register_many_into_cleaned_store_chains_the_disposal_failure(
+        store: Creations, methods: List[str],
+) -> None:
+    """The refusal chains the disposal failure of the stranded object."""
+    log: List[str] = []
+    store.cleanup()
+
+    with pytest.raises(RuntimeError) as caught:
+        store.register_many("spell-many", _Raising("late", log), methods)
+
+    assert isinstance(caught.value.__cause__, RuntimeError)
+    assert isinstance(caught.value.__cause__.__cause__, ValueError)
+    assert log == ["late:close", "late:dispose"]
+
+
+def test_reset_for_pool_fast_path_ignores_plain_buckets_only(store: Creations, methods: List[str]) -> None:
+    """A pool reset with a record present takes the disposing path; without one it only clears."""
+    log: List[str] = []
+    store.add_many_creations("spell-plain", object())
+    store.reset_for_pool()
+    assert store._creations == {}
+
+    store.register_many("spell-many", _Probe("a", log), methods)
+    store.reset_for_pool()
+    assert log == ["a:close", "a:dispose"]
+    assert store._creations == {} and store._disposable_creations == {}
+
+
+def test_record_fields_are_borrowed_not_copied(store: Creations, methods: List[str]) -> None:
+    """The record never copies: appending to the live bucket is visible through it, and vice versa."""
+    log: List[str] = []
+    store.register_many("spell-many", _Probe("a", log), methods)
+    record = store._disposable_creations["spell-many"]
+    extra = _Probe("b", log)
+
+    store._creations["spell-many"].append(extra)
+    assert record.entries[-1] is extra
+    methods.append("close")
+    assert record.methods == ["close", "dispose", "close"]
+================================================================================
+END FILE: tests/unit/melder/aether/conduit/creations/test_creations_many_registration_trim.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/conduit/creations/test_creations_slot_guard.py
@@ -279258,7 +279858,7 @@ END FILE: tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_pla
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering.py
-CONTENT SHA256: 55e19a4db2b61b3d105c619576a7361489ab60e57816badaacec788d67cb5265
+CONTENT SHA256: 321edb399b3233e5252b1ee5fdaaafe1ec640ab2c5c56663caad3587eb03ff62
 SOURCE ENCODING: utf-8
 ================================================================================
 """Unit contracts for key-set plan lowering and the override runtime (override design S3a)."""
@@ -279316,6 +279916,10 @@ class FakeStore:
     def add_many_creations(self, key: str, item: Any, *, has_disposal_methods: bool = False,
                            disposal_methods: Optional[List[str]] = None) -> None:
         """Record one disposal-bearing many instance."""
+        self.disposal_adds.append((key, item))
+
+    def register_many(self, key: str, item: Any, disposal_methods: List[str]) -> None:
+        """Record one disposal-bearing many instance registered through the hot verb (2026-10-01)."""
         self.disposal_adds.append((key, item))
 
 
@@ -280383,6 +280987,11 @@ class _DisposalRecordingStore(FakeStore):
         )
         self.disposal_lists.append((key, disposal_methods))
 
+    def register_many(self, key: str, item: Any, disposal_methods: List[str]) -> None:
+        """Record the hot-verb many registration and the list passed (2026-10-01)."""
+        super().register_many(key, item, disposal_methods)
+        self.disposal_lists.append((key, disposal_methods))
+
 
 def test_registration_passes_each_spells_live_ordered_disposal_list() -> None:
     """A many dependency and a shared site both register with their Spell's own list object, order intact."""
@@ -281263,7 +281872,7 @@ END FILE: tests/unit/melder/spellbook/spell_compiler/support/compiler_test_suppo
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/spellbook/spell_compiler/test_codegen_creation_compilers_core.py
-CONTENT SHA256: 21a4775e20d388eb831c7e1a344e2af41060bf58324f5a4ab2a4a3a89c548898
+CONTENT SHA256: b1d2b93793ec3c33435da7c22d949063609c79f1b42ede3e84a3270e759eac81
 SOURCE ENCODING: utf-8
 ================================================================================
 """Unit tests for direct codegen_creation compiler entrypoints and helpers."""
@@ -281347,9 +281956,14 @@ def _make_recording_creations() -> SimpleNamespace:
     def _add_many_creations(*args, **kwargs):
         add_many_calls.append((args, kwargs))
 
+    def _register_many(*args, **kwargs):
+        # The solo templates call the positional hot verb (2026-10-01).
+        add_many_calls.append((args, kwargs))
+
     return SimpleNamespace(
         add_creation=_add_creation,
         add_many_creations=_add_many_creations,
+        register_many=_register_many,
         add_creation_calls=add_creation_calls,
         add_many_calls=add_many_calls,
     )
@@ -284216,7 +284830,7 @@ END FILE: tests/unit/melder/spellbook/spell_compiler/test_generalized_specialize
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/spellbook/spell_compiler/test_ordered_disposal_compiler.py
-CONTENT SHA256: 771d37309ed8f4edfdbc43715af19a56f675a05339ade1bdb3775e1fc5449f8d
+CONTENT SHA256: ead582988105d73861d0485246336097ac06b819daf05c2400e2fd37c11bac9a
 SOURCE ENCODING: utf-8
 ================================================================================
 """Ordered disposal references through real processors, planners, and emitted executors."""
@@ -284366,10 +284980,16 @@ def test_solo_registration_retains_names_across_code_cache_reuse(route: str, ove
         assert result == f"{spell_id}:{'override' if overrides else 'base'}"
         calls = store.add_many_calls if route == "many" else store.add_creation_calls
         assert len(calls) == 1
-        assert calls[0][0] == (spell_id, result)
-        assert calls[0][1]["has_disposal_methods"] is True
-        assert calls[0][1]["disposal_methods"] == names
-        assert calls[0][1]["disposal_methods"] is names
+        if route == "many":
+            # `register_many` (2026-10-01) is positional: the live list rides as the third argument.
+            assert calls[0][0] == (spell_id, result, names)
+            assert calls[0][0][2] is names
+            assert calls[0][1] == {}
+        else:
+            assert calls[0][0] == (spell_id, result)
+            assert calls[0][1]["has_disposal_methods"] is True
+            assert calls[0][1]["disposal_methods"] == names
+            assert calls[0][1]["disposal_methods"] is names
     assert code_objects[0] is code_objects[1]
 
 

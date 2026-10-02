@@ -114,10 +114,13 @@ def test_real_compiled_disposal_uses_established_order(
             spell = book.find_spell_by_id(spell_id)
             assert spell is not None
             raw_entry = conduit._creations._disposable_creations[spell_id]
-            entry = (
-                next(row for row in raw_entry if row[0] is value)
-                if spell.existence is Existence.many else raw_entry
-            )
+            if spell.existence is Existence.many:
+                # One record per many key (2026-10-01): the bucket plus the
+                # key's one method list.
+                assert any(item is value for item in raw_entry.entries)
+                entry = (value, raw_entry.methods)
+            else:
+                entry = raw_entry
             assert entry[0] is value
             assert entry[1] == expected
             assert entry[1] is spell.disposal_method_names

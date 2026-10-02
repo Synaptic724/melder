@@ -13,8 +13,8 @@ Regenerate with:
     python src/melder/_build_assets/_build_asset_runner.py
 """
 
-BUILT_FOR_VERSION = "0.2.8215"
-NODE_COUNT = 1211
+BUILT_FOR_VERSION = "0.2.8216"
+NODE_COUNT = 1212
 EDGE_COUNT = 1394
 WHY_COUNT = 939
 RELATIONS = ('binds_into', 'borrows', 'creates', 'delegates_to', 'holds', 'implements', 'owns', 'owns_lifecycle_of', 'specializes', 'used_by', 'uses', 'validates')
@@ -264,7 +264,8 @@ NODES = {
     'melder.aether.conduit.creations.conduit_creations': ('src/melder/aether/conduit/creations/conduit_creations.py', 'conduit_creations', 'module', 1, False),
     'melder.aether.conduit.creations.conduit_creations.ConduitCreations': ('src/melder/aether/conduit/creations/conduit_creations.py', 'ConduitCreations', 'class', 8, False),
     'melder.aether.conduit.creations.creations': ('src/melder/aether/conduit/creations/creations.py', 'creations', 'module', 1, False),
-    'melder.aether.conduit.creations.creations.Creations': ('src/melder/aether/conduit/creations/creations.py', 'Creations', 'class', 14, False),
+    'melder.aether.conduit.creations.creations.Creations': ('src/melder/aether/conduit/creations/creations.py', 'Creations', 'class', 57, False),
+    'melder.aether.conduit.creations.creations.ManyDisposalBucket': ('src/melder/aether/conduit/creations/creations.py', 'ManyDisposalBucket', 'class', 10, False),
     'melder.aether.conduit.meld.conduit_meld': ('src/melder/aether/conduit/meld/conduit_meld.py', 'conduit_meld', 'module', 1, False),
     'melder.aether.conduit.meld.conduit_meld.ConduitMeld': ('src/melder/aether/conduit/meld/conduit_meld.py', 'ConduitMeld', 'class', 13, False),
     'melder.aether.conduit.meld.contracts.spell_contract': ('src/melder/aether/conduit/meld/contracts/spell_contract.py', 'spell_contract', 'module', 1, False),

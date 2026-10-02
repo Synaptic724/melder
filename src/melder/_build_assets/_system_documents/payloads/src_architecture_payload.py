@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_architecture.md'
-LINE_COUNT = 3495
-CONTENT_SHA256 = '0b00fac34a9ca1e7e2e1a5bf6e0c4dbaddb792845dd505f6f6147d20fc3b13ea'
+LINE_COUNT = 3511
+CONTENT_SHA256 = '82ace75312b6e780a954e801488cb7e5a5eaee6e5d3858eef38c94da91be34fc'
 
 TEXT = """# Src Architecture (C4)
 
@@ -24,7 +24,7 @@ TEXT = """# Src Architecture (C4)
 - Status: in_progress
 - Owner:
 - Created: 2026-01-17
-- Updated: 2026-10-01
+- Updated: 2026-10-02
 
 ## Scope and Intent
 This document describes the Melder core architecture at the C4 level for
@@ -550,8 +550,8 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:3701-4136 (the three seams, r
   tagging any user-extensible base silently made user subclasses unbindable.
 - `INTERNAL_MANIFEST` is a `frozenset` of `(module, qualname)` pairs imported from the
   hand-written loader `melder._build_assets._bind_guard.bind_guard`, which re-exports it
-  alongside `MANIFEST_VERSION`, `BUILT_FOR_VERSION` and `MANIFEST_ENTRY_COUNT` (619 at
-  0.2.8215). The TRUTH is the COMMITTED manifest
+  alongside `MANIFEST_VERSION`, `BUILT_FOR_VERSION` and `MANIFEST_ENTRY_COUNT` (620 at
+  0.2.8216; `ManyDisposalBucket` joined the manifest, 619 at 0.2.8215). The TRUTH is the COMMITTED manifest
   `_bind_guard/manifest/bind_guard_manifest.py`; the loader hydrates it through a `.melc`
   under `__melder_cache__/__bind_guard__/` that is an ACCELERATOR and never the source.
   The manifest module is imported lazily on cache miss only, so a warm process never
@@ -930,6 +930,17 @@ each entry in `src_components.md`; this list is the set that crosses components.
 - Validation strategies registered in `SpellValidationSystem`.
 
 ## Operational Invariants
+- Many registration trim (2026-10-02, 0.2.8216): a disposal-bearing `many` creation registers into its scope store with
+  one list append; the Spell's disposal list is recorded once per key in a `ManyDisposalBucket` whose `entries` is
+  the live bucket itself. Emitted plans and executors call `Creations.register_many(spell_id, instance,
+  disposal_methods)` (explicit store-lock acquire/release); `add_many_creations` keeps its signature and refuses
+  a registration whose disposal declaration disagrees with the key's entries, a state the spell id already makes
+  impossible. Disposal order, failure aggregation, the cleaned-store refusal and extract/restore rows are
+  unchanged; cache generation 16 retires executors emitted with the old keyword call. Measured on the VM:
+  plan -15..-34% and whole meld -7..-23% on transient roots with disposal; singletons unchanged.
+  EVIDENCE: `src/melder/aether/conduit/creations/creations.py:Creations.register_many`,
+  `Creations._append_many_locked` and
+  `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:SitePlanEmission._emit_many`.
 - Injected dependencies resolve on their first direct meld (2026-09-30, 0.2.8215). A target-local resolution pass -
   a consumer's first meld after a late bind - publishes root blueprints only to its target (2026-09-19) and its
   Phase 6 stamps every node of the target's scope valid, so a dependency first compiled inside the consumer's plan
@@ -1824,9 +1835,9 @@ Package root:
     committed manifest via an accelerator cache.
 - path: `src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py`
   start_line: 1
-  end_line: 641
-  loc: 641
-  verified_at: 2026-10-01T11:05:03Z
+  end_line: 642
+  loc: 642
+  verified_at: 2026-10-02T17:57:56Z
   note: GENERATED DURABLE BUILD ASSET holding `ENTRIES`; committed, do not
     edit by hand.
 - path: `src/melder/_build_assets/_bind_guard/_builder.py`
@@ -2024,9 +2035,9 @@ SpellCompiler and validation:
   note: DI shape classification.
 - path: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py`
   start_line: 1
-  end_line: 1501
-  loc: 1501
-  verified_at: 2026-09-26T22:18:53Z
+  end_line: 1500
+  loc: 1500
+  verified_at: 2026-10-02T17:50:04Z
   note: key-set plan lowering: site graph from steps, placement, emission, call shape.
 - path: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_override_runtime.py`
   start_line: 1
@@ -2611,10 +2622,10 @@ Resolution and creations:
   note: SpellContract descriptor.
 - path: `src/melder/aether/conduit/creations/creations.py`
   start_line: 1
-  end_line: 1189
-  loc: 1189
-  verified_at: 2026-09-27T13:27:50Z
-  note: instance registry.
+  end_line: 1343
+  loc: 1343
+  verified_at: 2026-10-02T17:50:04Z
+  note: instance registry; `ManyDisposalBucket` and `register_many` (0.2.8216).
 - path: `src/melder/aether/conduit/creations/conduit_creations.py`
   start_line: 1
   end_line: 134
@@ -2695,9 +2706,9 @@ Utilities:
 
 - path: `src/melder/utilities/caching_system/caching_system.py`
   start_line: 1
-  end_line: 806
-  loc: 806
-  verified_at: 2026-09-26T20:10:34Z
+  end_line: 810
+  loc: 810
+  verified_at: 2026-10-02T17:50:04Z
   note: release-bound creation-cache admission and atomic envelope persistence.
 
 - path: `src/melder/utilities/general_base/cleanable.py`
@@ -3192,6 +3203,11 @@ without rewriting the original record or existing live IDs.
 - `src/melder/utilities/ai_native_support_tools/protocol_crafter.py`
 
 ## Context / Handoff Summary
+
+2026-10-02 many registration trim (0.2.8216): a disposal-bearing `many` creation registers with one append and the
+key's disposal list is recorded once (`ManyDisposalBucket`, `Creations.register_many`, explicit lock calls); the
+operational invariants and the code map carry it, the component map carries the record, its readers and the
+emitted line.
 
 2026-10-01 citation audit (documentation only): the internal-bind call is
 `src/melder/aether/spellbook/bind/bind.py:657`, in `Bind._bind_logic` (cited as 404); the bind-guard

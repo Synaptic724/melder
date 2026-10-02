@@ -7,7 +7,7 @@
 - Agent Name: fable_0
 - Priority: p1
 - Created: 2026-10-01T00:53:45Z
-- Updated: 2026-10-01T01:25:22Z
+- Updated: 2026-10-02T18:01:21Z
 - Target Window: opened 2026-10-01 on the owner's split; one strategy lane at a time, S1 first
 - Related Program/Initiative: SpellCompiler codegen (phases 8-11, site-plan lowering), Creations, the meld doors
 - Split from: tickets/epics/2026-09-27_adaptive_creation_contexts_epic.md (now the PGO epic), on the owner's
@@ -314,7 +314,8 @@ melds -40..-50% (predicted), dynamic melds -30..-50% (predicted).
 - ARTIFACTS_REQUIRED: true
 - ARTIFACT_PATHS:
   - artifacts/pgo_strategies_20260927/ (the certification table; shared with the PGO epic)
-  - artifacts/many_registration_trim_20261001/ (verb shapes and the four static micro-shapes, {NOW[:10]})
+  - artifacts/many_registration_trim_20261001/ (verb shapes, the four static micro-shapes, the S1 apply script and
+    landing logs, 2026-10-01 and 2026-10-02)
 - DISPOSITION: retain_as_reference
 - CLEANUP_TRIGGER: promoted into the canonical maps as the stories ship.
 
@@ -343,6 +344,21 @@ melds -40..-50% (predicted), dynamic melds -30..-50% (predicted).
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-10-02T18:01:21Z
+  TYPE: FACT
+  CLAIM: Milestone 1 reached pending the owner's run: S1 landed at 0.2.8216 (A3), docs, graph, assets and bundles
+    current; the lane sits in review. Next lane per the recommendation: S8 (lazy instance_results), then S2a with
+    S9/S11 in the same emitter pass; the door lane after, audit first. The owner's Codex MCP instruction
+    (special_instructions/codex_mcp.md) replaces the mailbox for agent notices; melder_0/melder_2/muse_0 have no
+    reachable chat today, so landings are announced through the tickets and the board until they do.
+  EVIDENCE:
+  - tickets/tasks/2026-10-01_implement_many_registration_trim_task.md:300-330
+  - special_instructions/codex_mcp.md:1-20
+  IMPACT: S8's story opens on the owner's word; nothing else in the epic moved.
+  NEXT: owner turns S1 in; open the S8 task (patch docs first).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Acceptance criteria confirmed by user
@@ -361,6 +377,9 @@ Resume from the task's latest STATE line.
 
 STATE 2026-10-01T01:25:22Z: IN_PROGRESS. Non-PGO catalogue and recommendation recorded on the owner's request; S1's
 exact edit is proposed and waits for the owner; nothing implemented. Resume from the S1 task's latest STATE line.
+
+STATE 2026-10-02T18:01:21Z: IN_PROGRESS. S1 landed at 0.2.8216 and in review (owner-run suites and gauntlet pending); S8
+next. Resume from the S1 task's latest STATE line.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

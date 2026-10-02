@@ -145,10 +145,16 @@ def test_solo_registration_retains_names_across_code_cache_reuse(route: str, ove
         assert result == f"{spell_id}:{'override' if overrides else 'base'}"
         calls = store.add_many_calls if route == "many" else store.add_creation_calls
         assert len(calls) == 1
-        assert calls[0][0] == (spell_id, result)
-        assert calls[0][1]["has_disposal_methods"] is True
-        assert calls[0][1]["disposal_methods"] == names
-        assert calls[0][1]["disposal_methods"] is names
+        if route == "many":
+            # `register_many` (2026-10-01) is positional: the live list rides as the third argument.
+            assert calls[0][0] == (spell_id, result, names)
+            assert calls[0][0][2] is names
+            assert calls[0][1] == {}
+        else:
+            assert calls[0][0] == (spell_id, result)
+            assert calls[0][1]["has_disposal_methods"] is True
+            assert calls[0][1]["disposal_methods"] == names
+            assert calls[0][1]["disposal_methods"] is names
     assert code_objects[0] is code_objects[1]
 
 

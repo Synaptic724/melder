@@ -164,6 +164,9 @@ class CachingSystem(Cleanable):
     # (GC-untracked resident cache; see class contract). Version 2 carried
     # decoded manifest-package dicts; version 1 carried legacy executor
     # shapes. Older bundles are treated as cold cache and regenerated.
+    # Version 16 retires executors emitted before the many registration
+    # trim (2026-10-01): they still call the public `add_many_creations`
+    # and stay correct, but pay the old keyword call per creation.
     CACHE_VERSION_HISTORY: ClassVar[Mapping[int, str]] = MappingProxyType({
         1: "legacy_executor_payloads",
         2: "decoded_manifest_package_payloads",
@@ -180,6 +183,7 @@ class CachingSystem(Cleanable):
         13: "collection_member_paths",
         14: "override_site_plan_lanes",
         15: "structural_snapshot_rows",
+        16: "many_registration_per_key_methods",
     })
     CURRENT_VERSION: ClassVar[int] = max(CACHE_VERSION_HISTORY)
 

@@ -19,9 +19,9 @@ Regenerate with:
 """
 
 MANIFEST_VERSION = "2.0.0"
-BUILT_FOR_VERSION = "0.2.8215"
-SOURCE_SHA256 = "3cc04301aadf96290e85ba4bbf550bcd77e2e60f31d8ba7451a52503542971e1"
-MARKED_COUNT = 460
+BUILT_FOR_VERSION = "0.2.8216"
+SOURCE_SHA256 = "e529531cf7a9e28b5e682cd4d8fe3a911537eb79b08cfb4260e224f7f221803e"
+MARKED_COUNT = 461
 EXEMPT_COUNT = 142
 PENDING_COUNT = 17
 
@@ -141,6 +141,7 @@ AGENT_METADATA = {
     ('melder.aether.conduit.creations.cluster_creations', 'ClusterCreations'): ('internal', "access: internal. Facade over a cluster's elected-leader live creation store. Melder kernel machinery: read it to understand the runtime, do not drive it directly."),
     ('melder.aether.conduit.creations.conduit_creations', 'ConduitCreations'): ('internal', 'access: internal. Conduit-owned live creation registry. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
     ('melder.aether.conduit.creations.creations', 'Creations'): ('internal', 'access: internal. Scoped live creation registry. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
+    ('melder.aether.conduit.creations.creations', 'ManyDisposalBucket'): ('internal', ''),
     ('melder.aether.conduit.meld.conduit_meld', 'ConduitMeld'): ('internal', 'access: internal. Concrete conduit-facing meld front door. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
     ('melder.aether.conduit.meld.contracts.spell_contract', 'SpellContract'): ('public', 'access: public. Declares a LATE-BOUND dependency hole for dynamic conduit linking. Write it as a constructor default when the provider will arrive from another conduit. Requires at least spell or spellframe. Unsatisfied is an ERROR in automatic mode, a warning in dynamic.'),
     ('melder.aether.conduit.meld.contracts.spell_map', 'SpellMap'): ('public', "access: public. Declarative DI descriptor for normal in-graph resolution. Write it as a constructor default: SpellMap(MyRepo), SpellMap(ILogic, binding_name='primary'), or frame-only with spell=None. Zero or multiple matches raise at build time."),
