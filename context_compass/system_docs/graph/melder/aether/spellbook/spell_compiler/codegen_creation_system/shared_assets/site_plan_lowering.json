@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py",
- "source_sha256": "4ef811b7a4575b3aabe1e8f3c8187354a402978de4a4b7262d6f4303058279ea",
+ "source_sha256": "2731fd76183d4b33149058870b88edba944887a3899102fd2a0830dda973833d",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering": {
@@ -147,11 +147,11 @@
     "render"
    ],
    "shape": {
-    "method_count": 22,
+    "method_count": 23,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "958e56b5b46f58d6ce88e4cd187f55bb352a454d78e4f0ba02b41309428a3c23",
+   "span_sha256": "54038175731b905ba9d60cd7d82b30f0375102baf1b0e6b484ccb06ef7d107ad",
    "include": true,
    "role": "Per-plan emission state: places steps at top level or inside shared-site misses and renders the plan source.",
    "responsibilities": [
@@ -159,27 +159,28 @@
     "emits hit reads with out-of-line misses that build children before taking the build guard",
     "chooses a direct call or generic construction per step and builds call arguments",
     "emits conflict guards and unresolved-input refusals at context tops",
-    "leaves out the root miss's guard in a normal plan whose calling route door already holds it (unique_per_conduit and spellspace roots, 0.2.73)"
+    "leaves out the root miss's guard in a normal plan whose calling route door already holds it (unique_per_conduit and spellspace roots, 0.2.73)",
+    "emits a dict literal of exactly the dependency values a generic construction reads, where it runs (lazy instance_results, 2026-10-03): no dict at the plan top, no per-step stores, no dict parameter on misses; _place passes a generic member's providers into its miss like a direct member's operands"
    ],
    "owns_state": [
     "_lines",
     "_miss_lines",
     "_masked",
     "_direct",
-    "_dict_mode",
     "_shared",
     "_home",
     "_children",
     "_miss_value_params",
     "_root_index",
     "_context_params",
-    "_root_guard_held_by_door"
+    "_root_guard_held_by_door",
+    "_index_by_key"
    ],
    "phases": [
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "0d2bf71f62e7342c8f3079154830e029cf1be7cfa9d06612e306bb23c996d6be"
+   "semantics_authored_against": "54038175731b905ba9d60cd7d82b30f0375102baf1b0e6b484ccb06ef7d107ad"
   }
  },
  "edges_out": [

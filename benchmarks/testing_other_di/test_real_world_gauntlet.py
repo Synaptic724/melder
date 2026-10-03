@@ -17,14 +17,18 @@ from array import array
 from collections.abc import Callable, MutableSequence, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 import pytest
 
-# Keep this `True` so the shared gauntlet always runs through a standalone
-# `-X gil=0` subprocess when launched from pytest. Set to `False` only if you
-# explicitly want the wrapper to use the current interpreter mode instead.
-REAL_WORLD_GAUNTLET_FORCE_NOGIL = True
+# Every measured library runs in a fresh child with -X gil=0 and PYTHON_GIL=0.
+# The measurement entry point also refuses a process whose GIL is enabled.
+
+# EDIT THESE SETTINGS, then run test_real_world_gauntlet through pytest.
+# Every library/thread-count/round runs in a fresh GIL-off process automatically.
+REAL_WORLD_GAUNTLET_ITERATION_COUNTS: list[int] = [5_000, 10_000, 15_000, 25_000, 50_000]
+REAL_WORLD_GAUNTLET_THREAD_COUNTS: list[int] = [3, 5, 7, 9]
+REAL_WORLD_GAUNTLET_ROUNDS: int = 1
 
 
 def _runner_path() -> Path:
@@ -450,6 +454,12 @@ _LIB_SEEDS = {
 
 @dataclass(frozen=True)
 class _GauntletConfig:
+    """Scalar workload settings for one measured process.
+
+    The pytest wrapper selects each thread count from the editable relay.
+    Environment inputs support CI and existing single-count tools; ordinary
+    pytest use needs only the configuration block at the top of this file.
+    """
     iterations: int
     threads: int
     request_scope_runs: int
@@ -458,8 +468,14 @@ class _GauntletConfig:
 
     @staticmethod
     def from_env() -> _GauntletConfig:
+        """Read optional overrides over file defaults and reject empty workloads.
+
+        Counts must be positive; each request workload still creates at least
+        500 objects. Conversion errors and invalid counts propagate before
+        a library container or worker thread is created.
+        """
         cfg = _GauntletConfig(
-            iterations=_env_int("DI_GAUNTLET_ITERS", 5_000),
+            iterations=_env_int("DI_GAUNTLET_ITERS", _gauntlet_iteration_counts()[0]),
             threads=_env_int("DI_GAUNTLET_THREADS", 3),
             request_scope_runs=_env_int("DI_GAUNTLET_REQUEST_SCOPES", _REQUEST_SCOPE_RUNS_DEFAULT),
             worker_a_jobs=_env_int("DI_GAUNTLET_WORKER_A_JOBS", _WORKER_A_JOBS_DEFAULT),
@@ -467,8 +483,8 @@ class _GauntletConfig:
         )
         if cfg.iterations <= 0:
             raise AssertionError("DI_GAUNTLET_ITERS must be > 0")
-        if cfg.threads <= 0 or cfg.threads > 3:
-            raise AssertionError("DI_GAUNTLET_THREADS must be between 1 and 3")
+        if cfg.threads <= 0:
+            raise AssertionError("DI_GAUNTLET_THREADS must be > 0")
         if cfg.request_scope_runs <= 0:
             raise AssertionError("DI_GAUNTLET_REQUEST_SCOPES must be > 0")
         if cfg.worker_a_jobs <= 0:
@@ -1409,7 +1425,7 @@ def _gauntlet_rounds() -> int:
     Read how many times the pytest wrapper measures every library.
 
     Contract:
-        - `REAL_WORLD_GAUNTLET_ROUNDS` unset or blank means one round; any other
+        - `REAL_WORLD_GAUNTLET_ROUNDS` unset or blank uses the editable default; any other
           value must be a positive integer.
         - Each round runs every library once, each in its own process.
 
@@ -1420,7 +1436,7 @@ def _gauntlet_rounds() -> int:
         AssertionError: When the variable is set to zero or a negative number.
         ValueError: When the variable is not an integer.
     """
-    rounds = _env_int("REAL_WORLD_GAUNTLET_ROUNDS", 1)
+    rounds = _env_int("REAL_WORLD_GAUNTLET_ROUNDS", REAL_WORLD_GAUNTLET_ROUNDS)
     if rounds <= 0:
         raise AssertionError("REAL_WORLD_GAUNTLET_ROUNDS must be > 0")
     return rounds
@@ -1464,6 +1480,99 @@ def _build_ops(lib: str) -> _RuntimeOps:
         # kept equal to it by test_gauntlet_melder_lane_parity.py.
         return _build_runtime_melder()
     raise AssertionError(f"Unknown lib: {lib}")
+
+
+def _gauntlet_iteration_counts() -> tuple[int, ...]:
+    """Select the ordered iteration-count relay from the editable configuration.
+
+    REAL_WORLD_GAUNTLET_ITERATION_COUNTS may also be supplied as comma-separated
+    environment input. Without it, DI_GAUNTLET_ITERS selects one count for existing
+    profiling tools; otherwise the file's list is used. Counts must be distinct
+    positive integers, and a fresh child measures each count/thread/library/round.
+    """
+    series = os.getenv("REAL_WORLD_GAUNTLET_ITERATION_COUNTS", "").strip()
+    single = os.getenv("DI_GAUNTLET_ITERS", "").strip()
+    counts = ([int(value.strip()) for value in series.split(",")] if series
+              else [int(single)] if single else list(REAL_WORLD_GAUNTLET_ITERATION_COUNTS))
+    if not counts or any(type(value) is not int or value <= 0 for value in counts):
+        raise ValueError("Gauntlet iteration counts must be a nonempty list of positive integers")
+    if len(counts) != len(set(counts)):
+        raise ValueError("Gauntlet iteration counts must be distinct; use rounds for repetition")
+    return tuple(counts)
+
+
+def _gauntlet_thread_counts() -> tuple[int, ...]:
+    """Select the ordered thread-count relay without changing parent process state.
+
+    Edit REAL_WORLD_GAUNTLET_THREAD_COUNTS for the normal run. An optional
+    comma-separated environment variable of the same name overrides that list;
+    otherwise DI_GAUNTLET_THREADS selects one count for existing single-run tools.
+    Counts must be distinct positive integers. Each library/count/round receives
+    a fresh process, and summaries never combine different thread counts.
+    """
+    series = os.getenv("REAL_WORLD_GAUNTLET_THREAD_COUNTS", "").strip()
+    single = os.getenv("DI_GAUNTLET_THREADS", "").strip()
+    counts = ([int(value.strip()) for value in series.split(",")] if series
+              else [int(single)] if single else list(REAL_WORLD_GAUNTLET_THREAD_COUNTS))
+    if not counts or any(type(value) is not int or value <= 0 for value in counts):
+        raise ValueError("Gauntlet thread counts must be a nonempty list of positive integers")
+    if len(counts) != len(set(counts)):
+        raise ValueError("Gauntlet thread counts must be distinct; use rounds for repetition")
+    return tuple(counts)
+
+
+def _lane_layout(cfg: _GauntletConfig) -> tuple[tuple[str, str, int, int], ...]:
+    """Describe every thread's name, workload family, cycle count and random seed offset.
+
+    Repeat request, worker A and worker B workloads across positive N threads.
+    The first three names remain request, worker_a and worker_b. Later threads
+    are worker_c, worker_d and onward through worker_z, worker_aa, etc. Each
+    name receives its own counters and samples; no two threads mutate one lane.
+    A repeated workload uses that family's configured cycle count and class graph.
+
+    Args:
+        cfg: Run configuration with a positive thread count.
+
+    Returns:
+        Tuples in launch/report order. Existing 1-3-thread seeds are preserved.
+
+    Raises:
+        AssertionError: The requested thread count is not positive.
+    """
+    if cfg.threads <= 0:
+        raise AssertionError("DI_GAUNTLET_THREADS must be > 0")
+    patterns = (("request", cfg.request_scope_runs),
+                ("worker_a", cfg.worker_a_jobs), ("worker_b", cfg.worker_b_jobs))
+    lanes: list[tuple[str, str, int, int]] = []
+    for index in range(cfg.threads):
+        name = "request"
+        if index:
+            ordinal = index
+            label = ""
+            while ordinal:
+                ordinal, letter = divmod(ordinal - 1, 26)
+                label = chr(ord("a") + letter) + label
+            name = f"worker_{label}"
+        workload, cycles = patterns[index % len(patterns)]
+        lanes.append((name, workload, cycles, 17 + 12 * index))
+    return tuple(lanes)
+
+
+def _require_gil_disabled() -> None:
+    """Refuse measurement unless this process is actually running without the GIL.
+
+    The subprocess wrapper selects -X gil=0 and PYTHON_GIL=0 before startup.
+    Direct runner/profile invocations must select a free-threaded interpreter
+    themselves; changing an environment variable after startup is insufficient.
+
+    Raises:
+        RuntimeError: The interpreter reports an enabled or unknown GIL state.
+    """
+    if _gil_status() != "disabled":
+        raise RuntimeError(
+            "The real-world gauntlet requires the GIL disabled in the measured process. "
+            "Run free-threaded Python with -X gil=0 or PYTHON_GIL=0 before process startup."
+        )
 
 
 def _lane_objects_per_cycle(name: str) -> int:
@@ -1525,45 +1634,41 @@ def _variant_counts_tuple(values: list[int]) -> tuple[int, ...]:
 
 
 def _run_gauntlet_once(ops: _RuntimeOps, cfg: _GauntletConfig, iteration_ix: int) -> _IterationResult:
-    """
-    Time one full gauntlet iteration from fresh container build through cleanup.
+    """Time one synchronized burst against the already-built library container.
+
+    Bootstrap work runs on the parent, then N fresh threads wait at a readiness
+    barrier and start together. Each repeats its assigned workload in independent
+    scopes and writes only its own named metrics. The parent joins every thread
+    before inspecting counters or propagating a worker error. No work queue or
+    producer/consumer handoff exists. Total time includes thread startup and
+    joining; threaded time begins after readiness. Container setup and terminal
+    cleanup are measured separately by _run_gauntlet_benchmark.
     """
     t0 = time.perf_counter_ns()
     bootstrap_t0 = time.perf_counter_ns()
     ops.bootstrap_fanout()
     bootstrap_ns = time.perf_counter_ns() - bootstrap_t0
 
-    lane_counts = {
-        "request": 0,
-        "worker_a": 0,
-        "worker_b": 0,
-    }
-    lane_metrics = {
-        "request": _new_lane_metric_samples(),
-        "worker_a": _new_lane_metric_samples(),
-        "worker_b": _new_lane_metric_samples(),
-    }
-    lane_variant_counts = {
-        "request": [0] * _VARIANT_COUNT,
-        "worker_a": [0] * _VARIANT_COUNT,
-        "worker_b": [0] * _VARIANT_COUNT,
-    }
+    layout = _lane_layout(cfg)
+    lane_counts = {name: 0 for name, _, _, _ in layout}
+    lane_metrics = {name: _new_lane_metric_samples() for name, _, _, _ in layout}
+    lane_variant_counts = {name: [0] * _VARIANT_COUNT for name, _, _, _ in layout}
     errors: list[BaseException] = []
     stop_event = threading.Event()
-    active_lanes: list[tuple[str, Callable[[int], None], int, int]] = [
-        ("request", ops.request_scope_cycle, cfg.request_scope_runs, 17),
-    ]
-    if cfg.threads >= 2:
-        active_lanes.append(("worker_a", ops.worker_a_scope_cycle, cfg.worker_a_jobs, 29))
-    if cfg.threads >= 3:
-        active_lanes.append(("worker_b", ops.worker_b_scope_cycle, cfg.worker_b_jobs, 41))
+    scope_cycles = {
+        "request": ops.request_scope_cycle,
+        "worker_a": ops.worker_a_scope_cycle,
+        "worker_b": ops.worker_b_scope_cycle,
+    }
+    active_lanes = [(name, scope_cycles[workload], reps, offset)
+                    for name, workload, reps, offset in layout]
 
     ready_barrier = threading.Barrier(len(active_lanes) + 1)
     start_event = threading.Event()
 
     def make_worker(
             name: str,
-            call: Callable[[int], None],
+            call: Callable[[int], _ScopeCycleMetrics],
             reps: int,
             seed_offset: int,
     ) -> Callable[[], None]:
@@ -1611,12 +1716,9 @@ def _run_gauntlet_once(ops: _RuntimeOps, cfg: _GauntletConfig, iteration_ix: int
     if errors:
         raise errors[0]
 
-    if lane_counts["request"] != cfg.request_scope_runs:
-        raise AssertionError("Request lane did not complete expected scope cycles")
-    if cfg.threads >= 2 and lane_counts["worker_a"] != cfg.worker_a_jobs:
-        raise AssertionError("Worker A lane did not complete expected scope cycles")
-    if cfg.threads >= 3 and lane_counts["worker_b"] != cfg.worker_b_jobs:
-        raise AssertionError("Worker B lane did not complete expected scope cycles")
+    for name, _, reps, _ in layout:
+        if lane_counts[name] != reps:
+            raise AssertionError(f"{name} did not complete expected scope cycles")
     return _IterationResult(
         total_ns=time.perf_counter_ns() - t0,
         bootstrap_ns=bootstrap_ns,
@@ -1662,10 +1764,17 @@ def _summarize_lane(
         metric_samples: _LaneMetricSamples,
         variant_counts: list[int],
         wall_total_ns: int,
+        workload: Optional[str] = None,
 ) -> _LaneSummary:
+    """Summarize one named thread using its repeated workload family for object counts.
+
+    workload defaults to name for the original three lanes. Repeated lanes
+    supply their original family; their samples and output names stay separate.
+    """
     outer_total_summary = _summarize(metric_samples.outer_total_ns)
     request_total_summary = _summarize(metric_samples.request_total_ns)
-    objects_min = len(metric_samples.outer_total_ns) * _lane_objects_per_cycle(name)
+    objects_min = len(metric_samples.outer_total_ns) * _lane_objects_per_cycle(
+        name if workload is None else workload)
     active_seconds = request_total_summary.total_ns / 1_000_000_000.0 if request_total_summary.total_ns > 0 else 0.0
     wall_seconds = wall_total_ns / 1_000_000_000.0 if wall_total_ns > 0 else 0.0
     return _LaneSummary(
@@ -1822,6 +1931,16 @@ def _gc_stats_delta_text(before: list, after: list) -> str:
 
 
 def _run_gauntlet_benchmark(lib: str, cfg: _GauntletConfig) -> _BenchmarkResult:
+    """Measure one library with GIL-off checks before setup, after imports and after the run.
+
+    Build one container, reuse it across synchronized N-thread iterations, and
+    retire it in finally. Each repeated workload has independent lane storage;
+    throughput and object minima include every configured thread. Existing GC
+    instrumentation and its restoration remain local to this library's run.
+    """
+    _require_gil_disabled()
+    layout = _lane_layout(cfg)
+    lane_workloads = {name: workload for name, workload, _, _ in layout}
     # Optional, off-by-default GC instrumentation. When enabled it is applied
     # symmetrically to every library so the comparison stays fair; when off,
     # the measured path below is byte-for-byte the original benchmark.
@@ -1847,11 +1966,11 @@ def _run_gauntlet_benchmark(lib: str, cfg: _GauntletConfig) -> _BenchmarkResult:
     # aggregated after, so degradation across the run is visible instead of
     # being flattened into order-independent whole-run percentiles.
     trend_windows = _env_int("GAUNTLET_TREND_WINDOWS", 0)
-    min_request_objects = cfg.request_scope_runs * _REQUEST_OBJECTS_PER_ROOT
-    min_worker_a_objects = cfg.worker_a_jobs * _WORKER_A_OBJECTS_PER_ROOT if cfg.threads >= 2 else 0
-    min_worker_b_objects = cfg.worker_b_jobs * _WORKER_B_OBJECTS_PER_ROOT if cfg.threads >= 3 else 0
+    min_request_objects = sum(reps * _REQUEST_OBJECTS_PER_ROOT
+                              for _, workload, reps, _ in layout if workload == "request")
     bootstrap_objects = len(_BOOTSTRAP_TYPES) * _BOOTSTRAP_FANOUT_PER_SINGLETON
-    hot_objects_per_iter_min = bootstrap_objects + min_request_objects + min_worker_a_objects + min_worker_b_objects
+    hot_objects_per_iter_min = bootstrap_objects + sum(
+        reps * _lane_objects_per_cycle(workload) for _, workload, reps, _ in layout)
     setup_singletons = len(_SINGLETON_TYPES)
 
     setup_t0 = time.perf_counter_ns()
@@ -1859,6 +1978,7 @@ def _run_gauntlet_benchmark(lib: str, cfg: _GauntletConfig) -> _BenchmarkResult:
     result_payload: dict[str, Any] = {}
     cleanup_ns = 0
     try:
+        _require_gil_disabled()
         ops.spawn_singletons()
         setup_ns = time.perf_counter_ns() - setup_t0
 
@@ -1890,16 +2010,8 @@ def _run_gauntlet_benchmark(lib: str, cfg: _GauntletConfig) -> _BenchmarkResult:
         iteration_samples: list[int] = []
         bootstrap_samples: list[int] = []
         threaded_samples: list[int] = []
-        lane_metric_samples = {
-            "request": _new_lane_metric_storage(),
-            "worker_a": _new_lane_metric_storage(),
-            "worker_b": _new_lane_metric_storage(),
-        }
-        lane_variant_counts = {
-            "request": [0] * _VARIANT_COUNT,
-            "worker_a": [0] * _VARIANT_COUNT,
-            "worker_b": [0] * _VARIANT_COUNT,
-        }
+        lane_metric_samples = {name: _new_lane_metric_storage() for name, _, _, _ in layout}
+        lane_variant_counts = {name: [0] * _VARIANT_COUNT for name, _, _, _ in layout}
 
         # Time-series state: sample at each window boundary inside the loop so
         # the cause of any drift is captured as it happens, not inferred from
@@ -2052,6 +2164,7 @@ def _run_gauntlet_benchmark(lib: str, cfg: _GauntletConfig) -> _BenchmarkResult:
                 metric_samples=metric_samples,
                 variant_counts=lane_variant_counts[lane_name],
                 wall_total_ns=threaded_summary.total_ns,
+                workload=lane_workloads[lane_name],
             )
 
         # Packed like the run-long lane storage, so combining multi-million-entry
@@ -2072,6 +2185,7 @@ def _run_gauntlet_benchmark(lib: str, cfg: _GauntletConfig) -> _BenchmarkResult:
 
         total_hot_scopes = sum(summary.cycles for summary in lane_summaries.values())
         hot_seconds = iteration_summary.total_ns / 1_000_000_000.0 if iteration_summary.total_ns > 0 else 0.0
+        _require_gil_disabled()
         result_payload = {
             "lib": lib,
             "cfg": cfg,
@@ -2214,7 +2328,7 @@ def _maybe_write_per_turn_csv(results: list) -> None:
     "DI Container" column so all three libraries live in the same sheet.
     Used by the runner's all-in-one mode and by `--lib` when run by hand; the
     one-process-per-library wrapper writes the same file through
-    `_write_isolated_per_turn_csv`, which adds a Round column.
+    `_write_isolated_per_turn_csv`, which adds Round, Threads and Iterations columns.
     """
     if not _per_turn_csv_enabled():
         return
@@ -2241,7 +2355,8 @@ def _write_isolated_per_turn_csv(payloads: Sequence[dict[str, Any]]) -> None:
           `_maybe_write_per_turn_csv`, overwritten.
         - One row per turn per library per round, in the order the processes ran,
           with the same columns plus a trailing "Round" column (1-based), since
-          more than one round repeats every library.
+          more than one round repeats every library. Threads and Iterations
+          columns distinguish every configured measurement combination.
         - The rows come from the payloads the per-library processes handed back
           (`_result_payload`); those processes do not write the CSV themselves.
 
@@ -2254,10 +2369,10 @@ def _write_isolated_per_turn_csv(payloads: Sequence[dict[str, Any]]) -> None:
     written = 0
     with open(path, "w", newline="", encoding="utf-8") as handle:
         writer = csv.writer(handle)
-        writer.writerow([*_per_turn_csv_header(), "Round"])
+        writer.writerow([*_per_turn_csv_header(), "Round", "Threads", "Iterations"])
         for payload in payloads:
             for row in payload["per_turn_rows"]:
-                writer.writerow([*_per_turn_csv_row(payload["lib"], row), payload["round"]])
+                writer.writerow([*_per_turn_csv_row(payload["lib"], row), payload["round"], payload["threads"], payload["iterations"]])
                 written += 1
     print(
         f"[per-turn csv] wrote {written} rows for {len(payloads)} library runs -> {path}"
@@ -2321,10 +2436,7 @@ def _print_benchmark_result(result: _BenchmarkResult) -> None:
         f"hot_objects/s_min={result.hot_objects_per_s_min:,.0f}, "
         f"cleanup={_ms(result.cleanup_ns):.3f}ms"
     )
-    for lane_name in ("request", "worker_a", "worker_b"):
-        lane = result.lane_summaries.get(lane_name)
-        if lane is None:
-            continue
+    for lane in result.lane_summaries.values():
         print(
             f"[{result.lib}] lane={lane.name} | "
             f"cycles={lane.cycles}, "
@@ -2348,7 +2460,7 @@ def _result_payload(result: _BenchmarkResult, round_number: int) -> dict[str, An
     Reduce one library's result to the JSON payload a per-library process hands back.
 
     Contract:
-        - Values only (str, int, float, bool and lists of them), so `json.dumps`
+        - JSON values only, including named lane cycle/variant dictionaries, so `json.dumps`
           accepts it and the parent needs nothing else from the child process.
         - Carries what the wrapper summarizes across rounds - setup, the loop total
           and per-iteration statistics, the threaded and bootstrap averages,
@@ -2379,6 +2491,10 @@ def _result_payload(result: _BenchmarkResult, round_number: int) -> dict[str, An
         "threaded_avg_ms": _ms(result.threaded_summary.avg_ns),
         "bootstrap_avg_ms": _ms(result.bootstrap_summary.avg_ns),
         "hot_scopes_per_s": result.hot_scope_cycles_per_s,
+        "total_hot_scopes": result.total_hot_scopes,
+        "hot_objects_per_iter_min": result.hot_objects_per_iter_min,
+        "lane_cycles": {name: lane.cycles for name, lane in result.lane_summaries.items()},
+        "lane_variants": {name: list(lane.variant_counts) for name, lane in result.lane_summaries.items()},
         "per_turn_rows": [list(row) for row in result.per_turn_rows],
     }
 
@@ -2388,8 +2504,8 @@ def _isolated_median_lines(payloads: Sequence[dict[str, Any]]) -> list[str]:
     Summarize each library across the wrapper's rounds as one median line.
 
     Contract:
-        - One line per library that has payloads, in `_gauntlet_libraries()` order;
-          a library with none is skipped.
+        - One line per library/iteration-count/thread-count combination, in first-seen order and
+          `_gauntlet_libraries()` order; a pair with no payloads is skipped.
         - Every value is the median over that library's runs; the loop total also
           shows its min and max, so run-to-run spread stays visible.
 
@@ -2400,21 +2516,24 @@ def _isolated_median_lines(payloads: Sequence[dict[str, Any]]) -> list[str]:
         list[str]: The lines to print.
     """
     lines: list[str] = []
-    for lib in _gauntlet_libraries():
-        runs = [payload for payload in payloads if payload["lib"] == lib]
-        if not runs:
-            continue
-        totals = [run["total_ms"] for run in runs]
-        noun = "round" if len(runs) == 1 else "rounds"
-        lines.append(
-            f"[{lib}] isolated median over {len(runs)} {noun} | "
-            f"total={statistics.median(totals):.2f}ms (min={min(totals):.2f}, max={max(totals):.2f}) | "
-            f"avg={statistics.median([run['avg_ms'] for run in runs]):.3f}ms | "
-            f"p99={statistics.median([run['p99_ms'] for run in runs]):.3f}ms | "
-            f"threaded avg={statistics.median([run['threaded_avg_ms'] for run in runs]):.3f}ms | "
-            f"hot_scopes/s={statistics.median([run['hot_scopes_per_s'] for run in runs]):,.0f} | "
-            f"setup={statistics.median([run['setup_ms'] for run in runs]):.3f}ms"
-        )
+    settings = dict.fromkeys((payload["iterations"], payload["threads"]) for payload in payloads)
+    for iterations, threads in settings:
+        for lib in _gauntlet_libraries():
+            runs = [payload for payload in payloads
+                    if (payload["lib"], payload["iterations"], payload["threads"]) == (lib, iterations, threads)]
+            if not runs:
+                continue
+            totals = [run["total_ms"] for run in runs]
+            noun = "round" if len(runs) == 1 else "rounds"
+            lines.append(
+                f"[{lib}] isolated median over {len(runs)} {noun} | iterations={iterations} | threads={threads} | "
+                f"total={statistics.median(totals):.2f}ms (min={min(totals):.2f}, max={max(totals):.2f}) | "
+                f"avg={statistics.median([run['avg_ms'] for run in runs]):.3f}ms | "
+                f"p99={statistics.median([run['p99_ms'] for run in runs]):.3f}ms | "
+                f"threaded avg={statistics.median([run['threaded_avg_ms'] for run in runs]):.3f}ms | "
+                f"hot_scopes/s={statistics.median([run['hot_scopes_per_s'] for run in runs]):,.0f} | "
+                f"setup={statistics.median([run['setup_ms'] for run in runs]):.3f}ms"
+            )
     return lines
 
 
@@ -2422,14 +2541,16 @@ def _run_isolated_library(
         lib: str,
         round_number: int,
         result_path: Path,
+        *, threads: Optional[int] = None, iterations: Optional[int] = None,
 ) -> subprocess.CompletedProcess[str]:
     """
     Run one library of the shared gauntlet in a fresh interpreter process.
 
     Contract:
         - Starts `real_world_gauntlet_gil_runner.py --lib <lib>` with this
-          interpreter, adding `-X gil=0` when `REAL_WORLD_GAUNTLET_FORCE_NOGIL` is
-          true, from the repository root and with a copy of this environment.
+          interpreter with `-X gil=0`, from the repository root. A copied
+          child environment forces PYTHON_GIL=0 even when the parent has 1;
+          the parent environment itself is unchanged.
         - The child loads and runs only that library, prints its result and writes
           its `_result_payload` JSON to `result_path`.
         - Never raises for a failing child: the caller checks `returncode`.
@@ -2438,14 +2559,20 @@ def _run_isolated_library(
         lib: A name from `_gauntlet_libraries()`.
         round_number: 1-based round, recorded in the payload.
         result_path: Where the child writes its JSON payload.
+        threads: This child's thread count; None preserves the inherited setting.
+        iterations: This child's workload iterations; None preserves the inherited setting.
 
     Returns:
         subprocess.CompletedProcess[str]: The finished child, with stdout and stderr
             captured as text.
     """
-    command = [sys.executable]
-    if REAL_WORLD_GAUNTLET_FORCE_NOGIL:
-        command.extend(["-X", "gil=0"])
+    command = [sys.executable, "-X", "gil=0"]
+    child_env = os.environ.copy()
+    child_env["PYTHON_GIL"] = "0"
+    if threads is not None:
+        child_env["DI_GAUNTLET_THREADS"] = str(threads)
+    if iterations is not None:
+        child_env["DI_GAUNTLET_ITERS"] = str(iterations)
     command.extend([
         str(_runner_path()),
         "--lib",
@@ -2458,14 +2585,14 @@ def _run_isolated_library(
     return subprocess.run(
         command,
         cwd=str(_repo_root()),
-        env=os.environ.copy(),
+        env=child_env,
         capture_output=True,
         text=True,
         check=False,
     )
 
 
-@pytest.mark.timeout(3600)
+@pytest.mark.timeout(21_600)
 def test_real_world_gauntlet() -> None:
     """
     Run the shared real-world gauntlet with every library in its own process.
@@ -2480,7 +2607,12 @@ def test_real_world_gauntlet() -> None:
           CPython each library's run leaves starting and joining threads slower, and
           the gauntlet starts three threads per iteration. The runner with no
           arguments still runs that layout, to reproduce earlier baselines.
-        - Forces `-X gil=0` when `REAL_WORLD_GAUNTLET_FORCE_NOGIL` is true.
+        - Forces `-X gil=0` and PYTHON_GIL=0 in every measured child process.
+        - The editable REAL_WORLD_GAUNTLET_THREAD_COUNTS list defaults to 3,5,7,9.
+          The editable iteration-count list defaults to 5k,10k,15k,25k,50k.
+          Every iteration-count/thread-count/library/round gets a fresh process.
+        - DI_GAUNTLET_THREADS accepts positive N; request/A/B workloads repeat
+          under distinct request, worker_a, worker_b, worker_c, ... lane names.
         - `REAL_WORLD_GAUNTLET_ROUNDS` (default 1) repeats every library that many
           times, rotating the order each round (`_isolated_order`), and then prints
           one median line per library.
@@ -2490,26 +2622,36 @@ def test_real_world_gauntlet() -> None:
         - Fails, naming the library and round, if a process exits non-zero.
     """
     rounds = _gauntlet_rounds()
+    iteration_counts = _gauntlet_iteration_counts()
+    thread_counts = _gauntlet_thread_counts()
+    print(f"[gauntlet] thread counts: {list(thread_counts)}", flush=True)
+    print(f"[gauntlet] iteration counts: {list(iteration_counts)}", flush=True)
     payloads: list[dict[str, Any]] = []
     with tempfile.TemporaryDirectory(prefix="real_world_gauntlet_") as scratch:
-        for round_ix in range(rounds):
-            round_number = round_ix + 1
-            for lib in _isolated_order(round_ix):
-                result_path = Path(scratch) / f"round{round_number}_{lib}.json"
-                print(f"[gauntlet] round {round_number}/{rounds}: {lib} in its own process")
-                completed = _run_isolated_library(lib, round_number, result_path)
-                if completed.stdout:
-                    print(completed.stdout, end="" if completed.stdout.endswith("\n") else "\n")
-                if completed.stderr:
-                    print(completed.stderr, end="" if completed.stderr.endswith("\n") else "\n")
-                if completed.returncode != 0:
-                    raise AssertionError(
-                        f"Shared real-world gauntlet runner failed for {lib} in round {round_number} "
-                        f"with exit code {completed.returncode}."
-                    )
-                payloads.append(json.loads(result_path.read_text(encoding="utf-8")))
-    if rounds > 1:
+        for iterations in iteration_counts:
+            for threads in thread_counts:
+                for round_ix in range(rounds):
+                    round_number = round_ix + 1
+                    for lib in _isolated_order(round_ix):
+                        result_path = Path(scratch) / f"iters{iterations}_threads{threads}_round{round_number}_{lib}.json"
+                        print(f"[gauntlet] iterations={iterations}, threads={threads}, round {round_number}/{rounds}: {lib} in its own process")
+                        completed = _run_isolated_library(
+                            lib, round_number, result_path, threads=threads, iterations=iterations)
+                        if completed.stdout:
+                            print(completed.stdout, end="" if completed.stdout.endswith("\n") else "\n")
+                        if completed.stderr:
+                            print(completed.stderr, end="" if completed.stderr.endswith("\n") else "\n")
+                        if completed.returncode != 0:
+                            raise AssertionError(
+                                f"Shared real-world gauntlet runner failed for {lib}, iterations={iterations}, "
+                                f"threads={threads}, round {round_number}, exit code {completed.returncode}."
+                            )
+                        payload = json.loads(result_path.read_text(encoding="utf-8"))
+                        if (payload["lib"], payload["iterations"], payload["threads"], payload["round"], payload["gil_status"]) != (
+                                lib, iterations, threads, round_number, "disabled"):
+                            raise AssertionError("Gauntlet child returned mismatched iteration/thread/library/round/GIL identity")
+                        payloads.append(payload)
+    if rounds > 1 or len(thread_counts) > 1 or len(iteration_counts) > 1:
         for line in _isolated_median_lines(payloads):
             print(line)
     _write_isolated_per_turn_csv(payloads)
-

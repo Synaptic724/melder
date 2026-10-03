@@ -81,6 +81,12 @@ class CachingSystem(Cleanable):
           force a file rewrite; `transfer_spell_payload_to` moves executor
           bytes and DROPS the source's structural payload (the receiving
           Book captures its own on its next conjure).
+        - Since generation 19 the envelope also carries `world_stamp`: the
+          structural tier's world stamp (sorted pool ids, posture, borrowed
+          ids) recorded by `set_world_stamp` when the executor payloads were
+          last staged. The executor tier admits a full hit only when the live
+          world carries the same stamp; "" (an empty store, or a bundle
+          written without the field) never matches, so the rule fails closed.
         - Integrity is regeneration-based: a corrupt or version-mismatched
           bundle is treated as a cold cache, not repaired.
         - Persisted plans require the exact installed Melder release as well as
@@ -167,6 +173,16 @@ class CachingSystem(Cleanable):
     # Version 16 retires executors emitted before the many registration
     # trim (2026-10-01): they still call the public `add_many_creations`
     # and stay correct, but pay the old keyword call per creation.
+    # Version 17 retires site plans emitted before lazy `instance_results`
+    # (2026-10-03): they still run correctly, but allocate and fill the
+    # dict on every warm creation of a dict-mode root.
+    # Version 18 retires bundles captured before address-key matching
+    # (2026-10-03): their structural rows may hold an unresolved input
+    # for a parameter the key matcher now resolves.
+    # Version 19 retires bundles without the executor-tier world stamp
+    # (2026-10-03): the executor full hit now requires the envelope's
+    # `world_stamp` to equal the live world, so a bundle that cannot carry
+    # one is cold rather than admitted as a stamp-less full hit.
     CACHE_VERSION_HISTORY: ClassVar[Mapping[int, str]] = MappingProxyType({
         1: "legacy_executor_payloads",
         2: "decoded_manifest_package_payloads",
@@ -184,6 +200,9 @@ class CachingSystem(Cleanable):
         14: "override_site_plan_lanes",
         15: "structural_snapshot_rows",
         16: "many_registration_per_key_methods",
+        17: "lazy_instance_results",
+        18: "annotation_address_matching",
+        19: "executor_world_stamp",
     })
     CURRENT_VERSION: ClassVar[int] = max(CACHE_VERSION_HISTORY)
 
@@ -358,6 +377,51 @@ class CachingSystem(Cleanable):
                 Live `dict.keys()` view over spell ids with a structural payload.
         """
         return self._cache_data["structural_payloads"].keys()
+
+    @property
+    def world_stamp(self) -> str:
+        """
+        Return the world stamp recorded when the executor payloads were last staged.
+
+        Contract:
+            - The structural tier's `StructuralSnapshot.world_stamp` digest of
+              the world the bundle's executor payloads were compiled in, or ""
+              for an empty store and for a loaded bundle written without the
+              field. The executor tier compares it with the live world before
+              admitting a full hit; "" never matches a live stamp.
+
+        Returns:
+            str:
+                Hex digest, or "" when no staging has recorded one.
+        """
+        return self._cache_data["world_stamp"]
+
+    def set_world_stamp(self, world_stamp: str) -> bool:
+        """
+        Record the world the executor payloads were just staged in.
+
+        Contract:
+            - Called by the conjure-end staging AFTER every live payload was
+              re-staged, so the stamp on disk is never newer than the payloads
+              it describes; it is the only writer of the field.
+            - Reports whether the stored value CHANGED, so the caller can flag
+              the conjure-end emit for a changed world even when no payload
+              byte changed, and skip it for an unchanged one.
+            - Serialized under the instance lock like every other mutation.
+
+        Args:
+            world_stamp:
+                The live `StructuralSnapshot.world_stamp` digest.
+
+        Returns:
+            bool:
+                True when the recorded stamp was replaced by a different value.
+        """
+        with self._lock:
+            if self._cache_data["world_stamp"] == world_stamp:
+                return False
+            self._cache_data["world_stamp"] = world_stamp
+            return True
 
     def cleanup(self) -> None:
         """
@@ -665,6 +729,7 @@ class CachingSystem(Cleanable):
             "conduit_name": self._conduit_name,
             "spell_payloads": {},
             "structural_payloads": {},
+            "world_stamp": "",
         }
 
     def _load_or_initialize_from_disk(self) -> None:
@@ -704,6 +769,8 @@ class CachingSystem(Cleanable):
             and interpreter tag. Preserves the accepted release in the returned
             envelope so a later emit cannot drop or relabel it. The caller
             converts rejected or incomplete envelopes into a cold cache.
+            `world_stamp` is optional on load ("" when absent, which never
+            admits an executor full hit) but must be a str when present.
 
         Args:
             loaded_cache_data:
@@ -765,6 +832,14 @@ class CachingSystem(Cleanable):
                     f"Structural payload for '{spell_id}' is not nested-marshal "
                     "bytes."
                 )
+        # The executor-tier world stamp (generation 19) is optional on load so
+        # a hand-written envelope still reads; an absent stamp is "", which
+        # never admits a full hit, so the omission fails closed.
+        world_stamp = loaded_cache_data.get("world_stamp", "")
+        if not isinstance(world_stamp, str):
+            raise ValueError(
+                f"Cache world stamp {world_stamp!r} is not a string."
+            )
         return {
             "version": version,
             "melder_version": melder_version,
@@ -773,6 +848,7 @@ class CachingSystem(Cleanable):
             "conduit_name": conduit_name,
             "spell_payloads": dict(spell_payloads),
             "structural_payloads": dict(structural_payloads),
+            "world_stamp": world_stamp,
         }
 
     def _write_current_cache_to_disk_locked(self) -> None:
@@ -798,6 +874,7 @@ class CachingSystem(Cleanable):
             "conduit_name": self._cache_data["conduit_name"],
             "spell_payloads": self._cache_data["spell_payloads"],
             "structural_payloads": self._cache_data["structural_payloads"],
+            "world_stamp": self._cache_data["world_stamp"],
         }
         serialized_cache_data = marshal.dumps(cache_data)
         bundle_path = self._bundle_path

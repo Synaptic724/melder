@@ -1,8 +1,8 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: other
-SOURCE FINGERPRINT: 55f42ee6ebfaeba4187f6a027fafc6d20789b95bc48ff538ab77a02d4166984f
-FILE COUNT: 380
+SOURCE FINGERPRINT: 4993f18b231bed96f5b322af4ff83fda91262f939099e1be2f0a6c4db27cfcfc
+FILE COUNT: 386
 
 ================================================================================
 BEGIN FILE: .gitattributes
@@ -64,7 +64,7 @@ END FILE: .gitattributes
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/BRANCH_WORKFLOW.md
-CONTENT SHA256: ec8cb8ee9e7c4abe2307d501c8931f7cebc77b00ceaf1b28810dfe19500f5b33
+CONTENT SHA256: 19f0bbbfed8884531aa72b8bff1f6ba462b36eec0e17f11caa14ff269b8db105
 SOURCE ENCODING: utf-8
 ================================================================================
 # Branch CI and release workflow
@@ -80,7 +80,7 @@ which checks must run; the final gate independently verifies that selection.
 | Event | Full runtime matrix | Other required work |
 | --- | --- | --- |
 | Feature PR into `dev` | Yes | Hygiene, source/repository assets and documentation |
-| `dev` PR into `preprod` | Yes | The same checks plus distribution verification |
+| `dev` PR into `preprod` | Yes | The same checks plus distribution verification and both benchmark gauntlets |
 | `preprod` PR into `release_candidate` | No | Hygiene and exact-tree full preprod proof |
 | `release-fix/*` PR into `release_candidate` | Yes | Full checks and distribution verification for changed contents |
 | `release_candidate` PR into `prod` | No | Hygiene and exact-source successful TestPyPI qualification |
@@ -121,6 +121,64 @@ Scope `PYTHON_GIL=0` to the runtime-test and installed-package probe steps. Do n
 set it for the whole job: macOS Python setup runs a standard-Python certificate
 installer that cannot start with the GIL disabled. The test driver and wheel probe
 still reject an unsupported interpreter or an enabled GIL during qualification.
+
+## Real-world gauntlet
+
+Automatic CI runs real-world-gauntlet.yml only for this repository's dev-to-preprod
+promotion PRs. CI / merge-ready requires its success on that route and accepts the planned
+skip on feature PRs into dev, later promotions, release-fix PRs, and manual full CI.
+The gauntlet workflow itself remains manually runnable for a one-off test. Its YAML
+iteration-counts input defaults to [500, 1000, 2500, 5000, 10000] for both reusable calls
+and manual runs; local pytest defaults remain unchanged.
+
+Edit the configuration block at the top of benchmarks/testing_other_di/test_real_world_gauntlet.py:
+iteration counts default to [5,000, 10,000, 15,000, 25,000, 50,000], thread counts to
+[3, 5, 7, 9], and rounds to 1. Run that test
+normally through pytest; no separate launcher or environment variables are needed. Every
+library/iteration-count/thread-count/round runs in a fresh child with PYTHON_GIL=0 and -X gil=0, and the
+measured process refuses an enabled GIL. Request/A/B workloads repeat into distinct C, D, E
+and later lanes; threads synchronize their start and are joined each workload iteration.
+This is a synchronized burst, with independent scope work rather than a producer/consumer queue.
+
+The gauntlet uses pinned Python 3.14.7 and dependencies on Ubuntu x64, Windows x64 and macOS
+Intel x64 for comparison. This fixed benchmark baseline is separate from the compatibility
+test matrix below. Setup helpers do not inherit PYTHON_GIL=0. The optional manual thread-counts
+input overrides the file's list; iteration-counts overrides the smaller CI iteration budgets.
+An explicitly blank input uses the corresponding local file setting. The CI default relay
+has 60 fresh child runs per round on each OS: five iteration counts, four thread counts,
+and three libraries. It totals 228,000 workload iterations per OS at one round.
+The job permits six hours, with the measured step bounded at 345 minutes to leave upload time;
+the pytest wrapper has a six-hour timeout when pytest-timeout is active.
+
+Each OS job publishes timings by iteration and thread count in its summary and retains gauntlet-results
+for 30 days: JUnit, full log, summary, outcome JSON, dependency pins/install report and source
+hashes/runtime provenance. Results must include every requested count and library, even when
+pytest exits zero. There is no speed threshold; compare matching counts within the same OS
+and account for hosted hardware variation. A short correctness run is not a performance ranking.
+
+## Persistent runtime series
+
+The dev-to-preprod PR also starts persistent-runtime-gauntlet.yml. It depends only on
+branch-policy, just like the real-world gauntlet, so both may run concurrently on separate
+GitHub-hosted runner VMs. Each uses its own Ubuntu, Windows and Intel macOS jobs; runner
+availability may queue them. Both benchmark jobs must succeed for promotion.
+
+Run benchmarks/testing_other_di/test_persistent_runtime_gauntlet_series.py with pytest -s.
+Edit persistent_runtime_gauntlet_series_runner.py for local settings and aggregation:
+measurement windows [60, 180, 300] seconds (300 maximum), thread counts [3, 5], both existing
+scenarios and all three libraries. This is 36 isolated processes per OS, 108 minutes of
+measured work plus six minutes of warmup and setup/cleanup. The two original benchmark
+files retain their existing defaults and workloads. CI/manual workflow inputs duration-seconds
+and thread-counts select the same smaller series independently of local edits.
+
+Every cell starts a fresh GIL-off interpreter and reuses the original persistent runtime,
+its scope-semantic checks, workers and cleanup. Local logs and result files are retained in a
+new directory beneath benchmarks/testing_other_di/persistent_gauntlet_results; optional
+PERSISTENT_SERIES_OUTPUT_DIR changes that destination. Durations and thread counts are
+printed before launch. Per-cell logs/JSON and aggregate results.json, results.csv and summary.md
+keep every duration/thread/scenario/library result separate, including completed rows after
+a later failure. CI publishes these reports, JUnit, source/runtime provenance and the summary
+under its own persistent-gauntlet artifact. The standalone workflow also supports a manual run.
 
 ## Supported Python versions
 
@@ -758,7 +816,7 @@ END FILE: .github/scripts/check_candidate_run.py
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/scripts/ci_policy.py
-CONTENT SHA256: 07d3e58422ff14f3eca8ccb34ad7278be9d75266d944b83b213ce9ad4140a5be
+CONTENT SHA256: 87797880c33f951ce78d31a8123f0c2f12de628e1d2aa3c84557c7a23238139c
 SOURCE ENCODING: utf-8
 ================================================================================
 """Read-only branch, merge-result, repository, and publication gates for CI."""
@@ -783,8 +841,9 @@ class CIPolicy:
     }
     CANDIDATE_JOBS: tuple[str, ...] = ("authorize", "source-qualification", "build", "publish", "install")
     FULL_JOBS: tuple[str, ...] = ("source-assets", "repo-assets", "tests", "documentation")
+    GAUNTLET_JOBS: tuple[str, ...] = ("real-world-gauntlet", "persistent-runtime-gauntlet")
     REQUIRED_JOBS: tuple[str, ...] = (
-        "branch-policy", "hygiene", *FULL_JOBS, "source-qualification",
+        "branch-policy", "hygiene", *FULL_JOBS, *GAUNTLET_JOBS, "source-qualification",
     )
 
 
@@ -862,30 +921,32 @@ def package_required(event_name: str, event: Mapping[str, object], ref: str,
 
 
 def validation_requirements(event_name: str, event: Mapping[str, object], ref: str,
-                            repository: str) -> tuple[bool, bool, bool]:
-    """Return full-runtime, package, and source-proof requirements for a validated CI event.
+                            repository: str) -> tuple[bool, bool, bool, bool]:
+    """Return runtime, package, source-proof, and gauntlet requirements for a validated event.
 
     Dev/preprod PRs, release-fix PRs and manual CI run full qualification.
+    Only the validated dev-to-preprod PR also requires both benchmark gauntlets.
     Unchanged preprod promotions reuse source evidence; prod promotions consume
     the separate exact-candidate gate. Ordinary pushes have no source-CI profile.
     """
     packages = package_required(event_name, event, ref, repository)
     if event_name == "workflow_dispatch":
-        return True, packages, False
+        return True, packages, False, False
     if event_name != "pull_request":
         raise ValueError("Source CI runs on pull requests or explicit manual qualification, not pushes.")
     pr = object_value(event["pull_request"], "pull_request")
     base = object_value(pr["base"], "base")["ref"]
     head = object_value(pr["head"], "head")["ref"]
     if base == "prod":
-        return False, False, False
+        return False, False, False, False
     if base == "release_candidate" and head == "preprod":
-        return False, False, True
-    return True, packages, False
+        return False, False, True, False
+    return True, packages, False, base == "preprod" and head == "dev"
 
 
 def require_success(results: Mapping[str, object], require_package: bool,
-                    require_runtime: bool = True, require_source: bool = False) -> None:
+                    require_runtime: bool = True, require_source: bool = False,
+                    require_gauntlet: bool = False) -> None:
     """Require complete dependency evidence and success for the selected validation profile.
 
     Optional jobs may succeed or be explicitly skipped; failure/cancellation
@@ -904,7 +965,8 @@ def require_success(results: Mapping[str, object], require_package: bool,
         required = (name in ("branch-policy", "hygiene")
                     or name in CIPolicy.FULL_JOBS and require_runtime
                     or name == "packages" and require_package
-                    or name == "source-qualification" and require_source)
+                    or name == "source-qualification" and require_source
+                    or name in CIPolicy.GAUNTLET_JOBS and require_gauntlet)
         allowed = ("success",) if required else ("success", "skipped")
         if result not in allowed:
             failures.append(f"{name}={result!r}")
@@ -912,7 +974,7 @@ def require_success(results: Mapping[str, object], require_package: bool,
         raise ValueError("Required CI did not succeed: " + ", ".join(failures))
 
 
-def require_ci_results() -> tuple[bool, bool, bool]:
+def require_ci_results() -> tuple[bool, bool, bool, bool]:
     """Recompute requirements from event identity and verify both flags and job results.
 
     The branch job's outputs control scheduling, but cannot silently waive a
@@ -923,11 +985,11 @@ def require_ci_results() -> tuple[bool, bool, bool]:
         os.environ.get("GITHUB_EVENT_NAME", ""), read_event(),
         os.environ.get("GITHUB_REF", ""), os.environ.get("GITHUB_REPOSITORY", ""),
     )
-    for name, required in zip(("RUNTIME", "PACKAGE", "SOURCE"), requirements, strict=True):
+    for name, required in zip(("RUNTIME", "PACKAGE", "SOURCE", "GAUNTLET"), requirements, strict=True):
         if os.environ.get(f"CI_{name}_REQUIRED") != str(required).lower():
             raise ValueError(f"Missing/invalid {name.lower()} requirement from branch-policy.")
     require_success(object_value(json.loads(os.environ["CI_JOB_RESULTS"]), "needs"),
-                    requirements[1], requirements[0], requirements[2])
+                    requirements[1], requirements[0], requirements[2], requirements[3])
     return requirements
 
 
@@ -1067,7 +1129,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                 os.environ.get("GITHUB_REPOSITORY", ""),
             )
             with pathlib.Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as output:
-                for name, required in zip(("runtime", "package", "source"), requirements, strict=True):
+                for name, required in zip(("runtime", "package", "source", "gauntlet"), requirements, strict=True):
                     output.write(f"{name}-required={str(required).lower()}\n")
         elif args.gate == "merge-ready":
             require_ci_results()
@@ -1111,7 +1173,7 @@ END FILE: .github/scripts/ci_policy.py
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/scripts/ci_qualification.py
-CONTENT SHA256: 3e955bbad047805ccda9fb2a603ff74d6ef025c22149e5aeb1ac56d9f49aa35a
+CONTENT SHA256: 604a239e8689dcb68a721120d2bc0f2c4b28403e72b02842215e2490415a9051
 SOURCE ENCODING: utf-8
 ================================================================================
 """Record full CI evidence and verify it before reusing an unchanged source tree."""
@@ -1340,7 +1402,7 @@ def select_source() -> dict[str, object]:
     ref = os.environ.get("GITHUB_REF", "")
     sha, tree = checkout_identity()
     if event_name == "pull_request":
-        if validation_requirements(event_name, event, ref, repository) != (False, False, True):
+        if validation_requirements(event_name, event, ref, repository) != (False, False, True, False):
             raise ValueError("This PR does not use preprod source qualification.")
         head = object_value(object_value(event["pull_request"], "pull_request")["head"], "head")
         return select_for_commit(repository, commit_id(head.get("sha")), "preprod", tree)
@@ -1356,7 +1418,7 @@ def full_record() -> dict[str, object]:
     confusing the run API's head SHA with the actual merge checkout.
     Light profiles cannot emit this record, even if their other jobs are green.
     """
-    runtime, package, _ = require_ci_results()
+    runtime, package, _, _ = require_ci_results()
     if not runtime:
         raise ValueError("A light CI run cannot issue full runtime qualification.")
     sha, tree = checkout_identity()
@@ -2509,7 +2571,7 @@ END FILE: .github/workflows/build-src-assets.yml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/workflows/ci.yml
-CONTENT SHA256: 787ae9bb78db01978d03ba326fc3a36d71848e24fb0207c0a5e120ef396b6652
+CONTENT SHA256: bf105d2cd233c2c90ba00e28b0984f8d4c267c262ff5ad50d2aeb5c4999421f8
 SOURCE ENCODING: utf-8
 ================================================================================
 name: CI
@@ -2541,6 +2603,7 @@ jobs:
       runtime-required: ${{ steps.route.outputs.runtime-required }}
       package-required: ${{ steps.route.outputs.package-required }}
       source-required: ${{ steps.route.outputs.source-required }}
+      gauntlet-required: ${{ steps.route.outputs.gauntlet-required }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -2583,6 +2646,16 @@ jobs:
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
+  real-world-gauntlet:
+    needs: branch-policy
+    if: needs.branch-policy.outputs.gauntlet-required == 'true'
+    uses: ./.github/workflows/real-world-gauntlet.yml
+
+  persistent-runtime-gauntlet:
+    needs: branch-policy
+    if: needs.branch-policy.outputs.gauntlet-required == 'true'
+    uses: ./.github/workflows/persistent-runtime-gauntlet.yml
+
   documentation:
     needs: branch-policy
     if: needs.branch-policy.outputs.runtime-required == 'true'
@@ -2606,7 +2679,7 @@ jobs:
 
   merge-ready:
     name: CI / merge-ready
-    needs: [branch-policy, hygiene, source-assets, repo-assets, tests, documentation, packages, source-qualification]
+    needs: [branch-policy, hygiene, source-assets, repo-assets, tests, real-world-gauntlet, persistent-runtime-gauntlet, documentation, packages, source-qualification]
     # Without always(), a failed dependency skips the very check required to
     # block merging. The script accepts only explicitly successful evidence.
     if: always()
@@ -2628,6 +2701,7 @@ jobs:
           CI_RUNTIME_REQUIRED: ${{ needs.branch-policy.outputs.runtime-required }}
           CI_PACKAGE_REQUIRED: ${{ needs.branch-policy.outputs.package-required }}
           CI_SOURCE_REQUIRED: ${{ needs.branch-policy.outputs.source-required }}
+          CI_GAUNTLET_REQUIRED: ${{ needs.branch-policy.outputs.gauntlet-required }}
         run: python .github/scripts/ci_policy.py merge-ready
       - name: Record the exact full CI qualification
         if: needs.branch-policy.outputs.runtime-required == 'true'
@@ -2636,6 +2710,7 @@ jobs:
           CI_RUNTIME_REQUIRED: ${{ needs.branch-policy.outputs.runtime-required }}
           CI_PACKAGE_REQUIRED: ${{ needs.branch-policy.outputs.package-required }}
           CI_SOURCE_REQUIRED: ${{ needs.branch-policy.outputs.source-required }}
+          CI_GAUNTLET_REQUIRED: ${{ needs.branch-policy.outputs.gauntlet-required }}
         run: python .github/scripts/ci_qualification.py record
       - name: Retain full CI source evidence
         if: needs.branch-policy.outputs.runtime-required == 'true'
@@ -2721,6 +2796,185 @@ jobs:
           retention-days: 14
 ================================================================================
 END FILE: .github/workflows/docs.yml
+================================================================================
+================================================================================
+BEGIN FILE: .github/workflows/persistent-runtime-gauntlet.yml
+CONTENT SHA256: a528de2b410c6a1ee6feaa974da7a0c2f712628db5f6e6d61a10d33fcc09509a
+SOURCE ENCODING: utf-8
+================================================================================
+name: Persistent runtime gauntlet (three OSes)
+
+# ci.yml invokes this only for dev-to-preprod promotion PRs.
+# This benchmark has its own runners and runs alongside the real-world gauntlet.
+on:
+  workflow_call:
+    inputs:
+      thread-counts:
+        description: Optional comma-separated counts; blank uses the benchmark configuration.
+        type: string
+        required: false
+        default: '3,5'
+      duration-seconds:
+        description: Comma-separated measurement seconds, each greater than zero and at most 300.
+        type: string
+        required: false
+        default: '60,180,300'
+  workflow_dispatch:
+    inputs:
+      thread-counts:
+        description: Optional comma-separated counts; blank uses the benchmark configuration.
+        type: string
+        required: false
+        default: '3,5'
+      duration-seconds:
+        description: Comma-separated measurement seconds, each greater than zero and at most 300.
+        type: string
+        required: false
+        default: '60,180,300'
+
+permissions:
+  contents: read
+
+jobs:
+  gauntlet:
+    name: Persistent gauntlet / ${{ github.head_ref || github.ref_name }} / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 360
+    strategy:
+      fail-fast: false
+      matrix:
+        # Keep all three on x64, rather than comparing Intel with Apple Silicon.
+        os: [ubuntu-24.04, windows-2025, macos-15-intel]
+    env:
+      PYTHONUNBUFFERED: '1'
+      PYTHONUTF8: '1'
+      PYTHONIOENCODING: utf-8
+      PYTHONPATH: ${{ github.workspace }}/src
+      PYTEST_DISABLE_PLUGIN_AUTOLOAD: '1'
+      PERSISTENT_SERIES_THREADS: ${{ inputs.thread-counts }}
+      PERSISTENT_SERIES_SECONDS: ${{ inputs.duration-seconds }}
+      PERSISTENT_SERIES_OUTPUT_DIR: ${{ github.workspace }}/persistent-gauntlet-results
+      GAUNTLET_RUNNER_LABEL: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.14.7'
+          architecture: x64
+          freethreaded: true
+          allow-prereleases: false
+      - name: Install identical pinned benchmark dependencies
+        shell: python
+        run: |
+          import subprocess, sys
+          from pathlib import Path
+          pins = ['dependency-injector==4.49.1', 'dishka==1.10.1', 'pytest==9.1.1',
+                  'iniconfig==2.3.0', 'packaging==26.3', 'pluggy==1.6.0',
+                  'Pygments==2.21.0', 'colorama==0.4.6']
+          report = Path('persistent-gauntlet-results')
+          report.mkdir(exist_ok=True)
+          (report / 'requirements.txt').write_text('\n'.join(pins) + '\n', encoding='utf-8')
+          command = [sys.executable, '-m', 'pip', 'install', '--only-binary=:all:',
+                     '--report', str(report / 'install-report.json'), *pins]
+          with (report / 'install.log').open('w', encoding='utf-8') as log:
+              process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                         text=True, encoding='utf-8', errors='replace')
+              for line in process.stdout:
+                  print(line, end='', flush=True)
+                  log.write(line)
+                  log.flush()
+              status = process.wait()
+          raise SystemExit(status)
+      - name: Record persistent benchmark provenance
+        env:
+          PYTHON_GIL: '0'
+        shell: python
+        run: |
+          import hashlib, json, os, platform, shutil, subprocess, sys, sysconfig
+          from pathlib import Path
+          import dependency_injector.containers, dependency_injector.providers, dishka, melder
+          from benchmarks.testing_other_di import persistent_runtime_gauntlet_series_runner as series
+          report = Path('persistent-gauntlet-results')
+          durations, counts = series._series_counts()
+          libraries = series._names('PERSISTENT_GAUNTLET_LIBS', series.LIBRARIES, series._SUPPORTED_LIBRARIES)
+          scenarios = series._names('PERSISTENT_GAUNTLET_SCENARIOS', series.SCENARIOS, series._SUPPORTED_SCENARIOS)
+          hashes = {}
+          for name in ('persistent_runtime_gauntlet_series_runner.py', 'test_persistent_runtime_gauntlet_series.py',
+                       'test_persistent_runtime_gauntlet.py', 'test_real_world_gauntlet.py'):
+              path = Path('benchmarks/testing_other_di') / name
+              hashes[str(path)] = hashlib.sha256(path.read_bytes()).hexdigest()
+              shutil.copyfile(path, report / name)
+          data = {
+              'repository': os.environ['GITHUB_REPOSITORY'], 'commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
+              'event_sha': os.environ['GITHUB_SHA'], 'run_id': os.environ['GITHUB_RUN_ID'], 'run_attempt': os.environ['GITHUB_RUN_ATTEMPT'],
+              'python': sys.version, 'free_threaded_build': sysconfig.get_config_var('Py_GIL_DISABLED'),
+              'gil_enabled': sys._is_gil_enabled(), 'platform': platform.platform(), 'machine': platform.machine(),
+              'logical_cpu_count': os.cpu_count(), 'runner_label': os.environ['GAUNTLET_RUNNER_LABEL'],
+              'duration_seconds': list(durations), 'thread_counts': list(counts), 'libraries': list(libraries), 'scenarios': list(scenarios),
+              'benchmark_sha256': hashes,
+          }
+          (report / 'environment.json').write_text(json.dumps(data, indent=2), encoding='utf-8')
+          (report / 'dependencies.txt').write_text(subprocess.check_output([sys.executable, '-m', 'pip', 'freeze'], text=True), encoding='utf-8')
+          print(json.dumps(data, indent=2))
+          assert sys.version_info[:3] == (3, 14, 7), sys.version
+          assert data['free_threaded_build'] == 1 and not data['gil_enabled'], 'Expected free-threaded GIL-off runtime'
+          assert platform.machine().lower() in ('x86_64', 'amd64'), platform.machine()
+          assert data['commit'] == data['event_sha'], 'Checkout differs from the triggered commit'
+          assert Path(melder.__file__).resolve().is_relative_to(Path('src').resolve()), 'Wrong Melder checkout imported'
+          subprocess.run([sys.executable, '-m', 'pip', 'check'], check=True)
+      - name: Run persistent duration and thread series
+        timeout-minutes: 345
+        env:
+          PYTHON_GIL: '0'
+        shell: python
+        run: |
+          import itertools, json, os, subprocess, sys, time
+          from pathlib import Path
+          report = Path('persistent-gauntlet-results')
+          command = [sys.executable, '-X', 'gil=0', '-m', 'pytest', '-s', '-v', '-o', 'addopts=',
+                     '-o', 'markers=timeout: timeout metadata (bounded by Actions)',
+                     '--junitxml=persistent-gauntlet-results/junit.xml',
+                     'benchmarks/testing_other_di/test_persistent_runtime_gauntlet_series.py']
+          (report / 'command.json').write_text(json.dumps(command, indent=2), encoding='utf-8')
+          started = time.monotonic()
+          with (report / 'benchmark.log').open('w', encoding='utf-8') as log:
+              process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                         text=True, encoding='utf-8', errors='replace')
+              for line in process.stdout:
+                  print(line, end='', flush=True)
+                  log.write(line)
+                  log.flush()
+              status = process.wait()
+          expected = json.loads((report / 'environment.json').read_text(encoding='utf-8'))
+          cells = set(itertools.product(expected['duration_seconds'], expected['thread_counts'], expected['scenarios'], expected['libraries']))
+          files = list(report.glob('run-*/results.json'))
+          aggregate = json.loads(files[0].read_text(encoding='utf-8')) if len(files) == 1 else {}
+          rows = aggregate.get('results', [])
+          observed = {(row['duration_s'], row['threads'], row['scenario'], row['lib']) for row in rows}
+          valid = (status == 0 and aggregate.get('complete') is True and len(rows) == len(cells) and observed == cells
+                   and all(row['gil_status'] == row['gil_status_at_setup'] == 'disabled' and row['cycles'] > 0
+                           and row['semantics_checks'] > 0 for row in rows))
+          outcome = {'exit_code': status, 'validation_passed': valid, 'expected_runs': len(cells),
+                     'completed_runs': len(rows), 'elapsed_seconds': time.monotonic() - started}
+          (report / 'outcome.json').write_text(json.dumps(outcome, indent=2), encoding='utf-8')
+          summary = files[0].with_name('summary.md').read_text(encoding='utf-8') if len(files) == 1 else 'No aggregate report was produced.\n'
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a', encoding='utf-8') as stream:
+              stream.write(summary + '\nValidation: ' + json.dumps(outcome) + '\n')
+          if status:
+              raise SystemExit(status)
+          assert valid, 'Persistent series is incomplete, mismatched, or did not remain GIL-off'
+      - name: Preserve persistent benchmark evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: persistent-gauntlet-${{ matrix.os }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: persistent-gauntlet-results/
+          if-no-files-found: warn
+          retention-days: 30
+================================================================================
+END FILE: .github/workflows/persistent-runtime-gauntlet.yml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/workflows/python-publish.yml
@@ -2850,6 +3104,230 @@ jobs:
           print-hash: true
 ================================================================================
 END FILE: .github/workflows/python-publish.yml
+================================================================================
+================================================================================
+BEGIN FILE: .github/workflows/real-world-gauntlet.yml
+CONTENT SHA256: ac7407379a9480a9ce95547dfa9974b575528d9b254b140558169b7611656f7a
+SOURCE ENCODING: utf-8
+================================================================================
+name: Real-world gauntlet (three OSes)
+
+# ci.yml invokes this only for dev-to-preprod promotion PRs.
+# CI/manual iteration defaults are smaller than the local benchmark configuration.
+on:
+  workflow_call:
+    inputs:
+      thread-counts:
+        description: Optional comma-separated counts; blank uses the benchmark configuration.
+        type: string
+        required: false
+        default: ''
+      iteration-counts:
+        description: Comma-separated CI iteration counts; blank explicitly uses the local benchmark defaults.
+        type: string
+        required: false
+        default: '500,1000,2500,5000,10000'
+  workflow_dispatch:
+    inputs:
+      thread-counts:
+        description: Optional comma-separated counts; blank uses the benchmark configuration.
+        type: string
+        required: false
+        default: ''
+      iteration-counts:
+        description: Comma-separated CI iteration counts; blank explicitly uses the local benchmark defaults.
+        type: string
+        required: false
+        default: '500,1000,2500,5000,10000'
+
+permissions:
+  contents: read
+
+jobs:
+  gauntlet:
+    name: Gauntlet / ${{ github.head_ref || github.ref_name }} / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 360
+    strategy:
+      fail-fast: false
+      matrix:
+        # Keep all three on x64, rather than comparing Intel with Apple Silicon.
+        os: [ubuntu-24.04, windows-2025, macos-15-intel]
+    env:
+      PYTHONUNBUFFERED: '1'
+      PYTHONUTF8: '1'
+      PYTHONIOENCODING: utf-8
+      PYTHONPATH: ${{ github.workspace }}/src
+      PYTEST_DISABLE_PLUGIN_AUTOLOAD: '1'
+      REAL_WORLD_GAUNTLET_THREAD_COUNTS: ${{ inputs.thread-counts }}
+      REAL_WORLD_GAUNTLET_ITERATION_COUNTS: ${{ inputs.iteration-counts }}
+      GAUNTLET_RUNNER_LABEL: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.14.7'
+          architecture: x64
+          freethreaded: true
+          allow-prereleases: false
+      - name: Install identical pinned benchmark dependencies
+        shell: python
+        run: |
+          import subprocess, sys
+          from pathlib import Path
+          pins = ['dependency-injector==4.49.1', 'dishka==1.10.1', 'pytest==9.1.1',
+                  'iniconfig==2.3.0', 'packaging==26.3', 'pluggy==1.6.0',
+                  'Pygments==2.21.0', 'colorama==0.4.6']
+          report = Path('gauntlet-results')
+          report.mkdir(exist_ok=True)
+          (report / 'requirements.txt').write_text('\n'.join(pins) + '\n', encoding='utf-8')
+          command = [sys.executable, '-m', 'pip', 'install', '--only-binary=:all:',
+                     '--report', str(report / 'install-report.json'), *pins]
+          with (report / 'install.log').open('w', encoding='utf-8') as log:
+              process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                         text=True, encoding='utf-8', errors='replace')
+              for line in process.stdout:
+                  print(line, end='', flush=True)
+                  log.write(line)
+                  log.flush()
+              status = process.wait()
+          raise SystemExit(status)
+      - name: Record source and runtime provenance
+        env:
+          PYTHON_GIL: '0'
+        shell: python
+        run: |
+          import hashlib, json, os, platform, shutil, subprocess, sys, sysconfig
+          from pathlib import Path
+          report = Path('gauntlet-results')
+          report.mkdir(exist_ok=True)
+          sources = [Path('benchmarks/testing_other_di') / name for name in (
+              'test_real_world_gauntlet.py', 'real_world_gauntlet_gil_runner.py')]
+          hashes = {}
+          for path in sources:
+              hashes[str(path)] = hashlib.sha256(path.read_bytes()).hexdigest()
+              shutil.copyfile(path, report / path.name)
+          sys.path.insert(0, str(Path.cwd()))
+          from benchmarks.testing_other_di import test_real_world_gauntlet as gauntlet
+          iteration_counts = gauntlet._gauntlet_iteration_counts()
+          thread_counts = gauntlet._gauntlet_thread_counts()
+          rounds = gauntlet._gauntlet_rounds()
+          data = {
+              'repository': os.environ['GITHUB_REPOSITORY'],
+              'ref': os.environ['GITHUB_REF'], 'ref_name': os.environ['GITHUB_REF_NAME'],
+              'commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
+              'event_sha': os.environ['GITHUB_SHA'],
+              'run_id': os.environ['GITHUB_RUN_ID'], 'run_attempt': os.environ['GITHUB_RUN_ATTEMPT'],
+              'run_url': os.environ['GITHUB_SERVER_URL'] + '/' + os.environ['GITHUB_REPOSITORY'] + '/actions/runs/' + os.environ['GITHUB_RUN_ID'],
+              'python': sys.version, 'executable': sys.executable,
+              'free_threaded_build': sysconfig.get_config_var('Py_GIL_DISABLED'),
+              'gil_enabled': sys._is_gil_enabled(),
+              'platform': platform.platform(), 'machine': platform.machine(),
+              'processor': platform.processor(), 'logical_cpu_count': os.cpu_count(),
+              'runner_label': os.environ['GAUNTLET_RUNNER_LABEL'],
+              'runner_os': os.environ.get('RUNNER_OS'), 'runner_arch': os.environ.get('RUNNER_ARCH'),
+              'image_os': os.environ.get('ImageOS'), 'image_version': os.environ.get('ImageVersion'),
+              'iteration_counts': list(iteration_counts), 'thread_counts': list(thread_counts), 'rounds': rounds,
+              'benchmark_sha256': hashes,
+              'harness': 'Unmodified branch-native pytest wrapper; inspect archived sources for process-isolation differences.',
+              'settings': {k: v for k, v in os.environ.items() if k.startswith(('DI_GAUNTLET_', 'REAL_WORLD_GAUNTLET_', 'GAUNTLET_', 'PYTHON'))},
+              'comparison_caveat': 'Hosted hardware varies. Branches may change the harness and workload as well as Melder. One round is a spot check, not a statistical conclusion.',
+          }
+          (report / 'environment.json').write_text(json.dumps(data, indent=2), encoding='utf-8')
+          print(json.dumps(data, indent=2))
+          assert sys.version_info[:3] == (3, 14, 7), sys.version
+          assert data['free_threaded_build'] == 1
+          assert not data['gil_enabled'], 'Expected the GIL disabled'
+          assert platform.machine().lower() in ('x86_64', 'amd64'), platform.machine()
+          assert data['commit'] == data['event_sha'], 'Checkout differs from triggered commit'
+      - name: Verify all libraries and no-GIL imports
+        env:
+          PYTHON_GIL: '0'
+        shell: python
+        run: |
+          import importlib.metadata, json, subprocess, sys
+          from pathlib import Path
+          import dependency_injector.containers, dependency_injector.providers, dishka, melder, pytest
+          report = Path('gauntlet-results')
+          dependencies = {d.metadata['Name']: d.version for d in importlib.metadata.distributions()}
+          data = {'dependencies': dependencies, 'gil_enabled_after_imports': sys._is_gil_enabled(),
+                  'melder_source': str(Path(melder.__file__).resolve())}
+          (report / 'imports.json').write_text(json.dumps(data, indent=2), encoding='utf-8')
+          freeze = subprocess.check_output([sys.executable, '-m', 'pip', 'freeze'], text=True)
+          (report / 'dependencies.txt').write_text(freeze, encoding='utf-8')
+          print(json.dumps(data, indent=2))
+          assert not data['gil_enabled_after_imports'], 'GIL enabled after benchmark library imports'
+          assert Path(melder.__file__).resolve().is_relative_to(Path('src').resolve()), 'Wrong Melder checkout imported'
+          subprocess.run([sys.executable, '-m', 'pip', 'check'], check=True)
+      - name: Run configured real-world gauntlet
+        # Leave room for artifact upload before the job-wide timeout.
+        timeout-minutes: 345
+        env:
+          PYTHON_GIL: '0'
+        shell: python
+        run: |
+          import json, os, re, subprocess, sys, time
+          from pathlib import Path
+          report = Path('gauntlet-results')
+          command = [sys.executable, '-X', 'gil=0', '-m', 'pytest', '-s', '-v',
+                     '-o', 'addopts=', '-o', 'markers=timeout: timeout metadata (bounded by Actions)',
+                     '--junitxml=gauntlet-results/junit.xml',
+                     'benchmarks/testing_other_di/test_real_world_gauntlet.py::test_real_world_gauntlet']
+          start = time.monotonic()
+          (report / 'command.json').write_text(json.dumps(command, indent=2), encoding='utf-8')
+          with (report / 'benchmark.log').open('w', encoding='utf-8') as log:
+              process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                         text=True, encoding='utf-8', errors='replace')
+              for line in process.stdout:
+                  print(line, end='', flush=True)
+                  log.write(line)
+                  log.flush()
+              status = process.wait()
+          output = (report / 'benchmark.log').read_text(encoding='utf-8')
+          expected = json.loads((report / 'environment.json').read_text(encoding='utf-8'))
+          iteration_counts = expected['iteration_counts']
+          counts = expected['thread_counts']
+          rounds = expected['rounds']
+          expected_pairs = sorted((iterations, threads) for iterations in iteration_counts for threads in counts for _ in range(rounds))
+          verified = {}
+          for lib in ('dependency-injector', 'dishka', 'melder'):
+              configs = re.findall(r'\[' + re.escape(lib) + r'\] gauntlet config: ([^\n]+)', output)
+              verified[lib] = (
+                  len(configs) == len(expected_pairs)
+                  and sorted((int(re.search(r'iterations=(\d+)', config)[1]), int(re.search(r'threads=(\d+)', config)[1])) for config in configs) == expected_pairs
+                  and all('gil=disabled' in config.split(', ') for config in configs)
+                  and all(output.count(f'[{lib}] gauntlet total({iterations})=') == len(counts) * rounds for iterations in iteration_counts)
+                  and output.count(f'[{lib}] gauntlet throughput |') == len(expected_pairs)
+              )
+          outcome = {'exit_code': status, 'verified_libraries': verified,
+                     'validation_passed': status == 0 and all(verified.values()),
+                     'iteration_counts': iteration_counts, 'thread_counts': counts, 'rounds': rounds,
+                     'elapsed_seconds': time.monotonic() - start, 'command': command}
+          (report / 'outcome.json').write_text(json.dumps(outcome, indent=2), encoding='utf-8')
+          summary = '\n'.join(line for line in output.splitlines() if any(token in line for token in (
+              '[gauntlet] thread counts:', '[gauntlet] iteration counts:',
+              '] gauntlet config:', '] gauntlet total(', '] gauntlet throughput', '] isolated median', '] lane=')))
+          (report / 'summary.txt').write_text(summary + '\n', encoding='utf-8')
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a', encoding='utf-8') as handle:
+              handle.write('## Real-world gauntlet by thread count\n\n```text\n' + summary + '\n```\n')
+              handle.write('\nValidation: ' + json.dumps(outcome) + '\n')
+              handle.write('\nCompare matching thread counts within each OS. Hosted hardware and branch-native process isolation/workloads may differ; one round is not a controlled pure-OS comparison. See the artifact for raw logs and provenance.\n')
+          if status:
+              raise SystemExit(status)
+          assert all(verified.values()), 'Missing results or wrong settings for one or more libraries: ' + repr(verified)
+      - name: Preserve logs, settings and source evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          # SHA identifies the actual tested PR merge commit (or manually selected commit).
+          name: gauntlet-${{ matrix.os }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: gauntlet-results/
+          if-no-files-found: warn
+          retention-days: 30
+================================================================================
+END FILE: .github/workflows/real-world-gauntlet.yml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/workflows/release-candidate.yml
@@ -3226,7 +3704,7 @@ END FILE: .github/workflows/verify-source-qualification.yml
 ================================================================================
 ================================================================================
 BEGIN FILE: .gitignore
-CONTENT SHA256: c98ad9780d335b3e3be57eb987d40b18a4878eed275852f97153922892e00df4
+CONTENT SHA256: 2263bb6c36c30a1924cb50980ef5fe0261374907166d8bc61a7651364c283140
 SOURCE ENCODING: utf-8
 ================================================================================
 # Byte-compiled / optimized / DLL files
@@ -3455,6 +3933,9 @@ tests/tests/unit/melder/utilities/_caching_system_tmp_*/
 # exactly why it cannot be the artifact that ships.
 src/melder/__melder_cache__/__bind_guard__/
 src/melder/__melder_cache__/__agent_documentation__/
+
+# Persistent benchmark series outputs (logs, timings and aggregates).
+/benchmarks/testing_other_di/persistent_gauntlet_results/
 ================================================================================
 END FILE: .gitignore
 ================================================================================
@@ -4569,7 +5050,7 @@ END FILE: NOTICE
 ================================================================================
 ================================================================================
 BEGIN FILE: README.md
-CONTENT SHA256: 9f575513683268ec5966c760de72f122fd0d2bcd4432fa1efdf5e83204d41721
+CONTENT SHA256: 51abfe7d6c94f1f6b4fa5e784d95a928100a32ab8f80729a955b60e0db85575e
 SOURCE ENCODING: utf-8
 ================================================================================
 <div align="center">
@@ -4989,6 +5470,11 @@ book.bind(spell=EmailHandler, existence="unique",
 <sub>**Beginner → Intermediate.** Annotations, explicit targets, collections.</sub>
 
 Annotate a constructor parameter. Melder builds the graph.
+
+The annotation is a type reference and resolves by name, the same lowercased name every spell address
+uses: a class bound bare answers to its class name, an existing object to its instance's class name, and a
+spell bound under a `spellframe` to that frame's name as well. A `TYPE_CHECKING`-only import, which leaves a
+string at runtime, resolves exactly as the class object does.
 
 ```python
 class ReportService:
@@ -35779,6 +36265,300 @@ def test_optimistic_plan_execution_depths(
 END FILE: benchmarks/testing_other_di/optimistic/test_optimistic_meld_plan.py
 ================================================================================
 ================================================================================
+BEGIN FILE: benchmarks/testing_other_di/persistent_runtime_gauntlet_series_runner.py
+CONTENT SHA256: 02d0efb5a057c4e86ff3f0163b7dc400828a57cbadcfcb29a375b6f9a749ea83
+SOURCE ENCODING: utf-8
+================================================================================
+"""Run the persistent benchmark as an isolated duration/thread series.
+
+Edit the settings below, then run test_persistent_runtime_gauntlet_series.py
+through pytest, or execute this file directly. Every duration/thread/scenario/
+library cell gets a fresh interpreter with the GIL disabled. The original
+persistent benchmark owns its container, workers, warmup and cleanup unchanged.
+
+Defaults produce 36 cells: 108 minutes of measured work plus 6 minutes of warmup
+and setup/cleanup. Durations must be positive and at most 300 seconds. Optional
+PERSISTENT_SERIES_SECONDS and PERSISTENT_SERIES_THREADS comma-separated inputs
+override the two lists. The existing PERSISTENT_GAUNTLET_LIBS/SCENARIOS and other
+persistent settings remain usable; scalar seconds/threads cannot replace the
+series selections.
+
+Results go into a new run directory below persistent_gauntlet_results beside
+this file, or PERSISTENT_SERIES_OUTPUT_DIR. Each child retains its own JSON and
+log. results.json, results.csv and summary.md are refreshed after every completed
+cell, keeping partial evidence if a later cell fails. Different durations,
+thread counts and scenarios retain separate rows; their timings are not averaged.
+"""
+
+from __future__ import annotations
+
+import argparse
+import csv
+from dataclasses import asdict, dataclass
+import json
+import math
+import os
+from pathlib import Path
+import subprocess
+import sys
+import tempfile
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from benchmarks.testing_other_di.test_persistent_runtime_gauntlet import PersistentResult
+
+# ---- Editable series configuration ----
+DURATION_SECONDS: list[float] = [60, 180, 300]
+THREAD_COUNTS: list[int] = [3, 5]
+LIBRARIES: list[str] = ["dishka", "melder", "dependency-injector"]
+SCENARIOS: list[str] = ["fastapi_steady", "bursty_app"]
+WARMUP_SECONDS: float = 10.0
+SAMPLE_EVERY: int = 1000
+APP_WORK_NS: int = 0
+BURST_ACTIVE_MS: int = 2000
+BURST_IDLE_MS: int = 1000
+BURST_REQUEST_WEIGHT: int = 60
+BURST_WORKER_A_WEIGHT: int = 25
+BURST_WORKER_B_WEIGHT: int = 15
+BUCKET_SECONDS: float = 0.0
+INSTRUMENTATION: str = "full"
+OUTPUT_DIRECTORY: Path = Path(__file__).resolve().parent / "persistent_gauntlet_results"
+# ---- End editable configuration ----
+
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+_SUPPORTED_LIBRARIES = ("dependency-injector", "dishka", "melder")
+_SUPPORTED_SCENARIOS = ("fastapi_steady", "bursty_app")
+
+
+@dataclass(frozen=True)
+class SeriesRow:
+    """Store one completed cell's identity and wall-throughput evidence.
+
+    Object counts are declared workload minimums. Setup, warmup and cleanup are
+    separate from measured time. Raw phase and degradation details stay in the
+    cell log; this compact record is shared by JSON, CSV and the summary table.
+    """
+
+    lib: str
+    scenario: str
+    duration_s: float
+    threads: int
+    process_id: int
+    gil_status: str
+    gil_status_at_setup: str
+    measured_s: float
+    warmup_s: float
+    cycles: int
+    objects_min: int
+    cycles_per_s: float
+    objects_per_s_min: float
+    setup_ms: float
+    cleanup_ms: float
+    instrumentation: str
+    semantics_checks: int
+    environment: str
+
+
+def _duration(value: float) -> float:
+    """Refuse nonfinite, nonpositive or over-five-minute measurement windows."""
+    if isinstance(value, bool) or not math.isfinite(value) or not 0 < value <= 300:
+        raise ValueError("Series durations must be greater than 0 and at most 300 seconds.")
+    return value
+
+
+def _series_counts() -> tuple[tuple[float, ...], tuple[int, ...]]:
+    """Read the editable lists or explicit series overrides, preserving their order."""
+    seconds = os.getenv("PERSISTENT_SERIES_SECONDS", "").strip()
+    threads = os.getenv("PERSISTENT_SERIES_THREADS", "").strip()
+    durations = tuple(_duration(float(part)) for part in seconds.split(",")) if seconds else tuple(_duration(value) for value in DURATION_SECONDS)
+    counts = tuple(int(part) for part in threads.split(",")) if threads else tuple(THREAD_COUNTS)
+    if not durations or len(set(durations)) != len(durations):
+        raise ValueError("The duration list must be nonempty with no duplicates.")
+    if not counts or any(type(value) is not int or value <= 0 for value in counts) or len(set(counts)) != len(counts):
+        raise ValueError("The thread list must contain distinct positive integers.")
+    return durations, counts
+
+
+def _names(name: str, defaults: list[str], allowed: tuple[str, ...]) -> tuple[str, ...]:
+    """Select supported libraries/scenarios before starting any benchmark child."""
+    raw = os.getenv(name, "").strip()
+    values = tuple(part.strip() for part in raw.split(",")) if raw else tuple(defaults)
+    if not values or len(set(values)) != len(values) or any(value not in allowed for value in values):
+        raise ValueError(f"{name} must select distinct entries from {allowed}.")
+    return values
+
+
+def _child_environment(seconds: float, threads: int) -> dict[str, str]:
+    """Copy runtime settings for one child without mutating the parent environment.
+
+    Explicit persistent instrumentation/warmup overrides win over the editable
+    defaults. This cell's duration and thread count always come from the series.
+    Both the interpreter flag and environment force GIL-off before library imports.
+    """
+    env = os.environ.copy()
+    for name, value in (
+        ("PERSISTENT_GAUNTLET_WARMUP_SECONDS", WARMUP_SECONDS),
+        ("PERSISTENT_GAUNTLET_SAMPLE_EVERY", SAMPLE_EVERY),
+        ("PERSISTENT_APP_WORK_NS", APP_WORK_NS),
+        ("PERSISTENT_BURST_ACTIVE_MS", BURST_ACTIVE_MS),
+        ("PERSISTENT_BURST_IDLE_MS", BURST_IDLE_MS),
+        ("PERSISTENT_BURST_REQUEST_WEIGHT", BURST_REQUEST_WEIGHT),
+        ("PERSISTENT_BURST_WORKER_A_WEIGHT", BURST_WORKER_A_WEIGHT),
+        ("PERSISTENT_BURST_WORKER_B_WEIGHT", BURST_WORKER_B_WEIGHT),
+        ("PERSISTENT_GAUNTLET_BUCKET_SECONDS", BUCKET_SECONDS),
+        ("PERSISTENT_GAUNTLET_INSTRUMENTATION", INSTRUMENTATION),
+    ):
+        if not env.get(name, "").strip():
+            env[name] = str(value)
+    warmup = float(env["PERSISTENT_GAUNTLET_WARMUP_SECONDS"])
+    if not math.isfinite(warmup) or warmup < 0:
+        raise ValueError("Warmup seconds must be finite and nonnegative.")
+    env.update(PERSISTENT_GAUNTLET_SECONDS=str(seconds), PERSISTENT_GAUNTLET_THREADS=str(threads),
+               PYTHON_GIL="0", PYTHONUNBUFFERED="1", PYTHONIOENCODING="utf-8")
+    return env
+
+
+def _result_row(result: PersistentResult) -> SeriesRow:
+    """Keep the existing benchmark's measured-wall denominator in the aggregate."""
+    seconds = result.measured_ns / 1_000_000_000
+    cycles = sum(lane.cycles for lane in result.worker_stats.lanes.values())
+    objects = sum(lane.objects_min for lane in result.worker_stats.lanes.values())
+    return SeriesRow(result.lib, result.cfg.scenario, result.cfg.duration_s, result.cfg.threads,
+                     os.getpid(), result.gil_status, result.gil_status_at_setup, seconds,
+                     result.warmup_ns / 1_000_000_000, cycles, objects, cycles / seconds,
+                     objects / seconds, result.setup_ns / 1_000_000, result.cleanup_ns / 1_000_000,
+                     result.cfg.instrumentation, result.semantics_checks, result.environment)
+
+
+def _run_child(lib: str, scenario: str, seconds: float, threads: int, result_path: Path) -> None:
+    """Measure one cell in this process using the original benchmark's lifecycle."""
+    _duration(seconds)
+    if threads <= 0:
+        raise ValueError("Thread count must be positive.")
+    os.environ.update(_child_environment(seconds, threads))
+    sys.path.insert(0, str(_REPO_ROOT))
+    from benchmarks.testing_other_di import test_persistent_runtime_gauntlet as persistent
+
+    persistent.base._require_gil_disabled()
+    cfg = persistent.PersistentConfig.from_env(scenario)
+    result = persistent.run_persistent_benchmark_with_cleanup(lib, cfg)
+    persistent._print_result(result)
+    persistent._print_degradation(result)
+    persistent.base._require_gil_disabled()
+    if result.gil_status_at_setup != "disabled" or result.gil_status != "disabled":
+        raise RuntimeError("The persistent benchmark did not remain GIL-off.")
+    result_path.write_text(json.dumps(asdict(_result_row(result)), indent=2) + "\n", encoding="utf-8")
+
+
+def _run_isolated_cell(lib: str, scenario: str, seconds: float, threads: int, result_path: Path) -> SeriesRow:
+    """Start a bounded fresh interpreter, retain its output, and verify its identity."""
+    env = _child_environment(seconds, threads)
+    command = [sys.executable, "-X", "gil=0", str(Path(__file__).resolve()), "--lib", lib,
+               "--scenario", scenario, "--seconds", str(seconds), "--threads", str(threads),
+               "--result-json", str(result_path)]
+    timeout = seconds + float(env["PERSISTENT_GAUNTLET_WARMUP_SECONDS"]) + 180
+    try:
+        completed = subprocess.run(command, cwd=_REPO_ROOT, env=env, capture_output=True,
+                                   text=True, encoding="utf-8", errors="replace", check=False, timeout=timeout)
+    except subprocess.TimeoutExpired as error:
+        output = error.stdout or b""
+        if isinstance(output, bytes):
+            output = output.decode("utf-8", errors="replace")
+        result_path.with_suffix(".log").write_text(output + f"\nChild timed out after {timeout}s.\n", encoding="utf-8")
+        raise RuntimeError(f"Persistent cell timed out: {lib}, {scenario}, {seconds}s, {threads} threads") from error
+    output = completed.stdout + completed.stderr
+    result_path.with_suffix(".log").write_text(output, encoding="utf-8")
+    print(output, end="" if output.endswith("\n") else "\n", flush=True)
+    if completed.returncode:
+        raise RuntimeError(f"Persistent cell failed: {lib}, {scenario}, {seconds}s, {threads} threads; exit {completed.returncode}")
+    row = SeriesRow(**json.loads(result_path.read_text(encoding="utf-8")))
+    if (row.lib, row.scenario, row.duration_s, row.threads, row.gil_status, row.gil_status_at_setup) != (
+            lib, scenario, seconds, threads, "disabled", "disabled"):
+        raise RuntimeError("Persistent child returned mismatched library/scenario/duration/threads/GIL identity.")
+    if row.cycles <= 0 or row.measured_s < 0.9 * seconds or row.semantics_checks <= 0:
+        raise RuntimeError("Persistent child did not report a valid measured workload.")
+    return row
+
+
+def _write_reports(directory: Path, settings: dict[str, object], rows: list[SeriesRow], complete: bool) -> str:
+    """Retain completed cells as separate CSV/JSON/table rows, including partial runs."""
+    report = {"settings": settings, "complete": complete, "completed_runs": len(rows),
+              "results": [asdict(row) for row in rows]}
+    (directory / "results.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    with (directory / "results.csv").open("w", encoding="utf-8", newline="") as stream:
+        writer = csv.DictWriter(stream, fieldnames=list(SeriesRow.__dataclass_fields__))
+        writer.writeheader()
+        writer.writerows(asdict(row) for row in rows)
+    lines = ["# Persistent runtime series", "", f"Durations (seconds): {settings['duration_seconds']}",
+             f"Threads: {settings['thread_counts']}", f"Completed: {len(rows)}/{settings['expected_runs']}; complete={complete}", "",
+             "| Seconds | Threads | Scenario | Library | Measured s | Cycles/s | Objects/s minimum |",
+             "| --- | --- | --- | --- | --- | --- | --- |"]
+    for row in rows:
+        lines.append(f"| {row.duration_s:g} | {row.threads} | {row.scenario} | {row.lib} | {row.measured_s:.3f} | {row.cycles_per_s:,.0f} | {row.objects_per_s_min:,.0f} |")
+    summary = "\n".join(lines) + "\n"
+    (directory / "summary.md").write_text(summary, encoding="utf-8")
+    return summary
+
+
+def run_series() -> Path:
+    """Run the selected Cartesian series sequentially and return its retained results directory.
+
+    Each child has its own container and worker threads. A failed child stops the
+    series; previously completed rows and that child's log remain available.
+    The caller can be ordinary pytest: only measured children require GIL-off.
+    """
+    durations, threads = _series_counts()
+    libraries = _names("PERSISTENT_GAUNTLET_LIBS", LIBRARIES, _SUPPORTED_LIBRARIES)
+    scenarios = _names("PERSISTENT_GAUNTLET_SCENARIOS", SCENARIOS, _SUPPORTED_SCENARIOS)
+    expected = len(durations) * len(threads) * len(libraries) * len(scenarios)
+    print(f"[persistent series] duration seconds: {list(durations)}", flush=True)
+    print(f"[persistent series] thread counts: {list(threads)}", flush=True)
+    print(f"[persistent series] libraries: {list(libraries)}; scenarios: {list(scenarios)}; runs: {expected}", flush=True)
+    parent = Path(os.getenv("PERSISTENT_SERIES_OUTPUT_DIR") or OUTPUT_DIRECTORY).resolve()
+    parent.mkdir(parents=True, exist_ok=True)
+    directory = Path(tempfile.mkdtemp(prefix="run-", dir=parent))
+    print(f"[persistent series] results: {directory}", flush=True)
+    settings = {"duration_seconds": list(durations), "thread_counts": list(threads),
+                "libraries": list(libraries), "scenarios": list(scenarios), "expected_runs": expected}
+    rows: list[SeriesRow] = []
+    _write_reports(directory, settings, rows, False)
+    for seconds in durations:
+        for count in threads:
+            for scenario in scenarios:
+                for lib in libraries:
+                    print(f"[persistent series] {len(rows) + 1}/{expected}: {seconds:g}s, {count} threads, {scenario}, {lib}", flush=True)
+                    result_path = directory / f"{seconds:g}s_{count}threads_{scenario}_{lib}.json"
+                    rows.append(_run_isolated_cell(lib, scenario, seconds, count, result_path))
+                    summary = _write_reports(directory, settings, rows, len(rows) == expected)
+    print(summary, flush=True)
+    return directory
+
+
+def main(argv: list[str] | None = None) -> int:
+    """Run the series by default; complete child arguments select exactly one cell."""
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--lib", choices=_SUPPORTED_LIBRARIES)
+    parser.add_argument("--scenario", choices=_SUPPORTED_SCENARIOS)
+    parser.add_argument("--seconds", type=float)
+    parser.add_argument("--threads", type=int)
+    parser.add_argument("--result-json", type=Path)
+    args = parser.parse_args(argv)
+    selections = (args.lib, args.scenario, args.seconds, args.threads, args.result_json)
+    if all(value is None for value in selections):
+        run_series()
+    elif any(value is None for value in selections):
+        parser.error("A child run needs --lib, --scenario, --seconds, --threads and --result-json together.")
+    else:
+        _run_child(args.lib, args.scenario, args.seconds, args.threads, args.result_json)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+================================================================================
+END FILE: benchmarks/testing_other_di/persistent_runtime_gauntlet_series_runner.py
+================================================================================
+================================================================================
 BEGIN FILE: benchmarks/testing_other_di/profile_bind_conjure_cycle.py
 CONTENT SHA256: 9fdd4b8a99ad909593b91a8dcceffdd27c239a106e3af3c65ab4dc664be5f738
 SOURCE ENCODING: utf-8
@@ -39310,7 +40090,7 @@ END FILE: benchmarks/testing_other_di/profile_tail_stall_attribution.py
 ================================================================================
 ================================================================================
 BEGIN FILE: benchmarks/testing_other_di/real_world_gauntlet_gil_runner.py
-CONTENT SHA256: d35b30f37151f225d72b1d2916d839f8dc3c39851acfe7f57e8d8ac08223ff48
+CONTENT SHA256: 07290e7fd68a464d2f2574924528491b838aa8f3d554b2c637b57c33f71cdf21
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -39331,10 +40111,16 @@ Modes:
         iteration, so a library measured second or third ran 5-12% slower than when it
         ran first. Compare libraries with --lib or the pytest wrapper.
 
+Runtime:
+    Use free-threaded Python with -X gil=0 or PYTHON_GIL=0 before startup.
+    The shared measurement entry point refuses an enabled GIL. Its pytest
+    wrapper sets both for each isolated child process automatically.
+
 Environment:
     The gauntlet reads DI_GAUNTLET_ITERS, DI_GAUNTLET_THREADS, DI_GAUNTLET_REQUEST_SCOPES,
     DI_GAUNTLET_WORKER_A_JOBS, DI_GAUNTLET_WORKER_B_JOBS, GAUNTLET_PER_TURN_CSV and the other
-    GAUNTLET_* instruments in either mode.
+    GAUNTLET_* instruments in either mode. DI_GAUNTLET_THREADS accepts positive N;
+    workload families repeat request/A/B while lane names continue C, D, E, etc.
 """
 import argparse
 import json
@@ -57935,8 +58721,204 @@ def test_persistent_runtime_gauntlet(lib: str, scenario: str) -> None:
 END FILE: benchmarks/testing_other_di/test_persistent_runtime_gauntlet.py
 ================================================================================
 ================================================================================
+BEGIN FILE: benchmarks/testing_other_di/test_persistent_runtime_gauntlet_series.py
+CONTENT SHA256: f3c4046bbd3c130b4046e47c68b3a2447bbc60049746e0e243d89c9dac0a2340
+SOURCE ENCODING: utf-8
+================================================================================
+"""Run the persistent duration/thread series through ordinary pytest.
+
+Configuration and aggregation live in persistent_runtime_gauntlet_series_runner.py.
+Default cells cross 60/180/300 seconds with 3/5 threads, both existing
+scenarios, and all three libraries. Each cell runs in its own GIL-off process.
+
+Usage:
+    python -m pytest -s benchmarks/testing_other_di/test_persistent_runtime_gauntlet_series.py
+"""
+
+from benchmarks.testing_other_di import persistent_runtime_gauntlet_series_runner as runner
+
+
+def test_persistent_runtime_gauntlet_series() -> None:
+    """Run the configured series and keep individual logs plus aggregate reports."""
+    runner.run_series()
+================================================================================
+END FILE: benchmarks/testing_other_di/test_persistent_runtime_gauntlet_series.py
+================================================================================
+================================================================================
+BEGIN FILE: benchmarks/testing_other_di/test_persistent_runtime_gauntlet_series_contracts.py
+CONTENT SHA256: ea170dab8113771ba0c6aefdae05de013ffa8625e8cd5f05255be613cf4c98e4
+SOURCE ENCODING: utf-8
+================================================================================
+"""Check persistent series isolation, selection, result retention and aggregation.
+
+The real subprocess case uses short measurement windows across both scenarios,
+all three libraries and both thread counts; it never runs the multi-hour defaults.
+"""
+
+import csv
+from dataclasses import asdict, replace
+import itertools
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
+
+import pytest
+
+from benchmarks.testing_other_di import persistent_runtime_gauntlet_series_runner as series
+
+
+@pytest.fixture(autouse=True)
+def isolated_settings(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """Keep developer benchmark settings and generated reports outside each test's inputs."""
+    for name in tuple(os.environ):
+        if name.startswith("PERSISTENT_"):
+            monkeypatch.delenv(name)
+    monkeypatch.setenv("PERSISTENT_SERIES_OUTPUT_DIR", str(tmp_path))
+
+
+def row(lib: str = "melder", scenario: str = "fastapi_steady", seconds: float = 60,
+        threads: int = 3) -> series.SeriesRow:
+    """Represent a completed cell without creating a container for launcher-only tests."""
+    return series.SeriesRow(lib, scenario, seconds, threads, 123, "disabled", "disabled", seconds,
+                            10, 100, 6300, 100 / seconds, 6300 / seconds, 1, 2, "full", 20, "test")
+
+
+@pytest.mark.parametrize("values", [[], [0], [-1], [301], [float("inf")], [float("nan")], [60, 60], [True]])
+def test_invalid_measurement_windows_fail_before_launch(monkeypatch: pytest.MonkeyPatch, values: list[float]) -> None:
+    """Zero, unbounded and duplicate durations cannot silently become expensive series runs."""
+    monkeypatch.setattr(series, "DURATION_SECONDS", values)
+    with pytest.raises(ValueError):
+        series.run_series()
+
+
+@pytest.mark.parametrize("values", [[], [0], [-1], [3, 3], [3.5], [True]])
+def test_invalid_thread_selections_fail_before_launch(monkeypatch: pytest.MonkeyPatch, values: list[int]) -> None:
+    """The series requires distinct positive integer worker counts."""
+    monkeypatch.setattr(series, "THREAD_COUNTS", values)
+    with pytest.raises(ValueError):
+        series.run_series()
+
+
+def test_child_launch_forces_selected_cell_and_gil_without_mutating_parent(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+) -> None:
+    """Observe the actual subprocess boundary rather than mocking configuration helpers."""
+    monkeypatch.setenv("PYTHON_GIL", "1")
+    monkeypatch.setenv("PERSISTENT_GAUNTLET_SECONDS", "999")
+    monkeypatch.setenv("PERSISTENT_GAUNTLET_THREADS", "99")
+    monkeypatch.setattr(series, "WARMUP_SECONDS", 4)
+    payload = row(seconds=180, threads=5)
+    def run(command: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+        assert command[:3] == [sys.executable, "-X", "gil=0"]
+        assert kwargs["env"]["PYTHON_GIL"] == "0"
+        assert kwargs["env"]["PERSISTENT_GAUNTLET_SECONDS"] == "180"
+        assert kwargs["env"]["PERSISTENT_GAUNTLET_THREADS"] == "5"
+        assert kwargs["env"]["PERSISTENT_GAUNTLET_WARMUP_SECONDS"] == "4"
+        assert kwargs["timeout"] > 184
+        Path(command[-1]).write_text(json.dumps(asdict(payload)), encoding="utf-8")
+        return subprocess.CompletedProcess(command, 0, "child output\n", "")
+    monkeypatch.setattr(series.subprocess, "run", run)
+    assert series._run_isolated_cell("melder", "fastapi_steady", 180, 5, tmp_path / "cell.json") == payload
+    assert os.environ["PYTHON_GIL"] == "1"
+    assert os.environ["PERSISTENT_GAUNTLET_SECONDS"] == "999"
+    assert (tmp_path / "cell.log").read_text(encoding="utf-8") == "child output\n"
+
+
+@pytest.mark.parametrize("change", [{"threads": 7}, {"duration_s": 120}, {"gil_status": "enabled"}, {"cycles": 0}])
+def test_mismatched_or_empty_child_result_is_refused(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, change: dict,
+) -> None:
+    """A successful process exit alone cannot qualify the wrong workload or an empty measurement."""
+    def run(command: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+        Path(command[-1]).write_text(json.dumps(asdict(replace(row(), **change))), encoding="utf-8")
+        return subprocess.CompletedProcess(command, 0, "", "")
+    monkeypatch.setattr(series.subprocess, "run", run)
+    with pytest.raises(RuntimeError):
+        series._run_isolated_cell("melder", "fastapi_steady", 60, 3, tmp_path / "cell.json")
+
+
+def test_failed_child_keeps_log_and_cannot_return_a_result(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """Keep process diagnostics while propagating its failure to pytest and CI."""
+    monkeypatch.setattr(series.subprocess, "run", lambda command, **kwargs: subprocess.CompletedProcess(command, 17, "started\n", "failed\n"))
+    with pytest.raises(RuntimeError, match="exit 17"):
+        series._run_isolated_cell("melder", "fastapi_steady", 60, 3, tmp_path / "cell.json")
+    assert (tmp_path / "cell.log").read_text(encoding="utf-8") == "started\nfailed\n"
+
+
+def test_timeout_preserves_child_output(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """A hung child is bounded and its captured output survives the timeout failure."""
+    def run(command: list[str], **kwargs: object) -> None:
+        raise subprocess.TimeoutExpired(command, kwargs["timeout"], output=b"last progress\n")
+    monkeypatch.setattr(series.subprocess, "run", run)
+    with pytest.raises(RuntimeError, match="timed out"):
+        series._run_isolated_cell("melder", "fastapi_steady", 60, 3, tmp_path / "cell.json")
+    assert "last progress" in (tmp_path / "cell.log").read_text(encoding="utf-8")
+
+
+def test_later_failure_preserves_completed_cells_as_incomplete(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+) -> None:
+    """One successful cell remains usable without being presented as a complete series."""
+    monkeypatch.setenv("PERSISTENT_SERIES_SECONDS", "60,180")
+    monkeypatch.setenv("PERSISTENT_SERIES_THREADS", "3")
+    monkeypatch.setenv("PERSISTENT_GAUNTLET_LIBS", "melder")
+    monkeypatch.setenv("PERSISTENT_GAUNTLET_SCENARIOS", "fastapi_steady")
+    def cell(lib: str, scenario: str, seconds: float, threads: int, path: Path) -> series.SeriesRow:
+        if seconds == 180:
+            raise RuntimeError("second cell failed")
+        return row(lib, scenario, seconds, threads)
+    monkeypatch.setattr(series, "_run_isolated_cell", cell)
+    with pytest.raises(RuntimeError, match="second cell"):
+        series.run_series()
+    report = json.loads(next(tmp_path.glob("run-*/results.json")).read_text(encoding="utf-8"))
+    assert report["complete"] is False and report["completed_runs"] == 1
+    assert report["settings"]["expected_runs"] == 2
+    assert report["results"][0]["duration_s"] == 60
+
+
+@pytest.mark.parametrize("argv", [["--lib", "melder"], ["--seconds", "60"]])
+def test_incomplete_child_arguments_never_start_a_series(argv: list[str]) -> None:
+    """A mistyped child invocation fails immediately instead of launching the default two-hour run."""
+    with pytest.raises(SystemExit) as raised:
+        series.main(argv)
+    assert raised.value.code == 2
+
+
+def test_short_real_series_uses_fresh_gil_off_children_and_separate_aggregates(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Exercise the real pytest entry point across 24 short isolated cells, never the full defaults."""
+    from benchmarks.testing_other_di import test_persistent_runtime_gauntlet_series as wrapper
+    monkeypatch.setenv("PYTHON_GIL", "1")
+    monkeypatch.setenv("PERSISTENT_SERIES_SECONDS", "0.2,0.3")
+    monkeypatch.setenv("PERSISTENT_SERIES_THREADS", "3,5")
+    monkeypatch.setenv("PERSISTENT_GAUNTLET_WARMUP_SECONDS", "0")
+    monkeypatch.setenv("PERSISTENT_BURST_ACTIVE_MS", "20")
+    monkeypatch.setenv("PERSISTENT_BURST_IDLE_MS", "10")
+    wrapper.test_persistent_runtime_gauntlet_series()
+    directory = next(tmp_path.glob("run-*"))
+    report = json.loads((directory / "results.json").read_text(encoding="utf-8"))
+    expected = set(itertools.product((0.2, 0.3), (3, 5), ("fastapi_steady", "bursty_app"), ("dishka", "melder", "dependency-injector")))
+    assert report["complete"] is True and report["completed_runs"] == 24
+    assert {(item["duration_s"], item["threads"], item["scenario"], item["lib"]) for item in report["results"]} == expected
+    assert all(item["gil_status"] == item["gil_status_at_setup"] == "disabled" for item in report["results"])
+    assert all(item["process_id"] != os.getpid() and item["cycles"] > 0 and item["semantics_checks"] > 0 for item in report["results"])
+    with (directory / "results.csv").open(encoding="utf-8", newline="") as stream:
+        csv_rows = list(csv.DictReader(stream))
+    assert len(csv_rows) == 24
+    assert len(list(directory.glob("*.log"))) == 24
+    assert "Completed: 24/24; complete=True" in (directory / "summary.md").read_text(encoding="utf-8")
+    output = capsys.readouterr().out
+    assert output.startswith("[persistent series] duration seconds: [0.2, 0.3]\n[persistent series] thread counts: [3, 5]")
+    assert os.environ["PYTHON_GIL"] == "1"
+================================================================================
+END FILE: benchmarks/testing_other_di/test_persistent_runtime_gauntlet_series_contracts.py
+================================================================================
+================================================================================
 BEGIN FILE: benchmarks/testing_other_di/test_real_world_gauntlet.py
-CONTENT SHA256: 262d79a851754bbceba5eb184ab98146b7e9e347e102e8e042e5c5e2dbacff49
+CONTENT SHA256: 8939bb0570e1e84220e45989fb77cc94b5cd54e99c8d73f27964dac5e289a2d9
 SOURCE ENCODING: utf-8
 ================================================================================
 from __future__ import annotations
@@ -57958,14 +58940,18 @@ from array import array
 from collections.abc import Callable, MutableSequence, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 import pytest
 
-# Keep this `True` so the shared gauntlet always runs through a standalone
-# `-X gil=0` subprocess when launched from pytest. Set to `False` only if you
-# explicitly want the wrapper to use the current interpreter mode instead.
-REAL_WORLD_GAUNTLET_FORCE_NOGIL = True
+# Every measured library runs in a fresh child with -X gil=0 and PYTHON_GIL=0.
+# The measurement entry point also refuses a process whose GIL is enabled.
+
+# EDIT THESE SETTINGS, then run test_real_world_gauntlet through pytest.
+# Every library/thread-count/round runs in a fresh GIL-off process automatically.
+REAL_WORLD_GAUNTLET_ITERATION_COUNTS: list[int] = [5_000, 10_000, 15_000, 25_000, 50_000]
+REAL_WORLD_GAUNTLET_THREAD_COUNTS: list[int] = [3, 5, 7, 9]
+REAL_WORLD_GAUNTLET_ROUNDS: int = 1
 
 
 def _runner_path() -> Path:
@@ -58391,6 +59377,12 @@ _LIB_SEEDS = {
 
 @dataclass(frozen=True)
 class _GauntletConfig:
+    """Scalar workload settings for one measured process.
+
+    The pytest wrapper selects each thread count from the editable relay.
+    Environment inputs support CI and existing single-count tools; ordinary
+    pytest use needs only the configuration block at the top of this file.
+    """
     iterations: int
     threads: int
     request_scope_runs: int
@@ -58399,8 +59391,14 @@ class _GauntletConfig:
 
     @staticmethod
     def from_env() -> _GauntletConfig:
+        """Read optional overrides over file defaults and reject empty workloads.
+
+        Counts must be positive; each request workload still creates at least
+        500 objects. Conversion errors and invalid counts propagate before
+        a library container or worker thread is created.
+        """
         cfg = _GauntletConfig(
-            iterations=_env_int("DI_GAUNTLET_ITERS", 5_000),
+            iterations=_env_int("DI_GAUNTLET_ITERS", _gauntlet_iteration_counts()[0]),
             threads=_env_int("DI_GAUNTLET_THREADS", 3),
             request_scope_runs=_env_int("DI_GAUNTLET_REQUEST_SCOPES", _REQUEST_SCOPE_RUNS_DEFAULT),
             worker_a_jobs=_env_int("DI_GAUNTLET_WORKER_A_JOBS", _WORKER_A_JOBS_DEFAULT),
@@ -58408,8 +59406,8 @@ class _GauntletConfig:
         )
         if cfg.iterations <= 0:
             raise AssertionError("DI_GAUNTLET_ITERS must be > 0")
-        if cfg.threads <= 0 or cfg.threads > 3:
-            raise AssertionError("DI_GAUNTLET_THREADS must be between 1 and 3")
+        if cfg.threads <= 0:
+            raise AssertionError("DI_GAUNTLET_THREADS must be > 0")
         if cfg.request_scope_runs <= 0:
             raise AssertionError("DI_GAUNTLET_REQUEST_SCOPES must be > 0")
         if cfg.worker_a_jobs <= 0:
@@ -59350,7 +60348,7 @@ def _gauntlet_rounds() -> int:
     Read how many times the pytest wrapper measures every library.
 
     Contract:
-        - `REAL_WORLD_GAUNTLET_ROUNDS` unset or blank means one round; any other
+        - `REAL_WORLD_GAUNTLET_ROUNDS` unset or blank uses the editable default; any other
           value must be a positive integer.
         - Each round runs every library once, each in its own process.
 
@@ -59361,7 +60359,7 @@ def _gauntlet_rounds() -> int:
         AssertionError: When the variable is set to zero or a negative number.
         ValueError: When the variable is not an integer.
     """
-    rounds = _env_int("REAL_WORLD_GAUNTLET_ROUNDS", 1)
+    rounds = _env_int("REAL_WORLD_GAUNTLET_ROUNDS", REAL_WORLD_GAUNTLET_ROUNDS)
     if rounds <= 0:
         raise AssertionError("REAL_WORLD_GAUNTLET_ROUNDS must be > 0")
     return rounds
@@ -59405,6 +60403,99 @@ def _build_ops(lib: str) -> _RuntimeOps:
         # kept equal to it by test_gauntlet_melder_lane_parity.py.
         return _build_runtime_melder()
     raise AssertionError(f"Unknown lib: {lib}")
+
+
+def _gauntlet_iteration_counts() -> tuple[int, ...]:
+    """Select the ordered iteration-count relay from the editable configuration.
+
+    REAL_WORLD_GAUNTLET_ITERATION_COUNTS may also be supplied as comma-separated
+    environment input. Without it, DI_GAUNTLET_ITERS selects one count for existing
+    profiling tools; otherwise the file's list is used. Counts must be distinct
+    positive integers, and a fresh child measures each count/thread/library/round.
+    """
+    series = os.getenv("REAL_WORLD_GAUNTLET_ITERATION_COUNTS", "").strip()
+    single = os.getenv("DI_GAUNTLET_ITERS", "").strip()
+    counts = ([int(value.strip()) for value in series.split(",")] if series
+              else [int(single)] if single else list(REAL_WORLD_GAUNTLET_ITERATION_COUNTS))
+    if not counts or any(type(value) is not int or value <= 0 for value in counts):
+        raise ValueError("Gauntlet iteration counts must be a nonempty list of positive integers")
+    if len(counts) != len(set(counts)):
+        raise ValueError("Gauntlet iteration counts must be distinct; use rounds for repetition")
+    return tuple(counts)
+
+
+def _gauntlet_thread_counts() -> tuple[int, ...]:
+    """Select the ordered thread-count relay without changing parent process state.
+
+    Edit REAL_WORLD_GAUNTLET_THREAD_COUNTS for the normal run. An optional
+    comma-separated environment variable of the same name overrides that list;
+    otherwise DI_GAUNTLET_THREADS selects one count for existing single-run tools.
+    Counts must be distinct positive integers. Each library/count/round receives
+    a fresh process, and summaries never combine different thread counts.
+    """
+    series = os.getenv("REAL_WORLD_GAUNTLET_THREAD_COUNTS", "").strip()
+    single = os.getenv("DI_GAUNTLET_THREADS", "").strip()
+    counts = ([int(value.strip()) for value in series.split(",")] if series
+              else [int(single)] if single else list(REAL_WORLD_GAUNTLET_THREAD_COUNTS))
+    if not counts or any(type(value) is not int or value <= 0 for value in counts):
+        raise ValueError("Gauntlet thread counts must be a nonempty list of positive integers")
+    if len(counts) != len(set(counts)):
+        raise ValueError("Gauntlet thread counts must be distinct; use rounds for repetition")
+    return tuple(counts)
+
+
+def _lane_layout(cfg: _GauntletConfig) -> tuple[tuple[str, str, int, int], ...]:
+    """Describe every thread's name, workload family, cycle count and random seed offset.
+
+    Repeat request, worker A and worker B workloads across positive N threads.
+    The first three names remain request, worker_a and worker_b. Later threads
+    are worker_c, worker_d and onward through worker_z, worker_aa, etc. Each
+    name receives its own counters and samples; no two threads mutate one lane.
+    A repeated workload uses that family's configured cycle count and class graph.
+
+    Args:
+        cfg: Run configuration with a positive thread count.
+
+    Returns:
+        Tuples in launch/report order. Existing 1-3-thread seeds are preserved.
+
+    Raises:
+        AssertionError: The requested thread count is not positive.
+    """
+    if cfg.threads <= 0:
+        raise AssertionError("DI_GAUNTLET_THREADS must be > 0")
+    patterns = (("request", cfg.request_scope_runs),
+                ("worker_a", cfg.worker_a_jobs), ("worker_b", cfg.worker_b_jobs))
+    lanes: list[tuple[str, str, int, int]] = []
+    for index in range(cfg.threads):
+        name = "request"
+        if index:
+            ordinal = index
+            label = ""
+            while ordinal:
+                ordinal, letter = divmod(ordinal - 1, 26)
+                label = chr(ord("a") + letter) + label
+            name = f"worker_{label}"
+        workload, cycles = patterns[index % len(patterns)]
+        lanes.append((name, workload, cycles, 17 + 12 * index))
+    return tuple(lanes)
+
+
+def _require_gil_disabled() -> None:
+    """Refuse measurement unless this process is actually running without the GIL.
+
+    The subprocess wrapper selects -X gil=0 and PYTHON_GIL=0 before startup.
+    Direct runner/profile invocations must select a free-threaded interpreter
+    themselves; changing an environment variable after startup is insufficient.
+
+    Raises:
+        RuntimeError: The interpreter reports an enabled or unknown GIL state.
+    """
+    if _gil_status() != "disabled":
+        raise RuntimeError(
+            "The real-world gauntlet requires the GIL disabled in the measured process. "
+            "Run free-threaded Python with -X gil=0 or PYTHON_GIL=0 before process startup."
+        )
 
 
 def _lane_objects_per_cycle(name: str) -> int:
@@ -59466,45 +60557,41 @@ def _variant_counts_tuple(values: list[int]) -> tuple[int, ...]:
 
 
 def _run_gauntlet_once(ops: _RuntimeOps, cfg: _GauntletConfig, iteration_ix: int) -> _IterationResult:
-    """
-    Time one full gauntlet iteration from fresh container build through cleanup.
+    """Time one synchronized burst against the already-built library container.
+
+    Bootstrap work runs on the parent, then N fresh threads wait at a readiness
+    barrier and start together. Each repeats its assigned workload in independent
+    scopes and writes only its own named metrics. The parent joins every thread
+    before inspecting counters or propagating a worker error. No work queue or
+    producer/consumer handoff exists. Total time includes thread startup and
+    joining; threaded time begins after readiness. Container setup and terminal
+    cleanup are measured separately by _run_gauntlet_benchmark.
     """
     t0 = time.perf_counter_ns()
     bootstrap_t0 = time.perf_counter_ns()
     ops.bootstrap_fanout()
     bootstrap_ns = time.perf_counter_ns() - bootstrap_t0
 
-    lane_counts = {
-        "request": 0,
-        "worker_a": 0,
-        "worker_b": 0,
-    }
-    lane_metrics = {
-        "request": _new_lane_metric_samples(),
-        "worker_a": _new_lane_metric_samples(),
-        "worker_b": _new_lane_metric_samples(),
-    }
-    lane_variant_counts = {
-        "request": [0] * _VARIANT_COUNT,
-        "worker_a": [0] * _VARIANT_COUNT,
-        "worker_b": [0] * _VARIANT_COUNT,
-    }
+    layout = _lane_layout(cfg)
+    lane_counts = {name: 0 for name, _, _, _ in layout}
+    lane_metrics = {name: _new_lane_metric_samples() for name, _, _, _ in layout}
+    lane_variant_counts = {name: [0] * _VARIANT_COUNT for name, _, _, _ in layout}
     errors: list[BaseException] = []
     stop_event = threading.Event()
-    active_lanes: list[tuple[str, Callable[[int], None], int, int]] = [
-        ("request", ops.request_scope_cycle, cfg.request_scope_runs, 17),
-    ]
-    if cfg.threads >= 2:
-        active_lanes.append(("worker_a", ops.worker_a_scope_cycle, cfg.worker_a_jobs, 29))
-    if cfg.threads >= 3:
-        active_lanes.append(("worker_b", ops.worker_b_scope_cycle, cfg.worker_b_jobs, 41))
+    scope_cycles = {
+        "request": ops.request_scope_cycle,
+        "worker_a": ops.worker_a_scope_cycle,
+        "worker_b": ops.worker_b_scope_cycle,
+    }
+    active_lanes = [(name, scope_cycles[workload], reps, offset)
+                    for name, workload, reps, offset in layout]
 
     ready_barrier = threading.Barrier(len(active_lanes) + 1)
     start_event = threading.Event()
 
     def make_worker(
             name: str,
-            call: Callable[[int], None],
+            call: Callable[[int], _ScopeCycleMetrics],
             reps: int,
             seed_offset: int,
     ) -> Callable[[], None]:
@@ -59552,12 +60639,9 @@ def _run_gauntlet_once(ops: _RuntimeOps, cfg: _GauntletConfig, iteration_ix: int
     if errors:
         raise errors[0]
 
-    if lane_counts["request"] != cfg.request_scope_runs:
-        raise AssertionError("Request lane did not complete expected scope cycles")
-    if cfg.threads >= 2 and lane_counts["worker_a"] != cfg.worker_a_jobs:
-        raise AssertionError("Worker A lane did not complete expected scope cycles")
-    if cfg.threads >= 3 and lane_counts["worker_b"] != cfg.worker_b_jobs:
-        raise AssertionError("Worker B lane did not complete expected scope cycles")
+    for name, _, reps, _ in layout:
+        if lane_counts[name] != reps:
+            raise AssertionError(f"{name} did not complete expected scope cycles")
     return _IterationResult(
         total_ns=time.perf_counter_ns() - t0,
         bootstrap_ns=bootstrap_ns,
@@ -59603,10 +60687,17 @@ def _summarize_lane(
         metric_samples: _LaneMetricSamples,
         variant_counts: list[int],
         wall_total_ns: int,
+        workload: Optional[str] = None,
 ) -> _LaneSummary:
+    """Summarize one named thread using its repeated workload family for object counts.
+
+    workload defaults to name for the original three lanes. Repeated lanes
+    supply their original family; their samples and output names stay separate.
+    """
     outer_total_summary = _summarize(metric_samples.outer_total_ns)
     request_total_summary = _summarize(metric_samples.request_total_ns)
-    objects_min = len(metric_samples.outer_total_ns) * _lane_objects_per_cycle(name)
+    objects_min = len(metric_samples.outer_total_ns) * _lane_objects_per_cycle(
+        name if workload is None else workload)
     active_seconds = request_total_summary.total_ns / 1_000_000_000.0 if request_total_summary.total_ns > 0 else 0.0
     wall_seconds = wall_total_ns / 1_000_000_000.0 if wall_total_ns > 0 else 0.0
     return _LaneSummary(
@@ -59763,6 +60854,16 @@ def _gc_stats_delta_text(before: list, after: list) -> str:
 
 
 def _run_gauntlet_benchmark(lib: str, cfg: _GauntletConfig) -> _BenchmarkResult:
+    """Measure one library with GIL-off checks before setup, after imports and after the run.
+
+    Build one container, reuse it across synchronized N-thread iterations, and
+    retire it in finally. Each repeated workload has independent lane storage;
+    throughput and object minima include every configured thread. Existing GC
+    instrumentation and its restoration remain local to this library's run.
+    """
+    _require_gil_disabled()
+    layout = _lane_layout(cfg)
+    lane_workloads = {name: workload for name, workload, _, _ in layout}
     # Optional, off-by-default GC instrumentation. When enabled it is applied
     # symmetrically to every library so the comparison stays fair; when off,
     # the measured path below is byte-for-byte the original benchmark.
@@ -59788,11 +60889,11 @@ def _run_gauntlet_benchmark(lib: str, cfg: _GauntletConfig) -> _BenchmarkResult:
     # aggregated after, so degradation across the run is visible instead of
     # being flattened into order-independent whole-run percentiles.
     trend_windows = _env_int("GAUNTLET_TREND_WINDOWS", 0)
-    min_request_objects = cfg.request_scope_runs * _REQUEST_OBJECTS_PER_ROOT
-    min_worker_a_objects = cfg.worker_a_jobs * _WORKER_A_OBJECTS_PER_ROOT if cfg.threads >= 2 else 0
-    min_worker_b_objects = cfg.worker_b_jobs * _WORKER_B_OBJECTS_PER_ROOT if cfg.threads >= 3 else 0
+    min_request_objects = sum(reps * _REQUEST_OBJECTS_PER_ROOT
+                              for _, workload, reps, _ in layout if workload == "request")
     bootstrap_objects = len(_BOOTSTRAP_TYPES) * _BOOTSTRAP_FANOUT_PER_SINGLETON
-    hot_objects_per_iter_min = bootstrap_objects + min_request_objects + min_worker_a_objects + min_worker_b_objects
+    hot_objects_per_iter_min = bootstrap_objects + sum(
+        reps * _lane_objects_per_cycle(workload) for _, workload, reps, _ in layout)
     setup_singletons = len(_SINGLETON_TYPES)
 
     setup_t0 = time.perf_counter_ns()
@@ -59800,6 +60901,7 @@ def _run_gauntlet_benchmark(lib: str, cfg: _GauntletConfig) -> _BenchmarkResult:
     result_payload: dict[str, Any] = {}
     cleanup_ns = 0
     try:
+        _require_gil_disabled()
         ops.spawn_singletons()
         setup_ns = time.perf_counter_ns() - setup_t0
 
@@ -59831,16 +60933,8 @@ def _run_gauntlet_benchmark(lib: str, cfg: _GauntletConfig) -> _BenchmarkResult:
         iteration_samples: list[int] = []
         bootstrap_samples: list[int] = []
         threaded_samples: list[int] = []
-        lane_metric_samples = {
-            "request": _new_lane_metric_storage(),
-            "worker_a": _new_lane_metric_storage(),
-            "worker_b": _new_lane_metric_storage(),
-        }
-        lane_variant_counts = {
-            "request": [0] * _VARIANT_COUNT,
-            "worker_a": [0] * _VARIANT_COUNT,
-            "worker_b": [0] * _VARIANT_COUNT,
-        }
+        lane_metric_samples = {name: _new_lane_metric_storage() for name, _, _, _ in layout}
+        lane_variant_counts = {name: [0] * _VARIANT_COUNT for name, _, _, _ in layout}
 
         # Time-series state: sample at each window boundary inside the loop so
         # the cause of any drift is captured as it happens, not inferred from
@@ -59993,6 +61087,7 @@ def _run_gauntlet_benchmark(lib: str, cfg: _GauntletConfig) -> _BenchmarkResult:
                 metric_samples=metric_samples,
                 variant_counts=lane_variant_counts[lane_name],
                 wall_total_ns=threaded_summary.total_ns,
+                workload=lane_workloads[lane_name],
             )
 
         # Packed like the run-long lane storage, so combining multi-million-entry
@@ -60013,6 +61108,7 @@ def _run_gauntlet_benchmark(lib: str, cfg: _GauntletConfig) -> _BenchmarkResult:
 
         total_hot_scopes = sum(summary.cycles for summary in lane_summaries.values())
         hot_seconds = iteration_summary.total_ns / 1_000_000_000.0 if iteration_summary.total_ns > 0 else 0.0
+        _require_gil_disabled()
         result_payload = {
             "lib": lib,
             "cfg": cfg,
@@ -60155,7 +61251,7 @@ def _maybe_write_per_turn_csv(results: list) -> None:
     "DI Container" column so all three libraries live in the same sheet.
     Used by the runner's all-in-one mode and by `--lib` when run by hand; the
     one-process-per-library wrapper writes the same file through
-    `_write_isolated_per_turn_csv`, which adds a Round column.
+    `_write_isolated_per_turn_csv`, which adds Round, Threads and Iterations columns.
     """
     if not _per_turn_csv_enabled():
         return
@@ -60182,7 +61278,8 @@ def _write_isolated_per_turn_csv(payloads: Sequence[dict[str, Any]]) -> None:
           `_maybe_write_per_turn_csv`, overwritten.
         - One row per turn per library per round, in the order the processes ran,
           with the same columns plus a trailing "Round" column (1-based), since
-          more than one round repeats every library.
+          more than one round repeats every library. Threads and Iterations
+          columns distinguish every configured measurement combination.
         - The rows come from the payloads the per-library processes handed back
           (`_result_payload`); those processes do not write the CSV themselves.
 
@@ -60195,10 +61292,10 @@ def _write_isolated_per_turn_csv(payloads: Sequence[dict[str, Any]]) -> None:
     written = 0
     with open(path, "w", newline="", encoding="utf-8") as handle:
         writer = csv.writer(handle)
-        writer.writerow([*_per_turn_csv_header(), "Round"])
+        writer.writerow([*_per_turn_csv_header(), "Round", "Threads", "Iterations"])
         for payload in payloads:
             for row in payload["per_turn_rows"]:
-                writer.writerow([*_per_turn_csv_row(payload["lib"], row), payload["round"]])
+                writer.writerow([*_per_turn_csv_row(payload["lib"], row), payload["round"], payload["threads"], payload["iterations"]])
                 written += 1
     print(
         f"[per-turn csv] wrote {written} rows for {len(payloads)} library runs -> {path}"
@@ -60262,10 +61359,7 @@ def _print_benchmark_result(result: _BenchmarkResult) -> None:
         f"hot_objects/s_min={result.hot_objects_per_s_min:,.0f}, "
         f"cleanup={_ms(result.cleanup_ns):.3f}ms"
     )
-    for lane_name in ("request", "worker_a", "worker_b"):
-        lane = result.lane_summaries.get(lane_name)
-        if lane is None:
-            continue
+    for lane in result.lane_summaries.values():
         print(
             f"[{result.lib}] lane={lane.name} | "
             f"cycles={lane.cycles}, "
@@ -60289,7 +61383,7 @@ def _result_payload(result: _BenchmarkResult, round_number: int) -> dict[str, An
     Reduce one library's result to the JSON payload a per-library process hands back.
 
     Contract:
-        - Values only (str, int, float, bool and lists of them), so `json.dumps`
+        - JSON values only, including named lane cycle/variant dictionaries, so `json.dumps`
           accepts it and the parent needs nothing else from the child process.
         - Carries what the wrapper summarizes across rounds - setup, the loop total
           and per-iteration statistics, the threaded and bootstrap averages,
@@ -60320,6 +61414,10 @@ def _result_payload(result: _BenchmarkResult, round_number: int) -> dict[str, An
         "threaded_avg_ms": _ms(result.threaded_summary.avg_ns),
         "bootstrap_avg_ms": _ms(result.bootstrap_summary.avg_ns),
         "hot_scopes_per_s": result.hot_scope_cycles_per_s,
+        "total_hot_scopes": result.total_hot_scopes,
+        "hot_objects_per_iter_min": result.hot_objects_per_iter_min,
+        "lane_cycles": {name: lane.cycles for name, lane in result.lane_summaries.items()},
+        "lane_variants": {name: list(lane.variant_counts) for name, lane in result.lane_summaries.items()},
         "per_turn_rows": [list(row) for row in result.per_turn_rows],
     }
 
@@ -60329,8 +61427,8 @@ def _isolated_median_lines(payloads: Sequence[dict[str, Any]]) -> list[str]:
     Summarize each library across the wrapper's rounds as one median line.
 
     Contract:
-        - One line per library that has payloads, in `_gauntlet_libraries()` order;
-          a library with none is skipped.
+        - One line per library/iteration-count/thread-count combination, in first-seen order and
+          `_gauntlet_libraries()` order; a pair with no payloads is skipped.
         - Every value is the median over that library's runs; the loop total also
           shows its min and max, so run-to-run spread stays visible.
 
@@ -60341,21 +61439,24 @@ def _isolated_median_lines(payloads: Sequence[dict[str, Any]]) -> list[str]:
         list[str]: The lines to print.
     """
     lines: list[str] = []
-    for lib in _gauntlet_libraries():
-        runs = [payload for payload in payloads if payload["lib"] == lib]
-        if not runs:
-            continue
-        totals = [run["total_ms"] for run in runs]
-        noun = "round" if len(runs) == 1 else "rounds"
-        lines.append(
-            f"[{lib}] isolated median over {len(runs)} {noun} | "
-            f"total={statistics.median(totals):.2f}ms (min={min(totals):.2f}, max={max(totals):.2f}) | "
-            f"avg={statistics.median([run['avg_ms'] for run in runs]):.3f}ms | "
-            f"p99={statistics.median([run['p99_ms'] for run in runs]):.3f}ms | "
-            f"threaded avg={statistics.median([run['threaded_avg_ms'] for run in runs]):.3f}ms | "
-            f"hot_scopes/s={statistics.median([run['hot_scopes_per_s'] for run in runs]):,.0f} | "
-            f"setup={statistics.median([run['setup_ms'] for run in runs]):.3f}ms"
-        )
+    settings = dict.fromkeys((payload["iterations"], payload["threads"]) for payload in payloads)
+    for iterations, threads in settings:
+        for lib in _gauntlet_libraries():
+            runs = [payload for payload in payloads
+                    if (payload["lib"], payload["iterations"], payload["threads"]) == (lib, iterations, threads)]
+            if not runs:
+                continue
+            totals = [run["total_ms"] for run in runs]
+            noun = "round" if len(runs) == 1 else "rounds"
+            lines.append(
+                f"[{lib}] isolated median over {len(runs)} {noun} | iterations={iterations} | threads={threads} | "
+                f"total={statistics.median(totals):.2f}ms (min={min(totals):.2f}, max={max(totals):.2f}) | "
+                f"avg={statistics.median([run['avg_ms'] for run in runs]):.3f}ms | "
+                f"p99={statistics.median([run['p99_ms'] for run in runs]):.3f}ms | "
+                f"threaded avg={statistics.median([run['threaded_avg_ms'] for run in runs]):.3f}ms | "
+                f"hot_scopes/s={statistics.median([run['hot_scopes_per_s'] for run in runs]):,.0f} | "
+                f"setup={statistics.median([run['setup_ms'] for run in runs]):.3f}ms"
+            )
     return lines
 
 
@@ -60363,14 +61464,16 @@ def _run_isolated_library(
         lib: str,
         round_number: int,
         result_path: Path,
+        *, threads: Optional[int] = None, iterations: Optional[int] = None,
 ) -> subprocess.CompletedProcess[str]:
     """
     Run one library of the shared gauntlet in a fresh interpreter process.
 
     Contract:
         - Starts `real_world_gauntlet_gil_runner.py --lib <lib>` with this
-          interpreter, adding `-X gil=0` when `REAL_WORLD_GAUNTLET_FORCE_NOGIL` is
-          true, from the repository root and with a copy of this environment.
+          interpreter with `-X gil=0`, from the repository root. A copied
+          child environment forces PYTHON_GIL=0 even when the parent has 1;
+          the parent environment itself is unchanged.
         - The child loads and runs only that library, prints its result and writes
           its `_result_payload` JSON to `result_path`.
         - Never raises for a failing child: the caller checks `returncode`.
@@ -60379,14 +61482,20 @@ def _run_isolated_library(
         lib: A name from `_gauntlet_libraries()`.
         round_number: 1-based round, recorded in the payload.
         result_path: Where the child writes its JSON payload.
+        threads: This child's thread count; None preserves the inherited setting.
+        iterations: This child's workload iterations; None preserves the inherited setting.
 
     Returns:
         subprocess.CompletedProcess[str]: The finished child, with stdout and stderr
             captured as text.
     """
-    command = [sys.executable]
-    if REAL_WORLD_GAUNTLET_FORCE_NOGIL:
-        command.extend(["-X", "gil=0"])
+    command = [sys.executable, "-X", "gil=0"]
+    child_env = os.environ.copy()
+    child_env["PYTHON_GIL"] = "0"
+    if threads is not None:
+        child_env["DI_GAUNTLET_THREADS"] = str(threads)
+    if iterations is not None:
+        child_env["DI_GAUNTLET_ITERS"] = str(iterations)
     command.extend([
         str(_runner_path()),
         "--lib",
@@ -60399,14 +61508,14 @@ def _run_isolated_library(
     return subprocess.run(
         command,
         cwd=str(_repo_root()),
-        env=os.environ.copy(),
+        env=child_env,
         capture_output=True,
         text=True,
         check=False,
     )
 
 
-@pytest.mark.timeout(3600)
+@pytest.mark.timeout(21_600)
 def test_real_world_gauntlet() -> None:
     """
     Run the shared real-world gauntlet with every library in its own process.
@@ -60421,7 +61530,12 @@ def test_real_world_gauntlet() -> None:
           CPython each library's run leaves starting and joining threads slower, and
           the gauntlet starts three threads per iteration. The runner with no
           arguments still runs that layout, to reproduce earlier baselines.
-        - Forces `-X gil=0` when `REAL_WORLD_GAUNTLET_FORCE_NOGIL` is true.
+        - Forces `-X gil=0` and PYTHON_GIL=0 in every measured child process.
+        - The editable REAL_WORLD_GAUNTLET_THREAD_COUNTS list defaults to 3,5,7,9.
+          The editable iteration-count list defaults to 5k,10k,15k,25k,50k.
+          Every iteration-count/thread-count/library/round gets a fresh process.
+        - DI_GAUNTLET_THREADS accepts positive N; request/A/B workloads repeat
+          under distinct request, worker_a, worker_b, worker_c, ... lane names.
         - `REAL_WORLD_GAUNTLET_ROUNDS` (default 1) repeats every library that many
           times, rotating the order each round (`_isolated_order`), and then prints
           one median line per library.
@@ -60431,29 +61545,39 @@ def test_real_world_gauntlet() -> None:
         - Fails, naming the library and round, if a process exits non-zero.
     """
     rounds = _gauntlet_rounds()
+    iteration_counts = _gauntlet_iteration_counts()
+    thread_counts = _gauntlet_thread_counts()
+    print(f"[gauntlet] thread counts: {list(thread_counts)}", flush=True)
+    print(f"[gauntlet] iteration counts: {list(iteration_counts)}", flush=True)
     payloads: list[dict[str, Any]] = []
     with tempfile.TemporaryDirectory(prefix="real_world_gauntlet_") as scratch:
-        for round_ix in range(rounds):
-            round_number = round_ix + 1
-            for lib in _isolated_order(round_ix):
-                result_path = Path(scratch) / f"round{round_number}_{lib}.json"
-                print(f"[gauntlet] round {round_number}/{rounds}: {lib} in its own process")
-                completed = _run_isolated_library(lib, round_number, result_path)
-                if completed.stdout:
-                    print(completed.stdout, end="" if completed.stdout.endswith("\n") else "\n")
-                if completed.stderr:
-                    print(completed.stderr, end="" if completed.stderr.endswith("\n") else "\n")
-                if completed.returncode != 0:
-                    raise AssertionError(
-                        f"Shared real-world gauntlet runner failed for {lib} in round {round_number} "
-                        f"with exit code {completed.returncode}."
-                    )
-                payloads.append(json.loads(result_path.read_text(encoding="utf-8")))
-    if rounds > 1:
+        for iterations in iteration_counts:
+            for threads in thread_counts:
+                for round_ix in range(rounds):
+                    round_number = round_ix + 1
+                    for lib in _isolated_order(round_ix):
+                        result_path = Path(scratch) / f"iters{iterations}_threads{threads}_round{round_number}_{lib}.json"
+                        print(f"[gauntlet] iterations={iterations}, threads={threads}, round {round_number}/{rounds}: {lib} in its own process")
+                        completed = _run_isolated_library(
+                            lib, round_number, result_path, threads=threads, iterations=iterations)
+                        if completed.stdout:
+                            print(completed.stdout, end="" if completed.stdout.endswith("\n") else "\n")
+                        if completed.stderr:
+                            print(completed.stderr, end="" if completed.stderr.endswith("\n") else "\n")
+                        if completed.returncode != 0:
+                            raise AssertionError(
+                                f"Shared real-world gauntlet runner failed for {lib}, iterations={iterations}, "
+                                f"threads={threads}, round {round_number}, exit code {completed.returncode}."
+                            )
+                        payload = json.loads(result_path.read_text(encoding="utf-8"))
+                        if (payload["lib"], payload["iterations"], payload["threads"], payload["round"], payload["gil_status"]) != (
+                                lib, iterations, threads, round_number, "disabled"):
+                            raise AssertionError("Gauntlet child returned mismatched iteration/thread/library/round/GIL identity")
+                        payloads.append(payload)
+    if rounds > 1 or len(thread_counts) > 1 or len(iteration_counts) > 1:
         for line in _isolated_median_lines(payloads):
             print(line)
     _write_isolated_per_turn_csv(payloads)
-
 ================================================================================
 END FILE: benchmarks/testing_other_di/test_real_world_gauntlet.py
 ================================================================================
@@ -60531,7 +61655,7 @@ END FILE: benchmarks/testing_other_di/test_real_world_gauntlet_cprofile.py
 ================================================================================
 ================================================================================
 BEGIN FILE: benchmarks/testing_other_di/test_real_world_gauntlet_isolation.py
-CONTENT SHA256: 417486f6a67da63ec93f8c2fdcb7d04a9ecef73d636da523d5947a59cd43c20a
+CONTENT SHA256: 7eda952dad6747f310ddd6e4bd7f80ea6d8c34f644acb769d922206b2e85fea9
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -60696,15 +61820,11 @@ def test_a_negative_round_is_refused() -> None:
         _shared._isolated_order(-1)
 
 
-def test_rounds_default_to_one(monkeypatch: pytest.MonkeyPatch) -> None:
-    """
-    Without REAL_WORLD_GAUNTLET_ROUNDS the wrapper measures every library once.
-
-    Contract:
-        An unset variable reads as one round.
-    """
+def test_rounds_default_to_the_editable_setting(monkeypatch: pytest.MonkeyPatch) -> None:
+    """An unset environment override uses the benchmark's editable rounds setting."""
     monkeypatch.delenv("REAL_WORLD_GAUNTLET_ROUNDS", raising=False)
-    assert _shared._gauntlet_rounds() == 1
+    monkeypatch.setattr(_shared, "REAL_WORLD_GAUNTLET_ROUNDS", 2)
+    assert _shared._gauntlet_rounds() == 2
 
 
 def test_rounds_read_a_positive_count(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -60770,10 +61890,10 @@ def test_isolated_csv_has_one_header_and_a_round_column(monkeypatch: pytest.Monk
     ]
     _shared._write_isolated_per_turn_csv(payloads)
     rows = list(csv.reader(target.read_text(encoding="utf-8").splitlines()))
-    assert rows[0] == [*_shared._per_turn_csv_header(), "Round"]
-    assert rows[1] == ["dishka", "0", "1.0000", "0.0100", "0.9000", "no", "5", "1"]
-    assert rows[2] == ["melder", "0", "2.0000", "0.0200", "1.8000", "yes", "7", "2"]
-    assert rows[3][0] == "melder" and rows[3][-1] == "2"
+    assert rows[0] == [*_shared._per_turn_csv_header(), "Round", "Threads", "Iterations"]
+    assert rows[1] == ["dishka", "0", "1.0000", "0.0100", "0.9000", "no", "5", "1", "3", "3"]
+    assert rows[2] == ["melder", "0", "2.0000", "0.0200", "1.8000", "yes", "7", "2", "3", "3"]
+    assert rows[3][0] == "melder" and rows[3][-3:] == ["2", "3", "3"]
     assert len(rows) == 4
 
 
@@ -60796,7 +61916,7 @@ def test_isolated_run_starts_the_runner_for_one_library(monkeypatch: pytest.Monk
     The wrapper starts the runner for exactly one library, round and payload path.
 
     Contract:
-        Uses this interpreter, adds `-X gil=0` exactly when the module forces it,
+        Uses this interpreter, always adds `-X gil=0` and child PYTHON_GIL=0,
         passes --lib, --round and --result-json, runs from the repository root and
         leaves the exit code to the caller (check=False). subprocess.run is the
         mocked boundary.
@@ -60814,7 +61934,8 @@ def test_isolated_run_starts_the_runner_for_one_library(monkeypatch: pytest.Monk
     _shared._run_isolated_library("melder", 3, result_path)
     command = seen["command"]
     assert command[0] == sys.executable
-    assert (command[1:3] == ["-X", "gil=0"]) == _shared.REAL_WORLD_GAUNTLET_FORCE_NOGIL
+    assert command[1:3] == ["-X", "gil=0"]
+    assert seen["kwargs"]["env"]["PYTHON_GIL"] == "0"
     assert str(_shared._runner_path()) in command
     assert command[command.index("--lib") + 1] == "melder"
     assert command[command.index("--round") + 1] == "3"
@@ -60872,6 +61993,217 @@ def test_runner_refuses_a_payload_path_without_a_library(tmp_path: Path) -> None
     assert "need --lib" in completed.stderr
 ================================================================================
 END FILE: benchmarks/testing_other_di/test_real_world_gauntlet_isolation.py
+================================================================================
+================================================================================
+BEGIN FILE: benchmarks/testing_other_di/test_real_world_gauntlet_threads.py
+CONTENT SHA256: f654a13782fd62fbeba58decc1260f0ae60989a4234588a8b8ab688ec5b0fcce
+SOURCE ENCODING: utf-8
+================================================================================
+"""Verify repeated workload lanes and fresh GIL-off processes across the thread relay."""
+
+from collections import Counter
+import os
+from pathlib import Path
+import re
+import subprocess
+import sys
+import threading
+from typing import Callable
+
+import pytest
+
+from benchmarks.testing_other_di import test_real_world_gauntlet as gauntlet
+
+
+@pytest.mark.parametrize("threads", [1, 2, 3, 5, 7, 9, 28])
+def test_every_requested_thread_executes_its_own_repeated_workload(threads: int) -> None:
+    """Exercise real threads and independent metrics, including labels beyond Z.
+
+    Lightweight scope callbacks isolate scheduler/accounting correctness from DI
+    implementations. All threads exist at the ready barrier before work begins;
+    their OS identities therefore cannot be recycled between lane executions.
+    """
+    seen: list[tuple[int, str]] = []
+
+    def cycle(workload: str) -> Callable[[int], gauntlet._ScopeCycleMetrics]:
+        """Return a measured-work callback recording the actual executing thread."""
+        def run(variant: int) -> gauntlet._ScopeCycleMetrics:
+            """Record one scope cycle and return deterministic timing samples."""
+            seen.append((threading.get_ident(), workload))
+            return gauntlet._ScopeCycleMetrics(1, 2, 3, 4, 5, 6)
+        return run
+
+    ops = gauntlet._RuntimeOps("melder", lambda: None, lambda: None,
+                               cycle("request"), cycle("worker_a"), cycle("worker_b"), lambda: None)
+    result = gauntlet._run_gauntlet_once(ops, gauntlet._GauntletConfig(1, threads, 2, 3, 4), 0)
+    assert len({identity for identity, _ in seen}) == threads
+    assert len(result.lane_metrics) == threads
+    assert len(seen) == sum((2, 3, 4)[index % 3] for index in range(threads))
+    assert Counter(workload for _, workload in seen) == Counter({
+        "request": ((threads + 2) // 3) * 2,
+        "worker_a": ((threads + 1) // 3) * 3,
+        "worker_b": (threads // 3) * 4,
+    })
+    assert list(result.lane_metrics)[:min(threads, 3)] == ["request", "worker_a", "worker_b"][:threads]
+    if threads >= 5:
+        assert len(result.lane_metrics["worker_c"].outer_total_ns) == 2
+        assert len(result.lane_metrics["worker_d"].outer_total_ns) == 3
+    if threads == 28:
+        assert len(result.lane_metrics["worker_aa"].outer_total_ns) == 2
+    for name, samples in result.lane_metrics.items():
+        assert sum(result.lane_variant_counts[name]) == len(samples.outer_total_ns)
+        assert set(samples.outer_create_ns) == {1}
+        assert set(samples.request_total_ns) == {6}
+
+
+def test_default_relay_uses_the_editable_list(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The configured list selects the run order, and callers cannot mutate it through the result."""
+    monkeypatch.delenv("REAL_WORLD_GAUNTLET_THREAD_COUNTS", raising=False)
+    monkeypatch.delenv("DI_GAUNTLET_THREADS", raising=False)
+    configured = [9, 3, 6]
+    monkeypatch.setattr(gauntlet, "REAL_WORLD_GAUNTLET_THREAD_COUNTS", configured)
+    assert gauntlet._gauntlet_thread_counts() == (9, 3, 6)
+    assert configured == [9, 3, 6]
+
+
+@pytest.mark.parametrize("counts", [[], [0], [-2], [3, 3], [3.5], [True]])
+def test_invalid_configured_relays_are_refused(monkeypatch: pytest.MonkeyPatch, counts: list) -> None:
+    """Empty, nonpositive, duplicate and noninteger thread relays cannot produce plausible results."""
+    monkeypatch.delenv("REAL_WORLD_GAUNTLET_THREAD_COUNTS", raising=False)
+    monkeypatch.delenv("DI_GAUNTLET_THREADS", raising=False)
+    monkeypatch.setattr(gauntlet, "REAL_WORLD_GAUNTLET_THREAD_COUNTS", counts)
+    with pytest.raises(ValueError):
+        gauntlet._gauntlet_thread_counts()
+
+
+def test_environment_can_select_a_relay_or_one_legacy_count(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Explicit relay input takes precedence while the single-count profiling path remains usable."""
+    monkeypatch.delenv("REAL_WORLD_GAUNTLET_THREAD_COUNTS", raising=False)
+    monkeypatch.setenv("DI_GAUNTLET_THREADS", "12")
+    assert gauntlet._gauntlet_thread_counts() == (12,)
+    assert gauntlet._GauntletConfig.from_env().threads == 12
+    monkeypatch.setenv("REAL_WORLD_GAUNTLET_THREAD_COUNTS", " 3, 5, 7, 9 ")
+    assert gauntlet._gauntlet_thread_counts() == (3, 5, 7, 9)
+
+
+def test_child_forces_gil_off_without_changing_parent_environment(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+) -> None:
+    """Verify actual launch arguments and child environment at the subprocess boundary."""
+    monkeypatch.setenv("PYTHON_GIL", "1")
+    monkeypatch.setenv("DI_GAUNTLET_THREADS", "99")
+    seen: list[tuple[list[str], dict[str, str]]] = []
+
+    def run(command: list[str], *, env: dict[str, str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+        """Capture process inputs without starting an extra measured child in this unit case."""
+        seen.append((command, env))
+        return subprocess.CompletedProcess(command, 0, "", "")
+
+    monkeypatch.setattr(gauntlet.subprocess, "run", run)
+    gauntlet._run_isolated_library("melder", 1, tmp_path / "result.json", threads=7, iterations=11)
+    command, child_env = seen[0]
+    assert command[:3] == [sys.executable, "-X", "gil=0"]
+    assert child_env["PYTHON_GIL"] == "0"
+    assert child_env["DI_GAUNTLET_THREADS"] == "7"
+    assert child_env["DI_GAUNTLET_ITERS"] == "11"
+    assert os.environ["PYTHON_GIL"] == "1" and os.environ["DI_GAUNTLET_THREADS"] == "99"
+
+
+def test_enabled_gil_is_refused_before_library_setup(monkeypatch: pytest.MonkeyPatch) -> None:
+    """An unsuitable measured interpreter fails before it can build or time a DI graph."""
+    monkeypatch.setattr(sys, "_is_gil_enabled", lambda: True)
+    with pytest.raises(RuntimeError, match="GIL disabled in the measured process"):
+        gauntlet._run_gauntlet_benchmark("must-not-be-built", gauntlet._GauntletConfig(1, 3, 10, 25, 30))
+
+
+def test_round_summaries_do_not_mix_thread_counts() -> None:
+    """Three-thread and five-thread timings retain separate medians, even for the same library."""
+    payloads = []
+    for threads, total in ((3, 10), (5, 100), (3, 20), (5, 200)):
+        payloads.append({"lib": "melder", "iterations": 1, "threads": threads, "total_ms": total,
+                         "avg_ms": total, "p99_ms": total, "threaded_avg_ms": total,
+                         "hot_scopes_per_s": 1, "setup_ms": 1})
+    lines = gauntlet._isolated_median_lines(payloads)
+    assert len(lines) == 2
+    assert "threads=3" in lines[0] and "total=15.00ms" in lines[0]
+    assert "threads=5" in lines[1] and "total=150.00ms" in lines[1]
+
+
+def test_small_real_relay_runs_all_libraries_and_reports_every_thread_count(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Run real isolated children at 3/5/7/9 threads and prove their observed no-GIL/count identity.
+
+    One- and two-iteration cells make this a correctness check, not a performance
+    ranking. The parent advertises GIL=1 deliberately; every measured child must
+    override it before startup. Normal pytest output retains all twenty-four results.
+    """
+    pytest.importorskip("dishka")
+    pytest.importorskip("dependency_injector")
+    monkeypatch.setenv("PYTHON_GIL", "1")
+    monkeypatch.setenv("DI_GAUNTLET_ITERS", "2")
+    monkeypatch.setenv("REAL_WORLD_GAUNTLET_ITERATION_COUNTS", "1,2")
+    monkeypatch.setenv("REAL_WORLD_GAUNTLET_ROUNDS", "1")
+    monkeypatch.setenv("REAL_WORLD_GAUNTLET_THREAD_COUNTS", "3,5,7,9")
+    monkeypatch.delenv("GAUNTLET_PER_TURN_CSV", raising=False)
+    gauntlet.test_real_world_gauntlet()
+    output = capsys.readouterr().out
+    for lib in ("dependency-injector", "dishka", "melder"):
+        configs = re.findall(r"\[" + re.escape(lib) + r"\] gauntlet config: ([^\n]+)", output)
+        assert len(configs) == 8
+        observed = [(int(re.search(r"iterations=(\d+)", config)[1]),
+                     int(re.search(r"threads=(\d+)", config)[1])) for config in configs]
+        assert observed == [(iterations, threads) for iterations in (1, 2) for threads in (3, 5, 7, 9)]
+        assert all("gil=disabled" in config for config in configs)
+        assert f"[{lib}] lane=worker_h |" in output
+    assert os.environ["PYTHON_GIL"] == "1"
+    print(output)
+
+def test_file_iteration_and_round_settings_need_no_environment(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Editing the file defaults is sufficient for ordinary pytest launches."""
+    monkeypatch.delenv("DI_GAUNTLET_ITERS", raising=False)
+    monkeypatch.delenv("REAL_WORLD_GAUNTLET_ROUNDS", raising=False)
+    monkeypatch.delenv("REAL_WORLD_GAUNTLET_ITERATION_COUNTS", raising=False)
+    monkeypatch.setattr(gauntlet, "REAL_WORLD_GAUNTLET_ITERATION_COUNTS", [4, 8])
+    monkeypatch.setattr(gauntlet, "REAL_WORLD_GAUNTLET_ROUNDS", 2)
+    assert gauntlet._GauntletConfig.from_env().iterations == 4
+    assert gauntlet._gauntlet_rounds() == 2
+
+
+def test_iteration_relay_reads_the_editable_list_and_optional_overrides(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Iteration counts retain file order and support bounded legacy single-count runs."""
+    monkeypatch.delenv("REAL_WORLD_GAUNTLET_ITERATION_COUNTS", raising=False)
+    monkeypatch.delenv("DI_GAUNTLET_ITERS", raising=False)
+    monkeypatch.setattr(gauntlet, "REAL_WORLD_GAUNTLET_ITERATION_COUNTS", [5, 2])
+    assert gauntlet._gauntlet_iteration_counts() == (5, 2)
+    monkeypatch.setenv("DI_GAUNTLET_ITERS", "3")
+    assert gauntlet._gauntlet_iteration_counts() == (3,)
+    monkeypatch.setenv("REAL_WORLD_GAUNTLET_ITERATION_COUNTS", " 2, 4 ")
+    assert gauntlet._gauntlet_iteration_counts() == (2, 4)
+
+
+@pytest.mark.parametrize("counts", [[], [0], [-1], [2, 2], [2.5], [True]])
+def test_invalid_iteration_relays_are_refused(monkeypatch: pytest.MonkeyPatch, counts: list) -> None:
+    """Refuse meaningless iteration relays before any measured process starts."""
+    monkeypatch.delenv("REAL_WORLD_GAUNTLET_ITERATION_COUNTS", raising=False)
+    monkeypatch.delenv("DI_GAUNTLET_ITERS", raising=False)
+    monkeypatch.setattr(gauntlet, "REAL_WORLD_GAUNTLET_ITERATION_COUNTS", counts)
+    with pytest.raises(ValueError):
+        gauntlet._gauntlet_iteration_counts()
+
+
+def test_round_summaries_do_not_mix_iteration_counts() -> None:
+    """Identical thread counts still produce separate medians for different iteration budgets."""
+    payloads = [{"lib": "melder", "iterations": iterations, "threads": 3, "total_ms": total,
+                 "avg_ms": total, "p99_ms": total, "threaded_avg_ms": total,
+                 "hot_scopes_per_s": 1, "setup_ms": 1}
+                for iterations, total in ((5, 10), (10, 100), (5, 20), (10, 200))]
+    lines = gauntlet._isolated_median_lines(payloads)
+    assert len(lines) == 2
+    assert "iterations=5" in lines[0] and "total=15.00ms" in lines[0]
+    assert "iterations=10" in lines[1] and "total=150.00ms" in lines[1]
+================================================================================
+END FILE: benchmarks/testing_other_di/test_real_world_gauntlet_threads.py
 ================================================================================
 ================================================================================
 BEGIN FILE: benchmarks/testing_other_di/test_shallow_all.py
@@ -72353,10 +73685,10 @@ END FILE: release_docs/0.2.82.md
 ================================================================================
 ================================================================================
 BEGIN FILE: release_docs/next_version_release.md
-CONTENT SHA256: 87597b8e99695a31bb984a34e68f7ff7316633a2915c796ce0596723f5f3e530
+CONTENT SHA256: 149ba94694f5fd64ee22692ce49f86bc4782305e2ebeaec73c1808aae4e8168c
 SOURCE ENCODING: utf-8
 ================================================================================
-# Melder 0.2.8216
+# Melder 0.2.8220
 
 **Unreleased**
 
@@ -72663,6 +73995,69 @@ conjure cache on. What stays the same: melding the dependency first, or binding 
 as before; warm melds, validation verdicts and conjure do no extra work. A dependency marked this way pays one
 resolution pass on its first direct meld.
 
+## Fixed: a definition removed after use can be bound again at the same address and melded
+
+On a dynamic root, a class bound after `conjure()`, melded, then removed with `cleanup_spell` and bound again
+at the same address (the same class, spellframe and name) could not be melded afterwards: the second meld
+raised `RuntimeError: Cannot build CreationContext before spell_codegen_creation exists.` in every scope that
+had resolved the first definition. The two steps that skip the first meld worked. The verdict a conduit
+records when it resolves a definition is keyed by the spell id, and the spell id is content-stable, so the
+replacement - a new definition with nothing compiled yet - inherited the removed definition's "resolved"
+verdict and the meld went to build it without compiling it.
+
+Now removing a definition retires its verdict in every conduit, and registering a definition retires any
+verdict already held for its id, so the replacement is resolved again by each conduit on its first meld
+there and a new product comes back:
+
+```python
+book = Spellbook(aetheric_frame="app")
+root = book.conjure(name="definitions", dynamic=True)
+scope = root.create_lesser_conduit(name="requests")
+spell_id = root.bind(spell=Action, existence="many", spellframe="actions", binding_name="run")
+first = scope.meld(spellframe="actions", binding_name="run")
+root.cleanup_spell(spell=root.get_spell_by_id(spell_id, "app"))
+root.bind(spell=Action, existence="many", spellframe="actions", binding_name="run")
+second = scope.meld(spellframe="actions", binding_name="run", override={"value": 2})  # raised before 0.2.8219
+```
+
+What stays the same: a product built from the removed definition is untouched by its removal and is disposed
+by the scope that built it, alongside the replacement's products; peer scopes that resolved the removed
+definition through a contract meld the replacement once it is granted again; consumers of the removed
+definition rebuild against whatever is bound at that address next, as before. Removing a definition and
+binding again now costs one resolution pass per scope on the replacement's first meld there, the same as a
+first late binding; warm melds and conjure do no extra work. A notch back to a member that was active before
+is resolved again the same way. One existing behaviour is unchanged and worth knowing: for a lifetime that
+stores one object per scope (`unique_per_conduit` and kin) the object built from the removed definition keeps
+its slot, so the replacement's first meld in that scope returns it, and an override against it is refused as
+against any stored shared instance.
+
+## Fixed: a warm creation cache no longer replays an executor compiled in another world
+
+With system caching on, a conduit's creation-cache bundle was admitted as a full hit whenever every cached spell
+was still bound, without checking the rest of the world. An existing object or a non-resolvable definition
+carries no cached executor, so a world that only added one - say a provider for a parameter nobody had provided,
+bound bare as an existing object - or removed one was still a full hit: the consumer's executor compiled without
+the provider was replayed and its first meld raised `TypeError: ... missing 1 required positional argument`, or
+a plan naming a spell the world no longer has raised `RuntimeError: generalized manifest references unknown
+spell_id`, while a cold cache resolved the same world correctly.
+
+The bundle now records the world its executors were compiled in - the same stamp the structural tier already
+uses (the bound spell ids, the frame posture and the borrowed spells) - and a full hit requires it. A changed
+world recompiles phases 8-11 once and re-stages the bundle; a repeat world is still a full hit that leaves the
+file untouched. A world that only removed a spell is a changed world too and recompiles once (before, surplus
+cached ids were ignored). Creation-cache generation 19 retires bundles written without the stamp; they rebuild
+on the next conjure.
+
+```python
+service = Service()
+book.bind(spell=service, existence="unique", permissions="create")   # added since the cached run
+book.bind(spell=Worker, existence="many", permissions="create")       # Worker(service: Service)
+conduit = book.conjure(name="root")
+conduit.meld(spell=Worker).service is service                         # True; TypeError before 0.2.8220
+```
+
+What stays the same: caching off, the structural tier and its replay, what is staged per spell, every meld path.
+
 ## Transient creations with disposal methods register faster
 
 A `many` spell whose instances declare disposal methods (through the Spellbook's disposal configuration or a
@@ -72689,6 +74084,34 @@ without disposal methods are unchanged.
 The creation-cache format generation is 16: an existing `__melder_cache__` built by an earlier version is
 rebuilt on the next conjure, as before; nothing else changes on disk.
 
+## Dict-mode site plans build no dict on the warm path
+
+A root whose site plan has a generic step - an existing object, a contract payload, a positional override, a
+collection parameter - used to allocate `instance_results = {}` at the top of every warm creation and store
+every step into it, although only a cold miss ever read it. Each generic construction now receives a dict
+literal of exactly the values it reads, built where it runs; the warm path builds nothing. Measured on the
+maintainers' VM (3.14t, GIL off): the plan body of a root over existing objects drops 26-32% and the whole meld
+22-23%; roots whose plans are all direct calls are byte-identical. Same objects, same errors on a failing
+miss; no API change. Creation-cache generation 17 retires executors emitted with the eager dict, so the first
+conjure after upgrading regenerates them.
+
+## A consumer's annotation resolves by address key
+
+Phase 3 now matches a constructor annotation to candidate spells by key - the same lowercased name every
+spell address already uses - against each spell's frame key (its `spellframe`, else its own name) and its type
+key (its class name; for an existing object, the instance's class name). Before, a class-object annotation was
+matched by object identity while a string annotation was matched by name, so an existing object bound bare
+satisfied `service: "Service"` (a `TYPE_CHECKING`-only import) but not `service: Service`, and a concrete
+class used as a `spellframe` resolved as if it were the type. Now:
+
+- an existing object bound without a spellframe satisfies a consumer annotated with its class;
+- a binding resolves identically whether the consumer imported the type under `TYPE_CHECKING` or at runtime;
+- a spellframe is a category or a shape label (a string, a Protocol): it is matched by name, never by
+  identity, and a concrete class used as one is just a name.
+
+Nothing that resolved before stops resolving; ambiguity still raises in Phase 3 and two spells at one address
+are still refused in Phase 4. Creation-cache generation 18 retires bundles captured under the old matcher,
+whose structural rows may hold an unresolved input the key matcher resolves.
 ## Packaging and documentation
 
 - The internal-bind guard manifest holds 620 entries at 0.2.8216 (619 at 0.2.8215): `ManyDisposalBucket`, the
@@ -72726,7 +74149,13 @@ rebuilt on the next conjure, as before; nothing else changes on disk.
 - The packaged system documents describe the per-key disposal record behind `register_many`, the store's
   one-declaration rule and the emitted registration line; the Creations entries' line citations are
   remeasured.
-- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8216.
+- The packaged system documents describe the per-conduit verdict retirement on definition removal and on
+  registration, and correct the control-plane entry that named the registry verbs `register_lineage` and
+  `unregister_lineage` (they are `register_index` and `unregister_index`).
+- The packaged system documents describe the executor-cache world stamp: the envelope field, the full-hit
+  rule, the staging write and the retired surplus full hit; the conjure sequence's line citations into
+  `spellbook_creation_system.py` are remeasured.
+- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8220.
 ================================================================================
 END FILE: release_docs/next_version_release.md
 ================================================================================

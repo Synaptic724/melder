@@ -1,4 +1,4 @@
-# Melder 0.2.8216
+# Melder 0.2.8220
 
 **Unreleased**
 
@@ -305,6 +305,69 @@ conjure cache on. What stays the same: melding the dependency first, or binding 
 as before; warm melds, validation verdicts and conjure do no extra work. A dependency marked this way pays one
 resolution pass on its first direct meld.
 
+## Fixed: a definition removed after use can be bound again at the same address and melded
+
+On a dynamic root, a class bound after `conjure()`, melded, then removed with `cleanup_spell` and bound again
+at the same address (the same class, spellframe and name) could not be melded afterwards: the second meld
+raised `RuntimeError: Cannot build CreationContext before spell_codegen_creation exists.` in every scope that
+had resolved the first definition. The two steps that skip the first meld worked. The verdict a conduit
+records when it resolves a definition is keyed by the spell id, and the spell id is content-stable, so the
+replacement - a new definition with nothing compiled yet - inherited the removed definition's "resolved"
+verdict and the meld went to build it without compiling it.
+
+Now removing a definition retires its verdict in every conduit, and registering a definition retires any
+verdict already held for its id, so the replacement is resolved again by each conduit on its first meld
+there and a new product comes back:
+
+```python
+book = Spellbook(aetheric_frame="app")
+root = book.conjure(name="definitions", dynamic=True)
+scope = root.create_lesser_conduit(name="requests")
+spell_id = root.bind(spell=Action, existence="many", spellframe="actions", binding_name="run")
+first = scope.meld(spellframe="actions", binding_name="run")
+root.cleanup_spell(spell=root.get_spell_by_id(spell_id, "app"))
+root.bind(spell=Action, existence="many", spellframe="actions", binding_name="run")
+second = scope.meld(spellframe="actions", binding_name="run", override={"value": 2})  # raised before 0.2.8219
+```
+
+What stays the same: a product built from the removed definition is untouched by its removal and is disposed
+by the scope that built it, alongside the replacement's products; peer scopes that resolved the removed
+definition through a contract meld the replacement once it is granted again; consumers of the removed
+definition rebuild against whatever is bound at that address next, as before. Removing a definition and
+binding again now costs one resolution pass per scope on the replacement's first meld there, the same as a
+first late binding; warm melds and conjure do no extra work. A notch back to a member that was active before
+is resolved again the same way. One existing behaviour is unchanged and worth knowing: for a lifetime that
+stores one object per scope (`unique_per_conduit` and kin) the object built from the removed definition keeps
+its slot, so the replacement's first meld in that scope returns it, and an override against it is refused as
+against any stored shared instance.
+
+## Fixed: a warm creation cache no longer replays an executor compiled in another world
+
+With system caching on, a conduit's creation-cache bundle was admitted as a full hit whenever every cached spell
+was still bound, without checking the rest of the world. An existing object or a non-resolvable definition
+carries no cached executor, so a world that only added one - say a provider for a parameter nobody had provided,
+bound bare as an existing object - or removed one was still a full hit: the consumer's executor compiled without
+the provider was replayed and its first meld raised `TypeError: ... missing 1 required positional argument`, or
+a plan naming a spell the world no longer has raised `RuntimeError: generalized manifest references unknown
+spell_id`, while a cold cache resolved the same world correctly.
+
+The bundle now records the world its executors were compiled in - the same stamp the structural tier already
+uses (the bound spell ids, the frame posture and the borrowed spells) - and a full hit requires it. A changed
+world recompiles phases 8-11 once and re-stages the bundle; a repeat world is still a full hit that leaves the
+file untouched. A world that only removed a spell is a changed world too and recompiles once (before, surplus
+cached ids were ignored). Creation-cache generation 19 retires bundles written without the stamp; they rebuild
+on the next conjure.
+
+```python
+service = Service()
+book.bind(spell=service, existence="unique", permissions="create")   # added since the cached run
+book.bind(spell=Worker, existence="many", permissions="create")       # Worker(service: Service)
+conduit = book.conjure(name="root")
+conduit.meld(spell=Worker).service is service                         # True; TypeError before 0.2.8220
+```
+
+What stays the same: caching off, the structural tier and its replay, what is staged per spell, every meld path.
+
 ## Transient creations with disposal methods register faster
 
 A `many` spell whose instances declare disposal methods (through the Spellbook's disposal configuration or a
@@ -331,6 +394,34 @@ without disposal methods are unchanged.
 The creation-cache format generation is 16: an existing `__melder_cache__` built by an earlier version is
 rebuilt on the next conjure, as before; nothing else changes on disk.
 
+## Dict-mode site plans build no dict on the warm path
+
+A root whose site plan has a generic step - an existing object, a contract payload, a positional override, a
+collection parameter - used to allocate `instance_results = {}` at the top of every warm creation and store
+every step into it, although only a cold miss ever read it. Each generic construction now receives a dict
+literal of exactly the values it reads, built where it runs; the warm path builds nothing. Measured on the
+maintainers' VM (3.14t, GIL off): the plan body of a root over existing objects drops 26-32% and the whole meld
+22-23%; roots whose plans are all direct calls are byte-identical. Same objects, same errors on a failing
+miss; no API change. Creation-cache generation 17 retires executors emitted with the eager dict, so the first
+conjure after upgrading regenerates them.
+
+## A consumer's annotation resolves by address key
+
+Phase 3 now matches a constructor annotation to candidate spells by key - the same lowercased name every
+spell address already uses - against each spell's frame key (its `spellframe`, else its own name) and its type
+key (its class name; for an existing object, the instance's class name). Before, a class-object annotation was
+matched by object identity while a string annotation was matched by name, so an existing object bound bare
+satisfied `service: "Service"` (a `TYPE_CHECKING`-only import) but not `service: Service`, and a concrete
+class used as a `spellframe` resolved as if it were the type. Now:
+
+- an existing object bound without a spellframe satisfies a consumer annotated with its class;
+- a binding resolves identically whether the consumer imported the type under `TYPE_CHECKING` or at runtime;
+- a spellframe is a category or a shape label (a string, a Protocol): it is matched by name, never by
+  identity, and a concrete class used as one is just a name.
+
+Nothing that resolved before stops resolving; ambiguity still raises in Phase 3 and two spells at one address
+are still refused in Phase 4. Creation-cache generation 18 retires bundles captured under the old matcher,
+whose structural rows may hold an unresolved input the key matcher resolves.
 ## Packaging and documentation
 
 - The internal-bind guard manifest holds 620 entries at 0.2.8216 (619 at 0.2.8215): `ManyDisposalBucket`, the
@@ -368,4 +459,10 @@ rebuilt on the next conjure, as before; nothing else changes on disk.
 - The packaged system documents describe the per-key disposal record behind `register_many`, the store's
   one-declaration rule and the emitted registration line; the Creations entries' line citations are
   remeasured.
-- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8216.
+- The packaged system documents describe the per-conduit verdict retirement on definition removal and on
+  registration, and correct the control-plane entry that named the registry verbs `register_lineage` and
+  `unregister_lineage` (they are `register_index` and `unregister_index`).
+- The packaged system documents describe the executor-cache world stamp: the envelope field, the full-hit
+  rule, the staging write and the retired surplus full hit; the conjure sequence's line citations into
+  `spellbook_creation_system.py` are remeasured.
+- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8220.

@@ -16,10 +16,16 @@ Modes:
         iteration, so a library measured second or third ran 5-12% slower than when it
         ran first. Compare libraries with --lib or the pytest wrapper.
 
+Runtime:
+    Use free-threaded Python with -X gil=0 or PYTHON_GIL=0 before startup.
+    The shared measurement entry point refuses an enabled GIL. Its pytest
+    wrapper sets both for each isolated child process automatically.
+
 Environment:
     The gauntlet reads DI_GAUNTLET_ITERS, DI_GAUNTLET_THREADS, DI_GAUNTLET_REQUEST_SCOPES,
     DI_GAUNTLET_WORKER_A_JOBS, DI_GAUNTLET_WORKER_B_JOBS, GAUNTLET_PER_TURN_CSV and the other
-    GAUNTLET_* instruments in either mode.
+    GAUNTLET_* instruments in either mode. DI_GAUNTLET_THREADS accepts positive N;
+    workload families repeat request/A/B while lane names continue C, D, E, etc.
 """
 import argparse
 import json

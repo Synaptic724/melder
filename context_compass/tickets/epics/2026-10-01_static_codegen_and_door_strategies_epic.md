@@ -7,7 +7,7 @@
 - Agent Name: fable_0
 - Priority: p1
 - Created: 2026-10-01T00:53:45Z
-- Updated: 2026-10-02T19:09:13Z
+- Updated: 2026-10-03T21:31:58Z
 - Target Window: opened 2026-10-01 on the owner's split; one strategy lane at a time, S1 first
 - Related Program/Initiative: SpellCompiler codegen (phases 8-11, site-plan lowering), Creations, the meld doors
 - Split from: tickets/epics/2026-09-27_adaptive_creation_contexts_epic.md (now the PGO epic), on the owner's
@@ -110,18 +110,20 @@ VM numbers for direction and the owner-run gauntlet for the ranking.
 ## Milestones (Track Progress)
 - [x] Milestone 0: the certification table (S1-S8 measured on the emitted bodies).
 - [x] Milestone 1: S1 shipped and turned in at 0.2.8216 (VM-measured; owner-run gauntlet Not run at turn-in).
-- [ ] Milestone 2: S8 shipped and turned in.
-- [ ] Milestone 3: S2a shipped and turned in.
+- [x] Milestone 2: S8 shipped and turned in at 0.2.8217 (VM-measured; owner-run gauntlet Not run at turn-in).
+- [ ] Milestone 3: the flat warm body (S9 + S11) shipped and turned in; S2a parked (owner, 2026-10-03).
 - [ ] Milestone 4: the door harness table landed; the certified door set named.
 - [ ] Milestone 5: the certified door strategies shipped or dropped with numbers.
 
 ## Stories (Required to Complete)
 - [x] Story: STORY-2026-09-27-many-registration-trim (S1) - one append per `many` creation, per-key disposal
       methods. tickets/stories/completed/2026-09-27_many_registration_trim_story.md
-- [ ] Story: STORY-2026-10-01-lazy-instance-results (S8) - no instance_results dict on the warm path of a
-      dict-mode root. tickets/stories/2026-10-01_lazy_instance_results_story.md
-- [ ] Story: STORY-2026-10-01-existing-object-constants (S2a) - existing-object sites bound as constants at
-      hydration. tickets/stories/2026-10-01_existing_object_constants_story.md
+- [x] Story: STORY-2026-10-01-lazy-instance-results (S8) - no instance_results dict on the warm path of a
+      dict-mode root. tickets/stories/completed/2026-10-01_lazy_instance_results_story.md
+- [ ] Story: STORY-2026-10-03-flat-warm-body-constants (S9 + S11) - site and store constants and live key
+      objects on every shared site. tickets/stories/2026-10-03_flat_warm_body_constants_story.md
+- [ ] Story: STORY-2026-10-01-existing-object-constants (S2a) - PARKED (owner, 2026-10-03: existing objects
+      are rare). tickets/stories/backlog/2026-10-01_existing_object_constants_story.md
 - [ ] Story: STORY-2026-10-01-meld-door-strategies (D1-D4) - a door harness, then the certified door
       strategies. tickets/stories/2026-10-01_meld_door_strategies_story.md
 - [ ] Story: STORY-2026-09-28-codegen-strategy-certification-harness - the table that certified S1/S8/S2a
@@ -372,6 +374,34 @@ melds -40..-50% (predicted), dynamic melds -30..-50% (predicted).
   REREAD: HELPFUL
   SCORE_0_TO_10: 7
 
+- DATETIME: 2026-10-03T21:22:15Z
+  TYPE: DECISION
+  CLAIM: Owner (2026-10-03): S8 turned in (task and story moved to completed/, closed by directive, gauntlet Not
+    run) together with two standalone defect lanes found on the way - annotation matching by address key
+    (0.2.8218) and the executor-cache world stamp (0.2.8220). Milestone 2 is checked. Next lane per the
+    recommendation: S2a with S9/S11 (one emitter pass; the harness certifies S9/S11 first), patch docs first;
+    the epic keeps no board row until the owner names the next lane.
+  EVIDENCE:
+  - tickets/stories/completed/2026-10-01_lazy_instance_results_story.md:1-10
+  - tickets/tasks/completed/2026-10-03_implement_lazy_instance_results_task.md:1-12
+  IMPACT: No active lane in this epic; the tree is at 0.2.8220 with every landing's docs and assets current.
+  NEXT: owner names the next lane (S2a per the recommendation, or other work).
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
+- DATETIME: 2026-10-03T21:31:58Z
+  TYPE: DECISION
+  CLAIM: Owner (2026-10-03): "existing objects are very rare but sure, if it helps with everything in general ...
+    implement the next steps, ignore the PGO epic, test it first." fable_0: the emitter pass is S9 + S11 (every
+    shared site; certified in the harness before the patch docs), S2a is parked in the backlog, the door lane
+    follows (audit, harness, D5 then D1-D3); the PGO epic stays queued and untouched.
+  EVIDENCE:
+  - tickets/stories/2026-10-03_flat_warm_body_constants_story.md:1-40
+  IMPACT: Milestone 3 is redefined as the flat-warm-body story (S9/S11); S2a leaves the exit gate.
+  NEXT: the certification/implementation task's investigation read.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Acceptance criteria confirmed by user
@@ -396,6 +426,12 @@ next. Resume from the S1 task's latest STATE line.
 
 STATE 2026-10-02T19:09:13Z: IN_PROGRESS (idle). S1 turned in; no routed lane; S8 opens on the owner's word with its patch
 docs first.
+
+STATE 2026-10-03T21:22:15Z: IN_PROGRESS (idle). S1 and S8 turned in; no routed lane; S2a (with S9/S11) opens on the owner's word
+with its patch docs first.
+
+STATE 2026-10-03T21:31:58Z: IN_PROGRESS. The flat-warm-body story (S9/S11) is the active lane; S2a parked; PGO epic ignored.
+Resume from the task's latest STATE line.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

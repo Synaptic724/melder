@@ -144,7 +144,7 @@ def build_world(shape: Shape, tag: str) -> Tuple[Spellbook, Conduit]:
     for cls in shape.uniques:
         book.bind(spell=cls, existence=Existence.unique, permissions="create")
     for n, cls in enumerate(shape.existing):
-        book.bind(spell=cls(n), spellframe=cls, existence=Existence.unique, permissions="create")
+        book.bind(spell=cls(n), existence=Existence.unique, permissions="create")
     for cls in shape.manys:
         book.bind(spell=cls, existence=Existence.many, permissions="create")
     conduit = book.conjure(name=f"cert-{tag}-root", dynamic=False)

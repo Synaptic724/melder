@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py",
- "source_sha256": "c0db04ea6fd06ebc450df2cd16f80ace5f169049cbf5d85ae7750b3a4d0bee4b",
+ "source_sha256": "772d61b7c87c9cb69dd086d21036b45f57dc2b64a69185bd8e4fb796319fc2ba",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states": {
@@ -34,6 +34,7 @@
     "consume_dirty_indexes",
     "devops_information_registry",
     "drop_conduit_resolution_state",
+    "forget_spell_resolution_verdicts",
     "get_by_index_id",
     "get_by_spell_id",
     "get_conduit_resolution_state",
@@ -56,11 +57,11 @@
     "update_dependencies"
    ],
    "shape": {
-    "method_count": 35,
+    "method_count": 37,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "8f711cd351e08e80d856a0986da4de08753de0da8ab06070c146f0370fafe178",
+   "span_sha256": "75f12e7497c9e57cc4919a036e88cfc0a9c19a8abcc05b69d5a84f2de8ccf54c",
    "role": "Per-frame lineage and resolution state registry.",
    "responsibilities": [
     "owns lineage state by index id and spell id",
@@ -68,14 +69,20 @@
     "owns per-conduit resolution state buckets",
     "provides targeted dependency and contract invalidation",
     "indexes OVERRIDE_REQUIRED consumers alongside collection frame watchers without adding construction edges",
-    "watches UNRESOLVED_INPUT consumers under their expected-type frame key so a later matching bind re-resolves them"
+    "watches UNRESOLVED_INPUT consumers under their expected-type frame key so a later matching bind re-resolves them",
+    "retires a spell id's per-conduit resolution verdicts in every live conduit state when its lineage is unregistered and when a version id is registered, so a content-stable id re-entering the frame is resolved again per conduit (0.2.8219)"
    ],
    "owns_state": [
     "_states_by_index_id",
     "_states_by_spell_id",
-    "_dirty_lineages",
+    "_dirty_indexes",
     "_local_topologies",
-    "_resolution_by_conduit_id"
+    "_resolution_by_conduit_id",
+    "_index_owner_spellbook_id",
+    "_collection_frames_by_index",
+    "_collection_dependents_by_spellbook",
+    "_contract_keys_by_index",
+    "_contract_dependents_by_spellbook"
    ],
    "phases": [
     "init",
@@ -83,7 +90,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "14a5a5b0514f38f5288783fbbf854cf0cbc1f142538de7202c1bea41b29e8e3e"
+   "semantics_authored_against": "75f12e7497c9e57cc4919a036e88cfc0a9c19a8abcc05b69d5a84f2de8ccf54c"
   }
  },
  "edges_out": [

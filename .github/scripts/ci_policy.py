@@ -20,8 +20,9 @@ class CIPolicy:
     }
     CANDIDATE_JOBS: tuple[str, ...] = ("authorize", "source-qualification", "build", "publish", "install")
     FULL_JOBS: tuple[str, ...] = ("source-assets", "repo-assets", "tests", "documentation")
+    GAUNTLET_JOBS: tuple[str, ...] = ("real-world-gauntlet", "persistent-runtime-gauntlet")
     REQUIRED_JOBS: tuple[str, ...] = (
-        "branch-policy", "hygiene", *FULL_JOBS, "source-qualification",
+        "branch-policy", "hygiene", *FULL_JOBS, *GAUNTLET_JOBS, "source-qualification",
     )
 
 
@@ -99,30 +100,32 @@ def package_required(event_name: str, event: Mapping[str, object], ref: str,
 
 
 def validation_requirements(event_name: str, event: Mapping[str, object], ref: str,
-                            repository: str) -> tuple[bool, bool, bool]:
-    """Return full-runtime, package, and source-proof requirements for a validated CI event.
+                            repository: str) -> tuple[bool, bool, bool, bool]:
+    """Return runtime, package, source-proof, and gauntlet requirements for a validated event.
 
     Dev/preprod PRs, release-fix PRs and manual CI run full qualification.
+    Only the validated dev-to-preprod PR also requires both benchmark gauntlets.
     Unchanged preprod promotions reuse source evidence; prod promotions consume
     the separate exact-candidate gate. Ordinary pushes have no source-CI profile.
     """
     packages = package_required(event_name, event, ref, repository)
     if event_name == "workflow_dispatch":
-        return True, packages, False
+        return True, packages, False, False
     if event_name != "pull_request":
         raise ValueError("Source CI runs on pull requests or explicit manual qualification, not pushes.")
     pr = object_value(event["pull_request"], "pull_request")
     base = object_value(pr["base"], "base")["ref"]
     head = object_value(pr["head"], "head")["ref"]
     if base == "prod":
-        return False, False, False
+        return False, False, False, False
     if base == "release_candidate" and head == "preprod":
-        return False, False, True
-    return True, packages, False
+        return False, False, True, False
+    return True, packages, False, base == "preprod" and head == "dev"
 
 
 def require_success(results: Mapping[str, object], require_package: bool,
-                    require_runtime: bool = True, require_source: bool = False) -> None:
+                    require_runtime: bool = True, require_source: bool = False,
+                    require_gauntlet: bool = False) -> None:
     """Require complete dependency evidence and success for the selected validation profile.
 
     Optional jobs may succeed or be explicitly skipped; failure/cancellation
@@ -141,7 +144,8 @@ def require_success(results: Mapping[str, object], require_package: bool,
         required = (name in ("branch-policy", "hygiene")
                     or name in CIPolicy.FULL_JOBS and require_runtime
                     or name == "packages" and require_package
-                    or name == "source-qualification" and require_source)
+                    or name == "source-qualification" and require_source
+                    or name in CIPolicy.GAUNTLET_JOBS and require_gauntlet)
         allowed = ("success",) if required else ("success", "skipped")
         if result not in allowed:
             failures.append(f"{name}={result!r}")
@@ -149,7 +153,7 @@ def require_success(results: Mapping[str, object], require_package: bool,
         raise ValueError("Required CI did not succeed: " + ", ".join(failures))
 
 
-def require_ci_results() -> tuple[bool, bool, bool]:
+def require_ci_results() -> tuple[bool, bool, bool, bool]:
     """Recompute requirements from event identity and verify both flags and job results.
 
     The branch job's outputs control scheduling, but cannot silently waive a
@@ -160,11 +164,11 @@ def require_ci_results() -> tuple[bool, bool, bool]:
         os.environ.get("GITHUB_EVENT_NAME", ""), read_event(),
         os.environ.get("GITHUB_REF", ""), os.environ.get("GITHUB_REPOSITORY", ""),
     )
-    for name, required in zip(("RUNTIME", "PACKAGE", "SOURCE"), requirements, strict=True):
+    for name, required in zip(("RUNTIME", "PACKAGE", "SOURCE", "GAUNTLET"), requirements, strict=True):
         if os.environ.get(f"CI_{name}_REQUIRED") != str(required).lower():
             raise ValueError(f"Missing/invalid {name.lower()} requirement from branch-policy.")
     require_success(object_value(json.loads(os.environ["CI_JOB_RESULTS"]), "needs"),
-                    requirements[1], requirements[0], requirements[2])
+                    requirements[1], requirements[0], requirements[2], requirements[3])
     return requirements
 
 
@@ -304,7 +308,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                 os.environ.get("GITHUB_REPOSITORY", ""),
             )
             with pathlib.Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as output:
-                for name, required in zip(("runtime", "package", "source"), requirements, strict=True):
+                for name, required in zip(("runtime", "package", "source", "gauntlet"), requirements, strict=True):
                     output.write(f"{name}-required={str(required).lower()}\n")
         elif args.gate == "merge-ready":
             require_ci_results()

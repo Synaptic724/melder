@@ -5,7 +5,7 @@
 - Status: in_progress
 - Owner:
 - Created: 2026-01-17
-- Updated: 2026-10-02
+- Updated: 2026-10-03
 
 ## Scope
 This document defines C3 components, C2 subcomponents, and C1 code references
@@ -403,6 +403,22 @@ Release-bound creation cache (2026-09-24):
   EVIDENCE: `src/melder/aether/spellbook/spell_compiler/structural_snapshot/structural_snapshot.py:StructuralSnapshot`,
   `src/melder/aether/spellbook/spellbook_creation_system.py:SpellbookCreationSystem._prepare_spellbook_for_conjure` and
   `src/melder/utilities/caching_system/caching_system.py:CachingSystem.upsert_structural_payload`.
+- Generation 19 (2026-10-03, `executor_world_stamp`, 0.2.8220): the envelope records the structural tier's world
+  stamp once, `world_stamp`, written by `_stage_spell_payloads_at_conjure_end` through
+  `CachingSystem.set_world_stamp` after every live spell is re-staged (the conjure-end emit is flagged when it
+  changed), and `_build_conjure_cache_state` admits an executor full hit only when the recorded stamp equals the
+  live `StructuralSnapshot.world_stamp` (`world_matches`; every payload matched under another stamp is the mixed
+  path, nothing matched the full miss, an empty live set the full miss as before). The executor rule counted
+  payload ids only, and an existing creation or a non-resolvable definition carries no payload, so a world that
+  differed only by one - a provider added as a bare existing object, or removed - was a full hit: the consumer's
+  executor compiled when nothing provided the parameter was replayed (TypeError at its first meld), or a plan
+  naming a spell outside the world ran ("generalized manifest references unknown spell_id"), while a cold cache
+  resolved it. Now both tiers miss on the same worlds and the world is recompiled once; a repeat world is still a
+  byte-identical full hit; a world that only removed a spell is a changed world (one recompile; the former
+  surplus-id full hit is retired). "" (an empty store, a bundle written without the field) never matches, so the
+  rule fails closed; the field is optional on load and a non-str value is a cold cache.
+  EVIDENCE: `src/melder/utilities/caching_system/caching_system.py:CachingSystem.set_world_stamp` and
+  `src/melder/aether/spellbook/spellbook_creation_system.py:SpellbookCreationSystem._build_conjure_cache_state`.
 EVIDENCE: `src/melder/utilities/caching_system/caching_system.py:CachingSystem`,
 `src/melder/aether/spellbook/spellbook.py:Spellbook._emit_cache_file_if_required` and
 `src/melder/aether/spellbook/spellbook_creation_system.py:SpellbookCreationSystem._build_conjure_cache_state`.
@@ -3709,6 +3725,25 @@ Conjure validation report (2026-09-26):
   EVIDENCE: `src/melder/aether/spellbook/spell_compiler/validation/strategies/self_validation_strategy.py:SelfDependencyStrategy`
   and `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:CompilerPhase3._build_local_frame_dag`.
 
+Annotation matching by address key (2026-10-03, 0.2.8218):
+- `_resolve_single_by_annotation` and `_resolve_collection_by_annotation` match a candidate by KEY:
+  `CompilerPhase3._annotation_key` is `normalize_frame_key(annotation)` after the Optional/Union/ForwardRef
+  normalization, and `_spell_keys` gives each spell its address frame key (the spellframe, else its own name)
+  and its type key (`spell_name`; for an existing object the instance's class name). A class-object annotation
+  and its string spelling (a `TYPE_CHECKING`-only import leaves a string at runtime) are one key, an existing
+  object bound bare satisfies a consumer annotated with its class, and a spellframe is a category or a shape
+  label matched by name - never by object identity, so a concrete class used as a frame is just a name.
+  Before, the object path matched `spell.spell is annotation` / `spellframe is annotation` and the string path
+  matched names, which disagreed for existing objects and for `TYPE_CHECKING` imports.
+- The pass-scoped candidate index buckets each spell under its one or two keys (`{"by_key": ...}`); it is exact
+  for every pool, so the eq-risky gate and the scan fallback for custom `__eq__` pools are gone.
+  `_eq_safe_object` remains as the structural snapshot's replayability rule only. Ambiguity still raises;
+  Phase 4 still refuses two spells at one address; inheritance is not matched. Cache generation 18 retires
+  bundles captured under the identity matcher.
+- EVIDENCE: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:CompilerPhase3._annotation_key`, `CompilerPhase3._spell_keys`, `CompilerPhase3._matches_annotation`,
+  `CompilerPhase3._build_candidate_index`, `CompilerPhase3._indexed_annotation_candidates` and
+  `src/melder/utilities/helpers/general_helpers.py:SpellInputUtils.normalize_frame_key`.
+
 Caller-supplied container parameters (2026-09-26):
 - Phase 1 is the single decider of injection: it injects only a single class-like annotation
   (SINGLE_BY_ANNOTATION) or `list[T]` (COLLECTION_BY_ANNOTATION). A set, frozenset, dict or tuple parameter is
@@ -3934,6 +3969,17 @@ Site-plan runtime for normal and override melds (2026-09-26, override design v2)
   a stored instance keeps today's "already exists" refusal (P2). Disposal-bearing many sites register in the
   innermost scope store through `many_store.register_many(sidN, vN, dmN)` (0.2.8216; the positional hot verb
   of Creations and SpellSpace), and every registration passes the Spell's live `disposal_method_names` list.
+- Lazy `instance_results` (2026-10-03, 0.2.8217): a plan with a generic step (an existing object, a contract payload,
+  a positional override, a collection parameter) no longer allocates `instance_results = {}` at its top, stores
+  nothing per step and passes no dict into its misses. `SitePlanEmission._emit_results_literal` writes
+  `instance_results = {keyP: vP, ...}` - exactly the (masked) step's `dependency_resolution_order` keys, each
+  bound to its provider's local, `{}` for a step that reads none - immediately before each generic construct
+  call, and `_place` passes a generic member's providers into its miss as `v` parameters like a direct member's
+  operands. Direct-mode plans are byte-identical; the construct helpers are untouched. Measured on the VM: the
+  plan of a root over existing objects -26..-32%, the whole meld -22..-23%. Cache generation 17 retires plans
+  emitted with the eager dict.
+  EVIDENCE: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:SitePlanEmission._emit_results_literal`, `SitePlanEmission._emit_construct` and
+  `SitePlanEmission._place`.
 - Door-held root (2026-09-26, 0.2.73): the runtime passes `door_route_key` to its normal plan only; the
   generalized hydrator passes the manifest's route key and the many_only hydrator none (its roots are `many`).
   For "unique_per_conduit" or "spellspace" with a root of that existence
@@ -6313,17 +6359,33 @@ Purpose:
 - UNRESOLVED_INPUT consumers (2026-09-26) are watched the same way, under the expected type's frame key,
   so binding a matching provider later re-resolves them into a NORMAL edge.
 Contract/Interface:
-- `register_lineage`, `update_dependencies`, `consume_dirty_lineages`.
+- `register_index`, `update_dependencies`, `consume_dirty_indexes` (corrected 2026-10-03: this entry named them
+  `register_lineage` / `consume_dirty_lineages`, verbs the class never had).
 - `get_or_create_conduit_resolution_state`, `set_conduit_spell_validity`,
   `record_conduit_diagnostics`.
-- `unregister_lineage` removes lineage state and notifies RiskManager with
-  SpellValidity.cleaned to force validation gating. EVIDENCE: src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py:unregister_lineage.
+- `unregister_index` removes lineage state, notifies RiskManager with SpellValidity.cleaned (structural) and
+  retires the removed current spell id's resolution verdicts in every live `ConduitResolutionState`
+  (`_forget_resolution_verdicts_locked`, reason `cleaned_up_spell`), in both its branches. EVIDENCE:
+  src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py:SpellSystemStates.unregister_index.
+- `register_index` creates or updates the lineage state, marks it structurally gated (`register_or_rebind`) +
+  dirty, and retires any resolution verdict already held for `selected_spell_id` in every conduit state (same
+  helper, reason `register_or_rebind`), so a content-stable id re-entering the frame - a rebind of the same
+  class at the same address after `cleanup_spell`, a notch back to a member that was active before, a transfer
+  re-registration - is resolved again by each conduit before it is built there (0.2.8219). EVIDENCE:
+  src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py:SpellSystemStates.register_index.
+- `forget_spell_resolution_verdicts(spell_id, *, change_reason=None) -> int` is the public form of the
+  retirement (count of conduit states that held a verdict; `check_cleaned` first). Neither form notifies the
+  RiskManager: lineage membership in the risk model is owner-scoped and `RiskManager.register_spell` recomputes
+  risk from the live verdict on the rebind. EVIDENCE:
+  src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py:SpellSystemStates.forget_spell_resolution_verdicts.
 Scope:
 - Per-frame structural state with per-conduit resolution state keyed by conduit_id. EVIDENCE: src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py:__init__ + get_or_create_conduit_resolution_state.
 Data Structures:
-- `_states_by_index_id`, `_dirty_lineages`, `_resolution_by_conduit_id`.
+- `_states_by_index_id`, `_states_by_spell_id`, `_dirty_indexes`, `_resolution_by_conduit_id`.
 Concurrency/Threading:
-- RLock.
+- RLock. Verdict retirement runs under the registry lock and takes only each conduit state's own lock (no
+  callback), so registry -> conduit state is the only order taken; `drop_conduit_resolution_state` and `cleanup`
+  pop a state under the same lock before cleaning it, so the retirement never visits a cleaned state.
 Key Files (C1):
 - `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py`
 
@@ -6334,6 +6396,12 @@ Purpose:
 Contract/Interface:
 - `get_spell_validity`, `set_spell_validity`, `get_root_validity`, `set_root_validity`,
   `record_diagnostics`, `mark_dirty`, `clear_dirty`.
+- `forget_spell(spell_id, *, change_reason=None) -> bool` (0.2.8219) pops the spell-level and root-level verdict
+  for one id, marks the state dirty with the reason only on a hit, and fires no RiskManager callback (forgetting
+  is a change of scope, not of verdict); the getters answer `initial_validity` for the id afterwards, as for an id
+  this conduit never resolved. ValueError on an empty id, RuntimeError when cleaned. Diagnostics and
+  `last_validated_at` are untouched. EVIDENCE:
+  src/melder/aether/aetheric_frame/dev_ops/spell_system_states/conduit_resolution_state.py:ConduitResolutionState.forget_spell.
 Data Structures:
 - `_spell_validity`, `_root_validity`, `_diagnostics`, `_dirty`,
   `_last_validated_at`, `_last_change_reason`, `_initial_validity`.
@@ -6912,7 +6980,8 @@ These flows describe concrete method sequences for core behaviors.
    - Bind validates required direct Protocol members on classes and supplied values before Spell publication.
    - Runs activation(Spell), completes its profile, then attaches later creation hooks.
    - Checks native collisions before registering local lookup keys.
-   - Registers lineage in SpellSystemStates (marks dirty).
+   - Registers lineage in SpellSystemStates (marks dirty) and retires any per-conduit resolution verdict already
+     held for the new spell id (0.2.8219), so a rebound content-stable id is resolved again per conduit.
    - If Conduit exists, stamps ownership and registers existing objects into Creations.
    - Completes normal publication and calls Bind.execute_post_hooks with the captured set.
    - Ends the existing transaction; the returned spell_id contract is unchanged.
@@ -6930,7 +6999,8 @@ These flows describe concrete method sequences for core behaviors.
    - Only when `validation_warnings=True`: `_report_validation_warnings` logs the Phase-4 warnings once,
      grouped by code, before the phase artifacts are released.
    - Classifies the creation cache (`_build_conjure_cache_state`): live
-     resolvable, non-existing-creation spell ids vs cached ids ->
+     resolvable, non-existing-creation spell ids vs cached ids, and the
+     bundle's recorded world stamp vs the live one (0.2.8220) ->
      `disabled` | `full_hit` | `mixed` | `full_miss`.
    - Runs phases 5-7 via PhaseScheduler (foundational conduit resolution).
    - Runs phases 8-11 via PhaseScheduler only when phases 5-7 report no
@@ -6938,7 +7008,7 @@ These flows describe concrete method sequences for core behaviors.
      `force_skip_plan_phases=True`, loads both-lane creation contexts from the
      cache, and skips `_enforce_conduit_resolution_valid`.
      EVIDENCE: `src/melder/aether/spellbook/spellbook_creation_system.py:242-263`,
-     `src/melder/aether/spellbook/spellbook_creation_system.py:616-721`.
+     `src/melder/aether/spellbook/spellbook_creation_system.py:616-740`.
    - Live 8-11 output contract:
      - phase 8 `_occurrence_graph_analysis`
      - phase 9 `_spell_codegen_model`
@@ -7028,6 +7098,9 @@ These flows describe concrete method sequences for core behaviors.
    of its own, 0.2.8215, or an invalidated spell):
    - `Meld._ensure_runtime_resolution_ready(spell)` runs 8-11 for its Phase 5 root or an existing creation,
      otherwise `spell._spellbook._run_resolution_phases_for_target_spell(conduit_id, spell)` and a verdict check.
+5. The verdict step 3 reads is retired when its definition leaves the frame (`cleanup_spell` ->
+   `SpellSystemStates.unregister_index`) and when a definition is registered under the id (`register_index`), so a
+   same-address rebind takes step 3 in every conduit that resolved the removed definition (0.2.8219).
 
 ### Flow: Create Lesser Conduit
 1. `Conduit.create_lesser_conduit(...)` fires pre-create hook (`enter_lesser_conduit(...)` makes the same
@@ -7651,9 +7724,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py`
   start_line: 1
-  end_line: 1522
-  loc: 1522
-  verified_at: 2026-09-26T08:21:36Z
+  end_line: 1651
+  loc: 1651
+  verified_at: 2026-10-03T20:50:00Z
 - path: `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_state.py`
   start_line: 1
   end_line: 676
@@ -7661,9 +7734,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/conduit_resolution_state.py`
   start_line: 1
-  end_line: 849
-  loc: 849
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 922
+  loc: 922
+  verified_at: 2026-10-03T20:50:00Z
 - path: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py`
   start_line: 1
   end_line: 1679
@@ -10192,6 +10265,12 @@ Companion documents:
   component and code-description patches are inputs to this document while a lane is open.
 
 ## Context / Handoff Summary
+
+2026-10-03 rebind after first meld (0.2.8219): the SpellSystemStates Registry entry carries the verdict retirement
+in `unregister_index` and `register_index`, the public `forget_spell_resolution_verdicts`, the lock order and the
+no-callback rule, and its verb names are corrected (`register_index` / `unregister_index` / `consume_dirty_indexes`,
+not the `*_lineage*` names it had); the Conduit Resolution State entry carries `forget_spell`; the bind flow and the
+meld-time validation gate flow carry the retirement; the two files' code-map extents are remeasured.
 
 2026-10-01 citation audit (documentation only): nine stale citations remapped - the internal-bind call
 (`src/melder/aether/spellbook/bind/bind.py:657`, in `Bind._bind_logic`) and `assert_allowed`

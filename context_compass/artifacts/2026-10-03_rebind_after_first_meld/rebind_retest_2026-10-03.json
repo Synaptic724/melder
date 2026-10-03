@@ -1,0 +1,62 @@
+{
+  "timestamp": "2026-10-03T13:55:44Z",
+  "cwd": "C:/Users/Mark/PycharmProjects/priv_commandops",
+  "interpreter": "C:/Users/Mark/PycharmProjects/priv_commandops/.venv314/Scripts/python.exe",
+  "python": "3.14.7 free-threading",
+  "melder": "0.2.8215",
+  "argv": [
+    "-m",
+    "pytest",
+    "-o",
+    "pythonpath=src",
+    "context_compass/artifacts/2026-10-03_actions_native_factory/test_native_rebind_probe.py",
+    "tests/component/spectrum/test_actions_native_factory.py::test_duplicate_requires_explicit_removal_and_contract_is_withdrawn",
+    "-q",
+    "--tb=short",
+    "--timeout=60",
+    "--junitxml=context_compass/artifacts/2026-10-03_actions_native_factory/rebind_retest_2026-10-03.xml"
+  ],
+  "exit_code": 1,
+  "tests": 5,
+  "failures": 3,
+  "errors": 0,
+  "skipped": 0,
+  "junit_sha256": "056F0466D6194B2664DCF37691249BF38DB2CA44976FF40A94CC227E221E667E",
+  "probe_sha256": "56EAEF004E00633C904CD1910FB56CBC09EBD51EE9B1D0B959EE7FDFC5ACE5FD",
+  "actions_test_sha256": "2A1544F7CE89B1B9BD6BF03025B59F40B1F6E3A594800E8F96955379400678B5",
+  "cases": [
+    {
+      "name": "test_rebind_rebuilds_creation_context[False-False]",
+      "failed": false,
+      "failure": null
+    },
+    {
+      "name": "test_rebind_rebuilds_creation_context[False-True]",
+      "failed": false,
+      "failure": null
+    },
+    {
+      "name": "test_rebind_rebuilds_creation_context[True-False]",
+      "failed": true,
+      "failure": "context_compass\\artifacts\\2026-10-03_actions_native_factory\\test_native_rebind_probe.py:60: in test_rebind_rebuilds_creation_context\n    assert scope.meld(spellframe=\"actions\", binding_name=\"probe\", override={\"value\": 2}).value == 2\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n.venv314\\Lib\\site-packages\\melder\\aether\\conduit\\conduit.py:4845: in meld\n    return meld_component.meld(\n.venv314\\Lib\\site-packages\\melder\\aether\\conduit\\meld\\conduit_meld.py:593: in meld\n    instance = self._execute_admitted(\n.venv314\\Lib\\site-packages\\melder\\aether\\conduit\\meld\\meld.py:882: in _execute_admitted\n    creation_context = spell._get_or_build_creation_context()\n                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n.venv314\\Lib\\site-packages\\melder\\aether\\spellbook\\spell.py:847: in _get_or_build_creation_context\n    return creation_context_factory.get_or_build_for_spell(self)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n.venv314\\Lib\\site-packages\\melder\\aether\\conduit\\meld\\creation_context\\creation_context_factory.py:361: in get_or_build_for_spell\n    built_creation_context = CreationContextBuilder.build(\n.venv314\\Lib\\site-packages\\melder\\aether\\conduit\\meld\\creation_context\\creation_context_builder.py:121: in build\n    raise RuntimeError(\nE   RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -> processor -> planner -> codegen creation first."
+    },
+    {
+      "name": "test_rebind_rebuilds_creation_context[True-True]",
+      "failed": true,
+      "failure": "context_compass\\artifacts\\2026-10-03_actions_native_factory\\test_native_rebind_probe.py:60: in test_rebind_rebuilds_creation_context\n    assert scope.meld(spellframe=\"actions\", binding_name=\"probe\", override={\"value\": 2}).value == 2\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n.venv314\\Lib\\site-packages\\melder\\aether\\conduit\\conduit.py:4845: in meld\n    return meld_component.meld(\n.venv314\\Lib\\site-packages\\melder\\aether\\conduit\\meld\\conduit_meld.py:593: in meld\n    instance = self._execute_admitted(\n.venv314\\Lib\\site-packages\\melder\\aether\\conduit\\meld\\meld.py:882: in _execute_admitted\n    creation_context = spell._get_or_build_creation_context()\n                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n.venv314\\Lib\\site-packages\\melder\\aether\\spellbook\\spell.py:847: in _get_or_build_creation_context\n    return creation_context_factory.get_or_build_for_spell(self)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n.venv314\\Lib\\site-packages\\melder\\aether\\conduit\\meld\\creation_context\\creation_context_factory.py:361: in get_or_build_for_spell\n    built_creation_context = CreationContextBuilder.build(\n.venv314\\Lib\\site-packages\\melder\\aether\\conduit\\meld\\creation_context\\creation_context_builder.py:121: in build\n    raise RuntimeError(\nE   RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -> processor -> planner -> codegen creation first."
+    },
+    {
+      "name": "test_duplicate_requires_explicit_removal_and_contract_is_withdrawn",
+      "failed": true,
+      "failure": "tests\\component\\spectrum\\test_actions_native_factory.py:160: in test_duplicate_requires_explicit_removal_and_contract_is_withdrawn\n    assert host.actions.meld(\"payload\", override={\"payload\": 6}).execute() == 6\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nsrc\\melder_ops\\command_center\\spectrum\\actions\\actions.py:266: in meld\n    return self._conduits[command_center_name].meld(\n.venv314\\Lib\\site-packages\\melder\\aether\\conduit\\conduit.py:4845: in meld\n    return meld_component.meld(\n.venv314\\Lib\\site-packages\\melder\\aether\\conduit\\meld\\conduit_meld.py:593: in meld\n    instance = self._execute_admitted(\n.venv314\\Lib\\site-packages\\melder\\aether\\conduit\\meld\\meld.py:882: in _execute_admitted\n    creation_context = spell._get_or_build_creation_context()\n                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n.venv314\\Lib\\site-packages\\melder\\aether\\spellbook\\spell.py:847: in _get_or_build_creation_context\n    return creation_context_factory.get_or_build_for_spell(self)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n.venv314\\Lib\\site-packages\\melder\\aether\\conduit\\meld\\creation_context\\creation_context_factory.py:361: in get_or_build_for_spell\n    built_creation_context = CreationContextBuilder.build(\n.venv314\\Lib\\site-packages\\melder\\aether\\conduit\\meld\\creation_context\\creation_context_builder.py:121: in build\n    raise RuntimeError(\nE   RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -> processor -> planner -> codegen creation first."
+    }
+  ],
+  "installed_native_sha256": {
+    ".venv314/Lib/site-packages/melder/aether/conduit/conduit.py": "2A7CC7F3B78898874C115AFF01272019F04F19202600EF5791375DEFF159A89E",
+    ".venv314/Lib/site-packages/melder/aether/conduit/meld/creation_context/creation_context_factory.py": "BE275F0A16588B5C5560D1FE4CAC422E875FDCD2409CBC0F64C89E1D6A00D232",
+    ".venv314/Lib/site-packages/melder/aether/conduit/meld/creation_context/creation_context_builder.py": "49100A2CC7BB7A1A5AF2CC0BC81398A6B410263D9307E44276764C98826C96CC",
+    ".venv314/Lib/site-packages/melder/aether/spellbook/spell.py": "D7518DAE2182B2B232BBD90AB93E76AF09BE1F48F6DD07E5BA985B1AADF7F516",
+    ".venv314/Lib/site-packages/melder/aether/conduit/meld/meld.py": "CD91A6E97D687B5EE4ADED8C06DFFA69AEA9E2AD9A9F23F3D44FE7572E87D777",
+    ".venv314/Lib/site-packages/melder/aether/conduit/meld/conduit_meld.py": "657BB3DB1CA40E08AB5C5D9831FC3325FB51F742412D3F393FE0FC6D98ACECFF"
+  }
+}

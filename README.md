@@ -416,6 +416,11 @@ book.bind(spell=EmailHandler, existence="unique",
 
 Annotate a constructor parameter. Melder builds the graph.
 
+The annotation is a type reference and resolves by name, the same lowercased name every spell address
+uses: a class bound bare answers to its class name, an existing object to its instance's class name, and a
+spell bound under a `spellframe` to that frame's name as well. A `TYPE_CHECKING`-only import, which leaves a
+string at runtime, resolves exactly as the class object does.
+
 ```python
 class ReportService:
     def __init__(self, database: Database) -> None:   # ← injected

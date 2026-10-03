@@ -744,9 +744,14 @@ class SitePlanEmission(Cleanable):
           on every call, hundreds on deep graphs. Spells ride one `spells`
           tuple read only on cold paths (errors, shared-site routing for
           `unique`, locks). No namespace name is assigned in the plan body.
-        - Dict mode (`instance_results`) is emitted only when a generic step
-          needs dependency values by instance key; misses then receive the dict
-          and record their sites in it.
+        - Generic steps read their dependency values through a dict LITERAL
+          (lazy `instance_results`, 2026-10-03): each generic construction is
+          preceded by `instance_results = {key: v, ...}` holding exactly the
+          (masked) step's dependency keys, built where the step runs from
+          locals the plan already holds. No dict is allocated at the plan top,
+          nothing is stored per step and misses take no dict parameter, so a
+          warm creation whose shared sites all hit builds no dict at all.
+          Direct-mode plans are unchanged.
         - Placement (2026-09-26): every kept step lives at top level or inside
           exactly one shared site's `_miss{i}`. The root is top level; a many
           site lives where its one consumer is built (inside the consumer's miss
@@ -761,8 +766,9 @@ class SitePlanEmission(Cleanable):
           unconditionally, in step order, whose UNRESOLVED_INPUT parameters
           have no winning key: its many children, then (in a miss) the site
           itself. A stored site's miss never runs, so it never demands.
-        - A miss function takes `(meld, ov, c{i}, [instance_results], [args],
-          v...)`: the outer values its sites read, in step order. It builds the
+        - A miss function takes `(meld, ov, c{i}, [args], v...)`: the outer
+          values its sites read (call operands or dict-literal values), in
+          step order. It builds the
           sites placed inside it first, then takes the site's build guard for
           recheck, construction and publication only, and returns the site's
           value. So a plan never holds a build lock while another site's
@@ -827,7 +833,7 @@ class SitePlanEmission(Cleanable):
         "_lines",
         "_masked",
         "_direct",
-        "_dict_mode",
+        "_index_by_key",
         "_shared",
         "_home",
         "_children",
@@ -897,7 +903,7 @@ class SitePlanEmission(Cleanable):
         self._masked: List[SitePlanStep] = []
         # Placement state; filled by `render` (`_place`).
         self._direct: List[bool] = []
-        self._dict_mode: bool = False
+        self._index_by_key: Dict[SiteInstanceKey, int] = {}
         self._shared: List[bool] = [step.existence is not Existence.many for step in steps]
         self._home: Dict[int, Optional[int]] = {}
         self._children: Dict[Optional[int], List[int]] = {}
@@ -942,7 +948,7 @@ class SitePlanEmission(Cleanable):
         del self._masked
         self._miss_lines.clear()
         del self._direct
-        del self._dict_mode
+        del self._index_by_key
         del self._shared
         del self._home
         del self._children
@@ -1089,7 +1095,6 @@ class SitePlanEmission(Cleanable):
             Tuple[str, Dict[str, Any], Tuple[SitePlanStep, ...]]: See `SitePlanLowering.emit`.
         """
         self._direct = [self._is_direct(step) for step in self._steps]
-        self._dict_mode = not all(self._direct)
         self._place()
         body = self._lines
         if self._arity > 0:
@@ -1102,8 +1107,6 @@ class SitePlanEmission(Cleanable):
                 "root_spell_id, root_spell_name)"
             )
         body.extend(self._unresolved_check_lines(None, "    "))
-        if self._dict_mode:
-            body.append("    instance_results = {}")
         uses_many_store = self._emit_context(None, "    ", body)
         body.append(f"    return {self._local_by_key[self._root_instance_key]}")
         # Constants are read as globals of the plan's namespace; see the class contract.
@@ -1135,8 +1138,9 @@ class SitePlanEmission(Cleanable):
             - A consumer reads a provider through each non-supplied parameter's
               dependency keys, exactly the operands `_operand` emits.
             - Then each shared site's outer values are computed bottom-up: the
-              direct operands of the steps built inside its miss (and of its own
-              construction) that live outside it, plus what its nested misses need.
+              operands - call operands or dict-literal values - of the steps built
+              inside its miss (and of its own construction) that live outside it,
+              plus what its nested misses need.
 
         Raises:
             RuntimeError: When a dependency key has no kept step, or a provider
@@ -1147,6 +1151,7 @@ class SitePlanEmission(Cleanable):
         """
         steps = self._steps
         index_by_key = {step.instance_key: index for index, step in enumerate(steps)}
+        self._index_by_key = index_by_key
         providers_by_consumer: List[List[int]] = []
         consumers: List[List[int]] = [[] for _ in steps]
         for consumer, step in enumerate(steps):
@@ -1179,13 +1184,14 @@ class SitePlanEmission(Cleanable):
             needed = set()
             for member in inside:
                 # A nested shared site builds inside its own miss: only what that
-                # miss needs from outside passes through here.
+                # miss needs from outside passes through here. A generic member
+                # reads its providers through its dict literal, so they pass
+                # through exactly like a direct member's call operands.
                 if self._shared[member]:
                     needed.update(value_params[member])
-                elif self._direct[member]:
+                else:
                     needed.update(providers_by_consumer[member])
-            if self._direct[index]:
-                needed.update(providers_by_consumer[index])
+            needed.update(providers_by_consumer[index])
             needed.difference_update(inside)
             needed.discard(index)
             value_params[index] = tuple(sorted(needed))
@@ -1248,12 +1254,10 @@ class SitePlanEmission(Cleanable):
         Return the parameter/argument names after `(meld, ov, c{i})` for one miss.
 
         Contract:
-            `instance_results` in dict mode, `args` for the root when `__args__` is
-            supplied, then the outer values in step order.
+            `args` for the root when `__args__` is supplied, then the outer
+            values in step order (a generic member's providers included).
         """
         names: List[str] = []
-        if self._dict_mode:
-            names.append("instance_results")
         if self._arity > 0 and index == self._root_index:
             names.append("args")
         names.extend(f"v{value}" for value in self._miss_value_params[index])
@@ -1305,9 +1309,6 @@ class SitePlanEmission(Cleanable):
                 self._emit_shared_hit(index, step, indent, lines)
             elif self._emit_many(index, step, indent, lines):
                 uses_many_store = True
-            if self._dict_mode:
-                key_name = self._bind(f"key{index}", step.instance_key)
-                lines.append(f"{indent}instance_results[{key_name}] = v{index}")
         return uses_many_store
 
     def _emit_many(self, index: int, step: SitePlanStep, indent: str, lines: List[str]) -> bool:
@@ -1441,6 +1442,48 @@ class SitePlanEmission(Cleanable):
             return f"{spell_name}._lock"
         return f"({store}._slot_guards.get({sid_name}) or {store}.slot_guard({sid_name}))"
 
+    def _emit_results_literal(self, step: SitePlanStep, indent: str, lines: List[str]) -> None:
+        """
+        Emit the dict literal one generic construction reads: its dependency values by instance key.
+
+        Contract:
+            `step` is the step the construct helper receives (the masked copy
+            when values are supplied), so the literal carries exactly the keys
+            `_build_kwargs_no_overrides` reads from `dependency_resolution_order`,
+            in that order, each bound to its provider's local; a provider feeding
+            two parameters appears once. A step that reads no key gets `{}`.
+            Every provider is a local in scope where the step is constructed:
+            providers precede consumers, and `_place` passes outer providers into
+            a miss. The literal is rebuilt per construction; nothing shared is
+            held in the namespace.
+
+        Args:
+            step: The step (or masked copy) handed to the construct helper.
+            indent: Indentation of the emitted line.
+            lines: Target line list, appended in place.
+
+        Raises:
+            RuntimeError: When a dependency key has no kept step.
+
+        Returns:
+            None.
+        """
+        entries: List[str] = []
+        providers: List[int] = []
+        for _, dependency_keys in step.dependency_resolution_order:
+            for key in dependency_keys:
+                provider = self._index_by_key.get(key)
+                if provider is None:
+                    raise RuntimeError(
+                        f"Key-set plan dependency {key!r} of {step.instance_key!r} has no kept step."
+                    )
+                if provider in providers:
+                    continue
+                providers.append(provider)
+                key_name = self._bind(f"key{provider}", key)
+                entries.append(f"{key_name}: v{provider}")
+        lines.append(f"{indent}instance_results = {{{', '.join(entries)}}}")
+
     def _emit_construct(
             self,
             index: int,
@@ -1455,13 +1498,15 @@ class SitePlanEmission(Cleanable):
 
         Contract:
             Direct steps call the spell with operands and route failures through
-            `_raise_meld_construction_error`. Generic steps call the no-overrides helper, or the
+            `_raise_meld_construction_error`. Generic steps first get their dict literal
+            (`_emit_results_literal`), then call the no-overrides helper, or the
             supplied-values helper on a masked copy when the step has winners.
         """
         local = f"v{index}"
         if not direct:
             is_root_args = step.instance_key == self._root_instance_key and self._arity > 0
             if not supplied and not is_root_args:
+                self._emit_results_literal(step, indent, lines)
                 step_name = self._bind(f"st{index}", step)
                 lines.append(
                     f"{indent}{local} = _construct_spell_instance(plan_step={step_name}, "
@@ -1470,6 +1515,7 @@ class SitePlanEmission(Cleanable):
                 return
             masked = step.masked(supplied, is_root_args)
             self._masked.append(masked)
+            self._emit_results_literal(masked, indent, lines)
             masked_name = self._bind(f"st{index}", masked)
             site_index = self._site_index(step)
             values: List[str] = []

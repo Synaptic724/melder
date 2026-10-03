@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py",
- "source_sha256": "0f74333e023f731fea4f8e38d311c8ebb7044fb1cf91409a13ccb09cbb8f062e",
+ "source_sha256": "f6d5a4cd99e44c381f646c1410d722e06b7898fb2f9669d409a6f72982793032",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.phases.compiler_phase_3": {
@@ -29,11 +29,11 @@
     "run"
    ],
    "shape": {
-    "method_count": 17,
+    "method_count": 19,
     "has_bases": false,
     "trivial": false
    },
-   "span_sha256": "37e4f31ea72655a701e04d1c67cd252bb2dd16ad4bfd2730298f0bc71dbd91ec",
+   "span_sha256": "107c03a7427ac6d77eb1d7c8ebac29d8faf06d12fa8f6dc53df2f8e07af0a4ca",
    "role": "Compiler-owned phase-3 local-frame and DAG build surface.",
    "responsibilities": [
     "resolves symbolic constructor sockets into concrete dependency spell ids",
@@ -42,13 +42,15 @@
     "selects resolvable providers or OVERRIDE_REQUIRED references while preserving declarations and False-root topology",
     "republishes enabled late-compiled Nexus records after local topology is available",
     "records an UNRESOLVED_INPUT socket, keeping its frame key, when a single typed parameter has no registered provider; ambiguity still raises",
-    "scans candidate providers over a copy of the Spellbook spell pool taken in one call, so a concurrent bind cannot change it mid-scan"
+    "scans candidate providers over a copy of the Spellbook spell pool taken in one call, so a concurrent bind cannot change it mid-scan",
+    "matches an annotation to candidates by address key (2026-10-03): normalize_frame_key(annotation) against each spell's frame key (spellframe, else its own name) and its type key (spell_name; an existing object's class name) - no identity comparison, so a bare existing object answers to its class and a TYPE_CHECKING string equals the class object",
+    "indexes candidates once per resolution pass under those keys (by_key buckets, exact for every pool); _eq_safe_object is kept only as the structural snapshot's replayability rule"
    ],
    "phases": [
     "validation",
     "runtime"
    ],
-   "semantics_authored_against": "37e4f31ea72655a701e04d1c67cd252bb2dd16ad4bfd2730298f0bc71dbd91ec"
+   "semantics_authored_against": "107c03a7427ac6d77eb1d7c8ebac29d8faf06d12fa8f6dc53df2f8e07af0a4ca"
   }
  },
  "edges_out": [],

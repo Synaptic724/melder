@@ -175,12 +175,14 @@ def test_iter_all_spells_uses_live_spell_id_pool_order() -> None:
 @pytest.mark.parametrize(
     ("spell_type", "annotation_kind", "binding_name", "candidate_binding_name", "require_class_spell", "expected"),
     [
-        (SpellType.SPELL, "spell", None, None, True, True),
-        (SpellType.SPELL, "spell", "alpha", "beta", True, False),
+        (SpellType.SPELL, "type", None, None, True, True),
+        (SpellType.SPELL, "type", "alpha", "beta", True, False),
         (SpellType.SPELL, "frame", None, None, True, True),
-        (SpellType.SPELL, "frame_eq", None, None, True, True),
-        (SpellType.METHOD, "spell", None, None, True, False),
-        (SpellType.METHOD, "spell", None, None, False, True),
+        (SpellType.SPELL, "type_name", None, None, True, True),
+        (SpellType.SPELL, "frame_name", None, None, True, True),
+        (SpellType.SPELL, "other", None, None, True, False),
+        (SpellType.METHOD, "type", None, None, True, False),
+        (SpellType.METHOD, "type", None, None, False, True),
     ],
 )
 def test_matches_annotation_cases(
@@ -191,26 +193,34 @@ def test_matches_annotation_cases(
         require_class_spell: bool,
         expected: bool,
 ) -> None:
-    """Phase 3 annotation matching should honor type, frame, and binding filters."""
+    """Phase 3 matches by address key: the type key, the frame key, their names; binding and kind filters hold."""
     phase = CompilerPhase3()
 
     class _FrameType:
         pass
 
-    spell_obj = object()
-    spellframe = _FrameType
+    class CandidateSpell:
+        pass
+
+    class _Other:
+        pass
+
     annotation: Any
-    if annotation_kind == "spell":
-        annotation = spell_obj
+    if annotation_kind == "type":
+        annotation = CandidateSpell
     elif annotation_kind == "frame":
-        annotation = spellframe
-    else:
         annotation = _FrameType
+    elif annotation_kind == "type_name":
+        annotation = "CandidateSpell"
+    elif annotation_kind == "frame_name":
+        annotation = "_FrameType"
+    else:
+        annotation = _Other
 
     candidate = _make_spell_stub(
         "candidate",
-        spell_obj=spell_obj,
-        spellframe=spellframe,
+        spell_obj=CandidateSpell,
+        spellframe=_FrameType,
         spell_name="CandidateSpell",
         binding_name=candidate_binding_name,
         spell_type=spell_type,
@@ -285,6 +295,84 @@ def test_matches_annotation_supports_forward_ref_strings_and_frame_class_names()
         candidate,
         require_class_spell=True,
     ) is True
+
+
+def test_matches_annotation_matches_an_existing_object_by_its_class_and_by_its_name() -> None:
+    """A bare existing object answers to its class object and to its class name, and to nothing else."""
+    phase = CompilerPhase3()
+
+    class Service:
+        pass
+
+    class Other:
+        pass
+
+    candidate = _make_spell_stub(
+        "service",
+        spell_obj=Service(),
+        spellframe=None,
+        spell_name="Service",
+    )
+
+    assert phase._matches_annotation(Service, None, candidate, require_class_spell=True) is True
+    assert phase._matches_annotation("Service", None, candidate, require_class_spell=True) is True
+    assert phase._matches_annotation(Other, None, candidate, require_class_spell=True) is False
+    assert phase._spell_keys(candidate) == ("service",)
+
+
+def test_matches_annotation_treats_a_concrete_class_frame_as_a_name() -> None:
+    """A concrete class used as a spellframe is only a name: the spell answers to it and to its own type."""
+    phase = CompilerPhase3()
+
+    class Service:
+        pass
+
+    class Impl:
+        pass
+
+    candidate = _make_spell_stub(
+        "impl",
+        spell_obj=Impl,
+        spellframe=Service,
+        spell_name="Impl",
+    )
+
+    assert phase._spell_keys(candidate) == ("service", "impl")
+    assert phase._matches_annotation(Service, None, candidate, require_class_spell=True) is True
+    assert phase._matches_annotation("service", None, candidate, require_class_spell=True) is True
+    assert phase._matches_annotation(Impl, None, candidate, require_class_spell=True) is True
+
+
+def test_indexed_candidates_equal_the_scan_for_an_existing_object() -> None:
+    """The by-key index resolves a bare existing object exactly as the scan does, with no equality gate."""
+    phase = CompilerPhase3()
+
+    class Service:
+        pass
+
+    class Other:
+        pass
+
+    root_spell = _make_spell_stub("root", spell_obj=object(), spellframe=None, spell_name="RootSpell")
+    service = _make_spell_stub("svc", spell_obj=Service(), spellframe=None, spell_name="Service")
+    other = _make_spell_stub("other", spell_obj=Other, spellframe=None, spell_name="Other")
+    spellbook = SimpleNamespace(_spell_id_pool={"svc": service, "other": other})
+    dep = _make_dependency(
+        spell_id="root",
+        param_name="service",
+        position=0,
+        di_shape=ParameterDIShape.SINGLE_BY_ANNOTATION,
+        target_annotation=Service,
+    )
+
+    scanned = phase._resolve_single_by_annotation(root_spell, spellbook, dep)
+    index = phase._build_candidate_index(spellbook)
+    indexed = phase._resolve_single_by_annotation(root_spell, spellbook, dep, index)
+
+    assert list(scanned.values()) == [service]
+    assert indexed == scanned
+    assert set(index) == {"by_key"}
+    assert sorted(index["by_key"]) == ["other", "service"]
 
 
 @pytest.mark.parametrize(

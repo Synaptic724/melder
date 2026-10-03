@@ -11,7 +11,7 @@ which checks must run; the final gate independently verifies that selection.
 | Event | Full runtime matrix | Other required work |
 | --- | --- | --- |
 | Feature PR into `dev` | Yes | Hygiene, source/repository assets and documentation |
-| `dev` PR into `preprod` | Yes | The same checks plus distribution verification |
+| `dev` PR into `preprod` | Yes | The same checks plus distribution verification and both benchmark gauntlets |
 | `preprod` PR into `release_candidate` | No | Hygiene and exact-tree full preprod proof |
 | `release-fix/*` PR into `release_candidate` | Yes | Full checks and distribution verification for changed contents |
 | `release_candidate` PR into `prod` | No | Hygiene and exact-source successful TestPyPI qualification |
@@ -52,6 +52,64 @@ Scope `PYTHON_GIL=0` to the runtime-test and installed-package probe steps. Do n
 set it for the whole job: macOS Python setup runs a standard-Python certificate
 installer that cannot start with the GIL disabled. The test driver and wheel probe
 still reject an unsupported interpreter or an enabled GIL during qualification.
+
+## Real-world gauntlet
+
+Automatic CI runs real-world-gauntlet.yml only for this repository's dev-to-preprod
+promotion PRs. CI / merge-ready requires its success on that route and accepts the planned
+skip on feature PRs into dev, later promotions, release-fix PRs, and manual full CI.
+The gauntlet workflow itself remains manually runnable for a one-off test. Its YAML
+iteration-counts input defaults to [500, 1000, 2500, 5000, 10000] for both reusable calls
+and manual runs; local pytest defaults remain unchanged.
+
+Edit the configuration block at the top of benchmarks/testing_other_di/test_real_world_gauntlet.py:
+iteration counts default to [5,000, 10,000, 15,000, 25,000, 50,000], thread counts to
+[3, 5, 7, 9], and rounds to 1. Run that test
+normally through pytest; no separate launcher or environment variables are needed. Every
+library/iteration-count/thread-count/round runs in a fresh child with PYTHON_GIL=0 and -X gil=0, and the
+measured process refuses an enabled GIL. Request/A/B workloads repeat into distinct C, D, E
+and later lanes; threads synchronize their start and are joined each workload iteration.
+This is a synchronized burst, with independent scope work rather than a producer/consumer queue.
+
+The gauntlet uses pinned Python 3.14.7 and dependencies on Ubuntu x64, Windows x64 and macOS
+Intel x64 for comparison. This fixed benchmark baseline is separate from the compatibility
+test matrix below. Setup helpers do not inherit PYTHON_GIL=0. The optional manual thread-counts
+input overrides the file's list; iteration-counts overrides the smaller CI iteration budgets.
+An explicitly blank input uses the corresponding local file setting. The CI default relay
+has 60 fresh child runs per round on each OS: five iteration counts, four thread counts,
+and three libraries. It totals 228,000 workload iterations per OS at one round.
+The job permits six hours, with the measured step bounded at 345 minutes to leave upload time;
+the pytest wrapper has a six-hour timeout when pytest-timeout is active.
+
+Each OS job publishes timings by iteration and thread count in its summary and retains gauntlet-results
+for 30 days: JUnit, full log, summary, outcome JSON, dependency pins/install report and source
+hashes/runtime provenance. Results must include every requested count and library, even when
+pytest exits zero. There is no speed threshold; compare matching counts within the same OS
+and account for hosted hardware variation. A short correctness run is not a performance ranking.
+
+## Persistent runtime series
+
+The dev-to-preprod PR also starts persistent-runtime-gauntlet.yml. It depends only on
+branch-policy, just like the real-world gauntlet, so both may run concurrently on separate
+GitHub-hosted runner VMs. Each uses its own Ubuntu, Windows and Intel macOS jobs; runner
+availability may queue them. Both benchmark jobs must succeed for promotion.
+
+Run benchmarks/testing_other_di/test_persistent_runtime_gauntlet_series.py with pytest -s.
+Edit persistent_runtime_gauntlet_series_runner.py for local settings and aggregation:
+measurement windows [60, 180, 300] seconds (300 maximum), thread counts [3, 5], both existing
+scenarios and all three libraries. This is 36 isolated processes per OS, 108 minutes of
+measured work plus six minutes of warmup and setup/cleanup. The two original benchmark
+files retain their existing defaults and workloads. CI/manual workflow inputs duration-seconds
+and thread-counts select the same smaller series independently of local edits.
+
+Every cell starts a fresh GIL-off interpreter and reuses the original persistent runtime,
+its scope-semantic checks, workers and cleanup. Local logs and result files are retained in a
+new directory beneath benchmarks/testing_other_di/persistent_gauntlet_results; optional
+PERSISTENT_SERIES_OUTPUT_DIR changes that destination. Durations and thread counts are
+printed before launch. Per-cell logs/JSON and aggregate results.json, results.csv and summary.md
+keep every duration/thread/scenario/library result separate, including completed rows after
+a later failure. CI publishes these reports, JUnit, source/runtime provenance and the summary
+under its own persistent-gauntlet artifact. The standalone workflow also supports a manual run.
 
 ## Supported Python versions
 

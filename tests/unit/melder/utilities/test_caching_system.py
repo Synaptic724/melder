@@ -344,6 +344,7 @@ def test_caching_system_resident_store_holds_untracked_bytes() -> None:
         pytest.param("spell_payloads", [], id="wrong-payload-map"),
         pytest.param("spell_payloads", {"a" * 64: {}}, id="decoded-payload"),
         pytest.param("structural_payloads", {"a" * 64: {}}, id="decoded-structural-payload"),
+        pytest.param("world_stamp", 7, id="non-string-world-stamp"),
         pytest.param("melder_version", __version__ + ".other", id="different-release"),
         pytest.param("melder_version", "", id="empty-release"),
         pytest.param("melder_version", None, id="null-release"),
@@ -653,10 +654,61 @@ def test_caching_system_emit_writes_structural_tier_in_envelope(tmp_path: Path) 
         assert persisted["version"] == CachingSystem.CURRENT_VERSION
         assert set(persisted) == {
             "version", "melder_version", "python", "frame_name", "conduit_name",
-            "spell_payloads", "structural_payloads",
+            "spell_payloads", "structural_payloads", "world_stamp",
         }
         assert isinstance(persisted["structural_payloads"]["i" * 64], bytes)
         assert marshal.loads(persisted["structural_payloads"]["i" * 64]) == _make_structural_payload("rows")
     finally:
         caching_system.cleanup()
 
+
+def test_caching_system_new_store_carries_an_empty_world_stamp(tmp_path: Path) -> None:
+    """An empty store records no world: the stamp is "" until a staging sets it."""
+    caching_system = _make_cache_utility(cache_root_path=tmp_path)
+    try:
+        assert caching_system.world_stamp == ""
+    finally:
+        caching_system.cleanup()
+
+
+def test_caching_system_set_world_stamp_reports_a_change_and_round_trips(tmp_path: Path) -> None:
+    """
+    The setter reports whether the recorded value changed, and the stamp survives emit and reload.
+
+    Contract: the first set of a fresh store changes it; the same value again does not; a different value
+    does; the persisted envelope carries the stamp and a reload exposes it.
+    """
+    caching_system = _make_cache_utility(cache_root_path=tmp_path)
+    try:
+        assert caching_system.set_world_stamp("a" * 64) is True
+        assert caching_system.set_world_stamp("a" * 64) is False
+        assert caching_system.set_world_stamp("b" * 64) is True
+        assert caching_system.world_stamp == "b" * 64
+        caching_system.upsert_spell_payload("c" * 64, _make_spell_payload("stamped"))
+        caching_system.emit()
+        persisted = marshal.loads(caching_system.bundle_path.read_bytes())
+        assert persisted["world_stamp"] == "b" * 64
+    finally:
+        caching_system.cleanup()
+    reloaded = _make_cache_utility(cache_root_path=tmp_path)
+    try:
+        assert reloaded.world_stamp == "b" * 64
+        assert reloaded.get_spell_payload("c" * 64) == _make_spell_payload("stamped")
+    finally:
+        reloaded.cleanup()
+
+
+def test_caching_system_accepts_current_bundle_without_world_stamp_as_unstamped(tmp_path: Path) -> None:
+    """A current-generation bundle written without the field loads with an empty stamp (never a full hit)."""
+    bundle = _make_populated_cache_bundle()
+    assert "world_stamp" not in bundle
+    _write_cache_bundle(tmp_path, marshal.dumps(bundle))
+    caching_system = _make_cache_utility(cache_root_path=tmp_path)
+    try:
+        assert caching_system.get_spell_payload("a" * 64) == _make_spell_payload("cached")
+        assert caching_system.world_stamp == ""
+        assert caching_system.set_world_stamp("d" * 64) is True
+        caching_system.emit()
+        assert marshal.loads(caching_system.bundle_path.read_bytes())["world_stamp"] == "d" * 64
+    finally:
+        caching_system.cleanup()

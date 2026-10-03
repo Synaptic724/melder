@@ -20,6 +20,9 @@ from melder.aether.spellbook.spell_compiler.validation.spell_validation_issue im
 from melder.aether.spellbook.spell_compiler.validation.spell_validation_result import (
     SpellValidationResult,
 )
+from melder.aether.spellbook.spell_compiler.structural_snapshot.structural_snapshot import (
+    StructuralSnapshot,
+)
 from melder.aether.spellbook.spellbook_creation_system import SpellbookCreationSystem
 
 
@@ -219,6 +222,8 @@ class _StubCachingSystem:
             None.
         """
         self._payloads_by_spell_id = payloads_by_spell_id or {}
+        # Mirror the envelope's executor-tier world stamp (generation 19).
+        self.world_stamp: str = ""
 
     @property
     def cached_spell_ids(self):
@@ -1606,8 +1611,11 @@ def test_build_conjure_cache_state_reports_full_hit_path() -> None:
         },
         _system_caching_enabled_in_aether=lambda: True,
         _get_or_create_caching_system=lambda conduit_name=None: caching_system,
+        _aetheric_frame_configuration=None,
+        _contracted_spells={},
     )
 
+    caching_system.world_stamp = StructuralSnapshot.world_stamp(spellbook)
     cache_state = SpellbookCreationSystem._build_conjure_cache_state(
         spellbook=spellbook,
         dynamic=False,
@@ -1645,6 +1653,8 @@ def test_build_conjure_cache_state_reports_mixed_path() -> None:
         },
         _system_caching_enabled_in_aether=lambda: True,
         _get_or_create_caching_system=lambda conduit_name=None: caching_system,
+        _aetheric_frame_configuration=None,
+        _contracted_spells={},
     )
 
     cache_state = SpellbookCreationSystem._build_conjure_cache_state(
@@ -1682,8 +1692,11 @@ def test_build_conjure_cache_state_treats_stale_surplus_cache_as_full_hit() -> N
         },
         _system_caching_enabled_in_aether=lambda: True,
         _get_or_create_caching_system=lambda conduit_name=None: caching_system,
+        _aetheric_frame_configuration=None,
+        _contracted_spells={},
     )
 
+    caching_system.world_stamp = StructuralSnapshot.world_stamp(spellbook)
     cache_state = SpellbookCreationSystem._build_conjure_cache_state(
         spellbook=spellbook,
         dynamic=False,

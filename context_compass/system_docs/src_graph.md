@@ -228,7 +228,7 @@ descriptors and reassemble.
 
 ## src/melder/__version__.py
 
-- source_sha256: `5f15987188957bffa008a25a198ca37a65203a6bbe2fd13bac5674407d1bc64b`
+- source_sha256: `57943f1f33b900419f4a43349d055e7157dd2a5bd23b90375082f0912e711dbe`
 - nodes: 1
 
 ### Nodes
@@ -317,7 +317,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_agent_documentation/manifest/agent_documentation_manifest.py
 
-- source_sha256: `18ae66360ce357fd8af81be069c6612fda475ffa4534dc1bec0f3d9bb14b6376`
+- source_sha256: `9788efaf3c673aa90d6b2833fc92fb4abb8df0a0b767648e8d49823467b43872`
 - nodes: 1
 
 ### Nodes
@@ -396,7 +396,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py
 
-- source_sha256: `89e35af2b473742057140c311ff9149707ef689546ec087a8d118e25a1a774d2`
+- source_sha256: `dc698cbaa067bbe54049ace6249e0673fa033c1be717d6282393bf1ba2538866`
 - nodes: 1
 
 ### Nodes
@@ -474,7 +474,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/graph_adjacency_manifest.py
 
-- source_sha256: `aa7cb743466b4d07d2f5af9b51540d1ecf690ff768a46079be52475584e4e22f`
+- source_sha256: `1d470b3b720837c602c9f357905de3ffb31ef2aca5c2675a5dd142569661484a`
 - nodes: 1
 
 ### Nodes
@@ -491,7 +491,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_index.py
 
-- source_sha256: `6a6bcf624c138d383c33e4c832e4dd39a95a5f28da7ec6439937dc142e77d0e6`
+- source_sha256: `165ee30d76cb114eb43b535b72a2772007a50e8b732bad4618e15bf8a43df84d`
 - nodes: 1
 
 ### Nodes
@@ -508,7 +508,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_manifest.py
 
-- source_sha256: `e76558811ff8f83ff60ade2de7d0e1f383ba7c06e11afc88042f57029023d73c`
+- source_sha256: `46da049e8ccdfc9ad690d508465edcd541c4e64b89b30cc883dd8aa90a0afbe4`
 - nodes: 1
 
 ### Nodes
@@ -528,7 +528,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_architecture_payload.py
 
-- source_sha256: `2078e096fdf91e204d098e5ef6effb15a37e0800033a896db69a5ad989eed354`
+- source_sha256: `7c98130e7743bbcb62b86613910f22d2a5546a843c4ef47abe8ae5a65e080565`
 - nodes: 1
 
 ### Nodes
@@ -545,7 +545,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_components_payload.py
 
-- source_sha256: `0d3e504105c877be50d781b58b5724d4e75aa745faf0846560bbea483d4a58c0`
+- source_sha256: `81c343aed634762d69aa8086ea1e8af11f6d825838e7e3ba09f54f06de94717f`
 - nodes: 1
 
 ### Nodes
@@ -562,7 +562,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_graph_payload.py
 
-- source_sha256: `fa18d806b624d72b90c44742044a6c609e57fb7dd3c28787f07a6195c37a946d`
+- source_sha256: `833344bfd2f0b5c3aef3bb1ad521c2fff5ab805c117dae3e310cc57f875ebd2d`
 - nodes: 1
 
 ### Nodes
@@ -3027,7 +3027,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/dev_ops/spell_system_states/conduit_resolution_state.py
 
-- source_sha256: `7b16de13f3a0cb09f61dccdf4042a5fb75cc3c2e521f20177c67126524a058eb`
+- source_sha256: `f564eacd1ef9a31da9fdf5c1f7cad2fc03c01983797f710dfc24ee78ad873459`
 - nodes: 2
 
 ### Nodes
@@ -3047,9 +3047,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - responsibilities:
   - tracks per-spell and per-root resolution validity for one conduit
   - stores conduit-scoped system diagnostics and dirty/validated markers
-- owns_state: `_spell_validity`, `_root_validity`, `_diagnostics`, `_dirty`, `_last_validated_at`, `_last_change_reason`
+  - retires one spell id's spell-level and root-level verdict on demand (forget_spell), dirty-marked and without a RiskManager callback, so the id reads initial_validity again (0.2.8219)
+- owns_state: `_spell_validity`, `_root_validity`, `_diagnostics`, `_dirty`, `_last_validated_at`, `_last_change_reason`, `_initial_validity`
 - phases: `validation`, `runtime`, `cleanup`
-- public methods: `bulk_set_root_validity`, `bulk_set_spell_validity`, `cleanup`, `clear_diagnostics`, `clear_dirty`, `get_root_validity`, `get_spell_validity`, `has_errors`, `has_warnings`, `is_dirty`, `last_validated_at`, `list_diagnostics` (+6 more)
+- public methods: `bulk_set_root_validity`, `bulk_set_spell_validity`, `cleanup`, `clear_diagnostics`, `clear_dirty`, `forget_spell`, `get_root_validity`, `get_spell_validity`, `has_errors`, `has_warnings`, `is_dirty`, `last_validated_at` (+7 more)
 
 ### Edges out
 
@@ -3182,7 +3183,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py
 
-- source_sha256: `c0db04ea6fd06ebc450df2cd16f80ace5f169049cbf5d85ae7750b3a4d0bee4b`
+- source_sha256: `772d61b7c87c9cb69dd086d21036b45f57dc2b64a69185bd8e4fb796319fc2ba`
 - nodes: 2
 
 ### Nodes
@@ -3206,9 +3207,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - provides targeted dependency and contract invalidation
   - indexes OVERRIDE_REQUIRED consumers alongside collection frame watchers without adding construction edges
   - watches UNRESOLVED_INPUT consumers under their expected-type frame key so a later matching bind re-resolves them
-- owns_state: `_states_by_index_id`, `_states_by_spell_id`, `_dirty_lineages`, `_local_topologies`, `_resolution_by_conduit_id`
+  - retires a spell id's per-conduit resolution verdicts in every live conduit state when its lineage is unregistered and when a version id is registered, so a content-stable id re-entering the frame is resolved again per conduit (0.2.8219)
+- owns_state: `_states_by_index_id`, `_states_by_spell_id`, `_dirty_indexes`, `_local_topologies`, `_resolution_by_conduit_id`, `_index_owner_spellbook_id`, `_collection_frames_by_index`, `_collection_dependents_by_spellbook`, `_contract_keys_by_index`, `_contract_dependents_by_spellbook`
 - phases: `init`, `validation`, `runtime`, `cleanup`
-- public methods: `bulk_set_conduit_root_validity`, `bulk_set_conduit_spell_validity`, `cleanup`, `clear_conduit_diagnostics`, `clear_conduit_dirty`, `compute_impact_closure`, `consume_dirty_indexes`, `devops_information_registry`, `drop_conduit_resolution_state`, `get_by_index_id`, `get_by_spell_id`, `get_conduit_resolution_state` (+17 more)
+- public methods: `bulk_set_conduit_root_validity`, `bulk_set_conduit_spell_validity`, `cleanup`, `clear_conduit_diagnostics`, `clear_conduit_dirty`, `compute_impact_closure`, `consume_dirty_indexes`, `devops_information_registry`, `drop_conduit_resolution_state`, `forget_spell_resolution_verdicts`, `get_by_index_id`, `get_by_spell_id` (+18 more)
 
 ### Edges out
 
@@ -5130,7 +5132,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/creations/creations.py
 
-- source_sha256: `9dc5cdd28f457d2532a3f3131af11fcbcdd84df5ee9a86dbe1b044385785f150`
+- source_sha256: `b04d18f532396894c808a240265ea151a753f4997541f014e0fc544efd76cff5`
 - nodes: 3
 
 ### Nodes
@@ -5488,7 +5490,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/meld/creation_context/creation_context_rebuild.py
 
-- source_sha256: `69550981be88a8a862246385554d00055e5131697868953837d5494b79cd7e0a`
+- source_sha256: `6e374218415f6eba36ee3b1d6f4a11798bfae350e3429ccc19d1893be3bff247`
 - nodes: 2
 
 ### Nodes
@@ -6047,7 +6049,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/configuration/spellbook_configuration.py
 
-- source_sha256: `d470129b8473035c72118819c4bbb12c4fb3c938ab3e0fb5e29b602886ff5add`
+- source_sha256: `6e989ddcb9c3d8def3d4da8df973eeb13bdbd43ccc36103ebe39ebf4a045c00a`
 - nodes: 2
 
 ### Nodes
@@ -7900,7 +7902,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py
 
-- source_sha256: `4ef811b7a4575b3aabe1e8f3c8187354a402978de4a4b7262d6f4303058279ea`
+- source_sha256: `2731fd76183d4b33149058870b88edba944887a3899102fd2a0830dda973833d`
 - nodes: 5
 
 ### Nodes
@@ -7967,7 +7969,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - chooses a direct call or generic construction per step and builds call arguments
   - emits conflict guards and unresolved-input refusals at context tops
   - leaves out the root miss's guard in a normal plan whose calling route door already holds it (unique_per_conduit and spellspace roots, 0.2.73)
-- owns_state: `_lines`, `_miss_lines`, `_masked`, `_direct`, `_dict_mode`, `_shared`, `_home`, `_children`, `_miss_value_params`, `_root_index`, `_context_params`, `_root_guard_held_by_door`
+  - emits a dict literal of exactly the dependency values a generic construction reads, where it runs (lazy instance_results, 2026-10-03): no dict at the plan top, no per-step stores, no dict parameter on misses; _place passes a generic member's providers into its miss like a direct member's operands
+- owns_state: `_lines`, `_miss_lines`, `_masked`, `_direct`, `_shared`, `_home`, `_children`, `_miss_value_params`, `_root_index`, `_context_params`, `_root_guard_held_by_door`, `_index_by_key`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `render`
 
@@ -11055,7 +11058,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py
 
-- source_sha256: `0f74333e023f731fea4f8e38d311c8ebb7044fb1cf91409a13ccb09cbb8f062e`
+- source_sha256: `f6d5a4cd99e44c381f646c1410d722e06b7898fb2f9669d409a6f72982793032`
 - nodes: 2
 
 ### Nodes
@@ -11081,6 +11084,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - republishes enabled late-compiled Nexus records after local topology is available
   - records an UNRESOLVED_INPUT socket, keeping its frame key, when a single typed parameter has no registered provider; ambiguity still raises
   - scans candidate providers over a copy of the Spellbook spell pool taken in one call, so a concurrent bind cannot change it mid-scan
+  - matches an annotation to candidates by address key (2026-10-03): normalize_frame_key(annotation) against each spell's frame key (spellframe, else its own name) and its type key (spell_name; an existing object's class name) - no identity comparison, so a bare existing object answers to its class and a TYPE_CHECKING string equals the class object
+  - indexes candidates once per resolution pass under those keys (by_key buckets, exact for every pool); _eq_safe_object is kept only as the structural snapshot's replayability rule
 - phases: `validation`, `runtime`
 - public methods: `run`
 
@@ -15449,7 +15454,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spellbook_creation_system.py
 
-- source_sha256: `9befa3b4a6d7c11378d45716132abf3dd2ff230ba514a9571dc938f2ab95d506`
+- source_sha256: `e4111934a050c3512cc4a1ba2694e3d4cfa0ad7905c56c0ea93d21794f56d8b6`
 - nodes: 2
 
 ### Nodes
@@ -15478,6 +15483,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - hands the conduit resolution diagnostics to SpellbookValidationError at the conjure gate and the local-rerun gate, so a conduit-verdict refusal states its reasons (the phase artifacts are already cleaned)
   - publishes cached creation contexts from manifest packages only; any other payload is a cache miss
   - after a successful target-local pass, flags each owned, resolvable, non-existing-creation dependency in its scope that has no phase-11 plan, no published context and no flag yet with resolution_required and a door-epoch bump, under that dependency's spell lock (flag_dependencies_without_own_plan)
+  - admits an executor-cache full hit only when the bundle's recorded world stamp equals the live structural world stamp (generation 19); a world that differs by an existing creation or a non-resolvable definition recompiles phases 8-11 and re-stages the bundle under the new stamp
 - owns_state: `_spellbook`, `_policy`, `_dynamic`, `_name`, `_conduit_logger`, `_phase_scheduler_cls`, `_validation_warnings`, `_lock`
 - phases: `runtime`, `cleanup`
 - public methods: `check_system_state`, `cleanup`, `cleanup_phase_artifacts_after_resolution`, `conjure`, `define_conduit_into_spells`, `fire_conjure_hooks`, `flag_dependencies_without_own_plan`, `get_conjure_hook_map`, `phase_change_control_factory`, `phase_execution_plan_factory`, `phase_injection_plan_factory`, `phase_local_frame_factory` (+16 more)
@@ -17425,7 +17431,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/crystallizer/crystallizer.py
 
-- source_sha256: `a4640f1240893ffe819e7474d1f4aba6062a55010fd42aa5bd5f33b46edc5c0b`
+- source_sha256: `88364c444c26585e53c8a423843b0807f3d521a024457d429ddcfe0513947c1a`
 - nodes: 2
 
 ### Nodes
@@ -17862,7 +17868,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/crystallizer/crystals/spell_crystal.py
 
-- source_sha256: `d81740ba89cc6efda871e8c5f0f8b5d9a1e1e9197dc2e438a8b87a848756e9e3`
+- source_sha256: `535d6a844f47c51ce1e419ac6b608393ed1d49bcfabd3043003ba33d455b8388`
 - nodes: 2
 
 ### Nodes
@@ -18056,7 +18062,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/crystallizer/persistence/persistence_profile.py
 
-- source_sha256: `0b8677d3b38e287be539f6b89ef19f6433cf17706486d26459c5a479c443ac6d`
+- source_sha256: `3306ab58a9d35f0c3a4717bb1d6c7ea108b38add01a1d4ca71031c6a94d4aebb`
 - nodes: 2
 
 ### Nodes
@@ -18112,7 +18118,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/crystallizer/persistence/persistence_system.py
 
-- source_sha256: `3407dd4765d8bdd494f7fbad20c526249d267485db406bea104372bd6cc9cad8`
+- source_sha256: `cca0cea0fcdf2638662613e27ea439149872d874b231cc00585d7ab6bc36dcf6`
 - nodes: 2
 
 ### Nodes
@@ -18175,7 +18181,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/crystallizer/persistence/record_version.py
 
-- source_sha256: `3b0da78111efd9788dd04ca6ea717dc9d303684a2175c4e951a0f913b946dd1d`
+- source_sha256: `fee3546b18291e978c119552c548ada667e77d90232e7fd42bf5229d1167683d`
 - nodes: 2
 
 ### Nodes
@@ -25541,7 +25547,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/utilities/caching_system/caching_system.py
 
-- source_sha256: `50000338eb483e2b9e7a05a64181f86b55d33caec20c99062a93a79e5972830d`
+- source_sha256: `9446de98d4b41261c1670926255a89e478b0487ac3599025413447409ad03b76`
 - nodes: 2
 
 ### Nodes
@@ -25570,9 +25576,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - cache generation 11 retires executors emitted before the unresolved-input failure path
   - cache generation 12 cold-resets bundles that may hold consumer payloads from a previous world
   - cache generation 13 gives each collection member its own compiler path; 14 retires bundles whose manifests carried override lanes
+  - carries the executor-tier world stamp in the envelope (generation 19): set_world_stamp records it after staging and reports a change; a loaded bundle without the field is unstamped and never admits a full hit
 - owns_state: `_id`, `_lock`, `_frame_name`, `_conduit_name`, `_cache_root_path`, `_bundle_path`, `_cache_data`, `_logger`
 - phases: `init`, `runtime`, `cleanup`
-- public methods: `bundle_path`, `cached_spell_ids`, `cached_structural_spell_ids`, `cleanup`, `conduit_name`, `emit`, `get_spell_payload`, `get_structural_payload`, `has_spell_payload`, `has_structural_payload`, `remove_spell_payload`, `remove_structural_payload` (+5 more)
+- public methods: `bundle_path`, `cached_spell_ids`, `cached_structural_spell_ids`, `cleanup`, `conduit_name`, `emit`, `get_spell_payload`, `get_structural_payload`, `has_spell_payload`, `has_structural_payload`, `remove_spell_payload`, `remove_structural_payload` (+7 more)
 
 ### Edges out
 

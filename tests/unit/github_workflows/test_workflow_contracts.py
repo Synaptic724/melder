@@ -41,6 +41,9 @@ def test_every_pr_reports_a_fail_closed_required_status(policy: ModuleType) -> N
     assert aggregate["env"]["CI_PACKAGE_REQUIRED"] == "${{ needs.branch-policy.outputs.package-required }}"
     assert aggregate["env"]["CI_RUNTIME_REQUIRED"] == "${{ needs.branch-policy.outputs.runtime-required }}"
     assert aggregate["env"]["CI_SOURCE_REQUIRED"] == "${{ needs.branch-policy.outputs.source-required }}"
+    assert aggregate["env"]["CI_GAUNTLET_REQUIRED"] == "${{ needs.branch-policy.outputs.gauntlet-required }}"
+    assert jobs["branch-policy"]["outputs"]["gauntlet-required"] == "${{ steps.route.outputs.gauntlet-required }}"
+    assert jobs["real-world-gauntlet"]["if"] == "needs.branch-policy.outputs.gauntlet-required == 'true'"
     assert jobs["packages"]["if"] == "needs.branch-policy.outputs.package-required == 'true'"
     for name in policy.CIPolicy.FULL_JOBS:
         assert jobs[name]["needs"] == "branch-policy"
@@ -52,7 +55,7 @@ def test_every_pr_reports_a_fail_closed_required_status(policy: ModuleType) -> N
     assert jobs["source-qualification"]["if"] == "needs.branch-policy.outputs.source-required == 'true'"
 
 
-@pytest.mark.parametrize("name", ["build-src-assets.yml", "build-repo-assets.yml", "test-runtime.yml", "docs.yml"])
+@pytest.mark.parametrize("name", ["build-src-assets.yml", "build-repo-assets.yml", "test-runtime.yml", "real-world-gauntlet.yml", "persistent-runtime-gauntlet.yml", "docs.yml"])
 def test_reusable_mandatory_jobs_cannot_be_disabled(name: str) -> None:
     """Callers own triggers/concurrency; no helper silently skips a mandatory validation job."""
     document = workflow(name)
@@ -91,6 +94,8 @@ def test_docs_metadata_validation_precedes_artifact_upload_and_rtd_staging() -> 
 
 @pytest.mark.parametrize(("name", "job_name"), [
     ("test-runtime.yml", "test"),
+    ("real-world-gauntlet.yml", "gauntlet"),
+    ("persistent-runtime-gauntlet.yml", "gauntlet"),
     ("release-candidate.yml", "install"),
     ("build-distributions.yml", "build"),
 ])
@@ -472,3 +477,82 @@ def test_source_proof_download_is_pinned_and_has_only_read_permissions() -> None
     for name in ("ci.yml", "release-candidate.yml"):
         caller = workflow(name)["jobs"]["source-qualification"]
         assert caller["permissions"] == document["permissions"]
+
+
+def test_gauntlet_reports_all_counts_and_keeps_setup_outside_gil_override() -> None:
+    """Promotion CI uses its smaller iteration relay and preserves evidence from all three OSes."""
+    document = workflow("real-world-gauntlet.yml")
+    assert set(document["on"]) == {"workflow_call", "workflow_dispatch"}
+    for event in document["on"].values():
+        assert event["inputs"]["thread-counts"]["default"] == ""
+        assert event["inputs"]["iteration-counts"]["default"] == "500,1000,2500,5000,10000"
+    job = document["jobs"]["gauntlet"]
+    assert job["strategy"]["matrix"]["os"] == ["ubuntu-24.04", "windows-2025", "macos-15-intel"]
+    assert job["strategy"]["fail-fast"] == "false"
+    assert "PYTHON_GIL" not in job["env"]
+    assert "DI_GAUNTLET_THREADS" not in job["env"]
+    assert "DI_GAUNTLET_ITERS" not in job["env"]
+    assert job["env"]["REAL_WORLD_GAUNTLET_ITERATION_COUNTS"] == "${{ inputs.iteration-counts }}"
+    steps = job["steps"]
+    setup = next(step for step in steps if step.get("uses", "").startswith("actions/setup-python@"))
+    assert setup["with"]["python-version"] == "3.14.7"
+    assert setup["with"]["architecture"] == "x64"
+    assert setup["with"]["freethreaded"] == "true"
+    install = next(index for index, step in enumerate(steps) if step.get("name") == "Install identical pinned benchmark dependencies")
+    provenance = next(index for index, step in enumerate(steps) if step.get("name") == "Record source and runtime provenance")
+    assert install < provenance
+    assert "gauntlet._gauntlet_thread_counts()" in steps[provenance]["run"]
+    measured = next(step for step in steps if step.get("name") == "Run configured real-world gauntlet")
+    assert measured["env"]["PYTHON_GIL"] == "0"
+    assert int(measured["timeout-minutes"]) < int(job["timeout-minutes"])
+    assert "GITHUB_STEP_SUMMARY" in measured["run"]
+    assert "expected_pairs" in measured["run"]
+    assert "assert all(verified.values())" in measured["run"]
+    retained = steps[-1]
+    assert retained["if"] == "always()"
+    assert retained["with"]["path"] == "gauntlet-results/"
+    assert retained["with"]["retention-days"] == "30"
+    caller = workflow("ci.yml")["jobs"]["real-world-gauntlet"]
+    assert caller["uses"] == "./.github/workflows/real-world-gauntlet.yml"
+    assert "secrets" not in caller
+
+
+def test_gauntlet_inline_python_parses_after_yaml_indentation() -> None:
+    """Every Python step is valid executable syntax after YAML removes its indentation."""
+    import ast
+    for step in workflow("real-world-gauntlet.yml")["jobs"]["gauntlet"]["steps"]:
+        if step.get("shell") == "python":
+            ast.parse(step["run"], filename=step["name"])
+
+
+def test_persistent_gauntlet_runs_in_parallel_on_independent_promotion_runners() -> None:
+    """Neither benchmark waits for the other; each owns its OS jobs and result artifacts."""
+    jobs = workflow("ci.yml")["jobs"]
+    for name in ("real-world-gauntlet", "persistent-runtime-gauntlet"):
+        assert jobs[name]["needs"] == "branch-policy"
+        assert jobs[name]["if"] == "needs.branch-policy.outputs.gauntlet-required == 'true'"
+        assert name in jobs["merge-ready"]["needs"]
+    assert jobs["persistent-runtime-gauntlet"]["uses"] == "./.github/workflows/persistent-runtime-gauntlet.yml"
+    document = workflow("persistent-runtime-gauntlet.yml")
+    for event in document["on"].values():
+        assert event["inputs"]["duration-seconds"]["default"] == "60,180,300"
+        assert event["inputs"]["thread-counts"]["default"] == "3,5"
+    job = document["jobs"]["gauntlet"]
+    assert job["strategy"]["matrix"]["os"] == ["ubuntu-24.04", "windows-2025", "macos-15-intel"]
+    assert job["env"]["PERSISTENT_SERIES_SECONDS"] == "${{ inputs.duration-seconds }}"
+    assert job["env"]["PERSISTENT_SERIES_THREADS"] == "${{ inputs.thread-counts }}"
+    assert job["env"]["PERSISTENT_SERIES_OUTPUT_DIR"] == "${{ github.workspace }}/persistent-gauntlet-results"
+    assert "PYTHON_GIL" not in job["env"]
+    measured = next(step for step in job["steps"] if step.get("name") == "Run persistent duration and thread series")
+    assert measured["env"]["PYTHON_GIL"] == "0"
+    assert int(measured["timeout-minutes"]) < int(job["timeout-minutes"])
+    assert "test_persistent_runtime_gauntlet_series.py" in measured["run"]
+    assert "observed == cells" in measured["run"] and "assert valid" in measured["run"]
+    assert "GITHUB_STEP_SUMMARY" in measured["run"]
+    upload = job["steps"][-1]
+    assert upload["if"] == "always()"
+    assert upload["with"]["path"] == "persistent-gauntlet-results/"
+    assert upload["with"]["name"].startswith("persistent-gauntlet-")
+    for step in job["steps"]:
+        if step.get("shell") == "python":
+            compile(step["run"], step["name"], "exec")

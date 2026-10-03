@@ -160,15 +160,11 @@ def test_a_negative_round_is_refused() -> None:
         _shared._isolated_order(-1)
 
 
-def test_rounds_default_to_one(monkeypatch: pytest.MonkeyPatch) -> None:
-    """
-    Without REAL_WORLD_GAUNTLET_ROUNDS the wrapper measures every library once.
-
-    Contract:
-        An unset variable reads as one round.
-    """
+def test_rounds_default_to_the_editable_setting(monkeypatch: pytest.MonkeyPatch) -> None:
+    """An unset environment override uses the benchmark's editable rounds setting."""
     monkeypatch.delenv("REAL_WORLD_GAUNTLET_ROUNDS", raising=False)
-    assert _shared._gauntlet_rounds() == 1
+    monkeypatch.setattr(_shared, "REAL_WORLD_GAUNTLET_ROUNDS", 2)
+    assert _shared._gauntlet_rounds() == 2
 
 
 def test_rounds_read_a_positive_count(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -234,10 +230,10 @@ def test_isolated_csv_has_one_header_and_a_round_column(monkeypatch: pytest.Monk
     ]
     _shared._write_isolated_per_turn_csv(payloads)
     rows = list(csv.reader(target.read_text(encoding="utf-8").splitlines()))
-    assert rows[0] == [*_shared._per_turn_csv_header(), "Round"]
-    assert rows[1] == ["dishka", "0", "1.0000", "0.0100", "0.9000", "no", "5", "1"]
-    assert rows[2] == ["melder", "0", "2.0000", "0.0200", "1.8000", "yes", "7", "2"]
-    assert rows[3][0] == "melder" and rows[3][-1] == "2"
+    assert rows[0] == [*_shared._per_turn_csv_header(), "Round", "Threads", "Iterations"]
+    assert rows[1] == ["dishka", "0", "1.0000", "0.0100", "0.9000", "no", "5", "1", "3", "3"]
+    assert rows[2] == ["melder", "0", "2.0000", "0.0200", "1.8000", "yes", "7", "2", "3", "3"]
+    assert rows[3][0] == "melder" and rows[3][-3:] == ["2", "3", "3"]
     assert len(rows) == 4
 
 
@@ -260,7 +256,7 @@ def test_isolated_run_starts_the_runner_for_one_library(monkeypatch: pytest.Monk
     The wrapper starts the runner for exactly one library, round and payload path.
 
     Contract:
-        Uses this interpreter, adds `-X gil=0` exactly when the module forces it,
+        Uses this interpreter, always adds `-X gil=0` and child PYTHON_GIL=0,
         passes --lib, --round and --result-json, runs from the repository root and
         leaves the exit code to the caller (check=False). subprocess.run is the
         mocked boundary.
@@ -278,7 +274,8 @@ def test_isolated_run_starts_the_runner_for_one_library(monkeypatch: pytest.Monk
     _shared._run_isolated_library("melder", 3, result_path)
     command = seen["command"]
     assert command[0] == sys.executable
-    assert (command[1:3] == ["-X", "gil=0"]) == _shared.REAL_WORLD_GAUNTLET_FORCE_NOGIL
+    assert command[1:3] == ["-X", "gil=0"]
+    assert seen["kwargs"]["env"]["PYTHON_GIL"] == "0"
     assert str(_shared._runner_path()) in command
     assert command[command.index("--lib") + 1] == "melder"
     assert command[command.index("--round") + 1] == "3"

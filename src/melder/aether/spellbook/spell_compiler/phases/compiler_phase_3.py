@@ -60,6 +60,13 @@ class CompilerPhase3:
     Contract:
         - Slot-only phase surface with no explicit `__init__`.
         - Directly ports the canonical `SpellCrafter` phase-3 behavior.
+        - Annotation matching is by address key (2026-10-03): a DI annotation
+          names `normalize_frame_key(annotation)`, and a spell is a candidate
+          when that key is its address frame key (spellframe, else its own
+          name) or its type key (`spell_name`; an existing object's class
+          name). No identity comparison: a spellframe is a category or a
+          shape label, never a type, and a `TYPE_CHECKING`-only annotation
+          (a string at runtime) resolves exactly as the class object does.
         - Does not own spell, artifact, spellbook, or runtime collaborator
           lifecycle.
     """
@@ -175,6 +182,54 @@ class CompilerPhase3:
 
         return annotation
 
+    @staticmethod
+    def _annotation_key(annotation: Any) -> str:
+        """
+        Return the address key a DI annotation names.
+
+        Contract:
+            A `ForwardRef` keys by its name; everything else keys through
+            `SpellInputUtils.normalize_frame_key` - a class or Protocol by
+            `__name__`, a string by itself, anything else by `str()` -
+            lowercased, the normalization every spell address already uses.
+
+        Args:
+            annotation: The normalized annotation (Optional/Union unwrapped).
+
+        Returns:
+            str: The lowercased key.
+        """
+        if isinstance(annotation, typing.ForwardRef):
+            annotation = annotation.__forward_arg__
+        return SpellInputUtils.normalize_frame_key(annotation)
+
+    @staticmethod
+    def _spell_keys(spell_obj: Spell) -> Tuple[str, ...]:
+        """
+        Return the keys a spell answers to: its address frame key and its type key.
+
+        Contract:
+            The frame key is the spellframe when one was given, else the spell's
+            own name - exactly what `make_spell_key_from_parts` stores at bind.
+            The type key is the spell's name: a class's name, or an existing
+            object's class name. Equal keys collapse to one entry, so a bare
+            binding answers to one key and a framed binding to two.
+
+        Args:
+            spell_obj: The candidate spell (any object with `spell_name` and `spellframe`).
+
+        Returns:
+            Tuple[str, ...]: One or two lowercased keys.
+        """
+        type_key = SpellInputUtils.normalize_frame_key(spell_obj.spell_name)
+        frame = spell_obj.spellframe
+        if frame is None:
+            return (type_key,)
+        frame_key = SpellInputUtils.normalize_frame_key(frame)
+        if frame_key == type_key:
+            return (type_key,)
+        return (frame_key, type_key)
+
     def _matches_annotation(
             self,
             annotation: Any,
@@ -186,12 +241,16 @@ class CompilerPhase3:
         """
         Return True if `spell_obj` is a candidate for the given annotation.
 
-        Matching strategy:
-            - Optional/Union wrappers are stripped before matching.
-            - String/bare-name annotation matches against `spell_name`, `frame`
-              (string or type name), and the bound spell type object.
-            - Non-string annotation matches against `spell.spell` and
-              `spell.spellframe`.
+        Matching strategy (by address key, 2026-10-03):
+            - Optional/Union wrappers were stripped by the caller; a ForwardRef
+              keys by its name.
+            - The annotation's key (`_annotation_key`) must equal one of the
+              spell's keys (`_spell_keys`): its address frame key or its type
+              key. A class-object annotation and its string spelling therefore
+              resolve identically, an existing object is matched by its class,
+              and a spellframe is a category or a shape label - never compared
+              by object identity.
+            - `binding_name`, when given, must equal the spell's binding name.
             - `require_class_spell=True` excludes METHOD/LAMBDA spell kinds.
 
         Args:
@@ -217,38 +276,11 @@ class CompilerPhase3:
             ):
                 return False
 
-        if isinstance(annotation, typing.ForwardRef):
-            annotation = annotation.__forward_arg__
-
-        if isinstance(annotation, str):
-            if spell_obj.spell_name == annotation:
-                if binding_name is not None and spell_obj.binding_name != binding_name:
-                    return False
-                return True
-
-            frame = spell_obj.spellframe
-            if isinstance(frame, str) and frame == annotation:
-                if binding_name is not None and spell_obj.binding_name != binding_name:
-                    return False
-                return True
-
-            if inspect.isclass(frame) and frame.__name__ == annotation:
-                if binding_name is not None and spell_obj.binding_name != binding_name:
-                    return False
-                return True
-
-        if spell_obj.spell is annotation:
-            if binding_name is not None and spell_obj.binding_name != binding_name:
-                return False
-            return True
-
-        frame = spell_obj.spellframe
-        if frame is annotation or frame == annotation:
-            if binding_name is not None and spell_obj.binding_name != binding_name:
-                return False
-            return True
-
-        return False
+        if self._annotation_key(annotation) not in self._spell_keys(spell_obj):
+            return False
+        if binding_name is not None and spell_obj.binding_name != binding_name:
+            return False
+        return True
 
     @staticmethod
     def _eq_safe_object(candidate: Any) -> bool:
@@ -256,10 +288,10 @@ class CompilerPhase3:
         Return True when equality on `candidate` is provably identity/str-like.
 
         Purpose:
-            The pass-scoped candidate index replaces `is`/`==` scans with
-            bucket lookups. That substitution is only exact when no bound
-            spell object or spellframe carries a custom `__eq__` that could
-            match objects beyond identity (or plain string equality).
+            The structural snapshot's replayability rule: it marks a pool
+            non-replayable when a bound object or spellframe carries a custom
+            `__eq__`. Phase 3 itself no longer needs it - its index matches by
+            address key, which is exact for every pool (2026-10-03).
 
         Contract:
             - None, str, classes with the default `type.__eq__` metaclass
@@ -280,71 +312,31 @@ class CompilerPhase3:
         Build the pass-scoped phase-3 candidate index over the live pool.
 
         Purpose:
-            Collapse the O(dependencies x spells) annotation scans into
-            bucket lookups. All bucket keys derive from inputs that are
-            pass-invariant (binds are transactional and the resolution pass
-            runs post-bind): spell_name, spellframe, spell object identity,
-            spell_type, binding_name.
+            Collapse the O(dependencies x spells) annotation scans into one
+            bucket lookup per dependency. Bucket keys are the spells' address
+            keys (`_spell_keys`), which derive from pass-invariant inputs
+            (binds are transactional and the resolution pass runs post-bind):
+            spellframe and spell_name.
 
         Contract:
-            - Entries are `(pool_position, spell_index, spell_obj)` so any
-              bucket union can be re-sorted into `_spell_id_pool` iteration
-              order, keeping collection-injection order identical to the
-              scan implementation.
-            - `eq_risky` is True when any spell/frame object fails
-              `_eq_safe_object`; consumers must then fall back to scans.
+            - Entries are `(pool_position, spell_index, spell_obj)` so a bucket
+              can be re-sorted into `_spell_id_pool` iteration order, keeping
+              collection-injection order identical to the scan implementation.
+            - Each spell is appended once per distinct key (one or two).
+            - Keys are strings, so bucket membership equals scan membership for
+              every pool; no equality guard is needed (2026-10-03).
 
         Returns:
-            Dict[str, Any]: Index buckets plus the `eq_risky` flag.
+            Dict[str, Any]: `{"by_key": {key: [entries]}}`.
         """
-        ann_str: Dict[str, List[Tuple[int, Any, Spell]]] = {}
-        ident: Dict[int, List[Tuple[int, Any, Spell]]] = {}
-        frame_str: Dict[str, List[Tuple[int, Any, Spell]]] = {}
-        frame_ident: Dict[int, List[Tuple[int, Any, Spell]]] = {}
-        frame_none: List[Tuple[int, Any, Spell]] = []
-        eq_risky = False
-
+        by_key: Dict[str, List[Tuple[int, Any, Spell]]] = {}
         position = 0
         for index, spell_obj in self._iter_all_spells(spellbook):
             entry = (position, index, spell_obj)
             position += 1
-
-            bound_object = spell_obj.spell
-            frame = spell_obj.spellframe
-            if not (
-                    self._eq_safe_object(bound_object)
-                    and self._eq_safe_object(frame)
-            ):
-                eq_risky = True
-
-            string_keys = set()
-            spell_name = spell_obj.spell_name
-            if isinstance(spell_name, str):
-                string_keys.add(spell_name)
-            if isinstance(frame, str):
-                string_keys.add(frame)
-                frame_str.setdefault(frame, []).append(entry)
-            elif inspect.isclass(frame):
-                string_keys.add(frame.__name__)
-            for string_key in string_keys:
-                ann_str.setdefault(string_key, []).append(entry)
-
-            if bound_object is not None:
-                ident.setdefault(id(bound_object), []).append(entry)
-            if frame is not None:
-                ident.setdefault(id(frame), []).append(entry)
-                frame_ident.setdefault(id(frame), []).append(entry)
-            else:
-                frame_none.append(entry)
-
-        return {
-            "eq_risky": eq_risky,
-            "ann_str": ann_str,
-            "ident": ident,
-            "frame_str": frame_str,
-            "frame_ident": frame_ident,
-            "frame_none": frame_none,
-        }
+            for key in self._spell_keys(spell_obj):
+                by_key.setdefault(key, []).append(entry)
+        return {"by_key": by_key}
 
     def _get_candidate_index(
             self,
@@ -355,8 +347,8 @@ class CompilerPhase3:
         Return the usable pass-scoped candidate index, building it lazily.
 
         Contract:
-            - Returns None (scan path) when no pass cache was supplied or
-              when the built index is eq-risky.
+            - Returns None (scan path) only when no pass cache was supplied;
+              the key index is exact for every pool (2026-10-03).
             - Benign build race under multi-worker scheduling: the build is
               idempotent over pass-invariant inputs and the last writer wins
               with an equivalent value (same contract as the phase-4
@@ -368,8 +360,6 @@ class CompilerPhase3:
         if index is None:
             index = self._build_candidate_index(spellbook)
             resolution_pass_cache["phase3_candidate_index"] = index
-        if index["eq_risky"]:
-            return None
         return index
 
     def _indexed_annotation_candidates(
@@ -383,52 +373,39 @@ class CompilerPhase3:
         Bucket-lookup equivalent of the `_matches_annotation` scan.
 
         Contract:
-            - Only called when the index is not eq-risky, where bucket
-              membership provably equals scan membership:
-              string annotations match via spell_name / str-frame /
-              class-frame-name buckets plus identity (a bound str object can
-              identity-match a str annotation); non-string annotations match
-              via spell/frame identity buckets only, because `==` beyond
-              identity requires a custom `__eq__` (excluded by the guard).
+            - Reads the one bucket of the annotation's key (`_annotation_key`);
+              membership equals scan membership because both sides use the
+              same keys (2026-10-03).
             - `binding_name` filtering is omitted because both annotation
               resolvers pass None today (scan applies the filter only when a
               binding name is present).
             - `require_class_spell=True` applies the same METHOD/LAMBDA
               exclusions as the scan.
         """
-        buckets: List[List[Tuple[int, Any, Spell]]] = []
-        if isinstance(annotation, str):
-            string_bucket = candidate_index["ann_str"].get(annotation)
-            if string_bucket is not None:
-                buckets.append(string_bucket)
-        identity_bucket = candidate_index["ident"].get(id(annotation))
-        if identity_bucket is not None:
-            buckets.append(identity_bucket)
+        bucket = candidate_index["by_key"].get(self._annotation_key(annotation))
 
         # Replicate the scan's dict semantics exactly: when one SpellIndex
         # matches through multiple pool entries (version lineages), the scan
         # keeps the FIRST insertion position but the LAST matching spell
-        # object (dict insert-then-overwrite). Bucket union order is not
-        # global pool order, so track min/max positions explicitly.
+        # object (dict insert-then-overwrite).
         # collected: id(index) -> [first_pos, value_pos, index, spell_obj]
         collected: Dict[int, List[Any]] = {}
-        for bucket in buckets:
-            for position, index, spell_obj in bucket:
-                if require_class_spell and spell_obj.spell_type in (
-                        SpellType.METHOD,
-                        SpellType.METHOD_WITH_BINDING_NAME,
-                        SpellType.LAMBDA_METHOD_WITH_BINDING_NAME,
-                ):
-                    continue
-                record = collected.get(id(index))
-                if record is None:
-                    collected[id(index)] = [position, position, index, spell_obj]
-                    continue
-                if position < record[0]:
-                    record[0] = position
-                if position > record[1]:
-                    record[1] = position
-                    record[3] = spell_obj
+        for position, index, spell_obj in (bucket or ()):
+            if require_class_spell and spell_obj.spell_type in (
+                    SpellType.METHOD,
+                    SpellType.METHOD_WITH_BINDING_NAME,
+                    SpellType.LAMBDA_METHOD_WITH_BINDING_NAME,
+            ):
+                continue
+            record = collected.get(id(index))
+            if record is None:
+                collected[id(index)] = [position, position, index, spell_obj]
+                continue
+            if position < record[0]:
+                record[0] = position
+            if position > record[1]:
+                record[1] = position
+                record[3] = spell_obj
 
         ordered = sorted(collected.values(), key=lambda record: record[0])
         return {record[2]: record[3] for record in ordered}
@@ -867,7 +844,7 @@ class CompilerPhase3:
         root_id = self._get_required_current_spell_id(spell)
 
         # Pass-scoped candidate index (None -> original scan semantics).
-        # Built lazily once per resolution pass; eq-risky pools disable it.
+        # Built lazily once per resolution pass; exact for every pool (key matching).
         candidate_index = (
             self._get_candidate_index(spellbook, resolution_pass_cache)
             if spell.resolvable else None

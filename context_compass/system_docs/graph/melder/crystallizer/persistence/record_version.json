@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/persistence/record_version.py",
- "source_sha256": "3b0da78111efd9788dd04ca6ea717dc9d303684a2175c4e951a0f913b946dd1d",
+ "source_sha256": "fee3546b18291e978c119552c548ada667e77d90232e7fd42bf5229d1167683d",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.persistence.record_version": {

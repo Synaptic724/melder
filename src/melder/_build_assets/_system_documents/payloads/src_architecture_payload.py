@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_architecture.md'
-LINE_COUNT = 3511
-CONTENT_SHA256 = '82ace75312b6e780a954e801488cb7e5a5eaee6e5d3858eef38c94da91be34fc'
+LINE_COUNT = 3593
+CONTENT_SHA256 = '01d14d5e8d403e376ac0243a508d9ba8d89940ba631fc5223e366ff47d62f4cf'
 
 TEXT = """# Src Architecture (C4)
 
@@ -24,7 +24,7 @@ TEXT = """# Src Architecture (C4)
 - Status: in_progress
 - Owner:
 - Created: 2026-01-17
-- Updated: 2026-10-02
+- Updated: 2026-10-03
 
 ## Scope and Intent
 This document describes the Melder core architecture at the C4 level for
@@ -704,7 +704,9 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:3701-4136 (the three seams, r
      are released. The default logs nothing; internal conjure routes never pass True (2026-09-26).
    - Classify the creation cache BEFORE the conduit phases: the live set of
      resolvable, non-existing-creation spell ids is compared with the cached
-     ids, giving `disabled`, `full_hit`, `mixed` or `full_miss`.
+     ids, and the bundle's recorded world stamp with the live one (0.2.8220),
+     giving `disabled`, `full_hit` (every live id cached AND the stamps equal),
+     `mixed` or `full_miss`.
    - Run conduit foundational phases 5-7.
    - Run conduit plan phases 8-11 only when foundational resolution has no
      errors AND the cache path is not `full_hit`. A full hit passes
@@ -714,7 +716,7 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:3701-4136 (the three seams, r
      EVIDENCE:
      - src/melder/aether/spellbook/spellbook_creation_system.py:242-263
      - src/melder/aether/spellbook/spellbook_creation_system.py:517-544
-     - src/melder/aether/spellbook/spellbook_creation_system.py:616-721
+     - src/melder/aether/spellbook/spellbook_creation_system.py:616-740
    - Live 8-11 mapping:
      - phase 8 analyzer
      - phase 9 processor
@@ -764,6 +766,10 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:3701-4136 (the three seams, r
    instead of step 3: 8-11 for its own Phase 5 root or an existing creation, otherwise its full target pass
    5-11, which must leave it resolution-valid (0.2.8215). A successful target pass flags each owned dependency
    it compiled only inside the target's plan, so that dependency's first direct meld resolves it.
+6. The per-conduit verdict step 3 reads belongs to a definition's life, not to its id (0.2.8219):
+   `SpellSystemStates.unregister_index` retires the removed spell id's verdicts in every conduit state and
+   `register_index` retires any verdict already held for the version id it publishes, so a definition bound
+   again under the same content-stable id reads `unknown` in each conduit and step 3 runs for it there.
 
 ### Sequence: Create Lesser Conduit
 1. Parent Conduit fires pre-create hook.
@@ -930,6 +936,49 @@ each entry in `src_components.md`; this list is the set that crosses components.
 - Validation strategies registered in `SpellValidationSystem`.
 
 ## Operational Invariants
+- Per-conduit verdicts retire with their definition (2026-10-03, 0.2.8219): a spell id that no registered
+  `SpellSystemState` carries has no resolution verdict in any `ConduitResolutionState` of the frame, and a version
+  id that `register_index` publishes starts with none. `unregister_index` calls
+  `SpellSystemStates._forget_resolution_verdicts_locked` for the removed current spell id (reason
+  `cleaned_up_spell`) and `register_index` calls it for `selected_spell_id` (reason `register_or_rebind`); each
+  visits every live conduit state under the registry lock and pops the id's spell-level and root-level verdict
+  (`ConduitResolutionState.forget_spell`), with no RiskManager callback - lineage membership in the risk model is
+  owner-scoped and `RiskManager.register_spell` recomputes it from the live verdict on the rebind. Spell ids are
+  content-stable, so a rebind of the same class at the same address after `cleanup_spell` mints the same id for a
+  new Spell with no compiler artifact and a structural state that late binding makes valid eagerly; before 0.2.8219
+  the dead definition's `valid` was read as current, phases 5-11 were skipped and the context builder raised.
+  Lock order stays registry -> conduit state; a dropped conduit is popped under that lock before it is cleaned, so
+  the helper never visits a cleaned state. The surviving product of a removed definition is deliberately left
+  alive in its scope: for `many` the replacement builds anew; for a slotted existence (`unique_per_conduit` and kin)
+  it keeps its id-keyed slot, the replacement's first meld there returns it, and an override against it is refused
+  as against any stored shared instance (owner ruling 2026-10-03).
+  EVIDENCE: `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py:SpellSystemStates.register_index`,
+  `SpellSystemStates.unregister_index`, `SpellSystemStates._forget_resolution_verdicts_locked` and
+  `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/conduit_resolution_state.py:ConduitResolutionState.forget_spell`.
+- Executor-cache world stamp (2026-10-03, 0.2.8220): the conduit creation-cache bundle records the world its executor
+  payloads were staged in - the structural tier's world stamp (sorted pool ids, posture, sorted borrowed ids) - and
+  the executor tier admits a full hit only when the live world carries it. A world that differs only by an existing
+  creation or a non-resolvable definition (ids the executor tier never counts, because they carry no payload)
+  recompiles phases 8-11 and re-stages the bundle, as a missing live spell does; a repeat world is still a
+  byte-identical full hit; a world that only removed a spell recompiles once (the former surplus-id full hit is
+  retired). Generation 19 retires bundles without the field; "" (an empty store, a bundle written without the
+  field) never matches, so the rule fails closed.
+  EVIDENCE: `src/melder/aether/spellbook/spellbook_creation_system.py:SpellbookCreationSystem._build_conjure_cache_state`,
+  `SpellbookCreationSystem._stage_spell_payloads_at_conjure_end` and
+  `src/melder/utilities/caching_system/caching_system.py:CachingSystem.set_world_stamp`.
+- Annotation matching by address key (2026-10-03, 0.2.8218): Phase 3 matches a constructor annotation to candidate spells
+  by the lowercased name every spell address uses - the annotation's key against each spell's frame key (its
+  spellframe, else its own name) and its type key (its class name; an existing object's class name). An existing
+  object bound bare satisfies a consumer annotated with its class; a binding resolves identically under a
+  `TYPE_CHECKING`-only string and a runtime class object; a spellframe is a category or a shape label matched by
+  name, never by identity. Nothing that resolved before stops resolving; ambiguity and Phase 4's one-address rule
+  are unchanged; cache generation 18 retires bundles captured under the identity matcher.
+  EVIDENCE: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:CompilerPhase3._matches_annotation` and `CompilerPhase3._build_candidate_index`.
+- Lazy `instance_results` (2026-10-03, 0.2.8217): a dict-mode site plan builds a dict literal of exactly the values a
+  generic construction reads, where that construction runs, and nothing on the warm path; misses take no dict
+  parameter. Direct-mode plans are byte-identical; cache generation 17 retires the eager executors. Measured on
+  the VM: -26..-32% of the plan on roots over existing objects.
+  EVIDENCE: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:SitePlanEmission._emit_results_literal` and `SitePlanEmission._place`.
 - Many registration trim (2026-10-02, 0.2.8216): a disposal-bearing `many` creation registers into its scope store with
   one list append; the Spell's disposal list is recorded once per key in a `ManyDisposalBucket` whose `entries` is
   the live bucket itself. Emitted plans and executors call `Creations.register_many(spell_id, instance,
@@ -1451,6 +1500,20 @@ each entry in `src_components.md`; this list is the set that crosses components.
   not the same thing as a Rift-level event orchestrator.
 
 ## Failure Modes and Error Paths
+- A warm creation cache no longer replays an executor compiled in another world (fixed in 0.2.8220): a world that
+  differs only by an existing creation or a non-resolvable definition used to be a full hit, so a consumer's
+  executor compiled without a provider raised TypeError ("missing 1 required positional argument") at its first
+  meld after the provider was bound, and a plan naming a removed provider raised RuntimeError ("generalized
+  manifest references unknown spell_id"); both worlds now recompile and resolve as a cold cache does.
+  EVIDENCE: `src/melder/aether/spellbook/spellbook_creation_system.py:SpellbookCreationSystem._build_conjure_cache_state`.
+- A definition melded, removed with `cleanup_spell` and bound again at the same address (same class, spellframe and
+  name) no longer fails its next meld with RuntimeError "Cannot build CreationContext before spell_codegen_creation
+  exists." in the scopes that resolved the first definition (fixed in 0.2.8219; the builder's guard is unchanged).
+  The replacement is resolved again per conduit on its first meld there; the two sequences that skip the first meld
+  were never affected. A peer that resolved the removed definition through a contract melds the replacement once
+  it is granted again; consumers of the removed definition rebuild against the next binding at that address.
+  EVIDENCE: `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py:SpellSystemStates.unregister_index`
+  and `tests/integration/melder/aether/conduit/test_rebind_after_first_meld_integration.py`.
 - A spell bound on a live dynamic root after conjure and first built as a consumer's dependency no longer fails its
   first direct meld with RuntimeError "Cannot build CreationContext before spell_codegen_creation exists." (fixed
   in 0.2.8215; the builder's guard is unchanged). If that dependency's own full target pass leaves it unresolved
@@ -1895,11 +1958,12 @@ Spellbook and binding:
   note: Spellbook core and conjure pipeline.
 - path: `src/melder/aether/spellbook/spellbook_creation_system.py`
   start_line: 1
-  end_line: 3453
-  loc: 3453
-  verified_at: 2026-09-30T19:57:20Z
+  end_line: 3482
+  loc: 3482
+  verified_at: 2026-10-03T21:03:41Z
   note: conjure and target-local resolution orchestration; a successful target pass flags the owned
-    dependencies it compiled without a plan of their own (0.2.8215).
+    dependencies it compiled without a plan of their own (0.2.8215); the executor-cache full hit requires
+    the recorded world stamp (0.2.8220).
 - path: `src/melder/aether/spellbook/spellbinder.py`
   start_line: 1
   end_line: 870
@@ -2035,9 +2099,9 @@ SpellCompiler and validation:
   note: DI shape classification.
 - path: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py`
   start_line: 1
-  end_line: 1500
-  loc: 1500
-  verified_at: 2026-10-02T17:50:04Z
+  end_line: 1546
+  loc: 1546
+  verified_at: 2026-10-03T19:33:16Z
   note: key-set plan lowering: site graph from steps, placement, emission, call shape.
 - path: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_override_runtime.py`
   start_line: 1
@@ -2667,10 +2731,10 @@ Control plane:
   note: frame-local topology and transaction mirror.
 - path: `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py`
   start_line: 1
-  end_line: 1522
-  loc: 1522
-  verified_at: 2026-09-26T08:22:34Z
-  note: lineage registry.
+  end_line: 1651
+  loc: 1651
+  verified_at: 2026-10-03T20:50:00Z
+  note: lineage registry; retires a spell id's per-conduit verdicts on unregister and on register (0.2.8219).
 - path: `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_state.py`
   start_line: 1
   end_line: 676
@@ -2706,10 +2770,10 @@ Utilities:
 
 - path: `src/melder/utilities/caching_system/caching_system.py`
   start_line: 1
-  end_line: 810
-  loc: 810
-  verified_at: 2026-10-02T17:50:04Z
-  note: release-bound creation-cache admission and atomic envelope persistence.
+  end_line: 887
+  loc: 887
+  verified_at: 2026-10-03T21:03:41Z
+  note: release-bound creation-cache admission, the envelope's world stamp and atomic persistence.
 
 - path: `src/melder/utilities/general_base/cleanable.py`
   start_line: 1
@@ -3203,6 +3267,24 @@ without rewriting the original record or existing live IDs.
 - `src/melder/utilities/ai_native_support_tools/protocol_crafter.py`
 
 ## Context / Handoff Summary
+
+2026-10-03 executor-cache world stamp (0.2.8220): the creation-cache bundle records the world its executors were
+staged in and a full hit requires it, so a world that only added or removed an existing creation (or a
+non-resolvable definition) recompiles instead of replaying a stale executor; the conjure sequence, the operational
+invariants, the failure modes and the code map carry it, the component map carries the envelope field, the rule
+and the staging write. The former "surplus cached id still full-hits" contract is retired (one recompile).
+
+2026-10-03 rebind after first meld (0.2.8219): a definition melded, removed and bound again at the same address
+melds again - `unregister_index` and `register_index` retire the spell id's per-conduit resolution verdicts, so the
+replacement is resolved again by each conduit instead of inheriting the dead definition's `valid`. The meld-time
+validation sequence, the operational invariants, the failure modes and the code map carry it; the component map
+carries the two verbs, their call sites and the corrected registry verb names. The surviving product of a removed
+definition stays alive by ruling; a slotted replacement meets it in its slot.
+
+2026-10-03 lazy instance_results (0.2.8217) and annotation matching by address key (0.2.8218): a dict-mode site plan
+builds a literal per generic construction and nothing on the warm path; Phase 3 matches annotations by the
+address key, so existing objects resolve by their class and `TYPE_CHECKING` strings and class objects agree. The
+operational invariants, the code map and the component map carry both; the README's DI section names the rule.
 
 2026-10-02 many registration trim (0.2.8216): a disposal-bearing `many` creation registers with one append and the
 key's disposal list is recorded once (`ManyDisposalBucket`, `Creations.register_many`, explicit lock calls); the

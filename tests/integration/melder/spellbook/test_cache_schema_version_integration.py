@@ -26,6 +26,9 @@ EXPECTED_CACHE_VERSION_HISTORY = {
     14: "override_site_plan_lanes",
     15: "structural_snapshot_rows",
     16: "many_registration_per_key_methods",
+    17: "lazy_instance_results",
+    18: "annotation_address_matching",
+    19: "executor_world_stamp",
 }
 
 

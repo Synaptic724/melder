@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: src
-SOURCE FINGERPRINT: 13d135708ae5838513093ffd9c1f3fa63552c4b54e02d74b9bd832291faac28c
+SOURCE FINGERPRINT: 5264dbbf7860924a5633ca55c732ffb3017f8cb86ea9b1c01020385825802c53
 FILE COUNT: 576
 
 ================================================================================
@@ -599,7 +599,7 @@ END FILE: src/melder/__melder_cache__/__melder_cache__.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/__version__.py
-CONTENT SHA256: 6f510eed67ddfacccf634f8f51c3a54b67aa9f80c7bc3ff4b38b5421ec6d3481
+CONTENT SHA256: 91861c744b1f5636849d293fa347cef483786f87f90765755fecfef74ea9d3d0
 SOURCE ENCODING: utf-8
 ================================================================================
 
@@ -613,7 +613,7 @@ Contract:
   negotiation or runtime compatibility checks by itself.
 """
 
-__version__ = "0.2.8216"
+__version__ = "0.2.8220"
 ================================================================================
 END FILE: src/melder/__version__.py
 ================================================================================
@@ -30304,7 +30304,7 @@ END FILE: src/melder/aether/aetheric_frame/dev_ops/risk_manager/risk_manager.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/aetheric_frame/dev_ops/spell_system_states/conduit_resolution_state.py
-CONTENT SHA256: 9a1c6b12fb70c875f462d0ec2ae1a97dd59cb73d32f02e3ad34f851318ba5353
+CONTENT SHA256: 09c4c65a53fed0bc5420411043f1f93393cd3fd41c477d23049a788185928e2a
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -30850,6 +30850,79 @@ class ConduitResolutionState(Cleanable):
                     )
                 except Exception:
                     pass
+
+    # ------------------------------------------------------------------ #
+    # Verdict retirement                                                 #
+    # ------------------------------------------------------------------ #
+    def forget_spell(
+            self,
+            spell_id: str,
+            *,
+            change_reason: Optional[SpellStateChangeReason] = None,
+    ) -> bool:
+        """
+        Retire every verdict this conduit holds for one spell id.
+
+        Purpose:
+            A spell id leaves or re-enters the frame: its definition was cleaned
+            up (`SpellSystemStates.unregister_index`), or a definition was bound
+            under the same content-stable id (`SpellSystemStates.register_index`,
+            which a rebind of the same class at the same address, a notch and an
+            ownership transfer all reach). The verdicts this conduit recorded for
+            that id describe a version that is no longer the one a meld will
+            build, so they are dropped rather than carried forward.
+
+        Contract:
+            - Pops the spell-level and the root-level verdict for `spell_id`.
+              Other ids, the diagnostics snapshot and `last_validated_at` are
+              untouched.
+            - After the call `get_spell_validity(spell_id)` and
+              `get_root_validity(spell_id)` answer `initial_validity` again,
+              exactly as for an id this conduit never resolved, so
+              `Meld._ensure_resolution_resolvable` reruns phases 5-11 for this
+              conduit before it builds the id again.
+            - Marks the state dirty with `change_reason` only when a verdict was
+              actually removed; a miss changes nothing.
+            - Does NOT notify the `RiskManager`. Forgetting is a change of
+              scope, not of verdict: lineage membership in the risk model is
+              owned by `RiskManager.register_spell` / `unregister_spell`, which
+              the Spellbook calls on bind and on removal and which recompute
+              risk from the live verdict. A callback from here would leave a
+              risky key behind in every conduit that never registers the
+              lineage again (a peer that resolved the id through a contract).
+
+        Args:
+            spell_id:
+                Versioned spell id whose verdicts are retired.
+            change_reason:
+                Reason recorded on the state when a verdict was removed.
+
+        Returns:
+            bool:
+                True when this conduit held a spell-level or root-level verdict
+                for the id, False when there was nothing to forget.
+
+        Raises:
+            ValueError:
+                If spell_id is empty.
+            RuntimeError:
+                If this state has been cleaned.
+
+        Threading:
+            Acquires the internal lock; takes no other lock and runs no
+            callback, so the owning registry may hold its own lock across the
+            call.
+        """
+        self.check_cleaned()
+        if not spell_id:
+            raise ValueError("spell_id cannot be empty.")
+        with self._lock:
+            had_spell_verdict = self._spell_validity.pop(spell_id, None) is not None
+            had_root_verdict = self._root_validity.pop(spell_id, None) is not None
+            forgotten = had_spell_verdict or had_root_verdict
+            if forgotten:
+                self.mark_dirty(change_reason=change_reason)
+        return forgotten
 
     # ------------------------------------------------------------------ #
     # Diagnostics                                                        #
@@ -32035,7 +32108,7 @@ END FILE: src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_sys
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py
-CONTENT SHA256: 5e93f92314f033d129b574ac4da17fa093a6f1e73da017d2f166760088493df4
+CONTENT SHA256: 7f84e0e891e30120567468ed3dc7093fa8d36e2ba25d9a3b4ee9f00291322d80
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -32122,7 +32195,15 @@ class SpellSystemStates(Cleanable):
     Lifecycle / Cleanup:
         One instance per `AethericFrame`, initialized alongside DevOpsManager.
         Unregistering a lineage notifies `RiskManager` to force validation
-        gating, so a removed spell cannot leave a stale "valid" verdict behind.
+        gating and retires the removed spell id's per-conduit resolution
+        verdicts in every registered `ConduitResolutionState`, so a removed
+        spell cannot leave a stale "valid" verdict behind on either axis.
+        Registering an index retires any verdict already held for the version
+        id it publishes, because spell ids are content-stable: a rebind of the
+        same class at the same address mints the same id for a new Spell with
+        no compiler artifact, and a verdict carried across that boundary would
+        send the first meld of the replacement straight to the context builder
+        with no plan to build from (the rebind-after-first-meld defect).
 
     Registration:
         MELDER KERNEL - guarded. Frame-owned control-plane state; users never
@@ -32351,6 +32432,13 @@ class SpellSystemStates(Cleanable):
           collection revalidation.
         - Mark the spell index as structurally gated with reason
           SpellStateChangeReason.register_or_rebind and add it to the dirty set.
+        - Retire every per-conduit resolution verdict already held for
+          `spell_index.selected_spell_id` (`_forget_resolution_verdicts_locked`),
+          so a version id that re-enters the frame - a rebind of the same
+          class at the same address after `cleanup_spell`, a notch back to a
+          member that was active before, a transfer - is resolved again by each
+          conduit before it is built there. A first-time id has no verdict and
+          nothing happens.
 
         This is intended to be called from Spellbook.bind(...) or equivalent.
         """
@@ -32375,6 +32463,13 @@ class SpellSystemStates(Cleanable):
 
             # Refresh the spell-id index as well
             self._states_by_spell_id[current_id] = state
+
+            # The version id is (re)entering the frame: no conduit may keep a
+            # resolution verdict recorded for an earlier life of the same id.
+            self._forget_resolution_verdicts_locked(
+                current_id,
+                change_reason=SpellStateChangeReason.register_or_rebind,
+            )
 
             if owner_spellbook_id is not None and self._index_owner_spellbook_id is not None:
                 existing_owner = self._index_owner_spellbook_id.get(index_id)
@@ -32793,6 +32888,10 @@ class SpellSystemStates(Cleanable):
         - Remove the local topology entry for the current spell id.
         - Remove collection/contract indices for the owning spellbook.
         - Detach this spell index from reverse-dependency edges.
+        - Retire the current spell id's resolution verdicts in every registered
+          `ConduitResolutionState` (`_forget_resolution_verdicts_locked`), so no
+          conduit answers `valid` for a definition that no longer exists, and a
+          later bind under the same content-stable id starts unresolved.
         - Notify RiskManager so spellbooks referencing this spell index require validation.
         - Cleanup the removed SpellSystemState.
 
@@ -32825,6 +32924,11 @@ class SpellSystemStates(Cleanable):
                 current_spell_id = spell_index.selected_spell_id
                 if current_spell_id and states_by_spell_id.get(current_spell_id) is not None:
                     states_by_spell_id.pop(current_spell_id, None)
+                if current_spell_id:
+                    self._forget_resolution_verdicts_locked(
+                        current_spell_id,
+                        change_reason=SpellStateChangeReason.cleaned_up_spell,
+                    )
                 dirty_indexes.discard(index_id)
                 return None
 
@@ -32848,6 +32952,15 @@ class SpellSystemStates(Cleanable):
                     self._collection_frames_by_index.pop(index_id, None)
 
             dependencies = removed_state.direct_dependencies
+
+            # The definition is leaving the frame: retire its per-conduit
+            # resolution verdicts so no conduit keeps a stale `valid` under its
+            # content-stable id (a rebind would inherit it and skip phases 5-11).
+            if current_spell_id:
+                self._forget_resolution_verdicts_locked(
+                    current_spell_id,
+                    change_reason=SpellStateChangeReason.cleaned_up_spell,
+                )
 
             # Detach reverse edges from dependencies that still exist.
             for dep_id in dependencies:
@@ -32925,6 +33038,95 @@ class SpellSystemStates(Cleanable):
                     state.cleanup()
                 except Exception:
                     pass
+
+    def forget_spell_resolution_verdicts(
+            self,
+            spell_id: str,
+            *,
+            change_reason: Optional[SpellStateChangeReason] = None,
+    ) -> int:
+        """
+        Retire one spell id's resolution verdicts in every registered conduit.
+
+        Purpose:
+            The per-conduit axis of lineage retirement. `unregister_index` and
+            `register_index` call the locked form of this verb themselves; this
+            public form serves callers that retire or re-gate a version id
+            without touching the structural registry.
+
+        Contract:
+            - Calls `ConduitResolutionState.forget_spell(spell_id, ...)` on every
+              live conduit state under the registry lock, so a conduit dropped
+              concurrently (`drop_conduit_resolution_state`) is either already
+              gone from the registry or still live for the whole call.
+            - Leaves every other id's verdicts, the conduit diagnostics and the
+              structural `SpellSystemState` registry untouched.
+            - Notifies no `RiskManager`; see `ConduitResolutionState.forget_spell`.
+
+        Args:
+            spell_id:
+                Versioned spell id whose verdicts are retired frame-wide.
+            change_reason:
+                Reason recorded on each conduit state that held a verdict.
+
+        Returns:
+            int:
+                Number of conduit states that held a verdict for the id.
+
+        Raises:
+            RuntimeError:
+                If the registry has been cleaned (`check_cleaned`).
+
+        Threading:
+            Holds the registry lock across the per-conduit calls; each state
+            takes only its own lock and runs no callback, so the order
+            registry -> conduit state is the only one taken.
+        """
+        self.check_cleaned()
+        if not spell_id:
+            return 0
+        with self._lock:
+            return self._forget_resolution_verdicts_locked(
+                spell_id,
+                change_reason=change_reason,
+            )
+
+    def _forget_resolution_verdicts_locked(
+            self,
+            spell_id: str,
+            *,
+            change_reason: Optional[SpellStateChangeReason],
+    ) -> int:
+        """
+        Retire one spell id's verdicts in every live conduit state; caller holds `_lock`.
+
+        Contract:
+            - Caller holds `self._lock` and has checked the registry is live.
+            - Visits the live `ConduitResolutionState` objects in registry order
+              and calls `forget_spell` on each. A state is cleaned only after
+              `drop_conduit_resolution_state` or `cleanup` has popped it from
+              the registry under this same lock, so every state visited here is
+              live; `forget_spell` raising `RuntimeError` would mean that
+              invariant broke, and it is left to raise.
+            - Returns how many states held a verdict for the id.
+
+        Args:
+            spell_id:
+                Versioned spell id whose verdicts are retired.
+            change_reason:
+                Reason recorded on each conduit state that held a verdict.
+
+        Returns:
+            int:
+                Number of conduit states that held a verdict for the id.
+        """
+        if self._resolution_by_conduit_id is None:
+            return 0
+        forgotten = 0
+        for resolution_state in self._resolution_by_conduit_id.values():
+            if resolution_state.forget_spell(spell_id, change_reason=change_reason):
+                forgotten += 1
+        return forgotten
 
     def iter_conduit_resolution_states(self) -> Iterator[ConduitResolutionState]:
         """
@@ -81796,7 +81998,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/sha
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py
-CONTENT SHA256: 4ef811b7a4575b3aabe1e8f3c8187354a402978de4a4b7262d6f4303058279ea
+CONTENT SHA256: 4d3d7d99c681f697961a8f40dfe71777f3f70f16f6374a02c0e4d2c3fbce4995
 SOURCE ENCODING: utf-8
 ================================================================================
 from types import FunctionType, MethodType
@@ -82545,9 +82747,14 @@ class SitePlanEmission(Cleanable):
           on every call, hundreds on deep graphs. Spells ride one `spells`
           tuple read only on cold paths (errors, shared-site routing for
           `unique`, locks). No namespace name is assigned in the plan body.
-        - Dict mode (`instance_results`) is emitted only when a generic step
-          needs dependency values by instance key; misses then receive the dict
-          and record their sites in it.
+        - Generic steps read their dependency values through a dict LITERAL
+          (lazy `instance_results`, 2026-10-03): each generic construction is
+          preceded by `instance_results = {key: v, ...}` holding exactly the
+          (masked) step's dependency keys, built where the step runs from
+          locals the plan already holds. No dict is allocated at the plan top,
+          nothing is stored per step and misses take no dict parameter, so a
+          warm creation whose shared sites all hit builds no dict at all.
+          Direct-mode plans are unchanged.
         - Placement (2026-09-26): every kept step lives at top level or inside
           exactly one shared site's `_miss{i}`. The root is top level; a many
           site lives where its one consumer is built (inside the consumer's miss
@@ -82562,8 +82769,9 @@ class SitePlanEmission(Cleanable):
           unconditionally, in step order, whose UNRESOLVED_INPUT parameters
           have no winning key: its many children, then (in a miss) the site
           itself. A stored site's miss never runs, so it never demands.
-        - A miss function takes `(meld, ov, c{i}, [instance_results], [args],
-          v...)`: the outer values its sites read, in step order. It builds the
+        - A miss function takes `(meld, ov, c{i}, [args], v...)`: the outer
+          values its sites read (call operands or dict-literal values), in
+          step order. It builds the
           sites placed inside it first, then takes the site's build guard for
           recheck, construction and publication only, and returns the site's
           value. So a plan never holds a build lock while another site's
@@ -82628,7 +82836,7 @@ class SitePlanEmission(Cleanable):
         "_lines",
         "_masked",
         "_direct",
-        "_dict_mode",
+        "_index_by_key",
         "_shared",
         "_home",
         "_children",
@@ -82698,7 +82906,7 @@ class SitePlanEmission(Cleanable):
         self._masked: List[SitePlanStep] = []
         # Placement state; filled by `render` (`_place`).
         self._direct: List[bool] = []
-        self._dict_mode: bool = False
+        self._index_by_key: Dict[SiteInstanceKey, int] = {}
         self._shared: List[bool] = [step.existence is not Existence.many for step in steps]
         self._home: Dict[int, Optional[int]] = {}
         self._children: Dict[Optional[int], List[int]] = {}
@@ -82743,7 +82951,7 @@ class SitePlanEmission(Cleanable):
         del self._masked
         self._miss_lines.clear()
         del self._direct
-        del self._dict_mode
+        del self._index_by_key
         del self._shared
         del self._home
         del self._children
@@ -82890,7 +83098,6 @@ class SitePlanEmission(Cleanable):
             Tuple[str, Dict[str, Any], Tuple[SitePlanStep, ...]]: See `SitePlanLowering.emit`.
         """
         self._direct = [self._is_direct(step) for step in self._steps]
-        self._dict_mode = not all(self._direct)
         self._place()
         body = self._lines
         if self._arity > 0:
@@ -82903,8 +83110,6 @@ class SitePlanEmission(Cleanable):
                 "root_spell_id, root_spell_name)"
             )
         body.extend(self._unresolved_check_lines(None, "    "))
-        if self._dict_mode:
-            body.append("    instance_results = {}")
         uses_many_store = self._emit_context(None, "    ", body)
         body.append(f"    return {self._local_by_key[self._root_instance_key]}")
         # Constants are read as globals of the plan's namespace; see the class contract.
@@ -82936,8 +83141,9 @@ class SitePlanEmission(Cleanable):
             - A consumer reads a provider through each non-supplied parameter's
               dependency keys, exactly the operands `_operand` emits.
             - Then each shared site's outer values are computed bottom-up: the
-              direct operands of the steps built inside its miss (and of its own
-              construction) that live outside it, plus what its nested misses need.
+              operands - call operands or dict-literal values - of the steps built
+              inside its miss (and of its own construction) that live outside it,
+              plus what its nested misses need.
 
         Raises:
             RuntimeError: When a dependency key has no kept step, or a provider
@@ -82948,6 +83154,7 @@ class SitePlanEmission(Cleanable):
         """
         steps = self._steps
         index_by_key = {step.instance_key: index for index, step in enumerate(steps)}
+        self._index_by_key = index_by_key
         providers_by_consumer: List[List[int]] = []
         consumers: List[List[int]] = [[] for _ in steps]
         for consumer, step in enumerate(steps):
@@ -82980,13 +83187,14 @@ class SitePlanEmission(Cleanable):
             needed = set()
             for member in inside:
                 # A nested shared site builds inside its own miss: only what that
-                # miss needs from outside passes through here.
+                # miss needs from outside passes through here. A generic member
+                # reads its providers through its dict literal, so they pass
+                # through exactly like a direct member's call operands.
                 if self._shared[member]:
                     needed.update(value_params[member])
-                elif self._direct[member]:
+                else:
                     needed.update(providers_by_consumer[member])
-            if self._direct[index]:
-                needed.update(providers_by_consumer[index])
+            needed.update(providers_by_consumer[index])
             needed.difference_update(inside)
             needed.discard(index)
             value_params[index] = tuple(sorted(needed))
@@ -83049,12 +83257,10 @@ class SitePlanEmission(Cleanable):
         Return the parameter/argument names after `(meld, ov, c{i})` for one miss.
 
         Contract:
-            `instance_results` in dict mode, `args` for the root when `__args__` is
-            supplied, then the outer values in step order.
+            `args` for the root when `__args__` is supplied, then the outer
+            values in step order (a generic member's providers included).
         """
         names: List[str] = []
-        if self._dict_mode:
-            names.append("instance_results")
         if self._arity > 0 and index == self._root_index:
             names.append("args")
         names.extend(f"v{value}" for value in self._miss_value_params[index])
@@ -83106,9 +83312,6 @@ class SitePlanEmission(Cleanable):
                 self._emit_shared_hit(index, step, indent, lines)
             elif self._emit_many(index, step, indent, lines):
                 uses_many_store = True
-            if self._dict_mode:
-                key_name = self._bind(f"key{index}", step.instance_key)
-                lines.append(f"{indent}instance_results[{key_name}] = v{index}")
         return uses_many_store
 
     def _emit_many(self, index: int, step: SitePlanStep, indent: str, lines: List[str]) -> bool:
@@ -83242,6 +83445,48 @@ class SitePlanEmission(Cleanable):
             return f"{spell_name}._lock"
         return f"({store}._slot_guards.get({sid_name}) or {store}.slot_guard({sid_name}))"
 
+    def _emit_results_literal(self, step: SitePlanStep, indent: str, lines: List[str]) -> None:
+        """
+        Emit the dict literal one generic construction reads: its dependency values by instance key.
+
+        Contract:
+            `step` is the step the construct helper receives (the masked copy
+            when values are supplied), so the literal carries exactly the keys
+            `_build_kwargs_no_overrides` reads from `dependency_resolution_order`,
+            in that order, each bound to its provider's local; a provider feeding
+            two parameters appears once. A step that reads no key gets `{}`.
+            Every provider is a local in scope where the step is constructed:
+            providers precede consumers, and `_place` passes outer providers into
+            a miss. The literal is rebuilt per construction; nothing shared is
+            held in the namespace.
+
+        Args:
+            step: The step (or masked copy) handed to the construct helper.
+            indent: Indentation of the emitted line.
+            lines: Target line list, appended in place.
+
+        Raises:
+            RuntimeError: When a dependency key has no kept step.
+
+        Returns:
+            None.
+        """
+        entries: List[str] = []
+        providers: List[int] = []
+        for _, dependency_keys in step.dependency_resolution_order:
+            for key in dependency_keys:
+                provider = self._index_by_key.get(key)
+                if provider is None:
+                    raise RuntimeError(
+                        f"Key-set plan dependency {key!r} of {step.instance_key!r} has no kept step."
+                    )
+                if provider in providers:
+                    continue
+                providers.append(provider)
+                key_name = self._bind(f"key{provider}", key)
+                entries.append(f"{key_name}: v{provider}")
+        lines.append(f"{indent}instance_results = {{{', '.join(entries)}}}")
+
     def _emit_construct(
             self,
             index: int,
@@ -83256,13 +83501,15 @@ class SitePlanEmission(Cleanable):
 
         Contract:
             Direct steps call the spell with operands and route failures through
-            `_raise_meld_construction_error`. Generic steps call the no-overrides helper, or the
+            `_raise_meld_construction_error`. Generic steps first get their dict literal
+            (`_emit_results_literal`), then call the no-overrides helper, or the
             supplied-values helper on a masked copy when the step has winners.
         """
         local = f"v{index}"
         if not direct:
             is_root_args = step.instance_key == self._root_instance_key and self._arity > 0
             if not supplied and not is_root_args:
+                self._emit_results_literal(step, indent, lines)
                 step_name = self._bind(f"st{index}", step)
                 lines.append(
                     f"{indent}{local} = _construct_spell_instance(plan_step={step_name}, "
@@ -83271,6 +83518,7 @@ class SitePlanEmission(Cleanable):
                 return
             masked = step.masked(supplied, is_root_args)
             self._masked.append(masked)
+            self._emit_results_literal(masked, indent, lines)
             masked_name = self._bind(f"st{index}", masked)
             site_index = self._site_index(step)
             values: List[str] = []
@@ -99780,7 +100028,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_2.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py
-CONTENT SHA256: b0561737488b809948c992c85d05c1e3ac7ece659d622fb6255ae4958e434392
+CONTENT SHA256: 36dad36c22d25d40a81b79cb1bc97b0905a3251de78dcabebfa502b6bbd2d47a
 SOURCE ENCODING: utf-8
 ================================================================================
 import inspect
@@ -99845,6 +100093,13 @@ class CompilerPhase3:
     Contract:
         - Slot-only phase surface with no explicit `__init__`.
         - Directly ports the canonical `SpellCrafter` phase-3 behavior.
+        - Annotation matching is by address key (2026-10-03): a DI annotation
+          names `normalize_frame_key(annotation)`, and a spell is a candidate
+          when that key is its address frame key (spellframe, else its own
+          name) or its type key (`spell_name`; an existing object's class
+          name). No identity comparison: a spellframe is a category or a
+          shape label, never a type, and a `TYPE_CHECKING`-only annotation
+          (a string at runtime) resolves exactly as the class object does.
         - Does not own spell, artifact, spellbook, or runtime collaborator
           lifecycle.
     """
@@ -99960,6 +100215,54 @@ class CompilerPhase3:
 
         return annotation
 
+    @staticmethod
+    def _annotation_key(annotation: Any) -> str:
+        """
+        Return the address key a DI annotation names.
+
+        Contract:
+            A `ForwardRef` keys by its name; everything else keys through
+            `SpellInputUtils.normalize_frame_key` - a class or Protocol by
+            `__name__`, a string by itself, anything else by `str()` -
+            lowercased, the normalization every spell address already uses.
+
+        Args:
+            annotation: The normalized annotation (Optional/Union unwrapped).
+
+        Returns:
+            str: The lowercased key.
+        """
+        if isinstance(annotation, typing.ForwardRef):
+            annotation = annotation.__forward_arg__
+        return SpellInputUtils.normalize_frame_key(annotation)
+
+    @staticmethod
+    def _spell_keys(spell_obj: Spell) -> Tuple[str, ...]:
+        """
+        Return the keys a spell answers to: its address frame key and its type key.
+
+        Contract:
+            The frame key is the spellframe when one was given, else the spell's
+            own name - exactly what `make_spell_key_from_parts` stores at bind.
+            The type key is the spell's name: a class's name, or an existing
+            object's class name. Equal keys collapse to one entry, so a bare
+            binding answers to one key and a framed binding to two.
+
+        Args:
+            spell_obj: The candidate spell (any object with `spell_name` and `spellframe`).
+
+        Returns:
+            Tuple[str, ...]: One or two lowercased keys.
+        """
+        type_key = SpellInputUtils.normalize_frame_key(spell_obj.spell_name)
+        frame = spell_obj.spellframe
+        if frame is None:
+            return (type_key,)
+        frame_key = SpellInputUtils.normalize_frame_key(frame)
+        if frame_key == type_key:
+            return (type_key,)
+        return (frame_key, type_key)
+
     def _matches_annotation(
             self,
             annotation: Any,
@@ -99971,12 +100274,16 @@ class CompilerPhase3:
         """
         Return True if `spell_obj` is a candidate for the given annotation.
 
-        Matching strategy:
-            - Optional/Union wrappers are stripped before matching.
-            - String/bare-name annotation matches against `spell_name`, `frame`
-              (string or type name), and the bound spell type object.
-            - Non-string annotation matches against `spell.spell` and
-              `spell.spellframe`.
+        Matching strategy (by address key, 2026-10-03):
+            - Optional/Union wrappers were stripped by the caller; a ForwardRef
+              keys by its name.
+            - The annotation's key (`_annotation_key`) must equal one of the
+              spell's keys (`_spell_keys`): its address frame key or its type
+              key. A class-object annotation and its string spelling therefore
+              resolve identically, an existing object is matched by its class,
+              and a spellframe is a category or a shape label - never compared
+              by object identity.
+            - `binding_name`, when given, must equal the spell's binding name.
             - `require_class_spell=True` excludes METHOD/LAMBDA spell kinds.
 
         Args:
@@ -100002,38 +100309,11 @@ class CompilerPhase3:
             ):
                 return False
 
-        if isinstance(annotation, typing.ForwardRef):
-            annotation = annotation.__forward_arg__
-
-        if isinstance(annotation, str):
-            if spell_obj.spell_name == annotation:
-                if binding_name is not None and spell_obj.binding_name != binding_name:
-                    return False
-                return True
-
-            frame = spell_obj.spellframe
-            if isinstance(frame, str) and frame == annotation:
-                if binding_name is not None and spell_obj.binding_name != binding_name:
-                    return False
-                return True
-
-            if inspect.isclass(frame) and frame.__name__ == annotation:
-                if binding_name is not None and spell_obj.binding_name != binding_name:
-                    return False
-                return True
-
-        if spell_obj.spell is annotation:
-            if binding_name is not None and spell_obj.binding_name != binding_name:
-                return False
-            return True
-
-        frame = spell_obj.spellframe
-        if frame is annotation or frame == annotation:
-            if binding_name is not None and spell_obj.binding_name != binding_name:
-                return False
-            return True
-
-        return False
+        if self._annotation_key(annotation) not in self._spell_keys(spell_obj):
+            return False
+        if binding_name is not None and spell_obj.binding_name != binding_name:
+            return False
+        return True
 
     @staticmethod
     def _eq_safe_object(candidate: Any) -> bool:
@@ -100041,10 +100321,10 @@ class CompilerPhase3:
         Return True when equality on `candidate` is provably identity/str-like.
 
         Purpose:
-            The pass-scoped candidate index replaces `is`/`==` scans with
-            bucket lookups. That substitution is only exact when no bound
-            spell object or spellframe carries a custom `__eq__` that could
-            match objects beyond identity (or plain string equality).
+            The structural snapshot's replayability rule: it marks a pool
+            non-replayable when a bound object or spellframe carries a custom
+            `__eq__`. Phase 3 itself no longer needs it - its index matches by
+            address key, which is exact for every pool (2026-10-03).
 
         Contract:
             - None, str, classes with the default `type.__eq__` metaclass
@@ -100065,71 +100345,31 @@ class CompilerPhase3:
         Build the pass-scoped phase-3 candidate index over the live pool.
 
         Purpose:
-            Collapse the O(dependencies x spells) annotation scans into
-            bucket lookups. All bucket keys derive from inputs that are
-            pass-invariant (binds are transactional and the resolution pass
-            runs post-bind): spell_name, spellframe, spell object identity,
-            spell_type, binding_name.
+            Collapse the O(dependencies x spells) annotation scans into one
+            bucket lookup per dependency. Bucket keys are the spells' address
+            keys (`_spell_keys`), which derive from pass-invariant inputs
+            (binds are transactional and the resolution pass runs post-bind):
+            spellframe and spell_name.
 
         Contract:
-            - Entries are `(pool_position, spell_index, spell_obj)` so any
-              bucket union can be re-sorted into `_spell_id_pool` iteration
-              order, keeping collection-injection order identical to the
-              scan implementation.
-            - `eq_risky` is True when any spell/frame object fails
-              `_eq_safe_object`; consumers must then fall back to scans.
+            - Entries are `(pool_position, spell_index, spell_obj)` so a bucket
+              can be re-sorted into `_spell_id_pool` iteration order, keeping
+              collection-injection order identical to the scan implementation.
+            - Each spell is appended once per distinct key (one or two).
+            - Keys are strings, so bucket membership equals scan membership for
+              every pool; no equality guard is needed (2026-10-03).
 
         Returns:
-            Dict[str, Any]: Index buckets plus the `eq_risky` flag.
+            Dict[str, Any]: `{"by_key": {key: [entries]}}`.
         """
-        ann_str: Dict[str, List[Tuple[int, Any, Spell]]] = {}
-        ident: Dict[int, List[Tuple[int, Any, Spell]]] = {}
-        frame_str: Dict[str, List[Tuple[int, Any, Spell]]] = {}
-        frame_ident: Dict[int, List[Tuple[int, Any, Spell]]] = {}
-        frame_none: List[Tuple[int, Any, Spell]] = []
-        eq_risky = False
-
+        by_key: Dict[str, List[Tuple[int, Any, Spell]]] = {}
         position = 0
         for index, spell_obj in self._iter_all_spells(spellbook):
             entry = (position, index, spell_obj)
             position += 1
-
-            bound_object = spell_obj.spell
-            frame = spell_obj.spellframe
-            if not (
-                    self._eq_safe_object(bound_object)
-                    and self._eq_safe_object(frame)
-            ):
-                eq_risky = True
-
-            string_keys = set()
-            spell_name = spell_obj.spell_name
-            if isinstance(spell_name, str):
-                string_keys.add(spell_name)
-            if isinstance(frame, str):
-                string_keys.add(frame)
-                frame_str.setdefault(frame, []).append(entry)
-            elif inspect.isclass(frame):
-                string_keys.add(frame.__name__)
-            for string_key in string_keys:
-                ann_str.setdefault(string_key, []).append(entry)
-
-            if bound_object is not None:
-                ident.setdefault(id(bound_object), []).append(entry)
-            if frame is not None:
-                ident.setdefault(id(frame), []).append(entry)
-                frame_ident.setdefault(id(frame), []).append(entry)
-            else:
-                frame_none.append(entry)
-
-        return {
-            "eq_risky": eq_risky,
-            "ann_str": ann_str,
-            "ident": ident,
-            "frame_str": frame_str,
-            "frame_ident": frame_ident,
-            "frame_none": frame_none,
-        }
+            for key in self._spell_keys(spell_obj):
+                by_key.setdefault(key, []).append(entry)
+        return {"by_key": by_key}
 
     def _get_candidate_index(
             self,
@@ -100140,8 +100380,8 @@ class CompilerPhase3:
         Return the usable pass-scoped candidate index, building it lazily.
 
         Contract:
-            - Returns None (scan path) when no pass cache was supplied or
-              when the built index is eq-risky.
+            - Returns None (scan path) only when no pass cache was supplied;
+              the key index is exact for every pool (2026-10-03).
             - Benign build race under multi-worker scheduling: the build is
               idempotent over pass-invariant inputs and the last writer wins
               with an equivalent value (same contract as the phase-4
@@ -100153,8 +100393,6 @@ class CompilerPhase3:
         if index is None:
             index = self._build_candidate_index(spellbook)
             resolution_pass_cache["phase3_candidate_index"] = index
-        if index["eq_risky"]:
-            return None
         return index
 
     def _indexed_annotation_candidates(
@@ -100168,52 +100406,39 @@ class CompilerPhase3:
         Bucket-lookup equivalent of the `_matches_annotation` scan.
 
         Contract:
-            - Only called when the index is not eq-risky, where bucket
-              membership provably equals scan membership:
-              string annotations match via spell_name / str-frame /
-              class-frame-name buckets plus identity (a bound str object can
-              identity-match a str annotation); non-string annotations match
-              via spell/frame identity buckets only, because `==` beyond
-              identity requires a custom `__eq__` (excluded by the guard).
+            - Reads the one bucket of the annotation's key (`_annotation_key`);
+              membership equals scan membership because both sides use the
+              same keys (2026-10-03).
             - `binding_name` filtering is omitted because both annotation
               resolvers pass None today (scan applies the filter only when a
               binding name is present).
             - `require_class_spell=True` applies the same METHOD/LAMBDA
               exclusions as the scan.
         """
-        buckets: List[List[Tuple[int, Any, Spell]]] = []
-        if isinstance(annotation, str):
-            string_bucket = candidate_index["ann_str"].get(annotation)
-            if string_bucket is not None:
-                buckets.append(string_bucket)
-        identity_bucket = candidate_index["ident"].get(id(annotation))
-        if identity_bucket is not None:
-            buckets.append(identity_bucket)
+        bucket = candidate_index["by_key"].get(self._annotation_key(annotation))
 
         # Replicate the scan's dict semantics exactly: when one SpellIndex
         # matches through multiple pool entries (version lineages), the scan
         # keeps the FIRST insertion position but the LAST matching spell
-        # object (dict insert-then-overwrite). Bucket union order is not
-        # global pool order, so track min/max positions explicitly.
+        # object (dict insert-then-overwrite).
         # collected: id(index) -> [first_pos, value_pos, index, spell_obj]
         collected: Dict[int, List[Any]] = {}
-        for bucket in buckets:
-            for position, index, spell_obj in bucket:
-                if require_class_spell and spell_obj.spell_type in (
-                        SpellType.METHOD,
-                        SpellType.METHOD_WITH_BINDING_NAME,
-                        SpellType.LAMBDA_METHOD_WITH_BINDING_NAME,
-                ):
-                    continue
-                record = collected.get(id(index))
-                if record is None:
-                    collected[id(index)] = [position, position, index, spell_obj]
-                    continue
-                if position < record[0]:
-                    record[0] = position
-                if position > record[1]:
-                    record[1] = position
-                    record[3] = spell_obj
+        for position, index, spell_obj in (bucket or ()):
+            if require_class_spell and spell_obj.spell_type in (
+                    SpellType.METHOD,
+                    SpellType.METHOD_WITH_BINDING_NAME,
+                    SpellType.LAMBDA_METHOD_WITH_BINDING_NAME,
+            ):
+                continue
+            record = collected.get(id(index))
+            if record is None:
+                collected[id(index)] = [position, position, index, spell_obj]
+                continue
+            if position < record[0]:
+                record[0] = position
+            if position > record[1]:
+                record[1] = position
+                record[3] = spell_obj
 
         ordered = sorted(collected.values(), key=lambda record: record[0])
         return {record[2]: record[3] for record in ordered}
@@ -100652,7 +100877,7 @@ class CompilerPhase3:
         root_id = self._get_required_current_spell_id(spell)
 
         # Pass-scoped candidate index (None -> original scan semantics).
-        # Built lazily once per resolution pass; eq-risky pools disable it.
+        # Built lazily once per resolution pass; exact for every pool (key matching).
         candidate_index = (
             self._get_candidate_index(spellbook, resolution_pass_cache)
             if spell.resolvable else None
@@ -133216,7 +133441,7 @@ END FILE: src/melder/aether/spellbook/spellbook.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spellbook_creation_system.py
-CONTENT SHA256: bc17001f6cabf92a5285a6b55a47e4fdd8f8a27e3836227276b007ae07a7b647
+CONTENT SHA256: b882b94105514d0e2ea4eb6cbbb31c83fbabbc354ffb5b856629ca50f1f7957a
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -133857,8 +134082,17 @@ class SpellbookCreationSystem(Cleanable):
               non-resolvable definitions and existing-creation spells bypass phases 8-11 and never
               carry cache payloads, so they must not block the full-hit
               classification.
+            - A full hit also requires the bundle's recorded world stamp
+              (`CachingSystem.world_stamp`, written at staging) to equal the
+              live `StructuralSnapshot.world_stamp(spellbook)` (2026-10-03,
+              generation 19): a world that differs only by an existing
+              creation or a non-resolvable definition - ids outside the live
+              set - recompiles phases 8-11 instead of replaying executors
+              compiled in another world. Every payload matched under a
+              different stamp is the mixed path; nothing matched is the full
+              miss; an empty live set stays a full miss.
             - Creates the Spellbook-owned CachingSystem only when caching is
-              enabled.
+              enabled; the stamp is computed only then.
 
         Args:
             spellbook:
@@ -133870,7 +134104,8 @@ class SpellbookCreationSystem(Cleanable):
         Returns:
             Dict[str, Any]:
                 Cache-state summary containing the cache utility, runtime
-                posture flags, spell-id sets, and the classified cache path.
+                posture flags, spell-id sets, the live `world_stamp` with
+                `world_matches`, and the classified cache path.
         """
         caching_enabled = spellbook._system_caching_enabled_in_aether()
         live_spell_ids = {
@@ -133880,16 +134115,23 @@ class SpellbookCreationSystem(Cleanable):
         }
         caching_system: CachingSystem | None = None
         cached_spell_ids: set[str] = set()
+        world_stamp = ""
+        world_matches = False
         if caching_enabled:
             caching_system = spellbook._get_or_create_caching_system(
                 conduit_name=conduit_name,
             )
             cached_spell_ids = set(caching_system.cached_spell_ids)
+            # The executor payloads are a function of the world the structural
+            # tier already stamps (pool ids, posture, borrowed ids); a bundle
+            # staged in another world is never replayed as a full hit.
+            world_stamp = StructuralSnapshot.world_stamp(spellbook)
+            world_matches = caching_system.world_stamp == world_stamp
         matched_spell_ids = live_spell_ids.intersection(cached_spell_ids)
         missing_spell_ids = live_spell_ids.difference(cached_spell_ids)
         stale_cached_spell_ids = cached_spell_ids.difference(live_spell_ids)
-        is_full_hit = bool(live_spell_ids) and not missing_spell_ids
-        is_mixed = bool(matched_spell_ids) and bool(missing_spell_ids)
+        is_full_hit = bool(live_spell_ids) and not missing_spell_ids and world_matches
+        is_mixed = bool(matched_spell_ids) and not is_full_hit
         is_full_miss = not is_full_hit and not is_mixed
         return {
             "caching_enabled": caching_enabled,
@@ -133901,6 +134143,8 @@ class SpellbookCreationSystem(Cleanable):
             "matched_spell_ids": matched_spell_ids,
             "missing_spell_ids": missing_spell_ids,
             "stale_cached_spell_ids": stale_cached_spell_ids,
+            "world_stamp": world_stamp,
+            "world_matches": world_matches,
             "cache_path": SpellbookCreationSystem._resolve_conjure_cache_path(
                 caching_enabled=caching_enabled,
                 is_full_hit=is_full_hit,
@@ -134348,6 +134592,12 @@ class SpellbookCreationSystem(Cleanable):
               conjure-end file emit on success).
             - Flags the conjure-end emit when anything was removed, so a pruned
               bundle is persisted even if nothing re-staged.
+            - Records the live world stamp (`cache_state["world_stamp"]`) in
+              the envelope AFTER every live spell is re-staged, through
+              `CachingSystem.set_world_stamp`, and flags the conjure-end emit
+              when the recorded value changed: a stamp is never persisted
+              ahead of its payloads, and a changed world is persisted even
+              when no payload byte changed (2026-10-03, generation 19).
             - Payload eligibility is enforced upstream: `live_spell_ids`
               derives from `_build_conjure_cache_state`, which already excludes
               existing-creation and non-resolvable spells.
@@ -134378,6 +134628,10 @@ class SpellbookCreationSystem(Cleanable):
         for spell_id in sorted(cache_state["live_spell_ids"]):
             spellbook._emit_spell_cache(spellbook._spell_id_pool[spell_id])
         if removed_any:
+            spellbook._cache_emit_required = True
+        # The stamp follows the payloads it describes; a changed world must
+        # reach the disk even when every re-staged byte is unchanged.
+        if caching_system.set_world_stamp(cache_state["world_stamp"]):
             spellbook._cache_emit_required = True
 
     @staticmethod
@@ -253791,7 +254045,7 @@ END FILE: src/melder/utilities/caching_system/asset_cache.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/utilities/caching_system/caching_system.py
-CONTENT SHA256: 40cad943d2e55d17569c4afac7a53ecb5b3dd68ff766dd3541def1beeac337e1
+CONTENT SHA256: ce9282a36192ddcc4d2489b8a858cb3dc1e7dd74f07162e4ad1543e5013305bd
 SOURCE ENCODING: utf-8
 ================================================================================
 import logging
@@ -253877,6 +254131,12 @@ class CachingSystem(Cleanable):
           force a file rewrite; `transfer_spell_payload_to` moves executor
           bytes and DROPS the source's structural payload (the receiving
           Book captures its own on its next conjure).
+        - Since generation 19 the envelope also carries `world_stamp`: the
+          structural tier's world stamp (sorted pool ids, posture, borrowed
+          ids) recorded by `set_world_stamp` when the executor payloads were
+          last staged. The executor tier admits a full hit only when the live
+          world carries the same stamp; "" (an empty store, or a bundle
+          written without the field) never matches, so the rule fails closed.
         - Integrity is regeneration-based: a corrupt or version-mismatched
           bundle is treated as a cold cache, not repaired.
         - Persisted plans require the exact installed Melder release as well as
@@ -253963,6 +254223,16 @@ class CachingSystem(Cleanable):
     # Version 16 retires executors emitted before the many registration
     # trim (2026-10-01): they still call the public `add_many_creations`
     # and stay correct, but pay the old keyword call per creation.
+    # Version 17 retires site plans emitted before lazy `instance_results`
+    # (2026-10-03): they still run correctly, but allocate and fill the
+    # dict on every warm creation of a dict-mode root.
+    # Version 18 retires bundles captured before address-key matching
+    # (2026-10-03): their structural rows may hold an unresolved input
+    # for a parameter the key matcher now resolves.
+    # Version 19 retires bundles without the executor-tier world stamp
+    # (2026-10-03): the executor full hit now requires the envelope's
+    # `world_stamp` to equal the live world, so a bundle that cannot carry
+    # one is cold rather than admitted as a stamp-less full hit.
     CACHE_VERSION_HISTORY: ClassVar[Mapping[int, str]] = MappingProxyType({
         1: "legacy_executor_payloads",
         2: "decoded_manifest_package_payloads",
@@ -253980,6 +254250,9 @@ class CachingSystem(Cleanable):
         14: "override_site_plan_lanes",
         15: "structural_snapshot_rows",
         16: "many_registration_per_key_methods",
+        17: "lazy_instance_results",
+        18: "annotation_address_matching",
+        19: "executor_world_stamp",
     })
     CURRENT_VERSION: ClassVar[int] = max(CACHE_VERSION_HISTORY)
 
@@ -254154,6 +254427,51 @@ class CachingSystem(Cleanable):
                 Live `dict.keys()` view over spell ids with a structural payload.
         """
         return self._cache_data["structural_payloads"].keys()
+
+    @property
+    def world_stamp(self) -> str:
+        """
+        Return the world stamp recorded when the executor payloads were last staged.
+
+        Contract:
+            - The structural tier's `StructuralSnapshot.world_stamp` digest of
+              the world the bundle's executor payloads were compiled in, or ""
+              for an empty store and for a loaded bundle written without the
+              field. The executor tier compares it with the live world before
+              admitting a full hit; "" never matches a live stamp.
+
+        Returns:
+            str:
+                Hex digest, or "" when no staging has recorded one.
+        """
+        return self._cache_data["world_stamp"]
+
+    def set_world_stamp(self, world_stamp: str) -> bool:
+        """
+        Record the world the executor payloads were just staged in.
+
+        Contract:
+            - Called by the conjure-end staging AFTER every live payload was
+              re-staged, so the stamp on disk is never newer than the payloads
+              it describes; it is the only writer of the field.
+            - Reports whether the stored value CHANGED, so the caller can flag
+              the conjure-end emit for a changed world even when no payload
+              byte changed, and skip it for an unchanged one.
+            - Serialized under the instance lock like every other mutation.
+
+        Args:
+            world_stamp:
+                The live `StructuralSnapshot.world_stamp` digest.
+
+        Returns:
+            bool:
+                True when the recorded stamp was replaced by a different value.
+        """
+        with self._lock:
+            if self._cache_data["world_stamp"] == world_stamp:
+                return False
+            self._cache_data["world_stamp"] = world_stamp
+            return True
 
     def cleanup(self) -> None:
         """
@@ -254461,6 +254779,7 @@ class CachingSystem(Cleanable):
             "conduit_name": self._conduit_name,
             "spell_payloads": {},
             "structural_payloads": {},
+            "world_stamp": "",
         }
 
     def _load_or_initialize_from_disk(self) -> None:
@@ -254500,6 +254819,8 @@ class CachingSystem(Cleanable):
             and interpreter tag. Preserves the accepted release in the returned
             envelope so a later emit cannot drop or relabel it. The caller
             converts rejected or incomplete envelopes into a cold cache.
+            `world_stamp` is optional on load ("" when absent, which never
+            admits an executor full hit) but must be a str when present.
 
         Args:
             loaded_cache_data:
@@ -254561,6 +254882,14 @@ class CachingSystem(Cleanable):
                     f"Structural payload for '{spell_id}' is not nested-marshal "
                     "bytes."
                 )
+        # The executor-tier world stamp (generation 19) is optional on load so
+        # a hand-written envelope still reads; an absent stamp is "", which
+        # never admits a full hit, so the omission fails closed.
+        world_stamp = loaded_cache_data.get("world_stamp", "")
+        if not isinstance(world_stamp, str):
+            raise ValueError(
+                f"Cache world stamp {world_stamp!r} is not a string."
+            )
         return {
             "version": version,
             "melder_version": melder_version,
@@ -254569,6 +254898,7 @@ class CachingSystem(Cleanable):
             "conduit_name": conduit_name,
             "spell_payloads": dict(spell_payloads),
             "structural_payloads": dict(structural_payloads),
+            "world_stamp": world_stamp,
         }
 
     def _write_current_cache_to_disk_locked(self) -> None:
@@ -254594,6 +254924,7 @@ class CachingSystem(Cleanable):
             "conduit_name": self._cache_data["conduit_name"],
             "spell_payloads": self._cache_data["spell_payloads"],
             "structural_payloads": self._cache_data["structural_payloads"],
+            "world_stamp": self._cache_data["world_stamp"],
         }
         serialized_cache_data = marshal.dumps(cache_data)
         bundle_path = self._bundle_path

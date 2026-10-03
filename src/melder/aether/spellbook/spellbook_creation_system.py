@@ -636,8 +636,17 @@ class SpellbookCreationSystem(Cleanable):
               non-resolvable definitions and existing-creation spells bypass phases 8-11 and never
               carry cache payloads, so they must not block the full-hit
               classification.
+            - A full hit also requires the bundle's recorded world stamp
+              (`CachingSystem.world_stamp`, written at staging) to equal the
+              live `StructuralSnapshot.world_stamp(spellbook)` (2026-10-03,
+              generation 19): a world that differs only by an existing
+              creation or a non-resolvable definition - ids outside the live
+              set - recompiles phases 8-11 instead of replaying executors
+              compiled in another world. Every payload matched under a
+              different stamp is the mixed path; nothing matched is the full
+              miss; an empty live set stays a full miss.
             - Creates the Spellbook-owned CachingSystem only when caching is
-              enabled.
+              enabled; the stamp is computed only then.
 
         Args:
             spellbook:
@@ -649,7 +658,8 @@ class SpellbookCreationSystem(Cleanable):
         Returns:
             Dict[str, Any]:
                 Cache-state summary containing the cache utility, runtime
-                posture flags, spell-id sets, and the classified cache path.
+                posture flags, spell-id sets, the live `world_stamp` with
+                `world_matches`, and the classified cache path.
         """
         caching_enabled = spellbook._system_caching_enabled_in_aether()
         live_spell_ids = {
@@ -659,16 +669,23 @@ class SpellbookCreationSystem(Cleanable):
         }
         caching_system: CachingSystem | None = None
         cached_spell_ids: set[str] = set()
+        world_stamp = ""
+        world_matches = False
         if caching_enabled:
             caching_system = spellbook._get_or_create_caching_system(
                 conduit_name=conduit_name,
             )
             cached_spell_ids = set(caching_system.cached_spell_ids)
+            # The executor payloads are a function of the world the structural
+            # tier already stamps (pool ids, posture, borrowed ids); a bundle
+            # staged in another world is never replayed as a full hit.
+            world_stamp = StructuralSnapshot.world_stamp(spellbook)
+            world_matches = caching_system.world_stamp == world_stamp
         matched_spell_ids = live_spell_ids.intersection(cached_spell_ids)
         missing_spell_ids = live_spell_ids.difference(cached_spell_ids)
         stale_cached_spell_ids = cached_spell_ids.difference(live_spell_ids)
-        is_full_hit = bool(live_spell_ids) and not missing_spell_ids
-        is_mixed = bool(matched_spell_ids) and bool(missing_spell_ids)
+        is_full_hit = bool(live_spell_ids) and not missing_spell_ids and world_matches
+        is_mixed = bool(matched_spell_ids) and not is_full_hit
         is_full_miss = not is_full_hit and not is_mixed
         return {
             "caching_enabled": caching_enabled,
@@ -680,6 +697,8 @@ class SpellbookCreationSystem(Cleanable):
             "matched_spell_ids": matched_spell_ids,
             "missing_spell_ids": missing_spell_ids,
             "stale_cached_spell_ids": stale_cached_spell_ids,
+            "world_stamp": world_stamp,
+            "world_matches": world_matches,
             "cache_path": SpellbookCreationSystem._resolve_conjure_cache_path(
                 caching_enabled=caching_enabled,
                 is_full_hit=is_full_hit,
@@ -1127,6 +1146,12 @@ class SpellbookCreationSystem(Cleanable):
               conjure-end file emit on success).
             - Flags the conjure-end emit when anything was removed, so a pruned
               bundle is persisted even if nothing re-staged.
+            - Records the live world stamp (`cache_state["world_stamp"]`) in
+              the envelope AFTER every live spell is re-staged, through
+              `CachingSystem.set_world_stamp`, and flags the conjure-end emit
+              when the recorded value changed: a stamp is never persisted
+              ahead of its payloads, and a changed world is persisted even
+              when no payload byte changed (2026-10-03, generation 19).
             - Payload eligibility is enforced upstream: `live_spell_ids`
               derives from `_build_conjure_cache_state`, which already excludes
               existing-creation and non-resolvable spells.
@@ -1157,6 +1182,10 @@ class SpellbookCreationSystem(Cleanable):
         for spell_id in sorted(cache_state["live_spell_ids"]):
             spellbook._emit_spell_cache(spellbook._spell_id_pool[spell_id])
         if removed_any:
+            spellbook._cache_emit_required = True
+        # The stamp follows the payloads it describes; a changed world must
+        # reach the disk even when every re-staged byte is unchanged.
+        if caching_system.set_world_stamp(cache_state["world_stamp"]):
             spellbook._cache_emit_required = True
 
     @staticmethod
