@@ -412,7 +412,7 @@ class GraftRunner(Cleanable):
             spell=target,
             existence=str(crystal.get("existence_name", "unique")),
             permissions=str(crystal.get("permissions_name", "create")),
-            spellframe=crystal.get("spellframe_name"),
+            spellframe=self._hydrate_spellframe(selected_id, crystal, shortfalls),
             binding_name=crystal.get("binding_name"),
             disposal_method_names=list(
                 crystal.get("disposal_method_names", [])
@@ -474,7 +474,7 @@ class GraftRunner(Cleanable):
                 spell_index=anchor_index,
                 existence=str(crystal.get("existence_name", "unique")),
                 permissions=str(crystal.get("permissions_name", "create")),
-                spellframe=crystal.get("spellframe_name"),
+                spellframe=self._hydrate_spellframe(spell_id, crystal, shortfalls),
                 binding_name=crystal.get("binding_name"),
                 disposal_method_names=list(crystal.get("disposal_method_names", [])) or None,
                 profile=str(crystal.get("profile_family", "general")),
@@ -533,7 +533,7 @@ class GraftRunner(Cleanable):
                 spell_index=self._merge_into_index,
                 existence=str(crystal.get("existence_name", "unique")),
                 permissions=str(crystal.get("permissions_name", "create")),
-                spellframe=crystal.get("spellframe_name"),
+                spellframe=self._hydrate_spellframe(spell_id, crystal, shortfalls),
                 binding_name=crystal.get("binding_name"),
                 disposal_method_names=list(crystal.get("disposal_method_names", [])) or None,
                 profile=str(crystal.get("profile_family", "general")),
@@ -637,6 +637,54 @@ class GraftRunner(Cleanable):
                 ),
             })
             return None
+
+    def _hydrate_spellframe(
+            self,
+            spell_id: str,
+            crystal: Dict[str, object],
+            shortfalls: List[Dict[str, object]],
+    ) -> Optional[Any]:
+        """
+        Rebuild one member's spellframe as the kind it was recorded with.
+
+        Contract:
+            - Recorded kind "contract" (record 4.1.0): import the Protocol by its
+              recorded coordinates through the normal import lane and return the
+              class, so the grafted member is a contract member again. A failed
+              import appends an honest shortfall row
+              (`spellframe_contract_hydration_failed`) and returns the recorded
+              NAME, binding the member as a category so it still exists.
+            - Any other kind, and a record older than 4.1.0, returns the recorded
+              name (or None) exactly as before. Never raises.
+
+        Args:
+            spell_id:
+                The member's custody identity (shortfall anchor).
+            crystal:
+                The member's custody payload.
+            shortfalls:
+                Collector for honest rows.
+
+        Returns:
+            Optional[Any]: A Protocol class, a string label, or None.
+        """
+        name = crystal.get("spellframe_name")
+        if str(crystal.get("spellframe_kind")) != "contract":
+            return name
+        module_name = str(crystal.get("spellframe_module"))
+        qualname = str(crystal.get("spellframe_qualname"))
+        try:
+            return self._import_target(module_name, qualname)
+        except Exception as error:
+            # Best-effort by contract: degrade to the name, record the cause.
+            shortfalls.append({
+                "member": spell_id,
+                "reason": "spellframe_contract_hydration_failed ({0}.{1}): {2}; "
+                          "bound as the category {3!r}".format(
+                              module_name, qualname, error, name
+                          ),
+            })
+            return name
 
     @staticmethod
     def _import_target(module_name: str, qualname: str) -> Any:

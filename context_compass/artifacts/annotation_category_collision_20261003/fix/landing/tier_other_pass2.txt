@@ -1,0 +1,3 @@
+FAILED tests/experimentation/test_existing_instance_gap_experiment.py::test_existing_injection_paths[stock-collection]
+FAILED tests/experimentation/test_existing_instance_gap_experiment.py::test_existing_injection_paths[leaf_probe-collection]
+2 failed, 248 passed, 4 skipped in 6.31s

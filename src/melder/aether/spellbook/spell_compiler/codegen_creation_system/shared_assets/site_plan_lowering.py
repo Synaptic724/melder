@@ -752,6 +752,15 @@ class SitePlanEmission(Cleanable):
           nothing is stored per step and misses take no dict parameter, so a
           warm creation whose shared sites all hit builds no dict at all.
           Direct-mode plans are unchanged.
+        - Owner-store constants (S9, 2026-10-03): a `unique` site whose provider
+          Spell is owned by an automatic conduit and has an owner store binds
+          `c{i}` to that store in the namespace and emits no alias line, so the
+          warm read is `c{i}._creations.get(sid{i})` on a global; every other
+          shared site (the `meld.<store>` routes, a provider in a dynamic
+          environment, where ownership transfer repoints the store, or one not
+          yet owned) emits `c{i} = <route>` as before. The miss keeps its
+          `c{i}` parameter; the call passes the global. Measured on the VM:
+          8-10 ns per unique site per creation.
         - Placement (2026-09-26): every kept step lives at top level or inside
           exactly one shared site's `_miss{i}`. The root is top level; a many
           site lives where its one consumer is built (inside the consumer's miss
@@ -1328,14 +1337,47 @@ class SitePlanEmission(Cleanable):
         lines.append(f"{indent}many_store.register_many({sid_name}, v{index}, {disposal_name})")
         return True
 
+    @staticmethod
+    def _owner_store_constant(step: SitePlanStep) -> bool:
+        """
+        Decide whether one shared site's store is bound as a plan constant (S9, 2026-10-03).
+
+        Contract:
+            True only for `Existence.unique` - the one route that reads
+            `spells[i]._owner_creations` - when the provider Spell is owned by an
+            automatic conduit (`_dynamic_environment` False) and already has an
+            owner store. In a dynamic environment ownership transfer repoints
+            the store, so the per-creation read stays; a provider not yet owned
+            keeps the read too, so its failure mode is unchanged.
+
+        Args:
+            step: The shared step.
+
+        Returns:
+            bool: True when `c{i}` is bound in the namespace instead of read per creation.
+        """
+        spell = step.spell
+        return (
+            step.existence is Existence.unique
+            and not spell._dynamic_environment
+            and spell._owner_creations is not None
+        )
+
     def _emit_shared_hit(self, index: int, step: SitePlanStep, indent: str, lines: List[str]) -> None:
         """
-        Emit one shared site where it lives: store read, P2 when pinned, miss call; then its miss.
+        Emit one shared site where it lives: store read (or the bound store), P2 when pinned, miss call;
+        then its miss.
         """
         spell_name = f"spells[{index}]"
         store = f"c{index}"
         sid_name = self._bind(f"sid{index}", step.spell.spell_id)
-        lines.append(f"{indent}{store} = {self._route(step.existence, spell_name)}")
+        if self._owner_store_constant(step):
+            # S9: the owner store of a spell owned by an automatic conduit cannot
+            # move after conjure, so the plan reads it as a global bound here
+            # instead of `spells[i]._owner_creations` on every creation.
+            self._bind(store, step.spell._owner_creations)
+        else:
+            lines.append(f"{indent}{store} = {self._route(step.existence, spell_name)}")
         lines.append(f"{indent}v{index} = {store}._creations.get({sid_name})")
         if self._supplied_names(step):
             lines.append(f"{indent}if v{index} is not None:")

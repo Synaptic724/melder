@@ -17,6 +17,8 @@ from melder.aether.spellbook.existence.existence import Existence
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.aether.spellbook.spell import Spell
+from melder.aether.spellbook.spellframe_kind.spellframe_kind import SpellframeKind
+from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder._build_assets._bind_guard.bind_guard import INTERNAL_MANIFEST
 from melder.utilities.custom_exceptions.internal_registration_error import InternalRegistrationError
 from melder.utilities.custom_exceptions.hook_execution_error import HookExecutionError
@@ -482,7 +484,9 @@ class Bind(Cleanable):
             permissions (Permissions): The access level for this spell (e.g., read, create, block).
             aetheric_frame (str): The Aetheric Frame (logical container) this spell belongs to.
             spell (Any, optional): The class, function, or existing object to bind. Required for direct usage.
-            spellframe (Optional[Any]): Logical interface or Protocol used as the DI contract / grouping key.
+            spellframe (Optional[Any]): The category half of the address: a string label, or a
+                `typing.Protocol` that is both a label and a contract the spell is checked against.
+                Anything else (a concrete class, an instance) is refused with TypeError.
             binding_name (Optional[str]): A specific key used to distinguish this spell among others in its frame.
             profile (str): Spell profile family to attach to the final Spell.
             existence (Existence): The lifecycle scope for this spell (default is `Existence.unique`).
@@ -518,7 +522,8 @@ class Bind(Cleanable):
         Raises:
             TypeError: If a class or supplied existing object lacks a required
                 directly declared Protocol member or exposes a non-callable
-                value where that Protocol requires a callable, or resolvable is not a bool.
+                value where that Protocol requires a callable, or resolvable is not a bool,
+                or `spellframe` is neither None, a string nor a Protocol class.
         """
         self.check_cleaned()
         if spell is None:
@@ -586,6 +591,8 @@ class Bind(Cleanable):
         * Validates existence and method/lambda constraints.
         * Enforces Protocol/Spellframe semantics:
           - Protocol targets require explicit resolvable=False.
+          - A spellframe is a string category or a Protocol contract; its kind
+            is recorded on the Spell. Any other object is refused (TypeError).
           - Class-based and existing-object spells bound under a Protocol
             spellframe must satisfy its directly declared public members.
             Existing objects are checked on the supplied value, not its class.
@@ -602,8 +609,8 @@ class Bind(Cleanable):
 
         Args:
             spell (Any): The class, function, or existing object to bind.
-            spellframe (Optional[Any]): Logical interface or category for grouping
-                (typically a Protocol used as a DI contract).
+            spellframe (Optional[Any]): A string category label or a Protocol contract;
+                None binds bare. Any other object is refused.
             binding_name (Optional[str]): A specific key used to distinguish this spell.
             profile (str): Spell profile family to attach after Spell creation.
             existence (Existence): The lifecycle scope for this spell.
@@ -640,6 +647,7 @@ class Bind(Cleanable):
         Raises:
             TypeError:
                 - If resolvable is not a bool, or a Protocol target is resolvable.
+                - If `spellframe` is neither None, a string nor a Protocol class.
                 - If a class or existing object under a Protocol spellframe
                   fails its directly declared public-member check.
             ValueError:
@@ -673,6 +681,15 @@ class Bind(Cleanable):
                     f"Use it as a spellframe (DI contract), or pass resolvable=False "
                     f"to register a non-resolvable definition."
                 )
+
+            # ------------------------------------------------------------------
+            # 1.5 Classify the spellframe: category, contract, bare - or refused
+            # ------------------------------------------------------------------
+            # Owner ruling 2026-10-03: a spellframe is a label; a Protocol frame
+            # is a label and a contract; a concrete class is not a spellframe.
+            # The kind is recorded on the Spell so Phase 3 reads it instead of
+            # inferring a meaning from the frame's name.
+            spellframe_kind, implemented_protocols = Bind._classify_spellframe(spellframe)
 
             # ------------------------------------------------------------------
             # 2. Build binding profile and fingerprint
@@ -730,12 +747,12 @@ class Bind(Cleanable):
             # ------------------------------------------------------------------
             # 4. Protocol spellframe semantics
             # ------------------------------------------------------------------
-            # If the caller provided a Protocol as the spellframe:
+            # If the caller provided a Protocol as the spellframe (kind `contract`):
             #   * For classes and existing objects: check the actual target's
             #     members, including instance-only or shadowed implementations.
             #   * For callable spells: allow binding (factory/handler semantics),
             #     but do not run structural checks (no meaningful attribute set).
-            if spellframe is not None and Bind._is_protocol_type(spellframe):
+            if spellframe_kind is SpellframeKind.contract:
                 if isinstance(binding_profile, ClassBindingProfile) or is_instance:
                     ok, missing_members = Bind._structurally_implements_protocol(
                         spell, spellframe
@@ -780,6 +797,8 @@ class Bind(Cleanable):
                 spellbook=self._spellbook,
                 disposal_method_names=resolved_disposal_method_names,
                 resolvable=resolvable,
+                spellframe_kind=spellframe_kind,
+                implemented_protocols=implemented_protocols,
                 # Owner ruling 2026-07-19: leftover bind kwargs flow into
                 # Spell's OWN kwargs channel (Spell.__init__ stores them as
                 # spell.metadata). Native params stay sovereign: a colliding
@@ -1239,27 +1258,63 @@ class Bind(Cleanable):
         """
         Returns True if `obj` is a `typing.Protocol`-style interface.
 
-        Instead of using ``issubclass(obj, Protocol)`` (which static type
-        checkers complain about unless the protocol is marked
-        ``@runtime_checkable``), we rely on the internal flag that
-        ``typing.Protocol`` sets on all protocol subclasses.
-
-        This keeps the check runtime-friendly and IDE-friendly while still
-        correctly identifying Protocol-based spellframes.
+        Delegates to `SpellInputUtils.is_protocol_type`, the one detection Bind
+        and Phase 3 share, so a frame classified as a contract at bind is the
+        same thing a Protocol annotation asks for at resolution. Kept on Bind as
+        a thin alias for its existing callers.
         """
-        if not inspect.isclass(obj):
-            return False
+        return SpellInputUtils.is_protocol_type(obj)
 
-        # PEP 544 / typing implementation detail:
-        # Protocol subclasses have a private flag set on the class.
-        # Different Python versions may use `_is_protocol` or `__is_protocol__`,
-        # so we check both defensively.
-        if getattr(obj, "_is_protocol", False):
-            return True
-        if getattr(obj, "__is_protocol__", False):
-            return True
+    @staticmethod
+    def _classify_spellframe(
+            spellframe: Optional[Any],
+    ) -> Tuple[SpellframeKind, Tuple[type, ...]]:
+        """
+        Classify a bind's `spellframe` into its kind, refusing anything that is not one.
 
-        return False
+        Contract:
+            - None -> (`SpellframeKind.none`, ()): the address label is the spell's own name.
+            - A `str` -> (`SpellframeKind.category`, ()). The string is a label; it is
+              never checked against the spell and never satisfies an annotation.
+            - A Protocol class (`SpellInputUtils.is_protocol_type`) ->
+              (`SpellframeKind.contract`, (spellframe,)). The caller still runs the
+              structural member check for class and existing-object spells.
+            - Anything else - a concrete class, an instance, a number - raises
+              TypeError naming what was passed and the two accepted forms. Before
+              2026-10-04 such objects were accepted and keyed by their name; a concrete
+              class used as a label is now written as its name string, and a class
+              meant as a contract is declared as a `typing.Protocol`.
+
+        Args:
+            spellframe: The value passed to `bind(..., spellframe=...)`.
+
+        Returns:
+            Tuple[SpellframeKind, Tuple[type, ...]]: The kind and the Protocol(s) the
+            spell is recorded as implementing (one for a contract, none otherwise).
+
+        Raises:
+            TypeError: When `spellframe` is neither None, a string nor a Protocol class.
+        """
+        if spellframe is None:
+            return SpellframeKind.none, ()
+        if isinstance(spellframe, str):
+            return SpellframeKind.category, ()
+        if SpellInputUtils.is_protocol_type(spellframe):
+            return SpellframeKind.contract, (spellframe,)
+        if inspect.isclass(spellframe):
+            offered = f"the concrete class '{spellframe.__name__}'"
+            remedy = (
+                f"To group spells under it as a label, pass its name "
+                f"(spellframe={spellframe.__name__!r}); to make it a contract the "
+                f"spell is checked against, declare it as a typing.Protocol."
+            )
+        else:
+            offered = f"an object of type '{type(spellframe).__name__}'"
+            remedy = "Pass a string label or a typing.Protocol class."
+        raise TypeError(
+            "spellframe must be a string category or a Protocol contract; "
+            f"got {offered}. {remedy}"
+        )
 
     @staticmethod
     def _structurally_implements_protocol(

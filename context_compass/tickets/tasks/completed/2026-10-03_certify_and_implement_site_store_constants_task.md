@@ -1,14 +1,22 @@
 # Task: Certify S9/S11 in the harness, then emit site and store constants and live key objects
 
+- Completed: 2026-10-04T00:13:33Z
+- Summary: S9 landed at 0.2.8221: a unique site owned by an automatic conduit reads its owner store as a plan
+  constant (no alias line; dynamic, unowned and meld.<store> sites unchanged; misses byte-identical;
+  no generation bump); red on the tree's lowering, green with 4 unit + 3 component tests, every shard
+  green on the landed copy; plan -7..-17% on roots with unique providers on the VM; S11 retired as
+  already true; docs, graph, assets and bundles current; patch docs archived. Closed by the owner's
+  directive; full-tree suites and gauntlet Not run.
+
 ## Metadata
 - Task ID: TASK-2026-10-03-certify-and-implement-site-store-constants
 - Story: STORY-2026-10-03-flat-warm-body-constants
-- Status: in_progress
+- Status: done
 - Owner: cowork
 - Agent Name: fable_0
 - Priority: p1
 - Created: 2026-10-03T21:31:58Z
-- Updated: 2026-10-03T22:08:45Z
+- Updated: 2026-10-04T00:13:33Z
 
 ## Objective
 The certification harness gains S9 (site Spell and, in automatic posture, owner-store namespace constants) and
@@ -41,6 +49,14 @@ live Spell's `spell_id` object. Same objects, same errors; a dynamic transfer st
 - from_state: draft
 - to_state: in_progress
 - transition_reason: Opened on the owner's word (2026-10-03T21:31:58Z).
+- from_state: in_progress
+- to_state: review
+- transition_reason: Landed at 0.2.8221 with docs, graph, assets and bundles current (2026-10-04T00:02:11Z); the owner-run
+  suites and gauntlet remain.
+- from_state: review
+- to_state: done
+- transition_reason: Owner's turn-in directive (2026-10-04T00:13:33Z); notch 0.2.8221, note entry and rebuild
+  recorded at landing.
 
 ## Steps / Checklist
 - [x] Read the shared-site emission and the plan namespace in `site_plan_lowering.py` (render, _place,
@@ -50,12 +66,12 @@ live Spell's `spell_id` object. Same objects, same errors; a dynamic transfer st
 - [x] Harness: S9 and S11 transforms (and S9+S11), measured on the five shapes, interleaved; MEASURE note.
 - [x] Patch docs and the mapping note (only when the table says ship).
 - [x] Implement on the VM copy; emitter unit tests; component tests (both postures, transfer, full hit); shards.
-- [ ] Land on the tree (CRLF), notch above `__version__`, release-note section, docs, graph; patch docs promoted
+- [x] Land on the tree (CRLF), notch above `__version__`, release-note section, docs, graph; patch docs promoted
       and archived; assets and LLM bundles LAST; both checks OK; post-landing shards.
-- [ ] Run Ticket Microcycle during execution:
+- [x] Run Ticket Microcycle during execution:
       `Investigate -> Document -> Strategy/Plan -> Document -> Implement ->
       Document -> Validate -> Document`.
-- [ ] Document each meaningful finding immediately in `## Notes` before further investigation.
+- [x] Document each meaningful finding immediately in `## Notes` before further investigation.
 
 ## Deliverables
 - The harness table with S9/S11; the emitter and hydrator changes; tests; docs; release-note entry; notch.
@@ -70,7 +86,10 @@ live Spell's `spell_id` object. Same objects, same errors; a dynamic transfer st
 - release_docs/next_version_release.md, src/melder/__version__.py
 
 ## Validation
-- Not run.
+- Run on the VM (3.14.7t, GIL off): the lowering unit file and the component file (53 passed), six shards on
+  the working copy and five on a fresh copy of the landed tree (all green; counts in `## Notes`), the harness
+  on the shipped body (interleaved, run 1).
+- Not run: the full-tree suites and the persistent gauntlet (owner-run).
 - Recommended commands:
   - `python -X gil=0 tests/experimentation/codegen_strategy_certification.py`
   - `python -X gil=0 -m pytest tests/unit/melder/spellbook/spell_compiler tests/component/melder/aether/conduit -q`
@@ -80,18 +99,18 @@ live Spell's `spell_id` object. Same objects, same errors; a dynamic transfer st
 - Rollback: re-emit the per-creation read; keep the generation bumped.
 
 ## Applicable Anti-Patterns
-- [ ] No status transition without evidence-backed transition reason.
-- [ ] No implementation/validation from `UNKNOWN` or `HYPOTHESIS`.
+- [x] No status transition without evidence-backed transition reason.
+- [x] No implementation/validation from `UNKNOWN` or `HYPOTHESIS`.
 - [ ] No closure without acceptance confirmation and board-sync completion.
-- [ ] No src edit before the harness verdict, the patch docs and the mapping note.
-- [ ] No perf claim from agent-side runs; ranking numbers are owner-run.
+- [x] No src edit before the harness verdict, the patch docs and the mapping note.
+- [x] No perf claim from agent-side runs; ranking numbers are owner-run.
 
 ## Done Checklist
-- [ ] Steps complete and checked off
-- [ ] Deliverables produced and linked
-- [ ] Documentation updated (if needed)
-- [ ] Validation status recorded
-- [ ] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
+- [x] Steps complete and checked off
+- [x] Deliverables produced and linked
+- [x] Documentation updated (if needed)
+- [x] Validation status recorded
+- [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
 - [ ] Notes quality maintained (`SCORE_0_TO_10` >=
       `workflow.ticket_microcycle.minimum_note_score`)
 - [ ] Applicable anti-pattern checks are clear or escalated with evidence.
@@ -276,6 +295,59 @@ live Spell's `spell_id` object. Same objects, same errors; a dynamic transfer st
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-10-04T00:02:11Z
+  TYPE: FACT
+  CLAIM: Landed on the tree at 0.2.8221 (notched above 0.2.8220 at landing): `apply_s9.py` applied to the tree
+    (the lowering, the two stubs, four unit tests, the component file; CRLF kept, the door-held test file stays
+    LF as it was); release-note section "Shared singleton sites read their store as a constant" plus a packaging
+    bullet; `src_architecture.md` (operational invariant, the lowering's code-map extent 1588, handoff) and
+    `src_components.md` (SpellCompiler emission bullet, the lowering's code-map extent - stale since 2026-09-26 -
+    and handoff) with both indexes rebuilt and checked; the graph re-extracted (--strict), the SitePlanEmission
+    descriptor gains the owner-store-constant responsibility, accepted and reassembled (27595 lines, index
+    verified); patch docs archived to `system_docs/patches/completed/flat_warm_body_2026_10_03/` (Status
+    "promoted and archived"); assets rebuilt in the mirror and copied back (three manifests at v0.2.8221, --check
+    OK on the tree); LLM bundles rebuilt and --check OK; no `.git/index.lock` left behind. No cache generation
+    moved (plans are emitted from rows). The codex bridge lists no chat for melder_2 or muse_0 in this repository
+    (command_0-2 and cc_astra_0 are other repositories' agents), so the notch notice is carried by this ticket,
+    the board row and the release note, as for 0.2.8217-0.2.8220.
+  EVIDENCE:
+  - artifacts/flat_warm_body_20261003/logs/apply_tree.log:1-4
+  - artifacts/flat_warm_body_20261003/logs/land_docs.log:1-1
+  - artifacts/flat_warm_body_20261003/logs/graph_assemble.log:1-5
+  - artifacts/flat_warm_body_20261003/logs/assets_check_tree.log:1-3
+  - artifacts/flat_warm_body_20261003/logs/llm_bundles_check.log:1-3
+  - release_docs/next_version_release.md:425-441
+  - system_docs/patches/completed/flat_warm_body_2026_10_03/architecture_patch.md:1-8
+  IMPACT: The change set is complete on the tree; nothing else of this lane is in flight.
+  NEXT: MEASURE note (post-landing shards and the harness on the shipped body), then the task goes to review.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-04T00:02:11Z
+  TYPE: MEASURE
+  CLAIM: Post-landing shards on a fresh copy of the tree (`$HOME/work/melder_tree`, 3.14.7t, `-X gil=0`): unit
+    spellbook+utilities+root 3257 passed / 2 skipped / 7 xfailed (17.0 s), unit aether+crystallizer+MR+
+    build_assets 5171 passed / 1 skipped (22.3 s), component 2293 passed / 23 skipped / 1 xfailed (27.7 s),
+    integration spellbook+conduit+multithreading+live_sim 929 passed / 2 skipped / 1 xfailed / 2 xpassed
+    (19.0 s), integration aether+crystallizer+MR 1098 passed / 7 xfailed (79.5 s). Harness on the shipped body
+    (interleaved plain vs the S9 transform, which is now a no-op): plain medians worker 148 ns (pre-landing plain
+    160), context_root 260 (316), wide8_unique 359 (447), wide8_existing 368 (444), chain8_transient 404 (432);
+    the transform column is within +-3% of plain on every shape, so the shipped emitter already carries the
+    S9 shape. Full-tree suites and the gauntlet: Not run (owner-run).
+  EVIDENCE:
+  - artifacts/flat_warm_body_20261003/logs/post_landing_unit_spellbook_utilities_root.log:1-2
+  - artifacts/flat_warm_body_20261003/logs/post_landing_unit_aether_crystallizer_mr.log:1-2
+  - artifacts/flat_warm_body_20261003/logs/post_landing_component.log:1-2
+  - artifacts/flat_warm_body_20261003/logs/post_landing_integration_spellbook_conduit_mt_livesim.log:1-2
+  - artifacts/flat_warm_body_20261003/logs/post_landing_integration_aether_crystallizer_mr.log:1-2
+  - artifacts/flat_warm_body_20261003/logs/interleaved_shipped_body_run1.md:1-7
+  - artifacts/flat_warm_body_20261003/logs/interleaved_s9_medians.md:1-8
+  IMPACT: The lane's exit gate is met except the owner-run suites and gauntlet; the task is in review.
+  NEXT: owner turn-in (full-tree suites and the gauntlet on 0.2.8221; on green the task and story close); then
+    the door lane story opens with its epoch audit.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 ## Context / Handoff Summary
 STATE 2026-10-03T21:31:58Z: IN_PROGRESS. Opened; nothing read or edited yet. Resume from the latest note's NEXT.
 
@@ -284,6 +356,9 @@ already true, S2a parked; patch docs next, then the lowering edit. Resume from t
 
 STATE 2026-10-03T22:08:45Z: IN_PROGRESS. S9 implemented and green on the working copy (red on the tree's lowering); landing next: apply, notch 0.2.8221,
 release note, docs, graph, patch docs archived, assets and bundles last. Resume from the latest note's NEXT.
+
+STATE 2026-10-04T00:02:11Z: REVIEW. S9 landed at 0.2.8221 (docs, graph, assets, bundles current; post-landing shards green;
+harness re-run on the shipped body). Owner-owed: full-tree suites and gauntlet, then turn-in. Nothing in flight.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

@@ -1,0 +1,43 @@
+              TypeError naming what was passed and the two accepted forms. Before
+            spellframe: The value passed to `bind(..., spellframe=...)`.
+              TypeError naming what was passed and the two accepted forms. Before
+            spellframe: The value passed to `bind(..., spellframe=...)`.
+              TypeError naming what was passed and the two accepted forms. Before
+            spellframe: The value passed to `bind(..., spellframe=...)`.
+              TypeError naming what was passed and the two accepted forms. Before
+            spellframe: The value passed to `bind(..., spellframe=...)`.
+              TypeError naming what was passed and the two accepted forms. Before
+            spellframe: The value passed to `bind(..., spellframe=...)`.
+              TypeError naming what was passed and the two accepted forms. Before
+            spellframe: The value passed to `bind(..., spellframe=...)`.
+              TypeError naming what was passed and the two accepted forms. Before
+            spellframe: The value passed to `bind(..., spellframe=...)`.
+              TypeError naming what was passed and the two accepted forms. Before
+            spellframe: The value passed to `bind(..., spellframe=...)`.
+              TypeError naming what was passed and the two accepted forms. Before
+            spellframe: The value passed to `bind(..., spellframe=...)`.
+              TypeError naming what was passed and the two accepted forms. Before
+            spellframe: The value passed to `bind(..., spellframe=...)`.
+              TypeError naming what was passed and the two accepted forms. Before
+            spellframe: The value passed to `bind(..., spellframe=...)`.
+              TypeError naming what was passed and the two accepted forms. Before
+            spellframe: The value passed to `bind(..., spellframe=...)`.
+              TypeError naming what was passed and the two accepted forms. Before
+            spellframe: The value passed to `bind(..., spellframe=...)`.
+              TypeError naming what was passed and the two accepted forms. Before
+            spellframe: The value passed to `bind(..., spellframe=...)`.
+FAILED tests/experimentation/test_existing_instance_gap_experiment.py::test_existing_linked_injection[stock-annotation]
+FAILED tests/experimentation/test_existing_instance_gap_experiment.py::test_existing_linked_injection[stock-spell_contract]
+FAILED tests/experimentation/test_existing_instance_gap_experiment.py::test_existing_linked_injection[leaf_probe-annotation]
+FAILED tests/experimentation/test_existing_instance_gap_experiment.py::test_existing_linked_injection[leaf_probe-spell_contract]
+FAILED tests/experimentation/test_existing_instance_injection_experiment.py::test_characterize_existing_instance_injection[root_typed]
+FAILED tests/experimentation/test_existing_instance_injection_experiment.py::test_characterize_existing_instance_injection[direct_typed]
+FAILED tests/experimentation/test_existing_instance_injection_experiment.py::test_characterize_existing_instance_injection[nested_typed]
+FAILED tests/experimentation/test_existing_instance_injection_experiment.py::test_characterize_existing_instance_injection[collection_typed]
+FAILED tests/experimentation/test_existing_instance_injection_experiment.py::test_characterize_existing_instance_injection[late_bound_typed]
+FAILED tests/experimentation/test_meld_instance_reference_discovery_experiment.py::test_framed_instance_still_requires_its_frame_address[ReferenceFrame-False]
+FAILED tests/experimentation/test_meld_instance_reference_discovery_experiment.py::test_framed_instance_still_requires_its_frame_address[ReferenceFrame-True]
+ERROR tests/experimentation/test_meld_human_spell_name_string_experiment.py::test_explicit_frame_changes_the_address_and_does_not_create_a_class_name_alias[automatic-type-frame]
+ERROR tests/experimentation/test_meld_human_spell_name_string_experiment.py::test_explicit_frame_changes_the_address_and_does_not_create_a_class_name_alias[dynamic-type-frame]
+ERROR tests/experimentation/test_meld_human_spell_name_string_experiment.py::test_explicit_frame_changes_the_address_and_does_not_create_a_class_name_alias[late-bind-type-frame]
+11 failed, 236 passed, 4 skipped, 3 errors in 7.05s

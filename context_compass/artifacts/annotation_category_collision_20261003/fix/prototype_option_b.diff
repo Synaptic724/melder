@@ -1,0 +1,174 @@
+--- a/src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py
++++ b/src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py
+@@ -230,6 +230,38 @@
+             return (type_key,)
+         return (frame_key, type_key)
+ 
++    @staticmethod
++    def _spell_type_keys(spell_obj: Spell) -> Tuple[str, ...]:
++        """
++        Return the keys under which a spell PROVIDES A TYPE: the keys a single annotation may select.
++
++        Contract:
++            A single constructor annotation names a type. A spell provides that
++            type when its own class has that name (its type key: a class's name,
++            or an existing object's class name), or when it was bound under that
++            type as its spellframe - a class or Protocol object used as a frame
++            is a shape label, the "bind the implementation under its interface"
++            idiom. A spellframe given as a STRING is a category: it groups
++            definitions for explicit addressing (spellframe/binding_name,
++            SpellMap, SpellContract) and for collection injection, and it never
++            makes its members providers of a same-named type (owner ruling,
++            2026-10-03: a category named like a type is not that type).
++
++        Args:
++            spell_obj: The candidate spell (any object with `spell_name` and `spellframe`).
++
++        Returns:
++            Tuple[str, ...]: One or two lowercased keys; a subset of `_spell_keys`.
++        """
++        type_key = SpellInputUtils.normalize_frame_key(spell_obj.spell_name)
++        frame = spell_obj.spellframe
++        if frame is None or not isinstance(frame, type):
++            return (type_key,)
++        frame_key = SpellInputUtils.normalize_frame_key(frame)
++        if frame_key == type_key:
++            return (type_key,)
++        return (frame_key, type_key)
++
+     def _matches_annotation(
+             self,
+             annotation: Any,
+@@ -237,19 +269,25 @@
+             spell_obj: Spell,
+             *,
+             require_class_spell: bool,
++            type_providers_only: bool = False,
+     ) -> bool:
+         """
+         Return True if `spell_obj` is a candidate for the given annotation.
+ 
+-        Matching strategy (by address key, 2026-10-03):
++        Matching strategy (by address key, 2026-10-03; type providers, 2026-10-04):
+             - Optional/Union wrappers were stripped by the caller; a ForwardRef
+               keys by its name.
+             - The annotation's key (`_annotation_key`) must equal one of the
+-              spell's keys (`_spell_keys`): its address frame key or its type
+-              key. A class-object annotation and its string spelling therefore
++              spell's keys: for a collection annotation (`type_providers_only`
++              False) its address frame key or its type key (`_spell_keys`) - all
++              implementations under a frame or of a type; for a single annotation
++              (`type_providers_only` True) only the keys under which the spell
++              provides a type (`_spell_type_keys`) - its class name, or a class
++              or Protocol object it was bound under as its spellframe. A string
++              spellframe is a category and never satisfies a single type
++              annotation. A class-object annotation and its string spelling
+               resolve identically, an existing object is matched by its class,
+-              and a spellframe is a category or a shape label - never compared
+-              by object identity.
++              and nothing is compared by object identity.
+             - `binding_name`, when given, must equal the spell's binding name.
+             - `require_class_spell=True` excludes METHOD/LAMBDA spell kinds.
+ 
+@@ -262,6 +300,8 @@
+                 Candidate spell.
+             require_class_spell:
+                 When True, only class-like spells are allowed.
++            type_providers_only:
++                When True, match the spell's type keys only (single annotations).
+ 
+         Returns:
+             bool: `True` when the candidate should be considered for this
+@@ -276,7 +316,8 @@
+             ):
+                 return False
+ 
+-        if self._annotation_key(annotation) not in self._spell_keys(spell_obj):
++        keys = self._spell_type_keys(spell_obj) if type_providers_only else self._spell_keys(spell_obj)
++        if self._annotation_key(annotation) not in keys:
+             return False
+         if binding_name is not None and spell_obj.binding_name != binding_name:
+             return False
+@@ -327,16 +368,22 @@
+               every pool; no equality guard is needed (2026-10-03).
+ 
+         Returns:
+-            Dict[str, Any]: `{"by_key": {key: [entries]}}`.
++            Dict[str, Any]: `{"by_key": {key: [entries]}, "by_type_key": {key: [entries]}}` -
++            `by_key` buckets every address key (collection lookups), `by_type_key`
++            only the keys under which a spell provides a type (`_spell_type_keys`,
++            single lookups).
+         """
+         by_key: Dict[str, List[Tuple[int, Any, Spell]]] = {}
++        by_type_key: Dict[str, List[Tuple[int, Any, Spell]]] = {}
+         position = 0
+         for index, spell_obj in self._iter_all_spells(spellbook):
+             entry = (position, index, spell_obj)
+             position += 1
+             for key in self._spell_keys(spell_obj):
+                 by_key.setdefault(key, []).append(entry)
+-        return {"by_key": by_key}
++            for key in self._spell_type_keys(spell_obj):
++                by_type_key.setdefault(key, []).append(entry)
++        return {"by_key": by_key, "by_type_key": by_type_key}
+ 
+     def _get_candidate_index(
+             self,
+@@ -368,21 +415,25 @@
+             annotation: Any,
+             *,
+             require_class_spell: bool,
++            type_providers_only: bool = False,
+     ) -> Dict[Any, "Spell"]:
+         """
+         Bucket-lookup equivalent of the `_matches_annotation` scan.
+ 
+         Contract:
+-            - Reads the one bucket of the annotation's key (`_annotation_key`);
+-              membership equals scan membership because both sides use the
+-              same keys (2026-10-03).
++            - Reads the one bucket of the annotation's key (`_annotation_key`)
++              in `by_type_key` when `type_providers_only` (single annotations)
++              and in `by_key` otherwise (collections); membership equals scan
++              membership because both sides use the same key functions
++              (`_spell_type_keys` / `_spell_keys`).
+             - `binding_name` filtering is omitted because both annotation
+               resolvers pass None today (scan applies the filter only when a
+               binding name is present).
+             - `require_class_spell=True` applies the same METHOD/LAMBDA
+               exclusions as the scan.
+         """
+-        bucket = candidate_index["by_key"].get(self._annotation_key(annotation))
++        buckets = candidate_index["by_type_key"] if type_providers_only else candidate_index["by_key"]
++        bucket = buckets.get(self._annotation_key(annotation))
+ 
+         # Replicate the scan's dict semantics exactly: when one SpellIndex
+         # matches through multiple pool entries (version lineages), the scan
+@@ -421,6 +472,11 @@
+         Resolve a SINGLE_BY_ANNOTATION dependency to exactly one class/creation
+         spell.
+ 
++        A single annotation names a type, so only type providers are candidates
++        (`_spell_type_keys`): spells of that class, or bound under that class or
++        Protocol object as their spellframe. Members of a string-framed category
++        that happens to share the type's name are not candidates (2026-10-04).
++
+         Prefer matching resolvable providers. Only when none exist may a single
+         non-resolvable definition be selected for an OVERRIDE_REQUIRED input.
+         Matching and index grouping happen first; capability does not change them.
+@@ -452,6 +508,7 @@
+                 candidate_index,
+                 annotation,
+                 require_class_spell=True,
++                type_providers_only=True,
+             )
+         else:
+             candidates = {}
+@@ -461,6 +518,7 @@
+                         binding_name,
+                         spell_obj,
+                         require_class_spell=True,
++                        type_providers_only=True,
+                 ):
+                     candidates[index] = spell_obj
+ 

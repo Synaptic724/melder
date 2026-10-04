@@ -160,7 +160,7 @@ def test_explicit_false_selection_does_not_fall_back_to_a_resolvable_provider(sc
         spell=RuntimeDefinition, binding_name="definition", existence="unique", resolvable=False,
     )
     provider_id = book.bind(
-        spell=RuntimeProvider, spellframe=RuntimeDefinition, binding_name="runtime", existence="unique",
+        spell=RuntimeProvider, spellframe="RuntimeDefinition", binding_name="runtime", existence="unique",
     )
     conduit = book.conjure()
     runtime = conduit.create_spellspace() if scoped else conduit

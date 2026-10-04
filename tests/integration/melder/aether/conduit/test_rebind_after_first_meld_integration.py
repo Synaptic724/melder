@@ -13,6 +13,7 @@ references), no application import.
 """
 
 from collections.abc import Iterator
+from typing import Protocol
 
 import pytest
 
@@ -87,8 +88,30 @@ class ProviderV2(Cleanable):
         self._cleaned = True
 
 
+class IProvider(Protocol):
+    """The contract both provider classes are bound under when one replaces the other (M2)."""
+
+    generation: int
+
+
+class ContractConsumer(Cleanable):
+    """Depends on the provider CONTRACT by annotation, so a replacement implementation satisfies it."""
+
+    def __init__(self, p: IProvider) -> None:
+        """Hold the injected provider."""
+        super().__init__()
+        self.p = p
+
+    def cleanup(self) -> None:
+        """Retire once."""
+        if self._cleaned:
+            return
+        self._cleaned = True
+        del self.p
+
+
 class Consumer(Cleanable):
-    """Depends on the provider address by annotation."""
+    """Depends on the provider class by annotation."""
 
     def __init__(self, p: Provider) -> None:
         """Hold the injected provider."""
@@ -188,19 +211,24 @@ def test_replacement_is_resolved_again_and_the_old_product_survives() -> None:
 
 
 def test_dependent_consumer_is_rebuilt_against_the_replacement_class() -> None:
-    """GUARD (green before the repair): a consumer compiled against the first provider rebuilds its plan."""
+    """
+    GUARD (green before the repair): a consumer compiled against the first provider rebuilds its plan.
+
+    The consumer asks for the Protocol contract both providers are bound under (2026-10-04: a class
+    annotation names one type, so swapping implementations is a contract's job).
+    """
     frame = "rebind-matrix-m2"
     book, root, peer, scope = _world(frame)
     try:
-        provider_id = root.bind(spell=Provider, existence="many", spellframe="provider",
+        provider_id = root.bind(spell=Provider, existence="many", spellframe=IProvider,
                                 disposal_method_names=["cleanup"])
-        root.bind(spell=Consumer, existence="many", spellframe="consumers",
+        root.bind(spell=ContractConsumer, existence="many", spellframe="consumers",
                   binding_name="consumer", disposal_method_names=["cleanup"])
         first = scope.meld(spellframe="consumers", binding_name="consumer")
         assert first.p.generation == 1
         definition = root.get_spell_by_id(provider_id, frame)
         root.cleanup_spell(spell=definition)
-        root.bind(spell=ProviderV2, existence="many", spellframe="provider",
+        root.bind(spell=ProviderV2, existence="many", spellframe=IProvider,
                   disposal_method_names=["cleanup"])
         second = scope.meld(spellframe="consumers", binding_name="consumer")
         assert second.p.generation == 2, "consumer plan still constructs the removed provider class"

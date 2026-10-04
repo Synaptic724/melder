@@ -5,7 +5,7 @@
 - Status: in_progress
 - Owner:
 - Created: 2026-01-17
-- Updated: 2026-10-03
+- Updated: 2026-10-04
 
 ## Scope and Intent
 This document describes the Melder core architecture at the C4 level for
@@ -917,6 +917,37 @@ each entry in `src_components.md`; this list is the set that crosses components.
 - Validation strategies registered in `SpellValidationSystem`.
 
 ## Operational Invariants
+- Annotation matching by kind (2026-10-04, 0.2.8222; supersedes the 0.2.8218 address-key rule below): a spellframe is a
+  string category or a `typing.Protocol` contract and nothing else - `Bind._classify_spellframe` records the kind
+  (`SpellframeKind.none` / `category` / `contract`) and the Protocol on the Spell (`spellframe_kind`,
+  `implemented_protocols`) and raises `TypeError` for a concrete class or any other object. Phase 3 reads the
+  annotation's kind: a class annotation selects spells of that type (a class bound bare, an existing object of
+  that class); a Protocol annotation selects the spells recording it as their contract plus the Protocol's own
+  descriptive definition (bound `resolvable=False`), with the resolvable preference choosing an implementer; a
+  `TYPE_CHECKING` string selects a type or a contract by name and never a string category; `list[...]` gathers the
+  group the kind names (type / implementers / frame-key members). One predicate (`_matches_annotation`) serves the
+  scan and the four-bucket index (`by_type`, `by_label`, `by_contract`, `by_definition`), so a category that shares a
+  class's name never produces an ambiguity for that class. The crystal records `spellframe_kind` and the Protocol's
+  module coordinates (RecordVersion 4.1.0); restore and graft re-import the Protocol or, when they cannot, bind the
+  recorded name as a category and file a `spell_crystal` shortfall. Cache generation 20 retires bundles captured
+  under the name matcher.
+  EVIDENCE: `src/melder/aether/spellbook/bind/bind.py:Bind._classify_spellframe`,
+  `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:CompilerPhase3._annotation_kind`,
+  `CompilerPhase3._spell_keys_for`, `CompilerPhase3._matches_annotation`, `CompilerPhase3._build_candidate_index`,
+  `src/melder/crystallizer/crystal_loader_system/restore_engine.py:RestoreEngine._hydrate_spellframe` and
+  `src/melder/crystallizer/crystal_loader_system/graft_runner.py:GraftRunner._hydrate_spellframe`.
+- Owner-store constants on the warm path (2026-10-03, 0.2.8221): a site plan's shared site of existence `unique` whose
+  provider Spell is owned by an automatic conduit and already has an owner store reads that store as a plan
+  constant (`c{i}`, bound in the namespace at emission) instead of `spells[i]._owner_creations` on every creation;
+  the hit read `c{i}._creations.get(sid{i})`, the miss call and the miss body are unchanged, so a store swapped
+  empty by cleanup is seen as before. An owned spell's owner store changes only through
+  `Spell._add_owned_conduit` - at conjure and, in dynamic posture, at ownership transfer - and a notch or a late
+  bind re-gates and recompiles the plan, so in an automatic world nothing repoints the store under a plan; a
+  provider in a dynamic environment, one not yet owned, and every `meld.<store>` route keep the per-creation
+  read. Plans are emitted at hydration from manifest rows (cold path and cache full hit alike), so no cache
+  generation moves. Measured on the VM: -7..-17% of the plan on roots with `unique` providers (8-10 ns per site).
+  EVIDENCE: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:SitePlanEmission._owner_store_constant`
+  and `SitePlanEmission._emit_shared_hit`.
 - Per-conduit verdicts retire with their definition (2026-10-03, 0.2.8219): a spell id that no registered
   `SpellSystemState` carries has no resolution verdict in any `ConduitResolutionState` of the frame, and a version
   id that `register_index` publishes starts with none. `unregister_index` calls
@@ -947,13 +978,12 @@ each entry in `src_components.md`; this list is the set that crosses components.
   EVIDENCE: `src/melder/aether/spellbook/spellbook_creation_system.py:SpellbookCreationSystem._build_conjure_cache_state`,
   `SpellbookCreationSystem._stage_spell_payloads_at_conjure_end` and
   `src/melder/utilities/caching_system/caching_system.py:CachingSystem.set_world_stamp`.
-- Annotation matching by address key (2026-10-03, 0.2.8218): Phase 3 matches a constructor annotation to candidate spells
-  by the lowercased name every spell address uses - the annotation's key against each spell's frame key (its
-  spellframe, else its own name) and its type key (its class name; an existing object's class name). An existing
-  object bound bare satisfies a consumer annotated with its class; a binding resolves identically under a
-  `TYPE_CHECKING`-only string and a runtime class object; a spellframe is a category or a shape label matched by
-  name, never by identity. Nothing that resolved before stops resolving; ambiguity and Phase 4's one-address rule
-  are unchanged; cache generation 18 retires bundles captured under the identity matcher.
+- Annotation matching by address key (2026-10-03, 0.2.8218; SUPERSEDED by the kind rule above at 0.2.8222): Phase 3
+  matched a constructor annotation to candidate spells by the lowercased name every spell address uses - the
+  annotation's key against each spell's frame key and its type key - so a string category sharing a class's name
+  made its members providers of that class (the MelderOps "spectrum" collision). What survives: an existing object
+  bound bare satisfies a consumer annotated with its class; a binding resolves identically under a `TYPE_CHECKING`
+  string and a runtime class object; ambiguity and Phase 4's one-address rule are unchanged.
   EVIDENCE: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:CompilerPhase3._matches_annotation` and `CompilerPhase3._build_candidate_index`.
 - Lazy `instance_results` (2026-10-03, 0.2.8217): a dict-mode site plan builds a dict literal of exactly the values a
   generic construction reads, where that construction runs, and nothing on the warm path; misses take no dict
@@ -1481,6 +1511,17 @@ each entry in `src_components.md`; this list is the set that crosses components.
   not the same thing as a Rift-level event orchestrator.
 
 ## Failure Modes and Error Paths
+- `bind(..., spellframe=SomeClass)` with a concrete (non-Protocol) class raises TypeError "spellframe must be a string
+  category or a Protocol contract; got the concrete class 'SomeClass'. To group spells under it as a label, pass its
+  name (spellframe='SomeClass'); to make it a contract the spell is checked against, declare it as a
+  typing.Protocol." (0.2.8222, Breaking). Any other non-string, non-class object is refused the same way. Before,
+  the class was accepted and matched by name as a label, so a same-named single annotation resolved its members.
+  EVIDENCE: `src/melder/aether/spellbook/bind/bind.py:Bind._classify_spellframe`.
+- A restore or graft whose recorded Protocol frame cannot be imported binds the spell under the recorded name as a
+  category and files one `spell_crystal` shortfall, `spellframe_contract_hydration_failed (<module>.<qualname>):
+  <error>; bound as the category '<name>'`; the report still completes and Protocol-typed consumers of that spell
+  do not resolve it (0.2.8222).
+  EVIDENCE: `src/melder/crystallizer/crystal_loader_system/restore_engine.py:RestoreEngine._hydrate_spellframe`.
 - A warm creation cache no longer replays an executor compiled in another world (fixed in 0.2.8220): a world that
   differs only by an existing creation or a non-resolvable definition used to be a full hit, so a consumer's
   executor compiled without a provider raised TypeError ("missing 1 required positional argument") at its first
@@ -1953,10 +1994,16 @@ Spellbook and binding:
   note: fluent binding adapter.
 - path: `src/melder/aether/spellbook/bind/bind.py`
   start_line: 1
-  end_line: 1316
-  loc: 1316
-  verified_at: 2026-09-26T20:10:34Z
-  note: binding pipeline.
+  end_line: 1371
+  loc: 1371
+  verified_at: 2026-10-04T11:45:00Z
+  note: binding pipeline; classifies the spellframe kind and refuses concrete-class frames (0.2.8222).
+- path: `src/melder/aether/spellbook/spellframe_kind/spellframe_kind.py`
+  start_line: 1
+  end_line: 47
+  loc: 47
+  verified_at: 2026-10-04T11:45:00Z
+  note: `SpellframeKind` - none / category / contract, the kind a binding records (0.2.8222).
 - path: `src/melder/aether/spellbook/bind/scan.py`
   start_line: 1
   end_line: 373
@@ -1972,10 +2019,10 @@ Spellbook and binding:
     selected spell.
 - path: `src/melder/aether/spellbook/spell.py`
   start_line: 1
-  end_line: 1717
-  loc: 1717
-  verified_at: 2026-09-26T20:10:34Z
-  note: spell metadata and hooks.
+  end_line: 1734
+  loc: 1734
+  verified_at: 2026-10-04T11:45:00Z
+  note: spell metadata and hooks; carries `spellframe_kind` and `implemented_protocols` (0.2.8222).
 - path: `src/melder/aether/spellbook/existence/existence.py`
   start_line: 1
   end_line: 138
@@ -2080,10 +2127,11 @@ SpellCompiler and validation:
   note: DI shape classification.
 - path: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py`
   start_line: 1
-  end_line: 1546
-  loc: 1546
-  verified_at: 2026-10-03T19:33:16Z
-  note: key-set plan lowering: site graph from steps, placement, emission, call shape.
+  end_line: 1588
+  loc: 1588
+  verified_at: 2026-10-03T22:12:00Z
+  note: key-set plan lowering: site graph from steps, placement, emission, call shape; an automatic
+    world's `unique` sites read their owner store as a plan constant (0.2.8221).
 - path: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_override_runtime.py`
   start_line: 1
   end_line: 405
@@ -2121,12 +2169,12 @@ Aether and frames:
     and the loader - see "Persistence Subsystem Topology" below).
 - path: `src/melder/crystallizer/crystals/spell_crystal.py`
   start_line: 1
-  end_line: 1280
-  loc: 1280
-  verified_at: 2026-09-30T18:28:00Z
+  end_line: 1345
+  loc: 1345
+  verified_at: 2026-10-04T11:45:00Z
   note: bind-signature CARRIER for one spell version; delegates module-world
     analysis to crystal_analysis and carries the result (moved + slimmed,
-    2026-07-10).
+    2026-07-10); records the frame kind and Protocol coordinates (0.2.8222).
 - path: `src/melder/crystallizer/persistence/persistence_profile.py`
   start_line: 1
   end_line: 1636
@@ -2136,11 +2184,18 @@ Aether and frames:
     0.2.8214), journal and checkpoint capture.
 - path: `src/melder/crystallizer/crystal_loader_system/restore_engine.py`
   start_line: 1
-  end_line: 3021
-  loc: 3021
-  verified_at: 2026-09-30T18:28:00Z
+  end_line: 3069
+  loc: 3069
+  verified_at: 2026-10-04T11:45:00Z
   note: staged restore driver; stage 1 installs or reports the recorded spell-id regime,
-    stage 6 replays custody per Book (0.2.8213-0.2.8214).
+    stage 6 replays custody per Book (0.2.8213-0.2.8214); hydrates Protocol frames or degrades
+    them to categories with a shortfall (0.2.8222).
+- path: `src/melder/crystallizer/crystal_loader_system/graft_runner.py`
+  start_line: 1
+  end_line: 711
+  loc: 711
+  verified_at: 2026-10-04T11:45:00Z
+  note: spell-index graft driver; the same frame hydration as the restore engine (0.2.8222).
 - path: `src/melder/crystallizer/crystal_analysis/conduit_hierarchy.py`
   start_line: 1
   end_line: 264
@@ -2751,10 +2806,11 @@ Utilities:
 
 - path: `src/melder/utilities/caching_system/caching_system.py`
   start_line: 1
-  end_line: 887
-  loc: 887
-  verified_at: 2026-10-03T21:03:41Z
-  note: release-bound creation-cache admission, the envelope's world stamp and atomic persistence.
+  end_line: 892
+  loc: 892
+  verified_at: 2026-10-04T11:45:00Z
+  note: release-bound creation-cache admission, the envelope's world stamp and atomic persistence;
+    generation 20 (0.2.8222).
 
 - path: `src/melder/utilities/general_base/cleanable.py`
   start_line: 1
@@ -3109,6 +3165,9 @@ without rewriting the original record or existing live IDs.
 
 ## Information Sources
 - `src/melder/utilities/caching_system/caching_system.py`
+- `src/melder/aether/spellbook/spellframe_kind/spellframe_kind.py`
+- `src/melder/crystallizer/crystal_loader_system/graft_runner.py`
+- `src/melder/utilities/helpers/general_helpers.py`
 - `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py`
 - `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_override_runtime.py`
 - `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/override_key_resolver.py`
@@ -3248,6 +3307,21 @@ without rewriting the original record or existing live IDs.
 - `src/melder/utilities/ai_native_support_tools/protocol_crafter.py`
 
 ## Context / Handoff Summary
+
+2026-10-04 annotation matching by kind (0.2.8222): a spellframe is a string category or a Protocol contract, a
+concrete class is refused at bind (Breaking), the binding records its kind and Protocol, and Phase 3 resolves a
+class annotation to its type, a Protocol annotation to its recorded implementers (plus the descriptive
+definition), a `TYPE_CHECKING` string to a type or contract and never a category, and `list[...]` to the group
+the kind names; the crystal records the kind (RecordVersion 4.1.0) and the loaders re-import the Protocol or
+degrade to a category with a shortfall; cache generation 20. The operational invariants (the 0.2.8218 entry is
+marked superseded), the failure modes, the code map and the information sources carry it; the component map
+carries the per-component contracts and the README's spellframe and DI sections state the rule for users.
+
+2026-10-03 owner-store constants (0.2.8221): a `unique` site whose provider is owned by an automatic conduit reads its
+owner store as a plan constant bound at emission instead of `spells[i]._owner_creations` per creation; dynamic
+providers, unowned ones and the `meld.<store>` routes keep the read, and no cache generation moves because plans
+are emitted from rows at hydration. The operational invariants and the code map carry it; the component map
+carries the eligible-site rule and the emitted shape.
 
 2026-10-03 executor-cache world stamp (0.2.8220): the creation-cache bundle records the world its executors were
 staged in and a full hit requires it, so a world that only added or removed an existing creation (or a

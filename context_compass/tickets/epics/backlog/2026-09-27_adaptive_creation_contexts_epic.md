@@ -18,12 +18,12 @@
 
 ## Metadata
 - Epic ID: EPIC-2026-09-27-adaptive-creation-contexts
-- Status: ready
+- Status: ready (parked)
 - Owner: cowork
 - Agent Name: fable_0
 - Priority: p1
 - Created: 2026-09-27T23:42:45Z
-- Updated: 2026-10-01T00:57:45Z
+- Updated: 2026-10-04T00:25:04Z
 - Target Window: opened 2026-09-27 on the owner's direction; idea collection first, one story at a time after
 - Related Program/Initiative: SpellCompiler codegen (phases 8-11), Meld runtime, Creations, DevOps station,
   creation caches
@@ -121,6 +121,10 @@ measurement come first, one story at a time, and the owner-run gauntlet decides.
 - to_state: ready
 - transition_reason: Split by the owner (2026-10-01T00:57:45Z): the static strategies left for their own epic,
   which runs first; this epic is queued behind it with no active lane.
+- from_state: ready
+- to_state: ready (parked)
+- transition_reason: Parked in the backlog on the owner's word (2026-10-04T00:25:04Z: "keep your pgo in the backlog")
+  after the static epic was turned in; its thirteen stories and the probe task were already in the backlog.
 
 ## Success Metrics
 - Probe window: at most +11% per creation while open (measured +4..+11% count-only), 0 after the self-swap.
@@ -459,6 +463,19 @@ everything else is HYPOTHESIS until its story measures it.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-10-04T00:25:04Z
+  TYPE: DECISION
+  CLAIM: Owner (2026-10-04): the static epic is turned in (S1, S8, S9 shipped; the door lane parked) and this
+    epic stays in the backlog, not closed. Nothing of it was implemented; the certification table
+    (artifacts/pgo_strategies_20260927/) and the thirteen story drafts are its record. The static lanes it was
+    queued behind no longer exist, so it reopens only on the owner's word.
+  EVIDENCE:
+  - tickets/epics/completed/2026-10-01_static_codegen_and_door_strategies_epic.md:1-10
+  IMPACT: No active or ready lane of fable_0 remains; the board carries no row for this epic.
+  NEXT: none until the owner reopens it.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Acceptance criteria confirmed by user
@@ -490,6 +507,9 @@ active lane; the other fourteen stories stay in backlog until picked. Resume fro
 STATE 2026-10-01T00:57:45Z: READY (queued behind the static epic). Thirteen stories remain here, all in
 stories/backlog/; the registration trim and the harness stories moved to the static epic. Opens when the static
 epic's lanes are turned in or on the owner's word; the first lane then is the harvester/probe story.
+
+STATE 2026-10-04T00:25:04Z: PARKED (backlog_by_owner). The static epic is closed; this epic and its thirteen
+stories stay in the backlog until the owner reopens the PGO lane; no board row.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

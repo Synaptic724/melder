@@ -15,6 +15,9 @@ from tests.integration.melder.spellbook.test_existing_instance_planning import (
     ExistingValue as SuppliedValue,
 )
 from tests.integration.melder.spellbook.test_existing_instance_planning import (
+    IExistingValue,
+)
+from tests.integration.melder.spellbook.test_existing_instance_planning import (
     ValueConsumer,
 )
 from tests.integration.melder.spellbook.test_existing_instance_planning import (
@@ -49,7 +52,7 @@ class LinkedValueConsumer:
 
     def __init__(
             self,
-            value: SuppliedValue = SpellContract(spellframe=SuppliedValue, binding_name="shared"),
+            value: SuppliedValue = SpellContract(spellframe=IExistingValue, binding_name="shared"),
     ) -> None:
         """Retain the provider's object without acquiring its cleanup responsibility."""
         self.value = value
@@ -63,7 +66,7 @@ def build_value_consumer(value: SuppliedValue) -> ValueConsumer:
 def test_existing_provider_satisfies_repeated_parameters(instance_book: Spellbook) -> None:
     """A repeated dependency must share the original object through both parameters."""
     supplied = SuppliedValue("shared")
-    instance_book.bind(spell=supplied, existence="unique", spellframe=SuppliedValue)
+    instance_book.bind(spell=supplied, existence="unique", spellframe=IExistingValue)
     target = instance_book.bind(spell=RepeatedValueConsumer, existence="many")
     consumer = instance_book.conjure(dynamic=True).meld(spell_id=target)
     assert consumer.left is supplied and consumer.right is supplied
@@ -72,7 +75,7 @@ def test_existing_provider_satisfies_repeated_parameters(instance_book: Spellboo
 def test_existing_provider_can_be_injected_into_function(instance_book: Spellbook) -> None:
     """Function dependency planning must preserve the existing value without making it callable."""
     supplied = SuppliedValue("function-input")
-    instance_book.bind(spell=supplied, existence="unique", spellframe=SuppliedValue)
+    instance_book.bind(spell=supplied, existence="unique", spellframe=IExistingValue)
     target = instance_book.bind(spell=build_value_consumer, existence="unique")
     consumer = instance_book.conjure(dynamic=True).meld(spell_id=target)
     assert consumer.value is supplied
@@ -81,7 +84,7 @@ def test_existing_provider_can_be_injected_into_function(instance_book: Spellboo
 def test_existing_provider_typechecking_annotation_does_not_raise_nameerror(instance_book: Spellbook) -> None:
     """Resolve a real required TYPE_CHECKING-only annotation without eager evaluation failure."""
     supplied = SuppliedValue("deferred-input")
-    instance_book.bind(spell=supplied, existence="unique", spellframe=SuppliedValue)
+    instance_book.bind(spell=supplied, existence="unique", spellframe=IExistingValue)
     target = instance_book.bind(spell=DeferredValueConsumer, existence="many")
     consumer = instance_book.conjure(dynamic=True).meld(spell_id=target)
     assert consumer.value is supplied
@@ -95,7 +98,7 @@ def test_existing_provider_survives_consumer_scope_release(
 ) -> None:
     """Scoped consumer reuse and teardown must preserve the root-owned existing value."""
     supplied = SuppliedValue("scope-input")
-    provider_id = instance_book.bind(spell=supplied, existence="unique", spellframe=SuppliedValue)
+    provider_id = instance_book.bind(spell=supplied, existence="unique", spellframe=IExistingValue)
     target = instance_book.bind(spell=ValueConsumer, existence=existence)
     root = instance_book.conjure(dynamic=True)
     door = root.create_lesser_conduit() if scope == "lesser" else root.create_spellspace()
@@ -115,7 +118,7 @@ def test_existing_provider_is_injected_across_read_contract(
     """Borrower construction and cleanup must retain the existing provider's exact identity."""
     supplied = SuppliedValue("linked-input")
     provider_id = instance_book.bind(
-        spell=supplied, existence="unique", spellframe=SuppliedValue, binding_name="shared",
+        spell=supplied, existence="unique", spellframe=IExistingValue, binding_name="shared",
     )
     owner = instance_book.conjure(dynamic=True, name="owner")
     borrower_book = Spellbook(aetheric_frame="existing-instance-planning-regression")
@@ -136,11 +139,16 @@ def test_existing_provider_is_injected_across_read_contract(
 
 @pytest.mark.parametrize("lookup", ("instance", "frame"))
 def test_existing_root_public_lookup_preserves_identity(instance_book: Spellbook, lookup: str) -> None:
-    """Keep actual object/frame lookup covered independently of the machine-ID controls."""
+    """
+    Keep actual object/frame lookup covered independently of the machine-ID controls.
+
+    A lookup addresses the binding: `meld(spell=obj)` finds an object bound bare (at its class's address),
+    `meld(spellframe=IExistingValue)` one bound under that contract.
+    """
     supplied = SuppliedValue("lookup-input")
-    instance_book.bind(spell=supplied, existence="unique", spellframe=SuppliedValue)
+    instance_book.bind(spell=supplied, existence="unique", spellframe=None if lookup == "instance" else IExistingValue)
     root = instance_book.conjure(dynamic=True)
-    found = root.meld(spell=supplied) if lookup == "instance" else root.meld(spellframe=SuppliedValue)
+    found = root.meld(spell=supplied) if lookup == "instance" else root.meld(spellframe=IExistingValue)
     assert found is supplied
 
 

@@ -3,12 +3,12 @@
 ## Metadata
 - Story ID: STORY-2026-10-01-meld-door-strategies
 - Epic: EPIC-2026-10-01-static-codegen-and-door-strategies
-- Status: ready
+- Status: ready (parked)
 - Owner: cowork
 - Agent Name: fable_0
 - Priority: p1
 - Created: 2026-10-01T00:55:51Z
-- Updated: 2026-10-01T00:55:51Z
+- Updated: 2026-10-04T00:13:33Z
 
 ## User Narrative
 As the Melder owner, I want the warm lane of `Conduit.meld` and `SpellSpace.meld` measured with each door
@@ -54,9 +54,13 @@ the door compares, and that is verified in source before any door is built.
 - to_state: ready
 - transition_reason: Drafted from the epic's door section and the owner's split (2026-10-01T00:55:51Z); opens
   after S1.
+- from_state: ready
+- to_state: ready (parked)
+- transition_reason: Parked in the backlog when the owner turned the static epic in (2026-10-04T00:13:33Z); the door
+  lane (epoch audit, door harness in dynamic posture, D5, D1-D3) reopens under a new epic on the owner's word.
 
 ## Dependencies / Related Work
-- tickets/epics/2026-09-27_adaptive_creation_contexts_epic.md (Concrete Strategies: door strategies D1-D4)
+- tickets/epics/backlog/2026-09-27_adaptive_creation_contexts_epic.md (Concrete Strategies: door strategies D1-D4)
 - tickets/stories/2026-09-28_codegen_strategy_certification_harness_story.md (the method)
 - tickets/tasks/2026-09-26_measure_gauntlet_scope_cycle_costs_task.md (melder_2's single-check fast door lever)
 
@@ -122,7 +126,7 @@ the door compares, and that is verified in source before any door is built.
     meld, D4 ~80-90 ns per singleton meld; the warm lane today pays about twelve attribute reads, one dict get,
     the four-guard ladder, the executor frame and its store read, and the `_cache_emit_required` pair.
   EVIDENCE:
-  - tickets/epics/2026-09-27_adaptive_creation_contexts_epic.md:230-262
+  - tickets/epics/backlog/2026-09-27_adaptive_creation_contexts_epic.md:230-262
   - src/melder/aether/conduit/conduit.py:4755-4820
   IMPACT: The harness turns these into measurements before any door is touched.
   NEXT: opens after S1 lands; the epoch-bump audit is its first task.

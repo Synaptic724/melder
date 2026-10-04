@@ -29,6 +29,9 @@ from tests.integration.melder.spellbook.test_existing_instance_planning import (
     ExistingValue as SuppliedValue,
 )
 from tests.integration.melder.spellbook.test_existing_instance_planning import (
+    IExistingValue,
+)
+from tests.integration.melder.spellbook.test_existing_instance_planning import (
     instance_book as instance_book,
 )
 
@@ -119,7 +122,7 @@ class ContractConsumer:
 
     def __init__(
             self,
-            value: SuppliedValue = SpellContract(spellframe=SuppliedValue, binding_name="shared"),
+            value: SuppliedValue = SpellContract(spellframe=IExistingValue, binding_name="shared"),
     ) -> None:
         """Retain the contract-provided object for identity and post-unlink checks."""
         self.value = value
@@ -201,7 +204,7 @@ def test_existing_injection_paths(gap_book: Spellbook, planning_mode: str, scena
         if scenario != "missing_provider_override":
             gap_book.bind(
                 spell=supplied, existence="unique",
-                spellframe="named-values" if scenario == "map" else None if scenario in ("name_token", "string_token") else SuppliedValue,
+                spellframe="named-values" if scenario == "map" else None if scenario in ("name_token", "string_token") else IExistingValue,
                 binding_name="chosen" if scenario == "map" else None,
             )
         consumer: object = ValueConsumer
@@ -209,7 +212,7 @@ def test_existing_injection_paths(gap_book: Spellbook, planning_mode: str, scena
             gap_book.bind(spell=ValueConsumer, existence="many")
             consumer = NestedValueConsumer
         elif scenario == "collection":
-            gap_book.bind(spell=alternate, existence="unique", spellframe=SuppliedValue, binding_name="alternate")
+            gap_book.bind(spell=alternate, existence="unique", spellframe=IExistingValue, binding_name="alternate")
             consumer = CollectionValueConsumer
         elif scenario == "pair":
             consumer = PairConsumer
@@ -271,7 +274,7 @@ def test_existing_consumer_scope_reuse(
 
     def action() -> None:
         """Meld twice, release the selected scope and verify owner access afterward."""
-        provider_id = gap_book.bind(spell=supplied, existence="unique", spellframe=SuppliedValue)
+        provider_id = gap_book.bind(spell=supplied, existence="unique", spellframe=IExistingValue)
         consumer_id = gap_book.bind(spell=ValueConsumer, existence=existence)
         report["stage"] = "conjure"
         root = gap_book.conjure(dynamic=True)
@@ -313,7 +316,7 @@ def test_existing_root_lookup_forms(gap_book: Spellbook, lookup: str) -> None:
         """Bind the metadata needed by this lookup and verify stable repeated identity."""
         target = gap_book.bind(
             spell=supplied, existence="unique",
-            spellframe=SuppliedValue if lookup == "frame" else None,
+            spellframe=IExistingValue if lookup == "frame" else None,
             binding_name="chosen" if lookup == "named" else None,
         )
         root = gap_book.conjure(dynamic=True)
@@ -327,7 +330,7 @@ def test_existing_root_lookup_forms(gap_book: Spellbook, lookup: str) -> None:
         elif lookup == "name":
             value = root.meld("ExistingValue")
         elif lookup == "frame":
-            value = root.meld(spellframe=SuppliedValue)
+            value = root.meld(spellframe=IExistingValue)
         else:
             value = root.meld(spell=SuppliedValue, binding_name="chosen")
         assert value is supplied
@@ -416,7 +419,7 @@ def test_existing_mismatched_frame(gap_book: Spellbook, planning_mode: str, fram
 
     def action() -> None:
         """Record admission and injection separately from usable type/behavior satisfaction."""
-        gap_book.bind(spell=supplied, existence="unique", spellframe=ReadableValue if frame_kind == "protocol" else SuppliedValue)
+        gap_book.bind(spell=supplied, existence="unique", spellframe=ReadableValue if frame_kind == "protocol" else IExistingValue)
         report["binding_accepted"] = True
         target = gap_book.bind(spell=ProtocolConsumer if frame_kind == "protocol" else ValueConsumer, existence="many")
         report["stage"] = "conjure"
@@ -436,7 +439,7 @@ def test_existing_mismatched_frame(gap_book: Spellbook, planning_mode: str, fram
 def test_existing_linked_injection(gap_book: Spellbook, planning_mode: str, contract: bool) -> None:
     """Import a real existing provider through read permission and resolve it from a borrower."""
     supplied = SuppliedValue("owner-value")
-    provider_id = gap_book.bind(spell=supplied, existence="unique", spellframe=SuppliedValue, binding_name="shared")
+    provider_id = gap_book.bind(spell=supplied, existence="unique", spellframe=IExistingValue, binding_name="shared")
     owner = gap_book.conjure(dynamic=True, name="owner")
     borrower_book = Spellbook(aetheric_frame="existing-instance-planning-regression")
     report: dict[str, object] = {"case": "linked_contract" if contract else "linked_annotation", "planning": planning_mode, "stage": "link"}

@@ -19,11 +19,11 @@ Regenerate with:
 """
 
 MANIFEST_VERSION = "2.0.0"
-BUILT_FOR_VERSION = "0.2.8220"
-SOURCE_SHA256 = "df9e52ee014cf6f1908953a68bb1ab817f4900906e32d7fc766d470e783dc0c1"
+BUILT_FOR_VERSION = "0.2.8222"
+SOURCE_SHA256 = "4e21da43ae1a03f6bf7158328a84a96c395c6b9e6aaf8cd2c324aa11102afb5d"
 MARKED_COUNT = 461
 EXEMPT_COUNT = 142
-PENDING_COUNT = 17
+PENDING_COUNT = 18
 
 AGENT_METADATA = {
     ('melder.aether.aether', 'Aether'): ('public', 'access: public. The global singleton root. `Aether()` returns the process-wide instance and boots the hidden substrate (utility system, Crystallizer, Nexus, LoadGate). Creates ZERO frames - the first Spellbook births the frame it names. Use create_configuration()/configure()/activate() for root logger policy, attach_logger(...) to install one directly.'),
@@ -636,6 +636,7 @@ EXEMPT = (
 
 PENDING = (
     ('melder.aether.conduit.meld.creation_context.creation_context_rebuild', 'CreationContextRebuild'),
+    ('melder.aether.spellbook.spellframe_kind.spellframe_kind', 'SpellframeKind'),
     ('melder.crystallizer.crystal_analysis.conduit_hierarchy', 'ConduitHierarchy'),
     ('melder.crystallizer.crystal_analysis.preflight.conduit_hierarchy_strategy', 'ConduitHierarchyStrategy'),
     ('melder.nexus.configuration.nexus_configuration_builder', 'NexusConfigurationBuilder'),
@@ -938,6 +939,7 @@ CLASS_BASES = {
     ('melder.aether.spellbook.spellbinder', 'SpellBinder'): ('Cleanable',),
     ('melder.aether.spellbook.spellbook', 'Spellbook'): ('Cleanable',),
     ('melder.aether.spellbook.spellbook_creation_system', 'SpellbookCreationSystem'): ('Cleanable',),
+    ('melder.aether.spellbook.spellframe_kind.spellframe_kind', 'SpellframeKind'): ('Enum',),
     ('melder.crystallizer.asset_management.adapters.sqlite_mesh_adapter', 'SqliteMeshAdapter'): ('Cleanable',),
     ('melder.crystallizer.asset_management.asset_management_system', 'AssetManagementSystem'): ('Cleanable',),
     ('melder.crystallizer.asset_management.crystallizer_cache', 'CrystallizerCache'): ('Cleanable',),

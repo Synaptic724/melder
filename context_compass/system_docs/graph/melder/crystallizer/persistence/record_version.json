@@ -1,79 +1,80 @@
 {
- "schema_version": 1,
- "source": "src/melder/crystallizer/persistence/record_version.py",
- "source_sha256": "fee3546b18291e978c119552c548ada667e77d90232e7fd42bf5229d1167683d",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.crystallizer.persistence.record_version": {
-   "id": "melder.crystallizer.persistence.record_version",
-   "label": "record_version",
-   "kind": "module",
-   "file": "src/melder/crystallizer/persistence/record_version.py",
-   "lineno": 1,
-   "include": true,
-   "role": "Schema version authority for every durable crystallizer artifact.",
-   "responsibilities": [
-    "stamp outgoing payloads",
-    "refuse newer-major artifacts on read",
-    "uses record major 2 so older readers cannot silently ignore non-resolvable policy"
-   ],
-   "phases": [
-    "runtime"
-   ],
-   "semantics_authored_against": "35df51f36a8c1b2fe420f40471ea4d774b74c62eacff1c3b3a56c5c272a4e450"
+  "schema_version": 1,
+  "source": "src/melder/crystallizer/persistence/record_version.py",
+  "source_sha256": "3e7ca95d45463d274e213a276d076f70a80c5485c1932ea9905b0e4958aebc2b",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.crystallizer.persistence.record_version": {
+      "id": "melder.crystallizer.persistence.record_version",
+      "label": "record_version",
+      "kind": "module",
+      "file": "src/melder/crystallizer/persistence/record_version.py",
+      "lineno": 1,
+      "include": true,
+      "role": "Schema version authority for every durable crystallizer artifact.",
+      "responsibilities": [
+        "stamp outgoing payloads",
+        "refuse newer-major artifacts on read",
+        "uses record major 2 so older readers cannot silently ignore non-resolvable policy"
+      ],
+      "phases": [
+        "runtime"
+      ],
+      "semantics_authored_against": "35df51f36a8c1b2fe420f40471ea4d774b74c62eacff1c3b3a56c5c272a4e450"
+    },
+    "melder.crystallizer.persistence.record_version.RecordVersion": {
+      "id": "melder.crystallizer.persistence.record_version.RecordVersion",
+      "label": "RecordVersion",
+      "kind": "class",
+      "file": "src/melder/crystallizer/persistence/record_version.py",
+      "lineno": 17,
+      "bases": [],
+      "markers": [],
+      "public_methods": [
+        "check_readable",
+        "of",
+        "parse",
+        "stamp"
+      ],
+      "shape": {
+        "method_count": 4,
+        "has_bases": false,
+        "trivial": false
+      },
+      "span_sha256": "7ce9121f11777b802212d201d14acd548ce7f411813b857a36a5b73a9aff70cf",
+      "role": "Static record-schema version authority (stamp 4.1.0; readers gate on MAJOR; absent stamps read 0.0.0).",
+      "responsibilities": [
+        "stamps cached items, formation records, and emission-tap envelopes",
+        "refuses newer-major payloads at the read gates",
+        "uses record major 2 so older readers cannot silently ignore non-resolvable policy",
+        "uses major 3 to fence older readers from named lesser child topology",
+        "uses major 4 to fence older readers from frame-scoped custody keys (per-frame spell ids)",
+        "uses minor 4.1.0 for the additive spellframe-kind keys on spell crystals (0.2.8222); 4.0.0 records stay readable and hydrate frames by name"
+      ],
+      "phases": [
+        "runtime"
+      ],
+      "semantics_authored_against": "7ce9121f11777b802212d201d14acd548ce7f411813b857a36a5b73a9aff70cf"
+    }
   },
-  "melder.crystallizer.persistence.record_version.RecordVersion": {
-   "id": "melder.crystallizer.persistence.record_version.RecordVersion",
-   "label": "RecordVersion",
-   "kind": "class",
-   "file": "src/melder/crystallizer/persistence/record_version.py",
-   "lineno": 17,
-   "bases": [],
-   "markers": [],
-   "public_methods": [
-    "check_readable",
-    "of",
-    "parse",
-    "stamp"
-   ],
-   "shape": {
-    "method_count": 4,
-    "has_bases": false,
-    "trivial": false
-   },
-   "span_sha256": "413d1bf3bb971e6334c0199c60a58c5ad6d12f16e679b2d2beebc014c591acb2",
-   "role": "Static record-schema version authority (stamp 4.0.0; readers gate on MAJOR; absent stamps read 0.0.0).",
-   "responsibilities": [
-    "stamps cached items, formation records, and emission-tap envelopes",
-    "refuses newer-major payloads at the read gates",
-    "uses record major 2 so older readers cannot silently ignore non-resolvable policy",
-    "uses major 3 to fence older readers from named lesser child topology",
-    "uses major 4 to fence older readers from frame-scoped custody keys (per-frame spell ids)"
-   ],
-   "phases": [
-    "runtime"
-   ],
-   "semantics_authored_against": "413d1bf3bb971e6334c0199c60a58c5ad6d12f16e679b2d2beebc014c591acb2"
+  "edges_out": [],
+  "edge_candidates": [
+    {
+      "from": "melder.crystallizer.persistence.record_version.RecordVersion",
+      "to_label": "ValueError",
+      "relation": "creates",
+      "confidence": "candidate"
+    }
+  ],
+  "published_aliases": [],
+  "imports": {
+    "ClassVar": "typing.ClassVar",
+    "Dict": "typing.Dict",
+    "Tuple": "typing.Tuple"
+  },
+  "collapse_candidate": {
+    "module": "melder.crystallizer.persistence.record_version",
+    "class": "melder.crystallizer.persistence.record_version.RecordVersion",
+    "label": "RecordVersion"
   }
- },
- "edges_out": [],
- "edge_candidates": [
-  {
-   "from": "melder.crystallizer.persistence.record_version.RecordVersion",
-   "to_label": "ValueError",
-   "relation": "creates",
-   "confidence": "candidate"
-  }
- ],
- "published_aliases": [],
- "imports": {
-  "ClassVar": "typing.ClassVar",
-  "Dict": "typing.Dict",
-  "Tuple": "typing.Tuple"
- },
- "collapse_candidate": {
-  "module": "melder.crystallizer.persistence.record_version",
-  "class": "melder.crystallizer.persistence.record_version.RecordVersion",
-  "label": "RecordVersion"
- }
 }

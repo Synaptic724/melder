@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_components.md'
-LINE_COUNT = 10656
-CONTENT_SHA256 = '1e53bedc5ab5bced8b3154e00f7fc40229bfdb3d3acbfaebd7e006cad3baab8d'
+LINE_COUNT = 10675
+CONTENT_SHA256 = '36651a5d2af3fb474d763f19238f4ac9f0556d0fefd7df8e3404ead4e7ac7f06'
 
 TEXT = """# Src Components (C3/C2/C1)
 
@@ -3999,6 +3999,21 @@ Site-plan runtime for normal and override melds (2026-09-26, override design v2)
   emitted with the eager dict.
   EVIDENCE: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:SitePlanEmission._emit_results_literal`, `SitePlanEmission._emit_construct` and
   `SitePlanEmission._place`.
+- Owner-store constants (2026-10-03, 0.2.8221): `SitePlanEmission._owner_store_constant(step)` is True for a
+  shared site of existence `unique` - the one route that reads `spells[i]._owner_creations` - when the provider
+  Spell is owned by an automatic conduit (`Spell._dynamic_environment` False) and already has an owner store;
+  `_emit_shared_hit` then binds `c{i}` to `step.spell._owner_creations` in the plan namespace and emits no
+  `c{i} = <route>` line, so the warm read is `v{i} = c{i}._creations.get(sid{i})` on a global. Every other
+  shared site - the `meld.<store>` routes, a provider in a dynamic environment (ownership transfer repoints its
+  store), a provider not yet owned - emits the line as before; the miss keeps its `c{i}` parameter and the warm
+  call passes the global, so misses are byte-identical. `_dynamic_environment` and `_owner_creations` are Spell
+  slots written by `_add_owned_conduit` (False and None before ownership), which `define_conduit_into_spells`
+  calls at conjure before any plan is hydrated. The constant is the Creations OBJECT; its `_creations` dict is
+  still read per creation. Plans are emitted at hydration from rows on the cold path and on a cache full hit, so
+  no cache generation moves. Measured on the VM (interleaved medians): worker 160 -> 148 ns, context_root
+  316 -> 277, wide8_unique 447 -> 374, wide8_existing 444 -> 368, chain8_transient 432 -> 428.
+  EVIDENCE: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:SitePlanEmission._owner_store_constant`,
+  `SitePlanEmission._emit_shared_hit` and `src/melder/aether/spellbook/spell.py:Spell._add_owned_conduit`.
 - Door-held root (2026-09-26, 0.2.73): the runtime passes `door_route_key` to its normal plan only; the
   generalized hydrator passes the manifest's route key and the many_only hydrator none (its roots are `many`).
   For "unique_per_conduit" or "spellspace" with a root of that existence
@@ -8309,9 +8324,9 @@ future expansion of a `Key Files (C1)` list must land here in the same pass.
   verified_at: 2026-09-27T23:41:28Z
 - path: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py`
   start_line: 1
-  end_line: 1501
-  loc: 1501
-  verified_at: 2026-09-26T22:18:53Z
+  end_line: 1588
+  loc: 1588
+  verified_at: 2026-10-03T22:12:00Z
 - path: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_override_runtime.py`
   start_line: 1
   end_line: 405
@@ -10284,6 +10299,10 @@ Companion documents:
   component and code-description patches are inputs to this document while a lane is open.
 
 ## Context / Handoff Summary
+
+2026-10-03 owner-store constants (0.2.8221): the SpellCompiler entry's emission bullets carry the eligible-site rule
+(`_owner_store_constant`), the bound namespace name, the postures that keep the per-creation read and the harness
+numbers; the lowering's code-map extent is remeasured (it was stale since 2026-09-26).
 
 2026-10-03 rebind after first meld (0.2.8219): the SpellSystemStates Registry entry carries the verdict retirement
 in `unregister_index` and `register_index`, the public `forget_spell_resolution_verdicts`, the lock order and the

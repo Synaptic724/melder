@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_graph.md'
-LINE_COUNT = 27594
-CONTENT_SHA256 = 'ef0a8ea9beb04a11dde4f39255ea406c7d6b998afe51116327b9b214f782c856'
+LINE_COUNT = 27595
+CONTENT_SHA256 = 'cdfced62a0c9b713368daa440387a8767d30a47abec62b60b8762dcd53755319'
 
 TEXT = """# src_graph
 
@@ -247,7 +247,7 @@ descriptors and reassemble.
 
 ## src/melder/__version__.py
 
-- source_sha256: `57943f1f33b900419f4a43349d055e7157dd2a5bd23b90375082f0912e711dbe`
+- source_sha256: `f5e1349c1341864c6e818200e3ba6c3911fe22227c465ebb8ac7c1904269702f`
 - nodes: 1
 
 ### Nodes
@@ -336,7 +336,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_agent_documentation/manifest/agent_documentation_manifest.py
 
-- source_sha256: `9788efaf3c673aa90d6b2833fc92fb4abb8df0a0b767648e8d49823467b43872`
+- source_sha256: `e0bbd1c787e53b72da16705764bc4c2c6e39fe4ecb3f4600d25764ce4d24f6a1`
 - nodes: 1
 
 ### Nodes
@@ -415,7 +415,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py
 
-- source_sha256: `dc698cbaa067bbe54049ace6249e0673fa033c1be717d6282393bf1ba2538866`
+- source_sha256: `a26beb1b7df134332f9ae19e51b8c57462bff4a65ae7032f6331afce3c00bb24`
 - nodes: 1
 
 ### Nodes
@@ -493,7 +493,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/graph_adjacency_manifest.py
 
-- source_sha256: `1d470b3b720837c602c9f357905de3ffb31ef2aca5c2675a5dd142569661484a`
+- source_sha256: `b3dbc12a9cfb873b29e49361a587849f2ec537071ac8c6dac4c195dc7b32cfaf`
 - nodes: 1
 
 ### Nodes
@@ -510,7 +510,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_index.py
 
-- source_sha256: `165ee30d76cb114eb43b535b72a2772007a50e8b732bad4618e15bf8a43df84d`
+- source_sha256: `f53f1c930a020cd91d4d870d92221f256cc89ac6b1d69e3a802a744eaa21884a`
 - nodes: 1
 
 ### Nodes
@@ -527,7 +527,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_manifest.py
 
-- source_sha256: `46da049e8ccdfc9ad690d508465edcd541c4e64b89b30cc883dd8aa90a0afbe4`
+- source_sha256: `338ef5f9996a96cafcb7c0eb52665dd4c39869cd0e523676eefb000dd945726a`
 - nodes: 1
 
 ### Nodes
@@ -547,7 +547,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_architecture_payload.py
 
-- source_sha256: `7c98130e7743bbcb62b86613910f22d2a5546a843c4ef47abe8ae5a65e080565`
+- source_sha256: `941d67a1309a6fd49d296bb61912be2679e419187a5528ce5667bd6d949cc92b`
 - nodes: 1
 
 ### Nodes
@@ -564,7 +564,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_components_payload.py
 
-- source_sha256: `81c343aed634762d69aa8086ea1e8af11f6d825838e7e3ba09f54f06de94717f`
+- source_sha256: `b62e322871da0b37f3faf66ed6a07966e48263aa4911d8aa585100f9e9eceb9e`
 - nodes: 1
 
 ### Nodes
@@ -581,7 +581,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_graph_payload.py
 
-- source_sha256: `833344bfd2f0b5c3aef3bb1ad521c2fff5ab805c117dae3e310cc57f875ebd2d`
+- source_sha256: `cd23952cad1d5cf1ab3443dddec664c5497412a707cb9c2f1b7499305bc6fc59`
 - nodes: 1
 
 ### Nodes
@@ -7921,7 +7921,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py
 
-- source_sha256: `2731fd76183d4b33149058870b88edba944887a3899102fd2a0830dda973833d`
+- source_sha256: `c3ae5abb6146c5fbdca9d59ac392875aa7552e427f1d527180e509918141d94e`
 - nodes: 5
 
 ### Nodes
@@ -7989,6 +7989,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - emits conflict guards and unresolved-input refusals at context tops
   - leaves out the root miss's guard in a normal plan whose calling route door already holds it (unique_per_conduit and spellspace roots, 0.2.73)
   - emits a dict literal of exactly the dependency values a generic construction reads, where it runs (lazy instance_results, 2026-10-03): no dict at the plan top, no per-step stores, no dict parameter on misses; _place passes a generic member's providers into its miss like a direct member's operands
+  - binds an automatic world's unique-site owner store as a plan constant (owner-store constants, 2026-10-03): _owner_store_constant admits a unique site whose provider spell is owned by an automatic conduit and has an owner store; _emit_shared_hit then binds c{i} in the namespace and emits no alias line, while dynamic, unowned and meld.<store> sites keep the per-creation read and the miss keeps its c{i} parameter
 - owns_state: `_lines`, `_miss_lines`, `_masked`, `_direct`, `_shared`, `_home`, `_children`, `_miss_value_params`, `_root_index`, `_context_params`, `_root_guard_held_by_door`, `_index_by_key`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `render`

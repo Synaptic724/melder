@@ -574,31 +574,53 @@ def test_future_annotations_list_string_spellframe_resolves_all() -> None:
         conduit.cleanup()
 
 
-def test_future_annotations_string_literal_frame_annotation_resolves_single() -> None:
+def test_future_annotations_string_literal_category_annotation_is_an_unresolved_input() -> None:
     """
     Purpose:
-        Validate string-literal spellframe annotations resolve single DI.
+        A string-literal annotation naming a string CATEGORY selects no single provider (2026-10-04): a
+        category is a label, not a type or a contract. The explicit form - a SpellMap default addressing
+        the category - resolves it.
     Contract:
-        - "extra_frame" annotations resolve to the bound spellframe.
+        - `repo: "extra_frame"` compiles as an unresolved input; melding without an override raises
+          UnresolvedInputError.
+        - `repo: _FramePrimaryRepo = SpellMap(spellframe="extra_frame")` resolves the bound member.
     Returns:
         None.
     Raises:
-        AssertionError: If the dependency is missing.
+        AssertionError: If either half of the contract fails.
     """
+    from melder.aether.conduit.meld.contracts.spell_map import SpellMap
+    from melder.utilities.custom_exceptions.unresolved_input_error import UnresolvedInputError
+
     class _StringFrameService:
         """
         Purpose:
-            Provide a service that uses a string-literal spellframe annotation.
+            Name a string category in a single annotation (retired idiom).
         Contract:
-            Stores the injected repository instance.
+            Stores whatever the meld supplies.
         """
-
         def __init__(self, repo: "extra_frame") -> None:
             """
             Purpose:
+                Capture the supplied repository.
+            Args:
+                repo: Supplied repository instance.
+            Returns:
+                None.
+            """
+            self.repo = repo
+
+    class _MappedFrameService:
+        """
+        Purpose:
+            Address the category explicitly through a SpellMap default.
+        Contract:
+            Stores the injected repository instance.
+        """
+        def __init__(self, repo: _FramePrimaryRepo = SpellMap(spellframe="extra_frame")) -> None:
+            """
+            Purpose:
                 Capture the injected repository.
-            Contract:
-                Stores the repository on the instance.
             Args:
                 repo: Injected repository instance.
             Returns:
@@ -613,15 +635,21 @@ def test_future_annotations_string_literal_frame_annotation_resolves_single() ->
         permissions="create",
         spellframe="extra_frame",
     )
-    service_id = spellbook.bind(
+    unresolved_id = spellbook.bind(
         spell=_StringFrameService,
         existence=Existence.many,
         permissions="create",
     )
-
+    mapped_id = spellbook.bind(
+        spell=_MappedFrameService,
+        existence=Existence.many,
+        permissions="create",
+    )
     conduit = spellbook.conjure(name="root")
     try:
-        instance = conduit.meld(spell_id=service_id)
+        with pytest.raises(UnresolvedInputError):
+            conduit.meld(spell_id=unresolved_id)
+        instance = conduit.meld(spell_id=mapped_id)
         assert isinstance(instance.repo, _FramePrimaryRepo)
         assert instance.repo.marker == "primary"
     finally:

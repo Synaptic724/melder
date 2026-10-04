@@ -1,13 +1,19 @@
 # Epic: Static codegen and door strategies - the certified, data-free wins on the emitted bodies and the door
 
+- Completed: 2026-10-04T00:13:33Z
+- Summary: Three static strategies shipped and turned in - S1 registration trim (0.2.8216), S8 lazy
+  instance_results (0.2.8217), S9 owner-store constants (0.2.8221) - with tests, docs, graph, assets and
+  release-note sections; S11 already true, S4 dropped, S2a parked; the door lane (D1-D5) not reached,
+  its story parked in the backlog. Closed by the owner's directive; owner-run gauntlet ranking Not run.
+
 ## Metadata
 - Epic ID: EPIC-2026-10-01-static-codegen-and-door-strategies
-- Status: in_progress
+- Status: done
 - Owner: cowork
 - Agent Name: fable_0
 - Priority: p1
 - Created: 2026-10-01T00:53:45Z
-- Updated: 2026-10-03T21:31:58Z
+- Updated: 2026-10-04T00:13:33Z
 - Target Window: opened 2026-10-01 on the owner's split; one strategy lane at a time, S1 first
 - Related Program/Initiative: SpellCompiler codegen (phases 8-11, site-plan lowering), Creations, the meld doors
 - Split from: tickets/epics/2026-09-27_adaptive_creation_contexts_epic.md (now the PGO epic), on the owner's
@@ -81,6 +87,10 @@ VM numbers for direction and the owner-run gauntlet for the ranking.
 - to_state: in_progress
 - transition_reason: Opened on the owner's split directive (2026-10-01T00:53:45Z); S1's implementation task is
   the active lane.
+- from_state: in_progress
+- to_state: done
+- transition_reason: Owner's turn-in directive (2026-10-04T00:13:33Z); S9's story and task are closed, the door story
+  parked.
 
 ## Success Metrics
 - S1: >= 25% off a disposal-bearing `many` meld on the VM (Worker-shaped), confirmed owner-run; roots without
@@ -111,21 +121,23 @@ VM numbers for direction and the owner-run gauntlet for the ranking.
 - [x] Milestone 0: the certification table (S1-S8 measured on the emitted bodies).
 - [x] Milestone 1: S1 shipped and turned in at 0.2.8216 (VM-measured; owner-run gauntlet Not run at turn-in).
 - [x] Milestone 2: S8 shipped and turned in at 0.2.8217 (VM-measured; owner-run gauntlet Not run at turn-in).
-- [ ] Milestone 3: the flat warm body (S9 + S11) shipped and turned in; S2a parked (owner, 2026-10-03).
-- [ ] Milestone 4: the door harness table landed; the certified door set named.
-- [ ] Milestone 5: the certified door strategies shipped or dropped with numbers.
+- [x] Milestone 3: the flat warm body (S9) shipped and turned in at 0.2.8221; S11 already true; S2a parked
+      (owner, 2026-10-03).
+- [ ] Milestone 4: the door harness table landed; the certified door set named. NOT REACHED - the epic was
+      closed by the owner's directive (2026-10-04); the door story is parked in the backlog.
+- [ ] Milestone 5: the certified door strategies shipped or dropped with numbers. NOT REACHED (same).
 
 ## Stories (Required to Complete)
 - [x] Story: STORY-2026-09-27-many-registration-trim (S1) - one append per `many` creation, per-key disposal
       methods. tickets/stories/completed/2026-09-27_many_registration_trim_story.md
 - [x] Story: STORY-2026-10-01-lazy-instance-results (S8) - no instance_results dict on the warm path of a
       dict-mode root. tickets/stories/completed/2026-10-01_lazy_instance_results_story.md
-- [ ] Story: STORY-2026-10-03-flat-warm-body-constants (S9 + S11) - site and store constants and live key
-      objects on every shared site. tickets/stories/2026-10-03_flat_warm_body_constants_story.md
+- [x] Story: STORY-2026-10-03-flat-warm-body-constants (S9 + S11) - site and store constants and live key
+      objects on every shared site. tickets/stories/completed/2026-10-03_flat_warm_body_constants_story.md
 - [ ] Story: STORY-2026-10-01-existing-object-constants (S2a) - PARKED (owner, 2026-10-03: existing objects
       are rare). tickets/stories/backlog/2026-10-01_existing_object_constants_story.md
-- [ ] Story: STORY-2026-10-01-meld-door-strategies (D1-D4) - a door harness, then the certified door
-      strategies. tickets/stories/2026-10-01_meld_door_strategies_story.md
+- [ ] Story: STORY-2026-10-01-meld-door-strategies (D1-D5) - a door harness, then the certified door
+      strategies. PARKED at the epic's closure (owner, 2026-10-04). tickets/stories/backlog/2026-10-01_meld_door_strategies_story.md
 - [ ] Story: STORY-2026-09-28-codegen-strategy-certification-harness - the table that certified S1/S8/S2a
       (done; in review for the owner's closure).
       tickets/stories/2026-09-28_codegen_strategy_certification_harness_story.md
@@ -402,10 +414,41 @@ melds -40..-50% (predicted), dynamic melds -30..-50% (predicted).
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-10-04T00:02:11Z
+  TYPE: FACT
+  CLAIM: Milestone 3 reached pending the owner's run: the flat warm body (S9) landed at 0.2.8221 with docs,
+    graph, assets and bundles current; S11 retired (already true); S2a parked by the owner. Per the recommendation
+    the door lane is next: the epoch audit in source, the door harness in dynamic posture, D5, then D1-D3; the PGO
+    epic stays untouched (owner, 2026-10-03).
+  EVIDENCE:
+  - tickets/stories/2026-10-03_flat_warm_body_constants_story.md:100-151
+  - tickets/tasks/2026-10-03_certify_and_implement_site_store_constants_task.md:150-240
+  IMPACT: The emitter lane is done; the door lane's story is the next active lane on the owner's word.
+  NEXT: owner turns the S9 task and story in; open the door story's audit task (patch docs first).
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-04T00:13:33Z
+  TYPE: DECISION
+  CLAIM: Owner (2026-10-04): the lane and the epic are turned in. Shipped under this epic: S1 (0.2.8216), S8
+    (0.2.8217) and S9 (0.2.8221), each with tests, docs, graph, assets and a release-note section; S11 was found
+    already true; S4 dropped (noise); S2a parked (existing objects are rare). Not reached: the door lane
+    (Milestones 4-5: epoch audit, door harness in dynamic posture, D5, D1-D3) - its story is parked in the
+    backlog with the catalogue above as its brief, and reopens under a new epic on the owner's word. Owner-run
+    gauntlet numbers for the ranking: Not run at closure.
+  EVIDENCE:
+  - tickets/stories/completed/2026-10-03_flat_warm_body_constants_story.md:1-10
+  - tickets/tasks/completed/2026-10-03_certify_and_implement_site_store_constants_task.md:1-12
+  - tickets/stories/backlog/2026-10-01_meld_door_strategies_story.md:1-12
+  IMPACT: No active lane in this epic; the tree is at 0.2.8221 with every landing's docs and assets current.
+  NEXT: none for this epic; the door lane and the PGO epic wait on the owner.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
 ## Closure Confirmation
-- [ ] Work walkthrough shared with user
-- [ ] Acceptance criteria confirmed by user
-- [ ] Applicable anti-pattern checks are clear or escalated with evidence.
+- [x] Work walkthrough shared with user
+- [x] Acceptance criteria confirmed by user (closed by directive, 2026-10-04; the door strategies not reached)
+- [x] Applicable anti-pattern checks are clear or escalated with evidence.
 
 ## Noting Behavior
 - Note focus: program-level direction, cross-story tradeoffs, and tranche order.
@@ -432,6 +475,12 @@ with its patch docs first.
 
 STATE 2026-10-03T21:31:58Z: IN_PROGRESS. The flat-warm-body story (S9/S11) is the active lane; S2a parked; PGO epic ignored.
 Resume from the task's latest STATE line.
+
+STATE 2026-10-04T00:02:11Z: IN_PROGRESS. The flat-warm-body task is in review (S9 landed at 0.2.8221); the door lane opens on
+the owner's word after the turn-in. Resume from the task's latest STATE line.
+
+STATE 2026-10-04T00:13:33Z: DONE. S1, S8 and S9 shipped (0.2.8216, 0.2.8217, 0.2.8221); the door lane not reached and parked;
+closed by the owner's directive.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

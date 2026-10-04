@@ -1,0 +1,84 @@
+E           melder.utilities.custom_exceptions.unresolved_input_error.UnresolvedInputError: [MELD] Execution failed for spell 'Consumer' (52dec2860f8dd14252a30aec9f2b31b5c3a333433b96c16e29f77fafd0db638b) at node 52dec2860f8dd14252a30aec9f2b31b5c3a333433b96c16e29f77fafd0db638b (parameter 'p'): Consumer.p expects Provider, but nothing registered provides it and this meld did not supply it. Supply it with override={'p': ...} when melding Consumer, a path key ending in '>p' (or '**p') when Consumer is built as a dependency, or bind a provider for Provider.
+              TypeError naming what was passed and the two accepted forms. Before
+            spellframe: The value passed to `bind(..., spellframe=...)`.
+              TypeError naming what was passed and the two accepted forms. Before
+            spellframe: The value passed to `bind(..., spellframe=...)`.
+              TypeError naming what was passed and the two accepted forms. Before
+            spellframe: The value passed to `bind(..., spellframe=...)`.
+              TypeError naming what was passed and the two accepted forms. Before
+            spellframe: The value passed to `bind(..., spellframe=...)`.
+              TypeError naming what was passed and the two accepted forms. Before
+            spellframe: The value passed to `bind(..., spellframe=...)`.
+              TypeError naming what was passed and the two accepted forms. Before
+            spellframe: The value passed to `bind(..., spellframe=...)`.
+              TypeError naming what was passed and the two accepted forms. Before
+            spellframe: The value passed to `bind(..., spellframe=...)`.
+              TypeError naming what was passed and the two accepted forms. Before
+            spellframe: The value passed to `bind(..., spellframe=...)`.
+              TypeError naming what was passed and the two accepted forms. Before
+            spellframe: The value passed to `bind(..., spellframe=...)`.
+              TypeError naming what was passed and the two accepted forms. Before
+            spellframe: The value passed to `bind(..., spellframe=...)`.
+              TypeError naming what was passed and the two accepted forms. Before
+            spellframe: The value passed to `bind(..., spellframe=...)`.
+              TypeError naming what was passed and the two accepted forms. Before
+            spellframe: The value passed to `bind(..., spellframe=...)`.
+              TypeError naming what was passed and the two accepted forms. Before
+            spellframe: The value passed to `bind(..., spellframe=...)`.
+              TypeError naming what was passed and the two accepted forms. Before
+            spellframe: The value passed to `bind(..., spellframe=...)`.
+              TypeError naming what was passed and the two accepted forms. Before
+            spellframe: The value passed to `bind(..., spellframe=...)`.
+              TypeError naming what was passed and the two accepted forms. Before
+            spellframe: The value passed to `bind(..., spellframe=...)`.
+E           melder.utilities.custom_exceptions.unresolved_input_error.UnresolvedInputError: [MELD] Execution failed for spell '_StringFrameService' (c8357648d41a7cd02db54ee23cea0204b62679de3977df8d4ca8870b4cfe39ed) at node c8357648d41a7cd02db54ee23cea0204b62679de3977df8d4ca8870b4cfe39ed (parameter 'repo'): _StringFrameService.repo expects extra_frame, but nothing registered provides it and this meld did not supply it. Supply it with override={'repo': ...} when melding _StringFrameService, a path key ending in '>repo' (or '**repo') when _StringFrameService is built as a dependency, or bind a provider for extra_frame.
+              TypeError naming what was passed and the two accepted forms. Before
+            spellframe: The value passed to `bind(..., spellframe=...)`.
+              TypeError naming what was passed and the two accepted forms. Before
+            spellframe: The value passed to `bind(..., spellframe=...)`.
+              TypeError naming what was passed and the two accepted forms. Before
+            spellframe: The value passed to `bind(..., spellframe=...)`.
+              TypeError naming what was passed and the two accepted forms. Before
+            spellframe: The value passed to `bind(..., spellframe=...)`.
+FAILED tests/integration/melder/aether/conduit/test_rebind_after_first_meld_integration.py::test_dependent_consumer_is_rebuilt_against_the_replacement_class
+FAILED tests/integration/melder/spellbook/test_cache_schema_version_integration.py::test_cache_schema_version_history_accepts_only_current_bundle[1]
+FAILED tests/integration/melder/spellbook/test_cache_schema_version_integration.py::test_cache_schema_version_history_accepts_only_current_bundle[2]
+FAILED tests/integration/melder/spellbook/test_cache_schema_version_integration.py::test_cache_schema_version_history_accepts_only_current_bundle[3]
+FAILED tests/integration/melder/spellbook/test_cache_schema_version_integration.py::test_cache_schema_version_history_accepts_only_current_bundle[4]
+FAILED tests/integration/melder/spellbook/test_cache_schema_version_integration.py::test_cache_schema_version_history_accepts_only_current_bundle[5]
+FAILED tests/integration/melder/spellbook/test_cache_schema_version_integration.py::test_cache_schema_version_history_accepts_only_current_bundle[6]
+FAILED tests/integration/melder/spellbook/test_cache_schema_version_integration.py::test_cache_schema_version_history_accepts_only_current_bundle[7]
+FAILED tests/integration/melder/spellbook/test_cache_schema_version_integration.py::test_cache_schema_version_history_accepts_only_current_bundle[8]
+FAILED tests/integration/melder/spellbook/test_cache_schema_version_integration.py::test_cache_schema_version_history_accepts_only_current_bundle[9]
+FAILED tests/integration/melder/spellbook/test_cache_schema_version_integration.py::test_cache_schema_version_history_accepts_only_current_bundle[10]
+FAILED tests/integration/melder/spellbook/test_cache_schema_version_integration.py::test_cache_schema_version_history_accepts_only_current_bundle[11]
+FAILED tests/integration/melder/spellbook/test_cache_schema_version_integration.py::test_cache_schema_version_history_accepts_only_current_bundle[12]
+FAILED tests/integration/melder/spellbook/test_cache_schema_version_integration.py::test_cache_schema_version_history_accepts_only_current_bundle[13]
+FAILED tests/integration/melder/spellbook/test_cache_schema_version_integration.py::test_cache_schema_version_history_accepts_only_current_bundle[14]
+FAILED tests/integration/melder/spellbook/test_cache_schema_version_integration.py::test_cache_schema_version_history_accepts_only_current_bundle[15]
+FAILED tests/integration/melder/spellbook/test_cache_schema_version_integration.py::test_cache_schema_version_history_accepts_only_current_bundle[16]
+FAILED tests/integration/melder/spellbook/test_cache_schema_version_integration.py::test_cache_schema_version_history_accepts_only_current_bundle[17]
+FAILED tests/integration/melder/spellbook/test_cache_schema_version_integration.py::test_cache_schema_version_history_accepts_only_current_bundle[18]
+FAILED tests/integration/melder/spellbook/test_cache_schema_version_integration.py::test_cache_schema_version_history_accepts_only_current_bundle[19]
+FAILED tests/integration/melder/spellbook/test_existing_instance_additional_regressions.py::test_existing_provider_satisfies_repeated_parameters
+FAILED tests/integration/melder/spellbook/test_existing_instance_additional_regressions.py::test_existing_provider_can_be_injected_into_function
+FAILED tests/integration/melder/spellbook/test_existing_instance_additional_regressions.py::test_existing_provider_typechecking_annotation_does_not_raise_nameerror
+FAILED tests/integration/melder/spellbook/test_existing_instance_additional_regressions.py::test_existing_provider_survives_consumer_scope_release[lesser-unique_per_conduit]
+FAILED tests/integration/melder/spellbook/test_existing_instance_additional_regressions.py::test_existing_provider_survives_consumer_scope_release[spellspace-unique_per_spell_space]
+FAILED tests/integration/melder/spellbook/test_existing_instance_additional_regressions.py::test_existing_provider_is_injected_across_read_contract[annotation]
+FAILED tests/integration/melder/spellbook/test_existing_instance_additional_regressions.py::test_existing_provider_is_injected_across_read_contract[spell_contract]
+FAILED tests/integration/melder/spellbook/test_existing_instance_additional_regressions.py::test_existing_root_public_lookup_preserves_identity[instance]
+FAILED tests/integration/melder/spellbook/test_existing_instance_additional_regressions.py::test_existing_root_public_lookup_preserves_identity[frame]
+FAILED tests/integration/melder/spellbook/test_existing_instance_planning.py::test_existing_value_root_returns_original_without_factory_execution[typed]
+FAILED tests/integration/melder/spellbook/test_existing_instance_planning.py::test_existing_value_dependency_retains_identity_without_contract_inspection
+FAILED tests/integration/melder/spellbook/test_existing_instance_planning.py::test_existing_value_transitive_dependency_retains_identity
+FAILED tests/integration/melder/spellbook/test_existing_instance_planning.py::test_existing_values_in_collection_retain_identity
+FAILED tests/integration/melder/spellbook/test_existing_instance_planning.py::test_late_bound_consumer_injects_existing_value
+FAILED tests/integration/melder/spellbook/test_spellbook_integration_future_annotations.py::test_future_annotations_collection_di_class_frame_list_resolves_all
+FAILED tests/integration/melder/spellbook/test_spellbook_integration_future_annotations.py::test_future_annotations_local_forward_ref_collection_resolves_by_name
+FAILED tests/integration/melder/spellbook/test_spellbook_integration_future_annotations_more.py::test_future_annotations_string_literal_frame_annotation_resolves_single
+FAILED tests/integration/melder/spellbook/test_spellbook_integration_public_api.py::test_spellbook_public_api_describe_spells_returns_detached_sorted_runtime_dump
+FAILED tests/integration/melder/spellbook/test_spellbook_integration_resolution_break_matrix.py::test_c1_collection_over_concrete_element_type
+FAILED tests/integration/melder/spellbook/test_spellbook_integration_resolution_contract.py::test_type_hint_di_forward_ref_list_class_frame_resolves_all
+FAILED tests/integration/melder/spellbook/test_spellbook_integration_resolution_contract.py::test_type_hint_di_forward_ref_typing_list_class_frame_resolves_all
+41 failed, 1994 passed, 2 skipped, 4 xfailed, 2 xpassed in 71.97s (0:01:11)

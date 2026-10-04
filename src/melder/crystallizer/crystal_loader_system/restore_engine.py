@@ -2178,7 +2178,7 @@ class RestoreEngine(Cleanable):
             spell=target,
             existence=str(crystal.get("existence_name", "unique")),
             permissions=str(crystal.get("permissions_name", "create")),
-            spellframe=crystal.get("spellframe_name"),
+            spellframe=self._hydrate_spellframe(custody_key, crystal),
             binding_name=crystal.get("binding_name"),
             disposal_method_names=list(
                 crystal.get("disposal_method_names", [])
@@ -2254,7 +2254,7 @@ class RestoreEngine(Cleanable):
             spell_index=anchor,
             existence=str(crystal.get("existence_name", "unique")),
             permissions=str(crystal.get("permissions_name", "create")),
-            spellframe=crystal.get("spellframe_name"),
+            spellframe=self._hydrate_spellframe(custody_key, crystal),
             binding_name=crystal.get("binding_name"),
             disposal_method_names=list(crystal.get("disposal_method_names", [])) or None,
             profile=str(crystal.get("profile_family", "general")),
@@ -2831,6 +2831,54 @@ class RestoreEngine(Cleanable):
                 ),
             )
             return None
+
+    def _hydrate_spellframe(
+            self,
+            custody_key: str,
+            crystal: Dict[str, object],
+    ) -> Optional[Any]:
+        """
+        Rebuild one bind's spellframe as the kind it was recorded with.
+
+        Contract:
+            - Recorded kind "contract" (record 4.1.0): import the Protocol by its
+              recorded coordinates (`spellframe_module`, `spellframe_qualname`)
+              through the normal import lane and return the class, so the rebound
+              spell is a contract member again and Protocol-typed consumers resolve
+              as they did in the recorded world. A failed import files a shortfall
+              (`spellframe_contract_hydration_failed`) and returns the recorded
+              NAME, which binds the spell as a category: it still exists and is
+              addressable by name, and the report says what was lost.
+            - Any other kind, and a record older than 4.1.0 (no kind), returns the
+              recorded name (or None for a bare binding) exactly as before.
+
+        Args:
+            custody_key:
+                The folded custody key (shortfall anchor).
+            crystal:
+                The folded custody payload.
+
+        Returns:
+            Optional[Any]: A Protocol class, a string label, or None.
+        """
+        name = crystal.get("spellframe_name")
+        if str(crystal.get("spellframe_kind")) != "contract":
+            return name
+        module_name = str(crystal.get("spellframe_module"))
+        qualname = str(crystal.get("spellframe_qualname"))
+        try:
+            return self._import_qualified_target(module_name, qualname)
+        except Exception as error:
+            # Best-effort by contract: the frame degrades to its name and the
+            # ledger carries the cause; the spell itself is still rebuilt.
+            self._report.add_shortfall(
+                "spell_crystal", custody_key,
+                "spellframe_contract_hydration_failed ({0}.{1}): {2}; "
+                "bound as the category {3!r}".format(
+                    module_name, qualname, error, name
+                ),
+            )
+            return name
 
     @staticmethod
     def _import_qualified_target(module_name: str, qualname: str) -> Any:

@@ -29,6 +29,7 @@ EXPECTED_CACHE_VERSION_HISTORY = {
     17: "lazy_instance_results",
     18: "annotation_address_matching",
     19: "executor_world_stamp",
+    20: "annotation_kind_matching",
 }
 
 

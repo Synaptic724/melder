@@ -109,6 +109,52 @@ def test_spell_crystal_records_unknown_import_targets_honestly() -> None:
         module.cleanup()
         sys.modules.pop(module_name, None)
 
+def test_spell_crystal_records_the_frame_kind_and_a_contracts_coordinates() -> None:
+    """
+    The crystal carries `spellframe_kind` and, for a contract, the Protocol's module and qualname (record 4.1.0).
+
+    A bare binding records "none" with no coordinates; a string category records "category" and the label; a
+    Protocol frame records "contract" with the coordinates a loader hydrates it from.
+    """
+    from typing import Protocol
+
+    from melder.aether.spellbook.spellframe_kind.spellframe_kind import SpellframeKind
+
+    class IRepo(Protocol):
+        def fetch(self) -> None: ...
+
+    crystallizer = _create_activated_crystallizer()
+    bare = DummySpell("bare-spell", type("BareService", (), {"__module__": __name__}))
+    category = DummySpell("category-spell", type("CategoryService", (), {"__module__": __name__}))
+    category.spellframe = "storage"
+    category.spellframe_kind = SpellframeKind.category
+    contract = DummySpell("contract-spell", type("ContractService", (), {"__module__": __name__}))
+    contract.spellframe = IRepo
+    contract.spellframe_kind = SpellframeKind.contract
+    contract.implemented_protocols = (IRepo,)
+    crystals = []
+    try:
+        for spell in (bare, category, contract):
+            crystals.append(crystallizer.create_spell_crystal(spell))
+        bare_crystal, category_crystal, contract_crystal = crystals
+        assert bare_crystal.spellframe_kind == "none"
+        assert bare_crystal.spellframe_module is None and bare_crystal.spellframe_qualname is None
+        assert category_crystal.spellframe_kind == "category"
+        assert category_crystal.spellframe_name == "storage"
+        assert category_crystal.spellframe_module is None and category_crystal.spellframe_qualname is None
+        assert contract_crystal.spellframe_kind == "contract"
+        assert contract_crystal.spellframe_name == "IRepo"
+        assert contract_crystal.spellframe_module == IRepo.__module__
+        assert contract_crystal.spellframe_qualname == IRepo.__qualname__
+        payload = contract_crystal.describe()
+        assert payload["spellframe_kind"] == "contract"
+        assert payload["spellframe_module"] == IRepo.__module__
+        assert payload["spellframe_qualname"] == IRepo.__qualname__
+    finally:
+        for crystal in crystals:
+            crystal.cleanup()
+
+
 @pytest.fixture(params=SYNTHETIC_CASES, ids=synthetic_case_id)
 def synthetic_case_crystal(request):
     """

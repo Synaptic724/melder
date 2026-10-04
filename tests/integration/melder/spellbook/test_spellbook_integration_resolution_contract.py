@@ -759,7 +759,7 @@ def test_type_hint_di_forward_ref_list_class_frame_resolves_all() -> None:
     Raises:
         AssertionError: If the handler list is incomplete.
     """
-    class _Frame:
+    class _Frame(Protocol):
         """
         Purpose:
             Provide a class frame for list DI.
@@ -1209,7 +1209,7 @@ def test_type_hint_di_forward_ref_typing_list_class_frame_resolves_all() -> None
     Raises:
         AssertionError: If the handler list is incomplete.
     """
-    class _TypingFrame:
+    class _TypingFrame(Protocol):
         """
         Purpose:
             Provide a class frame for typing.List DI.

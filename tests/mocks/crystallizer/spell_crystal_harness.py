@@ -4,6 +4,7 @@ from pathlib import Path
 from types import ModuleType, SimpleNamespace
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
+from melder.aether.spellbook.spellframe_kind.spellframe_kind import SpellframeKind
 from melder.crystallizer.synthetic_module import SyntheticModule
 
 
@@ -30,6 +31,9 @@ class DummySpell:
         self.spell_name = spell_id
         self.binding_name = None
         self.spellframe = None
+        # Frame kind (record 4.1.0): SpellCrystal reads the enum member's name.
+        self.spellframe_kind = SpellframeKind.none
+        self.implemented_protocols = ()
         self.existence = SimpleNamespace(name="present")
         self.permissions = SimpleNamespace(name="default")
         # Capture-gap fields (restore_engine_2026_07_07): SpellCrystal now

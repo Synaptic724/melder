@@ -4,7 +4,7 @@ import annotationlib
 import inspect
 import logging
 from collections.abc import Iterator
-from typing import Optional, Union
+from typing import Optional, Protocol, Union
 
 import pytest
 
@@ -26,7 +26,7 @@ from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutio
 from melder.utilities.custom_exceptions.unresolved_input_error import UnresolvedInputError
 
 
-class Unregistered:
+class Unregistered(Protocol):
     """A type deliberately absent from every registration pool."""
 
 

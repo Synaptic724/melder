@@ -164,20 +164,17 @@ Message alert rules
 | work_item | status | mode | owner | agent_name | blocker | next | outcome | exit_signal | ticket | updated_at | reread |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: active_items -->
-| flat_warm_body | in_progress | implementation | claude | fable_0 | none | Green on the working copy (red on the tree); land on the tree: apply, notch 0.2.8221, release note, docs, graph, patch docs archived, assets and bundles last, post-landing shards. | S9 (site/store constants) and S11 (live key objects) certified on the five shapes; if they win, emitted with tests, docs and a notch; S2a parked. | Harness verdict recorded (ship or DECISION_REQUEST), then landed and in review. | tickets/tasks/2026-10-03_certify_and_implement_site_store_constants_task.md | 2026-10-03T22:08:45Z | REQUIRED |
 | gauntlet_runtime_speed | in_progress | discovery | claude | melder_2 | none | Owner decides whether an open lever (thread-affine pools, one-lock anonymous link, single-check fast door) is worth a task. | Per-scope-cycle cost map vs dishka and dependency-injector, with ranked and prototyped candidates. | Next lever validated and its task opened, or the owner redirects. | tickets/tasks/2026-09-26_measure_gauntlet_scope_cycle_costs_task.md | 2026-09-26T23:01:16Z | REQUIRED |
 | defect_hunting_spellbook | in_progress | discovery | opencode | muse_0 | none | Slice spellbook component sections then read the surface behind each claim. | Contradiction list with evidence; meaty issues flagged apart from polish. | Sweep list triaged or owner redirects to conduit/meld or arch diffs. | tickets/tasks/2026-09-27_spellbook_sweep_task.md | 2026-09-27T15:56:49Z | REQUIRED |
 | defect_hunting_fixes_1 | in_progress | implementation | opencode | muse_0 | none | Re-slice each target fresh then repair findings 1-8 in order. | Corrected blocks with verified ranges; index check clean. | Batch repaired with gates passing or owner redirects scope. | tickets/tasks/2026-09-27_sweep_fixes_batch_1_task.md | 2026-09-27T16:07:16Z | REQUIRED |
 | rebind_after_first_meld_acceptance | review | handoff | user | fable_1 | owner-owed: work package C | Owner installs the 0.2.8219 build in priv_commandops and reruns the unchanged five-case selection (test_native_rebind_probe.py + the Actions replacement regression); on 5 passes the epic and story close. | Consumer acceptance of the rebind-after-first-meld repair on the delivered build. | Owner reports 5 passes (epic closes) or a failure (a new task opens). | tickets/epics/2026-10-03_rebind_after_first_meld_epic.md | 2026-10-03T21:08:00Z | REQUIRED |
+| annotation_kind_matching | in_progress | implementation | claude | fable_1 | none | Red run on the unpatched mirror, then the source apply script (enum, Spell fields, Bind refusal, kind-aware Phase 3, crystal frame kind, generation 20), the 28-file test sweep, four tiers, docs, notch, note, rebuild. | Annotations match by kind: a category never provides, a Protocol frame is a recorded contract, concrete-class frames are refused; the four defect cases green with their markers removed. | Tiers green (pre-existing failures classified), docs/graph/assets current, tickets turned in; or the owner redirects. | tickets/tasks/2026-10-04_repair_annotation_kind_matching_task.md | 2026-10-04T01:25:00Z | REQUIRED |
 <!-- END USER-DEFINED: active_items -->
 
 ## Recently Closed Anchors
 | work_item | status | agent_name | ticket | note | closed_at |
 | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: closed_anchors -->
-| departed_agent_roster_cleanup | done | tester_0 | tickets/tasks/completed/2026-08-02_departed_agent_roster_cleanup_task.md | helper_f/mediator_0 retired, 14 tickets UNASSIGNED, board pruned; closed by owner directive with its three DECISION_REQUESTs unruled (bind-guard benchmark status, boot-melds epic, six unrecorded suite runs). Next: none. | 2026-10-03T19:01:36Z |
-| stale_source_docstrings | done | UNASSIGNED (ex helper_f) | tickets/tasks/completed/2026-08-02_stale_source_docstrings_task.md | Three stale names corrected and the manifest regenerated; closed by owner directive. Next: the three Conduit 'which admits' docstrings (conduit.py:5321/5404/5482) are still false - a src change for a future ticket. | 2026-10-03T19:01:36Z |
-| graph_authored_edge_drift | done | aether_0 | tickets/tasks/completed/2026-08-03_graph_authored_edge_drift_task.md | Two dead authored edges fixed at the descriptor level, graph reassembled, walker blind spot recorded; closed by owner directive. Next: 21 SEMANTICS_STALE nodes remain an unclaimed re-authoring lane. | 2026-10-03T19:01:36Z |
 | understand_nexus_crystallizer_spellbook | done | updater_0 (departed) | tickets/tasks/completed/2026-09-19_understand_nexus_crystallizer_spellbook_task.md | Source-grounded orientation and the discoverable-registration proposal that became its own (completed) epic; two component-map caveats recorded. Closed by owner directive. Next: none. | 2026-10-03T19:01:36Z |
 | codegen_strategy_certification_harness | done | fable_0 | tickets/stories/completed/2026-09-28_codegen_strategy_certification_harness_story.md | Harness + table delivered 2026-09-30 (S1, S8, S2a certified; S5/S6/S2b conditional; S4 not); drove the static/PGO epic split. Story and build task turned in by owner directive. Next: the static epic's S8 lane (fable_0). | 2026-10-03T19:01:36Z |
 | real_world_gauntlet_ci | done | command_0 | tickets/tasks/completed/2026-10-03_real_world_gauntlet_ci_task.md | Gauntlet in CI on dev-to-preprod only, GIL-off child, arbitrary thread counts and iteration list, 279+71 checks green, bundles OK; accepted by owner directive. Next: the owner's hosted three-OS matrix. | 2026-10-03T19:01:36Z |
@@ -187,17 +184,15 @@ Message alert rules
 | executor_cache_world_stamp | done | fable_0 | tickets/tasks/completed/2026-10-03_require_world_stamp_for_executor_cache_full_hit_task.md | Executor full hit requires the recorded world stamp (generation 19, 0.2.8220); the stale-executor defect fixed with unit/integration/component regressions; the surplus full hit retired. Turned in by owner directive; suites and gauntlet Not run. Next: none. | 2026-10-03T21:22:15Z |
 | annotation_address_matching | done | fable_0 | tickets/tasks/completed/2026-10-03_resolve_annotations_by_address_key_task.md | Phase 3 matches annotations by address key at 0.2.8218 (existing objects by class; string/object parity; generation 18). Turned in by owner directive; suites Not run. Next: the Autofac-strict tightening is not wanted. | 2026-10-03T21:22:15Z |
 | static_codegen_strategies | done | fable_0 | tickets/stories/completed/2026-10-01_lazy_instance_results_story.md | S8 lazy instance_results shipped at 0.2.8217 (plan -26..-32% on dict-mode roots, generation 17); story and task turned in by owner directive; gauntlet Not run. Next: S2a (with S9/S11) on the owner's word. | 2026-10-03T21:22:15Z |
+| flat_warm_body | done | fable_0 | tickets/tasks/completed/2026-10-03_certify_and_implement_site_store_constants_task.md | S9 owner-store constants landed at 0.2.8221 (plan -7..-17% on roots with unique providers; dynamic plans byte-identical; no generation bump); S11 already true. Turned in by owner directive; suites and gauntlet Not run. Next: none. | 2026-10-04T00:13:33Z |
+| flat_warm_body_story | done | fable_0 | tickets/stories/completed/2026-10-03_flat_warm_body_constants_story.md | The S9/S11 story behind the task; S2a parked. Turned in by owner directive. Next: none. | 2026-10-04T00:13:33Z |
+| static_codegen_and_door_strategies | done | fable_0 | tickets/epics/completed/2026-10-01_static_codegen_and_door_strategies_epic.md | S1, S8 and S9 shipped (0.2.8216/0.2.8217/0.2.8221); S4 dropped, S2a parked; the door lane (D1-D5) not reached, its story parked in the backlog. Closed by owner directive; gauntlet ranking Not run. Next: the door lane under a new epic on the owner's word. | 2026-10-04T00:13:33Z |
 <!-- END USER-DEFINED: closed_anchors -->
 
 ## Notes
 <!-- BEGIN USER-DEFINED: notes -->
 ### Active Attention Details
 
-- flat_warm_body: SWITCH_TRIGGER is the harness verdict (S9/S11 within noise -> DECISION_REQUEST), or the
-  landing and turn-in; then the door lane story opens (audit first). The PGO epic stays queued with no row
-  (owner: ignore it). RESUME_HIERARCHY: tickets/epics/2026-10-01_static_codegen_and_door_strategies_epic.md ->
-  tickets/stories/2026-10-03_flat_warm_body_constants_story.md ->
-  tickets/tasks/2026-10-03_certify_and_implement_site_store_constants_task.md.
 - gauntlet_runtime_speed: SWITCH_TRIGGER is the owner's pick among the open levers, or the owner's
   answer on the SpellSpace scope RISK; P1, P4, the tail, build locks and nested slot guard are turned in. The lever-1 lifecycle is closed as measured (21:15Z). RESUME_HIERARCHY: tickets/stories/2026-09-26_gauntlet_runtime_speed_story.md ->
   tickets/tasks/2026-09-26_measure_gauntlet_scope_cycle_costs_task.md.
@@ -207,6 +202,15 @@ Message alert rules
   tickets/epics/2026-10-03_rebind_after_first_meld_epic.md ->
   tickets/stories/2026-10-03_rebind_after_first_meld_repair_story.md
   (evidence: tickets/tasks/completed/2026-10-03_repair_rebind_after_first_meld_task.md).
+- annotation_kind_matching: SWITCH_TRIGGER is the landing of the owner-decided change set (2026-10-03 19:00 local)
+  at the notched version with the four tiers run, or an owner redirect. The decision and the survey live on the
+  reproduce task; the patch lane is system_docs/patches/active/annotation_kind_matching_2026_10_04/. NOTICE for
+  fable_0 (owner relay): this lane edits caching_system.py (generation 20) and notches above 0.2.8221 at landing.
+  RESUME_HIERARCHY:
+  tickets/epics/2026-10-03_annotation_category_provider_collision_epic.md ->
+  tickets/stories/2026-10-03_annotation_type_vs_category_matching_story.md ->
+  tickets/tasks/2026-10-04_repair_annotation_kind_matching_task.md
+  (decision: tickets/tasks/2026-10-03_reproduce_annotation_category_collision_task.md).
 ### Device VM git hazard (melder_2, 2026-09-26)
 - The connected folder refuses deletes, so any git command that refreshes the index from the device VM
   (plain `git status`, `git diff`) can leave an empty .git/index.lock that blocks the owner's commits.

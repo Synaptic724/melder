@@ -1,14 +1,19 @@
 # Story: Flat warm body - site and store constants (S9) and key identity (S11) on every shared site
 
+- Completed: 2026-10-04T00:13:33Z
+- Summary: S9 shipped at 0.2.8221 through its task: an automatic world's unique sites read their owner store as
+  a plan constant; -7..-17% of the plan on the VM's shapes with unique providers; S11 already true;
+  S2a parked. Closed by the owner's directive; owner-run suites and gauntlet Not run.
+
 ## Metadata
 - Story ID: STORY-2026-10-03-flat-warm-body-constants
 - Epic: EPIC-2026-10-01-static-codegen-and-door-strategies
-- Status: in_progress
+- Status: done
 - Owner: cowork
 - Agent Name: fable_0
 - Priority: p1
 - Created: 2026-10-03T21:31:58Z
-- Updated: 2026-10-03T21:31:58Z
+- Updated: 2026-10-04T00:13:33Z
 
 ## User Narrative
 As the Melder owner, I want every shared site of a site plan (a unique or per-conduit provider read by a
@@ -58,6 +63,9 @@ catalogue), S11 makes the store lookup hit the dict's identity fast path for cac
 - from_state: draft
 - to_state: in_progress
 - transition_reason: Opened on the owner's word (2026-10-03T21:31:58Z); the certification task is routed on the board.
+- from_state: in_progress
+- to_state: done
+- transition_reason: Owner's turn-in directive (2026-10-04T00:13:33Z); the task is closed.
 
 ## Dependencies / Related Work
 - tickets/epics/2026-10-01_static_codegen_and_door_strategies_epic.md (Non-PGO Strategy Catalogue: S9, S11)
@@ -65,8 +73,8 @@ catalogue), S11 makes the store lookup hit the dict's identity fast path for cac
 - artifacts/pgo_strategies_20260927/vm_strategy_certification_gil0_20260930.md
 
 ## Tasks (Implementation Checklist)
-- [ ] Task: TASK-2026-10-03-certify-and-implement-site-store-constants - harness S9/S11 columns, then the
-      emitter and hydrator edits with tests. tickets/tasks/2026-10-03_certify_and_implement_site_store_constants_task.md
+- [x] Task: TASK-2026-10-03-certify-and-implement-site-store-constants - harness S9/S11 columns, then the
+      emitter and hydrator edits with tests. tickets/tasks/completed/2026-10-03_certify_and_implement_site_store_constants_task.md
 - [ ] Enforce Ticket Microcycle across all linked tasks.
 - [ ] Require meaningful-finding note updates during discovery/implementation.
 
@@ -96,7 +104,9 @@ catalogue), S11 makes the store lookup hit the dict's identity fast path for cac
 
 ## Open Questions
 - Does any automatic-world path repoint a spell's owner store after conjure (upgrade? cluster?) - to verify in
-  source before the constant is emitted.
+  source before the constant is emitted. CLOSED 2026-10-04T00:02:11Z: only `Spell._add_owned_conduit` writes
+  `_owner_creations` (conjure, and ownership transfer in dynamic posture); upgrade conjures a new Book whose
+  definitions do not transfer, and clusters route through `meld._cluster_creations`, not the owner store.
 
 ## Decision Log
 - 2026-10-03T21:31:58Z (owner): existing objects are rare; implement what helps in general, test first, ignore the PGO
@@ -131,10 +141,39 @@ catalogue), S11 makes the store lookup hit the dict's identity fast path for cac
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-10-04T00:02:11Z
+  TYPE: FACT
+  CLAIM: S9 landed at 0.2.8221 through the task; S11 retired as already true (every `sid{i}` is the live
+    Spell's `spell_id` object because plans are emitted at hydration); S2a parked. The dynamic-posture proof is
+    the emitted line itself: a dynamic provider's plan is byte-identical to before (the unit and component tests
+    assert the alias line), so ownership transfer keeps the per-creation read and the existing transfer tests
+    cover it. The "automatic path repoints the store?" open question is closed in source: only
+    `Spell._add_owned_conduit` writes `_owner_creations` (conjure; transfer in dynamic posture).
+  EVIDENCE:
+  - tickets/tasks/2026-10-03_certify_and_implement_site_store_constants_task.md:150-240
+  - src/melder/aether/spellbook/spell.py:1440-1470
+  IMPACT: The story's acceptance criteria are met on the VM; the owner-run numbers remain.
+  NEXT: owner turn-in of the task and this story; the door lane opens after.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-04T00:13:33Z
+  TYPE: DECISION
+  CLAIM: Owner (2026-10-04): the lane is turned in. S9 shipped at 0.2.8221 through the task (plan -7..-17% on the
+    VM's shapes with unique providers, dynamic plans byte-identical, no generation bump); S11 retired as already
+    true; S2a stays parked. The hydrator edits the narrative anticipated were not needed: the emitter binds the
+    constant itself because plans are emitted at hydration from rows. Owner-run suites and gauntlet: Not run.
+  EVIDENCE:
+  - tickets/tasks/completed/2026-10-03_certify_and_implement_site_store_constants_task.md:1-12
+  IMPACT: Milestone 3 of the static epic is reached; the epic closes on the same directive.
+  NEXT: none for this story.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
 ## Closure Confirmation
-- [ ] Work walkthrough shared with user
-- [ ] Acceptance criteria confirmed by user
-- [ ] Applicable anti-pattern checks are clear or escalated with evidence.
+- [x] Work walkthrough shared with user
+- [x] Acceptance criteria confirmed by user (turn-in directive, 2026-10-04; owner-run numbers Not run)
+- [x] Applicable anti-pattern checks are clear or escalated with evidence.
 
 ## Noting Behavior
 - Note focus: cross-task synthesis, dependency flow, and state-transition logic.
@@ -145,6 +184,11 @@ catalogue), S11 makes the store lookup hit the dict's identity fast path for cac
 ## Context / Handoff Summary
 STATE 2026-10-03T21:31:58Z: IN_PROGRESS. The certification/implementation task is the active lane. Resume from its
 latest STATE line.
+
+STATE 2026-10-04T00:02:11Z: IN_PROGRESS. The task is in review: S9 landed at 0.2.8221; owner-run suites and gauntlet owed;
+then both tickets close on the owner's word.
+
+STATE 2026-10-04T00:13:33Z: DONE. S9 shipped at 0.2.8221 and turned in by the owner's directive; suites and gauntlet Not run.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

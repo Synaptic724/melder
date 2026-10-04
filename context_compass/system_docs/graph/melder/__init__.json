@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/__init__.py",
- "source_sha256": "7b3a95753a785e242f26ca0b2a61fffcdc44ca85b53ecb78e6cd4f47535d29b0",
+ "source_sha256": "89a5fc70e608c2108544a51dad3e31d389b6c876aea9108ea5c7f7eb1fc2a4fe",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder": {
@@ -42,6 +42,7 @@
   "SpellbookConfiguration": "melder.aether.spellbook.configuration.spellbook_configuration.SpellbookConfiguration",
   "SystemState": "melder.aether.spellbook.configuration.system_state.SystemState",
   "Existence": "melder.aether.spellbook.existence.existence.Existence",
+  "SpellframeKind": "melder.aether.spellbook.spellframe_kind.spellframe_kind.SpellframeKind",
   "Spell": "melder.aether.spellbook.spell.Spell",
   "SpellBinder": "melder.aether.spellbook.spellbinder.SpellBinder",
   "Spellbook": "melder.aether.spellbook.spellbook.Spellbook",

@@ -133,6 +133,9 @@ class SpellCrystal(Cleanable):
         "_spell_name",
         "_binding_name",
         "_spellframe_name",
+        "_spellframe_kind",
+        "_spellframe_module",
+        "_spellframe_qualname",
         "_existence_name",
         "_permissions_name",
         "_resolvable",
@@ -298,6 +301,17 @@ class SpellCrystal(Cleanable):
             if spellframe is not None
             else None
         )
+        # Frame kind (record 4.1.0): the kind Bind recorded ("none", "category",
+        # "contract") and, for a contract, the Protocol's module coordinates so a
+        # restore rebinds it as a contract rather than a same-named category.
+        # Plain values only; the enum is read off the Spell, never imported here.
+        self._spellframe_kind: str = spell.spellframe_kind.name
+        self._spellframe_module: Optional[str] = (
+            spellframe.__module__ if self._spellframe_kind == "contract" else None
+        )
+        self._spellframe_qualname: Optional[str] = (
+            spellframe.__qualname__ if self._spellframe_kind == "contract" else None
+        )
         self._existence_name: str = spell.existence.name
         self._permissions_name: str = spell.permissions.name
         self._resolvable: bool = spell.resolvable
@@ -418,6 +432,9 @@ class SpellCrystal(Cleanable):
             del self._spell_name
             del self._binding_name
             del self._spellframe_name
+            del self._spellframe_kind
+            del self._spellframe_module
+            del self._spellframe_qualname
             del self._existence_name
             del self._permissions_name
             del self._resolvable
@@ -718,6 +735,51 @@ class SpellCrystal(Cleanable):
         self.check_cleaned()
         with self._lock:
             return self._spellframe_name
+
+    @property
+    def spellframe_kind(self) -> str:
+        """
+        Return the frame kind recorded at bind: "none", "category" or "contract".
+
+        Contract:
+            - The `SpellframeKind` member NAME as Bind classified the frame
+              (record 4.1.0); a restore reads it to rebind a Protocol frame as a
+              contract instead of a same-named category.
+
+        Returns:
+            str: "none" (bound bare), "category" (a string label) or "contract"
+            (a Protocol the spell was checked against).
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._spellframe_kind
+
+    @property
+    def spellframe_module(self) -> Optional[str]:
+        """
+        Return the Protocol's module for a contract frame, else None.
+
+        Returns:
+            Optional[str]: `__module__` of the Protocol spellframe when the kind
+            is "contract"; None for a bare binding or a string category.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._spellframe_module
+
+    @property
+    def spellframe_qualname(self) -> Optional[str]:
+        """
+        Return the Protocol's qualified name for a contract frame, else None.
+
+        Returns:
+            Optional[str]: `__qualname__` of the Protocol spellframe when the
+            kind is "contract"; None otherwise. With `spellframe_module` it is
+            the import coordinate a loader hydrates the contract from.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._spellframe_qualname
 
     @property
     def existence_name(self) -> str:
@@ -1220,6 +1282,9 @@ class SpellCrystal(Cleanable):
                 "spell_name": self._spell_name,
                 "binding_name": self._binding_name,
                 "spellframe_name": self._spellframe_name,
+                "spellframe_kind": self._spellframe_kind,
+                "spellframe_module": self._spellframe_module,
+                "spellframe_qualname": self._spellframe_qualname,
                 "existence_name": self._existence_name,
                 "permissions_name": self._permissions_name,
                 "resolvable": self._resolvable,

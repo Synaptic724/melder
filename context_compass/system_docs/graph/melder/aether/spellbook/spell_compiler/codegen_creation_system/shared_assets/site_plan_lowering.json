@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py",
- "source_sha256": "2731fd76183d4b33149058870b88edba944887a3899102fd2a0830dda973833d",
+ "source_sha256": "c3ae5abb6146c5fbdca9d59ac392875aa7552e427f1d527180e509918141d94e",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering": {
@@ -147,11 +147,11 @@
     "render"
    ],
    "shape": {
-    "method_count": 23,
+    "method_count": 24,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "54038175731b905ba9d60cd7d82b30f0375102baf1b0e6b484ccb06ef7d107ad",
+   "span_sha256": "a3ad143daa5556411747e7ed0403cbe7d873a57c7426fa68588d480a9495a893",
    "include": true,
    "role": "Per-plan emission state: places steps at top level or inside shared-site misses and renders the plan source.",
    "responsibilities": [
@@ -160,7 +160,8 @@
     "chooses a direct call or generic construction per step and builds call arguments",
     "emits conflict guards and unresolved-input refusals at context tops",
     "leaves out the root miss's guard in a normal plan whose calling route door already holds it (unique_per_conduit and spellspace roots, 0.2.73)",
-    "emits a dict literal of exactly the dependency values a generic construction reads, where it runs (lazy instance_results, 2026-10-03): no dict at the plan top, no per-step stores, no dict parameter on misses; _place passes a generic member's providers into its miss like a direct member's operands"
+    "emits a dict literal of exactly the dependency values a generic construction reads, where it runs (lazy instance_results, 2026-10-03): no dict at the plan top, no per-step stores, no dict parameter on misses; _place passes a generic member's providers into its miss like a direct member's operands",
+    "binds an automatic world's unique-site owner store as a plan constant (owner-store constants, 2026-10-03): _owner_store_constant admits a unique site whose provider spell is owned by an automatic conduit and has an owner store; _emit_shared_hit then binds c{i} in the namespace and emits no alias line, while dynamic, unowned and meld.<store> sites keep the per-creation read and the miss keeps its c{i} parameter"
    ],
    "owns_state": [
     "_lines",
@@ -180,7 +181,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "54038175731b905ba9d60cd7d82b30f0375102baf1b0e6b484ccb06ef7d107ad"
+   "semantics_authored_against": "a3ad143daa5556411747e7ed0403cbe7d873a57c7426fa68588d480a9495a893"
   }
  },
  "edges_out": [

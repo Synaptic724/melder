@@ -53,7 +53,7 @@ epoch-guarded read (the S2b shape, -8 ns, measured). The rows already say which 
 - transition_reason: Drafted from the certification table and the owner's split (2026-10-01T00:55:51Z); opens after S8.
 
 ## Dependencies / Related Work
-- tickets/epics/2026-09-27_adaptive_creation_contexts_epic.md (Concrete Strategies: S2a, S2b)
+- tickets/epics/backlog/2026-09-27_adaptive_creation_contexts_epic.md (Concrete Strategies: S2a, S2b)
 - artifacts/pgo_strategies_20260927/vm_strategy_certification_gil0_20260930.md
 - tickets/stories/backlog/2026-09-27_probe_selected_codegen_styles_story.md (S2b, the guarded shape)
 

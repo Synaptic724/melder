@@ -1,4 +1,4 @@
-# Melder 0.2.8220
+# Melder 0.2.8222
 
 **Unreleased**
 
@@ -405,23 +405,58 @@ maintainers' VM (3.14t, GIL off): the plan body of a root over existing objects 
 miss; no API change. Creation-cache generation 17 retires executors emitted with the eager dict, so the first
 conjure after upgrading regenerates them.
 
-## A consumer's annotation resolves by address key
+## A consumer's annotation selects by kind: a category never provides, a Protocol frame is a contract
 
-Phase 3 now matches a constructor annotation to candidate spells by key - the same lowercased name every
-spell address already uses - against each spell's frame key (its `spellframe`, else its own name) and its type
-key (its class name; for an existing object, the instance's class name). Before, a class-object annotation was
-matched by object identity while a string annotation was matched by name, so an existing object bound bare
-satisfied `service: "Service"` (a `TYPE_CHECKING`-only import) but not `service: Service`, and a concrete
-class used as a `spellframe` resolved as if it were the type. Now:
+**Breaking change:** a `spellframe` is a string category or a `typing.Protocol` contract, and nothing else.
+`bind(spell=Impl, spellframe=SomeClass)` with a concrete class now raises `TypeError` naming the two valid
+forms. To upgrade, pass the class's name to keep the grouping (`spellframe="SomeClass"`), or declare the shape
+as a `Protocol` to make it a contract the spell is checked against. Before 0.2.8222 the class was accepted and
+matched by name, so a same-named single annotation resolved everything grouped under it.
 
-- an existing object bound without a spellframe satisfies a consumer annotated with its class;
-- a binding resolves identically whether the consumer imported the type under `TYPE_CHECKING` or at runtime;
-- a spellframe is a category or a shape label (a string, a Protocol): it is matched by name, never by
-  identity, and a concrete class used as one is just a name.
+What an annotation selects now follows from what the annotation is:
 
-Nothing that resolved before stops resolving; ambiguity still raises in Phase 3 and two spells at one address
-are still refused in Phase 4. Creation-cache generation 18 retires bundles captured under the old matcher,
-whose structural rows may hold an unresolved input the key matcher resolves.
+- a **class** selects the spells of that type - a class bound bare, or an existing object of that class. A
+  category that happens to share the class's name does not turn its members into providers: fourteen
+  framework classes grouped under `spellframe="spectrum"` no longer raise an ambiguity for a consumer declared
+  `spectrum: Spectrum`, which was the MelderOps defect this fixes;
+- a **Protocol** selects the spells bound under it as their contract (and the Protocol's own definition when it
+  is bound `resolvable=False`, so a descriptive definition still compiles its override socket; an implementer is
+  preferred);
+- a **`TYPE_CHECKING`-only import**, which leaves a string at runtime, selects a type or a contract by name and
+  never a string category;
+- `list[...]` gathers the group the annotation's kind names: every spell of the class, every implementer of the
+  Protocol, or - for a string - every spell whose frame key is that name.
+
+The binding records what its frame is: `Spell.spellframe_kind` (`SpellframeKind.none` / `category` /
+`contract`, exported at the package root) and `Spell.implemented_protocols` (the Protocol it was checked
+against). The crystallizer records them too (record version 4.1.0; 4.0.0 records stay readable), so a restored
+or grafted world rebinds a Protocol frame as the Protocol, not as a same-named category; when the Protocol
+cannot be imported at restore the spell is bound under the recorded name as a category and the report files a
+`spell_crystal` shortfall saying so. Explicit addressing (`SpellMap`, `SpellContract`, `meld(spellframe=...,
+binding_name=...)`) is unchanged; ambiguity between two spells of the type still raises in Phase 3 and two
+spells at one address are still refused in Phase 4. Creation-cache generation 20 retires bundles captured under
+the 0.2.8218 name matcher.
+
+What 0.2.8218 brought and 0.2.8222 keeps: an existing object bound bare satisfies a consumer annotated with
+its class, and a binding resolves identically whether the consumer imported the type under `TYPE_CHECKING` or
+at runtime.
+
+## Shared singleton sites read their store as a constant
+
+When a compiled site plan reads a dependency of existence `unique` - a singleton its Spellbook owns - it used to
+look that spell's owner store up on every creation (`c = spells[i]._owner_creations`) before reading the instance
+out of it. In an automatic world that store cannot move after conjure, so the plan now binds it once, when the
+plan is emitted at the first meld, and the warm read is the store lookup alone. A dynamic world keeps the
+per-creation read, because an ownership transfer repoints a spell's owner store there. Same objects, same
+errors, same locks; no API change; nothing changes on disk, since plans are emitted from the cached rows at
+hydration and the creation-cache generation stays 19.
+
+Directional numbers on the maintainers' VM (Python 3.14t, free-threaded), interleaved before/after medians of
+three runs on the real compiled plans: a transient over one singleton 160 -> 148 ns per creation, a root over
+five singletons 316 -> 277 ns, a wide root over eight singletons 447 -> 374 ns, a wide root over eight existing
+objects 444 -> 368 ns (-7..-17%), and an eight-deep transient chain with one singleton 432 -> 428 ns. Roots with
+no `unique` dependency are byte-identical.
+
 ## Packaging and documentation
 
 - The internal-bind guard manifest holds 620 entries at 0.2.8216 (619 at 0.2.8215): `ManyDisposalBucket`, the
@@ -465,4 +500,14 @@ whose structural rows may hold an unresolved input the key matcher resolves.
 - The packaged system documents describe the executor-cache world stamp: the envelope field, the full-hit
   rule, the staging write and the retired surplus full hit; the conjure sequence's line citations into
   `spellbook_creation_system.py` are remeasured.
-- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8220.
+- The packaged system documents describe the owner-store constant of a `unique` site in an automatic world:
+  the eligible-site rule, the bound namespace name, the posture that keeps the read and the harness numbers;
+  the site-plan lowering's code-map extents are remeasured.
+- The internal-bind guard manifest holds 621 entries at 0.2.8222: `SpellframeKind`, the frame-kind enum a
+  binding records, is Melder-internal and cannot be bound as a spell.
+- The README's spellframe and dependency-injection sections state the kind rule (string or Protocol frames
+  only; what a class, a Protocol and a `TYPE_CHECKING` string select; what `list[...]` gathers). The packaged
+  system documents describe the frame classification and refusal, the Spell's two new fields, the kind-aware
+  predicate and its four index buckets, the crystal's frame-kind keys, the loaders' hydration and shortfall
+  and record version 4.1.0; the 0.2.8218 invariant is marked superseded.
+- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8222.

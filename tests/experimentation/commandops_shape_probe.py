@@ -31,7 +31,7 @@ from tests._frame_posture_test_support import configure_frame_posture_for_spellb
 
 
 class Config:
-    """Existing object bound as an instance under `spellframe=Config`."""
+    """Existing object bound as an instance under `spellframe="Config"`."""
 
     def __init__(self, n: int) -> None:
         self.n = n
@@ -157,7 +157,7 @@ def build_world(specializer: bool) -> Tuple[Spellbook, Conduit]:
     book.configure_aether_frame(
         system_state=None, disposal=None, disposal_method_names=None, system_caching_enabled=False,
     )
-    book.bind(spell=Config(1), spellframe=Config, existence=Existence.unique, permissions="create")
+    book.bind(spell=Config(1), spellframe="Config", existence=Existence.unique, permissions="create")
     book.bind(spell=Builders(2), spellframe=Builders, existence=Existence.unique, permissions="create")
     book.bind(spell=Resources(3), spellframe=Resources, existence=Existence.unique, permissions="create")
     book.bind(spell=Utilities(4), spellframe=Utilities, existence=Existence.unique, permissions="create")

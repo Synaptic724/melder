@@ -274,6 +274,35 @@ class SpellInputUtils:
         return raw.lower()
 
     @staticmethod
+    def is_protocol_type(candidate: Any) -> bool:
+        """
+        Return True when `candidate` is a `typing.Protocol` class.
+
+        Contract:
+            - True for a class carrying the `_is_protocol` / `__is_protocol__`
+              flag that `typing.Protocol` sets on every protocol subclass (and
+              on `Protocol` itself). `issubclass(..., Protocol)` is avoided
+              because static checkers reject it on protocols that are not
+              `@runtime_checkable`.
+            - False for anything that is not a class, so a string category or
+              an instance never reads as a contract.
+            - The flags are read with `getattr` deliberately: the object is the
+              typing module's, not ours, and the flag's name moved between
+              Python versions.
+
+        Args:
+            candidate: Any object offered as a spellframe or found in an annotation.
+
+        Returns:
+            bool: Whether `candidate` is a Protocol class.
+        """
+        if not inspect.isclass(candidate):
+            return False
+        if getattr(candidate, "_is_protocol", False):
+            return True
+        return bool(getattr(candidate, "__is_protocol__", False))
+
+    @staticmethod
     def normalize_spell_name(spell: Any) -> str:
         """
         Normalize a spell object into a canonical spell display name.

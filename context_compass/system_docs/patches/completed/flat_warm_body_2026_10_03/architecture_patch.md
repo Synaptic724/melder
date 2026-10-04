@@ -1,7 +1,7 @@
 # Architecture patch: owner-store constants on the warm path of a site plan (S9)
 
 - Patch id: flat_warm_body_2026_10_03
-- Status: active (entry gate for TASK-2026-10-03-certify-and-implement-site-store-constants)
+- Status: promoted and archived (was the entry gate for TASK-2026-10-03-certify-and-implement-site-store-constants)
 - Owner: fable_0
 - Created: 2026-10-03T21:41:39Z
 

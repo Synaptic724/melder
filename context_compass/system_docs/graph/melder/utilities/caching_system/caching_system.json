@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "source": "src/melder/utilities/caching_system/caching_system.py",
-  "source_sha256": "9446de98d4b41261c1670926255a89e478b0487ac3599025413447409ad03b76",
+  "source_sha256": "f8c05e34c3bb2da6d1522d336c6ea8b5d9b56adea9b65dd0d83608727643c929",
   "generator": "tools/system_documents/python/extract_graph.py",
   "nodes": {
     "melder.utilities.caching_system.caching_system": {
@@ -57,7 +57,7 @@
         "has_bases": true,
         "trivial": false
       },
-      "span_sha256": "7e333d85aa7386e7c29f87691fb6078235ab4efa2feb9428df8cbe2992ad50e5",
+      "span_sha256": "71a042ce46d16a7ddf934695167db83d75a7deeee52107e51a4b4bd3d24f33d1",
       "role": "Conduit-scoped cache persistence utility.",
       "responsibilities": [
         "owns one rooted-conduit cache file and its in-memory spell-payload dictionary",
@@ -68,7 +68,8 @@
         "cache generation 11 retires executors emitted before the unresolved-input failure path",
         "cache generation 12 cold-resets bundles that may hold consumer payloads from a previous world",
         "cache generation 13 gives each collection member its own compiler path; 14 retires bundles whose manifests carried override lanes",
-        "carries the executor-tier world stamp in the envelope (generation 19): set_world_stamp records it after staging and reports a change; a loaded bundle without the field is unstamped and never admits a full hit"
+        "carries the executor-tier world stamp in the envelope (generation 19): set_world_stamp records it after staging and reports a change; a loaded bundle without the field is unstamped and never admits a full hit",
+        "cache generation 20 retires bundles whose phase 3-4 rows were captured under the name matcher (annotation matching by kind, 0.2.8222)"
       ],
       "owns_state": [
         "_id",
@@ -85,7 +86,7 @@
         "runtime",
         "cleanup"
       ],
-      "semantics_authored_against": "7e333d85aa7386e7c29f87691fb6078235ab4efa2feb9428df8cbe2992ad50e5"
+      "semantics_authored_against": "71a042ce46d16a7ddf934695167db83d75a7deeee52107e51a4b4bd3d24f33d1"
     }
   },
   "edges_out": [

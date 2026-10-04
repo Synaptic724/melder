@@ -88,6 +88,8 @@ def _spell(spell_id: str, built: Counter, existence: Existence = Existence.many,
         existence=existence,
         _lock=threading.RLock(),
         _owner_creations=FakeStore(),
+        # Mirror the live Spell: False until an owning conduit stamps a dynamic environment.
+        _dynamic_environment=False,
     )
 
 
@@ -1317,3 +1319,66 @@ def test_generic_collection_parameter_literal_carries_every_member_key() -> None
     x = first.args[0]
     assert [member.name for member in x.kwargs["items"]] == ["m1", "m2"] and x.kwargs["c"] == "contract"
     assert built == Counter({"m1": 1, "m2": 1, "x": 1, "root": 1})
+
+
+def _shared_source(steps: Tuple[SitePlanStep, ...], topologies: Dict[str, Any],
+                   keys: Tuple[str, ...]) -> Tuple[str, Dict[str, Any]]:
+    """Emit one plan over the shared world and return its (source, namespace) without executing it."""
+    graph = SitePlanLowering.build_site_graph(
+        root_spell_id="root", root_instance_key=("root", 0), steps=steps, topology_for=topologies.get,
+    )
+    resolution = OverrideKeyResolver.resolve(graph, keys)
+    source, namespace, _ = SitePlanLowering.emit(
+        steps=steps, site_graph=graph, resolution=resolution, root_instance_key=("root", 0),
+        root_spell_id="root", root_spell_name="root", arity=0,
+    )
+    graph.cleanup()
+    return source, namespace
+
+
+def test_unique_site_of_an_automatic_provider_binds_its_owner_store_as_a_constant() -> None:
+    """S9: the alias line is gone, `c1` is the owner store itself, and the plan publishes and reuses through it."""
+    built, spells, steps, topologies = _shared_world(existence=Existence.unique)
+    source, namespace = _shared_source(steps, topologies, ())
+
+    assert "c1 = spells[1]._owner_creations" not in source
+    assert "v1 = c1._creations.get(sid1)" in source
+    assert namespace["c1"] is spells["s"]._owner_creations
+    exec(compile(source, "<test>", "exec"), namespace)
+    plan = namespace[SitePlanLowering.PLAN_FUNCTION_NAME]
+    first = plan(SimpleNamespace(), {})
+    second = plan(SimpleNamespace(), {})
+    assert first.args[0] is second.args[0] is spells["s"]._owner_creations._creations["s"]
+    assert built == Counter({"x": 1, "s": 1, "root": 2})
+
+
+def test_unique_site_of_a_dynamic_provider_keeps_the_per_creation_store_read() -> None:
+    """A provider owned by a dynamic conduit (transfer can repoint its store) is read as before."""
+    built, spells, steps, topologies = _shared_world(existence=Existence.unique)
+    spells["s"]._dynamic_environment = True
+    source, namespace = _shared_source(steps, topologies, ())
+
+    assert "    c1 = spells[1]._owner_creations" in source
+    assert "c1" not in namespace
+    exec(compile(source, "<test>", "exec"), namespace)
+    result = namespace[SitePlanLowering.PLAN_FUNCTION_NAME](SimpleNamespace(), {})
+    assert spells["s"]._owner_creations._creations["s"] is result.args[0]
+
+
+def test_unique_site_of_an_unowned_provider_keeps_the_read() -> None:
+    """A provider with no owner store yet emits today's line, so its failure mode is unchanged."""
+    _built, spells, steps, topologies = _shared_world(existence=Existence.unique)
+    spells["s"]._owner_creations = None
+    source, namespace = _shared_source(steps, topologies, ())
+
+    assert "    c1 = spells[1]._owner_creations" in source
+    assert "c1" not in namespace
+
+
+def test_per_conduit_site_read_is_unchanged_by_the_owner_store_constant() -> None:
+    """The `meld.<store>` routes never bind a constant: the store is one attribute read on the parameter."""
+    _built, _spells, steps, topologies = _shared_world()
+    source, namespace = _shared_source(steps, topologies, ())
+
+    assert "    c1 = meld._conduit_creations" in source
+    assert "c1" not in namespace

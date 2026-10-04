@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_architecture.md'
-LINE_COUNT = 3593
-CONTENT_SHA256 = '01d14d5e8d403e376ac0243a508d9ba8d89940ba631fc5223e366ff47d62f4cf'
+LINE_COUNT = 3612
+CONTENT_SHA256 = 'af13dbeec2f96ce669a7af705ff315ca3de948769dfcbfdd219423d997f045e3'
 
 TEXT = """# Src Architecture (C4)
 
@@ -936,6 +936,18 @@ each entry in `src_components.md`; this list is the set that crosses components.
 - Validation strategies registered in `SpellValidationSystem`.
 
 ## Operational Invariants
+- Owner-store constants on the warm path (2026-10-03, 0.2.8221): a site plan's shared site of existence `unique` whose
+  provider Spell is owned by an automatic conduit and already has an owner store reads that store as a plan
+  constant (`c{i}`, bound in the namespace at emission) instead of `spells[i]._owner_creations` on every creation;
+  the hit read `c{i}._creations.get(sid{i})`, the miss call and the miss body are unchanged, so a store swapped
+  empty by cleanup is seen as before. An owned spell's owner store changes only through
+  `Spell._add_owned_conduit` - at conjure and, in dynamic posture, at ownership transfer - and a notch or a late
+  bind re-gates and recompiles the plan, so in an automatic world nothing repoints the store under a plan; a
+  provider in a dynamic environment, one not yet owned, and every `meld.<store>` route keep the per-creation
+  read. Plans are emitted at hydration from manifest rows (cold path and cache full hit alike), so no cache
+  generation moves. Measured on the VM: -7..-17% of the plan on roots with `unique` providers (8-10 ns per site).
+  EVIDENCE: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:SitePlanEmission._owner_store_constant`
+  and `SitePlanEmission._emit_shared_hit`.
 - Per-conduit verdicts retire with their definition (2026-10-03, 0.2.8219): a spell id that no registered
   `SpellSystemState` carries has no resolution verdict in any `ConduitResolutionState` of the frame, and a version
   id that `register_index` publishes starts with none. `unregister_index` calls
@@ -2099,10 +2111,11 @@ SpellCompiler and validation:
   note: DI shape classification.
 - path: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py`
   start_line: 1
-  end_line: 1546
-  loc: 1546
-  verified_at: 2026-10-03T19:33:16Z
-  note: key-set plan lowering: site graph from steps, placement, emission, call shape.
+  end_line: 1588
+  loc: 1588
+  verified_at: 2026-10-03T22:12:00Z
+  note: key-set plan lowering: site graph from steps, placement, emission, call shape; an automatic
+    world's `unique` sites read their owner store as a plan constant (0.2.8221).
 - path: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_override_runtime.py`
   start_line: 1
   end_line: 405
@@ -3267,6 +3280,12 @@ without rewriting the original record or existing live IDs.
 - `src/melder/utilities/ai_native_support_tools/protocol_crafter.py`
 
 ## Context / Handoff Summary
+
+2026-10-03 owner-store constants (0.2.8221): a `unique` site whose provider is owned by an automatic conduit reads its
+owner store as a plan constant bound at emission instead of `spells[i]._owner_creations` per creation; dynamic
+providers, unowned ones and the `meld.<store>` routes keep the read, and no cache generation moves because plans
+are emitted from rows at hydration. The operational invariants and the code map carry it; the component map
+carries the eligible-site rule and the emitted shape.
 
 2026-10-03 executor-cache world stamp (0.2.8220): the creation-cache bundle records the world its executors were
 staged in and a full hit requires it, so a world that only added or removed an existing creation (or a

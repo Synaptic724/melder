@@ -183,6 +183,10 @@ class CachingSystem(Cleanable):
     # (2026-10-03): the executor full hit now requires the envelope's
     # `world_stamp` to equal the live world, so a bundle that cannot carry
     # one is cold rather than admitted as a stamp-less full hit.
+    # Version 20 retires bundles captured before annotation-kind matching
+    # (2026-10-04): their structural rows were resolved by the name matcher,
+    # which read a string category named like a class as that class's
+    # provider set; the kind matcher resolves such sockets differently.
     CACHE_VERSION_HISTORY: ClassVar[Mapping[int, str]] = MappingProxyType({
         1: "legacy_executor_payloads",
         2: "decoded_manifest_package_payloads",
@@ -203,6 +207,7 @@ class CachingSystem(Cleanable):
         17: "lazy_instance_results",
         18: "annotation_address_matching",
         19: "executor_world_stamp",
+        20: "annotation_kind_matching",
     })
     CURRENT_VERSION: ClassVar[int] = max(CACHE_VERSION_HISTORY)
 

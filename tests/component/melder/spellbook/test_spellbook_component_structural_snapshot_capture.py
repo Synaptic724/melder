@@ -148,7 +148,8 @@ def test_repeat_world_full_hit_keeps_structural_rows_and_does_not_rewrite_the_bu
 def test_eq_risky_pool_marks_every_payload_non_replayable() -> None:
     """
     Purpose: Replayability is decided per pool, by the phase-3 eq-safety rule.
-    Contract: One spellframe with a custom __eq__ makes both payloads carry replayable False.
+    Contract: One bound object with a custom __eq__ makes both payloads carry replayable False
+        (a spellframe can no longer carry one: it is a string or a Protocol since 2026-10-04).
     """
 
     class Frame:
@@ -161,7 +162,7 @@ def test_eq_risky_pool_marks_every_payload_non_replayable() -> None:
     book = _new_world_book("structural-eq-risky", fragment)
     engine_id = book.bind(spell=Engine, existence="unique", permissions="create")
     car_id = book.bind(spell=Car, existence="many", permissions="create")
-    book.bind(spell=Frame, spellframe=Frame(), existence="unique", permissions="create")
+    book.bind(spell=Frame(), existence="unique", permissions="create")
     book.conjure(name="root")
 
     bundle = _bundle(book)

@@ -14,9 +14,9 @@ Regenerate with:
 """
 
 MANIFEST_VERSION = "2.0.0"
-BUILT_FOR_VERSION = "0.2.8220"
-SOURCE_SHA256 = "df9e52ee014cf6f1908953a68bb1ab817f4900906e32d7fc766d470e783dc0c1"
-ENTRY_COUNT = 620
+BUILT_FOR_VERSION = "0.2.8222"
+SOURCE_SHA256 = "4e21da43ae1a03f6bf7158328a84a96c395c6b9e6aaf8cd2c324aa11102afb5d"
+ENTRY_COUNT = 621
 
 ENTRIES = (
     ('melder.aether.aether', 'Aether'),
@@ -370,6 +370,7 @@ ENTRIES = (
     ('melder.aether.spellbook.spellbinder', 'SpellBinder'),
     ('melder.aether.spellbook.spellbook', 'Spellbook'),
     ('melder.aether.spellbook.spellbook_creation_system', 'SpellbookCreationSystem'),
+    ('melder.aether.spellbook.spellframe_kind.spellframe_kind', 'SpellframeKind'),
     ('melder.crystallizer.asset_management.adapters.sqlite_mesh_adapter', 'SqliteMeshAdapter'),
     ('melder.crystallizer.asset_management.asset_management_system', 'AssetManagementSystem'),
     ('melder.crystallizer.asset_management.crystallizer_cache', 'CrystallizerCache'),
