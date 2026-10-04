@@ -5,12 +5,18 @@
 ## Metadata
 - Task ID: TASK-2026-10-03-reproduce-annotation-category-collision
 - Story: STORY-2026-10-03-annotation-type-vs-category-matching
-- Status: in_progress
+- Status: done
 - Owner: user
 - Agent Name: fable_1
 - Priority: p1
 - Created: 2026-10-03T23:52:00Z
-- Updated: 2026-10-04T01:00:00Z
+- Updated: 2026-10-04T11:55:00Z
+
+- Completed: 2026-10-04T11:55:00Z
+- Summary: Reproduced the collision on 0.2.8221 with a Melder-only probe (2 failed / 2 passed), read the matcher,
+  surveyed 441 class-object frames (278 Protocols, 127 plain markers in 28 files), put three options to the owner
+  and recorded the DECISION (P2 + concrete-class refusal) that the repair task landed at 0.2.8222. No source
+  landed here. Closed by owner directive with the repair task.
 
 ## Objective
 Run the epic's four-case public-API probe against current Melder source with a Melder-only fixture, read the

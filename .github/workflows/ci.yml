@@ -80,6 +80,11 @@ jobs:
     if: needs.branch-policy.outputs.gauntlet-required == 'true'
     uses: ./.github/workflows/persistent-runtime-gauntlet.yml
 
+  shallow-all-thread-scaling:
+    needs: branch-policy
+    if: needs.branch-policy.outputs.gauntlet-required == 'true'
+    uses: ./.github/workflows/shallow-all-thread-scaling.yml
+
   documentation:
     needs: branch-policy
     if: needs.branch-policy.outputs.runtime-required == 'true'
@@ -103,7 +108,7 @@ jobs:
 
   merge-ready:
     name: CI / merge-ready
-    needs: [branch-policy, hygiene, source-assets, repo-assets, tests, real-world-gauntlet, persistent-runtime-gauntlet, documentation, packages, source-qualification]
+    needs: [branch-policy, hygiene, source-assets, repo-assets, tests, real-world-gauntlet, persistent-runtime-gauntlet, shallow-all-thread-scaling, documentation, packages, source-qualification]
     # Without always(), a failed dependency skips the very check required to
     # block merging. The script accepts only explicitly successful evidence.
     if: always()

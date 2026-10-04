@@ -2,12 +2,17 @@
 
 ## Metadata
 - Epic ID: EPIC-2026-10-03-rebind_after_first_meld
-- Status: in_progress
+- Status: done
 - Owner: project owner; receiving Melder maintainer to be assigned
 - Agent Name: command_0 (report author), fable_1 (receiving maintainer, 2026-10-03)
 - Priority: p1
 - Created: 2026-10-03T19:07:45.991467+00:00
-- Updated: 2026-10-03T21:08:00Z
+- Updated: 2026-10-04T12:20:00Z
+
+- Completed: 2026-10-04T12:20:00Z
+- Summary: Verdict retirement on unregister/register landed at 0.2.8219 with 37 regressions, docs, graph and assets
+  current; story and both tasks completed. Closed by owner directive (2026-10-04 06:12 local); work package C
+  (consumer acceptance on the delivered build) was not reported and stays with the owner.
 - Target Window: next owner-selected Melder correctness investigation
 - Related Program/Initiative: MelderOps dynamic Actions factory integration
 - Origin: priv_commandops / Actions native factory migration

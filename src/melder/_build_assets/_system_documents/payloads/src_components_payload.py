@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_components.md'
-LINE_COUNT = 10675
-CONTENT_SHA256 = '36651a5d2af3fb474d763f19238f4ac9f0556d0fefd7df8e3404ead4e7ac7f06'
+LINE_COUNT = 10721
+CONTENT_SHA256 = '8bafa87e7d1c44bdd61fa8ab71e32b0d0694bac80421cae92f61917943e2604c'
 
 TEXT = """# Src Components (C3/C2/C1)
 
@@ -24,7 +24,7 @@ TEXT = """# Src Components (C3/C2/C1)
 - Status: in_progress
 - Owner:
 - Created: 2026-01-17
-- Updated: 2026-10-03
+- Updated: 2026-10-04
 
 ## Scope
 This document defines C3 components, C2 subcomponents, and C1 code references
@@ -657,6 +657,24 @@ Text is preserved as authored; only its location changed.
 ### Component: Binding Pipeline (Bind, Spell, SpellIndex)
 Purpose:
 - Convert user objects into registered spell metadata with stable index identities.
+
+Spellframe kind (2026-10-04, 0.2.8222):
+- `Bind._classify_spellframe(spellframe)` runs before the structural Protocol check and decides what the frame
+  IS: `None` -> `SpellframeKind.none`; a `str` -> `category`; a `typing.Protocol` class
+  (`SpellInputUtils.is_protocol_type`: `inspect.isclass` and the `_is_protocol` / `__is_protocol__` flag) ->
+  `contract` with the Protocol recorded; any other class raises `TypeError("spellframe must be a string category
+  or a Protocol contract; got the concrete class '<Name>'. To group spells under it as a label, pass its name
+  (spellframe='<Name>'); to make it a contract the spell is checked against, declare it as a typing.Protocol.")`,
+  and a non-class object raises the same with `an object of type '<T>'`. BREAKING: before 0.2.8222 a concrete class
+  was accepted as a frame and matched by name.
+- The Spell carries `spellframe_kind: SpellframeKind` and `implemented_protocols: tuple[type, ...]` (the
+  Protocol the spell was structurally checked against, or `()`), set from the classification; both survive
+  `cleanup()` as identity data. Step 4's member check runs only for `contract`. The fingerprint is unchanged -
+  the kind is derived from the frame, not hashed.
+- EVIDENCE: `src/melder/aether/spellbook/bind/bind.py:Bind._classify_spellframe`, `Bind._bind_logic`,
+  `src/melder/aether/spellbook/spell.py:Spell.__init__`,
+  `src/melder/aether/spellbook/spellframe_kind/spellframe_kind.py:SpellframeKind` and
+  `src/melder/utilities/helpers/general_helpers.py:SpellInputUtils.is_protocol_type`.
 
 Bind callbacks (2026-09-22): Bind owns an immutable tuple of pre, activation and post tuples. The
 Book captures that tuple once for a binding. add_hooks validates all supplied sequences before
@@ -1488,6 +1506,20 @@ Per-frame spell worlds (2026-09-30, 0.2.8213-0.2.8214):
   frame; `ImpactEngine.blast_radius_of_spell` falls back to the lowest key whose payload "id" is the spell id.
 - RecordVersion 4.0.0: an older reader refuses a new record instead of folding two frames' copies into one;
   3.x records stay readable. MutationResearch stays keyed by spell id (code identity both copies share).
+- Spellframe kind (2026-10-04, 0.2.8222; RecordVersion 4.1.0 - MINOR, additive): `SpellCrystal` records
+  `spellframe_kind` (the Spell's `SpellframeKind` name), and for a contract the Protocol's `spellframe_module`
+  and `spellframe_qualname`; `describe()` carries the three keys. `RestoreEngine._hydrate_spellframe(custody_key,
+  crystal)` and `GraftRunner._hydrate_spellframe(spell_id, crystal, shortfalls)` return what the rebind passes as
+  `spellframe=`: the imported Protocol (through the loaders' qualified-import lane) for a contract, the recorded
+  name for a category, None for none. When the import fails the recorded NAME is bound as a category and a
+  `spell_crystal` shortfall `spellframe_contract_hydration_failed (<module>.<qualname>): <error>; bound as the
+  category '<name>'` is filed; the report still completes. Records without the keys (4.0.0) hydrate by name as
+  before. Every active, staged and graft bind site goes through the helper.
+- EVIDENCE: `src/melder/crystallizer/crystals/spell_crystal.py:SpellCrystal.__init__`, `SpellCrystal.describe`,
+  `src/melder/crystallizer/crystal_loader_system/restore_engine.py:RestoreEngine._hydrate_spellframe`,
+  `RestoreEngine._bind_one_active`, `RestoreEngine._bind_one_staged`,
+  `src/melder/crystallizer/crystal_loader_system/graft_runner.py:GraftRunner._hydrate_spellframe` and
+  `src/melder/crystallizer/persistence/record_version.py:RecordVersion`.
 - EVIDENCE: `src/melder/crystallizer/crystals/spell_crystal.py:SpellCrystal.custody_key`,
   `src/melder/crystallizer/persistence/persistence_profile.py:PersistenceProfile.get_spell_crystal`,
   `src/melder/crystallizer/crystallizer.py:Crystallizer._custody_key_for`,
@@ -3744,23 +3776,30 @@ Conjure validation report (2026-09-26):
   EVIDENCE: `src/melder/aether/spellbook/spell_compiler/validation/strategies/self_validation_strategy.py:SelfDependencyStrategy`
   and `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:CompilerPhase3._build_local_frame_dag`.
 
-Annotation matching by address key (2026-10-03, 0.2.8218):
-- `_resolve_single_by_annotation` and `_resolve_collection_by_annotation` match a candidate by KEY:
-  `CompilerPhase3._annotation_key` is `normalize_frame_key(annotation)` after the Optional/Union/ForwardRef
-  normalization, and `_spell_keys` gives each spell its address frame key (the spellframe, else its own name)
-  and its type key (`spell_name`; for an existing object the instance's class name). A class-object annotation
-  and its string spelling (a `TYPE_CHECKING`-only import leaves a string at runtime) are one key, an existing
-  object bound bare satisfies a consumer annotated with its class, and a spellframe is a category or a shape
-  label matched by name - never by object identity, so a concrete class used as a frame is just a name.
-  Before, the object path matched `spell.spell is annotation` / `spellframe is annotation` and the string path
-  matched names, which disagreed for existing objects and for `TYPE_CHECKING` imports.
-- The pass-scoped candidate index buckets each spell under its one or two keys (`{"by_key": ...}`); it is exact
-  for every pool, so the eq-risky gate and the scan fallback for custom `__eq__` pools are gone.
-  `_eq_safe_object` remains as the structural snapshot's replayability rule only. Ambiguity still raises;
-  Phase 4 still refuses two spells at one address; inheritance is not matched. Cache generation 18 retires
-  bundles captured under the identity matcher.
-- EVIDENCE: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:CompilerPhase3._annotation_key`, `CompilerPhase3._spell_keys`, `CompilerPhase3._matches_annotation`,
-  `CompilerPhase3._build_candidate_index`, `CompilerPhase3._indexed_annotation_candidates` and
+Annotation matching by kind (2026-10-04, 0.2.8222; replaces the 0.2.8218 address-key rule):
+- `CompilerPhase3._annotation_kind(annotation)` classifies the (Optional/Union/ForwardRef-normalized) annotation
+  as `_KIND_CONTRACT` (a Protocol class), `_KIND_TYPE` (any other class) or `_KIND_NAME` (a string - a
+  `TYPE_CHECKING`-only import leaves one at runtime). `_spell_keys_for(kind, spell, collection=...)` gives the
+  keys a spell answers under for that kind: type -> its type key (`normalize_frame_key(spell_name)`; an existing
+  object's class name); contract -> one key per `implemented_protocols` entry plus, when the spell IS a Protocol
+  bound `resolvable=False`, its own definition key, so the OVERRIDE_REQUIRED socket of a descriptive definition
+  still compiles while the resolvable preference picks a recorded implementer; name -> for a single socket the
+  type key and the contract keys (a string names a type or a contract, never a category), for a collection the
+  frame key (`spellframe_name`, else the spell's own name - the category or type of that name).
+- `_matches_annotation(spell, annotation, require_class_spell, collection=False)` is the ONE predicate; the scan
+  resolvers and the pass-scoped index agree by construction. `_build_candidate_index` buckets every spell into
+  four maps - `by_type`, `by_label`, `by_contract`, `by_definition` - and `_indexed_annotation_candidates`
+  reads the buckets `_index_buckets_for(kind, collection)` names (type: by_type; contract: by_contract +
+  by_definition; name single: by_type + by_contract; name collection: by_label) with the first-position /
+  last-object replay the single resolver relies on. A category sharing a class's name never enters that class's
+  candidates, so the MelderOps "spectrum" collision cannot recur; ambiguity between two spells of the type still
+  raises; Phase 4's one-address rule is unchanged. `_eq_safe_object` remains the structural snapshot's
+  replayability rule only. Cache generation 20 retires bundles captured under the name matcher.
+- History: 0.2.8218 matched by address KEY (frame key or type key, by name), which made a string category's
+  members providers of a same-named class; before that the object path matched by identity.
+- EVIDENCE: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:CompilerPhase3._annotation_kind`,
+  `CompilerPhase3._spell_keys_for`, `CompilerPhase3._matches_annotation`, `CompilerPhase3._build_candidate_index`,
+  `CompilerPhase3._index_buckets_for`, `CompilerPhase3._indexed_annotation_candidates` and
   `src/melder/utilities/helpers/general_helpers.py:SpellInputUtils.normalize_frame_key`.
 
 Caller-supplied container parameters (2026-09-26):
@@ -7103,8 +7142,9 @@ These flows describe concrete method sequences for core behaviors.
 
 ### Flow: Collection DI (list[FrameType])
 1. SpellRequirementsFinder classifies `list[FrameType]` as `ParameterDIShape.COLLECTION_BY_ANNOTATION`.
-2. `CompilerPhase3._resolve_collection_by_annotation(...)` scans all spells and
-   matches the frame annotation (methods/lambdas allowed).
+2. `CompilerPhase3._resolve_collection_by_annotation(...)` gathers the group the annotation's kind names
+   (0.2.8222): every spell of the class, every recorded implementer of the Protocol, or - for a string - every
+   spell whose frame key is that name (methods/lambdas allowed).
 3. The resulting candidate map (possibly empty) is injected as the collection dependency.
 
 ### Flow: Unresolved Input (Phase 3 -> Meld)
@@ -9828,7 +9868,7 @@ completed epics/stories of 2026-07-11/12).
   mid-describe) and ships AFTER (local truth leads the mirror);
   lenient + counted; untapped worlds pay one property read.
 - persistence/record_version.py - RecordVersion (static authority,
-  CURRENT "4.0.0" since 0.2.8214 ("2.0.0" when promoted), key "record_version"): stamps to_cached_item,
+  CURRENT "4.1.0" since 0.2.8222 ("4.0.0" at 0.2.8214, "2.0.0" when promoted), key "record_version"): stamps to_cached_item,
   capture_formation_record, and tap envelopes; check_readable refuses
   NEWER-major artifacts at from_cached_item (covers cache + external
   reloads) and load_formation_record; absent stamps read "0.0.0"
@@ -10299,6 +10339,12 @@ Companion documents:
   component and code-description patches are inputs to this document while a lane is open.
 
 ## Context / Handoff Summary
+
+2026-10-04 annotation matching by kind (0.2.8222): the Binding Pipeline entry carries the spellframe kind
+classification and the concrete-class refusal (Breaking) with the Spell's two new fields; the SpellCompiler entry
+replaces the 0.2.8218 address-key rule with the kind rule (one predicate, four index buckets, the descriptive
+definition's key); the Crystallizer entry carries the crystal's frame-kind keys, the loaders' hydration and
+shortfall, and RecordVersion 4.1.0; the collection DI flow names the group each kind gathers.
 
 2026-10-03 owner-store constants (0.2.8221): the SpellCompiler entry's emission bullets carry the eligible-site rule
 (`_owner_store_constant`), the bound namespace name, the postures that keep the per-creation read and the harness

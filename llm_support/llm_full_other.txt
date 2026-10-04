@@ -1,8 +1,8 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: other
-SOURCE FINGERPRINT: 936a78516f8957bfb5150f00eb53b73ad21a613e42a9fcd5cfb4b01b9c497db6
-FILE COUNT: 385
+SOURCE FINGERPRINT: 663389b50fd3bca49b4af394ec9d9cfd3c3ef02069d5f5e31707afcaecd5ec58
+FILE COUNT: 386
 
 ================================================================================
 BEGIN FILE: .gitattributes
@@ -64,7 +64,7 @@ END FILE: .gitattributes
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/BRANCH_WORKFLOW.md
-CONTENT SHA256: 19f0bbbfed8884531aa72b8bff1f6ba462b36eec0e17f11caa14ff269b8db105
+CONTENT SHA256: 32e2df18c3c140011258dc9a9ddef6c6cc32c26964bdf8ca0beead2edd9624e8
 SOURCE ENCODING: utf-8
 ================================================================================
 # Branch CI and release workflow
@@ -80,7 +80,7 @@ which checks must run; the final gate independently verifies that selection.
 | Event | Full runtime matrix | Other required work |
 | --- | --- | --- |
 | Feature PR into `dev` | Yes | Hygiene, source/repository assets and documentation |
-| `dev` PR into `preprod` | Yes | The same checks plus distribution verification and both benchmark gauntlets |
+| `dev` PR into `preprod` | Yes | The same checks plus distribution verification and the three benchmark jobs |
 | `preprod` PR into `release_candidate` | No | Hygiene and exact-tree full preprod proof |
 | `release-fix/*` PR into `release_candidate` | Yes | Full checks and distribution verification for changed contents |
 | `release_candidate` PR into `prod` | No | Hygiene and exact-source successful TestPyPI qualification |
@@ -159,9 +159,9 @@ and account for hosted hardware variation. A short correctness run is not a perf
 ## Persistent runtime series
 
 The dev-to-preprod PR also starts persistent-runtime-gauntlet.yml. It depends only on
-branch-policy, just like the real-world gauntlet, so both may run concurrently on separate
+branch-policy, just like the real-world gauntlet, so they may run concurrently on separate
 GitHub-hosted runner VMs. Each uses its own Ubuntu, Windows and Intel macOS jobs; runner
-availability may queue them. Both benchmark jobs must succeed for promotion.
+availability may queue them. Every benchmark job must succeed for promotion.
 
 Run benchmarks/testing_other_di/test_persistent_runtime_gauntlet_series.py with pytest -s.
 Edit persistent_runtime_gauntlet_series_runner.py for local settings and aggregation:
@@ -179,6 +179,29 @@ printed before launch. Per-cell logs/JSON and aggregate results.json, results.cs
 keep every duration/thread/scenario/library result separate, including completed rows after
 a later failure. CI publishes these reports, JUnit, source/runtime provenance and the summary
 under its own persistent-gauntlet artifact. The standalone workflow also supports a manual run.
+
+## Shallow thread scaling
+
+The dev-to-preprod PR also starts shallow-all-thread-scaling.yml. Like the other two benchmarks it
+depends only on branch-policy, so all three may run concurrently on separate GitHub-hosted runner
+VMs; runner availability may queue them. CI / merge-ready requires its success on that route and
+accepts the planned skip on every other route. The workflow itself remains manually runnable.
+
+It runs benchmarks/testing_other_di/test_shallow_all_thread_scaling.py on pinned Python 3.14.7
+(free-threaded, GIL off) with the same pinned dependencies as the other benchmarks, on Ubuntu x64,
+Windows x64 and macOS Intel x64. Each library (dependency-injector, dishka and melder) gets its
+own fresh pytest process through DI_LIBS, because a library measured second or third in one
+process runs 5-12% slower (benchmarks/testing_other_di/benchmarks.md). The thread-counts input
+(default 1,2,3,4,5; each from 1 to 5; the first count is the speedup baseline) and the
+duration-seconds input (default 15, at most 120) map to DI_THREAD_COUNTS and DI_DURATION_S; a
+blank input uses the benchmark default. The default is 225 seconds of measured work per OS.
+
+Each OS job lists steps/s, speedup and efficiency for every library and thread count in its
+summary and retains the shallow-thread-scaling artifact for 30 days: a JUnit file and log per
+library, results and outcome JSON, dependency pins/install report and source hashes/runtime
+provenance. Every requested thread count must report work, zero errors and a disabled GIL for
+every library, even when pytest exits zero. There is no speed threshold; compare matching thread
+counts within the same OS and account for hosted hardware variation.
 
 ## Supported Python versions
 
@@ -816,7 +839,7 @@ END FILE: .github/scripts/check_candidate_run.py
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/scripts/ci_policy.py
-CONTENT SHA256: 87797880c33f951ce78d31a8123f0c2f12de628e1d2aa3c84557c7a23238139c
+CONTENT SHA256: 0e4ee8e6293c59fbd38a4e094ea456a7676085f470ee99f204fa973797a63a54
 SOURCE ENCODING: utf-8
 ================================================================================
 """Read-only branch, merge-result, repository, and publication gates for CI."""
@@ -841,7 +864,9 @@ class CIPolicy:
     }
     CANDIDATE_JOBS: tuple[str, ...] = ("authorize", "source-qualification", "build", "publish", "install")
     FULL_JOBS: tuple[str, ...] = ("source-assets", "repo-assets", "tests", "documentation")
-    GAUNTLET_JOBS: tuple[str, ...] = ("real-world-gauntlet", "persistent-runtime-gauntlet")
+    GAUNTLET_JOBS: tuple[str, ...] = (
+        "real-world-gauntlet", "persistent-runtime-gauntlet", "shallow-all-thread-scaling",
+    )
     REQUIRED_JOBS: tuple[str, ...] = (
         "branch-policy", "hygiene", *FULL_JOBS, *GAUNTLET_JOBS, "source-qualification",
     )
@@ -925,7 +950,7 @@ def validation_requirements(event_name: str, event: Mapping[str, object], ref: s
     """Return runtime, package, source-proof, and gauntlet requirements for a validated event.
 
     Dev/preprod PRs, release-fix PRs and manual CI run full qualification.
-    Only the validated dev-to-preprod PR also requires both benchmark gauntlets.
+    Only the validated dev-to-preprod PR also requires all three benchmark jobs.
     Unchanged preprod promotions reuse source evidence; prod promotions consume
     the separate exact-candidate gate. Ordinary pushes have no source-CI profile.
     """
@@ -2571,7 +2596,7 @@ END FILE: .github/workflows/build-src-assets.yml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/workflows/ci.yml
-CONTENT SHA256: bf105d2cd233c2c90ba00e28b0984f8d4c267c262ff5ad50d2aeb5c4999421f8
+CONTENT SHA256: 7bef9e9926ae6eb998fa5e4f5b66aeee0595408428ca158be1fcbaab43655965
 SOURCE ENCODING: utf-8
 ================================================================================
 name: CI
@@ -2656,6 +2681,11 @@ jobs:
     if: needs.branch-policy.outputs.gauntlet-required == 'true'
     uses: ./.github/workflows/persistent-runtime-gauntlet.yml
 
+  shallow-all-thread-scaling:
+    needs: branch-policy
+    if: needs.branch-policy.outputs.gauntlet-required == 'true'
+    uses: ./.github/workflows/shallow-all-thread-scaling.yml
+
   documentation:
     needs: branch-policy
     if: needs.branch-policy.outputs.runtime-required == 'true'
@@ -2679,7 +2709,7 @@ jobs:
 
   merge-ready:
     name: CI / merge-ready
-    needs: [branch-policy, hygiene, source-assets, repo-assets, tests, real-world-gauntlet, persistent-runtime-gauntlet, documentation, packages, source-qualification]
+    needs: [branch-policy, hygiene, source-assets, repo-assets, tests, real-world-gauntlet, persistent-runtime-gauntlet, shallow-all-thread-scaling, documentation, packages, source-qualification]
     # Without always(), a failed dependency skips the very check required to
     # block merging. The script accepts only explicitly successful evidence.
     if: always()
@@ -3490,6 +3520,230 @@ jobs:
         run: python .github/scripts/ci_policy.py candidate-head
 ================================================================================
 END FILE: .github/workflows/release-candidate.yml
+================================================================================
+================================================================================
+BEGIN FILE: .github/workflows/shallow-all-thread-scaling.yml
+CONTENT SHA256: 956b1bb5bc1914adaee5fa1ba3e34c09eed071ba42eed473e60fd1e34562980d
+SOURCE ENCODING: utf-8
+================================================================================
+name: Shallow thread scaling (three OSes)
+
+# ci.yml invokes this only for dev-to-preprod promotion PRs.
+# This benchmark has its own runners and runs alongside the other two benchmark workflows.
+on:
+  workflow_call:
+    inputs:
+      thread-counts:
+        description: Comma-separated thread counts from 1 to 5; the first is the speedup baseline. Blank uses the benchmark default.
+        type: string
+        required: false
+        default: '1,2,3,4,5'
+      duration-seconds:
+        description: Measurement seconds for each thread count, greater than zero and at most 120. Blank uses the benchmark default.
+        type: string
+        required: false
+        default: '15'
+  workflow_dispatch:
+    inputs:
+      thread-counts:
+        description: Comma-separated thread counts from 1 to 5; the first is the speedup baseline. Blank uses the benchmark default.
+        type: string
+        required: false
+        default: '1,2,3,4,5'
+      duration-seconds:
+        description: Measurement seconds for each thread count, greater than zero and at most 120. Blank uses the benchmark default.
+        type: string
+        required: false
+        default: '15'
+
+permissions:
+  contents: read
+
+jobs:
+  scaling:
+    name: Thread scaling / ${{ github.head_ref || github.ref_name }} / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        # Keep all three on x64, rather than comparing Intel with Apple Silicon.
+        os: [ubuntu-24.04, windows-2025, macos-15-intel]
+    env:
+      PYTHONUNBUFFERED: '1'
+      PYTHONUTF8: '1'
+      PYTHONIOENCODING: utf-8
+      PYTHONPATH: ${{ github.workspace }}/src
+      PYTEST_DISABLE_PLUGIN_AUTOLOAD: '1'
+      DI_THREAD_COUNTS: ${{ inputs.thread-counts }}
+      DI_DURATION_S: ${{ inputs.duration-seconds }}
+      GAUNTLET_RUNNER_LABEL: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.14.7'
+          architecture: x64
+          freethreaded: true
+          allow-prereleases: false
+      - name: Install identical pinned benchmark dependencies
+        shell: python
+        run: |
+          import subprocess, sys
+          from pathlib import Path
+          pins = ['dependency-injector==4.49.1', 'dishka==1.10.1', 'pytest==9.1.1',
+                  'iniconfig==2.3.0', 'packaging==26.3', 'pluggy==1.6.0',
+                  'Pygments==2.21.0', 'colorama==0.4.6']
+          report = Path('thread-scaling-results')
+          report.mkdir(exist_ok=True)
+          (report / 'requirements.txt').write_text('\n'.join(pins) + '\n', encoding='utf-8')
+          command = [sys.executable, '-m', 'pip', 'install', '--only-binary=:all:',
+                     '--report', str(report / 'install-report.json'), *pins]
+          with (report / 'install.log').open('w', encoding='utf-8') as log:
+              process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                         text=True, encoding='utf-8', errors='replace')
+              for line in process.stdout:
+                  print(line, end='', flush=True)
+                  log.write(line)
+                  log.flush()
+              status = process.wait()
+          raise SystemExit(status)
+      - name: Record thread scaling provenance
+        env:
+          PYTHON_GIL: '0'
+        shell: python
+        run: |
+          import hashlib, json, os, platform, shutil, subprocess, sys, sysconfig
+          from pathlib import Path
+          sys.path.insert(0, str(Path.cwd()))
+          import dependency_injector.containers, dependency_injector.providers, dishka, melder
+          from benchmarks.testing_other_di import test_shallow_all_thread_scaling as scaling
+          report = Path('thread-scaling-results')
+          config = scaling._ScalingConfig.from_env()
+          libraries = list(scaling.shallow_all._selected_libs())
+          graphs = [graph.name for graph in scaling.shallow_all._selected_graphs()]
+          hashes = {}
+          for path in (Path('benchmarks/testing_other_di/test_shallow_all_thread_scaling.py'),
+                       Path('benchmarks/testing_other_di/test_shallow_all.py'),
+                       Path('tests/mocks/spellbook/deep_layers.py')):
+              hashes[path.as_posix()] = hashlib.sha256(path.read_bytes()).hexdigest()
+              shutil.copyfile(path, report / path.name)
+          data = {
+              'repository': os.environ['GITHUB_REPOSITORY'], 'commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
+              'event_sha': os.environ['GITHUB_SHA'], 'run_id': os.environ['GITHUB_RUN_ID'], 'run_attempt': os.environ['GITHUB_RUN_ATTEMPT'],
+              'python': sys.version, 'free_threaded_build': sysconfig.get_config_var('Py_GIL_DISABLED'),
+              'gil_enabled': sys._is_gil_enabled(), 'platform': platform.platform(), 'machine': platform.machine(),
+              'logical_cpu_count': os.cpu_count(), 'runner_label': os.environ['GAUNTLET_RUNNER_LABEL'],
+              'thread_counts': list(config.thread_counts), 'duration_seconds': config.duration_s,
+              'libraries': libraries, 'graphs': graphs, 'benchmark_sha256': hashes,
+          }
+          (report / 'environment.json').write_text(json.dumps(data, indent=2), encoding='utf-8')
+          (report / 'dependencies.txt').write_text(subprocess.check_output([sys.executable, '-m', 'pip', 'freeze'], text=True), encoding='utf-8')
+          print(json.dumps(data, indent=2))
+          assert sys.version_info[:3] == (3, 14, 7), sys.version
+          assert data['free_threaded_build'] == 1 and not data['gil_enabled'], 'Expected free-threaded GIL-off runtime'
+          assert platform.machine().lower() in ('x86_64', 'amd64'), platform.machine()
+          assert data['commit'] == data['event_sha'], 'Checkout differs from the triggered commit'
+          assert Path(melder.__file__).resolve().is_relative_to(Path('src').resolve()), 'Wrong Melder checkout imported'
+          assert 0 < config.duration_s <= 120, 'duration-seconds must be greater than zero and at most 120'
+          subprocess.run([sys.executable, '-m', 'pip', 'check'], check=True)
+      - name: Run thread scaling for each library in its own process
+        timeout-minutes: 100
+        env:
+          PYTHON_GIL: '0'
+        shell: python
+        run: |
+          import ast, json, os, re, subprocess, sys, time
+          from pathlib import Path
+          report = Path('thread-scaling-results')
+          expected = json.loads((report / 'environment.json').read_text(encoding='utf-8'))
+          counts = tuple(expected['thread_counts'])
+          seconds = '%.2f' % expected['duration_seconds']
+          target = 'benchmarks/testing_other_di/test_shallow_all_thread_scaling.py'
+          config_line = r'\[{lib}\] graph-mix scaling config: gil=(\w+), duration=([\d.]+)s, threads=(\([\d, ]+\)),'
+          result_line = (r'\[{lib}\] graph-mix scaling: threads=(\d+), duration=([\d.]+)s, steps=(\d+), '
+                         r'steps/s=([\d,]+), speedup_vs_1t=([\d.]+)x, efficiency=([\d.]+)%, '
+                         r'spellspaces=(\d+), errors=(\d+),')
+          rows, problems, exit_codes, commands = [], {}, {}, {}
+          started = time.monotonic()
+          for lib in expected['libraries']:
+              command = [sys.executable, '-X', 'gil=0', '-m', 'pytest', '-s', '-v', '-o', 'addopts=',
+                         '-o', 'markers=timeout: timeout metadata (bounded by Actions)',
+                         '--junitxml=thread-scaling-results/' + lib + '-junit.xml', target]
+              commands[lib] = command
+              captured = []
+              with (report / (lib + '.log')).open('w', encoding='utf-8') as log:
+                  process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                             text=True, encoding='utf-8', errors='replace',
+                                             env=dict(os.environ, DI_LIBS=lib, PYTHON_GIL='0'))
+                  for line in process.stdout:
+                      print(line, end='', flush=True)
+                      log.write(line)
+                      log.flush()
+                      captured.append(line)
+                  exit_codes[lib] = process.wait()
+              text = ''.join(captured)
+              configs = re.findall(config_line.replace('{lib}', re.escape(lib)), text)
+              results = re.findall(result_line.replace('{lib}', re.escape(lib)), text)
+              issues = []
+              if exit_codes[lib]:
+                  issues.append('pytest exited with ' + str(exit_codes[lib]))
+              if len(configs) != 1:
+                  issues.append('expected one config line, found ' + str(len(configs)))
+              else:
+                  gil, observed_seconds, observed_counts = configs[0]
+                  if gil != 'disabled':
+                      issues.append('GIL status was ' + gil)
+                  if observed_seconds != seconds:
+                      issues.append('duration was ' + observed_seconds + 's, expected ' + seconds + 's')
+                  if ast.literal_eval(observed_counts) != counts:
+                      issues.append('thread counts were ' + observed_counts + ', expected ' + repr(counts))
+              reported = tuple(int(row[0]) for row in results)
+              if reported != counts:
+                  issues.append('result lines covered ' + repr(reported) + ', expected ' + repr(counts))
+              for threads, elapsed, steps, rate, speedup, efficiency, spellspaces, errors in results:
+                  rows.append({'lib': lib, 'threads': int(threads), 'elapsed_s': float(elapsed), 'steps': int(steps),
+                               'steps_per_s': int(rate.replace(',', '')), 'speedup': float(speedup),
+                               'efficiency_percent': float(efficiency), 'spellspaces': int(spellspaces), 'errors': int(errors)})
+                  if int(steps) <= 0:
+                      issues.append('no work was done with ' + threads + ' thread(s)')
+                  if int(errors):
+                      issues.append(errors + ' error(s) with ' + threads + ' thread(s)')
+              problems[lib] = issues
+          valid = not any(problems.values())
+          table = ['### Shallow thread scaling on ' + os.environ['GAUNTLET_RUNNER_LABEL'], '',
+                   '| Library | Threads | Steps/s | Speedup vs ' + str(counts[0]) + ' thread(s) | Efficiency | Steps | Errors |',
+                   '| --- | ---: | ---: | ---: | ---: | ---: | ---: |']
+          for row in rows:
+              table.append('| %s | %d | %s | %.2fx | %.1f%% | %d | %d |' % (
+                  row['lib'], row['threads'], format(row['steps_per_s'], ','), row['speedup'],
+                  row['efficiency_percent'], row['steps'], row['errors']))
+          outcome = {'validation_passed': valid, 'exit_codes': exit_codes, 'problems': problems,
+                     'expected_rows': len(counts) * len(expected['libraries']), 'completed_rows': len(rows),
+                     'elapsed_seconds': time.monotonic() - started}
+          summary = '\n'.join(table) + '\n'
+          (report / 'commands.json').write_text(json.dumps(commands, indent=2), encoding='utf-8')
+          (report / 'results.json').write_text(json.dumps(rows, indent=2), encoding='utf-8')
+          (report / 'outcome.json').write_text(json.dumps(outcome, indent=2), encoding='utf-8')
+          (report / 'summary.md').write_text(summary, encoding='utf-8')
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a', encoding='utf-8') as stream:
+              stream.write(summary + '\nValidation: ' + json.dumps(outcome) + '\n')
+          failed = [code for code in exit_codes.values() if code]
+          if failed:
+              raise SystemExit(failed[0])
+          assert valid, 'Thread scaling is incomplete, mismatched, or did not remain GIL-off: ' + json.dumps(problems)
+      - name: Preserve thread scaling evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: shallow-thread-scaling-${{ matrix.os }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: thread-scaling-results/
+          if-no-files-found: warn
+          retention-days: 30
+================================================================================
+END FILE: .github/workflows/shallow-all-thread-scaling.yml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/workflows/test-runtime.yml
@@ -4838,7 +5092,7 @@ END FILE: NOTICE
 ================================================================================
 ================================================================================
 BEGIN FILE: README.md
-CONTENT SHA256: 51abfe7d6c94f1f6b4fa5e784d95a928100a32ab8f80729a955b60e0db85575e
+CONTENT SHA256: 49a82886c16772af6f21783d6cbbe2fef2022dac8e8902648e5a02484497551d
 SOURCE ENCODING: utf-8
 ================================================================================
 <div align="center">
@@ -5230,8 +5484,11 @@ primary = conduit.meld("PostgresStore", binding_name="primary")
 ## 🟢 Spellframes — Categories Inside a World
 <sub>**Beginner.** The organizing half of every address.</sub>
 
-A `spellframe` is the **category** half of the Address Law. It can be a plain
-string when you just want grouping, or a `Protocol` when you want a *shape*:
+A `spellframe` is the **category** half of the Address Law. It is a plain
+string when you just want grouping, or a `Protocol` when you want a *contract*.
+Nothing else is a spellframe: a concrete class is refused at `bind()` with a
+`TypeError` that names the two forms (pass `spellframe="Name"` to group under
+its name, or declare the shape as a `typing.Protocol`).
 
 ```python
 # strings — organize by role
@@ -5245,9 +5502,12 @@ api  = conduit.meld(spellframe="web",     binding_name="users")
 ```
 
 Same `binding_name`, two categories, **two distinct addresses** — names never
-collide across spellframes. And because a `Protocol` works as a spellframe, one
-category can mean "everything that satisfies this shape," which is exactly what
-collection DI resolves:
+collide across spellframes. A string frame is only a label: it groups, it is
+addressable, and it never makes its members providers of anything. A `Protocol`
+frame is a label **and a contract**: `bind()` checks the spell against the
+Protocol's own public members, records the Protocol on the binding, and a
+parameter annotated with that Protocol resolves exactly its recorded
+implementers — which is what collection DI gathers:
 
 ```python
 book.bind(spell=EmailHandler, existence="unique",
@@ -5259,10 +5519,13 @@ book.bind(spell=EmailHandler, existence="unique",
 
 Annotate a constructor parameter. Melder builds the graph.
 
-The annotation is a type reference and resolves by name, the same lowercased name every spell address
-uses: a class bound bare answers to its class name, an existing object to its instance's class name, and a
-spell bound under a `spellframe` to that frame's name as well. A `TYPE_CHECKING`-only import, which leaves a
-string at runtime, resolves exactly as the class object does.
+What an annotation selects depends on what it is. A **class** selects the spells of that type — a class
+bound bare, or an existing object of that class — and nothing else: a category that happens to share the
+class's name does not turn its members into providers. A **Protocol** selects the spells bound under it as
+their contract. A **`TYPE_CHECKING`-only import**, which leaves a string at runtime, resolves by name to a
+type or a contract, never to a string category. `list[...]` gathers the group the annotation's kind names:
+every spell of the class, every implementer of the Protocol, or — for a string — every member of the
+category or type of that name.
 
 ```python
 class ReportService:
@@ -64538,7 +64801,7 @@ def test_shallow_all_melder_route_diagnostics(graph: object) -> None:
 END FILE: benchmarks/testing_other_di/test_shallow_all_diagnostics.py
 ================================================================================
 ================================================================================
-BEGIN FILE: benchmarks/testing_other_di/test_shallow_all_thread_scalling.py
+BEGIN FILE: benchmarks/testing_other_di/test_shallow_all_thread_scaling.py
 CONTENT SHA256: ec7dc25f77830eb63031dcc6973ba4a5f09a580dbff61a1f17fab8c6d3ea6924
 SOURCE ENCODING: utf-8
 ================================================================================
@@ -64923,7 +65186,7 @@ def test_threaded_shallow_all_graph_mix_scaling(lib: str) -> None:
             f"per_graph=({per_graph_summary})"
         )
 ================================================================================
-END FILE: benchmarks/testing_other_di/test_shallow_all_thread_scalling.py
+END FILE: benchmarks/testing_other_di/test_shallow_all_thread_scaling.py
 ================================================================================
 ================================================================================
 BEGIN FILE: benchmarks/testing_other_di/test_shallow_diagnostics.py
@@ -73473,10 +73736,10 @@ END FILE: release_docs/0.2.82.md
 ================================================================================
 ================================================================================
 BEGIN FILE: release_docs/next_version_release.md
-CONTENT SHA256: 3c1e5621c1fe55beb24bd436fa5f5144b9bc26b42ebbea211db134db80005055
+CONTENT SHA256: d98952c31d5894ca5330f51be8313d33cf376f63626518b1f07136f3c07c60ea
 SOURCE ENCODING: utf-8
 ================================================================================
-# Melder 0.2.8221
+# Melder 0.2.8222
 
 **Unreleased**
 
@@ -73883,23 +74146,41 @@ maintainers' VM (3.14t, GIL off): the plan body of a root over existing objects 
 miss; no API change. Creation-cache generation 17 retires executors emitted with the eager dict, so the first
 conjure after upgrading regenerates them.
 
-## A consumer's annotation resolves by address key
+## A consumer's annotation selects by kind: a category never provides, a Protocol frame is a contract
 
-Phase 3 now matches a constructor annotation to candidate spells by key - the same lowercased name every
-spell address already uses - against each spell's frame key (its `spellframe`, else its own name) and its type
-key (its class name; for an existing object, the instance's class name). Before, a class-object annotation was
-matched by object identity while a string annotation was matched by name, so an existing object bound bare
-satisfied `service: "Service"` (a `TYPE_CHECKING`-only import) but not `service: Service`, and a concrete
-class used as a `spellframe` resolved as if it were the type. Now:
+**Breaking change:** a `spellframe` is a string category or a `typing.Protocol` contract, and nothing else.
+`bind(spell=Impl, spellframe=SomeClass)` with a concrete class now raises `TypeError` naming the two valid
+forms. To upgrade, pass the class's name to keep the grouping (`spellframe="SomeClass"`), or declare the shape
+as a `Protocol` to make it a contract the spell is checked against. Before 0.2.8222 the class was accepted and
+matched by name, so a same-named single annotation resolved everything grouped under it.
 
-- an existing object bound without a spellframe satisfies a consumer annotated with its class;
-- a binding resolves identically whether the consumer imported the type under `TYPE_CHECKING` or at runtime;
-- a spellframe is a category or a shape label (a string, a Protocol): it is matched by name, never by
-  identity, and a concrete class used as one is just a name.
+What an annotation selects now follows from what the annotation is:
 
-Nothing that resolved before stops resolving; ambiguity still raises in Phase 3 and two spells at one address
-are still refused in Phase 4. Creation-cache generation 18 retires bundles captured under the old matcher,
-whose structural rows may hold an unresolved input the key matcher resolves.
+- a **class** selects the spells of that type - a class bound bare, or an existing object of that class. A
+  category that happens to share the class's name does not turn its members into providers: fourteen
+  framework classes grouped under `spellframe="spectrum"` no longer raise an ambiguity for a consumer declared
+  `spectrum: Spectrum`, which was the MelderOps defect this fixes;
+- a **Protocol** selects the spells bound under it as their contract (and the Protocol's own definition when it
+  is bound `resolvable=False`, so a descriptive definition still compiles its override socket; an implementer is
+  preferred);
+- a **`TYPE_CHECKING`-only import**, which leaves a string at runtime, selects a type or a contract by name and
+  never a string category;
+- `list[...]` gathers the group the annotation's kind names: every spell of the class, every implementer of the
+  Protocol, or - for a string - every spell whose frame key is that name.
+
+The binding records what its frame is: `Spell.spellframe_kind` (`SpellframeKind.none` / `category` /
+`contract`, exported at the package root) and `Spell.implemented_protocols` (the Protocol it was checked
+against). The crystallizer records them too (record version 4.1.0; 4.0.0 records stay readable), so a restored
+or grafted world rebinds a Protocol frame as the Protocol, not as a same-named category; when the Protocol
+cannot be imported at restore the spell is bound under the recorded name as a category and the report files a
+`spell_crystal` shortfall saying so. Explicit addressing (`SpellMap`, `SpellContract`, `meld(spellframe=...,
+binding_name=...)`) is unchanged; ambiguity between two spells of the type still raises in Phase 3 and two
+spells at one address are still refused in Phase 4. Creation-cache generation 20 retires bundles captured under
+the 0.2.8218 name matcher.
+
+What 0.2.8218 brought and 0.2.8222 keeps: an existing object bound bare satisfies a consumer annotated with
+its class, and a binding resolves identically whether the consumer imported the type under `TYPE_CHECKING` or
+at runtime.
 
 ## Shared singleton sites read their store as a constant
 
@@ -73963,7 +74244,14 @@ no `unique` dependency are byte-identical.
 - The packaged system documents describe the owner-store constant of a `unique` site in an automatic world:
   the eligible-site rule, the bound namespace name, the posture that keeps the read and the harness numbers;
   the site-plan lowering's code-map extents are remeasured.
-- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8221.
+- The internal-bind guard manifest holds 621 entries at 0.2.8222: `SpellframeKind`, the frame-kind enum a
+  binding records, is Melder-internal and cannot be bound as a spell.
+- The README's spellframe and dependency-injection sections state the kind rule (string or Protocol frames
+  only; what a class, a Protocol and a `TYPE_CHECKING` string select; what `list[...]` gathers). The packaged
+  system documents describe the frame classification and refusal, the Spell's two new fields, the kind-aware
+  predicate and its four index buckets, the crystal's frame-kind keys, the loaders' hydration and shortfall
+  and record version 4.1.0; the 0.2.8218 invariant is marked superseded.
+- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8222.
 ================================================================================
 END FILE: release_docs/next_version_release.md
 ================================================================================

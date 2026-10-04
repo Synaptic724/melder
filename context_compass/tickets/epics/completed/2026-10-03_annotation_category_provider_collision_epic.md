@@ -2,12 +2,19 @@
 
 ## Metadata
 - Epic ID: EPIC-2026-10-03-annotation_category_provider_collision
-- Status: in_progress
+- Status: done
 - Owner: project owner; native implementation owner to be assigned after review
 - Agent Name: command_2 (evidence author), fable_1 (native implementation owner, 2026-10-03)
 - Priority: p1
 - Created: 2026-10-03T22:21:08Z
-- Updated: 2026-10-03T23:52:00Z
+- Updated: 2026-10-04T12:20:00Z
+
+- Completed: 2026-10-04T12:20:00Z
+- Summary: Native repair landed at Melder 0.2.8222 (fable_1; story and two tasks completed): spellframe kind recorded on the
+  binding, concrete-class frames refused, kind-aware Phase 3, crystal frame kind (record 4.1.0), generation 20;
+  docs, graph, release note, assets and bundles current. Closed by owner directive (2026-10-04 06:12 local); the
+  exit gate's consumer item - the unchanged Actions replacement test on a delivered build - was not reported and
+  stays with the owner; a failure there opens a new task.
 - Target Window: owner-selected after Anthropic review
 - Related Program/Initiative: MelderOps native Actions factory acceptance
 - Related Epic: tickets/epics/2026-10-03_rebind_after_first_meld_epic.md
@@ -198,6 +205,21 @@ spectrum_host_bootstrap.py 7A7ACEEB and command_center_definitions.py 24D85FA1
   NEXT: Give this draft and the exact paths/hashes to the owner-selected Anthropic reviewers.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
+
+- DATETIME: 2026-10-04T11:58:00Z
+  TYPE: DECISION
+  CLAIM: The native repair landed at Melder 0.2.8222 (fable_1): a spellframe is a string category or a Protocol
+    contract (concrete classes refused at bind - Breaking), the binding records its kind, and Phase 3 selects by
+    the annotation's kind, so a type annotation never reads a same-named category as its provider set. The exit
+    gate's remaining items are owner-owed: the tier run after the final regressions and the unchanged Actions
+    replacement test on a delivered 0.2.8222 build.
+  EVIDENCE:
+  - tickets/tasks/completed/2026-10-04_repair_annotation_kind_matching_task.md:14-24
+  - tickets/stories/2026-10-03_annotation_type_vs_category_matching_story.md:157-172
+  IMPACT: program direction settled; the epic closes on the owner's acceptance report.
+  NEXT: owner runs the tiers and the Actions case; a failure opens a new task under this epic.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
 
 ## Context / Handoff Summary
 Draft epic only. No native source, test-suite, version, wheel, shared board or artifact-board

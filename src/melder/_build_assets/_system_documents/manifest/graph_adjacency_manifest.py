@@ -13,8 +13,8 @@ Regenerate with:
     python src/melder/_build_assets/_build_asset_runner.py
 """
 
-BUILT_FOR_VERSION = "0.2.8221"
-NODE_COUNT = 1212
+BUILT_FOR_VERSION = "0.2.8222"
+NODE_COUNT = 1215
 EDGE_COUNT = 1394
 WHY_COUNT = 939
 RELATIONS = ('binds_into', 'borrows', 'creates', 'delegates_to', 'holds', 'implements', 'owns', 'owns_lifecycle_of', 'specializes', 'used_by', 'uses', 'validates')
@@ -292,7 +292,7 @@ NODES = {
     'melder.aether.conduit.spell_space.spell_space_thread_state.SpellSpaceThreadState': ('src/melder/aether/conduit/spell_space/spell_space_thread_state.py', 'SpellSpaceThreadState', 'class', 65, False),
     'melder.aether.conduit.spell_space.spell_space_thread_state._SpellSpaceLocal': ('src/melder/aether/conduit/spell_space/spell_space_thread_state.py', '_SpellSpaceLocal', 'class', 10, False),
     'melder.aether.spellbook.bind.bind': ('src/melder/aether/spellbook/bind/bind.py', 'bind', 'module', 1, False),
-    'melder.aether.spellbook.bind.bind.Bind': ('src/melder/aether/spellbook/bind/bind.py', 'Bind', 'class', 126, False),
+    'melder.aether.spellbook.bind.bind.Bind': ('src/melder/aether/spellbook/bind/bind.py', 'Bind', 'class', 128, False),
     'melder.aether.spellbook.bind.scan': ('src/melder/aether/spellbook/bind/scan.py', 'scan', 'module', 1, False),
     'melder.aether.spellbook.bind.scan.Scan': ('src/melder/aether/spellbook/bind/scan.py', 'Scan', 'class', 239, False),
     'melder.aether.spellbook.bind.scan.ScanBindMetadata': ('src/melder/aether/spellbook/bind/scan.py', 'ScanBindMetadata', 'class', 55, False),
@@ -307,7 +307,7 @@ NODES = {
     'melder.aether.spellbook.resolution_style_matrix': ('src/melder/aether/spellbook/resolution_style_matrix.py', 'resolution_style_matrix', 'module', 1, False),
     'melder.aether.spellbook.resolution_style_matrix.ResolutionStyleMatrix': ('src/melder/aether/spellbook/resolution_style_matrix.py', 'ResolutionStyleMatrix', 'class', 44, False),
     'melder.aether.spellbook.spell': ('src/melder/aether/spellbook/spell.py', 'spell', 'module', 1, False),
-    'melder.aether.spellbook.spell.Spell': ('src/melder/aether/spellbook/spell.py', 'Spell', 'class', 61, False),
+    'melder.aether.spellbook.spell.Spell': ('src/melder/aether/spellbook/spell.py', 'Spell', 'class', 62, False),
     'melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_injection_analysis': ('src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_injection_analysis.py', 'spell_injection_analysis', 'module', 1, False),
     'melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_injection_analysis.SpellInjectionAnalysis': ('src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_injection_analysis.py', 'SpellInjectionAnalysis', 'class', 169, False),
     'melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_injection_analysis.SpellInjectionInstanceSpec': ('src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_injection_analysis.py', 'SpellInjectionInstanceSpec', 'class', 81, False),
@@ -514,7 +514,7 @@ NODES = {
     'melder.aether.spellbook.spell_compiler.phases.compiler_phase_2': ('src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_2.py', 'compiler_phase_2', 'module', 1, False),
     'melder.aether.spellbook.spell_compiler.phases.compiler_phase_2.CompilerPhase2': ('src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_2.py', 'CompilerPhase2', 'class', 33, False),
     'melder.aether.spellbook.spell_compiler.phases.compiler_phase_3': ('src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py', 'compiler_phase_3', 'module', 1, False),
-    'melder.aether.spellbook.spell_compiler.phases.compiler_phase_3.CompilerPhase3': ('src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py', 'CompilerPhase3', 'class', 52, False),
+    'melder.aether.spellbook.spell_compiler.phases.compiler_phase_3.CompilerPhase3': ('src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py', 'CompilerPhase3', 'class', 66, False),
     'melder.aether.spellbook.spell_compiler.phases.compiler_phase_4': ('src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_4.py', 'compiler_phase_4', 'module', 1, False),
     'melder.aether.spellbook.spell_compiler.phases.compiler_phase_4.CompilerPhase4': ('src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_4.py', 'CompilerPhase4', 'class', 39, False),
     'melder.aether.spellbook.spell_compiler.phases.compiler_phase_5': ('src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py', 'compiler_phase_5', 'module', 1, False),
@@ -712,6 +712,9 @@ NODES = {
     'melder.aether.spellbook.spellbook.Spellbook': ('src/melder/aether/spellbook/spellbook.py', 'Spellbook', 'class', 69, False),
     'melder.aether.spellbook.spellbook_creation_system': ('src/melder/aether/spellbook/spellbook_creation_system.py', 'spellbook_creation_system', 'module', 1, False),
     'melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem': ('src/melder/aether/spellbook/spellbook_creation_system.py', 'SpellbookCreationSystem', 'class', 54, False),
+    'melder.aether.spellbook.spellframe_kind': ('src/melder/aether/spellbook/spellframe_kind/__init__.py', 'spellframe_kind', 'module', 1, True),
+    'melder.aether.spellbook.spellframe_kind.spellframe_kind': ('src/melder/aether/spellbook/spellframe_kind/spellframe_kind.py', 'spellframe_kind', 'module', 1, False),
+    'melder.aether.spellbook.spellframe_kind.spellframe_kind.SpellframeKind': ('src/melder/aether/spellbook/spellframe_kind/spellframe_kind.py', 'SpellframeKind', 'enum', 4, False),
     'melder.crystallizer.asset_management.adapters.sqlite_mesh_adapter': ('src/melder/crystallizer/asset_management/adapters/sqlite_mesh_adapter.py', 'sqlite_mesh_adapter', 'module', 1, False),
     'melder.crystallizer.asset_management.adapters.sqlite_mesh_adapter.SqliteMeshAdapter': ('src/melder/crystallizer/asset_management/adapters/sqlite_mesh_adapter.py', 'SqliteMeshAdapter', 'class', 18, False),
     'melder.crystallizer.asset_management.asset_management_system': ('src/melder/crystallizer/asset_management/asset_management_system.py', 'asset_management_system', 'module', 1, False),

@@ -98,7 +98,7 @@ def record_environment(source_qualification: ModuleType, tmp_path: pathlib.Path,
     monkeypatch.setenv("CI_SOURCE_REQUIRED", "false")
     monkeypatch.setenv("CI_GAUNTLET_REQUIRED", "true")
     results = {name: {"result": "success"} for name in (
-        "branch-policy", "hygiene", "source-assets", "repo-assets", "tests", "real-world-gauntlet", "persistent-runtime-gauntlet", "documentation", "packages",
+        "branch-policy", "hygiene", "source-assets", "repo-assets", "tests", "real-world-gauntlet", "persistent-runtime-gauntlet", "shallow-all-thread-scaling", "documentation", "packages",
     )}
     results["source-qualification"] = {"result": "skipped"}
     monkeypatch.setenv("CI_JOB_RESULTS", json.dumps(results))
@@ -259,7 +259,7 @@ def test_rc_fix_uses_its_own_full_pr_qualification(source_qualification: ModuleT
     assert result["expected"]["pull_request"] == 12
 
 
-@pytest.mark.parametrize("mode", ["sha", "dirty", "parents", "failed-tests", "failed-gauntlet", "skipped-gauntlet", "failed-persistent", "skipped-persistent"])
+@pytest.mark.parametrize("mode", ["sha", "dirty", "parents", "failed-tests", "failed-gauntlet", "skipped-gauntlet", "failed-persistent", "skipped-persistent", "failed-scaling", "skipped-scaling"])
 def test_record_refuses_unqualified_checkout(source_qualification: ModuleType, record_environment: GitState,
                                             monkeypatch: pytest.MonkeyPatch, mode: str) -> None:
     """Only the exact clean tested checkout and genuinely successful required jobs can issue a record."""
@@ -272,6 +272,7 @@ def test_record_refuses_unqualified_checkout(source_qualification: ModuleType, r
     else:
         results = json.loads(os.environ["CI_JOB_RESULTS"])
         job = ("persistent-runtime-gauntlet" if mode.endswith("persistent")
+               else "shallow-all-thread-scaling" if mode.endswith("scaling")
                else "real-world-gauntlet" if mode.endswith("gauntlet") else "tests")
         results[job]["result"] = "skipped" if mode.startswith("skipped-") else "failure"
         monkeypatch.setenv("CI_JOB_RESULTS", json.dumps(results))
@@ -290,7 +291,7 @@ def test_light_run_cannot_record_full_evidence(source_qualification: ModuleType,
     monkeypatch.setenv("CI_SOURCE_REQUIRED", "true")
     monkeypatch.setenv("CI_GAUNTLET_REQUIRED", "false")
     results = json.loads(os.environ["CI_JOB_RESULTS"])
-    for name in ("source-assets", "repo-assets", "tests", "real-world-gauntlet", "persistent-runtime-gauntlet", "documentation", "packages"):
+    for name in ("source-assets", "repo-assets", "tests", "real-world-gauntlet", "persistent-runtime-gauntlet", "shallow-all-thread-scaling", "documentation", "packages"):
         results[name]["result"] = "skipped"
     results["source-qualification"]["result"] = "success"
     monkeypatch.setenv("CI_JOB_RESULTS", json.dumps(results))

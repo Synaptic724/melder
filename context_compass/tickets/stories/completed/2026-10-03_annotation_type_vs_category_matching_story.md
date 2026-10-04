@@ -5,12 +5,20 @@
 ## Metadata
 - Story ID: STORY-2026-10-03-annotation-type-vs-category-matching
 - Epic: EPIC-2026-10-03-annotation_category_provider_collision
-- Status: in_progress
+- Status: done
 - Owner: user
 - Agent Name: fable_1
 - Priority: p1
 - Created: 2026-10-03T23:52:00Z
-- Updated: 2026-10-04T01:25:00Z
+- Updated: 2026-10-04T12:20:00Z
+
+- Completed: 2026-10-04T12:20:00Z
+- Summary: Repair landed at 0.2.8222 (both tasks completed): annotations select by kind, a category never provides, a
+  Protocol frame is a recorded contract, concrete-class frames are refused (Breaking). Owner's Windows tier run:
+  component 2292/2293 and integration 2037/2040 with the four failures classified as the fixed-name cache temp
+  file race (backlog task opened); git runner green. Turned in by owner directive (2026-10-04 06:12 local); the
+  consumer acceptance (unchanged Actions replacement test on a delivered 0.2.8222 build) was not reported and
+  stays with the owner.
 
 ## User Narrative
 As a Melder host that groups many definitions under one spellframe category (MelderOps: 14 framework classes
@@ -59,10 +67,10 @@ addressing (SpellMap/SpellContract, meld by address) left as the intentional cat
   rebind lifecycle (landed at 0.2.8219).
 
 ## State Transition Event
-- from_state: draft
-- to_state: in_progress
-- transition_reason: owner assigned the epic to fable_1 in chat (2026-10-03 17:46 local: "theres a new epic
-  for you about spectrum ... its a correctness bug again with spellframes").
+- from_state: in_progress
+- to_state: review
+- transition_reason: both tasks closed (repair landed at 0.2.8222, owner directive 2026-10-03 23:34 local); the
+  owner's tier run and the consumer acceptance (unchanged Actions replacement test) remain.
 
 ## Dependencies / Related Work
 - tickets/epics/2026-10-03_annotation_category_provider_collision_epic.md
@@ -70,14 +78,14 @@ addressing (SpellMap/SpellContract, meld by address) left as the intentional cat
 - tickets/epics/2026-10-03_rebind_after_first_meld_epic.md (distinct, repaired at 0.2.8219)
 
 ## Tasks (Implementation Checklist)
-- [ ] Task: TASK-2026-10-03-reproduce-annotation-category-collision - Melder-only reproduction of the
+- [x] Task: TASK-2026-10-03-reproduce-annotation-category-collision - Melder-only reproduction of the
       four-case probe on current source, the matcher read in full, the semantics options with evidence
       (STRATEGY_DISCUSSION), the owner's DECISION.
-      tickets/tasks/2026-10-03_reproduce_annotation_category_collision_task.md
-- [ ] Task: TASK-2026-10-04-repair-annotation-kind-matching - the decided change set: spellframe kind on the
+      tickets/tasks/completed/2026-10-03_reproduce_annotation_category_collision_task.md
+- [x] Task: TASK-2026-10-04-repair-annotation-kind-matching - the decided change set: spellframe kind on the
       binding, concrete-class frame refusal, kind-aware Phase 3, crystal frame kind, generation 20, sweep,
       docs, notch, note, rebuild.
-      tickets/tasks/2026-10-04_repair_annotation_kind_matching_task.md
+      tickets/tasks/completed/2026-10-04_repair_annotation_kind_matching_task.md
 - [ ] Enforce Ticket Microcycle across all linked tasks.
 - [ ] Require meaningful-finding note updates during discovery/implementation.
 
@@ -162,6 +170,40 @@ addressing (SpellMap/SpellContract, meld by address) left as the intentional cat
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-10-04T11:58:00Z
+  TYPE: DECISION
+  CLAIM: Gate transition to review: the repair landed at 0.2.8222 and both tasks are closed by owner directive. Remaining
+  gates are owner-owed: the four tiers after the final regressions (commands in the repair task's Validation
+  section) and the consumer acceptance - the unchanged Actions replacement test on a delivered 0.2.8222 build. Two
+  follow-ups opened in the backlog (deeper Protocol check; `implements=`). The semantic story the acceptance
+  depends on: `spectrum: Spectrum` selects the host alone while fourteen classes share spellframe "spectrum"
+  (regression module case test_many_category_members_never_become_providers_for_the_type).
+  EVIDENCE:
+  - tickets/tasks/completed/2026-10-04_repair_annotation_kind_matching_task.md:14-24
+  - tests/integration/melder/aether/conduit/test_annotation_category_collision_integration.py:482-515
+  IMPACT: no agent work is owed until the owner reports the tiers and the acceptance.
+  NEXT: owner runs the tiers; on green, installs 0.2.8222 in priv_commandops and reruns the Actions case.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-04T12:15:00Z
+  TYPE: MEASURE
+  CLAIM: OWNER TIER RUN on Windows (3.14t, `-n 4`), 0.2.8222: component 2292 passed / 1 failed; integration 2037 passed /
+  3 failed / 4 xfailed / 2 xpassed. All four failures are one mechanism and not this change: `PermissionError`
+  writing `src/melder/__melder_cache__/__conjure_cache__/default/root.melc.tmp` - the conjure cache's temp file
+  has a FIXED name (`bundle_path.with_suffix(".melc.tmp")`), so two xdist workers emitting the cache of a conduit
+  named "root" on the default frame at the same moment collide; Windows refuses the second open/replace where
+  Linux does not, which is why the owner's git runner passes. The failing tests (fast door, ForwardRef SpellMap
+  default, meld by class + binding_name, meld by name + binding_name) share nothing with annotation matching
+  and differ from run to run. Unit and other tiers: not yet reported.
+  EVIDENCE:
+  - src/melder/utilities/caching_system/caching_system.py:884-891
+  IMPACT: the tier gate is met on the owner's CI; the Windows collision is a pre-existing robustness gap - a
+  per-process temp name would remove it (backlog task opened).
+  NEXT: owner reruns the four by node id (or `-n 0`) if he wants a local green; then the Actions acceptance.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Acceptance criteria confirmed by user
@@ -174,8 +216,8 @@ addressing (SpellMap/SpellContract, meld by address) left as the intentional cat
 - Keep notes append-only and preserve UNKNOWN-first promotion discipline.
 
 ## Context / Handoff Summary
-STATE 2026-10-03T23:52:00Z: IN_PROGRESS. Lane opened on the owner's word; the reproduction task carries the work.
-Resume from its latest note's NEXT.
+STATE 2026-10-04T11:58:00Z: REVIEW. Repair landed at 0.2.8222 (both tasks completed); owner-owed: the tier run and
+the consumer acceptance on the delivered build. Resume from the latest note's NEXT.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

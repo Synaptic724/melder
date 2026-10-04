@@ -12,7 +12,7 @@ import pytest
 def result_map() -> dict[str, object]:
     """Build the complete, successful dependency report emitted by the CI workflow."""
     return {name: {"result": "success"} for name in
-            ("branch-policy", "hygiene", "source-assets", "repo-assets", "tests", "real-world-gauntlet", "persistent-runtime-gauntlet", "documentation",
+            ("branch-policy", "hygiene", "source-assets", "repo-assets", "tests", "real-world-gauntlet", "persistent-runtime-gauntlet", "shallow-all-thread-scaling", "documentation",
              "source-qualification", "packages")}
 
 
@@ -178,7 +178,7 @@ def test_stale_or_wrong_context_candidate_cannot_publish(policy: ModuleType, eve
 
 
 @pytest.mark.parametrize("job", ["branch-policy", "hygiene", "source-assets", "repo-assets", "tests",
-                                "real-world-gauntlet", "persistent-runtime-gauntlet", "documentation", "source-qualification", "packages"])
+                                "real-world-gauntlet", "persistent-runtime-gauntlet", "shallow-all-thread-scaling", "documentation", "source-qualification", "packages"])
 def test_missing_dependency_evidence_never_passes(policy: ModuleType, job: str) -> None:
     """Deleting a failed job from the report must not conceal its absence."""
     results = result_map()
@@ -417,6 +417,7 @@ def test_light_ci_accepts_only_intentional_skips_and_required_proof(policy: Modu
     results["packages"] = {"result": "skipped"}
     results["real-world-gauntlet"] = {"result": "skipped"}
     results["persistent-runtime-gauntlet"] = {"result": "skipped"}
+    results["shallow-all-thread-scaling"] = {"result": "skipped"}
     results["source-qualification"] = {"result": "success" if source_required else "skipped"}
     policy.require_success(results, False, False, source_required)
     if source_required:
@@ -517,7 +518,7 @@ def test_coverage_driver_preserves_runtime_contract_and_pytest_exit(runtime: Mod
     assert junit.parent.is_dir() and coverage.parent.is_dir()
 
 
-@pytest.mark.parametrize("job", ["real-world-gauntlet", "persistent-runtime-gauntlet"])
+@pytest.mark.parametrize("job", ["real-world-gauntlet", "persistent-runtime-gauntlet", "shallow-all-thread-scaling"])
 @pytest.mark.parametrize("required", [False, True])
 @pytest.mark.parametrize("result", ["success", "skipped", "failure", "cancelled", "timed_out", None])
 def test_gauntlet_skip_depends_on_the_promotion_requirement(policy: ModuleType,
@@ -551,5 +552,6 @@ def test_merge_gate_allows_feature_skip_but_refuses_promotion_skip(
     results = result_map()
     results["real-world-gauntlet"] = {"result": "skipped"}
     results["persistent-runtime-gauntlet"] = {"result": "skipped"}
+    results["shallow-all-thread-scaling"] = {"result": "skipped"}
     monkeypatch.setenv("CI_JOB_RESULTS", json.dumps(results))
     assert policy.main(["merge-ready"]) == exit_code

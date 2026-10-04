@@ -11,7 +11,7 @@ which checks must run; the final gate independently verifies that selection.
 | Event | Full runtime matrix | Other required work |
 | --- | --- | --- |
 | Feature PR into `dev` | Yes | Hygiene, source/repository assets and documentation |
-| `dev` PR into `preprod` | Yes | The same checks plus distribution verification and both benchmark gauntlets |
+| `dev` PR into `preprod` | Yes | The same checks plus distribution verification and the three benchmark jobs |
 | `preprod` PR into `release_candidate` | No | Hygiene and exact-tree full preprod proof |
 | `release-fix/*` PR into `release_candidate` | Yes | Full checks and distribution verification for changed contents |
 | `release_candidate` PR into `prod` | No | Hygiene and exact-source successful TestPyPI qualification |
@@ -90,9 +90,9 @@ and account for hosted hardware variation. A short correctness run is not a perf
 ## Persistent runtime series
 
 The dev-to-preprod PR also starts persistent-runtime-gauntlet.yml. It depends only on
-branch-policy, just like the real-world gauntlet, so both may run concurrently on separate
+branch-policy, just like the real-world gauntlet, so they may run concurrently on separate
 GitHub-hosted runner VMs. Each uses its own Ubuntu, Windows and Intel macOS jobs; runner
-availability may queue them. Both benchmark jobs must succeed for promotion.
+availability may queue them. Every benchmark job must succeed for promotion.
 
 Run benchmarks/testing_other_di/test_persistent_runtime_gauntlet_series.py with pytest -s.
 Edit persistent_runtime_gauntlet_series_runner.py for local settings and aggregation:
@@ -110,6 +110,29 @@ printed before launch. Per-cell logs/JSON and aggregate results.json, results.cs
 keep every duration/thread/scenario/library result separate, including completed rows after
 a later failure. CI publishes these reports, JUnit, source/runtime provenance and the summary
 under its own persistent-gauntlet artifact. The standalone workflow also supports a manual run.
+
+## Shallow thread scaling
+
+The dev-to-preprod PR also starts shallow-all-thread-scaling.yml. Like the other two benchmarks it
+depends only on branch-policy, so all three may run concurrently on separate GitHub-hosted runner
+VMs; runner availability may queue them. CI / merge-ready requires its success on that route and
+accepts the planned skip on every other route. The workflow itself remains manually runnable.
+
+It runs benchmarks/testing_other_di/test_shallow_all_thread_scaling.py on pinned Python 3.14.7
+(free-threaded, GIL off) with the same pinned dependencies as the other benchmarks, on Ubuntu x64,
+Windows x64 and macOS Intel x64. Each library (dependency-injector, dishka and melder) gets its
+own fresh pytest process through DI_LIBS, because a library measured second or third in one
+process runs 5-12% slower (benchmarks/testing_other_di/benchmarks.md). The thread-counts input
+(default 1,2,3,4,5; each from 1 to 5; the first count is the speedup baseline) and the
+duration-seconds input (default 15, at most 120) map to DI_THREAD_COUNTS and DI_DURATION_S; a
+blank input uses the benchmark default. The default is 225 seconds of measured work per OS.
+
+Each OS job lists steps/s, speedup and efficiency for every library and thread count in its
+summary and retains the shallow-thread-scaling artifact for 30 days: a JUnit file and log per
+library, results and outcome JSON, dependency pins/install report and source hashes/runtime
+provenance. Every requested thread count must report work, zero errors and a disabled GIL for
+every library, even when pytest exits zero. There is no speed threshold; compare matching thread
+counts within the same OS and account for hosted hardware variation.
 
 ## Supported Python versions
 

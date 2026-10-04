@@ -5,12 +5,17 @@
 ## Metadata
 - Story ID: STORY-2026-10-03-rebind-after-first-meld-repair
 - Epic: EPIC-2026-10-03-rebind_after_first_meld
-- Status: in_progress
+- Status: done
 - Owner: user
 - Agent Name: fable_1
 - Priority: p1
 - Created: 2026-10-03T19:13:22Z
-- Updated: 2026-10-03T21:08:00Z
+- Updated: 2026-10-04T12:20:00Z
+
+- Completed: 2026-10-04T12:20:00Z
+- Summary: Repair landed at 0.2.8219 (both tasks completed 2026-10-03); four isolated native rebind cases pass on 0.2.8220.
+  Turned in by owner directive (2026-10-04 06:12 local); work package C (the unchanged five-case selection on the
+  delivered build in priv_commandops) was not reported and stays with the owner.
 
 ## User Narrative
 As a Melder host that registers and replaces definitions at runtime (MelderOps Actions), I want

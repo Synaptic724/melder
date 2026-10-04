@@ -20,7 +20,9 @@ class CIPolicy:
     }
     CANDIDATE_JOBS: tuple[str, ...] = ("authorize", "source-qualification", "build", "publish", "install")
     FULL_JOBS: tuple[str, ...] = ("source-assets", "repo-assets", "tests", "documentation")
-    GAUNTLET_JOBS: tuple[str, ...] = ("real-world-gauntlet", "persistent-runtime-gauntlet")
+    GAUNTLET_JOBS: tuple[str, ...] = (
+        "real-world-gauntlet", "persistent-runtime-gauntlet", "shallow-all-thread-scaling",
+    )
     REQUIRED_JOBS: tuple[str, ...] = (
         "branch-policy", "hygiene", *FULL_JOBS, *GAUNTLET_JOBS, "source-qualification",
     )
@@ -104,7 +106,7 @@ def validation_requirements(event_name: str, event: Mapping[str, object], ref: s
     """Return runtime, package, source-proof, and gauntlet requirements for a validated event.
 
     Dev/preprod PRs, release-fix PRs and manual CI run full qualification.
-    Only the validated dev-to-preprod PR also requires both benchmark gauntlets.
+    Only the validated dev-to-preprod PR also requires all three benchmark jobs.
     Unchanged preprod promotions reuse source evidence; prod promotions consume
     the separate exact-candidate gate. Ordinary pushes have no source-CI profile.
     """

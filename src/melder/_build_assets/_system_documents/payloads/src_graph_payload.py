@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_graph.md'
-LINE_COUNT = 27595
-CONTENT_SHA256 = 'cdfced62a0c9b713368daa440387a8767d30a47abec62b60b8762dcd53755319'
+LINE_COUNT = 27653
+CONTENT_SHA256 = '2fcb1a5e750e73bbfbf6c47cd58a3590d57de87f05d5b31ad472a38a58dc42af'
 
 TEXT = """# src_graph
 
@@ -189,7 +189,7 @@ descriptors and reassemble.
 
 ## src/melder/__init__.py
 
-- source_sha256: `7b3a95753a785e242f26ca0b2a61fffcdc44ca85b53ecb78e6cd4f47535d29b0`
+- source_sha256: `89a5fc70e608c2108544a51dad3e31d389b6c876aea9108ea5c7f7eb1fc2a4fe`
 - nodes: 1
 
 ### Nodes
@@ -336,7 +336,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_agent_documentation/manifest/agent_documentation_manifest.py
 
-- source_sha256: `e0bbd1c787e53b72da16705764bc4c2c6e39fe4ecb3f4600d25764ce4d24f6a1`
+- source_sha256: `19ffffd8719f3e936e6c1253e8a42d34131a9a76e448f1a7303f1ad5988d63c3`
 - nodes: 1
 
 ### Nodes
@@ -415,7 +415,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py
 
-- source_sha256: `a26beb1b7df134332f9ae19e51b8c57462bff4a65ae7032f6331afce3c00bb24`
+- source_sha256: `10ada83249c14fa67c738f3931bef9006eaaad7a8c645adb2d803466c9f4a50e`
 - nodes: 1
 
 ### Nodes
@@ -493,7 +493,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/graph_adjacency_manifest.py
 
-- source_sha256: `b3dbc12a9cfb873b29e49361a587849f2ec537071ac8c6dac4c195dc7b32cfaf`
+- source_sha256: `c2b842877c653eddfc21aa134bb8536ee5e1fc6ff8fb3fc21e5e3aab336b8cc4`
 - nodes: 1
 
 ### Nodes
@@ -510,7 +510,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_index.py
 
-- source_sha256: `f53f1c930a020cd91d4d870d92221f256cc89ac6b1d69e3a802a744eaa21884a`
+- source_sha256: `f686b0ccb00671bbd5758796225ad2948be831194aad37f931b8e2f36cbb78ec`
 - nodes: 1
 
 ### Nodes
@@ -527,7 +527,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_manifest.py
 
-- source_sha256: `338ef5f9996a96cafcb7c0eb52665dd4c39869cd0e523676eefb000dd945726a`
+- source_sha256: `b1a41d8f77fdd81cc4937f298b4a9014a37d7356e265bf3a81d9fb05aec65112`
 - nodes: 1
 
 ### Nodes
@@ -547,7 +547,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_architecture_payload.py
 
-- source_sha256: `941d67a1309a6fd49d296bb61912be2679e419187a5528ce5667bd6d949cc92b`
+- source_sha256: `45c1cae64dfbe41a18676a2a6615505ad70726bcedc77b1b44b3928ad2eb26c4`
 - nodes: 1
 
 ### Nodes
@@ -564,7 +564,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_components_payload.py
 
-- source_sha256: `b62e322871da0b37f3faf66ed6a07966e48263aa4911d8aa585100f9e9eceb9e`
+- source_sha256: `679667b090c0cbd508d71dcfb370311d17b1af732d2812a5792016a6f8af5dde`
 - nodes: 1
 
 ### Nodes
@@ -581,7 +581,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_graph_payload.py
 
-- source_sha256: `cd23952cad1d5cf1ab3443dddec664c5497412a707cb9c2f1b7499305bc6fc59`
+- source_sha256: `252678c2f43d4ed0b9016387a2b1ca8dfae102a26655b1e1100a97de134e979e`
 - nodes: 1
 
 ### Nodes
@@ -5884,7 +5884,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/bind/bind.py
 
-- source_sha256: `cf6a77a17fa6f23e3c9dc81c4af8c956bb3457a3a4646f2b3fb59dada074e087`
+- source_sha256: `892cf05579ea869e397009d6784e5037d631c8363c54f320fd5e4ff953278f78`
 - nodes: 2
 
 ### Nodes
@@ -5898,7 +5898,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `Bind` (class)
 
 - id: `melder.aether.spellbook.bind.bind.Bind`
-- defined at: `src/melder/aether/spellbook/bind/bind.py:126`
+- defined at: `src/melder/aether/spellbook/bind/bind.py:128`
 - extends: `Cleanable`
 - role: Spell registration gateway for one Spellbook.
 - responsibilities:
@@ -5908,13 +5908,15 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - admits Protocol definitions only with resolvable=False without relaxing other binding rules
   - resolves ordered disposal once at bind; book names own overlaps and priority selects front or back placement
   - matches requested inherited disposal through first-definition MRO namespaces without invoking descriptors or expanding fingerprinted profile members
-  - validates binding policy and spellframe semantics
   - checks direct public Protocol members on classes and actual supplied objects before Spell creation
   - creates canonical Spell records for Spellbook registration
   - captures immutable configuration seeds once and owns subsequent Book-local registration hook changes
   - retains one callback tuple per bind and dispatches original-reference pre checks, actual-Spell activation and captured post notifications
   - runs application callbacks outside the construction lock and preserves phase, callback identity and cause on failure
   - retires unpublished failed Spell and index allocations locally without disposing supplied application objects
+  - classifies the spellframe before the structural check (_classify_spellframe): None -> SpellframeKind.none, str -> category, a typing.Protocol -> contract with the Protocol recorded; any other class or object is refused with a TypeError naming the two valid forms (0.2.8222, Breaking)
+  - validates binding policy and spellframe semantics, running the direct-public-member Protocol check only for a contract frame
+  - hands the Spell its spellframe_kind and implemented_protocols; the fingerprint does not hash the kind
 - owns_state: `_spellbook`, `_spell_examiner`, `_lifecycle_hooks`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `add_hooks`, `bind`, `capture_hooks`, `cleanup`, `clear_hooks`, `execute_post_hooks`, `get_hook_names`, `sha256_profile`, `spell_id_inspector`
@@ -5946,9 +5948,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - `melder.aether.spellbook.bind.bind.Bind` creates `RLock`
 - `melder.aether.spellbook.bind.bind.Bind` creates `SpellExaminer`
+- `melder.aether.spellbook.bind.bind.Bind` creates `TypeError`
 - `melder.aether.spellbook.bind.bind.Bind` creates `SpellIndex`
 - `melder.aether.spellbook.bind.bind.Bind` creates `Spell`
-- `melder.aether.spellbook.bind.bind.Bind` creates `TypeError`
 - `melder.aether.spellbook.bind.bind.Bind` creates `ValueError`
 - `melder.aether.spellbook.bind.bind.Bind` creates `HookExecutionError`
 
@@ -6216,7 +6218,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell.py
 
-- source_sha256: `d7518dae2182b2b232bbd90ab93e76af09be1f48f6dd07e5ba985b1aadf7f516`
+- source_sha256: `268ee4d536156f3bc072884a3829e2a855354386104f2d5afd31e871d1e1cd64`
 - nodes: 2
 
 ### Nodes
@@ -6230,7 +6232,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `Spell` (class)
 
 - id: `melder.aether.spellbook.spell.Spell`
-- defined at: `src/melder/aether/spellbook/spell.py:61`
+- defined at: `src/melder/aether/spellbook/spell.py:62`
 - extends: `Cleanable`
 - role: Canonical bound spell runtime record.
 - responsibilities:
@@ -6241,7 +6243,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - lazily owns the SpellCompiler and spell-owned creation-context machinery
   - records conduit ownership changes and publishes structural changes into SpellSystemStates
   - keeps a borrowed spell-index CreationGate under dynamic ownership and the cause of its last failed context build
-- owns_state: `_resolvable`, `_compiler_artifact`, `_creation_context`, `_creation_context_factory`, `_creation_context_switch`, `_spellbook`, `_spell_system_states`, `dependency_graph`, `dependencies`, `disposal_method_names`, `_creation_context_failure`
+  - carries the binding's spellframe_kind and implemented_protocols (the Protocol it was checked against, else ()) as identity data that survives cleanup (0.2.8222)
+- owns_state: `_resolvable`, `_compiler_artifact`, `_creation_context`, `_creation_context_factory`, `_creation_context_switch`, `_spellbook`, `_spell_system_states`, `dependency_graph`, `dependencies`, `disposal_method_names`, `_creation_context_failure`, `spellframe_kind`, `implemented_protocols`
 - phases: `init`, `validation`, `runtime`, `cleanup`
 - public methods: `apply_mutation_override`, `cleanup`, `clear_mutation_override`, `emit_cache`, `emit_cache_file`, `has_existing_object`, `has_mutation_override`, `invalidate_spell`, `is_broken`, `is_class_spell`, `is_existing_creation`, `is_lambda_spell` (+12 more)
 
@@ -11078,7 +11081,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py
 
-- source_sha256: `f6d5a4cd99e44c381f646c1410d722e06b7898fb2f9669d409a6f72982793032`
+- source_sha256: `820bcceb6286ac5404b6b882173135a9c2db520e679ccff7a13d78d0e3b593f8`
 - nodes: 2
 
 ### Nodes
@@ -11094,7 +11097,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `CompilerPhase3` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.phases.compiler_phase_3.CompilerPhase3`
-- defined at: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:52`
+- defined at: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:66`
 - role: Compiler-owned phase-3 local-frame and DAG build surface.
 - responsibilities:
   - resolves symbolic constructor sockets into concrete dependency spell ids
@@ -11104,8 +11107,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - republishes enabled late-compiled Nexus records after local topology is available
   - records an UNRESOLVED_INPUT socket, keeping its frame key, when a single typed parameter has no registered provider; ambiguity still raises
   - scans candidate providers over a copy of the Spellbook spell pool taken in one call, so a concurrent bind cannot change it mid-scan
-  - matches an annotation to candidates by address key (2026-10-03): normalize_frame_key(annotation) against each spell's frame key (spellframe, else its own name) and its type key (spell_name; an existing object's class name) - no identity comparison, so a bare existing object answers to its class and a TYPE_CHECKING string equals the class object
-  - indexes candidates once per resolution pass under those keys (by_key buckets, exact for every pool); _eq_safe_object is kept only as the structural snapshot's replayability rule
+  - matches an annotation to candidates by KIND (0.2.8222): _annotation_kind classifies it as a Protocol contract, a class type or a string name; _spell_keys_for gives the keys a spell answers under for that kind - its type key for a class, its implemented_protocols (plus its own definition key when it is a Protocol bound resolvable=False) for a Protocol, type-or-contract for a single string and the frame key for a string collection - so a string category never provides for a same-named class
+  - indexes candidates once per resolution pass into four buckets (by_type, by_label, by_contract, by_definition) read through _index_buckets_for; one predicate (_matches_annotation) serves the scan and the index; _eq_safe_object is kept only as the structural snapshot's replayability rule
 - phases: `validation`, `runtime`
 - public methods: `run`
 
@@ -15543,6 +15546,55 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 <!-- END FILE: src/melder/aether/spellbook/spellbook_creation_system.py -->
 
+<!-- BEGIN FILE: src/melder/aether/spellbook/spellframe_kind/__init__.py -->
+
+## src/melder/aether/spellbook/spellframe_kind/__init__.py
+
+- source_sha256: `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`
+- nodes: 1
+
+### Nodes
+
+#### `spellframe_kind` (module)
+
+- id: `melder.aether.spellbook.spellframe_kind`
+- defined at: `src/melder/aether/spellbook/spellframe_kind/__init__.py:1`
+- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+
+<!-- END FILE: src/melder/aether/spellbook/spellframe_kind/__init__.py -->
+
+<!-- BEGIN FILE: src/melder/aether/spellbook/spellframe_kind/spellframe_kind.py -->
+
+## src/melder/aether/spellbook/spellframe_kind/spellframe_kind.py
+
+- source_sha256: `b793da1e67b6986d62562f2d1680322d21ec7d00475474b5e8f34555afcfa8f9`
+- nodes: 2
+
+### Nodes
+
+#### `spellframe_kind` (module)
+
+- id: `melder.aether.spellbook.spellframe_kind.spellframe_kind`
+- defined at: `src/melder/aether/spellbook/spellframe_kind/spellframe_kind.py:1`
+- role: Module holding the SpellframeKind enum that a binding records for its spellframe.
+- responsibilities:
+  - exports SpellframeKind for Bind, Spell, Phase 3 and the crystallizer
+- phases: `init`
+
+#### `SpellframeKind` (enum)
+
+- id: `melder.aether.spellbook.spellframe_kind.spellframe_kind.SpellframeKind`
+- defined at: `src/melder/aether/spellbook/spellframe_kind/spellframe_kind.py:4`
+- markers: `Enum`
+- role: The kind of spellframe a Spell was bound under: none (no frame), category (a string label), contract (a typing.Protocol the spell was checked against).
+- responsibilities:
+  - names the three frame kinds Bind._classify_spellframe assigns; value == name so crystals carry the name
+  - read by CompilerPhase3 to decide what an annotation may match: a category never provides, a contract's implementers do
+  - recorded by SpellCrystal (spellframe_kind) and re-hydrated by RestoreEngine and GraftRunner
+- phases: `init`, `validation`, `runtime`
+
+<!-- END FILE: src/melder/aether/spellbook/spellframe_kind/spellframe_kind.py -->
+
 <!-- BEGIN FILE: src/melder/crystallizer/asset_management/adapters/sqlite_mesh_adapter.py -->
 
 ## src/melder/crystallizer/asset_management/adapters/sqlite_mesh_adapter.py
@@ -17167,7 +17219,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/crystallizer/crystal_loader_system/graft_runner.py
 
-- source_sha256: `89a67aab7fd43a1d110f5e0b674157cec39b8f31b47b89514f1f20be3a0e1bd0`
+- source_sha256: `cb13dce21ff2021a974ff378988cfa10d9522d952426f4aa700b5e98e8a41cc7`
 - nodes: 2
 
 ### Nodes
@@ -17199,6 +17251,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - adopts only a successfully grafted selected member using its returned live binding ID
   - emits a detached membership and index-identity report with explicit shortfalls
   - preserves each member resolution capability through selected, parked and merged graft bindings
+  - hydrates each member's spellframe through the same rule as the restore engine (_hydrate_spellframe) at the selected, parked and merged bind sites, appending a shortfall when the recorded Protocol cannot be imported (0.2.8222)
 - owns_state: `_record`, `_host_book (borrowed)`, `_skip_resident`, `_merge_into_index (borrowed)`, `_adopt_recorded_selection`, `_consumed`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `run`
@@ -17331,7 +17384,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/crystallizer/crystal_loader_system/restore_engine.py
 
-- source_sha256: `6a15023d47a9570bb7854cdb55eedd16ba1719931672ef85216ded59ee19a33c`
+- source_sha256: `6f5977ba63122bd535500b760d10f8872ce434b9da908d4a8ff90f4ff11125b7`
 - nodes: 3
 
 ### Nodes
@@ -17381,6 +17434,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - deactivates an already-active live Nexus (as it does MutationResearch) before activating the reloaded Nexus configuration
   - stage 1 installs the recorded spell-id regime, files a shortfall when a fixed live regime differs, and refuses a record binding one spell id in two frames under process-wide ids
   - stage 6 keys bind order, member-index lookup and recorded-to-live spell translation per Book
+  - hydrates each crystal's spellframe before the active and staged binds (_hydrate_spellframe): imports the recorded Protocol for a contract, passes the recorded name for a category, and on an import failure binds the name as a category and files a spell_crystal shortfall naming the Protocol and the spell (0.2.8222)
 - owns_state: `folded stores`, `built_stack`, `report`
 - phases: `runtime`
 - public methods: `cleanup`, `restore`
@@ -17888,7 +17942,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/crystallizer/crystals/spell_crystal.py
 
-- source_sha256: `535d6a844f47c51ce1e419ac6b608393ed1d49bcfabd3043003ba33d455b8388`
+- source_sha256: `760c4a1c2a9b5c6a93c783f69ee363ef73cfa49c316d794cc4b013c6d1250334`
 - nodes: 2
 
 ### Nodes
@@ -17916,9 +17970,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - carries the returned CrystalAnalysisResult and exposes it via delegating properties
   - captures native per-version resolution capability as a detached replay value
   - keys its record entry: custody_key is the spell id, or "<spell_id>@<frame>" when built with per_frame_custody (the frame read from spell.aetheric_frame)
-- owns_state: `_analysis (one carried CrystalAnalysisResult)`, `_disposal_method_names (ordered recorded values)`, `_frame_name, _custody_key (the record key)`
+  - records the frame kind (spellframe_kind) and, for a contract, the Protocol's module and qualname (spellframe_module, spellframe_qualname) so restore and graft rebind the Protocol rather than a same-named category (0.2.8222, record 4.1.0)
+- owns_state: `_analysis (one carried CrystalAnalysisResult)`, `_disposal_method_names (ordered recorded values)`, `_frame_name, _custody_key (the record key)`, `_spellframe_kind, _spellframe_module, _spellframe_qualname (recorded frame kind)`
 - phases: `init`, `runtime`, `cleanup`
-- public methods: `binding_name`, `cleanup`, `compose_custody_key`, `custody_key`, `describe`, `disposal_method_names`, `existence_name`, `frame_name`, `id`, `module_targets`, `module_to_direct_dependencies`, `module_to_extension` (+24 more)
+- public methods: `binding_name`, `cleanup`, `compose_custody_key`, `custody_key`, `describe`, `disposal_method_names`, `existence_name`, `frame_name`, `id`, `module_targets`, `module_to_direct_dependencies`, `module_to_extension` (+27 more)
 
 ### Edges out
 
@@ -18201,7 +18256,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/crystallizer/persistence/record_version.py
 
-- source_sha256: `fee3546b18291e978c119552c548ada667e77d90232e7fd42bf5229d1167683d`
+- source_sha256: `3e7ca95d45463d274e213a276d076f70a80c5485c1932ea9905b0e4958aebc2b`
 - nodes: 2
 
 ### Nodes
@@ -18221,13 +18276,14 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.crystallizer.persistence.record_version.RecordVersion`
 - defined at: `src/melder/crystallizer/persistence/record_version.py:17`
-- role: Static record-schema version authority (stamp 4.0.0; readers gate on MAJOR; absent stamps read 0.0.0).
+- role: Static record-schema version authority (stamp 4.1.0; readers gate on MAJOR; absent stamps read 0.0.0).
 - responsibilities:
   - stamps cached items, formation records, and emission-tap envelopes
   - refuses newer-major payloads at the read gates
   - uses record major 2 so older readers cannot silently ignore non-resolvable policy
   - uses major 3 to fence older readers from named lesser child topology
   - uses major 4 to fence older readers from frame-scoped custody keys (per-frame spell ids)
+  - uses minor 4.1.0 for the additive spellframe-kind keys on spell crystals (0.2.8222); 4.0.0 records stay readable and hydrate frames by name
 - phases: `runtime`
 - public methods: `check_readable`, `of`, `parse`, `stamp`
 
@@ -25567,7 +25623,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/utilities/caching_system/caching_system.py
 
-- source_sha256: `9446de98d4b41261c1670926255a89e478b0487ac3599025413447409ad03b76`
+- source_sha256: `f8c05e34c3bb2da6d1522d336c6ea8b5d9b56adea9b65dd0d83608727643c929`
 - nodes: 2
 
 ### Nodes
@@ -25597,6 +25653,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - cache generation 12 cold-resets bundles that may hold consumer payloads from a previous world
   - cache generation 13 gives each collection member its own compiler path; 14 retires bundles whose manifests carried override lanes
   - carries the executor-tier world stamp in the envelope (generation 19): set_world_stamp records it after staging and reports a change; a loaded bundle without the field is unstamped and never admits a full hit
+  - cache generation 20 retires bundles whose phase 3-4 rows were captured under the name matcher (annotation matching by kind, 0.2.8222)
 - owns_state: `_id`, `_lock`, `_frame_name`, `_conduit_name`, `_cache_root_path`, `_bundle_path`, `_cache_data`, `_logger`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `bundle_path`, `cached_spell_ids`, `cached_structural_spell_ids`, `cleanup`, `conduit_name`, `emit`, `get_spell_payload`, `get_structural_payload`, `has_spell_payload`, `has_structural_payload`, `remove_spell_payload`, `remove_structural_payload` (+7 more)
@@ -26539,7 +26596,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/utilities/helpers/general_helpers.py
 
-- source_sha256: `736fb07ff0c9a2bd4b7fdc136a8115c1f8cbd814b07b1bbe501a06e7fb506c65`
+- source_sha256: `e30145e0ff2e151c8726559e5abf145d2f608a0163a612cdea7b38e21c6703b3`
 - nodes: 3
 
 ### Nodes
@@ -26574,9 +26631,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - normalizes frame keys and binding names into canonical lowercase lookup keys
   - builds spellbook and meld lookup tuples from spell and frame inputs
   - names spell version ids for user-facing messages (describe_spell_id: the quoted spell name, or a 12-character id when the lookup cannot name it)
+  - tells a typing.Protocol class from any other object (is_protocol_type: inspect.isclass plus the _is_protocol / __is_protocol__ flag) for Bind's frame classification and Phase 3's annotation kind
 - owns_state: `DEFAULT_BINDING_NAME`
 - phases: `init`, `runtime`
-- public methods: `describe_spell_id`, `make_spell_key_from_parts`, `normalize_binding_name`, `normalize_frame_key`, `normalize_spell_key`, `normalize_spell_name`
+- public methods: `describe_spell_id`, `is_protocol_type`, `make_spell_key_from_parts`, `normalize_binding_name`, `normalize_frame_key`, `normalize_spell_key`, `normalize_spell_name`
 
 ### Edges out
 

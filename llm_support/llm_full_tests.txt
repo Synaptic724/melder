@@ -1,8 +1,8 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: tests
-SOURCE FINGERPRINT: 20ab2888cc458ba237c51468973116adcc29f60275818cd10c0340577fa2251c
-FILE COUNT: 1057
+SOURCE FINGERPRINT: a684543024cc3de1ad0462c7467e66c0cf85e2131807eeb8eb607b69f98dc7b3
+FILE COUNT: 1060
 
 ================================================================================
 BEGIN FILE: tests/_annotation_audit_support.py
@@ -12350,7 +12350,7 @@ END FILE: tests/component/melder/aether/conduit/test_conduit_component_meld_over
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/aether/conduit/test_conduit_component_non_resolvable_admission.py
-CONTENT SHA256: 60dbd43d3bb93c691b9d8d5706e3923ff0a5103647c089a09b2fbf93630df017
+CONTENT SHA256: 87f6e127331ed8b99ed65f300a0a66f630f35fbe9518b5827ba34beb896004c8
 SOURCE ENCODING: utf-8
 ================================================================================
 """Direct runtime admission preserves discovery while refusing non-resolvable registrations."""
@@ -12515,7 +12515,7 @@ def test_explicit_false_selection_does_not_fall_back_to_a_resolvable_provider(sc
         spell=RuntimeDefinition, binding_name="definition", existence="unique", resolvable=False,
     )
     provider_id = book.bind(
-        spell=RuntimeProvider, spellframe=RuntimeDefinition, binding_name="runtime", existence="unique",
+        spell=RuntimeProvider, spellframe="RuntimeDefinition", binding_name="runtime", existence="unique",
     )
     conduit = book.conjure()
     runtime = conduit.create_spellspace() if scoped else conduit
@@ -46541,7 +46541,7 @@ END FILE: tests/component/melder/spellbook/test_codegen_signature_determinism.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/spellbook/test_conjure_cache_restage.py
-CONTENT SHA256: f79d2b8248025df0cbdd5248b35503d7b0df9c9980c623fa23c35eb4ae53f4ec
+CONTENT SHA256: 281d11e9f6ff76749f405d897b17e54251b43deeac23ba6131f06580d8b337ba
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -46558,7 +46558,7 @@ import inspect
 import shutil
 import types
 from pathlib import Path
-from typing import Callable, Iterator, Tuple
+from typing import Callable, Iterator, Protocol, Tuple
 
 import pytest
 
@@ -46700,19 +46700,27 @@ def test_repeat_world_is_a_full_hit_and_leaves_the_bundle_untouched() -> None:
 
 
 def _function_world(frame: str, cache_fragment: Path, factory: Callable[..., object]) -> Tuple[Spellbook, type]:
-    """Bind a function provider (spellframe = its product type) and a class consumer, then conjure."""
-    product = factory.__annotations__["return"]
+    """
+    Bind a function provider under the product's Protocol contract and a class consumer, then conjure.
+
+    A function spell has no type of its own that a consumer annotation could name, so the contract it
+    provides is declared as its spellframe (a concrete class is not a valid frame since 2026-10-04).
+    """
 
     class Consumer:
-        def __init__(self, product: product) -> None:
+        def __init__(self, product: IProduct) -> None:
             self.product = product
 
     Consumer.__qualname__ = "Consumer"
     book = _new_world_book(frame, cache_fragment)
-    book.bind(spell=factory, spellframe=product, existence="unique", permissions="create")
+    book.bind(spell=factory, spellframe=IProduct, existence="unique", permissions="create")
     book.bind(spell=Consumer, existence="many", permissions="create")
     book.conjure(name="root")
     return book, Consumer
+
+
+class IProduct(Protocol):
+    """The contract a function provider is bound under; consumers ask for it by annotation."""
 
 
 class _Product:
@@ -46909,7 +46917,7 @@ END FILE: tests/component/melder/spellbook/test_conjure_refusal_leaves_frame_uns
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/spellbook/test_existing_instance_protocol_admission.py
-CONTENT SHA256: 70693a53aac8b510dcedc460fcb92fa8827d78b17ef521aaccd89a9e4c3ba0e4
+CONTENT SHA256: ba4506b4ee9a902736a5f9e46c27c42b1051820c0229337c6f6ed2da9742f3a5
 SOURCE ENCODING: utf-8
 ================================================================================
 """Existing providers must satisfy the same declared Protocol members as class providers.
@@ -46987,7 +46995,7 @@ class ReaderConsumer:
 
 
 class GroupingFrame:
-    """Act as a concrete grouping key, with no declared Protocol semantics."""
+    """A concrete class: refused as a spellframe since 2026-10-04 (a frame is a string or a Protocol)."""
 
 
 def reader_factory() -> ValidReader:
@@ -47036,21 +47044,31 @@ def test_valid_protocol_instance_remains_injectable_by_identity(
 
 
 @pytest.mark.parametrize("existing", [False, True], ids=["class", "instance"])
-@pytest.mark.parametrize("frame", [GroupingFrame, "reader-group"], ids=["concrete", "string"])
-def test_non_protocol_frames_keep_grouping_semantics(
+def test_string_frames_keep_grouping_semantics(
         instance_book: Spellbook,
         existing: bool,
-        frame: object,
 ) -> None:
-    """Keep non-Protocol frame grouping independent of nominal class inheritance checks."""
+    """A string category groups without any structural check, for class and existing-object targets alike."""
     supplied = ValidReader()
     target = supplied if existing else ValidReader
-    spell_id = instance_book.bind(spell=target, existence="unique", spellframe=frame)
+    spell_id = instance_book.bind(spell=target, existence="unique", spellframe="reader-group")
     root = instance_book.conjure(dynamic=True)
     resolved = root.meld(spell_id=spell_id)
     assert resolved.read() == "supplied-reader"
     if existing:
         assert resolved is supplied
+
+
+@pytest.mark.parametrize("existing", [False, True], ids=["class", "instance"])
+def test_concrete_class_frame_is_refused_for_class_and_instance_targets(
+        instance_book: Spellbook,
+        existing: bool,
+) -> None:
+    """A concrete class is neither a category nor a contract: bind refuses it with the two accepted forms."""
+    supplied = ValidReader()
+    target = supplied if existing else ValidReader
+    with pytest.raises(TypeError, match="string category or a Protocol contract"):
+        instance_book.bind(spell=target, existence="unique", spellframe=GroupingFrame)
 
 
 @pytest.mark.parametrize("late_bind", [False, True])
@@ -50813,7 +50831,7 @@ END FILE: tests/component/melder/spellbook/test_spellbook_component_caching_syst
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/spellbook/test_spellbook_component_collection_many_instances.py
-CONTENT SHA256: 79198081b042e5f629c339251c89a0b5c40f0c0e4ed54627bd35944823eec049
+CONTENT SHA256: f4ec3ec3c2916eaccdafdc2da817fb0993f99e3cf6904440341a130825e64fbd
 SOURCE ENCODING: utf-8
 ================================================================================
 """Regression: each collection member builds its own many-existence dependencies.
@@ -50824,7 +50842,7 @@ promises a new object per consumer; shared existences stay shared.
 """
 
 from collections.abc import Iterator
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Protocol, Tuple
 
 import pytest
 
@@ -50846,7 +50864,7 @@ class Leaf:
         self.config = config
 
 
-class IMember:
+class IMember(Protocol):
     """Frame type for collection members."""
 
 
@@ -53377,7 +53395,7 @@ END FILE: tests/component/melder/spellbook/test_spellbook_component_local_phase_
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/spellbook/test_spellbook_component_override_key_set_plans.py
-CONTENT SHA256: ee00745e5e9c23d46dfe82b10843b381e52c7f1b4d96b589f570a8b91bffa6d2
+CONTENT SHA256: 55c6ee2de2edc8e687e6bfc1810700cea5371e8647cfffc03488c3b9a41af4fe
 SOURCE ENCODING: utf-8
 ================================================================================
 """Override melds run one compiled plan per key set (override design v2, step S3a).
@@ -53393,7 +53411,7 @@ import marshal
 import threading
 from collections import Counter
 from collections.abc import Iterator
-from typing import Any, List, Tuple
+from typing import Any, List, Protocol, Tuple
 
 import pytest
 
@@ -53493,7 +53511,7 @@ class Consumer:
         self.parts = (p1, p2, p3, p4, p5)
 
 
-class IMember:
+class IMember(Protocol):
     """Frame type for collection members."""
 
 
@@ -53861,14 +53879,14 @@ END FILE: tests/component/melder/spellbook/test_spellbook_component_override_key
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/spellbook/test_spellbook_component_override_required.py
-CONTENT SHA256: 0340c921213d37338e94f3fa2df2192a04ef055c3a24218bc118d916587f7e1d
+CONTENT SHA256: e24d59dda9f86b12e7c259acf30cae8467824633aadd55736d2e7ffb60b62e02
 SOURCE ENCODING: utf-8
 ================================================================================
 """Compiler contracts separating descriptive registrations from construction dependencies."""
 
 from collections.abc import Iterator
 from dataclasses import replace
-from typing import Optional
+from typing import Optional, Protocol
 
 import pytest
 
@@ -53898,7 +53916,7 @@ from melder.aether.spellbook.spellbook_creation_system import SpellbookCreationS
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 
 
-class Definition:
+class Definition(Protocol):
     """Application definition available for graph references independently of construction."""
 
 
@@ -54379,17 +54397,25 @@ def test_late_contract_compilation_refuses_non_resolvable_provider(compiler_book
 def test_notch_from_definition_to_provider_revalidates_its_consumer(
     compiler_book: Spellbook, consumer_type: type,
 ) -> None:
-    """Switching the selected capability must rebuild a consumer that had only a descriptive reference."""
+    """
+    Switching the selected capability must rebuild a consumer that had only a descriptive reference.
+
+    The descriptive version is the Protocol itself (bound resolvable=False); the notched-in version is a
+    concrete implementer bound under the Protocol contract (2026-10-04: a Protocol cannot be bound as a
+    concrete spell, so the resolvable version at the same address is an implementer, not the Protocol).
+    """
     compiler_book._aetheric_frame_configuration.with_system_caching_enabled(False)
     definition_id = compiler_book.bind(spell=Definition, existence="unique", resolvable=False)
     consumer_id = compiler_book.bind(spell=consumer_type, existence="many")
     index = _selected(compiler_book, definition_id).spell_index
     conduit = compiler_book.conjure(dynamic=True, name="notch-required-input")
-    provider_id = conduit.bind_inactive(spell=Definition, spell_index=index, existence="unique")
+    provider_id = conduit.bind_inactive(
+        spell=Implementation, spell_index=index, spellframe=Definition, existence="unique",
+    )
     provider = compiler_book._inactive_spells[provider_id]
     conduit.notch_spell(spell_index=index, spell=provider)
     result = conduit.meld(spell=consumer_type)
-    assert isinstance(result.value, Definition)
+    assert isinstance(result.value, Implementation)
     assert _selected(compiler_book, consumer_id).dependencies == [provider_id]
 
 
@@ -54926,7 +54952,7 @@ END FILE: tests/component/melder/spellbook/test_spellbook_component_resolvable_r
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/spellbook/test_spellbook_component_signature_release_on_removal.py
-CONTENT SHA256: 84d3d9b152fae24dd2e9eb5db17313009a38a222eb60b8fd8ebfdcffb0ffccd2
+CONTENT SHA256: 1aa3872940f18eafda83f81f6b19a03a80f7fa7ec63cc38adc80c3bbd805cb90
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -54949,7 +54975,7 @@ No conjure here on purpose. `claim_lookup` runs at BIND, so the signature exists
 before any Conduit does, and the defect is reachable without one.
 """
 
-from typing import Any
+from typing import Any, Protocol
 
 import pytest
 
@@ -54958,7 +54984,7 @@ from melder.aether.conduit.conduit import Conduit
 from melder.aether.spellbook.spellbook import Spellbook
 
 
-class ISignatureFrame:
+class ISignatureFrame(Protocol):
     """Shared spellframe: forces both services onto ONE binding signature."""
     pass
 
@@ -59265,7 +59291,7 @@ END FILE: tests/component/melder/spellbook/test_spellbook_component_spellbook.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/spellbook/test_spellbook_component_structural_snapshot_capture.py
-CONTENT SHA256: b028afb741d5587561e832f0508a9ad884f764482c1cf9846a0354afca2122ef
+CONTENT SHA256: 0bc4d9275f5a15e112eff46139594452d50ff608a5f7bdd655a19d86fd82be3c
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -59418,7 +59444,8 @@ def test_repeat_world_full_hit_keeps_structural_rows_and_does_not_rewrite_the_bu
 def test_eq_risky_pool_marks_every_payload_non_replayable() -> None:
     """
     Purpose: Replayability is decided per pool, by the phase-3 eq-safety rule.
-    Contract: One spellframe with a custom __eq__ makes both payloads carry replayable False.
+    Contract: One bound object with a custom __eq__ makes both payloads carry replayable False
+        (a spellframe can no longer carry one: it is a string or a Protocol since 2026-10-04).
     """
 
     class Frame:
@@ -59431,7 +59458,7 @@ def test_eq_risky_pool_marks_every_payload_non_replayable() -> None:
     book = _new_world_book("structural-eq-risky", fragment)
     engine_id = book.bind(spell=Engine, existence="unique", permissions="create")
     car_id = book.bind(spell=Car, existence="many", permissions="create")
-    book.bind(spell=Frame, spellframe=Frame(), existence="unique", permissions="create")
+    book.bind(spell=Frame(), existence="unique", permissions="create")
     book.conjure(name="root")
 
     bundle = _bundle(book)
@@ -60119,7 +60146,7 @@ END FILE: tests/component/melder/spellbook/test_spellbook_component_structural_s
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/spellbook/test_spellbook_component_unresolved_input.py
-CONTENT SHA256: 10e1bf8fb70572243e64a1fc9839df30fa7239fa7258686f8248dfeb5c2d7c8e
+CONTENT SHA256: d97ef24c4667b70b3779a09837036a6aac3c4d5e054e8664d35efadacf92d538
 SOURCE ENCODING: utf-8
 ================================================================================
 """Compiler contracts for typed parameters that no registered spell provides (UNRESOLVED_INPUT)."""
@@ -60128,7 +60155,7 @@ import annotationlib
 import inspect
 import logging
 from collections.abc import Iterator
-from typing import Optional, Union
+from typing import Optional, Protocol, Union
 
 import pytest
 
@@ -60150,7 +60177,7 @@ from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutio
 from melder.utilities.custom_exceptions.unresolved_input_error import UnresolvedInputError
 
 
-class Unregistered:
+class Unregistered(Protocol):
     """A type deliberately absent from every registration pool."""
 
 
@@ -64294,7 +64321,7 @@ END FILE: tests/experimentation/codegen_strategy_certification.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/experimentation/commandops_shape_probe.py
-CONTENT SHA256: f4d2b1dae91a94b9b72ff56c1dae84389ed70f2940769eee63f9e93a21a62c3d
+CONTENT SHA256: 2d5b768dc12ec3dae16dd8ba0c1b57384f79840a97a99e9cebeb7623f3039321
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -64330,7 +64357,7 @@ from tests._frame_posture_test_support import configure_frame_posture_for_spellb
 
 
 class Config:
-    """Existing object bound as an instance under `spellframe=Config`."""
+    """Existing object bound as an instance under `spellframe="Config"`."""
 
     def __init__(self, n: int) -> None:
         self.n = n
@@ -64456,7 +64483,7 @@ def build_world(specializer: bool) -> Tuple[Spellbook, Conduit]:
     book.configure_aether_frame(
         system_state=None, disposal=None, disposal_method_names=None, system_caching_enabled=False,
     )
-    book.bind(spell=Config(1), spellframe=Config, existence=Existence.unique, permissions="create")
+    book.bind(spell=Config(1), spellframe="Config", existence=Existence.unique, permissions="create")
     book.bind(spell=Builders(2), spellframe=Builders, existence=Existence.unique, permissions="create")
     book.bind(spell=Resources(3), spellframe=Resources, existence=Existence.unique, permissions="create")
     book.bind(spell=Utilities(4), spellframe=Utilities, existence=Existence.unique, permissions="create")
@@ -75809,7 +75836,7 @@ END FILE: tests/experimentation/test_empty_clear_guard_experiment.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/experimentation/test_existing_instance_gap_experiment.py
-CONTENT SHA256: 857798b10f9788f862b6b39d5b7216c30289f08c38fe4fe090015a38b3b04a4b
+CONTENT SHA256: e2a74bd3c98a2d83f6b06b6882108c31319023043d845d46b34181eb7e3680f7
 SOURCE ENCODING: utf-8
 ================================================================================
 """Observe existing-object gaps with stock planning and an isolated leaf hypothesis.
@@ -75841,6 +75868,9 @@ from tests.integration.melder.spellbook.test_existing_instance_planning import (
 )
 from tests.integration.melder.spellbook.test_existing_instance_planning import (
     ExistingValue as SuppliedValue,
+)
+from tests.integration.melder.spellbook.test_existing_instance_planning import (
+    IExistingValue,
 )
 from tests.integration.melder.spellbook.test_existing_instance_planning import (
     instance_book as instance_book,
@@ -75933,7 +75963,7 @@ class ContractConsumer:
 
     def __init__(
             self,
-            value: SuppliedValue = SpellContract(spellframe=SuppliedValue, binding_name="shared"),
+            value: SuppliedValue = SpellContract(spellframe=IExistingValue, binding_name="shared"),
     ) -> None:
         """Retain the contract-provided object for identity and post-unlink checks."""
         self.value = value
@@ -76015,7 +76045,7 @@ def test_existing_injection_paths(gap_book: Spellbook, planning_mode: str, scena
         if scenario != "missing_provider_override":
             gap_book.bind(
                 spell=supplied, existence="unique",
-                spellframe="named-values" if scenario == "map" else None if scenario in ("name_token", "string_token") else SuppliedValue,
+                spellframe="named-values" if scenario == "map" else None if scenario in ("name_token", "string_token") else IExistingValue,
                 binding_name="chosen" if scenario == "map" else None,
             )
         consumer: object = ValueConsumer
@@ -76023,7 +76053,7 @@ def test_existing_injection_paths(gap_book: Spellbook, planning_mode: str, scena
             gap_book.bind(spell=ValueConsumer, existence="many")
             consumer = NestedValueConsumer
         elif scenario == "collection":
-            gap_book.bind(spell=alternate, existence="unique", spellframe=SuppliedValue, binding_name="alternate")
+            gap_book.bind(spell=alternate, existence="unique", spellframe=IExistingValue, binding_name="alternate")
             consumer = CollectionValueConsumer
         elif scenario == "pair":
             consumer = PairConsumer
@@ -76085,7 +76115,7 @@ def test_existing_consumer_scope_reuse(
 
     def action() -> None:
         """Meld twice, release the selected scope and verify owner access afterward."""
-        provider_id = gap_book.bind(spell=supplied, existence="unique", spellframe=SuppliedValue)
+        provider_id = gap_book.bind(spell=supplied, existence="unique", spellframe=IExistingValue)
         consumer_id = gap_book.bind(spell=ValueConsumer, existence=existence)
         report["stage"] = "conjure"
         root = gap_book.conjure(dynamic=True)
@@ -76127,7 +76157,7 @@ def test_existing_root_lookup_forms(gap_book: Spellbook, lookup: str) -> None:
         """Bind the metadata needed by this lookup and verify stable repeated identity."""
         target = gap_book.bind(
             spell=supplied, existence="unique",
-            spellframe=SuppliedValue if lookup == "frame" else None,
+            spellframe=IExistingValue if lookup == "frame" else None,
             binding_name="chosen" if lookup == "named" else None,
         )
         root = gap_book.conjure(dynamic=True)
@@ -76141,7 +76171,7 @@ def test_existing_root_lookup_forms(gap_book: Spellbook, lookup: str) -> None:
         elif lookup == "name":
             value = root.meld("ExistingValue")
         elif lookup == "frame":
-            value = root.meld(spellframe=SuppliedValue)
+            value = root.meld(spellframe=IExistingValue)
         else:
             value = root.meld(spell=SuppliedValue, binding_name="chosen")
         assert value is supplied
@@ -76230,7 +76260,7 @@ def test_existing_mismatched_frame(gap_book: Spellbook, planning_mode: str, fram
 
     def action() -> None:
         """Record admission and injection separately from usable type/behavior satisfaction."""
-        gap_book.bind(spell=supplied, existence="unique", spellframe=ReadableValue if frame_kind == "protocol" else SuppliedValue)
+        gap_book.bind(spell=supplied, existence="unique", spellframe=ReadableValue if frame_kind == "protocol" else IExistingValue)
         report["binding_accepted"] = True
         target = gap_book.bind(spell=ProtocolConsumer if frame_kind == "protocol" else ValueConsumer, existence="many")
         report["stage"] = "conjure"
@@ -76250,7 +76280,7 @@ def test_existing_mismatched_frame(gap_book: Spellbook, planning_mode: str, fram
 def test_existing_linked_injection(gap_book: Spellbook, planning_mode: str, contract: bool) -> None:
     """Import a real existing provider through read permission and resolve it from a borrower."""
     supplied = SuppliedValue("owner-value")
-    provider_id = gap_book.bind(spell=supplied, existence="unique", spellframe=SuppliedValue, binding_name="shared")
+    provider_id = gap_book.bind(spell=supplied, existence="unique", spellframe=IExistingValue, binding_name="shared")
     owner = gap_book.conjure(dynamic=True, name="owner")
     borrower_book = Spellbook(aetheric_frame="existing-instance-planning-regression")
     report: dict[str, object] = {"case": "linked_contract" if contract else "linked_annotation", "planning": planning_mode, "stage": "link"}
@@ -76299,7 +76329,7 @@ END FILE: tests/experimentation/test_existing_instance_gap_experiment.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/experimentation/test_existing_instance_injection_experiment.py
-CONTENT SHA256: 3016c7ffc411ecdfd443462b276b42f254f6ade7691d3d5ed9ff84909c6f776f
+CONTENT SHA256: 3592a6431be215c8549ef67db56c4068c28b7ebdaec8921ab58ea83491525a93
 SOURCE ENCODING: utf-8
 ================================================================================
 """Characterize existing-object injection before selecting a production repair.
@@ -76319,6 +76349,7 @@ from melder.utilities.custom_exceptions.unresolved_input_error import Unresolved
 from tests.integration.melder.spellbook.test_existing_instance_planning import (
     CollectionValueConsumer,
     ExistingValue,
+    IExistingValue,
     MappedValueConsumer,
     NestedValueConsumer,
     ValueConsumer,
@@ -76369,7 +76400,7 @@ def test_characterize_existing_instance_injection(instance_book: Spellbook, mode
     typed = mode.endswith("typed")
     spell_id = instance_book.bind(
         spell=supplied, existence="unique",
-        spellframe="named-values" if named else ExistingValue if typed else None,
+        spellframe="named-values" if named else IExistingValue if typed else None,
         binding_name="chosen" if named else None,
     )
     spell = instance_book._spell_id_pool[spell_id]
@@ -79191,7 +79222,7 @@ END FILE: tests/experimentation/test_lineage_upgrade_to_normal.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/experimentation/test_meld_human_spell_name_string_experiment.py
-CONTENT SHA256: 70aeed4745dc32ad65c791a3179ca4dc5650334ba410206eb2ac51f8a50035b4
+CONTENT SHA256: 736b58d51e9c2aced3abba0d54d9e5bc03b190efff121fab3ea020c4fb74a0cb
 SOURCE ENCODING: utf-8
 ================================================================================
 """Prove human SpellName and explicit machine-ID public meld behavior."""
@@ -79199,7 +79230,7 @@ SOURCE ENCODING: utf-8
 import melder as md
 import pytest
 from collections.abc import Iterator
-from typing import TYPE_CHECKING, Optional
+from typing import Optional, Protocol, TYPE_CHECKING
 
 from melder.aether.spellbook.spellbook import Spellbook
 
@@ -79211,7 +79242,7 @@ class MyService:
     """Minimal service whose class name is the human lookup value under test."""
 
 
-class ServiceFrame:
+class ServiceFrame(Protocol):
     """Concrete logical frame type with a name distinct from the bound service."""
 
 
@@ -79423,14 +79454,14 @@ END FILE: tests/experimentation/test_meld_human_spell_name_string_experiment.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/experimentation/test_meld_instance_reference_discovery_experiment.py
-CONTENT SHA256: 743262b492b2812e67d834eeab9ffde83e8d63d963cadcbbb3752270e1807c02
+CONTENT SHA256: bf4f85dd98e0b9453b27d998c11f6b598ef38ea9156de82e6dcbf44520362e16
 SOURCE ENCODING: utf-8
 ================================================================================
 """Characterize instance-reference Meld lookup before extending purge discovery."""
 
 from collections.abc import Iterator
 from contextlib import contextmanager
-from typing import TYPE_CHECKING, ClassVar, Union
+from typing import ClassVar, Protocol, TYPE_CHECKING, Union
 
 import pytest
 
@@ -79475,7 +79506,7 @@ class ReferenceResource:
         self.cleanup_calls += 1
 
 
-class ReferenceFrame:
+class ReferenceFrame(Protocol):
     """
     Purpose: Supply a logical frame distinct from the concrete resource name.
     Contract: Used only as a binding address; never constructed by these tests.
@@ -86626,6 +86657,529 @@ if __name__ == "__main__":
 END FILE: tests/experiments/cprofile_testing/trace_creation_vs_bootstrap.py
 ================================================================================
 ================================================================================
+BEGIN FILE: tests/integration/melder/aether/conduit/test_annotation_category_collision_integration.py
+CONTENT SHA256: 0073a3710c812c8d2244b6d8da6fda680379d556780ee1b9dbbd0a22c96dc359
+SOURCE ENCODING: utf-8
+================================================================================
+"""Integration regressions: annotations match by kind; a spellframe is a category or a Protocol contract.
+
+Reported 2026-10-03 (MelderOps, EPIC-2026-10-03-annotation_category_provider_collision): since 0.2.8218 Phase 3
+matched a constructor annotation by its lowercased name against each spell's spellframe key as well as its
+type key, so a category named like a type ("spectrum" holding 14 framework services) made every member a
+candidate provider for `spectrum: Spectrum` - an ambiguity when the real provider was also bound, and a silent
+wrong-type injection when it was not. Owner rulings (2026-10-03): a spellframe is a label; a string frame is a
+category and satisfies no annotation; a Protocol frame is a category AND a contract, and a Protocol-typed
+parameter resolves to the spells bound under it; a concrete class is not a valid spellframe; the binding
+records the kind (`Spell.spellframe_kind`) so Phase 3 reads it instead of inferring a meaning from a name.
+
+Repaired 2026-10-04 (annotation_kind_matching): the four defect cases below ran under xfail(strict=True) until
+then; the guards pin what the repair must keep, and the new cases pin the ruled contract and collection rules.
+"""
+
+import sys
+import types
+from collections.abc import Iterator
+from typing import Any, Protocol, Type
+
+import pytest
+
+from melder import Aether, Cleanable, Conduit, Spellbook
+from melder.utilities.custom_exceptions.unresolved_input_error import UnresolvedInputError
+
+
+@pytest.fixture(autouse=True)
+def reset_melder() -> Iterator[None]:
+    """Fresh cold Aether before and after every case, exactly as Melder's integration fixtures do."""
+    Aether._reset_singleton_for_tests()
+    world = Aether()
+    Spellbook._aether = world
+    Conduit._aether = world
+    try:
+        yield
+    finally:
+        Aether._reset_singleton_for_tests()
+        world = Aether()
+        Spellbook._aether = world
+        Conduit._aether = world
+
+
+class Spectrum(Cleanable):
+    """The host object a consumer annotates; bound as a unique at ("spectrum", "Spectrum")."""
+
+    def __init__(self) -> None:
+        """No collaborators."""
+        super().__init__()
+
+    def cleanup(self) -> None:
+        """Retire once."""
+        if self._cleaned:
+            return
+        self._cleaned = True
+
+
+class Toolbox(Cleanable):
+    """An unrelated framework service that may share the host's category."""
+
+    def __init__(self) -> None:
+        """No collaborators."""
+        super().__init__()
+
+    def cleanup(self) -> None:
+        """Retire once."""
+        if self._cleaned:
+            return
+        self._cleaned = True
+
+
+class CenterWithClass(Cleanable):
+    """Consumer annotated with the class object."""
+
+    def __init__(self, *, spectrum: Spectrum) -> None:
+        """Hold the borrowed host."""
+        super().__init__()
+        self.spectrum = spectrum
+
+    def cleanup(self) -> None:
+        """Retire once."""
+        if self._cleaned:
+            return
+        self._cleaned = True
+        del self.spectrum
+
+
+class CenterWithString(Cleanable):
+    """Consumer annotated with the type's name as a quoted string that resolves in this module."""
+
+    def __init__(self, *, spectrum: "Spectrum") -> None:
+        """Hold the borrowed host."""
+        super().__init__()
+        self.spectrum = spectrum
+
+    def cleanup(self) -> None:
+        """Retire once."""
+        if self._cleaned:
+            return
+        self._cleaned = True
+        del self.spectrum
+
+
+def _center_with_unbound_string_annotation() -> Type[Any]:
+    """Build a consumer whose `spectrum: "Spectrum"` annotation names a type that is unbound at runtime.
+
+    This is the `TYPE_CHECKING`-only shape: the class lives in a module of its own that never imports
+    `Spectrum`, so the annotation stays the string "Spectrum" when Melder reads it, and Phase 3 sees the
+    name, not the class object.
+    """
+    module_name = "melder_tests_unbound_spectrum_consumer"
+    module = types.ModuleType(module_name)
+    module.__dict__["Cleanable"] = Cleanable
+    source = (
+        "class CenterUnbound(Cleanable):\n"
+        "    def __init__(self, *, spectrum: 'Spectrum') -> None:\n"
+        "        super().__init__()\n"
+        "        self.spectrum = spectrum\n"
+        "    def cleanup(self) -> None:\n"
+        "        if self._cleaned:\n"
+        "            return\n"
+        "        self._cleaned = True\n"
+        "        del self.spectrum\n"
+    )
+    exec(source, module.__dict__)
+    sys.modules[module_name] = module
+    return module.__dict__["CenterUnbound"]
+
+
+class IService(Protocol):
+    """A Protocol used as a spellframe: a category label AND the contract its members are checked against."""
+
+
+class ServiceShape:
+    """A concrete class: not a valid spellframe since 2026-10-04 (neither a string nor a Protocol)."""
+
+
+class Impl(Cleanable):
+    """Implementation bound under the IService frame."""
+
+    def __init__(self) -> None:
+        """No collaborators."""
+        super().__init__()
+
+    def cleanup(self) -> None:
+        """Retire once."""
+        if self._cleaned:
+            return
+        self._cleaned = True
+
+
+class Client(Cleanable):
+    """Consumer annotated with the Protocol contract."""
+
+    def __init__(self, *, svc: IService) -> None:
+        """Hold the implementation."""
+        super().__init__()
+        self.svc = svc
+
+    def cleanup(self) -> None:
+        """Retire once."""
+        if self._cleaned:
+            return
+        self._cleaned = True
+        del self.svc
+
+
+def _dynamic_root(frame: str) -> Conduit:
+    """Conjure one dynamic root with caching off on a fresh frame."""
+    book = Spellbook(aetheric_frame=frame)
+    book.configure_aether_frame(system_state="dynamic", system_caching_enabled=False,
+                                disposal=None, disposal_method_names=None)
+    book.get_configuration().freeze()
+    return book.conjure(dynamic=True, name="host")
+
+
+def _consumer_with_unbound_annotation(class_name: str, param_name: str, annotation_text: str) -> Type[Any]:
+    """
+    Build a consumer class in its own module whose one parameter carries an UNBOUND string annotation.
+
+    The module never imports the named type, so when Phase 3 reads the annotation (Python 3.14 evaluates
+    annotations lazily) it gets the string itself - the shape a `TYPE_CHECKING`-only import leaves at runtime.
+    """
+    source = (
+        "from melder import Cleanable\n"
+        "class {cls}(Cleanable):\n"
+        "    def __init__(self, *, {param}: '{annotation}') -> None:\n"
+        "        super().__init__()\n"
+        "        self.{param} = {param}\n"
+        "    def cleanup(self) -> None:\n"
+        "        if self._cleaned:\n"
+        "            return\n"
+        "        self._cleaned = True\n"
+        "        del self.{param}\n"
+    ).format(cls=class_name, param=param_name, annotation=annotation_text)
+    module_name = "melder_tests_unbound_{0}".format(class_name.lower())
+    module = types.ModuleType(module_name)
+    sys.modules[module_name] = module
+    exec(compile(source, "<{0}>".format(module_name), "exec"), module.__dict__)
+    return module.__dict__[class_name]
+
+
+@pytest.mark.parametrize("annotation", ["class", "string"])
+@pytest.mark.parametrize(
+    "shared_category",
+    [
+        False,
+        True,
+    ],
+)
+def test_spectrum_annotation_selects_the_spectrum_provider(annotation: str, shared_category: bool) -> None:
+    """The reported four-case matrix: Spectrum resolves whether or not Toolbox shares the "spectrum" category."""
+    root = _dynamic_root("annotation-category-matrix")
+    try:
+        root.bind(spell=Spectrum, existence="unique_per_conduit", spellframe="spectrum",
+                  binding_name="Spectrum", disposal_method_names=["cleanup"])
+        root.bind(spell=Toolbox, existence="unique_per_conduit",
+                  spellframe="spectrum" if shared_category else "tooling",
+                  binding_name="Toolbox", disposal_method_names=["cleanup"])
+        consumer = CenterWithClass if annotation == "class" else CenterWithString
+        root.bind(spell=consumer, existence="many", spellframe="command_center",
+                  binding_name="center", disposal_method_names=["cleanup"])
+        center = root.meld(spellframe="command_center", binding_name="center")
+        assert isinstance(center.spectrum, Spectrum)
+    finally:
+        root.cleanup()
+
+
+def test_type_checking_only_string_annotation_selects_the_spectrum_provider() -> None:
+    """A string annotation whose name is unbound at runtime resolves exactly as the class object does."""
+    root = _dynamic_root("annotation-category-unbound-string")
+    try:
+        root.bind(spell=Spectrum, existence="unique_per_conduit", spellframe="spectrum",
+                  binding_name="Spectrum", disposal_method_names=["cleanup"])
+        root.bind(spell=Toolbox, existence="unique_per_conduit", spellframe="spectrum",
+                  binding_name="Toolbox", disposal_method_names=["cleanup"])
+        root.bind(spell=_center_with_unbound_string_annotation(), existence="many",
+                  spellframe="command_center", binding_name="center", disposal_method_names=["cleanup"])
+        center = root.meld(spellframe="command_center", binding_name="center")
+        assert isinstance(center.spectrum, Spectrum)
+    finally:
+        root.cleanup()
+
+
+def test_lone_category_member_is_not_injected_for_a_type_annotation() -> None:
+    """With no Spectrum bound, a Toolbox in category "spectrum" is NOT handed to `spectrum: Spectrum`.
+
+    The parameter is an unresolved input: the meld refuses without an override and takes the supplied
+    object with one. Today the Toolbox is injected silently.
+    """
+    root = _dynamic_root("annotation-category-lone-member")
+    try:
+        root.bind(spell=Toolbox, existence="unique_per_conduit", spellframe="spectrum",
+                  binding_name="Toolbox", disposal_method_names=["cleanup"])
+        root.bind(spell=CenterWithClass, existence="many", spellframe="command_center",
+                  binding_name="center", disposal_method_names=["cleanup"])
+        with pytest.raises(UnresolvedInputError):
+            root.meld(spellframe="command_center", binding_name="center")
+        host = Spectrum()
+        center = root.meld(spellframe="command_center", binding_name="center", override={"spectrum": host})
+        assert center.spectrum is host
+    finally:
+        root.cleanup()
+
+
+def test_guard_protocol_frame_is_a_contract_that_resolves_its_annotation() -> None:
+    """GUARD: an implementation bound under a Protocol spellframe satisfies a parameter annotated with it."""
+    root = _dynamic_root("annotation-category-contract")
+    try:
+        root.bind(spell=Impl, existence="unique_per_conduit", spellframe=IService,
+                  disposal_method_names=["cleanup"])
+        root.bind(spell=Client, existence="many", spellframe="clients", binding_name="client",
+                  disposal_method_names=["cleanup"])
+        client = root.meld(spellframe="clients", binding_name="client")
+        assert isinstance(client.svc, Impl)
+    finally:
+        root.cleanup()
+
+
+def test_type_checking_only_string_naming_a_protocol_resolves_the_contract() -> None:
+    """A consumer annotated `svc: "IService"` with the name unbound at runtime resolves the Protocol's member."""
+    root = _dynamic_root("annotation-category-contract-string")
+    try:
+        root.bind(spell=Impl, existence="unique_per_conduit", spellframe=IService,
+                  disposal_method_names=["cleanup"])
+        consumer = _consumer_with_unbound_annotation("ClientUnbound", "svc", "IService")
+        root.bind(spell=consumer, existence="many", spellframe="clients", binding_name="client",
+                  disposal_method_names=["cleanup"])
+        client = root.meld(spellframe="clients", binding_name="client")
+        assert isinstance(client.svc, Impl)
+    finally:
+        root.cleanup()
+
+
+def test_concrete_class_spellframe_is_refused_at_bind() -> None:
+    """A spellframe must be a string category or a Protocol contract; a concrete class is refused with the remedy."""
+    root = _dynamic_root("annotation-category-refusal")
+    try:
+        with pytest.raises(TypeError, match="string category or a Protocol contract") as caught:
+            root.bind(spell=Impl, existence="unique_per_conduit", spellframe=ServiceShape,
+                      disposal_method_names=["cleanup"])
+        assert "ServiceShape" in str(caught.value)
+        assert "spellframe='ServiceShape'" in str(caught.value)
+        with pytest.raises(TypeError, match="string category or a Protocol contract"):
+            root.bind(spell=Impl, existence="unique_per_conduit", spellframe=42,
+                      disposal_method_names=["cleanup"])
+    finally:
+        root.cleanup()
+
+
+def test_string_annotation_naming_a_category_does_not_select_a_single_provider() -> None:
+    """`tool: "tooling"` names no type and no contract: the lone member of category "tooling" is not injected."""
+    root = _dynamic_root("annotation-category-string-label")
+    try:
+        root.bind(spell=Toolbox, existence="unique_per_conduit", spellframe="tooling", binding_name="Toolbox",
+                  disposal_method_names=["cleanup"])
+        consumer = _consumer_with_unbound_annotation("ToolUser", "tool", "tooling")
+        root.bind(spell=consumer, existence="many", spellframe="consumers", binding_name="user",
+                  disposal_method_names=["cleanup"])
+        with pytest.raises(UnresolvedInputError):
+            root.meld(spellframe="consumers", binding_name="user")
+        tool = root.meld(spellframe="tooling", binding_name="Toolbox")
+        user = root.meld(spellframe="consumers", binding_name="user", override={"tool": tool})
+        assert user.tool is tool
+    finally:
+        root.cleanup()
+
+
+class Gatherer(Cleanable):
+    """Consumer of three collections: a class, a string label and a Protocol."""
+
+    def __init__(self, *, spectra: list[Spectrum], members: list["spectrum"], services: list[IService]) -> None:
+        """Hold the three groups."""
+        super().__init__()
+        self.spectra = spectra
+        self.members = members
+        self.services = services
+
+    def cleanup(self) -> None:
+        """Retire once."""
+        if self._cleaned:
+            return
+        self._cleaned = True
+        del self.spectra
+        del self.members
+        del self.services
+
+
+def test_collection_annotations_gather_the_group_their_kind_names() -> None:
+    """`list[Spectrum]` gathers that class, `list["spectrum"]` the category's members, `list[IService]` the contract's."""
+    root = _dynamic_root("annotation-category-collections")
+    try:
+        root.bind(spell=Spectrum, existence="unique_per_conduit", spellframe="spectrum",
+                  binding_name="Spectrum", disposal_method_names=["cleanup"])
+        root.bind(spell=Toolbox, existence="unique_per_conduit", spellframe="spectrum",
+                  binding_name="Toolbox", disposal_method_names=["cleanup"])
+        root.bind(spell=Impl, existence="unique_per_conduit", spellframe=IService,
+                  disposal_method_names=["cleanup"])
+        root.bind(spell=Gatherer, existence="many", spellframe="consumers", binding_name="gatherer",
+                  disposal_method_names=["cleanup"])
+        gatherer = root.meld(spellframe="consumers", binding_name="gatherer")
+        assert [type(item).__name__ for item in gatherer.spectra] == ["Spectrum"]
+        assert sorted(type(item).__name__ for item in gatherer.members) == ["Spectrum", "Toolbox"]
+        assert [type(item).__name__ for item in gatherer.services] == ["Impl"]
+    finally:
+        root.cleanup()
+
+
+def test_guard_two_providers_of_the_annotated_type_still_raise_ambiguity() -> None:
+    """GUARD: two spells of the annotated TYPE at distinct addresses are a real ambiguity, reported by Phase 3."""
+    root = _dynamic_root("annotation-category-type-ambiguity")
+    try:
+        root.bind(spell=Spectrum, existence="unique_per_conduit", spellframe="spectrum",
+                  binding_name="primary", disposal_method_names=["cleanup"])
+        root.bind(spell=Spectrum, existence="unique_per_conduit", spellframe="mirror",
+                  binding_name="secondary", disposal_method_names=["cleanup"])
+        with pytest.raises(RuntimeError, match="multiple DI candidates"):
+            root.bind(spell=CenterWithClass, existence="many", spellframe="command_center",
+                      binding_name="center", disposal_method_names=["cleanup"])
+    finally:
+        root.cleanup()
+
+
+def test_guard_explicit_address_selection_is_unchanged() -> None:
+    """GUARD: melding the category member by its address keeps working; the category is still addressable."""
+    root = _dynamic_root("annotation-category-explicit-address")
+    try:
+        root.bind(spell=Spectrum, existence="unique_per_conduit", spellframe="spectrum",
+                  binding_name="Spectrum", disposal_method_names=["cleanup"])
+        root.bind(spell=Toolbox, existence="unique_per_conduit", spellframe="spectrum",
+                  binding_name="Toolbox", disposal_method_names=["cleanup"])
+        assert isinstance(root.meld(spellframe="spectrum", binding_name="Toolbox"), Toolbox)
+        assert isinstance(root.meld(spellframe="spectrum", binding_name="Spectrum"), Spectrum)
+    finally:
+        root.cleanup()
+
+
+class SpectrumConfig(Cleanable):
+    """A framework input bound as a named existing object in the "spectrum" category (MelderOps shape)."""
+
+    def __init__(self, label: str) -> None:
+        """Hold a marker."""
+        super().__init__()
+        self.label = label
+
+    def cleanup(self) -> None:
+        """Retire once."""
+        if self._cleaned:
+            return
+        self._cleaned = True
+
+
+class IrisConfig(Cleanable):
+    """A second framework input in the same category."""
+
+    def __init__(self, label: str) -> None:
+        """Hold a marker."""
+        super().__init__()
+        self.label = label
+
+    def cleanup(self) -> None:
+        """Retire once."""
+        if self._cleaned:
+            return
+        self._cleaned = True
+
+
+class ManagerA(Cleanable):
+    """A framework manager in the category, typed with the category's existing-object inputs."""
+
+    def __init__(self, *, spectrum_config: SpectrumConfig, iris: IrisConfig) -> None:
+        """Hold both inputs."""
+        super().__init__()
+        self.spectrum_config = spectrum_config
+        self.iris = iris
+
+    def cleanup(self) -> None:
+        """Retire once."""
+        if self._cleaned:
+            return
+        self._cleaned = True
+        del self.spectrum_config
+        del self.iris
+
+
+class ManagerB(Cleanable):
+    """Another manager in the category; no inputs."""
+
+    def __init__(self) -> None:
+        """No collaborators."""
+        super().__init__()
+
+    def cleanup(self) -> None:
+        """Retire once."""
+        if self._cleaned:
+            return
+        self._cleaned = True
+
+
+def make_report() -> dict:
+    """A function spell grouped under the category (factory semantics)."""
+    return {"report": True}
+
+
+class CommandCenter(Cleanable):
+    """The consumer of the epic: requires the host by type and is melded with it supplied."""
+
+    def __init__(self, *, spectrum: Spectrum, manager: ManagerA) -> None:
+        """Hold the host and one manager."""
+        super().__init__()
+        self.spectrum = spectrum
+        self.manager = manager
+
+    def cleanup(self) -> None:
+        """Retire once."""
+        if self._cleaned:
+            return
+        self._cleaned = True
+        del self.spectrum
+        del self.manager
+
+
+def test_many_category_members_never_become_providers_for_the_type() -> None:
+    """
+    MelderOps shape: the host class, two named existing objects, two managers and a function spell all live in
+    the "spectrum" category; `CommandCenter.spectrum: Spectrum` resolves the host alone, the managers' typed
+    inputs resolve the existing objects by their classes, and melding the center with the host supplied by
+    override (as Spectrum.configure does) injects exactly that object.
+    """
+    root = _dynamic_root("annotation-category-melderops-shape")
+    try:
+        spectrum_config = SpectrumConfig("spectrum-config")
+        iris = IrisConfig("iris")
+        root.bind(spell=Spectrum, existence="unique_per_conduit", spellframe="spectrum",
+                  binding_name="Spectrum", disposal_method_names=["cleanup"])
+        root.bind(spell=spectrum_config, existence="unique", spellframe="spectrum", binding_name="SpectrumConfig")
+        root.bind(spell=iris, existence="unique", spellframe="spectrum", binding_name="IrisConfig")
+        root.bind(spell=ManagerA, existence="unique_per_conduit", spellframe="spectrum",
+                  binding_name="ManagerA", disposal_method_names=["cleanup"])
+        root.bind(spell=ManagerB, existence="unique_per_conduit", spellframe="spectrum",
+                  binding_name="ManagerB", disposal_method_names=["cleanup"])
+        root.bind(spell=make_report, existence="unique", spellframe="spectrum", binding_name="make_report")
+        root.bind(spell=CommandCenter, existence="many", spellframe="command_center",
+                  binding_name="center", disposal_method_names=["cleanup"])
+        host = root.meld(spellframe="spectrum", binding_name="Spectrum")
+        center = root.meld(spellframe="command_center", binding_name="center", override={"spectrum": host})
+        assert center.spectrum is host
+        assert isinstance(center.manager, ManagerA)
+        assert center.manager.spectrum_config is spectrum_config
+        assert center.manager.iris is iris
+        # without the override the host still resolves by its type, not by the category
+        second = root.meld(spellframe="command_center", binding_name="center")
+        assert isinstance(second.spectrum, Spectrum)
+        assert second.manager is center.manager
+    finally:
+        root.cleanup()
+================================================================================
+END FILE: tests/integration/melder/aether/conduit/test_annotation_category_collision_integration.py
+================================================================================
+================================================================================
 BEGIN FILE: tests/integration/melder/aether/conduit/test_human_spell_name_resolution.py
 CONTENT SHA256: 8461c31b505464032761e40faad722d75a38bef8e57c81dfcd700b7e5e9ce50a
 SOURCE ENCODING: utf-8
@@ -88495,7 +89049,7 @@ END FILE: tests/integration/melder/aether/conduit/test_meld_unhashable_input_cac
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/aether/conduit/test_rebind_after_first_meld_integration.py
-CONTENT SHA256: ffe9ad215eed12981ab0cba643ddd735c45c5873cc42b549881bbb9f03b3a0f7
+CONTENT SHA256: fbea3961e3eaf5ca98d82d7727d07e995b772e209835ec27915d8e07f1934671
 SOURCE ENCODING: utf-8
 ================================================================================
 """Integration coverage: rebind after first meld resolves again in every conduit (0.2.8219 repair).
@@ -88513,6 +89067,7 @@ references), no application import.
 """
 
 from collections.abc import Iterator
+from typing import Protocol
 
 import pytest
 
@@ -88587,8 +89142,30 @@ class ProviderV2(Cleanable):
         self._cleaned = True
 
 
+class IProvider(Protocol):
+    """The contract both provider classes are bound under when one replaces the other (M2)."""
+
+    generation: int
+
+
+class ContractConsumer(Cleanable):
+    """Depends on the provider CONTRACT by annotation, so a replacement implementation satisfies it."""
+
+    def __init__(self, p: IProvider) -> None:
+        """Hold the injected provider."""
+        super().__init__()
+        self.p = p
+
+    def cleanup(self) -> None:
+        """Retire once."""
+        if self._cleaned:
+            return
+        self._cleaned = True
+        del self.p
+
+
 class Consumer(Cleanable):
-    """Depends on the provider address by annotation."""
+    """Depends on the provider class by annotation."""
 
     def __init__(self, p: Provider) -> None:
         """Hold the injected provider."""
@@ -88688,19 +89265,24 @@ def test_replacement_is_resolved_again_and_the_old_product_survives() -> None:
 
 
 def test_dependent_consumer_is_rebuilt_against_the_replacement_class() -> None:
-    """GUARD (green before the repair): a consumer compiled against the first provider rebuilds its plan."""
+    """
+    GUARD (green before the repair): a consumer compiled against the first provider rebuilds its plan.
+
+    The consumer asks for the Protocol contract both providers are bound under (2026-10-04: a class
+    annotation names one type, so swapping implementations is a contract's job).
+    """
     frame = "rebind-matrix-m2"
     book, root, peer, scope = _world(frame)
     try:
-        provider_id = root.bind(spell=Provider, existence="many", spellframe="provider",
+        provider_id = root.bind(spell=Provider, existence="many", spellframe=IProvider,
                                 disposal_method_names=["cleanup"])
-        root.bind(spell=Consumer, existence="many", spellframe="consumers",
+        root.bind(spell=ContractConsumer, existence="many", spellframe="consumers",
                   binding_name="consumer", disposal_method_names=["cleanup"])
         first = scope.meld(spellframe="consumers", binding_name="consumer")
         assert first.p.generation == 1
         definition = root.get_spell_by_id(provider_id, frame)
         root.cleanup_spell(spell=definition)
-        root.bind(spell=ProviderV2, existence="many", spellframe="provider",
+        root.bind(spell=ProviderV2, existence="many", spellframe=IProvider,
                   disposal_method_names=["cleanup"])
         second = scope.meld(spellframe="consumers", binding_name="consumer")
         assert second.p.generation == 2, "consumer plan still constructs the removed provider class"
@@ -124150,6 +124732,297 @@ def test_restore_into_a_live_world_with_a_sealed_regime_completes(cache_root) ->
 END FILE: tests/integration/melder/crystallizer/test_restore_sealed_aether_regime_integration.py
 ================================================================================
 ================================================================================
+BEGIN FILE: tests/integration/melder/crystallizer/test_restore_spellframe_kind_integration.py
+CONTENT SHA256: 989ab871ecc4c2e12370b20a8829df181feb46ae3d01ce0e1beeea2e234a005b
+SOURCE ENCODING: utf-8
+================================================================================
+"""
+Integration: a Protocol spellframe survives a restore as a CONTRACT, not as a same-named category.
+
+Restore and graft rebind spells by the frame NAME the crystal recorded. Since 2026-10-04 Phase 3 matches by
+kind - a category never satisfies an annotation - so a Protocol frame rebound as a string would strand every
+Protocol-typed consumer of the restored world. The crystal now records `spellframe_kind` and the Protocol's
+module coordinates (record 4.1.0); the loaders hydrate the Protocol through the import lane and, when it
+cannot be imported, bind the recorded name as a category and file a shortfall that says so.
+
+Runs only on 3.14t (melder package root import chain).
+"""
+import sys
+import types
+from typing import Protocol
+
+import pytest
+
+from melder.aether.aether import Aether
+from melder.aether.aether_utility_system import AetherUtilitySystem
+from melder.aether.conduit.conduit import Conduit
+from melder.aether.spellbook.configuration.spellbook_configuration import (
+    SpellbookConfiguration,
+)
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spellbook import Spellbook
+from melder.aether.spellbook.spellframe_kind.spellframe_kind import SpellframeKind
+from melder.crystallizer.configuration.crystallizer_configuration import (
+    CrystallizerConfiguration,
+)
+from melder.crystallizer.crystallizer import Crystallizer
+from melder.nexus.nexus import Nexus
+from tests._frame_posture_test_support import (
+    apply_dynamic_defaults_for_spellbook_configuration,
+)
+
+
+class IRestoreService(Protocol):
+    """
+    The contract the provider is bound under; module-scoped so a restore can import it by qualname.
+    """
+
+    def serve(self) -> str:
+        """Return a marker."""
+        ...
+
+
+class RestoreServiceImpl:
+    """
+    Provider bound under the `IRestoreService` contract; module-scoped for hydration.
+    """
+
+    def serve(self) -> str:
+        """Return the provider's marker."""
+        return "served"
+
+
+class RestoreServiceClient:
+    """
+    Consumer typed with the contract; module-scoped for hydration.
+    """
+
+    def __init__(self, svc: IRestoreService) -> None:
+        """Hold the injected provider."""
+        self.svc = svc
+
+
+@pytest.fixture(autouse=True)
+def reset_world_singletons():
+    """
+    Purpose:
+        Isolate each test behind fresh Aether/Nexus/Crystallizer singletons.
+    Returns:
+        None.
+    """
+    Aether._reset_singleton_for_tests()
+    AetherUtilitySystem._reset_singleton_for_tests()
+    Nexus._reset_singleton_for_tests()
+    Crystallizer._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+    yield
+    Aether._reset_singleton_for_tests()
+    AetherUtilitySystem._reset_singleton_for_tests()
+    Nexus._reset_singleton_for_tests()
+    Crystallizer._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+
+
+@pytest.fixture()
+def cache_root(tmp_path, monkeypatch):
+    """
+    Route the crystallizer cache into a per-test directory.
+    Returns:
+        Path: The isolated cache root.
+    """
+    from melder.crystallizer.asset_management import crystallizer_cache
+
+    root = tmp_path / "__melder_cache__" / "__crystallizer_cache__"
+    monkeypatch.setattr(
+        crystallizer_cache.CrystallizerCache,
+        "resolve_cache_root_path",
+        staticmethod(lambda: root),
+    )
+    return root
+
+
+def _activate_crystallizer() -> Crystallizer:
+    """Activate the Aether-hosted crystallizer with default knobs."""
+    configuration = CrystallizerConfiguration().with_defaults()
+    configuration.activate()
+    crystallizer = Crystallizer()
+    crystallizer.activate(configuration)
+    return crystallizer
+
+
+def _dynamic_book() -> Spellbook:
+    """Build one dynamic-posture Spellbook with its configuration finalized first."""
+    configuration = SpellbookConfiguration()
+    apply_dynamic_defaults_for_spellbook_configuration(configuration)
+    configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
+    configuration.finalize()
+    return Spellbook(configuration=configuration)
+
+
+def _fresh_boot() -> Crystallizer:
+    """Simulate a process restart and return the fresh activated crystallizer."""
+    Aether._reset_singleton_for_tests()
+    AetherUtilitySystem._reset_singleton_for_tests()
+    Nexus._reset_singleton_for_tests()
+    Crystallizer._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+    return _activate_crystallizer()
+
+
+def _restored_root() -> Conduit:
+    """Return the rebuilt root conduit named "root" on the default frame."""
+    return Aether().get_root_conduit_by_name("root")
+
+
+def test_protocol_frame_restores_as_a_contract_and_its_consumer_resolves(cache_root) -> None:
+    """
+    Purpose:
+        A provider bound under a Protocol frame is rebound under that Protocol after a restore, so the
+        consumer typed with the Protocol resolves it exactly as in the recorded world.
+    Contract:
+        - The crystal carries kind "contract" and the Protocol's coordinates.
+        - The report completes with no spell-crystal shortfall; the rebuilt spell's kind is `contract`.
+        - Melding the consumer injects the provider.
+    """
+    crystallizer = _activate_crystallizer()
+    book = _dynamic_book()
+    provider_id = book.bind(
+        spell=RestoreServiceImpl, existence=Existence.unique, permissions="create", spellframe=IRestoreService,
+    )
+    book.bind(spell=RestoreServiceClient, existence=Existence.many, permissions="create")
+    book.conjure(dynamic=True, name="root")
+    crystal = crystallizer.get_spell_crystal(provider_id)
+    assert crystal.spellframe_kind == "contract"
+    assert crystal.spellframe_module == IRestoreService.__module__
+    assert crystal.spellframe_qualname == "IRestoreService"
+    checkpoint_id = crystallizer.create_checkpoint()
+    crystallizer.flush_checkpoint(checkpoint_id)
+
+    rebooted = _fresh_boot()
+    rebooted.reload_cached_checkpoint(checkpoint_id)
+    report = rebooted.load_checkpoint(checkpoint_id)
+
+    assert report["status"] == "complete"
+    assert [entry for entry in report["shortfalls"] if entry["kind"] == "spell_crystal"] == []
+    root = _restored_root()
+    rebuilt = root.meld(spellframe=IRestoreService)
+    assert isinstance(rebuilt, RestoreServiceImpl)
+    client = root.meld(spell=RestoreServiceClient)
+    assert client.svc is rebuilt
+    kinds = {entry["spell_name"]: entry for entry in root.spellbook.describe_spells_in_spellbook()}
+    provider_spell = root.spellbook.find_spell_by_id(kinds["RestoreServiceImpl"]["spell_id"])
+    assert provider_spell.spellframe_kind is SpellframeKind.contract
+    assert provider_spell.implemented_protocols == (IRestoreService,)
+
+
+def test_unimportable_protocol_frame_degrades_to_a_category_with_a_shortfall(cache_root) -> None:
+    """
+    Purpose:
+        When the recorded Protocol cannot be imported at restore, the spell is still rebuilt - under its
+        recorded NAME as a category - and the report says which spell lost its contract.
+    Contract:
+        - The report completes; one shortfall names `spellframe_contract_hydration_failed` and the spell.
+        - The rebuilt spell has kind `category` and is addressable by the frame name.
+    """
+    module_name = "melder_tests_vanishing_contract_module"
+    module = types.ModuleType(module_name)
+    exec(
+        "from typing import Protocol\n"
+        "class IVanishing(Protocol):\n"
+        "    def serve(self) -> str: ...\n",
+        module.__dict__,
+    )
+    sys.modules[module_name] = module
+    vanishing = module.__dict__["IVanishing"]
+    try:
+        crystallizer = _activate_crystallizer()
+        book = _dynamic_book()
+        provider_id = book.bind(
+            spell=RestoreServiceImpl, existence=Existence.unique, permissions="create", spellframe=vanishing,
+        )
+        book.conjure(dynamic=True, name="root")
+        assert crystallizer.get_spell_crystal(provider_id).spellframe_module == module_name
+        checkpoint_id = crystallizer.create_checkpoint()
+        crystallizer.flush_checkpoint(checkpoint_id)
+    finally:
+        sys.modules.pop(module_name, None)
+
+    rebooted = _fresh_boot()
+    rebooted.reload_cached_checkpoint(checkpoint_id)
+    report = rebooted.load_checkpoint(checkpoint_id)
+
+    assert report["status"] == "complete"
+    reasons = [entry["reason"] for entry in report["shortfalls"] if entry["kind"] == "spell_crystal"]
+    assert len(reasons) == 1
+    assert reasons[0].startswith("spellframe_contract_hydration_failed (" + module_name + ".IVanishing)")
+    assert "bound as the category 'IVanishing'" in reasons[0]
+    root = _restored_root()
+    rebuilt = root.meld(spellframe="IVanishing")
+    assert isinstance(rebuilt, RestoreServiceImpl)
+    kinds = {entry["spell_name"]: entry for entry in root.spellbook.describe_spells_in_spellbook()}
+    provider_spell = root.spellbook.find_spell_by_id(kinds["RestoreServiceImpl"]["spell_id"])
+    assert provider_spell.spellframe_kind is SpellframeKind.category
+    assert provider_spell.implemented_protocols == ()
+
+
+def test_index_graft_carries_the_protocol_frame_kind_into_the_host_book(cache_root) -> None:
+    """
+    Purpose:
+        The spell-index graft lane rebinds the selected member through the same frame hydration as a
+        restore: a member recorded under a Protocol frame is bound into the host book under that Protocol,
+        not under a same-named category. The source world is torn down before the graft so the member's
+        process-wide spell id is free for the host frame.
+    Contract:
+        - The graft report completes with no shortfall and a fresh live index id.
+        - The grafted spell's kind is `contract` with the Protocol recorded as its implemented contract.
+        - A consumer typed with the Protocol, bound on the host book, resolves the grafted member.
+    """
+    crystallizer = _activate_crystallizer()
+    source_book = _dynamic_book()
+    provider_id = source_book.bind(
+        spell=RestoreServiceImpl, existence=Existence.unique, permissions="create", spellframe=IRestoreService,
+    )
+    source_root = source_book.conjure(dynamic=True, name="graft-source")
+    recorded_index_id = source_book.find_spell_by_id(provider_id).spell_index.id
+    record = crystallizer.capture_index_graft(recorded_index_id)
+    assert record["graft_kind"] == "spell_index"
+    assert record["members"][provider_id]["payload"]["spellframe_kind"] == "contract"
+    # Release the source's claim on the id first: under process-wide spell ids a live member cannot be
+    # grafted into a second frame (EPIC-2026-08-02); the lane under test is the frame hydration.
+    source_root.cleanup()
+    source_book.cleanup()
+
+    host_configuration = SpellbookConfiguration(aether_frame="graft-host-frame")
+    apply_dynamic_defaults_for_spellbook_configuration(host_configuration)
+    host_configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
+    host_configuration.finalize()
+    host_book = Spellbook(aetheric_frame="graft-host-frame", configuration=host_configuration)
+    host_root = host_book.conjure(dynamic=True, name="graft-host")
+
+    report = crystallizer.graft_index(record, host_book)
+    assert report["status"] == "complete"
+    assert report["members_bound"] == 1
+    assert report["shortfalls"] == []
+    assert report["live_index_id"] not in (None, recorded_index_id)
+    grafted = host_book.find_spell_by_id(provider_id)
+    assert grafted is not None
+    assert grafted.spellframe_kind is SpellframeKind.contract
+    assert grafted.implemented_protocols == (IRestoreService,)
+
+    host_book.bind(spell=RestoreServiceClient, existence=Existence.many, permissions="create")
+    client = host_root.meld(spell=RestoreServiceClient)
+    assert isinstance(client.svc, RestoreServiceImpl)
+    assert client.svc is host_root.meld(spellframe=IRestoreService)
+================================================================================
+END FILE: tests/integration/melder/crystallizer/test_restore_spellframe_kind_integration.py
+================================================================================
+================================================================================
 BEGIN FILE: tests/integration/melder/crystallizer/test_spell_crystal_integration.py
 CONTENT SHA256: c2240336dd2f9d47b9aa79189fad1701a85fbba7be87548eb7a02b9753004504
 SOURCE ENCODING: utf-8
@@ -129998,7 +130871,7 @@ END FILE: tests/integration/melder/spellbook/test_cache_runtime_integration.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/spellbook/test_cache_schema_version_integration.py
-CONTENT SHA256: a35c3ad67936541f8594e6f4c6e154ef275e98300b3ebaf36c620880295c403f
+CONTENT SHA256: 60ab730708d57e7b5da370c93bd5cde69dbe9d80eb0c8a2a55ab29668551a7a2
 SOURCE ENCODING: utf-8
 ================================================================================
 import logging
@@ -130032,6 +130905,7 @@ EXPECTED_CACHE_VERSION_HISTORY = {
     17: "lazy_instance_results",
     18: "annotation_address_matching",
     19: "executor_world_stamp",
+    20: "annotation_kind_matching",
 }
 
 
@@ -130260,7 +131134,7 @@ END FILE: tests/integration/melder/spellbook/test_deferred_annotations.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/spellbook/test_existing_instance_additional_regressions.py
-CONTENT SHA256: b3cca409325e98fa50b27fb09f7b564c3ae4d3afd99fa207e10a955d80b53d40
+CONTENT SHA256: 1599b9cb8550b178d7ce1f55781784b13d0802ad468878984204e6fbc7e00a23
 SOURCE ENCODING: utf-8
 ================================================================================
 """Stock-runtime regressions for gaps confirmed by the existing-instance experiment.
@@ -130278,6 +131152,9 @@ from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.aether.spellbook.spellbook import Spellbook
 from tests.integration.melder.spellbook.test_existing_instance_planning import (
     ExistingValue as SuppliedValue,
+)
+from tests.integration.melder.spellbook.test_existing_instance_planning import (
+    IExistingValue,
 )
 from tests.integration.melder.spellbook.test_existing_instance_planning import (
     ValueConsumer,
@@ -130314,7 +131191,7 @@ class LinkedValueConsumer:
 
     def __init__(
             self,
-            value: SuppliedValue = SpellContract(spellframe=SuppliedValue, binding_name="shared"),
+            value: SuppliedValue = SpellContract(spellframe=IExistingValue, binding_name="shared"),
     ) -> None:
         """Retain the provider's object without acquiring its cleanup responsibility."""
         self.value = value
@@ -130328,7 +131205,7 @@ def build_value_consumer(value: SuppliedValue) -> ValueConsumer:
 def test_existing_provider_satisfies_repeated_parameters(instance_book: Spellbook) -> None:
     """A repeated dependency must share the original object through both parameters."""
     supplied = SuppliedValue("shared")
-    instance_book.bind(spell=supplied, existence="unique", spellframe=SuppliedValue)
+    instance_book.bind(spell=supplied, existence="unique", spellframe=IExistingValue)
     target = instance_book.bind(spell=RepeatedValueConsumer, existence="many")
     consumer = instance_book.conjure(dynamic=True).meld(spell_id=target)
     assert consumer.left is supplied and consumer.right is supplied
@@ -130337,7 +131214,7 @@ def test_existing_provider_satisfies_repeated_parameters(instance_book: Spellboo
 def test_existing_provider_can_be_injected_into_function(instance_book: Spellbook) -> None:
     """Function dependency planning must preserve the existing value without making it callable."""
     supplied = SuppliedValue("function-input")
-    instance_book.bind(spell=supplied, existence="unique", spellframe=SuppliedValue)
+    instance_book.bind(spell=supplied, existence="unique", spellframe=IExistingValue)
     target = instance_book.bind(spell=build_value_consumer, existence="unique")
     consumer = instance_book.conjure(dynamic=True).meld(spell_id=target)
     assert consumer.value is supplied
@@ -130346,7 +131223,7 @@ def test_existing_provider_can_be_injected_into_function(instance_book: Spellboo
 def test_existing_provider_typechecking_annotation_does_not_raise_nameerror(instance_book: Spellbook) -> None:
     """Resolve a real required TYPE_CHECKING-only annotation without eager evaluation failure."""
     supplied = SuppliedValue("deferred-input")
-    instance_book.bind(spell=supplied, existence="unique", spellframe=SuppliedValue)
+    instance_book.bind(spell=supplied, existence="unique", spellframe=IExistingValue)
     target = instance_book.bind(spell=DeferredValueConsumer, existence="many")
     consumer = instance_book.conjure(dynamic=True).meld(spell_id=target)
     assert consumer.value is supplied
@@ -130360,7 +131237,7 @@ def test_existing_provider_survives_consumer_scope_release(
 ) -> None:
     """Scoped consumer reuse and teardown must preserve the root-owned existing value."""
     supplied = SuppliedValue("scope-input")
-    provider_id = instance_book.bind(spell=supplied, existence="unique", spellframe=SuppliedValue)
+    provider_id = instance_book.bind(spell=supplied, existence="unique", spellframe=IExistingValue)
     target = instance_book.bind(spell=ValueConsumer, existence=existence)
     root = instance_book.conjure(dynamic=True)
     door = root.create_lesser_conduit() if scope == "lesser" else root.create_spellspace()
@@ -130380,7 +131257,7 @@ def test_existing_provider_is_injected_across_read_contract(
     """Borrower construction and cleanup must retain the existing provider's exact identity."""
     supplied = SuppliedValue("linked-input")
     provider_id = instance_book.bind(
-        spell=supplied, existence="unique", spellframe=SuppliedValue, binding_name="shared",
+        spell=supplied, existence="unique", spellframe=IExistingValue, binding_name="shared",
     )
     owner = instance_book.conjure(dynamic=True, name="owner")
     borrower_book = Spellbook(aetheric_frame="existing-instance-planning-regression")
@@ -130401,11 +131278,16 @@ def test_existing_provider_is_injected_across_read_contract(
 
 @pytest.mark.parametrize("lookup", ("instance", "frame"))
 def test_existing_root_public_lookup_preserves_identity(instance_book: Spellbook, lookup: str) -> None:
-    """Keep actual object/frame lookup covered independently of the machine-ID controls."""
+    """
+    Keep actual object/frame lookup covered independently of the machine-ID controls.
+
+    A lookup addresses the binding: `meld(spell=obj)` finds an object bound bare (at its class's address),
+    `meld(spellframe=IExistingValue)` one bound under that contract.
+    """
     supplied = SuppliedValue("lookup-input")
-    instance_book.bind(spell=supplied, existence="unique", spellframe=SuppliedValue)
+    instance_book.bind(spell=supplied, existence="unique", spellframe=None if lookup == "instance" else IExistingValue)
     root = instance_book.conjure(dynamic=True)
-    found = root.meld(spell=supplied) if lookup == "instance" else root.meld(spellframe=SuppliedValue)
+    found = root.meld(spell=supplied) if lookup == "instance" else root.meld(spellframe=IExistingValue)
     assert found is supplied
 
 
@@ -130422,7 +131304,7 @@ END FILE: tests/integration/melder/spellbook/test_existing_instance_additional_r
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/spellbook/test_existing_instance_planning.py
-CONTENT SHA256: cd0fe75a6d09ed8ddbbe75ccd4c0cbf9f990843470c859bd408bbc05414a1cf9
+CONTENT SHA256: dd4ef91d1227bbbb79aa53b9dced23f43726ab50b7c8f353a3f2f61dc9dc122c
 SOURCE ENCODING: utf-8
 ================================================================================
 """Existing values stay opaque through both contract planners and dependency walks.
@@ -130432,7 +131314,7 @@ acceptance test; no factory wrappers are used to make existing values callable.
 """
 
 from collections.abc import Iterator
-from typing import Union
+from typing import Protocol, Union
 
 import pytest
 
@@ -130446,6 +131328,10 @@ from melder.aether.spellbook.spell_compiler.spell_analyzer.strategies.spell_occu
 from melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_occurrence_contract_processor_strategy import (
     SpellOccurrenceContractProcessorStrategy,
 )
+
+
+class IExistingValue(Protocol):
+    """The contract an existing value is framed under (a concrete class is not a valid frame since 2026-10-04)."""
 
 
 class ExistingValue:
@@ -130475,7 +131361,7 @@ class NestedValueConsumer:
 class CollectionValueConsumer:
     """Request registered existing values as a collection."""
 
-    def __init__(self, values: list[ExistingValue]) -> None:
+    def __init__(self, values: list[IExistingValue]) -> None:
         """Retain the injected collection and its original element identities."""
         self.values = values
 
@@ -130545,7 +131431,7 @@ def test_existing_value_root_returns_original_without_factory_execution(
     supplied = ExistingValue("supplied-before-bind")
     spell_id = instance_book.bind(
         spell=supplied, existence="unique",
-        spellframe=ExistingValue if registration == "typed" else "named-values" if registration == "named" else None,
+        spellframe=IExistingValue if registration == "typed" else "named-values" if registration == "named" else None,
         binding_name="chosen" if registration == "named" else None,
     )
     root = instance_book.conjure(dynamic=True)
@@ -130557,7 +131443,7 @@ def test_existing_value_dependency_retains_identity_without_contract_inspection(
 ) -> None:
     """Construct a real dependent root without inspecting the supplied dependency as callable."""
     supplied = ExistingValue("supplied-before-bind")
-    instance_book.bind(spell=supplied, existence="unique", spellframe=ExistingValue)
+    instance_book.bind(spell=supplied, existence="unique", spellframe=IExistingValue)
     consumer_id = instance_book.bind(spell=ValueConsumer, existence="many")
     root = instance_book.conjure(dynamic=True)
     assert root.meld(spell_id=consumer_id).value is supplied
@@ -130566,7 +131452,7 @@ def test_existing_value_dependency_retains_identity_without_contract_inspection(
 def test_existing_value_transitive_dependency_retains_identity(instance_book: Spellbook) -> None:
     """A second dependency level must still end at the exact supplied object."""
     supplied = ExistingValue("supplied-before-bind")
-    instance_book.bind(spell=supplied, existence="unique", spellframe=ExistingValue)
+    instance_book.bind(spell=supplied, existence="unique", spellframe=IExistingValue)
     instance_book.bind(spell=ValueConsumer, existence="many")
     root_id = instance_book.bind(spell=NestedValueConsumer, existence="many")
     root = instance_book.conjure(dynamic=True)
@@ -130576,7 +131462,7 @@ def test_existing_value_transitive_dependency_retains_identity(instance_book: Sp
 def test_existing_values_in_collection_retain_identity(instance_book: Spellbook) -> None:
     """Collection planning must not discover constructors on existing elements."""
     supplied = ExistingValue("supplied-before-bind")
-    instance_book.bind(spell=supplied, existence="unique", spellframe=ExistingValue)
+    instance_book.bind(spell=supplied, existence="unique", spellframe=IExistingValue)
     consumer_id = instance_book.bind(spell=CollectionValueConsumer, existence="many")
     root = instance_book.conjure(dynamic=True)
     values = root.meld(spell_id=consumer_id).values
@@ -130597,7 +131483,7 @@ def test_explicit_map_injects_existing_value(instance_book: Spellbook) -> None:
 def test_late_bound_consumer_injects_existing_value(instance_book: Spellbook) -> None:
     """An existing provider remains a value when its dependent is bound after conjure."""
     supplied = ExistingValue("supplied-before-bind")
-    instance_book.bind(spell=supplied, existence="unique", spellframe=ExistingValue)
+    instance_book.bind(spell=supplied, existence="unique", spellframe=IExistingValue)
     root = instance_book.conjure(dynamic=True)
     consumer_id = instance_book.bind(spell=ValueConsumer, existence="many")
     assert root.meld(spell_id=consumer_id).value is supplied
@@ -137230,7 +138116,7 @@ END FILE: tests/integration/melder/spellbook/test_spellbook_integration_function
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/spellbook/test_spellbook_integration_future_annotations.py
-CONTENT SHA256: 5a62259a8e233e873990833260ee3e475010dc106112ab23274388c5b99e69a7
+CONTENT SHA256: 9f785789f5ed378ffecd568ce5a4a8cb36979f3646aaa94a930401924831173c
 SOURCE ENCODING: utf-8
 ================================================================================
 from __future__ import annotations
@@ -137384,7 +138270,7 @@ class _FuturePipeline:
         self.handlers = handlers
 
 
-class _FutureFrame:
+class _FutureFrame(Protocol):
     """
     Purpose:
         Provide a class-based spellframe for forward-ref list DI.
@@ -138266,7 +139152,7 @@ def test_future_annotations_local_forward_ref_collection_resolves_by_name() -> N
     Raises:
         AssertionError: If collection DI is incomplete.
     """
-    class _LocalFrame:
+    class _LocalFrame(Protocol):
         """
         Purpose:
             Provide a local class-based frame for list DI.
@@ -138533,7 +139419,7 @@ END FILE: tests/integration/melder/spellbook/test_spellbook_integration_future_a
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/spellbook/test_spellbook_integration_future_annotations_more.py
-CONTENT SHA256: 7346a0cecf169aa33bec600b344aa0ed62f4bdae2e4b518cc9a49f5f438a0bb1
+CONTENT SHA256: 0f941b9f4b37f09248de5b82258b14fdd9cef06229806f27119b2ab70ef9edd2
 SOURCE ENCODING: utf-8
 ================================================================================
 from __future__ import annotations
@@ -139112,31 +139998,53 @@ def test_future_annotations_list_string_spellframe_resolves_all() -> None:
         conduit.cleanup()
 
 
-def test_future_annotations_string_literal_frame_annotation_resolves_single() -> None:
+def test_future_annotations_string_literal_category_annotation_is_an_unresolved_input() -> None:
     """
     Purpose:
-        Validate string-literal spellframe annotations resolve single DI.
+        A string-literal annotation naming a string CATEGORY selects no single provider (2026-10-04): a
+        category is a label, not a type or a contract. The explicit form - a SpellMap default addressing
+        the category - resolves it.
     Contract:
-        - "extra_frame" annotations resolve to the bound spellframe.
+        - `repo: "extra_frame"` compiles as an unresolved input; melding without an override raises
+          UnresolvedInputError.
+        - `repo: _FramePrimaryRepo = SpellMap(spellframe="extra_frame")` resolves the bound member.
     Returns:
         None.
     Raises:
-        AssertionError: If the dependency is missing.
+        AssertionError: If either half of the contract fails.
     """
+    from melder.aether.conduit.meld.contracts.spell_map import SpellMap
+    from melder.utilities.custom_exceptions.unresolved_input_error import UnresolvedInputError
+
     class _StringFrameService:
         """
         Purpose:
-            Provide a service that uses a string-literal spellframe annotation.
+            Name a string category in a single annotation (retired idiom).
         Contract:
-            Stores the injected repository instance.
+            Stores whatever the meld supplies.
         """
-
         def __init__(self, repo: "extra_frame") -> None:
             """
             Purpose:
+                Capture the supplied repository.
+            Args:
+                repo: Supplied repository instance.
+            Returns:
+                None.
+            """
+            self.repo = repo
+
+    class _MappedFrameService:
+        """
+        Purpose:
+            Address the category explicitly through a SpellMap default.
+        Contract:
+            Stores the injected repository instance.
+        """
+        def __init__(self, repo: _FramePrimaryRepo = SpellMap(spellframe="extra_frame")) -> None:
+            """
+            Purpose:
                 Capture the injected repository.
-            Contract:
-                Stores the repository on the instance.
             Args:
                 repo: Injected repository instance.
             Returns:
@@ -139151,15 +140059,21 @@ def test_future_annotations_string_literal_frame_annotation_resolves_single() ->
         permissions="create",
         spellframe="extra_frame",
     )
-    service_id = spellbook.bind(
+    unresolved_id = spellbook.bind(
         spell=_StringFrameService,
         existence=Existence.many,
         permissions="create",
     )
-
+    mapped_id = spellbook.bind(
+        spell=_MappedFrameService,
+        existence=Existence.many,
+        permissions="create",
+    )
     conduit = spellbook.conjure(name="root")
     try:
-        instance = conduit.meld(spell_id=service_id)
+        with pytest.raises(UnresolvedInputError):
+            conduit.meld(spell_id=unresolved_id)
+        instance = conduit.meld(spell_id=mapped_id)
         assert isinstance(instance.repo, _FramePrimaryRepo)
         assert instance.repo.marker == "primary"
     finally:
@@ -140935,7 +141849,7 @@ END FILE: tests/integration/melder/spellbook/test_spellbook_integration_post_con
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/spellbook/test_spellbook_integration_public_api.py
-CONTENT SHA256: 3f437a6f2ae5115b40466ec22281d58939b74503c9f303b267918d32947fdc53
+CONTENT SHA256: 4c3edd7341657368d4787a32179712abdc15017134683e205b66c4dc4d7348cc
 SOURCE ENCODING: utf-8
 ================================================================================
 from __future__ import annotations
@@ -141167,7 +142081,7 @@ def test_spellbook_public_api_describe_spells_returns_detached_sorted_runtime_du
                 spell=BasicConfig,
                 existence=Existence.unique,
                 permissions="create",
-                spellframe=BasicConfig,
+                spellframe="BasicConfig",
                 binding_name="secondary",
             )
 
@@ -141713,7 +142627,7 @@ END FILE: tests/integration/melder/spellbook/test_spellbook_integration_resoluti
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/spellbook/test_spellbook_integration_resolution_break_matrix.py
-CONTENT SHA256: 45fc4b6d3cff6830dd21f43d0fbf1696ae2696056e7aed632a7815bc4fedc452
+CONTENT SHA256: 1b3a7b690b83699231dae8fdded11b27ad3dac5449cbf7b32ec9f9b9bdc8856e
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -142400,11 +143314,11 @@ def test_c1_mixed_existence_still_injects_all() -> None:
 
 
 def test_c1_collection_over_concrete_element_type() -> None:
-    """C1 characterization: list[Engine] over a concrete element resolves the bound engine(s)."""
+    """C1 characterization: list[Engine] over a concrete element gathers the spells of that class."""
     spellbook = _make_spellbook()
     conduit = None
     try:
-        spellbook.bind(spell=Engine, existence=Existence.unique, permissions="create", spellframe=Engine)
+        spellbook.bind(spell=Engine, existence=Existence.unique, permissions="create")
         spellbook.bind(spell=NeedsEngineList, existence=Existence.unique, permissions="create")
         conduit = spellbook.conjure(name="root")
         assert len(conduit.meld(spell=NeedsEngineList).engines) == 1
@@ -142648,7 +143562,7 @@ END FILE: tests/integration/melder/spellbook/test_spellbook_integration_resoluti
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/spellbook/test_spellbook_integration_resolution_contract.py
-CONTENT SHA256: 72c9993691010abb2a97bd22372a4a2fad65c3e6a8491a8ba2524ff7c9613309
+CONTENT SHA256: 5c9dd4be407b6b536a8b6dbb86ff4bd078f3370a0c5244f2645b1205259d9b77
 SOURCE ENCODING: utf-8
 ================================================================================
 import pytest
@@ -143412,7 +144326,7 @@ def test_type_hint_di_forward_ref_list_class_frame_resolves_all() -> None:
     Raises:
         AssertionError: If the handler list is incomplete.
     """
-    class _Frame:
+    class _Frame(Protocol):
         """
         Purpose:
             Provide a class frame for list DI.
@@ -143862,7 +144776,7 @@ def test_type_hint_di_forward_ref_typing_list_class_frame_resolves_all() -> None
     Raises:
         AssertionError: If the handler list is incomplete.
     """
-    class _TypingFrame:
+    class _TypingFrame(Protocol):
         """
         Purpose:
             Provide a class frame for typing.List DI.
@@ -154203,7 +155117,7 @@ END FILE: tests/mocks/crystallizer/spell_crystal_demo_pkg/shared.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/mocks/crystallizer/spell_crystal_harness.py
-CONTENT SHA256: 1f8910c33d4ac75ed6a66fd3c356f95ec85acce89d64f2ba32ac3c5d2522632b
+CONTENT SHA256: ea6507e85d6bbbbc456c4a7ad02b8ac7cba7cd592b95365dcdd50f13689d28a7
 SOURCE ENCODING: utf-8
 ================================================================================
 import importlib
@@ -154212,6 +155126,7 @@ from pathlib import Path
 from types import ModuleType, SimpleNamespace
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
+from melder.aether.spellbook.spellframe_kind.spellframe_kind import SpellframeKind
 from melder.crystallizer.synthetic_module import SyntheticModule
 
 
@@ -154238,6 +155153,9 @@ class DummySpell:
         self.spell_name = spell_id
         self.binding_name = None
         self.spellframe = None
+        # Frame kind (record 4.1.0): SpellCrystal reads the enum member's name.
+        self.spellframe_kind = SpellframeKind.none
+        self.implemented_protocols = ()
         self.existence = SimpleNamespace(name="present")
         self.permissions = SimpleNamespace(name="default")
         # Capture-gap fields (restore_engine_2026_07_07): SpellCrystal now
@@ -159234,7 +160152,7 @@ END FILE: tests/unit/github_workflows/test_checkout_identity.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/github_workflows/test_ci_policy.py
-CONTENT SHA256: 33ded15f2b9b28c175306aab8294b3779e6336030b83a6c4fafbc8cde2fa29ae
+CONTENT SHA256: 3bc8882a37851d3a0e5aa806072a5fb4b8670728748f941cdd28f415e7626e7b
 SOURCE ENCODING: utf-8
 ================================================================================
 """Behavioral regression tests for branch routes, required results, and release authorization."""
@@ -159251,7 +160169,7 @@ import pytest
 def result_map() -> dict[str, object]:
     """Build the complete, successful dependency report emitted by the CI workflow."""
     return {name: {"result": "success"} for name in
-            ("branch-policy", "hygiene", "source-assets", "repo-assets", "tests", "real-world-gauntlet", "persistent-runtime-gauntlet", "documentation",
+            ("branch-policy", "hygiene", "source-assets", "repo-assets", "tests", "real-world-gauntlet", "persistent-runtime-gauntlet", "shallow-all-thread-scaling", "documentation",
              "source-qualification", "packages")}
 
 
@@ -159417,7 +160335,7 @@ def test_stale_or_wrong_context_candidate_cannot_publish(policy: ModuleType, eve
 
 
 @pytest.mark.parametrize("job", ["branch-policy", "hygiene", "source-assets", "repo-assets", "tests",
-                                "real-world-gauntlet", "persistent-runtime-gauntlet", "documentation", "source-qualification", "packages"])
+                                "real-world-gauntlet", "persistent-runtime-gauntlet", "shallow-all-thread-scaling", "documentation", "source-qualification", "packages"])
 def test_missing_dependency_evidence_never_passes(policy: ModuleType, job: str) -> None:
     """Deleting a failed job from the report must not conceal its absence."""
     results = result_map()
@@ -159656,6 +160574,7 @@ def test_light_ci_accepts_only_intentional_skips_and_required_proof(policy: Modu
     results["packages"] = {"result": "skipped"}
     results["real-world-gauntlet"] = {"result": "skipped"}
     results["persistent-runtime-gauntlet"] = {"result": "skipped"}
+    results["shallow-all-thread-scaling"] = {"result": "skipped"}
     results["source-qualification"] = {"result": "success" if source_required else "skipped"}
     policy.require_success(results, False, False, source_required)
     if source_required:
@@ -159756,7 +160675,7 @@ def test_coverage_driver_preserves_runtime_contract_and_pytest_exit(runtime: Mod
     assert junit.parent.is_dir() and coverage.parent.is_dir()
 
 
-@pytest.mark.parametrize("job", ["real-world-gauntlet", "persistent-runtime-gauntlet"])
+@pytest.mark.parametrize("job", ["real-world-gauntlet", "persistent-runtime-gauntlet", "shallow-all-thread-scaling"])
 @pytest.mark.parametrize("required", [False, True])
 @pytest.mark.parametrize("result", ["success", "skipped", "failure", "cancelled", "timed_out", None])
 def test_gauntlet_skip_depends_on_the_promotion_requirement(policy: ModuleType,
@@ -159790,6 +160709,7 @@ def test_merge_gate_allows_feature_skip_but_refuses_promotion_skip(
     results = result_map()
     results["real-world-gauntlet"] = {"result": "skipped"}
     results["persistent-runtime-gauntlet"] = {"result": "skipped"}
+    results["shallow-all-thread-scaling"] = {"result": "skipped"}
     monkeypatch.setenv("CI_JOB_RESULTS", json.dumps(results))
     assert policy.main(["merge-ready"]) == exit_code
 ================================================================================
@@ -160359,7 +161279,7 @@ END FILE: tests/unit/github_workflows/test_sdist_normalization.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/github_workflows/test_source_qualification.py
-CONTENT SHA256: ed46ce2e06a2c7587b2d22ebb7e75f43c1850ce4703ae083c9d1bccf3772255f
+CONTENT SHA256: 35dbdaca0d50975f49bb0bbb6de0a3343cdf028fbb26ebcf57429bae6693ab53
 SOURCE ENCODING: utf-8
 ================================================================================
 """Exercise full-CI evidence across distinct merge SHAs, source changes, and stale GitHub state."""
@@ -160462,7 +161382,7 @@ def record_environment(source_qualification: ModuleType, tmp_path: pathlib.Path,
     monkeypatch.setenv("CI_SOURCE_REQUIRED", "false")
     monkeypatch.setenv("CI_GAUNTLET_REQUIRED", "true")
     results = {name: {"result": "success"} for name in (
-        "branch-policy", "hygiene", "source-assets", "repo-assets", "tests", "real-world-gauntlet", "persistent-runtime-gauntlet", "documentation", "packages",
+        "branch-policy", "hygiene", "source-assets", "repo-assets", "tests", "real-world-gauntlet", "persistent-runtime-gauntlet", "shallow-all-thread-scaling", "documentation", "packages",
     )}
     results["source-qualification"] = {"result": "skipped"}
     monkeypatch.setenv("CI_JOB_RESULTS", json.dumps(results))
@@ -160623,7 +161543,7 @@ def test_rc_fix_uses_its_own_full_pr_qualification(source_qualification: ModuleT
     assert result["expected"]["pull_request"] == 12
 
 
-@pytest.mark.parametrize("mode", ["sha", "dirty", "parents", "failed-tests", "failed-gauntlet", "skipped-gauntlet", "failed-persistent", "skipped-persistent"])
+@pytest.mark.parametrize("mode", ["sha", "dirty", "parents", "failed-tests", "failed-gauntlet", "skipped-gauntlet", "failed-persistent", "skipped-persistent", "failed-scaling", "skipped-scaling"])
 def test_record_refuses_unqualified_checkout(source_qualification: ModuleType, record_environment: GitState,
                                             monkeypatch: pytest.MonkeyPatch, mode: str) -> None:
     """Only the exact clean tested checkout and genuinely successful required jobs can issue a record."""
@@ -160636,6 +161556,7 @@ def test_record_refuses_unqualified_checkout(source_qualification: ModuleType, r
     else:
         results = json.loads(os.environ["CI_JOB_RESULTS"])
         job = ("persistent-runtime-gauntlet" if mode.endswith("persistent")
+               else "shallow-all-thread-scaling" if mode.endswith("scaling")
                else "real-world-gauntlet" if mode.endswith("gauntlet") else "tests")
         results[job]["result"] = "skipped" if mode.startswith("skipped-") else "failure"
         monkeypatch.setenv("CI_JOB_RESULTS", json.dumps(results))
@@ -160654,7 +161575,7 @@ def test_light_run_cannot_record_full_evidence(source_qualification: ModuleType,
     monkeypatch.setenv("CI_SOURCE_REQUIRED", "true")
     monkeypatch.setenv("CI_GAUNTLET_REQUIRED", "false")
     results = json.loads(os.environ["CI_JOB_RESULTS"])
-    for name in ("source-assets", "repo-assets", "tests", "real-world-gauntlet", "persistent-runtime-gauntlet", "documentation", "packages"):
+    for name in ("source-assets", "repo-assets", "tests", "real-world-gauntlet", "persistent-runtime-gauntlet", "shallow-all-thread-scaling", "documentation", "packages"):
         results[name]["result"] = "skipped"
     results["source-qualification"]["result"] = "success"
     monkeypatch.setenv("CI_JOB_RESULTS", json.dumps(results))
@@ -160780,14 +161701,16 @@ END FILE: tests/unit/github_workflows/test_source_qualification.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/github_workflows/test_workflow_contracts.py
-CONTENT SHA256: 73e6ff68054f8bd2642e49963f1c5b965c7139c76a2cf45853c43e0f4f923ba1
+CONTENT SHA256: f574d4a14b3f113d843112c1811d96d83ed7b6fd47511e30383d1fb133ba6b31
 SOURCE ENCODING: utf-8
 ================================================================================
 """Prove safety-relevant workflow wiring using parsed YAML rather than substring matches."""
 
+import ast
 import pathlib
 import json
-from types import ModuleType
+import re
+from types import ModuleType, SimpleNamespace
 from typing import cast
 
 import pytest
@@ -160840,7 +161763,7 @@ def test_every_pr_reports_a_fail_closed_required_status(policy: ModuleType) -> N
     assert jobs["source-qualification"]["if"] == "needs.branch-policy.outputs.source-required == 'true'"
 
 
-@pytest.mark.parametrize("name", ["build-src-assets.yml", "build-repo-assets.yml", "test-runtime.yml", "real-world-gauntlet.yml", "persistent-runtime-gauntlet.yml", "docs.yml"])
+@pytest.mark.parametrize("name", ["build-src-assets.yml", "build-repo-assets.yml", "test-runtime.yml", "real-world-gauntlet.yml", "persistent-runtime-gauntlet.yml", "shallow-all-thread-scaling.yml", "docs.yml"])
 def test_reusable_mandatory_jobs_cannot_be_disabled(name: str) -> None:
     """Callers own triggers/concurrency; no helper silently skips a mandatory validation job."""
     document = workflow(name)
@@ -160881,6 +161804,7 @@ def test_docs_metadata_validation_precedes_artifact_upload_and_rtd_staging() -> 
     ("test-runtime.yml", "test"),
     ("real-world-gauntlet.yml", "gauntlet"),
     ("persistent-runtime-gauntlet.yml", "gauntlet"),
+    ("shallow-all-thread-scaling.yml", "scaling"),
     ("release-candidate.yml", "install"),
     ("build-distributions.yml", "build"),
 ])
@@ -161313,7 +162237,7 @@ def test_gauntlet_inline_python_parses_after_yaml_indentation() -> None:
 def test_persistent_gauntlet_runs_in_parallel_on_independent_promotion_runners() -> None:
     """Neither benchmark waits for the other; each owns its OS jobs and result artifacts."""
     jobs = workflow("ci.yml")["jobs"]
-    for name in ("real-world-gauntlet", "persistent-runtime-gauntlet"):
+    for name in ("real-world-gauntlet", "persistent-runtime-gauntlet", "shallow-all-thread-scaling"):
         assert jobs[name]["needs"] == "branch-policy"
         assert jobs[name]["if"] == "needs.branch-policy.outputs.gauntlet-required == 'true'"
         assert name in jobs["merge-ready"]["needs"]
@@ -161341,6 +162265,94 @@ def test_persistent_gauntlet_runs_in_parallel_on_independent_promotion_runners()
     for step in job["steps"]:
         if step.get("shell") == "python":
             compile(step["run"], step["name"], "exec")
+
+
+def test_shallow_thread_scaling_measures_each_library_in_its_own_gil_off_process() -> None:
+    """The scaling benchmark is a parallel promotion job that isolates every library in a fresh interpreter."""
+    caller = workflow("ci.yml")["jobs"]["shallow-all-thread-scaling"]
+    assert caller["uses"] == "./.github/workflows/shallow-all-thread-scaling.yml"
+    assert "secrets" not in caller
+    document = workflow("shallow-all-thread-scaling.yml")
+    for event in document["on"].values():
+        assert event["inputs"]["thread-counts"]["default"] == "1,2,3,4,5"
+        assert event["inputs"]["duration-seconds"]["default"] == "15"
+    job = document["jobs"]["scaling"]
+    assert job["strategy"]["matrix"]["os"] == ["ubuntu-24.04", "windows-2025", "macos-15-intel"]
+    assert job["strategy"]["fail-fast"] == "false"
+    assert job["env"]["DI_THREAD_COUNTS"] == "${{ inputs.thread-counts }}"
+    assert job["env"]["DI_DURATION_S"] == "${{ inputs.duration-seconds }}"
+    assert "PYTHON_GIL" not in job["env"]
+    assert "DI_LIBS" not in job["env"]
+    steps = job["steps"]
+    setup = next(step for step in steps if step.get("uses", "").startswith("actions/setup-python@"))
+    assert setup["with"]["python-version"] == "3.14.7"
+    assert setup["with"]["architecture"] == "x64"
+    assert setup["with"]["freethreaded"] == "true"
+    names = [step.get("name") for step in steps]
+    install = names.index("Install identical pinned benchmark dependencies")
+    provenance = names.index("Record thread scaling provenance")
+    measured = names.index("Run thread scaling for each library in its own process")
+    assert install < provenance < measured
+    assert steps[provenance]["env"]["PYTHON_GIL"] == "0"
+    assert steps[measured]["env"]["PYTHON_GIL"] == "0"
+    assert int(steps[measured]["timeout-minutes"]) < int(job["timeout-minutes"])
+    script = steps[measured]["run"]
+    assert "DI_LIBS=lib" in script and "'-X', 'gil=0'" in script
+    assert "test_shallow_all_thread_scaling.py" in script
+    assert "GITHUB_STEP_SUMMARY" in script and "assert valid" in script
+    retained = steps[-1]
+    assert retained["if"] == "always()"
+    assert retained["with"]["path"] == "thread-scaling-results/"
+    assert retained["with"]["name"].startswith("shallow-thread-scaling-")
+    assert retained["with"]["retention-days"] == "30"
+    for step in steps:
+        if step.get("shell") == "python":
+            compile(step["run"], step["name"], "exec")
+
+
+def test_shallow_thread_scaling_parser_accepts_the_lines_the_benchmark_prints() -> None:
+    """Render the benchmark's own print expressions and require the workflow's parser to read them back."""
+    root = pathlib.Path(__file__).resolve().parents[3]
+    benchmark = ast.parse((root / "benchmarks/testing_other_di/test_shallow_all_thread_scaling.py")
+                          .read_text(encoding="utf-8"))
+    printed = sorted((call for call in ast.walk(benchmark)
+                      if isinstance(call, ast.Call) and isinstance(call.func, ast.Name) and call.func.id == "print"),
+                     key=lambda call: call.lineno)
+    assert len(printed) == 2, "The workflow parses exactly one config line and one result line per thread count."
+    namespace = {
+        "lib": "dependency-injector",
+        "_gil_status": lambda: "disabled",
+        "cfg": SimpleNamespace(duration_s=15.0, thread_counts=(1, 2, 3, 4, 5),
+                               graph_pattern="random", root_pattern="alternating"),
+        "graphs": [SimpleNamespace(name="solo"), SimpleNamespace(name="deep")],
+        "thread_count": 4,
+        "result": SimpleNamespace(elapsed_s=15.004, steps=1234567, steps_per_s=82271.1, spellspaces=61728, errors=0),
+        "speedup": 3.2,
+        "efficiency": 0.8,
+        "per_graph_summary": "solo=1, deep=2",
+    }
+    config_text, result_text = (eval(compile(ast.Expression(call.args[0]), "<benchmark print>", "eval"), namespace)
+                                for call in printed)
+    measured = next(step for step in workflow("shallow-all-thread-scaling.yml")["jobs"]["scaling"]["steps"]
+                    if step.get("name") == "Run thread scaling for each library in its own process")
+    patterns = {node.targets[0].id: ast.literal_eval(node.value) for node in ast.parse(measured["run"]).body
+                if isinstance(node, ast.Assign) and isinstance(node.targets[0], ast.Name)
+                and node.targets[0].id in ("config_line", "result_line")}
+    assert set(patterns) == {"config_line", "result_line"}
+    node_id = ("benchmarks/testing_other_di/test_shallow_all_thread_scaling.py::"
+               "test_threaded_shallow_all_graph_mix_scaling[dependency-injector] ")
+
+    def pattern(name: str, lib: str) -> str:
+        """Specialize one workflow regular expression for a library, as the measured step does."""
+        return patterns[name].replace("{lib}", re.escape(lib))
+
+    # With -s -v pytest prints the first benchmark line directly after the node id.
+    assert re.findall(pattern("config_line", "dependency-injector"), node_id + config_text) == [
+        ("disabled", "15.00", "(1, 2, 3, 4, 5)")]
+    assert re.findall(pattern("result_line", "dependency-injector"), result_text) == [
+        ("4", "15.00", "1234567", "82,271", "3.20", "80.0", "61728", "0")]
+    assert not re.findall(pattern("config_line", "melder"), node_id + config_text)
+    assert not re.findall(pattern("result_line", "melder"), result_text)
 ================================================================================
 END FILE: tests/unit/github_workflows/test_workflow_contracts.py
 ================================================================================
@@ -263676,7 +264688,7 @@ END FILE: tests/unit/melder/crystallizer/persistence/test_spell_index_crystal.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/crystallizer/test_crystallizer.py
-CONTENT SHA256: b1be9dbff3afd2a1a901d5d3b43d88984638f48d70392197c14573ec2a3c5313
+CONTENT SHA256: a994913a143ce65dfbb7828e6d94c67cfaa62b7e7978781dec1bcd1d87e12092
 SOURCE ENCODING: utf-8
 ================================================================================
 import importlib
@@ -263685,6 +264697,7 @@ from types import SimpleNamespace
 
 import pytest
 
+from melder.aether.spellbook.spellframe_kind.spellframe_kind import SpellframeKind
 from melder.aether.aether import Aether
 from melder.aether.aether_utility_system import AetherUtilitySystem
 from melder.nexus.nexus import Nexus
@@ -263714,6 +264727,9 @@ class _DummySpell:
         self.spell_name = spell_id
         self.binding_name = None
         self.spellframe = None
+        # Frame kind (record 4.1.0): SpellCrystal reads the enum member's name.
+        self.spellframe_kind = SpellframeKind.none
+        self.implemented_protocols = ()
         self.existence = SimpleNamespace(name="present")
         self.permissions = SimpleNamespace(name="default")
         self.resolvable = True
@@ -265537,7 +266553,7 @@ END FILE: tests/unit/melder/crystallizer/test_persistence_loop_residue.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/crystallizer/test_spell_crystal.py
-CONTENT SHA256: 874b7cb9d3562f826eb413fabbef393b70d6b37836d37e71b1bcbc4e8a6b4b06
+CONTENT SHA256: 9f0defbb8ce2603e575fb95f347eadaf0647d06a302a745b430418fe451b9cc0
 SOURCE ENCODING: utf-8
 ================================================================================
 import sys
@@ -265650,6 +266666,52 @@ def test_spell_crystal_records_unknown_import_targets_honestly() -> None:
             crystal.cleanup()
         module.cleanup()
         sys.modules.pop(module_name, None)
+
+def test_spell_crystal_records_the_frame_kind_and_a_contracts_coordinates() -> None:
+    """
+    The crystal carries `spellframe_kind` and, for a contract, the Protocol's module and qualname (record 4.1.0).
+
+    A bare binding records "none" with no coordinates; a string category records "category" and the label; a
+    Protocol frame records "contract" with the coordinates a loader hydrates it from.
+    """
+    from typing import Protocol
+
+    from melder.aether.spellbook.spellframe_kind.spellframe_kind import SpellframeKind
+
+    class IRepo(Protocol):
+        def fetch(self) -> None: ...
+
+    crystallizer = _create_activated_crystallizer()
+    bare = DummySpell("bare-spell", type("BareService", (), {"__module__": __name__}))
+    category = DummySpell("category-spell", type("CategoryService", (), {"__module__": __name__}))
+    category.spellframe = "storage"
+    category.spellframe_kind = SpellframeKind.category
+    contract = DummySpell("contract-spell", type("ContractService", (), {"__module__": __name__}))
+    contract.spellframe = IRepo
+    contract.spellframe_kind = SpellframeKind.contract
+    contract.implemented_protocols = (IRepo,)
+    crystals = []
+    try:
+        for spell in (bare, category, contract):
+            crystals.append(crystallizer.create_spell_crystal(spell))
+        bare_crystal, category_crystal, contract_crystal = crystals
+        assert bare_crystal.spellframe_kind == "none"
+        assert bare_crystal.spellframe_module is None and bare_crystal.spellframe_qualname is None
+        assert category_crystal.spellframe_kind == "category"
+        assert category_crystal.spellframe_name == "storage"
+        assert category_crystal.spellframe_module is None and category_crystal.spellframe_qualname is None
+        assert contract_crystal.spellframe_kind == "contract"
+        assert contract_crystal.spellframe_name == "IRepo"
+        assert contract_crystal.spellframe_module == IRepo.__module__
+        assert contract_crystal.spellframe_qualname == IRepo.__qualname__
+        payload = contract_crystal.describe()
+        assert payload["spellframe_kind"] == "contract"
+        assert payload["spellframe_module"] == IRepo.__module__
+        assert payload["spellframe_qualname"] == IRepo.__qualname__
+    finally:
+        for crystal in crystals:
+            crystal.cleanup()
+
 
 @pytest.fixture(params=SYNTHETIC_CASES, ids=synthetic_case_id)
 def synthetic_case_crystal(request):
@@ -272051,7 +273113,7 @@ END FILE: tests/unit/melder/mutation_research/test_mutation_research_root_matrix
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/spellbook/bind/test_bind.py
-CONTENT SHA256: 065c3927a7a0557a95c3bb26bace53c5efc77603e9be1a74fa4df9e0ec159a6c
+CONTENT SHA256: ad54ddd41b6d3aa818fa68833b6061cf4612c15f9012c066f50582e0c96081a3
 SOURCE ENCODING: utf-8
 ================================================================================
 import inspect
@@ -272062,6 +273124,7 @@ from melder.aether.spellbook.bind.bind import Bind
 from melder.aether.spellbook.bind.spell_index import SpellIndex
 from melder.aether.spellbook.spell_types.spell_types import SpellType
 from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spellframe_kind.spellframe_kind import SpellframeKind
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile import (
     SpellBindingProfile,
@@ -273411,11 +274474,70 @@ def test_other_profile_with_frame(monkeypatch):
 
 # Spellframe semantics edge --------------------------------------------
 
-def test_nonclass_noncallable_spellframe(monkeypatch):
+def test_nonclass_noncallable_spellframe_is_refused(monkeypatch):
+    """A spellframe that is neither a string nor a Protocol - here an int - is refused before any profile work."""
     monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(class_profile()))
     b = Bind(StubSpellbook())
-    spell = b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=RealClassImplementingProto, spellframe=123)
-    assert spell.kwargs["spellframe"] == 123
+    with pytest.raises(TypeError, match="string category or a Protocol contract") as caught:
+        b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=RealClassImplementingProto, spellframe=123)
+    assert "an object of type 'int'" in str(caught.value)
+
+
+def test_concrete_class_spellframe_is_refused_with_the_remedy(monkeypatch):
+    """A concrete class used as a spellframe is refused and the message names the string and Protocol remedies."""
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(class_profile()))
+    b = Bind(StubSpellbook())
+
+    class ServiceShape:
+        pass
+
+    with pytest.raises(TypeError, match="string category or a Protocol contract") as caught:
+        b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=RealClassImplementingProto, spellframe=ServiceShape)
+    message = str(caught.value)
+    assert "the concrete class 'ServiceShape'" in message
+    assert "spellframe='ServiceShape'" in message
+    assert "typing.Protocol" in message
+
+
+def test_string_spellframe_is_recorded_as_a_category(monkeypatch):
+    """A string frame records SpellframeKind.category and no implemented Protocols."""
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(class_profile()))
+    b = Bind(StubSpellbook())
+    spell = b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=RealClassImplementingProto, spellframe="services")
+    assert spell.kwargs["spellframe"] == "services"
+    assert spell.kwargs["spellframe_kind"] is SpellframeKind.category
+    assert spell.kwargs["implemented_protocols"] == ()
+
+
+def test_protocol_spellframe_is_recorded_as_a_contract(monkeypatch):
+    """A Protocol frame records SpellframeKind.contract with the Protocol as the implemented contract."""
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(class_profile()))
+    b = Bind(StubSpellbook())
+    spell = b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=RealClassImplementingProto, spellframe=ProtoWithFoo)
+    assert spell.kwargs["spellframe"] is ProtoWithFoo
+    assert spell.kwargs["spellframe_kind"] is SpellframeKind.contract
+    assert spell.kwargs["implemented_protocols"] == (ProtoWithFoo,)
+
+
+def test_bare_binding_is_recorded_as_kind_none(monkeypatch):
+    """No frame records SpellframeKind.none and no implemented Protocols."""
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(class_profile()))
+    b = Bind(StubSpellbook())
+    spell = b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=RealClassImplementingProto)
+    assert spell.kwargs["spellframe"] is None
+    assert spell.kwargs["spellframe_kind"] is SpellframeKind.none
+    assert spell.kwargs["implemented_protocols"] == ()
+
+
+def test_classify_spellframe_table():
+    """The classifier's table: None -> none, str -> category, Protocol -> contract, anything else refused."""
+    assert Bind._classify_spellframe(None) == (SpellframeKind.none, ())
+    assert Bind._classify_spellframe("label") == (SpellframeKind.category, ())
+    assert Bind._classify_spellframe(ProtoWithFoo) == (SpellframeKind.contract, (ProtoWithFoo,))
+    with pytest.raises(TypeError, match="string category or a Protocol contract"):
+        Bind._classify_spellframe(RealClassImplementingProto)
+    with pytest.raises(TypeError, match="string category or a Protocol contract"):
+        Bind._classify_spellframe(object())
 
 
 # Fingerprints: dataclass/decorated/origin -----------------------------
@@ -276204,7 +277326,7 @@ END FILE: tests/unit/melder/spellbook/spell_compiler/phases/test_compiler_phase_
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/spellbook/spell_compiler/phases/test_compiler_phase_3.py
-CONTENT SHA256: 64dc6a7703937f4821f13f6edd4d2b44e9eb8d3aa483450c315a7681534bbbbe
+CONTENT SHA256: 037ec7378d74d395395a59f7b0551a1f08445edee2dcae7b3a8ee3eb32fcc3c5
 SOURCE ENCODING: utf-8
 ================================================================================
 """Unit tests for current-surface compiler phase 3 local DAG build."""
@@ -276212,7 +277334,7 @@ SOURCE ENCODING: utf-8
 import inspect
 import typing
 from types import SimpleNamespace
-from typing import Any, Optional, Union
+from typing import Any, Optional, Protocol, Union
 
 import pytest
 
@@ -276233,6 +277355,8 @@ from melder.aether.spellbook.spell_compiler.symbolic_graph.spell_symbolic_graph 
     SpellSymbolicGraph,
 )
 from melder.aether.spellbook.spell_types.spell_types import SpellType
+from melder.aether.spellbook.spellframe_kind.spellframe_kind import SpellframeKind
+from melder.utilities.helpers.general_helpers import SpellInputUtils
 
 
 class _CancelStub:
@@ -276294,7 +277418,13 @@ def _make_spell_stub(
         spell_type: SpellType = SpellType.SPELL,
         resolvable: bool = True,
 ) -> Any:
-    """Build a minimal spell stub for Phase 3 matching and run tests."""
+    """
+    Build a minimal spell stub for Phase 3 matching and run tests.
+
+    The frame kind is derived exactly as Bind records it: None -> none, a string -> category, a Protocol ->
+    contract with the Protocol in `implemented_protocols`. A concrete class is refused here as Bind refuses
+    it, so a stub cannot describe a binding the runtime would not create.
+    """
     build_details: list[dict[str, Any]] = []
 
     def _add_build_details(*, dependencies: list[str]) -> None:
@@ -276304,10 +277434,24 @@ def _make_spell_stub(
             }
         )
 
+    if spellframe is None:
+        spellframe_kind = SpellframeKind.none
+        implemented_protocols: tuple[type, ...] = ()
+    elif isinstance(spellframe, str):
+        spellframe_kind = SpellframeKind.category
+        implemented_protocols = ()
+    elif SpellInputUtils.is_protocol_type(spellframe):
+        spellframe_kind = SpellframeKind.contract
+        implemented_protocols = (spellframe,)
+    else:
+        raise TypeError("test stub: a spellframe is a string or a Protocol, as Bind enforces")
+
     return SimpleNamespace(
         spell_id=spell_id,
         spell=spell_obj,
         spellframe=spellframe,
+        spellframe_kind=spellframe_kind,
+        implemented_protocols=implemented_protocols,
         spell_name=spell_name,
         binding_name=binding_name,
         spell_type=spell_type,
@@ -276386,10 +277530,11 @@ def test_iter_all_spells_uses_live_spell_id_pool_order() -> None:
     [
         (SpellType.SPELL, "type", None, None, True, True),
         (SpellType.SPELL, "type", "alpha", "beta", True, False),
-        (SpellType.SPELL, "frame", None, None, True, True),
+        (SpellType.SPELL, "contract", None, None, True, True),
         (SpellType.SPELL, "type_name", None, None, True, True),
-        (SpellType.SPELL, "frame_name", None, None, True, True),
+        (SpellType.SPELL, "contract_name", None, None, True, True),
         (SpellType.SPELL, "other", None, None, True, False),
+        (SpellType.SPELL, "other_name", None, None, True, False),
         (SpellType.METHOD, "type", None, None, True, False),
         (SpellType.METHOD, "type", None, None, False, True),
     ],
@@ -276402,10 +277547,10 @@ def test_matches_annotation_cases(
         require_class_spell: bool,
         expected: bool,
 ) -> None:
-    """Phase 3 matches by address key: the type key, the frame key, their names; binding and kind filters hold."""
+    """A single socket matches a contract-framed spell by its type, by its Protocol, or by either name."""
     phase = CompilerPhase3()
 
-    class _FrameType:
+    class _FrameContract(Protocol):
         pass
 
     class CandidateSpell:
@@ -276417,19 +277562,21 @@ def test_matches_annotation_cases(
     annotation: Any
     if annotation_kind == "type":
         annotation = CandidateSpell
-    elif annotation_kind == "frame":
-        annotation = _FrameType
+    elif annotation_kind == "contract":
+        annotation = _FrameContract
     elif annotation_kind == "type_name":
         annotation = "CandidateSpell"
-    elif annotation_kind == "frame_name":
-        annotation = "_FrameType"
+    elif annotation_kind == "contract_name":
+        annotation = "_FrameContract"
+    elif annotation_kind == "other_name":
+        annotation = "_Other"
     else:
         annotation = _Other
 
     candidate = _make_spell_stub(
         "candidate",
         spell_obj=CandidateSpell,
-        spellframe=_FrameType,
+        spellframe=_FrameContract,
         spell_name="CandidateSpell",
         binding_name=candidate_binding_name,
         spell_type=spell_type,
@@ -276444,22 +277591,22 @@ def test_matches_annotation_cases(
 
 
 def test_matches_annotation_rejects_binding_mismatch_on_frame() -> None:
-    """Phase 3 should reject frame matches when binding names differ."""
+    """Phase 3 should reject contract matches when binding names differ."""
     phase = CompilerPhase3()
 
-    class _FrameType:
+    class _FrameContract(Protocol):
         pass
 
     candidate = _make_spell_stub(
         "candidate",
         spell_obj=object(),
-        spellframe=_FrameType,
+        spellframe=_FrameContract,
         spell_name="CandidateSpell",
         binding_name="secondary",
     )
 
     assert phase._matches_annotation(
-        _FrameType,
+        _FrameContract,
         "primary",
         candidate,
         require_class_spell=True,
@@ -276478,32 +277625,41 @@ def test_normalize_annotation_for_matching_handles_forward_refs_and_optional_uni
     ) is int
 
 
-def test_matches_annotation_supports_forward_ref_strings_and_frame_class_names() -> None:
-    """Phase 3 should match string forward refs against spell names and frame names."""
+def test_annotation_kind_classifies_contracts_types_and_names() -> None:
+    """A Protocol is a contract, any other class a type, a string or ForwardRef a name."""
     phase = CompilerPhase3()
 
-    class _FrameType:
+    class _Contract(Protocol):
+        pass
+
+    class _Type:
+        pass
+
+    assert phase._annotation_kind(_Contract) == CompilerPhase3._KIND_CONTRACT
+    assert phase._annotation_kind(_Type) == CompilerPhase3._KIND_TYPE
+    assert phase._annotation_kind("_Type") == CompilerPhase3._KIND_NAME
+    assert phase._annotation_kind(typing.ForwardRef("_Type")) == CompilerPhase3._KIND_NAME
+    assert phase._annotation_kind(typing.Protocol) == CompilerPhase3._KIND_CONTRACT
+
+
+def test_matches_annotation_supports_forward_ref_strings_and_contract_names() -> None:
+    """A string names the spell's type or its Protocol contract, never a different name."""
+    phase = CompilerPhase3()
+
+    class _FrameContract(Protocol):
         pass
 
     candidate = _make_spell_stub(
         "candidate",
         spell_obj=object(),
-        spellframe=_FrameType,
+        spellframe=_FrameContract,
         spell_name="CandidateSpell",
     )
 
-    assert phase._matches_annotation(
-        "CandidateSpell",
-        None,
-        candidate,
-        require_class_spell=True,
-    ) is True
-    assert phase._matches_annotation(
-        "_FrameType",
-        None,
-        candidate,
-        require_class_spell=True,
-    ) is True
+    assert phase._matches_annotation("CandidateSpell", None, candidate, require_class_spell=True) is True
+    assert phase._matches_annotation("_FrameContract", None, candidate, require_class_spell=True) is True
+    assert phase._matches_annotation(typing.ForwardRef("_FrameContract"), None, candidate, require_class_spell=True) is True
+    assert phase._matches_annotation("Unrelated", None, candidate, require_class_spell=True) is False
 
 
 def test_matches_annotation_matches_an_existing_object_by_its_class_and_by_its_name() -> None:
@@ -276526,11 +277682,13 @@ def test_matches_annotation_matches_an_existing_object_by_its_class_and_by_its_n
     assert phase._matches_annotation(Service, None, candidate, require_class_spell=True) is True
     assert phase._matches_annotation("Service", None, candidate, require_class_spell=True) is True
     assert phase._matches_annotation(Other, None, candidate, require_class_spell=True) is False
-    assert phase._spell_keys(candidate) == ("service",)
+    assert phase._spell_type_key(candidate) == "service"
+    assert phase._spell_label_key(candidate) == "service"
+    assert phase._spell_contract_keys(candidate) == ()
 
 
-def test_matches_annotation_treats_a_concrete_class_frame_as_a_name() -> None:
-    """A concrete class used as a spellframe is only a name: the spell answers to it and to its own type."""
+def test_matches_annotation_never_reads_a_string_category_as_a_type_or_contract() -> None:
+    """A spell under a string category answers to its own type; the category's name reaches it only as a collection label."""
     phase = CompilerPhase3()
 
     class Service:
@@ -276542,18 +277700,118 @@ def test_matches_annotation_treats_a_concrete_class_frame_as_a_name() -> None:
     candidate = _make_spell_stub(
         "impl",
         spell_obj=Impl,
-        spellframe=Service,
+        spellframe="service",
         spell_name="Impl",
     )
 
-    assert phase._spell_keys(candidate) == ("service", "impl")
-    assert phase._matches_annotation(Service, None, candidate, require_class_spell=True) is True
-    assert phase._matches_annotation("service", None, candidate, require_class_spell=True) is True
+    assert candidate.spellframe_kind is SpellframeKind.category
+    assert phase._spell_type_key(candidate) == "impl"
+    assert phase._spell_label_key(candidate) == "service"
+    assert phase._spell_contract_keys(candidate) == ()
+    # single socket: the type, by object or by name - never the category
     assert phase._matches_annotation(Impl, None, candidate, require_class_spell=True) is True
+    assert phase._matches_annotation("Impl", None, candidate, require_class_spell=True) is True
+    assert phase._matches_annotation(Service, None, candidate, require_class_spell=True) is False
+    assert phase._matches_annotation("service", None, candidate, require_class_spell=True) is False
+    # collection: the label by name, the type by class - not the category by a class spelled like it
+    assert phase._matches_annotation("service", None, candidate, require_class_spell=False, collection=True) is True
+    assert phase._matches_annotation(Impl, None, candidate, require_class_spell=False, collection=True) is True
+    assert phase._matches_annotation(Service, None, candidate, require_class_spell=False, collection=True) is False
+    assert phase._matches_annotation("impl", None, candidate, require_class_spell=False, collection=True) is False
+
+
+def test_matches_annotation_contract_spell_is_reached_by_type_contract_and_their_names() -> None:
+    """A spell under a Protocol answers to its type, to the Protocol (object or name), and as a collection to both groups."""
+    phase = CompilerPhase3()
+
+    class IService(Protocol):
+        pass
+
+    class Impl:
+        pass
+
+    class Other(Protocol):
+        pass
+
+    candidate = _make_spell_stub("impl", spell_obj=Impl, spellframe=IService, spell_name="Impl")
+
+    assert candidate.spellframe_kind is SpellframeKind.contract
+    assert phase._spell_contract_keys(candidate) == ("iservice",)
+    assert phase._spell_label_key(candidate) == "iservice"
+    for annotation in (Impl, "Impl", IService, "IService"):
+        assert phase._matches_annotation(annotation, None, candidate, require_class_spell=True) is True, annotation
+    assert phase._matches_annotation(Other, None, candidate, require_class_spell=True) is False
+    for annotation in (IService, "iservice", Impl):
+        assert phase._matches_annotation(annotation, None, candidate, require_class_spell=False, collection=True) is True, annotation
+    assert phase._matches_annotation("impl", None, candidate, require_class_spell=False, collection=True) is False
+
+
+@pytest.mark.parametrize(
+    ("annotation_name", "collection", "expected"),
+    [
+        ("Impl", False, ["Impl"]),
+        ("IService", False, ["Impl"]),
+        ("Spectrum", False, ["Spectrum"]),
+        ("Toolbox", False, ["Toolbox"]),
+        ("spectrum_label", False, []),
+        ("Spectrum", True, ["Spectrum"]),
+        ("spectrum_label", True, ["Spectrum", "Toolbox"]),
+        ("IService", True, ["Impl"]),
+        ("Impl", True, ["Impl"]),
+    ],
+)
+def test_indexed_candidates_equal_the_scan_for_every_kind(annotation_name: str, collection: bool, expected: list[str]) -> None:
+    """The three-bucket index returns exactly what the scan returns, in pool order, for every annotation and socket kind."""
+    phase = CompilerPhase3()
+
+    class IService(Protocol):
+        pass
+
+    class Impl:
+        pass
+
+    class Spectrum:
+        pass
+
+    class Toolbox:
+        pass
+
+    objects = {"Impl": Impl, "IService": IService, "Spectrum": Spectrum, "Toolbox": Toolbox}
+    annotation: Any = objects.get(annotation_name, annotation_name)
+    root_spell = _make_spell_stub("root", spell_obj=object(), spellframe=None, spell_name="RootSpell")
+    pool = {
+        "spectrum": _make_spell_stub("spectrum", spell_obj=Spectrum, spellframe="spectrum_label", spell_name="Spectrum", binding_name="Spectrum"),
+        "toolbox": _make_spell_stub("toolbox", spell_obj=Toolbox, spellframe="spectrum_label", spell_name="Toolbox", binding_name="Toolbox"),
+        "impl": _make_spell_stub("impl", spell_obj=Impl, spellframe=IService, spell_name="Impl"),
+    }
+    spellbook = SimpleNamespace(_spell_id_pool=pool)
+    dep = _make_dependency(
+        spell_id="root",
+        param_name="dep",
+        position=0,
+        di_shape=ParameterDIShape.COLLECTION_BY_ANNOTATION if collection else ParameterDIShape.SINGLE_BY_ANNOTATION,
+        target_annotation=annotation,
+        is_collection=collection,
+    )
+    index = phase._build_candidate_index(spellbook)
+    if collection:
+        scanned = phase._resolve_collection_by_annotation(spellbook, dep)
+        indexed = phase._resolve_collection_by_annotation(spellbook, dep, index)
+    else:
+        scanned = phase._resolve_single_by_annotation(root_spell, spellbook, dep)
+        indexed = phase._resolve_single_by_annotation(root_spell, spellbook, dep, index)
+
+    assert [candidate.spell_name for candidate in scanned.values()] == expected
+    assert list(indexed.items()) == list(scanned.items())
+    assert set(index) == {"by_type", "by_label", "by_contract", "by_definition"}
+    assert sorted(index["by_type"]) == ["impl", "spectrum", "toolbox"]
+    assert sorted(index["by_label"]) == ["iservice", "spectrum_label"]
+    assert sorted(index["by_contract"]) == ["iservice"]
+    assert index["by_definition"] == {}
 
 
 def test_indexed_candidates_equal_the_scan_for_an_existing_object() -> None:
-    """The by-key index resolves a bare existing object exactly as the scan does, with no equality gate."""
+    """The index resolves a bare existing object exactly as the scan does, with no equality gate."""
     phase = CompilerPhase3()
 
     class Service:
@@ -276580,8 +277838,43 @@ def test_indexed_candidates_equal_the_scan_for_an_existing_object() -> None:
 
     assert list(scanned.values()) == [service]
     assert indexed == scanned
-    assert set(index) == {"by_key"}
-    assert sorted(index["by_key"]) == ["other", "service"]
+    assert set(index) == {"by_type", "by_label", "by_contract", "by_definition"}
+    assert sorted(index["by_type"]) == ["other", "service"]
+    assert sorted(index["by_label"]) == ["other", "service"]
+    assert index["by_contract"] == {}
+
+
+def test_protocol_definition_is_a_candidate_for_its_own_annotation_until_an_implementer_exists() -> None:
+    """A Protocol bound resolvable=False matches `x: Proto` (OVERRIDE_REQUIRED); a recorded implementer wins over it."""
+    phase = CompilerPhase3()
+
+    class IRepo(Protocol):
+        pass
+
+    class Repo:
+        pass
+
+    root_spell = _make_spell_stub("root", spell_obj=object(), spellframe=None, spell_name="RootSpell")
+    definition = _make_spell_stub("def", spell_obj=IRepo, spellframe=None, spell_name="IRepo", resolvable=False)
+    implementer = _make_spell_stub("impl", spell_obj=Repo, spellframe=IRepo, spell_name="Repo")
+    dep = _make_dependency(spell_id="root", param_name="repo", position=0,
+                           di_shape=ParameterDIShape.SINGLE_BY_ANNOTATION, target_annotation=IRepo)
+
+    assert phase._spell_definition_key(definition) == "irepo"
+    assert phase._spell_definition_key(implementer) is None
+    only_definition = SimpleNamespace(_spell_id_pool={"def": definition})
+    index = phase._build_candidate_index(only_definition)
+    assert sorted(index["by_definition"]) == ["irepo"]
+    assert list(phase._resolve_single_by_annotation(root_spell, only_definition, dep).values()) == [definition]
+    assert list(phase._resolve_single_by_annotation(root_spell, only_definition, dep, index).values()) == [definition]
+    both = SimpleNamespace(_spell_id_pool={"def": definition, "impl": implementer})
+    index = phase._build_candidate_index(both)
+    assert list(phase._resolve_single_by_annotation(root_spell, both, dep).values()) == [implementer]
+    assert list(phase._resolve_single_by_annotation(root_spell, both, dep, index).values()) == [implementer]
+    # a string annotation reaches the definition through its type key too
+    named = _make_dependency(spell_id="root", param_name="repo", position=0,
+                             di_shape=ParameterDIShape.SINGLE_BY_ANNOTATION, target_annotation="IRepo")
+    assert list(phase._resolve_single_by_annotation(root_spell, only_definition, named).values()) == [definition]
 
 
 @pytest.mark.parametrize(
@@ -276740,7 +278033,7 @@ def test_resolve_single_by_annotation_returns_exact_match() -> None:
     """Phase 3 should resolve a single-annotation socket to one candidate."""
     phase = CompilerPhase3()
 
-    class _ServiceFrame:
+    class _ServiceFrame(Protocol):
         pass
 
     root_spell = _make_spell_stub(
@@ -276786,7 +278079,7 @@ def test_resolve_single_by_annotation_no_candidates(method_only: bool) -> None:
     """
     phase = CompilerPhase3()
 
-    class _ServiceFrame:
+    class _ServiceFrame(Protocol):
         pass
 
     root_spell = _make_spell_stub(
@@ -276823,7 +278116,7 @@ def test_resolve_single_by_annotation_raises_on_multiple_matches() -> None:
     """Phase 3 should fail fast when a single socket matches multiple spells."""
     phase = CompilerPhase3()
 
-    class _ServiceFrame:
+    class _ServiceFrame(Protocol):
         pass
 
     root_spell = _make_spell_stub(
@@ -276861,7 +278154,7 @@ def test_resolve_collection_by_annotation_returns_all_matches() -> None:
     """Phase 3 collection DI should keep both class and method matches."""
     phase = CompilerPhase3()
 
-    class _ServiceFrame:
+    class _ServiceFrame(Protocol):
         pass
 
     class_spell = _make_spell_stub(
@@ -276903,7 +278196,7 @@ def test_resolve_collection_by_annotation_empty_returns_empty() -> None:
     """Phase 3 collection-resolution should allow an empty candidate set."""
     phase = CompilerPhase3()
 
-    class _ServiceFrame:
+    class _ServiceFrame(Protocol):
         pass
 
     dep = _make_dependency(
@@ -277308,10 +278601,10 @@ def test_build_local_frame_dag_orders_dependencies_by_id_then_root() -> None:
     """The local frame lists distinct dependencies ascending by id, then the root last."""
     phase = CompilerPhase3()
 
-    class _FrameA:
+    class _FrameA(Protocol):
         pass
 
-    class _FrameB:
+    class _FrameB(Protocol):
         pass
 
     root_spell = _make_spell_stub(
@@ -277378,7 +278671,7 @@ def test_build_local_frame_dag_records_self_dependency_out_of_the_frame() -> Non
     """A spell that resolves itself is recorded as its own dependency and stays out of the frame order."""
     phase = CompilerPhase3()
 
-    class _RootFrame:
+    class _RootFrame(Protocol):
         pass
 
     root_spell = _make_spell_stub(
@@ -277426,7 +278719,7 @@ def test_run_builds_resolution_frame_and_updates_topology(
     """Phase 3 should store the local frame and publish dependencies/topology."""
     phase = CompilerPhase3()
 
-    class _ServiceFrame:
+    class _ServiceFrame(Protocol):
         pass
 
     root_spell = _make_spell_stub(
@@ -316158,6 +317451,40 @@ def test_component_meld_revalidation_phase_8_to_11_runs_for_target_only(
 END FILE: tests/unit/melder/spellbook/spellbook/test_conjure_phase_invocation_counts.py
 ================================================================================
 ================================================================================
+BEGIN FILE: tests/unit/melder/spellbook/spellframe_kind/test_spellframe_kind.py
+CONTENT SHA256: 6c0d387aa50aa6b495dc6a8b2ab870ed66af98a28211e823d0c3844f52600fc9
+SOURCE ENCODING: utf-8
+================================================================================
+"""Unit tests for the SpellframeKind vocabulary (what a spell's spellframe is)."""
+from enum import Enum
+
+from melder.aether.spellbook.spellframe_kind.spellframe_kind import SpellframeKind
+
+
+def test_spellframe_kind_has_exactly_the_three_kinds() -> None:
+    """A spellframe is bare, a string category or a Protocol contract - nothing else."""
+    assert issubclass(SpellframeKind, Enum)
+    assert [member.name for member in SpellframeKind] == ["none", "category", "contract"]
+
+
+def test_spellframe_kind_values_equal_their_names() -> None:
+    """The member value is its name, so a recorded crystal field round-trips by name."""
+    for member in SpellframeKind:
+        assert member.value == member.name
+        assert SpellframeKind(member.value) is member
+        assert SpellframeKind[member.name] is member
+
+
+def test_spellframe_kind_is_exported_at_the_package_root() -> None:
+    """Users read the kind off a Spell; the enum is importable from `melder` beside Existence."""
+    import melder
+
+    assert melder.SpellframeKind is SpellframeKind
+    assert "SpellframeKind" in melder.__all__
+================================================================================
+END FILE: tests/unit/melder/spellbook/spellframe_kind/test_spellframe_kind.py
+================================================================================
+================================================================================
 BEGIN FILE: tests/unit/melder/spellbook/test_cache_runtime_verification.py
 CONTENT SHA256: 2160fc2136bdda4d7dd14db1eda41909cdf11e26fec0e455fc12b55d2d865af6
 SOURCE ENCODING: utf-8
@@ -317405,7 +318732,7 @@ END FILE: tests/unit/melder/spellbook/test_scan_bind.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/spellbook/test_spell.py
-CONTENT SHA256: cdb6034ed53c90926ca530c91a1981fa2308987fa9d1587b2898b33eea8147f3
+CONTENT SHA256: 65a06b54744d58df0016073ab0ae9d282d9725b78a4dc0a55693a351165c0146
 SOURCE ENCODING: utf-8
 ================================================================================
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import (
@@ -318913,6 +320240,82 @@ def test_spell_omitted_disposal_lists_are_independent() -> None:
     finally:
         for spell in spells:
             spell.cleanup()
+
+
+# Spellframe kind (2026-10-04): identity data Bind records, Phase 3 reads -----
+
+
+def test_spell_frame_kind_defaults_to_none_with_no_contracts() -> None:
+    """A Spell built without the kind arguments is a bare binding: kind none, no implemented Protocols."""
+    from melder.aether.spellbook.spellframe_kind.spellframe_kind import SpellframeKind
+
+    spell = _make_spell()
+    try:
+        assert spell.spellframe_kind is SpellframeKind.none
+        assert spell.implemented_protocols == ()
+    finally:
+        spell.cleanup()
+
+
+def test_spell_frame_kind_and_contracts_pass_through_and_survive_cleanup() -> None:
+    """The kind and the implemented Protocols are stored as given and stay readable after cleanup, like `spellframe`."""
+    from typing import Protocol
+
+    from melder.aether.spellbook.spellframe_kind.spellframe_kind import SpellframeKind
+
+    class IRepo(Protocol):
+        pass
+
+    states = _RecordingStates()
+    spell = Spell(
+        spell=object,
+        spell_index=SpellIndex("fingerprint-contract"),
+        spellframe=IRepo,
+        binding_name=None,
+        spell_name="RepoImpl",
+        existence=Existence.unique,
+        spell_type=SpellType.SPELL_WITH_SPELLFRAME,
+        spell_id="fingerprint-contract",
+        permissions=Permissions.read,
+        aetheric_frame="default",
+        spellbook=_SpellbookStub(states),
+        spellframe_kind=SpellframeKind.contract,
+        implemented_protocols=(IRepo,),
+    )
+    assert spell.spellframe_kind is SpellframeKind.contract
+    assert spell.implemented_protocols == (IRepo,)
+    assert spell.spellframe is IRepo
+    spell.cleanup()
+    assert spell.spellframe_kind is SpellframeKind.contract
+    assert spell.implemented_protocols == (IRepo,)
+    assert spell.spellframe is IRepo
+
+
+def test_spell_category_kind_records_the_label_and_no_contract() -> None:
+    """A string category records kind category and an empty contract tuple."""
+    from melder.aether.spellbook.spellframe_kind.spellframe_kind import SpellframeKind
+
+    states = _RecordingStates()
+    spell = Spell(
+        spell=object,
+        spell_index=SpellIndex("fingerprint-category"),
+        spellframe="storage",
+        binding_name="users",
+        spell_name="UsersRepo",
+        existence=Existence.unique,
+        spell_type=SpellType.SPELL_WITH_BINDING_NAME_WITH_SPELLFRAME,
+        spell_id="fingerprint-category",
+        permissions=Permissions.read,
+        aetheric_frame="default",
+        spellbook=_SpellbookStub(states),
+        spellframe_kind=SpellframeKind.category,
+    )
+    try:
+        assert spell.spellframe_kind is SpellframeKind.category
+        assert spell.implemented_protocols == ()
+        assert spell.key == ("storage", "users")
+    finally:
+        spell.cleanup()
 ================================================================================
 END FILE: tests/unit/melder/spellbook/test_spell.py
 ================================================================================
