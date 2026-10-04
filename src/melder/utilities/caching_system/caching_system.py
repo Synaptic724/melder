@@ -32,7 +32,7 @@ class CachingSystem(Cleanable):
         The sibling is `asset_cache`, which caches BUILD ASSETS: a
         process-lifetime, read-mostly bundle hydrated from a committed manifest,
         with no lock, no logger and no lifecycle. This class is the per-conduit
-        instance cache with all three. Both write `.melc` under
+        instance cache with all three. Both write `.meldercache` under
         `__melder_cache__` and both stamp `sys.implementation.cache_tag`;
         confusing which one owns a given bundle is a category error.
 
@@ -107,7 +107,7 @@ class CachingSystem(Cleanable):
     AGENT_ACCESS: internal
 
     AGENT_PURPOSE:
-        access: internal. Per-conduit on-disk payload cache (one .melc marshal bundle per
+        access: internal. Per-conduit on-disk payload cache (one .meldercache marshal bundle per
         frame_name/conduit_name); upsert/get/remove_spell_payload plus emit() to write.
         Melder-owned and guarded - the owning conduit gives you this behaviour, you do not
         construct or bind it. Distinct from the crystallizer's restore record.
@@ -215,7 +215,7 @@ class CachingSystem(Cleanable):
     # back-references, so equal values always give equal bytes (see
     # `upsert_structural_payload`). Executor payloads keep the default format.
     STRUCTURAL_MARSHAL_VERSION: ClassVar[int] = 2
-    BUNDLE_SUFFIX: ClassVar[str] = ".melc"
+    BUNDLE_SUFFIX: ClassVar[str] = ".meldercache"
 
     __slots__ = Cleanable.__slots__ + [
         "_id",
@@ -252,7 +252,7 @@ class CachingSystem(Cleanable):
 
         Contract:
             - Derives the bundle path as
-              `<cache_root>/<frame_name>/<conduit_name>.melc` and LOADS the
+              `<cache_root>/<frame_name>/<conduit_name>.meldercache` and LOADS the
               cache from disk during construction; a corrupt or version-
               mismatched bundle is treated as a cold cache, not an error.
 

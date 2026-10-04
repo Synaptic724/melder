@@ -245,6 +245,8 @@
  ],
  "published_aliases": [],
  "imports": {
+  "threading": "threading",
+  "time": "time",
   "TYPE_CHECKING": "typing.TYPE_CHECKING",
   "Any": "typing.Any",
   "ClassVar": "typing.ClassVar",

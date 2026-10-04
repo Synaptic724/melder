@@ -86,6 +86,9 @@
  ],
  "published_aliases": [],
  "imports": {
+  "ast": "ast",
+  "hashlib": "hashlib",
+  "threading": "threading",
   "Dict": "typing.Dict",
   "List": "typing.List",
   "Optional": "typing.Optional",

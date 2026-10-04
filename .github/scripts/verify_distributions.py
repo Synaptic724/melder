@@ -34,7 +34,7 @@ class DistributionPolicy:
         "LICENSE", "NOTICE", "README.md", "pyproject.toml", "PKG-INFO", "setup.cfg",
     })
     FORBIDDEN_SUFFIXES: tuple[str, ...] = (
-        ".db", ".sqlite", ".sqlite3", ".pyc", ".pyo", ".melc", ".prof", ".pstats",
+        ".db", ".sqlite", ".sqlite3", ".pyc", ".pyo", ".melc", ".meldercache", ".prof", ".pstats",
     )
 
 

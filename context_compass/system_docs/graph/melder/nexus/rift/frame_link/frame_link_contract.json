@@ -89,6 +89,7 @@
  ],
  "published_aliases": [],
  "imports": {
+  "threading": "threading",
   "Dict": "typing.Dict",
   "Optional": "typing.Optional",
   "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",

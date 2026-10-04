@@ -71,6 +71,7 @@
  "edge_candidates": [],
  "published_aliases": [],
  "imports": {
+  "threading": "threading",
   "Any": "typing.Any",
   "Callable": "typing.Callable",
   "Dict": "typing.Dict",

@@ -364,6 +364,7 @@
   "Tuple": "typing.Tuple",
   "AgentTextReader": "melder.utilities.ai_native_support_tools.agent_text_reader.AgentTextReader",
   "TextChunk": "melder.utilities.ai_native_support_tools.agent_text_reader.TextChunk",
+  "hashlib": "hashlib",
   "system_documents_index": "melder._build_assets._system_documents.manifest.system_documents_index",
   "import_module": "importlib.import_module",
   "StaticSystemDocument": "melder.system_document.StaticSystemDocument",

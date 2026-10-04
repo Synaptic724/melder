@@ -14,9 +14,9 @@ Regenerate with:
 """
 
 MANIFEST_VERSION = "2.0.0"
-BUILT_FOR_VERSION = "0.2.8222"
-SOURCE_SHA256 = "4e21da43ae1a03f6bf7158328a84a96c395c6b9e6aaf8cd2c324aa11102afb5d"
-ENTRY_COUNT = 621
+BUILT_FOR_VERSION = "0.2.8224"
+SOURCE_SHA256 = "78f510159008d6b7847a1e98c143834c11e83ee690e3b6467826a56e748a2b79"
+ENTRY_COUNT = 622
 
 ENTRIES = (
     ('melder.aether.aether', 'Aether'),
@@ -351,6 +351,7 @@ ENTRIES = (
     ('melder.aether.spellbook.spell_compiler.validation.spell_validation_context', 'SpellValidationContext'),
     ('melder.aether.spellbook.spell_compiler.validation.spell_validation_issue', 'SpellValidationIssue'),
     ('melder.aether.spellbook.spell_compiler.validation.spell_validation_result', 'SpellValidationResult'),
+    ('melder.aether.spellbook.spell_compiler.validation.strategies.ambiguous_provider_strategy', 'AmbiguousProviderStrategy'),
     ('melder.aether.spellbook.spell_compiler.validation.strategies.annotation_shape_guard_strategy', 'AnnotationShapeGuardStrategy'),
     ('melder.aether.spellbook.spell_compiler.validation.strategies.binding_resolution_cycle_strategy', 'BindingResolutionCycleStrategy'),
     ('melder.aether.spellbook.spell_compiler.validation.strategies.callable_profile_hygiene_strategy', 'CallableProfileHygieneStrategy'),

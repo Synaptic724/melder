@@ -97,7 +97,8 @@
   {
    "from": "melder.aether.conduit.spell_space.spell_space_thread_state._SpellSpaceLocal",
    "to_label": "local",
-   "relation": "specializes"
+   "relation": "specializes",
+   "to": "threading.local"
   },
   {
    "from": "melder.aether.conduit.spell_space.spell_space_thread_state.SpellSpaceThreadState",
@@ -122,6 +123,7 @@
  ],
  "published_aliases": [],
  "imports": {
+  "threading": "threading",
   "Any": "typing.Any",
   "List": "typing.List",
   "Optional": "typing.Optional",

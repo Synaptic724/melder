@@ -35,7 +35,7 @@ says which behaviour it owns rather than which file format it happens to use.
 
 WHAT THE RUNNER DOES *NOT* TOUCH
 --------------------------------
-The `.melc` caches under `__melder_cache__/__<asset>__/`. Those are derived,
+The `.meldercache` caches under `__melder_cache__/__<asset>__/`. Those are derived,
 gitignored, interpreter-specific, and rebuilt on demand at import time by
 `melder.utilities.caching_system.asset_cache`. This runner's whole surface is
 the COMMITTED manifest: the truth the cache is derived FROM. Building a cache

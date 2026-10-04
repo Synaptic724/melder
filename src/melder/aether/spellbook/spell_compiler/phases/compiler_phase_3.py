@@ -643,7 +643,11 @@ class CompilerPhase3:
         non-resolvable definition be selected for an OVERRIDE_REQUIRED input.
         Matching and index grouping happen first; capability does not change them.
         When nothing matches at all, the mapping is empty: the caller records an
-        UNRESOLVED_INPUT socket, which the constructing meld must supply.
+        UNRESOLVED_INPUT socket, which the constructing meld must supply. When
+        several match, every candidate is returned (2026-10-04): the caller
+        records an AMBIGUOUS_INPUT socket and Phase 4 refuses the spell with
+        AMBIGUOUS_PROVIDER, naming the candidates and their addresses - the
+        former RuntimeError never reached the readable report.
 
         Args:
             spell:
@@ -656,11 +660,9 @@ class CompilerPhase3:
         Returns:
             Dict[Any, Spell]:
                 Mapping from matched `spell_index` to spell. Empty when no
-                registered spell matches the annotation.
-
-        Raises:
-            RuntimeError: If multiple candidates match the annotation
-                constraints (ambiguity is a configuration error, not an input).
+                registered spell matches the annotation; more than one entry
+                when the annotation is ambiguous (a configuration error the
+                caller records for Phase 4, never an input the meld could pick).
         """
         annotation = self._normalize_annotation_for_matching(dep.target_annotation)
         binding_name: Optional[str] = None
@@ -695,20 +697,10 @@ class CompilerPhase3:
             # UnresolvedInputError when this object is built.
             return {}
 
-        if len(candidates) > 1:
-            names = ", ".join(
-                sorted(candidate_spell.spell_name for candidate_spell in candidates.values())
-            )
-            raise RuntimeError(
-                "SpellCrafter Phase 3: multiple DI candidates found for "
-                f"parameter {dep.param_name!r} on spell {spell.spell_name!r} "
-                f"(annotation={annotation!r}). "
-                f"Candidates: {names}. "
-                "Use a SpellMap with an explicit spellframe/binding_name or a "
-                "collection type (e.g. list[FrameType]) to inject multiple "
-                "implementations."
-            )
-
+        # Several providers: returned as they are. `_build_local_frame_dag`
+        # records the socket as AMBIGUOUS_INPUT and Phase 4's
+        # AmbiguousProviderStrategy refuses the spell through the readable
+        # report (owner decision 2026-10-04; this used to raise RuntimeError).
         return candidates
 
     def _resolve_collection_by_annotation(
@@ -903,6 +895,7 @@ class CompilerPhase3:
             requirements: SpellRequirements,
             socket_references: Dict[tuple[str, int], List[str]],
             socket_unresolved: Optional[Set[tuple[str, int]]] = None,
+            socket_ambiguous: Optional[Dict[tuple[str, int], List[str]]] = None,
     ) -> SpellLocalTopology:
         """
             Internal helper for Phase 3.
@@ -919,6 +912,10 @@ class CompilerPhase3:
                 * Mark single typed sockets listed in "socket_unresolved" (no
                   registered provider at all) UNRESOLVED_INPUT. They keep their
                   dependency_key so a later matching bind re-resolves this spell.
+                * Mark single typed sockets listed in "socket_ambiguous" (two or
+                  more resolvable providers) AMBIGUOUS_INPUT, with the candidate
+                  ids as descriptive `referenced_spell_ids` and no target; they
+                  keep their dependency_key for the same re-gating (2026-10-04).
                 * Copy "is_collection" and "is_optional" flags from the
                   symbolic graph.
                 * Look up any concrete targets via "socket_targets" using
@@ -952,11 +949,15 @@ class CompilerPhase3:
                 socket_kind = SocketKind.OVERRIDE_REQUIRED
             elif socket_unresolved and (dep.param_name, dep.position) in socket_unresolved:
                 socket_kind = SocketKind.UNRESOLVED_INPUT
+            elif socket_ambiguous and (dep.param_name, dep.position) in socket_ambiguous:
+                socket_kind = SocketKind.AMBIGUOUS_INPUT
+                referenced_spell_ids = tuple(socket_ambiguous[(dep.param_name, dep.position)])
             dependency_key = None
             if spell.resolvable and socket_kind in (
                     SocketKind.NORMAL,
                     SocketKind.OVERRIDE_REQUIRED,
                     SocketKind.UNRESOLVED_INPUT,
+                    SocketKind.AMBIGUOUS_INPUT,
             ):
                 dependency_key = self._dependency_key_for_dep(dep)
 
@@ -1027,8 +1028,7 @@ class CompilerPhase3:
                 ValueError:
                     If ``requirements`` or ``graph`` is None.
                 RuntimeError:
-                    If the spell has no bound SpellIndex / current spell id, or
-                    when annotation resolution is ambiguous (see the resolvers).
+                    If the spell has no bound SpellIndex / current spell id.
             
             Important:
                 * This helper does **not** mutate the Spell object. All artifacts
@@ -1043,6 +1043,11 @@ class CompilerPhase3:
                 * A single typed dependency that no registered spell provides
                   produces an UNRESOLVED_INPUT socket (no dependency id) instead of
                   failing: the constructing meld supplies it.
+                * A single typed dependency that several resolvable spells provide
+                  produces an AMBIGUOUS_INPUT socket (no dependency id; the
+                  candidates as references) instead of a RuntimeError, so Phase
+                  4's AMBIGUOUS_PROVIDER refuses the spell through the readable
+                  validation report (owner decision 2026-10-04).
                 * The per-socket target rows carry everything the retired DAG held
                   (parent id, child id, parameter name; every edge was NORMAL), so
                   no edge list is kept beside them.
@@ -1082,6 +1087,9 @@ class CompilerPhase3:
         socket_references: Dict[tuple[str, int], List[str]] = {}
         # Single typed sockets with no registered provider: recorded, not refused.
         socket_unresolved: Set[tuple[str, int]] = set()
+        # Single typed sockets with several resolvable providers: recorded for
+        # Phase 4 with their candidate ids, never resolved.
+        socket_ambiguous: Dict[tuple[str, int], List[str]] = {}
 
         for dep in graph.dependencies if spell.resolvable else ():
             CompilerPhaseUtility.throw_if_cancelled(cancellation_event)
@@ -1117,6 +1125,13 @@ class CompilerPhase3:
                     # as an unresolved input instead of failing resolution.
                     socket_unresolved.add(key)
                 continue
+            if di_shape is ParameterDIShape.SINGLE_BY_ANNOTATION and len(resolved) > 1:
+                # Several providers: record the candidates for Phase 4's
+                # AMBIGUOUS_PROVIDER report; no dependency id, no edge.
+                socket_ambiguous[key] = sorted(
+                    spell_index.selected_spell_id for spell_index in resolved
+                )
+                continue
 
             for spell_index, spell_obj in resolved.items():
                 dep_spell_id = spell_index.selected_spell_id
@@ -1144,6 +1159,7 @@ class CompilerPhase3:
             requirements=requirements,
             socket_references=socket_references,
             socket_unresolved=socket_unresolved,
+            socket_ambiguous=socket_ambiguous,
         )
 
         # Update spell-system state with dependency IDs and local topology.

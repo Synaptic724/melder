@@ -120,6 +120,8 @@
  ],
  "published_aliases": [],
  "imports": {
+  "logging": "logging",
+  "threading": "threading",
   "Callable": "collections.abc.Callable",
   "Iterable": "collections.abc.Iterable",
   "Any": "typing.Any",

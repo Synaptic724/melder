@@ -1,4 +1,4 @@
-# Melder 0.2.8222
+# Melder 0.2.8224
 
 **Unreleased**
 
@@ -457,6 +457,41 @@ five singletons 316 -> 277 ns, a wide root over eight singletons 447 -> 374 ns, 
 objects 444 -> 368 ns (-7..-17%), and an eight-deep transient chain with one singleton 432 -> 428 ns. Roots with
 no `unique` dependency are byte-identical.
 
+## Cache files are named `.meldercache`
+
+Melder's on-disk cache bundles now end in `.meldercache` instead of `.melc`, so a file under `__melder_cache__`
+says what it is: `<cache root>/<frame>/<conduit>.meldercache` for a conduit's creation cache and
+`__melder_cache__/__<asset>__/<asset>.meldercache` for the build-asset caches.
+
+Nothing reads or deletes an old `.melc` file. The first conjure and the first import after upgrading compile
+cold once and write the new name, as every release change already does; leftover `.melc` files are inert and
+safe to delete. Cache contents, locations and admission rules are unchanged, and `.gitignore` ignores both names.
+
+## An ambiguous provider is refused with its candidates and the fix, not a compiler error
+
+When a single typed constructor parameter has two or more registered providers - two classes that happen to
+share a name, or one class bound twice - `conjure()` now refuses the consumer through the readable validation
+report instead of raising `RuntimeError("SpellCrafter Phase 3: multiple DI candidates ...")` from inside the
+compiler:
+
+```text
+Spellbook validation failed. Broken spells: MCPScanner.
+MCPScanner:
+  - Parameter 'profile' on spell 'MCPScanner' expects ScanProfile, but 2 registered spells provide it:
+    ScanProfile at (spellframe='agents', binding_name='ScanProfile'); ScanProfile at
+    (spellframe='artificial_intelligence_tools', binding_name='ScanProfile'). Select one with a SpellMap
+    default on the parameter (SpellMap(spellframe=..., binding_name=...)), supply it at meld with
+    override={'profile': ...}, or bind only one provider of this type. [AMBIGUOUS_PROVIDER]
+```
+
+Every candidate is named with its address, and the three ways out are spelled out. The refusal keeps its
+timing: `conjure()` in an automatic world, the late `bind()` (and any meld) of the consumer in a dynamic one.
+Nothing is softened to a warning - ambiguity is a configuration error, not an input Melder picks for you.
+Under the hood Phase 3 records the parameter as an `AMBIGUOUS_INPUT` socket and a new Phase-4 strategy
+(`AmbiguousProviderStrategy`) reports it; `SpellValidationIssue.details` carries `candidates` for tooling.
+Code that matched the old error text (`PhaseExecutionError` / "multiple DI candidates") should expect
+`SpellbookValidationError` with code `AMBIGUOUS_PROVIDER`. No cache generation moves.
+
 ## Packaging and documentation
 
 - The internal-bind guard manifest holds 620 entries at 0.2.8216 (619 at 0.2.8215): `ManyDisposalBucket`, the
@@ -510,4 +545,8 @@ no `unique` dependency are byte-identical.
   system documents describe the frame classification and refusal, the Spell's two new fields, the kind-aware
   predicate and its four index buckets, the crystal's frame-kind keys, the loaders' hydration and shortfall
   and record version 4.1.0; the 0.2.8218 invariant is marked superseded.
-- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8222.
+- The packaged system documents name the cache bundles `.meldercache`.
+- The internal-bind guard manifest holds 622 entries at 0.2.8224: `AmbiguousProviderStrategy` joined.
+- The packaged system documents describe the AMBIGUOUS_INPUT socket, the strategy and the message shape; the
+  README's `SpellMap` paragraph names the report.
+- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8224.

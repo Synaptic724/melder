@@ -197,6 +197,7 @@
  ],
  "published_aliases": [],
  "imports": {
+  "time": "time",
   "dataclass": "dataclasses.dataclass",
   "StrEnum": "enum.StrEnum",
   "Condition": "threading.Condition",

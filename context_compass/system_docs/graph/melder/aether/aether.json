@@ -198,6 +198,8 @@
  ],
  "published_aliases": [],
  "imports": {
+  "logging": "logging",
+  "time": "time",
   "contextmanager": "contextlib.contextmanager",
   "RLock": "threading.RLock",
   "TracebackType": "types.TracebackType",

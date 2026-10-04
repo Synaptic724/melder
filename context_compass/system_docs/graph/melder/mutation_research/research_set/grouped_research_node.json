@@ -82,6 +82,8 @@
  ],
  "published_aliases": [],
  "imports": {
+  "copy": "copy",
+  "hashlib": "hashlib",
   "datetime": "datetime.datetime",
   "timezone": "datetime.timezone",
   "Dict": "typing.Dict",

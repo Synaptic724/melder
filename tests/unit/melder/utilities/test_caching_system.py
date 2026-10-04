@@ -107,9 +107,9 @@ def _write_cache_bundle(cache_root: Path, contents: bytes) -> Path:
         contents: Serialized bundle or deliberately corrupt bytes.
 
     Returns:
-        Path: The frame-a/root.melc file read by _make_cache_utility.
+        Path: The frame-a/root.meldercache file read by _make_cache_utility.
     """
-    bundle_path = cache_root / "frame-a" / "root.melc"
+    bundle_path = cache_root / "frame-a" / "root.meldercache"
     bundle_path.parent.mkdir(parents=True, exist_ok=True)
     bundle_path.write_bytes(contents)
     return bundle_path
@@ -198,7 +198,7 @@ def test_caching_system_builds_expected_bundle_metadata() -> None:
 
     assert caching_system.conduit_name == "alpha"
     assert caching_system.bundle_path == (
-        cache_root_path / "frame-b" / "alpha.melc"
+        cache_root_path / "frame-b" / "alpha.meldercache"
     )
 
 
@@ -447,7 +447,7 @@ def test_caching_system_rejects_missing_release_then_emits_current_bundle(tmp_pa
 @pytest.mark.parametrize("contents", [b"not-marshal", marshal.dumps([])])
 def test_caching_system_rejects_corrupt_real_bundle(tmp_path: Path, contents: bytes) -> None:
     """
-    Treat unreadable or non-dictionary .melc contents as a cold cache.
+    Treat unreadable or non-dictionary .meldercache contents as a cold cache.
 
     Args:
         tmp_path: Isolated test-owned cache root.
@@ -460,6 +460,34 @@ def test_caching_system_rejects_corrupt_real_bundle(tmp_path: Path, contents: by
     caching_system = _make_cache_utility(cache_root_path=tmp_path)
     try:
         assert tuple(caching_system.cached_spell_ids) == ()
+    finally:
+        caching_system.cleanup()
+
+
+def test_caching_system_never_reads_a_legacy_melc_bundle(tmp_path: Path) -> None:
+    """
+    Regression: a current-format bundle under the retired `.melc` name is never read.
+
+    Contract:
+        Since 0.2.8223 a conduit cache bundle is `<frame>/<conduit>.meldercache`. A bundle that
+        would be admitted under that name, written beside it under the old `.melc` name, leaves
+        the cache cold: Melder neither migrates nor deletes such a file.
+
+    Args:
+        tmp_path: Isolated test-owned cache root.
+
+    Returns:
+        None. The legacy file is untouched and no cached spell is exposed.
+    """
+    legacy_path = tmp_path / "frame-a" / "root.melc"
+    legacy_path.parent.mkdir(parents=True, exist_ok=True)
+    legacy_bytes = marshal.dumps(_make_populated_cache_bundle())
+    legacy_path.write_bytes(legacy_bytes)
+    caching_system = _make_cache_utility(cache_root_path=tmp_path)
+    try:
+        assert caching_system.bundle_path == tmp_path / "frame-a" / "root.meldercache"
+        assert tuple(caching_system.cached_spell_ids) == ()
+        assert legacy_path.read_bytes() == legacy_bytes
     finally:
         caching_system.cleanup()
 

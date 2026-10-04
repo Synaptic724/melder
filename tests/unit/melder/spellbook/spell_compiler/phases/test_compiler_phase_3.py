@@ -815,8 +815,10 @@ def test_resolve_single_by_annotation_raises_on_multiple_matches() -> None:
         target_annotation=_ServiceFrame,
     )
 
-    with pytest.raises(RuntimeError, match="multiple DI candidates found"):
-        phase._resolve_single_by_annotation(root_spell, spellbook, dep)
+    # 2026-10-04: ambiguity is no longer a Phase-3 raise; every candidate comes back and the DAG
+    # builder records the socket as AMBIGUOUS_INPUT for Phase 4's AMBIGUOUS_PROVIDER report.
+    resolved = phase._resolve_single_by_annotation(root_spell, spellbook, dep)
+    assert {spell_obj.spell_name for spell_obj in resolved.values()} == {"DepA", "DepB"}
 
 
 def test_resolve_collection_by_annotation_returns_all_matches() -> None:

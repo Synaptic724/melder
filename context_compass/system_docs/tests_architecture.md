@@ -548,7 +548,7 @@ Recounted 2026-09-26 with `find tests/<tier> -name '*.py'` (pycache excluded).
   unit tests use cwd-relative `tests/unit/melder/utilities/_caching_system_tmp_*`
   directories (under `tests/tests/...` when pytest runs from `tests/`), and
   component cache tests write under the package directory (`src/melder/tests/...`).
-  `.gitignore` covers `*.melc` and the `tests/tests/...` form, so the `.melc` caches
+  `.gitignore` covers `*.meldercache`, the legacy `*.melc` and the `tests/tests/...` form, so the caches
   never reach a commit (six `bundle.json` files under the `_load_*` directories did;
   see `## Unknowns`), but they survive between runs; newer tests use `tmp_path`. The
   two synthetic-module benches write case packages under
@@ -846,6 +846,9 @@ graph TD
 - direct filesystem inventory of `tests/`
 
 ## Context / Handoff Summary
+
+2026-10-04 cache suffix (0.2.8223): cache tests now leave `.meldercache` bundles in the tree; `.gitignore`
+ignores them and still ignores legacy `.melc` files. A unit regression shows a legacy bundle is never read.
 
 2026-09-30 (root configuration guards pass): three code-map extents remeasured by the verification
 recipe - `pyproject.toml` 246, `test_nexus.py` 6377 (two setup rows now deactivate the live Nexus first) and

@@ -170,6 +170,7 @@
   "Format": "annotationlib.Format",
   "AbstractContextManager": "contextlib.AbstractContextManager",
   "nullcontext": "contextlib.nullcontext",
+  "inspect": "inspect",
   "RLock": "threading.RLock",
   "TYPE_CHECKING": "typing.TYPE_CHECKING",
   "Optional": "typing.Optional",

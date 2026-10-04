@@ -90,6 +90,7 @@
  ],
  "published_aliases": [],
  "imports": {
+  "threading": "threading",
   "Any": "typing.Any",
   "Optional": "typing.Optional",
   "Tuple": "typing.Tuple",

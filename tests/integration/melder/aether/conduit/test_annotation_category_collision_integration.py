@@ -21,6 +21,7 @@ from typing import Any, Protocol, Type
 import pytest
 
 from melder import Aether, Cleanable, Conduit, Spellbook
+from melder.utilities.custom_exceptions.spellbook_validation_error import SpellbookValidationError
 from melder.utilities.custom_exceptions.unresolved_input_error import UnresolvedInputError
 
 
@@ -366,18 +367,77 @@ def test_collection_annotations_gather_the_group_their_kind_names() -> None:
 
 
 def test_guard_two_providers_of_the_annotated_type_still_raise_ambiguity() -> None:
-    """GUARD: two spells of the annotated TYPE at distinct addresses are a real ambiguity, reported by Phase 3."""
+    """
+    GUARD: two spells of the annotated TYPE at distinct addresses are a real ambiguity. Since 2026-10-04 it is
+    refused through the readable validation report (AMBIGUOUS_PROVIDER) naming both addresses and the remedies,
+    at the late bind in a dynamic world.
+    """
     root = _dynamic_root("annotation-category-type-ambiguity")
     try:
         root.bind(spell=Spectrum, existence="unique_per_conduit", spellframe="spectrum",
                   binding_name="primary", disposal_method_names=["cleanup"])
         root.bind(spell=Spectrum, existence="unique_per_conduit", spellframe="mirror",
                   binding_name="secondary", disposal_method_names=["cleanup"])
-        with pytest.raises(RuntimeError, match="multiple DI candidates"):
+        with pytest.raises(SpellbookValidationError) as excinfo:
             root.bind(spell=CenterWithClass, existence="many", spellframe="command_center",
                       binding_name="center", disposal_method_names=["cleanup"])
+        text = str(excinfo.value)
+        assert "[AMBIGUOUS_PROVIDER]" in text
+        assert "Spectrum at (spellframe='spectrum', binding_name='primary')" in text
+        assert "Spectrum at (spellframe='mirror', binding_name='secondary')" in text
+        assert "SpellMap(spellframe=..., binding_name=...)" in text and "override={'spectrum': ...}" in text
     finally:
         root.cleanup()
+
+
+class ScanProfileFromAgents:
+    """One of two unrelated classes a host happens to name alike (the MelderOps MCPScanner shape)."""
+
+    def __init__(self) -> None:
+        """No collaborators."""
+
+
+class ScanProfileFromTools:
+    """The other same-named class, bound in another category."""
+
+    def __init__(self) -> None:
+        """No collaborators."""
+
+
+ScanProfileFromAgents.__name__ = ScanProfileFromTools.__name__ = "ScanProfile"
+
+
+class MCPScanner:
+    """Consumer typed with one of the two same-named classes."""
+
+    def __init__(self, profile: ScanProfileFromTools) -> None:
+        """Hold the profile."""
+        self.profile = profile
+
+
+def test_two_same_named_classes_in_two_categories_are_reported_with_both_addresses() -> None:
+    """
+    The MelderOps composition: Agents' ScanProfile under "agents" and Utilities' ScanProfile under
+    "artificial_intelligence_tools", and `MCPScanner.profile: ScanProfile`. A class annotation keys by the
+    class NAME (so a TYPE_CHECKING string and the class object agree), so the two are one type key; conjure
+    refuses MCPScanner through the readable report naming both addresses and the SpellMap remedy, not with a
+    compiler RuntimeError.
+    """
+    aether = Aether(); Spellbook._aether = aether; Conduit._aether = aether
+    book = Spellbook(aetheric_frame="annotation-category-same-named-classes")
+    book.get_configuration().set_property("phase_scheduler_workers_per_spellbook", 1)
+    book.bind(spell=ScanProfileFromAgents, existence="unique", spellframe="agents", binding_name="ScanProfile")
+    book.bind(spell=ScanProfileFromTools, existence="unique", spellframe="artificial_intelligence_tools",
+              binding_name="ScanProfile")
+    book.bind(spell=MCPScanner, existence="many")
+    with pytest.raises(SpellbookValidationError) as excinfo:
+        book.conjure(name="root")
+    text = str(excinfo.value)
+    assert "Broken spells: MCPScanner" in text
+    assert "ScanProfile at (spellframe='agents', binding_name='ScanProfile')" in text
+    assert "ScanProfile at (spellframe='artificial_intelligence_tools', binding_name='ScanProfile')" in text
+    assert "[AMBIGUOUS_PROVIDER]" in text
+    book.cleanup()
 
 
 def test_guard_explicit_address_selection_is_unchanged() -> None:

@@ -1507,6 +1507,8 @@ class SpellSystemStates(Cleanable):
             - An UNRESOLVED_INPUT socket is watched under its expected type's frame
               key, so binding a matching provider later marks this consumer
               dependency-changed and its next meld re-resolves it into a NORMAL edge.
+            - An AMBIGUOUS_INPUT socket is watched the same way (2026-10-04), so
+              removing one of the competing providers re-gates the consumer.
             - False-root declarations carry no dependency_key and therefore add no watcher.
             - The frame key is taken from `socket.dependency_key[0]`.
             - Returns a detached set suitable for index replacement.
@@ -1518,6 +1520,7 @@ class SpellSystemStates(Cleanable):
             if (
                     socket.socket_kind is not SocketKind.OVERRIDE_REQUIRED
                     and socket.socket_kind is not SocketKind.UNRESOLVED_INPUT
+                    and socket.socket_kind is not SocketKind.AMBIGUOUS_INPUT
                     and not (socket.socket_kind is SocketKind.NORMAL and socket.is_collection)
             ):
                 continue

@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_components.md'
-LINE_COUNT = 10721
-CONTENT_SHA256 = '8bafa87e7d1c44bdd61fa8ab71e32b0d0694bac80421cae92f61917943e2604c'
+LINE_COUNT = 10758
+CONTENT_SHA256 = 'e05f607a133af7b89a41f2dccd4af3de35e96d20a87cae5e75ad99e163f2ae8c'
 
 TEXT = """# Src Components (C3/C2/C1)
 
@@ -3793,10 +3793,36 @@ Annotation matching by kind (2026-10-04, 0.2.8222; replaces the 0.2.8218 address
   by_definition; name single: by_type + by_contract; name collection: by_label) with the first-position /
   last-object replay the single resolver relies on. A category sharing a class's name never enters that class's
   candidates, so the MelderOps "spectrum" collision cannot recur; ambiguity between two spells of the type still
-  raises; Phase 4's one-address rule is unchanged. `_eq_safe_object` remains the structural snapshot's
+  refuses the consumer (through Phase 4 since 0.2.8224, next block); Phase 4's one-address rule is unchanged. `_eq_safe_object` remains the structural snapshot's
   replayability rule only. Cache generation 20 retires bundles captured under the name matcher.
 - History: 0.2.8218 matched by address KEY (frame key or type key, by name), which made a string category's
   members providers of a same-named class; before that the object path matched by identity.
+
+Ambiguous providers reported through Phase 4 (2026-10-04, 0.2.8224):
+- `_resolve_single_by_annotation` returns every matching candidate; `_build_local_frame_dag` records a
+  SINGLE_BY_ANNOTATION socket with >1 resolvable candidates in `socket_ambiguous` (candidate ids sorted; no
+  dependency id, no edge) and `_build_local_topology` marks it `SocketKind.AMBIGUOUS_INPUT` with the ids as
+  `referenced_spell_ids`, `target_spell_ids=()` and its `dependency_key` kept, so
+  `SpellSystemStates._extract_collection_frame_keys` watches it like an UNRESOLVED_INPUT (a bind or removal of a
+  same-keyed spell re-gates the consumer) and `BindingResolutionCycleStrategy` skips it (no edge to cycle).
+- `AmbiguousProviderStrategy` (registered after `RequiredHolesStrategy`) emits one `AMBIGUOUS_PROVIDER` error per
+  such socket: parameter, expected type (rendered as `UnresolvedInputError.expected_type_name`), each candidate as
+  `<spell_name> at (spellframe=<display name or None>, binding_name=<name or None>)` ordered by address, and the
+  remedies (a SpellMap default on the parameter, `override={param: ...}` at meld, or one provider of the type);
+  `details` carries `spell_id`, `parameter_name`, `expected_type`, `candidates` (`{spell_id, spell_name,
+  spellframe, binding_name}`); an unresolvable candidate id renders as `spell id <id>`. Conjure refuses through
+  `SpellbookValidationError`; a late dynamic bind of the consumer raises the same report, as does a meld of it.
+- Before 0.2.8224 the resolver raised `RuntimeError("SpellCrafter Phase 3: multiple DI candidates ...")`, which
+  surfaced as a `PhaseExecutionError` at conjure or a bare RuntimeError at a late bind and never reached the
+  readable report. Owner ruling 2026-10-04: an error, not a warning. A broken spell never plans, so no executor,
+  site plan or cache row carries the kind and the cache generation does not move.
+- EVIDENCE: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:CompilerPhase3._resolve_single_by_annotation`,
+  `CompilerPhase3._build_local_frame_dag`, `CompilerPhase3._build_local_topology`,
+  `src/melder/aether/spellbook/spell_compiler/dag/socket_kind.py:SocketKind`,
+  `src/melder/aether/spellbook/spell_compiler/validation/strategies/ambiguous_provider_strategy.py:AmbiguousProviderStrategy`,
+  `src/melder/aether/spellbook/spell_compiler/validation/validation_system.py:SpellValidationSystem`,
+  `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py:SpellSystemStates._extract_collection_frame_keys`
+  and `src/melder/aether/spellbook/spell_compiler/validation/strategies/binding_resolution_cycle_strategy.py:BindingResolutionCycleStrategy`.
 - EVIDENCE: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:CompilerPhase3._annotation_kind`,
   `CompilerPhase3._spell_keys_for`, `CompilerPhase3._matches_annotation`, `CompilerPhase3._build_candidate_index`,
   `CompilerPhase3._index_buckets_for`, `CompilerPhase3._indexed_annotation_candidates` and
@@ -5306,7 +5332,7 @@ Data Structures:
   which also re-exports `MANIFEST_VERSION`, `BUILT_FOR_VERSION` and
   `MANIFEST_ENTRY_COUNT` (619 at 0.2.8215).
 - The TRUTH is the COMMITTED manifest `_bind_guard/manifest/bind_guard_manifest.py`. The
-  loader hydrates it through a `.melc` under `__melder_cache__/__bind_guard__/` that is an
+  loader hydrates it through a `.meldercache` under `__melder_cache__/__bind_guard__/` that is an
   ACCELERATOR, never the source; the manifest module is imported lazily on cache miss
   only. Regeneration: `python src/melder/_build_assets/_build_asset_runner.py`.
 Semantics:
@@ -5666,6 +5692,9 @@ Contract/Interface:
 - A genuine shared address emits error code `DUPLICATE_SPELL_NAME`, preserving prior detail fields and
   adding `lookup_key` plus each collider's display name. The address map is memoized only for the
   validation pass, built from one pool copy; a standalone validation computes it fresh.
+- `AmbiguousProviderStrategy` (0.2.8224) emits `AMBIGUOUS_PROVIDER` for every AMBIGUOUS_INPUT socket Phase 3
+  recorded: the parameter, its expected type, each candidate with its address and the remedies (see the
+  SpellCompiler entry). `RequiredHolesStrategy` keeps reporting UNRESOLVED_INPUT sockets as warnings.
 Data Structures:
 - Strategy registry and validation results.
 Concurrency/Threading:
@@ -5673,6 +5702,7 @@ Concurrency/Threading:
 Key Files (C1):
 - `src/melder/aether/spellbook/spell_compiler/validation/validation_system.py`
 - `src/melder/aether/spellbook/spell_compiler/validation/strategies/duplicate_spell_name_strategy.py`
+- `src/melder/aether/spellbook/spell_compiler/validation/strategies/ambiguous_provider_strategy.py`
 - `src/melder/utilities/helpers/general_helpers.py`
 
 ### Subcomponent: System Validation (Phase 6)
@@ -10339,6 +10369,13 @@ Companion documents:
   component and code-description patches are inputs to this document while a lane is open.
 
 ## Context / Handoff Summary
+
+2026-10-04 ambiguous providers reported through Phase 4 (0.2.8224): the SpellCompiler entry carries the AMBIGUOUS_INPUT
+socket, the new strategy and the message shape; the Spell Validation Strategies entry lists the strategy and its
+key file.
+
+2026-10-04 cache suffix (0.2.8223): the bind-guard loader hydrates through a `.meldercache` bundle (was
+`.melc`); every cache bundle Melder writes uses that suffix and `.melc` files are no longer read.
 
 2026-10-04 annotation matching by kind (0.2.8222): the Binding Pipeline entry carries the spellframe kind
 classification and the concrete-class refusal (Breaking) with the Spell's two new fields; the SpellCompiler entry

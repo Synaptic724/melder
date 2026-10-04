@@ -1,63 +1,63 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/aether/spellbook/spellframe_kind/spellframe_kind.py",
-  "source_sha256": "b793da1e67b6986d62562f2d1680322d21ec7d00475474b5e8f34555afcfa8f9",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.aether.spellbook.spellframe_kind.spellframe_kind": {
-      "id": "melder.aether.spellbook.spellframe_kind.spellframe_kind",
-      "label": "spellframe_kind",
-      "kind": "module",
-      "file": "src/melder/aether/spellbook/spellframe_kind/spellframe_kind.py",
-      "lineno": 1,
-      "include": true,
-      "role": "Module holding the SpellframeKind enum that a binding records for its spellframe.",
-      "responsibilities": [
-        "exports SpellframeKind for Bind, Spell, Phase 3 and the crystallizer"
-      ],
-      "phases": [
-        "init"
-      ],
-      "semantics_authored_against": ""
-    },
-    "melder.aether.spellbook.spellframe_kind.spellframe_kind.SpellframeKind": {
-      "id": "melder.aether.spellbook.spellframe_kind.spellframe_kind.SpellframeKind",
-      "label": "SpellframeKind",
-      "kind": "enum",
-      "file": "src/melder/aether/spellbook/spellframe_kind/spellframe_kind.py",
-      "lineno": 4,
-      "bases": [],
-      "markers": [
-        "Enum"
-      ],
-      "public_methods": [],
-      "shape": {
-        "method_count": 0,
-        "has_bases": true,
-        "trivial": false
-      },
-      "span_sha256": "e8b362e0fe923235de394c8072f53e6017f0e6ae1ce877f6ac2aaf32f907921a",
-      "include": true,
-      "role": "The kind of spellframe a Spell was bound under: none (no frame), category (a string label), contract (a typing.Protocol the spell was checked against).",
-      "responsibilities": [
-        "names the three frame kinds Bind._classify_spellframe assigns; value == name so crystals carry the name",
-        "read by CompilerPhase3 to decide what an annotation may match: a category never provides, a contract's implementers do",
-        "recorded by SpellCrystal (spellframe_kind) and re-hydrated by RestoreEngine and GraftRunner"
-      ],
-      "owns_state": [],
-      "phases": [
-        "init",
-        "validation",
-        "runtime"
-      ],
-      "semantics_authored_against": "e8b362e0fe923235de394c8072f53e6017f0e6ae1ce877f6ac2aaf32f907921a"
-    }
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/spellframe_kind/spellframe_kind.py",
+ "source_sha256": "b793da1e67b6986d62562f2d1680322d21ec7d00475474b5e8f34555afcfa8f9",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.spellframe_kind.spellframe_kind": {
+   "id": "melder.aether.spellbook.spellframe_kind.spellframe_kind",
+   "label": "spellframe_kind",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/spellframe_kind/spellframe_kind.py",
+   "lineno": 1,
+   "include": true,
+   "role": "Module holding the SpellframeKind enum that a binding records for its spellframe.",
+   "responsibilities": [
+    "exports SpellframeKind for Bind, Spell, Phase 3 and the crystallizer"
+   ],
+   "phases": [
+    "init"
+   ],
+   "semantics_authored_against": ""
   },
-  "edges_out": [],
-  "edge_candidates": [],
-  "published_aliases": [],
-  "imports": {
-    "Enum": "enum.Enum"
-  },
-  "collapse_candidate": null
+  "melder.aether.spellbook.spellframe_kind.spellframe_kind.SpellframeKind": {
+   "id": "melder.aether.spellbook.spellframe_kind.spellframe_kind.SpellframeKind",
+   "label": "SpellframeKind",
+   "kind": "enum",
+   "file": "src/melder/aether/spellbook/spellframe_kind/spellframe_kind.py",
+   "lineno": 4,
+   "bases": [],
+   "markers": [
+    "Enum"
+   ],
+   "public_methods": [],
+   "shape": {
+    "method_count": 0,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "e8b362e0fe923235de394c8072f53e6017f0e6ae1ce877f6ac2aaf32f907921a",
+   "include": true,
+   "role": "The kind of spellframe a Spell was bound under: none (no frame), category (a string label), contract (a typing.Protocol the spell was checked against).",
+   "responsibilities": [
+    "names the three frame kinds Bind._classify_spellframe assigns; value == name so crystals carry the name",
+    "read by CompilerPhase3 to decide what an annotation may match: a category never provides, a contract's implementers do",
+    "recorded by SpellCrystal (spellframe_kind) and re-hydrated by RestoreEngine and GraftRunner"
+   ],
+   "owns_state": [],
+   "phases": [
+    "init",
+    "validation",
+    "runtime"
+   ],
+   "semantics_authored_against": "e8b362e0fe923235de394c8072f53e6017f0e6ae1ce877f6ac2aaf32f907921a"
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {
+  "Enum": "enum.Enum"
+ },
+ "collapse_candidate": null
 }

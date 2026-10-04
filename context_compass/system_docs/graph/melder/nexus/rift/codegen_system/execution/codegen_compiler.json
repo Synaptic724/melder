@@ -70,6 +70,7 @@
  ],
  "published_aliases": [],
  "imports": {
+  "threading": "threading",
   "TYPE_CHECKING": "typing.TYPE_CHECKING",
   "CodeType": "types.CodeType",
   "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",

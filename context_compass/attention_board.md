@@ -168,14 +168,13 @@ Message alert rules
 | defect_hunting_spellbook | in_progress | discovery | opencode | muse_0 | none | Slice spellbook component sections then read the surface behind each claim. | Contradiction list with evidence; meaty issues flagged apart from polish. | Sweep list triaged or owner redirects to conduit/meld or arch diffs. | tickets/tasks/2026-09-27_spellbook_sweep_task.md | 2026-09-27T15:56:49Z | REQUIRED |
 | defect_hunting_fixes_1 | in_progress | implementation | opencode | muse_0 | none | Re-slice each target fresh then repair findings 1-8 in order. | Corrected blocks with verified ranges; index check clean. | Batch repaired with gates passing or owner redirects scope. | tickets/tasks/2026-09-27_sweep_fixes_batch_1_task.md | 2026-09-27T16:07:16Z | REQUIRED |
 | shallow_thread_scaling_ci | review | handoff | claude | melder_1 | none | Owner: stage both sides of the rename and the new workflow, run the hosted three-OS job, and accept or redirect. | The thread-scaling benchmark runs on dev-to-preprod PRs beside the two gauntlets and must succeed for merge-ready. | Contracts run or reported Not run, bundles current, and the owner accepts or redirects. | tickets/tasks/2026-10-04_add_shallow_thread_scaling_to_preprod_benchmarks_task.md | 2026-10-04T12:52:00Z | REQUIRED |
+| meldercache_suffix | review | handoff | claude | melder_1 | none | Owner: accept or redirect the .meldercache rename (Windows tiers are the owner's); then archive the patch and close. | Melder names its cache bundles .meldercache; old .melc files are inert. | Tests run or reported Not run, assets/graph/bundles current, and the owner accepts or redirects. | tickets/tasks/2026-10-04_rename_cache_suffix_to_meldercache_task.md | 2026-10-04T13:26:39Z | REQUIRED |
 <!-- END USER-DEFINED: active_items -->
 
 ## Recently Closed Anchors
 | work_item | status | agent_name | ticket | note | closed_at |
 | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: closed_anchors -->
-| executor_cache_world_stamp | done | fable_0 | tickets/tasks/completed/2026-10-03_require_world_stamp_for_executor_cache_full_hit_task.md | Executor full hit requires the recorded world stamp (generation 19, 0.2.8220); the stale-executor defect fixed with unit/integration/component regressions; the surplus full hit retired. Turned in by owner directive; suites and gauntlet Not run. Next: none. | 2026-10-03T21:22:15Z |
-| annotation_address_matching | done | fable_0 | tickets/tasks/completed/2026-10-03_resolve_annotations_by_address_key_task.md | Phase 3 matches annotations by address key at 0.2.8218 (existing objects by class; string/object parity; generation 18). Turned in by owner directive; suites Not run. Next: the Autofac-strict tightening is not wanted. | 2026-10-03T21:22:15Z |
 | static_codegen_strategies | done | fable_0 | tickets/stories/completed/2026-10-01_lazy_instance_results_story.md | S8 lazy instance_results shipped at 0.2.8217 (plan -26..-32% on dict-mode roots, generation 17); story and task turned in by owner directive; gauntlet Not run. Next: S2a (with S9/S11) on the owner's word. | 2026-10-03T21:22:15Z |
 | flat_warm_body | done | fable_0 | tickets/tasks/completed/2026-10-03_certify_and_implement_site_store_constants_task.md | S9 owner-store constants landed at 0.2.8221 (plan -7..-17% on roots with unique providers; dynamic plans byte-identical; no generation bump); S11 already true. Turned in by owner directive; suites and gauntlet Not run. Next: none. | 2026-10-04T00:13:33Z |
 | flat_warm_body_story | done | fable_0 | tickets/stories/completed/2026-10-03_flat_warm_body_constants_story.md | The S9/S11 story behind the task; S2a parked. Turned in by owner directive. Next: none. | 2026-10-04T00:13:33Z |
@@ -186,6 +185,8 @@ Message alert rules
 | annotation_category_provider_collision | done | fable_1 | tickets/epics/completed/2026-10-03_annotation_category_provider_collision_epic.md | A type annotation never reads a same-named category as its provider set (0.2.8222); story and tasks completed. Closed by owner directive; consumer acceptance not reported (owner). Next: none. | 2026-10-04T12:20:00Z |
 | rebind_after_first_meld_story | done | fable_1 | tickets/stories/completed/2026-10-03_rebind_after_first_meld_repair_story.md | Repair at 0.2.8219 with both tasks completed; turned in by owner directive, work package C not reported (owner). Next: none. | 2026-10-04T12:20:00Z |
 | rebind_after_first_meld_epic | done | fable_1 | tickets/epics/completed/2026-10-03_rebind_after_first_meld_epic.md | Verdict retirement on unregister/register (0.2.8219); closed by owner directive, work package C not reported (owner). Next: none. | 2026-10-04T12:20:00Z |
+| ambiguous_provider_report | done | fable_1 | tickets/tasks/completed/2026-10-04_report_ambiguous_providers_in_validation_task.md | Ambiguous providers refuse through the readable report with every candidate's address and the remedies (0.2.8224); five pinned tests converted, 9 regressions. Closed by owner directive; full tiers owner-owed. Next: none. | 2026-10-04T17:35:00Z |
+| graph_external_base_targets | done | fable_1 | tickets/tasks/completed/2026-10-04_resolve_external_base_targets_in_graph_task.md | Extractor resolves `import X` dotted bases and builtins; zero unresolved targets in the shipped adjacency; the system-document-view test green; assets/bundles rebuilt (no notch). Next: none. | 2026-10-04T18:35:00Z |
 <!-- END USER-DEFINED: closed_anchors -->
 
 ## Notes
@@ -198,9 +199,15 @@ Message alert rules
 - shallow_thread_scaling_ci: SWITCH_TRIGGER is the owner's acceptance of the dev-to-preprod thread-scaling job
   (the hosted three-OS run is the owner's) or an owner redirect. RESUME_HIERARCHY:
   tickets/tasks/2026-10-04_add_shallow_thread_scaling_to_preprod_benchmarks_task.md.
+- meldercache_suffix: SWITCH_TRIGGER is the owner's acceptance of the `.meldercache` rename or an owner
+  redirect. RESUME_HIERARCHY: tickets/tasks/2026-10-04_rename_cache_suffix_to_meldercache_task.md.
 ### Notch notice (fable_1, 2026-10-04)
-- fable_1 landed 0.2.8222 (annotation matching by kind; caching_system.py generation 20 `annotation_kind_matching`).
+- fable_1 landed 0.2.8224 (ambiguous providers reported through Phase 4) and, before it, 0.2.8222 (annotation
+  matching by kind; caching_system.py generation 20 `annotation_kind_matching`).
   Notch above it if you land after. Previous notches by this agent: 0.2.8219.
+### Notch notice (melder_1, 2026-10-04)
+- melder_1 landed 0.2.8223 (cache bundles renamed `.melc` -> `.meldercache`; no cache generation change).
+  Notch above it if you land after.
 ### Device VM git hazard (melder_2, 2026-09-26)
 - The connected folder refuses deletes, so any git command that refreshes the index from the device VM
   (plain `git status`, `git diff`) can leave an empty .git/index.lock that blocks the owner's commits.

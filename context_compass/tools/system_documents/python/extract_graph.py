@@ -52,6 +52,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+import builtins
 import hashlib
 import json
 import collections
@@ -118,6 +119,24 @@ def base_name(node: ast.expr) -> str | None:
         return node.attr
     if isinstance(node, ast.Subscript):  # Generic[T] -> Generic
         return base_name(node.value)
+    return None
+
+
+def base_dotted(node: ast.expr) -> str | None:
+    """Dotted source text of a base class expression, or None.
+
+    `threading.local` -> "threading.local", `importlib.abc.Loader` ->
+    "importlib.abc.Loader", a bare `Name` -> the name. This is what PASS 1 uses
+    to resolve a base written through an `import X` module: `base_name` keeps
+    only the last attribute, which is a display label, not an address.
+    """
+    if isinstance(node, ast.Name):
+        return node.id
+    if isinstance(node, ast.Attribute):
+        head = base_dotted(node.value)
+        return f"{head}.{node.attr}" if head else None
+    if isinstance(node, ast.Subscript):
+        return base_dotted(node.value)
     return None
 
 
@@ -190,6 +209,13 @@ def import_map(tree: ast.Module, mod: str) -> dict[str, str]:
     """
     out: dict[str, str] = {}
     for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            # `import threading` / `import importlib.abc as iabc`: the bound name
+            # is a module id, so a dotted base rooted in it resolves to
+            # `<module>.<rest>` in PASS 1.
+            for alias in node.names:
+                out[alias.asname or alias.name] = alias.name
+            continue
         if not isinstance(node, ast.ImportFrom):
             continue
         if node.level:                                  # relative import
@@ -317,8 +343,13 @@ def extract(path: pathlib.Path, src_root: pathlib.Path,
         # relation is provisional: `implements` vs `specializes` depends on
         # whether the target is an interface, which is only knowable after every
         # file has been parsed. main() resolves it in a second pass.
+        dotted_by_label = {base_name(b): base_dotted(b) for b in cls.bases}
         for b in bases:
-            edges.append({"from": cid, "to_label": b, "relation": "specializes"})
+            edge = {"from": cid, "to_label": b, "relation": "specializes"}
+            dotted = dotted_by_label.get(b)
+            if dotted and dotted != b:
+                edge["_to_dotted"] = dotted       # in-memory only; popped before write
+            edges.append(edge)
         for sub in ast.walk(cls):
             if isinstance(sub, ast.Call):
                 name = base_name(sub.func)
@@ -563,7 +594,17 @@ def main() -> int:
         imports = d.get("imports", {})
         for e in d["edges_out"]:
             label = e["to_label"]
+            dotted = e.pop("_to_dotted", None)
             target = imports.get(label) or local_defs.get((d["source"], label))
+            if not target and dotted and "." in dotted:
+                # `threading.local`: the head is a module bound by `import X`
+                # (or an alias of one); the rest is the attribute path.
+                head, _, rest = dotted.partition(".")
+                if head in imports:
+                    target = f"{imports[head]}.{rest}"
+            if not target and label in builtins.__dict__:
+                # `ReferenceError`, `Exception`: a base the interpreter provides.
+                target = f"builtins.{label}"
             if target:
                 e["to"] = target
                 stats_resolved[0] += 1

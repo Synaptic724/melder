@@ -281,6 +281,8 @@
  ],
  "published_aliases": [],
  "imports": {
+  "threading": "threading",
+  "time": "time",
   "Sequence": "collections.abc.Sequence",
   "contextmanager": "contextlib.contextmanager",
   "ModuleType": "types.ModuleType",

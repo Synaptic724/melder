@@ -62,6 +62,7 @@
  "edge_candidates": [],
  "published_aliases": [],
  "imports": {
+  "ast": "ast",
   "CrystalFactStrategy": "melder.crystallizer.crystal_analysis.strategies.base_strategy.CrystalFactStrategy",
   "FactContext": "melder.crystallizer.crystal_analysis.strategies.base_strategy.FactContext"
  },

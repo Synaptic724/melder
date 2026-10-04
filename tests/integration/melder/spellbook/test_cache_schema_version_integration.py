@@ -59,7 +59,7 @@ def test_cache_schema_version_history_accepts_only_current_bundle(
     conduit_name = "root"
     spell_id = "a" * 64
     cache_root = tmp_path / "cache"
-    bundle_path = cache_root / frame_name / f"{conduit_name}.melc"
+    bundle_path = cache_root / frame_name / f"{conduit_name}.meldercache"
     bundle_path.parent.mkdir(parents=True, exist_ok=True)
     bundle_path.write_bytes(marshal.dumps({
         "version": bundle_version,

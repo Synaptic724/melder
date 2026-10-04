@@ -1,8 +1,8 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: tests
-SOURCE FINGERPRINT: a684543024cc3de1ad0462c7467e66c0cf85e2131807eeb8eb607b69f98dc7b3
-FILE COUNT: 1060
+SOURCE FINGERPRINT: 722757fbdc062d65916aedc11db096ef641685ee26a4bc95d21bd2df71315a33
+FILE COUNT: 1061
 
 ================================================================================
 BEGIN FILE: tests/_annotation_audit_support.py
@@ -45884,7 +45884,7 @@ END FILE: tests/component/melder/spellbook/test_bind_lifecycle_hooks.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/spellbook/test_codegen_signature_determinism.py
-CONTENT SHA256: 3991f7828d685cfcd071d9d22b984824afe783ea9eb16d8a6192fe3354fed182
+CONTENT SHA256: 46f26bc0a35a073810d785127b82909850ed34232dd7d64d771dba0e68976b8d
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -46167,7 +46167,7 @@ def _compile_contract_payload_book(consumer_class: type) -> Tuple[Any, Any, Any,
 
     Contract:
         - Two dynamic books in the default frame with the system creation cache disabled
-          (so every process computes fresh signatures instead of loading a `.melc`).
+          (so every process computes fresh signatures instead of loading a `.meldercache`).
         - The owner book provides `BasicService` as `IService`/`primary`; the borrower book
           binds `consumer_class`; the conduits are linked, the provider is added to the
           contract, contracts are validated and the consumer is melded once so phases 8-11
@@ -50148,7 +50148,7 @@ END FILE: tests/component/melder/spellbook/test_spellbook_component_bind_inactiv
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/spellbook/test_spellbook_component_caching_system.py
-CONTENT SHA256: 4281cfa1035547c5a222b144c46101e7aed06b6f89624c7cbf7b3ce6333daef0
+CONTENT SHA256: 9ddcad5d011479f39ef013179b70fbd8e3a583046e4f3a70e79068baf133785c
 SOURCE ENCODING: utf-8
 ================================================================================
 import inspect
@@ -50501,7 +50501,7 @@ def test_component_spellbook_lazily_builds_caching_system_when_enabled() -> None
 
     assert isinstance(caching_system, CachingSystem)
     assert caching_system.bundle_path == (
-        cache_root_path / "__conjure_cache__" / "default" / "root.melc"
+        cache_root_path / "__conjure_cache__" / "default" / "root.meldercache"
     )
 
 
@@ -50526,7 +50526,7 @@ def test_component_spellbook_uses_custom_conduit_name_in_cache_path() -> None:
     caching_system = spellbook._get_or_create_caching_system()
 
     assert caching_system.bundle_path == (
-        cache_root_path / "__conjure_cache__" / "default" / "alpha.melc"
+        cache_root_path / "__conjure_cache__" / "default" / "alpha.meldercache"
     )
 
 
@@ -50555,7 +50555,7 @@ def test_component_spellbook_uses_frame_name_in_cache_path() -> None:
     caching_system = spellbook._get_or_create_caching_system()
 
     assert caching_system.bundle_path == (
-        cache_root_path / "__conjure_cache__" / "ops" / "root.melc"
+        cache_root_path / "__conjure_cache__" / "ops" / "root.meldercache"
     )
 
 
@@ -50650,7 +50650,7 @@ def test_component_spellbook_bundle_path_uses_relative_config_fragment() -> None
     caching_system = spellbook._get_or_create_caching_system()
 
     assert configuration.system_cache_root_path == cache_root_fragment
-    # Bundle layout is <cache_root>/__conjure_cache__/<frame>/<conduit>.melc, so the bundle's
+    # Bundle layout is <cache_root>/__conjure_cache__/<frame>/<conduit>.meldercache, so the bundle's
     # parent directory is the frame directory under the configured root.
     assert caching_system.bundle_path.parent == cache_root_path / "__conjure_cache__" / "default"
 
@@ -52008,7 +52008,7 @@ END FILE: tests/component/melder/spellbook/test_spellbook_component_configuratio
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/spellbook/test_spellbook_component_contract_override_operands.py
-CONTENT SHA256: 73fbe835ea30be64fc1a5569f1096827e1a5e373154cc8b74d40379d17f29ee1
+CONTENT SHA256: dc016df1c8bbfbf50a80e80204ee76c75d2be58087b463b9cff59c25783b3936
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -52122,8 +52122,8 @@ def _prepare_cache_root(fragment: Path) -> Path:
 
 
 def _bundle_path(fragment: Path) -> Path:
-    """Return the root conduit's `.melc` path under the default frame for one cache root."""
-    return (_package_root() / fragment / "__conjure_cache__" / "default" / "root.melc").resolve()
+    """Return the root conduit's `.meldercache` path under the default frame for one cache root."""
+    return (_package_root() / fragment / "__conjure_cache__" / "default" / "root.meldercache").resolve()
 
 
 def _activate_cache(fragment: Path, *, enabled: bool) -> None:
@@ -60146,7 +60146,7 @@ END FILE: tests/component/melder/spellbook/test_spellbook_component_structural_s
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/spellbook/test_spellbook_component_unresolved_input.py
-CONTENT SHA256: d97ef24c4667b70b3779a09837036a6aac3c4d5e054e8664d35efadacf92d538
+CONTENT SHA256: ed867688026e72f3fe68a43fea5567817db695c6ea97c77a08dc72a94ab65318
 SOURCE ENCODING: utf-8
 ================================================================================
 """Compiler contracts for typed parameters that no registered spell provides (UNRESOLVED_INPUT)."""
@@ -60332,12 +60332,19 @@ def test_existing_socket_kinds_are_unchanged(
 
 
 def test_two_providers_remain_an_ambiguity_error(compiler_book: Spellbook) -> None:
-    """Ambiguity is a configuration error, never an input the caller could supply."""
-    compiler_book.bind(spell=Provider, spellframe=Unregistered, existence="unique", binding_name="one")
-    compiler_book.bind(spell=OtherProvider, spellframe=Unregistered, existence="unique", binding_name="two")
+    """
+    Ambiguity is a configuration error, never an input the caller could supply. Since 2026-10-04 Phase 3
+    records it as an AMBIGUOUS_INPUT socket (no target, the candidates as references, the frame key kept)
+    and Phase 4 refuses the spell with AMBIGUOUS_PROVIDER instead of a Phase-3 RuntimeError.
+    """
+    one = compiler_book.bind(spell=Provider, spellframe=Unregistered, existence="unique", binding_name="one")
+    two = compiler_book.bind(spell=OtherProvider, spellframe=Unregistered, existence="unique", binding_name="two")
     consumer_id = compiler_book.bind(spell=Consumer, existence="unique")
-    with pytest.raises(RuntimeError, match="multiple DI candidates"):
-        _local_topology(compiler_book, consumer_id, indexed=True)
+    socket, = _local_topology(compiler_book, consumer_id, indexed=True).sockets
+    assert socket.socket_kind is SocketKind.AMBIGUOUS_INPUT
+    assert socket.target_spell_ids == ()
+    assert set(socket.referenced_spell_ids) == {one, two}
+    assert socket.dependency_key is not None and socket.dependency_key[0] == "unregistered"
 
 
 @pytest.mark.parametrize(("consumer_type", "expected_kind"), [
@@ -66149,14 +66156,14 @@ END FILE: tests/experimentation/many_registration_split_experiment.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/experimentation/melc_cache_ledger.py
-CONTENT SHA256: c2a3293c2ca5697ae262593e2d11e61069960dcf6562c3994ad863feaa2b7fc8
+CONTENT SHA256: 5ee01e90aeb60bcaf9df40b38bcd3b1d892304d331956c66a9a10e51f1eb8b3b
 SOURCE ENCODING: utf-8
 ================================================================================
 """
 melc cache ledger: what each cached creation plan does per creation, and what a codegen style could remove.
 
 WHY THIS EXISTS
-    Proof before design. A creation cache (`__melder_cache__/__conjure_cache__/<frame>/<conduit>.melc`) holds one
+    Proof before design. A creation cache (`__conjure_cache__/<frame>/<conduit>.meldercache`) holds one
     marshal bundle per conduit; each spell payload carries the family manifest, and for the generalized and
     many_only families the `no_overrides.steps_rows` the normal plan is re-emitted from at hydration. Those rows
     say what the emitted body does on every creation of that root: which sites are shared reads (singletons,
@@ -66289,10 +66296,10 @@ class RootLedger:
 
 
 def load_bundles(root: pathlib.Path) -> List[Tuple[pathlib.Path, Dict[str, Any]]]:
-    """Decode every `.melc` bundle under a conjure cache root; unreadable files are reported, not fatal."""
+    """Decode every `.meldercache` bundle under a conjure cache root; unreadable files are reported, not fatal."""
     conjure = root / "__conjure_cache__" if (root / "__conjure_cache__").is_dir() else root
     bundles: List[Tuple[pathlib.Path, Dict[str, Any]]] = []
-    for path in sorted(conjure.glob("*/*.melc")):
+    for path in sorted(conjure.glob("*/*.meldercache")):
         try:
             bundles.append((path, marshal.loads(path.read_bytes())))
         except (ValueError, EOFError, TypeError) as exc:
@@ -74749,7 +74756,7 @@ END FILE: tests/experimentation/test_deque_vs_list_append_popleft_experiment.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/experimentation/test_dynamic_bind_conjure_order_cache_speed_experiment.py
-CONTENT SHA256: 25274a6192734c514b17ba64538c7cbe31d861449cc9b91cdf7120ad38b0899c
+CONTENT SHA256: e811deeb3b7d42a885b02b6131267337852ed9c11bf177e0196d282aa0a13794
 SOURCE ENCODING: utf-8
 ================================================================================
 """Opt-in cold/warm disk-cache extension of the five-object order speed test.
@@ -74821,7 +74828,7 @@ class CacheOrderBenchmark(OrderBenchmark):
         if sequence not in self.SEQUENCES:
             raise ValueError(f"Unknown benchmark sequence: {sequence}")
         path = (
-            self._cache_root / sequence / "__conjure_cache__" / self.FRAME_NAME / "root.melc"
+            self._cache_root / sequence / "__conjure_cache__" / self.FRAME_NAME / "root.meldercache"
         ).resolve()
         assert path.is_relative_to(self._cache_root)
         return path
@@ -86658,7 +86665,7 @@ END FILE: tests/experiments/cprofile_testing/trace_creation_vs_bootstrap.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/aether/conduit/test_annotation_category_collision_integration.py
-CONTENT SHA256: 0073a3710c812c8d2244b6d8da6fda680379d556780ee1b9dbbd0a22c96dc359
+CONTENT SHA256: f461af50f4f3df8a18dad7856125002580fb01233c9aad3da40ce8124d60908c
 SOURCE ENCODING: utf-8
 ================================================================================
 """Integration regressions: annotations match by kind; a spellframe is a category or a Protocol contract.
@@ -86684,6 +86691,7 @@ from typing import Any, Protocol, Type
 import pytest
 
 from melder import Aether, Cleanable, Conduit, Spellbook
+from melder.utilities.custom_exceptions.spellbook_validation_error import SpellbookValidationError
 from melder.utilities.custom_exceptions.unresolved_input_error import UnresolvedInputError
 
 
@@ -87029,18 +87037,77 @@ def test_collection_annotations_gather_the_group_their_kind_names() -> None:
 
 
 def test_guard_two_providers_of_the_annotated_type_still_raise_ambiguity() -> None:
-    """GUARD: two spells of the annotated TYPE at distinct addresses are a real ambiguity, reported by Phase 3."""
+    """
+    GUARD: two spells of the annotated TYPE at distinct addresses are a real ambiguity. Since 2026-10-04 it is
+    refused through the readable validation report (AMBIGUOUS_PROVIDER) naming both addresses and the remedies,
+    at the late bind in a dynamic world.
+    """
     root = _dynamic_root("annotation-category-type-ambiguity")
     try:
         root.bind(spell=Spectrum, existence="unique_per_conduit", spellframe="spectrum",
                   binding_name="primary", disposal_method_names=["cleanup"])
         root.bind(spell=Spectrum, existence="unique_per_conduit", spellframe="mirror",
                   binding_name="secondary", disposal_method_names=["cleanup"])
-        with pytest.raises(RuntimeError, match="multiple DI candidates"):
+        with pytest.raises(SpellbookValidationError) as excinfo:
             root.bind(spell=CenterWithClass, existence="many", spellframe="command_center",
                       binding_name="center", disposal_method_names=["cleanup"])
+        text = str(excinfo.value)
+        assert "[AMBIGUOUS_PROVIDER]" in text
+        assert "Spectrum at (spellframe='spectrum', binding_name='primary')" in text
+        assert "Spectrum at (spellframe='mirror', binding_name='secondary')" in text
+        assert "SpellMap(spellframe=..., binding_name=...)" in text and "override={'spectrum': ...}" in text
     finally:
         root.cleanup()
+
+
+class ScanProfileFromAgents:
+    """One of two unrelated classes a host happens to name alike (the MelderOps MCPScanner shape)."""
+
+    def __init__(self) -> None:
+        """No collaborators."""
+
+
+class ScanProfileFromTools:
+    """The other same-named class, bound in another category."""
+
+    def __init__(self) -> None:
+        """No collaborators."""
+
+
+ScanProfileFromAgents.__name__ = ScanProfileFromTools.__name__ = "ScanProfile"
+
+
+class MCPScanner:
+    """Consumer typed with one of the two same-named classes."""
+
+    def __init__(self, profile: ScanProfileFromTools) -> None:
+        """Hold the profile."""
+        self.profile = profile
+
+
+def test_two_same_named_classes_in_two_categories_are_reported_with_both_addresses() -> None:
+    """
+    The MelderOps composition: Agents' ScanProfile under "agents" and Utilities' ScanProfile under
+    "artificial_intelligence_tools", and `MCPScanner.profile: ScanProfile`. A class annotation keys by the
+    class NAME (so a TYPE_CHECKING string and the class object agree), so the two are one type key; conjure
+    refuses MCPScanner through the readable report naming both addresses and the SpellMap remedy, not with a
+    compiler RuntimeError.
+    """
+    aether = Aether(); Spellbook._aether = aether; Conduit._aether = aether
+    book = Spellbook(aetheric_frame="annotation-category-same-named-classes")
+    book.get_configuration().set_property("phase_scheduler_workers_per_spellbook", 1)
+    book.bind(spell=ScanProfileFromAgents, existence="unique", spellframe="agents", binding_name="ScanProfile")
+    book.bind(spell=ScanProfileFromTools, existence="unique", spellframe="artificial_intelligence_tools",
+              binding_name="ScanProfile")
+    book.bind(spell=MCPScanner, existence="many")
+    with pytest.raises(SpellbookValidationError) as excinfo:
+        book.conjure(name="root")
+    text = str(excinfo.value)
+    assert "Broken spells: MCPScanner" in text
+    assert "ScanProfile at (spellframe='agents', binding_name='ScanProfile')" in text
+    assert "ScanProfile at (spellframe='artificial_intelligence_tools', binding_name='ScanProfile')" in text
+    assert "[AMBIGUOUS_PROVIDER]" in text
+    book.cleanup()
 
 
 def test_guard_explicit_address_selection_is_unchanged() -> None:
@@ -130871,7 +130938,7 @@ END FILE: tests/integration/melder/spellbook/test_cache_runtime_integration.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/spellbook/test_cache_schema_version_integration.py
-CONTENT SHA256: 60ab730708d57e7b5da370c93bd5cde69dbe9d80eb0c8a2a55ab29668551a7a2
+CONTENT SHA256: fb40ea88e71f31e9a157fc405b8276338f8c4e8172d88631eaacf9826c80b770
 SOURCE ENCODING: utf-8
 ================================================================================
 import logging
@@ -130935,7 +131002,7 @@ def test_cache_schema_version_history_accepts_only_current_bundle(
     conduit_name = "root"
     spell_id = "a" * 64
     cache_root = tmp_path / "cache"
-    bundle_path = cache_root / frame_name / f"{conduit_name}.melc"
+    bundle_path = cache_root / frame_name / f"{conduit_name}.meldercache"
     bundle_path.parent.mkdir(parents=True, exist_ok=True)
     bundle_path.write_bytes(marshal.dumps({
         "version": bundle_version,
@@ -143562,7 +143629,7 @@ END FILE: tests/integration/melder/spellbook/test_spellbook_integration_resoluti
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/spellbook/test_spellbook_integration_resolution_contract.py
-CONTENT SHA256: 5c9dd4be407b6b536a8b6dbb86ff4bd078f3370a0c5244f2645b1205259d9b77
+CONTENT SHA256: 2e423c3bff939697f1c38ee04553ad2487a6257b795b91d074111a6b771b2a05
 SOURCE ENCODING: utf-8
 ================================================================================
 import pytest
@@ -143574,6 +143641,7 @@ from melder.aether.conduit.meld.contracts.spell_map import SpellMap
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spellbook import Spellbook
 from melder.utilities.custom_exceptions.phase_execution_error import PhaseExecutionError
+from melder.utilities.custom_exceptions.spellbook_validation_error import SpellbookValidationError
 from melder.utilities.custom_exceptions.unresolved_input_error import UnresolvedInputError
 
 
@@ -145526,13 +145594,14 @@ def test_type_hint_di_ambiguous_frame_raises() -> None:
         permissions="create",
     )
 
-    with pytest.raises(PhaseExecutionError) as exc_info:
+    # 2026-10-04: refused through the readable report (AMBIGUOUS_PROVIDER), not a Phase-3 RuntimeError.
+    with pytest.raises(SpellbookValidationError) as exc_info:
         spellbook.conjure(name="root")
 
-    assert any(
-        "multiple DI candidates" in str(error)
-        for error in exc_info.value.errors
-    )
+    text = str(exc_info.value)
+    assert "[AMBIGUOUS_PROVIDER]" in text
+    assert "_RepoA at (spellframe='IRepository', binding_name=None)" in text
+    assert "_RepoB at (spellframe='IRepository', binding_name='secondary')" in text
 ================================================================================
 END FILE: tests/integration/melder/spellbook/test_spellbook_integration_resolution_contract.py
 ================================================================================
@@ -146880,7 +146949,7 @@ END FILE: tests/integration/melder/spellbook/test_spellbook_integration_resoluti
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/spellbook/test_spellbook_integration_resolution_contract_more.py
-CONTENT SHA256: a8d4f404d5e86afc87f0b7604d9607b892616a35e4d90be942c0064181d9daca
+CONTENT SHA256: 0f9fbebe7e01d5b23a71e45ca972e0b1512310d2d1735666760dbb3082c494b4
 SOURCE ENCODING: utf-8
 ================================================================================
 import inspect
@@ -146894,6 +146963,7 @@ from melder.aether.conduit.meld.contracts.spell_map import SpellMap
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spellbook import Spellbook
 from melder.utilities.custom_exceptions.phase_execution_error import PhaseExecutionError
+from melder.utilities.custom_exceptions.spellbook_validation_error import SpellbookValidationError
 
 
 @pytest.fixture(autouse=True)
@@ -148251,9 +148321,13 @@ def test_type_hint_di_ambiguous_concrete_class_raises() -> None:
         existence=Existence.unique,
         permissions="create",
     )
-    with pytest.raises(PhaseExecutionError) as excinfo:
+    # 2026-10-04: refused through the readable report (AMBIGUOUS_PROVIDER), not a Phase-3 RuntimeError.
+    with pytest.raises(SpellbookValidationError) as excinfo:
         spellbook.conjure(name="ambiguous-concrete", dynamic=False)
-    assert "multiple DI candidates" in str(excinfo.value)
+    text = str(excinfo.value)
+    assert "[AMBIGUOUS_PROVIDER]" in text
+    assert "_Repo at (spellframe=None, binding_name='primary')" in text
+    assert "_Repo at (spellframe=None, binding_name='secondary')" in text
 
 
 def test_meld_by_spell_id_resolves_class_instance_unique() -> None:
@@ -160717,7 +160791,7 @@ END FILE: tests/unit/github_workflows/test_ci_policy.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/github_workflows/test_distributions.py
-CONTENT SHA256: f1d62459383c7792743e685461218f0dd0f76c22ea942f890997936d71499b31
+CONTENT SHA256: bb85ea6dfb08702cf33836495cea2fea229d798c89a8cebf9b37a919d00f896c
 SOURCE ENCODING: utf-8
 ================================================================================
 """Exercise archive/version rejection using small real wheel and sdist fixtures."""
@@ -160824,7 +160898,7 @@ def test_unverified_extra_upload_file_is_refused(distributions: ModuleType,
 
 @pytest.mark.parametrize("member", [
     "../escaped.py", "/absolute.py", "C:/drive.py", "melder\\bad.py", "melder/ok.py\x00bad",
-    "other_package/module.py", "melder/cache.melc", "melder/__pycache__/a.pyc",
+    "other_package/module.py", "melder/cache.melc", "melder/cache.meldercache", "melder/__pycache__/a.pyc",
 ])
 def test_wheel_rejects_unsafe_or_unrelated_members(distributions: ModuleType,
                                                  tmp_path: pathlib.Path, member: str) -> None:
@@ -252575,7 +252649,7 @@ END FILE: tests/unit/melder/build_assets/test_agent_metadata_builder.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/build_assets/test_build_asset_runner.py
-CONTENT SHA256: 58a6c9a1a8dbc6fb5954b1016e62ff79d31a8fee2bccc1c8f4748bd99a3d165b
+CONTENT SHA256: 0502f294598a3b797a88934dffe164573366d29d8e77e6d86e58d9b0cd787787
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -252705,7 +252779,7 @@ def _shipped_asset_names() -> List[str]:
     return sorted(p.parent.name for p in _load_runner().discover_builders())
 
 
-# Assets whose loader hydrates through a `.melc` cache. NOT every asset has one,
+# Assets whose loader hydrates through a `.meldercache` cache. NOT every asset has one,
 # and the omission is a design decision rather than an oversight:
 # `_system_documents` deliberately has no cache because a cache amortises
 # COMPUTATION and there is none - its payload is already a string - and because
@@ -253219,14 +253293,14 @@ def test_shipped_assets_follow_the_directory_convention(asset_name):
 def test_shipped_assets_cache_under_melder_cache(asset_name):
     """
     Purpose:
-        The `.melc` is a CACHE and must land in the shared cache root, not
+        The `.meldercache` is a CACHE and must land in the shared cache root, not
         beside the source it was derived from. A committed marshal bundle is
         interpreter-specific - `marshal` carries no cross-version guarantee -
         and this repo runs 3.10 while targeting 3.14t, so the previous layout
         would have handed one interpreter's bundle to another.
     Contract:
-        The cache path is `__melder_cache__/__<asset>__/<asset>.melc`, matching
-        the `<root>/<scope>/<name>.melc` shape `CachingSystem` uses, and it is
+        The cache path is `__melder_cache__/__<asset>__/<asset>.meldercache`, matching
+        the `<root>/<scope>/<name>.meldercache` shape `CachingSystem` uses, and it is
         NOT inside `_build_assets`.
     """
     # Loaded BY PATH, like everything else in this file: `import melder` would
@@ -253238,7 +253312,7 @@ def test_shipped_assets_cache_under_melder_cache(asset_name):
         _REPO_ROOT / "src" / "melder" / "utilities" / "caching_system" / "asset_cache.py",
     )
     path = pathlib.Path(asset_cache.cache_path_for(asset_name))
-    assert path.name == f"{asset_name}.melc"
+    assert path.name == f"{asset_name}.meldercache"
     assert path.parent.name == f"__{asset_name}__"
     assert path.parent.parent.name == "__melder_cache__"
     assert "_build_assets" not in path.parts
@@ -277326,7 +277400,7 @@ END FILE: tests/unit/melder/spellbook/spell_compiler/phases/test_compiler_phase_
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/spellbook/spell_compiler/phases/test_compiler_phase_3.py
-CONTENT SHA256: 037ec7378d74d395395a59f7b0551a1f08445edee2dcae7b3a8ee3eb32fcc3c5
+CONTENT SHA256: 23da1618e19ac986e7239523356adad659cb3833bfc4df97ab19bc100a47e86c
 SOURCE ENCODING: utf-8
 ================================================================================
 """Unit tests for current-surface compiler phase 3 local DAG build."""
@@ -278146,8 +278220,10 @@ def test_resolve_single_by_annotation_raises_on_multiple_matches() -> None:
         target_annotation=_ServiceFrame,
     )
 
-    with pytest.raises(RuntimeError, match="multiple DI candidates found"):
-        phase._resolve_single_by_annotation(root_spell, spellbook, dep)
+    # 2026-10-04: ambiguity is no longer a Phase-3 raise; every candidate comes back and the DAG
+    # builder records the socket as AMBIGUOUS_INPUT for Phase 4's AMBIGUOUS_PROVIDER report.
+    resolved = phase._resolve_single_by_annotation(root_spell, spellbook, dep)
+    assert {spell_obj.spell_name for spell_obj in resolved.values()} == {"DepA", "DepB"}
 
 
 def test_resolve_collection_by_annotation_returns_all_matches() -> None:
@@ -308586,6 +308662,203 @@ def test_iter_sockets_returns_same_tuple_instance():
     assert topo.iter_sockets() is topo.sockets
 ================================================================================
 END FILE: tests/unit/melder/spellbook/spell_crafter/topology/test_spell_local_topology.py
+================================================================================
+================================================================================
+BEGIN FILE: tests/unit/melder/spellbook/spell_crafter/validation/strategies/test_ambiguous_provider_strategy.py
+CONTENT SHA256: ef453e29ba41806585ca535c49845cef2251a781141348f2457fc25087675a01
+SOURCE ENCODING: utf-8
+================================================================================
+"""
+Unit tests for `AmbiguousProviderStrategy` (2026-10-04): the Phase-4 refusal of a single typed parameter that
+several registered spells provide, driven from the AMBIGUOUS_INPUT sockets Phase 3 records.
+"""
+from types import SimpleNamespace
+from typing import Any, List, Optional
+
+import pytest
+
+from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
+from melder.aether.spellbook.spell_compiler.topology.spell_local_topology import (
+    SpellLocalTopology,
+    SpellSocketDescriptor,
+)
+from melder.aether.spellbook.spell_compiler.validation.spell_validation_context import SpellValidationContext
+from melder.aether.spellbook.spell_compiler.validation.spell_validation_issue import SpellValidationIssue
+from melder.aether.spellbook.spell_compiler.validation.strategies.ambiguous_provider_strategy import (
+    AmbiguousProviderStrategy,
+)
+
+
+class _Profile:
+    """The annotated type of the consumer parameter."""
+
+
+class _StatesStub:
+    """Hands back one fixed topology for any index."""
+
+    def __init__(self, topology: Optional[SpellLocalTopology]) -> None:
+        """Hold the topology to return."""
+        self._topology = topology
+
+    def get_local_topology(self, spell_index: Any) -> Optional[SpellLocalTopology]:
+        """Return the held topology."""
+        return self._topology
+
+
+class _SpellStub:
+    """A consumer spell with a name, an id, an index and a states registry."""
+
+    def __init__(self, *, spell_id: str, spell_name: str, topology: Optional[SpellLocalTopology]) -> None:
+        """Wire the stub."""
+        self.spell_id = spell_id
+        self.spell_name = spell_name
+        self.spell_index = SimpleNamespace(selected_spell_id=spell_id)
+        self._spell_system_states = _StatesStub(topology)
+
+
+class _CandidateStub:
+    """A provider spell as the spellbook returns it."""
+
+    def __init__(self, spell_name: str, spellframe: Any, binding_name: Optional[str]) -> None:
+        """Hold the address parts."""
+        self.spell_name = spell_name
+        self.spellframe = spellframe
+        self.binding_name = binding_name
+
+
+class _BookStub:
+    """A spellbook that answers `find_spell_by_id` from a dict."""
+
+    def __init__(self, spells: dict) -> None:
+        """Hold the lookup."""
+        self._spells = spells
+
+    def find_spell_by_id(self, spell_id: str):
+        """Return the candidate or None."""
+        return self._spells.get(spell_id)
+
+
+def _socket(kind: SocketKind, references: tuple = ()) -> SpellSocketDescriptor:
+    """One `profile` socket of the given kind."""
+    return SpellSocketDescriptor(
+        spell_id="consumer", param_name="profile", position=0, socket_kind=kind, is_collection=False,
+        is_optional=False, target_spell_ids=(), dependency_key=("profile", "__default__"),
+        referenced_spell_ids=references,
+    )
+
+
+def _requirements() -> Any:
+    """Phase-1 requirements naming `profile: _Profile`."""
+    return SimpleNamespace(parameters=[SimpleNamespace(name="profile", annotation=_Profile)])
+
+
+def _context(spell: _SpellStub, spellbook: Any, issues: List[SpellValidationIssue], requirements: Any = None) -> SpellValidationContext:
+    """Build a validation context around the stubs."""
+    return SpellValidationContext(
+        spell=spell, spellbook=spellbook, requirements=requirements, symbolic_graph=None,
+        resolution_frame=None, cancel_event=None, issues=issues,
+    )
+
+
+def test_init_sets_name_and_description() -> None:
+    """The strategy publishes a stable name."""
+    strategy = AmbiguousProviderStrategy()
+    assert strategy.name == "ambiguous_provider"
+    assert "several" in strategy.description
+
+
+def test_no_topology_emits_nothing() -> None:
+    """A spell without a Phase-3 topology (a stand-in) yields no issue."""
+    issues: List[SpellValidationIssue] = []
+    AmbiguousProviderStrategy().validate(_context(_SpellStub(spell_id="c", spell_name="C", topology=None), None, issues))
+    assert issues == []
+
+
+def test_other_socket_kinds_emit_nothing() -> None:
+    """NORMAL, UNRESOLVED_INPUT and OVERRIDE_REQUIRED sockets are not this strategy's business."""
+    topology = SpellLocalTopology(spell_id="consumer", sockets=[
+        _socket(SocketKind.NORMAL), _socket(SocketKind.UNRESOLVED_INPUT), _socket(SocketKind.OVERRIDE_REQUIRED, ("x",)),
+    ])
+    issues: List[SpellValidationIssue] = []
+    AmbiguousProviderStrategy().validate(_context(_SpellStub(spell_id="c", spell_name="C", topology=topology), None, issues))
+    assert issues == []
+
+
+def test_ambiguous_socket_names_every_candidate_address_and_the_remedies() -> None:
+    """One AMBIGUOUS_PROVIDER error: parameter, expected type, both addresses (ordered), three remedies, details."""
+    topology = SpellLocalTopology(spell_id="consumer", sockets=[_socket(SocketKind.AMBIGUOUS_INPUT, ("id-b", "id-a"))])
+    book = _BookStub({
+        "id-a": _CandidateStub("ScanProfile", "agents", "ScanProfile"),
+        "id-b": _CandidateStub("ScanProfile", "artificial_intelligence_tools", "ScanProfile"),
+    })
+    issues: List[SpellValidationIssue] = []
+    spell = _SpellStub(spell_id="consumer", spell_name="MCPScanner", topology=topology)
+    AmbiguousProviderStrategy().validate(_context(spell, book, issues, requirements=_requirements()))
+
+    assert len(issues) == 1
+    issue = issues[0]
+    assert issue.severity == "error" and issue.code == "AMBIGUOUS_PROVIDER"
+    assert issue.message.startswith("Parameter 'profile' on spell 'MCPScanner' expects _Profile, but 2 registered spells provide it: ")
+    assert issue.message.index("spellframe='agents'") < issue.message.index("spellframe='artificial_intelligence_tools'")
+    assert "SpellMap(spellframe=..., binding_name=...)" in issue.message
+    assert "override={'profile': ...}" in issue.message
+    assert "bind only one provider of this type" in issue.message
+    assert issue.details["spell_id"] == "consumer" and issue.details["parameter_name"] == "profile"
+    assert issue.details["expected_type"] == "_Profile"
+    assert [c["spell_id"] for c in issue.details["candidates"]] == ["id-a", "id-b"]
+    assert issue.details["candidates"][0] == {
+        "spell_id": "id-a", "spell_name": "ScanProfile", "spellframe": "agents", "binding_name": "ScanProfile",
+    }
+
+
+def test_protocol_frame_and_bare_binding_render_by_name_and_none() -> None:
+    """A Protocol frame renders by `__name__`; a bare binding renders spellframe=None, binding_name=None."""
+    class IRepo:
+        """A frame."""
+    topology = SpellLocalTopology(spell_id="consumer", sockets=[_socket(SocketKind.AMBIGUOUS_INPUT, ("one", "two"))])
+    book = _BookStub({"one": _CandidateStub("RepoA", IRepo, None), "two": _CandidateStub("RepoB", None, None)})
+    issues: List[SpellValidationIssue] = []
+    AmbiguousProviderStrategy().validate(_context(_SpellStub(spell_id="consumer", spell_name="Svc", topology=topology), book, issues))
+    message = issues[0].message
+    assert "RepoA at (spellframe='IRepo', binding_name=None)" in message
+    assert "RepoB at (spellframe=None, binding_name=None)" in message
+    # without Phase-1 requirements the expected type falls back to the parameter name
+    assert "expects profile," in message
+
+
+def test_unknown_candidate_renders_by_id_and_does_not_raise() -> None:
+    """A candidate the spellbook no longer finds is rendered by id; a missing spellbook renders all by id."""
+    topology = SpellLocalTopology(spell_id="consumer", sockets=[_socket(SocketKind.AMBIGUOUS_INPUT, ("gone", "there"))])
+    book = _BookStub({"there": _CandidateStub("Impl", "frame", "name")})
+    issues: List[SpellValidationIssue] = []
+    AmbiguousProviderStrategy().validate(_context(_SpellStub(spell_id="consumer", spell_name="Svc", topology=topology), book, issues))
+    assert "spell id gone" in issues[0].message and "Impl at (spellframe='frame', binding_name='name')" in issues[0].message
+    issues.clear()
+    AmbiguousProviderStrategy().validate(_context(_SpellStub(spell_id="consumer", spell_name="Svc", topology=topology), None, issues))
+    assert issues[0].message.count("spell id ") == 2
+
+
+def test_cancelled_context_raises_before_reading() -> None:
+    """A set cancellation event stops the strategy."""
+    class _Cancel:
+        is_set = True
+        def throw_if_set(self) -> None:
+            raise RuntimeError("cancelled")
+    issues: List[SpellValidationIssue] = []
+    context = SpellValidationContext(
+        spell=_SpellStub(spell_id="c", spell_name="C", topology=None), spellbook=None, requirements=None,
+        symbolic_graph=None, resolution_frame=None, cancel_event=_Cancel(), issues=issues,
+    )
+    with pytest.raises(RuntimeError, match="cancelled"):
+        AmbiguousProviderStrategy().validate(context)
+
+
+def test_socket_kind_member_exists_and_is_distinct() -> None:
+    """The enum carries AMBIGUOUS_INPUT beside the other four kinds."""
+    assert SocketKind.AMBIGUOUS_INPUT is not SocketKind.UNRESOLVED_INPUT
+    assert {k.name for k in SocketKind} == {"NORMAL", "SPELL_CONTRACT", "OVERRIDE_REQUIRED", "UNRESOLVED_INPUT", "AMBIGUOUS_INPUT"}
+================================================================================
+END FILE: tests/unit/melder/spellbook/spell_crafter/validation/strategies/test_ambiguous_provider_strategy.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/spellbook/spell_crafter/validation/strategies/test_annotation_shape_guard_strategy.py
@@ -342179,7 +342452,7 @@ END FILE: tests/unit/melder/utilities/synchronization/test_unit_of_work.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/utilities/test_caching_system.py
-CONTENT SHA256: 6812dcee37dbb4be47a41843c836225020e9d65d24e884c632e980315d453fd6
+CONTENT SHA256: 3b931efaa3b7c355201876f677db80c9263d1fd3a50a0e264b88722b4ed805d9
 SOURCE ENCODING: utf-8
 ================================================================================
 import logging
@@ -342291,9 +342564,9 @@ def _write_cache_bundle(cache_root: Path, contents: bytes) -> Path:
         contents: Serialized bundle or deliberately corrupt bytes.
 
     Returns:
-        Path: The frame-a/root.melc file read by _make_cache_utility.
+        Path: The frame-a/root.meldercache file read by _make_cache_utility.
     """
-    bundle_path = cache_root / "frame-a" / "root.melc"
+    bundle_path = cache_root / "frame-a" / "root.meldercache"
     bundle_path.parent.mkdir(parents=True, exist_ok=True)
     bundle_path.write_bytes(contents)
     return bundle_path
@@ -342382,7 +342655,7 @@ def test_caching_system_builds_expected_bundle_metadata() -> None:
 
     assert caching_system.conduit_name == "alpha"
     assert caching_system.bundle_path == (
-        cache_root_path / "frame-b" / "alpha.melc"
+        cache_root_path / "frame-b" / "alpha.meldercache"
     )
 
 
@@ -342631,7 +342904,7 @@ def test_caching_system_rejects_missing_release_then_emits_current_bundle(tmp_pa
 @pytest.mark.parametrize("contents", [b"not-marshal", marshal.dumps([])])
 def test_caching_system_rejects_corrupt_real_bundle(tmp_path: Path, contents: bytes) -> None:
     """
-    Treat unreadable or non-dictionary .melc contents as a cold cache.
+    Treat unreadable or non-dictionary .meldercache contents as a cold cache.
 
     Args:
         tmp_path: Isolated test-owned cache root.
@@ -342644,6 +342917,34 @@ def test_caching_system_rejects_corrupt_real_bundle(tmp_path: Path, contents: by
     caching_system = _make_cache_utility(cache_root_path=tmp_path)
     try:
         assert tuple(caching_system.cached_spell_ids) == ()
+    finally:
+        caching_system.cleanup()
+
+
+def test_caching_system_never_reads_a_legacy_melc_bundle(tmp_path: Path) -> None:
+    """
+    Regression: a current-format bundle under the retired `.melc` name is never read.
+
+    Contract:
+        Since 0.2.8223 a conduit cache bundle is `<frame>/<conduit>.meldercache`. A bundle that
+        would be admitted under that name, written beside it under the old `.melc` name, leaves
+        the cache cold: Melder neither migrates nor deletes such a file.
+
+    Args:
+        tmp_path: Isolated test-owned cache root.
+
+    Returns:
+        None. The legacy file is untouched and no cached spell is exposed.
+    """
+    legacy_path = tmp_path / "frame-a" / "root.melc"
+    legacy_path.parent.mkdir(parents=True, exist_ok=True)
+    legacy_bytes = marshal.dumps(_make_populated_cache_bundle())
+    legacy_path.write_bytes(legacy_bytes)
+    caching_system = _make_cache_utility(cache_root_path=tmp_path)
+    try:
+        assert caching_system.bundle_path == tmp_path / "frame-a" / "root.meldercache"
+        assert tuple(caching_system.cached_spell_ids) == ()
+        assert legacy_path.read_bytes() == legacy_bytes
     finally:
         caching_system.cleanup()
 

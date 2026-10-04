@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_graph.md'
-LINE_COUNT = 27653
-CONTENT_SHA256 = '2fcb1a5e750e73bbfbf6c47cd58a3590d57de87f05d5b31ad472a38a58dc42af'
+LINE_COUNT = 27705
+CONTENT_SHA256 = '4a2f272034139d886cf237314fe3a134652301cd066851beb046c67ef541b25f'
 
 TEXT = """# src_graph
 
@@ -247,7 +247,7 @@ descriptors and reassemble.
 
 ## src/melder/__version__.py
 
-- source_sha256: `f5e1349c1341864c6e818200e3ba6c3911fe22227c465ebb8ac7c1904269702f`
+- source_sha256: `4913797ec30ba49bc32605b910d930b56aed195a387b3b41f84a2485c6418ae6`
 - nodes: 1
 
 ### Nodes
@@ -307,7 +307,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_agent_documentation/agent_documentation.py
 
-- source_sha256: `97d18a65dca4046578e0354a3aecafe376e9fff01a15cbc1ec5727514b31793c`
+- source_sha256: `e758ba88c1b412f0511615b11495ecab9088ce50c73524165f138d4364f5c98b`
 - nodes: 2
 
 ### Nodes
@@ -336,7 +336,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_agent_documentation/manifest/agent_documentation_manifest.py
 
-- source_sha256: `19ffffd8719f3e936e6c1253e8a42d34131a9a76e448f1a7303f1ad5988d63c3`
+- source_sha256: `f5547b7f2d04a395b17f07bedcc1f2c6fc31e8b87b13a6f10c88812392a32745`
 - nodes: 1
 
 ### Nodes
@@ -356,7 +356,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_bind_guard/_builder.py
 
-- source_sha256: `d489c6f750871953f94521c402a00ede1d84a598f071017b4e015fbe0d340241`
+- source_sha256: `c93f2f2aa05b7a4b4d5be6f0a6b345052c1798902ed77e26b11539e8dc853854`
 - nodes: 2
 
 ### Nodes
@@ -386,7 +386,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_bind_guard/bind_guard.py
 
-- source_sha256: `051831289a91e4851c1016448743c7d8dc084e4da82cf6ac9c8531581a76dae2`
+- source_sha256: `f4def1fc80fd013838b20e3f1923686bd35b1da9ac36635749a994669e45eb4f`
 - nodes: 2
 
 ### Nodes
@@ -415,7 +415,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py
 
-- source_sha256: `10ada83249c14fa67c738f3931bef9006eaaad7a8c645adb2d803466c9f4a50e`
+- source_sha256: `61f6193deb56a0305b7452dbaf2017dc158e20bbb701e25e8cc811a9367d3b36`
 - nodes: 1
 
 ### Nodes
@@ -435,7 +435,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_build_asset_runner.py
 
-- source_sha256: `a70d3f111fbf30f1f7b849c6e95892db14ee1f26bc14d1b8b3233ee2b8db1321`
+- source_sha256: `ff493bed92fc4955bafd8a60cc87ca1af5887318199d5010ebfc35eae193d34a`
 - nodes: 2
 
 ### Nodes
@@ -493,7 +493,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/graph_adjacency_manifest.py
 
-- source_sha256: `c2b842877c653eddfc21aa134bb8536ee5e1fc6ff8fb3fc21e5e3aab336b8cc4`
+- source_sha256: `0f7bfe9748d65a3c78c8a82f25282e0eeae22cda725eb6ae4a068b2aff5ee07e`
 - nodes: 1
 
 ### Nodes
@@ -510,7 +510,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_index.py
 
-- source_sha256: `f686b0ccb00671bbd5758796225ad2948be831194aad37f931b8e2f36cbb78ec`
+- source_sha256: `3534e78b38046780de3f5ba4ec1901ea98c3bc9a2694132718f42793dc15fffc`
 - nodes: 1
 
 ### Nodes
@@ -527,7 +527,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_manifest.py
 
-- source_sha256: `b1a41d8f77fdd81cc4937f298b4a9014a37d7356e265bf3a81d9fb05aec65112`
+- source_sha256: `9a363830fbb4a39da7fae63bbf8312f76259e035a15fa2d072363960da15e6ce`
 - nodes: 1
 
 ### Nodes
@@ -547,7 +547,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_architecture_payload.py
 
-- source_sha256: `45c1cae64dfbe41a18676a2a6615505ad70726bcedc77b1b44b3928ad2eb26c4`
+- source_sha256: `fe607d69182e897c398b5e04434bf83043bbae1d16b74ebf4d4ef5beb52610a6`
 - nodes: 1
 
 ### Nodes
@@ -564,7 +564,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_components_payload.py
 
-- source_sha256: `679667b090c0cbd508d71dcfb370311d17b1af732d2812a5792016a6f8af5dde`
+- source_sha256: `f1d5d843bdc9b5cdc6507fd9724011a5917a888e7e3ab0fb57244d67cde219c8`
 - nodes: 1
 
 ### Nodes
@@ -581,7 +581,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_graph_payload.py
 
-- source_sha256: `252678c2f43d4ed0b9016387a2b1ca8dfae102a26655b1e1100a97de134e979e`
+- source_sha256: `8727a563c4ed4cc82a06b4d2c1edee4bce7f60d66f70bffe4f6bca225c57306e`
 - nodes: 1
 
 ### Nodes
@@ -3202,7 +3202,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py
 
-- source_sha256: `772d61b7c87c9cb69dd086d21036b45f57dc2b64a69185bd8e4fb796319fc2ba`
+- source_sha256: `84e2c93040388a5937e6961abecb0d2a8f51045e1a8113b9664a8e8e284f5425`
 - nodes: 2
 
 ### Nodes
@@ -3227,6 +3227,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - indexes OVERRIDE_REQUIRED consumers alongside collection frame watchers without adding construction edges
   - watches UNRESOLVED_INPUT consumers under their expected-type frame key so a later matching bind re-resolves them
   - retires a spell id's per-conduit resolution verdicts in every live conduit state when its lineage is unregistered and when a version id is registered, so a content-stable id re-entering the frame is resolved again per conduit (0.2.8219)
+  - watches AMBIGUOUS_INPUT sockets by frame key like UNRESOLVED_INPUT ones, so a bind or removal of a same-keyed spell re-gates the consumer (0.2.8224)
 - owns_state: `_states_by_index_id`, `_states_by_spell_id`, `_dirty_indexes`, `_local_topologies`, `_resolution_by_conduit_id`, `_index_owner_spellbook_id`, `_collection_frames_by_index`, `_collection_dependents_by_spellbook`, `_contract_keys_by_index`, `_contract_dependents_by_spellbook`
 - phases: `init`, `validation`, `runtime`, `cleanup`
 - public methods: `bulk_set_conduit_root_validity`, `bulk_set_conduit_spell_validity`, `cleanup`, `clear_conduit_diagnostics`, `clear_conduit_dirty`, `compute_impact_closure`, `consume_dirty_indexes`, `devops_information_registry`, `drop_conduit_resolution_state`, `forget_spell_resolution_verdicts`, `get_by_index_id`, `get_by_spell_id` (+18 more)
@@ -5865,7 +5866,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 | from | relation | to | cardinality | phase | origin |
 | --- | --- | --- | --- | --- | --- |
-| `melder.aether.conduit.spell_space.spell_space_thread_state._SpellSpaceLocal` | specializes | `local (unresolved)` | - | - | derived |
+| `melder.aether.conduit.spell_space.spell_space_thread_state._SpellSpaceLocal` | specializes | `threading.local` | - | - | derived |
 | `melder.aether.conduit.spell_space.spell_space_thread_state.SpellSpaceThreadState` | specializes | `melder.utilities.general_base.cleanable.Cleanable` | - | - | derived |
 | `melder.aether.conduit.spell_space.spell_space_thread_state.SpellSpaceThreadState` | specializes | `melder.utilities.general_base.cleanable.Cleanable` | one_to_one | init,runtime,cleanup | authored |
 
@@ -10751,7 +10752,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/dag/socket_kind.py
 
-- source_sha256: `d6d526045807a858d27272bd02352637b5f1c0e61f56271fbe1bfe3255eda5a1`
+- source_sha256: `1fac29b4dafa14239f079fb3a73395860712a43474b46521ca8fe6250a1c7c45`
 - nodes: 2
 
 ### Nodes
@@ -10771,6 +10772,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - responsibilities:
   - labels the current NORMAL, SPELL_CONTRACT, OVERRIDE_REQUIRED and UNRESOLVED_INPUT categories
   - UNRESOLVED_INPUT marks a single typed dependency no registered spell provides: no target, no DAG edge, supplied by the constructing call
+  - AMBIGUOUS_INPUT (0.2.8224): a single typed dependency with several resolvable providers - no target, candidates as references, frame key kept; refused by Phase 4
 - owns_state: `NORMAL`, `SPELL_CONTRACT`, `OVERRIDE_REQUIRED`
 - phases: `validation`, `runtime`
 
@@ -11081,7 +11083,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py
 
-- source_sha256: `820bcceb6286ac5404b6b882173135a9c2db520e679ccff7a13d78d0e3b593f8`
+- source_sha256: `531e9b52dd4fb9c7dc762db562d6bd1bbe2263b7ecd65ea9020b1b5c707748c1`
 - nodes: 2
 
 ### Nodes
@@ -11109,6 +11111,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - scans candidate providers over a copy of the Spellbook spell pool taken in one call, so a concurrent bind cannot change it mid-scan
   - matches an annotation to candidates by KIND (0.2.8222): _annotation_kind classifies it as a Protocol contract, a class type or a string name; _spell_keys_for gives the keys a spell answers under for that kind - its type key for a class, its implemented_protocols (plus its own definition key when it is a Protocol bound resolvable=False) for a Protocol, type-or-contract for a single string and the frame key for a string collection - so a string category never provides for a same-named class
   - indexes candidates once per resolution pass into four buckets (by_type, by_label, by_contract, by_definition) read through _index_buckets_for; one predicate (_matches_annotation) serves the scan and the index; _eq_safe_object is kept only as the structural snapshot's replayability rule
+  - records a single annotation with several resolvable candidates as an AMBIGUOUS_INPUT socket (candidate ids as references, no dependency id) instead of raising, so Phase 4 reports AMBIGUOUS_PROVIDER through the readable report (0.2.8224)
 - phases: `validation`, `runtime`
 - public methods: `run`
 
@@ -11659,7 +11662,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/shared_assets/codegen_signature.py
 
-- source_sha256: `571c21087ae641060f59642951956ae89d1e8d333b58d1dd0d699a51ce16107b`
+- source_sha256: `2f5b0ade0e8e968134f1d86c912a43f1e8b10da789862eb8b02c8546b192f417`
 - nodes: 2
 
 ### Nodes
@@ -12902,7 +12905,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/structural_snapshot/structural_snapshot.py
 
-- source_sha256: `739b6fce1b25ff86d0ca253c6eacf1dceba83bfa7f01d9abdcbc9c2b39cd80f2`
+- source_sha256: `42168e83e9828452d67c5e6659035ddc155e402957dd066a99c264d8d3acaad8`
 - nodes: 2
 
 ### Nodes
@@ -14584,6 +14587,52 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 <!-- END FILE: src/melder/aether/spellbook/spell_compiler/validation/spell_validation_result.py -->
 
+<!-- BEGIN FILE: src/melder/aether/spellbook/spell_compiler/validation/strategies/ambiguous_provider_strategy.py -->
+
+## src/melder/aether/spellbook/spell_compiler/validation/strategies/ambiguous_provider_strategy.py
+
+- source_sha256: `37d88be311c3aba244a8a81cd8089ca5828afd1041257b44b86ac0a29284fd5e`
+- nodes: 2
+
+### Nodes
+
+#### `ambiguous_provider_strategy` (module)
+
+- id: `melder.aether.spellbook.spell_compiler.validation.strategies.ambiguous_provider_strategy`
+- defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/ambiguous_provider_strategy.py:1`
+- role: Module holding the Phase-4 strategy that refuses a single typed parameter with several providers.
+- responsibilities:
+  - exports AmbiguousProviderStrategy for SpellValidationSystem registration
+- phases: `validation`
+
+#### `AmbiguousProviderStrategy` (class)
+
+- id: `melder.aether.spellbook.spell_compiler.validation.strategies.ambiguous_provider_strategy.AmbiguousProviderStrategy`
+- defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/ambiguous_provider_strategy.py:17`
+- extends: `SpellValidationStrategy`
+- role: Phase-4 strategy: one AMBIGUOUS_PROVIDER error per AMBIGUOUS_INPUT socket, naming the parameter, the expected type, every candidate's address and the remedies.
+- responsibilities:
+  - reads the spell's Phase-3 topology and selects the AMBIGUOUS_INPUT sockets Phase 3 recorded instead of raising (0.2.8224)
+  - describes each referenced candidate through the spellbook as {spell_id, spell_name, spellframe, binding_name}, ordered by address; an unknown id renders by id
+  - renders the expected type with UnresolvedInputError.expected_type_name and names the three remedies: a SpellMap default, a meld override, one provider
+  - emits severity error so conjure refuses the spell through SpellbookValidationError; never mutates topology, graph or spell
+- phases: `validation`
+- public methods: `validate`
+
+### Edges out
+
+| from | relation | to | cardinality | phase | origin |
+| --- | --- | --- | --- | --- | --- |
+| `melder.aether.spellbook.spell_compiler.validation.strategies.ambiguous_provider_strategy.AmbiguousProviderStrategy` | specializes | `melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy.SpellValidationStrategy` | - | - | derived |
+
+### Edge candidates (1, unconfirmed)
+
+Instantiation guesses from the AST. Over-generated roughly 8x against the reference graph; confirm or drop before relying on them.
+
+- `melder.aether.spellbook.spell_compiler.validation.strategies.ambiguous_provider_strategy.AmbiguousProviderStrategy` creates `SpellValidationIssue`
+
+<!-- END FILE: src/melder/aether/spellbook/spell_compiler/validation/strategies/ambiguous_provider_strategy.py -->
+
 <!-- BEGIN FILE: src/melder/aether/spellbook/spell_compiler/validation/strategies/annotation_shape_guard_strategy.py -->
 
 ## src/melder/aether/spellbook/spell_compiler/validation/strategies/annotation_shape_guard_strategy.py
@@ -14636,7 +14685,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/validation/strategies/binding_resolution_cycle_strategy.py
 
-- source_sha256: `1bbc46a692d5322c6f4dd923145793d7f4428a9371566faf350157c8aa3ade8d`
+- source_sha256: `6a50c7921be1950f5c1bb0bcf40d5c83770546e2e68e2b1cc4f52d3919fb700f`
 - nodes: 2
 
 ### Nodes
@@ -14663,6 +14712,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - omits non-resolvable constructors and OVERRIDE_REQUIRED sockets from construction-cycle reconstruction
   - omits UNRESOLVED_INPUT sockets from construction-cycle reconstruction, as it omits OVERRIDE_REQUIRED
   - sweeps a copy of the Spellbook spell pool taken in one call, because concurrent binds change the live dict
+  - skips AMBIGUOUS_INPUT sockets as it skips UNRESOLVED_INPUT ones: no construction edge exists to cycle (0.2.8224)
 - phases: `compile`
 - public methods: `validate`
 
@@ -15230,7 +15280,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/validation/validation_system.py
 
-- source_sha256: `3f85506ef01b4cbc5f18211daca304347aa69720050432daccd49a7c4f6a5687`
+- source_sha256: `8ad8182ac0c89588d7de252281362cd56639fd9c872b6970fe53f1ef0743846e`
 - nodes: 2
 
 ### Nodes
@@ -15244,7 +15294,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `SpellValidationSystem` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem`
-- defined at: `src/melder/aether/spellbook/spell_compiler/validation/validation_system.py:62`
+- defined at: `src/melder/aether/spellbook/spell_compiler/validation/validation_system.py:65`
 - extends: `Cleanable`
 - role: Spell-level validation strategy registry and runner.
 - responsibilities:
@@ -15252,6 +15302,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - validates one spell across requirements, symbolic graph, and phase 3 summary
   - aggregates issues into a SpellValidationResult for the caller
   - cleans validation context and strategies after use
+  - registers AmbiguousProviderStrategy after RequiredHolesStrategy (0.2.8224)
 - owns_state: `_strategies`
 - phases: `validation`, `runtime`, `cleanup`
 - public methods: `cleanup`, `iter_strategies`, `register_strategy`, `unregister_strategy`, `validate_spell`
@@ -15271,7 +15322,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - `melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem` -> `melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy.SpellValidationStrategy`: SpellValidationSystem owns the registered spell validation strategies it runs.
 - `melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem` -> `melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError`: Spell validation flows use SpellbookValidationError for fatal validation failures.
 
-### Edge candidates (17, unconfirmed)
+### Edge candidates (18, unconfirmed)
 
 Instantiation guesses from the AST. Over-generated roughly 8x against the reference graph; confirm or drop before relying on them.
 
@@ -15283,6 +15334,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - `melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem` creates `SelfDependencyStrategy`
 - `melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem` creates `CircularDependencyStrategy`
 - `melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem` creates `RequiredHolesStrategy`
+- `melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem` creates `AmbiguousProviderStrategy`
 - `melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem` creates `DuplicateSpellNameStrategy`
 - `melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem` creates `AnnotationShapeGuardStrategy`
 - `melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem` creates `SpellMapShapeValidationStrategy`
@@ -18354,8 +18406,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 | from | relation | to | cardinality | phase | origin |
 | --- | --- | --- | --- | --- | --- |
-| `melder.crystallizer.synthetic_module._SyntheticModuleImportLoader` | specializes | `Loader (unresolved)` | - | - | derived |
-| `melder.crystallizer.synthetic_module._SyntheticModuleMetaPathFinder` | specializes | `MetaPathFinder (unresolved)` | - | - | derived |
+| `melder.crystallizer.synthetic_module._SyntheticModuleImportLoader` | specializes | `importlib.abc.Loader` | - | - | derived |
+| `melder.crystallizer.synthetic_module._SyntheticModuleMetaPathFinder` | specializes | `importlib.abc.MetaPathFinder` | - | - | derived |
 | `melder.crystallizer.synthetic_module.SyntheticModule` | specializes | `types.ModuleType` | - | - | derived |
 
 ### Edge candidates (5, unconfirmed)
@@ -25594,7 +25646,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/utilities/caching_system/asset_cache.py
 
-- source_sha256: `d3562f6f5f5a9a839b0b1341d8cfdfea5ac1fa537c9daaac380251f9002a6c8a`
+- source_sha256: `242507c9cd25371a22c44efe612c6a661eab7b1c9c49f43651ab828299dd8631`
 - nodes: 2
 
 ### Nodes
@@ -25623,7 +25675,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/utilities/caching_system/caching_system.py
 
-- source_sha256: `f8c05e34c3bb2da6d1522d336c6ea8b5d9b56adea9b65dd0d83608727643c929`
+- source_sha256: `5e29ab528ee6dccb176f6d6fe6d4af47cc7118647483ce3954407c9bd1223dcf`
 - nodes: 2
 
 ### Nodes
@@ -25715,7 +25767,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 | from | relation | to | cardinality | phase | origin |
 | --- | --- | --- | --- | --- | --- |
-| `melder.utilities.custom_exceptions.dead_reference_error.DeadReferenceError` | specializes | `ReferenceError (unresolved)` | - | - | derived |
+| `melder.utilities.custom_exceptions.dead_reference_error.DeadReferenceError` | specializes | `builtins.ReferenceError` | - | - | derived |
 
 <!-- END FILE: src/melder/utilities/custom_exceptions/dead_reference_error.py -->
 

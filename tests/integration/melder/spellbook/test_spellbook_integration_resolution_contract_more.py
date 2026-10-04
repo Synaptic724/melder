@@ -9,6 +9,7 @@ from melder.aether.conduit.meld.contracts.spell_map import SpellMap
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spellbook import Spellbook
 from melder.utilities.custom_exceptions.phase_execution_error import PhaseExecutionError
+from melder.utilities.custom_exceptions.spellbook_validation_error import SpellbookValidationError
 
 
 @pytest.fixture(autouse=True)
@@ -1366,9 +1367,13 @@ def test_type_hint_di_ambiguous_concrete_class_raises() -> None:
         existence=Existence.unique,
         permissions="create",
     )
-    with pytest.raises(PhaseExecutionError) as excinfo:
+    # 2026-10-04: refused through the readable report (AMBIGUOUS_PROVIDER), not a Phase-3 RuntimeError.
+    with pytest.raises(SpellbookValidationError) as excinfo:
         spellbook.conjure(name="ambiguous-concrete", dynamic=False)
-    assert "multiple DI candidates" in str(excinfo.value)
+    text = str(excinfo.value)
+    assert "[AMBIGUOUS_PROVIDER]" in text
+    assert "_Repo at (spellframe=None, binding_name='primary')" in text
+    assert "_Repo at (spellframe=None, binding_name='secondary')" in text
 
 
 def test_meld_by_spell_id_resolves_class_instance_unique() -> None:

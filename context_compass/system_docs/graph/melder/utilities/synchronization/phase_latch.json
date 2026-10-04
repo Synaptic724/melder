@@ -92,6 +92,7 @@
  ],
  "published_aliases": [],
  "imports": {
+  "threading": "threading",
   "ClassVar": "typing.ClassVar",
   "List": "typing.List"
  },

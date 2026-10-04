@@ -96,6 +96,12 @@
  ],
  "published_aliases": [],
  "imports": {
+  "ast": "ast",
+  "builtins": "builtins",
+  "inspect": "inspect",
+  "threading": "threading",
+  "typing": "typing",
+  "types": "types",
   "Format": "annotationlib.Format",
   "get_annotations": "annotationlib.get_annotations",
   "TYPE_CHECKING": "typing.TYPE_CHECKING",

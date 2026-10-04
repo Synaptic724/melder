@@ -13,7 +13,7 @@ generation is cycle-free, side-effect free, and runs against a half-built tree.
 
 WHAT IT DOES NOT OWN
 --------------------
-The `.melc` cache. This builder writes ONE file: the manifest. Hydration and
+The `.meldercache` cache. This builder writes ONE file: the manifest. Hydration and
 caching belong to `bind_guard.py` and `_asset_cache`, and the cache is derived
 at runtime under `__melder_cache__/__bind_guard__/`. A build step that wrote an
 interpreter-specific `marshal` bundle into the source tree would be committing
@@ -28,7 +28,7 @@ LAYOUT
             bind_guard_manifest.py         GENERATED, committed, the truth
 
     __melder_cache__/__bind_guard__/
-        bind_guard.melc                    derived, gitignored, per-interpreter
+        bind_guard.meldercache             derived, gitignored, per-interpreter
 """
 import ast
 import hashlib

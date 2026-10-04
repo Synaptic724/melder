@@ -158,6 +158,7 @@
  ],
  "published_aliases": [],
  "imports": {
+  "threading": "threading",
   "Callable": "collections.abc.Callable",
   "Collection": "collections.abc.Collection",
   "Iterable": "collections.abc.Iterable",

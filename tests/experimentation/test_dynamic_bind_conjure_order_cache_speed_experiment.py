@@ -67,7 +67,7 @@ class CacheOrderBenchmark(OrderBenchmark):
         if sequence not in self.SEQUENCES:
             raise ValueError(f"Unknown benchmark sequence: {sequence}")
         path = (
-            self._cache_root / sequence / "__conjure_cache__" / self.FRAME_NAME / "root.melc"
+            self._cache_root / sequence / "__conjure_cache__" / self.FRAME_NAME / "root.meldercache"
         ).resolve()
         assert path.is_relative_to(self._cache_root)
         return path

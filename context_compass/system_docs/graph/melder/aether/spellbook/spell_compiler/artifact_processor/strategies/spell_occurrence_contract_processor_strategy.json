@@ -77,6 +77,7 @@
  ],
  "published_aliases": [],
  "imports": {
+  "inspect": "inspect",
   "Format": "annotationlib.Format",
   "TYPE_CHECKING": "typing.TYPE_CHECKING",
   "Any": "typing.Any",

@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_architecture.md'
-LINE_COUNT = 3667
-CONTENT_SHA256 = '4dd4772b3c52716d630015862c4b8e24999c39ead31d4a7f690abc61654ad92b'
+LINE_COUNT = 3700
+CONTENT_SHA256 = '7ceac98c429db73e92121f78f8df77b97a78b951e73c5dde515d22b466dcd2cb'
 
 TEXT = """# Src Architecture (C4)
 
@@ -552,7 +552,7 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:3701-4136 (the three seams, r
   hand-written loader `melder._build_assets._bind_guard.bind_guard`, which re-exports it
   alongside `MANIFEST_VERSION`, `BUILT_FOR_VERSION` and `MANIFEST_ENTRY_COUNT` (620 at
   0.2.8216; `ManyDisposalBucket` joined the manifest, 619 at 0.2.8215). The TRUTH is the COMMITTED manifest
-  `_bind_guard/manifest/bind_guard_manifest.py`; the loader hydrates it through a `.melc`
+  `_bind_guard/manifest/bind_guard_manifest.py`; the loader hydrates it through a `.meldercache`
   under `__melder_cache__/__bind_guard__/` that is an ACCELERATOR and never the source.
   The manifest module is imported lazily on cache miss only, so a warm process never
   parses it. `_builder.py` is build-time only and is regenerated explicitly with
@@ -1243,7 +1243,7 @@ each entry in `src_components.md`; this list is the set that crosses components.
   `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_override_runtime.py:SitePlanOverrideRuntime._compile_normal_plan`
   and `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_hydrator.py:_build_site_plan_runtime`.
 - Creation-cache release compatibility (2026-09-24): generation 9 stores the canonical Melder
-  release in each conduit .melc envelope. Admission requires exact release, format-generation and
+  release in each conduit .meldercache envelope. Admission requires exact release, format-generation and
   Python cache-tag agreement. A missing, malformed or different release produces the existing cold
   cache before individual payloads are exposed. Normal conjure rebuilds and emits the fresh envelope;
   subsequent matching runs can reuse it. Old generation-8 readers reject generation 9 on downgrade.
@@ -1635,8 +1635,21 @@ each entry in `src_components.md`; this list is the set that crosses components.
   `__cause__` (2026-09-26; until then it was raised from the binding TypeError). It names the consumer,
   parameter, expected type and override keys, and lists every missing input. A TypeError from a constructor
   body with every unresolved input supplied keeps the existing error. Since 2026-09-26 conjure no longer raises for a
-  typed parameter with no provider; two or more providers still fail Phase 3.
+  typed parameter with no provider; two or more providers still refuse the spell (next entry).
   EVIDENCE: `src/melder/utilities/custom_exceptions/unresolved_input_error.py:UnresolvedInputError`.
+- A single typed parameter that two or more registered resolvable spells provide refuses its spell through the
+  readable report (0.2.8224): Phase 3 records an `AMBIGUOUS_INPUT` socket (no target, no edge, the candidates as
+  references) and Phase 4's `AmbiguousProviderStrategy` emits `AMBIGUOUS_PROVIDER`, so conjure raises
+  `SpellbookValidationError` - "Parameter 'profile' on spell 'MCPScanner' expects ScanProfile, but 2 registered
+  spells provide it: ScanProfile at (spellframe='agents', binding_name='ScanProfile'); ScanProfile at
+  (spellframe='artificial_intelligence_tools', binding_name='ScanProfile'). Select one with a SpellMap default on
+  the parameter (SpellMap(spellframe=..., binding_name=...)), supply it at meld with override={'profile': ...}, or
+  bind only one provider of this type. [AMBIGUOUS_PROVIDER]" - and a consumer late-bound into a dynamic world is
+  refused at that bind and at its melds. Before 0.2.8224 this was a `RuntimeError("SpellCrafter Phase 3: multiple DI
+  candidates ...")` out of the compiler, never reaching the report. Ambiguity stays an error by owner ruling
+  (2026-10-04): never a warning, never an input the meld picks.
+  EVIDENCE: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:CompilerPhase3._build_local_frame_dag`
+  and `src/melder/aether/spellbook/spell_compiler/validation/strategies/ambiguous_provider_strategy.py:AmbiguousProviderStrategy.validate`.
 - An override key that names no socket, a UNIQUE key that matches more than one, or equal-rank keys with
   different values raise `MeldExecutionError("Failed to apply overrides.")` chained from the key error; a key
   that targets a stored shared instance raises "already exists". Texts are unchanged by the 2026-09-26
@@ -2128,10 +2141,16 @@ SpellCompiler and validation:
   note: per-spell phase artifacts.
 - path: `src/melder/aether/spellbook/spell_compiler/validation/validation_system.py`
   start_line: 1
-  end_line: 350
-  loc: 350
-  verified_at: 2026-08-02T13:00:45Z
-  note: phase 4 validation.
+  end_line: 354
+  loc: 354
+  verified_at: 2026-10-04T17:15:00Z
+  note: phase 4 validation; registers `AmbiguousProviderStrategy` after the required-holes strategy (0.2.8224).
+- path: `src/melder/aether/spellbook/spell_compiler/validation/strategies/ambiguous_provider_strategy.py`
+  start_line: 1
+  end_line: 196
+  loc: 196
+  verified_at: 2026-10-04T17:15:00Z
+  note: Phase-4 refusal of a single typed parameter with several providers; names every candidate's address (0.2.8224).
 - path: `src/melder/aether/spellbook/spell_compiler/system/spell_system_validation_system.py`
   start_line: 1
   end_line: 268
@@ -3184,6 +3203,8 @@ without rewriting the original record or existing live IDs.
 
 ## Information Sources
 - `src/melder/utilities/caching_system/caching_system.py`
+- `src/melder/aether/spellbook/spell_compiler/validation/strategies/ambiguous_provider_strategy.py`
+- `src/melder/aether/spellbook/spell_compiler/dag/socket_kind.py`
 - `src/melder/aether/spellbook/spellframe_kind/spellframe_kind.py`
 - `src/melder/crystallizer/crystal_loader_system/graft_runner.py`
 - `src/melder/utilities/helpers/general_helpers.py`
@@ -3326,6 +3347,18 @@ without rewriting the original record or existing live IDs.
 - `src/melder/utilities/ai_native_support_tools/protocol_crafter.py`
 
 ## Context / Handoff Summary
+
+2026-10-04 ambiguous providers reported, not thrown (0.2.8224): two or more providers for one single annotation refuse
+the consumer through the readable conjure report (`AMBIGUOUS_PROVIDER`, every candidate's address, the SpellMap /
+override / single-provider remedies) instead of a Phase-3 RuntimeError; Phase 3 records an `AMBIGUOUS_INPUT`
+socket, a new Phase-4 strategy refuses it, the watcher and the cycle strategy learn the kind. No warning path by
+owner ruling; no cache generation moves (a broken spell never plans). The failure modes, the code map and the
+sources carry it; the component map carries the socket, the strategy and the message shape.
+
+2026-10-04 cache suffix (0.2.8223): Melder's cache bundles are named `.meldercache` (they were `.melc`):
+the per-conduit creation caches and the build-asset caches. Nothing reads or deletes a `.melc` file, so
+the first run after upgrading compiles cold once. The bind-guard guardrail and the release-compatibility
+invariant carry the new name.
 
 2026-10-04 annotation matching by kind (0.2.8222): a spellframe is a string category or a Protocol contract, a
 concrete class is refused at bind (Breaking), the binding records its kind and Protocol, and Phase 3 resolves a

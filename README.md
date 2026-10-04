@@ -454,6 +454,10 @@ class Consumer:
 `SpellMap` takes the full address: a concrete spell, a `spellframe`, a
 `binding_name`, or a combination. It obeys an **exactly-one law** — a target
 that matches zero spells or several fails at `conjure()`, not at runtime.
+When a plain annotation has several providers (two classes that share a name,
+two bindings of one class), `conjure()` refuses with an `AMBIGUOUS_PROVIDER`
+report that lists every candidate's address and the fix — a `SpellMap`
+default, a meld `override`, or one provider — never a guess.
 
 Ask for a list and get every implementation — the plugin pattern in one
 annotation:

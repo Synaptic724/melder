@@ -181,6 +181,12 @@
  ],
  "published_aliases": [],
  "imports": {
+  "ast": "ast",
+  "hashlib": "hashlib",
+  "importlib.util": "importlib.util",
+  "site": "site",
+  "sys": "sys",
+  "threading": "threading",
   "OrderedDict": "collections.OrderedDict",
   "Path": "pathlib.Path",
   "Any": "typing.Any",

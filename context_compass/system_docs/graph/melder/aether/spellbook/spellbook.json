@@ -199,6 +199,8 @@
  ],
  "published_aliases": [],
  "imports": {
+  "threading": "threading",
+  "time": "time",
   "Generator": "collections.abc.Generator",
   "Iterable": "collections.abc.Iterable",
   "Mapping": "collections.abc.Mapping",

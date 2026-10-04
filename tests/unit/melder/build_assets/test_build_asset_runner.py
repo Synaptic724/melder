@@ -125,7 +125,7 @@ def _shipped_asset_names() -> List[str]:
     return sorted(p.parent.name for p in _load_runner().discover_builders())
 
 
-# Assets whose loader hydrates through a `.melc` cache. NOT every asset has one,
+# Assets whose loader hydrates through a `.meldercache` cache. NOT every asset has one,
 # and the omission is a design decision rather than an oversight:
 # `_system_documents` deliberately has no cache because a cache amortises
 # COMPUTATION and there is none - its payload is already a string - and because
@@ -639,14 +639,14 @@ def test_shipped_assets_follow_the_directory_convention(asset_name):
 def test_shipped_assets_cache_under_melder_cache(asset_name):
     """
     Purpose:
-        The `.melc` is a CACHE and must land in the shared cache root, not
+        The `.meldercache` is a CACHE and must land in the shared cache root, not
         beside the source it was derived from. A committed marshal bundle is
         interpreter-specific - `marshal` carries no cross-version guarantee -
         and this repo runs 3.10 while targeting 3.14t, so the previous layout
         would have handed one interpreter's bundle to another.
     Contract:
-        The cache path is `__melder_cache__/__<asset>__/<asset>.melc`, matching
-        the `<root>/<scope>/<name>.melc` shape `CachingSystem` uses, and it is
+        The cache path is `__melder_cache__/__<asset>__/<asset>.meldercache`, matching
+        the `<root>/<scope>/<name>.meldercache` shape `CachingSystem` uses, and it is
         NOT inside `_build_assets`.
     """
     # Loaded BY PATH, like everything else in this file: `import melder` would
@@ -658,7 +658,7 @@ def test_shipped_assets_cache_under_melder_cache(asset_name):
         _REPO_ROOT / "src" / "melder" / "utilities" / "caching_system" / "asset_cache.py",
     )
     path = pathlib.Path(asset_cache.cache_path_for(asset_name))
-    assert path.name == f"{asset_name}.melc"
+    assert path.name == f"{asset_name}.meldercache"
     assert path.parent.name == f"__{asset_name}__"
     assert path.parent.parent.name == "__melder_cache__"
     assert "_build_assets" not in path.parts

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py",
- "source_sha256": "772d61b7c87c9cb69dd086d21036b45f57dc2b64a69185bd8e4fb796319fc2ba",
+ "source_sha256": "84e2c93040388a5937e6961abecb0d2a8f51045e1a8113b9664a8e8e284f5425",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states": {
@@ -61,7 +61,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "75f12e7497c9e57cc4919a036e88cfc0a9c19a8abcc05b69d5a84f2de8ccf54c",
+   "span_sha256": "78ac33e556649e10a3dc090552177cb39e61e3084b75072bdbe2b82e2a830aff",
    "role": "Per-frame lineage and resolution state registry.",
    "responsibilities": [
     "owns lineage state by index id and spell id",
@@ -70,7 +70,8 @@
     "provides targeted dependency and contract invalidation",
     "indexes OVERRIDE_REQUIRED consumers alongside collection frame watchers without adding construction edges",
     "watches UNRESOLVED_INPUT consumers under their expected-type frame key so a later matching bind re-resolves them",
-    "retires a spell id's per-conduit resolution verdicts in every live conduit state when its lineage is unregistered and when a version id is registered, so a content-stable id re-entering the frame is resolved again per conduit (0.2.8219)"
+    "retires a spell id's per-conduit resolution verdicts in every live conduit state when its lineage is unregistered and when a version id is registered, so a content-stable id re-entering the frame is resolved again per conduit (0.2.8219)",
+    "watches AMBIGUOUS_INPUT sockets by frame key like UNRESOLVED_INPUT ones, so a bind or removal of a same-keyed spell re-gates the consumer (0.2.8224)"
    ],
    "owns_state": [
     "_states_by_index_id",
@@ -90,7 +91,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "75f12e7497c9e57cc4919a036e88cfc0a9c19a8abcc05b69d5a84f2de8ccf54c"
+   "semantics_authored_against": "78ac33e556649e10a3dc090552177cb39e61e3084b75072bdbe2b82e2a830aff"
   }
  },
  "edges_out": [
@@ -135,6 +136,7 @@
  ],
  "published_aliases": [],
  "imports": {
+  "threading": "threading",
   "TYPE_CHECKING": "typing.TYPE_CHECKING",
   "Callable": "typing.Callable",
   "Dict": "typing.Dict",

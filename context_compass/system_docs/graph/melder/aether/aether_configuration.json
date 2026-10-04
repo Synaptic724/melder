@@ -133,6 +133,8 @@
  ],
  "published_aliases": [],
  "imports": {
+  "logging": "logging",
+  "threading": "threading",
   "Callable": "collections.abc.Callable",
   "Any": "typing.Any",
   "Crystallizer": "melder.crystallizer.crystallizer.Crystallizer",

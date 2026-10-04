@@ -117,7 +117,7 @@ class StructuralSnapshot:
     System Context:
         Capture is called once per conjure from the creation system's
         activation tail, after the executor payloads are staged and before
-        the single conjure-end emit of the `.melc` bundle; classify and
+        the single conjure-end emit of the `.meldercache` bundle; classify and
         hydrate are called from `_prepare_spellbook_for_conjure` before the
         structural scheduler run (which they replace on a full hit).
 

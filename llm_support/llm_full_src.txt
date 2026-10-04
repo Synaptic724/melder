@@ -1,8 +1,8 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: src
-SOURCE FINGERPRINT: 26bfe5ac02e444979bb709454988ea0beddeab6967c50c175424cc15b6997fad
-FILE COUNT: 578
+SOURCE FINGERPRINT: ec1bb924e64eb21b4c8898a81e08ee69b7b9ba080a9fa8e27c419ae1792e14d5
+FILE COUNT: 579
 
 ================================================================================
 BEGIN FILE: src/melder/__architecture__.py
@@ -601,7 +601,7 @@ END FILE: src/melder/__melder_cache__/__melder_cache__.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/__version__.py
-CONTENT SHA256: d0fd8997a14991efd0215c916d7fc30c5469fa9ebd64b0b309f8c5aea756c8d9
+CONTENT SHA256: 5d3dedce9c7642e9d2ca0dd7e48569f8735cb45e45250e2a010d0f0608bb4009
 SOURCE ENCODING: utf-8
 ================================================================================
 
@@ -615,7 +615,7 @@ Contract:
   negotiation or runtime compatibility checks by itself.
 """
 
-__version__ = "0.2.8222"
+__version__ = "0.2.8224"
 ================================================================================
 END FILE: src/melder/__version__.py
 ================================================================================
@@ -1333,7 +1333,7 @@ END FILE: src/melder/_build_assets/_agent_documentation/_builder.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/_build_assets/_agent_documentation/agent_documentation.py
-CONTENT SHA256: adf2c02898b3154bd06e4f9b52ae69bec8c7eba59d7c890aeccc7238c260c618
+CONTENT SHA256: 3c7f0f4319cf0c64444353f1e47ad9e3763f344713db264dcc72bfd55addb78b
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -1343,7 +1343,7 @@ WHAT THIS IS
 ------------
 `AGENT_ACCESS:` / `AGENT_PURPOSE:` sections are authored in class docstrings and
 harvested into a COMMITTED manifest (`manifest/agent_documentation_manifest.py`)
-so the classes themselves stop carrying the facts. The `.melc` under
+so the classes themselves stop carrying the facts. The `.meldercache` under
 `__melder_cache__` is only an accelerator - see `_asset_cache` for why the cache
 must never be the source.
 
@@ -1395,7 +1395,7 @@ class AgentDocumentationAsset:
 
     Attributes:
         ASSET_NAME: Bare asset name; drives the cache path
-            `__melder_cache__/__agent_documentation__/agent_documentation.melc`.
+            `__melder_cache__/__agent_documentation__/agent_documentation.meldercache`.
         MANIFEST_DIR_NAME: Directory holding the committed manifest.
         MANIFEST_MODULE_NAME: Generated manifest module filename.
     """
@@ -1470,7 +1470,7 @@ END FILE: src/melder/_build_assets/_agent_documentation/agent_documentation.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/_build_assets/_bind_guard/_builder.py
-CONTENT SHA256: df23ba91d82b2f3c0ec8ffb7fc16ac1c4f4f22ea34f62824e5d06cf5622f0148
+CONTENT SHA256: 387d9da9ebf8811cd771d16f4171ca571ae53dbc7f105855ee3ec40303a171e2
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -1488,7 +1488,7 @@ generation is cycle-free, side-effect free, and runs against a half-built tree.
 
 WHAT IT DOES NOT OWN
 --------------------
-The `.melc` cache. This builder writes ONE file: the manifest. Hydration and
+The `.meldercache` cache. This builder writes ONE file: the manifest. Hydration and
 caching belong to `bind_guard.py` and `_asset_cache`, and the cache is derived
 at runtime under `__melder_cache__/__bind_guard__/`. A build step that wrote an
 interpreter-specific `marshal` bundle into the source tree would be committing
@@ -1503,7 +1503,7 @@ LAYOUT
             bind_guard_manifest.py         GENERATED, committed, the truth
 
     __melder_cache__/__bind_guard__/
-        bind_guard.melc                    derived, gitignored, per-interpreter
+        bind_guard.meldercache             derived, gitignored, per-interpreter
 """
 import ast
 import hashlib
@@ -1865,7 +1865,7 @@ END FILE: src/melder/_build_assets/_bind_guard/_builder.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/_build_assets/_bind_guard/bind_guard.py
-CONTENT SHA256: 8af62877931d39214990874404d263b240c0b95b56045a73b6c02d653122abcb
+CONTENT SHA256: 6169e1abff4aaab9aeb51e145880b9e976895f3552d9ca37992ff5399f356e2d
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -1876,7 +1876,7 @@ WHAT THIS IS
 `bind.py` imports `INTERNAL_MANIFEST` at module scope and there is no runtime
 rebuild lane, so whatever this resolves to IS the enforced registration policy.
 That is why the truth lives in a COMMITTED manifest
-(`manifest/bind_guard_manifest.py`) and the `.melc` under `__melder_cache__` is
+(`manifest/bind_guard_manifest.py`) and the `.meldercache` under `__melder_cache__` is
 only ever an accelerator - see `_asset_cache` for why the cache must never be
 the source.
 
@@ -1908,7 +1908,7 @@ class BindGuardAsset:
 
     Attributes:
         ASSET_NAME: Bare asset name; drives the cache path
-            `__melder_cache__/__bind_guard__/bind_guard.melc`.
+            `__melder_cache__/__bind_guard__/bind_guard.meldercache`.
         MANIFEST_DIR_NAME: Directory holding the committed manifest.
         MANIFEST_MODULE_NAME: Generated manifest module filename.
     """
@@ -1969,7 +1969,7 @@ END FILE: src/melder/_build_assets/_bind_guard/bind_guard.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/_build_assets/_build_asset_runner.py
-CONTENT SHA256: 74cc9243613bc8615ae2b815e1375348be85d45cb474e6778c50e07c790dbf70
+CONTENT SHA256: f515b46b98c57393ab90c5247f2ca188168f778a658461829a2e969fa1341632
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -2009,7 +2009,7 @@ says which behaviour it owns rather than which file format it happens to use.
 
 WHAT THE RUNNER DOES *NOT* TOUCH
 --------------------------------
-The `.melc` caches under `__melder_cache__/__<asset>__/`. Those are derived,
+The `.meldercache` caches under `__melder_cache__/__<asset>__/`. Those are derived,
 gitignored, interpreter-specific, and rebuilt on demand at import time by
 `melder.utilities.caching_system.asset_cache`. This runner's whole surface is
 the COMMITTED manifest: the truth the cache is derived FROM. Building a cache
@@ -32110,7 +32110,7 @@ END FILE: src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_sys
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py
-CONTENT SHA256: 7f84e0e891e30120567468ed3dc7093fa8d36e2ba25d9a3b4ee9f00291322d80
+CONTENT SHA256: 31ff5a1a5a6905f077e80fb00f65e542673e8bdf5656bf320de9d5c443bc9c3b
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -33622,6 +33622,8 @@ class SpellSystemStates(Cleanable):
             - An UNRESOLVED_INPUT socket is watched under its expected type's frame
               key, so binding a matching provider later marks this consumer
               dependency-changed and its next meld re-resolves it into a NORMAL edge.
+            - An AMBIGUOUS_INPUT socket is watched the same way (2026-10-04), so
+              removing one of the competing providers re-gates the consumer.
             - False-root declarations carry no dependency_key and therefore add no watcher.
             - The frame key is taken from `socket.dependency_key[0]`.
             - Returns a detached set suitable for index replacement.
@@ -33633,6 +33635,7 @@ class SpellSystemStates(Cleanable):
             if (
                     socket.socket_kind is not SocketKind.OVERRIDE_REQUIRED
                     and socket.socket_kind is not SocketKind.UNRESOLVED_INPUT
+                    and socket.socket_kind is not SocketKind.AMBIGUOUS_INPUT
                     and not (socket.socket_kind is SocketKind.NORMAL and socket.is_collection)
             ):
                 continue
@@ -98878,7 +98881,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/dag/resolution_frame/resolu
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/dag/socket_kind.py
-CONTENT SHA256: c3a81f5113f4ece52eea86980fa5bc9b1764a48ebe92232bc03c8f32b30e199d
+CONTENT SHA256: b55ac16ea895827a20a4cff47fb896312a1c3765994fcc375ca43c19ac756ebe
 SOURCE ENCODING: utf-8
 ================================================================================
 from enum import Enum, auto
@@ -98908,6 +98911,15 @@ class SocketKind(Enum):
         built. Registering a matching provider later re-resolves the consumer
         and the socket becomes NORMAL. Distinct from OVERRIDE_REQUIRED, which is
         produced only by a registered non-resolvable definition.
+    - AMBIGUOUS_INPUT:
+        A single typed dependency that two or more registered resolvable spells
+        provide (2026-10-04). Resolution records it instead of raising: no
+        target, no DAG edge, the candidates kept as descriptive
+        `referenced_spell_ids`, and the dependency_key kept so a bind or removal
+        of a same-keyed spell re-gates the consumer. Phase 4 refuses the spell
+        with AMBIGUOUS_PROVIDER, naming every candidate's address and the
+        remedies (a SpellMap default, a meld override, or one provider). Never
+        reaches planning: a broken spell does not plan.
 
     Subsystem Context:
         The edge-kind vocabulary of the `dag` package: a DAG socket carries one of
@@ -98921,13 +98933,15 @@ class SocketKind(Enum):
     AGENT_PURPOSE:
         access: internal. Phase-3 DAG edge classifier: NORMAL (regular DI socket) vs
         SPELL_CONTRACT (late-bound provider socket), OVERRIDE_REQUIRED (required supplied input),
-        UNRESOLVED_INPUT (typed dependency with no provider; supplied by the call or reported).
+        UNRESOLVED_INPUT (typed dependency with no provider; supplied by the call or reported),
+        AMBIGUOUS_INPUT (typed dependency with several providers; refused by Phase 4 with the candidates).
     """
 
     NORMAL = auto()
     SPELL_CONTRACT = auto()
     OVERRIDE_REQUIRED = auto()
     UNRESOLVED_INPUT = auto()
+    AMBIGUOUS_INPUT = auto()
 ================================================================================
 END FILE: src/melder/aether/spellbook/spell_compiler/dag/socket_kind.py
 ================================================================================
@@ -100144,7 +100158,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_2.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py
-CONTENT SHA256: 984ae1d449e0d65baa3fbb2f1fc2efed62999c043182c5363f68cf31cac9e3e2
+CONTENT SHA256: 2e6d748b859fe2aebf852648f434830236d0cc0a197f32d2ffc49858446c4501
 SOURCE ENCODING: utf-8
 ================================================================================
 import inspect
@@ -100792,7 +100806,11 @@ class CompilerPhase3:
         non-resolvable definition be selected for an OVERRIDE_REQUIRED input.
         Matching and index grouping happen first; capability does not change them.
         When nothing matches at all, the mapping is empty: the caller records an
-        UNRESOLVED_INPUT socket, which the constructing meld must supply.
+        UNRESOLVED_INPUT socket, which the constructing meld must supply. When
+        several match, every candidate is returned (2026-10-04): the caller
+        records an AMBIGUOUS_INPUT socket and Phase 4 refuses the spell with
+        AMBIGUOUS_PROVIDER, naming the candidates and their addresses - the
+        former RuntimeError never reached the readable report.
 
         Args:
             spell:
@@ -100805,11 +100823,9 @@ class CompilerPhase3:
         Returns:
             Dict[Any, Spell]:
                 Mapping from matched `spell_index` to spell. Empty when no
-                registered spell matches the annotation.
-
-        Raises:
-            RuntimeError: If multiple candidates match the annotation
-                constraints (ambiguity is a configuration error, not an input).
+                registered spell matches the annotation; more than one entry
+                when the annotation is ambiguous (a configuration error the
+                caller records for Phase 4, never an input the meld could pick).
         """
         annotation = self._normalize_annotation_for_matching(dep.target_annotation)
         binding_name: Optional[str] = None
@@ -100844,20 +100860,10 @@ class CompilerPhase3:
             # UnresolvedInputError when this object is built.
             return {}
 
-        if len(candidates) > 1:
-            names = ", ".join(
-                sorted(candidate_spell.spell_name for candidate_spell in candidates.values())
-            )
-            raise RuntimeError(
-                "SpellCrafter Phase 3: multiple DI candidates found for "
-                f"parameter {dep.param_name!r} on spell {spell.spell_name!r} "
-                f"(annotation={annotation!r}). "
-                f"Candidates: {names}. "
-                "Use a SpellMap with an explicit spellframe/binding_name or a "
-                "collection type (e.g. list[FrameType]) to inject multiple "
-                "implementations."
-            )
-
+        # Several providers: returned as they are. `_build_local_frame_dag`
+        # records the socket as AMBIGUOUS_INPUT and Phase 4's
+        # AmbiguousProviderStrategy refuses the spell through the readable
+        # report (owner decision 2026-10-04; this used to raise RuntimeError).
         return candidates
 
     def _resolve_collection_by_annotation(
@@ -101052,6 +101058,7 @@ class CompilerPhase3:
             requirements: SpellRequirements,
             socket_references: Dict[tuple[str, int], List[str]],
             socket_unresolved: Optional[Set[tuple[str, int]]] = None,
+            socket_ambiguous: Optional[Dict[tuple[str, int], List[str]]] = None,
     ) -> SpellLocalTopology:
         """
             Internal helper for Phase 3.
@@ -101068,6 +101075,10 @@ class CompilerPhase3:
                 * Mark single typed sockets listed in "socket_unresolved" (no
                   registered provider at all) UNRESOLVED_INPUT. They keep their
                   dependency_key so a later matching bind re-resolves this spell.
+                * Mark single typed sockets listed in "socket_ambiguous" (two or
+                  more resolvable providers) AMBIGUOUS_INPUT, with the candidate
+                  ids as descriptive `referenced_spell_ids` and no target; they
+                  keep their dependency_key for the same re-gating (2026-10-04).
                 * Copy "is_collection" and "is_optional" flags from the
                   symbolic graph.
                 * Look up any concrete targets via "socket_targets" using
@@ -101101,11 +101112,15 @@ class CompilerPhase3:
                 socket_kind = SocketKind.OVERRIDE_REQUIRED
             elif socket_unresolved and (dep.param_name, dep.position) in socket_unresolved:
                 socket_kind = SocketKind.UNRESOLVED_INPUT
+            elif socket_ambiguous and (dep.param_name, dep.position) in socket_ambiguous:
+                socket_kind = SocketKind.AMBIGUOUS_INPUT
+                referenced_spell_ids = tuple(socket_ambiguous[(dep.param_name, dep.position)])
             dependency_key = None
             if spell.resolvable and socket_kind in (
                     SocketKind.NORMAL,
                     SocketKind.OVERRIDE_REQUIRED,
                     SocketKind.UNRESOLVED_INPUT,
+                    SocketKind.AMBIGUOUS_INPUT,
             ):
                 dependency_key = self._dependency_key_for_dep(dep)
 
@@ -101176,8 +101191,7 @@ class CompilerPhase3:
                 ValueError:
                     If ``requirements`` or ``graph`` is None.
                 RuntimeError:
-                    If the spell has no bound SpellIndex / current spell id, or
-                    when annotation resolution is ambiguous (see the resolvers).
+                    If the spell has no bound SpellIndex / current spell id.
             
             Important:
                 * This helper does **not** mutate the Spell object. All artifacts
@@ -101192,6 +101206,11 @@ class CompilerPhase3:
                 * A single typed dependency that no registered spell provides
                   produces an UNRESOLVED_INPUT socket (no dependency id) instead of
                   failing: the constructing meld supplies it.
+                * A single typed dependency that several resolvable spells provide
+                  produces an AMBIGUOUS_INPUT socket (no dependency id; the
+                  candidates as references) instead of a RuntimeError, so Phase
+                  4's AMBIGUOUS_PROVIDER refuses the spell through the readable
+                  validation report (owner decision 2026-10-04).
                 * The per-socket target rows carry everything the retired DAG held
                   (parent id, child id, parameter name; every edge was NORMAL), so
                   no edge list is kept beside them.
@@ -101231,6 +101250,9 @@ class CompilerPhase3:
         socket_references: Dict[tuple[str, int], List[str]] = {}
         # Single typed sockets with no registered provider: recorded, not refused.
         socket_unresolved: Set[tuple[str, int]] = set()
+        # Single typed sockets with several resolvable providers: recorded for
+        # Phase 4 with their candidate ids, never resolved.
+        socket_ambiguous: Dict[tuple[str, int], List[str]] = {}
 
         for dep in graph.dependencies if spell.resolvable else ():
             CompilerPhaseUtility.throw_if_cancelled(cancellation_event)
@@ -101266,6 +101288,13 @@ class CompilerPhase3:
                     # as an unresolved input instead of failing resolution.
                     socket_unresolved.add(key)
                 continue
+            if di_shape is ParameterDIShape.SINGLE_BY_ANNOTATION and len(resolved) > 1:
+                # Several providers: record the candidates for Phase 4's
+                # AMBIGUOUS_PROVIDER report; no dependency id, no edge.
+                socket_ambiguous[key] = sorted(
+                    spell_index.selected_spell_id for spell_index in resolved
+                )
+                continue
 
             for spell_index, spell_obj in resolved.items():
                 dep_spell_id = spell_index.selected_spell_id
@@ -101293,6 +101322,7 @@ class CompilerPhase3:
             requirements=requirements,
             socket_references=socket_references,
             socket_unresolved=socket_unresolved,
+            socket_ambiguous=socket_ambiguous,
         )
 
         # Update spell-system state with dependency IDs and local topology.
@@ -105371,7 +105401,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/profiles/resolution_profile
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/shared_assets/codegen_signature.py
-CONTENT SHA256: 4a7c0032a96c47f96e7f94121ff560b3972a582af4965e43c6bf41d277388353
+CONTENT SHA256: 30b6be4ab544db3b3b8bea7a126a852a71dff6e7bc879408a938959140b4bfef
 SOURCE ENCODING: utf-8
 ================================================================================
 import hashlib
@@ -105425,7 +105455,7 @@ class CodegenSignature:
         for override payload entries, used directly by every family's row builder.
 
     System Context:
-        Every creation-cache key and every executor signature in the `.melc`
+        Every creation-cache key and every executor signature in the `.meldercache`
         bundle passes through `hash_codegen_signature`, so a non-deterministic byte
         here is a cache miss per process, and a byte that drifts between the two
         facades is a stale full-hit cache: on a full hit no fresh signature is
@@ -115410,7 +115440,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/s
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/structural_snapshot/structural_snapshot.py
-CONTENT SHA256: 1814e0147ac481a86b8d21e04731412c754e6c445dcd7d74618ec105bb5d89db
+CONTENT SHA256: 57a43b9effa9443c254d66895db1db391a1895e1173d8106cd1502c875eb69af
 SOURCE ENCODING: utf-8
 ================================================================================
 import hashlib
@@ -115532,7 +115562,7 @@ class StructuralSnapshot:
     System Context:
         Capture is called once per conjure from the creation system's
         activation tail, after the executor payloads are staged and before
-        the single conjure-end emit of the `.melc` bundle; classify and
+        the single conjure-end emit of the `.meldercache` bundle; classify and
         hydrate are called from `_prepare_spellbook_for_conjure` before the
         structural scheduler run (which they replace on a full hit).
 
@@ -122267,6 +122297,210 @@ class SpellValidationResult(Cleanable):
 END FILE: src/melder/aether/spellbook/spell_compiler/validation/spell_validation_result.py
 ================================================================================
 ================================================================================
+BEGIN FILE: src/melder/aether/spellbook/spell_compiler/validation/strategies/ambiguous_provider_strategy.py
+CONTENT SHA256: 8873cfc3ee3b7311e554dfe43993b30e924a657200b1f9fd218dfc3cbd09ec68
+SOURCE ENCODING: utf-8
+================================================================================
+from typing import TYPE_CHECKING, Any, Dict, List
+
+
+
+# Melder imports
+from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
+from melder.aether.spellbook.spell_compiler.validation.spell_validation_issue import SpellValidationIssue
+from melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy import SpellValidationStrategy
+from melder.utilities.custom_exceptions.unresolved_input_error import UnresolvedInputError
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spell import Spell
+    from melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements import SpellRequirements
+    from melder.aether.spellbook.spell_compiler.topology.spell_local_topology import SpellSocketDescriptor
+    from melder.aether.spellbook.spell_compiler.validation.spell_validation_context import SpellValidationContext
+
+
+class AmbiguousProviderStrategy(SpellValidationStrategy):
+    """
+    Refuse a spell whose single typed parameter has several registered providers, and say which.
+
+    Ambiguity is a configuration error, never an input the meld could pick for the caller (owner
+    ruling 2026-10-04: a hard error, no warning). Phase 3 records such a parameter as an
+    `AMBIGUOUS_INPUT` socket instead of raising, so this strategy is what refuses the spell - through
+    the readable validation report, with every candidate's address and the remedies, where the
+    former Phase-3 `RuntimeError` surfaced as a compiler trace.
+
+    Contract:
+    - One `AMBIGUOUS_PROVIDER` error per `AMBIGUOUS_INPUT` socket of the spell's Phase-3 topology.
+    - The message names the parameter, the expected type (rendered as the meld-time
+      `UnresolvedInputError` renders it), each candidate as `<spell_name> at (spellframe=...,
+      binding_name=...)` ordered by address, and the three ways out: a `SpellMap`
+      default on the parameter, a meld override, or a single provider of the type.
+    - `details` carries `spell_id`, `parameter_name`, `expected_type` and `candidates` (a list of
+      `{spell_id, spell_name, spellframe, binding_name}`), so tooling can act without parsing text.
+    - A candidate the spellbook can no longer find (removed between phases) is rendered by id only.
+    - Emits into the supplied context; mutates no graph, topology or spell.
+
+    Registration:
+        MELDER KERNEL. A built-in strategy; registered, never bound.
+
+    Subsystem Context:
+        One built-in of the `validation/strategies` family, registered into `SpellValidationSystem`
+        after `RequiredHolesStrategy` (which reports the sibling UNRESOLVED_INPUT sockets as warnings).
+
+    System Context:
+        Phase 4 (validation) of the conjure pipeline. Its error marks the spell broken: conjure refuses
+        through `SpellbookValidationError`, and a consumer late-bound into a dynamic world is refused at
+        its first meld by the meld-time validation gate.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Phase-4 strategy: emits one AMBIGUOUS_PROVIDER error per AMBIGUOUS_INPUT
+        socket, naming the parameter, the expected type, every candidate's address and the remedies.
+    """
+
+    __slots__ = SpellValidationStrategy.__slots__
+
+    def __init__(self) -> None:
+        """
+        Initialize the ambiguous-provider strategy.
+
+        Contract:
+            Seeds the stable strategy name/description published through the validation pipeline.
+        """
+        super().__init__(
+            name="ambiguous_provider",
+            description="Refuses a single typed parameter that several registered spells provide.",
+        )
+
+    def validate(self, context: SpellValidationContext) -> None:
+        """
+        Emit one AMBIGUOUS_PROVIDER error per ambiguous socket of the spell.
+
+        Contract:
+        - Stops early if the validation context has been cancelled.
+        - Reads the spell's Phase-3 topology through the spell's `SpellSystemStates`; a spell with no
+          topology (stand-ins, or validation without Phase 3) yields nothing.
+        - Never raises for a candidate id the spellbook cannot resolve; the entry is rendered by id.
+
+        Args:
+            context: Validation context of the spell under validation.
+        """
+        self.check_cleaned()
+
+        cancel_event = context.cancel_event
+        if cancel_event is not None and cancel_event.is_set:
+            cancel_event.throw_if_set()
+
+        spell = context.spell
+        topology = spell._spell_system_states.get_local_topology(spell.spell_index)
+        if topology is None:
+            return
+        for socket in topology.iter_sockets():
+            if socket.socket_kind is not SocketKind.AMBIGUOUS_INPUT:
+                continue
+            expected_type = self._expected_type_for(context.requirements, socket.param_name)
+            candidates = self._describe_candidates(context, socket)
+            rendered = "; ".join(self._render_candidate(candidate) for candidate in candidates)
+            context.issues.append(
+                SpellValidationIssue(
+                    severity="error",
+                    code="AMBIGUOUS_PROVIDER",
+                    message=(
+                        f"Parameter {socket.param_name!r} on spell {spell.spell_name!r} expects "
+                        f"{expected_type}, but {len(candidates)} registered spells provide it: {rendered}. "
+                        f"Select one with a SpellMap default on the parameter "
+                        f"(SpellMap(spellframe=..., binding_name=...)), supply it at meld with "
+                        f"override={{{socket.param_name!r}: ...}}, or bind only one provider of this type."
+                    ),
+                    details={
+                        "spell_id": spell.spell_id,
+                        "parameter_name": socket.param_name,
+                        "expected_type": expected_type,
+                        "candidates": candidates,
+                    },
+                )
+            )
+
+    @staticmethod
+    def _expected_type_for(requirements: "SpellRequirements | None", param_name: str) -> str:
+        """
+        Name the expected type of the ambiguous parameter.
+
+        Contract:
+            - Renders the Phase-1 annotation of `param_name` with
+              `UnresolvedInputError.expected_type_name`, the rule the meld-time errors use.
+            - Returns the parameter name itself when requirements are absent or do not carry the
+              parameter, so the report never fails on a rendering detail.
+
+        Args:
+            requirements: Phase-1 requirements of the spell under validation, when available.
+            param_name: Parameter carried by the AMBIGUOUS_INPUT socket.
+
+        Returns:
+            str: Display name of the expected type.
+        """
+        if requirements is not None:
+            for param in requirements.parameters:
+                if param.name == param_name:
+                    return UnresolvedInputError.expected_type_name(param.annotation)
+        return param_name
+
+    @staticmethod
+    def _describe_candidates(context: SpellValidationContext, socket: SpellSocketDescriptor) -> List[Dict[str, Any]]:
+        """
+        Describe each candidate the socket recorded with its address.
+
+        Contract:
+            - One entry per `referenced_spell_ids` id, ordered by address (spellframe, binding_name,
+              spell_name; None sorts first): `{spell_id, spell_name, spellframe, binding_name}`;
+              `spellframe` is the frame's display name (a string category as itself, a Protocol by
+              `__name__`) or None, `binding_name` the bound name or None.
+            - A candidate the spellbook cannot find renders with `spell_name` None and no address.
+
+        Args:
+            context: Validation context of the spell under validation.
+            socket: The AMBIGUOUS_INPUT socket.
+
+        Returns:
+            List[Dict[str, Any]]: The candidate descriptions.
+        """
+        described: List[Dict[str, Any]] = []
+        spellbook = context.spellbook
+        for candidate_id in socket.referenced_spell_ids:
+            candidate: "Spell | None" = spellbook.find_spell_by_id(candidate_id) if spellbook is not None else None
+            if candidate is None:
+                described.append({"spell_id": candidate_id, "spell_name": None, "spellframe": None, "binding_name": None})
+                continue
+            frame = candidate.spellframe
+            described.append({
+                "spell_id": candidate_id,
+                "spell_name": candidate.spell_name,
+                "spellframe": None if frame is None else getattr(frame, "__name__", str(frame)),
+                "binding_name": candidate.binding_name,
+            })
+        described.sort(key=lambda entry: (entry["spellframe"] or "", entry["binding_name"] or "", entry["spell_name"] or ""))
+        return described
+
+    @staticmethod
+    def _render_candidate(candidate: Dict[str, Any]) -> str:
+        """
+        Render one candidate as `<spell_name> at (spellframe=..., binding_name=...)`.
+
+        Args:
+            candidate: One entry of `_describe_candidates`.
+
+        Returns:
+            str: The rendered candidate; an unresolvable one renders as `spell id <id>`.
+        """
+        if candidate["spell_name"] is None:
+            return f"spell id {candidate['spell_id']}"
+        return (
+            f"{candidate['spell_name']} at (spellframe={candidate['spellframe']!r}, "
+            f"binding_name={candidate['binding_name']!r})"
+        )
+================================================================================
+END FILE: src/melder/aether/spellbook/spell_compiler/validation/strategies/ambiguous_provider_strategy.py
+================================================================================
+================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/validation/strategies/annotation_shape_guard_strategy.py
 CONTENT SHA256: 3924b4ba22bb5bc165e1489587892dece95ef60245989a5efdff4d1abb38f9f8
 SOURCE ENCODING: utf-8
@@ -122496,7 +122730,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/validation/strategies/annot
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/validation/strategies/binding_resolution_cycle_strategy.py
-CONTENT SHA256: 253dcd8b96f3a26758d74a98d355f773f576f4ac91b321f5e6a8abf35370a741
+CONTENT SHA256: 99ceb2a6945c82490a14ca3eb196acf15ec00cb70ece31b8a9f52e172f612a13
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import TYPE_CHECKING, Dict, List, Optional, Set, Tuple
@@ -122538,10 +122772,10 @@ class BindingResolutionCycleStrategy(SpellValidationStrategy):
 
     Contract:
         - Builds a binding-key graph from available requirements.
-        - Excludes non-resolvable constructors, resolved OVERRIDE_REQUIRED sockets
-          and UNRESOLVED_INPUT sockets. Descriptive references are never
-          reconstruction of a construction edge, and an unresolved input has no
-          provider to form one.
+        - Excludes non-resolvable constructors, resolved OVERRIDE_REQUIRED sockets,
+          UNRESOLVED_INPUT and AMBIGUOUS_INPUT sockets. Descriptive references are never
+          reconstruction of a construction edge, an unresolved input has no
+          provider to form one, and an ambiguous input is refused before any edge exists.
         - Reports cycles reachable from the spell under validation.
         - Does not mutate spells, spellbooks, or requirements.
 
@@ -122735,6 +122969,7 @@ class BindingResolutionCycleStrategy(SpellValidationStrategy):
                 if topology is not None and any(
                         socket.socket_kind is SocketKind.OVERRIDE_REQUIRED
                         or socket.socket_kind is SocketKind.UNRESOLVED_INPUT
+                        or socket.socket_kind is SocketKind.AMBIGUOUS_INPUT
                         for socket in topology.get_sockets_for_param(param.name)
                 ):
                     continue
@@ -125086,7 +125321,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/validation/strategies/spell
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/validation/validation_system.py
-CONTENT SHA256: 5ac3ba08c2368411fe8d49eaeda9c638d32b7ab220de8384f0c4d63f729c9876
+CONTENT SHA256: 15093a7899e5154f1e20d893e56b31686437c63350036932b45aeda91a7b5fa7
 SOURCE ENCODING: utf-8
 ================================================================================
 from threading import RLock
@@ -125122,6 +125357,9 @@ from melder.aether.spellbook.spell_compiler.validation.strategies.circular_depen
 from melder.aether.spellbook.spell_compiler.validation.strategies.dangling_dependency_strategy import \
     DanglingDependenciesStrategy
 from melder.aether.spellbook.spell_compiler.validation.strategies.required_holes_strategy import RequiredHolesStrategy
+from melder.aether.spellbook.spell_compiler.validation.strategies.ambiguous_provider_strategy import (
+    AmbiguousProviderStrategy,
+)
 from melder.aether.spellbook.spell_compiler.validation.strategies.resolution_frame_presence_strategy import \
     ResolutionFramePresenceStrategy
 from melder.aether.spellbook.spell_compiler.validation.strategies.self_validation_strategy import SelfDependencyStrategy
@@ -125272,6 +125510,7 @@ class SpellValidationSystem(Cleanable):
         self.register_strategy(SelfDependencyStrategy())
         self.register_strategy(CircularDependencyStrategy())
         self.register_strategy(RequiredHolesStrategy())
+        self.register_strategy(AmbiguousProviderStrategy())
         self.register_strategy(DuplicateSpellNameStrategy())
         self.register_strategy(AnnotationShapeGuardStrategy())
         self.register_strategy(SpellMapShapeValidationStrategy())
@@ -254357,7 +254596,7 @@ END FILE: src/melder/utilities/ai_native_support_tools/system_document_view.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/utilities/caching_system/asset_cache.py
-CONTENT SHA256: 9a6130525118e435cd1ac7eddef9b6ea81ef13ec04176bdb09183521917083c1
+CONTENT SHA256: 4859dc3d861eb917ccb5e009dff380700a1d50ec9c6f93c71f62731026dbf04d
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -254376,7 +254615,7 @@ It sits beside `caching_system.py` because that is where melder's cache
 machinery lives, and the two are deliberately different scopes of the same
 idea: `CachingSystem` is a per-conduit instance cache with a lock, a logger and
 a lifecycle; this is a process-lifetime, read-mostly bundle for build assets.
-Both write `.melc` under `__melder_cache__`, both stamp
+Both write `.meldercache` under `__melder_cache__`, both stamp
 `sys.implementation.cache_tag`, and both treat a bad bundle as a cold cache.
 
 Importing this module does NOT pull in `caching_system.py` - there is no
@@ -254393,7 +254632,7 @@ mistake this module exists to prevent:
                diffable in review, and the thing `--check` gates on. This is
                the TRUTH.
 
-    CACHE      `__melder_cache__/__<asset>__/<asset>.melc`
+    CACHE      `__melder_cache__/__<asset>__/<asset>.meldercache`
                DERIVED and GITIGNORED. One marshal bundle, rebuilt on demand.
                This is SPEED, and nothing else.
 
@@ -254402,12 +254641,12 @@ WHY THE CACHE CANNOT BE THE TRUTH
 `marshal` is explicitly interpreter-specific - the format carries no
 compatibility guarantee across Python versions, which is why `CachingSystem`
 stamps `sys.implementation.cache_tag` into every bundle it writes. This repo
-runs 3.10 today and targets 3.14t free-threaded, so a committed `.melc` would
+runs 3.10 today and targets 3.14t free-threaded, so a committed `.meldercache` would
 be a blob written by one interpreter and handed to another. Committing one puts
 an interpreter-specific artifact on the critical import path of a package that
 deliberately supports two interpreters.
 
-Keeping the manifest as source and the `.melc` as cache also means a clone,
+Keeping the manifest as source and the `.meldercache` as cache also means a clone,
 a wheel, and a read-only install all work identically: worst case they miss the
 cache and pay the manifest import once.
 
@@ -254477,7 +254716,7 @@ class AssetCachePolicy:
     CACHE_VERSION_HISTORY = {1: "manifest_stat_gated_payload"}
     CURRENT_VERSION = max(CACHE_VERSION_HISTORY)
 
-    BUNDLE_SUFFIX = ".melc"
+    BUNDLE_SUFFIX = ".meldercache"
     CACHE_ROOT_DIR_NAME = "__melder_cache__"
 
     # melder/utilities/caching_system/asset_cache.py -> melder/
@@ -254491,8 +254730,8 @@ def cache_path_for(asset_name):
     Return the cache bundle path for one asset.
 
     Contract:
-        `<package>/__melder_cache__/__<asset>__/<asset>.melc` - the same
-        `<root>/<scope>/<name>.melc` shape `CachingSystem` uses for conduits,
+        `<package>/__melder_cache__/__<asset>__/<asset>.meldercache` - the same
+        `<root>/<scope>/<name>.meldercache` shape `CachingSystem` uses for conduits,
         so every cache in the tree is discoverable by one mental model.
 
     Args:
@@ -254612,7 +254851,7 @@ END FILE: src/melder/utilities/caching_system/asset_cache.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/utilities/caching_system/caching_system.py
-CONTENT SHA256: 8b207c18caed51bded1a518bf2f3dda47fdeec3cd10ab17c389739db5f84b187
+CONTENT SHA256: bd1f5083f4fbde7b2391f215dd7b8b8d0eb5daf6a739425b91df7db49632a411
 SOURCE ENCODING: utf-8
 ================================================================================
 import logging
@@ -254649,7 +254888,7 @@ class CachingSystem(Cleanable):
         The sibling is `asset_cache`, which caches BUILD ASSETS: a
         process-lifetime, read-mostly bundle hydrated from a committed manifest,
         with no lock, no logger and no lifecycle. This class is the per-conduit
-        instance cache with all three. Both write `.melc` under
+        instance cache with all three. Both write `.meldercache` under
         `__melder_cache__` and both stamp `sys.implementation.cache_tag`;
         confusing which one owns a given bundle is a category error.
 
@@ -254724,7 +254963,7 @@ class CachingSystem(Cleanable):
     AGENT_ACCESS: internal
 
     AGENT_PURPOSE:
-        access: internal. Per-conduit on-disk payload cache (one .melc marshal bundle per
+        access: internal. Per-conduit on-disk payload cache (one .meldercache marshal bundle per
         frame_name/conduit_name); upsert/get/remove_spell_payload plus emit() to write.
         Melder-owned and guarded - the owning conduit gives you this behaviour, you do not
         construct or bind it. Distinct from the crystallizer's restore record.
@@ -254832,7 +255071,7 @@ class CachingSystem(Cleanable):
     # back-references, so equal values always give equal bytes (see
     # `upsert_structural_payload`). Executor payloads keep the default format.
     STRUCTURAL_MARSHAL_VERSION: ClassVar[int] = 2
-    BUNDLE_SUFFIX: ClassVar[str] = ".melc"
+    BUNDLE_SUFFIX: ClassVar[str] = ".meldercache"
 
     __slots__ = Cleanable.__slots__ + [
         "_id",
@@ -254869,7 +255108,7 @@ class CachingSystem(Cleanable):
 
         Contract:
             - Derives the bundle path as
-              `<cache_root>/<frame_name>/<conduit_name>.melc` and LOADS the
+              `<cache_root>/<frame_name>/<conduit_name>.meldercache` and LOADS the
               cache from disk during construction; a corrupt or version-
               mismatched bundle is treated as a cold cache, not an error.
 

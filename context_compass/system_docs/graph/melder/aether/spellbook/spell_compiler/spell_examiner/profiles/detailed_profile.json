@@ -97,6 +97,7 @@
  ],
  "published_aliases": [],
  "imports": {
+  "inspect": "inspect",
   "Any": "typing.Any",
   "Dict": "typing.Dict",
   "List": "typing.List",
