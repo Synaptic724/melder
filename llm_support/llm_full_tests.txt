@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: tests
-SOURCE FINGERPRINT: 722757fbdc062d65916aedc11db096ef641685ee26a4bc95d21bd2df71315a33
+SOURCE FINGERPRINT: 4e9b930984e6d7053129e8bf33ab10a27c4ed8336c5bd3f3453d6fa697c04aab
 FILE COUNT: 1061
 
 ================================================================================
@@ -317725,7 +317725,7 @@ END FILE: tests/unit/melder/spellbook/spellbook/test_conjure_phase_invocation_co
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/spellbook/spellframe_kind/test_spellframe_kind.py
-CONTENT SHA256: 6c0d387aa50aa6b495dc6a8b2ab870ed66af98a28211e823d0c3844f52600fc9
+CONTENT SHA256: f84e4b373c74d5fd4dc45dd31d8653dac930fc185b94896190618e22d3dda869
 SOURCE ENCODING: utf-8
 ================================================================================
 """Unit tests for the SpellframeKind vocabulary (what a spell's spellframe is)."""
@@ -317748,12 +317748,12 @@ def test_spellframe_kind_values_equal_their_names() -> None:
         assert SpellframeKind[member.name] is member
 
 
-def test_spellframe_kind_is_exported_at_the_package_root() -> None:
-    """Users read the kind off a Spell; the enum is importable from `melder` beside Existence."""
+def test_spellframe_kind_is_not_a_root_export() -> None:
+    """Bind sets the kind on a Spell from the spellframe it was given; users never import or pass it."""
     import melder
 
-    assert melder.SpellframeKind is SpellframeKind
-    assert "SpellframeKind" in melder.__all__
+    assert "SpellframeKind" not in melder.__all__
+    assert "SpellframeKind" not in vars(melder)
 ================================================================================
 END FILE: tests/unit/melder/spellbook/spellframe_kind/test_spellframe_kind.py
 ================================================================================
@@ -329249,7 +329249,7 @@ END FILE: tests/unit/melder/test_package_license_metadata.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/test_package_public_surface.py
-CONTENT SHA256: 3ff4b5a20a0f3fb09ae830cc1642e43e18d3fc2a18a0c0a637b990ca5e2c5731
+CONTENT SHA256: 1cfd6dd7b4ed0eaa51fd428f469a4636cab7cb76bd43dc1d1d04f9878e88ec34
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -329541,6 +329541,11 @@ def test_internal_depths_stay_off_the_root():
         # `AethericFrame.conduit_cloud` still return it. Only the NAME is gone,
         # which cost exactly one `isinstance` line in intermediate lesson 37.
         "ConduitCloud",
+        # Owner ruling 2026-10-04: SpellframeKind is what Bind records on a Spell
+        # from the spellframe it was given (a string is a category, a Protocol a
+        # contract, nothing is none). Users never pass or construct it, so it was
+        # never meant for the root; `spell.spellframe_kind` still reads it.
+        "SpellframeKind",
     ):
         assert name not in melder.__all__
         assert name not in vars(melder)

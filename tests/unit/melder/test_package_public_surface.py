@@ -287,6 +287,11 @@ def test_internal_depths_stay_off_the_root():
         # `AethericFrame.conduit_cloud` still return it. Only the NAME is gone,
         # which cost exactly one `isinstance` line in intermediate lesson 37.
         "ConduitCloud",
+        # Owner ruling 2026-10-04: SpellframeKind is what Bind records on a Spell
+        # from the spellframe it was given (a string is a category, a Protocol a
+        # contract, nothing is none). Users never pass or construct it, so it was
+        # never meant for the root; `spell.spellframe_kind` still reads it.
+        "SpellframeKind",
     ):
         assert name not in melder.__all__
         assert name not in vars(melder)

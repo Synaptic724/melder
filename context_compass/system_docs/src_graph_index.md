@@ -11,10 +11,10 @@ Line numbers are 1-based and inclusive on both ends.
 | --- | --- |
 | document | `src_graph.md` |
 | index_version | 1.0.0 |
-| generated_at | 2026-10-04T18:16:22Z |
+| generated_at | 2026-10-04T19:54:56Z |
 | line_count | 27705 |
 | line_ending | lf |
-| content_sha256 | `4a2f272034139d886cf237314fe3a134652301cd066851beb046c67ef541b25f` |
+| content_sha256 | `6bbf2da9dbeba4c825a5d4506ca19ae7465aaa1dbe19ab591f636e65bd8d4a9c` |
 | sections | 587 |
 
 Recompute `line_count` and `content_sha256` before slicing. On any

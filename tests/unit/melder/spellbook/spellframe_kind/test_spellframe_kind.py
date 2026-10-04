@@ -18,9 +18,9 @@ def test_spellframe_kind_values_equal_their_names() -> None:
         assert SpellframeKind[member.name] is member
 
 
-def test_spellframe_kind_is_exported_at_the_package_root() -> None:
-    """Users read the kind off a Spell; the enum is importable from `melder` beside Existence."""
+def test_spellframe_kind_is_not_a_root_export() -> None:
+    """Bind sets the kind on a Spell from the spellframe it was given; users never import or pass it."""
     import melder
 
-    assert melder.SpellframeKind is SpellframeKind
-    assert "SpellframeKind" in melder.__all__
+    assert "SpellframeKind" not in melder.__all__
+    assert "SpellframeKind" not in vars(melder)

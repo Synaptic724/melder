@@ -87,7 +87,6 @@ from melder.aether.spellbook.configuration.spellbook_configuration import (
 )
 from melder.aether.spellbook.configuration.system_state import SystemState
 from melder.aether.spellbook.existence.existence import Existence
-from melder.aether.spellbook.spellframe_kind.spellframe_kind import SpellframeKind
 from melder.aether.spellbook.spell import Spell
 from melder.aether.spellbook.spellbinder import SpellBinder
 from melder.aether.spellbook.spellbook import Spellbook
@@ -246,7 +245,6 @@ __all__ = [
     "SpellContract",
     "SpellIndex",
     "SpellMap",
-    "SpellframeKind",
     "SpellSpace",
     "SpellSpaceScopeError",
     "Spellbook",

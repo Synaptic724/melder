@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: other
-SOURCE FINGERPRINT: 1dd6cd40cfa3f18c74486b38c267dc7021c8d797ddee8fd5541dc79b6c8b41f9
+SOURCE FINGERPRINT: 0d9dee99fdfa649e2d94f778d0c14977970ab5c78f34ff606a37c2eb5f154936
 FILE COUNT: 386
 
 ================================================================================
@@ -73743,10 +73743,10 @@ END FILE: release_docs/0.2.82.md
 ================================================================================
 ================================================================================
 BEGIN FILE: release_docs/next_version_release.md
-CONTENT SHA256: ba429f8de7c49b669154bacf80e2993dbf12d04ebd5fdd86a4f5a4c78b7e3a5b
+CONTENT SHA256: 5a9b398450e58f1bf7d9f5c7fdb94333777f9d6a98379b37c42b7729aab4af86
 SOURCE ENCODING: utf-8
 ================================================================================
-# Melder 0.2.8224
+# Melder 0.2.8225
 
 **Unreleased**
 
@@ -74175,8 +74175,8 @@ What an annotation selects now follows from what the annotation is:
 - `list[...]` gathers the group the annotation's kind names: every spell of the class, every implementer of the
   Protocol, or - for a string - every spell whose frame key is that name.
 
-The binding records what its frame is: `Spell.spellframe_kind` (`SpellframeKind.none` / `category` /
-`contract`, exported at the package root) and `Spell.implemented_protocols` (the Protocol it was checked
+The binding records what its frame is: `Spell.spellframe_kind` (`none`, `category` or `contract`, which bind
+sets from the frame you pass; it is not exported) and `Spell.implemented_protocols` (the Protocol it was checked
 against). The crystallizer records them too (record version 4.1.0; 4.0.0 records stay readable), so a restored
 or grafted world rebinds a Protocol frame as the Protocol, not as a same-named category; when the Protocol
 cannot be imported at restore the spell is bound under the recorded name as a category and the report files a
@@ -74297,7 +74297,7 @@ Code that matched the old error text (`PhaseExecutionError` / "multiple DI candi
 - The internal-bind guard manifest holds 622 entries at 0.2.8224: `AmbiguousProviderStrategy` joined.
 - The packaged system documents describe the AMBIGUOUS_INPUT socket, the strategy and the message shape; the
   README's `SpellMap` paragraph names the report.
-- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8224.
+- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8225.
 ================================================================================
 END FILE: release_docs/next_version_release.md
 ================================================================================

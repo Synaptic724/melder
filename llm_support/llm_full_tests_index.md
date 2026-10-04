@@ -10,9 +10,9 @@ Line numbers are 1-based and inclusive.
 | bundle | llm_full_tests.txt |
 | schema_version | 1.0.0 |
 | generator_sha256 | d75f1de961817875c099e1b3bc6eaa3a6c670dc89752cd94864d977e452b88e3 |
-| source_fingerprint | 722757fbdc062d65916aedc11db096ef641685ee26a4bc95d21bd2df71315a33 |
-| bundle_sha256 | 80fafa4d4a1042a3ffbcae7663b659b5c16188ee69bd2a064f0cfcef783ac7dc |
-| bundle_line_count | 343575 |
+| source_fingerprint | 4e9b930984e6d7053129e8bf33ab10a27c4ed8336c5bd3f3453d6fa697c04aab |
+| bundle_sha256 | bdb4d18742bc56d59ca186f5d95b7e6056f073df5943957136f439556ef9573a |
+| bundle_line_count | 343580 |
 | bundle_line_ending | lf |
 | files | 1061 |
 
@@ -1002,7 +1002,7 @@ Line numbers are 1-based and inclusive.
 | 315435-315994 | 315440-315991 | 16117 | utf-8 | b7cfa590b2e208af0eb7efccef8dc3dac90c7b6ea3af903b074a2be1193f817b | tests/unit/melder/spellbook/spell_crafter/validation/test_spell_validation_result.py |
 | 315995-317316 | 316000-317313 | 38542 | utf-8 | c5b93fb8ca4178f869fd4dca16cb85934adffa4f6c399abb149e86905b672f87 | tests/unit/melder/spellbook/spell_crafter/validation/test_validation_system.py |
 | 317317-317725 | 317322-317722 | 12888 | utf-8 | ab59d86777410112eaca7586f852d4d273b2a410b75de7f0fdc8249c4f8f1a69 | tests/unit/melder/spellbook/spellbook/test_conjure_phase_invocation_counts.py |
-| 317726-317759 | 317731-317756 | 1098 | utf-8 | 6c0d387aa50aa6b495dc6a8b2ab870ed66af98a28211e823d0c3844f52600fc9 | tests/unit/melder/spellbook/spellframe_kind/test_spellframe_kind.py |
+| 317726-317759 | 317731-317756 | 1095 | utf-8 | f84e4b373c74d5fd4dc45dd31d8653dac930fc185b94896190618e22d3dda869 | tests/unit/melder/spellbook/spellframe_kind/test_spellframe_kind.py |
 | 317760-318463 | 317765-318460 | 25285 | utf-8 | 2160fc2136bdda4d7dd14db1eda41909cdf11e26fec0e455fc12b55d2d865af6 | tests/unit/melder/spellbook/test_cache_runtime_verification.py |
 | 318464-318663 | 318469-318660 | 7514 | utf-8 | 5f92988cae2b48ab50736409fec9b21d6fd5cbef81b63f797eb9de1432e99410 | tests/unit/melder/spellbook/test_resolution_style_matrix.py |
 | 318664-319005 | 318669-319002 | 9810 | utf-8 | f6e5fb790989010444acd4a7ea52aadf4e4ef6a06e3775e82c93bf68da9e45b6 | tests/unit/melder/spellbook/test_scan_bind.py |
@@ -1019,65 +1019,65 @@ Line numbers are 1-based and inclusive.
 | 329173-329198 | 329178-329195 | 634 | utf-8 | a19745c8404a4e96963e153611b16314c394dac30215507a609976cc87e8eb3c | tests/unit/melder/test_package_author_metadata.py |
 | 329199-329225 | 329204-329222 | 734 | utf-8 | a9a66c615fd0c92323c6397afc1caa9321a1c1cad89333b2cabcae07b8827301 | tests/unit/melder/test_package_description_metadata.py |
 | 329226-329249 | 329231-329246 | 548 | utf-8 | 09845bb6575c70e8d138967a900bc342489ad19794436e73e4a7ae6c3ac16290 | tests/unit/melder/test_package_license_metadata.py |
-| 329250-329609 | 329255-329606 | 13593 | utf-8 | 3ff4b5a20a0f3fb09ae830cc1642e43e18d3fc2a18a0c0a637b990ca5e2c5731 | tests/unit/melder/test_package_public_surface.py |
-| 329610-329730 | 329615-329727 | 4837 | utf-8 | 73c225054d7c42a08f3d6389ec056b9b707b57b84f463ead117ebfd4ccf4585b | tests/unit/melder/test_package_version_metadata.py |
-| 329731-330787 | 329736-330784 | 39501 | utf-8 | f46e14f9f5d056d4aa0717d598be72a754dc7298be0983ce86370373a04609f7 | tests/unit/melder/test_system_document_view.py |
-| 330788-331058 | 330793-331055 | 9008 | utf-8 | 623f31086bff640e0ee4c2ee8b6b57ac54c71ab60ecee1a0d471ddcbcd673a48 | tests/unit/melder/test_system_documents.py |
-| 331059-331067 | 331064-331064 | 8 | utf-8 | 0c21a879c732a67910d80988df4919d794f6a070aab610ef865032a28046b021 | tests/unit/melder/utilities/_caching_system_tmp_load_invalid_json/frame-a/root/bundle.json |
-| 331068-331076 | 331073-331073 | 75 | utf-8 | 71358a750e1c6a48a91a8a237be2a4592a967b8e168d8600c7a7e73879796f05 | tests/unit/melder/utilities/_caching_system_tmp_load_non_dict_spell_payloads/frame-a/root/bundle.json |
-| 331077-331085 | 331082-331082 | 82 | utf-8 | 05cd7211423946520168dc27fb815aed29a44500fe65e2ae28726b83c43ca585 | tests/unit/melder/utilities/_caching_system_tmp_load_non_string_spell_id/frame-a/root/bundle.json |
-| 331086-331094 | 331091-331091 | 277 | utf-8 | 6870df15f2e03b4b23d2a3b9d894e6031acb2163262d1ae3a58e29cac860c372 | tests/unit/melder/utilities/_caching_system_tmp_load_sha_mismatch/frame-a/root/bundle.json |
-| 331095-331103 | 331100-331100 | 76 | utf-8 | 053abfe23798f3ac23243bfdd24bc0a78716c530c2daaec494d532fb18fbc5d2 | tests/unit/melder/utilities/_caching_system_tmp_load_wrong_conduit_name/frame-a/root/bundle.json |
-| 331104-331112 | 331109-331109 | 77 | utf-8 | 3925bd1d5e7dfab61962ea95608c727249d2f0bdba11487d93c3dcd8472da596 | tests/unit/melder/utilities/_caching_system_tmp_load_wrong_version/frame-a/root/bundle.json |
-| 331113-331701 | 331118-331698 | 20198 | utf-8 | 9e6301ac10a280df7184ed2da91038d7bb2204dc3999f954cea4ae500fb64d4a | tests/unit/melder/utilities/ai_native_support_tools/test_agent_text_reader.py |
-| 331702-331726 | 331707-331723 | 548 | utf-8 | ce20e2b99e7156a88adf5b43409ee1e7b04f8ac635a8deb168d07c50532a1cf9 | tests/unit/melder/utilities/custom_exceptions/test_dead_reference_error.py |
-| 331727-331751 | 331732-331748 | 555 | utf-8 | c8f895f39ae6e50301e70cf06d94acd77a747b065186beec10000fa43946cd52 | tests/unit/melder/utilities/custom_exceptions/test_empty_error.py |
-| 331752-331783 | 331757-331780 | 845 | utf-8 | 7b4126e6fea54c2d6cd641949ebdae8870d1067a42ef9c32ea508e444fc9cc37 | tests/unit/melder/utilities/custom_exceptions/test_hook_execution_error.py |
-| 331784-331813 | 331789-331810 | 754 | utf-8 | 025641dee8093b92add82d077059cb74995373ed2c40d1fd9cf137003db4083f | tests/unit/melder/utilities/custom_exceptions/test_internal_registration_error.py |
-| 331814-331853 | 331819-331850 | 954 | utf-8 | 1b7adcdd628b4c7246393b6a8593bb3050a068b8e219c7340889946cf0d3572b | tests/unit/melder/utilities/custom_exceptions/test_meld_execution_error.py |
-| 331854-331878 | 331859-331875 | 562 | utf-8 | f826dc541a99d53733c9ddac2fe71d80e2e34e7db5581035d6192d521237a0bf | tests/unit/melder/utilities/custom_exceptions/test_operation_cancelled_error.py |
-| 331879-331910 | 331884-331907 | 872 | utf-8 | 78d64fff03c7af0e343a8830adff4124305c1d25c5b9ea351e1fca7c83f5626c | tests/unit/melder/utilities/custom_exceptions/test_phase_execution_error.py |
-| 331911-331935 | 331916-331932 | 559 | utf-8 | 6555e03348a7d03d9a9768cb7cffc3b05698f7e58992da7be45a86e63b4927de | tests/unit/melder/utilities/custom_exceptions/test_phase_scheduler_error.py |
-| 331936-331965 | 331941-331962 | 789 | utf-8 | 76125992a2c94329dc4463b95652b3bcb26fde99e6f318953dc667280492bf34 | tests/unit/melder/utilities/custom_exceptions/test_phase_timeout_error.py |
-| 331966-331990 | 331971-331987 | 589 | utf-8 | 8697e48bcab7f38a36dabf3a9ac53dfccc392ac990ad501dc6bf3a7872bb8a84 | tests/unit/melder/utilities/custom_exceptions/test_spell_space_scope_error.py |
-| 331991-332324 | 331996-332321 | 13438 | utf-8 | 43a6b13176871dccbb658ed39c0554eab83c34489e35b864ed5f6ad5b6afcd49 | tests/unit/melder/utilities/custom_exceptions/test_spellbook_validation_error.py |
-| 332325-332782 | 332330-332779 | 11480 | utf-8 | f5edd8bcba3c0be16596fc34596a94b0683c935463948f6024f358bfccc478bb | tests/unit/melder/utilities/data_structures/test_abstract_elastic_pool.py |
-| 332783-333033 | 332788-333030 | 6872 | utf-8 | a0fafed9fbe4f2e813f1cc057a42cad0468d4167eea14f4dab03a9f842c4d683 | tests/unit/melder/utilities/data_structures/test_abstract_elastic_pool_multithreaded.py |
-| 333034-333611 | 333039-333608 | 15320 | utf-8 | 2cae91bdab61b15e06121b66145c371dd00044ae4e154191a0e94302a8b0e303 | tests/unit/melder/utilities/data_structures/weak_data_structures/test_weak_concurrent_dict.py |
-| 333612-334011 | 333617-334008 | 9916 | utf-8 | 9f4406a8ae018bc65434f3ea769a2b239b9af27526bd138e8aeea527be0a61fd | tests/unit/melder/utilities/data_structures/weak_data_structures/test_weak_concurrent_list.py |
-| 334012-334457 | 334017-334454 | 11915 | utf-8 | 426c8480d2f6c7d13f483eaec9eda8a77bc876a85b9b39dc7a8e0f4a9ff47031 | tests/unit/melder/utilities/data_structures/weak_data_structures/test_weak_concurrent_set.py |
-| 334458-334747 | 334463-334744 | 6361 | utf-8 | 238920e048f974d9ad6f627369dcf80a70962f13f892e2845565acbccd31d3e9 | tests/unit/melder/utilities/data_structures/weak_data_structures/test_weak_ref_node.py |
-| 334748-334820 | 334753-334817 | 1499 | utf-8 | d3f353fa7c67284dd30bcfec37d8430fcbe9b3a7af90d5229d0ea09e403e3875 | tests/unit/melder/utilities/general_base/test_cleanable.py |
-| 334821-334942 | 334826-334939 | 3656 | utf-8 | aae9bfe3838c0f1fc70af85db7cc94f65527d068c81238e49875af57169f1d7b | tests/unit/melder/utilities/general_base/test_cleanable_cleanup_contexts.py |
-| 334943-335058 | 334948-335055 | 2652 | utf-8 | 581b38c59b4b1a8e212fcf8f6276d0048a66fa295f8c3c3a85d49d84d93edf62 | tests/unit/melder/utilities/general_base/test_isync.py |
-| 335059-335119 | 335064-335116 | 1309 | utf-8 | fb4a0fa97d727493b427241c95ecd4cc21466823df0e64432650a20f10b444b5 | tests/unit/melder/utilities/helpers/test_class_wraps.py |
-| 335120-335230 | 335125-335227 | 3505 | utf-8 | f0fec261158d7f8f501a54bd82aea7f095441e65f49094b7f7456345c6eb2b8c | tests/unit/melder/utilities/helpers/test_general_helpers.py |
-| 335231-335286 | 335236-335283 | 1093 | utf-8 | 1e60e413278694eb509afd4ea9a10ab7a7c2609285e653e069ba353ff212b53e | tests/unit/melder/utilities/helpers/test_id_builder.py |
-| 335287-335337 | 335292-335334 | 1323 | utf-8 | ebfdc982e2621233e0e4eb600c99ef809fe94d8f8b29635bfe022534f14d16c9 | tests/unit/melder/utilities/helpers/test_init_helpers.py |
-| 335338-335708 | 335343-335705 | 13994 | utf-8 | 42eefadd1f0d61dcde9faf523739f1bcb94813998df92999f2726b13db61ab4d | tests/unit/melder/utilities/helpers/test_pack_russian_doll.py |
-| 335709-336191 | 335714-336188 | 17668 | utf-8 | e35ca0f385d95a8725680db2d18b709e75d583e1e93af2c0ef22e2240f07fe07 | tests/unit/melder/utilities/helpers/test_pack_testing.py |
-| 336192-336494 | 336197-336491 | 8531 | utf-8 | 971524af4cf9b20f5bcd5e3ec3a4cdcfcf8b49dbdbe76a17737e617f11754e7a | tests/unit/melder/utilities/helpers/test_package.py |
-| 336495-337141 | 336500-337138 | 21247 | utf-8 | 3c9fa79afddd80a5d990fda7909863d170dafdcd33e7763c2c13dcaf02df6649 | tests/unit/melder/utilities/helpers/test_package_core.py |
-| 337142-337244 | 337147-337241 | 3201 | utf-8 | dc1d97f919ff2668e8110be72f46c743aaffd668d43ec8f65567c74293f08fed | tests/unit/melder/utilities/helpers/test_package_decorators.py |
-| 337245-337342 | 337250-337339 | 3468 | utf-8 | ac62387a62adf32c17f510ae5369e61773612eb8e5e6f9c3edef713a2d084d67 | tests/unit/melder/utilities/helpers/test_package_double_wrap.py |
-| 337343-337403 | 337348-337400 | 1552 | utf-8 | 15ce5bde54bead156f6ab364bbe24a3c9f377b86b2663de6fac5ad55a0ae320d | tests/unit/melder/utilities/helpers/test_package_helper_bug266_269_regression.py |
-| 337404-337661 | 337409-337658 | 8559 | utf-8 | a24fef661e8ca966c2f1c26b8d49347281bbc9fc5fbc4cde098a99e323399f19 | tests/unit/melder/utilities/helpers/test_package_wrapping.py |
-| 337662-337890 | 337667-337887 | 8490 | utf-8 | 260c51e3610bb2f885c4dfacf7f1c9b74c8b58bd6d55f7361c1aff6ca48e45d6 | tests/unit/melder/utilities/helpers/test_signature_reflection.py |
-| 337891-337943 | 337896-337940 | 1526 | utf-8-bom | d06baca86cd616a4ab9cb3917db67b362b5165f4b468def75be84416deb98db1 | tests/unit/melder/utilities/interfaces/test_interface_inheritance.py |
-| 337944-338159 | 337949-338156 | 7127 | utf-8 | 52e3a55478a3682fe7189d7f2f32b6b4bc26aca361fbff78244a58dd80a24836 | tests/unit/melder/utilities/logger/test_safe_logger.py |
-| 338160-338342 | 338165-338339 | 5860 | utf-8 | 212aa41b01e0ebbd73ec93584da3774375fbcc79bcf32d1ccd378fe85d45c21f | tests/unit/melder/utilities/logger/test_safe_logger_lifecycle_and_exc_info_regression.py |
-| 338343-338413 | 338348-338410 | 1711 | utf-8 | 44e53efe1b20a17ec219682c1e2f886d1d49b2c178d59f53f80664fb964e5157 | tests/unit/melder/utilities/synchronization/test_cancellation_event_signal.py |
-| 338414-338717 | 338419-338714 | 9220 | utf-8 | 857fc03a4fdb8f1c5d086204e32d5079622ba36f698014be6f3d8becf6ed74db | tests/unit/melder/utilities/synchronization/test_counter_switch.py |
-| 338718-338794 | 338723-338791 | 2675 | utf-8 | baabc9dd0bcd4552cbf65f196fd34bdbedd317a82c8cf82b28f6674c163bab68 | tests/unit/melder/utilities/synchronization/test_counter_switch_cleanup_waiter_release_regression.py |
-| 338795-339317 | 338800-339314 | 15645 | utf-8 | 1c53bb13fe20fb9e0c76af5b223615f604804d919ab183a2104b0bf9691319fd | tests/unit/melder/utilities/synchronization/test_creation_gate.py |
-| 339318-339990 | 339323-339987 | 20986 | utf-8 | 9bfcb06f34d84d312e2515b92667dde639a21f49bd42c59281dd9f99eef3d225 | tests/unit/melder/utilities/synchronization/test_creation_gate_controller.py |
-| 339991-340097 | 339996-340094 | 2455 | utf-8 | 299b5c7efb6c47fab55a501237c8e2529d16006accfa20c8093fdc978a419594 | tests/unit/melder/utilities/synchronization/test_fast_switch.py |
-| 340098-340735 | 340103-340732 | 18322 | utf-8 | bafd4b8d744ebe04e22d3d0bc22ffa26fe203c99e2058be5656f1b889bdcc5e4 | tests/unit/melder/utilities/synchronization/test_load_gate.py |
-| 340736-340854 | 340741-340851 | 3283 | utf-8 | 65abb73fdaff11bd07964ae126ec35fd68b1dd1dccfe940329270243211b0dc9 | tests/unit/melder/utilities/synchronization/test_phase_latch.py |
-| 340855-341491 | 340860-341488 | 20779 | utf-8 | 34ad3f2d4b1496e5560f7f83445b1a961e451bbd4a444ec5ef88c5f1c4747024 | tests/unit/melder/utilities/synchronization/test_phase_scheduler.py |
-| 341492-341708 | 341497-341705 | 5685 | utf-8 | 41e3a3cc3632768507b16bf71c51a9fc0d62fbf581986da077b64623f099fd08 | tests/unit/melder/utilities/synchronization/test_safeguard.py |
-| 341709-342003 | 341714-342000 | 6215 | utf-8 | a4114f9b9ab0efa3e44f29be130f38de8a1d7ccbf30c09d578ab2c35b6146745 | tests/unit/melder/utilities/synchronization/test_sync_weak_ref.py |
-| 342004-342186 | 342009-342183 | 4233 | utf-8 | 4f47375d3210afb6adf4ee7a511763325de7333648ac91a5b289e4f045d98193 | tests/unit/melder/utilities/synchronization/test_ticket_flag.py |
-| 342187-342452 | 342192-342449 | 7797 | utf-8 | 7303ba0f3ee5874bde2739f476dd9c6a518b4590132859b4b961c428be2212cf | tests/unit/melder/utilities/synchronization/test_unit_of_work.py |
-| 342453-343202 | 342458-343199 | 27512 | utf-8 | 3b931efaa3b7c355201876f677db80c9263d1fd3a50a0e264b88722b4ed805d9 | tests/unit/melder/utilities/test_caching_system.py |
-| 343203-343575 | 343208-343572 | 12134 | utf-8 | 9d69a5229354658b789e4d678559fa6ef1ddecf8dcfe7e1c06b6adb02df2c109 | tests/unit/melder/utilities/test_protocol_crafter.py |
+| 329250-329614 | 329255-329611 | 13940 | utf-8 | 1cfd6dd7b4ed0eaa51fd428f469a4636cab7cb76bd43dc1d1d04f9878e88ec34 | tests/unit/melder/test_package_public_surface.py |
+| 329615-329735 | 329620-329732 | 4837 | utf-8 | 73c225054d7c42a08f3d6389ec056b9b707b57b84f463ead117ebfd4ccf4585b | tests/unit/melder/test_package_version_metadata.py |
+| 329736-330792 | 329741-330789 | 39501 | utf-8 | f46e14f9f5d056d4aa0717d598be72a754dc7298be0983ce86370373a04609f7 | tests/unit/melder/test_system_document_view.py |
+| 330793-331063 | 330798-331060 | 9008 | utf-8 | 623f31086bff640e0ee4c2ee8b6b57ac54c71ab60ecee1a0d471ddcbcd673a48 | tests/unit/melder/test_system_documents.py |
+| 331064-331072 | 331069-331069 | 8 | utf-8 | 0c21a879c732a67910d80988df4919d794f6a070aab610ef865032a28046b021 | tests/unit/melder/utilities/_caching_system_tmp_load_invalid_json/frame-a/root/bundle.json |
+| 331073-331081 | 331078-331078 | 75 | utf-8 | 71358a750e1c6a48a91a8a237be2a4592a967b8e168d8600c7a7e73879796f05 | tests/unit/melder/utilities/_caching_system_tmp_load_non_dict_spell_payloads/frame-a/root/bundle.json |
+| 331082-331090 | 331087-331087 | 82 | utf-8 | 05cd7211423946520168dc27fb815aed29a44500fe65e2ae28726b83c43ca585 | tests/unit/melder/utilities/_caching_system_tmp_load_non_string_spell_id/frame-a/root/bundle.json |
+| 331091-331099 | 331096-331096 | 277 | utf-8 | 6870df15f2e03b4b23d2a3b9d894e6031acb2163262d1ae3a58e29cac860c372 | tests/unit/melder/utilities/_caching_system_tmp_load_sha_mismatch/frame-a/root/bundle.json |
+| 331100-331108 | 331105-331105 | 76 | utf-8 | 053abfe23798f3ac23243bfdd24bc0a78716c530c2daaec494d532fb18fbc5d2 | tests/unit/melder/utilities/_caching_system_tmp_load_wrong_conduit_name/frame-a/root/bundle.json |
+| 331109-331117 | 331114-331114 | 77 | utf-8 | 3925bd1d5e7dfab61962ea95608c727249d2f0bdba11487d93c3dcd8472da596 | tests/unit/melder/utilities/_caching_system_tmp_load_wrong_version/frame-a/root/bundle.json |
+| 331118-331706 | 331123-331703 | 20198 | utf-8 | 9e6301ac10a280df7184ed2da91038d7bb2204dc3999f954cea4ae500fb64d4a | tests/unit/melder/utilities/ai_native_support_tools/test_agent_text_reader.py |
+| 331707-331731 | 331712-331728 | 548 | utf-8 | ce20e2b99e7156a88adf5b43409ee1e7b04f8ac635a8deb168d07c50532a1cf9 | tests/unit/melder/utilities/custom_exceptions/test_dead_reference_error.py |
+| 331732-331756 | 331737-331753 | 555 | utf-8 | c8f895f39ae6e50301e70cf06d94acd77a747b065186beec10000fa43946cd52 | tests/unit/melder/utilities/custom_exceptions/test_empty_error.py |
+| 331757-331788 | 331762-331785 | 845 | utf-8 | 7b4126e6fea54c2d6cd641949ebdae8870d1067a42ef9c32ea508e444fc9cc37 | tests/unit/melder/utilities/custom_exceptions/test_hook_execution_error.py |
+| 331789-331818 | 331794-331815 | 754 | utf-8 | 025641dee8093b92add82d077059cb74995373ed2c40d1fd9cf137003db4083f | tests/unit/melder/utilities/custom_exceptions/test_internal_registration_error.py |
+| 331819-331858 | 331824-331855 | 954 | utf-8 | 1b7adcdd628b4c7246393b6a8593bb3050a068b8e219c7340889946cf0d3572b | tests/unit/melder/utilities/custom_exceptions/test_meld_execution_error.py |
+| 331859-331883 | 331864-331880 | 562 | utf-8 | f826dc541a99d53733c9ddac2fe71d80e2e34e7db5581035d6192d521237a0bf | tests/unit/melder/utilities/custom_exceptions/test_operation_cancelled_error.py |
+| 331884-331915 | 331889-331912 | 872 | utf-8 | 78d64fff03c7af0e343a8830adff4124305c1d25c5b9ea351e1fca7c83f5626c | tests/unit/melder/utilities/custom_exceptions/test_phase_execution_error.py |
+| 331916-331940 | 331921-331937 | 559 | utf-8 | 6555e03348a7d03d9a9768cb7cffc3b05698f7e58992da7be45a86e63b4927de | tests/unit/melder/utilities/custom_exceptions/test_phase_scheduler_error.py |
+| 331941-331970 | 331946-331967 | 789 | utf-8 | 76125992a2c94329dc4463b95652b3bcb26fde99e6f318953dc667280492bf34 | tests/unit/melder/utilities/custom_exceptions/test_phase_timeout_error.py |
+| 331971-331995 | 331976-331992 | 589 | utf-8 | 8697e48bcab7f38a36dabf3a9ac53dfccc392ac990ad501dc6bf3a7872bb8a84 | tests/unit/melder/utilities/custom_exceptions/test_spell_space_scope_error.py |
+| 331996-332329 | 332001-332326 | 13438 | utf-8 | 43a6b13176871dccbb658ed39c0554eab83c34489e35b864ed5f6ad5b6afcd49 | tests/unit/melder/utilities/custom_exceptions/test_spellbook_validation_error.py |
+| 332330-332787 | 332335-332784 | 11480 | utf-8 | f5edd8bcba3c0be16596fc34596a94b0683c935463948f6024f358bfccc478bb | tests/unit/melder/utilities/data_structures/test_abstract_elastic_pool.py |
+| 332788-333038 | 332793-333035 | 6872 | utf-8 | a0fafed9fbe4f2e813f1cc057a42cad0468d4167eea14f4dab03a9f842c4d683 | tests/unit/melder/utilities/data_structures/test_abstract_elastic_pool_multithreaded.py |
+| 333039-333616 | 333044-333613 | 15320 | utf-8 | 2cae91bdab61b15e06121b66145c371dd00044ae4e154191a0e94302a8b0e303 | tests/unit/melder/utilities/data_structures/weak_data_structures/test_weak_concurrent_dict.py |
+| 333617-334016 | 333622-334013 | 9916 | utf-8 | 9f4406a8ae018bc65434f3ea769a2b239b9af27526bd138e8aeea527be0a61fd | tests/unit/melder/utilities/data_structures/weak_data_structures/test_weak_concurrent_list.py |
+| 334017-334462 | 334022-334459 | 11915 | utf-8 | 426c8480d2f6c7d13f483eaec9eda8a77bc876a85b9b39dc7a8e0f4a9ff47031 | tests/unit/melder/utilities/data_structures/weak_data_structures/test_weak_concurrent_set.py |
+| 334463-334752 | 334468-334749 | 6361 | utf-8 | 238920e048f974d9ad6f627369dcf80a70962f13f892e2845565acbccd31d3e9 | tests/unit/melder/utilities/data_structures/weak_data_structures/test_weak_ref_node.py |
+| 334753-334825 | 334758-334822 | 1499 | utf-8 | d3f353fa7c67284dd30bcfec37d8430fcbe9b3a7af90d5229d0ea09e403e3875 | tests/unit/melder/utilities/general_base/test_cleanable.py |
+| 334826-334947 | 334831-334944 | 3656 | utf-8 | aae9bfe3838c0f1fc70af85db7cc94f65527d068c81238e49875af57169f1d7b | tests/unit/melder/utilities/general_base/test_cleanable_cleanup_contexts.py |
+| 334948-335063 | 334953-335060 | 2652 | utf-8 | 581b38c59b4b1a8e212fcf8f6276d0048a66fa295f8c3c3a85d49d84d93edf62 | tests/unit/melder/utilities/general_base/test_isync.py |
+| 335064-335124 | 335069-335121 | 1309 | utf-8 | fb4a0fa97d727493b427241c95ecd4cc21466823df0e64432650a20f10b444b5 | tests/unit/melder/utilities/helpers/test_class_wraps.py |
+| 335125-335235 | 335130-335232 | 3505 | utf-8 | f0fec261158d7f8f501a54bd82aea7f095441e65f49094b7f7456345c6eb2b8c | tests/unit/melder/utilities/helpers/test_general_helpers.py |
+| 335236-335291 | 335241-335288 | 1093 | utf-8 | 1e60e413278694eb509afd4ea9a10ab7a7c2609285e653e069ba353ff212b53e | tests/unit/melder/utilities/helpers/test_id_builder.py |
+| 335292-335342 | 335297-335339 | 1323 | utf-8 | ebfdc982e2621233e0e4eb600c99ef809fe94d8f8b29635bfe022534f14d16c9 | tests/unit/melder/utilities/helpers/test_init_helpers.py |
+| 335343-335713 | 335348-335710 | 13994 | utf-8 | 42eefadd1f0d61dcde9faf523739f1bcb94813998df92999f2726b13db61ab4d | tests/unit/melder/utilities/helpers/test_pack_russian_doll.py |
+| 335714-336196 | 335719-336193 | 17668 | utf-8 | e35ca0f385d95a8725680db2d18b709e75d583e1e93af2c0ef22e2240f07fe07 | tests/unit/melder/utilities/helpers/test_pack_testing.py |
+| 336197-336499 | 336202-336496 | 8531 | utf-8 | 971524af4cf9b20f5bcd5e3ec3a4cdcfcf8b49dbdbe76a17737e617f11754e7a | tests/unit/melder/utilities/helpers/test_package.py |
+| 336500-337146 | 336505-337143 | 21247 | utf-8 | 3c9fa79afddd80a5d990fda7909863d170dafdcd33e7763c2c13dcaf02df6649 | tests/unit/melder/utilities/helpers/test_package_core.py |
+| 337147-337249 | 337152-337246 | 3201 | utf-8 | dc1d97f919ff2668e8110be72f46c743aaffd668d43ec8f65567c74293f08fed | tests/unit/melder/utilities/helpers/test_package_decorators.py |
+| 337250-337347 | 337255-337344 | 3468 | utf-8 | ac62387a62adf32c17f510ae5369e61773612eb8e5e6f9c3edef713a2d084d67 | tests/unit/melder/utilities/helpers/test_package_double_wrap.py |
+| 337348-337408 | 337353-337405 | 1552 | utf-8 | 15ce5bde54bead156f6ab364bbe24a3c9f377b86b2663de6fac5ad55a0ae320d | tests/unit/melder/utilities/helpers/test_package_helper_bug266_269_regression.py |
+| 337409-337666 | 337414-337663 | 8559 | utf-8 | a24fef661e8ca966c2f1c26b8d49347281bbc9fc5fbc4cde098a99e323399f19 | tests/unit/melder/utilities/helpers/test_package_wrapping.py |
+| 337667-337895 | 337672-337892 | 8490 | utf-8 | 260c51e3610bb2f885c4dfacf7f1c9b74c8b58bd6d55f7361c1aff6ca48e45d6 | tests/unit/melder/utilities/helpers/test_signature_reflection.py |
+| 337896-337948 | 337901-337945 | 1526 | utf-8-bom | d06baca86cd616a4ab9cb3917db67b362b5165f4b468def75be84416deb98db1 | tests/unit/melder/utilities/interfaces/test_interface_inheritance.py |
+| 337949-338164 | 337954-338161 | 7127 | utf-8 | 52e3a55478a3682fe7189d7f2f32b6b4bc26aca361fbff78244a58dd80a24836 | tests/unit/melder/utilities/logger/test_safe_logger.py |
+| 338165-338347 | 338170-338344 | 5860 | utf-8 | 212aa41b01e0ebbd73ec93584da3774375fbcc79bcf32d1ccd378fe85d45c21f | tests/unit/melder/utilities/logger/test_safe_logger_lifecycle_and_exc_info_regression.py |
+| 338348-338418 | 338353-338415 | 1711 | utf-8 | 44e53efe1b20a17ec219682c1e2f886d1d49b2c178d59f53f80664fb964e5157 | tests/unit/melder/utilities/synchronization/test_cancellation_event_signal.py |
+| 338419-338722 | 338424-338719 | 9220 | utf-8 | 857fc03a4fdb8f1c5d086204e32d5079622ba36f698014be6f3d8becf6ed74db | tests/unit/melder/utilities/synchronization/test_counter_switch.py |
+| 338723-338799 | 338728-338796 | 2675 | utf-8 | baabc9dd0bcd4552cbf65f196fd34bdbedd317a82c8cf82b28f6674c163bab68 | tests/unit/melder/utilities/synchronization/test_counter_switch_cleanup_waiter_release_regression.py |
+| 338800-339322 | 338805-339319 | 15645 | utf-8 | 1c53bb13fe20fb9e0c76af5b223615f604804d919ab183a2104b0bf9691319fd | tests/unit/melder/utilities/synchronization/test_creation_gate.py |
+| 339323-339995 | 339328-339992 | 20986 | utf-8 | 9bfcb06f34d84d312e2515b92667dde639a21f49bd42c59281dd9f99eef3d225 | tests/unit/melder/utilities/synchronization/test_creation_gate_controller.py |
+| 339996-340102 | 340001-340099 | 2455 | utf-8 | 299b5c7efb6c47fab55a501237c8e2529d16006accfa20c8093fdc978a419594 | tests/unit/melder/utilities/synchronization/test_fast_switch.py |
+| 340103-340740 | 340108-340737 | 18322 | utf-8 | bafd4b8d744ebe04e22d3d0bc22ffa26fe203c99e2058be5656f1b889bdcc5e4 | tests/unit/melder/utilities/synchronization/test_load_gate.py |
+| 340741-340859 | 340746-340856 | 3283 | utf-8 | 65abb73fdaff11bd07964ae126ec35fd68b1dd1dccfe940329270243211b0dc9 | tests/unit/melder/utilities/synchronization/test_phase_latch.py |
+| 340860-341496 | 340865-341493 | 20779 | utf-8 | 34ad3f2d4b1496e5560f7f83445b1a961e451bbd4a444ec5ef88c5f1c4747024 | tests/unit/melder/utilities/synchronization/test_phase_scheduler.py |
+| 341497-341713 | 341502-341710 | 5685 | utf-8 | 41e3a3cc3632768507b16bf71c51a9fc0d62fbf581986da077b64623f099fd08 | tests/unit/melder/utilities/synchronization/test_safeguard.py |
+| 341714-342008 | 341719-342005 | 6215 | utf-8 | a4114f9b9ab0efa3e44f29be130f38de8a1d7ccbf30c09d578ab2c35b6146745 | tests/unit/melder/utilities/synchronization/test_sync_weak_ref.py |
+| 342009-342191 | 342014-342188 | 4233 | utf-8 | 4f47375d3210afb6adf4ee7a511763325de7333648ac91a5b289e4f045d98193 | tests/unit/melder/utilities/synchronization/test_ticket_flag.py |
+| 342192-342457 | 342197-342454 | 7797 | utf-8 | 7303ba0f3ee5874bde2739f476dd9c6a518b4590132859b4b961c428be2212cf | tests/unit/melder/utilities/synchronization/test_unit_of_work.py |
+| 342458-343207 | 342463-343204 | 27512 | utf-8 | 3b931efaa3b7c355201876f677db80c9263d1fd3a50a0e264b88722b4ed805d9 | tests/unit/melder/utilities/test_caching_system.py |
+| 343208-343580 | 343213-343577 | 12134 | utf-8 | 9d69a5229354658b789e4d678559fa6ef1ddecf8dcfe7e1c06b6adb02df2c109 | tests/unit/melder/utilities/test_protocol_crafter.py |

@@ -1,4 +1,4 @@
-# Melder 0.2.8224
+# Melder 0.2.8225
 
 **Unreleased**
 
@@ -427,8 +427,8 @@ What an annotation selects now follows from what the annotation is:
 - `list[...]` gathers the group the annotation's kind names: every spell of the class, every implementer of the
   Protocol, or - for a string - every spell whose frame key is that name.
 
-The binding records what its frame is: `Spell.spellframe_kind` (`SpellframeKind.none` / `category` /
-`contract`, exported at the package root) and `Spell.implemented_protocols` (the Protocol it was checked
+The binding records what its frame is: `Spell.spellframe_kind` (`none`, `category` or `contract`, which bind
+sets from the frame you pass; it is not exported) and `Spell.implemented_protocols` (the Protocol it was checked
 against). The crystallizer records them too (record version 4.1.0; 4.0.0 records stay readable), so a restored
 or grafted world rebinds a Protocol frame as the Protocol, not as a same-named category; when the Protocol
 cannot be imported at restore the spell is bound under the recorded name as a category and the report files a
@@ -549,4 +549,4 @@ Code that matched the old error text (`PhaseExecutionError` / "multiple DI candi
 - The internal-bind guard manifest holds 622 entries at 0.2.8224: `AmbiguousProviderStrategy` joined.
 - The packaged system documents describe the AMBIGUOUS_INPUT socket, the strategy and the message shape; the
   README's `SpellMap` paragraph names the report.
-- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8224.
+- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8225.

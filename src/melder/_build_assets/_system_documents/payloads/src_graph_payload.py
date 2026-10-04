@@ -15,7 +15,7 @@ Regenerate with:
 
 DOCUMENT_FILE = 'src_graph.md'
 LINE_COUNT = 27705
-CONTENT_SHA256 = '4a2f272034139d886cf237314fe3a134652301cd066851beb046c67ef541b25f'
+CONTENT_SHA256 = '6bbf2da9dbeba4c825a5d4506ca19ae7465aaa1dbe19ab591f636e65bd8d4a9c'
 
 TEXT = """# src_graph
 
@@ -189,7 +189,7 @@ descriptors and reassemble.
 
 ## src/melder/__init__.py
 
-- source_sha256: `89a5fc70e608c2108544a51dad3e31d389b6c876aea9108ea5c7f7eb1fc2a4fe`
+- source_sha256: `7b3a95753a785e242f26ca0b2a61fffcdc44ca85b53ecb78e6cd4f47535d29b0`
 - nodes: 1
 
 ### Nodes
@@ -247,7 +247,7 @@ descriptors and reassemble.
 
 ## src/melder/__version__.py
 
-- source_sha256: `4913797ec30ba49bc32605b910d930b56aed195a387b3b41f84a2485c6418ae6`
+- source_sha256: `a5823a03d4abdb43b5cab8ee4276f505402dfd01ceeb99c23f581343d3c32af4`
 - nodes: 1
 
 ### Nodes
@@ -493,7 +493,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/graph_adjacency_manifest.py
 
-- source_sha256: `0f7bfe9748d65a3c78c8a82f25282e0eeae22cda725eb6ae4a068b2aff5ee07e`
+- source_sha256: `b9e8097877f0c1b8ae830198fb2cb4d09a759899fa408ebf32ebd8382db1c23a`
 - nodes: 1
 
 ### Nodes
@@ -527,7 +527,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_manifest.py
 
-- source_sha256: `9a363830fbb4a39da7fae63bbf8312f76259e035a15fa2d072363960da15e6ce`
+- source_sha256: `8ba4e95cc73f43afb6f84d980216e65e62dd8450eb1fc6c33552567d4964d21c`
 - nodes: 1
 
 ### Nodes
@@ -581,7 +581,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_graph_payload.py
 
-- source_sha256: `8727a563c4ed4cc82a06b4d2c1edee4bce7f60d66f70bffe4f6bca225c57306e`
+- source_sha256: `3b8975c48535c564075f93269d7b4ef09c369de16541bb6de1c2a1aafee07a27`
 - nodes: 1
 
 ### Nodes

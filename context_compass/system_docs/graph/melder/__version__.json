@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/__version__.py",
- "source_sha256": "4913797ec30ba49bc32605b910d930b56aed195a387b3b41f84a2485c6418ae6",
+ "source_sha256": "a5823a03d4abdb43b5cab8ee4276f505402dfd01ceeb99c23f581343d3c32af4",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.__version__": {

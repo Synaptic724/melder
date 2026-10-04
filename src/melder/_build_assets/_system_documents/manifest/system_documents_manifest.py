@@ -19,8 +19,8 @@ Regenerate with:
 """
 
 MANIFEST_VERSION = "2.0.0"
-BUILT_FOR_VERSION = "0.2.8224"
-SOURCE_SHA256 = "57fe58bd50fdc30e49896cc484795bb775688bed38601be135a92ba6b58dbff1"
+BUILT_FOR_VERSION = "0.2.8225"
+SOURCE_SHA256 = "9799204822c6c71d0b1fdfb2bcaa615c10132ca1149f5fe9b87461620dd967aa"
 DOCUMENT_COUNT = 4
 
 READ_ORDER = (
@@ -65,7 +65,7 @@ DOCUMENTS = {
         'document_file': 'src_graph.md',
         'payload_module': 'src_graph_payload',
         'line_count': 27705,
-        'content_sha256': '4a2f272034139d886cf237314fe3a134652301cd066851beb046c67ef541b25f',
+        'content_sha256': '6bbf2da9dbeba4c825a5d4506ca19ae7465aaa1dbe19ab591f636e65bd8d4a9c',
     },
     '__graph_details__': {
         'name': '__graph_details__',
@@ -77,6 +77,6 @@ DOCUMENTS = {
         'document_file': 'src_graph.md',
         'payload_module': 'src_graph_payload',
         'line_count': 27705,
-        'content_sha256': '4a2f272034139d886cf237314fe3a134652301cd066851beb046c67ef541b25f',
+        'content_sha256': '6bbf2da9dbeba4c825a5d4506ca19ae7465aaa1dbe19ab591f636e65bd8d4a9c',
     },
 }

@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: src
-SOURCE FINGERPRINT: ec1bb924e64eb21b4c8898a81e08ee69b7b9ba080a9fa8e27c419ae1792e14d5
+SOURCE FINGERPRINT: 886ee6b0bd915f9703116f223d7cf62219c20327306e6cd6d38a336bb5c73c34
 FILE COUNT: 579
 
 ================================================================================
@@ -270,7 +270,7 @@ END FILE: src/melder/__graph_network__.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/__init__.py
-CONTENT SHA256: 04cd10bbb04451c06b32a9e17ca37d5e145f0ce2c3a829404e0c985da42327c3
+CONTENT SHA256: bdddd92942819a98491c2d579b7b33f9aa829c8d14ea10fed9067fea83ec23b1
 SOURCE ENCODING: utf-8
 ================================================================================
 
@@ -362,7 +362,6 @@ from melder.aether.spellbook.configuration.spellbook_configuration import (
 )
 from melder.aether.spellbook.configuration.system_state import SystemState
 from melder.aether.spellbook.existence.existence import Existence
-from melder.aether.spellbook.spellframe_kind.spellframe_kind import SpellframeKind
 from melder.aether.spellbook.spell import Spell
 from melder.aether.spellbook.spellbinder import SpellBinder
 from melder.aether.spellbook.spellbook import Spellbook
@@ -521,7 +520,6 @@ __all__ = [
     "SpellContract",
     "SpellIndex",
     "SpellMap",
-    "SpellframeKind",
     "SpellSpace",
     "SpellSpaceScopeError",
     "Spellbook",
@@ -601,7 +599,7 @@ END FILE: src/melder/__melder_cache__/__melder_cache__.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/__version__.py
-CONTENT SHA256: 5d3dedce9c7642e9d2ca0dd7e48569f8735cb45e45250e2a010d0f0608bb4009
+CONTENT SHA256: f156dda052cb7738ce42de2784aba5b424127dcc6a37b5bba20d7482521a093b
 SOURCE ENCODING: utf-8
 ================================================================================
 
@@ -615,7 +613,7 @@ Contract:
   negotiation or runtime compatibility checks by itself.
 """
 
-__version__ = "0.2.8224"
+__version__ = "0.2.8225"
 ================================================================================
 END FILE: src/melder/__version__.py
 ================================================================================

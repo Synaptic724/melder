@@ -169,6 +169,7 @@ Message alert rules
 | defect_hunting_fixes_1 | in_progress | implementation | opencode | muse_0 | none | Re-slice each target fresh then repair findings 1-8 in order. | Corrected blocks with verified ranges; index check clean. | Batch repaired with gates passing or owner redirects scope. | tickets/tasks/2026-09-27_sweep_fixes_batch_1_task.md | 2026-09-27T16:07:16Z | REQUIRED |
 | shallow_thread_scaling_ci | review | handoff | claude | melder_1 | none | Owner: stage both sides of the rename and the new workflow, run the hosted three-OS job, and accept or redirect. | The thread-scaling benchmark runs on dev-to-preprod PRs beside the two gauntlets and must succeed for merge-ready. | Contracts run or reported Not run, bundles current, and the owner accepts or redirects. | tickets/tasks/2026-10-04_add_shallow_thread_scaling_to_preprod_benchmarks_task.md | 2026-10-04T12:52:00Z | REQUIRED |
 | meldercache_suffix | review | handoff | claude | melder_1 | none | Owner: accept or redirect the .meldercache rename (Windows tiers are the owner's); then archive the patch and close. | Melder names its cache bundles .meldercache; old .melc files are inert. | Tests run or reported Not run, assets/graph/bundles current, and the owner accepts or redirects. | tickets/tasks/2026-10-04_rename_cache_suffix_to_meldercache_task.md | 2026-10-04T13:26:39Z | REQUIRED |
+| preprod_ci_docs_and_bundles | review | handoff | claude | melder_1 | none | Owner: commit everything (incl. the four ignore-file changes) and push; accept or redirect. | The dev-to-preprod docs and llm_support checks pass once the owner commits and pushes. | Docs tests pass here, llm_support --check OK, owner pushes and accepts. | tickets/tasks/2026-10-04_fix_preprod_ci_docs_api_and_bundle_drift_task.md | 2026-10-04T20:09:37Z | REQUIRED |
 <!-- END USER-DEFINED: active_items -->
 
 ## Recently Closed Anchors
@@ -201,6 +202,8 @@ Message alert rules
   tickets/tasks/2026-10-04_add_shallow_thread_scaling_to_preprod_benchmarks_task.md.
 - meldercache_suffix: SWITCH_TRIGGER is the owner's acceptance of the `.meldercache` rename or an owner
   redirect. RESUME_HIERARCHY: tickets/tasks/2026-10-04_rename_cache_suffix_to_meldercache_task.md.
+- preprod_ci_docs_and_bundles: SWITCH_TRIGGER is a green dev-to-preprod run after the owner's push, or
+  an owner redirect. RESUME_HIERARCHY: tickets/tasks/2026-10-04_fix_preprod_ci_docs_api_and_bundle_drift_task.md.
 ### Notch notice (fable_1, 2026-10-04)
 - fable_1 landed 0.2.8224 (ambiguous providers reported through Phase 4) and, before it, 0.2.8222 (annotation
   matching by kind; caching_system.py generation 20 `annotation_kind_matching`).
@@ -208,6 +211,7 @@ Message alert rules
 ### Notch notice (melder_1, 2026-10-04)
 - melder_1 landed 0.2.8223 (cache bundles renamed `.melc` -> `.meldercache`; no cache generation change).
   Notch above it if you land after.
+- melder_1 landed 0.2.8225 (SpellframeKind off the package root; owner ruling). Notch above it if you land after.
 ### Device VM git hazard (melder_2, 2026-09-26)
 - The connected folder refuses deletes, so any git command that refreshes the index from the device VM
   (plain `git status`, `git diff`) can leave an empty .git/index.lock that blocks the owner's commits.
