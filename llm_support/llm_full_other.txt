@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: other
-SOURCE FINGERPRINT: 0d9dee99fdfa649e2d94f778d0c14977970ab5c78f34ff606a37c2eb5f154936
+SOURCE FINGERPRINT: ce57bdefc2613c1103fa5fe38134701ac2b60bbac5162925b06ea791e0a30c7b
 FILE COUNT: 386
 
 ================================================================================
@@ -64,7 +64,7 @@ END FILE: .gitattributes
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/BRANCH_WORKFLOW.md
-CONTENT SHA256: 32e2df18c3c140011258dc9a9ddef6c6cc32c26964bdf8ca0beead2edd9624e8
+CONTENT SHA256: dee8ac635049d07474ef90e3e2b9f69ec9b91699575b83b4ca7d23976fccd1c6
 SOURCE ENCODING: utf-8
 ================================================================================
 # Branch CI and release workflow
@@ -216,6 +216,12 @@ RC installation probes use `freethreaded: true` with the discovered exact Python
 The test driver verifies free-threading support and GIL-off state before and after pytest;
 the installed-package probe also verifies GIL-off state. Discovery, asset and policy tooling
 may use ordinary Python because those jobs do not qualify Melder's runtime behavior.
+
+Single-version helper jobs (hygiene, assets, docs, source qualification, publication and RC
+bookkeeping) request `python-version: "3.14"` with `check-latest: true`, so they run the newest
+stable 3.14 patch instead of whatever patch the runner image cached. The three speed tests are
+not part of the matrix: each runs on one pinned Python (3.14.7), never across versions, and only
+on dev-to-preprod pull requests.
 
 The discovery helper refuses empty/malformed catalog data, missing support for the declared
 floor, and a selected release lacking free-threaded assets on a required platform. Setup errors
@@ -2511,7 +2517,7 @@ END FILE: .github/workflows/build-distributions.yml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/workflows/build-repo-assets.yml
-CONTENT SHA256: fd3639e1913886e3eb8438a5178a2fca95544551d169fbe2d5c05cfaecc508b5
+CONTENT SHA256: d4766691abed31eca72527db77b722202ba98f5c71541b9dff3b2b8502f4b1ba
 SOURCE ENCODING: utf-8
 ================================================================================
 name: build-repo-assets
@@ -2536,6 +2542,7 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.14"
+          check-latest: true
       - name: List repository asset inputs
         run: python llm_support/_builder.py --list
       - name: Verify committed repository assets
@@ -2551,7 +2558,7 @@ END FILE: .github/workflows/build-repo-assets.yml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/workflows/build-src-assets.yml
-CONTENT SHA256: 1d7842f5108929fa1c354339b44061b151caf08a34442ad7576bd8eb29ae47ec
+CONTENT SHA256: 8bfa8a021ce29a5e965479079c3947610bf8aab946b8b11177d9e6cc18944b70
 SOURCE ENCODING: utf-8
 ================================================================================
 name: build-src-assets
@@ -2581,6 +2588,7 @@ jobs:
         with:
           # Builders parse source without importing the Melder runtime.
           python-version: "3.14"
+          check-latest: true
       - name: List discovered build assets
         run: python src/melder/_build_assets/_build_asset_runner.py --list
       - name: Verify committed source assets
@@ -2596,7 +2604,7 @@ END FILE: .github/workflows/build-src-assets.yml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/workflows/ci.yml
-CONTENT SHA256: 7bef9e9926ae6eb998fa5e4f5b66aeee0595408428ca158be1fcbaab43655965
+CONTENT SHA256: 0eadfd441ade641c315c6c9f0e847583a42d5aee0781d0e8fe9e334b08dc4db2
 SOURCE ENCODING: utf-8
 ================================================================================
 name: CI
@@ -2636,6 +2644,7 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.14"
+          check-latest: true
       - name: Validate the branch route
         id: route
         run: python .github/scripts/ci_policy.py branch
@@ -2649,6 +2658,7 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.14"
+          check-latest: true
       - run: python .github/scripts/ci_policy.py hygiene
 
   source-assets:
@@ -2725,6 +2735,7 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.14"
+          check-latest: true
       - name: Require every mandatory check to succeed
         env:
           CI_JOB_RESULTS: ${{ toJSON(needs) }}
@@ -2762,7 +2773,7 @@ END FILE: .github/workflows/ci.yml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/workflows/docs.yml
-CONTENT SHA256: b9467d5210887f512e4cae6aa6f2cd14bfdf1a3cfaa8d0501effd574c6083259
+CONTENT SHA256: b0a63c70ff18a1f5680eb6711d4594b6159d204cc9298947268409e29d2ec8f7
 SOURCE ENCODING: utf-8
 ================================================================================
 name: Documentation
@@ -2787,6 +2798,7 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.14"
+          check-latest: true
           cache: pip
           cache-dependency-path: docs/requirements.lock
       - name: Install the locked documentation environment
@@ -3008,7 +3020,7 @@ END FILE: .github/workflows/persistent-runtime-gauntlet.yml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/workflows/python-publish.yml
-CONTENT SHA256: 193f9c846b4e978c621490c6520f9da356b2261440f98190b25e95a027e85b41
+CONTENT SHA256: f854488b05d657d45bb79ca99d73225f0224d4195ab7f04f53af791594eaed20
 SOURCE ENCODING: utf-8
 ================================================================================
 name: Publish Python Package
@@ -3045,6 +3057,7 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.14"
+          check-latest: true
       - name: Authorize the selected final release
         run: python .github/scripts/ci_policy.py release-head
       - name: Require successful TestPyPI qualification of the candidate source
@@ -3062,6 +3075,7 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.14"
+          check-latest: true
       - run: python .github/scripts/ci_policy.py hygiene
 
   source-assets:
@@ -3107,6 +3121,7 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.14"
+          check-latest: true
       - name: Retrieve this run's verified distributions
         uses: actions/download-artifact@v8
         with:
@@ -3361,7 +3376,7 @@ END FILE: .github/workflows/real-world-gauntlet.yml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/workflows/release-candidate.yml
-CONTENT SHA256: 3071377a9acefeccda8d3d7f03edddeb8feaa5e038454d276d2b6149eb5b6c6b
+CONTENT SHA256: 60fb3fe3bf41f46d34983b82676725f119cc357186ea8baee0f7866b31608c56
 SOURCE ENCODING: utf-8
 ================================================================================
 name: Release candidate
@@ -3392,6 +3407,7 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.14"
+          check-latest: true
       - run: python .github/scripts/ci_policy.py candidate-head
       - name: Discover every supported stable no-GIL minor
         id: runtimes
@@ -3433,6 +3449,7 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.14"
+          check-latest: true
       - uses: actions/download-artifact@v8
         with:
           name: candidate-dists-${{ github.run_id }}-${{ github.run_attempt }}
@@ -3512,6 +3529,7 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.14"
+          check-latest: true
       - name: Require every candidate stage to have succeeded
         env:
           CI_JOB_RESULTS: ${{ toJSON(needs) }}
@@ -3913,7 +3931,7 @@ END FILE: .github/workflows/test-runtime.yml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/workflows/verify-source-qualification.yml
-CONTENT SHA256: d36cc5a8e7e123ad4007e732cfa51c123e12d4bec92880d1a66002dd08959998
+CONTENT SHA256: fa63749801aa235fc08c842477d63206446f69d6a976615675edc3f98911f093
 SOURCE ENCODING: utf-8
 ================================================================================
 name: Verify source qualification
@@ -3936,6 +3954,7 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.14"
+          check-latest: true
       - name: Select exact successful full CI evidence
         id: source
         env:
@@ -73743,10 +73762,10 @@ END FILE: release_docs/0.2.82.md
 ================================================================================
 ================================================================================
 BEGIN FILE: release_docs/next_version_release.md
-CONTENT SHA256: 5a9b398450e58f1bf7d9f5c7fdb94333777f9d6a98379b37c42b7729aab4af86
+CONTENT SHA256: 288bfdc7df43a2ebc95f9f037a9dcbce2f59985fa24a23205f696234c44bd845
 SOURCE ENCODING: utf-8
 ================================================================================
-# Melder 0.2.8225
+# Melder 0.2.8226
 
 **Unreleased**
 
@@ -74240,6 +74259,38 @@ Under the hood Phase 3 records the parameter as an `AMBIGUOUS_INPUT` socket and 
 Code that matched the old error text (`PhaseExecutionError` / "multiple DI candidates") should expect
 `SpellbookValidationError` with code `AMBIGUOUS_PROVIDER`. No cache generation moves.
 
+## Fixed: a SpellMap or SpellContract binding name matches the way `bind` and `meld` do
+
+`bind(..., binding_name="ScanProfile")` keeps the name as written and finds it case-insensitively, but `SpellMap`
+lowercased the name it was given and Phase 3 compared the two raw strings. A SpellMap default naming a binding with a
+capital letter - the selection the ambiguous-provider report above asks for - therefore failed with "SpellMap default
+could not be resolved":
+
+```python
+book.bind(spell=ScanProfile, existence="unique", spellframe="agents", binding_name="ScanProfile")
+book.bind(spell=ScanProfile, existence="unique", spellframe="artificial_intelligence_tools",
+          binding_name="ScanProfile")
+
+class MCPScanner:
+    def __init__(self, profile: ScanProfile = SpellMap(spellframe="agents", binding_name="ScanProfile")):
+        self.profile = profile
+```
+
+`SpellMap` and `SpellContract` now keep `binding_name` exactly as you wrote it, as `bind` does, and a SpellMap default
+is matched the way `meld(spellframe=..., binding_name=...)` is: "ScanProfile", "scanprofile" and "SCANPROFILE" select
+the same provider, and so do "agents" and "Agents" for a string category (a Protocol frame still matches only itself).
+`canonical_key` is unchanged and still lowercase. SpellContract already matched case-insensitively; only the value it
+shows changes.
+
+What else changes:
+
+- `SpellMap(..., binding_name="Primary").binding_name` is now `"Primary"` (it was `"primary"`); read
+  `canonical_key[1]` if you need the normalized name.
+- A non-string `binding_name` raises `TypeError` when the descriptor is created (it was an `AttributeError`).
+- The Phase-4 warning `SPELLMAP_BINDING_NAME_NOT_NORMALIZED`, which told you to lowercase the name, is gone.
+- A class whose constructor default carries a SpellMap or SpellContract with a mixed-case binding name gets a new
+  spell id once, because the id includes the default's text. No cache generation moves.
+
 ## Packaging and documentation
 
 - The internal-bind guard manifest holds 620 entries at 0.2.8216 (619 at 0.2.8215): `ManyDisposalBucket`, the
@@ -74297,7 +74348,9 @@ Code that matched the old error text (`PhaseExecutionError` / "multiple DI candi
 - The internal-bind guard manifest holds 622 entries at 0.2.8224: `AmbiguousProviderStrategy` joined.
 - The packaged system documents describe the AMBIGUOUS_INPUT socket, the strategy and the message shape; the
   README's `SpellMap` paragraph names the report.
-- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8225.
+- The packaged system documents describe the descriptors' binding-name rule (kept as written, matched by the
+  normalized key) and Phase 3's SpellMap matching; the descriptor code-map extents are remeasured.
+- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8226.
 ================================================================================
 END FILE: release_docs/next_version_release.md
 ================================================================================

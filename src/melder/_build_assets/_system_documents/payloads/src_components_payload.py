@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_components.md'
-LINE_COUNT = 10758
-CONTENT_SHA256 = 'e05f607a133af7b89a41f2dccd4af3de35e96d20a87cae5e75ad99e163f2ae8c'
+LINE_COUNT = 10771
+CONTENT_SHA256 = 'e2482a7229f9e0a7609016bfc9413331cc404a74b08b36cd9da7662b3c1aaafa'
 
 TEXT = """# Src Components (C3/C2/C1)
 
@@ -917,13 +917,16 @@ Concurrency/Threading:
 
 Invariants/Guarantees:
 - At least one of `spell` or `spellframe` must be provided.
-- Binding names are normalized for case-insensitive matching and default to `__default__` when omitted.
+- Binding names are kept as written, as Bind keeps a spell's (0.2.8226; the descriptors lowercased them
+  before); `canonical_key` carries the normalized form and Phase 3 compares normalized names, so matching is
+  case-insensitive, and a name that is None or empty means `__default__`.
 - SpellMap and SpellContract preserve `override` payloads as provided; when `None`, no override is attached.
   The values are read live at hydration (2026-09-26): a descriptor mutated after conjure is read as it is.
 - SpellContract is intended for dynamic mode usage.
 
 Failure Modes:
 - ValueError when both `spell` and `spellframe` are None.
+- TypeError when `binding_name` is neither a string nor None (0.2.8226).
 - `ContractProviderPresenceStrategy.validate` emits five codes:
   `CONTRACT_IN_AUTOMATIC_MODE` for SpellContract sockets in automatic mode,
   `SPELL_CONTRACT_INVALID` and `SPELL_CONTRACT_AMBIGUOUS` for invalid or
@@ -5600,6 +5603,7 @@ Purpose:
 - Declare explicit DI targets with optional override payloads.
 Contract/Interface:
 - `SpellMap.lookup_triplet` and `SpellMap.canonical_key`.
+- `binding_name` is kept as written (0.2.8226); `canonical_key` normalizes it and Phase 3 matches by that key.
 - `SpellMap(spell=None, *, spellframe=None, binding_name=None, override=None)`; `override` was
   `spell_override` until 2026-09-26 and its values may be any object, bound live at meld.
 Data Structures:
@@ -5615,6 +5619,7 @@ Purpose:
 - Describe the late-bound contract socket a conduit link satisfies.
 Contract/Interface:
 - `SpellContract.lookup_triplet` and `canonical_key`.
+- `binding_name` is kept as written (0.2.8226); every contract match reads `canonical_key`, which normalizes it.
 - `SpellContract(spell=None, *, spellframe=None, binding_name=None, override=None)`; `override` was
   `spell_override` until 2026-09-26 and its values may be any object, bound live at meld.
 - `SPELL_CONTRACT` is the contract-socket `ParameterDIShape`.
@@ -7164,7 +7169,9 @@ These flows describe concrete method sequences for core behaviors.
 ### Flow: SpellMap Default Resolution (Phase 3)
 1. SpellRequirementsFinder classifies a parameter default `SpellMap` as `ParameterDIShape.SPELLMAP_DEFAULT`.
 2. `CompilerPhase3._resolve_spellmap_default(...)` prefers an explicit `spell`
-   target, then frame+binding lookup by iterating Spellbook `_spell_id_pool`.
+   target, then frame+binding lookup by iterating Spellbook `_spell_id_pool`. Binding names compare by
+   their normalized keys and string spellframes through `_spellmap_frame_matches` (normalized frame keys;
+   class and Protocol frames by identity), the address rule bind and meld use (0.2.8226).
 3. Zero candidates raises RuntimeError; multiple candidates raise RuntimeError with disambiguation guidance.
 4. The single resolved spell becomes the dependency target in the local resolution frame.
 5. A SpellMap carrying an `override` payload (2026-09-26): phase 9 records the payload against that
@@ -7407,14 +7414,14 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/conduit/meld/contracts/spell_map.py`
   start_line: 1
-  end_line: 351
-  loc: 351
-  verified_at: 2026-09-26T20:10:34Z
+  end_line: 359
+  loc: 359
+  verified_at: 2026-10-04T21:25:32Z
 - path: `src/melder/aether/conduit/meld/contracts/spell_contract.py`
   start_line: 1
-  end_line: 344
-  loc: 344
-  verified_at: 2026-09-26T20:10:34Z
+  end_line: 351
+  loc: 351
+  verified_at: 2026-10-04T21:25:32Z
 - path: `src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/parameter_di_shape.py`
   start_line: 1
   end_line: 70
@@ -10369,6 +10376,12 @@ Companion documents:
   component and code-description patches are inputs to this document while a lane is open.
 
 ## Context / Handoff Summary
+
+2026-10-04 descriptor binding names (0.2.8226): the DI Descriptors entry, both descriptor subcomponents and the
+Phase-3 SpellMap flow state the rule - SpellMap and SpellContract keep `binding_name` as written, as Bind does,
+and Phase 3 matches binding names and string spellframes by their normalized keys; TypeError for a non-string
+name; the lowercase-advice warning SPELLMAP_BINDING_NAME_NOT_NORMALIZED is retired. The code map's descriptor
+extents are remeasured.
 
 2026-10-04 ambiguous providers reported through Phase 4 (0.2.8224): the SpellCompiler entry carries the AMBIGUOUS_INPUT
 socket, the new strategy and the message shape; the Spell Validation Strategies entry lists the strategy and its

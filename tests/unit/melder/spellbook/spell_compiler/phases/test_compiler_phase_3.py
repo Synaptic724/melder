@@ -8,6 +8,7 @@ from typing import Any, Optional, Protocol, Union
 import pytest
 
 import melder.aether.spellbook.spell_compiler.phases.compiler_phase_3 as compiler_phase_3_module
+from melder.aether.conduit.meld.contracts.spell_map import SpellMap
 from melder.aether.spellbook.spell_compiler.phases.compiler_phase_3 import (
     CompilerPhase3,
 )
@@ -1087,6 +1088,80 @@ def test_resolve_spellmap_default_raises_on_ambiguous_match() -> None:
 
     with pytest.raises(RuntimeError, match="resolved to multiple candidates"):
         phase._resolve_spellmap_default(root_spell, spellbook, dep)
+
+
+def _scan_profile_pool(spell_obj: Any) -> tuple[Any, Any, Any]:
+    """The reported pool: one ScanProfile under "agents", its namesake under another category."""
+    agents = _make_spell_stub("agents", spell_obj=spell_obj, spellframe="agents", spell_name="ScanProfile",
+                              binding_name="ScanProfile")
+    tools = _make_spell_stub("tools", spell_obj=spell_obj, spellframe="artificial_intelligence_tools",
+                             spell_name="ScanProfile", binding_name="ScanProfile")
+    return agents, tools, SimpleNamespace(_spell_id_pool={"agents": agents, "tools": tools})
+
+
+@pytest.mark.parametrize(("frame", "written"), [
+    ("agents", "ScanProfile"), ("agents", "scanprofile"), ("Agents", "SCANPROFILE"),
+])
+def test_resolve_spellmap_default_capitalized_binding_name_no_longer_fails_to_resolve(frame: str,
+                                                                                      written: str) -> None:
+    """
+    Regression (0.2.8226): a frame-only SpellMap keeps the binding name as written, as Bind does, and Phase 3
+    compares names and string categories by their normalized keys, so every spelling selects the provider
+    bound as ("agents", "ScanProfile") and never its namesake. Before, the SpellMap stored "scanprofile" and
+    was compared with the raw "ScanProfile", raising "SpellMap default could not be resolved".
+    """
+    agents, _tools, spellbook = _scan_profile_pool(object())
+    root_spell = _make_spell_stub("root", spell_obj=object(), spellframe=None, spell_name="MCPScanner")
+    dep = _make_dependency(spell_id="root", param_name="profile", position=0,
+                           di_shape=ParameterDIShape.SPELLMAP_DEFAULT,
+                           spellmap_default=SpellMap(spellframe=frame, binding_name=written))
+    resolved = CompilerPhase3()._resolve_spellmap_default(root_spell, spellbook, dep)
+    assert list(resolved.values()) == [agents]
+
+
+def test_resolve_spellmap_default_explicit_spell_matches_a_capitalized_binding_name() -> None:
+    """The explicit-spell form filters frame and binding name by the same normalized keys."""
+    provider = object()
+    agents, _tools, spellbook = _scan_profile_pool(provider)
+    root_spell = _make_spell_stub("root", spell_obj=object(), spellframe=None, spell_name="MCPScanner")
+    dep = _make_dependency(spell_id="root", param_name="profile", position=0,
+                           di_shape=ParameterDIShape.SPELLMAP_DEFAULT,
+                           spellmap_default=SpellMap(provider, spellframe="AGENTS", binding_name="ScanProfile"))
+    resolved = CompilerPhase3()._resolve_spellmap_default(root_spell, spellbook, dep)
+    assert list(resolved.values()) == [agents]
+
+
+@pytest.mark.parametrize("written", [None, ""])
+def test_resolve_spellmap_default_none_and_empty_binding_name_select_the_default_binding(written: Any) -> None:
+    """None and "" both name the default binding, as in the address key: a named sibling is not selected."""
+    default = _make_spell_stub("default", spell_obj=object(), spellframe="agents", spell_name="ScanProfile")
+    named = _make_spell_stub("named", spell_obj=object(), spellframe="agents", spell_name="ScanProfile",
+                             binding_name="ScanProfile")
+    root_spell = _make_spell_stub("root", spell_obj=object(), spellframe=None, spell_name="MCPScanner")
+    dep = _make_dependency(spell_id="root", param_name="profile", position=0,
+                           di_shape=ParameterDIShape.SPELLMAP_DEFAULT,
+                           spellmap_default=SpellMap(spellframe="agents", binding_name=written))
+    spellbook = SimpleNamespace(_spell_id_pool={"default": default, "named": named})
+    resolved = CompilerPhase3()._resolve_spellmap_default(root_spell, spellbook, dep)
+    assert list(resolved.values()) == [default]
+
+
+def test_spellmap_frame_matching_folds_case_for_categories_only() -> None:
+    """String categories match case-insensitively; a Protocol frame matches only itself, never its name."""
+
+    class IScanner(Protocol):
+        """Contract frame."""
+
+        def scan(self) -> None:
+            """Scan once."""
+
+    assert CompilerPhase3._spellmap_frame_matches("agents", "Agents")
+    assert CompilerPhase3._spellmap_frame_matches("AGENTS", "agents")
+    assert not CompilerPhase3._spellmap_frame_matches("agents", "tools")
+    assert CompilerPhase3._spellmap_frame_matches(IScanner, IScanner)
+    assert not CompilerPhase3._spellmap_frame_matches(IScanner, "IScanner")
+    assert not CompilerPhase3._spellmap_frame_matches("IScanner", IScanner)
+    assert not CompilerPhase3._spellmap_frame_matches(None, "agents")
 
 
 def test_build_local_frame_dag_skips_unresolved_collection() -> None:

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py",
- "source_sha256": "531e9b52dd4fb9c7dc762db562d6bd1bbe2263b7ecd65ea9020b1b5c707748c1",
+ "source_sha256": "b5c087b8ff5b43055550a4bbd75ce18e3cb21966924d2c89d785151b016111f2",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.phases.compiler_phase_3": {
@@ -29,11 +29,11 @@
     "run"
    ],
    "shape": {
-    "method_count": 25,
+    "method_count": 26,
     "has_bases": false,
     "trivial": false
    },
-   "span_sha256": "dbe8c6e04316910263f762230b92cc4db81b642f39b5cb52d2ac24aa9066cdac",
+   "span_sha256": "81ecd42c575e2d2eb750b9b9ce79b65d4b6be6d32218e7c147abb9b640bc1007",
    "role": "Compiler-owned phase-3 local-frame and DAG build surface.",
    "responsibilities": [
     "resolves symbolic constructor sockets into concrete dependency spell ids",
@@ -45,7 +45,8 @@
     "scans candidate providers over a copy of the Spellbook spell pool taken in one call, so a concurrent bind cannot change it mid-scan",
     "matches an annotation to candidates by KIND (0.2.8222): _annotation_kind classifies it as a Protocol contract, a class type or a string name; _spell_keys_for gives the keys a spell answers under for that kind - its type key for a class, its implemented_protocols (plus its own definition key when it is a Protocol bound resolvable=False) for a Protocol, type-or-contract for a single string and the frame key for a string collection - so a string category never provides for a same-named class",
     "indexes candidates once per resolution pass into four buckets (by_type, by_label, by_contract, by_definition) read through _index_buckets_for; one predicate (_matches_annotation) serves the scan and the index; _eq_safe_object is kept only as the structural snapshot's replayability rule",
-    "records a single annotation with several resolvable candidates as an AMBIGUOUS_INPUT socket (candidate ids as references, no dependency id) instead of raising, so Phase 4 reports AMBIGUOUS_PROVIDER through the readable report (0.2.8224)"
+    "records a single annotation with several resolvable candidates as an AMBIGUOUS_INPUT socket (candidate ids as references, no dependency id) instead of raising, so Phase 4 reports AMBIGUOUS_PROVIDER through the readable report (0.2.8224)",
+    "resolves a SpellMap default by normalized binding names and string-frame keys (_spellmap_frame_matches; class and Protocol frames by identity), the address rule bind and meld use (0.2.8226)"
    ],
    "phases": [
     "validation",

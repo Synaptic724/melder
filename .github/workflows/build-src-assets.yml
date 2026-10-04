@@ -25,6 +25,7 @@ jobs:
         with:
           # Builders parse source without importing the Melder runtime.
           python-version: "3.14"
+          check-latest: true
       - name: List discovered build assets
         run: python src/melder/_build_assets/_build_asset_runner.py --list
       - name: Verify committed source assets

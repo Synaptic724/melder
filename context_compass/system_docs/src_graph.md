@@ -317,7 +317,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_agent_documentation/manifest/agent_documentation_manifest.py
 
-- source_sha256: `f5547b7f2d04a395b17f07bedcc1f2c6fc31e8b87b13a6f10c88812392a32745`
+- source_sha256: `f6b18452bfc6427fce9e45d2f4989d8fbc77414b820533d40b933a8ea9d45d31`
 - nodes: 1
 
 ### Nodes
@@ -396,7 +396,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py
 
-- source_sha256: `61f6193deb56a0305b7452dbaf2017dc158e20bbb701e25e8cc811a9367d3b36`
+- source_sha256: `ec1f953a2ebf4e6fbbf77b93d8dd4b45b0d02d8afd7f373a07b2d7a98c77415c`
 - nodes: 1
 
 ### Nodes
@@ -474,7 +474,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/graph_adjacency_manifest.py
 
-- source_sha256: `b9e8097877f0c1b8ae830198fb2cb4d09a759899fa408ebf32ebd8382db1c23a`
+- source_sha256: `87db0c95c96322abfa10b0d63d3aa06f05fb88146f1bf046fb3ca439c5ae9b35`
 - nodes: 1
 
 ### Nodes
@@ -491,7 +491,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_index.py
 
-- source_sha256: `3534e78b38046780de3f5ba4ec1901ea98c3bc9a2694132718f42793dc15fffc`
+- source_sha256: `b680ab42666d584a636981940ba8fe90c49c28dbff8c82e92e963fa71cc4a1d7`
 - nodes: 1
 
 ### Nodes
@@ -508,7 +508,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_manifest.py
 
-- source_sha256: `8ba4e95cc73f43afb6f84d980216e65e62dd8450eb1fc6c33552567d4964d21c`
+- source_sha256: `f8e2b54eb512c9b76c0d8cd670bacc8cae9be07f592e1468b89fdfc5fed1111e`
 - nodes: 1
 
 ### Nodes
@@ -562,7 +562,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_graph_payload.py
 
-- source_sha256: `3b8975c48535c564075f93269d7b4ef09c369de16541bb6de1c2a1aafee07a27`
+- source_sha256: `a222f3667270b52b9789847792ad10330ff8078f59d5286351937f215ee9d49f`
 - nodes: 1
 
 ### Nodes
@@ -5260,7 +5260,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/meld/contracts/spell_contract.py
 
-- source_sha256: `3369a5fad23cafe81ad1632361df52cebe41e93208f5c69d8a2aa024e1f140d5`
+- source_sha256: `9c2914db2ceb3f92a8938955d13765272724eb0537030534ee3e2b6cd394fdfc`
 - nodes: 2
 
 ### Nodes
@@ -5283,7 +5283,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - responsibilities:
   - describes cross-conduit dependency identity and optional override payload
   - marks late-bound contract holes without performing linking or resolution itself
-- owns_state: `spell`, `spellframe`, `binding_name`, `spell_override`
+  - keeps binding_name exactly as written, as Bind does; canonical_key carries the normalized key every contract match reads (0.2.8226)
+- owns_state: `spell`, `spellframe`, `binding_name`, `override`
 - phases: `validation`, `runtime`, `cleanup`
 - public methods: `canonical_key`, `cleanup`, `lookup_triplet`, `spell_key`
 
@@ -5293,11 +5294,12 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 | --- | --- | --- | --- | --- | --- |
 | `melder.aether.conduit.meld.contracts.spell_contract.SpellContract` | specializes | `melder.utilities.general_base.cleanable.Cleanable` | - | - | derived |
 
-### Edge candidates (1, unconfirmed)
+### Edge candidates (2, unconfirmed)
 
 Instantiation guesses from the AST. Over-generated roughly 8x against the reference graph; confirm or drop before relying on them.
 
 - `melder.aether.conduit.meld.contracts.spell_contract.SpellContract` creates `ValueError`
+- `melder.aether.conduit.meld.contracts.spell_contract.SpellContract` creates `TypeError`
 
 <!-- END FILE: src/melder/aether/conduit/meld/contracts/spell_contract.py -->
 
@@ -5305,7 +5307,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/meld/contracts/spell_map.py
 
-- source_sha256: `3d0a54bf2421cb59e482cf5a9d568da895260366b5ba232080bb9463a93a4ca8`
+- source_sha256: `b670854eaa331ad49c7fd5ecbec348a024ae26ff691b5852bd10a872b422b0c7`
 - nodes: 2
 
 ### Nodes
@@ -5329,7 +5331,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - responsibilities:
   - describes normal spellbook-local DI identity and optional override payload
   - lets SpellCompiler and Meld resolve ordinary in-graph dependencies without late conduit linking
-- owns_state: `spell`, `spellframe`, `binding_name`, `spell_override`
+  - keeps binding_name exactly as written, as Bind does; canonical_key carries the normalized key Phase 3 matches by (0.2.8226)
+- owns_state: `spell`, `spellframe`, `binding_name`, `override`
 - phases: `validation`, `runtime`, `cleanup`
 - public methods: `canonical_key`, `cleanup`, `lookup_triplet`, `spell_key`
 
@@ -5339,11 +5342,12 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 | --- | --- | --- | --- | --- | --- |
 | `melder.aether.conduit.meld.contracts.spell_map.SpellMap` | specializes | `melder.utilities.general_base.cleanable.Cleanable` | - | - | derived |
 
-### Edge candidates (1, unconfirmed)
+### Edge candidates (2, unconfirmed)
 
 Instantiation guesses from the AST. Over-generated roughly 8x against the reference graph; confirm or drop before relying on them.
 
 - `melder.aether.conduit.meld.contracts.spell_map.SpellMap` creates `ValueError`
+- `melder.aether.conduit.meld.contracts.spell_map.SpellMap` creates `TypeError`
 
 <!-- END FILE: src/melder/aether/conduit/meld/contracts/spell_map.py -->
 
@@ -11064,7 +11068,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py
 
-- source_sha256: `531e9b52dd4fb9c7dc762db562d6bd1bbe2263b7ecd65ea9020b1b5c707748c1`
+- source_sha256: `b5c087b8ff5b43055550a4bbd75ce18e3cb21966924d2c89d785151b016111f2`
 - nodes: 2
 
 ### Nodes
@@ -11093,6 +11097,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - matches an annotation to candidates by KIND (0.2.8222): _annotation_kind classifies it as a Protocol contract, a class type or a string name; _spell_keys_for gives the keys a spell answers under for that kind - its type key for a class, its implemented_protocols (plus its own definition key when it is a Protocol bound resolvable=False) for a Protocol, type-or-contract for a single string and the frame key for a string collection - so a string category never provides for a same-named class
   - indexes candidates once per resolution pass into four buckets (by_type, by_label, by_contract, by_definition) read through _index_buckets_for; one predicate (_matches_annotation) serves the scan and the index; _eq_safe_object is kept only as the structural snapshot's replayability rule
   - records a single annotation with several resolvable candidates as an AMBIGUOUS_INPUT socket (candidate ids as references, no dependency id) instead of raising, so Phase 4 reports AMBIGUOUS_PROVIDER through the readable report (0.2.8224)
+  - resolves a SpellMap default by normalized binding names and string-frame keys (_spellmap_frame_matches; class and Protocol frames by identity), the address rule bind and meld use (0.2.8226)
 - phases: `validation`, `runtime`
 - public methods: `run`
 
@@ -12886,7 +12891,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/structural_snapshot/structural_snapshot.py
 
-- source_sha256: `42168e83e9828452d67c5e6659035ddc155e402957dd066a99c264d8d3acaad8`
+- source_sha256: `dc59ed0fef1915f603242eb1d77c763aa98251f37c72266657047e8d04d3cee7`
 - nodes: 2
 
 ### Nodes
@@ -12900,7 +12905,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `StructuralSnapshot` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.structural_snapshot.structural_snapshot.StructuralSnapshot`
-- defined at: `src/melder/aether/spellbook/spell_compiler/structural_snapshot/structural_snapshot.py:34`
+- defined at: `src/melder/aether/spellbook/spell_compiler/structural_snapshot/structural_snapshot.py:35`
 - public methods: `annotation_refs`, `bind_time_requirements`, `build_payload`, `capture_at_conjure_end`, `classify`, `hydrate_full_hit`, `payload_well_formed`, `pool_replayable`, `rebuild_topology`, `structural_key`, `type_refs`, `world_stamp`
 - **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
@@ -15216,7 +15221,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/validation/strategies/spellmap_shape_validation_strategy.py
 
-- source_sha256: `d57e1f074fbbb5b354b43aceb6595f1e632d98354dd2dd7b69484a12f17b543b`
+- source_sha256: `2921305f7c5972aaede013328ca7d56c7fa2d4ffdd37d0c31809c29991ce7995`
 - nodes: 2
 
 ### Nodes
@@ -15233,12 +15238,12 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `SpellMapShapeValidationStrategy` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.validation.strategies.spellmap_shape_validation_strategy.SpellMapShapeValidationStrategy`
-- defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/spellmap_shape_validation_strategy.py:23`
+- defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/spellmap_shape_validation_strategy.py:22`
 - extends: `SpellValidationStrategy`
 - role: Validates the SpellMap defaults captured on Phase-1 parameters, one pass per SPELLMAP_DEFAULT parameter.
 - responsibilities:
   - error on SPELLMAP_DEFAULT_MISSING, SPELLMAP_DEFAULT_INVALID, and SPELLMAP_MISSING_TARGET (neither spell nor spellframe)
-  - warn on SPELLMAP_BINDING_NAME_NOT_NORMALIZED, normalizing via SpellInputUtils
+  - no binding-name check: SpellMap keeps the caller's text and Phase 3 matches it case-insensitively (SPELLMAP_BINDING_NAME_NOT_NORMALIZED retired at 0.2.8226)
   - validate only; mutate nothing
 - phases: `compile`
 - public methods: `validate`

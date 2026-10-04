@@ -13,7 +13,7 @@ Regenerate with:
     python src/melder/_build_assets/_build_asset_runner.py
 """
 
-BUILT_FOR_VERSION = "0.2.8225"
+BUILT_FOR_VERSION = "0.2.8226"
 NODE_COUNT = 1217
 EDGE_COUNT = 1395
 WHY_COUNT = 939
@@ -597,7 +597,7 @@ NODES = {
     'melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements_finder': ('src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/spell_requirements_finder.py', 'spell_requirements_finder', 'module', 1, False),
     'melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements_finder.SpellRequirementsFinder': ('src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/spell_requirements_finder.py', 'SpellRequirementsFinder', 'class', 31, False),
     'melder.aether.spellbook.spell_compiler.structural_snapshot.structural_snapshot': ('src/melder/aether/spellbook/spell_compiler/structural_snapshot/structural_snapshot.py', 'structural_snapshot', 'module', 1, True),
-    'melder.aether.spellbook.spell_compiler.structural_snapshot.structural_snapshot.StructuralSnapshot': ('src/melder/aether/spellbook/spell_compiler/structural_snapshot/structural_snapshot.py', 'StructuralSnapshot', 'class', 34, True),
+    'melder.aether.spellbook.spell_compiler.structural_snapshot.structural_snapshot.StructuralSnapshot': ('src/melder/aether/spellbook/spell_compiler/structural_snapshot/structural_snapshot.py', 'StructuralSnapshot', 'class', 35, True),
     'melder.aether.spellbook.spell_compiler.symbolic_graph.spell_symbolic_dependency': ('src/melder/aether/spellbook/spell_compiler/symbolic_graph/spell_symbolic_dependency.py', 'spell_symbolic_dependency', 'module', 1, False),
     'melder.aether.spellbook.spell_compiler.symbolic_graph.spell_symbolic_dependency.SpellSymbolicDependency': ('src/melder/aether/spellbook/spell_compiler/symbolic_graph/spell_symbolic_dependency.py', 'SpellSymbolicDependency', 'class', 12, False),
     'melder.aether.spellbook.spell_compiler.symbolic_graph.spell_symbolic_graph': ('src/melder/aether/spellbook/spell_compiler/symbolic_graph/spell_symbolic_graph.py', 'spell_symbolic_graph', 'module', 1, False),
@@ -703,7 +703,7 @@ NODES = {
     'melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy': ('src/melder/aether/spellbook/spell_compiler/validation/strategies/spell_validation_strategy.py', 'spell_validation_strategy', 'module', 1, False),
     'melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy.SpellValidationStrategy': ('src/melder/aether/spellbook/spell_compiler/validation/strategies/spell_validation_strategy.py', 'SpellValidationStrategy', 'class', 9, False),
     'melder.aether.spellbook.spell_compiler.validation.strategies.spellmap_shape_validation_strategy': ('src/melder/aether/spellbook/spell_compiler/validation/strategies/spellmap_shape_validation_strategy.py', 'spellmap_shape_validation_strategy', 'module', 1, False),
-    'melder.aether.spellbook.spell_compiler.validation.strategies.spellmap_shape_validation_strategy.SpellMapShapeValidationStrategy': ('src/melder/aether/spellbook/spell_compiler/validation/strategies/spellmap_shape_validation_strategy.py', 'SpellMapShapeValidationStrategy', 'class', 23, False),
+    'melder.aether.spellbook.spell_compiler.validation.strategies.spellmap_shape_validation_strategy.SpellMapShapeValidationStrategy': ('src/melder/aether/spellbook/spell_compiler/validation/strategies/spellmap_shape_validation_strategy.py', 'SpellMapShapeValidationStrategy', 'class', 22, False),
     'melder.aether.spellbook.spell_compiler.validation.validation_system': ('src/melder/aether/spellbook/spell_compiler/validation/validation_system.py', 'validation_system', 'module', 1, False),
     'melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem': ('src/melder/aether/spellbook/spell_compiler/validation/validation_system.py', 'SpellValidationSystem', 'class', 65, False),
     'melder.aether.spellbook.spell_types.spell_types': ('src/melder/aether/spellbook/spell_types/spell_types.py', 'spell_types', 'module', 1, False),

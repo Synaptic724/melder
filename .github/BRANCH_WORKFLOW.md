@@ -148,6 +148,12 @@ The test driver verifies free-threading support and GIL-off state before and aft
 the installed-package probe also verifies GIL-off state. Discovery, asset and policy tooling
 may use ordinary Python because those jobs do not qualify Melder's runtime behavior.
 
+Single-version helper jobs (hygiene, assets, docs, source qualification, publication and RC
+bookkeeping) request `python-version: "3.14"` with `check-latest: true`, so they run the newest
+stable 3.14 patch instead of whatever patch the runner image cached. The three speed tests are
+not part of the matrix: each runs on one pinned Python (3.14.7), never across versions, and only
+on dev-to-preprod pull requests.
+
 The discovery helper refuses empty/malformed catalog data, missing support for the declared
 floor, and a selected release lacking free-threaded assets on a required platform. Setup errors
 on the actual runner also fail the matrix. No missing version/platform silently disappears.

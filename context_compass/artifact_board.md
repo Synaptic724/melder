@@ -87,6 +87,8 @@ Disposition values
 | tickets/tasks/backlog/2026-09-27_probe_creation_context_design_task.md | artifacts/pgo_strategies_20260927/ | measurement_evidence | backlog | retain_as_reference | Parked by owner with the adaptive-creation-contexts epic; the proof (cache ledger, live shapes, registration split) and every run retained for a reopen. | 2026-09-28T00:57:27Z | HELPFUL |
 | tickets/tasks/2026-10-04_rename_cache_suffix_to_meldercache_task.md | system_docs/patches/active/meldercache_suffix_2026_10_04/architecture_patch.md | patch_doc | active | promote_to_documentation | Suffix invariant, migration order and rollback for the rename. | 2026-10-04T13:11:56Z | REQUIRED |
 | tickets/tasks/2026-10-04_rename_cache_suffix_to_meldercache_task.md | system_docs/patches/active/meldercache_suffix_2026_10_04/component_patch_caching_system.md | patch_doc | active | promote_to_documentation | Before/after cache paths, ignore and CI rules, validation. | 2026-10-04T13:11:56Z | REQUIRED |
+| tickets/tasks/2026-10-04_match_descriptor_binding_names_like_bind_task.md | system_docs/patches/active/spellmap_binding_name_case_2026_10_04/architecture_patch.md | patch_doc | active | promote_to_documentation | Objective, invariants, interface deltas, migration order and rollback for descriptor binding-name case. | 2026-10-04T21:00:53Z | REQUIRED |
+| tickets/tasks/2026-10-04_match_descriptor_binding_names_like_bind_task.md | system_docs/patches/active/spellmap_binding_name_case_2026_10_04/component_patch_di_descriptors.md | patch_doc | active | promote_to_documentation | Before/after descriptor storage and Phase 3 matching, validation expectations. | 2026-10-04T21:00:53Z | REQUIRED |
 <!-- END USER-DEFINED: active_artifacts -->
 
 ## Recently Cleared Artifacts

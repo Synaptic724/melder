@@ -767,6 +767,32 @@ class CompilerPhase3:
 
         return SocketKind.NORMAL
 
+    @staticmethod
+    def _spellmap_frame_matches(spell_frame: Any, frame: Any) -> bool:
+        """
+        Return True when a spell's spellframe is the frame a SpellMap names.
+
+        Contract:
+            - Two string categories match by their normalized frame keys, the
+              case-insensitive rule bind registers addresses with and meld looks
+              them up by: "Agents" names the category bound as "agents"
+              (2026-10-04, 0.2.8226; before, the two strings had to be equal).
+            - Any other pair matches by identity or equality only, as before: a
+              class or Protocol frame is that object, never a same-named string.
+
+        Args:
+            spell_frame:
+                The candidate spell's recorded spellframe (None when bound bare).
+            frame:
+                The SpellMap's `spellframe`.
+
+        Returns:
+            bool: Whether the candidate sits under the SpellMap's frame.
+        """
+        if isinstance(spell_frame, str) and isinstance(frame, str):
+            return SpellInputUtils.normalize_frame_key(spell_frame) == SpellInputUtils.normalize_frame_key(frame)
+        return spell_frame is frame or spell_frame == frame
+
     def _resolve_spellmap_default(
             self,
             spell: Spell,
@@ -776,6 +802,16 @@ class CompilerPhase3:
         """
         Resolve a SPELLMAP_DEFAULT dependency using the original SpellMap
         default attached to the parameter.
+
+        Matching (2026-10-04, 0.2.8226):
+            A SpellMap keeps the binding name as written, as Bind keeps a
+            spell's, so names are compared by their normalized keys - the
+            case-insensitive rule bind registers addresses with and meld looks
+            them up by - and string spellframes the same way
+            (`_spellmap_frame_matches`). `None` and "" both name the default
+            binding. Before, the descriptor stored the lowercased name and this
+            method compared it with the spell's raw one, so a binding name with
+            a capital letter never resolved.
 
         Args:
             spell:
@@ -801,26 +837,28 @@ class CompilerPhase3:
         explicit_spell = spellmap.spell
         frame = spellmap.spellframe
         binding_name = spellmap.binding_name
+        # The key every candidate's binding name is compared with: bind and meld
+        # address spells by this normalized form, never by the raw text.
+        binding_key = SpellInputUtils.normalize_binding_name(binding_name)
 
         if explicit_spell is not None:
             for index, spell_obj in self._iter_all_spells(spellbook):
                 if spell_obj.spell is not explicit_spell:
                     continue
 
-                if frame is not None:
-                    spell_frame = spell_obj.spellframe
-                    if not (spell_frame is frame or spell_frame == frame):
-                        continue
+                if frame is not None and not self._spellmap_frame_matches(spell_obj.spellframe, frame):
+                    continue
 
-                if binding_name is not None and spell_obj.binding_name != binding_name:
+                if (binding_name is not None
+                        and SpellInputUtils.normalize_binding_name(spell_obj.binding_name) != binding_key):
                     continue
 
                 candidates[index] = spell_obj
         else:
             for index, spell_obj in self._iter_all_spells(spellbook):
-                if spell_obj.spellframe is spellmap.spellframe or spell_obj.spellframe == spellmap.spellframe:
-                    if spell_obj.binding_name == spellmap.binding_name:
-                        candidates[index] = spell_obj
+                if (self._spellmap_frame_matches(spell_obj.spellframe, frame)
+                        and SpellInputUtils.normalize_binding_name(spell_obj.binding_name) == binding_key):
+                    candidates[index] = spell_obj
 
         if not candidates:
             raise RuntimeError(

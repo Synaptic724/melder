@@ -1,4 +1,4 @@
-# Melder 0.2.8225
+# Melder 0.2.8226
 
 **Unreleased**
 
@@ -492,6 +492,38 @@ Under the hood Phase 3 records the parameter as an `AMBIGUOUS_INPUT` socket and 
 Code that matched the old error text (`PhaseExecutionError` / "multiple DI candidates") should expect
 `SpellbookValidationError` with code `AMBIGUOUS_PROVIDER`. No cache generation moves.
 
+## Fixed: a SpellMap or SpellContract binding name matches the way `bind` and `meld` do
+
+`bind(..., binding_name="ScanProfile")` keeps the name as written and finds it case-insensitively, but `SpellMap`
+lowercased the name it was given and Phase 3 compared the two raw strings. A SpellMap default naming a binding with a
+capital letter - the selection the ambiguous-provider report above asks for - therefore failed with "SpellMap default
+could not be resolved":
+
+```python
+book.bind(spell=ScanProfile, existence="unique", spellframe="agents", binding_name="ScanProfile")
+book.bind(spell=ScanProfile, existence="unique", spellframe="artificial_intelligence_tools",
+          binding_name="ScanProfile")
+
+class MCPScanner:
+    def __init__(self, profile: ScanProfile = SpellMap(spellframe="agents", binding_name="ScanProfile")):
+        self.profile = profile
+```
+
+`SpellMap` and `SpellContract` now keep `binding_name` exactly as you wrote it, as `bind` does, and a SpellMap default
+is matched the way `meld(spellframe=..., binding_name=...)` is: "ScanProfile", "scanprofile" and "SCANPROFILE" select
+the same provider, and so do "agents" and "Agents" for a string category (a Protocol frame still matches only itself).
+`canonical_key` is unchanged and still lowercase. SpellContract already matched case-insensitively; only the value it
+shows changes.
+
+What else changes:
+
+- `SpellMap(..., binding_name="Primary").binding_name` is now `"Primary"` (it was `"primary"`); read
+  `canonical_key[1]` if you need the normalized name.
+- A non-string `binding_name` raises `TypeError` when the descriptor is created (it was an `AttributeError`).
+- The Phase-4 warning `SPELLMAP_BINDING_NAME_NOT_NORMALIZED`, which told you to lowercase the name, is gone.
+- A class whose constructor default carries a SpellMap or SpellContract with a mixed-case binding name gets a new
+  spell id once, because the id includes the default's text. No cache generation moves.
+
 ## Packaging and documentation
 
 - The internal-bind guard manifest holds 620 entries at 0.2.8216 (619 at 0.2.8215): `ManyDisposalBucket`, the
@@ -549,4 +581,6 @@ Code that matched the old error text (`PhaseExecutionError` / "multiple DI candi
 - The internal-bind guard manifest holds 622 entries at 0.2.8224: `AmbiguousProviderStrategy` joined.
 - The packaged system documents describe the AMBIGUOUS_INPUT socket, the strategy and the message shape; the
   README's `SpellMap` paragraph names the report.
-- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8225.
+- The packaged system documents describe the descriptors' binding-name rule (kept as written, matched by the
+  normalized key) and Phase 3's SpellMap matching; the descriptor code-map extents are remeasured.
+- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8226.

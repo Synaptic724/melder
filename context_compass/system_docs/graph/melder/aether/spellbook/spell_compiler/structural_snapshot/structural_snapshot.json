@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/structural_snapshot/structural_snapshot.py",
- "source_sha256": "42168e83e9828452d67c5e6659035ddc155e402957dd066a99c264d8d3acaad8",
+ "source_sha256": "dc59ed0fef1915f603242eb1d77c763aa98251f37c72266657047e8d04d3cee7",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.structural_snapshot.structural_snapshot": {
@@ -16,7 +16,7 @@
    "label": "StructuralSnapshot",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/structural_snapshot/structural_snapshot.py",
-   "lineno": 34,
+   "lineno": 35,
    "bases": [],
    "markers": [],
    "public_methods": [
@@ -38,7 +38,7 @@
     "has_bases": false,
     "trivial": false
    },
-   "span_sha256": "4ee24a5b7b8f4c747e4168c112e082345aa2048381d8e345bce217cf24e7bd37"
+   "span_sha256": "e816384f0dd94f8b84cc9b8195b0ab9646546d40c9cc428e9d6a223703e2c61c"
   }
  },
  "edges_out": [],
@@ -94,6 +94,7 @@
   "ParameterDIShape": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_di_shape.ParameterDIShape",
   "SpellLocalTopology": "melder.aether.spellbook.spell_compiler.topology.spell_local_topology.SpellLocalTopology",
   "SpellSocketDescriptor": "melder.aether.spellbook.spell_compiler.topology.spell_local_topology.SpellSocketDescriptor",
+  "SpellInputUtils": "melder.utilities.helpers.general_helpers.SpellInputUtils",
   "SpellSystemStates": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
   "Spell": "melder.aether.spellbook.spell.Spell",
   "Spellbook": "melder.aether.spellbook.spellbook.Spellbook",

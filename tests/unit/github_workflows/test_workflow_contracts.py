@@ -115,6 +115,37 @@ def test_python_setup_does_not_force_gil_off_in_standard_bootstrap_helpers(name:
     assert inherited.get("PYTHON_GIL") != "0"
 
 
+def test_single_version_setups_follow_the_newest_stable_patch() -> None:
+    """Helper jobs track the newest stable patch of their minor; only the speed tests pin one exact Python.
+
+    The runtime matrix already selects the newest stable patch of every supported minor. A job that names
+    a bare minor must ask setup-python for that minor's newest patch too, not the patch the runner image
+    happened to cache. Exact pins belong to the three speed tests alone, which measure one interpreter and
+    never iterate a Python matrix. No setup step may request a pre-release interpreter.
+    """
+    root = pathlib.Path(__file__).resolve().parents[3]
+    speed_tests = {"real-world-gauntlet.yml", "persistent-runtime-gauntlet.yml", "shallow-all-thread-scaling.yml"}
+    pinned: set[str] = set()
+    for path in sorted((root / ".github/workflows").glob("*.yml")):
+        for job in workflow(path.name)["jobs"].values():
+            for step in job.get("steps", []):
+                if not step.get("uses", "").startswith("actions/setup-python@"):
+                    continue
+                settings = step["with"]
+                assert settings.get("allow-prereleases", "false") == "false", path.name
+                version = settings.get("python-version")
+                if version is None or version.startswith("${{"):
+                    continue
+                if re.fullmatch(r"\d+\.\d+", version):
+                    assert settings.get("check-latest") == "true", (path.name, version)
+                else:
+                    assert re.fullmatch(r"\d+\.\d+\.\d+", version), (path.name, version)
+                    matrix = job.get("strategy", {}).get("matrix", {})
+                    assert isinstance(matrix, dict) and "python" not in matrix, path.name
+                    pinned.add(path.name)
+    assert pinned == speed_tests
+
+
 def test_supported_runtime_matrix_and_test_driver_are_shared() -> None:
     """Every discovered OS/version uses free threading and retains independent failing-test evidence."""
     jobs = workflow("test-runtime.yml")["jobs"]

@@ -18,6 +18,7 @@ from melder.aether.spellbook.spell_compiler.topology.spell_local_topology import
     SpellLocalTopology,
     SpellSocketDescriptor,
 )
+from melder.utilities.helpers.general_helpers import SpellInputUtils
 
 if TYPE_CHECKING:
     from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import (
@@ -184,7 +185,7 @@ class StructuralSnapshot:
               COLLECTION_BY_ANNOTATION parameters their element annotation
               (the annotation itself when no element is recorded);
               SPELLMAP_DEFAULT parameters the map's `spell`, `spellframe` and
-              a ``("binding_name", name)`` row; PLAIN and SpellContract
+              a ``("binding_name", normalized name)`` row; PLAIN and SpellContract
               parameters contribute nothing (contract keys are already
               strings inside the socket rows).
             - Sorted and unique, so two processes render the same rows.
@@ -215,7 +216,11 @@ class StructuralSnapshot:
                     rows.update(StructuralSnapshot.type_refs(spellmap.spell))
                 if spellmap.spellframe is not None:
                     rows.update(StructuralSnapshot.type_refs(spellmap.spellframe))
-                rows.add(("binding_name", spellmap.binding_name or ""))
+                # The normalized name Phase 3 matches by: SpellMap keeps the caller's text
+                # since 0.2.8226, and these rows stay byte-identical to what they were.
+                binding_name = spellmap.binding_name
+                rows.add(("binding_name",
+                          SpellInputUtils.normalize_binding_name(binding_name) if binding_name is not None else ""))
         return sorted(rows)
 
     @staticmethod

@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: src
-SOURCE FINGERPRINT: 886ee6b0bd915f9703116f223d7cf62219c20327306e6cd6d38a336bb5c73c34
+SOURCE FINGERPRINT: 1480c6c3a4c5edb0ccb142cd3b220bca4ae7cd9744f13e7ba967ab829c626acd
 FILE COUNT: 579
 
 ================================================================================
@@ -599,7 +599,7 @@ END FILE: src/melder/__melder_cache__/__melder_cache__.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/__version__.py
-CONTENT SHA256: f156dda052cb7738ce42de2784aba5b424127dcc6a37b5bba20d7482521a093b
+CONTENT SHA256: dedd0fe77b599998bb27add39749f2f892150a8d4e69ae7b795bdb406e434654
 SOURCE ENCODING: utf-8
 ================================================================================
 
@@ -613,7 +613,7 @@ Contract:
   negotiation or runtime compatibility checks by itself.
 """
 
-__version__ = "0.2.8225"
+__version__ = "0.2.8226"
 ================================================================================
 END FILE: src/melder/__version__.py
 ================================================================================
@@ -61900,7 +61900,7 @@ END FILE: src/melder/aether/conduit/meld/conduit_meld.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/conduit/meld/contracts/spell_contract.py
-CONTENT SHA256: c497e78c7ea63eb237d6c1817533ad6d7ea3476cd1a702fefd2793d29e6226ba
+CONTENT SHA256: ca094ca29d2cf9d058a53665bb5c69c85c6057b3a96c4d8b4fcb7a9197b0277c
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import Any, Optional, Union, Tuple, ClassVar
@@ -62055,10 +62055,13 @@ class SpellContract(Cleanable):
 
             binding_name:
                 Optional binding name used to disambiguate multiple providers
-                under the same frame. Normalized via `SpellInputUtils` so the
-                contract is stable and case-insensitive. When `None`, the
-                binding name remains `None` so default-binding semantics remain
-                intact.
+                under the same frame. Kept exactly as written, the way `Bind`
+                keeps a spell's binding name (0.2.8226; it was lowercased here
+                before). The contract's identity, `canonical_key`, is
+                case-insensitive, so a provider bound as "ScanProfile"
+                satisfies `binding_name="scanprofile"` and the reverse. When
+                `None`, the binding name remains `None` so default-binding
+                semantics remain intact.
 
             override:
                 Optional construction payload for the provider spell that satisfies
@@ -62080,6 +62083,7 @@ class SpellContract(Cleanable):
         Raises:
             ValueError: If both `spell` and `spellframe` are omitted, because
                 the contract would have no identity to match against.
+            TypeError: If `binding_name` is neither a string nor `None`.
 
         Returns:
             None.
@@ -62089,15 +62093,18 @@ class SpellContract(Cleanable):
                 "SpellContract requires at least one of `spell` or `spellframe` "
                 "to be provided."
             )
+        if binding_name is not None and not isinstance(binding_name, str):
+            raise TypeError(
+                "SpellContract binding_name must be a string or None; "
+                f"got {type(binding_name).__name__}."
+            )
         super().__init__()
 
         self.spell = spell
         self.spellframe = spellframe
-        self.binding_name = (
-            SpellInputUtils.normalize_binding_name(binding_name)
-            if binding_name is not None
-            else None
-        )
+        # Kept as written, as Bind keeps a spell's binding name; `canonical_key`
+        # carries the normalized form every contract match compares.
+        self.binding_name = binding_name
         # Preserve the caller payload by reference; None means no payload is attached.
         self.override = override
 
@@ -62161,8 +62168,8 @@ class SpellContract(Cleanable):
             - When `spell` is present, it is part of the contract descriptor
               but does not imply immediate resolution; the provider may live in
               another conduit.
-            - If a binding name was provided at construction time, it is
-              normalized for case-insensitive matching.
+            - The binding name is the caller's text (0.2.8226); `canonical_key`
+              carries the normalized form that matching uses.
         """
         return (self.spell, self.spellframe, self.binding_name)
 
@@ -62252,7 +62259,7 @@ END FILE: src/melder/aether/conduit/meld/contracts/spell_contract.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/conduit/meld/contracts/spell_map.py
-CONTENT SHA256: a2181572e96cd46e2bfbd034995d3344d492ea312abfc933c5a598c484bb338c
+CONTENT SHA256: ba008e6488f23c8cc005c14895a94ae4b0f289d7d3bbd85b9f3552ab88d92062
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import Any, Optional, Union, Tuple, ClassVar
@@ -62413,9 +62420,12 @@ class SpellMap(Cleanable):
 
             binding_name:
                 Optional named binding used to disambiguate multiple providers
-                under the same frame. Normalized via `SpellInputUtils` for
-                case-insensitive matching. When `None`, default-binding semantics
-                remain intact.
+                under the same frame. Kept exactly as written, the way `Bind`
+                keeps a spell's binding name (0.2.8226; it was lowercased here
+                before). Matching is case-insensitive: Phase 3 compares
+                normalized names, so "ScanProfile", "scanprofile" and
+                "SCANPROFILE" select the provider bound as "ScanProfile", as
+                `meld` does. `None` (or "") keeps default-binding semantics.
 
             override:
                 Optional construction payload for the provider spell this descriptor
@@ -62438,6 +62448,7 @@ class SpellMap(Cleanable):
         Raises:
             ValueError: If both `spell` and `spellframe` are omitted, because
                 the descriptor would have no DI identity.
+            TypeError: If `binding_name` is neither a string nor `None`.
 
         Returns:
             None.
@@ -62447,14 +62458,17 @@ class SpellMap(Cleanable):
                 "SpellMap requires at least one of `spell` or `spellframe` "
                 "to be provided."
             )
+        if binding_name is not None and not isinstance(binding_name, str):
+            raise TypeError(
+                "SpellMap binding_name must be a string or None; "
+                f"got {type(binding_name).__name__}."
+            )
         super().__init__()
         self.spell = spell
         self.spellframe = spellframe
-        self.binding_name = (
-            SpellInputUtils.normalize_binding_name(binding_name)
-            if binding_name is not None
-            else None
-        )
+        # Kept as written, as Bind keeps a spell's binding name; `canonical_key`
+        # and Phase 3 compare its normalized form, so case never decides a match.
+        self.binding_name = binding_name
         # Preserve the caller payload by reference; None means no payload is attached.
         self.override = override
 
@@ -62516,7 +62530,8 @@ class SpellMap(Cleanable):
               `binding_name` contribute to the runtime identity.
             - For fully explicit SpellMaps, higher layers may use both `spell`
               and `spellframe` when enforcing resolution rules.
-            - Binding names are already normalized when provided.
+            - The binding name is the caller's text (0.2.8226); `canonical_key`
+              carries the normalized form that matching uses.
         """
         return (self.spell, self.spellframe, self.binding_name)
 
@@ -100156,7 +100171,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_2.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py
-CONTENT SHA256: 2e6d748b859fe2aebf852648f434830236d0cc0a197f32d2ffc49858446c4501
+CONTENT SHA256: 4ff6c29e9df6bef555cf2354880c32a844b1e7c3e5212dbb57d36e4eefbfb381
 SOURCE ENCODING: utf-8
 ================================================================================
 import inspect
@@ -100928,6 +100943,32 @@ class CompilerPhase3:
 
         return SocketKind.NORMAL
 
+    @staticmethod
+    def _spellmap_frame_matches(spell_frame: Any, frame: Any) -> bool:
+        """
+        Return True when a spell's spellframe is the frame a SpellMap names.
+
+        Contract:
+            - Two string categories match by their normalized frame keys, the
+              case-insensitive rule bind registers addresses with and meld looks
+              them up by: "Agents" names the category bound as "agents"
+              (2026-10-04, 0.2.8226; before, the two strings had to be equal).
+            - Any other pair matches by identity or equality only, as before: a
+              class or Protocol frame is that object, never a same-named string.
+
+        Args:
+            spell_frame:
+                The candidate spell's recorded spellframe (None when bound bare).
+            frame:
+                The SpellMap's `spellframe`.
+
+        Returns:
+            bool: Whether the candidate sits under the SpellMap's frame.
+        """
+        if isinstance(spell_frame, str) and isinstance(frame, str):
+            return SpellInputUtils.normalize_frame_key(spell_frame) == SpellInputUtils.normalize_frame_key(frame)
+        return spell_frame is frame or spell_frame == frame
+
     def _resolve_spellmap_default(
             self,
             spell: Spell,
@@ -100937,6 +100978,16 @@ class CompilerPhase3:
         """
         Resolve a SPELLMAP_DEFAULT dependency using the original SpellMap
         default attached to the parameter.
+
+        Matching (2026-10-04, 0.2.8226):
+            A SpellMap keeps the binding name as written, as Bind keeps a
+            spell's, so names are compared by their normalized keys - the
+            case-insensitive rule bind registers addresses with and meld looks
+            them up by - and string spellframes the same way
+            (`_spellmap_frame_matches`). `None` and "" both name the default
+            binding. Before, the descriptor stored the lowercased name and this
+            method compared it with the spell's raw one, so a binding name with
+            a capital letter never resolved.
 
         Args:
             spell:
@@ -100962,26 +101013,28 @@ class CompilerPhase3:
         explicit_spell = spellmap.spell
         frame = spellmap.spellframe
         binding_name = spellmap.binding_name
+        # The key every candidate's binding name is compared with: bind and meld
+        # address spells by this normalized form, never by the raw text.
+        binding_key = SpellInputUtils.normalize_binding_name(binding_name)
 
         if explicit_spell is not None:
             for index, spell_obj in self._iter_all_spells(spellbook):
                 if spell_obj.spell is not explicit_spell:
                     continue
 
-                if frame is not None:
-                    spell_frame = spell_obj.spellframe
-                    if not (spell_frame is frame or spell_frame == frame):
-                        continue
+                if frame is not None and not self._spellmap_frame_matches(spell_obj.spellframe, frame):
+                    continue
 
-                if binding_name is not None and spell_obj.binding_name != binding_name:
+                if (binding_name is not None
+                        and SpellInputUtils.normalize_binding_name(spell_obj.binding_name) != binding_key):
                     continue
 
                 candidates[index] = spell_obj
         else:
             for index, spell_obj in self._iter_all_spells(spellbook):
-                if spell_obj.spellframe is spellmap.spellframe or spell_obj.spellframe == spellmap.spellframe:
-                    if spell_obj.binding_name == spellmap.binding_name:
-                        candidates[index] = spell_obj
+                if (self._spellmap_frame_matches(spell_obj.spellframe, frame)
+                        and SpellInputUtils.normalize_binding_name(spell_obj.binding_name) == binding_key):
+                    candidates[index] = spell_obj
 
         if not candidates:
             raise RuntimeError(
@@ -115438,7 +115491,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/s
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/structural_snapshot/structural_snapshot.py
-CONTENT SHA256: 57a43b9effa9443c254d66895db1db391a1895e1173d8106cd1502c875eb69af
+CONTENT SHA256: 4a57a429c4520bab55719668921e89153f820d17490cd5fff83252dc248eda35
 SOURCE ENCODING: utf-8
 ================================================================================
 import hashlib
@@ -115461,6 +115514,7 @@ from melder.aether.spellbook.spell_compiler.topology.spell_local_topology import
     SpellLocalTopology,
     SpellSocketDescriptor,
 )
+from melder.utilities.helpers.general_helpers import SpellInputUtils
 
 if TYPE_CHECKING:
     from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import (
@@ -115627,7 +115681,7 @@ class StructuralSnapshot:
               COLLECTION_BY_ANNOTATION parameters their element annotation
               (the annotation itself when no element is recorded);
               SPELLMAP_DEFAULT parameters the map's `spell`, `spellframe` and
-              a ``("binding_name", name)`` row; PLAIN and SpellContract
+              a ``("binding_name", normalized name)`` row; PLAIN and SpellContract
               parameters contribute nothing (contract keys are already
               strings inside the socket rows).
             - Sorted and unique, so two processes render the same rows.
@@ -115658,7 +115712,11 @@ class StructuralSnapshot:
                     rows.update(StructuralSnapshot.type_refs(spellmap.spell))
                 if spellmap.spellframe is not None:
                     rows.update(StructuralSnapshot.type_refs(spellmap.spellframe))
-                rows.add(("binding_name", spellmap.binding_name or ""))
+                # The normalized name Phase 3 matches by: SpellMap keeps the caller's text
+                # since 0.2.8226, and these rows stay byte-identical to what they were.
+                binding_name = spellmap.binding_name
+                rows.add(("binding_name",
+                          SpellInputUtils.normalize_binding_name(binding_name) if binding_name is not None else ""))
         return sorted(rows)
 
     @staticmethod
@@ -125146,7 +125204,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/validation/strategies/spell
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/validation/strategies/spellmap_shape_validation_strategy.py
-CONTENT SHA256: 3609bb0f360e02876ad803f239424d9853fd619e67f8b623a516a01e12fba7f4
+CONTENT SHA256: b3b355d72b3688e0fb55ab525cf65567e7afbf4888007ad84d3f74fa3b398a06
 SOURCE ENCODING: utf-8
 ================================================================================
 from __future__ import annotations
@@ -125164,7 +125222,6 @@ from melder.aether.spellbook.spell_compiler.validation.spell_validation_issue im
 from melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy import (
     SpellValidationStrategy,
 )
-from melder.utilities.helpers.general_helpers import SpellInputUtils
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell_compiler.validation.spell_validation_context import (
         SpellValidationContext,
@@ -125175,22 +125232,23 @@ class SpellMapShapeValidationStrategy(SpellValidationStrategy):
     """
     Validate SpellMap defaults for structural correctness.
 
-    This checks that SpellMap defaults are present, have valid targets,
-    and use normalized binding names.
+    This checks that SpellMap defaults are present and have valid targets.
+    Binding names are not checked: SpellMap keeps the caller's text, as Bind
+    does, and Phase 3 matches it case-insensitively, so the lowercase-advice
+    warning SPELLMAP_BINDING_NAME_NOT_NORMALIZED was retired at 0.2.8226.
 
     Contract:
         Runs per SPELLMAP_DEFAULT parameter. Errors on SPELLMAP_DEFAULT_MISSING (no
         captured SpellMap), SPELLMAP_DEFAULT_INVALID (default is not a SpellMap), and
-        SPELLMAP_MISSING_TARGET (neither spell nor spellframe). Warns
-        SPELLMAP_BINDING_NAME_NOT_NORMALIZED. Validation only; mutates nothing.
+        SPELLMAP_MISSING_TARGET (neither spell nor spellframe). Validation only;
+        mutates nothing.
 
     Registration:
         MELDER KERNEL. A built-in strategy; registered, never bound.
 
     Subsystem Context:
         A built-in of the `validation/strategies` family; it inspects the SpellMap
-        defaults captured on Phase-1 parameters and normalizes binding names via
-        `SpellInputUtils`.
+        defaults captured on Phase-1 parameters.
 
     System Context:
         Phase 4 (validation) of the conjure pipeline, guarding the explicit
@@ -125200,8 +125258,7 @@ class SpellMapShapeValidationStrategy(SpellValidationStrategy):
 
     AGENT_PURPOSE:
         access: internal. Phase-4 strategy for SPELLMAP_DEFAULT params: errors on missing /
-        invalid SpellMap or a SpellMap with no spell/spellframe target; warns when binding_name
-        is not normalized. Validation only.
+        invalid SpellMap or a SpellMap with no spell/spellframe target. Validation only.
     """
 
     __slots__ = SpellValidationStrategy.__slots__
@@ -125212,7 +125269,7 @@ class SpellMapShapeValidationStrategy(SpellValidationStrategy):
         """
         super().__init__(
             name="spellmap_shape_validation",
-            description="Validates SpellMap defaults for required fields and normalized binding names.",
+            description="Validates SpellMap defaults for required fields.",
         )
 
     def validate(self, context: SpellValidationContext) -> None:
@@ -125222,9 +125279,8 @@ class SpellMapShapeValidationStrategy(SpellValidationStrategy):
         Contract:
             Honors the context cancel event, returns early when the spell has no
             requirements, and otherwise scans each parameter's SpellMap default,
-            appending issues for missing required fields and non-normalized
-            binding names. Read-only; appends to `context.issues` rather than
-            raising.
+            appending issues for missing required fields. Read-only; appends to
+            `context.issues` rather than raising.
 
         Args:
             context:
@@ -125294,26 +125350,9 @@ class SpellMapShapeValidationStrategy(SpellValidationStrategy):
                     )
                 )
 
-            binding_name = spellmap.binding_name
-            if binding_name is not None:
-                normalized = SpellInputUtils.normalize_binding_name(binding_name)
-                if normalized != binding_name:
-                    context.issues.append(
-                        SpellValidationIssue(
-                            severity="warning",
-                            code="SPELLMAP_BINDING_NAME_NOT_NORMALIZED",
-                            message=(
-                                f"Parameter {param.name!r} on spell {spell.spell_name!r} "
-                                f"uses a SpellMap binding_name {binding_name!r} that is not normalized. "
-                                f"Use {normalized!r} for consistent lookup behavior."
-                            ),
-                            details={
-                                "parameter_name": param.name,
-                                "binding_name": binding_name,
-                                "normalized_binding_name": normalized,
-                            },
-                        )
-                    )
+            # No binding-name check: SpellMap keeps the caller's text, as Bind does,
+            # and Phase 3 matches it case-insensitively, so there is no unnormalized
+            # form to warn about (SPELLMAP_BINDING_NAME_NOT_NORMALIZED, retired at 0.2.8226).
 ================================================================================
 END FILE: src/melder/aether/spellbook/spell_compiler/validation/strategies/spellmap_shape_validation_strategy.py
 ================================================================================

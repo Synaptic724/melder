@@ -1,8 +1,8 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: tests
-SOURCE FINGERPRINT: 4e9b930984e6d7053129e8bf33ab10a27c4ed8336c5bd3f3453d6fa697c04aab
-FILE COUNT: 1061
+SOURCE FINGERPRINT: ae1a072546f637df57476d44b577ba1465c39dbdc361f104db42eaa4799091a6
+FILE COUNT: 1062
 
 ================================================================================
 BEGIN FILE: tests/_annotation_audit_support.py
@@ -43657,7 +43657,7 @@ END FILE: tests/component/melder/spellbook/spell_crafter/validation/test_spellbo
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/spellbook/spell_crafter/validation/test_spellbook_component_validation_strategies.py
-CONTENT SHA256: 1f63e0a3a43d9f89d01e8c50bb9fcc78f48b3ea760794bea041f2d4fa5939930
+CONTENT SHA256: b864b2110505028cfddb1cc4f65be9fbe2cde2a6523817a7340653f68521dacc
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import Optional
@@ -43999,28 +43999,30 @@ def test_component_spellmap_shape_validation_flags_missing_target() -> None:
         spellbook.cleanup()
 
 
-def test_component_spellmap_shape_validation_warns_on_non_normalized_binding_name() -> None:
+def test_component_spellmap_shape_validation_accepts_a_mixed_case_binding_name() -> None:
     """
     Purpose:
-        Validate SpellMapShapeValidationStrategy warns on non-normalized binding names.
+        Validate SpellMapShapeValidationStrategy reports nothing for a mixed-case binding name.
     Contract:
-        - Non-normalized binding names yield SPELLMAP_BINDING_NAME_NOT_NORMALIZED warnings.
+        - SpellMap keeps the binding name as written, as Bind does, and Phase 3 matches it
+          case-insensitively, so the strategy has nothing to report (the lowercase-advice
+          warning SPELLMAP_BINDING_NAME_NOT_NORMALIZED was retired at 0.2.8226).
     Returns:
         None.
     Raises:
-        AssertionError: If the expected warning is not reported.
+        AssertionError: If any issue is reported for the mixed-case name.
     """
     spellbook = _make_spellbook()
     strategy = SpellMapShapeValidationStrategy()
-    spellmap = SpellMap(spell=BasicService, binding_name="primary")
-    spellmap.binding_name = "Primary"
+    spellmap = SpellMap(spell=BasicService, binding_name="Primary")
+    assert spellmap.binding_name == "Primary"
 
     class UsesSpellMap:
         """
         Purpose:
-            Provide a spell with a SpellMap using a non-normalized binding name.
+            Provide a spell with a SpellMap using a mixed-case binding name.
         Contract:
-            - Uses binding_name with uppercase letters.
+            - Uses binding_name with an uppercase letter.
         Args:
             service: SpellMap placeholder.
         """
@@ -44056,10 +44058,7 @@ def test_component_spellmap_shape_validation_warns_on_non_normalized_binding_nam
         )
         try:
             strategy.validate(context)
-            assert len(issues) == 1
-            issue = issues[0]
-            assert issue.code == "SPELLMAP_BINDING_NAME_NOT_NORMALIZED"
-            assert issue.severity == "warning"
+            assert issues == []
         finally:
             context.cleanup()
     finally:
@@ -130351,6 +130350,182 @@ def test_codegen_room_composition_loop() -> None:
 END FILE: tests/integration/melder/mutation_research/test_research_room_commands_integration.py
 ================================================================================
 ================================================================================
+BEGIN FILE: tests/integration/melder/spellbook/test_binding_name_case_parity_integration.py
+CONTENT SHA256: d824b0bb2ab0befc35f92f5694910f296a65fc1c2465f3adfbbe1989105c7d77
+SOURCE ENCODING: utf-8
+================================================================================
+"""Integration regressions: bind, SpellMap, SpellContract and meld name one provider the same way.
+
+Reported 2026-10-04 (MelderOps on 0.2.8224): with a ScanProfile bound at (spellframe="agents",
+binding_name="ScanProfile"), the consumer default `SpellMap(spellframe="agents", binding_name="ScanProfile")`
+raised "SpellMap default could not be resolved". Bind kept the binding name as written, SpellMap stored it
+lowercased, and Phase 3 compared the two raw strings. Owner ruling (2026-10-04): SpellMap and SpellContract
+behave as Bind does - they keep the binding name as written - and every surface selects a provider by the
+same case-insensitive address meld uses (0.2.8226).
+"""
+
+from collections.abc import Iterator
+from typing import Any
+
+import pytest
+
+from melder import Aether, Conduit, Spellbook, SpellContract, SpellMap
+from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
+from melder.aether.spellbook.existence.existence import Existence
+from melder.utilities.helpers.general_helpers import SpellInputUtils
+from tests._frame_posture_test_support import apply_dynamic_defaults_for_spellbook_configuration
+
+
+@pytest.fixture(autouse=True)
+def reset_melder() -> Iterator[None]:
+    """Fresh cold Aether before and after every case, exactly as Melder's integration fixtures do."""
+    Aether._reset_singleton_for_tests()
+    world = Aether()
+    Spellbook._aether = world
+    Conduit._aether = world
+    try:
+        yield
+    finally:
+        Aether._reset_singleton_for_tests()
+        world = Aether()
+        Spellbook._aether = world
+        Conduit._aether = world
+
+
+class ScanProfile:
+    """The provider, bound once under "agents" and once under "artificial_intelligence_tools"."""
+
+    def __init__(self) -> None:
+        """No collaborators."""
+
+
+def _scanner_with(default: Any) -> type:
+    """
+    Build a consumer class whose one parameter defaults to `default` (a SpellMap or a SpellContract).
+
+    One class per descriptor, because a descriptor is read from the constructor's default.
+    """
+
+    class MCPScanner:
+        """Consumer of one ScanProfile, selected by its descriptor default (the MelderOps shape)."""
+
+        def __init__(self, profile: ScanProfile = default) -> None:
+            """Hold the injected profile."""
+            self.profile = profile
+
+    return MCPScanner
+
+
+def _automatic_book(frame: str) -> Spellbook:
+    """One automatic Spellbook with caching off on a fresh frame, so conjure runs every phase cold."""
+    book = Spellbook(aetheric_frame=frame)
+    book.get_configuration().set_property("phase_scheduler_workers_per_spellbook", 1)
+    book.configure_aether_frame(system_state="automatic", system_caching_enabled=False,
+                                disposal=None, disposal_method_names=None)
+    return book
+
+
+def _dynamic_configuration() -> SpellbookConfiguration:
+    """A shared dynamic configuration for an owner and a borrower Spellbook."""
+    configuration = SpellbookConfiguration()
+    apply_dynamic_defaults_for_spellbook_configuration(configuration)
+    configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
+    return configuration
+
+
+def test_bind_spellmap_spellcontract_and_meld_keep_the_name_and_share_one_address() -> None:
+    """
+    Bind, SpellMap and SpellContract all keep "ScanProfile" exactly as written, and all three address the
+    provider by the one case-insensitive key meld resolves: ("agents", "scanprofile").
+    """
+    book = _automatic_book("binding-name-case-address")
+    try:
+        spell_id = book.bind(spell=ScanProfile, existence="unique", spellframe="agents", binding_name="ScanProfile")
+        spell = book.find_spell_by_id(spell_id)
+        assert spell is not None
+        spellmap = SpellMap(spellframe="agents", binding_name="ScanProfile")
+        contract = SpellContract(spellframe="agents", binding_name="ScanProfile")
+        assert spell.binding_name == spellmap.binding_name == contract.binding_name == "ScanProfile"
+        key = SpellInputUtils.normalize_spell_key(spellframe="agents", binding_name="ScanProfile")
+        assert key == ("agents", "scanprofile")
+        assert spell.key == spellmap.canonical_key == contract.canonical_key == key
+        for frame, written in (("AGENTS", "scanprofile"), ("Agents", "SCANPROFILE")):
+            assert SpellMap(spellframe=frame, binding_name=written).canonical_key == key
+            assert SpellContract(spellframe=frame, binding_name=written).canonical_key == key
+            assert SpellMap(spellframe=frame, binding_name=written).binding_name == written
+    finally:
+        book.cleanup()
+
+
+@pytest.mark.parametrize(("explicit", "frame", "written"), [
+    (False, "agents", "ScanProfile"),
+    (False, "agents", "scanprofile"),
+    (False, "Agents", "SCANPROFILE"),
+    (True, "agents", "ScanProfile"),
+    (True, "AGENTS", "scanprofile"),
+], ids=["reported", "lower", "upper-frame-and-name", "explicit-spell", "explicit-spell-lower"])
+def test_capitalized_spellmap_binding_name_no_longer_fails_to_resolve(explicit: bool, frame: str,
+                                                                     written: str) -> None:
+    """
+    The reported composition: two ScanProfile providers at ("agents", "ScanProfile") and
+    ("artificial_intelligence_tools", "ScanProfile"), and a consumer whose SpellMap default names the first.
+    Conjure resolves it for every spelling of the frame and binding name, the injected object is the one meld
+    returns for that address (and never its namesake), and the SpellMap keeps the name as written.
+    """
+    book = _automatic_book("binding-name-case-spellmap")
+    book.bind(spell=ScanProfile, existence="unique", spellframe="agents", binding_name="ScanProfile")
+    book.bind(spell=ScanProfile, existence="unique", spellframe="artificial_intelligence_tools",
+              binding_name="ScanProfile")
+    if explicit:
+        default = SpellMap(ScanProfile, spellframe=frame, binding_name=written)
+    else:
+        default = SpellMap(spellframe=frame, binding_name=written)
+    book.bind(spell=_scanner_with(default), existence="many", spellframe="scanners", binding_name="MCPScanner")
+    root = book.conjure(name="root")
+    try:
+        scanner = root.meld(spellframe="scanners", binding_name="MCPScanner")
+        agents = root.meld(spellframe="agents", binding_name="ScanProfile")
+        tools = root.meld(spellframe="artificial_intelligence_tools", binding_name="ScanProfile")
+        assert scanner.profile is agents
+        assert scanner.profile is not tools
+        assert root.meld(spellframe=frame, binding_name=written) is agents
+        assert default.binding_name == written
+    finally:
+        root.cleanup()
+
+
+@pytest.mark.parametrize("written", ["ScanProfile", "scanprofile", "SCANPROFILE"])
+def test_capitalized_spellcontract_binding_name_is_satisfied_by_its_provider(written: str) -> None:
+    """
+    A SpellContract keeps the binding name as written and is satisfied, across a conduit link, by the provider
+    bound as ("agents", "ScanProfile") whatever the spelling, exactly as meld finds that provider.
+    """
+    configuration = _dynamic_configuration()
+    owner_book = Spellbook(configuration=configuration)
+    provider_id = owner_book.bind(spell=ScanProfile, existence=Existence.unique, permissions="create",
+                                  spellframe="agents", binding_name="ScanProfile")
+    borrower_book = Spellbook(configuration=configuration)
+    default = SpellContract(spellframe="agents", binding_name=written)
+    consumer_id = borrower_book.bind(spell=_scanner_with(default), existence=Existence.unique,
+                                     permissions="create")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
+    try:
+        owner.link(borrower)
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            assert borrower.add_spell_to_contract(spell_id=provider_id, conduit=owner, permissions="create")
+        assert borrower.validate_contracts_and_define()
+        scanner = borrower.meld(spell_id=consumer_id)
+        assert scanner.profile is owner.meld(spell_id=provider_id)
+        assert scanner.profile is owner.meld(spellframe="agents", binding_name=written)
+        assert default.binding_name == written
+    finally:
+        borrower.cleanup()
+        owner.cleanup()
+================================================================================
+END FILE: tests/integration/melder/spellbook/test_binding_name_case_parity_integration.py
+================================================================================
+================================================================================
 BEGIN FILE: tests/integration/melder/spellbook/test_cache_runtime_integration.py
 CONTENT SHA256: e788b7f0d6c6b15f1bb69c08e152286cb51fd9cbe114c502609652f7b6b86cb7
 SOURCE ENCODING: utf-8
@@ -136001,7 +136176,7 @@ END FILE: tests/integration/melder/spellbook/test_spellbook_integration_default_
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/spellbook/test_spellbook_integration_di_shape_compiler_matrix.py
-CONTENT SHA256: a68360faf6bf6d15977b4c7031c119bcff7484593c40289b08c8fa5a263fbad0
+CONTENT SHA256: f0dd1060d57a52d0568e8a5e6b8a7e8338b47c4bfe8eeb67de4b22b89f807e95
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -136641,13 +136816,15 @@ def test_spellmap_construction_rejects_empty_target() -> None:
         SpellMap(spell=None, spellframe=None)
 
 
-def test_spellmap_normalizes_binding_name_at_construction() -> None:
+def test_spellmap_keeps_binding_name_as_written() -> None:
     """
-    SpellMap lowercases binding_name at construction, so the Phase-4
-    SPELLMAP_BINDING_NAME_NOT_NORMALIZED warning is a defensive guard a
-    constructor-built SpellMap can never trip.
+    SpellMap keeps binding_name exactly as written, as Bind keeps a spell's binding name
+    (0.2.8226; it lowercased the name before), and exposes the case-insensitive form
+    through canonical_key, which Phase 3 matching agrees with.
     """
-    assert SpellMap(Engine, binding_name="PRIMARY").binding_name == "primary"
+    spellmap = SpellMap(Engine, binding_name="PRIMARY")
+    assert spellmap.binding_name == "PRIMARY"
+    assert spellmap.canonical_key[1] == "primary"
 
 
 def test_phase4_dangling_dependency_marks_broken() -> None:
@@ -161775,7 +161952,7 @@ END FILE: tests/unit/github_workflows/test_source_qualification.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/github_workflows/test_workflow_contracts.py
-CONTENT SHA256: f574d4a14b3f113d843112c1811d96d83ed7b6fd47511e30383d1fb133ba6b31
+CONTENT SHA256: 3d9b5bb9a20cf7f74191870d94b1b43e10959ce6991fe3aeab53f88534b58160
 SOURCE ENCODING: utf-8
 ================================================================================
 """Prove safety-relevant workflow wiring using parsed YAML rather than substring matches."""
@@ -161893,6 +162070,37 @@ def test_python_setup_does_not_force_gil_off_in_standard_bootstrap_helpers(name:
     setup = next(step for step in job["steps"] if step.get("uses", "").startswith("actions/setup-python@"))
     inherited = {**document.get("env", {}), **job.get("env", {}), **setup.get("env", {})}
     assert inherited.get("PYTHON_GIL") != "0"
+
+
+def test_single_version_setups_follow_the_newest_stable_patch() -> None:
+    """Helper jobs track the newest stable patch of their minor; only the speed tests pin one exact Python.
+
+    The runtime matrix already selects the newest stable patch of every supported minor. A job that names
+    a bare minor must ask setup-python for that minor's newest patch too, not the patch the runner image
+    happened to cache. Exact pins belong to the three speed tests alone, which measure one interpreter and
+    never iterate a Python matrix. No setup step may request a pre-release interpreter.
+    """
+    root = pathlib.Path(__file__).resolve().parents[3]
+    speed_tests = {"real-world-gauntlet.yml", "persistent-runtime-gauntlet.yml", "shallow-all-thread-scaling.yml"}
+    pinned: set[str] = set()
+    for path in sorted((root / ".github/workflows").glob("*.yml")):
+        for job in workflow(path.name)["jobs"].values():
+            for step in job.get("steps", []):
+                if not step.get("uses", "").startswith("actions/setup-python@"):
+                    continue
+                settings = step["with"]
+                assert settings.get("allow-prereleases", "false") == "false", path.name
+                version = settings.get("python-version")
+                if version is None or version.startswith("${{"):
+                    continue
+                if re.fullmatch(r"\d+\.\d+", version):
+                    assert settings.get("check-latest") == "true", (path.name, version)
+                else:
+                    assert re.fullmatch(r"\d+\.\d+\.\d+", version), (path.name, version)
+                    matrix = job.get("strategy", {}).get("matrix", {})
+                    assert isinstance(matrix, dict) and "python" not in matrix, path.name
+                    pinned.add(path.name)
+    assert pinned == speed_tests
 
 
 def test_supported_runtime_matrix_and_test_driver_are_shared() -> None:
@@ -183208,7 +183416,7 @@ END FILE: tests/unit/melder/aether/conduit/creations/test_lesser_creations.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/conduit/meld/contracts/test_spell_contract.py
-CONTENT SHA256: a2edd79d147d893569e13378ef77147ad7b51bf79266a97b91ca65cd7685d90e
+CONTENT SHA256: 1eb6e3d9afe3ea7f0602d4b4766931fe3b63bbbc073d01a56eb6bdc4365cd066
 SOURCE ENCODING: utf-8
 ================================================================================
 from unittest.mock import patch
@@ -183285,22 +183493,39 @@ def test_init_accepts_spell_frame_binding() -> None:
     assert contract.binding_name == "primary"
 
 
-def test_init_normalizes_binding_name_when_provided() -> None:
+def test_init_keeps_binding_name_as_written() -> None:
     """
-    Verify SpellContract normalizes binding names when provided.
+    Verify SpellContract keeps the binding name exactly as written, as Bind does (0.2.8226).
 
     Contract:
-        - binding_name is lowercased for case-insensitive matching.
+        - binding_name is the caller's text; it was lowercased before 0.2.8226.
+        - canonical_key carries the lowercase form, so matching stays case-insensitive.
 
     Raises:
-        AssertionError: If binding_name is not normalized.
+        AssertionError: If binding_name is changed or the key is not normalized.
     """
     contract = SpellContract(
         spell="alpha",
         spellframe="frame",
         binding_name="Primary",
     )
-    assert contract.binding_name == "primary"
+    assert contract.binding_name == "Primary"
+    assert contract.lookup_triplet == ("alpha", "frame", "Primary")
+    assert contract.canonical_key == ("frame", "primary")
+
+
+def test_init_rejects_a_non_string_binding_name() -> None:
+    """
+    Verify SpellContract refuses a binding name that is neither a string nor None.
+
+    Contract:
+        - TypeError names the received type before any field is set.
+
+    Raises:
+        AssertionError: If construction does not raise TypeError.
+    """
+    with pytest.raises(TypeError, match="binding_name must be a string or None; got int"):
+        SpellContract(spell="alpha", binding_name=7)
 
 
 def test_default_override_is_none() -> None:
@@ -183522,7 +183747,7 @@ END FILE: tests/unit/melder/aether/conduit/meld/contracts/test_spell_contract.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/conduit/meld/contracts/test_spell_map.py
-CONTENT SHA256: 742177f0fea9e9b290f74527b7dbb6569467f1e8734a2fb3d43e4c0efa211653
+CONTENT SHA256: bd1e31fda39255c12269a539a23e068f1ee50706e6406e5024cce5844270a3cc
 SOURCE ENCODING: utf-8
 ================================================================================
 from unittest.mock import patch
@@ -183599,22 +183824,39 @@ def test_init_accepts_spell_frame_binding() -> None:
     assert mapping.binding_name == "primary"
 
 
-def test_init_normalizes_binding_name_when_provided() -> None:
+def test_init_keeps_binding_name_as_written() -> None:
     """
-    Verify SpellMap normalizes binding names when provided.
+    Verify SpellMap keeps the binding name exactly as written, as Bind does (0.2.8226).
 
     Contract:
-        - binding_name is lowercased for case-insensitive matching.
+        - binding_name is the caller's text; it was lowercased before 0.2.8226.
+        - canonical_key carries the lowercase form, so matching stays case-insensitive.
 
     Raises:
-        AssertionError: If binding_name is not normalized.
+        AssertionError: If binding_name is changed or the key is not normalized.
     """
     mapping = SpellMap(
         spell="alpha",
         spellframe="frame",
         binding_name="Primary",
     )
-    assert mapping.binding_name == "primary"
+    assert mapping.binding_name == "Primary"
+    assert mapping.lookup_triplet == ("alpha", "frame", "Primary")
+    assert mapping.canonical_key == ("frame", "primary")
+
+
+def test_init_rejects_a_non_string_binding_name() -> None:
+    """
+    Verify SpellMap refuses a binding name that is neither a string nor None.
+
+    Contract:
+        - TypeError names the received type before any field is set.
+
+    Raises:
+        AssertionError: If construction does not raise TypeError.
+    """
+    with pytest.raises(TypeError, match="binding_name must be a string or None; got int"):
+        SpellMap(spell="alpha", binding_name=7)
 
 
 def test_default_override_is_none() -> None:
@@ -277400,7 +277642,7 @@ END FILE: tests/unit/melder/spellbook/spell_compiler/phases/test_compiler_phase_
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/spellbook/spell_compiler/phases/test_compiler_phase_3.py
-CONTENT SHA256: 23da1618e19ac986e7239523356adad659cb3833bfc4df97ab19bc100a47e86c
+CONTENT SHA256: 6e767262cdfb629ffecbe9a744bab8d1936d464784c65c79c9adcb3f20ab5d83
 SOURCE ENCODING: utf-8
 ================================================================================
 """Unit tests for current-surface compiler phase 3 local DAG build."""
@@ -277413,6 +277655,7 @@ from typing import Any, Optional, Protocol, Union
 import pytest
 
 import melder.aether.spellbook.spell_compiler.phases.compiler_phase_3 as compiler_phase_3_module
+from melder.aether.conduit.meld.contracts.spell_map import SpellMap
 from melder.aether.spellbook.spell_compiler.phases.compiler_phase_3 import (
     CompilerPhase3,
 )
@@ -278492,6 +278735,80 @@ def test_resolve_spellmap_default_raises_on_ambiguous_match() -> None:
 
     with pytest.raises(RuntimeError, match="resolved to multiple candidates"):
         phase._resolve_spellmap_default(root_spell, spellbook, dep)
+
+
+def _scan_profile_pool(spell_obj: Any) -> tuple[Any, Any, Any]:
+    """The reported pool: one ScanProfile under "agents", its namesake under another category."""
+    agents = _make_spell_stub("agents", spell_obj=spell_obj, spellframe="agents", spell_name="ScanProfile",
+                              binding_name="ScanProfile")
+    tools = _make_spell_stub("tools", spell_obj=spell_obj, spellframe="artificial_intelligence_tools",
+                             spell_name="ScanProfile", binding_name="ScanProfile")
+    return agents, tools, SimpleNamespace(_spell_id_pool={"agents": agents, "tools": tools})
+
+
+@pytest.mark.parametrize(("frame", "written"), [
+    ("agents", "ScanProfile"), ("agents", "scanprofile"), ("Agents", "SCANPROFILE"),
+])
+def test_resolve_spellmap_default_capitalized_binding_name_no_longer_fails_to_resolve(frame: str,
+                                                                                      written: str) -> None:
+    """
+    Regression (0.2.8226): a frame-only SpellMap keeps the binding name as written, as Bind does, and Phase 3
+    compares names and string categories by their normalized keys, so every spelling selects the provider
+    bound as ("agents", "ScanProfile") and never its namesake. Before, the SpellMap stored "scanprofile" and
+    was compared with the raw "ScanProfile", raising "SpellMap default could not be resolved".
+    """
+    agents, _tools, spellbook = _scan_profile_pool(object())
+    root_spell = _make_spell_stub("root", spell_obj=object(), spellframe=None, spell_name="MCPScanner")
+    dep = _make_dependency(spell_id="root", param_name="profile", position=0,
+                           di_shape=ParameterDIShape.SPELLMAP_DEFAULT,
+                           spellmap_default=SpellMap(spellframe=frame, binding_name=written))
+    resolved = CompilerPhase3()._resolve_spellmap_default(root_spell, spellbook, dep)
+    assert list(resolved.values()) == [agents]
+
+
+def test_resolve_spellmap_default_explicit_spell_matches_a_capitalized_binding_name() -> None:
+    """The explicit-spell form filters frame and binding name by the same normalized keys."""
+    provider = object()
+    agents, _tools, spellbook = _scan_profile_pool(provider)
+    root_spell = _make_spell_stub("root", spell_obj=object(), spellframe=None, spell_name="MCPScanner")
+    dep = _make_dependency(spell_id="root", param_name="profile", position=0,
+                           di_shape=ParameterDIShape.SPELLMAP_DEFAULT,
+                           spellmap_default=SpellMap(provider, spellframe="AGENTS", binding_name="ScanProfile"))
+    resolved = CompilerPhase3()._resolve_spellmap_default(root_spell, spellbook, dep)
+    assert list(resolved.values()) == [agents]
+
+
+@pytest.mark.parametrize("written", [None, ""])
+def test_resolve_spellmap_default_none_and_empty_binding_name_select_the_default_binding(written: Any) -> None:
+    """None and "" both name the default binding, as in the address key: a named sibling is not selected."""
+    default = _make_spell_stub("default", spell_obj=object(), spellframe="agents", spell_name="ScanProfile")
+    named = _make_spell_stub("named", spell_obj=object(), spellframe="agents", spell_name="ScanProfile",
+                             binding_name="ScanProfile")
+    root_spell = _make_spell_stub("root", spell_obj=object(), spellframe=None, spell_name="MCPScanner")
+    dep = _make_dependency(spell_id="root", param_name="profile", position=0,
+                           di_shape=ParameterDIShape.SPELLMAP_DEFAULT,
+                           spellmap_default=SpellMap(spellframe="agents", binding_name=written))
+    spellbook = SimpleNamespace(_spell_id_pool={"default": default, "named": named})
+    resolved = CompilerPhase3()._resolve_spellmap_default(root_spell, spellbook, dep)
+    assert list(resolved.values()) == [default]
+
+
+def test_spellmap_frame_matching_folds_case_for_categories_only() -> None:
+    """String categories match case-insensitively; a Protocol frame matches only itself, never its name."""
+
+    class IScanner(Protocol):
+        """Contract frame."""
+
+        def scan(self) -> None:
+            """Scan once."""
+
+    assert CompilerPhase3._spellmap_frame_matches("agents", "Agents")
+    assert CompilerPhase3._spellmap_frame_matches("AGENTS", "agents")
+    assert not CompilerPhase3._spellmap_frame_matches("agents", "tools")
+    assert CompilerPhase3._spellmap_frame_matches(IScanner, IScanner)
+    assert not CompilerPhase3._spellmap_frame_matches(IScanner, "IScanner")
+    assert not CompilerPhase3._spellmap_frame_matches("IScanner", IScanner)
+    assert not CompilerPhase3._spellmap_frame_matches(None, "agents")
 
 
 def test_build_local_frame_dag_skips_unresolved_collection() -> None:

@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_architecture.md'
-LINE_COUNT = 3700
-CONTENT_SHA256 = '7ceac98c429db73e92121f78f8df77b97a78b951e73c5dde515d22b466dcd2cb'
+LINE_COUNT = 3729
+CONTENT_SHA256 = 'f4b03018ce68b580dcfd6b44531d0d77eecc7370988366e9422678a07f1d2e96'
 
 TEXT = """# Src Architecture (C4)
 
@@ -936,6 +936,20 @@ each entry in `src_components.md`; this list is the set that crosses components.
 - Validation strategies registered in `SpellValidationSystem`.
 
 ## Operational Invariants
+- Descriptor binding names (2026-10-04, 0.2.8226): `SpellMap` and `SpellContract` keep `binding_name` exactly as
+  written, as Bind keeps a spell's, and every match goes through the normalized address key bind registers and
+  meld resolves by. Phase 3 compares a SpellMap default's binding name by `normalize_binding_name` on both sides
+  (None and "" are the default binding) and string spellframes by `normalize_frame_key` (class and Protocol
+  frames stay identity matches); SpellContract already matched through `canonical_key`. So "ScanProfile",
+  "scanprofile" and "SCANPROFILE" select one provider on every surface. A non-string name raises TypeError at
+  construction; the Phase-4 warning SPELLMAP_BINDING_NAME_NOT_NORMALIZED is retired; the structural snapshot
+  records the normalized name, so its rows and every cache format are unchanged. A consumer whose default carries
+  a mixed-case descriptor name gets a new spell id once, because the bind fingerprint hashes default reprs.
+  EVIDENCE: `src/melder/aether/conduit/meld/contracts/spell_map.py:SpellMap.__init__`,
+  `src/melder/aether/conduit/meld/contracts/spell_contract.py:SpellContract.__init__`,
+  `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:CompilerPhase3._resolve_spellmap_default`,
+  `CompilerPhase3._spellmap_frame_matches` and
+  `src/melder/aether/spellbook/spell_compiler/structural_snapshot/structural_snapshot.py:StructuralSnapshot.annotation_refs`.
 - Annotation matching by kind (2026-10-04, 0.2.8222; supersedes the 0.2.8218 address-key rule below): a spellframe is a
   string category or a `typing.Protocol` contract and nothing else - `Bind._classify_spellframe` records the kind
   (`SpellframeKind.none` / `category` / `contract`) and the Protocol on the Spell (`spellframe_kind`,
@@ -1715,6 +1729,12 @@ each entry in `src_components.md`; this list is the set that crosses components.
   a single posture setting explains all four at once, and it is the common
   cause.
 - SpellMap defaults that resolve to zero or multiple candidates raise RuntimeError.
+- A SpellMap default naming its provider's binding name or string category in another case no longer raises
+  "SpellMap default could not be resolved" (fixed in 0.2.8226): the descriptor kept the lowercased name and
+  Phase 3 compared it with the bound spell's raw one. A non-string `binding_name` on either descriptor raises
+  TypeError (it was an AttributeError from `.lower()`).
+  EVIDENCE:
+  `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:CompilerPhase3._resolve_spellmap_default`.
 - SpellContract requires at least `spell` or `spellframe` (ValueError).
 - Ownership transfer raises RuntimeError when dynamic mode is disabled (same
   posture gate as linking, severing and upgrade).
@@ -2748,16 +2768,16 @@ Resolution and creations:
   note: compiled execution lanes and runtime dispatch.
 - path: `src/melder/aether/conduit/meld/contracts/spell_map.py`
   start_line: 1
-  end_line: 351
-  loc: 351
-  verified_at: 2026-09-26T20:10:34Z
-  note: SpellMap descriptor.
+  end_line: 359
+  loc: 359
+  verified_at: 2026-10-04T21:25:43Z
+  note: SpellMap descriptor; keeps binding_name as written (0.2.8226).
 - path: `src/melder/aether/conduit/meld/contracts/spell_contract.py`
   start_line: 1
-  end_line: 344
-  loc: 344
-  verified_at: 2026-09-26T20:10:34Z
-  note: SpellContract descriptor.
+  end_line: 351
+  loc: 351
+  verified_at: 2026-10-04T21:25:43Z
+  note: SpellContract descriptor; keeps binding_name as written (0.2.8226).
 - path: `src/melder/aether/conduit/creations/creations.py`
   start_line: 1
   end_line: 1343
@@ -3202,6 +3222,8 @@ policy source. Receiving-book order wins on replay. The loader follows changed b
 without rewriting the original record or existing live IDs.
 
 ## Information Sources
+- `src/melder/aether/spellbook/spell_compiler/structural_snapshot/structural_snapshot.py`
+- `src/melder/aether/spellbook/spell_compiler/validation/strategies/spellmap_shape_validation_strategy.py`
 - `src/melder/utilities/caching_system/caching_system.py`
 - `src/melder/aether/spellbook/spell_compiler/validation/strategies/ambiguous_provider_strategy.py`
 - `src/melder/aether/spellbook/spell_compiler/dag/socket_kind.py`
@@ -3347,6 +3369,13 @@ without rewriting the original record or existing live IDs.
 - `src/melder/utilities/ai_native_support_tools/protocol_crafter.py`
 
 ## Context / Handoff Summary
+
+2026-10-04 descriptor binding names (0.2.8226): SpellMap and SpellContract keep `binding_name` as written, as Bind
+does, and Phase 3 resolves a SpellMap default by the normalized binding and string-frame keys bind and meld use,
+so a capitalized binding name no longer fails with "SpellMap default could not be resolved"; TypeError for a
+non-string name; SPELLMAP_BINDING_NAME_NOT_NORMALIZED retired; no cache generation moves. The operational
+invariants, the failure modes, the code map and the sources carry it; the component map carries the
+per-descriptor rule.
 
 2026-10-04 ambiguous providers reported, not thrown (0.2.8224): two or more providers for one single annotation refuse
 the consumer through the readable conjure report (`AMBIGUOUS_PROVIDER`, every candidate's address, the SpellMap /

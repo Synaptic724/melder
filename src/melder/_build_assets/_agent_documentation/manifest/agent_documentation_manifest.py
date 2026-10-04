@@ -19,8 +19,8 @@ Regenerate with:
 """
 
 MANIFEST_VERSION = "2.0.0"
-BUILT_FOR_VERSION = "0.2.8225"
-SOURCE_SHA256 = "293ff89bfe139f87c6f0af3ef990b42cb400230f513eec7cb8cf90e6361b3579"
+BUILT_FOR_VERSION = "0.2.8226"
+SOURCE_SHA256 = "b95450a6531ef631d2ade9388c9c1d21fc05b684be4a2b517716feae3ab2da86"
 MARKED_COUNT = 462
 EXEMPT_COUNT = 142
 PENDING_COUNT = 18
@@ -229,7 +229,7 @@ AGENT_METADATA = {
     ('melder.aether.spellbook.spell_compiler.validation.strategies.resolution_frame_presence_strategy', 'ResolutionFramePresenceStrategy'): ('internal', 'access: internal. Phase-4 structural gate: emits MISSING_RESOLUTION_FRAME (error) when Phase 3 produced no resolution frame. (MISSING_DEPENDENCY_GRAPH retired 2026-09-26.)'),
     ('melder.aether.spellbook.spell_compiler.validation.strategies.self_validation_strategy', 'SelfDependencyStrategy'): ('internal', "access: internal. Phase-4 strategy: emits one SELF_DEPENDENCY error if a spell's dependency list contains its own selected_spell_id. Direct self-dependency only, not longer cycles."),
     ('melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy', 'SpellValidationStrategy'): ('internal', 'access: internal. Base class for Phase-4 validation strategies: implement validate(context) to inspect one spell and append SpellValidationIssue; name/description identify it in the registry. Never mutate the spell/spellbook; prefer appending issues to raising.'),
-    ('melder.aether.spellbook.spell_compiler.validation.strategies.spellmap_shape_validation_strategy', 'SpellMapShapeValidationStrategy'): ('internal', 'access: internal. Phase-4 strategy for SPELLMAP_DEFAULT params: errors on missing / invalid SpellMap or a SpellMap with no spell/spellframe target; warns when binding_name is not normalized. Validation only.'),
+    ('melder.aether.spellbook.spell_compiler.validation.strategies.spellmap_shape_validation_strategy', 'SpellMapShapeValidationStrategy'): ('internal', 'access: internal. Phase-4 strategy for SPELLMAP_DEFAULT params: errors on missing / invalid SpellMap or a SpellMap with no spell/spellframe target. Validation only.'),
     ('melder.aether.spellbook.spell_compiler.validation.validation_system', 'SpellValidationSystem'): ('internal', 'access: internal. Phase-4 registry+runner: auto-registers the built-in SpellValidationStrategy set, runs them in order over one SpellValidationContext per spell, tags issues with their strategy, and returns a SpellValidationResult. Ephemeral - one per validation run, cleaned after.'),
     ('melder.aether.spellbook.spell_types.spell_types', 'SpellType'): ('internal', 'access: internal. Canonical runtime binding-family classification for bound spells. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
     ('melder.aether.spellbook.spellbinder', 'SpellBinder'): ('public', 'access: public. Fluent alternative to Spellbook.bind(...). Chain the bind-time choices then finalize() to submit. Holds one pending registration at a time; bind(...) resets in-flight state. Holds the Spellbook weakly.'),
