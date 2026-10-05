@@ -1,0 +1,21 @@
+- DATETIME: {NOW}
+  TYPE: MEASURE
+  CLAIM: melder 0.2.8215 is installed in priv_commandops/.venv314. Method (the VM cannot run the Windows
+    interpreter): `uv pip install --target` into VM scratch (no bytecode), direct_url.json pointed at the Windows
+    wheel path and uv's uv_cache.json stamp dropped (RECORD rewritten, 594 rows checked in scratch), the old
+    `melder/` (with its 533 Windows .pyc and runtime caches) and `melder-0.2.8212.dist-info/` moved into
+    `.venv314/_to_delete/melder-0.2.8212/`, the new tree copied in. The recursive copy stopped once with "cannot
+    create directory melder/__melder_cache__: File exists" (the directory was there, empty, when inspected), so
+    its one marker file and the dist-info were copied separately. The installed tree then matches its RECORD: 594
+    rows, no hash or size mismatch, no stray or missing file, no .pyc; INSTALLER uv, direct_url the Windows dist
+    path. A VM copy of it imports as 0.2.8215 (metadata agrees) and the release example passes on it.
+  EVIDENCE:
+  - context_compass/artifacts/wheel_0_2_8215_20260930/melderops_env_before.txt:1-11
+  - context_compass/artifacts/wheel_0_2_8215_20260930/prepare_windows_install.log:1-2
+  - context_compass/artifacts/wheel_0_2_8215_20260930/melderops_env_install_check.log:1-3
+  - context_compass/artifacts/wheel_0_2_8215_20260930/melderops_env_import_copy.log:1-4
+  IMPACT: MelderOps' Windows env carries option B; Windows compiles bytecode on its first import there; the old
+    files wait in .venv314/_to_delete/ for an owner delete.
+  NEXT: Upgrade the VM env with the wheel and refresh its copy of MelderOps from the device tree.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 9

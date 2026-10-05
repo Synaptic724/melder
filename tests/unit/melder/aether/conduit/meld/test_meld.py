@@ -2097,6 +2097,20 @@ def test_ensure_resolution_resolvable_blocks_invalid_disabled_cleaned(
         meld._ensure_resolution_resolvable(spell)
 
 
+def _make_phase5_root(spell: _SpellStub) -> _SpellStub:
+    """
+    Give a stub spell a Phase 5 root blueprint for its selected id and return it.
+
+    The deferred lane keeps its 8-11 pass for a spell that is its current Phase 5 root; any other constructed
+    spell (a dependency compiled only inside a consumer's plan) runs the full target pass (5-11) instead.
+    """
+    spell._compiler_artifact._root_blueprint_phase5 = SimpleNamespace(
+        root_spell_id=spell.spell_index.selected_spell_id,
+        cleanup=lambda: None,
+    )
+    return spell
+
+
 def test_ensure_runtime_resolution_ready_skips_when_not_required() -> None:
     """
     Verify deferred runtime-resolution gate is a no-op when not required.
@@ -2150,22 +2164,24 @@ def test_ensure_runtime_resolution_ready_marks_not_required_when_complete() -> N
 
 def test_ensure_runtime_resolution_ready_runs_deferred_and_marks_complete() -> None:
     """
-    Verify runtime gate executes deferred phases and marks resolution complete.
+    Verify runtime gate executes deferred phases for a Phase 5 root and marks resolution complete.
 
     Contract:
-        - Deferred phase hook runs once for the active resolution conduit id.
+        - A spell that is its current Phase 5 root keeps the deferred 8-11 pass: the hook runs once for
+          the active resolution conduit id and the full target pass does not run.
         - Success flips flags to `resolution_complete=True` and
           `resolution_required=False`.
     """
     spellbook = _SpellbookStub()
     spellbook._run_deferred_resolution_phases_for_target_spell = MagicMock()
+    spellbook._run_resolution_phases_for_target_spell = MagicMock()
     meld = _make_meld(spellbook=spellbook)
-    spell = _SpellStub(
+    spell = _make_phase5_root(_SpellStub(
         spell_id="spell-1",
         spellbook=spellbook,
         resolution_required=True,
         resolution_complete=False,
-    )
+    ))
 
     meld._ensure_runtime_resolution_ready(spell)
 
@@ -2174,6 +2190,7 @@ def test_ensure_runtime_resolution_ready_runs_deferred_and_marks_complete() -> N
         expected_conduit_id,
         spell,
     )
+    spellbook._run_resolution_phases_for_target_spell.assert_not_called()
     assert spell.resolution_complete is True
     assert spell.resolution_required is False
 
@@ -2183,7 +2200,7 @@ def test_ensure_runtime_resolution_ready_failure_reflags_and_reraises() -> None:
     Verify deferred-resolution failures keep runtime gate required and incomplete.
 
     Contract:
-        - Deferred phase exceptions propagate to caller.
+        - Deferred phase exceptions (a Phase 5 root's 8-11 pass) propagate to caller.
         - Failure preserves `resolution_required=True` and
           `resolution_complete=False`.
     """
@@ -2192,12 +2209,12 @@ def test_ensure_runtime_resolution_ready_failure_reflags_and_reraises() -> None:
         side_effect=RuntimeError("deferred resolution failed"),
     )
     meld = _make_meld(spellbook=spellbook)
-    spell = _SpellStub(
+    spell = _make_phase5_root(_SpellStub(
         spell_id="spell-1",
         spellbook=spellbook,
         resolution_required=True,
         resolution_complete=False,
-    )
+    ))
 
     with pytest.raises(RuntimeError, match="deferred resolution failed"):
         meld._ensure_runtime_resolution_ready(spell)
@@ -2238,9 +2255,141 @@ def test_ensure_runtime_resolution_ready_requires_conduit_id() -> None:
     assert spell.resolution_complete is False
 
 
+def test_ensure_runtime_resolution_ready_runs_full_target_pass_without_phase5_root() -> None:
+    """
+    Verify the runtime gate runs the full target pass for a spell that is not its Phase 5 root.
+
+    Contract:
+        - A constructed spell with no Phase 5 root blueprint - a dependency compiled only inside a
+          consumer's plan and flagged by that pass - runs `_run_resolution_phases_for_target_spell` (5-11)
+          once for the active resolution conduit id.
+        - The deferred 8-11 hook does not run: it skips a spell with no Phase 5 root blueprint.
+        - Success flips flags to `resolution_complete=True` and `resolution_required=False`.
+    """
+    spellbook = _SpellbookStub()
+    spellbook._run_resolution_phases_for_target_spell = MagicMock()
+    spellbook._run_deferred_resolution_phases_for_target_spell = MagicMock()
+    meld = _make_meld(spellbook=spellbook)
+    spell = _SpellStub(
+        spell_id="spell-1",
+        spellbook=spellbook,
+        resolution_required=True,
+        resolution_complete=False,
+    )
+
+    meld._ensure_runtime_resolution_ready(spell)
+
+    spellbook._run_resolution_phases_for_target_spell.assert_called_once_with(
+        meld._resolution_conduit_id,
+        spell,
+    )
+    spellbook._run_deferred_resolution_phases_for_target_spell.assert_not_called()
+    assert spell.resolution_complete is True
+    assert spell.resolution_required is False
+
+
+def test_ensure_runtime_resolution_ready_keeps_deferred_pass_for_existing_creation() -> None:
+    """
+    Verify an existing-creation spell keeps the deferred pass even without a Phase 5 root blueprint.
+
+    Contract:
+        - Existing creations never plan (their context has its own executor path), so the lane keeps
+          `_run_deferred_resolution_phases_for_target_spell` for them and never runs the full target pass.
+        - Success flips flags to `resolution_complete=True` and `resolution_required=False`.
+    """
+    spellbook = _SpellbookStub()
+    spellbook._run_resolution_phases_for_target_spell = MagicMock()
+    spellbook._run_deferred_resolution_phases_for_target_spell = MagicMock()
+    meld = _make_meld(spellbook=spellbook)
+    spell = _SpellStub(
+        spell_id="spell-1",
+        spellbook=spellbook,
+        is_existing_creation=True,
+        resolution_required=True,
+        resolution_complete=False,
+    )
+
+    meld._ensure_runtime_resolution_ready(spell)
+
+    spellbook._run_deferred_resolution_phases_for_target_spell.assert_called_once_with(
+        meld._resolution_conduit_id,
+        spell,
+    )
+    spellbook._run_resolution_phases_for_target_spell.assert_not_called()
+    assert spell.resolution_complete is True
+    assert spell.resolution_required is False
+
+
+def test_ensure_runtime_resolution_ready_full_pass_leaving_invalid_verdict_raises() -> None:
+    """
+    Verify a full target pass that leaves the spell unresolved for the conduit raises a validation error.
+
+    Contract:
+        - After the full pass the spell must read resolution-valid for the resolution conduit; a pass that
+          records an invalid verdict (a visibility failure returns without raising) raises
+          SpellbookValidationError instead of marking the spell complete.
+        - The failure keeps `resolution_required=True` and `resolution_complete=False` and bumps the door
+          epoch, like any failed deferred-lane pass.
+    """
+    resolution_state = _ResolutionStateStub()
+    spellbook = _SpellbookStub()
+
+    def _record_invalid_verdict(conduit_id: str, target_spell: _SpellStub) -> None:
+        """Stand in for a full pass that ends in a visibility failure."""
+        resolution_state._spell_validity[target_spell.spell_id] = SpellValidity.invalid
+
+    spellbook._run_resolution_phases_for_target_spell = MagicMock(side_effect=_record_invalid_verdict)
+    meld = _make_meld(spellbook=spellbook)
+    spell = _SpellStub(
+        spell_id="spell-1",
+        spellbook=spellbook,
+        spell_system_states=_SpellSystemStatesStub(resolution_state),
+        resolution_required=True,
+        resolution_complete=False,
+    )
+    epoch_before = spell._door_epoch
+
+    with pytest.raises(SpellbookValidationError):
+        meld._ensure_runtime_resolution_ready(spell)
+
+    assert spell.resolution_required is True
+    assert spell.resolution_complete is False
+    assert spell._door_epoch == epoch_before + 1
+
+
+def test_ensure_runtime_resolution_ready_full_pass_failure_reflags_and_reraises() -> None:
+    """
+    Verify a failing full target pass propagates and keeps the spell owing its resolution.
+
+    Contract:
+        - Exceptions from `_run_resolution_phases_for_target_spell` propagate unchanged.
+        - Failure preserves `resolution_required=True` and `resolution_complete=False` and bumps the
+          door epoch.
+    """
+    spellbook = _SpellbookStub()
+    spellbook._run_resolution_phases_for_target_spell = MagicMock(
+        side_effect=RuntimeError("full target pass failed"),
+    )
+    meld = _make_meld(spellbook=spellbook)
+    spell = _SpellStub(
+        spell_id="spell-1",
+        spellbook=spellbook,
+        resolution_required=True,
+        resolution_complete=False,
+    )
+    epoch_before = spell._door_epoch
+
+    with pytest.raises(RuntimeError, match="full target pass failed"):
+        meld._ensure_runtime_resolution_ready(spell)
+
+    assert spell.resolution_required is True
+    assert spell.resolution_complete is False
+    assert spell._door_epoch == epoch_before + 1
+
+
 def test_meld_runs_deferred_runtime_resolution_before_context_build(monkeypatch: pytest.MonkeyPatch) -> None:
     """
-    Verify meld executes deferred runtime gate before creation-context build.
+    Verify meld executes deferred runtime gate before creation-context build (a Phase 5 root: 8-11).
 
     Contract:
         - Deferred phase hook executes before context build/execution.
@@ -2275,13 +2424,13 @@ def test_meld_runs_deferred_runtime_resolution_before_context_build(monkeypatch:
         return "resolved"
 
     context.execute_no_hooks = _execute_no_hooks
-    spell = _SpellStub(
+    spell = _make_phase5_root(_SpellStub(
         spell_id="spell-1",
         owner_creations=creations,
         spellbook=spellbook,
         resolution_required=True,
         resolution_complete=False,
-    )
+    ))
     spell._get_or_build_creation_context = MagicMock(return_value=context)
 
     meld = _make_meld(creations=creations, spellbook=spellbook)
@@ -2301,7 +2450,7 @@ def test_meld_runs_deferred_runtime_resolution_before_context_build(monkeypatch:
 
 def test_meld_skips_context_build_when_deferred_runtime_resolution_fails(monkeypatch: pytest.MonkeyPatch) -> None:
     """
-    Verify meld does not build context when deferred runtime gate fails.
+    Verify meld does not build context when deferred runtime gate fails (a Phase 5 root: 8-11).
 
     Contract:
         - Deferred runtime phase errors propagate from `meld`.
@@ -2313,12 +2462,12 @@ def test_meld_skips_context_build_when_deferred_runtime_resolution_fails(monkeyp
     spellbook._run_deferred_resolution_phases_for_target_spell = MagicMock(
         side_effect=RuntimeError("deferred gate failure"),
     )
-    spell = _SpellStub(
+    spell = _make_phase5_root(_SpellStub(
         spell_id="spell-1",
         spellbook=spellbook,
         resolution_required=True,
         resolution_complete=False,
-    )
+    ))
     spell._get_or_build_creation_context = MagicMock()
 
     meld = _make_meld(spellbook=spellbook)

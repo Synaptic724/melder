@@ -72,7 +72,8 @@
   "Dict": "typing.Dict",
   "Optional": "typing.Optional",
   "Tuple": "typing.Tuple",
-  "SourceCustodyStrategy": "melder.crystallizer.crystal_analysis.custody.source_custody_strategy.SourceCustodyStrategy"
+  "SourceCustodyStrategy": "melder.crystallizer.crystal_analysis.custody.source_custody_strategy.SourceCustodyStrategy",
+  "hashlib": "hashlib"
  },
  "collapse_candidate": {
   "module": "melder.crystallizer.crystal_analysis.custody.binary_unknown_custody_strategy",

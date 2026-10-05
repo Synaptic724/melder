@@ -1,0 +1,61 @@
+{
+  "prepared_at": "2026-10-03T19:07:45.991467+00:00",
+  "origin_repository": "C:\\Users\\Mark\\PycharmProjects\\priv_commandops",
+  "last_test_receipt": "2026-10-03T13:55:44Z",
+  "last_test_distribution": "0.2.8215",
+  "tests_rerun_for_handoff": false,
+  "saved_result": {
+    "tests": 5,
+    "failures": 3,
+    "errors": 0,
+    "skipped": 0
+  },
+  "files": {
+    "test_native_rebind_probe.py": {
+      "origin": "C:\\Users\\Mark\\PycharmProjects\\priv_commandops\\context_compass\\artifacts\\2026-10-03_actions_native_factory\\test_native_rebind_probe.py",
+      "sha256": "56EAEF004E00633C904CD1910FB56CBC09EBD51EE9B1D0B959EE7FDFC5ACE5FD",
+      "lf_sha256": "56EAEF004E00633C904CD1910FB56CBC09EBD51EE9B1D0B959EE7FDFC5ACE5FD"
+    },
+    "native_rebind_finding.md": {
+      "origin": "C:\\Users\\Mark\\PycharmProjects\\priv_commandops\\context_compass\\artifacts\\2026-10-03_actions_native_factory\\native_rebind_finding.md",
+      "sha256": "777111C7AA96F93645B28898045EBABE0DDA9FB9DCC7611EBB550939C42B4247",
+      "lf_sha256": "777111C7AA96F93645B28898045EBABE0DDA9FB9DCC7611EBB550939C42B4247"
+    },
+    "native_rebind.xml": {
+      "origin": "C:\\Users\\Mark\\PycharmProjects\\priv_commandops\\context_compass\\artifacts\\2026-10-03_actions_native_factory\\native_rebind.xml",
+      "sha256": "ACED7E5505EBE09CAF21A91AD62F16B5137533A75D32424ED07FA71EB3BA37CA",
+      "lf_sha256": "ACED7E5505EBE09CAF21A91AD62F16B5137533A75D32424ED07FA71EB3BA37CA"
+    },
+    "rebind_retest_2026-10-03.json": {
+      "origin": "C:\\Users\\Mark\\PycharmProjects\\priv_commandops\\context_compass\\artifacts\\2026-10-03_actions_native_factory\\rebind_retest_2026-10-03.json",
+      "sha256": "581B45B749F12A83A0B0324DDCA14431AAFF7E4F65D4909D136A7FBCCB8F7719",
+      "lf_sha256": "581B45B749F12A83A0B0324DDCA14431AAFF7E4F65D4909D136A7FBCCB8F7719"
+    },
+    "rebind_retest_2026-10-03.xml": {
+      "origin": "C:\\Users\\Mark\\PycharmProjects\\priv_commandops\\context_compass\\artifacts\\2026-10-03_actions_native_factory\\rebind_retest_2026-10-03.xml",
+      "sha256": "9AD1AD821ACBE4FE18E17B7B89FC5CAEB378FAB8F542C27B409740E8ED4B5070",
+      "lf_sha256": "9AD1AD821ACBE4FE18E17B7B89FC5CAEB378FAB8F542C27B409740E8ED4B5070"
+    },
+    "snapshot/tests/mocks/melder_isolation.py": {
+      "origin": "C:\\Users\\Mark\\PycharmProjects\\priv_commandops\\tests\\mocks\\melder_isolation.py",
+      "sha256": "A3FCEABF1AD175D250C3C66C93BB5704F483AEB82D2AAD1105F20A1225FCCCE5",
+      "lf_sha256": "A3FCEABF1AD175D250C3C66C93BB5704F483AEB82D2AAD1105F20A1225FCCCE5"
+    },
+    "snapshot/tests/mocks/actions_factory.py": {
+      "origin": "C:\\Users\\Mark\\PycharmProjects\\priv_commandops\\tests\\mocks\\actions_factory.py",
+      "sha256": "A8E47D34781DA37EE45FFC847BB8B41260C1582D32465DCDD57EE04685ABC69F",
+      "lf_sha256": "6E536D2B76D97EBC5C3D5659554FD3DB8875E801D49D89CDA2FBF618D14CAF58"
+    },
+    "snapshot/tests/component/spectrum/conftest.py": {
+      "origin": "C:\\Users\\Mark\\PycharmProjects\\priv_commandops\\tests\\component\\spectrum\\conftest.py",
+      "sha256": "7004CCF7EB8CB274D3E46BC4A49AF517F9CFB2115F77F05947EEA03FCF634556",
+      "lf_sha256": "7004CCF7EB8CB274D3E46BC4A49AF517F9CFB2115F77F05947EEA03FCF634556"
+    },
+    "snapshot/tests/component/spectrum/test_actions_native_factory.py": {
+      "origin": "C:\\Users\\Mark\\PycharmProjects\\priv_commandops\\tests\\component\\spectrum\\test_actions_native_factory.py",
+      "sha256": "28077A5FBAE9DF3B6CCE0330BE25E7300484DCF48C87FF664EB917D64206A0E9",
+      "lf_sha256": "2A1544F7CE89B1B9BD6BF03025B59F40B1F6E3A594800E8F96955379400678B5"
+    }
+  },
+  "line_ending_note": "Current test source matches the receipt hash after LF normalization; current JUnit matches its receipt after CRLF normalization. Probe matches byte-for-byte. No semantic difference inferred from these line-ending-only hash differences."
+}

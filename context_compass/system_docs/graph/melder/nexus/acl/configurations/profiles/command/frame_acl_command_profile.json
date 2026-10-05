@@ -134,6 +134,7 @@
  ],
  "published_aliases": [],
  "imports": {
+  "threading": "threading",
   "List": "typing.List",
   "Optional": "typing.Optional",
   "FrameACLRule": "melder.nexus.acl.configurations.profiles.rules.frame_acl_rule.FrameACLRule",

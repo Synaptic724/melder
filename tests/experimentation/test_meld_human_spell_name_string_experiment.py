@@ -3,7 +3,7 @@
 import melder as md
 import pytest
 from collections.abc import Iterator
-from typing import TYPE_CHECKING, Optional
+from typing import Optional, Protocol, TYPE_CHECKING
 
 from melder.aether.spellbook.spellbook import Spellbook
 
@@ -15,7 +15,7 @@ class MyService:
     """Minimal service whose class name is the human lookup value under test."""
 
 
-class ServiceFrame:
+class ServiceFrame(Protocol):
     """Concrete logical frame type with a name distinct from the bound service."""
 
 

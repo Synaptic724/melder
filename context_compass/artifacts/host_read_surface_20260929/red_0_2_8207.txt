@@ -1,0 +1,51 @@
+# melder_0 2026-09-29T21:30:10Z: red run on 0.2.8207 before any source edit; 3.14t PYTHON_GIL=0
+        with pytest.raises(RuntimeError):
+>           _ = posture.frozen
+                ^^^^^^^^^^^^^^
+E           AttributeError: 'AethericFrameConfiguration' object has no attribute 'frozen'
+
+tests/unit/melder/aether/test_configuration_read_accessors.py:80: AttributeError
+=========================== short test summary info ============================
+FAILED tests/integration/melder/aether/test_aether_frame_lookups.py::test_lookups_on_a_fresh_world_create_no_frame_and_leave_the_configuration_unsealed
+FAILED tests/integration/melder/aether/test_aether_frame_lookups.py::test_a_spellbook_frame_is_found_and_returned_as_the_same_object
+FAILED tests/integration/melder/aether/test_aether_frame_lookups.py::test_list_frame_names_follows_registration_order_and_is_a_snapshot
+FAILED tests/integration/melder/aether/test_aether_frame_lookups.py::test_a_cleaned_frame_is_absent_from_every_lookup
+FAILED tests/integration/melder/aether/test_aether_frame_lookups.py::test_get_frame_error_says_how_to_create_or_probe_the_frame
+FAILED tests/integration/melder/aether/test_aether_frame_lookups.py::test_frame_lookups_refuse_a_name_that_is_not_a_string[none]
+FAILED tests/integration/melder/aether/test_aether_frame_lookups.py::test_frame_lookups_refuse_a_name_that_is_not_a_string[int]
+FAILED tests/integration/melder/aether/test_aether_frame_lookups.py::test_frame_lookups_refuse_a_name_that_is_not_a_string[tuple]
+FAILED tests/integration/melder/aether/test_aether_frame_lookups.py::test_frame_lookups_on_a_cleaned_aether_raise_runtime_error
+FAILED tests/integration/melder/aether/test_aether_frame_lookups.py::test_listing_while_other_threads_create_frames_never_raises
+FAILED tests/integration/melder/aether/test_aether_frame_lookups.py::test_shared_spellbook_configuration_is_none_while_the_frame_does_not_share_it
+FAILED tests/integration/melder/aether/test_aether_frame_lookups.py::test_shared_spellbook_configuration_is_the_bound_configuration_when_shared
+FAILED tests/integration/melder/aether/test_aether_frame_lookups.py::test_shared_spellbook_configuration_raises_once_the_frame_is_cleaned
+FAILED tests/integration/melder/aether/test_aether_frame_lookups.py::test_conduit_spellbook_is_the_conjuring_book_for_a_root_and_its_lessers
+FAILED tests/integration/melder/aether/test_aether_frame_lookups.py::test_conduit_spellbook_raises_after_the_root_is_torn_down
+FAILED tests/unit/melder/aether/test_configuration_read_accessors.py::test_spellbook_configuration_reports_the_frame_it_was_built_for
+FAILED tests/unit/melder/aether/test_configuration_read_accessors.py::test_spellbook_configuration_frozen_is_false_until_frozen
+FAILED tests/unit/melder/aether/test_configuration_read_accessors.py::test_spellbook_configuration_finalize_reports_frozen
+FAILED tests/unit/melder/aether/test_configuration_read_accessors.py::test_spellbook_configuration_reads_change_nothing
+FAILED tests/unit/melder/aether/test_configuration_read_accessors.py::test_spellbook_configuration_accessors_raise_once_cleaned
+FAILED tests/unit/melder/aether/test_configuration_read_accessors.py::test_frame_posture_frozen_is_false_until_frozen
+FAILED tests/unit/melder/aether/test_configuration_read_accessors.py::test_frame_posture_frozen_raises_once_cleaned
+22 failed in 14.44s
+      1       Left contains one more item: AttributeError("'Aether' object has no attribute 'list_frame_names'")
+      5 E   AttributeError: 'Aether' object has no attribute 'find_frame'
+      5 E   AttributeError: 'Aether' object has no attribute 'get_frame'
+      2 E   AttributeError: 'Aether' object has no attribute 'list_frame_names'
+      2 E   AttributeError: 'AethericFrameConfiguration' object has no attribute 'frozen'
+      2 E   AttributeError: 'Conduit' object has no attribute 'spellbook'
+      1 E   AttributeError: 'SpellbookConfiguration' object has no attribute 'aether_frame'
+      4 E   AttributeError: 'SpellbookConfiguration' object has no attribute 'frozen'
+      1 FAILED tests/integration/melder/aether/test_aether_frame_lookups.py::test_frame_lookups_on_a_cleaned_aether_raise_runtime_error
+      1 FAILED tests/integration/melder/aether/test_aether_frame_lookups.py::test_get_frame_error_says_how_to_create_or_probe_the_frame
+      1 tests/integration/melder/aether/test_aether_frame_lookups.py:105: AttributeError: 'Aether' object has no attribute 'find_frame'
+      1 tests/integration/melder/aether/test_aether_frame_lookups.py:151: AttributeError: 'Aether' object has no attribute 'get_frame'
+      1 tests/integration/melder/aether/test_aether_frame_lookups.py:164: AttributeError: 'Aether' object has no attribute 'get_frame'
+      1 tests/integration/melder/aether/test_aether_frame_lookups.py:172: AttributeError: 'Aether' object has no attribute 'get_frame'
+      1 tests/integration/melder/aether/test_aether_frame_lookups.py:185: AttributeError: 'Conduit' object has no attribute 'spellbook'
+      1 tests/integration/melder/aether/test_aether_frame_lookups.py:196: AttributeError: 'Conduit' object has no attribute 'spellbook'
+      1 tests/integration/melder/aether/test_aether_frame_lookups.py:35: AttributeError: 'Aether' object has no attribute 'list_frame_names'
+      1 tests/integration/melder/aether/test_aether_frame_lookups.py:48: AttributeError: 'Aether' object has no attribute 'find_frame'
+      1 tests/integration/melder/aether/test_aether_frame_lookups.py:60: AttributeError: 'Aether' object has no attribute 'list_frame_names'
+      1 tests/integration/melder/aether/test_aether_frame_lookups.py:71: AttributeError: 'Aether' object has no attribute 'get_frame'

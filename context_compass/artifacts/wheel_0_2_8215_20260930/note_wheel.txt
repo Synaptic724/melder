@@ -1,0 +1,19 @@
+- DATETIME: {NOW}
+  TYPE: MEASURE
+  CLAIM: dist/melder-0.2.8215-py3-none-any.whl is built (uv 0.12.13, setuptools backend, CPython 3.14.7t) from a
+    fresh staging copy of the 596 files git lists as tracked or untracked-not-ignored under pyproject.toml,
+    README.md, LICENSE, NOTICE and src (none untracked). verify_wheel passes for 0.2.8215; 591 members, the same
+    package set as 0.2.8212 (585 files, none added or removed); all 585 package files are byte-identical to the
+    device tree; the lane's markers (flag_dependencies_without_own_plan, _requires_own_target_pass,
+    _raise_unless_resolution_valid, the version) are present; sha256 cfaf55b6...4191, 3258176 bytes. In an isolated
+    3.14t venv (-I, GIL off) the CI smoke script passes for 0.2.8215 and the release example returns the injected
+    instance on its direct meld. The same bytes are in dist/.
+  EVIDENCE:
+  - context_compass/artifacts/wheel_0_2_8215_20260930/wheel_build.log:2112-2119
+  - context_compass/artifacts/wheel_0_2_8215_20260930/wheel_verify.log:1-11
+  - context_compass/artifacts/wheel_0_2_8215_20260930/wheel_smoke.log:1-7
+  - context_compass/artifacts/wheel_0_2_8215_20260930/verify_wheel_8215.py:1-53
+  IMPACT: The wheel carries option B and the refreshed assets; it is ready for MelderOps' environments.
+  NEXT: Install it into priv_commandops/.venv314 with moves and copies, then check it against RECORD.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 9

@@ -304,6 +304,7 @@
  "edge_candidates": [],
  "published_aliases": [],
  "imports": {
+  "inspect": "inspect",
   "Enum": "enum.Enum",
   "auto": "enum.auto",
   "Any": "typing.Any",

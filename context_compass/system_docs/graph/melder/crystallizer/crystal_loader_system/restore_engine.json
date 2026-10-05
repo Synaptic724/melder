@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/crystal_loader_system/restore_engine.py",
- "source_sha256": "3c2ba15f36ff87528785d336dd8337fcdb361d33cdde2d416547fc941f945369",
+ "source_sha256": "6f5977ba63122bd535500b760d10f8872ce434b9da908d4a8ff90f4ff11125b7",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.crystal_loader_system.restore_engine": {
@@ -29,7 +29,7 @@
    "label": "RestoreReport",
    "kind": "class",
    "file": "src/melder/crystallizer/crystal_loader_system/restore_engine.py",
-   "lineno": 27,
+   "lineno": 28,
    "bases": [
     "Cleanable"
    ],
@@ -81,7 +81,7 @@
    "label": "RestoreEngine",
    "kind": "class",
    "file": "src/melder/crystallizer/crystal_loader_system/restore_engine.py",
-   "lineno": 382,
+   "lineno": 383,
    "bases": [
     "Cleanable"
    ],
@@ -91,11 +91,11 @@
     "restore"
    ],
    "shape": {
-    "method_count": 43,
+    "method_count": 50,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "298834b3077fe4ec7c9426544415190eac079eed59680658192c4291a6a1c9d5",
+   "span_sha256": "936764f7b84b26f2e4e4e3991644018d0a8d9bf96f2b3b38c2510faaa8459221",
    "role": "Single-use all-or-nothing world restorer: folds a checkpoint chain and replays it through PUBLIC runtime verbs.",
    "responsibilities": [
     "fold: oldest-first later-wins with tombstones and custody routing; journal-without-payload is an honesty shortfall",
@@ -106,7 +106,11 @@
     "fresh structural identities and changed Spell IDs are reported; failure tears down in reverse order",
     "forwards recorded resolution capability through active and staged binding with legacy True defaults",
     "folds surviving named carriers before expanding and validating supporting ancestry",
-    "selects each Book root explicitly and replays parent-ordered lessers in the shared per-Book unit"
+    "selects each Book root explicitly and replays parent-ordered lessers in the shared per-Book unit",
+    "deactivates an already-active live Nexus (as it does MutationResearch) before activating the reloaded Nexus configuration",
+    "stage 1 installs the recorded spell-id regime, files a shortfall when a fixed live regime differs, and refuses a record binding one spell id in two frames under process-wide ids",
+    "stage 6 keys bind order, member-index lookup and recorded-to-live spell translation per Book",
+    "hydrates each crystal's spellframe before the active and staged binds (_hydrate_spellframe): imports the recorded Protocol for a contract, passes the recorded name for a category, and on an import failure binds the name as a category and files a spell_crystal shortfall naming the Protocol and the spell (0.2.8222)"
    ],
    "owns_state": [
     "folded stores",
@@ -116,7 +120,7 @@
    "phases": [
     "runtime"
    ],
-   "semantics_authored_against": "4ec7ba5c771d29dd306c73f4505b3d12411be5202f704dcf62d8529f8268031b"
+   "semantics_authored_against": "936764f7b84b26f2e4e4e3991644018d0a8d9bf96f2b3b38c2510faaa8459221"
   }
  },
  "edges_out": [
@@ -233,6 +237,9 @@
  ],
  "published_aliases": [],
  "imports": {
+  "importlib": "importlib",
+  "sys": "sys",
+  "threading": "threading",
   "Path": "pathlib.Path",
   "Any": "typing.Any",
   "Dict": "typing.Dict",
@@ -243,6 +250,7 @@
   "TYPE_CHECKING": "typing.TYPE_CHECKING",
   "cast": "typing.cast",
   "ConduitHierarchy": "melder.crystallizer.crystal_analysis.conduit_hierarchy.ConduitHierarchy",
+  "SpellCrystal": "melder.crystallizer.crystals.spell_crystal.SpellCrystal",
   "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
   "PhaseExecutionError": "melder.utilities.custom_exceptions.phase_execution_error.PhaseExecutionError",
   "PhaseTimeoutError": "melder.utilities.custom_exceptions.phase_timeout_error.PhaseTimeoutError",

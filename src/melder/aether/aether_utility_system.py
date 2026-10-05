@@ -1,7 +1,7 @@
 import logging
 import threading
 from collections.abc import Callable, Iterable
-from typing import Any, ClassVar
+from typing import Any, ClassVar, Optional
 
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.ichannellogger import IChannelLogger
@@ -222,6 +222,11 @@ class AetherUtilitySystem(Cleanable):
               not activated.
             - Callable-bearing entries record as PRESENCE flags only; the
               reload lane reports them as code_participation.
+            - Carries the Aether's spell-id regime in force: this twin
+              REPLACES the configuration's own, so without it every logger
+              verb would erase the recorded regime. Omitted when no live
+              Aether can answer (see `_read_spell_id_regime`); a restore
+              then reports it missing.
 
         Returns:
             None.
@@ -250,10 +255,40 @@ class AetherUtilitySystem(Cleanable):
                             self._default_logger is not None
                         ),
                     }
+                regime = self._read_spell_id_regime()
+                if regime is not None:
+                    payload["process_wide_unique_spell_ids"] = regime
                 crystallizer.emit(
                     AetherCrystal(configuration_payload=payload)
                 )
             del crystallizer
+
+    @staticmethod
+    def _read_spell_id_regime() -> Optional[bool]:
+        """
+        Internal
+
+        Return the Aether's spell-id regime in force, or None when no live Aether can answer.
+
+        Contract:
+            - Reads `Aether.process_wide_unique_spell_ids` only while the Aether singleton is initialized and its
+              instance is not cleaned. Constructing `Aether()` without an initialized singleton would boot a new
+              world, and Aether marks itself cleaned before it tears down frames and the crystallizer while
+              `Aether()` keeps returning that instance until teardown ends - a verb called then must not read it.
+            - None tells the caller to omit the key; the reload lane then reports it missing.
+
+        Returns:
+            Optional[bool]: The regime in force, or None.
+        """
+        # Lazy import: the Aether module imports this one at module level.
+        from melder.aether.aether import Aether
+
+        if not Aether._initialized:
+            return None
+        aether = Aether()
+        if aether.cleaned:
+            return None
+        return aether.process_wide_unique_spell_ids
 
     def is_channel_logger_activation_enabled(self) -> bool:
         """

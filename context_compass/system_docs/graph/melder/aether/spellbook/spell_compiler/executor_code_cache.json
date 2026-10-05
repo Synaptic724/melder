@@ -32,6 +32,8 @@
  "edge_candidates": [],
  "published_aliases": [],
  "imports": {
+  "hashlib": "hashlib",
+  "threading": "threading",
   "CodeType": "types.CodeType",
   "Dict": "typing.Dict"
  },

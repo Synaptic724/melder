@@ -1,0 +1,24 @@
+== melderops_injects_logging_into_host_aether_policy
+host policy: resolver None | activation enabled False
+OBSERVED after MelderRuntime.initialize: same host policy object True | Aether activated True | policy frozen True | resolver InitHelpers.resolve_channel_logger | resolver module melder_ops.utilities.general_helpers.init_helpers | activation enabled True
+rc=0
+== melderops_clears_utility_logger
+utility singleton is the hosted one True
+before: has_default_logger True | has_channel_logger_resolver False
+OBSERVED after MelderRuntime.initialize: has_default_logger False | has_channel_logger_resolver True
+rc=0
+== melderops_frame_default_settled_automatic
+OBSERVED MelderOps into the host's settled automatic frame: refused -> ValueError Frame 'default' is not dynamic; select a compatible or new frame.
+rc=0
+== melderops_settles_host_unsettled_default_frame
+before: frozen False | system_state SystemState.automatic
+OBSERVED after MelderOps: frozen False | system_state SystemState.dynamic
+OBSERVED host's plain conjure afterwards: accepted; frame system_state SystemState.dynamic
+rc=0
+== melderops_nexus_default_targets
+OBSERVED after AI preset: nexus activated True | allowed_target_frame_names ('default',) | frames ('melderops',)
+rc=0
+== crystallizer_late_activation_dynamic
+OBSERVED profile right after a late activation over a dynamic world: {'profile_name': 'default', 'emission_sequence': 1, 'has_aether_crystal': False, 'has_nexus_crystal': False, 'has_mutation_research_crystal': False, 'nexus_state': None, 'mutation_research_state': None, 'frame_count': 0, 'spellbook_count': 0, 'conduit_count': 0, 'spell_index_count': 0, 'contract_count': 0, 'cluster_count': 0, 'spell_crystal_count': 0, 'inactive_spell_crystal_count': 0}
+OBSERVED profile after one bind made after activation: {'profile_name': 'default', 'emission_sequence': 3, 'has_aether_crystal': False, 'has_nexus_crystal': False, 'has_mutation_research_crystal': False, 'nexus_state': None, 'mutation_research_state': None, 'frame_count': 0, 'spellbook_count': 0, 'conduit_count': 0, 'spell_index_count': 1, 'contract_count': 0, 'cluster_count': 0, 'spell_crystal_count': 1, 'inactive_spell_crystal_count': 0}
+rc=0

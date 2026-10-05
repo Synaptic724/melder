@@ -1,0 +1,43 @@
+root conduit id      : 01M41M21HV8CXW7520VKQ8BJ6W
+scope resolution cid : 01M41M21HV8CXW7520VKQ8BJ6W (== root id: True )
+--- after bind #1
+  spell obj id       : 0x2d64c5fc400 spell_id: a730f04b6898 index: 01M41M21HVMC
+  structural validity: SpellValidity.valid | flags: []
+  conduit res state  : None
+  resolution_required: False complete: False
+  compiler artifact  : phase5_root=None codegen=None
+  is_phase5_root     : False
+  gated_validation_required: False
+  effective res validity   : SpellValidity.unknown
+meld #1 -> 1
+--- after meld #1
+  spell obj id       : 0x2d64c5fc400 spell_id: a730f04b6898 index: 01M41M21HVMC
+  structural validity: SpellValidity.valid | flags: []
+  conduit res state  : root_validity=SpellValidity.valid spell_validity=SpellValidity.valid
+  resolution_required: False complete: False
+  compiler artifact  : phase5_root=set codegen=set
+  is_phase5_root     : True
+  gated_validation_required: False
+  effective res validity   : SpellValidity.valid
+--- after cleanup_spell: old cleaned: True | original product live: True
+  conduit res state for OLD id after cleanup_spell: root_validity=SpellValidity.valid spell_validity=SpellValidity.valid
+--- rebind: same spell_id as before: True | same Spell object: False | same index id: old cleaned
+--- after bind #2 (before meld #2)
+  spell obj id       : 0x2d64c5fc600 spell_id: a730f04b6898 index: 01M41M21JEBR
+  structural validity: SpellValidity.valid | flags: []
+  conduit res state  : root_validity=SpellValidity.valid spell_validity=SpellValidity.valid
+  resolution_required: False complete: False
+  compiler artifact  : phase5_root=None codegen=None
+  is_phase5_root     : False
+  gated_validation_required: False
+  effective res validity   : SpellValidity.valid
+meld #2 RAISED: RuntimeError Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -> process
+--- after failed meld #2
+  spell obj id       : 0x2d64c5fc600 spell_id: a730f04b6898 index: 01M41M21JEBR
+  structural validity: SpellValidity.valid | flags: []
+  conduit res state  : root_validity=SpellValidity.valid spell_validity=SpellValidity.valid
+  resolution_required: False complete: False
+  compiler artifact  : phase5_root=None codegen=None
+  is_phase5_root     : False
+  gated_validation_required: False
+  effective res validity   : SpellValidity.valid

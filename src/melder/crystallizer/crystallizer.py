@@ -1,6 +1,6 @@
 import threading
 import time
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Optional
 
 from melder.crystallizer.asset_management.asset_management_system import (
     AssetManagementSystem,
@@ -826,7 +826,11 @@ class Crystallizer(Cleanable):
             self._activated = False
 
 
-    def get_spell_crystal(self, spell_id: str) -> SpellCrystal:
+    def get_spell_crystal(
+            self,
+            spell_id: str,
+            frame_name: Optional[str] = None,
+    ) -> SpellCrystal:
         """
         Return the recorded custody crystal for one spell (active profile).
 
@@ -845,10 +849,15 @@ class Crystallizer(Cleanable):
             - RECORD SIDE: delegates to the persistence system, which owns the ledger.
             - Returns the SEALED crystal for one spell id, which is a point-in-time
               record and not a live view of the spell.
+            - Per frame (0.2.8214): under per-frame spell ids one spell id may be
+              recorded once per frame. `frame_name` selects that frame's copy;
+              without it the lowest custody key answers.
 
         Args:
             spell_id:
-                The spell's SHA256 identity.
+                The spell's SHA256 identity, or a full custody key.
+            frame_name:
+                Optional frame whose copy is wanted.
 
         Returns:
             SpellCrystal:
@@ -862,7 +871,9 @@ class Crystallizer(Cleanable):
         """
         self.check_cleaned()
         self._require_activated()
-        return self._persistence_system.get_spell_crystal(spell_id)
+        return self._persistence_system.get_spell_crystal(
+            spell_id, frame_name=frame_name
+        )
 
     def describe_mutation_research_record(self) -> dict[str, object] | None:
         """
@@ -1110,7 +1121,11 @@ class Crystallizer(Cleanable):
         self._persistence_system.record_spell_crystal(crystal, active=active)
         self._maybe_create_automatic_checkpoint()
 
-    def emit_spell_removed(self, spell_id: str) -> None:
+    def emit_spell_removed(
+            self,
+            spell_id: str,
+            frame_name: Optional[str] = None,
+    ) -> None:
         """
         Evict one removed spell's custody from the record.
 
@@ -1122,10 +1137,16 @@ class Crystallizer(Cleanable):
 
         Contract:
             - NO-OP while the crystallizer is not activated.
+            - Addresses one custody key (0.2.8214): the spell id under
+              process-wide ids (the frame is ignored), "<spell_id>@<frame>"
+              under per-frame ids, so only that frame's copy leaves.
 
         Args:
             spell_id:
                 The removed spell's SHA256 identity.
+            frame_name:
+                The frame of the Book removing the spell; required under
+                per-frame spell ids.
 
         Returns:
             None.
@@ -1133,11 +1154,15 @@ class Crystallizer(Cleanable):
         Raises:
             RuntimeError:
                 If the crystallizer has been cleaned.
+            ValueError:
+                Under per-frame spell ids when `frame_name` is None.
         """
         self.check_cleaned()
         if not self._activated:
             return
-        self._persistence_system.remove_spell_crystal(spell_id)
+        self._persistence_system.remove_spell_crystal(
+            self._custody_key_for(spell_id, frame_name)
+        )
         self._maybe_create_automatic_checkpoint()
 
     def emit_conduit_removed(self, conduit_id: str) -> None:
@@ -1468,7 +1493,12 @@ class Crystallizer(Cleanable):
         self._persistence_system.record_mutation_research_state(state)
         self._maybe_create_automatic_checkpoint()
 
-    def emit_spell_activity(self, spell_id: str, active: bool) -> None:
+    def emit_spell_activity(
+            self,
+            spell_id: str,
+            active: bool,
+            frame_name: Optional[str] = None,
+    ) -> None:
         """
         Mirror one runtime park/promote flip into the record and, when
         configured, into the live module world.
@@ -1490,12 +1520,18 @@ class Crystallizer(Cleanable):
             - NO-OP while the crystallizer is not activated.
             - Tolerates missing custody (activity for a spell the record
               never held is journaled without a crystal move).
+            - Addresses one custody key (0.2.8214): the spell id under
+              process-wide ids (the frame is ignored), "<spell_id>@<frame>"
+              under per-frame ids, so only that frame's copy moves.
 
         Args:
             spell_id:
                 The spell whose activity flipped.
             active:
                 True = promoted to active; False = parked inactive.
+            frame_name:
+                The frame of the Book that flipped it; required under
+                per-frame spell ids.
 
         Returns:
             None.
@@ -1503,14 +1539,17 @@ class Crystallizer(Cleanable):
         Raises:
             RuntimeError:
                 If the crystallizer has been cleaned.
+            ValueError:
+                Under per-frame spell ids when `frame_name` is None.
         """
         self.check_cleaned()
         if not self._activated:
             return
-        self._persistence_system.record_spell_activity(spell_id, active=active)
+        custody_key = self._custody_key_for(spell_id, frame_name)
+        self._persistence_system.record_spell_activity(custody_key, active=active)
         self._maybe_create_automatic_checkpoint()
         try:
-            crystal = self._persistence_system.get_spell_crystal(spell_id)
+            crystal = self._persistence_system.get_spell_crystal(custody_key)
         except KeyError:
             return
         if crystal.root_module_kind != "synthetic_module":
@@ -1538,6 +1577,44 @@ class Crystallizer(Cleanable):
                 )
             else:
                 module.unpublish_from_sys_modules()
+
+    def _custody_key_for(self, spell_id: str, frame_name: Optional[str]) -> str:
+        """
+        Internal
+
+        Return the record key a spell-level emit verb addresses.
+
+        Contract:
+            - Under process-wide spell ids the key is the spell id; the frame
+              is optional and ignored.
+            - Under per-frame spell ids the key is "<spell_id>@<frame_name>"
+              (`SpellCrystal.compose_custody_key`), so only the named frame's
+              copy is touched; a missing frame is refused (0.2.8214).
+            - Reads the regime from the hosting Aether without a lock
+              (`Aether.process_wide_unique_spell_ids`).
+
+        Args:
+            spell_id:
+                The spell's SHA256 identity.
+            frame_name:
+                The frame of the Book that emits.
+
+        Returns:
+            str: The custody key.
+
+        Raises:
+            ValueError:
+                Under per-frame spell ids when `frame_name` is None.
+        """
+        if self._aether.process_wide_unique_spell_ids:
+            return spell_id
+        if frame_name is None:
+            raise ValueError(
+                "Under per-frame spell ids a spell id can be bound in several frames and the record keeps "
+                "one copy per frame, so frame_name is required to address spell {0!r}. Pass the frame of the "
+                "Book that emits (Spellbook passes its own).".format(spell_id)
+            )
+        return SpellCrystal.compose_custody_key(spell_id, frame_name)
 
     def emit(self, twin: Cleanable) -> None:
         """
@@ -1610,7 +1687,9 @@ class Crystallizer(Cleanable):
             only its value-only `CrystalAnalysisResult`, and never owns the
             analyzer or strategy machinery. User-source text is retained only
             when the installed policy enables it; bind-time fingerprints are
-            recorded independently of that opt-in.
+            recorded independently of that opt-in. The record key follows the
+            regime in force: under per-frame spell ids the crystal is keyed
+            "<spell_id>@<frame>" (0.2.8214).
 
         Args:
             spell:
@@ -1636,6 +1715,7 @@ class Crystallizer(Cleanable):
             site_package_dependency_descent=(
                 self._configuration.site_package_dependency_descent
             ),
+            per_frame_custody=not self._aether.process_wide_unique_spell_ids,
         )
 
 

@@ -1,8 +1,10 @@
 """Prove safety-relevant workflow wiring using parsed YAML rather than substring matches."""
 
+import ast
 import pathlib
 import json
-from types import ModuleType
+import re
+from types import ModuleType, SimpleNamespace
 from typing import cast
 
 import pytest
@@ -41,6 +43,9 @@ def test_every_pr_reports_a_fail_closed_required_status(policy: ModuleType) -> N
     assert aggregate["env"]["CI_PACKAGE_REQUIRED"] == "${{ needs.branch-policy.outputs.package-required }}"
     assert aggregate["env"]["CI_RUNTIME_REQUIRED"] == "${{ needs.branch-policy.outputs.runtime-required }}"
     assert aggregate["env"]["CI_SOURCE_REQUIRED"] == "${{ needs.branch-policy.outputs.source-required }}"
+    assert aggregate["env"]["CI_GAUNTLET_REQUIRED"] == "${{ needs.branch-policy.outputs.gauntlet-required }}"
+    assert jobs["branch-policy"]["outputs"]["gauntlet-required"] == "${{ steps.route.outputs.gauntlet-required }}"
+    assert jobs["real-world-gauntlet"]["if"] == "needs.branch-policy.outputs.gauntlet-required == 'true'"
     assert jobs["packages"]["if"] == "needs.branch-policy.outputs.package-required == 'true'"
     for name in policy.CIPolicy.FULL_JOBS:
         assert jobs[name]["needs"] == "branch-policy"
@@ -52,7 +57,7 @@ def test_every_pr_reports_a_fail_closed_required_status(policy: ModuleType) -> N
     assert jobs["source-qualification"]["if"] == "needs.branch-policy.outputs.source-required == 'true'"
 
 
-@pytest.mark.parametrize("name", ["build-src-assets.yml", "build-repo-assets.yml", "test-runtime.yml", "docs.yml"])
+@pytest.mark.parametrize("name", ["build-src-assets.yml", "build-repo-assets.yml", "test-runtime.yml", "real-world-gauntlet.yml", "persistent-runtime-gauntlet.yml", "shallow-all-thread-scaling.yml", "docs.yml"])
 def test_reusable_mandatory_jobs_cannot_be_disabled(name: str) -> None:
     """Callers own triggers/concurrency; no helper silently skips a mandatory validation job."""
     document = workflow(name)
@@ -91,6 +96,9 @@ def test_docs_metadata_validation_precedes_artifact_upload_and_rtd_staging() -> 
 
 @pytest.mark.parametrize(("name", "job_name"), [
     ("test-runtime.yml", "test"),
+    ("real-world-gauntlet.yml", "gauntlet"),
+    ("persistent-runtime-gauntlet.yml", "gauntlet"),
+    ("shallow-all-thread-scaling.yml", "scaling"),
     ("release-candidate.yml", "install"),
     ("build-distributions.yml", "build"),
 ])
@@ -105,6 +113,59 @@ def test_python_setup_does_not_force_gil_off_in_standard_bootstrap_helpers(name:
     setup = next(step for step in job["steps"] if step.get("uses", "").startswith("actions/setup-python@"))
     inherited = {**document.get("env", {}), **job.get("env", {}), **setup.get("env", {})}
     assert inherited.get("PYTHON_GIL") != "0"
+
+
+def test_single_version_setups_follow_the_newest_stable_patch() -> None:
+    """Every literal Python request is a bare minor with check-latest; no workflow pins an exact patch.
+
+    The runtime matrix already selects the newest stable patch of every supported minor. A job that names
+    a bare minor must ask setup-python for that minor's newest patch too, not the patch the runner image
+    happened to cache. That now includes the three speed tests (owner, 2026-10-04: one Python, the latest),
+    which stopped pinning 3.14.7. No setup step may request a pre-release interpreter.
+    """
+    root = pathlib.Path(__file__).resolve().parents[3]
+    for path in sorted((root / ".github/workflows").glob("*.yml")):
+        for job in workflow(path.name)["jobs"].values():
+            for step in job.get("steps", []):
+                if not step.get("uses", "").startswith("actions/setup-python@"):
+                    continue
+                settings = step["with"]
+                assert settings.get("allow-prereleases", "false") == "false", path.name
+                version = settings.get("python-version")
+                if version is None or version.startswith("${{"):
+                    continue
+                assert re.fullmatch(r"\d+\.\d+", version), (path.name, version)
+                assert settings.get("check-latest") == "true", (path.name, version)
+
+
+@pytest.mark.parametrize(("name", "job_name"), [
+    ("real-world-gauntlet.yml", "gauntlet"),
+    ("persistent-runtime-gauntlet.yml", "gauntlet"),
+    ("shallow-all-thread-scaling.yml", "scaling"),
+])
+def test_speed_tests_run_one_supported_python_and_assert_the_minor_they_request(
+        runtime_matrix: ModuleType, name: str, job_name: str,
+) -> None:
+    """Each speed test measures one free-threaded interpreter: the newest patch of a supported minor.
+
+    The job iterates no Python matrix, asks for a bare minor at or above the declared floor with
+    check-latest, and its provenance step asserts a final release of exactly that minor, so moving the
+    speed tests to a new minor cannot change one side and forget the other.
+    """
+    job = workflow(name)["jobs"][job_name]
+    matrix = job.get("strategy", {}).get("matrix", {})
+    assert isinstance(matrix, dict) and "python" not in matrix
+    setup = next(step for step in job["steps"] if step.get("uses", "").startswith("actions/setup-python@"))
+    settings = setup["with"]
+    assert settings["freethreaded"] == "true"
+    assert settings["check-latest"] == "true"
+    major, minor = (int(part) for part in settings["python-version"].split("."))
+    assert (major, minor) >= runtime_matrix.supported_floor()[:2]
+    scripts = "\n".join(step.get("run", "") for step in job["steps"])
+    asserted = re.findall(r"sys\.version_info\[:2\] == \((\d+), (\d+)\) and sys\.version_info\.releaselevel == 'final'",
+                          scripts)
+    assert asserted == [(str(major), str(minor))]
+    assert "version_info[:3]" not in scripts
 
 
 def test_supported_runtime_matrix_and_test_driver_are_shared() -> None:
@@ -472,3 +533,172 @@ def test_source_proof_download_is_pinned_and_has_only_read_permissions() -> None
     for name in ("ci.yml", "release-candidate.yml"):
         caller = workflow(name)["jobs"]["source-qualification"]
         assert caller["permissions"] == document["permissions"]
+
+
+def test_gauntlet_reports_all_counts_and_keeps_setup_outside_gil_override() -> None:
+    """Promotion CI uses its smaller iteration relay and preserves evidence from all three OSes."""
+    document = workflow("real-world-gauntlet.yml")
+    assert set(document["on"]) == {"workflow_call", "workflow_dispatch"}
+    for event in document["on"].values():
+        assert event["inputs"]["thread-counts"]["default"] == ""
+        assert event["inputs"]["iteration-counts"]["default"] == "500,1000,2500,5000,10000"
+    job = document["jobs"]["gauntlet"]
+    assert job["strategy"]["matrix"]["os"] == ["ubuntu-24.04", "windows-2025", "macos-15-intel"]
+    assert job["strategy"]["fail-fast"] == "false"
+    assert "PYTHON_GIL" not in job["env"]
+    assert "DI_GAUNTLET_THREADS" not in job["env"]
+    assert "DI_GAUNTLET_ITERS" not in job["env"]
+    assert job["env"]["REAL_WORLD_GAUNTLET_ITERATION_COUNTS"] == "${{ inputs.iteration-counts }}"
+    steps = job["steps"]
+    setup = next(step for step in steps if step.get("uses", "").startswith("actions/setup-python@"))
+    assert setup["with"]["python-version"] == "3.14"
+    assert setup["with"]["check-latest"] == "true"
+    assert setup["with"]["architecture"] == "x64"
+    assert setup["with"]["freethreaded"] == "true"
+    install = next(index for index, step in enumerate(steps) if step.get("name") == "Install identical pinned benchmark dependencies")
+    provenance = next(index for index, step in enumerate(steps) if step.get("name") == "Record source and runtime provenance")
+    assert install < provenance
+    assert "gauntlet._gauntlet_thread_counts()" in steps[provenance]["run"]
+    measured = next(step for step in steps if step.get("name") == "Run configured real-world gauntlet")
+    assert measured["env"]["PYTHON_GIL"] == "0"
+    assert int(measured["timeout-minutes"]) < int(job["timeout-minutes"])
+    assert "GITHUB_STEP_SUMMARY" in measured["run"]
+    assert "expected_pairs" in measured["run"]
+    assert "assert all(verified.values())" in measured["run"]
+    retained = steps[-1]
+    assert retained["if"] == "always()"
+    assert retained["with"]["path"] == "gauntlet-results/"
+    assert retained["with"]["retention-days"] == "30"
+    caller = workflow("ci.yml")["jobs"]["real-world-gauntlet"]
+    assert caller["uses"] == "./.github/workflows/real-world-gauntlet.yml"
+    assert "secrets" not in caller
+
+
+def test_gauntlet_inline_python_parses_after_yaml_indentation() -> None:
+    """Every Python step is valid executable syntax after YAML removes its indentation."""
+    import ast
+    for step in workflow("real-world-gauntlet.yml")["jobs"]["gauntlet"]["steps"]:
+        if step.get("shell") == "python":
+            ast.parse(step["run"], filename=step["name"])
+
+
+def test_persistent_gauntlet_runs_in_parallel_on_independent_promotion_runners() -> None:
+    """Neither benchmark waits for the other; each owns its OS jobs and result artifacts."""
+    jobs = workflow("ci.yml")["jobs"]
+    for name in ("real-world-gauntlet", "persistent-runtime-gauntlet", "shallow-all-thread-scaling"):
+        assert jobs[name]["needs"] == "branch-policy"
+        assert jobs[name]["if"] == "needs.branch-policy.outputs.gauntlet-required == 'true'"
+        assert name in jobs["merge-ready"]["needs"]
+    assert jobs["persistent-runtime-gauntlet"]["uses"] == "./.github/workflows/persistent-runtime-gauntlet.yml"
+    document = workflow("persistent-runtime-gauntlet.yml")
+    for event in document["on"].values():
+        assert event["inputs"]["duration-seconds"]["default"] == "60,180,300"
+        assert event["inputs"]["thread-counts"]["default"] == "3,5"
+    job = document["jobs"]["gauntlet"]
+    assert job["strategy"]["matrix"]["os"] == ["ubuntu-24.04", "windows-2025", "macos-15-intel"]
+    assert job["env"]["PERSISTENT_SERIES_SECONDS"] == "${{ inputs.duration-seconds }}"
+    assert job["env"]["PERSISTENT_SERIES_THREADS"] == "${{ inputs.thread-counts }}"
+    assert job["env"]["PERSISTENT_SERIES_OUTPUT_DIR"] == "${{ github.workspace }}/persistent-gauntlet-results"
+    assert "PYTHON_GIL" not in job["env"]
+    measured = next(step for step in job["steps"] if step.get("name") == "Run persistent duration and thread series")
+    assert measured["env"]["PYTHON_GIL"] == "0"
+    assert int(measured["timeout-minutes"]) < int(job["timeout-minutes"])
+    assert "test_persistent_runtime_gauntlet_series.py" in measured["run"]
+    assert "observed == cells" in measured["run"] and "assert valid" in measured["run"]
+    assert "GITHUB_STEP_SUMMARY" in measured["run"]
+    upload = job["steps"][-1]
+    assert upload["if"] == "always()"
+    assert upload["with"]["path"] == "persistent-gauntlet-results/"
+    assert upload["with"]["name"].startswith("persistent-gauntlet-")
+    for step in job["steps"]:
+        if step.get("shell") == "python":
+            compile(step["run"], step["name"], "exec")
+
+
+def test_shallow_thread_scaling_measures_each_library_in_its_own_gil_off_process() -> None:
+    """The scaling benchmark is a parallel promotion job that isolates every library in a fresh interpreter."""
+    caller = workflow("ci.yml")["jobs"]["shallow-all-thread-scaling"]
+    assert caller["uses"] == "./.github/workflows/shallow-all-thread-scaling.yml"
+    assert "secrets" not in caller
+    document = workflow("shallow-all-thread-scaling.yml")
+    for event in document["on"].values():
+        assert event["inputs"]["thread-counts"]["default"] == "1,2,3,4,5"
+        assert event["inputs"]["duration-seconds"]["default"] == "15"
+    job = document["jobs"]["scaling"]
+    assert job["strategy"]["matrix"]["os"] == ["ubuntu-24.04", "windows-2025", "macos-15-intel"]
+    assert job["strategy"]["fail-fast"] == "false"
+    assert job["env"]["DI_THREAD_COUNTS"] == "${{ inputs.thread-counts }}"
+    assert job["env"]["DI_DURATION_S"] == "${{ inputs.duration-seconds }}"
+    assert "PYTHON_GIL" not in job["env"]
+    assert "DI_LIBS" not in job["env"]
+    steps = job["steps"]
+    setup = next(step for step in steps if step.get("uses", "").startswith("actions/setup-python@"))
+    assert setup["with"]["python-version"] == "3.14"
+    assert setup["with"]["check-latest"] == "true"
+    assert setup["with"]["architecture"] == "x64"
+    assert setup["with"]["freethreaded"] == "true"
+    names = [step.get("name") for step in steps]
+    install = names.index("Install identical pinned benchmark dependencies")
+    provenance = names.index("Record thread scaling provenance")
+    measured = names.index("Run thread scaling for each library in its own process")
+    assert install < provenance < measured
+    assert steps[provenance]["env"]["PYTHON_GIL"] == "0"
+    assert steps[measured]["env"]["PYTHON_GIL"] == "0"
+    assert int(steps[measured]["timeout-minutes"]) < int(job["timeout-minutes"])
+    script = steps[measured]["run"]
+    assert "DI_LIBS=lib" in script and "'-X', 'gil=0'" in script
+    assert "test_shallow_all_thread_scaling.py" in script
+    assert "GITHUB_STEP_SUMMARY" in script and "assert valid" in script
+    retained = steps[-1]
+    assert retained["if"] == "always()"
+    assert retained["with"]["path"] == "thread-scaling-results/"
+    assert retained["with"]["name"].startswith("shallow-thread-scaling-")
+    assert retained["with"]["retention-days"] == "30"
+    for step in steps:
+        if step.get("shell") == "python":
+            compile(step["run"], step["name"], "exec")
+
+
+def test_shallow_thread_scaling_parser_accepts_the_lines_the_benchmark_prints() -> None:
+    """Render the benchmark's own print expressions and require the workflow's parser to read them back."""
+    root = pathlib.Path(__file__).resolve().parents[3]
+    benchmark = ast.parse((root / "benchmarks/testing_other_di/test_shallow_all_thread_scaling.py")
+                          .read_text(encoding="utf-8"))
+    printed = sorted((call for call in ast.walk(benchmark)
+                      if isinstance(call, ast.Call) and isinstance(call.func, ast.Name) and call.func.id == "print"),
+                     key=lambda call: call.lineno)
+    assert len(printed) == 2, "The workflow parses exactly one config line and one result line per thread count."
+    namespace = {
+        "lib": "dependency-injector",
+        "_gil_status": lambda: "disabled",
+        "cfg": SimpleNamespace(duration_s=15.0, thread_counts=(1, 2, 3, 4, 5),
+                               graph_pattern="random", root_pattern="alternating"),
+        "graphs": [SimpleNamespace(name="solo"), SimpleNamespace(name="deep")],
+        "thread_count": 4,
+        "result": SimpleNamespace(elapsed_s=15.004, steps=1234567, steps_per_s=82271.1, spellspaces=61728, errors=0),
+        "speedup": 3.2,
+        "efficiency": 0.8,
+        "per_graph_summary": "solo=1, deep=2",
+    }
+    config_text, result_text = (eval(compile(ast.Expression(call.args[0]), "<benchmark print>", "eval"), namespace)
+                                for call in printed)
+    measured = next(step for step in workflow("shallow-all-thread-scaling.yml")["jobs"]["scaling"]["steps"]
+                    if step.get("name") == "Run thread scaling for each library in its own process")
+    patterns = {node.targets[0].id: ast.literal_eval(node.value) for node in ast.parse(measured["run"]).body
+                if isinstance(node, ast.Assign) and isinstance(node.targets[0], ast.Name)
+                and node.targets[0].id in ("config_line", "result_line")}
+    assert set(patterns) == {"config_line", "result_line"}
+    node_id = ("benchmarks/testing_other_di/test_shallow_all_thread_scaling.py::"
+               "test_threaded_shallow_all_graph_mix_scaling[dependency-injector] ")
+
+    def pattern(name: str, lib: str) -> str:
+        """Specialize one workflow regular expression for a library, as the measured step does."""
+        return patterns[name].replace("{lib}", re.escape(lib))
+
+    # With -s -v pytest prints the first benchmark line directly after the node id.
+    assert re.findall(pattern("config_line", "dependency-injector"), node_id + config_text) == [
+        ("disabled", "15.00", "(1, 2, 3, 4, 5)")]
+    assert re.findall(pattern("result_line", "dependency-injector"), result_text) == [
+        ("4", "15.00", "1234567", "82,271", "3.20", "80.0", "61728", "0")]
+    assert not re.findall(pattern("config_line", "melder"), node_id + config_text)
+    assert not re.findall(pattern("result_line", "melder"), result_text)

@@ -216,6 +216,58 @@ class SpellbookConfiguration(Cleanable):
             del self._meld_hooks
             del self._bind_hooks
 
+    @property
+    def aether_frame(self) -> str:
+        """
+        Return the name of the Aether frame this configuration was built for.
+
+        Contract:
+            - The `aether_frame` given at construction ("default" when omitted); it never changes.
+            - When a Spellbook is handed a configuration and its frame has no shared configuration to adopt, it
+              refuses one whose `aether_frame` is not the Spellbook's own frame, so this is the value to compare
+              before handing a configuration over.
+
+        Threading:
+            Unsynchronized read of a value fixed at construction.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Returns:
+            str: The frame name.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
+        """
+        self.check_cleaned()
+        return self._aether_frame
+
+    @property
+    def frozen(self) -> bool:
+        """
+        Return whether this configuration has been frozen.
+
+        Contract:
+            - False while properties and hooks can still change; True once `freeze()` (or `finalize()` /
+              `build()`) has succeeded. A configuration must be frozen before a Conduit is conjured from it.
+            - Reading it changes nothing: it never freezes or validates.
+
+        Threading:
+            Reads under `self._lock`, the lock `freeze()` holds while it sets the flag.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Returns:
+            bool: True when frozen.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._frozen
+
     def set_property(self, key: str, value: Any) -> None:
         """
         Defines or overwrites a property in the configuration.

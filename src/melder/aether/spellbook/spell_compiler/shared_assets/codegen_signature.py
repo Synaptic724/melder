@@ -49,7 +49,7 @@ class CodegenSignature:
         for override payload entries, used directly by every family's row builder.
 
     System Context:
-        Every creation-cache key and every executor signature in the `.melc`
+        Every creation-cache key and every executor signature in the `.meldercache`
         bundle passes through `hash_codegen_signature`, so a non-deterministic byte
         here is a cache miss per process, and a byte that drifts between the two
         facades is a stale full-hit cache: on a full hit no fresh signature is

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/validation/strategies/spellmap_shape_validation_strategy.py",
- "source_sha256": "d57e1f074fbbb5b354b43aceb6595f1e632d98354dd2dd7b69484a12f17b543b",
+ "source_sha256": "2921305f7c5972aaede013328ca7d56c7fa2d4ffdd37d0c31809c29991ce7995",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.validation.strategies.spellmap_shape_validation_strategy": {
@@ -19,14 +19,14 @@
     "validation",
     "runtime"
    ],
-   "semantics_authored_against": "d57e1f074fbbb5b354b43aceb6595f1e632d98354dd2dd7b69484a12f17b543b"
+   "semantics_authored_against": ""
   },
   "melder.aether.spellbook.spell_compiler.validation.strategies.spellmap_shape_validation_strategy.SpellMapShapeValidationStrategy": {
    "id": "melder.aether.spellbook.spell_compiler.validation.strategies.spellmap_shape_validation_strategy.SpellMapShapeValidationStrategy",
    "label": "SpellMapShapeValidationStrategy",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/validation/strategies/spellmap_shape_validation_strategy.py",
-   "lineno": 23,
+   "lineno": 22,
    "bases": [
     "SpellValidationStrategy"
    ],
@@ -39,18 +39,18 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "675d95d6693e6fbe03fcf7bd3da236cba5536da043491333f2c9507e5ad6a57e",
+   "span_sha256": "ca1c4ffbdea9f3c3f034a780f0f33fb174c6acd1cac0c4f172a7c61a447527e7",
    "include": true,
    "role": "Validates the SpellMap defaults captured on Phase-1 parameters, one pass per SPELLMAP_DEFAULT parameter.",
    "responsibilities": [
     "error on SPELLMAP_DEFAULT_MISSING, SPELLMAP_DEFAULT_INVALID, and SPELLMAP_MISSING_TARGET (neither spell nor spellframe)",
-    "warn on SPELLMAP_BINDING_NAME_NOT_NORMALIZED, normalizing via SpellInputUtils",
+    "no binding-name check: SpellMap keeps the caller's text and Phase 3 matches it case-insensitively (SPELLMAP_BINDING_NAME_NOT_NORMALIZED retired at 0.2.8226)",
     "validate only; mutate nothing"
    ],
    "phases": [
     "compile"
    ],
-   "semantics_authored_against": "675d95d6693e6fbe03fcf7bd3da236cba5536da043491333f2c9507e5ad6a57e"
+   "semantics_authored_against": "ca1c4ffbdea9f3c3f034a780f0f33fb174c6acd1cac0c4f172a7c61a447527e7"
   }
  },
  "edges_out": [
@@ -77,7 +77,6 @@
   "ParameterDIShape": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_di_shape.ParameterDIShape",
   "SpellValidationIssue": "melder.aether.spellbook.spell_compiler.validation.spell_validation_issue.SpellValidationIssue",
   "SpellValidationStrategy": "melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy.SpellValidationStrategy",
-  "SpellInputUtils": "melder.utilities.helpers.general_helpers.SpellInputUtils",
   "SpellValidationContext": "melder.aether.spellbook.spell_compiler.validation.spell_validation_context.SpellValidationContext"
  },
  "collapse_candidate": null

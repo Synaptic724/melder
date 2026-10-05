@@ -99,6 +99,7 @@
  ],
  "published_aliases": [],
  "imports": {
+  "threading": "threading",
   "partial": "functools.partial",
   "TYPE_CHECKING": "typing.TYPE_CHECKING",
   "Any": "typing.Any",

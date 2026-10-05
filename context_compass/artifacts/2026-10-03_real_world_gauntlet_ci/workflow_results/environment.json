@@ -1,0 +1,12 @@
+{
+  "validation": "Local Windows smoke, not a hosted matrix or performance ranking",
+  "iterations_per_library": 2,
+  "thread_counts": [
+    3,
+    5,
+    7,
+    9
+  ],
+  "rounds": 1,
+  "python": "3.14.7 free-threading build (main, Sep  1 2026, 14:18:33) [MSC v.1944 64 bit (AMD64)]"
+}

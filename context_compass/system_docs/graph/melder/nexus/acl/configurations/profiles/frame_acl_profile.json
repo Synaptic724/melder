@@ -92,6 +92,7 @@
  ],
  "published_aliases": [],
  "imports": {
+  "threading": "threading",
   "Optional": "typing.Optional",
   "FrameACLCodegenProfile": "melder.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile.FrameACLCodegenProfile",
   "FrameACLCommandProfile": "melder.nexus.acl.configurations.profiles.command.frame_acl_command_profile.FrameACLCommandProfile",

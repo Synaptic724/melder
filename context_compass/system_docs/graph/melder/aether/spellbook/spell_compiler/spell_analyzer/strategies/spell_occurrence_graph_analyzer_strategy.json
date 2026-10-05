@@ -91,6 +91,7 @@
  ],
  "published_aliases": [],
  "imports": {
+  "inspect": "inspect",
   "Format": "annotationlib.Format",
   "deque": "collections.deque",
   "TYPE_CHECKING": "typing.TYPE_CHECKING",

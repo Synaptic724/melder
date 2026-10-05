@@ -109,6 +109,9 @@
  ],
  "published_aliases": [],
  "imports": {
+  "time": "time",
+  "uuid": "uuid",
+  "hashlib": "hashlib",
   "RLock": "threading.RLock",
   "Any": "typing.Any",
   "Callable": "typing.Callable",

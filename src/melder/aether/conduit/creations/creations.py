@@ -7,8 +7,51 @@ from melder.utilities.general_base.cleanable import Cleanable
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell import Spell
 
+class ManyDisposalBucket:
+    """
+    Cleanup-only record of one `many` key that declared disposal methods.
+
+    Purpose:
+        Replace the per-entry `(object, disposal_methods)` tuples a many key
+        used to mirror into `_disposable_creations` with one record per key
+        (2026-10-01): the key's live bucket, aliased, plus the Spell-owned
+        method list recorded once. A warm registration is then one list append
+        instead of a tuple allocation and two appends.
+
+    Contract:
+        - `entries` IS the live many bucket held in `_creations` - the same
+          list object, never a copy - so the live and disposal views cannot
+          diverge and a single-object purge needs one removal.
+        - `methods` is the Spell's established ordered disposal list, retained
+          by reference (never matched, reordered or copied), identical for
+          every entry of the key: a spell id hashes its resolved disposal
+          names, so one key carries one declaration.
+        - Both fields are borrowed. The owning `Creations` store detaches the
+          record (cleanup, clear, purge, extract) and disposes from it; the
+          record itself owns nothing and needs no cleanup.
+
+    AGENT_ACCESS: internal
+    """
+
+    __slots__ = ("entries", "methods")
+
+    def __init__(self, entries: List[object], methods: List[str]) -> None:
+        """
+        Bind the key's live bucket and its disposal list.
+
+        Args:
+            entries: The live many bucket of the key (aliased, not copied).
+            methods: The Spell-owned ordered disposal method names.
+
+        Returns:
+            None.
+        """
+        self.entries = entries
+        self.methods = methods
+
+
 StoredDisposalEntry = Tuple[object, List[str]]
-StoredDisposalValue = Union[StoredDisposalEntry, List[StoredDisposalEntry]]
+StoredDisposalValue = Union[StoredDisposalEntry, ManyDisposalBucket]
 
 
 class Creations(Cleanable):
@@ -29,7 +72,14 @@ class Creations(Cleanable):
         - Disposal metadata mirrors only entries that declared disposal
           methods:
           - unique: `spell_id -> (object, disposal_methods)`
-          - many: `spell_id -> list[(object, disposal_methods)]`
+          - many: `spell_id -> ManyDisposalBucket` whose `entries` IS the
+            live many bucket (the same list object, never a copy) and
+            whose `methods` is the Spell-owned list recorded once, at the
+            key's first registration (2026-10-01; before, a second list of
+            `(object, methods)` tuples was appended in step with the live
+            bucket, a tuple and a second append per creation). A many key
+            therefore carries one disposal declaration: every entry of the
+            key is disposal-bearing or none is.
         - Cleanup and reusable clearing are explicit, idempotent, and aggregate
           disposal failures.
         - Disposal names are the established Spell-owned list, retained directly
@@ -325,27 +375,30 @@ class Creations(Cleanable):
 
     def _dispose_many_creations(
             self,
-            entries: List[StoredDisposalEntry],
+            bucket: ManyDisposalBucket,
     ) -> List[Exception]:
         """
-        Dispose every recorded object in one detached many bucket.
+        Dispose every object of one detached many record.
 
         Purpose:
-            Share the existing multi-object disposal loop between targeted purge
-            and whole-store cleanup without constructing a temporary registry.
+            Share the multi-object disposal loop between targeted purge and
+            whole-store cleanup without constructing a temporary registry.
 
         Contract:
-            - Visit entries newest-first, preserving existing many disposal order.
-            - Delegate each object to `_attempt_cleanup`, which runs every method
-              name in order and returns one error per failing method.
+            - Visit `bucket.entries` newest-first, preserving many disposal
+              order.
+            - Delegate each object to `_attempt_cleanup` paired with the key's
+              one method list (`bucket.methods`), which runs every method name
+              in order and returns one error per failing method.
             - Collect every failure and continue with the other objects.
-            - Do not mutate entries, clear borrowed method-name lists, or reach
-              into a live creation store.
+            - Do not mutate the record, clear its borrowed method-name list, or
+              reach into a live creation store.
 
         Args:
-            entries:
-                Detached `(object, disposal_method_names)` records for one many
-                target, still ordered by their original registration.
+            bucket:
+                The detached `ManyDisposalBucket` of one many target: its
+                `entries` is the detached live bucket, still in registration
+                order.
 
         Returns:
             List[Exception]:
@@ -353,13 +406,14 @@ class Creations(Cleanable):
                 raises them after processing its selected retirement set.
 
         Threading / Lifecycle:
-            The caller has already detached these records under the appropriate
+            The caller has already detached the record under the appropriate
             writer lock. This helper takes no lock and owns no scope policy;
             user disposal methods run after the removal locks are released.
         """
         errors: List[Exception] = []
-        for entry in reversed(entries):
-            errors.extend(self._attempt_cleanup(entry))
+        methods = bucket.methods
+        for item in reversed(bucket.entries):
+            errors.extend(self._attempt_cleanup((item, methods)))
         return errors
 
     def _dispose_disposable_registry(
@@ -408,7 +462,7 @@ class Creations(Cleanable):
             if isinstance(value, tuple):
                 errors.extend(self._attempt_cleanup(value))
                 continue
-            if isinstance(value, list):
+            if isinstance(value, ManyDisposalBucket):
                 errors.extend(self._dispose_many_creations(value))
         return errors
 
@@ -607,19 +661,23 @@ class Creations(Cleanable):
 
         Contract:
             - Appends the live object into `_creations[key]`.
-            - Appends cleanup metadata into `_disposable_creations[key]` only
-              when disposal methods were declared.
-            - Rejects collisions with non-list slots.
-            - Preserves insertion order inside both the live many bucket and
-              the matching disposable metadata bucket.
-            - Retains the supplied disposal list directly for each entry;
-              omitted names use an empty list when disposal is enabled.
-            - First-use bucket creation and both appends are atomic with
-              respect to competing resolutions (BUG-073, 2026-07-17 audit):
-              the whole live+disposable mutation runs under `_lock`, so two
-              threads first-resolving the same key can never overwrite each
-              other's bucket and strand a successfully returned creation
-              outside lifetime and disposal tracking.
+            - For a disposal-bearing key, records the Spell-owned method list
+              ONCE, at the key's first registration, in a `ManyDisposalBucket`
+              under `_disposable_creations[key]` whose `entries` is the live
+              bucket itself; later registrations of the key append only.
+            - Rejects collisions with non-list slots, and a registration whose
+              disposal declaration disagrees with the key's existing entries:
+              one many key carries one declaration (the spell id hashes the
+              resolved disposal names, so a live world cannot produce a mix).
+            - Preserves insertion order; the disposal view is the live bucket,
+              so the two cannot diverge (BUG-073, 2026-07-17 audit, now by
+              construction: the first-use bucket and its record are created
+              in one critical section under `_lock`).
+            - Retains the supplied disposal list directly; omitted names use
+              an empty list when disposal is enabled.
+            - Emitted plans and executors call `register_many` instead: the
+              same shape without the keyword marshaling and the checks this
+              public verb keeps (2026-10-01).
 
         Threading:
             - Runs under `_lock` (re-entrant, shared with extract/restore/
@@ -630,7 +688,8 @@ class Creations(Cleanable):
 
         Raises:
             ValueError:
-                If the key already holds a non-list slot.
+                If the key already holds a non-list slot, or if the disposal
+                declaration disagrees with the key's existing entries.
             RuntimeError:
                 If this store was cleaned while the object was being built.
 
@@ -653,6 +712,79 @@ class Creations(Cleanable):
             disposal_methods=disposal_methods,
         )
 
+    def register_many(
+            self,
+            key: str,
+            item: object,
+            disposal_methods: List[str],
+    ) -> None:
+        """
+        Register one disposal-bearing `many` creation on the warm path.
+
+        Purpose:
+            The registration emitted plans and executors run on every creation
+            of a disposal-bearing `many` root (2026-10-01). It is the
+            `add_many_creations` shape without the keyword marshaling and the
+            checks that verb keeps for callers it cannot trust: one lock, one
+            dict read, one list append (measured 204 -> 104 ns per
+            registration on 3.14t, GIL off).
+
+        Contract:
+            - Precondition, guaranteed by the emitters and NOT checked here:
+              `key` is a `many` spell id whose Spell declares disposal methods,
+              and `disposal_methods` is that Spell's own ordered list, the same
+              object on every call for the key. A spell id hashes its resolved
+              disposal names, so one key cannot carry two declarations, and one
+              Existence per Spell means the key's live slot is a list or absent.
+              Callers that cannot promise this use `add_many_creations`.
+            - The first registration of the key creates the live bucket and
+              its `ManyDisposalBucket` record (the bucket itself plus the
+              method list) in one critical section; every later one appends.
+            - Refuses a cleaned store exactly like `add_many_creations`: the
+              object's disposal methods run and `RuntimeError` is raised.
+
+        Args:
+            key: The many spell id.
+            item: The just-built object.
+            disposal_methods: The Spell-owned ordered disposal method names.
+
+        Raises:
+            RuntimeError:
+                If this store was cleaned while the object was being built.
+
+        Threading:
+            `_lock` is a leaf here: only the dict read, the first-use stores
+            and the append run under it. A build that finishes after
+            `cleanup()` observes `_cleaned` through the tombstone lock and is
+            refused outside it, with no lock held while its methods run.
+
+        Returns:
+            None.
+        """
+        # Explicit acquire/release: the with-statement costs ~14 ns per call
+        # on 3.14t (measured 2026-10-01), a tenth of this verb.
+        lock = self._lock
+        lock.acquire()
+        try:
+            if not self._cleaned:
+                bucket = self._creations.get(key)
+                if bucket is None:
+                    bucket = []
+                    self._creations[key] = bucket
+                    self._disposable_creations[key] = ManyDisposalBucket(
+                        bucket, disposal_methods,
+                    )
+                bucket.append(item)
+                return
+        finally:
+            lock.release()
+        self._refuse_publish_into_cleaned_store(
+            key,
+            item,
+            has_disposal_methods=True,
+            disposal_methods=disposal_methods,
+        )
+
     def _append_many_locked(
             self,
             key: str,
@@ -662,44 +794,55 @@ class Creations(Cleanable):
             disposal_methods: Optional[List[str]],
     ) -> None:
         """
-        Append one many creation and its disposal record; caller holds `_lock`.
+        Append one many creation through the checked public verb; caller holds `_lock`.
 
         Contract:
             - The caller holds `_lock` and has checked the store is not cleaned.
-            - Creates first-use buckets and appends to both registries in one
-              critical section (BUG-073 invariant).
+            - Validates before it appends, so a refused registration leaves the
+              store untouched.
+            - Creates the first-use bucket and, for a disposal-bearing key, its
+              `ManyDisposalBucket` record in one critical section. The record
+              IS the live bucket, so the live and disposal views cannot diverge
+              (the BUG-073 invariant, now by construction).
 
         Raises:
             ValueError:
-                If the key already holds a non-list live or disposable slot.
+                If the key already holds a non-list live slot or a non-many
+                disposable slot, or if this registration's disposal declaration
+                disagrees with the key's existing entries: one many key carries
+                one declaration (the spell id fixes it).
         """
-        live_value = self._creations.get(key)
-        if live_value is None:
-            self._creations[key] = []
-            live_value = self._creations[key]
-        if not isinstance(live_value, list):
+        bucket = self._creations.get(key)
+        if bucket is not None and not isinstance(bucket, list):
             raise ValueError(
                 f"Key {key} already exists in creations with non-list slot."
             )
-        live_value.append(item)
-
-        if not has_disposal_methods:
-            return
-
-        disposable_value = self._disposable_creations.get(key)
-        if disposable_value is None:
-            self._disposable_creations[key] = []
-            disposable_value = self._disposable_creations[key]
-        if not isinstance(disposable_value, list):
+        record = self._disposable_creations.get(key)
+        if has_disposal_methods:
+            if record is None:
+                if bucket:
+                    raise ValueError(
+                        f"Key {key} already holds many creations registered without disposal "
+                        f"methods; one many key carries one disposal declaration."
+                    )
+            elif not isinstance(record, ManyDisposalBucket):
+                raise ValueError(
+                    f"Key {key} already exists in disposable creations with non-list slot."
+                )
+        elif record is not None:
             raise ValueError(
-                f"Key {key} already exists in disposable creations with non-list slot."
+                f"Key {key} already holds many creations registered with disposal "
+                f"methods; one many key carries one disposal declaration."
             )
-        disposable_value.append(
-            (
-                item,
+        if bucket is None:
+            bucket = []
+            self._creations[key] = bucket
+        if has_disposal_methods and record is None:
+            self._disposable_creations[key] = ManyDisposalBucket(
+                bucket,
                 disposal_methods if disposal_methods is not None else [],
             )
-        )
+        bucket.append(item)
 
     def get_creation(self, spell_id: str) -> Optional[Any]:
         """
@@ -807,7 +950,7 @@ class Creations(Cleanable):
         errors: List[Exception] = []
         if isinstance(disposal, tuple):
             errors = self._attempt_cleanup(disposal)
-        elif isinstance(disposal, list):
+        elif isinstance(disposal, ManyDisposalBucket):
             errors = self._dispose_many_creations(disposal)
         # Keep non-disposable objects alive until the removal locks are released.
         del retired
@@ -891,9 +1034,12 @@ class Creations(Cleanable):
             - The caller holds this store's lock and established key presence.
             - Search only this target's bucket, using object identity so custom
               equality cannot select a different creation or invoke user code.
-            - Remove one retained entry and its disposal metadata, if recorded.
-              Metadata may be sparse, so its position is found independently.
-            - Preserve remaining order and remove buckets only when empty.
+            - Remove one retained entry. The disposal record aliases the live
+              bucket, so that one removal retires it from both views; the
+              returned disposal entry pairs the object with the key's method
+              list when the key is disposal-bearing.
+            - Preserve remaining order and remove the bucket, and its record,
+              only when empty.
             - Missing references return zero; no disposal callback runs here.
 
         Args:
@@ -909,25 +1055,22 @@ class Creations(Cleanable):
             Called only inside `_detach_purge_entries`' locked critical section.
             This helper owns no scope policy, additional lock or disposal action.
         """
-        for index, retired in enumerate(self._creations[spell_id]):
+        bucket = self._creations[spell_id]
+        for index, retired in enumerate(bucket):
             if retired is creation:
                 break
         else:
             return 0, None, None
 
-        self._creations[spell_id].pop(index)
-        if not self._creations[spell_id]:
+        bucket.pop(index)
+        record = self._disposable_creations.get(spell_id)
+        if not bucket:
             del self._creations[spell_id]
-
-        disposal: Optional[StoredDisposalEntry] = None
-        if spell_id in self._disposable_creations:
-            for index, entry in enumerate(self._disposable_creations[spell_id]):
-                if entry[0] is creation:
-                    disposal = self._disposable_creations[spell_id].pop(index)
-                    break
-            if not self._disposable_creations[spell_id]:
+            if record is not None:
                 del self._disposable_creations[spell_id]
-        return 1, retired, disposal
+        if record is None:
+            return 1, retired, None
+        return 1, retired, (retired, record.methods)
 
     def extract_spell_creations(
             self,
@@ -957,19 +1100,22 @@ class Creations(Cleanable):
 
             if isinstance(live_value, list):
                 live_many = self._creations.pop(spell_id)
-                disposable_many = (
+                record = (
                     self._disposable_creations.pop(spell_id)
-                    if isinstance(disposable_value, list)
+                    if isinstance(disposable_value, ManyDisposalBucket)
                     else None
                 )
-                for index, stored_value in enumerate(live_many):
+                # One record per key: every row of a disposal-bearing many
+                # key carries the same Spell-owned list object.
+                methods = None if record is None else record.methods
+                for stored_value in live_many:
                     entry = {
                         "scope": "many",
-                        "disposable": disposable_many is not None,
+                        "disposable": methods is not None,
                         "stored": stored_value,
                     }
-                    if disposable_many is not None:
-                        entry["disposal_methods"] = disposable_many[index][1]
+                    if methods is not None:
+                        entry["disposal_methods"] = methods
                     extracted.append(entry)
             elif live_value is not None and not isinstance(live_value, dict):
                 stored_value = self._creations.pop(spell_id)
@@ -1000,8 +1146,10 @@ class Creations(Cleanable):
         Contract:
             - Rebuilds this scoped store from the extracted payload only.
             - Replaces any current local state for the spell id.
-            - Restores both live entries and disposal metadata.
-            - Raises when the payload does not match the local slot shape.
+            - Restores both live entries and disposal metadata; a many key's
+              rows rebuild one `ManyDisposalBucket` over the restored bucket.
+            - Raises when the payload does not match the local slot shape, or
+              when the rows of one many key disagree on `disposable`.
             - Restores the same raw object references that were extracted; it
               does not clone or rehydrate them.
             - Retains the extracted disposal lists directly, without copying
@@ -1042,28 +1190,34 @@ class Creations(Cleanable):
                 if scope == "many":
                     existing = self._creations.get(spell_id)
                     if existing is None:
-                        self._creations[spell_id] = []
-                        existing = self._creations[spell_id]
-                    if not isinstance(existing, list):
+                        existing = []
+                        self._creations[spell_id] = existing
+                    elif not isinstance(existing, list):
                         raise RuntimeError(
                             f"Cannot restore many creations for spell '{spell_id}' into non-list slot."
                         )
-                    existing.append(stored_value)
+                    record = self._disposable_creations.get(spell_id)
                     if is_disposable:
-                        disposable_many = self._disposable_creations.get(spell_id)
-                        if disposable_many is None:
-                            self._disposable_creations[spell_id] = []
-                            disposable_many = self._disposable_creations[spell_id]
-                        if not isinstance(disposable_many, list):
+                        if record is None:
+                            if existing:
+                                raise RuntimeError(
+                                    f"Cannot restore a disposable many creation for spell '{spell_id}' "
+                                    f"beside entries restored without disposal methods."
+                                )
+                            self._disposable_creations[spell_id] = ManyDisposalBucket(
+                                existing,
+                                disposal_methods if disposal_methods is not None else [],
+                            )
+                        elif not isinstance(record, ManyDisposalBucket):
                             raise RuntimeError(
                                 f"Cannot restore many creations for spell '{spell_id}' into non-list slot."
                             )
-                        disposable_many.append(
-                            (
-                                stored_value,
-                                disposal_methods if disposal_methods is not None else [],
-                            )
+                    elif record is not None:
+                        raise RuntimeError(
+                            f"Cannot restore a many creation without disposal methods for spell "
+                            f"'{spell_id}' beside disposable entries."
                         )
+                    existing.append(stored_value)
                     continue
 
                 raise RuntimeError(

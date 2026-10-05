@@ -1,0 +1,217 @@
+name: Shallow thread scaling (three OSes)
+
+# ci.yml invokes this only for dev-to-preprod promotion PRs.
+# This benchmark has its own runners and runs alongside the other two benchmark workflows.
+on:
+  workflow_call:
+    inputs:
+      thread-counts:
+        description: Comma-separated thread counts from 1 to 5; the first is the speedup baseline. Blank uses the benchmark default.
+        type: string
+        required: false
+        default: '1,2,3,4,5'
+      duration-seconds:
+        description: Measurement seconds for each thread count, greater than zero and at most 120. Blank uses the benchmark default.
+        type: string
+        required: false
+        default: '15'
+  workflow_dispatch:
+    inputs:
+      thread-counts:
+        description: Comma-separated thread counts from 1 to 5; the first is the speedup baseline. Blank uses the benchmark default.
+        type: string
+        required: false
+        default: '1,2,3,4,5'
+      duration-seconds:
+        description: Measurement seconds for each thread count, greater than zero and at most 120. Blank uses the benchmark default.
+        type: string
+        required: false
+        default: '15'
+
+permissions:
+  contents: read
+
+jobs:
+  scaling:
+    name: Thread scaling / ${{ github.head_ref || github.ref_name }} / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        # Keep all three on x64, rather than comparing Intel with Apple Silicon.
+        os: [ubuntu-24.04, windows-2025, macos-15-intel]
+    env:
+      PYTHONUNBUFFERED: '1'
+      PYTHONUTF8: '1'
+      PYTHONIOENCODING: utf-8
+      PYTHONPATH: ${{ github.workspace }}/src
+      PYTEST_DISABLE_PLUGIN_AUTOLOAD: '1'
+      DI_THREAD_COUNTS: ${{ inputs.thread-counts }}
+      DI_DURATION_S: ${{ inputs.duration-seconds }}
+      GAUNTLET_RUNNER_LABEL: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.14'
+          check-latest: true
+          architecture: x64
+          freethreaded: true
+          allow-prereleases: false
+      - name: Install identical pinned benchmark dependencies
+        shell: python
+        run: |
+          import subprocess, sys
+          from pathlib import Path
+          pins = ['dependency-injector==4.49.1', 'dishka==1.10.1', 'pytest==9.1.1',
+                  'iniconfig==2.3.0', 'packaging==26.3', 'pluggy==1.6.0',
+                  'Pygments==2.21.0', 'colorama==0.4.6']
+          report = Path('thread-scaling-results')
+          report.mkdir(exist_ok=True)
+          (report / 'requirements.txt').write_text('\n'.join(pins) + '\n', encoding='utf-8')
+          command = [sys.executable, '-m', 'pip', 'install', '--only-binary=:all:',
+                     '--report', str(report / 'install-report.json'), *pins]
+          with (report / 'install.log').open('w', encoding='utf-8') as log:
+              process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                         text=True, encoding='utf-8', errors='replace')
+              for line in process.stdout:
+                  print(line, end='', flush=True)
+                  log.write(line)
+                  log.flush()
+              status = process.wait()
+          raise SystemExit(status)
+      - name: Record thread scaling provenance
+        env:
+          PYTHON_GIL: '0'
+        shell: python
+        run: |
+          import hashlib, json, os, platform, shutil, subprocess, sys, sysconfig
+          from pathlib import Path
+          sys.path.insert(0, str(Path.cwd()))
+          import dependency_injector.containers, dependency_injector.providers, dishka, melder
+          from benchmarks.testing_other_di import test_shallow_all_thread_scaling as scaling
+          report = Path('thread-scaling-results')
+          config = scaling._ScalingConfig.from_env()
+          libraries = list(scaling.shallow_all._selected_libs())
+          graphs = [graph.name for graph in scaling.shallow_all._selected_graphs()]
+          hashes = {}
+          for path in (Path('benchmarks/testing_other_di/test_shallow_all_thread_scaling.py'),
+                       Path('benchmarks/testing_other_di/test_shallow_all.py'),
+                       Path('tests/mocks/spellbook/deep_layers.py')):
+              hashes[path.as_posix()] = hashlib.sha256(path.read_bytes()).hexdigest()
+              shutil.copyfile(path, report / path.name)
+          data = {
+              'repository': os.environ['GITHUB_REPOSITORY'], 'commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
+              'event_sha': os.environ['GITHUB_SHA'], 'run_id': os.environ['GITHUB_RUN_ID'], 'run_attempt': os.environ['GITHUB_RUN_ATTEMPT'],
+              'python': sys.version, 'free_threaded_build': sysconfig.get_config_var('Py_GIL_DISABLED'),
+              'gil_enabled': sys._is_gil_enabled(), 'platform': platform.platform(), 'machine': platform.machine(),
+              'logical_cpu_count': os.cpu_count(), 'runner_label': os.environ['GAUNTLET_RUNNER_LABEL'],
+              'thread_counts': list(config.thread_counts), 'duration_seconds': config.duration_s,
+              'libraries': libraries, 'graphs': graphs, 'benchmark_sha256': hashes,
+          }
+          (report / 'environment.json').write_text(json.dumps(data, indent=2), encoding='utf-8')
+          (report / 'dependencies.txt').write_text(subprocess.check_output([sys.executable, '-m', 'pip', 'freeze'], text=True), encoding='utf-8')
+          print(json.dumps(data, indent=2))
+          assert sys.version_info[:2] == (3, 14) and sys.version_info.releaselevel == 'final', sys.version
+          assert data['free_threaded_build'] == 1 and not data['gil_enabled'], 'Expected free-threaded GIL-off runtime'
+          assert platform.machine().lower() in ('x86_64', 'amd64'), platform.machine()
+          assert data['commit'] == data['event_sha'], 'Checkout differs from the triggered commit'
+          assert Path(melder.__file__).resolve().is_relative_to(Path('src').resolve()), 'Wrong Melder checkout imported'
+          assert 0 < config.duration_s <= 120, 'duration-seconds must be greater than zero and at most 120'
+          subprocess.run([sys.executable, '-m', 'pip', 'check'], check=True)
+      - name: Run thread scaling for each library in its own process
+        timeout-minutes: 100
+        env:
+          PYTHON_GIL: '0'
+        shell: python
+        run: |
+          import ast, json, os, re, subprocess, sys, time
+          from pathlib import Path
+          report = Path('thread-scaling-results')
+          expected = json.loads((report / 'environment.json').read_text(encoding='utf-8'))
+          counts = tuple(expected['thread_counts'])
+          seconds = '%.2f' % expected['duration_seconds']
+          target = 'benchmarks/testing_other_di/test_shallow_all_thread_scaling.py'
+          config_line = r'\[{lib}\] graph-mix scaling config: gil=(\w+), duration=([\d.]+)s, threads=(\([\d, ]+\)),'
+          result_line = (r'\[{lib}\] graph-mix scaling: threads=(\d+), duration=([\d.]+)s, steps=(\d+), '
+                         r'steps/s=([\d,]+), speedup_vs_1t=([\d.]+)x, efficiency=([\d.]+)%, '
+                         r'spellspaces=(\d+), errors=(\d+),')
+          rows, problems, exit_codes, commands = [], {}, {}, {}
+          started = time.monotonic()
+          for lib in expected['libraries']:
+              command = [sys.executable, '-X', 'gil=0', '-m', 'pytest', '-s', '-v', '-o', 'addopts=',
+                         '-o', 'markers=timeout: timeout metadata (bounded by Actions)',
+                         '--junitxml=thread-scaling-results/' + lib + '-junit.xml', target]
+              commands[lib] = command
+              captured = []
+              with (report / (lib + '.log')).open('w', encoding='utf-8') as log:
+                  process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                             text=True, encoding='utf-8', errors='replace',
+                                             env=dict(os.environ, DI_LIBS=lib, PYTHON_GIL='0'))
+                  for line in process.stdout:
+                      print(line, end='', flush=True)
+                      log.write(line)
+                      log.flush()
+                      captured.append(line)
+                  exit_codes[lib] = process.wait()
+              text = ''.join(captured)
+              configs = re.findall(config_line.replace('{lib}', re.escape(lib)), text)
+              results = re.findall(result_line.replace('{lib}', re.escape(lib)), text)
+              issues = []
+              if exit_codes[lib]:
+                  issues.append('pytest exited with ' + str(exit_codes[lib]))
+              if len(configs) != 1:
+                  issues.append('expected one config line, found ' + str(len(configs)))
+              else:
+                  gil, observed_seconds, observed_counts = configs[0]
+                  if gil != 'disabled':
+                      issues.append('GIL status was ' + gil)
+                  if observed_seconds != seconds:
+                      issues.append('duration was ' + observed_seconds + 's, expected ' + seconds + 's')
+                  if ast.literal_eval(observed_counts) != counts:
+                      issues.append('thread counts were ' + observed_counts + ', expected ' + repr(counts))
+              reported = tuple(int(row[0]) for row in results)
+              if reported != counts:
+                  issues.append('result lines covered ' + repr(reported) + ', expected ' + repr(counts))
+              for threads, elapsed, steps, rate, speedup, efficiency, spellspaces, errors in results:
+                  rows.append({'lib': lib, 'threads': int(threads), 'elapsed_s': float(elapsed), 'steps': int(steps),
+                               'steps_per_s': int(rate.replace(',', '')), 'speedup': float(speedup),
+                               'efficiency_percent': float(efficiency), 'spellspaces': int(spellspaces), 'errors': int(errors)})
+                  if int(steps) <= 0:
+                      issues.append('no work was done with ' + threads + ' thread(s)')
+                  if int(errors):
+                      issues.append(errors + ' error(s) with ' + threads + ' thread(s)')
+              problems[lib] = issues
+          valid = not any(problems.values())
+          table = ['### Shallow thread scaling on ' + os.environ['GAUNTLET_RUNNER_LABEL'], '',
+                   '| Library | Threads | Steps/s | Speedup vs ' + str(counts[0]) + ' thread(s) | Efficiency | Steps | Errors |',
+                   '| --- | ---: | ---: | ---: | ---: | ---: | ---: |']
+          for row in rows:
+              table.append('| %s | %d | %s | %.2fx | %.1f%% | %d | %d |' % (
+                  row['lib'], row['threads'], format(row['steps_per_s'], ','), row['speedup'],
+                  row['efficiency_percent'], row['steps'], row['errors']))
+          outcome = {'validation_passed': valid, 'exit_codes': exit_codes, 'problems': problems,
+                     'expected_rows': len(counts) * len(expected['libraries']), 'completed_rows': len(rows),
+                     'elapsed_seconds': time.monotonic() - started}
+          summary = '\n'.join(table) + '\n'
+          (report / 'commands.json').write_text(json.dumps(commands, indent=2), encoding='utf-8')
+          (report / 'results.json').write_text(json.dumps(rows, indent=2), encoding='utf-8')
+          (report / 'outcome.json').write_text(json.dumps(outcome, indent=2), encoding='utf-8')
+          (report / 'summary.md').write_text(summary, encoding='utf-8')
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a', encoding='utf-8') as stream:
+              stream.write(summary + '\nValidation: ' + json.dumps(outcome) + '\n')
+          failed = [code for code in exit_codes.values() if code]
+          if failed:
+              raise SystemExit(failed[0])
+          assert valid, 'Thread scaling is incomplete, mismatched, or did not remain GIL-off: ' + json.dumps(problems)
+      - name: Preserve thread scaling evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: shallow-thread-scaling-${{ matrix.os }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: thread-scaling-results/
+          if-no-files-found: warn
+          retention-days: 30

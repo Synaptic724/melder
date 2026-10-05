@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/crystals/spell_crystal.py",
- "source_sha256": "24d389a39c7f50d6f08e7b1dd77bc12ba9916d319e9be4b008a18fbce88c3e21",
+ "source_sha256": "760c4a1c2a9b5c6a93c783f69ee363ef73cfa49c316d794cc4b013c6d1250334",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.crystals.spell_crystal": {
@@ -34,9 +34,12 @@
    "public_methods": [
     "binding_name",
     "cleanup",
+    "compose_custody_key",
+    "custody_key",
     "describe",
     "disposal_method_names",
     "existence_name",
+    "frame_name",
     "id",
     "module_targets",
     "module_to_direct_dependencies",
@@ -56,9 +59,13 @@
     "root_target_qualname",
     "site_package_root_paths",
     "site_package_targets",
+    "spell_id_of_custody_key",
     "spell_name",
     "spellbook_id",
+    "spellframe_kind",
+    "spellframe_module",
     "spellframe_name",
+    "spellframe_qualname",
     "synthetic_module_targets",
     "unknown_targets",
     "user_source_root_paths",
@@ -66,29 +73,33 @@
     "walk_errors"
    ],
    "shape": {
-    "method_count": 34,
+    "method_count": 41,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "10f728167dc8490593bc4903213eb867936ac9d47781616c096a4864eab143a9",
+   "span_sha256": "93b395f3b620207e0b1601b5a700c95b3774a20088484d9a4cbf464f8c26a203",
    "role": "Spell custody twin + module-dependency manifest; carries the full bind signature and, for synthetic roots, the rebuildable module SOURCES (M3); opt-in user-source TEXT rides beside them (S2).",
    "responsibilities": [
     "captures identity and the full bind signature for one live spell target",
     "captures detached disposal names in resolved execution order without sorting or reapplying book policy",
     "delegates the module-world walk to a single-use CrystalAnalyzer (V3 carrier law)",
     "carries the returned CrystalAnalysisResult and exposes it via delegating properties",
-    "captures native per-version resolution capability as a detached replay value"
+    "captures native per-version resolution capability as a detached replay value",
+    "keys its record entry: custody_key is the spell id, or \"<spell_id>@<frame>\" when built with per_frame_custody (the frame read from spell.aetheric_frame)",
+    "records the frame kind (spellframe_kind) and, for a contract, the Protocol's module and qualname (spellframe_module, spellframe_qualname) so restore and graft rebind the Protocol rather than a same-named category (0.2.8222, record 4.1.0)"
    ],
    "owns_state": [
     "_analysis (one carried CrystalAnalysisResult)",
-    "_disposal_method_names (ordered recorded values)"
+    "_disposal_method_names (ordered recorded values)",
+    "_frame_name, _custody_key (the record key)",
+    "_spellframe_kind, _spellframe_module, _spellframe_qualname (recorded frame kind)"
    ],
    "phases": [
     "init",
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "1bd984746f212d8a43d10cfb0d777460dda8bb8cce42d82d202f4ccb7b07137a"
+   "semantics_authored_against": "93b395f3b620207e0b1601b5a700c95b3774a20088484d9a4cbf464f8c26a203"
   }
  },
  "edges_out": [
@@ -127,6 +138,9 @@
  ],
  "published_aliases": [],
  "imports": {
+  "inspect": "inspect",
+  "sys": "sys",
+  "threading": "threading",
   "Path": "pathlib.Path",
   "TYPE_CHECKING": "typing.TYPE_CHECKING",
   "Any": "typing.Any",

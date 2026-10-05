@@ -29,6 +29,8 @@
  "edge_candidates": [],
  "published_aliases": [],
  "imports": {
+  "hashlib": "hashlib",
+  "threading": "threading",
   "Any": "typing.Any",
   "Callable": "typing.Callable",
   "Dict": "typing.Dict",

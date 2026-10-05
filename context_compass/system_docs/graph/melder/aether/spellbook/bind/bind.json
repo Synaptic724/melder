@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/bind/bind.py",
- "source_sha256": "cf6a77a17fa6f23e3c9dc81c4af8c956bb3457a3a4646f2b3fb59dada074e087",
+ "source_sha256": "892cf05579ea869e397009d6784e5037d631c8363c54f320fd5e4ff953278f78",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.bind.bind": {
@@ -19,7 +19,7 @@
    "label": "Bind",
    "kind": "class",
    "file": "src/melder/aether/spellbook/bind/bind.py",
-   "lineno": 126,
+   "lineno": 128,
    "bases": [
     "Cleanable"
    ],
@@ -36,11 +36,11 @@
     "spell_id_inspector"
    ],
    "shape": {
-    "method_count": 21,
+    "method_count": 22,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "08ed6c3e49073cb2f596f1aecf55fd518db0369ff023197f9a21af7f87d4ce72",
+   "span_sha256": "352c76bda7730da7d0101782405d7a75581834c3be93c2a8bb4d13e466241a73",
    "role": "Spell registration gateway for one Spellbook.",
    "responsibilities": [
     "examines binding targets into canonical binding profiles",
@@ -49,13 +49,15 @@
     "admits Protocol definitions only with resolvable=False without relaxing other binding rules",
     "resolves ordered disposal once at bind; book names own overlaps and priority selects front or back placement",
     "matches requested inherited disposal through first-definition MRO namespaces without invoking descriptors or expanding fingerprinted profile members",
-    "validates binding policy and spellframe semantics",
     "checks direct public Protocol members on classes and actual supplied objects before Spell creation",
     "creates canonical Spell records for Spellbook registration",
     "captures immutable configuration seeds once and owns subsequent Book-local registration hook changes",
     "retains one callback tuple per bind and dispatches original-reference pre checks, actual-Spell activation and captured post notifications",
     "runs application callbacks outside the construction lock and preserves phase, callback identity and cause on failure",
-    "retires unpublished failed Spell and index allocations locally without disposing supplied application objects"
+    "retires unpublished failed Spell and index allocations locally without disposing supplied application objects",
+    "classifies the spellframe before the structural check (_classify_spellframe): None -> SpellframeKind.none, str -> category, a typing.Protocol -> contract with the Protocol recorded; any other class or object is refused with a TypeError naming the two valid forms (0.2.8222, Breaking)",
+    "validates binding policy and spellframe semantics, running the direct-public-member Protocol check only for a contract frame",
+    "hands the Spell its spellframe_kind and implemented_protocols; the fingerprint does not hash the kind"
    ],
    "owns_state": [
     "_spellbook",
@@ -67,7 +69,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "08ed6c3e49073cb2f596f1aecf55fd518db0369ff023197f9a21af7f87d4ce72"
+   "semantics_authored_against": "352c76bda7730da7d0101782405d7a75581834c3be93c2a8bb4d13e466241a73"
   }
  },
  "edges_out": [
@@ -93,6 +95,12 @@
   },
   {
    "from": "melder.aether.spellbook.bind.bind.Bind",
+   "to_label": "TypeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.bind.bind.Bind",
    "to_label": "SpellIndex",
    "relation": "creates",
    "confidence": "candidate"
@@ -100,12 +108,6 @@
   {
    "from": "melder.aether.spellbook.bind.bind.Bind",
    "to_label": "Spell",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.spellbook.bind.bind.Bind",
-   "to_label": "TypeError",
    "relation": "creates",
    "confidence": "candidate"
   },
@@ -124,6 +126,9 @@
  ],
  "published_aliases": [],
  "imports": {
+  "inspect": "inspect",
+  "threading": "threading",
+  "hashlib": "hashlib",
   "TYPE_CHECKING": "typing.TYPE_CHECKING",
   "Any": "typing.Any",
   "Callable": "typing.Callable",
@@ -138,6 +143,8 @@
   "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
   "Permissions": "melder.aether.conduit.conduit_ward.permissions.permissions.Permissions",
   "Spell": "melder.aether.spellbook.spell.Spell",
+  "SpellframeKind": "melder.aether.spellbook.spellframe_kind.spellframe_kind.SpellframeKind",
+  "SpellInputUtils": "melder.utilities.helpers.general_helpers.SpellInputUtils",
   "INTERNAL_MANIFEST": "melder._build_assets._bind_guard.bind_guard.INTERNAL_MANIFEST",
   "InternalRegistrationError": "melder.utilities.custom_exceptions.internal_registration_error.InternalRegistrationError",
   "HookExecutionError": "melder.utilities.custom_exceptions.hook_execution_error.HookExecutionError",

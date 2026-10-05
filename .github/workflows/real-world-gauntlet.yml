@@ -1,0 +1,217 @@
+name: Real-world gauntlet (three OSes)
+
+# ci.yml invokes this only for dev-to-preprod promotion PRs.
+# CI/manual iteration defaults are smaller than the local benchmark configuration.
+on:
+  workflow_call:
+    inputs:
+      thread-counts:
+        description: Optional comma-separated counts; blank uses the benchmark configuration.
+        type: string
+        required: false
+        default: ''
+      iteration-counts:
+        description: Comma-separated CI iteration counts; blank explicitly uses the local benchmark defaults.
+        type: string
+        required: false
+        default: '500,1000,2500,5000,10000'
+  workflow_dispatch:
+    inputs:
+      thread-counts:
+        description: Optional comma-separated counts; blank uses the benchmark configuration.
+        type: string
+        required: false
+        default: ''
+      iteration-counts:
+        description: Comma-separated CI iteration counts; blank explicitly uses the local benchmark defaults.
+        type: string
+        required: false
+        default: '500,1000,2500,5000,10000'
+
+permissions:
+  contents: read
+
+jobs:
+  gauntlet:
+    name: Gauntlet / ${{ github.head_ref || github.ref_name }} / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 360
+    strategy:
+      fail-fast: false
+      matrix:
+        # Keep all three on x64, rather than comparing Intel with Apple Silicon.
+        os: [ubuntu-24.04, windows-2025, macos-15-intel]
+    env:
+      PYTHONUNBUFFERED: '1'
+      PYTHONUTF8: '1'
+      PYTHONIOENCODING: utf-8
+      PYTHONPATH: ${{ github.workspace }}/src
+      PYTEST_DISABLE_PLUGIN_AUTOLOAD: '1'
+      REAL_WORLD_GAUNTLET_THREAD_COUNTS: ${{ inputs.thread-counts }}
+      REAL_WORLD_GAUNTLET_ITERATION_COUNTS: ${{ inputs.iteration-counts }}
+      GAUNTLET_RUNNER_LABEL: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.14'
+          check-latest: true
+          architecture: x64
+          freethreaded: true
+          allow-prereleases: false
+      - name: Install identical pinned benchmark dependencies
+        shell: python
+        run: |
+          import subprocess, sys
+          from pathlib import Path
+          pins = ['dependency-injector==4.49.1', 'dishka==1.10.1', 'pytest==9.1.1',
+                  'iniconfig==2.3.0', 'packaging==26.3', 'pluggy==1.6.0',
+                  'Pygments==2.21.0', 'colorama==0.4.6']
+          report = Path('gauntlet-results')
+          report.mkdir(exist_ok=True)
+          (report / 'requirements.txt').write_text('\n'.join(pins) + '\n', encoding='utf-8')
+          command = [sys.executable, '-m', 'pip', 'install', '--only-binary=:all:',
+                     '--report', str(report / 'install-report.json'), *pins]
+          with (report / 'install.log').open('w', encoding='utf-8') as log:
+              process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                         text=True, encoding='utf-8', errors='replace')
+              for line in process.stdout:
+                  print(line, end='', flush=True)
+                  log.write(line)
+                  log.flush()
+              status = process.wait()
+          raise SystemExit(status)
+      - name: Record source and runtime provenance
+        env:
+          PYTHON_GIL: '0'
+        shell: python
+        run: |
+          import hashlib, json, os, platform, shutil, subprocess, sys, sysconfig
+          from pathlib import Path
+          report = Path('gauntlet-results')
+          report.mkdir(exist_ok=True)
+          sources = [Path('benchmarks/testing_other_di') / name for name in (
+              'test_real_world_gauntlet.py', 'real_world_gauntlet_gil_runner.py')]
+          hashes = {}
+          for path in sources:
+              hashes[str(path)] = hashlib.sha256(path.read_bytes()).hexdigest()
+              shutil.copyfile(path, report / path.name)
+          sys.path.insert(0, str(Path.cwd()))
+          from benchmarks.testing_other_di import test_real_world_gauntlet as gauntlet
+          iteration_counts = gauntlet._gauntlet_iteration_counts()
+          thread_counts = gauntlet._gauntlet_thread_counts()
+          rounds = gauntlet._gauntlet_rounds()
+          data = {
+              'repository': os.environ['GITHUB_REPOSITORY'],
+              'ref': os.environ['GITHUB_REF'], 'ref_name': os.environ['GITHUB_REF_NAME'],
+              'commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
+              'event_sha': os.environ['GITHUB_SHA'],
+              'run_id': os.environ['GITHUB_RUN_ID'], 'run_attempt': os.environ['GITHUB_RUN_ATTEMPT'],
+              'run_url': os.environ['GITHUB_SERVER_URL'] + '/' + os.environ['GITHUB_REPOSITORY'] + '/actions/runs/' + os.environ['GITHUB_RUN_ID'],
+              'python': sys.version, 'executable': sys.executable,
+              'free_threaded_build': sysconfig.get_config_var('Py_GIL_DISABLED'),
+              'gil_enabled': sys._is_gil_enabled(),
+              'platform': platform.platform(), 'machine': platform.machine(),
+              'processor': platform.processor(), 'logical_cpu_count': os.cpu_count(),
+              'runner_label': os.environ['GAUNTLET_RUNNER_LABEL'],
+              'runner_os': os.environ.get('RUNNER_OS'), 'runner_arch': os.environ.get('RUNNER_ARCH'),
+              'image_os': os.environ.get('ImageOS'), 'image_version': os.environ.get('ImageVersion'),
+              'iteration_counts': list(iteration_counts), 'thread_counts': list(thread_counts), 'rounds': rounds,
+              'benchmark_sha256': hashes,
+              'harness': 'Unmodified branch-native pytest wrapper; inspect archived sources for process-isolation differences.',
+              'settings': {k: v for k, v in os.environ.items() if k.startswith(('DI_GAUNTLET_', 'REAL_WORLD_GAUNTLET_', 'GAUNTLET_', 'PYTHON'))},
+              'comparison_caveat': 'Hosted hardware varies. Branches may change the harness and workload as well as Melder. One round is a spot check, not a statistical conclusion.',
+          }
+          (report / 'environment.json').write_text(json.dumps(data, indent=2), encoding='utf-8')
+          print(json.dumps(data, indent=2))
+          assert sys.version_info[:2] == (3, 14) and sys.version_info.releaselevel == 'final', sys.version
+          assert data['free_threaded_build'] == 1
+          assert not data['gil_enabled'], 'Expected the GIL disabled'
+          assert platform.machine().lower() in ('x86_64', 'amd64'), platform.machine()
+          assert data['commit'] == data['event_sha'], 'Checkout differs from triggered commit'
+      - name: Verify all libraries and no-GIL imports
+        env:
+          PYTHON_GIL: '0'
+        shell: python
+        run: |
+          import importlib.metadata, json, subprocess, sys
+          from pathlib import Path
+          import dependency_injector.containers, dependency_injector.providers, dishka, melder, pytest
+          report = Path('gauntlet-results')
+          dependencies = {d.metadata['Name']: d.version for d in importlib.metadata.distributions()}
+          data = {'dependencies': dependencies, 'gil_enabled_after_imports': sys._is_gil_enabled(),
+                  'melder_source': str(Path(melder.__file__).resolve())}
+          (report / 'imports.json').write_text(json.dumps(data, indent=2), encoding='utf-8')
+          freeze = subprocess.check_output([sys.executable, '-m', 'pip', 'freeze'], text=True)
+          (report / 'dependencies.txt').write_text(freeze, encoding='utf-8')
+          print(json.dumps(data, indent=2))
+          assert not data['gil_enabled_after_imports'], 'GIL enabled after benchmark library imports'
+          assert Path(melder.__file__).resolve().is_relative_to(Path('src').resolve()), 'Wrong Melder checkout imported'
+          subprocess.run([sys.executable, '-m', 'pip', 'check'], check=True)
+      - name: Run configured real-world gauntlet
+        # Leave room for artifact upload before the job-wide timeout.
+        timeout-minutes: 345
+        env:
+          PYTHON_GIL: '0'
+        shell: python
+        run: |
+          import json, os, re, subprocess, sys, time
+          from pathlib import Path
+          report = Path('gauntlet-results')
+          command = [sys.executable, '-X', 'gil=0', '-m', 'pytest', '-s', '-v',
+                     '-o', 'addopts=', '-o', 'markers=timeout: timeout metadata (bounded by Actions)',
+                     '--junitxml=gauntlet-results/junit.xml',
+                     'benchmarks/testing_other_di/test_real_world_gauntlet.py::test_real_world_gauntlet']
+          start = time.monotonic()
+          (report / 'command.json').write_text(json.dumps(command, indent=2), encoding='utf-8')
+          with (report / 'benchmark.log').open('w', encoding='utf-8') as log:
+              process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                         text=True, encoding='utf-8', errors='replace')
+              for line in process.stdout:
+                  print(line, end='', flush=True)
+                  log.write(line)
+                  log.flush()
+              status = process.wait()
+          output = (report / 'benchmark.log').read_text(encoding='utf-8')
+          expected = json.loads((report / 'environment.json').read_text(encoding='utf-8'))
+          iteration_counts = expected['iteration_counts']
+          counts = expected['thread_counts']
+          rounds = expected['rounds']
+          expected_pairs = sorted((iterations, threads) for iterations in iteration_counts for threads in counts for _ in range(rounds))
+          verified = {}
+          for lib in ('dependency-injector', 'dishka', 'melder'):
+              configs = re.findall(r'\[' + re.escape(lib) + r'\] gauntlet config: ([^\n]+)', output)
+              verified[lib] = (
+                  len(configs) == len(expected_pairs)
+                  and sorted((int(re.search(r'iterations=(\d+)', config)[1]), int(re.search(r'threads=(\d+)', config)[1])) for config in configs) == expected_pairs
+                  and all('gil=disabled' in config.split(', ') for config in configs)
+                  and all(output.count(f'[{lib}] gauntlet total({iterations})=') == len(counts) * rounds for iterations in iteration_counts)
+                  and output.count(f'[{lib}] gauntlet throughput |') == len(expected_pairs)
+              )
+          outcome = {'exit_code': status, 'verified_libraries': verified,
+                     'validation_passed': status == 0 and all(verified.values()),
+                     'iteration_counts': iteration_counts, 'thread_counts': counts, 'rounds': rounds,
+                     'elapsed_seconds': time.monotonic() - start, 'command': command}
+          (report / 'outcome.json').write_text(json.dumps(outcome, indent=2), encoding='utf-8')
+          summary = '\n'.join(line for line in output.splitlines() if any(token in line for token in (
+              '[gauntlet] thread counts:', '[gauntlet] iteration counts:',
+              '] gauntlet config:', '] gauntlet total(', '] gauntlet throughput', '] isolated median', '] lane=')))
+          (report / 'summary.txt').write_text(summary + '\n', encoding='utf-8')
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a', encoding='utf-8') as handle:
+              handle.write('## Real-world gauntlet by thread count\n\n```text\n' + summary + '\n```\n')
+              handle.write('\nValidation: ' + json.dumps(outcome) + '\n')
+              handle.write('\nCompare matching thread counts within each OS. Hosted hardware and branch-native process isolation/workloads may differ; one round is not a controlled pure-OS comparison. See the artifact for raw logs and provenance.\n')
+          if status:
+              raise SystemExit(status)
+          assert all(verified.values()), 'Missing results or wrong settings for one or more libraries: ' + repr(verified)
+      - name: Preserve logs, settings and source evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          # SHA identifies the actual tested PR merge commit (or manually selected commit).
+          name: gauntlet-${{ matrix.os }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: gauntlet-results/
+          if-no-files-found: warn
+          retention-days: 30

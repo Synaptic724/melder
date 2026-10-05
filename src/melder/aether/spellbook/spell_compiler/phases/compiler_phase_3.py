@@ -1,7 +1,20 @@
 import inspect
 import types
 import typing
-from typing import TYPE_CHECKING, Any, Dict, Generator, List, Optional, Set, Tuple, Union, get_args, get_origin
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Dict,
+    Generator,
+    List,
+    Optional,
+    Set,
+    Tuple,
+    Union,
+    get_args,
+    get_origin,
+)
 
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell import Spell
@@ -45,6 +58,7 @@ from melder.aether.spellbook.spell_compiler.topology.spell_local_topology import
     SpellSocketDescriptor,
 )
 from melder.aether.spellbook.spell_types.spell_types import SpellType
+from melder.aether.spellbook.spellframe_kind.spellframe_kind import SpellframeKind
 from melder.utilities.helpers.general_helpers import SpellInputUtils
 
 
@@ -60,6 +74,13 @@ class CompilerPhase3:
     Contract:
         - Slot-only phase surface with no explicit `__init__`.
         - Directly ports the canonical `SpellCrafter` phase-3 behavior.
+        - Annotation matching is by address key (2026-10-03): a DI annotation
+          names `normalize_frame_key(annotation)`, and a spell is a candidate
+          when that key is its address frame key (spellframe, else its own
+          name) or its type key (`spell_name`; an existing object's class
+          name). No identity comparison: a spellframe is a category or a
+          shape label, never a type, and a `TYPE_CHECKING`-only annotation
+          (a string at runtime) resolves exactly as the class object does.
         - Does not own spell, artifact, spellbook, or runtime collaborator
           lifecycle.
     """
@@ -175,6 +196,195 @@ class CompilerPhase3:
 
         return annotation
 
+    # Annotation kinds. Class-level constants (no module globals): the vocabulary
+    # `_annotation_kind` returns and the matching table below is keyed on.
+    _KIND_TYPE: ClassVar[str] = "type"
+    _KIND_CONTRACT: ClassVar[str] = "contract"
+    _KIND_NAME: ClassVar[str] = "name"
+
+    @staticmethod
+    def _annotation_key(annotation: Any) -> str:
+        """
+        Return the lowercased key a DI annotation names.
+
+        Contract:
+            A `ForwardRef` keys by its name; everything else keys through
+            `SpellInputUtils.normalize_frame_key` - a class or Protocol by
+            `__name__`, a string by itself, anything else by `str()` -
+            lowercased, the normalization every spell address already uses.
+            The key says WHAT NAME was written; `_annotation_kind` says what
+            kind of thing it names, and the two together select the spell keys
+            it is compared against.
+
+        Args:
+            annotation: The normalized annotation (Optional/Union unwrapped).
+
+        Returns:
+            str: The lowercased key.
+        """
+        if isinstance(annotation, typing.ForwardRef):
+            annotation = annotation.__forward_arg__
+        return SpellInputUtils.normalize_frame_key(annotation)
+
+    @classmethod
+    def _annotation_kind(cls, annotation: Any) -> str:
+        """
+        Classify a normalized annotation as a contract, a type or a bare name.
+
+        Contract (owner ruling 2026-10-03: a spellframe is a label; a Protocol
+        frame is a label and a contract; an annotation names a type or a
+        contract, never a category):
+            - A Protocol class (`SpellInputUtils.is_protocol_type`) is
+              `_KIND_CONTRACT`: the parameter asks for whatever bind checked
+              against that Protocol.
+            - Any other class is `_KIND_TYPE`: the parameter asks for instances
+              of that class; an existing object counts through its class.
+            - A string, a `ForwardRef` (a `TYPE_CHECKING`-only import leaves one
+              at runtime) or anything else is `_KIND_NAME`: the kind cannot be
+              told from the value, so the name is compared against every kind
+              a name may stand for in that position - a type or a contract for
+              a single socket, a label for a collection.
+
+        Args:
+            annotation: The normalized annotation (Optional/Union unwrapped).
+
+        Returns:
+            str: One of `_KIND_CONTRACT`, `_KIND_TYPE`, `_KIND_NAME`.
+        """
+        if inspect.isclass(annotation):
+            if SpellInputUtils.is_protocol_type(annotation):
+                return cls._KIND_CONTRACT
+            return cls._KIND_TYPE
+        return cls._KIND_NAME
+
+    @staticmethod
+    def _spell_type_key(spell_obj: Spell) -> str:
+        """
+        Return the spell's type key: its lowercased name.
+
+        Contract:
+            `spell_name` is a class's name, or for an existing object the name
+            of its class (Bind records `type(obj).__name__`), so the type key is
+            what a class annotation of that type keys to. Methods and lambdas
+            carry their function name here; `require_class_spell` keeps them
+            out of single resolution before this key is read.
+
+        Args:
+            spell_obj: The candidate spell.
+
+        Returns:
+            str: The lowercased type key.
+        """
+        return SpellInputUtils.normalize_frame_key(spell_obj.spell_name)
+
+    @staticmethod
+    def _spell_label_key(spell_obj: Spell) -> str:
+        """
+        Return the spell's address label: the frame key of its address.
+
+        Contract:
+            The spellframe's lowercased name (a string category as itself, a
+            Protocol by `__name__`) when one was given, else the spell's own
+            name - exactly the frame key `make_spell_key_from_parts` stores at
+            bind. This is what a collection annotation written as a name
+            gathers: the members of that label.
+
+        Args:
+            spell_obj: The candidate spell.
+
+        Returns:
+            str: The lowercased label key.
+        """
+        frame = spell_obj.spellframe
+        if frame is None:
+            return SpellInputUtils.normalize_frame_key(spell_obj.spell_name)
+        return SpellInputUtils.normalize_frame_key(frame)
+
+    @staticmethod
+    def _spell_contract_keys(spell_obj: Spell) -> Tuple[str, ...]:
+        """
+        Return the lowercased names of the Protocols the spell was checked against.
+
+        Contract:
+            Read from `Spell.implemented_protocols`, which Bind fills with the
+            Protocol spellframe when the frame kind is `contract` (one entry
+            today; the field is the seam a later `implements=` would extend).
+            Empty for a bare binding and for a string category, so a category
+            can never be reached through a contract comparison.
+
+        Args:
+            spell_obj: The candidate spell.
+
+        Returns:
+            Tuple[str, ...]: Zero or more lowercased contract keys.
+        """
+        return tuple(
+            SpellInputUtils.normalize_frame_key(protocol)
+            for protocol in spell_obj.implemented_protocols
+        )
+
+    @staticmethod
+    def _spell_definition_key(spell_obj: Spell) -> Optional[str]:
+        """
+        Return the type key of a spell that IS a Protocol - a descriptive definition - else None.
+
+        Contract:
+            A Protocol can be bound only with `resolvable=False` (Bind refuses it
+            as a concrete spell); such a binding describes the contract itself so a
+            consumer annotated with the Protocol compiles an OVERRIDE_REQUIRED socket
+            the caller supplies. A Protocol annotation therefore also matches the
+            Protocol's own definition by name, and the resolvers' resolvable
+            preference picks a real implementer whenever one is recorded.
+
+        Args:
+            spell_obj: The candidate spell.
+
+        Returns:
+            Optional[str]: The lowercased type key when the bound object is a Protocol class.
+        """
+        if SpellInputUtils.is_protocol_type(spell_obj.spell):
+            return SpellInputUtils.normalize_frame_key(spell_obj.spell_name)
+        return None
+
+    def _spell_keys_for(
+            self,
+            annotation_kind: str,
+            spell_obj: Spell,
+            *,
+            collection: bool,
+    ) -> Tuple[str, ...]:
+        """
+        Return the spell keys an annotation of `annotation_kind` is compared against.
+
+        The matching table (single socket | collection):
+            - type:     type key                      | type key
+            - contract: contract keys + definition    | contract keys + definition
+            - name:     type + contract               | label key
+        "definition" is the type key of a spell that is itself a Protocol (bound
+        `resolvable=False` as the contract's description). A category label is
+        reachable only through a collection written as a name (`list["storage"]`),
+        never through a single socket, and a class annotation never reads a frame
+        of any kind.
+
+        Args:
+            annotation_kind: One of the `_KIND_*` constants.
+            spell_obj: The candidate spell.
+            collection: True when resolving a COLLECTION_BY_ANNOTATION socket.
+
+        Returns:
+            Tuple[str, ...]: The keys to compare the annotation key against.
+        """
+        if annotation_kind == self._KIND_TYPE:
+            return (self._spell_type_key(spell_obj),)
+        if annotation_kind == self._KIND_CONTRACT:
+            definition_key = self._spell_definition_key(spell_obj)
+            if definition_key is None:
+                return self._spell_contract_keys(spell_obj)
+            return self._spell_contract_keys(spell_obj) + (definition_key,)
+        if collection:
+            return (self._spell_label_key(spell_obj),)
+        return (self._spell_type_key(spell_obj),) + self._spell_contract_keys(spell_obj)
+
     def _matches_annotation(
             self,
             annotation: Any,
@@ -182,16 +392,24 @@ class CompilerPhase3:
             spell_obj: Spell,
             *,
             require_class_spell: bool,
+            collection: bool = False,
     ) -> bool:
         """
         Return True if `spell_obj` is a candidate for the given annotation.
 
-        Matching strategy:
-            - Optional/Union wrappers are stripped before matching.
-            - String/bare-name annotation matches against `spell_name`, `frame`
-              (string or type name), and the bound spell type object.
-            - Non-string annotation matches against `spell.spell` and
-              `spell.spellframe`.
+        Matching strategy (by annotation kind, 2026-10-04):
+            - Optional/Union wrappers were stripped by the caller; a ForwardRef
+              keys by its name.
+            - The annotation's key (`_annotation_key`) must equal one of the
+              spell keys its kind selects (`_spell_keys_for`): a class
+              annotation compares with the spell's type key; a Protocol
+              annotation with the Protocols bind recorded on the spell; a string
+              with the type or contract keys on a single socket and with the
+              address label on a collection. A spell under a string category is
+              therefore reached by its type or, in a collection, by the category's
+              name - never does the category's name make it a provider of a
+              class spelled the same way.
+            - `binding_name`, when given, must equal the spell's binding name.
             - `require_class_spell=True` excludes METHOD/LAMBDA spell kinds.
 
         Args:
@@ -203,6 +421,8 @@ class CompilerPhase3:
                 Candidate spell.
             require_class_spell:
                 When True, only class-like spells are allowed.
+            collection:
+                True for a COLLECTION_BY_ANNOTATION socket (a name gathers a label).
 
         Returns:
             bool: `True` when the candidate should be considered for this
@@ -217,38 +437,12 @@ class CompilerPhase3:
             ):
                 return False
 
-        if isinstance(annotation, typing.ForwardRef):
-            annotation = annotation.__forward_arg__
-
-        if isinstance(annotation, str):
-            if spell_obj.spell_name == annotation:
-                if binding_name is not None and spell_obj.binding_name != binding_name:
-                    return False
-                return True
-
-            frame = spell_obj.spellframe
-            if isinstance(frame, str) and frame == annotation:
-                if binding_name is not None and spell_obj.binding_name != binding_name:
-                    return False
-                return True
-
-            if inspect.isclass(frame) and frame.__name__ == annotation:
-                if binding_name is not None and spell_obj.binding_name != binding_name:
-                    return False
-                return True
-
-        if spell_obj.spell is annotation:
-            if binding_name is not None and spell_obj.binding_name != binding_name:
-                return False
-            return True
-
-        frame = spell_obj.spellframe
-        if frame is annotation or frame == annotation:
-            if binding_name is not None and spell_obj.binding_name != binding_name:
-                return False
-            return True
-
-        return False
+        kind = self._annotation_kind(annotation)
+        if self._annotation_key(annotation) not in self._spell_keys_for(kind, spell_obj, collection=collection):
+            return False
+        if binding_name is not None and spell_obj.binding_name != binding_name:
+            return False
+        return True
 
     @staticmethod
     def _eq_safe_object(candidate: Any) -> bool:
@@ -256,10 +450,10 @@ class CompilerPhase3:
         Return True when equality on `candidate` is provably identity/str-like.
 
         Purpose:
-            The pass-scoped candidate index replaces `is`/`==` scans with
-            bucket lookups. That substitution is only exact when no bound
-            spell object or spellframe carries a custom `__eq__` that could
-            match objects beyond identity (or plain string equality).
+            The structural snapshot's replayability rule: it marks a pool
+            non-replayable when a bound object or spellframe carries a custom
+            `__eq__`. Phase 3 itself no longer needs it - its index matches by
+            key, which is exact for every pool (2026-10-03).
 
         Contract:
             - None, str, classes with the default `type.__eq__` metaclass
@@ -280,70 +474,48 @@ class CompilerPhase3:
         Build the pass-scoped phase-3 candidate index over the live pool.
 
         Purpose:
-            Collapse the O(dependencies x spells) annotation scans into
-            bucket lookups. All bucket keys derive from inputs that are
-            pass-invariant (binds are transactional and the resolution pass
-            runs post-bind): spell_name, spellframe, spell object identity,
-            spell_type, binding_name.
+            Collapse the O(dependencies x spells) annotation scans into one
+            bucket lookup per dependency. Three bucket maps, one per spell key
+            kind - type, label, contract - so a lookup reads exactly the
+            buckets the annotation's kind selects (`_spell_keys_for`). Keys
+            derive from pass-invariant inputs (binds are transactional and the
+            resolution pass runs post-bind): spellframe, its kind and spell_name.
 
         Contract:
-            - Entries are `(pool_position, spell_index, spell_obj)` so any
-              bucket union can be re-sorted into `_spell_id_pool` iteration
-              order, keeping collection-injection order identical to the
-              scan implementation.
-            - `eq_risky` is True when any spell/frame object fails
-              `_eq_safe_object`; consumers must then fall back to scans.
+            - Entries are `(pool_position, spell_index, spell_obj)` so a bucket
+              can be re-sorted into `_spell_id_pool` iteration order, keeping
+              collection-injection order identical to the scan implementation.
+            - Each spell is appended once to `by_type` and once to `by_label`
+              (the two may be the same key for a bare binding), once per
+              recorded contract to `by_contract`, and - when the bound object
+              is itself a Protocol - once to `by_definition` under its type key.
+            - Keys are strings, so bucket membership equals scan membership for
+              every pool; no equality guard is needed.
 
         Returns:
-            Dict[str, Any]: Index buckets plus the `eq_risky` flag.
+            Dict[str, Any]: `{"by_type": {...}, "by_label": {...}, "by_contract": {...},
+            "by_definition": {...}}`, each mapping a key to its list of entries.
         """
-        ann_str: Dict[str, List[Tuple[int, Any, Spell]]] = {}
-        ident: Dict[int, List[Tuple[int, Any, Spell]]] = {}
-        frame_str: Dict[str, List[Tuple[int, Any, Spell]]] = {}
-        frame_ident: Dict[int, List[Tuple[int, Any, Spell]]] = {}
-        frame_none: List[Tuple[int, Any, Spell]] = []
-        eq_risky = False
-
+        by_type: Dict[str, List[Tuple[int, Any, Spell]]] = {}
+        by_label: Dict[str, List[Tuple[int, Any, Spell]]] = {}
+        by_contract: Dict[str, List[Tuple[int, Any, Spell]]] = {}
+        by_definition: Dict[str, List[Tuple[int, Any, Spell]]] = {}
         position = 0
         for index, spell_obj in self._iter_all_spells(spellbook):
             entry = (position, index, spell_obj)
             position += 1
-
-            bound_object = spell_obj.spell
-            frame = spell_obj.spellframe
-            if not (
-                    self._eq_safe_object(bound_object)
-                    and self._eq_safe_object(frame)
-            ):
-                eq_risky = True
-
-            string_keys = set()
-            spell_name = spell_obj.spell_name
-            if isinstance(spell_name, str):
-                string_keys.add(spell_name)
-            if isinstance(frame, str):
-                string_keys.add(frame)
-                frame_str.setdefault(frame, []).append(entry)
-            elif inspect.isclass(frame):
-                string_keys.add(frame.__name__)
-            for string_key in string_keys:
-                ann_str.setdefault(string_key, []).append(entry)
-
-            if bound_object is not None:
-                ident.setdefault(id(bound_object), []).append(entry)
-            if frame is not None:
-                ident.setdefault(id(frame), []).append(entry)
-                frame_ident.setdefault(id(frame), []).append(entry)
-            else:
-                frame_none.append(entry)
-
+            by_type.setdefault(self._spell_type_key(spell_obj), []).append(entry)
+            by_label.setdefault(self._spell_label_key(spell_obj), []).append(entry)
+            for key in self._spell_contract_keys(spell_obj):
+                by_contract.setdefault(key, []).append(entry)
+            definition_key = self._spell_definition_key(spell_obj)
+            if definition_key is not None:
+                by_definition.setdefault(definition_key, []).append(entry)
         return {
-            "eq_risky": eq_risky,
-            "ann_str": ann_str,
-            "ident": ident,
-            "frame_str": frame_str,
-            "frame_ident": frame_ident,
-            "frame_none": frame_none,
+            "by_type": by_type,
+            "by_label": by_label,
+            "by_contract": by_contract,
+            "by_definition": by_definition,
         }
 
     def _get_candidate_index(
@@ -355,8 +527,8 @@ class CompilerPhase3:
         Return the usable pass-scoped candidate index, building it lazily.
 
         Contract:
-            - Returns None (scan path) when no pass cache was supplied or
-              when the built index is eq-risky.
+            - Returns None (scan path) only when no pass cache was supplied;
+              the key index is exact for every pool (2026-10-03).
             - Benign build race under multi-worker scheduling: the build is
               idempotent over pass-invariant inputs and the last writer wins
               with an equivalent value (same contract as the phase-4
@@ -368,9 +540,38 @@ class CompilerPhase3:
         if index is None:
             index = self._build_candidate_index(spellbook)
             resolution_pass_cache["phase3_candidate_index"] = index
-        if index["eq_risky"]:
-            return None
         return index
+
+    def _index_buckets_for(
+            self,
+            candidate_index: Dict[str, Any],
+            annotation: Any,
+            *,
+            collection: bool,
+    ) -> Tuple[Optional[List[Tuple[int, Any, Spell]]], ...]:
+        """
+        Select the index bucket(s) an annotation reads, by the same table as `_spell_keys_for`.
+
+        Args:
+            candidate_index: The three-map index from `_build_candidate_index`.
+            annotation: The normalized annotation.
+            collection: True for a COLLECTION_BY_ANNOTATION socket.
+
+        Returns:
+            Tuple[Optional[List[...]], ...]: One bucket for a type or a
+            collection-name lookup; the contract and definition buckets for a
+            Protocol; the type and contract buckets for a single-socket name.
+            A missing bucket is None.
+        """
+        key = self._annotation_key(annotation)
+        kind = self._annotation_kind(annotation)
+        if kind == self._KIND_TYPE:
+            return (candidate_index["by_type"].get(key),)
+        if kind == self._KIND_CONTRACT:
+            return (candidate_index["by_contract"].get(key), candidate_index["by_definition"].get(key))
+        if collection:
+            return (candidate_index["by_label"].get(key),)
+        return (candidate_index["by_type"].get(key), candidate_index["by_contract"].get(key))
 
     def _indexed_annotation_candidates(
             self,
@@ -378,42 +579,33 @@ class CompilerPhase3:
             annotation: Any,
             *,
             require_class_spell: bool,
+            collection: bool = False,
     ) -> Dict[Any, "Spell"]:
         """
         Bucket-lookup equivalent of the `_matches_annotation` scan.
 
         Contract:
-            - Only called when the index is not eq-risky, where bucket
-              membership provably equals scan membership:
-              string annotations match via spell_name / str-frame /
-              class-frame-name buckets plus identity (a bound str object can
-              identity-match a str annotation); non-string annotations match
-              via spell/frame identity buckets only, because `==` beyond
-              identity requires a custom `__eq__` (excluded by the guard).
+            - Reads the bucket(s) `_index_buckets_for` selects for the
+              annotation's kind and socket shape; membership equals scan
+              membership because both sides use the same keys and the same
+              table (2026-10-04). An entry present in two buckets (a name that
+              is both a type key and a contract key of one spell) is seen once.
             - `binding_name` filtering is omitted because both annotation
               resolvers pass None today (scan applies the filter only when a
               binding name is present).
             - `require_class_spell=True` applies the same METHOD/LAMBDA
               exclusions as the scan.
         """
-        buckets: List[List[Tuple[int, Any, Spell]]] = []
-        if isinstance(annotation, str):
-            string_bucket = candidate_index["ann_str"].get(annotation)
-            if string_bucket is not None:
-                buckets.append(string_bucket)
-        identity_bucket = candidate_index["ident"].get(id(annotation))
-        if identity_bucket is not None:
-            buckets.append(identity_bucket)
+        buckets = self._index_buckets_for(candidate_index, annotation, collection=collection)
 
         # Replicate the scan's dict semantics exactly: when one SpellIndex
         # matches through multiple pool entries (version lineages), the scan
         # keeps the FIRST insertion position but the LAST matching spell
-        # object (dict insert-then-overwrite). Bucket union order is not
-        # global pool order, so track min/max positions explicitly.
+        # object (dict insert-then-overwrite).
         # collected: id(index) -> [first_pos, value_pos, index, spell_obj]
         collected: Dict[int, List[Any]] = {}
         for bucket in buckets:
-            for position, index, spell_obj in bucket:
+            for position, index, spell_obj in (bucket or ()):
                 if require_class_spell and spell_obj.spell_type in (
                         SpellType.METHOD,
                         SpellType.METHOD_WITH_BINDING_NAME,
@@ -444,11 +636,18 @@ class CompilerPhase3:
         Resolve a SINGLE_BY_ANNOTATION dependency to exactly one class/creation
         spell.
 
+        A class annotation selects spells of that class, a Protocol annotation
+        the spells bind recorded under it, a string either by name - never the
+        members of a string category (2026-10-04, `_spell_keys_for`).
         Prefer matching resolvable providers. Only when none exist may a single
         non-resolvable definition be selected for an OVERRIDE_REQUIRED input.
         Matching and index grouping happen first; capability does not change them.
         When nothing matches at all, the mapping is empty: the caller records an
-        UNRESOLVED_INPUT socket, which the constructing meld must supply.
+        UNRESOLVED_INPUT socket, which the constructing meld must supply. When
+        several match, every candidate is returned (2026-10-04): the caller
+        records an AMBIGUOUS_INPUT socket and Phase 4 refuses the spell with
+        AMBIGUOUS_PROVIDER, naming the candidates and their addresses - the
+        former RuntimeError never reached the readable report.
 
         Args:
             spell:
@@ -461,11 +660,9 @@ class CompilerPhase3:
         Returns:
             Dict[Any, Spell]:
                 Mapping from matched `spell_index` to spell. Empty when no
-                registered spell matches the annotation.
-
-        Raises:
-            RuntimeError: If multiple candidates match the annotation
-                constraints (ambiguity is a configuration error, not an input).
+                registered spell matches the annotation; more than one entry
+                when the annotation is ambiguous (a configuration error the
+                caller records for Phase 4, never an input the meld could pick).
         """
         annotation = self._normalize_annotation_for_matching(dep.target_annotation)
         binding_name: Optional[str] = None
@@ -500,20 +697,10 @@ class CompilerPhase3:
             # UnresolvedInputError when this object is built.
             return {}
 
-        if len(candidates) > 1:
-            names = ", ".join(
-                sorted(candidate_spell.spell_name for candidate_spell in candidates.values())
-            )
-            raise RuntimeError(
-                "SpellCrafter Phase 3: multiple DI candidates found for "
-                f"parameter {dep.param_name!r} on spell {spell.spell_name!r} "
-                f"(annotation={annotation!r}). "
-                f"Candidates: {names}. "
-                "Use a SpellMap with an explicit spellframe/binding_name or a "
-                "collection type (e.g. list[FrameType]) to inject multiple "
-                "implementations."
-            )
-
+        # Several providers: returned as they are. `_build_local_frame_dag`
+        # records the socket as AMBIGUOUS_INPUT and Phase 4's
+        # AmbiguousProviderStrategy refuses the spell through the readable
+        # report (owner decision 2026-10-04; this used to raise RuntimeError).
         return candidates
 
     def _resolve_collection_by_annotation(
@@ -524,10 +711,13 @@ class CompilerPhase3:
     ) -> Dict[Any, Spell]:
         """
             Resolve a COLLECTION_BY_ANNOTATION dependency to **all** matching
-            spells (classes, methods, lambdas) bound under the given frame/type.
+            spells (classes, methods, lambdas) in the group the annotation names.
             
-            This corresponds to list[FrameType]-style DI where the user explicitly
-            asked for "all implementations". Non-resolvable definitions are
+            This corresponds to list[...]-style DI where the user explicitly
+            asked for "all of them": `list[Proto]` gathers the spells recorded
+            under that Protocol, `list["label"]` the members of that category
+            (or the bare spells named so), `list[Cls]` the spells of that class
+            (2026-10-04, `_spell_keys_for`). Non-resolvable definitions are
             excluded after the existing matching and ordering decisions.
             
             Returns:
@@ -542,6 +732,7 @@ class CompilerPhase3:
                 candidate_index,
                 annotation,
                 require_class_spell=False,
+                collection=True,
             )
         else:
             candidates = {}
@@ -551,6 +742,7 @@ class CompilerPhase3:
                         binding_name,
                         spell_obj,
                         require_class_spell=False,
+                        collection=True,
                 ):
                     candidates[index] = spell_obj
 
@@ -575,6 +767,32 @@ class CompilerPhase3:
 
         return SocketKind.NORMAL
 
+    @staticmethod
+    def _spellmap_frame_matches(spell_frame: Any, frame: Any) -> bool:
+        """
+        Return True when a spell's spellframe is the frame a SpellMap names.
+
+        Contract:
+            - Two string categories match by their normalized frame keys, the
+              case-insensitive rule bind registers addresses with and meld looks
+              them up by: "Agents" names the category bound as "agents"
+              (2026-10-04, 0.2.8226; before, the two strings had to be equal).
+            - Any other pair matches by identity or equality only, as before: a
+              class or Protocol frame is that object, never a same-named string.
+
+        Args:
+            spell_frame:
+                The candidate spell's recorded spellframe (None when bound bare).
+            frame:
+                The SpellMap's `spellframe`.
+
+        Returns:
+            bool: Whether the candidate sits under the SpellMap's frame.
+        """
+        if isinstance(spell_frame, str) and isinstance(frame, str):
+            return SpellInputUtils.normalize_frame_key(spell_frame) == SpellInputUtils.normalize_frame_key(frame)
+        return spell_frame is frame or spell_frame == frame
+
     def _resolve_spellmap_default(
             self,
             spell: Spell,
@@ -584,6 +802,16 @@ class CompilerPhase3:
         """
         Resolve a SPELLMAP_DEFAULT dependency using the original SpellMap
         default attached to the parameter.
+
+        Matching (2026-10-04, 0.2.8226):
+            A SpellMap keeps the binding name as written, as Bind keeps a
+            spell's, so names are compared by their normalized keys - the
+            case-insensitive rule bind registers addresses with and meld looks
+            them up by - and string spellframes the same way
+            (`_spellmap_frame_matches`). `None` and "" both name the default
+            binding. Before, the descriptor stored the lowercased name and this
+            method compared it with the spell's raw one, so a binding name with
+            a capital letter never resolved.
 
         Args:
             spell:
@@ -609,26 +837,28 @@ class CompilerPhase3:
         explicit_spell = spellmap.spell
         frame = spellmap.spellframe
         binding_name = spellmap.binding_name
+        # The key every candidate's binding name is compared with: bind and meld
+        # address spells by this normalized form, never by the raw text.
+        binding_key = SpellInputUtils.normalize_binding_name(binding_name)
 
         if explicit_spell is not None:
             for index, spell_obj in self._iter_all_spells(spellbook):
                 if spell_obj.spell is not explicit_spell:
                     continue
 
-                if frame is not None:
-                    spell_frame = spell_obj.spellframe
-                    if not (spell_frame is frame or spell_frame == frame):
-                        continue
+                if frame is not None and not self._spellmap_frame_matches(spell_obj.spellframe, frame):
+                    continue
 
-                if binding_name is not None and spell_obj.binding_name != binding_name:
+                if (binding_name is not None
+                        and SpellInputUtils.normalize_binding_name(spell_obj.binding_name) != binding_key):
                     continue
 
                 candidates[index] = spell_obj
         else:
             for index, spell_obj in self._iter_all_spells(spellbook):
-                if spell_obj.spellframe is spellmap.spellframe or spell_obj.spellframe == spellmap.spellframe:
-                    if spell_obj.binding_name == spellmap.binding_name:
-                        candidates[index] = spell_obj
+                if (self._spellmap_frame_matches(spell_obj.spellframe, frame)
+                        and SpellInputUtils.normalize_binding_name(spell_obj.binding_name) == binding_key):
+                    candidates[index] = spell_obj
 
         if not candidates:
             raise RuntimeError(
@@ -703,6 +933,7 @@ class CompilerPhase3:
             requirements: SpellRequirements,
             socket_references: Dict[tuple[str, int], List[str]],
             socket_unresolved: Optional[Set[tuple[str, int]]] = None,
+            socket_ambiguous: Optional[Dict[tuple[str, int], List[str]]] = None,
     ) -> SpellLocalTopology:
         """
             Internal helper for Phase 3.
@@ -719,6 +950,10 @@ class CompilerPhase3:
                 * Mark single typed sockets listed in "socket_unresolved" (no
                   registered provider at all) UNRESOLVED_INPUT. They keep their
                   dependency_key so a later matching bind re-resolves this spell.
+                * Mark single typed sockets listed in "socket_ambiguous" (two or
+                  more resolvable providers) AMBIGUOUS_INPUT, with the candidate
+                  ids as descriptive `referenced_spell_ids` and no target; they
+                  keep their dependency_key for the same re-gating (2026-10-04).
                 * Copy "is_collection" and "is_optional" flags from the
                   symbolic graph.
                 * Look up any concrete targets via "socket_targets" using
@@ -752,11 +987,15 @@ class CompilerPhase3:
                 socket_kind = SocketKind.OVERRIDE_REQUIRED
             elif socket_unresolved and (dep.param_name, dep.position) in socket_unresolved:
                 socket_kind = SocketKind.UNRESOLVED_INPUT
+            elif socket_ambiguous and (dep.param_name, dep.position) in socket_ambiguous:
+                socket_kind = SocketKind.AMBIGUOUS_INPUT
+                referenced_spell_ids = tuple(socket_ambiguous[(dep.param_name, dep.position)])
             dependency_key = None
             if spell.resolvable and socket_kind in (
                     SocketKind.NORMAL,
                     SocketKind.OVERRIDE_REQUIRED,
                     SocketKind.UNRESOLVED_INPUT,
+                    SocketKind.AMBIGUOUS_INPUT,
             ):
                 dependency_key = self._dependency_key_for_dep(dep)
 
@@ -827,8 +1066,7 @@ class CompilerPhase3:
                 ValueError:
                     If ``requirements`` or ``graph`` is None.
                 RuntimeError:
-                    If the spell has no bound SpellIndex / current spell id, or
-                    when annotation resolution is ambiguous (see the resolvers).
+                    If the spell has no bound SpellIndex / current spell id.
             
             Important:
                 * This helper does **not** mutate the Spell object. All artifacts
@@ -843,6 +1081,11 @@ class CompilerPhase3:
                 * A single typed dependency that no registered spell provides
                   produces an UNRESOLVED_INPUT socket (no dependency id) instead of
                   failing: the constructing meld supplies it.
+                * A single typed dependency that several resolvable spells provide
+                  produces an AMBIGUOUS_INPUT socket (no dependency id; the
+                  candidates as references) instead of a RuntimeError, so Phase
+                  4's AMBIGUOUS_PROVIDER refuses the spell through the readable
+                  validation report (owner decision 2026-10-04).
                 * The per-socket target rows carry everything the retired DAG held
                   (parent id, child id, parameter name; every edge was NORMAL), so
                   no edge list is kept beside them.
@@ -867,7 +1110,7 @@ class CompilerPhase3:
         root_id = self._get_required_current_spell_id(spell)
 
         # Pass-scoped candidate index (None -> original scan semantics).
-        # Built lazily once per resolution pass; eq-risky pools disable it.
+        # Built lazily once per resolution pass; exact for every pool (key matching).
         candidate_index = (
             self._get_candidate_index(spellbook, resolution_pass_cache)
             if spell.resolvable else None
@@ -882,6 +1125,9 @@ class CompilerPhase3:
         socket_references: Dict[tuple[str, int], List[str]] = {}
         # Single typed sockets with no registered provider: recorded, not refused.
         socket_unresolved: Set[tuple[str, int]] = set()
+        # Single typed sockets with several resolvable providers: recorded for
+        # Phase 4 with their candidate ids, never resolved.
+        socket_ambiguous: Dict[tuple[str, int], List[str]] = {}
 
         for dep in graph.dependencies if spell.resolvable else ():
             CompilerPhaseUtility.throw_if_cancelled(cancellation_event)
@@ -917,6 +1163,13 @@ class CompilerPhase3:
                     # as an unresolved input instead of failing resolution.
                     socket_unresolved.add(key)
                 continue
+            if di_shape is ParameterDIShape.SINGLE_BY_ANNOTATION and len(resolved) > 1:
+                # Several providers: record the candidates for Phase 4's
+                # AMBIGUOUS_PROVIDER report; no dependency id, no edge.
+                socket_ambiguous[key] = sorted(
+                    spell_index.selected_spell_id for spell_index in resolved
+                )
+                continue
 
             for spell_index, spell_obj in resolved.items():
                 dep_spell_id = spell_index.selected_spell_id
@@ -944,6 +1197,7 @@ class CompilerPhase3:
             requirements=requirements,
             socket_references=socket_references,
             socket_unresolved=socket_unresolved,
+            socket_ambiguous=socket_ambiguous,
         )
 
         # Update spell-system state with dependency IDs and local topology.

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/validation/validation_system.py",
- "source_sha256": "3f85506ef01b4cbc5f18211daca304347aa69720050432daccd49a7c4f6a5687",
+ "source_sha256": "8ad8182ac0c89588d7de252281362cd56639fd9c872b6970fe53f1ef0743846e",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.validation.validation_system": {
@@ -19,7 +19,7 @@
    "label": "SpellValidationSystem",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/validation/validation_system.py",
-   "lineno": 62,
+   "lineno": 65,
    "bases": [
     "Cleanable"
    ],
@@ -36,13 +36,14 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "46274b62815b40a77f39aecef6a6f148acde02f4b2e040b00f4c664bb343ee75",
+   "span_sha256": "ebba619908870fb626c21fdb9ec4a7ebe63d77d4182a3ee2d9c061f8f88d0a37",
    "role": "Spell-level validation strategy registry and runner.",
    "responsibilities": [
     "owns the default spell validation strategies",
     "validates one spell across requirements, symbolic graph, and phase 3 summary",
     "aggregates issues into a SpellValidationResult for the caller",
-    "cleans validation context and strategies after use"
+    "cleans validation context and strategies after use",
+    "registers AmbiguousProviderStrategy after RequiredHolesStrategy (0.2.8224)"
    ],
    "owns_state": [
     "_strategies"
@@ -52,7 +53,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "46274b62815b40a77f39aecef6a6f148acde02f4b2e040b00f4c664bb343ee75"
+   "semantics_authored_against": "ebba619908870fb626c21fdb9ec4a7ebe63d77d4182a3ee2d9c061f8f88d0a37"
   }
  },
  "edges_out": [
@@ -109,6 +110,12 @@
   {
    "from": "melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem",
    "to_label": "RequiredHolesStrategy",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem",
+   "to_label": "AmbiguousProviderStrategy",
    "relation": "creates",
    "confidence": "candidate"
   },
@@ -182,6 +189,7 @@
   "CircularDependencyStrategy": "melder.aether.spellbook.spell_compiler.validation.strategies.circular_dependency_strategy.CircularDependencyStrategy",
   "DanglingDependenciesStrategy": "melder.aether.spellbook.spell_compiler.validation.strategies.dangling_dependency_strategy.DanglingDependenciesStrategy",
   "RequiredHolesStrategy": "melder.aether.spellbook.spell_compiler.validation.strategies.required_holes_strategy.RequiredHolesStrategy",
+  "AmbiguousProviderStrategy": "melder.aether.spellbook.spell_compiler.validation.strategies.ambiguous_provider_strategy.AmbiguousProviderStrategy",
   "ResolutionFramePresenceStrategy": "melder.aether.spellbook.spell_compiler.validation.strategies.resolution_frame_presence_strategy.ResolutionFramePresenceStrategy",
   "SelfDependencyStrategy": "melder.aether.spellbook.spell_compiler.validation.strategies.self_validation_strategy.SelfDependencyStrategy",
   "DuplicateSpellNameStrategy": "melder.aether.spellbook.spell_compiler.validation.strategies.duplicate_spell_name_strategy.DuplicateSpellNameStrategy",

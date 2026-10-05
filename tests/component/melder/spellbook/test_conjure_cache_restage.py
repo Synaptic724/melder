@@ -12,7 +12,7 @@ import inspect
 import shutil
 import types
 from pathlib import Path
-from typing import Callable, Iterator, Tuple
+from typing import Callable, Iterator, Protocol, Tuple
 
 import pytest
 
@@ -154,19 +154,27 @@ def test_repeat_world_is_a_full_hit_and_leaves_the_bundle_untouched() -> None:
 
 
 def _function_world(frame: str, cache_fragment: Path, factory: Callable[..., object]) -> Tuple[Spellbook, type]:
-    """Bind a function provider (spellframe = its product type) and a class consumer, then conjure."""
-    product = factory.__annotations__["return"]
+    """
+    Bind a function provider under the product's Protocol contract and a class consumer, then conjure.
+
+    A function spell has no type of its own that a consumer annotation could name, so the contract it
+    provides is declared as its spellframe (a concrete class is not a valid frame since 2026-10-04).
+    """
 
     class Consumer:
-        def __init__(self, product: product) -> None:
+        def __init__(self, product: IProduct) -> None:
             self.product = product
 
     Consumer.__qualname__ = "Consumer"
     book = _new_world_book(frame, cache_fragment)
-    book.bind(spell=factory, spellframe=product, existence="unique", permissions="create")
+    book.bind(spell=factory, spellframe=IProduct, existence="unique", permissions="create")
     book.bind(spell=Consumer, existence="many", permissions="create")
     book.conjure(name="root")
     return book, Consumer
+
+
+class IProduct(Protocol):
+    """The contract a function provider is bound under; consumers ask for it by annotation."""
 
 
 class _Product:

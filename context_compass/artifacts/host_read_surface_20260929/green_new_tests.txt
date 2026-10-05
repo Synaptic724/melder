@@ -1,0 +1,7 @@
+# melder_0 2026-09-29T21:33:36Z: green run after apply_1 (tree at 0.2.8207 + additions); 3.14t
+--- PYTHON_GIL=0
+......................                                                   [100%]
+22 passed in 10.28s
+--- PYTHON_GIL=1
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+22 passed, 1 warning in 10.25s

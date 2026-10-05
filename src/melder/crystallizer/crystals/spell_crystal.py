@@ -39,6 +39,10 @@ class SpellCrystal(Cleanable):
     Contract:
         - constructed from one live `Spell`
         - anchored to the spell's concrete SHA256 identity
+        - records the spell's frame and its record key (`custody_key`): the
+          spell id under process-wide ids, "<spell_id>@<frame>" under
+          per-frame ids, where one spell id may be bound in several frames
+          (0.2.8214)
         - resolves the root target module (crystal-side identity work)
         - DELEGATES the module-world analysis to `CrystalAnalyzer`
           (crystal_analysis subsystem) and CARRIES the returned
@@ -124,9 +128,14 @@ class SpellCrystal(Cleanable):
         "_root_target_qualname",
         "_root_target_kind",
         "_spellbook_id",
+        "_frame_name",
+        "_custody_key",
         "_spell_name",
         "_binding_name",
         "_spellframe_name",
+        "_spellframe_kind",
+        "_spellframe_module",
+        "_spellframe_qualname",
         "_existence_name",
         "_permissions_name",
         "_resolvable",
@@ -148,6 +157,7 @@ class SpellCrystal(Cleanable):
             spellbook_id: Optional[str] = None,
             retain_user_sources: bool = False,
             site_package_dependency_descent: bool = True,
+            per_frame_custody: bool = False,
     ) -> None:
         """
         Initialize one spell-targeted module dependency manifest.
@@ -170,6 +180,9 @@ class SpellCrystal(Cleanable):
             - Captures resolved disposal names in execution order. This detached
               persistence value does not sort or reapply book policy.
             - Captures native resolution capability so replay cannot enable a definition.
+            - Captures the spell's frame (`spell.aetheric_frame`) and keys the
+              record by the spell id, or by "<spell_id>@<frame>" when
+              `per_frame_custody` is set (0.2.8214).
             - Captures the root module classification and all direct-dependency
               edges needed for later loader validation and world activation
               through the carried analysis result.
@@ -205,6 +218,12 @@ class SpellCrystal(Cleanable):
                 provenance-carrying leaves with no source read. The
                 crystallizer facade passes the configuration truth
                 (schema default False).
+            per_frame_custody:
+                True keys the record entry "<spell_id>@<frame>" (the
+                crystallizer facade passes True under per-frame spell ids,
+                where one spell id may be bound in several frames); False
+                (default) keys it by the spell id alone, as process-wide
+                worlds always have been.
 
         Returns:
             None.
@@ -265,6 +284,15 @@ class SpellCrystal(Cleanable):
         # this spell version, retained so a profile can rebind from the
         # crystal alone (or truthfully report replay_required).
         self._spellbook_id: Optional[str] = spellbook_id
+        # Record key (0.2.8214): under per-frame spell ids one spell id may
+        # be bound in several frames, so custody is keyed per frame; under
+        # process-wide ids the spell id is unique and stays the key.
+        self._frame_name: str = spell.aetheric_frame
+        self._custody_key: str = (
+            SpellCrystal.compose_custody_key(self._id, self._frame_name)
+            if per_frame_custody
+            else self._id
+        )
         self._spell_name: Optional[str] = spell.spell_name
         self._binding_name: Optional[str] = spell.binding_name
         spellframe = spell.spellframe
@@ -272,6 +300,17 @@ class SpellCrystal(Cleanable):
             getattr(spellframe, "__name__", str(spellframe))
             if spellframe is not None
             else None
+        )
+        # Frame kind (record 4.1.0): the kind Bind recorded ("none", "category",
+        # "contract") and, for a contract, the Protocol's module coordinates so a
+        # restore rebinds it as a contract rather than a same-named category.
+        # Plain values only; the enum is read off the Spell, never imported here.
+        self._spellframe_kind: str = spell.spellframe_kind.name
+        self._spellframe_module: Optional[str] = (
+            spellframe.__module__ if self._spellframe_kind == "contract" else None
+        )
+        self._spellframe_qualname: Optional[str] = (
+            spellframe.__qualname__ if self._spellframe_kind == "contract" else None
         )
         self._existence_name: str = spell.existence.name
         self._permissions_name: str = spell.permissions.name
@@ -388,9 +427,14 @@ class SpellCrystal(Cleanable):
             del self._root_target_qualname
             del self._root_target_kind
             del self._spellbook_id
+            del self._frame_name
+            del self._custody_key
             del self._spell_name
             del self._binding_name
             del self._spellframe_name
+            del self._spellframe_kind
+            del self._spellframe_module
+            del self._spellframe_qualname
             del self._existence_name
             del self._permissions_name
             del self._resolvable
@@ -419,6 +463,86 @@ class SpellCrystal(Cleanable):
         self.check_cleaned()
         with self._lock:
             return self._id
+
+    @property
+    def frame_name(self) -> str:
+        """
+        Return the name of the frame the spell was bound in.
+
+        Purpose:
+            Say which frame's world this custody describes. Under per-frame
+            spell ids the same spell id can be bound in several frames, and
+            each frame's copy is recorded separately.
+
+        Returns:
+            str:
+                The owning frame's name (`Spell.aetheric_frame` at capture).
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._frame_name
+
+    @property
+    def custody_key(self) -> str:
+        """
+        Return the key this crystal is recorded under.
+
+        Purpose:
+            Address one frame's copy of a spell in the record. Under
+            process-wide spell ids a spell id exists once per process, so the
+            key is the spell id itself and records of such worlds keep their
+            shape; under per-frame ids it is "<spell_id>@<frame_name>", so two
+            frames binding the same class keep one crystal each (0.2.8214).
+
+        Returns:
+            str:
+                The spell id, or "<spell_id>@<frame_name>" when built with
+                `per_frame_custody`.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._custody_key
+
+    @staticmethod
+    def compose_custody_key(spell_id: str, frame_name: str) -> str:
+        """
+        Return the per-frame record key for one spell id bound in one frame.
+
+        Contract:
+            The key is "<spell_id>@<frame_name>". A spell id is a SHA256 hex
+            digest and never holds "@", so `spell_id_of_custody_key` recovers
+            it by splitting at the first "@" even when the frame name holds one.
+
+        Args:
+            spell_id:
+                The spell's SHA256 identity.
+            frame_name:
+                The frame the spell was bound in.
+
+        Returns:
+            str: The frame-scoped custody key.
+        """
+        return f"{spell_id}@{frame_name}"
+
+    @staticmethod
+    def spell_id_of_custody_key(custody_key: str) -> str:
+        """
+        Return the spell id one custody key names.
+
+        Contract:
+            Splits at the first "@"; a key without one (a process-wide key) is
+            the spell id itself. Readers holding the crystal or its payload read
+            the spell id there ("id"); this parse serves the tombstones whose
+            crystal is already gone.
+
+        Args:
+            custody_key:
+                A record key: a spell id, or "<spell_id>@<frame_name>".
+
+        Returns:
+            str: The spell id.
+        """
+        return custody_key.split("@", 1)[0]
 
     @property
     def root_module_name(self) -> str:
@@ -611,6 +735,51 @@ class SpellCrystal(Cleanable):
         self.check_cleaned()
         with self._lock:
             return self._spellframe_name
+
+    @property
+    def spellframe_kind(self) -> str:
+        """
+        Return the frame kind recorded at bind: "none", "category" or "contract".
+
+        Contract:
+            - The `SpellframeKind` member NAME as Bind classified the frame
+              (record 4.1.0); a restore reads it to rebind a Protocol frame as a
+              contract instead of a same-named category.
+
+        Returns:
+            str: "none" (bound bare), "category" (a string label) or "contract"
+            (a Protocol the spell was checked against).
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._spellframe_kind
+
+    @property
+    def spellframe_module(self) -> Optional[str]:
+        """
+        Return the Protocol's module for a contract frame, else None.
+
+        Returns:
+            Optional[str]: `__module__` of the Protocol spellframe when the kind
+            is "contract"; None for a bare binding or a string category.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._spellframe_module
+
+    @property
+    def spellframe_qualname(self) -> Optional[str]:
+        """
+        Return the Protocol's qualified name for a contract frame, else None.
+
+        Returns:
+            Optional[str]: `__qualname__` of the Protocol spellframe when the
+            kind is "contract"; None otherwise. With `spellframe_module` it is
+            the import coordinate a loader hydrates the contract from.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._spellframe_qualname
 
     @property
     def existence_name(self) -> str:
@@ -1078,7 +1247,8 @@ class SpellCrystal(Cleanable):
             agent inspection without exposing the crystal's mutable containers.
 
         Contract:
-            Combines crystal-owned identity/bind-policy fields with a detached
+            Combines crystal-owned identity (spell id, frame, custody key) and
+            bind-policy fields with a detached
             `CrystalAnalysisResult` payload. Returned lists and dictionaries are
             independent of the carried manifest; no live spell, module, target,
             analyzer, strategy, or synchronization object crosses the boundary.
@@ -1099,6 +1269,8 @@ class SpellCrystal(Cleanable):
             analysis_payload = self._analysis.describe()
             return {
                 "id": self._id,
+                "frame_name": self._frame_name,
+                "custody_key": self._custody_key,
                 "root_module_name": self._root_module_name,
                 "root_module_path": self._root_module_path,
                 "root_module_kind": self._root_module_kind,
@@ -1110,6 +1282,9 @@ class SpellCrystal(Cleanable):
                 "spell_name": self._spell_name,
                 "binding_name": self._binding_name,
                 "spellframe_name": self._spellframe_name,
+                "spellframe_kind": self._spellframe_kind,
+                "spellframe_module": self._spellframe_module,
+                "spellframe_qualname": self._spellframe_qualname,
                 "existence_name": self._existence_name,
                 "permissions_name": self._permissions_name,
                 "resolvable": self._resolvable,

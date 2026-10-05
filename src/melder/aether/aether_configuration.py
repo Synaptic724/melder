@@ -354,6 +354,41 @@ class AetherConfiguration(Cleanable):
             )
         return value
 
+    def get_configuration_dictionary(self) -> dict[str, object]:
+        """
+        Return a snapshot of the properties this configuration currently holds.
+
+        Purpose:
+            Let a host compare two configurations - for example a policy it was
+            handed against the one installed on the root - without reading the
+            private property bag.
+
+        Contract:
+            - Returns a NEW dict of every property currently set, name to value.
+              Changing the returned dict never changes this configuration.
+            - Values are the stored objects BY REFERENCE (no deep copy, no
+              serialization); all four logger/regime properties are always
+              present.
+            - Never validates, freezes, activates or emits a recorded twin, and
+              works in every lifecycle state until cleanup.
+
+        Threading:
+            Taken under the configuration lock, so the snapshot never sees a
+            half-applied write.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
+
+        Returns:
+            dict[str, object]: Property name to stored value.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return dict(self._properties)
+
     def with_defaults(self) -> AetherConfiguration:
         """
         Apply the default Aether logger policy.
@@ -401,6 +436,10 @@ class AetherConfiguration(Cleanable):
             - channel_logger_activation_enabled reloads from the record;
               when absent it falls to the documented default (False) and
               is reported under "missing".
+            - process_wide_unique_spell_ids (the spell-id regime, recorded
+              since record major 4) reloads the same way; when absent (an
+              older record) it keeps the default (True) and is reported
+              under "missing".
             - Callable-bearing entries can NEVER reload from a record:
               when the payload marks channel_logger_resolver_present or
               default_logger_present True, the key is reported under
@@ -434,6 +473,14 @@ class AetherConfiguration(Cleanable):
             )
         else:
             missing.append("channel_logger_activation_enabled")
+        # The regime is a plain recorded value, applied before the freeze
+        # below so the reloaded configuration cannot be flipped afterwards.
+        if "process_wide_unique_spell_ids" in recorded_payload:
+            configuration.set_process_wide_unique_spell_ids(
+                bool(recorded_payload["process_wide_unique_spell_ids"])
+            )
+        else:
+            missing.append("process_wide_unique_spell_ids")
         # Presence flags are honesty signals, not reloadable values: a
         # record can say a resolver existed, but only live code can
         # supply one.
@@ -855,6 +902,8 @@ class AetherConfiguration(Cleanable):
             - Callable-bearing entries record as PRESENCE flags only (a
               record cannot carry live callables); the reload lane reports
               them as code_participation.
+            - Records the spell-id regime (`process_wide_unique_spell_ids`)
+              so a restore can rebuild a per-frame world under per-frame ids.
             - Replace-on-emit in the profile keeps exactly one root twin.
 
         Returns:
@@ -878,6 +927,9 @@ class AetherConfiguration(Cleanable):
                             ),
                             "default_logger_present": (
                                 self._properties["default_logger"] is not None
+                            ),
+                            "process_wide_unique_spell_ids": (
+                                self._properties["process_wide_unique_spell_ids"]
                             ),
                         },
                     )

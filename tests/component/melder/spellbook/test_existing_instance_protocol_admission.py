@@ -73,7 +73,7 @@ class ReaderConsumer:
 
 
 class GroupingFrame:
-    """Act as a concrete grouping key, with no declared Protocol semantics."""
+    """A concrete class: refused as a spellframe since 2026-10-04 (a frame is a string or a Protocol)."""
 
 
 def reader_factory() -> ValidReader:
@@ -122,21 +122,31 @@ def test_valid_protocol_instance_remains_injectable_by_identity(
 
 
 @pytest.mark.parametrize("existing", [False, True], ids=["class", "instance"])
-@pytest.mark.parametrize("frame", [GroupingFrame, "reader-group"], ids=["concrete", "string"])
-def test_non_protocol_frames_keep_grouping_semantics(
+def test_string_frames_keep_grouping_semantics(
         instance_book: Spellbook,
         existing: bool,
-        frame: object,
 ) -> None:
-    """Keep non-Protocol frame grouping independent of nominal class inheritance checks."""
+    """A string category groups without any structural check, for class and existing-object targets alike."""
     supplied = ValidReader()
     target = supplied if existing else ValidReader
-    spell_id = instance_book.bind(spell=target, existence="unique", spellframe=frame)
+    spell_id = instance_book.bind(spell=target, existence="unique", spellframe="reader-group")
     root = instance_book.conjure(dynamic=True)
     resolved = root.meld(spell_id=spell_id)
     assert resolved.read() == "supplied-reader"
     if existing:
         assert resolved is supplied
+
+
+@pytest.mark.parametrize("existing", [False, True], ids=["class", "instance"])
+def test_concrete_class_frame_is_refused_for_class_and_instance_targets(
+        instance_book: Spellbook,
+        existing: bool,
+) -> None:
+    """A concrete class is neither a category nor a contract: bind refuses it with the two accepted forms."""
+    supplied = ValidReader()
+    target = supplied if existing else ValidReader
+    with pytest.raises(TypeError, match="string category or a Protocol contract"):
+        instance_book.bind(spell=target, existence="unique", spellframe=GroupingFrame)
 
 
 @pytest.mark.parametrize("late_bind", [False, True])

@@ -2,7 +2,7 @@
 
 from collections.abc import Iterator
 from contextlib import contextmanager
-from typing import TYPE_CHECKING, ClassVar, Union
+from typing import ClassVar, Protocol, TYPE_CHECKING, Union
 
 import pytest
 
@@ -47,7 +47,7 @@ class ReferenceResource:
         self.cleanup_calls += 1
 
 
-class ReferenceFrame:
+class ReferenceFrame(Protocol):
     """
     Purpose: Supply a logical frame distinct from the concrete resource name.
     Contract: Used only as a binding address; never constructed by these tests.

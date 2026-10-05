@@ -1,0 +1,6 @@
+variant=idle     iterations=50 cycles=20 before_median=  232.3us after_median=  235.8us after_p90=  278.0us
+variant=lesser   iterations=50 cycles=20 before_median=  220.1us after_median=  403.0us after_p90=  468.0us
+variant=outer    iterations=50 cycles=20 before_median=  216.9us after_median=  432.8us after_p90=  496.6us
+variant=space    iterations=50 cycles=20 before_median=  211.2us after_median=  471.9us after_p90=  551.6us
+variant=request  iterations=50 cycles=20 before_median=  222.5us after_median=  486.8us after_p90=  553.9us
+variant=harness  iterations=50 cycles=20 before_median=  222.6us after_median=  529.9us after_p90=  607.8us

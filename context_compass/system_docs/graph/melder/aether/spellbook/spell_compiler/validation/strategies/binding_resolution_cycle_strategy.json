@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/validation/strategies/binding_resolution_cycle_strategy.py",
- "source_sha256": "1bbc46a692d5322c6f4dd923145793d7f4428a9371566faf350157c8aa3ade8d",
+ "source_sha256": "6a50c7921be1950f5c1bb0bcf40d5c83770546e2e68e2b1cc4f52d3919fb700f",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.validation.strategies.binding_resolution_cycle_strategy": {
@@ -39,7 +39,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "9872c4fe3e5d4d0ecb70613eb3781a0d3d0f41500ab9ef6fa1a9e8ca7093504b",
+   "span_sha256": "646c70f0fadfeebb2e112269489939464fdb870a1e9445f4fc19f04b7a5f35df",
    "include": true,
    "role": "The binding-KEY counterpart to the spell-id cycle check: loops invisible by spell id but visible once resolution is modeled by binding key.",
    "responsibilities": [
@@ -48,12 +48,13 @@
     "mutate nothing - spells, spellbooks and requirements are read only",
     "omits non-resolvable constructors and OVERRIDE_REQUIRED sockets from construction-cycle reconstruction",
     "omits UNRESOLVED_INPUT sockets from construction-cycle reconstruction, as it omits OVERRIDE_REQUIRED",
-    "sweeps a copy of the Spellbook spell pool taken in one call, because concurrent binds change the live dict"
+    "sweeps a copy of the Spellbook spell pool taken in one call, because concurrent binds change the live dict",
+    "skips AMBIGUOUS_INPUT sockets as it skips UNRESOLVED_INPUT ones: no construction edge exists to cycle (0.2.8224)"
    ],
    "phases": [
     "compile"
    ],
-   "semantics_authored_against": "9872c4fe3e5d4d0ecb70613eb3781a0d3d0f41500ab9ef6fa1a9e8ca7093504b"
+   "semantics_authored_against": "646c70f0fadfeebb2e112269489939464fdb870a1e9445f4fc19f04b7a5f35df"
   }
  },
  "edges_out": [

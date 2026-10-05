@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/utilities/caching_system/asset_cache.py",
- "source_sha256": "d3562f6f5f5a9a839b0b1341d8cfdfea5ac1fa537c9daaac380251f9002a6c8a",
+ "source_sha256": "242507c9cd25371a22c44efe612c6a661eab7b1c9c49f43651ab828299dd8631",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.utilities.caching_system.asset_cache": {
@@ -35,7 +35,7 @@
     "has_bases": false,
     "trivial": true
    },
-   "span_sha256": "213277ab11df2673ba507cd5abf8fd4b7d2a4e580bbe29973ed7e46cf3f134c8",
+   "span_sha256": "9145399e3a27a949072310a9b517b0ef56bd103b778040b8ec46c74c5364dc90",
    "include": true,
    "role": "Fixed values for the asset cache, held as class constants per the module-scope rule.",
    "responsibilities": [
@@ -50,6 +50,10 @@
  "edges_out": [],
  "edge_candidates": [],
  "published_aliases": [],
- "imports": {},
+ "imports": {
+  "marshal": "marshal",
+  "os": "os",
+  "sys": "sys"
+ },
  "collapse_candidate": null
 }

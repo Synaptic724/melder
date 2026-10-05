@@ -76,6 +76,7 @@
  ],
  "published_aliases": [],
  "imports": {
+  "threading": "threading",
   "TYPE_CHECKING": "typing.TYPE_CHECKING",
   "CodeType": "types.CodeType",
   "CodegenExecutionResult": "melder.nexus.rift.codegen_system.execution.codegen_execution_result.CodegenExecutionResult",

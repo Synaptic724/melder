@@ -425,6 +425,39 @@ def test_occurrence_contract_processor_strategy_allows_missing_providers_only_in
         )
 
 
+def test_occurrence_contract_processor_strategy_reports_a_missing_occurrence_spell_by_id() -> None:
+    """
+    An occurrence whose spell left the pool fails as `KeyError(spell_id, message)` (0.2.8227).
+
+    The target-local pass classifies KeyError misses as visibility failures, so a meld whose
+    borrowed provider was popped by a concurrent link sever raises SpellbookValidationError;
+    the former RuntimeError escaped as PhaseExecutionError.
+    """
+    strategy = SpellOccurrenceContractProcessorStrategy()
+    spellbook = SimpleNamespace(
+        _spell_id_pool={},
+        _lookup_contracted_spells={},
+        _contracted_spells={},
+        _aetheric_frame_configuration=SimpleNamespace(system_state=SystemState.dynamic),
+    )
+    overrides_by_occurrence: Dict[Tuple[str, int], Dict[str, Any]] = {}
+
+    with pytest.raises(KeyError, match="Occurrence spell could not be resolved") as exc_info:
+        strategy._compile_contract_overrides_for_occurrence(
+            occurrence=("severed-provider", 0),
+            occurrence_graph={("severed-provider", 0): {}},
+            overrides_by_occurrence=overrides_by_occurrence,
+            overrides_by_spell_id={},
+            refs_by_occurrence={},
+            spell_lookup=spellbook._spell_id_pool,
+            spellbook=spellbook,
+            path_registry=_PathRegistryProbe({0: 0}),
+        )
+
+    assert exc_info.value.args[0] == "severed-provider"
+    assert overrides_by_occurrence == {}
+
+
 def test_runtime_processor_strategy_ports_execution_runtime_rows() -> None:
     """The runtime processor should derive per-spell runtime rows from ordered spell ids."""
     strategy = SpellRuntimeProcessorStrategy()
@@ -483,15 +516,24 @@ def test_runtime_processor_strategy_falls_back_to_graph_order_when_order_shape_i
 
 
 def test_runtime_processor_strategy_raises_when_visible_spell_id_is_missing() -> None:
-    """The runtime processor should fail hard if graph/order truth references a spellbook-missing spell id."""
+    """
+    The runtime processor fails hard when graph/order truth names a spell id the pool lacks.
+
+    Since 0.2.8227 the failure is `KeyError(spell_id, message)`: a meld-time target pass reads
+    `args[0]` as the missing dependency and records a visibility failure instead of letting the
+    meld raise PhaseExecutionError (a link sever or uncontract raced the pass).
+    """
     strategy = SpellRuntimeProcessorStrategy()
     model = _ModelProbe()
     model.order_shape = SimpleNamespace(execution_order=["missing"])
     spellbook = SimpleNamespace(_spell_id_pool={})
     spell = SimpleNamespace(_spellbook=spellbook)
 
-    with pytest.raises(RuntimeError, match="could not resolve spell_id 'missing'"):
+    with pytest.raises(KeyError, match="could not resolve spell_id 'missing'") as exc_info:
         strategy.process(spell, object(), model)
+
+    assert exc_info.value.args[0] == "missing"
+    assert model.spell_runtime_shape is None
 
 
 def test_generalized_codegen_plan_strategy_ports_execution_plan_builder_intent(

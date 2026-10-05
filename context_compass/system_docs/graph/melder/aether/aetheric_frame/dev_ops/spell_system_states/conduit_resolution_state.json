@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/conduit_resolution_state.py",
- "source_sha256": "7b16de13f3a0cb09f61dccdf4042a5fb75cc3c2e521f20177c67126524a058eb",
+ "source_sha256": "f564eacd1ef9a31da9fdf5c1f7cad2fc03c01983797f710dfc24ee78ad873459",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state": {
@@ -30,6 +30,7 @@
     "cleanup",
     "clear_diagnostics",
     "clear_dirty",
+    "forget_spell",
     "get_root_validity",
     "get_spell_validity",
     "has_errors",
@@ -45,15 +46,16 @@
     "snapshot_spell_validity"
    ],
    "shape": {
-    "method_count": 23,
+    "method_count": 24,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "aa7000dee88267d0109c68e57e264073ad9ea3b95d54b939044c726105d4fdd4",
+   "span_sha256": "b7dc18aaf96527ec8f2bd56607537fb00e0cd527ad96236dda3d37b919f6f933",
    "role": "Per-conduit resolution-validity container.",
    "responsibilities": [
     "tracks per-spell and per-root resolution validity for one conduit",
-    "stores conduit-scoped system diagnostics and dirty/validated markers"
+    "stores conduit-scoped system diagnostics and dirty/validated markers",
+    "retires one spell id's spell-level and root-level verdict on demand (forget_spell), dirty-marked and without a RiskManager callback, so the id reads initial_validity again (0.2.8219)"
    ],
    "owns_state": [
     "_spell_validity",
@@ -61,14 +63,15 @@
     "_diagnostics",
     "_dirty",
     "_last_validated_at",
-    "_last_change_reason"
+    "_last_change_reason",
+    "_initial_validity"
    ],
    "phases": [
     "validation",
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "aa7000dee88267d0109c68e57e264073ad9ea3b95d54b939044c726105d4fdd4"
+   "semantics_authored_against": "b7dc18aaf96527ec8f2bd56607537fb00e0cd527ad96236dda3d37b919f6f933"
   }
  },
  "edges_out": [
@@ -101,6 +104,7 @@
  ],
  "published_aliases": [],
  "imports": {
+  "threading": "threading",
   "TYPE_CHECKING": "typing.TYPE_CHECKING",
   "Callable": "typing.Callable",
   "Dict": "typing.Dict",

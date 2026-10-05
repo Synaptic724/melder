@@ -6,7 +6,7 @@ promises a new object per consumer; shared existences stay shared.
 """
 
 from collections.abc import Iterator
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Protocol, Tuple
 
 import pytest
 
@@ -28,7 +28,7 @@ class Leaf:
         self.config = config
 
 
-class IMember:
+class IMember(Protocol):
     """Frame type for collection members."""
 
 

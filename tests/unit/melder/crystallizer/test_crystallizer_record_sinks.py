@@ -11,6 +11,7 @@ import pytest
 
 import melder.crystallizer.crystallizer as crystallizer_module
 from melder.aether.aether import Aether
+from melder.aether.aether_configuration import AetherConfiguration
 from melder.aether.aether_utility_system import AetherUtilitySystem
 from melder.nexus.nexus import Nexus
 from melder.crystallizer.configuration.crystallizer_configuration import (
@@ -25,6 +26,7 @@ class _StubSpellCrystal:
 
     def __init__(self, spell_id, spellbook_id=None):
         self.id = spell_id
+        self.custody_key = spell_id  # the record key (the bare spell id under process-wide ids)
         self.spellbook_id = spellbook_id
         # Real custody carries root_module_kind ("synthetic_module" /
         # "site_package" / "user_source"); emit_spell_activity reads it to
@@ -311,3 +313,89 @@ def test_manual_and_automatic_checkpoints_share_the_retention_window(
         for checkpoint_id in ledger
     ]
     assert descriptions == ["automatic cadence checkpoint", "manual-2"]
+
+
+def _per_frame_ids():
+    """Install per-frame spell ids on the fixture Aether before any frame exists."""
+    policy = AetherConfiguration().with_defaults().with_process_wide_unique_spell_ids(False)
+    policy.activate()
+    Aether().activate(policy)
+
+
+def _frame_scoped_stub(spell_id, spellbook_id, frame_name):
+    """Build one custody stub keyed the way per-frame ids key it ("<spell_id>@<frame>")."""
+    crystal = _StubSpellCrystal(spell_id, spellbook_id)
+    crystal.custody_key = f"{spell_id}@{frame_name}"
+    return crystal
+
+
+def test_per_frame_spell_verbs_require_the_frame():
+    """
+    Purpose:
+        Verify the key-aware verbs refuse an ambiguous address under per-frame ids (0.2.8214).
+    Contract:
+        emit_spell_activity and emit_spell_removed raise ValueError naming frame_name when none is given, because a
+        spell id alone does not say which frame's copy is meant; the record is untouched.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If a frameless per-frame emit is accepted.
+    """
+    _per_frame_ids()
+    crystallizer = _activated_crystallizer()
+    crystallizer.emit_spell_crystal(_frame_scoped_stub("sha", "book-a", "tenant_a"), active=True)
+    with pytest.raises(ValueError, match="frame_name"):
+        crystallizer.emit_spell_activity("sha", active=False)
+    with pytest.raises(ValueError, match="frame_name"):
+        crystallizer.emit_spell_removed("sha")
+    summary = crystallizer.describe_profile()
+    assert summary["spell_crystal_count"] == 1
+    assert summary["inactive_spell_crystal_count"] == 0
+
+
+def test_per_frame_spell_verbs_address_one_frames_copy():
+    """
+    Purpose:
+        Verify park and removal under per-frame ids touch only the named frame's copy.
+    Contract:
+        Parking in tenant_a moves tenant_a's copy to the inactive location; removing in tenant_b cleans tenant_b's
+        copy; get_spell_crystal with a frame answers that frame's copy.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If a verb reaches the other frame's copy.
+    """
+    _per_frame_ids()
+    crystallizer = _activated_crystallizer()
+    first = _frame_scoped_stub("sha", "book-a", "tenant_a")
+    second = _frame_scoped_stub("sha", "book-b", "tenant_b")
+    crystallizer.emit_spell_crystal(first, active=True)
+    crystallizer.emit_spell_crystal(second, active=True)
+    crystallizer.emit_spell_activity("sha", active=False, frame_name="tenant_a")
+    summary = crystallizer.describe_profile()
+    assert summary["spell_crystal_count"] == 1
+    assert summary["inactive_spell_crystal_count"] == 1
+    crystallizer.emit_spell_removed("sha", frame_name="tenant_b")
+    assert second.cleaned is True and first.cleaned is False
+    assert crystallizer.get_spell_crystal("sha", frame_name="tenant_a") is first
+
+
+def test_process_wide_spell_verbs_ignore_the_frame():
+    """
+    Purpose:
+        Verify the frame is optional, and ignored, under process-wide ids.
+    Contract:
+        The key is the bare spell id, so a park and a removal that name a frame address the one recorded copy.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the frame changes the address under process-wide ids.
+    """
+    crystallizer = _activated_crystallizer()
+    crystal = _StubSpellCrystal("sha-a", "book-1")
+    crystallizer.emit_spell_crystal(crystal, active=True)
+    crystallizer.emit_spell_activity("sha-a", active=False, frame_name="tenant_a")
+    assert crystallizer.describe_profile()["inactive_spell_crystal_count"] == 1
+    crystallizer.emit_spell_removed("sha-a", frame_name="tenant_a")
+    assert crystal.cleaned is True
+    assert crystallizer.describe_profile()["inactive_spell_crystal_count"] == 0

@@ -118,6 +118,7 @@
  ],
  "published_aliases": [],
  "imports": {
+  "threading": "threading",
   "Callable": "collections.abc.Callable",
   "TYPE_CHECKING": "typing.TYPE_CHECKING",
   "Any": "typing.Any",

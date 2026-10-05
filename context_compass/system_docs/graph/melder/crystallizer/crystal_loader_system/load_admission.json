@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/crystal_loader_system/load_admission.py",
- "source_sha256": "d2fe9bae071dedd0f8780e7a641ec0128f9f74c9e323a6192ae00a3345a0e1b7",
+ "source_sha256": "31d105c2feb707d96ebbb299be680dea0c8d60afb1cd6a1f1cdee2c252ddbddf",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.crystal_loader_system.load_admission": {
@@ -27,7 +27,7 @@
    "label": "LoadAdmission",
    "kind": "class",
    "file": "src/melder/crystallizer/crystal_loader_system/load_admission.py",
-   "lineno": 35,
+   "lineno": 36,
    "bases": [
     "Cleanable"
    ],
@@ -43,13 +43,14 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "d3f33ace60f03702a0ed7ce9edacec6c57e6b0699e6330183bbd4f235f9ac8f8",
+   "span_sha256": "3e6e5b23dd42db461fbcc76d9bac5b6f6a1f74c32d7480e082f2a5e5dddbfdcd",
    "role": "Small admission plane for loads (owner design; renamed from BootMediator 2026-07-11): plan -> gated engine -> scope adjudication; no fold duplication.",
    "responsibilities": [
     "plan_checkpoint_load via the record's detach_profile_chain",
     "plan_formation_load mints the canonical-kind-order synthetic window (moved from the ledger)",
     "execute_plan runs the engine with refuse_on_blockers=True always",
-    "adjudicates conduit/frame scopes (frame_posture warnings -> expected_for_scope in the additive admission view)"
+    "adjudicates conduit/frame scopes (frame_posture warnings -> expected_for_scope in the additive admission view)",
+    "retargets spell custody: rewrites frame_name and re-keys frame-scoped custody keys for the target frame"
    ],
    "phases": [
     "runtime"
@@ -105,6 +106,7 @@
   "TYPE_CHECKING": "typing.TYPE_CHECKING",
   "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
   "LoadPlan": "melder.crystallizer.crystal_loader_system.load_plan.LoadPlan",
+  "SpellCrystal": "melder.crystallizer.crystals.spell_crystal.SpellCrystal",
   "Aether": "melder.aether.aether.Aether",
   "PhaseScheduler": "melder.utilities.synchronization.phase_scheduler.PhaseScheduler",
   "PersistenceSystem": "melder.crystallizer.persistence.persistence_system.PersistenceSystem",

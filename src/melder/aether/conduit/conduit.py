@@ -1907,6 +1907,35 @@ class Conduit(Cleanable):
             raise RuntimeError("Conduit name is set.")
         self._name = name
 
+    @property
+    def spellbook(self) -> Spellbook:
+        """
+        Public API
+
+        Return the Spellbook this conduit resolves through.
+
+        Contract:
+            - A root conduit returns the Spellbook that conjured it, whose `conduit` property returns this root.
+              A lesser returns the Spellbook it was built with, its root's. `upgrade_to_normal` rebinds the upgraded
+              conduit to its new Spellbook, which this then returns.
+            - BORROWED: reading it keeps nothing alive, and the caller cleans the Spellbook only if it owns it.
+            - The mirror of `Spellbook.conduit`.
+
+        Threading:
+            Unsynchronized read; a snapshot only.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the conduit has been cleaned.
+
+        Returns:
+            Spellbook: The borrowed Spellbook.
+        """
+        self.check_cleaned()
+        return self._spellbook
+
     def get_conduit_cloud(self) -> "ConduitCloud":
         """
         Public API

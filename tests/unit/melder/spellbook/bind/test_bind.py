@@ -6,6 +6,7 @@ from melder.aether.spellbook.bind.bind import Bind
 from melder.aether.spellbook.bind.spell_index import SpellIndex
 from melder.aether.spellbook.spell_types.spell_types import SpellType
 from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spellframe_kind.spellframe_kind import SpellframeKind
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile import (
     SpellBindingProfile,
@@ -1355,11 +1356,70 @@ def test_other_profile_with_frame(monkeypatch):
 
 # Spellframe semantics edge --------------------------------------------
 
-def test_nonclass_noncallable_spellframe(monkeypatch):
+def test_nonclass_noncallable_spellframe_is_refused(monkeypatch):
+    """A spellframe that is neither a string nor a Protocol - here an int - is refused before any profile work."""
     monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(class_profile()))
     b = Bind(StubSpellbook())
-    spell = b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=RealClassImplementingProto, spellframe=123)
-    assert spell.kwargs["spellframe"] == 123
+    with pytest.raises(TypeError, match="string category or a Protocol contract") as caught:
+        b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=RealClassImplementingProto, spellframe=123)
+    assert "an object of type 'int'" in str(caught.value)
+
+
+def test_concrete_class_spellframe_is_refused_with_the_remedy(monkeypatch):
+    """A concrete class used as a spellframe is refused and the message names the string and Protocol remedies."""
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(class_profile()))
+    b = Bind(StubSpellbook())
+
+    class ServiceShape:
+        pass
+
+    with pytest.raises(TypeError, match="string category or a Protocol contract") as caught:
+        b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=RealClassImplementingProto, spellframe=ServiceShape)
+    message = str(caught.value)
+    assert "the concrete class 'ServiceShape'" in message
+    assert "spellframe='ServiceShape'" in message
+    assert "typing.Protocol" in message
+
+
+def test_string_spellframe_is_recorded_as_a_category(monkeypatch):
+    """A string frame records SpellframeKind.category and no implemented Protocols."""
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(class_profile()))
+    b = Bind(StubSpellbook())
+    spell = b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=RealClassImplementingProto, spellframe="services")
+    assert spell.kwargs["spellframe"] == "services"
+    assert spell.kwargs["spellframe_kind"] is SpellframeKind.category
+    assert spell.kwargs["implemented_protocols"] == ()
+
+
+def test_protocol_spellframe_is_recorded_as_a_contract(monkeypatch):
+    """A Protocol frame records SpellframeKind.contract with the Protocol as the implemented contract."""
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(class_profile()))
+    b = Bind(StubSpellbook())
+    spell = b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=RealClassImplementingProto, spellframe=ProtoWithFoo)
+    assert spell.kwargs["spellframe"] is ProtoWithFoo
+    assert spell.kwargs["spellframe_kind"] is SpellframeKind.contract
+    assert spell.kwargs["implemented_protocols"] == (ProtoWithFoo,)
+
+
+def test_bare_binding_is_recorded_as_kind_none(monkeypatch):
+    """No frame records SpellframeKind.none and no implemented Protocols."""
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(class_profile()))
+    b = Bind(StubSpellbook())
+    spell = b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=RealClassImplementingProto)
+    assert spell.kwargs["spellframe"] is None
+    assert spell.kwargs["spellframe_kind"] is SpellframeKind.none
+    assert spell.kwargs["implemented_protocols"] == ()
+
+
+def test_classify_spellframe_table():
+    """The classifier's table: None -> none, str -> category, Protocol -> contract, anything else refused."""
+    assert Bind._classify_spellframe(None) == (SpellframeKind.none, ())
+    assert Bind._classify_spellframe("label") == (SpellframeKind.category, ())
+    assert Bind._classify_spellframe(ProtoWithFoo) == (SpellframeKind.contract, (ProtoWithFoo,))
+    with pytest.raises(TypeError, match="string category or a Protocol contract"):
+        Bind._classify_spellframe(RealClassImplementingProto)
+    with pytest.raises(TypeError, match="string category or a Protocol contract"):
+        Bind._classify_spellframe(object())
 
 
 # Fingerprints: dataclass/decorated/origin -----------------------------

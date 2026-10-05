@@ -1,0 +1,6 @@
+none     waves=3000 before=204us after=206us
+idle     waves=3000 before=208us after=296us
+local    waves=3000 before=218us after=262us
+handoff  waves=3000 before=204us after=240us after_drop=228us
+keep     waves=3000 before=204us after=328us after_drop=190us
+intern   waves=3000 before=205us after=326us

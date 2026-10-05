@@ -67,6 +67,7 @@
  "edge_candidates": [],
  "published_aliases": [],
  "imports": {
+  "hashlib": "hashlib",
   "ABC": "abc.ABC",
   "abstractmethod": "abc.abstractmethod",
   "Path": "pathlib.Path",

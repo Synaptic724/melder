@@ -20,6 +20,9 @@ from melder.aether.spellbook.spell_compiler.validation.spell_validation_issue im
 from melder.aether.spellbook.spell_compiler.validation.spell_validation_result import (
     SpellValidationResult,
 )
+from melder.aether.spellbook.spell_compiler.structural_snapshot.structural_snapshot import (
+    StructuralSnapshot,
+)
 from melder.aether.spellbook.spellbook_creation_system import SpellbookCreationSystem
 
 
@@ -95,6 +98,8 @@ class _StubSpellbook:
             - Starts with zero check_cleaned invocations.
             - Exposes minimal configuration/logging surfaces required by the
               tested orchestration paths.
+            - Exposes an empty visible spell pool: a successful target-local
+              pass reads it to flag dependencies without a plan of their own.
         Returns:
             None.
         """
@@ -102,6 +107,7 @@ class _StubSpellbook:
         self._configuration = _StubConfiguration()
         self._logger = _StubLogger()
         self._spells: Dict[Any, Any] = {}
+        self._spell_id_pool: Dict[str, Any] = {}
 
     def check_cleaned(self) -> None:
         """
@@ -216,6 +222,8 @@ class _StubCachingSystem:
             None.
         """
         self._payloads_by_spell_id = payloads_by_spell_id or {}
+        # Mirror the envelope's executor-tier world stamp (generation 19).
+        self.world_stamp: str = ""
 
     @property
     def cached_spell_ids(self):
@@ -642,6 +650,21 @@ def test_extract_missing_dependency_ids_filters_non_keyerrors() -> None:
         "a",
         "b",
     ]
+
+
+def test_extract_missing_dependency_ids_reads_the_id_of_a_described_key_error() -> None:
+    """
+    A KeyError that carries a message after the id still names the id (0.2.8227).
+
+    The phase 9 contract and runtime processors raise `KeyError(spell_id, message)` for a spell
+    that left the pool mid-pass; the target pass must record that id, not the message.
+    """
+    phase_error = PhaseExecutionError(
+        "injection_plan_local",
+        errors=[KeyError("provider-id", "Occurrence spell could not be resolved from the spell lookup.")],
+    )
+
+    assert SpellbookCreationSystem._extract_missing_dependency_ids(phase_error) == ["provider-id"]
 
 
 def test_cleanup_phase_artifacts_after_resolution_cleans_all_and_scoped_spells(
@@ -1603,8 +1626,11 @@ def test_build_conjure_cache_state_reports_full_hit_path() -> None:
         },
         _system_caching_enabled_in_aether=lambda: True,
         _get_or_create_caching_system=lambda conduit_name=None: caching_system,
+        _aetheric_frame_configuration=None,
+        _contracted_spells={},
     )
 
+    caching_system.world_stamp = StructuralSnapshot.world_stamp(spellbook)
     cache_state = SpellbookCreationSystem._build_conjure_cache_state(
         spellbook=spellbook,
         dynamic=False,
@@ -1642,6 +1668,8 @@ def test_build_conjure_cache_state_reports_mixed_path() -> None:
         },
         _system_caching_enabled_in_aether=lambda: True,
         _get_or_create_caching_system=lambda conduit_name=None: caching_system,
+        _aetheric_frame_configuration=None,
+        _contracted_spells={},
     )
 
     cache_state = SpellbookCreationSystem._build_conjure_cache_state(
@@ -1679,8 +1707,11 @@ def test_build_conjure_cache_state_treats_stale_surplus_cache_as_full_hit() -> N
         },
         _system_caching_enabled_in_aether=lambda: True,
         _get_or_create_caching_system=lambda conduit_name=None: caching_system,
+        _aetheric_frame_configuration=None,
+        _contracted_spells={},
     )
 
+    caching_system.world_stamp = StructuralSnapshot.world_stamp(spellbook)
     cache_state = SpellbookCreationSystem._build_conjure_cache_state(
         spellbook=spellbook,
         dynamic=False,

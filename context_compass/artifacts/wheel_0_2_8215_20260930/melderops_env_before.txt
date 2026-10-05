@@ -1,0 +1,11 @@
+# .venv314 before (melder 0.2.8212)
+~/mnt/priv_commandops/.venv314/Lib/site-packages/melder
+~/mnt/priv_commandops/.venv314/Lib/site-packages/melder-0.2.8212.dist-info
+INSTALLER: uv
+REQUESTED: 
+direct_url.json: {"url":"file:///C:/Users/Mark/PycharmProjects/melder_private/dist/melder-0.2.8212-py3-none-any.whl","archive_info":{}}
+top_level.txt: melder
+
+RECORD rows: 594
+pyc files in melder/: 533
+__pycache__ dirs in melder/: 149

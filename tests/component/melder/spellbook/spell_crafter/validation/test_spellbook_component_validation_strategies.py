@@ -337,28 +337,30 @@ def test_component_spellmap_shape_validation_flags_missing_target() -> None:
         spellbook.cleanup()
 
 
-def test_component_spellmap_shape_validation_warns_on_non_normalized_binding_name() -> None:
+def test_component_spellmap_shape_validation_accepts_a_mixed_case_binding_name() -> None:
     """
     Purpose:
-        Validate SpellMapShapeValidationStrategy warns on non-normalized binding names.
+        Validate SpellMapShapeValidationStrategy reports nothing for a mixed-case binding name.
     Contract:
-        - Non-normalized binding names yield SPELLMAP_BINDING_NAME_NOT_NORMALIZED warnings.
+        - SpellMap keeps the binding name as written, as Bind does, and Phase 3 matches it
+          case-insensitively, so the strategy has nothing to report (the lowercase-advice
+          warning SPELLMAP_BINDING_NAME_NOT_NORMALIZED was retired at 0.2.8226).
     Returns:
         None.
     Raises:
-        AssertionError: If the expected warning is not reported.
+        AssertionError: If any issue is reported for the mixed-case name.
     """
     spellbook = _make_spellbook()
     strategy = SpellMapShapeValidationStrategy()
-    spellmap = SpellMap(spell=BasicService, binding_name="primary")
-    spellmap.binding_name = "Primary"
+    spellmap = SpellMap(spell=BasicService, binding_name="Primary")
+    assert spellmap.binding_name == "Primary"
 
     class UsesSpellMap:
         """
         Purpose:
-            Provide a spell with a SpellMap using a non-normalized binding name.
+            Provide a spell with a SpellMap using a mixed-case binding name.
         Contract:
-            - Uses binding_name with uppercase letters.
+            - Uses binding_name with an uppercase letter.
         Args:
             service: SpellMap placeholder.
         """
@@ -394,10 +396,7 @@ def test_component_spellmap_shape_validation_warns_on_non_normalized_binding_nam
         )
         try:
             strategy.validate(context)
-            assert len(issues) == 1
-            issue = issues[0]
-            assert issue.code == "SPELLMAP_BINDING_NAME_NOT_NORMALIZED"
-            assert issue.severity == "warning"
+            assert issues == []
         finally:
             context.cleanup()
     finally:

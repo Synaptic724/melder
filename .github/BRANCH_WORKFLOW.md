@@ -11,7 +11,7 @@ which checks must run; the final gate independently verifies that selection.
 | Event | Full runtime matrix | Other required work |
 | --- | --- | --- |
 | Feature PR into `dev` | Yes | Hygiene, source/repository assets and documentation |
-| `dev` PR into `preprod` | Yes | The same checks plus distribution verification |
+| `dev` PR into `preprod` | Yes | The same checks plus distribution verification and the three benchmark jobs |
 | `preprod` PR into `release_candidate` | No | Hygiene and exact-tree full preprod proof |
 | `release-fix/*` PR into `release_candidate` | Yes | Full checks and distribution verification for changed contents |
 | `release_candidate` PR into `prod` | No | Hygiene and exact-source successful TestPyPI qualification |
@@ -53,6 +53,87 @@ set it for the whole job: macOS Python setup runs a standard-Python certificate
 installer that cannot start with the GIL disabled. The test driver and wheel probe
 still reject an unsupported interpreter or an enabled GIL during qualification.
 
+## Real-world gauntlet
+
+Automatic CI runs real-world-gauntlet.yml only for this repository's dev-to-preprod
+promotion PRs. CI / merge-ready requires its success on that route and accepts the planned
+skip on feature PRs into dev, later promotions, release-fix PRs, and manual full CI.
+The gauntlet workflow itself remains manually runnable for a one-off test. Its YAML
+iteration-counts input defaults to [500, 1000, 2500, 5000, 10000] for both reusable calls
+and manual runs; local pytest defaults remain unchanged.
+
+Edit the configuration block at the top of benchmarks/testing_other_di/test_real_world_gauntlet.py:
+iteration counts default to [5,000, 10,000, 15,000, 25,000, 50,000], thread counts to
+[3, 5, 7, 9], and rounds to 1. Run that test
+normally through pytest; no separate launcher or environment variables are needed. Every
+library/iteration-count/thread-count/round runs in a fresh child with PYTHON_GIL=0 and -X gil=0, and the
+measured process refuses an enabled GIL. Request/A/B workloads repeat into distinct C, D, E
+and later lanes; threads synchronize their start and are joined each workload iteration.
+This is a synchronized burst, with independent scope work rather than a producer/consumer queue.
+
+The gauntlet uses the newest stable Python 3.14 patch and pinned dependencies on Ubuntu x64, Windows x64 and macOS
+Intel x64 for comparison. This fixed benchmark baseline is separate from the compatibility
+test matrix below. Setup helpers do not inherit PYTHON_GIL=0. The optional manual thread-counts
+input overrides the file's list; iteration-counts overrides the smaller CI iteration budgets.
+An explicitly blank input uses the corresponding local file setting. The CI default relay
+has 60 fresh child runs per round on each OS: five iteration counts, four thread counts,
+and three libraries. It totals 228,000 workload iterations per OS at one round.
+The job permits six hours, with the measured step bounded at 345 minutes to leave upload time;
+the pytest wrapper has a six-hour timeout when pytest-timeout is active.
+
+Each OS job publishes timings by iteration and thread count in its summary and retains gauntlet-results
+for 30 days: JUnit, full log, summary, outcome JSON, dependency pins/install report and source
+hashes/runtime provenance. Results must include every requested count and library, even when
+pytest exits zero. There is no speed threshold; compare matching counts within the same OS
+and account for hosted hardware variation. A short correctness run is not a performance ranking.
+
+## Persistent runtime series
+
+The dev-to-preprod PR also starts persistent-runtime-gauntlet.yml. It depends only on
+branch-policy, just like the real-world gauntlet, so they may run concurrently on separate
+GitHub-hosted runner VMs. Each uses its own Ubuntu, Windows and Intel macOS jobs; runner
+availability may queue them. Every benchmark job must succeed for promotion.
+
+Run benchmarks/testing_other_di/test_persistent_runtime_gauntlet_series.py with pytest -s.
+Edit persistent_runtime_gauntlet_series_runner.py for local settings and aggregation:
+measurement windows [60, 180, 300] seconds (300 maximum), thread counts [3, 5], both existing
+scenarios and all three libraries. This is 36 isolated processes per OS, 108 minutes of
+measured work plus six minutes of warmup and setup/cleanup. The two original benchmark
+files retain their existing defaults and workloads. CI/manual workflow inputs duration-seconds
+and thread-counts select the same smaller series independently of local edits.
+
+Every cell starts a fresh GIL-off interpreter and reuses the original persistent runtime,
+its scope-semantic checks, workers and cleanup. Local logs and result files are retained in a
+new directory beneath benchmarks/testing_other_di/persistent_gauntlet_results; optional
+PERSISTENT_SERIES_OUTPUT_DIR changes that destination. Durations and thread counts are
+printed before launch. Per-cell logs/JSON and aggregate results.json, results.csv and summary.md
+keep every duration/thread/scenario/library result separate, including completed rows after
+a later failure. CI publishes these reports, JUnit, source/runtime provenance and the summary
+under its own persistent-gauntlet artifact. The standalone workflow also supports a manual run.
+
+## Shallow thread scaling
+
+The dev-to-preprod PR also starts shallow-all-thread-scaling.yml. Like the other two benchmarks it
+depends only on branch-policy, so all three may run concurrently on separate GitHub-hosted runner
+VMs; runner availability may queue them. CI / merge-ready requires its success on that route and
+accepts the planned skip on every other route. The workflow itself remains manually runnable.
+
+It runs benchmarks/testing_other_di/test_shallow_all_thread_scaling.py on the newest stable Python 3.14 patch
+(free-threaded, GIL off) with the same pinned dependencies as the other benchmarks, on Ubuntu x64,
+Windows x64 and macOS Intel x64. Each library (dependency-injector, dishka and melder) gets its
+own fresh pytest process through DI_LIBS, because a library measured second or third in one
+process runs 5-12% slower (benchmarks/testing_other_di/benchmarks.md). The thread-counts input
+(default 1,2,3,4,5; each from 1 to 5; the first count is the speedup baseline) and the
+duration-seconds input (default 15, at most 120) map to DI_THREAD_COUNTS and DI_DURATION_S; a
+blank input uses the benchmark default. The default is 225 seconds of measured work per OS.
+
+Each OS job lists steps/s, speedup and efficiency for every library and thread count in its
+summary and retains the shallow-thread-scaling artifact for 30 days: a JUnit file and log per
+library, results and outcome JSON, dependency pins/install report and source hashes/runtime
+provenance. Every requested thread count must report work, zero errors and a disabled GIL for
+every library, even when pytest exits zero. There is no speed threshold; compare matching thread
+counts within the same OS and account for hosted hardware variation.
+
 ## Supported Python versions
 
 Runtime discovery reads the Python floor from `project.requires-python` in `pyproject.toml`
@@ -66,6 +147,17 @@ RC installation probes use `freethreaded: true` with the discovered exact Python
 The test driver verifies free-threading support and GIL-off state before and after pytest;
 the installed-package probe also verifies GIL-off state. Discovery, asset and policy tooling
 may use ordinary Python because those jobs do not qualify Melder's runtime behavior.
+
+Single-version helper jobs (hygiene, assets, docs, source qualification, publication and RC
+bookkeeping) request `python-version: "3.14"` with `check-latest: true`, so they run the newest
+stable 3.14 patch instead of whatever patch the runner image cached. The three speed tests
+(real-world gauntlet, persistent runtime series, shallow thread scaling) are not part of the matrix:
+each runs once, on the newest stable 3.14 patch the same way (and asserts a final 3.14 release), never
+across versions, and only on dev-to-preprod pull requests. They do not move to a new minor by
+themselves, because they install pinned third-party benchmark libraries as wheels only: once those
+libraries install on the new free-threaded minor, change `python-version` and the matching
+`sys.version_info[:2]` assertion in the three workflows together (the workflow contract test checks
+that the two agree and that no workflow pins an exact patch).
 
 The discovery helper refuses empty/malformed catalog data, missing support for the declared
 floor, and a selected release lacking free-threaded assets on a required platform. Setup errors

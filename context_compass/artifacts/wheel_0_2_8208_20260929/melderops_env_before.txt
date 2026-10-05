@@ -1,0 +1,36 @@
+# priv_commandops/.venv314 before the install (2026-09-29T22:09:41Z)
+## pyvenv.cfg
+home = C:\Users\Mark\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none
+implementation = CPython
+uv = 0.12.13
+version_info = 3.14
+include-system-site-packages = true
+
+## site-packages entries named melder*
+drwx------ 1 rcw-01ea5tnfq1nyfhrsj4wka11q rcw-01ea5tnfq1nyfhrsj4wka11q   4096 Sep 28 13:46 melder
+drwx------ 1 rcw-01ea5tnfq1nyfhrsj4wka11q rcw-01ea5tnfq1nyfhrsj4wka11q   4096 Sep 28 13:46 melder-0.2.8207.dist-info
+## melder dist-info
+total 188
+drwx------ 1 rcw-01ea5tnfq1nyfhrsj4wka11q rcw-01ea5tnfq1nyfhrsj4wka11q   4096 Sep 28 13:46 .
+drwx------ 1 rcw-01ea5tnfq1nyfhrsj4wka11q rcw-01ea5tnfq1nyfhrsj4wka11q   4096 Sep 28 13:46 ..
+-rwx------ 1 rcw-01ea5tnfq1nyfhrsj4wka11q rcw-01ea5tnfq1nyfhrsj4wka11q      4 Sep 28 13:46 INSTALLER
+-rwx------ 1 rcw-01ea5tnfq1nyfhrsj4wka11q rcw-01ea5tnfq1nyfhrsj4wka11q  51856 Sep 28 13:46 METADATA
+-rwx------ 1 rcw-01ea5tnfq1nyfhrsj4wka11q rcw-01ea5tnfq1nyfhrsj4wka11q 137009 Sep 28 13:46 RECORD
+-rwx------ 1 rcw-01ea5tnfq1nyfhrsj4wka11q rcw-01ea5tnfq1nyfhrsj4wka11q      0 Sep 28 13:46 REQUESTED
+-rwx------ 1 rcw-01ea5tnfq1nyfhrsj4wka11q rcw-01ea5tnfq1nyfhrsj4wka11q     91 Sep 28 13:46 WHEEL
+drwx------ 1 rcw-01ea5tnfq1nyfhrsj4wka11q rcw-01ea5tnfq1nyfhrsj4wka11q   4096 Sep 28 13:46 licenses
+-rwx------ 1 rcw-01ea5tnfq1nyfhrsj4wka11q rcw-01ea5tnfq1nyfhrsj4wka11q      7 Sep 28 13:46 top_level.txt
+## INSTALLER
+pip
+
+## melder/__version__.py
+
+__version__ = "0.2.8207"
+## __pycache__ dirs under melder
+157
+## file count under melder
+1187
+## RECORD lines
+1177
+## pyproject floor
+107:    "melder>=0.2.8207",

@@ -101,7 +101,8 @@
   "SpellSystemStates": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
   "SpellSystemIndex": "melder.aether.spellbook.spell_compiler.system.spell_system_index.SpellSystemIndex",
   "SpellSystemValidationStrategy": "melder.aether.spellbook.spell_compiler.system.validation.strategy_base.SpellSystemValidationStrategy",
-  "CancellationEvent": "melder.utilities.synchronization.cancellation_event_signal.CancellationEvent"
+  "CancellationEvent": "melder.utilities.synchronization.cancellation_event_signal.CancellationEvent",
+  "time": "time"
  },
  "collapse_candidate": {
   "module": "melder.aether.spellbook.spell_compiler.system.spell_system_validation_system",

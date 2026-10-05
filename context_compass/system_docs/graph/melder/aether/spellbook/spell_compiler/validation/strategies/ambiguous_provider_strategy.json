@@ -1,0 +1,93 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/spell_compiler/validation/strategies/ambiguous_provider_strategy.py",
+ "source_sha256": "37d88be311c3aba244a8a81cd8089ca5828afd1041257b44b86ac0a29284fd5e",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.spell_compiler.validation.strategies.ambiguous_provider_strategy": {
+   "id": "melder.aether.spellbook.spell_compiler.validation.strategies.ambiguous_provider_strategy",
+   "label": "ambiguous_provider_strategy",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/spell_compiler/validation/strategies/ambiguous_provider_strategy.py",
+   "lineno": 1,
+   "include": true,
+   "role": "Module holding the Phase-4 strategy that refuses a single typed parameter with several providers.",
+   "responsibilities": [
+    "exports AmbiguousProviderStrategy for SpellValidationSystem registration"
+   ],
+   "phases": [
+    "validation"
+   ],
+   "semantics_authored_against": ""
+  },
+  "melder.aether.spellbook.spell_compiler.validation.strategies.ambiguous_provider_strategy.AmbiguousProviderStrategy": {
+   "id": "melder.aether.spellbook.spell_compiler.validation.strategies.ambiguous_provider_strategy.AmbiguousProviderStrategy",
+   "label": "AmbiguousProviderStrategy",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/validation/strategies/ambiguous_provider_strategy.py",
+   "lineno": 17,
+   "bases": [
+    "SpellValidationStrategy"
+   ],
+   "markers": [],
+   "public_methods": [
+    "validate"
+   ],
+   "shape": {
+    "method_count": 4,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "43bf23d0c404c5de50e4630f6e60a6a724e72a4cf56849ff426f4f69b4f225a8",
+   "include": true,
+   "role": "Phase-4 strategy: one AMBIGUOUS_PROVIDER error per AMBIGUOUS_INPUT socket, naming the parameter, the expected type, every candidate's address and the remedies.",
+   "responsibilities": [
+    "reads the spell's Phase-3 topology and selects the AMBIGUOUS_INPUT sockets Phase 3 recorded instead of raising (0.2.8224)",
+    "describes each referenced candidate through the spellbook as {spell_id, spell_name, spellframe, binding_name}, ordered by address; an unknown id renders by id",
+    "renders the expected type with UnresolvedInputError.expected_type_name and names the three remedies: a SpellMap default, a meld override, one provider",
+    "emits severity error so conjure refuses the spell through SpellbookValidationError; never mutates topology, graph or spell"
+   ],
+   "owns_state": [],
+   "phases": [
+    "validation"
+   ],
+   "semantics_authored_against": "43bf23d0c404c5de50e4630f6e60a6a724e72a4cf56849ff426f4f69b4f225a8"
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.validation.strategies.ambiguous_provider_strategy.AmbiguousProviderStrategy",
+   "to_label": "SpellValidationStrategy",
+   "relation": "specializes",
+   "to": "melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy.SpellValidationStrategy"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.validation.strategies.ambiguous_provider_strategy.AmbiguousProviderStrategy",
+   "to_label": "SpellValidationIssue",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "Any": "typing.Any",
+  "Dict": "typing.Dict",
+  "List": "typing.List",
+  "SocketKind": "melder.aether.spellbook.spell_compiler.dag.socket_kind.SocketKind",
+  "SpellValidationIssue": "melder.aether.spellbook.spell_compiler.validation.spell_validation_issue.SpellValidationIssue",
+  "SpellValidationStrategy": "melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy.SpellValidationStrategy",
+  "UnresolvedInputError": "melder.utilities.custom_exceptions.unresolved_input_error.UnresolvedInputError",
+  "Spell": "melder.aether.spellbook.spell.Spell",
+  "SpellRequirements": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements.SpellRequirements",
+  "SpellSocketDescriptor": "melder.aether.spellbook.spell_compiler.topology.spell_local_topology.SpellSocketDescriptor",
+  "SpellValidationContext": "melder.aether.spellbook.spell_compiler.validation.spell_validation_context.SpellValidationContext"
+ },
+ "collapse_candidate": {
+  "module": "melder.aether.spellbook.spell_compiler.validation.strategies.ambiguous_provider_strategy",
+  "class": "melder.aether.spellbook.spell_compiler.validation.strategies.ambiguous_provider_strategy.AmbiguousProviderStrategy",
+  "label": "AmbiguousProviderStrategy"
+ }
+}

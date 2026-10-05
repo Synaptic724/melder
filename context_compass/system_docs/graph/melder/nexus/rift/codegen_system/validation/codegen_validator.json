@@ -123,6 +123,8 @@
  ],
  "published_aliases": [],
  "imports": {
+  "ast": "ast",
+  "threading": "threading",
   "TYPE_CHECKING": "typing.TYPE_CHECKING",
   "Optional": "typing.Optional",
   "CodegenAstStructureStrategy": "melder.nexus.rift.codegen_system.validation.strategies.codegen_ast_structure_strategy.CodegenAstStructureStrategy",

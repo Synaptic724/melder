@@ -1,0 +1,77 @@
+    def _matches_annotation(
+            self,
+            annotation: Any,
+            binding_name: Optional[str],
+            spell_obj: Spell,
+            *,
+            require_class_spell: bool,
+    ) -> bool:
+        """
+        Return True if `spell_obj` is a candidate for the given annotation.
+
+        Matching strategy:
+            - Optional/Union wrappers are stripped before matching.
+            - String/bare-name annotation matches against `spell_name`, `frame`
+              (string or type name), and the bound spell type object.
+            - Non-string annotation matches against `spell.spell` and
+              `spell.spellframe`.
+            - `require_class_spell=True` excludes METHOD/LAMBDA spell kinds.
+
+        Args:
+            annotation:
+                Canonicalized annotation to match.
+            binding_name:
+                Optional binding-name filter.
+            spell_obj:
+                Candidate spell.
+            require_class_spell:
+                When True, only class-like spells are allowed.
+
+        Returns:
+            bool: `True` when the candidate should be considered for this
+            dependency.
+        """
+        if require_class_spell:
+            spell_type = spell_obj.spell_type
+            if spell_type in (
+                    SpellType.METHOD,
+                    SpellType.METHOD_WITH_BINDING_NAME,
+                    SpellType.LAMBDA_METHOD_WITH_BINDING_NAME,
+            ):
+                return False
+
+        if isinstance(annotation, typing.ForwardRef):
+            annotation = annotation.__forward_arg__
+
+        if isinstance(annotation, str):
+            if spell_obj.spell_name == annotation:
+                if binding_name is not None and spell_obj.binding_name != binding_name:
+                    return False
+                return True
+
+            frame = spell_obj.spellframe
+            if isinstance(frame, str) and frame == annotation:
+                if binding_name is not None and spell_obj.binding_name != binding_name:
+                    return False
+                return True
+
+            if inspect.isclass(frame) and frame.__name__ == annotation:
+                if binding_name is not None and spell_obj.binding_name != binding_name:
+                    return False
+                return True
+
+        if spell_obj.spell is annotation:
+            if binding_name is not None and spell_obj.binding_name != binding_name:
+                return False
+            return True
+
+        frame = spell_obj.spellframe
+        if frame is annotation or frame == annotation:
+            if binding_name is not None and spell_obj.binding_name != binding_name:
+                return False
+            return True
+
+        return False
+
+    @staticmethod
+    def _eq_safe_object(candidate: Any) -> bool:

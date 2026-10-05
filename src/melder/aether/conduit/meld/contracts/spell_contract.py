@@ -150,10 +150,13 @@ class SpellContract(Cleanable):
 
             binding_name:
                 Optional binding name used to disambiguate multiple providers
-                under the same frame. Normalized via `SpellInputUtils` so the
-                contract is stable and case-insensitive. When `None`, the
-                binding name remains `None` so default-binding semantics remain
-                intact.
+                under the same frame. Kept exactly as written, the way `Bind`
+                keeps a spell's binding name (0.2.8226; it was lowercased here
+                before). The contract's identity, `canonical_key`, is
+                case-insensitive, so a provider bound as "ScanProfile"
+                satisfies `binding_name="scanprofile"` and the reverse. When
+                `None`, the binding name remains `None` so default-binding
+                semantics remain intact.
 
             override:
                 Optional construction payload for the provider spell that satisfies
@@ -175,6 +178,7 @@ class SpellContract(Cleanable):
         Raises:
             ValueError: If both `spell` and `spellframe` are omitted, because
                 the contract would have no identity to match against.
+            TypeError: If `binding_name` is neither a string nor `None`.
 
         Returns:
             None.
@@ -184,15 +188,18 @@ class SpellContract(Cleanable):
                 "SpellContract requires at least one of `spell` or `spellframe` "
                 "to be provided."
             )
+        if binding_name is not None and not isinstance(binding_name, str):
+            raise TypeError(
+                "SpellContract binding_name must be a string or None; "
+                f"got {type(binding_name).__name__}."
+            )
         super().__init__()
 
         self.spell = spell
         self.spellframe = spellframe
-        self.binding_name = (
-            SpellInputUtils.normalize_binding_name(binding_name)
-            if binding_name is not None
-            else None
-        )
+        # Kept as written, as Bind keeps a spell's binding name; `canonical_key`
+        # carries the normalized form every contract match compares.
+        self.binding_name = binding_name
         # Preserve the caller payload by reference; None means no payload is attached.
         self.override = override
 
@@ -256,8 +263,8 @@ class SpellContract(Cleanable):
             - When `spell` is present, it is part of the contract descriptor
               but does not imply immediate resolution; the provider may live in
               another conduit.
-            - If a binding name was provided at construction time, it is
-              normalized for case-insensitive matching.
+            - The binding name is the caller's text (0.2.8226); `canonical_key`
+              carries the normalized form that matching uses.
         """
         return (self.spell, self.spellframe, self.binding_name)
 

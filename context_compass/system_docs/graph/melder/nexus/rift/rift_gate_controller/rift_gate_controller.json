@@ -94,6 +94,7 @@
  ],
  "published_aliases": [],
  "imports": {
+  "threading": "threading",
   "Dict": "typing.Dict",
   "Optional": "typing.Optional",
   "RiftGate": "melder.nexus.rift.rift_gate.rift_gate.RiftGate",

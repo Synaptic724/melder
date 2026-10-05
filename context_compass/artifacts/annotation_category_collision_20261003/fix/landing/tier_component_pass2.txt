@@ -1,0 +1,5 @@
+            HookExecutionError: A pre-bind or bind-activation callback failed.
+            HookExecutionError: A pre-bind or bind-activation callback failed.
+FAILED tests/component/melder/spellbook/test_spellbook_component_override_required.py::test_notch_from_definition_to_provider_revalidates_its_consumer[Consumer]
+FAILED tests/component/melder/spellbook/test_spellbook_component_override_required.py::test_notch_from_definition_to_provider_revalidates_its_consumer[OptionalConsumer]
+2 failed, 2291 passed, 23 skipped, 1 xfailed in 10.61s

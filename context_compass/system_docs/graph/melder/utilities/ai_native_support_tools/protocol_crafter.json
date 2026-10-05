@@ -144,6 +144,10 @@
  ],
  "published_aliases": [],
  "imports": {
+  "ast": "ast",
+  "inspect": "inspect",
+  "re": "re",
+  "threading": "threading",
   "ForwardRef": "annotationlib.ForwardRef",
   "Format": "annotationlib.Format",
   "get_annotations": "annotationlib.get_annotations",

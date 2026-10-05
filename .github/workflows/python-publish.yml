@@ -32,6 +32,7 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.14"
+          check-latest: true
       - name: Authorize the selected final release
         run: python .github/scripts/ci_policy.py release-head
       - name: Require successful TestPyPI qualification of the candidate source
@@ -49,6 +50,7 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.14"
+          check-latest: true
       - run: python .github/scripts/ci_policy.py hygiene
 
   source-assets:
@@ -94,6 +96,7 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.14"
+          check-latest: true
       - name: Retrieve this run's verified distributions
         uses: actions/download-artifact@v8
         with:

@@ -1,26 +1,29 @@
-# Epic: Adaptive creation contexts - probe, harvest, report, regenerate
+# Epic: PGO creation contexts - probe, harvest, report, regenerate (the data-dependent strategies)
 
-## Current Backlog Disposition
-- Parked: 2026-09-28T00:57:27Z
-- Disposition: backlog_by_owner; no active work.
-- Owner's reason: it feels powerful, but the scan of the objects that exist says most have few dependencies -
-  Melder's own composition is 58% width 0 / 23% width 1, depth <= 5; commandops' cache is 47 singleton roots
-  (warm melds are door hits) and 4 `many` roots of width 1 and 5 - so the data-driven levers have little to work
-  on there. Recorded for later: fifteen stories, the concrete strategies with predictions, the seam in source.
-- What stands without this epic: the registration trim (S1) and the existing-object constants (S2a) need no PGO
-  data - only the rows - and are the two measured/predicted wins on the real shapes; they can be picked up as
-  plain tasks if the owner wants them without reopening the epic.
-- Reopen trigger: an application with wide singleton consumers, deep transient trees or multi-thread creators,
-  or the owner's word.
+## Split (2026-10-01)
+- The owner split the strategies in two: this epic keeps everything that needs a runtime profile - the probe,
+  harvest, capture, report, versioning/regeneration, the harvester and the phase-cycle regeneration, the cost
+  model, and the data-gated strategies S2b (hit rate), S3 (miss-first), S5 (purge count), S6 (creator thread)
+  and S7 (observed key sets). The data-free strategies S1, S8, S2a and the door strategies D1-D4 moved to
+  tickets/epics/2026-10-01_static_codegen_and_door_strategies_epic.md with the certification harness story.
+- Sequenced AFTER the static epic (owner: "go with non-pgo first"). Status `ready`; no board row until its
+  first story opens. The record below stands unchanged except the story list and the decision log.
+
+## Reopened
+- Reopened: 2026-09-30T18:59:06Z (owner: "reopen the PGO lane, I really want it to get faster").
+- Parked 2026-09-28T00:57:27Z to 2026-09-30 on the owner's word (little value on the shapes scanned); the record
+  from that pass stands below unchanged.
+- First lane on reopening: the certification harness (measure S1-S7 on the emitted bodies, no src change), then
+  the certified strategies in order of measured win; the PGO harvester and regeneration follow the data.
 
 ## Metadata
 - Epic ID: EPIC-2026-09-27-adaptive-creation-contexts
-- Status: blocked
+- Status: ready (parked)
 - Owner: cowork
 - Agent Name: fable_0
-- Priority: p3
+- Priority: p1
 - Created: 2026-09-27T23:42:45Z
-- Updated: 2026-09-28T00:57:27Z
+- Updated: 2026-10-04T00:25:04Z
 - Target Window: opened 2026-09-27 on the owner's direction; idea collection first, one story at a time after
 - Related Program/Initiative: SpellCompiler codegen (phases 8-11), Meld runtime, Creations, DevOps station,
   creation caches
@@ -111,6 +114,17 @@ measurement come first, one story at a time, and the owner-run gauntlet decides.
 - to_state: blocked
 - transition_reason: Parked by the owner (2026-09-28T00:57:27Z): little value on the shapes that exist;
   everything recorded for later.
+- from_state: blocked
+- to_state: in_progress
+- transition_reason: Reopened by the owner (2026-09-30T18:59:06Z); the certification harness story opens first.
+- from_state: in_progress
+- to_state: ready
+- transition_reason: Split by the owner (2026-10-01T00:57:45Z): the static strategies left for their own epic,
+  which runs first; this epic is queued behind it with no active lane.
+- from_state: ready
+- to_state: ready (parked)
+- transition_reason: Parked in the backlog on the owner's word (2026-10-04T00:25:04Z: "keep your pgo in the backlog")
+  after the static epic was turned in; its thirteen stories and the probe task were already in the backlog.
 
 ## Success Metrics
 - Probe window: at most +11% per creation while open (measured +4..+11% count-only), 0 after the self-swap.
@@ -146,8 +160,8 @@ measurement come first, one story at a time, and the owner-run gauntlet decides.
 - [ ] Milestone 4: the remaining ideas measured and shipped, parked or dropped on their numbers.
 
 ## Stories (Required to Complete)
-- [ ] Story: STORY-2026-09-27-many-registration-trim - one append per `many` creation, per-key disposal methods.
-      tickets/stories/backlog/2026-09-27_many_registration_trim_story.md
+- [x] Story: STORY-2026-09-27-many-registration-trim - MOVED to the static epic on the split (2026-10-01);
+      tickets/stories/2026-09-27_many_registration_trim_story.md
 - [ ] Story: STORY-2026-09-27-probe-creation-context-harvest - the sampled, self-ending probe body and the
       trigger points that harvest it. tickets/stories/backlog/2026-09-27_probe_creation_context_harvest_story.md
 - [ ] Story: STORY-2026-09-27-creator-thread-context-capture - who built it, where, for whom, on which thread.
@@ -176,8 +190,9 @@ measurement come first, one story at a time, and the owner-run gauntlet decides.
 - [ ] Story: STORY-2026-09-28-codegen-cost-model-planner - a phase-10 cost model that predicts each candidate
       body's ns from the profile and the rows, ranks the tournament's shortlist, and recalibrates from the
       measured windows. tickets/stories/backlog/2026-09-28_codegen_cost_model_planner_story.md
-- [ ] Story: STORY-2026-09-28-codegen-strategy-certification-harness - measure S1-S7 on the emitted bodies
-      before any system is built. tickets/stories/backlog/2026-09-28_codegen_strategy_certification_harness_story.md
+- [x] Story: STORY-2026-09-28-codegen-strategy-certification-harness - delivered (the table certified S1, S8,
+      S2a; S5/S6/S2b with preconditions); MOVED to the static epic on the split; in review for the owner's closure.
+      tickets/stories/2026-09-28_codegen_strategy_certification_harness_story.md
 - [ ] Story: STORY-2026-09-28-batched-many-registration-lazy-index - one scope list, lazy per-key index on
       the first purge (S5). tickets/stories/backlog/2026-09-28_batched_many_registration_lazy_index_story.md
 
@@ -269,8 +284,28 @@ emitted body, the predicted saving from the price model, how it is measured. Pre
 - S6 Thread-affine append. Precondition: one creator thread over the window. Change: a `get_ident()` compare
   and a per-thread bucket instead of the store lock; a foreign thread deopts to the locked path. Predicted:
   -30..-40 ns (lock 57-67 -> compare ~20-30); contention at threads > 1 is the real target, owner-run.
+- S8 Lazy instance_results (found by the harness, 2026-09-30). Precondition: none (dict-mode roots: any generic
+  step, e.g. an existing object). Change: the warm path builds no `instance_results` dict and stores nothing in
+  it; a miss builds its own. MEASURED: -18..-24% of the plan on ContextRoot and wide8 over existing objects.
 - S7 Override key-set precompile. Precondition: key sets observed. Change: compile at harvest instead of first
   use. Predicted: cold-start only; no warm-path saving. Last.
+Door strategies (PREDICTED, not yet measured; for the 0-2 object melds most users make, the door is the cost):
+the warm lane of `Conduit.meld` (conduit.py:4755-4820) pays per hit about twelve attribute reads, one dict get, the
+guard ladder (`_meld_hooks`, `_door_epoch`, context identity, `_spellbook_validation_required`), the executor call
+frame, the executor's own store read, and the `_cache_emit_required` read pair - ~130-180 ns of every meld and the
+WHOLE of a warm singleton meld (164-177 ns).
+- D1 Guard folding. Precondition: none. Change: fold the hooks flag, the validation flag and the emit flag into the
+  door epoch (bump on change) so the hit compares one int instead of reading four attributes. Predicted: -30..-40 ns.
+- D2 Executor hold with epoch re-validation. Precondition: none. Change: the entry holds the instance executor and
+  the epoch; the slot re-read goes. Predicted: -10..-20 ns (measured earlier as the lane frame's share).
+- D3 Route inline at the door for singleton roots. Precondition: root is unique/per-conduit (rows). Change: the
+  entry carries the store and the sid; the hit does `store._creations.get(sid)` in the door, no executor frame.
+  Predicted: -60..-70 ns of a 170 ns singleton meld (-35..-40%).
+- D4 Instance at the door. Precondition: singleton root, automatic posture, every retirement path bumps
+  `_door_epoch` (purge/cleanup/notch/transfer - to verify). Change: the entry holds the object; the hit is unpack,
+  epoch compare, return. Predicted: ~80-90 ns per singleton meld (-50%).
+These are measured the same way: a door harness that installs variant doors on the live conduit over the real
+entries and times melds by name; the next measurement lane after the plan-level table.
 Expected totals on the real shapes (S1+S2a+S2b+S4+S5): Worker 650-853 -> ~300-330 (-50..-60%); ContextRoot
 1136-1219 -> ~500-560 (-55%); a wide8 many root over uniques -8 x 8 = -64 (~12%), over existing objects
 -23 x 8 = -184 (~33%); singleton-root warm melds: 0 (door hits). PGO's own data buys S2b, S4, S5, S6; S1 and
@@ -345,8 +380,8 @@ everything else is HYPOTHESIS until its story measures it.
   the context holds its spell, the deferred pass is exactly phases 8-11, phase 8's analyzer chain is the entry
   for the data (recorded in the harvest-driven regeneration story).
 
-- 2026-09-28T00:33:12Z (owner): regenerate from the creation context directly, unbind/rebind under a closed gate, try 3-5
-  candidates and keep the best (maybe 10%). fable_0: the trial loop is adopted as the tournament requirement of
+- 2026-09-28T00:33:12Z (owner): regenerate from the creation context directly, unbind/rebind under a closed gate,
+  try 3-5 candidates and keep the best (maybe 10%). fable_0: the trial loop is adopted as the tournament requirement of
   the versioning story; unbind/rebind is rejected from source (removal unregisters the index and cleans the
   Spell; bind after conjure is refused in automatic worlds) in favour of the 8-11 pass under the rebuild
   window, which is the closed-gate regeneration the owner means.
@@ -375,6 +410,25 @@ everything else is HYPOTHESIS until its story measures it.
   but the scan of the objects that exist says most have few dependencies. fable_0: two more stories (the
   certification harness; batched registration), the parked disposition above, every story and the design
   task moved to backlog, the board row removed; S1 and S2a noted as the data-free wins that survive the park.
+
+- 2026-09-30T18:59:06Z (owner): reopen the PGO lane and get it faster; start thinking about how to use it. fable_0: the
+  harness story opens first (numbers before code), then S1/S2a as the data-free wins, then the harvester.
+
+- 2026-09-30T19:07:05Z (fable_0, MEASURE): certification table landed. ALL (S8+S4+S2a+S2b+S1) cuts the plan
+  40-67% and the whole meld 30-52% on all five shapes, the two commandops shapes included; ALL+S5 cuts the plan 51-76%.
+  Certified without data: S1, S8, S2a; with a precondition: S5, S6, S2b; not certified: S4. Owner picks the
+  implementation order.
+
+- 2026-09-30T19:54:46Z (owner): most people meld 0-2 objects - we want a range of strategies, and what PGO
+  buys is still a guess. fable_0: added the door strategies D1-D4 (predicted) for the narrow melds where the
+  door is the cost; the plan-level increments of S5/S6/S2b are measured, their applicability in real apps is
+  not.
+
+- 2026-10-01T00:57:45Z (owner): split into two epics - non-PGO strategies and PGO strategies - and go with
+  non-PGO first. fable_0: S1, S8, S2a, the door strategies and the harness story moved to the static epic; this
+  epic keeps the profile-dependent strategies and the PGO machinery, retitled, status ready, queued behind the
+  static epic.
+  Open question kept here: S5 may be static-safe (the purge verb guards it) and could move after S1 lands.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
@@ -409,6 +463,19 @@ everything else is HYPOTHESIS until its story measures it.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-10-04T00:25:04Z
+  TYPE: DECISION
+  CLAIM: Owner (2026-10-04): the static epic is turned in (S1, S8, S9 shipped; the door lane parked) and this
+    epic stays in the backlog, not closed. Nothing of it was implemented; the certification table
+    (artifacts/pgo_strategies_20260927/) and the thirteen story drafts are its record. The static lanes it was
+    queued behind no longer exist, so it reopens only on the owner's word.
+  EVIDENCE:
+  - tickets/epics/completed/2026-10-01_static_codegen_and_door_strategies_epic.md:1-10
+  IMPACT: No active or ready lane of fable_0 remains; the board carries no row for this epic.
+  NEXT: none until the owner reopens it.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Acceptance criteria confirmed by user
@@ -430,9 +497,19 @@ STATE 2026-09-28T00:18:56Z: IN_PROGRESS. Twelve stories; the harvest-driven rege
 phase-cycle seam from source. Owner's pick of the first story pending.
 STATE 2026-09-28T00:37:47Z: IN_PROGRESS. Thirteen stories; tournament with an attempt budget carried by hydration; the
 cost-model planner drafted with the ledger as its seed. Owner's pick of the first story pending.
-STATE 2026-09-28T00:57:27Z: PARKED (backlog_by_owner). Fifteen stories drafted under this epic, all in stories/backlog/; the
-design task in tasks/backlog/ with the proof notes; the superseded PGO epic parked beside this one. Reopen on the
-owner's word or on an application whose shapes the scan did not show.
+STATE 2026-09-28T00:57:27Z: PARKED (backlog_by_owner). Fifteen stories drafted under this epic, all in
+stories/backlog/; the design task in tasks/backlog/ with the proof notes; the superseded PGO epic parked beside
+this one. Reopen on the owner's word or on an application whose shapes the scan did not show.
+
+STATE 2026-09-30T18:59:06Z: IN_PROGRESS (reopened). The certification harness story and its build task are the
+active lane; the other fourteen stories stay in backlog until picked. Resume from the task's latest STATE line.
+
+STATE 2026-10-01T00:57:45Z: READY (queued behind the static epic). Thirteen stories remain here, all in
+stories/backlog/; the registration trim and the harness stories moved to the static epic. Opens when the static
+epic's lanes are turned in or on the owner's word; the first lane then is the harvester/probe story.
+
+STATE 2026-10-04T00:25:04Z: PARKED (backlog_by_owner). The static epic is closed; this epic and its thirteen
+stories stay in the backlog until the owner reopens the PGO lane; no board row.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

@@ -1,0 +1,299 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="4" time="0.538" timestamp="2026-10-03T23:52:38.501822+00:00" hostname="claude"><testcase classname="spectrum.test_spectrum_category_collision_melder_only" name="test_spectrum_annotation_selects_the_spectrum_provider[False-class]" time="0.040" /><testcase classname="spectrum.test_spectrum_category_collision_melder_only" name="test_spectrum_annotation_selects_the_spectrum_provider[False-string]" time="0.013" /><testcase classname="spectrum.test_spectrum_category_collision_melder_only" name="test_spectrum_annotation_selects_the_spectrum_provider[True-class]" time="0.006"><failure message="RuntimeError: SpellCrafter Phase 3: multiple DI candidates found for parameter 'spectrum' on spell 'CenterWithClass' (annotation=&lt;class 'test_spectrum_category_collision_melder_only.Spectrum'&gt;). Candidates: Spectrum, Toolbox. Use a SpellMap with an explicit spellframe/binding_name or a collection type (e.g. list[FrameType]) to inject multiple implementations.">annotation = 'class', shared_category = True
+
+    @pytest.mark.parametrize("annotation", ["class", "string"])
+    @pytest.mark.parametrize("shared_category", [False, True])
+    def test_spectrum_annotation_selects_the_spectrum_provider(annotation: str, shared_category: bool) -&gt; None:
+        """A Spectrum annotation resolves the Spectrum spell whether or not Toolbox shares the category."""
+        book = Spellbook(aetheric_frame="spectrum-probe")
+        book.configure_aether_frame(system_state="dynamic", system_caching_enabled=False,
+                                    disposal=None, disposal_method_names=None)
+        book.get_configuration().freeze()
+        root = book.conjure(dynamic=True, name="host")
+        try:
+            root.bind(spell=Spectrum, existence="unique_per_conduit", spellframe="spectrum",
+                      binding_name="Spectrum", disposal_method_names=["cleanup"])
+            root.bind(spell=Toolbox, existence="unique_per_conduit",
+                      spellframe="spectrum" if shared_category else "tooling",
+                      binding_name="Toolbox", disposal_method_names=["cleanup"])
+            consumer = CenterWithClass if annotation == "class" else CenterWithString
+&gt;           root.bind(spell=consumer, existence="many", spellframe="command_center",
+                      binding_name="center", disposal_method_names=["cleanup"])
+
+../spectrum/test_spectrum_category_collision_melder_only.py:99: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/melder/aether/conduit/conduit.py:3858: in bind
+    return self._spellbook.bind(
+src/melder/aether/spellbook/spellbook.py:5291: in bind
+    with self.transaction(
+/sessions/rcw-01vydzrulcjeuzoj4jemymm6/.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/contextlib.py:148: in __exit__
+    next(self.gen)
+src/melder/aether/spellbook/spellbook.py:4551: in transaction
+    self.end_transaction(transaction_type, success=True)
+src/melder/aether/spellbook/spellbook.py:4439: in end_transaction
+    mediator.end_transaction_for_identity(
+src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/transaction_mediator.py:744: in end_transaction_for_identity
+    return self.end_transaction_by_request_id(
+src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/transaction_mediator.py:889: in end_transaction_by_request_id
+    self._finalize_root_session(session)
+src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/transaction_mediator.py:1073: in _finalize_root_session
+    self._orchestrator.commit_request(
+src/melder/aether/aetheric_frame/dev_ops/change_control_manager/orchestrator/orchestrator.py:504: in commit_request
+    commit_validator(staged)
+src/melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py:584: in _dispatch_commit_validator
+    structural(staged)
+src/melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py:835: in _default_structural_validator
+    spellbook._run_post_conjure_structural_phases(pending)
+src/melder/aether/spellbook/spellbook.py:7241: in _run_post_conjure_structural_phases
+    SpellbookCreationSystem.run_post_conjure_structural_phases(
+src/melder/aether/spellbook/spellbook_creation_system.py:1574: in run_post_conjure_structural_phases
+    compiler_system.run_structural_phases(
+src/melder/aether/spellbook/spell_compiler/spell_compiler_system.py:813: in run_structural_phases
+    self.run_phase_local_frame(
+src/melder/aether/spellbook/spell_compiler/spell_compiler_system.py:203: in run_phase_local_frame
+    self._spell_compiler.run_phase_local_frame(
+src/melder/aether/spellbook/spell_compiler/spell_compiler.py:255: in run_phase_local_frame
+    self._phase_3.run(
+src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:1012: in run
+    ordered_node_ids, dependency_spell_ids = self._build_local_frame_dag(
+src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:870: in _build_local_frame_dag
+    resolved = self._resolve_single_by_annotation(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;melder.aether.spellbook.spell_compiler.phases.compiler_phase_3.CompilerPhase3 object at 0x377188408a0&gt;
+spell = Spell(name=CenterWithClass, binding=center, frame=command_center, SHA256=41f4bd61d3180d95e690951f70d9324cbacdecfd95589b0514e9ac534c1ba423)
+spellbook = &lt;melder.aether.spellbook.spellbook.Spellbook object at 0x3771aae0610&gt;
+dep = &lt;melder.aether.spellbook.spell_compiler.symbolic_graph.spell_symbolic_dependency.SpellSymbolicDependency object at 0x3771bc66780&gt;
+candidate_index = None
+
+    def _resolve_single_by_annotation(
+            self,
+            spell: Spell,
+            spellbook: Spellbook,
+            dep: SpellSymbolicDependency,
+            candidate_index: Optional[Dict[str, Any]] = None,
+    ) -&gt; Dict[Any, Spell]:
+        """
+        Resolve a SINGLE_BY_ANNOTATION dependency to exactly one class/creation
+        spell.
+    
+        Prefer matching resolvable providers. Only when none exist may a single
+        non-resolvable definition be selected for an OVERRIDE_REQUIRED input.
+        Matching and index grouping happen first; capability does not change them.
+        When nothing matches at all, the mapping is empty: the caller records an
+        UNRESOLVED_INPUT socket, which the constructing meld must supply.
+    
+        Args:
+            spell:
+                Consuming spell owning the dependency.
+            spellbook:
+                Spellbook used for candidate enumeration.
+            dep:
+                Dependency metadata for this constructor parameter.
+    
+        Returns:
+            Dict[Any, Spell]:
+                Mapping from matched `spell_index` to spell. Empty when no
+                registered spell matches the annotation.
+    
+        Raises:
+            RuntimeError: If multiple candidates match the annotation
+                constraints (ambiguity is a configuration error, not an input).
+        """
+        annotation = self._normalize_annotation_for_matching(dep.target_annotation)
+        binding_name: Optional[str] = None
+    
+        if candidate_index is not None:
+            candidates = self._indexed_annotation_candidates(
+                candidate_index,
+                annotation,
+                require_class_spell=True,
+            )
+        else:
+            candidates = {}
+            for index, spell_obj in self._iter_all_spells(spellbook):
+                if self._matches_annotation(
+                        annotation,
+                        binding_name,
+                        spell_obj,
+                        require_class_spell=True,
+                ):
+                    candidates[index] = spell_obj
+    
+        resolvable_candidates = {
+            index: candidate for index, candidate in candidates.items() if candidate.resolvable
+        }
+        if resolvable_candidates:
+            candidates = resolvable_candidates
+    
+        if not candidates:
+            # Nothing registered provides this type. `_build_local_frame_dag`
+            # records an UNRESOLVED_INPUT socket instead of failing resolution;
+            # the constructing meld supplies the value or raises
+            # UnresolvedInputError when this object is built.
+            return {}
+    
+        if len(candidates) &gt; 1:
+            names = ", ".join(
+                sorted(candidate_spell.spell_name for candidate_spell in candidates.values())
+            )
+&gt;           raise RuntimeError(
+                "SpellCrafter Phase 3: multiple DI candidates found for "
+                f"parameter {dep.param_name!r} on spell {spell.spell_name!r} "
+                f"(annotation={annotation!r}). "
+                f"Candidates: {names}. "
+                "Use a SpellMap with an explicit spellframe/binding_name or a "
+                "collection type (e.g. list[FrameType]) to inject multiple "
+                "implementations."
+            )
+E           RuntimeError: SpellCrafter Phase 3: multiple DI candidates found for parameter 'spectrum' on spell 'CenterWithClass' (annotation=&lt;class 'test_spectrum_category_collision_melder_only.Spectrum'&gt;). Candidates: Spectrum, Toolbox. Use a SpellMap with an explicit spellframe/binding_name or a collection type (e.g. list[FrameType]) to inject multiple implementations.
+
+src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:484: RuntimeError</failure></testcase><testcase classname="spectrum.test_spectrum_category_collision_melder_only" name="test_spectrum_annotation_selects_the_spectrum_provider[True-string]" time="0.006"><failure message="RuntimeError: SpellCrafter Phase 3: multiple DI candidates found for parameter 'spectrum' on spell 'CenterWithString' (annotation=&lt;class 'test_spectrum_category_collision_melder_only.Spectrum'&gt;). Candidates: Spectrum, Toolbox. Use a SpellMap with an explicit spellframe/binding_name or a collection type (e.g. list[FrameType]) to inject multiple implementations.">annotation = 'string', shared_category = True
+
+    @pytest.mark.parametrize("annotation", ["class", "string"])
+    @pytest.mark.parametrize("shared_category", [False, True])
+    def test_spectrum_annotation_selects_the_spectrum_provider(annotation: str, shared_category: bool) -&gt; None:
+        """A Spectrum annotation resolves the Spectrum spell whether or not Toolbox shares the category."""
+        book = Spellbook(aetheric_frame="spectrum-probe")
+        book.configure_aether_frame(system_state="dynamic", system_caching_enabled=False,
+                                    disposal=None, disposal_method_names=None)
+        book.get_configuration().freeze()
+        root = book.conjure(dynamic=True, name="host")
+        try:
+            root.bind(spell=Spectrum, existence="unique_per_conduit", spellframe="spectrum",
+                      binding_name="Spectrum", disposal_method_names=["cleanup"])
+            root.bind(spell=Toolbox, existence="unique_per_conduit",
+                      spellframe="spectrum" if shared_category else "tooling",
+                      binding_name="Toolbox", disposal_method_names=["cleanup"])
+            consumer = CenterWithClass if annotation == "class" else CenterWithString
+&gt;           root.bind(spell=consumer, existence="many", spellframe="command_center",
+                      binding_name="center", disposal_method_names=["cleanup"])
+
+../spectrum/test_spectrum_category_collision_melder_only.py:99: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/melder/aether/conduit/conduit.py:3858: in bind
+    return self._spellbook.bind(
+src/melder/aether/spellbook/spellbook.py:5291: in bind
+    with self.transaction(
+/sessions/rcw-01vydzrulcjeuzoj4jemymm6/.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/contextlib.py:148: in __exit__
+    next(self.gen)
+src/melder/aether/spellbook/spellbook.py:4551: in transaction
+    self.end_transaction(transaction_type, success=True)
+src/melder/aether/spellbook/spellbook.py:4439: in end_transaction
+    mediator.end_transaction_for_identity(
+src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/transaction_mediator.py:744: in end_transaction_for_identity
+    return self.end_transaction_by_request_id(
+src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/transaction_mediator.py:889: in end_transaction_by_request_id
+    self._finalize_root_session(session)
+src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/transaction_mediator.py:1073: in _finalize_root_session
+    self._orchestrator.commit_request(
+src/melder/aether/aetheric_frame/dev_ops/change_control_manager/orchestrator/orchestrator.py:504: in commit_request
+    commit_validator(staged)
+src/melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py:584: in _dispatch_commit_validator
+    structural(staged)
+src/melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py:835: in _default_structural_validator
+    spellbook._run_post_conjure_structural_phases(pending)
+src/melder/aether/spellbook/spellbook.py:7241: in _run_post_conjure_structural_phases
+    SpellbookCreationSystem.run_post_conjure_structural_phases(
+src/melder/aether/spellbook/spellbook_creation_system.py:1574: in run_post_conjure_structural_phases
+    compiler_system.run_structural_phases(
+src/melder/aether/spellbook/spell_compiler/spell_compiler_system.py:813: in run_structural_phases
+    self.run_phase_local_frame(
+src/melder/aether/spellbook/spell_compiler/spell_compiler_system.py:203: in run_phase_local_frame
+    self._spell_compiler.run_phase_local_frame(
+src/melder/aether/spellbook/spell_compiler/spell_compiler.py:255: in run_phase_local_frame
+    self._phase_3.run(
+src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:1012: in run
+    ordered_node_ids, dependency_spell_ids = self._build_local_frame_dag(
+src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:870: in _build_local_frame_dag
+    resolved = self._resolve_single_by_annotation(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;melder.aether.spellbook.spell_compiler.phases.compiler_phase_3.CompilerPhase3 object at 0x377188406c0&gt;
+spell = Spell(name=CenterWithString, binding=center, frame=command_center, SHA256=e8bb00a7fcecf32ef86deaa4ae5772f846453302d96835611caf1a050ccaf057)
+spellbook = &lt;melder.aether.spellbook.spellbook.Spellbook object at 0x3771aae0310&gt;
+dep = &lt;melder.aether.spellbook.spell_compiler.symbolic_graph.spell_symbolic_dependency.SpellSymbolicDependency object at 0x3771bc62080&gt;
+candidate_index = None
+
+    def _resolve_single_by_annotation(
+            self,
+            spell: Spell,
+            spellbook: Spellbook,
+            dep: SpellSymbolicDependency,
+            candidate_index: Optional[Dict[str, Any]] = None,
+    ) -&gt; Dict[Any, Spell]:
+        """
+        Resolve a SINGLE_BY_ANNOTATION dependency to exactly one class/creation
+        spell.
+    
+        Prefer matching resolvable providers. Only when none exist may a single
+        non-resolvable definition be selected for an OVERRIDE_REQUIRED input.
+        Matching and index grouping happen first; capability does not change them.
+        When nothing matches at all, the mapping is empty: the caller records an
+        UNRESOLVED_INPUT socket, which the constructing meld must supply.
+    
+        Args:
+            spell:
+                Consuming spell owning the dependency.
+            spellbook:
+                Spellbook used for candidate enumeration.
+            dep:
+                Dependency metadata for this constructor parameter.
+    
+        Returns:
+            Dict[Any, Spell]:
+                Mapping from matched `spell_index` to spell. Empty when no
+                registered spell matches the annotation.
+    
+        Raises:
+            RuntimeError: If multiple candidates match the annotation
+                constraints (ambiguity is a configuration error, not an input).
+        """
+        annotation = self._normalize_annotation_for_matching(dep.target_annotation)
+        binding_name: Optional[str] = None
+    
+        if candidate_index is not None:
+            candidates = self._indexed_annotation_candidates(
+                candidate_index,
+                annotation,
+                require_class_spell=True,
+            )
+        else:
+            candidates = {}
+            for index, spell_obj in self._iter_all_spells(spellbook):
+                if self._matches_annotation(
+                        annotation,
+                        binding_name,
+                        spell_obj,
+                        require_class_spell=True,
+                ):
+                    candidates[index] = spell_obj
+    
+        resolvable_candidates = {
+            index: candidate for index, candidate in candidates.items() if candidate.resolvable
+        }
+        if resolvable_candidates:
+            candidates = resolvable_candidates
+    
+        if not candidates:
+            # Nothing registered provides this type. `_build_local_frame_dag`
+            # records an UNRESOLVED_INPUT socket instead of failing resolution;
+            # the constructing meld supplies the value or raises
+            # UnresolvedInputError when this object is built.
+            return {}
+    
+        if len(candidates) &gt; 1:
+            names = ", ".join(
+                sorted(candidate_spell.spell_name for candidate_spell in candidates.values())
+            )
+&gt;           raise RuntimeError(
+                "SpellCrafter Phase 3: multiple DI candidates found for "
+                f"parameter {dep.param_name!r} on spell {spell.spell_name!r} "
+                f"(annotation={annotation!r}). "
+                f"Candidates: {names}. "
+                "Use a SpellMap with an explicit spellframe/binding_name or a "
+                "collection type (e.g. list[FrameType]) to inject multiple "
+                "implementations."
+            )
+E           RuntimeError: SpellCrafter Phase 3: multiple DI candidates found for parameter 'spectrum' on spell 'CenterWithString' (annotation=&lt;class 'test_spectrum_category_collision_melder_only.Spectrum'&gt;). Candidates: Spectrum, Toolbox. Use a SpellMap with an explicit spellframe/binding_name or a collection type (e.g. list[FrameType]) to inject multiple implementations.
+
+src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:484: RuntimeError</failure></testcase></testsuite></testsuites>

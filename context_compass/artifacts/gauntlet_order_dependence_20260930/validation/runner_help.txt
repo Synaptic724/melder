@@ -1,0 +1,16 @@
+usage: real_world_gauntlet_gil_runner.py [-h]
+                                         [--lib {dependency-injector,dishka,melder}]
+                                         [--round ROUND]
+                                         [--result-json RESULT_JSON]
+
+Run the shared real-world gauntlet.
+
+options:
+  -h, --help            show this help message and exit
+  --lib {dependency-injector,dishka,melder}
+                        run only this library, in this process
+  --round ROUND         1-based round number recorded in the result payload
+                        (needs --lib)
+  --result-json RESULT_JSON
+                        write this library's result payload here instead of
+                        the per-turn CSV (needs --lib)

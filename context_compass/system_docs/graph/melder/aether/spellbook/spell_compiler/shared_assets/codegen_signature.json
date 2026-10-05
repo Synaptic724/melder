@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/shared_assets/codegen_signature.py",
- "source_sha256": "571c21087ae641060f59642951956ae89d1e8d333b58d1dd0d699a51ce16107b",
+ "source_sha256": "2f5b0ade0e8e968134f1d86c912a43f1e8b10da789862eb8b02c8546b192f417",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.shared_assets.codegen_signature": {
@@ -33,7 +33,7 @@
     "has_bases": false,
     "trivial": false
    },
-   "span_sha256": "974167482bb8591284430275b6a05a2996c4e6547a02b653081bc5fc3842d383"
+   "span_sha256": "dd58269eef7b2a355aefb7c6d24ec94b7b4c90cd20d41093a0a45fdb8e7e3e13"
   }
  },
  "edges_out": [],
@@ -47,6 +47,9 @@
  ],
  "published_aliases": [],
  "imports": {
+  "hashlib": "hashlib",
+  "pickle": "pickle",
+  "types": "types",
   "Any": "typing.Any",
   "Dict": "typing.Dict",
   "Optional": "typing.Optional",

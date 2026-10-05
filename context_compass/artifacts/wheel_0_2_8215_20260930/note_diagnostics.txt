@@ -1,0 +1,22 @@
+- DATETIME: {NOW}
+  TYPE: MEASURE
+  CLAIM: The epic's unchanged diagnostic passes on the installed 0.2.8215 wheel. VM env venvs/melderops314t: uv
+    replaced 0.2.8212 with the dist/ wheel (melder imports from the venv's site-packages; melder_ops from the
+    editable copy), and $HOME/melderops_copy was refreshed from the device tree (89 files changed, caches
+    excluded) with command_0's two diagnostics copied to their original paths. Run as in the epic (repo root,
+    PYTHONPATH=src, GIL off): test_native_dependency_lookup (Spectrum host, NativeService/NativeConsumer, direct
+    service meld `is consumer.service`) and the order matrix (service_only, service_first, tool_first) - 4 passed.
+    Control in the same env and copy with 0.2.8212 reinstalled: the direct lookup and tool_first fail with the
+    original "Cannot build CreationContext before spell_codegen_creation exists." (2 failed, 2 passed); the env
+    was put back on 0.2.8215.
+  EVIDENCE:
+  - context_compass/artifacts/wheel_0_2_8215_20260930/vm_melderops_env_install.log:1-6
+  - context_compass/artifacts/wheel_0_2_8215_20260930/melderops_copy_refresh.log:1-17
+  - context_compass/artifacts/wheel_0_2_8215_20260930/diagnostics_0_2_8215.log:1-14
+  - context_compass/artifacts/wheel_0_2_8215_20260930/diagnostics_control_0_2_8212.log:1-15
+  - ../priv_commandops/context_compass/artifacts/2026-09-30_toolbox_native_dispense/test_native_dependency_lookup.py:1-35
+  IMPACT: The epic's first acceptance criteria hold on the delivered build in a MelderOps host; the red control
+    shows the diagnostic detects the defect in this environment. The Windows interpreter run stays Not run.
+  NEXT: Run the Toolbox tests, the melder_setup set and the whole MelderOps suite on the installed wheel.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9

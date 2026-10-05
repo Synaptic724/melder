@@ -19,6 +19,8 @@
  "edge_candidates": [],
  "published_aliases": [],
  "imports": {
+  "sys": "sys",
+  "warnings": "warnings",
   "__architecture__": "melder.__architecture__.__architecture__",
   "__author__": "melder.__author__.CREATOR",
   "__components__": "melder.__components__.__components__",
