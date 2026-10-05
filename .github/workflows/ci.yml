@@ -34,8 +34,7 @@ jobs:
           fetch-depth: 2
       - uses: actions/setup-python@v7
         with:
-          python-version: "3.14"
-          check-latest: true
+          python-version: "3.14.7"
       - name: Validate the branch route
         id: route
         run: python .github/scripts/ci_policy.py branch
@@ -48,8 +47,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
         with:
-          python-version: "3.14"
-          check-latest: true
+          python-version: "3.14.7"
       - run: python .github/scripts/ci_policy.py hygiene
 
   source-assets:
@@ -125,8 +123,7 @@ jobs:
           fetch-depth: 2
       - uses: actions/setup-python@v7
         with:
-          python-version: "3.14"
-          check-latest: true
+          python-version: "3.14.7"
       - name: Require every mandatory check to succeed
         env:
           CI_JOB_RESULTS: ${{ toJSON(needs) }}

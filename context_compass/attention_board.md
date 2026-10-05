@@ -170,9 +170,11 @@ Message alert rules
 | shallow_thread_scaling_ci | review | handoff | claude | melder_1 | none | Owner: stage both sides of the rename and the new workflow, run the hosted three-OS job, and accept or redirect. | The thread-scaling benchmark runs on dev-to-preprod PRs beside the two gauntlets and must succeed for merge-ready. | Contracts run or reported Not run, bundles current, and the owner accepts or redirects. | tickets/tasks/2026-10-04_add_shallow_thread_scaling_to_preprod_benchmarks_task.md | 2026-10-04T12:52:00Z | REQUIRED |
 | meldercache_suffix | review | handoff | claude | melder_1 | none | Owner: accept or redirect the .meldercache rename (Windows tiers are the owner's); then archive the patch and close. | Melder names its cache bundles .meldercache; old .melc files are inert. | Tests run or reported Not run, assets/graph/bundles current, and the owner accepts or redirects. | tickets/tasks/2026-10-04_rename_cache_suffix_to_meldercache_task.md | 2026-10-04T13:26:39Z | REQUIRED |
 | preprod_ci_docs_and_bundles | review | handoff | claude | melder_1 | none | Owner: commit everything (incl. the four ignore-file changes) and push; accept or redirect. | The dev-to-preprod docs and llm_support checks pass once the owner commits and pushes. | Docs tests pass here, llm_support --check OK, owner pushes and accepts. | tickets/tasks/2026-10-04_fix_preprod_ci_docs_api_and_bundle_drift_task.md | 2026-10-04T20:09:37Z | REQUIRED |
-| ci_python_check_latest | review | handoff | claude | melder_1 | none | Owner: push and accept or redirect (the speed tests now follow the newest stable 3.14 patch). | Tests run on every stable minor from 3.14 at its newest patch; the speed tests run once, on the newest stable 3.14 patch, for dev-to-preprod only. | Workflow suite passes here (480) and the owner accepts or redirects. | tickets/tasks/2026-10-04_use_newest_patch_in_single_version_ci_jobs_task.md | 2026-10-04T23:59:15Z | REQUIRED |
+| ci_python_check_latest | review | handoff | claude | melder_1 | none | Owner: git add -A (ten new manifests under .github/python/), push, run the hosted jobs, accept or redirect. | Every Python CI runs comes from a per-release manifest (tests 3.14.0-3.14.8, speed 3.14.7) or is the 3.14.7 helper pin; nothing is discovered on the network. | Workflow suite passes here (498), assets and llm_support current, and the owner accepts or redirects. | tickets/tasks/2026-10-04_use_newest_patch_in_single_version_ci_jobs_task.md | 2026-10-05T11:42:00Z | REQUIRED |
 | descriptor_binding_name_case | review | handoff | claude | melder_1 | none | Owner: commit everything (git add -A: the five new files, the deleted artifact .gitignore, the root .gitignore) and push; accept or redirect. | SpellMap and SpellContract keep binding names as written and resolve like bind and meld; regression tests lock it. | Tests pass here, 0.2.8226 assets and bundles current, the owner pushes and accepts. | tickets/tasks/2026-10-04_match_descriptor_binding_names_like_bind_task.md | 2026-10-04T21:37:58Z | REQUIRED |
 | live_unlink_churn_phase_error | review | handoff | claude | melder_1 | none | Owner: push and accept or redirect; then promote the patch docs and close. | A meld racing a link sever or uncontract raises SpellbookValidationError, never PhaseExecutionError; regression forced red/green. | Tiers pass here, 0.2.8227 assets and bundles current, the owner accepts. | tickets/tasks/2026-10-04_fix_live_unlink_churn_phase_error_task.md | 2026-10-04T23:59:15Z | REQUIRED |
+| codecov_upload_tls | review | handoff | claude | melder_1 | none | Owner: commit and push (the PyPI fallback runs from the next upload on); accept or redirect. | The Codecov upload retries once with the PyPI uploader when the signed download fails; diagnosis recorded. | Workflow suite passes here (481), llm_support check OK, and the owner accepts or redirects. | tickets/tasks/2026-10-05_diagnose_codecov_upload_tls_failure_task.md | 2026-10-05T01:53:09Z | REQUIRED |
+| agent_cicd_guide | review | handoff | claude | melder_1 | none | Owner: git add -A (six new .github/ci_cd/ pages) and push; keep the special instruction local or force-add it; accept or redirect. | Agents can read what each CI piece is for and how to extend it, and learn of the guide at onboarding. | Workflow suite passes here (500), assets and llm_support current, and the owner accepts or redirects. | tickets/tasks/2026-10-05_write_agent_cicd_guide_task.md | 2026-10-05T12:07:51Z | REQUIRED |
 <!-- END USER-DEFINED: active_items -->
 
 ## Recently Closed Anchors
@@ -207,8 +209,8 @@ Message alert rules
   redirect. RESUME_HIERARCHY: tickets/tasks/2026-10-04_rename_cache_suffix_to_meldercache_task.md.
 - preprod_ci_docs_and_bundles: SWITCH_TRIGGER is a green dev-to-preprod run after the owner's push, or
   an owner redirect. RESUME_HIERARCHY: tickets/tasks/2026-10-04_fix_preprod_ci_docs_api_and_bundle_drift_task.md.
-- ci_python_check_latest: SWITCH_TRIGGER is the speed tests off the 3.14.7 pin with the workflow suite
-  passing and the owner's acceptance, or an owner redirect. RESUME_HIERARCHY:
+- ci_python_check_latest: SWITCH_TRIGGER is the owner's acceptance of the manifest-driven CI (ticket
+  Notes 24-31) after the push and the hosted runs, or an owner redirect. RESUME_HIERARCHY:
   tickets/tasks/2026-10-04_use_newest_patch_in_single_version_ci_jobs_task.md.
 - descriptor_binding_name_case: SWITCH_TRIGGER is the regression tests passing with assets and bundles
   current and the owner's acceptance, or an owner redirect. RESUME_HIERARCHY:
@@ -216,6 +218,11 @@ Message alert rules
 - live_unlink_churn_phase_error: SWITCH_TRIGGER is the owner's acceptance after the push, or an owner
   redirect. RESUME_HIERARCHY:
   tickets/tasks/2026-10-04_fix_live_unlink_churn_phase_error_task.md.
+- codecov_upload_tls: SWITCH_TRIGGER is the owner's acceptance of the PyPI fallback after the push, or an
+  owner redirect. RESUME_HIERARCHY:
+  tickets/tasks/2026-10-05_diagnose_codecov_upload_tls_failure_task.md.
+- agent_cicd_guide: SWITCH_TRIGGER is the owner's acceptance of the CI/CD guide folder, or an owner
+  redirect. RESUME_HIERARCHY: tickets/tasks/2026-10-05_write_agent_cicd_guide_task.md.
 ### Notch notice (fable_1, 2026-10-04)
 - fable_1 landed 0.2.8224 (ambiguous providers reported through Phase 4) and, before it, 0.2.8222 (annotation
   matching by kind; caching_system.py generation 20 `annotation_kind_matching`).

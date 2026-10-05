@@ -1,0 +1,16 @@
+# Runtime test cell: Python 3.14.8 free-threaded on Linux, Windows and macOS.
+# CI installs exactly these pins (no dependency resolution) plus Melder from the checkout.
+# Add a Python release by adding a manifest; see "Supported Python versions" in .github/BRANCH_WORKFLOW.md.
+python = "3.14.8"
+freethreaded = true
+dependencies = [
+    "pytest==9.1.1",
+    "pytest-cov==7.1.0",
+    "coverage==7.16.1",
+    "PyYAML==6.0.3",
+    "iniconfig==2.3.0",
+    "packaging==26.3",
+    "pluggy==1.6.0",
+    "Pygments==2.21.0",
+    "colorama==0.4.6; sys_platform == 'win32'",
+]

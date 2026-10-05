@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   discover:
-    name: Runtime / discover stable no-GIL versions
+    name: Runtime / read the test manifests
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
@@ -22,9 +22,9 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
         with:
-          python-version-file: pyproject.toml
+          python-version: "3.14.7"
           allow-prereleases: false
-      - name: Discover every supported stable minor
+      - name: Build the runtime matrix from the test manifests
         id: runtimes
         run: python .github/scripts/python_runtime_matrix.py discover
       - name: Retain the selected runtime matrix
@@ -54,16 +54,22 @@ jobs:
           architecture: ${{ matrix.architecture }}
           freethreaded: true
           allow-prereleases: false
-      - name: Set up uv for locked dependencies
+      - name: Set up uv for this release's pinned dependencies
         uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
           version-file: pyproject.toml
           resolution-strategy: lowest
           enable-cache: true
-          cache-dependency-glob: uv.lock
+          cache-dependency-glob: .github/python/tests/${{ matrix.python }}.toml
           cache-suffix: runtime-${{ matrix.python }}t-${{ matrix.architecture }}
-      - name: Install locked Melder and test dependencies
-        run: uv sync --locked --no-default-groups --group test --python "${{ steps.python.outputs.python-path }}"
+      - name: Install exactly this release's manifest pins and Melder
+        # The manifest is the whole dependency set: --no-deps means nothing unpinned can enter.
+        shell: bash
+        run: |
+          python .github/scripts/python_runtime_matrix.py requirements --manifest ".github/python/tests/${{ matrix.python }}.toml" --output reports/requirements.txt
+          uv venv --python "${{ steps.python.outputs.python-path }}" .venv
+          uv pip install --no-deps -r reports/requirements.txt
+          uv pip install --no-deps -e .
       - name: Run supported test tiers with runtime verification
         env:
           # Fix pytest's posture, including plugins, without affecting macOS setup helpers.
@@ -120,7 +126,7 @@ jobs:
       - uses: actions/setup-python@v7
         if: steps.credentials.outputs.enabled == 'true'
         with:
-          python-version-file: pyproject.toml
+          python-version: "3.14.7"
           allow-prereleases: false
       - name: Download this run's coverage reports
         if: steps.credentials.outputs.enabled == 'true'
@@ -148,7 +154,10 @@ jobs:
           if-no-files-found: error
           retention-days: 14
       - name: Upload coverage to Codecov
+        id: codecov
         if: steps.credentials.outputs.enabled == 'true'
+        # A failed first attempt hands over to the PyPI attempt below instead of ending the job.
+        continue-on-error: true
         uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -156,3 +165,14 @@ jobs:
           fail_ci_if_error: true
           # Final-release tags have already been verified against current prod.
           override_branch: ${{ github.event_name == 'release' && 'prod' || '' }}
+      - name: Upload coverage to Codecov with the PyPI uploader
+        # Runs only after the first attempt failed, for example when cli.codecov.io cannot be reached.
+        # PyPI carries the same Codecov uploader; this attempt skips the signed-download check.
+        if: steps.credentials.outputs.enabled == 'true' && steps.codecov.outcome == 'failure'
+        uses: codecov/codecov-action@v7
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          directory: selected-coverage
+          fail_ci_if_error: true
+          override_branch: ${{ github.event_name == 'release' && 'prod' || '' }}
+          use_pypi: true

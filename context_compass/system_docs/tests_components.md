@@ -5,7 +5,7 @@
 - Status: in_progress
 - Owner:
 - Created: 2026-01-22
-- Updated: 2026-10-01
+- Updated: 2026-10-05
 
 ## Scope
 This document defines C3 components, C2 subcomponents, and C1 code references
@@ -129,12 +129,10 @@ If not evidenced => UNKNOWN.
   cell runs `tests/unit`, `tests/component` and `tests/integration` in one pytest
   process through `.github/scripts/run_runtime_tests.py`. See
   `### Component: Pytest Runner And Path Bootstrap`.
-- UNKNOWN: which Python minors a given CI run tested.
-  Why it matters: the matrix is discovered per run (every stable free-threaded
-  minor at or above the `requires-python` floor, on three runners), so the tree
-  records no version list and "passes in CI" names no interpreter.
-  Where to investigate: the `runtime-python-matrix-*` artifact of that run.
-  Current status: by design; recorded per run, not in the tree.
+- RESOLVED 2026-10-05 (was UNKNOWN: which Python releases a given CI run tested, because
+  the matrix was discovered per run). The tree records them: one manifest per exact
+  release under `.github/python/tests/` (3.14.0 through 3.14.8) builds the matrix with no
+  network lookup, so "passes in CI" names exactly the manifests at that commit.
 - UNKNOWN: whether six tracked `bundle.json` files under
   tests/unit/melder/utilities/_caching_system_tmp_load_*/ are fixtures or leftovers.
   Why it matters: no test references those directories, so they are dead
@@ -2376,9 +2374,9 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-09-26T22:11:36Z
 - path: `tests/unit/github_workflows/test_workflow_contracts.py`
   start_line: 1
-  end_line: 474
-  loc: 474
-  verified_at: 2026-09-30T00:32:11Z
+  end_line: 773
+  loc: 773
+  verified_at: 2026-10-05T11:36:52Z
 - path: `tests/unit/github_workflows/test_candidate_publication.py`
   start_line: 1
   end_line: 357
@@ -2391,9 +2389,9 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-09-26T22:11:36Z
 - path: `tests/unit/github_workflows/test_python_runtime_matrix.py`
   start_line: 1
-  end_line: 267
-  loc: 267
-  verified_at: 2026-09-26T22:11:36Z
+  end_line: 421
+  loc: 421
+  verified_at: 2026-10-05T11:36:52Z
 - path: `tests/unit/github_workflows/test_distributions.py`
   start_line: 1
   end_line: 185
@@ -2675,6 +2673,11 @@ graph TD
   scan/bind coverage grows.
 
 ## Context / Handoff Summary
+
+2026-10-05 manifest-driven CI (no notch): the per-run Python matrix unknown is resolved - the test manifests
+in `.github/python/tests/` name every release CI runs. The two CI test files this change rewrote,
+`test_workflow_contracts.py` and `test_python_runtime_matrix.py`, carry remeasured C1 extents; the other
+github_workflows extents were not remeasured in this pass.
 
 2026-10-01 frame lookups and read accessors (0.2.8208, documented now): the two files that landed with them
 join their clusters - the noncreating frame lookups with the frame and conduit reads (integration) and the

@@ -24,8 +24,7 @@ jobs:
         uses: actions/setup-python@v7
         with:
           # Builders parse source without importing the Melder runtime.
-          python-version: "3.14"
-          check-latest: true
+          python-version: "3.14.7"
       - name: List discovered build assets
         run: python src/melder/_build_assets/_build_asset_runner.py --list
       - name: Verify committed source assets
