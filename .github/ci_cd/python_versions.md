@@ -4,7 +4,7 @@ CI never chooses a Python release by itself. Every interpreter it sets up is one
 
 | Where | Which Python | Comes from |
 | --- | --- | --- |
-| Runtime test cells (`test-runtime.yml`) and the release candidate's install probes (`release-candidate.yml`) | Every release that has a test manifest, free-threaded, on Linux x64, Windows x64 and macOS arm64 | `.github/python/tests/<release>.toml`, read by `python_runtime_matrix.py discover` |
+| Runtime test cells (`test-runtime.yml`) and the release candidate's install probes (`release-candidate.yml`) | Every release that has a test manifest, free-threaded, on Linux x64, Windows x64 and macOS arm64; a PR into `dev` runs only the floor and the newest of them | `.github/python/tests/<release>.toml`, read by `python_runtime_matrix.py discover` (`--releases floor-and-newest` for a PR into `dev`) |
 | The three speed tests | The one speed release, free-threaded, on three x64 runners | `.github/python/speed/<release>.toml`, read by `python_runtime_matrix.py speed` |
 | Every other job (policy, assets, docs, builds, publication, the speed tests' manifest jobs) | The helper release, written as `python-version: "3.14.7"` | The workflow file; the release must have a test manifest |
 
@@ -75,8 +75,9 @@ below).
 1. Copy the newest test manifest to `.github/python/tests/3.14.9.toml` and set `python = "3.14.9"`.
 2. Make sure every pin installs on that release as a free-threaded wheel (a `cp314t` wheel or a pure-Python one);
    change the pins that do not, in this manifest only.
-3. Run the workflow tests ([validating.md](validating.md)). The runtime matrix and the release candidate's probes
-   each gain three jobs; nothing else changes.
+3. Run the workflow tests ([validating.md](validating.md)). The full runtime matrix and the release candidate's
+   probes each gain three jobs; nothing else changes. A newer release also becomes the newest one that PRs into
+   `dev` test, replacing the previous newest there.
 
 A new minor (3.15) works the same way. Expect to adjust pins: libraries publish free-threaded wheels for a new
 minor on their own schedule.

@@ -40,7 +40,8 @@ To focus on one test file, use `uv run --locked python -X gil=0 -m pytest <path>
 CI's runtime tests do not use this lock: each Python release CI tests has a manifest in
 `.github/python/tests/` with that release's exact test-dependency pins, and a test cell installs exactly
 those pins plus Melder with `uv pip install --no-deps` (see `.github/BRANCH_WORKFLOW.md` and the CI
-guide in `.github/ci_cd/`).
+guide in `.github/ci_cd/`). A pull request into `dev` runs the oldest and newest of those releases; the
+promotion to `preprod` runs them all.
 Distribution jobs install only the locked `build` group. CI uses the minimum supported uv version
 declared in `pyproject.toml`, and a stale lock fails the distribution install step.
 

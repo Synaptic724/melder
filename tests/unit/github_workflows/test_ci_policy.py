@@ -351,6 +351,7 @@ def test_merge_cli_propagates_failure_and_missing_stage(policy: ModuleType,
     monkeypatch.setenv("CI_RUNTIME_REQUIRED", "true")
     monkeypatch.setenv("CI_SOURCE_REQUIRED", "false")
     monkeypatch.setenv("CI_GAUNTLET_REQUIRED", "false")
+    monkeypatch.setenv("CI_RUNTIME_RELEASES", "floor-and-newest")
     monkeypatch.setenv("GITHUB_EVENT_NAME", "pull_request")
     monkeypatch.setenv("GITHUB_REPOSITORY", "owner/repo")
     monkeypatch.setattr(policy, "read_event", pr_event)
@@ -378,7 +379,56 @@ def test_branch_cli_writes_the_actual_package_requirement(policy: ModuleType,
     assert policy.main(["branch"]) == 0
     assert output.read_text(encoding="utf-8") == (
         "runtime-required=true\npackage-required=true\nsource-required=false\ngauntlet-required=true\n"
+        "runtime-releases=all\n"
     )
+
+
+def test_branch_cli_slices_the_runtime_releases_of_a_pull_request_into_dev(policy: ModuleType,
+                                                                          tmp_path: pathlib.Path,
+                                                                          monkeypatch: pytest.MonkeyPatch) -> None:
+    """The branch job tells the runtime tests to run the floor and newest manifests for a PR into dev only."""
+    event = tmp_path / "event.json"
+    output = tmp_path / "output.txt"
+    event.write_text(json.dumps(pr_event("dev", "feature/work")), encoding="utf-8")
+    monkeypatch.setenv("GITHUB_EVENT_PATH", str(event))
+    monkeypatch.setenv("GITHUB_OUTPUT", str(output))
+    monkeypatch.setenv("GITHUB_EVENT_NAME", "pull_request")
+    monkeypatch.setenv("GITHUB_REPOSITORY", "owner/repo")
+    monkeypatch.setenv("GITHUB_REF", "refs/pull/1/merge")
+    assert policy.main(["branch"]) == 0
+    assert output.read_text(encoding="utf-8") == (
+        "runtime-required=true\npackage-required=false\nsource-required=false\ngauntlet-required=false\n"
+        "runtime-releases=floor-and-newest\n"
+    )
+
+
+@pytest.mark.parametrize(("event_name", "base", "head", "ref", "releases"), [
+    ("pull_request", "dev", "feature/work", "refs/pull/1/merge", "floor-and-newest"),
+    ("pull_request", "dev", "preprod", "refs/pull/1/merge", "floor-and-newest"),
+    ("pull_request", "preprod", "dev", "refs/pull/1/merge", "all"),
+    ("pull_request", "release_candidate", "release-fix/correction", "refs/pull/1/merge", "all"),
+    ("pull_request", "release_candidate", "preprod", "refs/pull/1/merge", "all"),
+    ("pull_request", "prod", "release_candidate", "refs/pull/1/merge", "all"),
+    ("workflow_dispatch", "", "", "refs/heads/dev", "all"),
+    ("workflow_dispatch", "", "", "refs/heads/preprod", "all"),
+])
+def test_only_pull_requests_into_dev_slice_the_runtime_releases(policy: ModuleType, event_name: str, base: str,
+                                                                head: str, ref: str, releases: str) -> None:
+    """A PR into dev tests the floor and newest manifests; every route that can qualify a release tests all.
+
+    Owner ruling, 2026-10-05: the dev-to-preprod promotion, release fixes and manual CI test every manifest,
+    so a defect specific to a middle patch is caught there, while a PR into dev gets the fast slice.
+    """
+    event = pr_event(base, head) if event_name == "pull_request" else {}
+    assert policy.runtime_releases(event_name, event, ref, "owner/repo") == releases
+
+
+def test_runtime_releases_refuse_an_invalid_route(policy: ModuleType) -> None:
+    """The slice is decided only for a validated route; a forged route or a push selects nothing."""
+    with pytest.raises(ValueError, match="Promotion into preprod"):
+        policy.runtime_releases("pull_request", pr_event("preprod", "feature/work"), "refs/pull/1/merge", "owner/repo")
+    with pytest.raises(ValueError, match="not pushes"):
+        policy.runtime_releases("push", {}, "refs/heads/dev", "owner/repo")
 
 
 @pytest.mark.parametrize(("base", "head", "expected"), [
@@ -444,9 +494,34 @@ def test_reported_flags_cannot_waive_event_requirements(policy: ModuleType,
     monkeypatch.setenv("CI_PACKAGE_REQUIRED", "true")
     monkeypatch.setenv("CI_SOURCE_REQUIRED", "false")
     monkeypatch.setenv("CI_GAUNTLET_REQUIRED", "true")
+    monkeypatch.setenv("CI_RUNTIME_RELEASES", "all")
     monkeypatch.setenv(f"CI_{flag}_REQUIRED", value)
     monkeypatch.setenv("CI_JOB_RESULTS", json.dumps(result_map()))
     with pytest.raises(ValueError, match="Missing/invalid"):
+        policy.require_ci_results()
+
+
+@pytest.mark.parametrize(("base", "head", "reported"), [
+    ("preprod", "dev", "floor-and-newest"),
+    ("preprod", "dev", ""),
+    ("release_candidate", "release-fix/correction", "floor-and-newest"),
+    ("dev", "feature/work", "all"),
+    ("dev", "feature/work", ""),
+])
+def test_reported_runtime_releases_must_match_the_route(policy: ModuleType, monkeypatch: pytest.MonkeyPatch,
+                                                        base: str, head: str, reported: str) -> None:
+    """A wrong or missing runtime-releases output fails merge-ready instead of shrinking a release's matrix."""
+    requirements = policy.validation_requirements("pull_request", pr_event(base, head), "refs/pull/1/merge",
+                                                  "owner/repo")
+    monkeypatch.setenv("GITHUB_EVENT_NAME", "pull_request")
+    monkeypatch.setenv("GITHUB_REPOSITORY", "owner/repo")
+    monkeypatch.setenv("GITHUB_REF", "refs/pull/1/merge")
+    monkeypatch.setattr(policy, "read_event", lambda: pr_event(base, head))
+    for name, required in zip(("RUNTIME", "PACKAGE", "SOURCE", "GAUNTLET"), requirements, strict=True):
+        monkeypatch.setenv(f"CI_{name}_REQUIRED", str(required).lower())
+    monkeypatch.setenv("CI_RUNTIME_RELEASES", reported)
+    monkeypatch.setenv("CI_JOB_RESULTS", json.dumps(result_map()))
+    with pytest.raises(ValueError, match="runtime releases"):
         policy.require_ci_results()
 
 
@@ -549,6 +624,7 @@ def test_merge_gate_allows_feature_skip_but_refuses_promotion_skip(
     monkeypatch.setenv("CI_PACKAGE_REQUIRED", str(required).lower())
     monkeypatch.setenv("CI_SOURCE_REQUIRED", "false")
     monkeypatch.setenv("CI_GAUNTLET_REQUIRED", str(required).lower())
+    monkeypatch.setenv("CI_RUNTIME_RELEASES", "floor-and-newest" if base == "dev" else "all")
     results = result_map()
     results["real-world-gauntlet"] = {"result": "skipped"}
     results["persistent-runtime-gauntlet"] = {"result": "skipped"}

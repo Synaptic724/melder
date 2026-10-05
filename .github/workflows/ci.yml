@@ -28,6 +28,8 @@ jobs:
       package-required: ${{ steps.route.outputs.package-required }}
       source-required: ${{ steps.route.outputs.source-required }}
       gauntlet-required: ${{ steps.route.outputs.gauntlet-required }}
+      # all, or floor-and-newest for a pull request into dev (ci_policy.py runtime_releases).
+      runtime-releases: ${{ steps.route.outputs.runtime-releases }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -67,6 +69,8 @@ jobs:
       contents: read
       actions: read
     uses: ./.github/workflows/test-runtime.yml
+    with:
+      releases: ${{ needs.branch-policy.outputs.runtime-releases }}
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
@@ -131,18 +135,21 @@ jobs:
           CI_PACKAGE_REQUIRED: ${{ needs.branch-policy.outputs.package-required }}
           CI_SOURCE_REQUIRED: ${{ needs.branch-policy.outputs.source-required }}
           CI_GAUNTLET_REQUIRED: ${{ needs.branch-policy.outputs.gauntlet-required }}
+          CI_RUNTIME_RELEASES: ${{ needs.branch-policy.outputs.runtime-releases }}
         run: python .github/scripts/ci_policy.py merge-ready
       - name: Record the exact full CI qualification
-        if: needs.branch-policy.outputs.runtime-required == 'true'
+        # Only a run that tested every manifest may qualify a release; a PR into dev tests the floor and newest.
+        if: needs.branch-policy.outputs.runtime-required == 'true' && needs.branch-policy.outputs.runtime-releases == 'all'
         env:
           CI_JOB_RESULTS: ${{ toJSON(needs) }}
           CI_RUNTIME_REQUIRED: ${{ needs.branch-policy.outputs.runtime-required }}
           CI_PACKAGE_REQUIRED: ${{ needs.branch-policy.outputs.package-required }}
           CI_SOURCE_REQUIRED: ${{ needs.branch-policy.outputs.source-required }}
           CI_GAUNTLET_REQUIRED: ${{ needs.branch-policy.outputs.gauntlet-required }}
+          CI_RUNTIME_RELEASES: ${{ needs.branch-policy.outputs.runtime-releases }}
         run: python .github/scripts/ci_qualification.py record
       - name: Retain full CI source evidence
-        if: needs.branch-policy.outputs.runtime-required == 'true'
+        if: needs.branch-policy.outputs.runtime-required == 'true' && needs.branch-policy.outputs.runtime-releases == 'all'
         uses: actions/upload-artifact@v7
         with:
           name: source-qualification-${{ github.run_id }}-${{ github.run_attempt }}

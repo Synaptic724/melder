@@ -59,6 +59,62 @@ def test_raised_floor_selects_only_its_manifests(runtime_matrix: ModuleType, tmp
     assert [row["python"] for row in matrix["include"]] == ["3.15.1"] * 3 + ["3.15.2"] * 3
 
 
+def test_floor_and_newest_selection_runs_only_the_two_edge_releases(runtime_matrix: ModuleType,
+                                                                     tmp_path: pathlib.Path) -> None:
+    """A pull request into dev tests the floor and the newest manifest on every runner (owner, 2026-10-05).
+
+    The two are picked by version, not by file name, so adding or retiring a release needs no edit, and the
+    sliced matrix still passes the coverage check's shape validation. "all" is the unsliced matrix.
+    """
+    for version in ("3.14.10", "3.15.0", "3.14.0", "3.14.9"):
+        write_manifest(tmp_path, version)
+    matrix = runtime_matrix.discover_matrix(tmp_path, (3, 14, 0), "floor-and-newest")
+    assert [row["python"] for row in matrix["include"]] == ["3.14.0"] * 3 + ["3.15.0"] * 3
+    assert runtime_matrix.validate_matrix(matrix, (3, 14, 0)) == matrix
+    assert runtime_matrix.discover_matrix(tmp_path, (3, 14, 0), "all") == runtime_matrix.discover_matrix(
+        tmp_path, (3, 14, 0))
+
+
+def test_floor_and_newest_of_a_single_manifest_is_that_release(runtime_matrix: ModuleType,
+                                                                tmp_path: pathlib.Path) -> None:
+    """With one manifest the floor is also the newest release: three cells, never a duplicate entry."""
+    write_manifest(tmp_path, "3.14.0")
+    matrix = runtime_matrix.discover_matrix(tmp_path, (3, 14, 0), "floor-and-newest")
+    assert [row["python"] for row in matrix["include"]] == ["3.14.0"] * 3
+
+
+def test_unknown_release_selection_refuses(runtime_matrix: ModuleType, tmp_path: pathlib.Path,
+                                           monkeypatch: pytest.MonkeyPatch) -> None:
+    """Only the two named selections exist; anything else stops discovery instead of guessing a matrix."""
+    write_manifest(tmp_path, "3.14.0")
+    with pytest.raises(ValueError, match="release selection"):
+        runtime_matrix.discover_matrix(tmp_path, (3, 14, 0), "latest")
+    monkeypatch.setattr(runtime_matrix, "supported_floor", lambda: (3, 14, 0))
+    monkeypatch.setenv("GITHUB_OUTPUT", str(tmp_path / "outputs"))
+    with pytest.raises(SystemExit):
+        runtime_matrix.main(["discover", "--manifests", str(tmp_path), "--report", str(tmp_path / "matrix.json"),
+                             "--releases", ""])
+
+
+def test_discover_cli_writes_the_selected_releases(runtime_matrix: ModuleType, tmp_path: pathlib.Path,
+                                                   monkeypatch: pytest.MonkeyPatch) -> None:
+    """The workflow's --releases reaches discovery; without it the CLI keeps every manifest (the RC probes)."""
+    manifests = tmp_path / "manifests"
+    for version in ("3.14.0", "3.14.7", "3.14.8"):
+        write_manifest(manifests, version)
+    monkeypatch.setattr(runtime_matrix, "supported_floor", lambda: (3, 14, 0))
+    for label, arguments, expected in (("default", [], ["3.14.0", "3.14.7", "3.14.8"]),
+                                       ("sliced", ["--releases", "floor-and-newest"], ["3.14.0", "3.14.8"])):
+        outputs = tmp_path / f"outputs-{label}"
+        report = tmp_path / f"reports-{label}/python-matrix.json"
+        monkeypatch.setenv("GITHUB_OUTPUT", str(outputs))
+        assert runtime_matrix.main(["discover", "--manifests", str(manifests), "--report", str(report),
+                                    *arguments]) == 0
+        matrix = json.loads(report.read_text(encoding="utf-8"))
+        assert sorted({row["python"] for row in matrix["include"]}, key=runtime_matrix.stable_version) == expected
+        assert json.loads(outputs.read_text(encoding="utf-8").removeprefix("matrix=")) == matrix
+
+
 @pytest.mark.parametrize(("name", "text"), [
     ("3.14.1.toml", 'python = "3.14.2"\nfreethreaded = true\ndependencies = ["pytest==9.1.1"]\n'),
     ("3.14.0rc1.toml", 'python = "3.14.0rc1"\nfreethreaded = true\ndependencies = ["pytest==9.1.1"]\n'),

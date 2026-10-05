@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: other
-SOURCE FINGERPRINT: bf6b0fbbd40f577d0de30f8b69d061f9e3b6117f3369b7aa4b8b5abba5537900
+SOURCE FINGERPRINT: 14a5806160916354afd7b7506eb1b6b96684fda29b6581e18736819be26db9da
 FILE COUNT: 402
 
 ================================================================================
@@ -64,7 +64,7 @@ END FILE: .gitattributes
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/BRANCH_WORKFLOW.md
-CONTENT SHA256: bc4291dba961f69aaebb166327b9e356e6241601985f0500176fffbf3cbc76b4
+CONTENT SHA256: a2c74647bdf64a13acb86d3b4618581a9bb3cd50075159fc5b2773d814c1ebb8
 SOURCE ENCODING: utf-8
 ================================================================================
 # Branch CI and release workflow
@@ -80,16 +80,16 @@ and how to extend them. Read it before changing CI.
 `CI / merge-ready` remains the stable required status. The branch route selects
 which checks must run; the final gate independently verifies that selection.
 
-| Event | Full runtime matrix | Other required work |
+| Event | Runtime matrix | Other required work |
 | --- | --- | --- |
-| Feature PR into `dev` | Yes | Hygiene, source/repository assets and documentation |
-| `dev` PR into `preprod` | Yes | The same checks plus distribution verification and the three benchmark jobs |
+| Feature PR into `dev` | Floor and newest release | Hygiene, source/repository assets and documentation |
+| `dev` PR into `preprod` | Every release | The same checks plus distribution verification and the three benchmark jobs |
 | `preprod` PR into `release_candidate` | No | Hygiene and exact-tree full preprod proof |
-| `release-fix/*` PR into `release_candidate` | Yes | Full checks and distribution verification for changed contents |
+| `release-fix/*` PR into `release_candidate` | Every release | Full checks and distribution verification for changed contents |
 | `release_candidate` PR into `prod` | No | Hygiene and exact-source successful TestPyPI qualification |
-| Manual `CI` on a permanent branch | Yes | Full checks; distributions on every branch except dev |
+| Manual `CI` on a permanent branch | Every release | Full checks; distributions on every branch except dev |
 | Ordinary branch push | No source CI | RC pushes retain their dedicated package workflow |
-| Final publication | Yes | Fresh package validation and final tag/prod checks |
+| Final publication | Every release | Fresh package validation and final tag/prod checks |
 
 The checks enforce these contracts:
 
@@ -104,7 +104,10 @@ The checks enforce these contracts:
 - Documentation in full CI: the shared documentation validation workflow must succeed.
 - Full runtime tests: unit, component, and integration tiers on Linux, Windows, and macOS,
   on every Python release that has a test manifest, with the GIL disabled
-  in the actual pytest process.
+  in the actual pytest process. A feature PR into dev runs only the floor and the
+  newest of those releases; the dev-to-preprod promotion, release fixes, manual CI
+  and publication run them all, so a problem on a middle release is caught at the
+  promotion, and only a run of every release can record source qualification.
   The macOS job uses `macos-latest` on native Apple Silicon (arm64).
 - Distribution verification in full CI outside dev: wheel and sdist boundaries,
   source/metadata/asset versions, and an isolated installed-wheel smoke test.
@@ -229,9 +232,11 @@ that does not install on that release. To move the speed tests, replace the spee
 their first run afterwards is the new baseline. When Melder gains a runtime dependency, pin it in every
 test manifest; a contract test refuses a manifest that leaves one out.
 
-Every test release runs on Linux x64, Windows x64 and macOS arm64. Each cell installs exactly its
-manifest's pins plus Melder from the checkout with `uv pip install --no-deps`, so nothing unpinned enters.
-Release-candidate installation probes run the same releases. Runtime tests and RC probes use
+Every test release runs on Linux x64, Windows x64 and macOS arm64. A pull request into dev runs only the
+floor and the newest test release (owner ruling, 2026-10-05: six cells instead of twenty-seven); every
+other runtime run covers all of them. Each cell installs exactly its manifest's pins plus Melder from the
+checkout with `uv pip install --no-deps`, so nothing unpinned enters. Release-candidate installation
+probes run every release. Runtime tests and RC probes use
 `freethreaded: true`. The test driver verifies free-threading support and GIL-off state before and after
 pytest; the installed-package probe also verifies GIL-off state. Discovery, asset and policy tooling
 may use ordinary Python because those jobs do not qualify Melder's runtime behavior.
@@ -259,9 +264,10 @@ tests every release named by the test manifests afresh.
 The existing OS/version runtime runs also produce line/branch coverage XML for Melder.
 They do not run the suite a second time. Successful cells retain coverage artifacts for 14 days;
 JUnit results remain available even when tests fail. One reporting job uploads coverage after
-the full matrix succeeds. It selects the newest available report for every current OS/Python cell
-within the same workflow run. Partial reruns may therefore use Ubuntu attempt 2 with Windows and
-macOS attempt 1: GitHub preserves the original event commit/ref across attempts of that run.
+the run's matrix succeeds (six cells for a PR into dev). It selects the newest available report for
+every current OS/Python cell within the same workflow run. Partial reruns may therefore use Ubuntu
+attempt 2 with Windows and macOS attempt 1: GitHub preserves the original event commit/ref across
+attempts of that run.
 
 The XML filename itself carries OS, Python version, run ID and attempt. Downloads explicitly select
 the current repository/run through the read-only Actions API, merge those unique filenames, and
@@ -351,10 +357,10 @@ back into dev through a reviewed synchronization PR.
 
 ## Reusing full qualification
 
-A successful full CI run retains `source-qualification-<run-id>-<attempt>` for
-90 days. Its JSON record binds the repository, run/attempt, event/PR identity and
-the actual tested checkout and Git tree. A PR run's head SHA is not assumed to
-be its tested merge SHA.
+A successful full CI run that tested every release retains `source-qualification-<run-id>-<attempt>`
+for 90 days; a feature PR into dev tests only the floor and newest releases and records none. Its JSON
+record binds the repository, run/attempt, event/PR identity and the actual tested checkout and Git tree.
+A PR run's head SHA is not assumed to be its tested merge SHA.
 
 Checkout verification requires an unchanged Git index and rejects actual tracked content or mode
 changes. Git can report older committed CRLF files as modified under a newer LF attribute policy
@@ -563,7 +569,7 @@ END FILE: .github/FUNDING.yml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/ci_cd/README.md
-CONTENT SHA256: 2442b6c41e9adbebf49e1b6891f32fe74db55a4417be1d77993079d55a962ed9
+CONTENT SHA256: 0ecffb09dd3db9acd71708aa3194295916b00d3429447141aff1d1d4d4ae1bf5
 SOURCE ENCODING: utf-8
 ================================================================================
 # CI/CD guide for agents
@@ -592,7 +598,9 @@ workflows call it, and it can also be started by hand from the Actions tab.
 pull request into dev, preprod, release_candidate or prod, or a manual run  -->  ci.yml
   branch-policy         refuses an invalid route, decides what this PR must run (ci_policy.py branch)
   hygiene               every time
-  source-assets, repo-assets, tests, documentation      when the route needs the full checks
+  source-assets, repo-assets, tests, documentation      when the route needs the full checks; tests run every
+                                                        manifest release, or only the floor and newest for a
+                                                        PR into dev
   real-world-gauntlet, persistent-runtime-gauntlet,
   shallow-all-thread-scaling                            only for a dev -> preprod PR
   packages              full checks outside dev
@@ -630,7 +638,7 @@ END FILE: .github/ci_cd/README.md
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/ci_cd/extending.md
-CONTENT SHA256: bc99278794214022a940c25bb130aa0942d4d14cb1ba50ba8869df82fe296659
+CONTENT SHA256: ba2e5c80ed24e07b2387b3e8b4951242521710d026373a814ac2ae6dc2c627d8
 SOURCE ENCODING: utf-8
 ================================================================================
 # Extending CI
@@ -688,13 +696,16 @@ BRANCH_WORKFLOW.md.
    with `freethreaded: true`, the install step
    `python .github/scripts/python_runtime_matrix.py speed-install --results <its results folder>`, a provenance
    step asserting `platform.python_version() == os.environ['SPEED_PYTHON']`, `PYTHON_GIL=0` on the measured steps
-   only, and an upload of the results folder with `if: always()`.
+   only, and an upload of the results folder with `if: always()`. A `shell: python` step runs from a temporary
+   file, so the checkout is not on `sys.path`: call `sys.path.insert(0, str(Path.cwd()))` before importing
+   `benchmarks`, or the step fails with "No module named 'benchmarks'".
 2. Pin any new benchmark library in the speed manifest, and list it under `build_from_source` if it publishes no
    free-threaded wheel.
 3. Call it from `ci.yml` with `if: needs.branch-policy.outputs.gauntlet-required == 'true'`, and add it to
    `merge-ready`'s `needs` and to `CIPolicy.GAUNTLET_JOBS`.
 4. Add the workflow to the speed-test parametrizations in `test_workflow_contracts.py` (Python from the speed
-   manifest, the install, the GIL-off setup) and to `test_reusable_mandatory_jobs_cannot_be_disabled`.
+   manifest, the install, the benchmarks import, the GIL-off setup) and to
+   `test_reusable_mandatory_jobs_cannot_be_disabled`.
 
 ## Add a script
 
@@ -712,7 +723,7 @@ END FILE: .github/ci_cd/extending.md
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/ci_cd/python_versions.md
-CONTENT SHA256: e2a72d05f65e7586a0c4d16fa899aa6f52adf8e5e85252ab37e6cf2376041800
+CONTENT SHA256: 4b7aaf7fb77d947ac3603284e0968622d29e57abae9d1e94a40b735114ba6bac
 SOURCE ENCODING: utf-8
 ================================================================================
 # Python versions and the manifests
@@ -721,7 +732,7 @@ CI never chooses a Python release by itself. Every interpreter it sets up is one
 
 | Where | Which Python | Comes from |
 | --- | --- | --- |
-| Runtime test cells (`test-runtime.yml`) and the release candidate's install probes (`release-candidate.yml`) | Every release that has a test manifest, free-threaded, on Linux x64, Windows x64 and macOS arm64 | `.github/python/tests/<release>.toml`, read by `python_runtime_matrix.py discover` |
+| Runtime test cells (`test-runtime.yml`) and the release candidate's install probes (`release-candidate.yml`) | Every release that has a test manifest, free-threaded, on Linux x64, Windows x64 and macOS arm64; a PR into `dev` runs only the floor and the newest of them | `.github/python/tests/<release>.toml`, read by `python_runtime_matrix.py discover` (`--releases floor-and-newest` for a PR into `dev`) |
 | The three speed tests | The one speed release, free-threaded, on three x64 runners | `.github/python/speed/<release>.toml`, read by `python_runtime_matrix.py speed` |
 | Every other job (policy, assets, docs, builds, publication, the speed tests' manifest jobs) | The helper release, written as `python-version: "3.14.7"` | The workflow file; the release must have a test manifest |
 
@@ -792,8 +803,9 @@ below).
 1. Copy the newest test manifest to `.github/python/tests/3.14.9.toml` and set `python = "3.14.9"`.
 2. Make sure every pin installs on that release as a free-threaded wheel (a `cp314t` wheel or a pure-Python one);
    change the pins that do not, in this manifest only.
-3. Run the workflow tests ([validating.md](validating.md)). The runtime matrix and the release candidate's probes
-   each gain three jobs; nothing else changes.
+3. Run the workflow tests ([validating.md](validating.md)). The full runtime matrix and the release candidate's
+   probes each gain three jobs; nothing else changes. A newer release also becomes the newest one that PRs into
+   `dev` test, replacing the previous newest there.
 
 A new minor (3.15) works the same way. Expect to adjust pins: libraries publish free-threaded wheels for a new
 minor on their own schedule.
@@ -840,7 +852,7 @@ END FILE: .github/ci_cd/python_versions.md
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/ci_cd/scripts.md
-CONTENT SHA256: 6f08985b05dbc13d43a1efb35315e7aae7bbeecc5c6a1dbee9691a12e7d5303c
+CONTENT SHA256: 3493280119a690cbc7159ff796145fdad958c4c309bb8f645ebf6ad50afa381a
 SOURCE ENCODING: utf-8
 ================================================================================
 # Scripts and other `.github` files
@@ -871,20 +883,24 @@ scripts rely on (job names, needs, flags, artifact names, Python requests, insta
 
 ### `ci_policy.py`
 
-`CIPolicy` names the permanent branches (`dev`, `preprod`, `release_candidate`, `prod`), the promotion order, and
-the job lists that `merge-ready` and `package-ready` require: `FULL_JOBS`, `GAUNTLET_JOBS`, `REQUIRED_JOBS` and
-`CANDIDATE_JOBS`. `validate_route` refuses a pull request that skips a promotion step or comes from a fork, and
-`validation_requirements` turns an event into the runtime, package, source and gauntlet flags (table in
-[workflows.md](workflows.md)). `require_success` is the merge-ready rule. The `release-head` and `candidate-head`
-gates compare full commit SHAs from the event, the checkout and the live remote, so a branch or tag that moved
-during a run is refused. The script also provides the input helpers the others import (`object_value`,
-`text_value`, `git_output`, `read_event`).
+`CIPolicy` names the permanent branches (`dev`, `preprod`, `release_candidate`, `prod`), the promotion order, the
+job lists that `merge-ready` and `package-ready` require (`FULL_JOBS`, `GAUNTLET_JOBS`, `REQUIRED_JOBS`,
+`CANDIDATE_JOBS`) and the two runtime release selections (`FULL_RELEASES` "all", `SLICED_RELEASES`
+"floor-and-newest"). `validate_route` refuses a pull request that skips a promotion step or comes from a fork,
+`validation_requirements` turns an event into the runtime, package, source and gauntlet flags, and
+`runtime_releases` decides which test manifests the runtime tests cover: the floor and the newest for a PR into
+`dev`, all of them otherwise (table in [workflows.md](workflows.md)). `branch` writes all five as outputs, and
+`merge-ready` recomputes them and refuses a mismatch. `require_success` is the merge-ready rule. The
+`release-head` and `candidate-head` gates compare full commit SHAs from the event, the checkout and the live
+remote, so a branch or tag that moved during a run is refused. The script also provides the input helpers the
+others import (`object_value`, `text_value`, `git_output`, `read_event`).
 
 ### `python_runtime_matrix.py`
 
-Everything about which Python CI runs; see [python_versions.md](python_versions.md). Its `coverage` operation,
-used before the Codecov upload, requires a report for every matrix cell of this run, taking each cell's newest
-attempt.
+Everything about which Python CI runs; see [python_versions.md](python_versions.md). `discover --releases`
+builds the runtime matrix from every test manifest (`all`, the default) or from the floor and the newest
+(`floor-and-newest`). Its `coverage` operation, used before the Codecov upload, requires a report for every matrix
+cell of this run, taking each cell's newest attempt.
 
 ### `run_runtime_tests.py`
 
@@ -894,10 +910,11 @@ process (`tests/experimentation/` is never part of CI). Its exit code is pytest'
 
 ### `ci_qualification.py`
 
-Source proof. After a successful full run, `record` writes which repository, run, event, pull request and Git tree
-were tested. `select` finds that record for the tree being promoted (a `preprod` pull request into
-`release_candidate`, or the `release_candidate` branch itself) and `verify` checks the downloaded record field by
-field. Any change to the tree means the old proof no longer applies; the fix is a manual full CI run (see
+Source proof. After a successful full run that tested every manifest, `record` writes which repository, run,
+event, pull request and Git tree were tested; it refuses a light run and a sliced run (a PR into `dev`). `select`
+finds that record for the tree being promoted (a `preprod` pull request into `release_candidate`, or the
+`release_candidate` branch itself) and `verify` checks the downloaded record field by field. Any change to the
+tree means the old proof no longer applies; the fix is a manual full CI run (see
 [BRANCH_WORKFLOW.md](../BRANCH_WORKFLOW.md), "Reusing full qualification").
 
 ### `check_candidate_run.py`
@@ -939,7 +956,7 @@ END FILE: .github/ci_cd/scripts.md
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/ci_cd/validating.md
-CONTENT SHA256: 2957535ddfc26d9620b4fece95e29525d1237d8896ab854f95721e1815f16c8f
+CONTENT SHA256: 7bfc9d99e51016d95642d3a1d5273e8ec439980ef5280b1d7fc918ca651e1357
 SOURCE ENCODING: utf-8
 ================================================================================
 # Validating a CI change
@@ -980,6 +997,7 @@ Start with `CI / merge-ready`: its message lists every required job that did not
 | `discover`: a manifest is refused | The message names the file and the rule; fix the manifest ([python_versions.md](python_versions.md)). |
 | A test cell fails to install | A pin has no wheel for that release or runner; change the pin in that manifest. |
 | A speed test fails in its install step | A benchmark library has no free-threaded wheel on that runner: pin another version or list it under `build_from_source`. Read `install.log` in the results artifact. |
+| A speed test's inline step fails with "No module named 'benchmarks'" | The step imports `benchmarks` before putting the checkout on `sys.path`; add `sys.path.insert(0, str(Path.cwd()))` above the import ([extending.md](extending.md)). |
 | `source-qualification` refused | No full CI run tested this exact tree. Run CI by hand on the branch (BRANCH_WORKFLOW.md, "Reusing full qualification"). |
 | Prod pull request: "Candidate qualification has not passed" | The release-candidate run for that commit is pending or failed; finish or fix it, then rerun the check. |
 | The Codecov upload fails | Reporting only: it never blocks a merge. |
@@ -1000,7 +1018,7 @@ END FILE: .github/ci_cd/validating.md
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/ci_cd/workflows.md
-CONTENT SHA256: 7e5107f90368440ca253635ebdd263842c6fb6b38fb5e8a7e947d19719062352
+CONTENT SHA256: c6b4e70138f242c62c220fe114d0d68880c81894263cc4ee457aae06189fadef
 SOURCE ENCODING: utf-8
 ================================================================================
 # Workflows
@@ -1018,33 +1036,39 @@ same pull request cancels the older run. Ordinary pushes do not run it.
 
 | Job | Runs when | What it proves |
 | --- | --- | --- |
-| `branch-policy` (CI / branch-policy) | always | The route is allowed; it sets the four flags below (`ci_policy.py branch`). |
+| `branch-policy` (CI / branch-policy) | always | The route is allowed; it sets the four flags and the runtime releases below (`ci_policy.py branch`). |
 | `hygiene` (CI / repository-hygiene) | always | No two tracked paths differ only by letter case (`ci_policy.py hygiene`). |
 | `source-assets` | runtime | The committed build assets match their builders (`build-src-assets.yml`). |
 | `repo-assets` | runtime | The committed LLM bundles match the tracked files (`build-repo-assets.yml`). |
-| `tests` | runtime | Every test tier passes on every manifest release and runner (`test-runtime.yml`). |
+| `tests` | runtime | Every test tier passes on each selected manifest release and runner (`test-runtime.yml`). |
 | `documentation` | runtime | The documentation site and handbooks build and validate (`docs.yml`). |
 | `real-world-gauntlet`, `persistent-runtime-gauntlet`, `shallow-all-thread-scaling` | gauntlet | The three speed tests complete (see below). |
 | `packages` | package | The wheel and sdist build, verify and install (`build-distributions.yml`). |
 | `source-qualification` | source | An earlier full CI run tested this exact tree (`verify-source-qualification.yml`). |
 | `merge-ready` (CI / merge-ready) | always | Every required job succeeded (below). |
 
-`ci_policy.py` sets the flags from the event alone (`validation_requirements`):
+`ci_policy.py` sets the flags from the event alone (`validation_requirements`), and with them which test
+manifests the runtime tests cover (`runtime_releases`, the output `runtime-releases`):
 
-| Event | runtime | package | source | gauntlet |
-| --- | --- | --- | --- | --- |
-| PR into `dev` | yes | no | no | no |
-| `dev` PR into `preprod` | yes | yes | no | yes |
-| `preprod` PR into `release_candidate` | no | no | yes | no |
-| `release-fix/*` PR into `release_candidate` | yes | yes | no | no |
-| `release_candidate` PR into `prod` | no | no | no | no |
-| Manual run on a permanent branch | yes | yes, except on `dev` | no | no |
+| Event | runtime | runtime releases | package | source | gauntlet |
+| --- | --- | --- | --- | --- | --- |
+| PR into `dev` | yes | floor and newest | no | no | no |
+| `dev` PR into `preprod` | yes | all | yes | no | yes |
+| `preprod` PR into `release_candidate` | no | (none run) | no | yes | no |
+| `release-fix/*` PR into `release_candidate` | yes | all | yes | no | no |
+| `release_candidate` PR into `prod` | no | (none run) | no | no | no |
+| Manual run on a permanent branch | yes | all | yes, except on `dev` | no | no |
+
+A PR into `dev` tests only the floor and the newest manifest (today 3.14.0 and 3.14.8, six cells instead of
+twenty-seven); the `dev` -> `preprod` promotion tests every manifest, so a problem that shows on a middle release
+is caught there (owner ruling, 2026-10-05).
 
 `merge-ready` runs even when a job before it failed (`if: always()`). `ci_policy.py merge-ready` recomputes the
-four flags from the event, refuses if `branch-policy` reported different ones, and requires a result for every
-job in its `needs`: a required job must succeed, an optional one may succeed or be skipped, and a failure or a
-cancellation never passes. After a full run it records the tested tree (`ci_qualification.py record`) as the
-artifact `source-qualification-<run>-<attempt>`, kept 90 days, which later promotions reuse. On a pull request
+four flags and the runtime releases from the event, refuses if `branch-policy` reported different ones, and
+requires a result for every job in its `needs`: a required job must succeed, an optional one may succeed or be
+skipped, and a failure or a cancellation never passes. After a full run that tested every manifest it records the
+tested tree (`ci_qualification.py record`) as the artifact `source-qualification-<run>-<attempt>`, kept 90 days,
+which later promotions reuse; a PR into `dev` tests only two releases and records nothing. On a pull request
 into `prod`, or a manual run there, it then waits up to ten minutes for that candidate's release-candidate run to
 succeed (`check_candidate_run.py --wait-seconds 600`).
 
@@ -1076,10 +1100,12 @@ Publication runs are serialized.
 
 ## Reusable workflows
 
-### `test-runtime.yml`: the test tiers on every release
+### `test-runtime.yml`: the test tiers on the selected releases
 
 - `discover` (Runtime / read the test manifests) builds the matrix from `.github/python/tests/`
-  (`python_runtime_matrix.py discover`) and keeps it as `runtime-python-matrix-<run>-<attempt>` for 90 days.
+  (`python_runtime_matrix.py discover --releases`) and keeps it as `runtime-python-matrix-<run>-<attempt>` for 90
+  days. The input `releases` selects `all` manifests (the default, so publication tests every release) or
+  `floor-and-newest`, which `ci.yml` passes for a PR into `dev`; a manual run offers both.
 - `test` (Runtime / <os> / Python <release> no-GIL) is one job per release and runner (`ubuntu-latest` x64,
   `windows-latest` x64, `macos-latest` arm64). It sets up that free-threaded release, installs exactly its
   manifest's pins plus Melder with `uv pip install --no-deps`, and runs `run_runtime_tests.py` with
@@ -1690,7 +1716,7 @@ END FILE: .github/scripts/check_candidate_run.py
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/scripts/ci_policy.py
-CONTENT SHA256: 0e4ee8e6293c59fbd38a4e094ea456a7676085f470ee99f204fa973797a63a54
+CONTENT SHA256: a3823aa68ae69068d0330296fda4d705b2527b32f895cfd37728fea08fd794b4
 SOURCE ENCODING: utf-8
 ================================================================================
 """Read-only branch, merge-result, repository, and publication gates for CI."""
@@ -1721,6 +1747,11 @@ class CIPolicy:
     REQUIRED_JOBS: tuple[str, ...] = (
         "branch-policy", "hygiene", *FULL_JOBS, *GAUNTLET_JOBS, "source-qualification",
     )
+    # Which test manifests a run's runtime tests cover (runtime_releases): every one, or only the floor and
+    # the newest. python_runtime_matrix.py discover accepts exactly these values.
+    FULL_RELEASES: str = "all"
+    SLICED_RELEASES: str = "floor-and-newest"
+    RUNTIME_RELEASES: tuple[str, ...] = (FULL_RELEASES, SLICED_RELEASES)
 
 
 def object_value(value: object, label: str) -> Mapping[str, object]:
@@ -1800,7 +1831,8 @@ def validation_requirements(event_name: str, event: Mapping[str, object], ref: s
                             repository: str) -> tuple[bool, bool, bool, bool]:
     """Return runtime, package, source-proof, and gauntlet requirements for a validated event.
 
-    Dev/preprod PRs, release-fix PRs and manual CI run full qualification.
+    Dev/preprod PRs, release-fix PRs and manual CI run full qualification; runtime_releases decides how
+    many test manifests that covers (a PR into dev tests only the floor and the newest).
     Only the validated dev-to-preprod PR also requires all three benchmark jobs.
     Unchanged preprod promotions reuse source evidence; prod promotions consume
     the separate exact-candidate gate. Ordinary pushes have no source-CI profile.
@@ -1818,6 +1850,37 @@ def validation_requirements(event_name: str, event: Mapping[str, object], ref: s
     if base == "release_candidate" and head == "preprod":
         return False, False, True, False
     return True, packages, False, base == "preprod" and head == "dev"
+
+
+def runtime_releases(event_name: str, event: Mapping[str, object], ref: str, repository: str) -> str:
+    """Return which test manifests a validated event's runtime tests cover: every one, or the floor and newest.
+
+    A pull request into dev tests the floor and the newest manifest on every runner (owner ruling,
+    2026-10-05). Every route that can produce release evidence - the dev-to-preprod promotion,
+    release-fix pull requests and manual CI - tests every manifest, so a defect specific to a middle
+    patch is caught at the promotion at the latest, and a sliced run never qualifies a release
+    (ci_qualification.py refuses to record one). Routes that skip the runtime tests report "all",
+    which nothing reads.
+
+    Args:
+        event_name: GITHUB_EVENT_NAME.
+        event: The parsed GitHub event payload.
+        ref: GITHUB_REF.
+        repository: GITHUB_REPOSITORY.
+
+    Returns:
+        CIPolicy.SLICED_RELEASES for a pull request into dev, otherwise CIPolicy.FULL_RELEASES.
+
+    Raises:
+        ValueError: When validation_requirements refuses the event; an invalid route never selects a
+            smaller matrix.
+    """
+    validation_requirements(event_name, event, ref, repository)
+    if event_name == "pull_request":
+        pr = object_value(event["pull_request"], "pull_request")
+        if object_value(pr["base"], "base")["ref"] == "dev":
+            return CIPolicy.SLICED_RELEASES
+    return CIPolicy.FULL_RELEASES
 
 
 def require_success(results: Mapping[str, object], require_package: bool,
@@ -1854,16 +1917,20 @@ def require_ci_results() -> tuple[bool, bool, bool, bool]:
     """Recompute requirements from event identity and verify both flags and job results.
 
     The branch job's outputs control scheduling, but cannot silently waive a
-    requirement by emitting an empty or incorrect flag. Return the verified
-    profile for consumers such as the full-qualification record writer.
+    requirement by emitting an empty or incorrect flag, nor shrink the runtime
+    matrix by reporting the wrong release selection (CI_RUNTIME_RELEASES). Return
+    the verified profile for consumers such as the full-qualification record writer.
     """
-    requirements = validation_requirements(
-        os.environ.get("GITHUB_EVENT_NAME", ""), read_event(),
-        os.environ.get("GITHUB_REF", ""), os.environ.get("GITHUB_REPOSITORY", ""),
-    )
+    event_name = os.environ.get("GITHUB_EVENT_NAME", "")
+    event = read_event()
+    ref = os.environ.get("GITHUB_REF", "")
+    repository = os.environ.get("GITHUB_REPOSITORY", "")
+    requirements = validation_requirements(event_name, event, ref, repository)
     for name, required in zip(("RUNTIME", "PACKAGE", "SOURCE", "GAUNTLET"), requirements, strict=True):
         if os.environ.get(f"CI_{name}_REQUIRED") != str(required).lower():
             raise ValueError(f"Missing/invalid {name.lower()} requirement from branch-policy.")
+    if os.environ.get("CI_RUNTIME_RELEASES") != runtime_releases(event_name, event, ref, repository):
+        raise ValueError("Missing/invalid runtime releases from branch-policy.")
     require_success(object_value(json.loads(os.environ["CI_JOB_RESULTS"]), "needs"),
                     requirements[1], requirements[0], requirements[2], requirements[3])
     return requirements
@@ -2000,13 +2067,16 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     args = parser.parse_args(argv)
     try:
         if args.gate == "branch":
-            requirements = validation_requirements(
-                os.environ.get("GITHUB_EVENT_NAME", ""), read_event(), os.environ.get("GITHUB_REF", ""),
-                os.environ.get("GITHUB_REPOSITORY", ""),
-            )
+            event_name = os.environ.get("GITHUB_EVENT_NAME", "")
+            event = read_event()
+            ref = os.environ.get("GITHUB_REF", "")
+            repository = os.environ.get("GITHUB_REPOSITORY", "")
+            requirements = validation_requirements(event_name, event, ref, repository)
+            releases = runtime_releases(event_name, event, ref, repository)
             with pathlib.Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as output:
                 for name, required in zip(("runtime", "package", "source", "gauntlet"), requirements, strict=True):
                     output.write(f"{name}-required={str(required).lower()}\n")
+                output.write(f"runtime-releases={releases}\n")
         elif args.gate == "merge-ready":
             require_ci_results()
         elif args.gate == "hygiene":
@@ -2049,7 +2119,7 @@ END FILE: .github/scripts/ci_policy.py
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/scripts/ci_qualification.py
-CONTENT SHA256: 604a239e8689dcb68a721120d2bc0f2c4b28403e72b02842215e2490415a9051
+CONTENT SHA256: 556e1d564f375626d945ecc2c1ca259e0e425ff7913a1c67aa2e45c76b696608
 SOURCE ENCODING: utf-8
 ================================================================================
 """Record full CI evidence and verify it before reusing an unchanged source tree."""
@@ -2065,7 +2135,7 @@ from collections.abc import Mapping, Sequence
 from typing import Optional
 
 from check_candidate_run import commit_id, positive_integer
-from ci_policy import (git_output, object_value, read_event, require_ci_results, text_value,
+from ci_policy import (CIPolicy, git_output, object_value, read_event, require_ci_results, text_value,
                        validate_route, validation_requirements)
 
 
@@ -2292,11 +2362,16 @@ def full_record() -> dict[str, object]:
 
     A PR record identifies its tested merge parents and tree, rather than
     confusing the run API's head SHA with the actual merge checkout.
-    Light profiles cannot emit this record, even if their other jobs are green.
+    Light profiles cannot emit this record, even if their other jobs are green,
+    and neither can a PR into dev, which tests only the floor and newest manifests
+    (CI_RUNTIME_RELEASES, already verified against the route by require_ci_results).
     """
     runtime, package, _, _ = require_ci_results()
     if not runtime:
         raise ValueError("A light CI run cannot issue full runtime qualification.")
+    if os.environ.get("CI_RUNTIME_RELEASES") != CIPolicy.FULL_RELEASES:
+        raise ValueError("A sliced CI run (the floor and newest test manifests only) cannot issue full runtime "
+                         "qualification.")
     sha, tree = checkout_identity()
     event_name = os.environ["GITHUB_EVENT_NAME"]
     event = read_event()
@@ -2468,7 +2543,7 @@ END FILE: .github/scripts/normalize_sdist.py
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/scripts/python_runtime_matrix.py
-CONTENT SHA256: 8c8718c42bb9b468d5c93073b3e955512e0eb4c7f9b227d0361fdda112107320
+CONTENT SHA256: 1b4bb2842f5b4523dfd97bac3692044d340a6c7eee15e7cb884b5fae87b5beb6
 SOURCE ENCODING: utf-8
 ================================================================================
 """Build CI's Python matrices and installs from the repository's per-release manifests; verify coverage.
@@ -2493,7 +2568,7 @@ import tomllib
 from collections.abc import Mapping, Sequence
 from typing import Optional
 
-from ci_policy import object_value
+from ci_policy import CIPolicy, object_value
 
 
 class RuntimeMatrixPolicy:
@@ -2678,22 +2753,37 @@ def load_manifests(directory: pathlib.Path, floor: tuple[int, int, int]) -> list
     return loaded
 
 
-def discover_matrix(directory: pathlib.Path, floor: tuple[int, int, int]) -> dict[str, list[dict[str, str]]]:
-    """Build the runtime (and release-candidate) matrix from the test manifests: every manifest, every runner.
+def discover_matrix(directory: pathlib.Path, floor: tuple[int, int, int],
+                    releases: str = CIPolicy.FULL_RELEASES) -> dict[str, list[dict[str, str]]]:
+    """Build the runtime (and release-candidate) matrix from the test manifests: the selected releases, every runner.
 
     Nothing is looked up on the network: a Python release runs only once a manifest names it (owner
     ruling, 2026-10-05). The supported floor release itself must have a manifest, so CI tests the oldest
     release the package claims.
 
+    Args:
+        directory: The test manifest directory.
+        floor: The supported floor read from project.requires-python.
+        releases: CIPolicy.FULL_RELEASES ("all", the default) keeps every manifest. CIPolicy.SLICED_RELEASES
+            ("floor-and-newest") keeps the floor and the newest manifest, picked by version, which is what a
+            pull request into dev runs (ci_policy.runtime_releases); with one manifest that is one release.
+
     Raises:
-        ValueError: As load_manifests, when the floor release has no manifest, or when the matrix needs
-            more jobs than RuntimeMatrixPolicy.MAX_JOBS.
+        ValueError: For an unknown release selection, as load_manifests, when the floor release has no
+            manifest, or when the matrix needs more jobs than RuntimeMatrixPolicy.MAX_JOBS.
     """
+    if releases not in CIPolicy.RUNTIME_RELEASES:
+        raise ValueError(f"Unknown runtime release selection {releases!r}; expected one of "
+                         f"{list(CIPolicy.RUNTIME_RELEASES)}.")
     loaded = load_manifests(directory, floor)
     if floor not in {manifest.release for manifest in loaded}:
         floor_label = ".".join(map(str, floor))
         raise ValueError(f"Python {floor_label} (the supported floor) has no test manifest; add {floor_label}.toml "
                          "or raise project.requires-python.")
+    if releases == CIPolicy.SLICED_RELEASES:
+        # load_manifests orders by release and refuses anything below the floor, so the first manifest is the
+        # floor release itself and the last is the newest.
+        loaded = [loaded[0]] if len(loaded) == 1 else [loaded[0], loaded[-1]]
     return version_matrix([manifest.python for manifest in loaded], floor)
 
 
@@ -2850,7 +2940,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     """Build a matrix, name or install the speed-test release, write one cell's pins, or verify coverage.
 
     discover writes the runtime/RC matrix built from the test manifests to --report and to
-    GITHUB_OUTPUT (matrix=...). speed writes the single speed-test release to GITHUB_OUTPUT (python=...).
+    GITHUB_OUTPUT (matrix=...); --releases picks every manifest (all, the default) or the floor and newest
+    (floor-and-newest, for a pull request into dev). speed writes the single speed-test release to
+    GITHUB_OUTPUT (python=...).
     speed-install installs the speed manifest's pins into the running interpreter, which must be that
     manifest's free-threaded release, keeps the evidence under --results and returns pip's exit status.
     requirements writes one manifest's pins to --output for an install without dependency resolution.
@@ -2860,6 +2952,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("operation", choices=("discover", "speed", "speed-install", "requirements", "coverage"))
     parser.add_argument("--manifests", type=pathlib.Path)
+    parser.add_argument("--releases", choices=CIPolicy.RUNTIME_RELEASES, default=CIPolicy.FULL_RELEASES)
     parser.add_argument("--manifest", type=pathlib.Path)
     parser.add_argument("--output", type=pathlib.Path, default=pathlib.Path("reports/requirements.txt"))
     parser.add_argument("--results", type=pathlib.Path)
@@ -2871,12 +2964,14 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     floor = supported_floor()
     root = pathlib.Path(__file__).resolve().parents[2]
     if args.operation == "discover":
-        matrix = discover_matrix(args.manifests or root / RuntimeMatrixPolicy.TESTS_DIRECTORY, floor)
+        directory = args.manifests or root / RuntimeMatrixPolicy.TESTS_DIRECTORY
+        matrix = discover_matrix(directory, floor, args.releases)
         args.report.parent.mkdir(parents=True, exist_ok=True)
         args.report.write_text(json.dumps(matrix, indent=2) + "\n", encoding="utf-8")
         with pathlib.Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as output:
             output.write("matrix=" + json.dumps(matrix, separators=(",", ":")) + "\n")
-        print(f"Selected {len(matrix['include'])} OS/Python combinations from the test manifests.")
+        print(f"Selected {len(matrix['include'])} OS/Python combinations from the test manifests "
+              f"({args.releases}).")
     elif args.operation == "speed":
         manifest = speed_manifest(args.manifests or root / RuntimeMatrixPolicy.SPEED_DIRECTORY, floor)
         with pathlib.Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as output:
@@ -3657,7 +3752,7 @@ END FILE: .github/workflows/build-src-assets.yml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/workflows/ci.yml
-CONTENT SHA256: acefcb452d832fba28f3c9abd0d6006de963b2f68bc5fb10ff9d11330478dab4
+CONTENT SHA256: 85d48bddacfd38669cdb8e0c7e56ae0ee78e3f469cbcb6199cd8aa07194e831d
 SOURCE ENCODING: utf-8
 ================================================================================
 name: CI
@@ -3690,6 +3785,8 @@ jobs:
       package-required: ${{ steps.route.outputs.package-required }}
       source-required: ${{ steps.route.outputs.source-required }}
       gauntlet-required: ${{ steps.route.outputs.gauntlet-required }}
+      # all, or floor-and-newest for a pull request into dev (ci_policy.py runtime_releases).
+      runtime-releases: ${{ steps.route.outputs.runtime-releases }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -3729,6 +3826,8 @@ jobs:
       contents: read
       actions: read
     uses: ./.github/workflows/test-runtime.yml
+    with:
+      releases: ${{ needs.branch-policy.outputs.runtime-releases }}
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
@@ -3793,18 +3892,21 @@ jobs:
           CI_PACKAGE_REQUIRED: ${{ needs.branch-policy.outputs.package-required }}
           CI_SOURCE_REQUIRED: ${{ needs.branch-policy.outputs.source-required }}
           CI_GAUNTLET_REQUIRED: ${{ needs.branch-policy.outputs.gauntlet-required }}
+          CI_RUNTIME_RELEASES: ${{ needs.branch-policy.outputs.runtime-releases }}
         run: python .github/scripts/ci_policy.py merge-ready
       - name: Record the exact full CI qualification
-        if: needs.branch-policy.outputs.runtime-required == 'true'
+        # Only a run that tested every manifest may qualify a release; a PR into dev tests the floor and newest.
+        if: needs.branch-policy.outputs.runtime-required == 'true' && needs.branch-policy.outputs.runtime-releases == 'all'
         env:
           CI_JOB_RESULTS: ${{ toJSON(needs) }}
           CI_RUNTIME_REQUIRED: ${{ needs.branch-policy.outputs.runtime-required }}
           CI_PACKAGE_REQUIRED: ${{ needs.branch-policy.outputs.package-required }}
           CI_SOURCE_REQUIRED: ${{ needs.branch-policy.outputs.source-required }}
           CI_GAUNTLET_REQUIRED: ${{ needs.branch-policy.outputs.gauntlet-required }}
+          CI_RUNTIME_RELEASES: ${{ needs.branch-policy.outputs.runtime-releases }}
         run: python .github/scripts/ci_qualification.py record
       - name: Retain full CI source evidence
-        if: needs.branch-policy.outputs.runtime-required == 'true'
+        if: needs.branch-policy.outputs.runtime-required == 'true' && needs.branch-policy.outputs.runtime-releases == 'all'
         uses: actions/upload-artifact@v7
         with:
           name: source-qualification-${{ github.run_id }}-${{ github.run_attempt }}
@@ -3890,7 +3992,7 @@ END FILE: .github/workflows/docs.yml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/workflows/persistent-runtime-gauntlet.yml
-CONTENT SHA256: 4cb6e2a14a9f60270bda2b6eaf90fddb51fb114a5b286e21792150a96a118a47
+CONTENT SHA256: 75a6e60f9f5a0d6881833b0b1d07c8f2a4726e7886fe747110f23c862cd9ac9f
 SOURCE ENCODING: utf-8
 ================================================================================
 name: Persistent runtime gauntlet (three OSes)
@@ -3988,6 +4090,7 @@ jobs:
           import hashlib, json, os, platform, shutil, subprocess, sys, sysconfig
           from pathlib import Path
           import dependency_injector.containers, dependency_injector.providers, dishka, melder
+          sys.path.insert(0, str(Path.cwd()))
           from benchmarks.testing_other_di import persistent_runtime_gauntlet_series_runner as series
           report = Path('persistent-gauntlet-results')
           durations, counts = series._series_counts()
@@ -4814,18 +4917,33 @@ END FILE: .github/workflows/shallow-all-thread-scaling.yml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/workflows/test-runtime.yml
-CONTENT SHA256: 4f22ef8e5a9ed192da11516825a93f9f3eae962a5c217e7941e6f4eddca7df21
+CONTENT SHA256: 52f74c58843ca2473709e58b27a2773783dbcb7654d05d7e990464e8e22fcb3e
 SOURCE ENCODING: utf-8
 ================================================================================
 name: Runtime tests
 
 on:
   workflow_call:
+    inputs:
+      releases:
+        # ci.yml passes ci_policy.py's runtime-releases; a caller that passes nothing tests every manifest.
+        description: Test manifests to run - all, or floor-and-newest (a pull request into dev).
+        type: string
+        required: false
+        default: all
     secrets:
       CODECOV_TOKEN:
         description: Optional repository upload token; reporting is skipped when absent.
         required: false
   workflow_dispatch:
+    inputs:
+      releases:
+        description: Test manifests to run - all, or floor-and-newest (a pull request into dev).
+        type: choice
+        options:
+          - all
+          - floor-and-newest
+        default: all
 
 permissions:
   contents: read
@@ -4845,7 +4963,9 @@ jobs:
           allow-prereleases: false
       - name: Build the runtime matrix from the test manifests
         id: runtimes
-        run: python .github/scripts/python_runtime_matrix.py discover
+        env:
+          RUNTIME_RELEASES: ${{ inputs.releases }}
+        run: python .github/scripts/python_runtime_matrix.py discover --releases "$RUNTIME_RELEASES"
       - name: Retain the selected runtime matrix
         uses: actions/upload-artifact@v7
         with:
@@ -5341,7 +5461,7 @@ END FILE: .readthedocs.yaml
 ================================================================================
 ================================================================================
 BEGIN FILE: CONTRIBUTING.md
-CONTENT SHA256: 09c03408c19d95f5089ae71d25ae0d833a3c333f15a69085688db4942a74fd7f
+CONTENT SHA256: 215e35959c1c65d685b75372f4f43e8acc03ed359dd43c09fdbb3a92a315161b
 SOURCE ENCODING: utf-8
 ================================================================================
 # Working on Melder
@@ -5386,7 +5506,8 @@ To focus on one test file, use `uv run --locked python -X gil=0 -m pytest <path>
 CI's runtime tests do not use this lock: each Python release CI tests has a manifest in
 `.github/python/tests/` with that release's exact test-dependency pins, and a test cell installs exactly
 those pins plus Melder with `uv pip install --no-deps` (see `.github/BRANCH_WORKFLOW.md` and the CI
-guide in `.github/ci_cd/`).
+guide in `.github/ci_cd/`). A pull request into `dev` runs the oldest and newest of those releases; the
+promotion to `preprod` runs them all.
 Distribution jobs install only the locked `build` group. CI uses the minimum supported uv version
 declared in `pyproject.toml`, and a stale lock fails the distribution install step.
 

@@ -26,20 +26,24 @@ scripts rely on (job names, needs, flags, artifact names, Python requests, insta
 
 ### `ci_policy.py`
 
-`CIPolicy` names the permanent branches (`dev`, `preprod`, `release_candidate`, `prod`), the promotion order, and
-the job lists that `merge-ready` and `package-ready` require: `FULL_JOBS`, `GAUNTLET_JOBS`, `REQUIRED_JOBS` and
-`CANDIDATE_JOBS`. `validate_route` refuses a pull request that skips a promotion step or comes from a fork, and
-`validation_requirements` turns an event into the runtime, package, source and gauntlet flags (table in
-[workflows.md](workflows.md)). `require_success` is the merge-ready rule. The `release-head` and `candidate-head`
-gates compare full commit SHAs from the event, the checkout and the live remote, so a branch or tag that moved
-during a run is refused. The script also provides the input helpers the others import (`object_value`,
-`text_value`, `git_output`, `read_event`).
+`CIPolicy` names the permanent branches (`dev`, `preprod`, `release_candidate`, `prod`), the promotion order, the
+job lists that `merge-ready` and `package-ready` require (`FULL_JOBS`, `GAUNTLET_JOBS`, `REQUIRED_JOBS`,
+`CANDIDATE_JOBS`) and the two runtime release selections (`FULL_RELEASES` "all", `SLICED_RELEASES`
+"floor-and-newest"). `validate_route` refuses a pull request that skips a promotion step or comes from a fork,
+`validation_requirements` turns an event into the runtime, package, source and gauntlet flags, and
+`runtime_releases` decides which test manifests the runtime tests cover: the floor and the newest for a PR into
+`dev`, all of them otherwise (table in [workflows.md](workflows.md)). `branch` writes all five as outputs, and
+`merge-ready` recomputes them and refuses a mismatch. `require_success` is the merge-ready rule. The
+`release-head` and `candidate-head` gates compare full commit SHAs from the event, the checkout and the live
+remote, so a branch or tag that moved during a run is refused. The script also provides the input helpers the
+others import (`object_value`, `text_value`, `git_output`, `read_event`).
 
 ### `python_runtime_matrix.py`
 
-Everything about which Python CI runs; see [python_versions.md](python_versions.md). Its `coverage` operation,
-used before the Codecov upload, requires a report for every matrix cell of this run, taking each cell's newest
-attempt.
+Everything about which Python CI runs; see [python_versions.md](python_versions.md). `discover --releases`
+builds the runtime matrix from every test manifest (`all`, the default) or from the floor and the newest
+(`floor-and-newest`). Its `coverage` operation, used before the Codecov upload, requires a report for every matrix
+cell of this run, taking each cell's newest attempt.
 
 ### `run_runtime_tests.py`
 
@@ -49,10 +53,11 @@ process (`tests/experimentation/` is never part of CI). Its exit code is pytest'
 
 ### `ci_qualification.py`
 
-Source proof. After a successful full run, `record` writes which repository, run, event, pull request and Git tree
-were tested. `select` finds that record for the tree being promoted (a `preprod` pull request into
-`release_candidate`, or the `release_candidate` branch itself) and `verify` checks the downloaded record field by
-field. Any change to the tree means the old proof no longer applies; the fix is a manual full CI run (see
+Source proof. After a successful full run that tested every manifest, `record` writes which repository, run,
+event, pull request and Git tree were tested; it refuses a light run and a sliced run (a PR into `dev`). `select`
+finds that record for the tree being promoted (a `preprod` pull request into `release_candidate`, or the
+`release_candidate` branch itself) and `verify` checks the downloaded record field by field. Any change to the
+tree means the old proof no longer applies; the fix is a manual full CI run (see
 [BRANCH_WORKFLOW.md](../BRANCH_WORKFLOW.md), "Reusing full qualification").
 
 ### `check_candidate_run.py`

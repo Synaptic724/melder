@@ -2,13 +2,13 @@
   "corpora": {
     "other": {
       "bundle": {
-        "bytes": 3253715,
-        "lines": 76527,
+        "bytes": 3262355,
+        "lines": 76648,
         "path": "llm_support/llm_full_other.txt",
-        "sha256": "41e01d88191ad74235b6e666ba1340727dfc68536b3d582ffc0ee2a56e11b294"
+        "sha256": "c8fb54e440ca6e15e925d2587a309e0ec9244211c76f85f1e00a8d62281e975e"
       },
-      "content_bytes": 3030549,
-      "content_lines": 73305,
+      "content_bytes": 3039189,
+      "content_lines": 73426,
       "file_count": 402,
       "files": {
         ".gitattributes": {
@@ -18,9 +18,9 @@
           "source_encoding": "utf-8"
         },
         ".github/BRANCH_WORKFLOW.md": {
-          "content_bytes": 30680,
-          "content_lines": 468,
-          "content_sha256": "bc4291dba961f69aaebb166327b9e356e6241601985f0500176fffbf3cbc76b4",
+          "content_bytes": 31342,
+          "content_lines": 474,
+          "content_sha256": "a2c74647bdf64a13acb86d3b4618581a9bb3cd50075159fc5b2773d814c1ebb8",
           "source_encoding": "utf-8"
         },
         ".github/FUNDING.yml": {
@@ -30,39 +30,39 @@
           "source_encoding": "utf-8"
         },
         ".github/ci_cd/README.md": {
-          "content_bytes": 3990,
-          "content_lines": 59,
-          "content_sha256": "2442b6c41e9adbebf49e1b6891f32fe74db55a4417be1d77993079d55a962ed9",
+          "content_bytes": 4184,
+          "content_lines": 61,
+          "content_sha256": "0ecffb09dd3db9acd71708aa3194295916b00d3429447141aff1d1d4d4ae1bf5",
           "source_encoding": "utf-8"
         },
         ".github/ci_cd/extending.md": {
-          "content_bytes": 4762,
-          "content_lines": 74,
-          "content_sha256": "bc99278794214022a940c25bb130aa0942d4d14cb1ba50ba8869df82fe296659",
+          "content_bytes": 5012,
+          "content_lines": 77,
+          "content_sha256": "ba2e5c80ed24e07b2387b3e8b4951242521710d026373a814ac2ae6dc2c627d8",
           "source_encoding": "utf-8"
         },
         ".github/ci_cd/python_versions.md": {
-          "content_bytes": 6721,
-          "content_lines": 120,
-          "content_sha256": "e2a72d05f65e7586a0c4d16fa899aa6f52adf8e5e85252ab37e6cf2376041800",
+          "content_bytes": 6948,
+          "content_lines": 121,
+          "content_sha256": "4b7aaf7fb77d947ac3603284e0968622d29e57abae9d1e94a40b735114ba6bac",
           "source_encoding": "utf-8"
         },
         ".github/ci_cd/scripts.md": {
-          "content_bytes": 6515,
-          "content_lines": 91,
-          "content_sha256": "6f08985b05dbc13d43a1efb35315e7aae7bbeecc5c6a1dbee9691a12e7d5303c",
+          "content_bytes": 7082,
+          "content_lines": 96,
+          "content_sha256": "3493280119a690cbc7159ff796145fdad958c4c309bb8f645ebf6ad50afa381a",
           "source_encoding": "utf-8"
         },
         ".github/ci_cd/validating.md": {
-          "content_bytes": 3800,
-          "content_lines": 53,
-          "content_sha256": "2957535ddfc26d9620b4fece95e29525d1237d8896ab854f95721e1815f16c8f",
+          "content_bytes": 4039,
+          "content_lines": 54,
+          "content_sha256": "7bfc9d99e51016d95642d3a1d5273e8ec439980ef5280b1d7fc918ca651e1357",
           "source_encoding": "utf-8"
         },
         ".github/ci_cd/workflows.md": {
-          "content_bytes": 9396,
-          "content_lines": 134,
-          "content_sha256": "7e5107f90368440ca253635ebdd263842c6fb6b38fb5e8a7e947d19719062352",
+          "content_bytes": 10219,
+          "content_lines": 142,
+          "content_sha256": "c6b4e70138f242c62c220fe114d0d68880c81894263cc4ee457aae06189fadef",
           "source_encoding": "utf-8"
         },
         ".github/python/speed/3.14.7.toml": {
@@ -156,15 +156,15 @@
           "source_encoding": "utf-8"
         },
         ".github/scripts/ci_policy.py": {
-          "content_bytes": 18351,
-          "content_lines": 351,
-          "content_sha256": "0e4ee8e6293c59fbd38a4e094ea456a7676085f470ee99f204fa973797a63a54",
+          "content_bytes": 20824,
+          "content_lines": 395,
+          "content_sha256": "a3823aa68ae69068d0330296fda4d705b2527b32f895cfd37728fea08fd794b4",
           "source_encoding": "utf-8"
         },
         ".github/scripts/ci_qualification.py": {
-          "content_bytes": 17629,
-          "content_lines": 323,
-          "content_sha256": "604a239e8689dcb68a721120d2bc0f2c4b28403e72b02842215e2490415a9051",
+          "content_bytes": 18035,
+          "content_lines": 328,
+          "content_sha256": "556e1d564f375626d945ecc2c1ca259e0e425ff7913a1c67aa2e45c76b696608",
           "source_encoding": "utf-8"
         },
         ".github/scripts/normalize_sdist.py": {
@@ -174,9 +174,9 @@
           "source_encoding": "utf-8"
         },
         ".github/scripts/python_runtime_matrix.py": {
-          "content_bytes": 23908,
-          "content_lines": 436,
-          "content_sha256": "8c8718c42bb9b468d5c93073b3e955512e0eb4c7f9b227d0361fdda112107320",
+          "content_bytes": 25291,
+          "content_lines": 456,
+          "content_sha256": "1b4bb2842f5b4523dfd97bac3692044d340a6c7eee15e7cb884b5fae87b5beb6",
           "source_encoding": "utf-8"
         },
         ".github/scripts/run_runtime_tests.py": {
@@ -222,9 +222,9 @@
           "source_encoding": "utf-8"
         },
         ".github/workflows/ci.yml": {
-          "content_bytes": 5861,
-          "content_lines": 158,
-          "content_sha256": "acefcb452d832fba28f3c9abd0d6006de963b2f68bc5fb10ff9d11330478dab4",
+          "content_bytes": 6494,
+          "content_lines": 165,
+          "content_sha256": "85d48bddacfd38669cdb8e0c7e56ae0ee78e3f469cbcb6199cd8aa07194e831d",
           "source_encoding": "utf-8"
         },
         ".github/workflows/docs.yml": {
@@ -234,9 +234,9 @@
           "source_encoding": "utf-8"
         },
         ".github/workflows/persistent-runtime-gauntlet.yml": {
-          "content_bytes": 9318,
-          "content_lines": 173,
-          "content_sha256": "4cb6e2a14a9f60270bda2b6eaf90fddb51fb114a5b286e21792150a96a118a47",
+          "content_bytes": 9364,
+          "content_lines": 174,
+          "content_sha256": "75a6e60f9f5a0d6881833b0b1d07c8f2a4726e7886fe747110f23c862cd9ac9f",
           "source_encoding": "utf-8"
         },
         ".github/workflows/python-publish.yml": {
@@ -264,9 +264,9 @@
           "source_encoding": "utf-8"
         },
         ".github/workflows/test-runtime.yml": {
-          "content_bytes": 7399,
-          "content_lines": 178,
-          "content_sha256": "4f22ef8e5a9ed192da11516825a93f9f3eae962a5c217e7941e6f4eddca7df21",
+          "content_bytes": 8022,
+          "content_lines": 195,
+          "content_sha256": "52f74c58843ca2473709e58b27a2773783dbcb7654d05d7e990464e8e22fcb3e",
           "source_encoding": "utf-8"
         },
         ".github/workflows/verify-source-qualification.yml": {
@@ -288,9 +288,9 @@
           "source_encoding": "utf-8"
         },
         "CONTRIBUTING.md": {
-          "content_bytes": 3783,
-          "content_lines": 81,
-          "content_sha256": "09c03408c19d95f5089ae71d25ae0d833a3c333f15a69085688db4942a74fd7f",
+          "content_bytes": 3897,
+          "content_lines": 82,
+          "content_sha256": "215e35959c1c65d685b75372f4f43e8acc03ed359dd43c09fdbb3a92a315161b",
           "source_encoding": "utf-8"
         },
         "LICENSE": {
@@ -2425,12 +2425,12 @@
         }
       },
       "index": {
-        "bytes": 67114,
+        "bytes": 67128,
         "lines": 424,
         "path": "llm_support/llm_full_other_index.md",
-        "sha256": "db9be8c828e5eca99492078bd4b9d95bc9a49441c162e360c90c753362685369"
+        "sha256": "8cba87a27778a88e361f6042d6a2ebf1fe13e00e79a004b326ae7b7fc904d4d7"
       },
-      "source_fingerprint": "bf6b0fbbd40f577d0de30f8b69d061f9e3b6117f3369b7aa4b8b5abba5537900"
+      "source_fingerprint": "14a5806160916354afd7b7506eb1b6b96684fda29b6581e18736819be26db9da"
     },
     "src": {
       "bundle": {
@@ -5928,13 +5928,13 @@
     },
     "tests": {
       "bundle": {
-        "bytes": 12440190,
-        "lines": 344560,
+        "bytes": 12452543,
+        "lines": 344759,
         "path": "llm_support/llm_full_tests.txt",
-        "sha256": "5c5e61821b07cadf6408d172366c714bf20e8fc25d7cc7d9ea15832c04c7d625"
+        "sha256": "1df5bc22d13b260793a4633ad39327d0309615bf14b3bcdfe419d954aeea13fb"
       },
-      "content_bytes": 11791418,
-      "content_lines": 336050,
+      "content_bytes": 11803771,
+      "content_lines": 336249,
       "file_count": 1063,
       "files": {
         "tests/_annotation_audit_support.py": {
@@ -9448,9 +9448,9 @@
           "source_encoding": "utf-8"
         },
         "tests/unit/github_workflows/test_ci_policy.py": {
-          "content_bytes": 29020,
-          "content_lines": 557,
-          "content_sha256": "3bc8882a37851d3a0e5aa806072a5fb4b8670728748f941cdd28f415e7626e7b",
+          "content_bytes": 33710,
+          "content_lines": 633,
+          "content_sha256": "29032b8f73c7d74eb1e9eeaa215d4c7dd2daf212c94d9b1842865dc741a62b06",
           "source_encoding": "utf-8"
         },
         "tests/unit/github_workflows/test_distributions.py": {
@@ -9460,9 +9460,9 @@
           "source_encoding": "utf-8"
         },
         "tests/unit/github_workflows/test_python_runtime_matrix.py": {
-          "content_bytes": 24756,
-          "content_lines": 421,
-          "content_sha256": "adcea7c42c1112b8ab980d2598505386bc1c70c446215ff4171ca159db62cb39",
+          "content_bytes": 28395,
+          "content_lines": 477,
+          "content_sha256": "92482336a86a8ef4e7e133969b3aed4f9c630b789f7e24731f3a88c9ce6f92b6",
           "source_encoding": "utf-8"
         },
         "tests/unit/github_workflows/test_sdist_normalization.py": {
@@ -9472,15 +9472,15 @@
           "source_encoding": "utf-8"
         },
         "tests/unit/github_workflows/test_source_qualification.py": {
-          "content_bytes": 22541,
-          "content_lines": 414,
-          "content_sha256": "35dbdaca0d50975f49bb0bbb6de0a3343cdf028fbb26ebcf57429bae6693ab53",
+          "content_bytes": 23634,
+          "content_lines": 432,
+          "content_sha256": "fb0cc05774cf4f9889e93009b809f62ed5eebc65654949385c8faa778a3daee4",
           "source_encoding": "utf-8"
         },
         "tests/unit/github_workflows/test_workflow_contracts.py": {
-          "content_bytes": 48379,
-          "content_lines": 799,
-          "content_sha256": "370bcb94d8cd534fbdc8817f4d75394db6cb58f514268c82b4dbb65e015ef84a",
+          "content_bytes": 51310,
+          "content_lines": 848,
+          "content_sha256": "3a23cfda0c88591844c69325abfca1b7894c5c9eba30ed2e4f141323f43d0740",
           "source_encoding": "utf-8"
         },
         "tests/unit/llm_support/test_builder.py": {
@@ -12320,9 +12320,9 @@
         "bytes": 209077,
         "lines": 1085,
         "path": "llm_support/llm_full_tests_index.md",
-        "sha256": "c1fa454e1e6bb8ef54a0c214048006f0b55706b3776f7cf76743b902ad83fa9a"
+        "sha256": "2b99c4898910390ab9d2ee5835e332625845e5fad3782409b9a20c16aead8d24"
       },
-      "source_fingerprint": "3fc69d1e5020cf9504fc726a16c7eaafb99831b0b9f9cd8344893c6dc4937b8a"
+      "source_fingerprint": "a7faeb607fe7798bb6aaee07e501a051ab587b05626102fb6b89a20abb53549d"
     }
   },
   "generator_sha256": "d75f1de961817875c099e1b3bc6eaa3a6c670dc89752cd94864d977e452b88e3",

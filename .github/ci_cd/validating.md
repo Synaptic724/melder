@@ -36,6 +36,7 @@ Start with `CI / merge-ready`: its message lists every required job that did not
 | `discover`: a manifest is refused | The message names the file and the rule; fix the manifest ([python_versions.md](python_versions.md)). |
 | A test cell fails to install | A pin has no wheel for that release or runner; change the pin in that manifest. |
 | A speed test fails in its install step | A benchmark library has no free-threaded wheel on that runner: pin another version or list it under `build_from_source`. Read `install.log` in the results artifact. |
+| A speed test's inline step fails with "No module named 'benchmarks'" | The step imports `benchmarks` before putting the checkout on `sys.path`; add `sys.path.insert(0, str(Path.cwd()))` above the import ([extending.md](extending.md)). |
 | `source-qualification` refused | No full CI run tested this exact tree. Run CI by hand on the branch (BRANCH_WORKFLOW.md, "Reusing full qualification"). |
 | Prod pull request: "Candidate qualification has not passed" | The release-candidate run for that commit is pending or failed; finish or fix it, then rerun the check. |
 | The Codecov upload fails | Reporting only: it never blocks a merge. |
