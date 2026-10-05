@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: src
-SOURCE FINGERPRINT: 1480c6c3a4c5edb0ccb142cd3b220bca4ae7cd9744f13e7ba967ab829c626acd
+SOURCE FINGERPRINT: 07b2f8b6a53b588c6b888fb67e019c45860524f2b65c79dac9a3e2f4e60363e1
 FILE COUNT: 579
 
 ================================================================================
@@ -599,7 +599,7 @@ END FILE: src/melder/__melder_cache__/__melder_cache__.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/__version__.py
-CONTENT SHA256: dedd0fe77b599998bb27add39749f2f892150a8d4e69ae7b795bdb406e434654
+CONTENT SHA256: a8cc629f929ee5086c9530614e51e9f8192a986f7c3ff1d77a5001d876369568
 SOURCE ENCODING: utf-8
 ================================================================================
 
@@ -613,7 +613,7 @@ Contract:
   negotiation or runtime compatibility checks by itself.
 """
 
-__version__ = "0.2.8226"
+__version__ = "0.2.8227"
 ================================================================================
 END FILE: src/melder/__version__.py
 ================================================================================
@@ -76989,7 +76989,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/artifact_processor/strategi
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_occurrence_contract_processor_strategy.py
-CONTENT SHA256: 292bb4acd12edd7c3dc887bce989ffeacef125034f92411b8bd2902522c9ff72
+CONTENT SHA256: f8593a7dd4a069f819bba04c13e7409fed9174fbf5cd2bae616d4cf218b176e6
 SOURCE ENCODING: utf-8
 ================================================================================
 import inspect
@@ -77059,6 +77059,11 @@ class SpellOccurrenceContractProcessorStrategy(SpellArtifactProcessorStrategy):
             - Writes only `model.contract_shape` plus compatible top-level
               `contract_payload_count`.
             - Does not write back onto `SpellCompilerArtifact`.
+
+        Raises:
+            RuntimeError: Without `graph_shape` or a live owning Spellbook.
+            KeyError: `(spell_id, message)` when an occurrence's spell has left
+                the Spellbook pool (see `_compile_contract_overrides_for_occurrence`).
         """
         _ = artifact
         graph_shape = model.graph_shape
@@ -77193,11 +77198,24 @@ class SpellOccurrenceContractProcessorStrategy(SpellArtifactProcessorStrategy):
               dependency occurrence of that parameter (the analyzer already routed
               the edge); a parameter with no dependency edge records nothing.
             - Each recorded payload is accompanied by its reference map.
+
+        Raises:
+            KeyError: `(spell_id, message)` when the occurrence's spell is not in
+                `spell_lookup` (the live Spellbook pool). A meld-time target pass
+                reads the pool without the Spellbook lock, so a link sever or an
+                uncontract can remove a borrowed provider after Phase 8 saw it;
+                `args[0]` names the missing spell id, which the target pass
+                records as a visibility failure, like the analyzer's and the
+                instance processor's misses (0.2.8227; it was a RuntimeError the
+                pass could not classify, so the meld raised PhaseExecutionError).
+            MeldExecutionError: When a SpellContract resolves to several
+                contracted spells, or to none outside dynamic mode.
         """
         spell = spell_lookup.get(occurrence[0])
         if spell is None:
-            raise RuntimeError(
-                "Occurrence spell could not be resolved from the spell lookup."
+            raise KeyError(
+                occurrence[0],
+                "Occurrence spell could not be resolved from the spell lookup.",
             )
 
         complete = True
@@ -77962,7 +77980,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/artifact_processor/strategi
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_runtime_processor_strategy.py
-CONTENT SHA256: d534c73870ada72c0cf960c743df2be9e4d77ab31e7a775d24ebf52dcd7a047d
+CONTENT SHA256: 327e42531091bedb895e4a1fa055ae4db81c6165dc9281f1f53566743df8d3b8
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import TYPE_CHECKING, Optional
@@ -78018,6 +78036,17 @@ class SpellRuntimeProcessorStrategy(SpellArtifactProcessorStrategy):
             - Writes only `model.spell_runtime_shape`.
             - Borrows each Spell's resolved disposal list without conversion;
               binding has already established its order and presence flag.
+
+        Raises:
+            RuntimeError: Without a live owning Spellbook, or without graph or
+                order truth.
+            KeyError: `(spell_id, message)` when a scoped spell id is not in the
+                live Spellbook pool. A meld-time target pass reads the pool
+                without the Spellbook lock, so a link sever, an uncontract or an
+                unbind can remove a spell after Phase 8 saw it; `args[0]` names
+                it, and the target pass records a visibility failure, like the
+                analyzer's and the instance processor's misses (0.2.8227; it was
+                a RuntimeError the pass could not classify).
         """
         _ = artifact
         spellbook = spell._spellbook
@@ -78044,8 +78073,9 @@ class SpellRuntimeProcessorStrategy(SpellArtifactProcessorStrategy):
         for spell_id in ordered_spell_ids:
             spell_obj = spellbook._spell_id_pool.get(spell_id)
             if spell_obj is None:
-                raise RuntimeError(
-                    f"SpellRuntimeProcessorStrategy could not resolve spell_id '{spell_id}'."
+                raise KeyError(
+                    spell_id,
+                    f"SpellRuntimeProcessorStrategy could not resolve spell_id '{spell_id}'.",
                 )
             records_by_spell_id[spell_id] = SpellRuntimeRecord(
                 spell_id=spell_id,

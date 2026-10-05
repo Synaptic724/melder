@@ -652,6 +652,21 @@ def test_extract_missing_dependency_ids_filters_non_keyerrors() -> None:
     ]
 
 
+def test_extract_missing_dependency_ids_reads_the_id_of_a_described_key_error() -> None:
+    """
+    A KeyError that carries a message after the id still names the id (0.2.8227).
+
+    The phase 9 contract and runtime processors raise `KeyError(spell_id, message)` for a spell
+    that left the pool mid-pass; the target pass must record that id, not the message.
+    """
+    phase_error = PhaseExecutionError(
+        "injection_plan_local",
+        errors=[KeyError("provider-id", "Occurrence spell could not be resolved from the spell lookup.")],
+    )
+
+    assert SpellbookCreationSystem._extract_missing_dependency_ids(phase_error) == ["provider-id"]
+
+
 def test_cleanup_phase_artifacts_after_resolution_cleans_all_and_scoped_spells(
         monkeypatch: pytest.MonkeyPatch,
 ) -> None:

@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_architecture.md'
-LINE_COUNT = 3729
-CONTENT_SHA256 = 'f4b03018ce68b580dcfd6b44531d0d77eecc7370988366e9422678a07f1d2e96'
+LINE_COUNT = 3746
+CONTENT_SHA256 = '2e9d6ffeacf37dab5cbd2ccfcc669cf9dca05ec4c2009213b2995c3e2e65a8a3'
 
 TEXT = """# Src Architecture (C4)
 
@@ -1149,7 +1149,10 @@ each entry in `src_components.md`; this list is the set that crosses components.
   iterates a copy taken in one call (Phases 3, 4, 5, 6 frame-wide and the Phase-8 walk). Pool writers hold the
   Spellbook lock and passes run without it at meld time, so a concurrent bind used to abort revalidation. Phase 5
   sees only ids with a registered SpellSystemState, which leaves a half-registered bind to its own
-  revalidation. No lock was added.
+  revalidation. No lock was added. A meld-time pass can therefore lose a spell between its phases (a concurrent
+  link sever, uncontract or unbind): every Phase 8/9 lookup that misses raises KeyError naming the spell id, and
+  the target pass records it as a visibility failure, so the meld raises SpellbookValidationError (0.2.8227; the
+  Phase 9 contract and runtime processors raised RuntimeError, which surfaced as PhaseExecutionError).
   EVIDENCE: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py:CompilerPhase5`.
 - Override key-set plans and the site-plan runtime (2026-09-26): each hydrated root of the many_only and
   generalized families owns one `SitePlanOverrideRuntime`. Its normal plan (the empty key set) is the family's
@@ -1544,6 +1547,14 @@ each entry in `src_components.md`; this list is the set that crosses components.
   not the same thing as a Rift-level event orchestrator.
 
 ## Failure Modes and Error Paths
+- A meld that races a link sever, an uncontract or an unbind of a spell its resolution pass is planning no
+  longer fails with PhaseExecutionError ("Phase 'injection_plan_local' ... Occurrence spell could not be resolved
+  from the spell lookup." or "... SpellRuntimeProcessorStrategy could not resolve spell_id ..."; fixed in
+  0.2.8227): it raises SpellbookValidationError, as a meld starting a moment later does, and the next meld
+  resolves against the current links and contracts. After an uncontract the old failure also left the next meld
+  raising "Cannot build CreationContext before spell_codegen_creation exists."
+  EVIDENCE: `src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_occurrence_contract_processor_strategy.py:SpellOccurrenceContractProcessorStrategy._compile_contract_overrides_for_occurrence`
+  and `src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_runtime_processor_strategy.py:SpellRuntimeProcessorStrategy.process`.
 - `bind(..., spellframe=SomeClass)` with a concrete (non-Protocol) class raises TypeError "spellframe must be a string
   category or a Protocol contract; got the concrete class 'SomeClass'. To group spells under it as a label, pass its
   name (spellframe='SomeClass'); to make it a contract the spell is checked against, declare it as a
@@ -3369,6 +3380,12 @@ without rewriting the original record or existing live IDs.
 - `src/melder/utilities/ai_native_support_tools/protocol_crafter.py`
 
 ## Context / Handoff Summary
+
+2026-10-04 live unlink race (0.2.8227): a meld racing a link sever, uncontract or unbind of a spell its pass is
+planning raises SpellbookValidationError instead of PhaseExecutionError - the Phase 9 contract and runtime
+processors now report a pool miss as KeyError naming the spell, which the target pass already records as a
+visibility failure. The failure modes and the compiler pool-read invariant carry it; the component map carries the
+per-strategy rule.
 
 2026-10-04 descriptor binding names (0.2.8226): SpellMap and SpellContract keep `binding_name` as written, as Bind
 does, and Phase 3 resolves a SpellMap default by the normalized binding and string-frame keys bind and meld use,

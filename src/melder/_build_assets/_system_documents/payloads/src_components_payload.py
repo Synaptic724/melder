@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_components.md'
-LINE_COUNT = 10771
-CONTENT_SHA256 = 'e2482a7229f9e0a7609016bfc9413331cc404a74b08b36cd9da7662b3c1aaafa'
+LINE_COUNT = 10786
+CONTENT_SHA256 = 'ead221dd60cb0447efe780b909c6094a5ead214856e8063373e601c259708f47'
 
 TEXT = """# Src Components (C3/C2/C1)
 
@@ -4188,7 +4188,7 @@ Invariants/Guarantees:
   (PhaseExecutionError in `occurrence_plan_local`).
   EVIDENCE:
   - src/melder/aether/spellbook/spell_compiler/spell_analyzer/strategies/spell_occurrence_graph_analyzer_strategy.py:1085-1127
-  - src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_occurrence_contract_processor_strategy.py:219-258
+  - src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_occurrence_contract_processor_strategy.py:373-413
 
 Failure Modes:
 - Validation errors captured in SpellValidationResult and SpellbookValidationError.
@@ -4197,6 +4197,16 @@ Failure Modes:
 - RuntimeError when SpellMap defaults resolve to zero or multiple candidates.
 - RuntimeError at hydration when a contract override ref names a consumer, parameter or payload key that
   the spell lookup or the consumer's descriptor does not carry (2026-09-26).
+- KeyError(spell_id, message) from a Phase 8 or 9 lookup that misses a spell in the live pool (0.2.8227). A
+  meld-time target pass reads the pool without the Spellbook lock, so a concurrent link sever, uncontract or
+  unbind can pop a spell after Phase 8 planned it; the target pass reads `args[0]`, records a visibility failure
+  (`visibility_gap_dependency_filtered`) and Meld raises SpellbookValidationError. The analyzer and the instance
+  processor always missed this way (subscript); the contract and runtime processors raised RuntimeError, which
+  the pass could not classify, so such a meld raised PhaseExecutionError ("Occurrence spell could not be
+  resolved from the spell lookup.").
+  EVIDENCE:
+  - src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_occurrence_contract_processor_strategy.py:185-298
+  - src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_runtime_processor_strategy.py:39-115
 - Until 2026-09-26 a set/frozenset/dict/tuple parameter of user classes or `typing.Any` broke its spell at
   Phase 4 (UNSUPPORTED_COLLECTION_SHAPE error, conjure refused) although Phase 1 never injects it; it is now a
   REQUIRED_HOLE caller input.
@@ -10376,6 +10386,11 @@ Companion documents:
   component and code-description patches are inputs to this document while a lane is open.
 
 ## Context / Handoff Summary
+
+2026-10-04 live unlink race (0.2.8227): the SpellCompiler entry's failure modes state that a Phase 8 or 9 pool
+miss is KeyError(spell_id, message), which a meld-time target pass records as a visibility failure; the Phase 9
+contract and runtime processors raised RuntimeError until now, so a meld racing a link sever or an uncontract
+raised PhaseExecutionError. The FORWARDREF citation into the contract processor is remapped.
 
 2026-10-04 descriptor binding names (0.2.8226): the DI Descriptors entry, both descriptor subcomponents and the
 Phase-3 SpellMap flow state the rule - SpellMap and SpellContract keep `binding_name` as written, as Bind does,

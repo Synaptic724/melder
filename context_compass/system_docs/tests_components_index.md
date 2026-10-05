@@ -12,10 +12,10 @@ Line numbers are 1-based and inclusive on both ends.
 | --- | --- |
 | document | `tests_components.md` |
 | index_version | 1.1.0 |
-| generated_at | 2026-10-01T10:23:50Z |
-| line_count | 2790 |
+| generated_at | 2026-10-04T23:40:01Z |
+| line_count | 2795 |
 | line_ending | lf |
-| content_sha256 | `dda5d95511a419f76e46208e4976db99bcec32cbb36b1b95a257e9955db35062` |
+| content_sha256 | `a9fa7c2059768ad84e4d5fd250b41f5002643b0cbb2b70d424f79244f0ee5d72` |
 | sections | 66 |
 
 Recompute all three of `line_count`, `line_ending`, and `content_sha256`
@@ -44,7 +44,7 @@ which you did.
 | 518-616 | 3 | C3 Components Catalog > Component: Integration Runtime Suite |
 | 617-706 | 3 | C3 Components Catalog > Component: Mock Fixture Corpus |
 | 707-769 | 3 | C3 Components Catalog > Component: Experimentation And Profiling Trees (Local Only) |
-| 770-1420 | 2 | C2 Subcomponents Catalog |
+| 770-1425 | 2 | C2 Subcomponents Catalog |
 | 772-780 | 3 | C2 Subcomponents Catalog > Subcomponent: `conftest.py` Path Bootstrap |
 | 781-791 | 3 | C2 Subcomponents Catalog > Subcomponent: Frame Posture Test Support |
 | 792-801 | 3 | C2 Subcomponents Catalog > Subcomponent: Nexus Viewer Matrix Support |
@@ -74,22 +74,22 @@ which you did.
 | 1296-1308 | 3 | C2 Subcomponents Catalog > Subcomponent: MutationResearch Integration Cluster |
 | 1309-1333 | 3 | C2 Subcomponents Catalog > Subcomponent: Spellbook Integration Cluster |
 | 1334-1364 | 3 | C2 Subcomponents Catalog > Subcomponent: Conduit Integration Cluster |
-| 1365-1385 | 3 | C2 Subcomponents Catalog > Subcomponent: Multithreading Integration Cluster |
-| 1386-1400 | 3 | C2 Subcomponents Catalog > Subcomponent: Live Sim Integration Cluster |
-| 1401-1409 | 3 | C2 Subcomponents Catalog > Subcomponent: Mock Spellbook Fixtures |
-| 1410-1420 | 3 | C2 Subcomponents Catalog > Subcomponent: Mock Crystallizer Harnesses |
-| 1421-1497 | 2 | Method-Level Call Flows (C1) |
-| 1423-1428 | 3 | Method-Level Call Flows (C1) > Flow: Pytest Bootstrap |
-| 1429-1446 | 3 | Method-Level Call Flows (C1) > Flow: Singleton Reset And Re-Boot |
-| 1447-1453 | 3 | Method-Level Call Flows (C1) > Flow: Viewer Matrix Fixture Build |
-| 1454-1460 | 3 | Method-Level Call Flows (C1) > Flow: Static Rift JSON Bench |
-| 1461-1467 | 3 | Method-Level Call Flows (C1) > Flow: Capability Rift JSON Bench |
-| 1468-1481 | 3 | Method-Level Call Flows (C1) > Flow: CI Runtime Qualification |
-| 1482-1497 | 3 | Method-Level Call Flows (C1) > Flow: Concurrent-Writer Stand-In |
-| 1498-2559 | 2 | C1 Code Map (Core) |
-| 2560-2610 | 2 | Diagrams |
-| 2561-2587 | 3 | Diagrams > ASCII Component Diagram (C3/C2) |
-| 2588-2610 | 3 | Diagrams > Mermaid Component Diagram (C3/C2) |
-| 2611-2661 | 2 | Information Sources |
-| 2662-2671 | 2 | Open Questions |
-| 2672-2790 | 2 | Context / Handoff Summary |
+| 1365-1390 | 3 | C2 Subcomponents Catalog > Subcomponent: Multithreading Integration Cluster |
+| 1391-1405 | 3 | C2 Subcomponents Catalog > Subcomponent: Live Sim Integration Cluster |
+| 1406-1414 | 3 | C2 Subcomponents Catalog > Subcomponent: Mock Spellbook Fixtures |
+| 1415-1425 | 3 | C2 Subcomponents Catalog > Subcomponent: Mock Crystallizer Harnesses |
+| 1426-1502 | 2 | Method-Level Call Flows (C1) |
+| 1428-1433 | 3 | Method-Level Call Flows (C1) > Flow: Pytest Bootstrap |
+| 1434-1451 | 3 | Method-Level Call Flows (C1) > Flow: Singleton Reset And Re-Boot |
+| 1452-1458 | 3 | Method-Level Call Flows (C1) > Flow: Viewer Matrix Fixture Build |
+| 1459-1465 | 3 | Method-Level Call Flows (C1) > Flow: Static Rift JSON Bench |
+| 1466-1472 | 3 | Method-Level Call Flows (C1) > Flow: Capability Rift JSON Bench |
+| 1473-1486 | 3 | Method-Level Call Flows (C1) > Flow: CI Runtime Qualification |
+| 1487-1502 | 3 | Method-Level Call Flows (C1) > Flow: Concurrent-Writer Stand-In |
+| 1503-2564 | 2 | C1 Code Map (Core) |
+| 2565-2615 | 2 | Diagrams |
+| 2566-2592 | 3 | Diagrams > ASCII Component Diagram (C3/C2) |
+| 2593-2615 | 3 | Diagrams > Mermaid Component Diagram (C3/C2) |
+| 2616-2666 | 2 | Information Sources |
+| 2667-2676 | 2 | Open Questions |
+| 2677-2795 | 2 | Context / Handoff Summary |

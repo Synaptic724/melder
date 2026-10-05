@@ -116,16 +116,14 @@ def test_python_setup_does_not_force_gil_off_in_standard_bootstrap_helpers(name:
 
 
 def test_single_version_setups_follow_the_newest_stable_patch() -> None:
-    """Helper jobs track the newest stable patch of their minor; only the speed tests pin one exact Python.
+    """Every literal Python request is a bare minor with check-latest; no workflow pins an exact patch.
 
     The runtime matrix already selects the newest stable patch of every supported minor. A job that names
     a bare minor must ask setup-python for that minor's newest patch too, not the patch the runner image
-    happened to cache. Exact pins belong to the three speed tests alone, which measure one interpreter and
-    never iterate a Python matrix. No setup step may request a pre-release interpreter.
+    happened to cache. That now includes the three speed tests (owner, 2026-10-04: one Python, the latest),
+    which stopped pinning 3.14.7. No setup step may request a pre-release interpreter.
     """
     root = pathlib.Path(__file__).resolve().parents[3]
-    speed_tests = {"real-world-gauntlet.yml", "persistent-runtime-gauntlet.yml", "shallow-all-thread-scaling.yml"}
-    pinned: set[str] = set()
     for path in sorted((root / ".github/workflows").glob("*.yml")):
         for job in workflow(path.name)["jobs"].values():
             for step in job.get("steps", []):
@@ -136,14 +134,38 @@ def test_single_version_setups_follow_the_newest_stable_patch() -> None:
                 version = settings.get("python-version")
                 if version is None or version.startswith("${{"):
                     continue
-                if re.fullmatch(r"\d+\.\d+", version):
-                    assert settings.get("check-latest") == "true", (path.name, version)
-                else:
-                    assert re.fullmatch(r"\d+\.\d+\.\d+", version), (path.name, version)
-                    matrix = job.get("strategy", {}).get("matrix", {})
-                    assert isinstance(matrix, dict) and "python" not in matrix, path.name
-                    pinned.add(path.name)
-    assert pinned == speed_tests
+                assert re.fullmatch(r"\d+\.\d+", version), (path.name, version)
+                assert settings.get("check-latest") == "true", (path.name, version)
+
+
+@pytest.mark.parametrize(("name", "job_name"), [
+    ("real-world-gauntlet.yml", "gauntlet"),
+    ("persistent-runtime-gauntlet.yml", "gauntlet"),
+    ("shallow-all-thread-scaling.yml", "scaling"),
+])
+def test_speed_tests_run_one_supported_python_and_assert_the_minor_they_request(
+        runtime_matrix: ModuleType, name: str, job_name: str,
+) -> None:
+    """Each speed test measures one free-threaded interpreter: the newest patch of a supported minor.
+
+    The job iterates no Python matrix, asks for a bare minor at or above the declared floor with
+    check-latest, and its provenance step asserts a final release of exactly that minor, so moving the
+    speed tests to a new minor cannot change one side and forget the other.
+    """
+    job = workflow(name)["jobs"][job_name]
+    matrix = job.get("strategy", {}).get("matrix", {})
+    assert isinstance(matrix, dict) and "python" not in matrix
+    setup = next(step for step in job["steps"] if step.get("uses", "").startswith("actions/setup-python@"))
+    settings = setup["with"]
+    assert settings["freethreaded"] == "true"
+    assert settings["check-latest"] == "true"
+    major, minor = (int(part) for part in settings["python-version"].split("."))
+    assert (major, minor) >= runtime_matrix.supported_floor()[:2]
+    scripts = "\n".join(step.get("run", "") for step in job["steps"])
+    asserted = re.findall(r"sys\.version_info\[:2\] == \((\d+), (\d+)\) and sys\.version_info\.releaselevel == 'final'",
+                          scripts)
+    assert asserted == [(str(major), str(minor))]
+    assert "version_info[:3]" not in scripts
 
 
 def test_supported_runtime_matrix_and_test_driver_are_shared() -> None:
@@ -529,7 +551,8 @@ def test_gauntlet_reports_all_counts_and_keeps_setup_outside_gil_override() -> N
     assert job["env"]["REAL_WORLD_GAUNTLET_ITERATION_COUNTS"] == "${{ inputs.iteration-counts }}"
     steps = job["steps"]
     setup = next(step for step in steps if step.get("uses", "").startswith("actions/setup-python@"))
-    assert setup["with"]["python-version"] == "3.14.7"
+    assert setup["with"]["python-version"] == "3.14"
+    assert setup["with"]["check-latest"] == "true"
     assert setup["with"]["architecture"] == "x64"
     assert setup["with"]["freethreaded"] == "true"
     install = next(index for index, step in enumerate(steps) if step.get("name") == "Install identical pinned benchmark dependencies")
@@ -610,7 +633,8 @@ def test_shallow_thread_scaling_measures_each_library_in_its_own_gil_off_process
     assert "DI_LIBS" not in job["env"]
     steps = job["steps"]
     setup = next(step for step in steps if step.get("uses", "").startswith("actions/setup-python@"))
-    assert setup["with"]["python-version"] == "3.14.7"
+    assert setup["with"]["python-version"] == "3.14"
+    assert setup["with"]["check-latest"] == "true"
     assert setup["with"]["architecture"] == "x64"
     assert setup["with"]["freethreaded"] == "true"
     names = [step.get("name") for step in steps]

@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_graph.md'
-LINE_COUNT = 27710
-CONTENT_SHA256 = '4027d22ee648509845336753c22bc2259765dc8f746fdde2436f0faa1b42cd4c'
+LINE_COUNT = 27714
+CONTENT_SHA256 = '8c674fd58763b642a137db2c86d0a1cf8b1679a66c0796f0852712be39396f8c'
 
 TEXT = """# src_graph
 
@@ -247,7 +247,7 @@ descriptors and reassemble.
 
 ## src/melder/__version__.py
 
-- source_sha256: `a5823a03d4abdb43b5cab8ee4276f505402dfd01ceeb99c23f581343d3c32af4`
+- source_sha256: `1b99a878f8de58beebcea428fc4a688f1ab539dc30af5fb1b01695d3fae6765b`
 - nodes: 1
 
 ### Nodes
@@ -336,7 +336,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_agent_documentation/manifest/agent_documentation_manifest.py
 
-- source_sha256: `f6b18452bfc6427fce9e45d2f4989d8fbc77414b820533d40b933a8ea9d45d31`
+- source_sha256: `2768e2297fea44d8a32d06f344d6c9211bd9cb9efaf3e3659565fa4093d191a0`
 - nodes: 1
 
 ### Nodes
@@ -415,7 +415,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py
 
-- source_sha256: `ec1f953a2ebf4e6fbbf77b93d8dd4b45b0d02d8afd7f373a07b2d7a98c77415c`
+- source_sha256: `bbbec0eee20d53b62537ba0fec96dae1b38752ffd3cb8f9062eeb057f2b988df`
 - nodes: 1
 
 ### Nodes
@@ -493,7 +493,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/graph_adjacency_manifest.py
 
-- source_sha256: `87db0c95c96322abfa10b0d63d3aa06f05fb88146f1bf046fb3ca439c5ae9b35`
+- source_sha256: `3a1820c4a6d246fecb3c505bdedb37f96e18282e53bc19458a16128da705cecc`
 - nodes: 1
 
 ### Nodes
@@ -510,7 +510,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_index.py
 
-- source_sha256: `b680ab42666d584a636981940ba8fe90c49c28dbff8c82e92e963fa71cc4a1d7`
+- source_sha256: `dfe7bfd42a16c7b9178ec10e205d172b06fa185d83cbbf3330da1b2383d92171`
 - nodes: 1
 
 ### Nodes
@@ -527,7 +527,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_manifest.py
 
-- source_sha256: `f8e2b54eb512c9b76c0d8cd670bacc8cae9be07f592e1468b89fdfc5fed1111e`
+- source_sha256: `8eae79f754cd3e4f6efffb6241abb41ecb3be796c8dd35ed747f1dd55e67f6ab`
 - nodes: 1
 
 ### Nodes
@@ -547,7 +547,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_architecture_payload.py
 
-- source_sha256: `fe607d69182e897c398b5e04434bf83043bbae1d16b74ebf4d4ef5beb52610a6`
+- source_sha256: `4fe5ef65250e60825eb2513383e7e9dcd79e9a149e0a890fe3ea896bbce3e671`
 - nodes: 1
 
 ### Nodes
@@ -564,7 +564,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_components_payload.py
 
-- source_sha256: `f1d5d843bdc9b5cdc6507fd9724011a5917a888e7e3ab0fb57244d67cde219c8`
+- source_sha256: `1273abb029ce45ac16a9e4becc286bce853ca8ff7a8d2ab76b8cf7703b60f918`
 - nodes: 1
 
 ### Nodes
@@ -581,7 +581,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_graph_payload.py
 
-- source_sha256: `a222f3667270b52b9789847792ad10330ff8078f59d5286351937f215ee9d49f`
+- source_sha256: `42bf39c29874b5bcf26227241c11e0a004a31f48daa471f26e82781a18d99fab`
 - nodes: 1
 
 ### Nodes
@@ -6942,7 +6942,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_occurrence_contract_processor_strategy.py
 
-- source_sha256: `2798861a144d23dad90825556260daa0171af410d769c2fd884c4ce7f5fb02bc`
+- source_sha256: `17ab8096f32e44bc10ed18829f79f757a3544ed8256dba66a1a058b2fbd55a76`
 - nodes: 2
 
 ### Nodes
@@ -6964,6 +6964,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - publishes SpellOccurrenceContractAnalysis onto SpellCodegenModel
   - tracks contract payload counts and completeness for later planning
   - skips constructor-contract discovery for already-supplied existing provider occurrences
+  - reports an occurrence spell missing from the live Spellbook pool as KeyError(spell_id, message), which a meld-time target pass records as a visibility failure
 - phases: `runtime`
 - public methods: `process`, `strategy_id`
 
@@ -6980,13 +6981,14 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - `melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_occurrence_contract_processor_strategy.SpellOccurrenceContractProcessorStrategy` -> `melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_strategy.SpellArtifactProcessorStrategy`: SpellOccurrenceContractProcessorStrategy specializes the abstract processor-strategy contract.
 - `melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_occurrence_contract_processor_strategy.SpellOccurrenceContractProcessorStrategy` -> `melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel`: SpellOccurrenceContractProcessorStrategy fits the contract-routing section directly onto SpellCodegenModel.
 
-### Edge candidates (3, unconfirmed)
+### Edge candidates (4, unconfirmed)
 
 Instantiation guesses from the AST. Over-generated roughly 8x against the reference graph; confirm or drop before relying on them.
 
 - `melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_occurrence_contract_processor_strategy.SpellOccurrenceContractProcessorStrategy` creates `SpellOccurrenceContractAnalysis`
 - `melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_occurrence_contract_processor_strategy.SpellOccurrenceContractProcessorStrategy` creates `MeldExecutionError`
 - `melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_occurrence_contract_processor_strategy.SpellOccurrenceContractProcessorStrategy` creates `RuntimeError`
+- `melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_occurrence_contract_processor_strategy.SpellOccurrenceContractProcessorStrategy` creates `KeyError`
 
 <!-- END FILE: src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_occurrence_contract_processor_strategy.py -->
 
@@ -7094,7 +7096,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_runtime_processor_strategy.py
 
-- source_sha256: `c51c151ef88a4c5b5b21f57d52cb21cf3520d5e73a39efc2d784f0c3c6600d6b`
+- source_sha256: `5a4dd3d88ccc22bc958e0016ffadb2d092d2bf0918b6bc55d1ccbbbddd61c1f9`
 - nodes: 2
 
 ### Nodes
@@ -7115,6 +7117,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - captures static spell facts needed by planner strategies
   - publishes SpellRuntimeAnalysis onto SpellCodegenModel
   - scopes runtime spell records by occurrence order or graph-visible spell ids
+  - reports a scoped spell id missing from the live Spellbook pool as KeyError(spell_id, message), which a meld-time target pass records as a visibility failure
 - phases: `runtime`
 - public methods: `process`, `strategy_id`
 
@@ -7131,13 +7134,14 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - `melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_runtime_processor_strategy.SpellRuntimeProcessorStrategy` -> `melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_strategy.SpellArtifactProcessorStrategy`: SpellRuntimeProcessorStrategy specializes the abstract processor-strategy contract.
 - `melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_runtime_processor_strategy.SpellRuntimeProcessorStrategy` -> `melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel`: SpellRuntimeProcessorStrategy fits the runtime spell section directly onto SpellCodegenModel.
 
-### Edge candidates (3, unconfirmed)
+### Edge candidates (4, unconfirmed)
 
 Instantiation guesses from the AST. Over-generated roughly 8x against the reference graph; confirm or drop before relying on them.
 
 - `melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_runtime_processor_strategy.SpellRuntimeProcessorStrategy` creates `SpellRuntimeAnalysis`
 - `melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_runtime_processor_strategy.SpellRuntimeProcessorStrategy` creates `RuntimeError`
 - `melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_runtime_processor_strategy.SpellRuntimeProcessorStrategy` creates `SpellRuntimeRecord`
+- `melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_runtime_processor_strategy.SpellRuntimeProcessorStrategy` creates `KeyError`
 
 <!-- END FILE: src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_runtime_processor_strategy.py -->
 

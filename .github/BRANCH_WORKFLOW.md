@@ -71,7 +71,7 @@ measured process refuses an enabled GIL. Request/A/B workloads repeat into disti
 and later lanes; threads synchronize their start and are joined each workload iteration.
 This is a synchronized burst, with independent scope work rather than a producer/consumer queue.
 
-The gauntlet uses pinned Python 3.14.7 and dependencies on Ubuntu x64, Windows x64 and macOS
+The gauntlet uses the newest stable Python 3.14 patch and pinned dependencies on Ubuntu x64, Windows x64 and macOS
 Intel x64 for comparison. This fixed benchmark baseline is separate from the compatibility
 test matrix below. Setup helpers do not inherit PYTHON_GIL=0. The optional manual thread-counts
 input overrides the file's list; iteration-counts overrides the smaller CI iteration budgets.
@@ -118,7 +118,7 @@ depends only on branch-policy, so all three may run concurrently on separate Git
 VMs; runner availability may queue them. CI / merge-ready requires its success on that route and
 accepts the planned skip on every other route. The workflow itself remains manually runnable.
 
-It runs benchmarks/testing_other_di/test_shallow_all_thread_scaling.py on pinned Python 3.14.7
+It runs benchmarks/testing_other_di/test_shallow_all_thread_scaling.py on the newest stable Python 3.14 patch
 (free-threaded, GIL off) with the same pinned dependencies as the other benchmarks, on Ubuntu x64,
 Windows x64 and macOS Intel x64. Each library (dependency-injector, dishka and melder) gets its
 own fresh pytest process through DI_LIBS, because a library measured second or third in one
@@ -150,9 +150,14 @@ may use ordinary Python because those jobs do not qualify Melder's runtime behav
 
 Single-version helper jobs (hygiene, assets, docs, source qualification, publication and RC
 bookkeeping) request `python-version: "3.14"` with `check-latest: true`, so they run the newest
-stable 3.14 patch instead of whatever patch the runner image cached. The three speed tests are
-not part of the matrix: each runs on one pinned Python (3.14.7), never across versions, and only
-on dev-to-preprod pull requests.
+stable 3.14 patch instead of whatever patch the runner image cached. The three speed tests
+(real-world gauntlet, persistent runtime series, shallow thread scaling) are not part of the matrix:
+each runs once, on the newest stable 3.14 patch the same way (and asserts a final 3.14 release), never
+across versions, and only on dev-to-preprod pull requests. They do not move to a new minor by
+themselves, because they install pinned third-party benchmark libraries as wheels only: once those
+libraries install on the new free-threaded minor, change `python-version` and the matching
+`sys.version_info[:2]` assertion in the three workflows together (the workflow contract test checks
+that the two agree and that no workflow pins an exact patch).
 
 The discovery helper refuses empty/malformed catalog data, missing support for the declared
 floor, and a selected release lacking free-threaded assets on a required platform. Setup errors

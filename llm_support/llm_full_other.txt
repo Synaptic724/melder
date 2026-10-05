@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: other
-SOURCE FINGERPRINT: ce57bdefc2613c1103fa5fe38134701ac2b60bbac5162925b06ea791e0a30c7b
+SOURCE FINGERPRINT: 91dd0d94d0643f4a6e12092a73f8f6ec824df961e39ea547afe5c45a5fe8ba47
 FILE COUNT: 386
 
 ================================================================================
@@ -64,7 +64,7 @@ END FILE: .gitattributes
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/BRANCH_WORKFLOW.md
-CONTENT SHA256: dee8ac635049d07474ef90e3e2b9f69ec9b91699575b83b4ca7d23976fccd1c6
+CONTENT SHA256: c7fe0741f7c2ede6bf93f746476ee558460bf645ba412ca16affb4be270a2a4c
 SOURCE ENCODING: utf-8
 ================================================================================
 # Branch CI and release workflow
@@ -140,7 +140,7 @@ measured process refuses an enabled GIL. Request/A/B workloads repeat into disti
 and later lanes; threads synchronize their start and are joined each workload iteration.
 This is a synchronized burst, with independent scope work rather than a producer/consumer queue.
 
-The gauntlet uses pinned Python 3.14.7 and dependencies on Ubuntu x64, Windows x64 and macOS
+The gauntlet uses the newest stable Python 3.14 patch and pinned dependencies on Ubuntu x64, Windows x64 and macOS
 Intel x64 for comparison. This fixed benchmark baseline is separate from the compatibility
 test matrix below. Setup helpers do not inherit PYTHON_GIL=0. The optional manual thread-counts
 input overrides the file's list; iteration-counts overrides the smaller CI iteration budgets.
@@ -187,7 +187,7 @@ depends only on branch-policy, so all three may run concurrently on separate Git
 VMs; runner availability may queue them. CI / merge-ready requires its success on that route and
 accepts the planned skip on every other route. The workflow itself remains manually runnable.
 
-It runs benchmarks/testing_other_di/test_shallow_all_thread_scaling.py on pinned Python 3.14.7
+It runs benchmarks/testing_other_di/test_shallow_all_thread_scaling.py on the newest stable Python 3.14 patch
 (free-threaded, GIL off) with the same pinned dependencies as the other benchmarks, on Ubuntu x64,
 Windows x64 and macOS Intel x64. Each library (dependency-injector, dishka and melder) gets its
 own fresh pytest process through DI_LIBS, because a library measured second or third in one
@@ -219,9 +219,14 @@ may use ordinary Python because those jobs do not qualify Melder's runtime behav
 
 Single-version helper jobs (hygiene, assets, docs, source qualification, publication and RC
 bookkeeping) request `python-version: "3.14"` with `check-latest: true`, so they run the newest
-stable 3.14 patch instead of whatever patch the runner image cached. The three speed tests are
-not part of the matrix: each runs on one pinned Python (3.14.7), never across versions, and only
-on dev-to-preprod pull requests.
+stable 3.14 patch instead of whatever patch the runner image cached. The three speed tests
+(real-world gauntlet, persistent runtime series, shallow thread scaling) are not part of the matrix:
+each runs once, on the newest stable 3.14 patch the same way (and asserts a final 3.14 release), never
+across versions, and only on dev-to-preprod pull requests. They do not move to a new minor by
+themselves, because they install pinned third-party benchmark libraries as wheels only: once those
+libraries install on the new free-threaded minor, change `python-version` and the matching
+`sys.version_info[:2]` assertion in the three workflows together (the workflow contract test checks
+that the two agree and that no workflow pins an exact patch).
 
 The discovery helper refuses empty/malformed catalog data, missing support for the declared
 floor, and a selected release lacking free-threaded assets on a required platform. Setup errors
@@ -2841,7 +2846,7 @@ END FILE: .github/workflows/docs.yml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/workflows/persistent-runtime-gauntlet.yml
-CONTENT SHA256: a528de2b410c6a1ee6feaa974da7a0c2f712628db5f6e6d61a10d33fcc09509a
+CONTENT SHA256: 1e8490b0079c6f4d071bb3a7bbb37252756f9720ebd25644f8018b930cc181f7
 SOURCE ENCODING: utf-8
 ================================================================================
 name: Persistent runtime gauntlet (three OSes)
@@ -2903,7 +2908,8 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-python@v7
         with:
-          python-version: '3.14.7'
+          python-version: '3.14'
+          check-latest: true
           architecture: x64
           freethreaded: true
           allow-prereleases: false
@@ -2960,7 +2966,7 @@ jobs:
           (report / 'environment.json').write_text(json.dumps(data, indent=2), encoding='utf-8')
           (report / 'dependencies.txt').write_text(subprocess.check_output([sys.executable, '-m', 'pip', 'freeze'], text=True), encoding='utf-8')
           print(json.dumps(data, indent=2))
-          assert sys.version_info[:3] == (3, 14, 7), sys.version
+          assert sys.version_info[:2] == (3, 14) and sys.version_info.releaselevel == 'final', sys.version
           assert data['free_threaded_build'] == 1 and not data['gil_enabled'], 'Expected free-threaded GIL-off runtime'
           assert platform.machine().lower() in ('x86_64', 'amd64'), platform.machine()
           assert data['commit'] == data['event_sha'], 'Checkout differs from the triggered commit'
@@ -3152,7 +3158,7 @@ END FILE: .github/workflows/python-publish.yml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/workflows/real-world-gauntlet.yml
-CONTENT SHA256: ac7407379a9480a9ce95547dfa9974b575528d9b254b140558169b7611656f7a
+CONTENT SHA256: e15692cd101650f88a87e9368ad18b4474a20fe88fc8e3262e0fe331ec376eb8
 SOURCE ENCODING: utf-8
 ================================================================================
 name: Real-world gauntlet (three OSes)
@@ -3213,7 +3219,8 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-python@v7
         with:
-          python-version: '3.14.7'
+          python-version: '3.14'
+          check-latest: true
           architecture: x64
           freethreaded: true
           allow-prereleases: false
@@ -3282,7 +3289,7 @@ jobs:
           }
           (report / 'environment.json').write_text(json.dumps(data, indent=2), encoding='utf-8')
           print(json.dumps(data, indent=2))
-          assert sys.version_info[:3] == (3, 14, 7), sys.version
+          assert sys.version_info[:2] == (3, 14) and sys.version_info.releaselevel == 'final', sys.version
           assert data['free_threaded_build'] == 1
           assert not data['gil_enabled'], 'Expected the GIL disabled'
           assert platform.machine().lower() in ('x86_64', 'amd64'), platform.machine()
@@ -3541,7 +3548,7 @@ END FILE: .github/workflows/release-candidate.yml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/workflows/shallow-all-thread-scaling.yml
-CONTENT SHA256: 956b1bb5bc1914adaee5fa1ba3e34c09eed071ba42eed473e60fd1e34562980d
+CONTENT SHA256: 13f5e5fdbe6f16477036374fb7ac4ac24fa650835d41d42f67ef59d7f4e61e29
 SOURCE ENCODING: utf-8
 ================================================================================
 name: Shallow thread scaling (three OSes)
@@ -3602,7 +3609,8 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-python@v7
         with:
-          python-version: '3.14.7'
+          python-version: '3.14'
+          check-latest: true
           architecture: x64
           freethreaded: true
           allow-prereleases: false
@@ -3660,7 +3668,7 @@ jobs:
           (report / 'environment.json').write_text(json.dumps(data, indent=2), encoding='utf-8')
           (report / 'dependencies.txt').write_text(subprocess.check_output([sys.executable, '-m', 'pip', 'freeze'], text=True), encoding='utf-8')
           print(json.dumps(data, indent=2))
-          assert sys.version_info[:3] == (3, 14, 7), sys.version
+          assert sys.version_info[:2] == (3, 14) and sys.version_info.releaselevel == 'final', sys.version
           assert data['free_threaded_build'] == 1 and not data['gil_enabled'], 'Expected free-threaded GIL-off runtime'
           assert platform.machine().lower() in ('x86_64', 'amd64'), platform.machine()
           assert data['commit'] == data['event_sha'], 'Checkout differs from the triggered commit'
@@ -73762,10 +73770,10 @@ END FILE: release_docs/0.2.82.md
 ================================================================================
 ================================================================================
 BEGIN FILE: release_docs/next_version_release.md
-CONTENT SHA256: 288bfdc7df43a2ebc95f9f037a9dcbce2f59985fa24a23205f696234c44bd845
+CONTENT SHA256: b45e63689dcd8a2e1ad47a8d501b26e50b48fd74aa2285899da37744fac56e75
 SOURCE ENCODING: utf-8
 ================================================================================
-# Melder 0.2.8226
+# Melder 0.2.8227
 
 **Unreleased**
 
@@ -74291,6 +74299,23 @@ What else changes:
 - A class whose constructor default carries a SpellMap or SpellContract with a mixed-case binding name gets a new
   spell id once, because the id includes the default's text. No cache generation moves.
 
+## Fixed: a meld that races a link change fails cleanly instead of with an internal phase error
+
+A meld runs part of its resolution while another thread can change the conduit's links. When `sever_link` or an
+uncontract removed a contracted provider in the middle of a borrower's meld, that meld could fail with an internal
+error instead of the validation error the same meld gets a moment later:
+
+```text
+PhaseExecutionError: Phase 'injection_plan_local' encountered 1 error(s). Resolution pipeline aborted.
+Errors: RuntimeError: Occurrence spell could not be resolved from the spell lookup.
+```
+
+After an uncontract, the next meld could then fail with "Cannot build CreationContext before spell_codegen_creation
+exists." Now such a meld raises `SpellbookValidationError`, saying the spell it needs is no longer visible to this
+conduit, and the next meld resolves against the links and contracts as they stand: it fails cleanly while the
+provider is gone and succeeds again once you re-link or re-contract it. Melds that do not race a link change are
+unchanged.
+
 ## Packaging and documentation
 
 - The internal-bind guard manifest holds 620 entries at 0.2.8216 (619 at 0.2.8215): `ManyDisposalBucket`, the
@@ -74350,7 +74375,7 @@ What else changes:
   README's `SpellMap` paragraph names the report.
 - The packaged system documents describe the descriptors' binding-name rule (kept as written, matched by the
   normalized key) and Phase 3's SpellMap matching; the descriptor code-map extents are remeasured.
-- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8226.
+- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8227.
 ================================================================================
 END FILE: release_docs/next_version_release.md
 ================================================================================

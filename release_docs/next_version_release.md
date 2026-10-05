@@ -1,4 +1,4 @@
-# Melder 0.2.8226
+# Melder 0.2.8227
 
 **Unreleased**
 
@@ -524,6 +524,23 @@ What else changes:
 - A class whose constructor default carries a SpellMap or SpellContract with a mixed-case binding name gets a new
   spell id once, because the id includes the default's text. No cache generation moves.
 
+## Fixed: a meld that races a link change fails cleanly instead of with an internal phase error
+
+A meld runs part of its resolution while another thread can change the conduit's links. When `sever_link` or an
+uncontract removed a contracted provider in the middle of a borrower's meld, that meld could fail with an internal
+error instead of the validation error the same meld gets a moment later:
+
+```text
+PhaseExecutionError: Phase 'injection_plan_local' encountered 1 error(s). Resolution pipeline aborted.
+Errors: RuntimeError: Occurrence spell could not be resolved from the spell lookup.
+```
+
+After an uncontract, the next meld could then fail with "Cannot build CreationContext before spell_codegen_creation
+exists." Now such a meld raises `SpellbookValidationError`, saying the spell it needs is no longer visible to this
+conduit, and the next meld resolves against the links and contracts as they stand: it fails cleanly while the
+provider is gone and succeeds again once you re-link or re-contract it. Melds that do not race a link change are
+unchanged.
+
 ## Packaging and documentation
 
 - The internal-bind guard manifest holds 620 entries at 0.2.8216 (619 at 0.2.8215): `ManyDisposalBucket`, the
@@ -583,4 +600,4 @@ What else changes:
   README's `SpellMap` paragraph names the report.
 - The packaged system documents describe the descriptors' binding-name rule (kept as written, matched by the
   normalized key) and Phase 3's SpellMap matching; the descriptor code-map extents are remeasured.
-- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8226.
+- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8227.

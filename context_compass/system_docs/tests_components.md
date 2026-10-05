@@ -1376,8 +1376,13 @@ Protects:
 - deterministic index publication (2026-09-28): an Event pauses the first mapping constructor while
   another public lookup runs; all four views must return complete data. A failing mapping constructor
   must propagate its error and permit a successful retry. Existing simultaneous-load tests remain.
+- a contract mutation inside a meld's resolution pass (0.2.8227): a link sever or an uncontract is forced to
+  finish just before the Phase 9 contract or runtime processor (the two that raised RuntimeError on a pool
+  miss); the meld must raise SpellbookValidationError, never PhaseExecutionError, and the consumer melds again
+  once the contract returns
 Key Files (C1):
 - `tests/integration/melder/multithreading/test_multithreading_link_bind_contract_features.py`
+- `tests/integration/melder/multithreading/test_contract_mutation_during_meld_resolution_integration.py`
 - `tests/integration/melder/multithreading/test_multithreading_spell_system_states.py`
 - `tests/integration/melder/multithreading/test_multithreading_meld_lock_order_deadlock.py`
 - `tests/integration/melder/multithreading/test_multithreading_system_document_view.py`
