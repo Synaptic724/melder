@@ -5,7 +5,7 @@
 - Status: in_progress
 - Owner:
 - Created: 2026-01-22
-- Updated: 2026-09-30
+- Updated: 2026-10-05
 
 ## Scope and Intent
 This document describes the tests architecture (C4) for `tests/` and how it
@@ -127,12 +127,11 @@ UNKNOWN items must remain explicitly marked until the relevant source is read.
   `.github/scripts/run_runtime_tests.py`, which runs `tests/unit`,
   `tests/component` and `tests/integration` in ONE pytest process per OS/Python
   cell. See `## System Boundary and External Interfaces`.
-- UNKNOWN: which Python minors a given CI run tested.
-  Why it matters: the matrix is discovered at run time (every stable free-threaded
-  minor at or above the `requires-python` floor, on three runners), so no file in
-  the tree records the versions a run used.
-  Where to investigate: the `runtime-python-matrix-*` artifact of that run.
-  Current status: by design; recorded per run, not in the tree.
+- RESOLVED 2026-10-05 (was UNKNOWN: which Python releases a given CI run tested, because
+  the matrix was discovered at run time from GitHub's release catalog). The tree names
+  them now: one manifest per exact release under `.github/python/tests/` (3.14.0 through
+  3.14.8) builds the matrix with no network lookup, so a run tested exactly the manifests
+  at its commit. The `runtime-python-matrix-*` artifact still records each run's matrix.
 - UNKNOWN: whether the six tracked `bundle.json` files under
   tests/unit/melder/utilities/_caching_system_tmp_load_*/ are fixtures or leftovers.
   Why it matters: no current test references those directories (the caching tests
@@ -179,12 +178,15 @@ CI entrypoint (verified 2026-09-26 against the files named):
   raises before AND after the run unless the process is Python 3.14+ built
   free-threaded with the GIL off. `tests/experimentation/` is therefore collected by
   a local `pytest` (it sits under `testpaths`) and never by CI.
-- Matrix: `.github/scripts/python_runtime_matrix.py` discovers every stable
-  free-threaded Python minor at or above the `requires-python` floor for
-  ubuntu-latest (x64), windows-latest (x64) and macos-latest (arm64). Each cell
-  installs locked test dependencies (`uv sync --locked --group test`) and runs with
-  `PYTHON_GIL=0`. Coverage uploads only after every cell reported, and an upload
-  failure does not fail the run.
+- Matrix (re-verified 2026-10-05): `.github/scripts/python_runtime_matrix.py` builds
+  it from the test manifests in `.github/python/tests/` - one TOML file per exact
+  Python release holding the release, `freethreaded = true` and that release's exact
+  test-dependency pins - for ubuntu-latest (x64), windows-latest (x64) and macos-latest
+  (arm64), with no network lookup. The floor release from `requires-python` must have
+  a manifest and none may sit below it. Each cell installs exactly its manifest's pins
+  plus Melder from the checkout (`uv pip install --no-deps`, no resolver, no lockfile)
+  and runs with `PYTHON_GIL=0`. Coverage uploads only after every cell reported, and an
+  upload failure does not fail the run.
 - Nothing in the repository runs the GIL-enabled posture. Lanes that need it run the
   suites by hand with `PYTHON_GIL=1` on the same interpreter.
 
@@ -226,6 +228,23 @@ Representative runtime-heavy entry fixtures:
   - `tests/integration/melder/aether/test_nexus_viewer_extended_surface_integration_matrix.py`
   - `tests/integration/melder/aether/rift/test_static_rift_json_testbench_integration.py`
   - `tests/integration/melder/aether/rift/test_capability_rift_json_testbench_integration.py`
+
+### CI/CD Pipeline
+The CI/CD that runs these tiers lives under `.github/`. Its agent guide, the folder `.github/ci_cd/`
+(start at `.github/ci_cd/README.md`), describes every workflow, script, ruleset and Python manifest, how they
+connect and how to extend them; read it before changing CI. Branch and release policy stays in
+`.github/BRANCH_WORKFLOW.md`. In brief, verified 2026-10-05 against the files named:
+- Three workflows start runs. `.github/workflows/ci.yml` qualifies pull requests and manual runs and reports
+  the one required status, `CI / merge-ready`; `.github/workflows/release-candidate.yml` uploads a candidate to
+  TestPyPI and probes the installed wheel on every manifest release; `.github/workflows/python-publish.yml`
+  requalifies a published release from scratch and uploads it to PyPI.
+- Every other workflow is reusable and proves one thing: `test-runtime.yml` (the three tiers on every manifest
+  release and runner, then coverage), the two asset checks, `docs.yml`, `build-distributions.yml`,
+  `verify-source-qualification.yml` and the three speed tests.
+- The decisions live in standard-library scripts in `.github/scripts/`, tested in
+  `tests/unit/github_workflows/`: `ci_policy.py` routes a pull request to the jobs it requires and checks their
+  results, and `python_runtime_matrix.py` turns the manifests in `.github/python/` into matrices and installs.
+  `test_workflow_contracts.py` also fails when a workflow, script or ruleset is missing from the guide.
 
 ## Architecture Summary (C4)
 The test system is a pytest-driven mirror of the runtime’s architectural
@@ -343,9 +362,10 @@ The most important recent integration addition is the dedicated
 ### Flow: CI Runtime Qualification
 1. `ci.yml` routes a pull request through `branch-policy`; when the runtime is in
    scope it calls `test-runtime.yml` (and the asset and documentation checks).
-2. `discover` computes the OS/Python matrix and keeps it as an artifact.
-3. each cell sets up a free-threaded Python, installs locked test dependencies and
-   runs `run_runtime_tests.py` with `PYTHON_GIL=0`.
+2. `discover` builds the OS/Python matrix from the test manifests (no network lookup)
+   and keeps it as an artifact.
+3. each cell sets up its free-threaded release, installs exactly that release's manifest
+   pins plus Melder and runs `run_runtime_tests.py` with `PYTHON_GIL=0`.
 4. the driver checks the runtime, runs the three tiers in one pytest process,
    checks the runtime again and returns pytest's exit code; JUnit XML is always
    kept, coverage XML only when the run passed.
@@ -727,9 +747,9 @@ constituent files.
   verified_at: 2026-09-26T21:51:55Z
 - path: `.github/workflows/test-runtime.yml`
   start_line: 1
-  end_line: 158
-  loc: 158
-  verified_at: 2026-09-26T21:51:55Z
+  end_line: 178
+  loc: 178
+  verified_at: 2026-10-05T11:36:52Z
 - path: `.github/scripts/run_runtime_tests.py`
   start_line: 1
   end_line: 54
@@ -835,6 +855,8 @@ graph TD
 - `.github/workflows/test-runtime.yml`
 - `.github/scripts/run_runtime_tests.py`
 - `.github/scripts/python_runtime_matrix.py`
+- `.github/python/tests/3.14.0.toml`
+- `.github/ci_cd/README.md`
 - `tests/unit/github_workflows/conftest.py`
 - `tests/integration/melder/live_sim/conftest.py`
 - `tests/unit/melder/aether/conduit/conftest.py`
@@ -846,6 +868,15 @@ graph TD
 - direct filesystem inventory of `tests/`
 
 ## Context / Handoff Summary
+
+2026-10-05 CI/CD guide (no notch): `### CI/CD Pipeline` under the system boundary points at `.github/ci_cd/`,
+the agent guide to every workflow, script, ruleset and Python manifest, and sketches the three entry workflows.
+
+2026-10-05 manifest-driven CI (no notch; CI and documentation only): each CI cell's Python release and test
+dependencies come from a manifest in `.github/python/tests/` (3.14.0 through 3.14.8); discovery reads no
+network catalog and cells install exactly their manifest's pins with `uv pip install --no-deps`. The CI
+entrypoint, the qualification flow and the C1 extent of `test-runtime.yml` follow; the per-run matrix
+unknown is resolved.
 
 2026-10-04 cache suffix (0.2.8223): cache tests now leave `.meldercache` bundles in the tree; `.gitignore`
 ignores them and still ignores legacy `.melc` files. A unit regression shows a legacy bundle is never read.

@@ -600,4 +600,6 @@ unchanged.
   README's `SpellMap` paragraph names the report.
 - The packaged system documents describe the descriptors' binding-name rule (kept as written, matched by the
   normalized key) and Phase 3's SpellMap matching; the descriptor code-map extents are remeasured.
+- CONTRIBUTING.md and the test system documents describe how CI installs test dependencies: every Python
+  release CI tests has a manifest in `.github/python/tests/` with that release's exact pins.
 - Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8227.

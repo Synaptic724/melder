@@ -32,8 +32,28 @@ permissions:
   contents: read
 
 jobs:
+  manifest:
+    # The speed tests' Python release and library pins come from .github/python/speed/ (exactly one manifest).
+    name: Speed manifest / ${{ github.head_ref || github.ref_name }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      python: ${{ steps.speed.outputs.python }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.14.7'
+          allow-prereleases: false
+      - name: Read the speed-test release from its manifest
+        id: speed
+        run: python .github/scripts/python_runtime_matrix.py speed
+
   gauntlet:
     name: Persistent gauntlet / ${{ github.head_ref || github.ref_name }} / ${{ matrix.os }}
+    needs: manifest
     runs-on: ${{ matrix.os }}
     timeout-minutes: 360
     strategy:
@@ -51,39 +71,20 @@ jobs:
       PERSISTENT_SERIES_SECONDS: ${{ inputs.duration-seconds }}
       PERSISTENT_SERIES_OUTPUT_DIR: ${{ github.workspace }}/persistent-gauntlet-results
       GAUNTLET_RUNNER_LABEL: ${{ matrix.os }}
+      SPEED_PYTHON: ${{ needs.manifest.outputs.python }}
     steps:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
       - uses: actions/setup-python@v7
         with:
-          python-version: '3.14'
-          check-latest: true
+          python-version: ${{ needs.manifest.outputs.python }}
           architecture: x64
           freethreaded: true
           allow-prereleases: false
       - name: Install identical pinned benchmark dependencies
-        shell: python
-        run: |
-          import subprocess, sys
-          from pathlib import Path
-          pins = ['dependency-injector==4.49.1', 'dishka==1.10.1', 'pytest==9.1.1',
-                  'iniconfig==2.3.0', 'packaging==26.3', 'pluggy==1.6.0',
-                  'Pygments==2.21.0', 'colorama==0.4.6']
-          report = Path('persistent-gauntlet-results')
-          report.mkdir(exist_ok=True)
-          (report / 'requirements.txt').write_text('\n'.join(pins) + '\n', encoding='utf-8')
-          command = [sys.executable, '-m', 'pip', 'install', '--only-binary=:all:',
-                     '--report', str(report / 'install-report.json'), *pins]
-          with (report / 'install.log').open('w', encoding='utf-8') as log:
-              process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                                         text=True, encoding='utf-8', errors='replace')
-              for line in process.stdout:
-                  print(line, end='', flush=True)
-                  log.write(line)
-                  log.flush()
-              status = process.wait()
-          raise SystemExit(status)
+        # Exactly the speed manifest's pins: wheels only, except its build_from_source entries.
+        run: python .github/scripts/python_runtime_matrix.py speed-install --results persistent-gauntlet-results
       - name: Record persistent benchmark provenance
         env:
           PYTHON_GIL: '0'
@@ -115,7 +116,7 @@ jobs:
           (report / 'environment.json').write_text(json.dumps(data, indent=2), encoding='utf-8')
           (report / 'dependencies.txt').write_text(subprocess.check_output([sys.executable, '-m', 'pip', 'freeze'], text=True), encoding='utf-8')
           print(json.dumps(data, indent=2))
-          assert sys.version_info[:2] == (3, 14) and sys.version_info.releaselevel == 'final', sys.version
+          assert platform.python_version() == os.environ['SPEED_PYTHON'], (sys.version, os.environ['SPEED_PYTHON'])
           assert data['free_threaded_build'] == 1 and not data['gil_enabled'], 'Expected free-threaded GIL-off runtime'
           assert platform.machine().lower() in ('x86_64', 'amd64'), platform.machine()
           assert data['commit'] == data['event_sha'], 'Checkout differs from the triggered commit'

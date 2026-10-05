@@ -3,6 +3,9 @@
 Contributions enter `dev` through a pull request. Promotion proceeds through
 `dev -> preprod -> release_candidate -> prod`, with the merge result checked at every boundary.
 
+Agents: `.github/ci_cd/` explains every workflow, script, ruleset and Python manifest, how they fit together
+and how to extend them. Read it before changing CI.
+
 ## Required checks
 
 `CI / merge-ready` remains the stable required status. The branch route selects
@@ -31,7 +34,7 @@ The checks enforce these contracts:
 - Repository hygiene: tracked filenames must not collide case-insensitively.
 - Documentation in full CI: the shared documentation validation workflow must succeed.
 - Full runtime tests: unit, component, and integration tiers on Linux, Windows, and macOS,
-  using the latest stable patch of every supported Python minor, with the GIL disabled
+  on every Python release that has a test manifest, with the GIL disabled
   in the actual pytest process.
   The macOS job uses `macos-latest` on native Apple Silicon (arm64).
 - Distribution verification in full CI outside dev: wheel and sdist boundaries,
@@ -71,10 +74,10 @@ measured process refuses an enabled GIL. Request/A/B workloads repeat into disti
 and later lanes; threads synchronize their start and are joined each workload iteration.
 This is a synchronized burst, with independent scope work rather than a producer/consumer queue.
 
-The gauntlet uses the newest stable Python 3.14 patch and pinned dependencies on Ubuntu x64, Windows x64 and macOS
-Intel x64 for comparison. This fixed benchmark baseline is separate from the compatibility
-test matrix below. Setup helpers do not inherit PYTHON_GIL=0. The optional manual thread-counts
-input overrides the file's list; iteration-counts overrides the smaller CI iteration budgets.
+The gauntlet uses the speed manifest's Python release (3.14.7 free-threaded today) and pinned dependencies
+on Ubuntu x64, Windows x64 and macOS Intel x64 for comparison. This fixed benchmark baseline is separate
+from the compatibility test matrix below. Setup helpers do not inherit PYTHON_GIL=0. The optional manual
+thread-counts input overrides the file's list; iteration-counts overrides the smaller CI iteration budgets.
 An explicitly blank input uses the corresponding local file setting. The CI default relay
 has 60 fresh child runs per round on each OS: five iteration counts, four thread counts,
 and three libraries. It totals 228,000 workload iterations per OS at one round.
@@ -118,8 +121,8 @@ depends only on branch-policy, so all three may run concurrently on separate Git
 VMs; runner availability may queue them. CI / merge-ready requires its success on that route and
 accepts the planned skip on every other route. The workflow itself remains manually runnable.
 
-It runs benchmarks/testing_other_di/test_shallow_all_thread_scaling.py on the newest stable Python 3.14 patch
-(free-threaded, GIL off) with the same pinned dependencies as the other benchmarks, on Ubuntu x64,
+It runs benchmarks/testing_other_di/test_shallow_all_thread_scaling.py on the speed manifest's release
+(3.14.7 today; free-threaded, GIL off) with the same pinned dependencies as the other benchmarks, on Ubuntu x64,
 Windows x64 and macOS Intel x64. Each library (dependency-injector, dishka and melder) gets its
 own fresh pytest process through DI_LIBS, because a library measured second or third in one
 process runs 5-12% slower (benchmarks/testing_other_di/benchmarks.md). The thread-counts input
@@ -136,40 +139,51 @@ counts within the same OS and account for hosted hardware variation.
 
 ## Supported Python versions
 
-Runtime discovery reads the Python floor from `project.requires-python` in `pyproject.toml`
-(currently `>=3.14`) and GitHub's official `actions/python-versions` release manifest.
-It selects the latest stable patch of every matching minor: 3.14, then 3.15 once stable,
-and subsequent stable versions automatically. Alpha, beta and release-candidate Python builds
-are excluded. Historical patch releases are not separate matrix entries.
+CI runs only the Python releases the repository names. Each one has a manifest: a TOML file named after
+the exact release, holding `python` (that release), `freethreaded = true` and `dependencies`, the exact
+`name==version` pins installed with it (a pin may carry a `; marker`, as colorama does for Windows).
+Nothing is looked up on the network, so a new Python release, 3.15 included, runs only after a manifest
+adds it.
 
-Every selected version runs on Linux x64, Windows x64 and macOS arm64. Runtime tests and
-RC installation probes use `freethreaded: true` with the discovered exact Python version.
-The test driver verifies free-threading support and GIL-off state before and after pytest;
-the installed-package probe also verifies GIL-off state. Discovery, asset and policy tooling
+- `.github/python/tests/` holds one manifest per release the runtime tests cover: today 3.14.0 through
+  3.14.8. A user's other dependencies can hold them on an older patch, and `>=3.14` claims that patch
+  too, so each release is its own matrix entry. The floor release from `project.requires-python`
+  (`>=3.14`, so 3.14.0) must have a manifest, and a manifest below the floor is refused: raising the
+  floor means deleting the retired manifests in the same change.
+- `.github/python/speed/` holds exactly one manifest: the release the three speed tests measure (3.14.7)
+  and the benchmark libraries' pins. Its `build_from_source` list names pins built from their source
+  distribution because no free-threaded wheel exists (dependency-injector); everything else installs as
+  a wheel. The speed release must also have a test manifest.
+
+To add a release, copy the newest test manifest to `<release>.toml`, change `python`, and adjust any pin
+that does not install on that release. To move the speed tests, replace the speed manifest in one change;
+their first run afterwards is the new baseline. When Melder gains a runtime dependency, pin it in every
+test manifest; a contract test refuses a manifest that leaves one out.
+
+Every test release runs on Linux x64, Windows x64 and macOS arm64. Each cell installs exactly its
+manifest's pins plus Melder from the checkout with `uv pip install --no-deps`, so nothing unpinned enters.
+Release-candidate installation probes run the same releases. Runtime tests and RC probes use
+`freethreaded: true`. The test driver verifies free-threading support and GIL-off state before and after
+pytest; the installed-package probe also verifies GIL-off state. Discovery, asset and policy tooling
 may use ordinary Python because those jobs do not qualify Melder's runtime behavior.
 
-Single-version helper jobs (hygiene, assets, docs, source qualification, publication and RC
-bookkeeping) request `python-version: "3.14"` with `check-latest: true`, so they run the newest
-stable 3.14 patch instead of whatever patch the runner image cached. The three speed tests
-(real-world gauntlet, persistent runtime series, shallow thread scaling) are not part of the matrix:
-each runs once, on the newest stable 3.14 patch the same way (and asserts a final 3.14 release), never
-across versions, and only on dev-to-preprod pull requests. They do not move to a new minor by
-themselves, because they install pinned third-party benchmark libraries as wheels only: once those
-libraries install on the new free-threaded minor, change `python-version` and the matching
-`sys.version_info[:2]` assertion in the three workflows together (the workflow contract test checks
-that the two agree and that no workflow pins an exact patch).
+Single-version helper jobs (discovery, hygiene, assets, docs, source qualification, publication, RC
+bookkeeping, distribution builds and the speed tests' manifest jobs) request exactly
+`python-version: "3.14.7"`, a release with a test manifest; none uses `check-latest` or a version file.
+The three speed tests (real-world gauntlet, persistent runtime series, shallow thread scaling) are not
+part of the matrix: each runs once, on the speed manifest's release, never across versions, and only on
+dev-to-preprod pull requests. Each asserts that it is running that release before measuring.
 
-The discovery helper refuses empty/malformed catalog data, missing support for the declared
-floor, and a selected release lacking free-threaded assets on a required platform. Setup errors
-on the actual runner also fail the matrix. No missing version/platform silently disappears.
-Each runtime/RC run retains its selected OS/version matrix as a JSON artifact for 90 days.
+The discovery helper refuses a missing or empty manifest folder, a file that is not a valid manifest, an
+inexact or repeated pin, a missing floor release, a release below the floor and a matrix over its job
+limit. Setup errors on the actual runner also fail the matrix. No missing version/platform silently
+disappears. Each runtime/RC run retains its selected OS/version matrix as a JSON artifact for 90 days.
 Tests, coverage and installed-package reports include OS, exact Python version and run/attempt.
 
-Distribution building still produces one wheel/sdist pair. Its Python selection comes from
-`pyproject.toml` with free threading enabled; the full compatibility matrix belongs to runtime
-tests and RC installed-package checks. Existing full-test stages stay unchanged. Historical
-source proof refers to its recorded full-CI run, while final publication discovers and tests
-the currently available stable matrix afresh.
+Distribution building still produces one wheel/sdist pair, on free-threaded Python 3.14.7; the full
+compatibility matrix belongs to runtime tests and RC installed-package checks. Existing full-test stages
+stay unchanged. Historical source proof refers to its recorded full-CI run, while final publication
+tests every release named by the test manifests afresh.
 
 ## Coverage reporting and README badges
 
@@ -192,6 +206,11 @@ a complete same-attempt set. The corrected layout takes effect in a new run afte
 committed and promoted. This reporting reuse does not relax publication artifacts or source proof.
 Tests and the current source/release checks remain required. Coverage delivery is nonblocking,
 and codecov.yml disables extra coverage statuses and PR comments; no percentage threshold is added.
+
+When the first Codecov upload attempt fails, for example because Codecov's download host
+cli.codecov.io cannot be reached, one retry installs the same uploader from PyPI (`use_pypi: true`)
+and uploads again. That retry skips the signed-download check of the uploader; if it fails too,
+the reporting job fails without blocking CI.
 
 One-time setup:
 
@@ -228,12 +247,13 @@ uv run --locked python src/melder/_build_assets/_build_asset_runner.py --check
 uv run --locked python llm_support/_builder.py --check
 ```
 
-`uv.lock` pins the development dependency resolution shared with CI. Runtime jobs preserve the
-dynamic OS/no-GIL Python matrix and sync the test group with each selected interpreter. Distribution
+`uv.lock` pins the development dependency resolution; in CI only the distribution jobs use it. Runtime
+test cells install their release's manifest pins instead (see Supported Python versions). Distribution
 jobs sync only the build group and build without isolation, using those locked tools. Their wheel
 probe still installs only the exact built wheel in a separate environment. Cache keys include the
-lockfile and runtime/build context. The documentation toolchain retains `docs/requirements.lock`.
-See [contributor setup](../CONTRIBUTING.md) for optional groups and deliberate lock updates.
+lockfile or manifest and the runtime/build context. The documentation toolchain retains
+`docs/requirements.lock`. See [contributor setup](../CONTRIBUTING.md) for optional groups and
+deliberate lock updates.
 
 If generated assets are stale, regenerate locally and commit them. Stage newly
 added input files before running the repository builder so its tracked-file
@@ -322,7 +342,7 @@ errors still refuse. If the wait expires, finish/fix RC and rerun the failed CI
 jobs. Elapsed time never substitutes for successful exact-source qualification.
 
 The workflow reuses the package builder, uploads to TestPyPI, then checks a
-fresh installation across the discovered stable no-GIL OS/version matrix. It does not run the whole
+fresh installation on every no-GIL OS/release cell built from the test manifests. It does not run the whole
 source suite again after upload. The probe requires the expected package version,
 metadata, import origin in site-packages, packaged assets, and a small public
 bind/conjure/resolve/cleanup scenario. The exact downloaded wheel SHA256 must
