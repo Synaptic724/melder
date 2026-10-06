@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/persistence/persistence_system.py",
- "source_sha256": "12a9df0e25520cf679191689a450ecee0a7983268e82eb0e2b1082a35d56b928",
+ "source_sha256": "cca0cea0fcdf2638662613e27ea439149872d874b231cc00585d7ab6bc36dcf6",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.persistence.persistence_system": {
@@ -79,7 +79,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "0a0f797d638b421e5da8ff3eb9ea9bc75419461e158a6f9aae75b693f80280ec",
+   "span_sha256": "2a2154dd7f3743b8127694c7eb5a0e74f469805a43a722d141f38a1ddc2458a9",
    "role": "Owns ALL persistence stores: profiles, the checkpoint ledger, and the cache.",
    "responsibilities": [
     "routes twin emissions to the ACTIVE profile",
@@ -88,7 +88,8 @@
     "flushes/reloads the profile-scoped cache and enforces its FIFO cap",
     "constructs the RestoreEngine for load_checkpoint (chain detached under lock, engine runs outside it)",
     "inserts cached items insert-if-absent (cache and external-manager import sinks)",
-    "routes conduit-only removal to the active profile without loader dependencies"
+    "routes conduit-only removal to the active profile without loader dependencies",
+    "passes custody keys and frame-aware custody lookups through to the active profile"
    ],
    "owns_state": [
     "profiles_by_name",
@@ -144,6 +145,7 @@
  ],
  "published_aliases": [],
  "imports": {
+  "threading": "threading",
   "Dict": "typing.Dict",
   "List": "typing.List",
   "Optional": "typing.Optional",

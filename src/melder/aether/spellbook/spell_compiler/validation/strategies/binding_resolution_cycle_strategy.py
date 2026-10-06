@@ -37,10 +37,10 @@ class BindingResolutionCycleStrategy(SpellValidationStrategy):
 
     Contract:
         - Builds a binding-key graph from available requirements.
-        - Excludes non-resolvable constructors, resolved OVERRIDE_REQUIRED sockets
-          and UNRESOLVED_INPUT sockets. Descriptive references are never
-          reconstruction of a construction edge, and an unresolved input has no
-          provider to form one.
+        - Excludes non-resolvable constructors, resolved OVERRIDE_REQUIRED sockets,
+          UNRESOLVED_INPUT and AMBIGUOUS_INPUT sockets. Descriptive references are never
+          reconstruction of a construction edge, an unresolved input has no
+          provider to form one, and an ambiguous input is refused before any edge exists.
         - Reports cycles reachable from the spell under validation.
         - Does not mutate spells, spellbooks, or requirements.
 
@@ -234,6 +234,7 @@ class BindingResolutionCycleStrategy(SpellValidationStrategy):
                 if topology is not None and any(
                         socket.socket_kind is SocketKind.OVERRIDE_REQUIRED
                         or socket.socket_kind is SocketKind.UNRESOLVED_INPUT
+                        or socket.socket_kind is SocketKind.AMBIGUOUS_INPUT
                         for socket in topology.get_sockets_for_param(param.name)
                 ):
                     continue

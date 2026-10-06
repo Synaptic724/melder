@@ -227,7 +227,7 @@ def test_spellbook_public_api_describe_spells_returns_detached_sorted_runtime_du
                 spell=BasicConfig,
                 existence=Existence.unique,
                 permissions="create",
-                spellframe=BasicConfig,
+                spellframe="BasicConfig",
                 binding_name="secondary",
             )
 

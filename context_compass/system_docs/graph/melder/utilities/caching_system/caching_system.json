@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/utilities/caching_system/caching_system.py",
- "source_sha256": "138732c435edc526936956f2de8bd1ae4958df93c968e74f56618c07ab29aa80",
+ "source_sha256": "5e29ab528ee6dccb176f6d6fe6d4af47cc7118647483ce3954407c9bd1223dcf",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.utilities.caching_system.caching_system": {
@@ -44,18 +44,20 @@
     "has_structural_payload",
     "remove_spell_payload",
     "remove_structural_payload",
+    "set_world_stamp",
     "spell_payloads",
     "structural_payloads",
     "transfer_spell_payload_to",
     "upsert_spell_payload",
-    "upsert_structural_payload"
+    "upsert_structural_payload",
+    "world_stamp"
    ],
    "shape": {
-    "method_count": 22,
+    "method_count": 24,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "fe28b0c20fffa859f6b07dd2955afcf0f037f1f81db4d32966e8e8c7f7e4dd8b",
+   "span_sha256": "59e2c15a15637c6d2f35f488adfc36ccae15f9d24f9c6e4cbb40579c13752cbb",
    "role": "Conduit-scoped cache persistence utility.",
    "responsibilities": [
     "owns one rooted-conduit cache file and its in-memory spell-payload dictionary",
@@ -65,7 +67,9 @@
     "preserves the accepted release stamp through normalization and subsequent emission",
     "cache generation 11 retires executors emitted before the unresolved-input failure path",
     "cache generation 12 cold-resets bundles that may hold consumer payloads from a previous world",
-    "cache generation 13 gives each collection member its own compiler path; 14 retires bundles whose manifests carried override lanes"
+    "cache generation 13 gives each collection member its own compiler path; 14 retires bundles whose manifests carried override lanes",
+    "carries the executor-tier world stamp in the envelope (generation 19): set_world_stamp records it after staging and reports a change; a loaded bundle without the field is unstamped and never admits a full hit",
+    "cache generation 20 retires bundles whose phase 3-4 rows were captured under the name matcher (annotation matching by kind, 0.2.8222)"
    ],
    "owns_state": [
     "_id",
@@ -82,7 +86,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "fe28b0c20fffa859f6b07dd2955afcf0f037f1f81db4d32966e8e8c7f7e4dd8b"
+   "semantics_authored_against": "71a042ce46d16a7ddf934695167db83d75a7deeee52107e51a4b4bd3d24f33d1"
   }
  },
  "edges_out": [
@@ -115,6 +119,10 @@
  ],
  "published_aliases": [],
  "imports": {
+  "logging": "logging",
+  "marshal": "marshal",
+  "sys": "sys",
+  "threading": "threading",
   "Path": "pathlib.Path",
   "MappingProxyType": "types.MappingProxyType",
   "Any": "typing.Any",

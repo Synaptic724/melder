@@ -82,6 +82,7 @@
  ],
  "published_aliases": [],
  "imports": {
+  "json": "json",
   "ClassVar": "typing.ClassVar",
   "Optional": "typing.Optional",
   "TYPE_CHECKING": "typing.TYPE_CHECKING",

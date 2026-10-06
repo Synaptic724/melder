@@ -31,6 +31,9 @@ from melder.aether.spellbook.spell_compiler.validation.strategies.circular_depen
 from melder.aether.spellbook.spell_compiler.validation.strategies.dangling_dependency_strategy import \
     DanglingDependenciesStrategy
 from melder.aether.spellbook.spell_compiler.validation.strategies.required_holes_strategy import RequiredHolesStrategy
+from melder.aether.spellbook.spell_compiler.validation.strategies.ambiguous_provider_strategy import (
+    AmbiguousProviderStrategy,
+)
 from melder.aether.spellbook.spell_compiler.validation.strategies.resolution_frame_presence_strategy import \
     ResolutionFramePresenceStrategy
 from melder.aether.spellbook.spell_compiler.validation.strategies.self_validation_strategy import SelfDependencyStrategy
@@ -181,6 +184,7 @@ class SpellValidationSystem(Cleanable):
         self.register_strategy(SelfDependencyStrategy())
         self.register_strategy(CircularDependencyStrategy())
         self.register_strategy(RequiredHolesStrategy())
+        self.register_strategy(AmbiguousProviderStrategy())
         self.register_strategy(DuplicateSpellNameStrategy())
         self.register_strategy(AnnotationShapeGuardStrategy())
         self.register_strategy(SpellMapShapeValidationStrategy())

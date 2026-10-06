@@ -115,6 +115,7 @@
  ],
  "published_aliases": [],
  "imports": {
+  "threading": "threading",
   "Dict": "typing.Dict",
   "Optional": "typing.Optional",
   "AethericFrameConfiguration": "melder.aether.aetheric_frame.aetheric_frame_configuration.AethericFrameConfiguration",

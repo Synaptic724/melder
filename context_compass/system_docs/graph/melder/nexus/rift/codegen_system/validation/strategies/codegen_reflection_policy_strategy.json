@@ -69,6 +69,8 @@
  ],
  "published_aliases": [],
  "imports": {
+  "ast": "ast",
+  "threading": "threading",
   "TYPE_CHECKING": "typing.TYPE_CHECKING",
   "Optional": "typing.Optional",
   "CodegenValidationResult": "melder.nexus.rift.codegen_system.validation.codegen_validation_result.CodegenValidationResult",

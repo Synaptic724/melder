@@ -1,0 +1,18 @@
+melder: iterations=50 main=72523 zero=23465 other=1317 other_tids=1 live_threads=2
+     409  builtins.dict
+     348  builtins.set
+     261  builtins.list
+     144  melder.aether.spellbook.spell_compiler.dag.dag_node.DagNode
+      30  _thread.RLock
+      29  melder.aether.spellbook.spell_compiler.system.spell_system_node.SpellSystemNode
+      29  melder.aether.spellbook.spell_compiler.dag.dag_index.PathRegistry
+      29  melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint.RootResolutionBlueprint
+      29  melder.aether.spellbook.spell_compiler.dag.directed_acyclic_work_graph.DirectedAcyclicWorkGraph
+       2  builtins.function
+       2  builtins.cell
+       1  melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state.ConduitResolutionState
+       1  builtins.builtin_method
+       1  builtins.tuple
+       1  melder.aether.spellbook.spell_compiler.system.spell_system_index.SpellSystemIndex
+       1  builtins.method
+dishka: iterations=50 main=39131 zero=11093 other=0 other_tids=0 live_threads=1

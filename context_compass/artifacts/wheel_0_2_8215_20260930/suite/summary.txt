@@ -1,0 +1,67 @@
+# MelderOps suite on installed Melder 0.2.8215 (VM env venvs/melderops314t, CPython 3.14.7t, GIL off, clean PYTHONPYCACHEPREFIX)
+## suite/command_center.xml
+tests 2905: passed 2902, failed 0, errors 0, skipped 3
+## suite/component.xml
+tests 473: passed 473, failed 0, errors 0, skipped 0
+## suite/system_integration.xml
+tests 30: passed 29, failed 0, errors 0, skipped 1
+## suite/utilities.xml
+tests 977: passed 975, failed 0, errors 0, skipped 2
+## suite/concurrency_ds.xml
+tests 320: passed 320, failed 0, errors 0, skipped 0
+## suite/concurrency_sync_types.xml
+tests 976: passed 976, failed 0, errors 0, skipped 0
+## suite/sync_primitives.xml
+tests 349: passed 346, failed 2, errors 0, skipped 1
+FAILURE tests.synchronization.primitives.flow_regulator.test_flow_regulator_extra.TestFlowRegulatorEdgeCases::test_fairness_no_starvation - AssertionError: Starvation detected: ['Agent-3', 'Agent-7']
+FAILURE tests.synchronization.primitives.flow_regulator.test_flow_regulator_extra.TestFlowRegulatorEdgeCases::test_acquire_latency_ratio - AssertionError: Acquire under contention is too slow (531.1x)
+## suite/sync_rest.xml
+tests 543: passed 540, failed 1, errors 0, skipped 2
+FAILURE tests.synchronization.coordinators.test_agent_coordinator.TestAgenticCoordinatorGeneral::test_28_setup_mode_with_wait_time_batches_followers - assert 0.1499350020003476 >= 0.15
+## all shards
+tests 6573: passed 6561, failed 3, errors 0, skipped 9
+FAILURE tests.synchronization.primitives.flow_regulator.test_flow_regulator_extra.TestFlowRegulatorEdgeCases::test_fairness_no_starvation - AssertionError: Starvation detected: ['Agent-3', 'Agent-7']
+FAILURE tests.synchronization.primitives.flow_regulator.test_flow_regulator_extra.TestFlowRegulatorEdgeCases::test_acquire_latency_ratio - AssertionError: Acquire under contention is too slow (531.1x)
+FAILURE tests.synchronization.coordinators.test_agent_coordinator.TestAgenticCoordinatorGeneral::test_28_setup_mode_with_wait_time_batches_followers - assert 0.1499350020003476 >= 0.15
+## focused: diagnostics, toolbox, melder_setup
+tests 4: passed 4, failed 0, errors 0, skipped 0
+tests 87: passed 85, failed 0, errors 0, skipped 2
+tests 265: passed 265, failed 0, errors 0, skipped 0
+## timing controls
+isolated on 0.2.8215:
+tests 3: passed 2, failed 1, errors 0, skipped 0
+FAILURE tests.synchronization.coordinators.test_agent_coordinator.TestAgenticCoordinatorGeneral::test_28_setup_mode_with_wait_time_batches_followers - assert 0.14992290499958472 >= 0.15
+same three on 0.2.8212:
+tests 3: passed 2, failed 1, errors 0, skipped 0
+FAILURE tests.synchronization.primitives.flow_regulator.test_flow_regulator_extra.TestFlowRegulatorEdgeCases::test_fairness_no_starvation - AssertionError: Starvation detected: ['Agent-5', 'Agent-8']
+repeats of the three on 0.2.8215:
+run 1: tests 3: passed 2, failed 1, errors 0, skipped 0 FAILURE tests.synchroniz
+
+run 2: tests 3: passed 2, failed 1, errors 0, skipped 0 FAILURE tests.synchroniz
+
+run 3: tests 3: passed 2, failed 1, errors 0, skipped 0 FAILURE tests.synchroniz
+
+run 4: tests 3: passed 2, failed 1, errors 0, skipped 0 FAILURE tests.synchroniz
+
+run 5: tests 3: passed 1, failed 2, errors 0, skipped 0 FAILURE tests.synchroniz
+
+run 6: tests 3: passed 2, failed 1, errors 0, skipped 0 FAILURE tests.synchroniz
+
+test_28 alone on 0.2.8212, six runs:
+run 1: tests 1: passed 0, failed 1, errors 0, skipped 0 FAILURE tests.synchroniz
+
+run 2: tests 1: passed 0, failed 1, errors 0, skipped 0 FAILURE tests.synchroniz
+
+run 3: tests 1: passed 0, failed 1, errors 0, skipped 0 FAILURE tests.synchroniz
+
+run 4: tests 1: passed 0, failed 1, errors 0, skipped 0 FAILURE tests.synchroniz
+
+run 5: tests 1: passed 0, failed 1, errors 0, skipped 0 FAILURE tests.synchroniz
+
+run 6: tests 1: passed 0, failed 1, errors 0, skipped 0 FAILURE tests.synchroniz
+
+## per-test counts of the timing repeats
+0.2.8215, the three together, six runs: test_28 failed 6; test_acquire_latency_ratio passed 6; test_fairness_no_starvation passed 5, failed 1
+0.2.8212, test_28 alone, six runs: failed 6 (elapsed 0.1496-0.1500 against >= 0.15)
+## note
+An earlier utilities run showed 18 failures from stale Windows-compiled bytecode (co_filename C:\Users\...) in the VM copy's __pycache__; with a clean PYTHONPYCACHEPREFIX all pass. Those runs are kept under suite/superseded/.

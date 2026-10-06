@@ -93,6 +93,8 @@
  ],
  "published_aliases": [],
  "imports": {
+  "logging": "logging",
+  "threading": "threading",
   "Callable": "collections.abc.Callable",
   "Any": "typing.Any",
   "AetherConfiguration": "melder.aether.aether_configuration.AetherConfiguration",

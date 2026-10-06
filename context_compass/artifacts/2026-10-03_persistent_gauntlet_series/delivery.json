@@ -1,0 +1,58 @@
+{
+  "timestamp": "2026-10-03T18:44:45.829676+00:00",
+  "duration_seconds": [
+    60,
+    180,
+    300
+  ],
+  "thread_counts": [
+    3,
+    5
+  ],
+  "libraries": [
+    "dishka",
+    "melder",
+    "dependency-injector"
+  ],
+  "scenarios": [
+    "fastapi_steady",
+    "bursty_app"
+  ],
+  "full_cells_per_os": 36,
+  "measured_minutes_per_os": 108,
+  "default_warmup_minutes_per_os": 6,
+  "validation": {
+    "tests": 322,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "short_real_cells": 24,
+  "short_duration_seconds": [
+    0.2,
+    0.3
+  ],
+  "original_benchmarks_unchanged": true,
+  "bundle_check": "src/tests/other OK",
+  "full_series_run": false,
+  "hosted_run": false,
+  "committed_or_pushed": false,
+  "hashes": {
+    ".github/workflows/persistent-runtime-gauntlet.yml": "49bdcc39da38a7575030c6ec6e51683279adf09355c419adf67eac099f8a38ee",
+    ".github/workflows/ci.yml": "c769a71ed9b37cec12092483ecf0ff6c5f9d9b508502680bf5bc1a747ce70c1c",
+    ".github/scripts/ci_policy.py": "e9c45cd5e58e8e060a683c96192706d3eaad69038b30019f01cc2e597cc56411",
+    ".github/BRANCH_WORKFLOW.md": "d9f267a5572c2e972f12fc4755a1f3839e1f50e855b1dcb50cd4cecef639f55f",
+    ".gitignore": "2263bb6c36c30a1924cb50980ef5fe0261374907166d8bc61a7651364c283140",
+    "benchmarks/testing_other_di/persistent_runtime_gauntlet_series_runner.py": "2bcb97fec6f9fb3e7d0014bc3e1f370bdb8d5c92c4a8331c9817477918212261",
+    "benchmarks/testing_other_di/test_persistent_runtime_gauntlet_series.py": "fef91f651f8ae43aa7a1c68167a32ea9d9705e744adad1363ee0a88377856366",
+    "benchmarks/testing_other_di/test_persistent_runtime_gauntlet_series_contracts.py": "2f286b0c2484908216f6f4f9635de5be3ad9dea5ae4087693fcb9660e4ff1c55",
+    "tests/unit/github_workflows/test_ci_policy.py": "fd6a2a240ec9a5479a57b1c1b7e8025d91494d3d5f2b0386a38d006a0c8a96eb",
+    "tests/unit/github_workflows/test_source_qualification.py": "17a239e71f783fd805898b690debb8d696bb8b604983419ea1657eabc4768ee3",
+    "tests/unit/github_workflows/test_workflow_contracts.py": "67491e5b3d8bae71099ac47bee19ad72e812dba63a60a340dab4865bf619620f",
+    "llm_support/llm_full_other.txt": "151bb73020f53367611e82997f2e6f5fd792393404a56fedcfa27e64285b1b7e",
+    "llm_support/llm_full_other_index.md": "6ec472569060c9983517def97b0e80fc91cce22b12769dfc860d2348e7cf4886",
+    "llm_support/llm_full_tests.txt": "83bfcfa0840b01674039484f3f0d7269d02dd8b4338834dc3193c448db1cee01",
+    "llm_support/llm_full_tests_index.md": "a13ddd73fa59d1afa4bb5ea7aa56cc70dc5811eef22c23db9d0de9618a0c7713",
+    "llm_support/manifest.json": "0152fc086e908d66c493b11c50578b40858c369d5ea43f2497c8284de678ab94"
+  }
+}

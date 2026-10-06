@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/_build_assets/_build_asset_runner.py",
- "source_sha256": "a70d3f111fbf30f1f7b849c6e95892db14ee1f26bc14d1b8b3233ee2b8db1321",
+ "source_sha256": "ff493bed92fc4955bafd8a60cc87ca1af5887318199d5010ebfc35eae193d34a",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder._build_assets._build_asset_runner": {
@@ -45,6 +45,11 @@
  "edge_candidates": [],
  "published_aliases": [],
  "imports": {
+  "argparse": "argparse",
+  "importlib.util": "importlib.util",
+  "re": "re",
+  "pathlib": "pathlib",
+  "sys": "sys",
   "ModuleType": "types.ModuleType",
   "List": "typing.List",
   "Optional": "typing.Optional",

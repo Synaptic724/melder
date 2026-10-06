@@ -298,10 +298,16 @@ def test_cache_integration_second_identical_run_skips_phase11_artifact(dynamic: 
 
 
 @pytest.mark.parametrize("dynamic", [False, True])
-def test_cache_integration_stale_surplus_cache_still_full_hits(dynamic: bool) -> None:
-    """Verify extra cached spell ids do not block full-hit reload for live ids."""
+def test_cache_integration_removed_spell_reruns_once_then_full_hits(dynamic: bool) -> None:
+    """
+    A removed spell is a changed world: the next run recompiles, the one after full-hits.
+
+    Before generation 19 a surplus cached id was ignored and the second world full-hit although its
+    executors were compiled in a world with one more spell; the world stamp now retires that bundle
+    once, and the re-staged bundle serves the repeat world as a full hit.
+    """
     cache_root_path = _prepare_case_cache_root(
-        f"_cache_runtime_surplus_full_hit_{'dynamic' if dynamic else 'automatic'}"
+        f"_cache_runtime_removed_spell_{'dynamic' if dynamic else 'automatic'}"
     )
     first_spellbook = _make_spellbook(
         frame_name="cache-runtime-surplus",
@@ -325,10 +331,27 @@ def test_cache_integration_stale_surplus_cache_still_full_hits(dynamic: bool) ->
     second_conduit = _conjure(second_spellbook, conduit_name="root", dynamic=dynamic)
     try:
         spell = _get_spell(second_spellbook, second_spell_ids[BasicService])
+        # Rerun: phases 8-11 compiled the spell again; no context was preloaded.
+        assert spell._creation_context is None
+        assert spell._compiler_artifact._spell_codegen_creation is not None
+    finally:
+        second_conduit.cleanup()
+    _reset_runtime_singletons()
+
+    third_spellbook = _make_spellbook(
+        frame_name="cache-runtime-surplus",
+        cache_root_fragment=_build_cache_root_fragment(cache_root_path),
+        dynamic=dynamic,
+    )
+    third_spell_ids = _bind_simple_spells(third_spellbook, include_logger=False)
+    third_conduit = _conjure(third_spellbook, conduit_name="root", dynamic=dynamic)
+    try:
+        spell = _get_spell(third_spellbook, third_spell_ids[BasicService])
+        # The repeat of the re-staged world is a full hit.
         assert spell._creation_context is not None
         assert spell.resolution_required is False
     finally:
-        second_conduit.cleanup()
+        third_conduit.cleanup()
 
 
 @pytest.mark.parametrize("dynamic", [False, True])

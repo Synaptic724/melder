@@ -296,13 +296,14 @@ class PersistenceSystem(Cleanable):
         self.check_cleaned()
         self.active_profile.record_spell_crystal(crystal, active=active)
 
-    def record_spell_activity(self, spell_id: str, active: bool) -> None:
+    def record_spell_activity(self, custody_key: str, active: bool) -> None:
         """
         Mirror one runtime park/promote flip into the ACTIVE profile.
 
         Args:
-            spell_id:
-                The spell whose activity flipped.
+            custody_key:
+                The flipped crystal's record key (the spell id, or
+                "<spell_id>@<frame>" under per-frame ids, 0.2.8214).
             active:
                 True = promoted; False = parked.
 
@@ -314,15 +315,16 @@ class PersistenceSystem(Cleanable):
                 If the subsystem has been cleaned.
         """
         self.check_cleaned()
-        self.active_profile.record_spell_activity(spell_id, active=active)
+        self.active_profile.record_spell_activity(custody_key, active=active)
 
-    def remove_spell_crystal(self, spell_id: str) -> None:
+    def remove_spell_crystal(self, custody_key: str) -> None:
         """
         Evict one spell's custody from the ACTIVE profile.
 
         Args:
-            spell_id:
-                The removed spell's SHA256 identity.
+            custody_key:
+                The removed crystal's record key (the spell id, or
+                "<spell_id>@<frame>" under per-frame ids, 0.2.8214).
 
         Returns:
             None.
@@ -332,7 +334,7 @@ class PersistenceSystem(Cleanable):
                 If the subsystem has been cleaned.
         """
         self.check_cleaned()
-        self.active_profile.remove_spell_crystal(spell_id)
+        self.active_profile.remove_spell_crystal(custody_key)
 
     def remove_conduit_crystal(self, conduit_id: str) -> None:
         """Retire one conduit twin from the active profile through its record owner.
@@ -476,13 +478,20 @@ class PersistenceSystem(Cleanable):
         self.check_cleaned()
         self.active_profile.record_mutation_research_state(state)
 
-    def get_spell_crystal(self, spell_id: str) -> SpellCrystal:
+    def get_spell_crystal(
+            self,
+            spell_id: str,
+            frame_name: Optional[str] = None,
+    ) -> SpellCrystal:
         """
         Return the ACTIVE profile's custody crystal for one spell.
 
         Args:
             spell_id:
-                The spell's SHA256 identity.
+                The spell's SHA256 identity, or a full custody key.
+            frame_name:
+                Optional frame whose copy is wanted (see
+                `PersistenceProfile.get_spell_crystal`, 0.2.8214).
 
         Returns:
             SpellCrystal:
@@ -492,10 +501,10 @@ class PersistenceSystem(Cleanable):
             RuntimeError:
                 If the subsystem has been cleaned.
             KeyError:
-                If the active profile records no crystal for `spell_id`.
+                If the active profile records no crystal that answers.
         """
         self.check_cleaned()
-        return self.active_profile.get_spell_crystal(spell_id)
+        return self.active_profile.get_spell_crystal(spell_id, frame_name=frame_name)
 
     def describe_mutation_research_record(self) -> Optional[Dict[str, object]]:
         """
@@ -523,7 +532,8 @@ class PersistenceSystem(Cleanable):
 
         Returns:
             Dict[str, Dict[str, object]]:
-                spell_id -> crystal describe() payload + "custody_state".
+                custody key (the spell id, or "<spell_id>@<frame>" under
+                per-frame ids) -> crystal describe() payload + "custody_state".
 
         Raises:
             RuntimeError:

@@ -101,6 +101,7 @@
  ],
  "published_aliases": [],
  "imports": {
+  "weakref": "weakref",
   "Generic": "typing.Generic",
   "TypeVar": "typing.TypeVar",
   "Optional": "typing.Optional",

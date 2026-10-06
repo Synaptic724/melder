@@ -1,0 +1,16 @@
+# melder_0 2026-09-29T21:41:43Z: suites on the device tree at 0.2.8208, 3.14t PYTHON_GIL=0
+--- tests/unit/melder/aether
+4119 passed in 31.99s
+--- tests/integration/melder/aether + tests/component/melder/aether
+2007 passed, 1 xfailed in 147.28s (0:02:27)
+--- tests/unit/melder/spellbook (first run read stale Windows-compiled __pycache__; rerun with a VM-only PYTHONPYCACHEPREFIX)
+3 failed, 2203 passed in 39.77s
+2206 passed in 11.95s
+--- tests/component/melder/spellbook (36 errors: shutil.rmtree -> os.unlink refused by the connected folder)
+      4 FAILED tests/component/melder/spellbook/test_conjure_cache_restage.py
+     16 FAILED tests/component/melder/spellbook/test_spellbook_component_caching_system.py
+      1 FAILED tests/component/melder/spellbook/test_spellbook_component_contract_override_operands.py
+      3 FAILED tests/component/melder/spellbook/test_spellbook_component_structural_snapshot_capture.py
+      5 FAILED tests/component/melder/spellbook/test_spellbook_component_structural_snapshot_hydrate.py
+      7 FAILED tests/component/melder/spellbook/test_spellbook_component_structural_snapshot_parity.py
+36 failed, 740 passed in 43.25s

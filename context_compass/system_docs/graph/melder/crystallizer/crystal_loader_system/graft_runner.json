@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/crystal_loader_system/graft_runner.py",
- "source_sha256": "89a67aab7fd43a1d110f5e0b674157cec39b8f31b47b89514f1f20be3a0e1bd0",
+ "source_sha256": "cb13dce21ff2021a974ff378988cfa10d9522d952426f4aa700b5e98e8a41cc7",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.crystal_loader_system.graft_runner": {
@@ -37,11 +37,11 @@
     "run"
    ],
    "shape": {
-    "method_count": 8,
+    "method_count": 9,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "106fc62cbf00a0327c2bf69ff655a3bf817b62ca02000809a364f5ed7240b1e7",
+   "span_sha256": "2503f75ad5d146aa24d1457ab12b19148f71645b42bdb83a777ef7cab291ef7f",
    "role": "Single-use spell-index graft executor: re-integrates one captured index (members, custody, selection) into a live conjured host book through normal verbs only.",
    "responsibilities": [
     "gates the versioned graft record (RecordVersion MAJOR + graft_kind)",
@@ -52,7 +52,8 @@
     "forwards ordered disposal names for every member and carries the new index directly to fresh-graft parking",
     "adopts only a successfully grafted selected member using its returned live binding ID",
     "emits a detached membership and index-identity report with explicit shortfalls",
-    "preserves each member resolution capability through selected, parked and merged graft bindings"
+    "preserves each member resolution capability through selected, parked and merged graft bindings",
+    "hydrates each member's spellframe through the same rule as the restore engine (_hydrate_spellframe) at the selected, parked and merged bind sites, appending a shortfall when the recorded Protocol cannot be imported (0.2.8222)"
    ],
    "owns_state": [
     "_record",
@@ -66,7 +67,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "7dc4c9eca8c864546f0470a231120067f23b3272da3f6a27bed79359a4f55b09"
+   "semantics_authored_against": "2503f75ad5d146aa24d1457ab12b19148f71645b42bdb83a777ef7cab291ef7f"
   }
  },
  "edges_out": [
@@ -99,6 +100,7 @@
  ],
  "published_aliases": [],
  "imports": {
+  "importlib": "importlib",
   "TYPE_CHECKING": "typing.TYPE_CHECKING",
   "Any": "typing.Any",
   "Dict": "typing.Dict",

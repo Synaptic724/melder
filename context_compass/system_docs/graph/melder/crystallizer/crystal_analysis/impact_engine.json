@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/crystal_analysis/impact_engine.py",
- "source_sha256": "735cabd78e81b0cdcaf4a27f72de9d882f414cbe5e976e7f7cd17f152740d34a",
+ "source_sha256": "45cbad030696cfba125d108f0c554484f3ca1febfecb59ef700334a95a0bff95",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.crystal_analysis.impact_engine": {
@@ -37,11 +37,12 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "2e552dc41808eec75ff996f434b70e07d75e8137dd0d1e8a141e1daa46d5f092",
+   "span_sha256": "be967f38b511aa75c1af0b76221872a7d0cd9734725dc846ecaf4a56349bda9e",
    "role": "Read-only blast-radius view over custody manifests (reverse import closure + source drift; spell_id vocabulary).",
    "responsibilities": [
     "indexes module->spells and module->importers from detached custody payloads",
-    "answers blast_radius_of_module/spell and describe_source_drift"
+    "answers blast_radius_of_module/spell and describe_source_drift",
+    "answers a bare spell id through its lowest frame-scoped custody key (by payload id)"
    ],
    "owns_state": [
     "_spells_by_module",

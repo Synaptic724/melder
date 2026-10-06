@@ -24,6 +24,7 @@ from melder.aether.spellbook.spell_compiler.symbolic_graph.spell_symbolic_graph 
     SpellSymbolicGraph,
 )
 from melder.aether.spellbook.spell_types.spell_types import SpellType
+from melder.aether.spellbook.spellframe_kind.spellframe_kind import SpellframeKind
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder.utilities.helpers.ulid_factory import new_ulid
@@ -114,8 +115,10 @@ class Spell(Cleanable):
 
     Key Concepts:
         - Each spell has a unique SHA256 `spell_id`, generated from its bind-time fingerprint.
-        - `spellframe` distinguishes the context it was declared in (e.g., Protocol, class,
-          or string frame).
+        - `spellframe` is the category half of the address: a string category or a
+          Protocol contract. `spellframe_kind` records which (or `none` for a bare
+          binding) and `implemented_protocols` the Protocol bind checked the spell
+          against, so Phase 3 never infers a meaning from the frame's name.
         - Spells may be cleaned (`cleanup()`), after which modification is disallowed.
         - Dependency graphs and resolution profiles are produced by the Resolution / Meld
           pipeline, not by this class directly.
@@ -292,6 +295,8 @@ class Spell(Cleanable):
         # hot fast-door slots (`_door_epoch`, `_creation_context`) stay put.
         "_creation_context_failure",
         "_creation_gate",
+        "spellframe_kind",
+        "implemented_protocols",
     ]
     def __init__(
             self,
@@ -311,6 +316,8 @@ class Spell(Cleanable):
             disposal_method_names: Optional[list[str]] = None,
             *args: Any,
             resolvable: bool = True,
+            spellframe_kind: SpellframeKind = SpellframeKind.none,
+            implemented_protocols: tuple[type, ...] = (),
             **kwargs: Any,
     ) -> None:
         """
@@ -337,6 +344,10 @@ class Spell(Cleanable):
             *args: Optional positional metadata tags, collected into `tags`.
             resolvable (bool): Validated per-version resolution capability. Stored natively,
                 outside metadata, and independent of active/parked or compiler readiness state.
+            spellframe_kind (SpellframeKind): What `spellframe` is - `none` (bare), `category`
+                (a string) or `contract` (a Protocol) - as Bind classified it. Phase 3 reads it.
+            implemented_protocols (tuple[type, ...]): The Protocol(s) Bind structurally checked
+                this spell against: `(spellframe,)` for a contract frame, else empty.
             **kwargs: Optional keyword metadata map, collected into `metadata`.
 
         Contract:
@@ -398,6 +409,12 @@ class Spell(Cleanable):
         self.spell: Any = spell  # Object reference
         self.spell_id: str = spell_id  # SHA256 unique identifier
         self.spellframe: Any | None = spellframe
+        # Frame kind recorded by Bind (none / category / contract) and the
+        # Protocol this spell was structurally checked against. Identity data
+        # like `spellframe`: Phase 3 reads the kind instead of inferring a
+        # meaning from the frame's name, and both survive cleanup.
+        self.spellframe_kind: SpellframeKind = spellframe_kind
+        self.implemented_protocols: tuple[type, ...] = implemented_protocols
         self.spell_type: SpellType = spell_type
         self._is_existing_creation: bool = spell_type in (
             SpellType.EXISTING_CREATION,

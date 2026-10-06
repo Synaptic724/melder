@@ -1,0 +1,2 @@
+FAILED tests/unit/melder/spellbook/spell_crafter/spell_examiner/inspectors/test_method_inspector.py::test_preview_truncated_when_max_repr_small
+3 failed, 2270 passed in 49.50s

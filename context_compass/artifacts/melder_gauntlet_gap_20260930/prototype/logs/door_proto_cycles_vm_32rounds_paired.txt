@@ -1,0 +1,16 @@
+paired rounds: 32 metric: cpu_ns
+solo       request  proto/base median=0.9719 mean=0.9718 IQR=[0.886,1.060] proto faster in 20/32
+solo       worker_a proto/base median=0.9304 mean=0.9574 IQR=[0.856,1.004] proto faster in 23/32
+solo       worker_b proto/base median=0.9858 mean=0.9845 IQR=[0.871,1.043] proto faster in 21/32
+concurrent request  proto/base median=1.0009 mean=0.9931 IQR=[0.927,1.059] proto faster in 16/32
+concurrent worker_a proto/base median=0.9921 mean=0.9995 IQR=[0.940,1.024] proto faster in 20/32
+concurrent worker_b proto/base median=0.9629 mean=0.9702 IQR=[0.901,1.041] proto faster in 22/32
+all phases and lanes: median=0.9770 mean=0.9794 proto faster in 122/192
+paired rounds: 32 metric: wall_ns
+solo       request  proto/base median=0.9717 mean=0.9717 IQR=[0.886,1.059] proto faster in 20/32
+solo       worker_a proto/base median=0.9301 mean=0.9571 IQR=[0.856,1.004] proto faster in 23/32
+solo       worker_b proto/base median=0.9861 mean=0.9846 IQR=[0.871,1.042] proto faster in 21/32
+concurrent request  proto/base median=0.9557 mean=0.9790 IQR=[0.905,1.054] proto faster in 19/32
+concurrent worker_a proto/base median=1.0348 mean=1.0837 IQR=[0.949,1.229] proto faster in 13/32
+concurrent worker_b proto/base median=0.9356 mean=0.9364 IQR=[0.807,1.074] proto faster in 20/32
+all phases and lanes: median=0.9747 mean=0.9854 proto faster in 116/192

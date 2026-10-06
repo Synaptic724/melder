@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/configuration/crystallizer_configuration.py",
- "source_sha256": "84160dbedb9fc68a602b3466e2530ed056ff00c263fdabbd61d5232ba9654215",
+ "source_sha256": "f1af0e57d1ff3e8fe34d50b289c3d8a7021af6423ddc1e0d501cf00073d9e799",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.configuration.crystallizer_configuration": {
@@ -40,6 +40,7 @@
     "finalize",
     "freeze",
     "frozen",
+    "get_configuration_dictionary",
     "get_property",
     "has_property",
     "id",
@@ -62,16 +63,17 @@
     "with_user_source_root_paths"
    ],
    "shape": {
-    "method_count": 30,
+    "method_count": 31,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "bf778a11d3236b87d948fbee949334f5a6af9060289da1e5d963686a2238fb17",
+   "span_sha256": "31d7d9d15e72c5681c3ce3ac2d6d43b9dcf07555aefbe8adcde6e3d923206fcb",
    "role": "Mutable-to-frozen configuration surface for the crystallizer root.",
    "responsibilities": [
     "stores crystallizer-wide policy inputs before root activation",
     "owns user-source root path classification policy",
-    "validates and freezes configuration before activation"
+    "validates and freezes configuration before activation",
+    "exposes a lock-guarded value snapshot of its properties (get_configuration_dictionary)"
    ],
    "owns_state": [
     "_properties",
@@ -82,7 +84,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "bf778a11d3236b87d948fbee949334f5a6af9060289da1e5d963686a2238fb17"
+   "semantics_authored_against": "31d7d9d15e72c5681c3ce3ac2d6d43b9dcf07555aefbe8adcde6e3d923206fcb"
   }
  },
  "edges_out": [
@@ -128,6 +130,7 @@
  "published_aliases": [],
  "imports": {
   "SequenceABC": "collections.abc.Sequence",
+  "threading": "threading",
   "Path": "pathlib.Path",
   "Any": "typing.Any",
   "Dict": "typing.Dict",

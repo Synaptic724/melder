@@ -68,6 +68,8 @@
  ],
  "published_aliases": [],
  "imports": {
+  "hashlib": "hashlib",
+  "threading": "threading",
   "OrderedDict": "collections.OrderedDict",
   "Path": "pathlib.Path",
   "Dict": "typing.Dict",

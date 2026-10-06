@@ -1,0 +1,20 @@
+# prototype (mirror = tree 0.2.8218 + fix/apply_forget_verdicts.py), CPython 3.14.7t, 2026-10-03T20:05:33Z
+M7: same object as the surviving old product: True; value=1
+PASSED ../rebind/test_rebind_probe_melder_only.py::test_rebind_rebuilds_creation_context[False-False]
+PASSED ../rebind/test_rebind_probe_melder_only.py::test_rebind_rebuilds_creation_context[False-True]
+PASSED ../rebind/test_rebind_probe_melder_only.py::test_rebind_rebuilds_creation_context[True-False]
+PASSED ../rebind/test_rebind_probe_melder_only.py::test_rebind_rebuilds_creation_context[True-True]
+PASSED ../rebind/test_rebind_revalidation_matrix.py::test_m1_replacement_is_resolved_again_and_old_product_survives
+PASSED ../rebind/test_rebind_revalidation_matrix.py::test_m2_dependent_consumer_is_rebuilt_against_the_replacement_class
+PASSED ../rebind/test_rebind_revalidation_matrix.py::test_m2b_dependent_consumer_survives_same_class_rebind_of_its_dependency
+PASSED ../rebind/test_rebind_revalidation_matrix.py::test_m3_peer_conduit_that_resolved_the_old_definition_revalidates_the_replacement
+PASSED ../rebind/test_rebind_revalidation_matrix.py::test_m4_both_products_are_disposed_by_the_scope_that_built_them
+PASSED ../rebind/test_rebind_revalidation_matrix.py::test_m5_validation_flag_follows_the_replacement
+PASSED ../rebind/test_rebind_revalidation_matrix.py::test_m7_informational_unique_per_conduit_replacement_shares_the_old_slot
+11 passed in 0.26s
+
+# full tiers on the prototype (run 2026-10-03T19:5x-20:0xZ, -n 2):
+tests/unit: 8829 passed, 3 skipped, 7 xfailed in 23.94s
+tests/component: 2283 passed, 23 skipped, 1 xfailed in 12.34s
+tests/integration: 2011 passed, 2 skipped, 4 xfailed, 2 xpassed in 70.49s
+tests/tests tests/experimentation tests/experiments: 250 passed, 4 skipped in 6.51s

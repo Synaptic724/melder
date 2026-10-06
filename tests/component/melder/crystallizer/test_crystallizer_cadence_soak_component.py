@@ -19,6 +19,7 @@ class _StubSpellCrystal:
 
     def __init__(self, spell_id):
         self.id = spell_id
+        self.custody_key = spell_id  # the record key (the bare spell id under process-wide ids)
         self.spellbook_id = None
         self.cleaned = False
 

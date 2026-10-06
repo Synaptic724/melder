@@ -7,6 +7,7 @@ from melder.aether.conduit.meld.contracts.spell_map import SpellMap
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spellbook import Spellbook
 from melder.utilities.custom_exceptions.phase_execution_error import PhaseExecutionError
+from melder.utilities.custom_exceptions.spellbook_validation_error import SpellbookValidationError
 from melder.utilities.custom_exceptions.unresolved_input_error import UnresolvedInputError
 
 
@@ -759,7 +760,7 @@ def test_type_hint_di_forward_ref_list_class_frame_resolves_all() -> None:
     Raises:
         AssertionError: If the handler list is incomplete.
     """
-    class _Frame:
+    class _Frame(Protocol):
         """
         Purpose:
             Provide a class frame for list DI.
@@ -1209,7 +1210,7 @@ def test_type_hint_di_forward_ref_typing_list_class_frame_resolves_all() -> None
     Raises:
         AssertionError: If the handler list is incomplete.
     """
-    class _TypingFrame:
+    class _TypingFrame(Protocol):
         """
         Purpose:
             Provide a class frame for typing.List DI.
@@ -1959,10 +1960,11 @@ def test_type_hint_di_ambiguous_frame_raises() -> None:
         permissions="create",
     )
 
-    with pytest.raises(PhaseExecutionError) as exc_info:
+    # 2026-10-04: refused through the readable report (AMBIGUOUS_PROVIDER), not a Phase-3 RuntimeError.
+    with pytest.raises(SpellbookValidationError) as exc_info:
         spellbook.conjure(name="root")
 
-    assert any(
-        "multiple DI candidates" in str(error)
-        for error in exc_info.value.errors
-    )
+    text = str(exc_info.value)
+    assert "[AMBIGUOUS_PROVIDER]" in text
+    assert "_RepoA at (spellframe='IRepository', binding_name=None)" in text
+    assert "_RepoB at (spellframe='IRepository', binding_name='secondary')" in text

@@ -969,12 +969,19 @@ class Meld(Cleanable, ABC):
 
         Contract:
             - Fast-path no-op when `resolution_required` is False.
-            - When required, runs exactly one deferred target-local plan pass
-              (`8-11`) under the spell lock.
+            - When required, runs exactly one target-local pass under the
+              spell's rebuild window and lock: the deferred plan pass
+              (`8-11`) for an existing creation or a spell that is its
+              current Phase 5 root; otherwise the full target pass
+              (`5-11`), which must leave the spell resolution-valid for the
+              conduit (0.2.8215). A dependency first compiled only inside a
+              consumer's plan has no Phase 5 root blueprint, and the 8-11
+              pass skips such a spell.
             - On success: sets `resolution_complete=True` and
               `resolution_required=False`.
             - On failure: preserves `resolution_required=True` and
-              `resolution_complete=False`, then re-raises.
+              `resolution_complete=False`, bumps `_door_epoch`, then
+              re-raises.
             - Hard-fails when deferred resolution is required but no active
               resolution conduit id exists.
 
@@ -983,6 +990,8 @@ class Meld(Cleanable, ABC):
 
         Raises:
             RuntimeError: If no resolution conduit id is available.
+            SpellbookValidationError: If a full target pass leaves the spell
+                unresolved for the conduit.
             Exception: Re-raises deferred resolution failures.
         """
         # Rebuild window first (dynamic only), then the spell lock: see
@@ -1004,10 +1013,16 @@ class Meld(Cleanable, ABC):
             if spellbook is None:
                 raise RuntimeError("Spell has no owning Spellbook surface.")
             try:
-                spellbook._run_deferred_resolution_phases_for_target_spell(
-                    conduit_id,
-                    spell,
-                )
+                if self._requires_own_target_pass(spell):
+                    # No Phase 5 root blueprint: the 8-11 pass would skip this
+                    # spell, so its own full target pass (5-11) builds its plan.
+                    spellbook._run_resolution_phases_for_target_spell(conduit_id, spell)
+                    self._raise_unless_resolution_valid(spell, conduit_id)
+                else:
+                    spellbook._run_deferred_resolution_phases_for_target_spell(
+                        conduit_id,
+                        spell,
+                    )
             except Exception:
                 spell.resolution_complete = False
                 spell.resolution_required = True
@@ -1017,6 +1032,58 @@ class Meld(Cleanable, ABC):
 
             spell.resolution_complete = True
             spell.resolution_required = False
+
+    def _requires_own_target_pass(self, spell: Spell) -> bool:
+        """
+        Decide whether a flagged spell needs its full target pass rather than
+        the deferred 8-11 pass.
+
+        Contract:
+            - True for a constructed spell that is not its current Phase 5
+              root. The 8-11 pass skips a spell without a Phase 5 root
+              blueprint (`SpellbookCreationSystem._is_spell_plan_phase_eligible`),
+              so only the full pass (5-11) builds its plan. That is the state
+              of a dependency a consumer's target-local pass compiled only
+              inside the consumer's plan and flagged
+              (`SpellbookCreationSystem.flag_dependencies_without_own_plan`).
+            - False for an existing creation (it never plans) and for a spell
+              that is its current Phase 5 root (the 8-11 pass rebuilds its
+              plan, as before 0.2.8215).
+            - Reads compiler state only; mutates nothing.
+
+        Args:
+            spell: The flagged spell, under its rebuild window and lock.
+
+        Returns:
+            bool: True when the full target pass must run.
+        """
+        if spell.is_existing_creation:
+            return False
+        return not self._get_spell_compiler_system().is_current_spell_phase5_root(spell)
+
+    def _raise_unless_resolution_valid(self, spell: Spell, conduit_id: str) -> None:
+        """
+        Confirm that a spell's own full target pass left it resolution-valid
+        for the conduit.
+
+        Contract:
+            - Reads the effective conduit-local verdict
+              (`_get_resolution_validity`) after the pass; valid returns.
+            - Anything else raises SpellbookValidationError. A visibility
+              failure records invalid verdicts and returns without raising;
+              marking that spell complete would only move the failure into the
+              CreationContext build.
+
+        Args:
+            spell: The spell whose full target pass just ran.
+            conduit_id: The resolution conduit id the pass ran for.
+
+        Raises:
+            SpellbookValidationError: When the verdict is not valid.
+        """
+        resolution_state = spell._spell_system_states.get_conduit_resolution_state(conduit_id)
+        if self._get_resolution_validity(spell, resolution_state) is not SpellValidity.valid:
+            raise SpellbookValidationError([spell])
 
     def _get_cached_change_control_manager(
             self,

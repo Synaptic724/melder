@@ -1,0 +1,15 @@
+[
+  "C:\\Users\\Mark\\PycharmProjects\\melder_private\\.venv_new\\Scripts\\python.exe",
+  "-X",
+  "gil=0",
+  "-m",
+  "pytest",
+  "-s",
+  "-v",
+  "-o",
+  "addopts=",
+  "-o",
+  "markers=timeout: timeout metadata (bounded by Actions)",
+  "--junitxml=context_compass/artifacts/2026-10-03_real_world_gauntlet_ci/workflow_results/junit.xml",
+  "benchmarks/testing_other_di/test_real_world_gauntlet.py::test_real_world_gauntlet"
+]

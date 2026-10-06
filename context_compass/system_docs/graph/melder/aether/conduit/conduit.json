@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/conduit.py",
- "source_sha256": "c2033a58a1eaebabc41eaa5aed151cd91ed8044068d026223c4ccf3863d42cf1",
+ "source_sha256": "2a7cc7f3b78898874c115aff01272019f04f19202600ef5791375deff159a89e",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.conduit": {
@@ -106,6 +106,7 @@
     "set_new_policy",
     "sever_link",
     "snapshot_state",
+    "spellbook",
     "transaction",
     "transfer_spell_ownership",
     "upgrade_to_normal",
@@ -114,11 +115,11 @@
     "validate_resolution"
    ],
    "shape": {
-    "method_count": 131,
+    "method_count": 132,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "3ebdc50daec4b5914caaf0a6b6eedf0be3aa6066b4b02fb2cae03319b1e333ba",
+   "span_sha256": "d798c02ed1cd841e3244fd118aac61bd1fd9e330913ec296122f7c7fcdd0a30d",
    "role": "Runtime execution scope for spell resolution.",
    "responsibilities": [
     "hosts meld execution",
@@ -139,7 +140,8 @@
     "is a dispose scope in `with`: __enter__ takes no lock and __exit__ runs cleanup(), so a lesser returns to its pool and a root is torn down at block exit (0.2.8203)",
     "creates a lesser for a `with` block through enter_lesser_conduit, which returns create_lesser_conduit's result unchanged",
     "returns a lesser to its pool descendants first, then SpellSpaces, then its own store, and raises the collected disposal failures after the shell is pooled; soft cleanup of a pooled lesser is a no-op",
-    "finishes permanent teardown when a disposal method fails and then raises the collected disposal groups"
+    "finishes permanent teardown when a disposal method fails and then raises the collected disposal groups",
+    "returns the Spellbook it resolves through, borrowed (spellbook): the conjuring Book for a root, the root's Book for a lesser, the new Book after upgrade_to_normal"
    ],
    "owns_state": [
     "_meld",
@@ -279,6 +281,8 @@
  ],
  "published_aliases": [],
  "imports": {
+  "threading": "threading",
+  "time": "time",
   "Sequence": "collections.abc.Sequence",
   "contextmanager": "contextlib.contextmanager",
   "ModuleType": "types.ModuleType",

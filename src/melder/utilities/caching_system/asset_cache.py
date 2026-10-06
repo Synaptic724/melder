@@ -14,7 +14,7 @@ It sits beside `caching_system.py` because that is where melder's cache
 machinery lives, and the two are deliberately different scopes of the same
 idea: `CachingSystem` is a per-conduit instance cache with a lock, a logger and
 a lifecycle; this is a process-lifetime, read-mostly bundle for build assets.
-Both write `.melc` under `__melder_cache__`, both stamp
+Both write `.meldercache` under `__melder_cache__`, both stamp
 `sys.implementation.cache_tag`, and both treat a bad bundle as a cold cache.
 
 Importing this module does NOT pull in `caching_system.py` - there is no
@@ -31,7 +31,7 @@ mistake this module exists to prevent:
                diffable in review, and the thing `--check` gates on. This is
                the TRUTH.
 
-    CACHE      `__melder_cache__/__<asset>__/<asset>.melc`
+    CACHE      `__melder_cache__/__<asset>__/<asset>.meldercache`
                DERIVED and GITIGNORED. One marshal bundle, rebuilt on demand.
                This is SPEED, and nothing else.
 
@@ -40,12 +40,12 @@ WHY THE CACHE CANNOT BE THE TRUTH
 `marshal` is explicitly interpreter-specific - the format carries no
 compatibility guarantee across Python versions, which is why `CachingSystem`
 stamps `sys.implementation.cache_tag` into every bundle it writes. This repo
-runs 3.10 today and targets 3.14t free-threaded, so a committed `.melc` would
+runs 3.10 today and targets 3.14t free-threaded, so a committed `.meldercache` would
 be a blob written by one interpreter and handed to another. Committing one puts
 an interpreter-specific artifact on the critical import path of a package that
 deliberately supports two interpreters.
 
-Keeping the manifest as source and the `.melc` as cache also means a clone,
+Keeping the manifest as source and the `.meldercache` as cache also means a clone,
 a wheel, and a read-only install all work identically: worst case they miss the
 cache and pay the manifest import once.
 
@@ -115,7 +115,7 @@ class AssetCachePolicy:
     CACHE_VERSION_HISTORY = {1: "manifest_stat_gated_payload"}
     CURRENT_VERSION = max(CACHE_VERSION_HISTORY)
 
-    BUNDLE_SUFFIX = ".melc"
+    BUNDLE_SUFFIX = ".meldercache"
     CACHE_ROOT_DIR_NAME = "__melder_cache__"
 
     # melder/utilities/caching_system/asset_cache.py -> melder/
@@ -129,8 +129,8 @@ def cache_path_for(asset_name):
     Return the cache bundle path for one asset.
 
     Contract:
-        `<package>/__melder_cache__/__<asset>__/<asset>.melc` - the same
-        `<root>/<scope>/<name>.melc` shape `CachingSystem` uses for conduits,
+        `<package>/__melder_cache__/__<asset>__/<asset>.meldercache` - the same
+        `<root>/<scope>/<name>.meldercache` shape `CachingSystem` uses for conduits,
         so every cache in the tree is discoverable by one mental model.
 
     Args:

@@ -109,12 +109,7 @@ def _build_source(
     many_creations = meld._spellspace_creations
     if many_creations is None:
         many_creations = meld._conduit_creations
-    many_creations.add_many_creations(
-        spell_id,
-        instance,
-        has_disposal_methods=True,
-        disposal_methods=disposal_methods,
-    )
+    many_creations.register_many(spell_id, instance, disposal_methods)
     return instance
 """
         return """def _solo_overrides_codegen_creation_executor(meld, overrides):

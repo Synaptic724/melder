@@ -147,7 +147,7 @@ version = { attr = "melder.__version__.__version__" }
 #
 # Nothing else needs listing. The build assets' committed truth is a plain `.py`
 # manifest under `_build_assets/<asset>/manifest/`, which setuptools ships by
-# virtue of it being a module. Their `.melc` caches are NOT packaged on purpose:
+# virtue of it being a module. Their `.meldercache` caches are NOT packaged on purpose:
 # marshal is interpreter-specific, so a bundle baked at build time would be read
 # by whatever Python the wheel lands on. `_asset_cache` rebuilds it per
 # interpreter on first import, and degrades to the manifest when the install

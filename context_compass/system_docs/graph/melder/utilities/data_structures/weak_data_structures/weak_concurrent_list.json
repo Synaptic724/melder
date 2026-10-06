@@ -123,6 +123,7 @@
  ],
  "published_aliases": [],
  "imports": {
+  "threading": "threading",
   "TracebackType": "types.TracebackType",
   "Any": "typing.Any",
   "Callable": "typing.Callable",

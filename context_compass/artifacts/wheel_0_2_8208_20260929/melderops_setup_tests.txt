@@ -1,0 +1,10 @@
+tests/command_center/spectrum/configurations/test_melder_behavior_configuration.py
+tests/command_center/spectrum/configurations/test_melder_configuration.py
+tests/command_center/spectrum/configurations/test_melder_setup_contracts.py
+tests/component/spectrum/test_command_center_definitions.py
+tests/component/spectrum/test_foundation_bootstraps.py
+tests/component/spectrum/test_framework_managers_bootstrap.py
+tests/component/spectrum/test_framework_spellframe_labels.py
+tests/component/spectrum/test_melder_composition.py
+tests/component/spectrum/test_native_initialization.py
+tests/component/spectrum/test_spectrum_host_bootstrap.py

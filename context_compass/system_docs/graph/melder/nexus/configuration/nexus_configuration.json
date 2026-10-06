@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/configuration/nexus_configuration.py",
- "source_sha256": "43d802c7c8b743cf91f10b19dd13ab5920eea9edda3d57a293a8015210ae7467",
+ "source_sha256": "7b9a0405f35433ead9b89e2d9bc0dc834df96da1f57da24543417c1bbc7c3441",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.configuration.nexus_configuration": {
@@ -40,6 +40,7 @@
     "finalize",
     "freeze",
     "frozen",
+    "get_configuration_dictionary",
     "get_property",
     "has_property",
     "id",
@@ -75,15 +76,16 @@
     "with_target_frame_override"
    ],
    "shape": {
-    "method_count": 44,
+    "method_count": 45,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "db1ca97d6c3137d1a3c696c082ed104da6d240ebc71e6e05e80ec2c5c476b6ef",
+   "span_sha256": "09f177db4e31f762d9166ce246f29588bb001e16ca4511506cbdc0fd68dddcf4",
    "role": "Process-wide configuration for Nexus.",
    "responsibilities": [
     "stores typed process-wide Rift creation/access and frame-topology policy",
-    "freezes into the active Nexus governance surface"
+    "freezes into the active Nexus governance surface",
+    "exposes a lock-guarded value snapshot of its properties (get_configuration_dictionary)"
    ],
    "owns_state": [
     "_properties",
@@ -94,7 +96,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "d5cc823598c35f9b71322067c84ece8ff73a18395478110bcf40fba48fae2a6f"
+   "semantics_authored_against": "09f177db4e31f762d9166ce246f29588bb001e16ca4511506cbdc0fd68dddcf4"
   }
  },
  "edges_out": [
@@ -145,6 +147,7 @@
  ],
  "published_aliases": [],
  "imports": {
+  "threading": "threading",
   "Enum": "enum.Enum",
   "Any": "typing.Any",
   "Dict": "typing.Dict",

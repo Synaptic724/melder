@@ -152,6 +152,7 @@
  ],
  "published_aliases": [],
  "imports": {
+  "threading": "threading",
   "ClassVar": "typing.ClassVar",
   "OperationCancelledError": "melder.utilities.custom_exceptions.operation_cancelled_error.OperationCancelledError",
   "Cleanable": "melder.utilities.general_base.cleanable.Cleanable"

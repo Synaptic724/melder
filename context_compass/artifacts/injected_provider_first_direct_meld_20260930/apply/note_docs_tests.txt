@@ -1,0 +1,23 @@
+- DATETIME: {NOW}
+  TYPE: MEASURE
+  CLAIM: Docs pass, part 2: tests_components carries the lane's two new files - a Protects bullet and a Key File
+    in the Spellbook Runtime And Binding Unit Cluster (the target-pass flags; the deferred-lane rows in the aether
+    tree's test_meld.py named there) and in the Aether Component Cluster (the first direct meld across scopes,
+    lifetimes, caching and the SpellSpace door, with both controls) - plus measured code-map entries; the C1 core
+    set is the key-file union again at 204 paths and the index --check is OK. Remeasured tier counts had drifted
+    with earlier lanes' files, now corrected: unit 468 test modules among 471 .py (was 462/465; aether 186,
+    crystallizer 46, spellbook 142, utilities 52), component 149/151 (was 141/143; aether 65, spellbook 72),
+    integration 149/156 (was 142/149; aether 38 outside rift, conduit 36, crystallizer 15, spellbook 48), 766
+    CI-tier modules in all (was 745); the other stated counts were checked and hold.
+  EVIDENCE:
+  - system_docs/tests_components.md:949-978
+  - system_docs/tests_components.md:1121-1152
+  - system_docs/tests_components.md:2020-2024
+  - system_docs/tests_components.md:2231-2235
+  - context_compass/artifacts/injected_provider_first_direct_meld_20260930/apply/apply_docs_tests.py:1-177
+  IMPACT: The three system documents are done; tests_architecture's own tier counts (unit 465 .py) lag too, a
+    pre-existing gap outside this lane's documents.
+  NEXT: Re-extract the graph descriptors for meld.py and spellbook_creation_system.py with --strict, author the
+    Meld and SpellbookCreationSystem responsibilities, accept those nodes, then reassemble and verify the index.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8

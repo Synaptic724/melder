@@ -97,6 +97,7 @@
  ],
  "published_aliases": [],
  "imports": {
+  "heapq": "heapq",
   "RLock": "threading.RLock",
   "Any": "typing.Any",
   "Dict": "typing.Dict",

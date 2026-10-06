@@ -1,0 +1,5 @@
+[gauntlet] thread counts: [3, 5, 7, 9]
+[gauntlet] iteration counts: [5000, 10000, 15000, 25000, 50000]
+[gauntlet] thread counts: [7, 3]
+[gauntlet] iteration counts: [10, 5]
+Verified defaults and overrides before child launch; workflow Python compiles. No benchmark children launched.

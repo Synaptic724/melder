@@ -2,7 +2,7 @@
 
 from collections.abc import Iterator
 from dataclasses import replace
-from typing import Optional
+from typing import Optional, Protocol
 
 import pytest
 
@@ -32,7 +32,7 @@ from melder.aether.spellbook.spellbook_creation_system import SpellbookCreationS
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 
 
-class Definition:
+class Definition(Protocol):
     """Application definition available for graph references independently of construction."""
 
 
@@ -513,17 +513,25 @@ def test_late_contract_compilation_refuses_non_resolvable_provider(compiler_book
 def test_notch_from_definition_to_provider_revalidates_its_consumer(
     compiler_book: Spellbook, consumer_type: type,
 ) -> None:
-    """Switching the selected capability must rebuild a consumer that had only a descriptive reference."""
+    """
+    Switching the selected capability must rebuild a consumer that had only a descriptive reference.
+
+    The descriptive version is the Protocol itself (bound resolvable=False); the notched-in version is a
+    concrete implementer bound under the Protocol contract (2026-10-04: a Protocol cannot be bound as a
+    concrete spell, so the resolvable version at the same address is an implementer, not the Protocol).
+    """
     compiler_book._aetheric_frame_configuration.with_system_caching_enabled(False)
     definition_id = compiler_book.bind(spell=Definition, existence="unique", resolvable=False)
     consumer_id = compiler_book.bind(spell=consumer_type, existence="many")
     index = _selected(compiler_book, definition_id).spell_index
     conduit = compiler_book.conjure(dynamic=True, name="notch-required-input")
-    provider_id = conduit.bind_inactive(spell=Definition, spell_index=index, existence="unique")
+    provider_id = conduit.bind_inactive(
+        spell=Implementation, spell_index=index, spellframe=Definition, existence="unique",
+    )
     provider = compiler_book._inactive_spells[provider_id]
     conduit.notch_spell(spell_index=index, spell=provider)
     result = conduit.meld(spell=consumer_type)
-    assert isinstance(result.value, Definition)
+    assert isinstance(result.value, Implementation)
     assert _selected(compiler_book, consumer_id).dependencies == [provider_id]
 
 

@@ -74,6 +74,8 @@
  ],
  "published_aliases": [],
  "imports": {
+  "inspect": "inspect",
+  "typing": "typing",
   "TYPE_CHECKING": "typing.TYPE_CHECKING",
   "Any": "typing.Any",
   "get_args": "typing.get_args",

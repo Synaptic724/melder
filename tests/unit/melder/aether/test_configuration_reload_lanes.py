@@ -200,17 +200,20 @@ def test_from_recorded_posture_refuses_a_stateless_payload():
 
 def test_aether_from_recorded_payload_reloads_knob_and_reports_callables():
     """
-    Contract: the boolean knob reloads and seals; presence-flagged
-    callables report under code_participation (a record cannot carry a
-    live resolver); the returned configuration is frozen but NOT yet
-    activated (activation is the booting Aether's act).
+    Contract: the boolean knob and the spell-id regime reload and seal (a
+    full payload reports nothing missing); presence-flagged callables
+    report under code_participation (a record cannot carry a live
+    resolver); the returned configuration is frozen but NOT yet activated
+    (activation is the booting Aether's act).
     """
     configuration, report = AetherConfiguration.from_recorded_payload({
         "channel_logger_activation_enabled": True,
         "channel_logger_resolver_present": True,
         "default_logger_present": False,
+        "process_wide_unique_spell_ids": True,
     })
     assert configuration.channel_logger_activation_enabled is True
+    assert configuration.process_wide_unique_spell_ids is True
     assert report["missing"] == []
     assert report["code_participation"] == ["channel_logger_resolver"]
     assert configuration.frozen is True
@@ -220,13 +223,43 @@ def test_aether_from_recorded_payload_reloads_knob_and_reports_callables():
 
 def test_aether_from_recorded_payload_defaults_missing_knob_with_report():
     """
-    Contract: an absent knob falls to the documented default (False) and
-    is reported under "missing" - never silently.
+    Contract: absent keys fall to their documented defaults (logger
+    activation False, process-wide spell ids True) and each is reported
+    under "missing" - never silently. A record sealed before the regime was
+    recorded (record major 3 and older) reloads this way.
     """
     configuration, report = AetherConfiguration.from_recorded_payload({})
     assert configuration.channel_logger_activation_enabled is False
-    assert report["missing"] == ["channel_logger_activation_enabled"]
+    assert configuration.process_wide_unique_spell_ids is True
+    assert report["missing"] == [
+        "channel_logger_activation_enabled",
+        "process_wide_unique_spell_ids",
+    ]
     assert report["code_participation"] == []
+    configuration.cleanup()
+
+
+def test_aether_from_recorded_payload_reloads_a_per_frame_regime_and_seals() -> None:
+    """
+    Purpose:
+        A world recorded under per-frame spell ids must rebuild a root
+        configuration that says so, or its restore runs process-wide ids.
+    Contract:
+        A recorded `process_wide_unique_spell_ids` False reloads False, the
+        configuration comes back frozen (the regime cannot be changed after
+        the reload), and nothing is reported missing.
+    """
+    configuration, report = AetherConfiguration.from_recorded_payload({
+        "channel_logger_activation_enabled": False,
+        "channel_logger_resolver_present": False,
+        "default_logger_present": False,
+        "process_wide_unique_spell_ids": False,
+    })
+    assert configuration.process_wide_unique_spell_ids is False
+    assert configuration.frozen is True
+    assert report["missing"] == []
+    with pytest.raises(RuntimeError):
+        configuration.set_process_wide_unique_spell_ids(True)
     configuration.cleanup()
 
 

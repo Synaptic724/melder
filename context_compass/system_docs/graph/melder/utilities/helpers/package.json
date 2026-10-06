@@ -138,6 +138,8 @@
   }
  ],
  "imports": {
+  "inspect": "inspect",
+  "types": "types",
   "Format": "annotationlib.Format",
   "update_wrapper": "functools.update_wrapper",
   "RLock": "threading.RLock",

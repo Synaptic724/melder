@@ -218,6 +218,8 @@
  ],
  "published_aliases": [],
  "imports": {
+  "functools": "functools",
+  "threading": "threading",
   "MappingABC": "collections.abc.Mapping",
   "deepcopy": "copy.deepcopy",
   "TracebackType": "types.TracebackType",

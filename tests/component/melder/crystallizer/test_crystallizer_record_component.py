@@ -32,6 +32,7 @@ class _StubSpellCrystal:
 
     def __init__(self, spell_id, spellbook_id=None):
         self.id = spell_id
+        self.custody_key = spell_id  # the record key (the bare spell id under process-wide ids)
         self.spellbook_id = spellbook_id
         # Real custody carries root_module_kind ("synthetic_module" /
         # "site_package" / "user_source"); emit_spell_activity reads it to

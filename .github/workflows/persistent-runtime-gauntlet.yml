@@ -1,0 +1,174 @@
+name: Persistent runtime gauntlet (three OSes)
+
+# ci.yml invokes this only for dev-to-preprod promotion PRs.
+# This benchmark has its own runners and runs alongside the real-world gauntlet.
+on:
+  workflow_call:
+    inputs:
+      thread-counts:
+        description: Optional comma-separated counts; blank uses the benchmark configuration.
+        type: string
+        required: false
+        default: '3,5'
+      duration-seconds:
+        description: Comma-separated measurement seconds, each greater than zero and at most 300.
+        type: string
+        required: false
+        default: '60,180,300'
+  workflow_dispatch:
+    inputs:
+      thread-counts:
+        description: Optional comma-separated counts; blank uses the benchmark configuration.
+        type: string
+        required: false
+        default: '3,5'
+      duration-seconds:
+        description: Comma-separated measurement seconds, each greater than zero and at most 300.
+        type: string
+        required: false
+        default: '60,180,300'
+
+permissions:
+  contents: read
+
+jobs:
+  manifest:
+    # The speed tests' Python release and library pins come from .github/python/speed/ (exactly one manifest).
+    name: Speed manifest / ${{ github.head_ref || github.ref_name }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      python: ${{ steps.speed.outputs.python }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.14.7'
+          allow-prereleases: false
+      - name: Read the speed-test release from its manifest
+        id: speed
+        run: python .github/scripts/python_runtime_matrix.py speed
+
+  gauntlet:
+    name: Persistent gauntlet / ${{ github.head_ref || github.ref_name }} / ${{ matrix.os }}
+    needs: manifest
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 360
+    strategy:
+      fail-fast: false
+      matrix:
+        # Keep all three on x64, rather than comparing Intel with Apple Silicon.
+        os: [ubuntu-24.04, windows-2025, macos-15-intel]
+    env:
+      PYTHONUNBUFFERED: '1'
+      PYTHONUTF8: '1'
+      PYTHONIOENCODING: utf-8
+      PYTHONPATH: ${{ github.workspace }}/src
+      PYTEST_DISABLE_PLUGIN_AUTOLOAD: '1'
+      PERSISTENT_SERIES_THREADS: ${{ inputs.thread-counts }}
+      PERSISTENT_SERIES_SECONDS: ${{ inputs.duration-seconds }}
+      PERSISTENT_SERIES_OUTPUT_DIR: ${{ github.workspace }}/persistent-gauntlet-results
+      GAUNTLET_RUNNER_LABEL: ${{ matrix.os }}
+      SPEED_PYTHON: ${{ needs.manifest.outputs.python }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ needs.manifest.outputs.python }}
+          architecture: x64
+          freethreaded: true
+          allow-prereleases: false
+      - name: Install identical pinned benchmark dependencies
+        # Exactly the speed manifest's pins: wheels only, except its build_from_source entries.
+        run: python .github/scripts/python_runtime_matrix.py speed-install --results persistent-gauntlet-results
+      - name: Record persistent benchmark provenance
+        env:
+          PYTHON_GIL: '0'
+        shell: python
+        run: |
+          import hashlib, json, os, platform, shutil, subprocess, sys, sysconfig
+          from pathlib import Path
+          import dependency_injector.containers, dependency_injector.providers, dishka, melder
+          sys.path.insert(0, str(Path.cwd()))
+          from benchmarks.testing_other_di import persistent_runtime_gauntlet_series_runner as series
+          report = Path('persistent-gauntlet-results')
+          durations, counts = series._series_counts()
+          libraries = series._names('PERSISTENT_GAUNTLET_LIBS', series.LIBRARIES, series._SUPPORTED_LIBRARIES)
+          scenarios = series._names('PERSISTENT_GAUNTLET_SCENARIOS', series.SCENARIOS, series._SUPPORTED_SCENARIOS)
+          hashes = {}
+          for name in ('persistent_runtime_gauntlet_series_runner.py', 'test_persistent_runtime_gauntlet_series.py',
+                       'test_persistent_runtime_gauntlet.py', 'test_real_world_gauntlet.py'):
+              path = Path('benchmarks/testing_other_di') / name
+              hashes[str(path)] = hashlib.sha256(path.read_bytes()).hexdigest()
+              shutil.copyfile(path, report / name)
+          data = {
+              'repository': os.environ['GITHUB_REPOSITORY'], 'commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
+              'event_sha': os.environ['GITHUB_SHA'], 'run_id': os.environ['GITHUB_RUN_ID'], 'run_attempt': os.environ['GITHUB_RUN_ATTEMPT'],
+              'python': sys.version, 'free_threaded_build': sysconfig.get_config_var('Py_GIL_DISABLED'),
+              'gil_enabled': sys._is_gil_enabled(), 'platform': platform.platform(), 'machine': platform.machine(),
+              'logical_cpu_count': os.cpu_count(), 'runner_label': os.environ['GAUNTLET_RUNNER_LABEL'],
+              'duration_seconds': list(durations), 'thread_counts': list(counts), 'libraries': list(libraries), 'scenarios': list(scenarios),
+              'benchmark_sha256': hashes,
+          }
+          (report / 'environment.json').write_text(json.dumps(data, indent=2), encoding='utf-8')
+          (report / 'dependencies.txt').write_text(subprocess.check_output([sys.executable, '-m', 'pip', 'freeze'], text=True), encoding='utf-8')
+          print(json.dumps(data, indent=2))
+          assert platform.python_version() == os.environ['SPEED_PYTHON'], (sys.version, os.environ['SPEED_PYTHON'])
+          assert data['free_threaded_build'] == 1 and not data['gil_enabled'], 'Expected free-threaded GIL-off runtime'
+          assert platform.machine().lower() in ('x86_64', 'amd64'), platform.machine()
+          assert data['commit'] == data['event_sha'], 'Checkout differs from the triggered commit'
+          assert Path(melder.__file__).resolve().is_relative_to(Path('src').resolve()), 'Wrong Melder checkout imported'
+          subprocess.run([sys.executable, '-m', 'pip', 'check'], check=True)
+      - name: Run persistent duration and thread series
+        timeout-minutes: 345
+        env:
+          PYTHON_GIL: '0'
+        shell: python
+        run: |
+          import itertools, json, os, subprocess, sys, time
+          from pathlib import Path
+          report = Path('persistent-gauntlet-results')
+          command = [sys.executable, '-X', 'gil=0', '-m', 'pytest', '-s', '-v', '-o', 'addopts=',
+                     '-o', 'markers=timeout: timeout metadata (bounded by Actions)',
+                     '--junitxml=persistent-gauntlet-results/junit.xml',
+                     'benchmarks/testing_other_di/test_persistent_runtime_gauntlet_series.py']
+          (report / 'command.json').write_text(json.dumps(command, indent=2), encoding='utf-8')
+          started = time.monotonic()
+          with (report / 'benchmark.log').open('w', encoding='utf-8') as log:
+              process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                         text=True, encoding='utf-8', errors='replace')
+              for line in process.stdout:
+                  print(line, end='', flush=True)
+                  log.write(line)
+                  log.flush()
+              status = process.wait()
+          expected = json.loads((report / 'environment.json').read_text(encoding='utf-8'))
+          cells = set(itertools.product(expected['duration_seconds'], expected['thread_counts'], expected['scenarios'], expected['libraries']))
+          files = list(report.glob('run-*/results.json'))
+          aggregate = json.loads(files[0].read_text(encoding='utf-8')) if len(files) == 1 else {}
+          rows = aggregate.get('results', [])
+          observed = {(row['duration_s'], row['threads'], row['scenario'], row['lib']) for row in rows}
+          valid = (status == 0 and aggregate.get('complete') is True and len(rows) == len(cells) and observed == cells
+                   and all(row['gil_status'] == row['gil_status_at_setup'] == 'disabled' and row['cycles'] > 0
+                           and row['semantics_checks'] > 0 for row in rows))
+          outcome = {'exit_code': status, 'validation_passed': valid, 'expected_runs': len(cells),
+                     'completed_runs': len(rows), 'elapsed_seconds': time.monotonic() - started}
+          (report / 'outcome.json').write_text(json.dumps(outcome, indent=2), encoding='utf-8')
+          summary = files[0].with_name('summary.md').read_text(encoding='utf-8') if len(files) == 1 else 'No aggregate report was produced.\n'
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a', encoding='utf-8') as stream:
+              stream.write(summary + '\nValidation: ' + json.dumps(outcome) + '\n')
+          if status:
+              raise SystemExit(status)
+          assert valid, 'Persistent series is incomplete, mismatched, or did not remain GIL-off'
+      - name: Preserve persistent benchmark evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: persistent-gauntlet-${{ matrix.os }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: persistent-gauntlet-results/
+          if-no-files-found: warn
+          retention-days: 30

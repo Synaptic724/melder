@@ -1,0 +1,18 @@
+# priv_commandops worktree, read-only capture by melder_0 at 2026-09-29T23:06:15Z
+## HEAD
+595f326e8f03ec79b7f8ee07aecae40a5d65c81c 2026-09-29 16:23:05 -0600 Mark Add new files for calibration receipts, action delivery, and agent cleanup tracking; update documentation and type annotations across multiple modules
+## status (melder_setup, mailbox, attention board)
+ M context_compass/attention_board.md
+ M context_compass/mailbox_board.md
+ M src/melder_ops/command_center/spectrum/melder_setup/inspection.py
+ M src/melder_ops/command_center/spectrum/melder_setup/runtime.py
+## diff stat vs HEAD
+ context_compass/mailbox_board.md                   | 115 ---------------------
+ .../spectrum/melder_setup/inspection.py            |  84 +++++----------
+ .../spectrum/melder_setup/runtime.py               |  67 ++++++------
+ 3 files changed, 60 insertions(+), 206 deletions(-)
+## mtimes
+5742 2026-09-29 23:06:31.329592900 context_compass/mailbox_board.md
+7463 2026-09-29 22:59:32.474602200 src/melder_ops/command_center/spectrum/melder_setup/inspection.py
+50704 2026-09-29 22:59:32.897023000 src/melder_ops/command_center/spectrum/melder_setup/runtime.py
+14443 2026-09-29 13:47:07.586321500 src/melder_ops/command_center/spectrum/melder_setup/strategies.py

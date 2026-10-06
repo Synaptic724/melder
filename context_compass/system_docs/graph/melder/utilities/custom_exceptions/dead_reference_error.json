@@ -51,7 +51,8 @@
   {
    "from": "melder.utilities.custom_exceptions.dead_reference_error.DeadReferenceError",
    "to_label": "ReferenceError",
-   "relation": "specializes"
+   "relation": "specializes",
+   "to": "builtins.ReferenceError"
   }
  ],
  "edge_candidates": [],

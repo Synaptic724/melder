@@ -682,11 +682,11 @@ def test_c1_mixed_existence_still_injects_all() -> None:
 
 
 def test_c1_collection_over_concrete_element_type() -> None:
-    """C1 characterization: list[Engine] over a concrete element resolves the bound engine(s)."""
+    """C1 characterization: list[Engine] over a concrete element gathers the spells of that class."""
     spellbook = _make_spellbook()
     conduit = None
     try:
-        spellbook.bind(spell=Engine, existence=Existence.unique, permissions="create", spellframe=Engine)
+        spellbook.bind(spell=Engine, existence=Existence.unique, permissions="create")
         spellbook.bind(spell=NeedsEngineList, existence=Existence.unique, permissions="create")
         conduit = spellbook.conjure(name="root")
         assert len(conduit.meld(spell=NeedsEngineList).engines) == 1

@@ -109,8 +109,8 @@ def _prepare_cache_root(fragment: Path) -> Path:
 
 
 def _bundle_path(fragment: Path) -> Path:
-    """Return the root conduit's `.melc` path under the default frame for one cache root."""
-    return (_package_root() / fragment / "__conjure_cache__" / "default" / "root.melc").resolve()
+    """Return the root conduit's `.meldercache` path under the default frame for one cache root."""
+    return (_package_root() / fragment / "__conjure_cache__" / "default" / "root.meldercache").resolve()
 
 
 def _activate_cache(fragment: Path, *, enabled: bool) -> None:

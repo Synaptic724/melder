@@ -2,7 +2,7 @@ from unittest.mock import patch
 
 import pytest
 
-from melder.aether.conduit.creations.creations import Creations
+from melder.aether.conduit.creations.creations import Creations, ManyDisposalBucket
 
 
 class Probe:
@@ -134,10 +134,10 @@ def test_add_many_creations_records_disposal_metadata(creations: Creations) -> N
     )
 
     assert creations._creations["spell-many"] == [obj]
-    assert creations._disposable_creations["spell-many"][0] == _disposable_entry(
-        obj,
-        "dispose",
-    )
+    record = creations._disposable_creations["spell-many"]
+    assert isinstance(record, ManyDisposalBucket)
+    assert record.entries is creations._creations["spell-many"]
+    assert record.methods == ["dispose"]
 
 
 def test_add_creation_duplicate_key_raises(creations: Creations) -> None:

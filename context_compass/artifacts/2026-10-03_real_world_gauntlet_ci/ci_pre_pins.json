@@ -1,0 +1,10 @@
+{
+  "benchmarks/testing_other_di/test_real_world_gauntlet.py": "54a6e194ecd5f16dfbc7270546b3bd0c2ad3bf773ab1360206c96891d836d767",
+  ".github/workflows/real-world-gauntlet.yml": null,
+  ".github/workflows/ci.yml": "f7d73fd7e973ae0692e0b319c2c6aa5c8932a859c4fd3b661cfb90791f45c8a2",
+  ".github/scripts/ci_policy.py": "e4c0786b0beb48ed1b0adad5f3cd621e8ae6dd6886bb835ba708b93b794d32d1",
+  "tests/unit/github_workflows/test_ci_policy.py": "3107ce53db54bf850594c0a6c68f6d2a249a2122807a0ed3abd26aeed7273dad",
+  "tests/unit/github_workflows/test_source_qualification.py": "8e39140cd47b043c5c45dd53579588592cdd124eb9a763f6b771c0213f58f5a0",
+  "tests/unit/github_workflows/test_workflow_contracts.py": "65353ff297683c7eb19d486ddb1ae56bf0f4b6e92afe4afbac0a8ec825613907",
+  ".github/BRANCH_WORKFLOW.md": "2ad6fee71d98f076d8f9a606b45d1d520121861bc864a9d44410424cc62fb4da"
+}

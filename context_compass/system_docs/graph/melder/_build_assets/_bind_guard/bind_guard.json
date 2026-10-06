@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/_build_assets/_bind_guard/bind_guard.py",
- "source_sha256": "051831289a91e4851c1016448743c7d8dc084e4da82cf6ac9c8531581a76dae2",
+ "source_sha256": "f4def1fc80fd013838b20e3f1923686bd35b1da9ac36635749a994669e45eb4f",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder._build_assets._bind_guard.bind_guard": {
@@ -35,7 +35,7 @@
     "has_bases": false,
     "trivial": true
    },
-   "span_sha256": "32425561acc804038d7757dbce749e15d3ab7eeb45f154d7d92fa9312d0b3dbc",
+   "span_sha256": "1c3ac647f4a648e5b6082c7938e506d4cf621ea8c79cc84c506a0b7851a1e0aa",
    "include": true,
    "role": "Static identity namespace for the bind-guard asset.",
    "responsibilities": [
@@ -51,6 +51,7 @@
  "edge_candidates": [],
  "published_aliases": [],
  "imports": {
+  "os": "os",
   "hydrate": "melder.utilities.caching_system.asset_cache.hydrate",
   "source": "melder._build_assets._bind_guard.manifest.bind_guard_manifest"
  },

@@ -1,0 +1,13 @@
+{
+ "books": {
+  "01M3SGX2WAC9V1CMMMPCY1ZJGY": "tenant_a",
+  "01M3SGX2X1XE2E3ZVWWFRN7RV8": "tenant_b"
+ },
+ "book_bind_orders": {
+  "01M3SGX2WAC9V1CMMMPCY1ZJGY": [],
+  "01M3SGX2X1XE2E3ZVWWFRN7RV8": []
+ },
+ "crystal_owner": {
+  "4b2051b5eb7ae7f6": "01M3SGX2X1XE2E3ZVWWFRN7RV8"
+ }
+}

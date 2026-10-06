@@ -1,0 +1,44 @@
+== regime_default
+OBSERVED default regime: same class in a second frame refused -> RuntimeError Spell ID collision detected. spell_id is computed from the spell's bind-time 
+fingerprint (e.g., structural profile, lookup signature, existence, and resolved 
+
+rc=0
+== regime_policy_before_first_frame
+OBSERVED per-frame policy installed before the first frame: same class in a second frame accepted (per-frame ids)
+rc=0
+== regime_policy_after_first_frame
+reported process_wide_unique_spell_ids False
+OBSERVED per-frame policy installed after the first frame: same class in a second frame refused -> RuntimeError Spell ID collision detected. spell_id is computed from the spell's bind-time 
+fingerprint (e.g., structural profile, lookup signature, existence, and resolved 
+
+rc=0
+== crystallizer_early_activation_dynamic
+Traceback (most recent call last):
+  File "/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/scratch/rootprobe/probe_roots.py", line 309, in <module>
+    globals()[scenario]()
+    ~~~~~~~~~~~~~~~~~~~^^
+  File "/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/scratch/rootprobe/probe_roots.py", line 302, in crystallizer_early_activation_dynamic
+    book.conjure(name="root", dynamic=True)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/venvs/melderops314t/lib/python3.14t/site-packages/melder/aether/spellbook/spellbook.py", line 6635, in conjure
+    return self._conjure_within_transaction_window(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        policy=policy,
+        ^^^^^^^^^^^^^^
+    ...<3 lines>...
+        validation_warnings=validation_warnings,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/venvs/melderops314t/lib/python3.14t/site-packages/melder/aether/spellbook/spellbook.py", line 6930, in _conjure_within_transaction_window
+    raise RuntimeError(
+    ...<7 lines>...
+    )
+RuntimeError: [SPELLBOOK] Dynamic-mode conjure with an active Crystallizer requires the 
+SpellbookConfiguration to be finalized BEFORE the first bind. 1 spell(s) 
+were bound while the configuration was still mutable, so the recorded world 
+(profiles, checkpoints, the default bootstrap) would persist binds that ran 
+against unsettled configuration. Fix: build and finalize the configuration 
+first, pass it to the Spellbook before binding, then conjure. Automatic-mode 
+worlds and worlds without an active Crystallizer are not affected.
+rc=1

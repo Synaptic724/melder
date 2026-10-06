@@ -51,6 +51,8 @@
  "edge_candidates": [],
  "published_aliases": [],
  "imports": {
+  "inspect": "inspect",
+  "re": "re",
   "Any": "typing.Any",
   "Optional": "typing.Optional",
   "ClassVar": "typing.ClassVar"

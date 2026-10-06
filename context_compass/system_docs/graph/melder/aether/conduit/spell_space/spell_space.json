@@ -117,6 +117,7 @@
  ],
  "published_aliases": [],
  "imports": {
+  "threading": "threading",
   "TracebackType": "types.TracebackType",
   "TYPE_CHECKING": "typing.TYPE_CHECKING",
   "NoReturn": "typing.NoReturn",

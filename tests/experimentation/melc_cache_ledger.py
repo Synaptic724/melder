@@ -2,7 +2,7 @@
 melc cache ledger: what each cached creation plan does per creation, and what a codegen style could remove.
 
 WHY THIS EXISTS
-    Proof before design. A creation cache (`__melder_cache__/__conjure_cache__/<frame>/<conduit>.melc`) holds one
+    Proof before design. A creation cache (`__conjure_cache__/<frame>/<conduit>.meldercache`) holds one
     marshal bundle per conduit; each spell payload carries the family manifest, and for the generalized and
     many_only families the `no_overrides.steps_rows` the normal plan is re-emitted from at hydration. Those rows
     say what the emitted body does on every creation of that root: which sites are shared reads (singletons,
@@ -135,10 +135,10 @@ class RootLedger:
 
 
 def load_bundles(root: pathlib.Path) -> List[Tuple[pathlib.Path, Dict[str, Any]]]:
-    """Decode every `.melc` bundle under a conjure cache root; unreadable files are reported, not fatal."""
+    """Decode every `.meldercache` bundle under a conjure cache root; unreadable files are reported, not fatal."""
     conjure = root / "__conjure_cache__" if (root / "__conjure_cache__").is_dir() else root
     bundles: List[Tuple[pathlib.Path, Dict[str, Any]]] = []
-    for path in sorted(conjure.glob("*/*.melc")):
+    for path in sorted(conjure.glob("*/*.meldercache")):
         try:
             bundles.append((path, marshal.loads(path.read_bytes())))
         except (ValueError, EOFError, TypeError) as exc:
