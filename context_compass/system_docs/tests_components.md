@@ -2374,14 +2374,14 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-10-06T00:22:33Z
 - path: `tests/unit/github_workflows/test_workflow_contracts.py`
   start_line: 1
-  end_line: 823
-  loc: 823
-  verified_at: 2026-10-06T00:22:33Z
+  end_line: 860
+  loc: 860
+  verified_at: 2026-10-06T09:52:58Z
 - path: `tests/unit/github_workflows/test_candidate_publication.py`
   start_line: 1
-  end_line: 357
-  loc: 357
-  verified_at: 2026-09-26T22:11:36Z
+  end_line: 434
+  loc: 434
+  verified_at: 2026-10-06T09:52:58Z
 - path: `tests/unit/github_workflows/test_source_qualification.py`
   start_line: 1
   end_line: 414
