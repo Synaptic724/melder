@@ -196,6 +196,30 @@ def test_speed_tests_install_the_speed_manifest_into_their_evidence(name: str, j
     assert "if" not in install and "continue-on-error" not in install
 
 
+@pytest.mark.parametrize(("name", "job_name"), [
+    ("real-world-gauntlet.yml", "gauntlet"),
+    ("persistent-runtime-gauntlet.yml", "gauntlet"),
+    ("shallow-all-thread-scaling.yml", "scaling"),
+])
+def test_speed_provenance_can_import_benchmarks_from_the_checkout(name: str, job_name: str) -> None:
+    """An inline Python step puts the checkout on sys.path before it imports the benchmarks package.
+
+    `shell: python` runs a step from a file in the runner's temporary directory, so sys.path[0] is that
+    directory, not the checkout, and the job's PYTHONPATH names only src/. Without the insert the import fails
+    with "No module named 'benchmarks'", as the persistent gauntlet's provenance step did on the owner's
+    2026-10-05 hosted run.
+    """
+    importing = re.compile(r"^\s*(?:from|import) benchmarks\b", re.MULTILINE)
+    steps = [step for step in workflow(name)["jobs"][job_name]["steps"]
+             if step.get("shell") == "python" and importing.search(step.get("run", ""))]
+    assert steps, f"{name}: no inline Python step imports benchmarks"
+    for step in steps:
+        script = step["run"]
+        first_import = importing.search(script)
+        assert first_import is not None
+        assert "sys.path.insert(0, str(Path.cwd()))" in script[:first_import.start()], step["name"]
+
+
 def test_supported_runtime_matrix_and_test_driver_are_shared() -> None:
     """Every discovered OS/version uses free threading and retains independent failing-test evidence."""
     jobs = workflow("test-runtime.yml")["jobs"]

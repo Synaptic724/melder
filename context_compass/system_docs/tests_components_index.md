@@ -12,10 +12,10 @@ Line numbers are 1-based and inclusive on both ends.
 | --- | --- |
 | document | `tests_components.md` |
 | index_version | 1.1.0 |
-| generated_at | 2026-10-05T11:36:57Z |
+| generated_at | 2026-10-06T00:22:37Z |
 | line_count | 2798 |
 | line_ending | lf |
-| content_sha256 | `cfadef70dae281191f7496d0b69026f0df0ee118ff703c8ce0ebce23cce14f8d` |
+| content_sha256 | `341c8e8c822b492d79635a7fcb1b53eb8d57858b76b4cf9fb3a934d67ae8513d` |
 | sections | 66 |
 
 Recompute all three of `line_count`, `line_ending`, and `content_sha256`

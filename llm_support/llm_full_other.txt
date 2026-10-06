@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: other
-SOURCE FINGERPRINT: bf6b0fbbd40f577d0de30f8b69d061f9e3b6117f3369b7aa4b8b5abba5537900
+SOURCE FINGERPRINT: a970b9b11357354e8ec8f7dec3ea3595c0a63ba12dfb48b97ae51fbd99dfc0e6
 FILE COUNT: 402
 
 ================================================================================
@@ -630,7 +630,7 @@ END FILE: .github/ci_cd/README.md
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/ci_cd/extending.md
-CONTENT SHA256: bc99278794214022a940c25bb130aa0942d4d14cb1ba50ba8869df82fe296659
+CONTENT SHA256: ba2e5c80ed24e07b2387b3e8b4951242521710d026373a814ac2ae6dc2c627d8
 SOURCE ENCODING: utf-8
 ================================================================================
 # Extending CI
@@ -688,13 +688,16 @@ BRANCH_WORKFLOW.md.
    with `freethreaded: true`, the install step
    `python .github/scripts/python_runtime_matrix.py speed-install --results <its results folder>`, a provenance
    step asserting `platform.python_version() == os.environ['SPEED_PYTHON']`, `PYTHON_GIL=0` on the measured steps
-   only, and an upload of the results folder with `if: always()`.
+   only, and an upload of the results folder with `if: always()`. A `shell: python` step runs from a temporary
+   file, so the checkout is not on `sys.path`: call `sys.path.insert(0, str(Path.cwd()))` before importing
+   `benchmarks`, or the step fails with "No module named 'benchmarks'".
 2. Pin any new benchmark library in the speed manifest, and list it under `build_from_source` if it publishes no
    free-threaded wheel.
 3. Call it from `ci.yml` with `if: needs.branch-policy.outputs.gauntlet-required == 'true'`, and add it to
    `merge-ready`'s `needs` and to `CIPolicy.GAUNTLET_JOBS`.
 4. Add the workflow to the speed-test parametrizations in `test_workflow_contracts.py` (Python from the speed
-   manifest, the install, the GIL-off setup) and to `test_reusable_mandatory_jobs_cannot_be_disabled`.
+   manifest, the install, the benchmarks import, the GIL-off setup) and to
+   `test_reusable_mandatory_jobs_cannot_be_disabled`.
 
 ## Add a script
 
@@ -939,7 +942,7 @@ END FILE: .github/ci_cd/scripts.md
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/ci_cd/validating.md
-CONTENT SHA256: 2957535ddfc26d9620b4fece95e29525d1237d8896ab854f95721e1815f16c8f
+CONTENT SHA256: 7bfc9d99e51016d95642d3a1d5273e8ec439980ef5280b1d7fc918ca651e1357
 SOURCE ENCODING: utf-8
 ================================================================================
 # Validating a CI change
@@ -980,6 +983,7 @@ Start with `CI / merge-ready`: its message lists every required job that did not
 | `discover`: a manifest is refused | The message names the file and the rule; fix the manifest ([python_versions.md](python_versions.md)). |
 | A test cell fails to install | A pin has no wheel for that release or runner; change the pin in that manifest. |
 | A speed test fails in its install step | A benchmark library has no free-threaded wheel on that runner: pin another version or list it under `build_from_source`. Read `install.log` in the results artifact. |
+| A speed test's inline step fails with "No module named 'benchmarks'" | The step imports `benchmarks` before putting the checkout on `sys.path`; add `sys.path.insert(0, str(Path.cwd()))` above the import ([extending.md](extending.md)). |
 | `source-qualification` refused | No full CI run tested this exact tree. Run CI by hand on the branch (BRANCH_WORKFLOW.md, "Reusing full qualification"). |
 | Prod pull request: "Candidate qualification has not passed" | The release-candidate run for that commit is pending or failed; finish or fix it, then rerun the check. |
 | The Codecov upload fails | Reporting only: it never blocks a merge. |
@@ -1000,7 +1004,7 @@ END FILE: .github/ci_cd/validating.md
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/ci_cd/workflows.md
-CONTENT SHA256: 7e5107f90368440ca253635ebdd263842c6fb6b38fb5e8a7e947d19719062352
+CONTENT SHA256: 9997cc1773e3c35a5c1caa83dfa7a345ca68515da168ef2b5da4ad157738777b
 SOURCE ENCODING: utf-8
 ================================================================================
 # Workflows
@@ -1039,6 +1043,9 @@ same pull request cancels the older run. Ordinary pushes do not run it.
 | `release-fix/*` PR into `release_candidate` | yes | yes | no | no |
 | `release_candidate` PR into `prod` | no | no | no | no |
 | Manual run on a permanent branch | yes | yes, except on `dev` | no | no |
+
+Every route with `runtime` set runs the whole matrix: every manifest release on every runner (27 cells today). The
+owner ruled out a smaller matrix for any route, pull requests into `dev` included (2026-10-05).
 
 `merge-ready` runs even when a job before it failed (`if: always()`). `ci_policy.py merge-ready` recomputes the
 four flags from the event, refuses if `branch-policy` reported different ones, and requires a result for every
@@ -3890,7 +3897,7 @@ END FILE: .github/workflows/docs.yml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/workflows/persistent-runtime-gauntlet.yml
-CONTENT SHA256: 4cb6e2a14a9f60270bda2b6eaf90fddb51fb114a5b286e21792150a96a118a47
+CONTENT SHA256: 75a6e60f9f5a0d6881833b0b1d07c8f2a4726e7886fe747110f23c862cd9ac9f
 SOURCE ENCODING: utf-8
 ================================================================================
 name: Persistent runtime gauntlet (three OSes)
@@ -3988,6 +3995,7 @@ jobs:
           import hashlib, json, os, platform, shutil, subprocess, sys, sysconfig
           from pathlib import Path
           import dependency_injector.containers, dependency_injector.providers, dishka, melder
+          sys.path.insert(0, str(Path.cwd()))
           from benchmarks.testing_other_di import persistent_runtime_gauntlet_series_runner as series
           report = Path('persistent-gauntlet-results')
           durations, counts = series._series_counts()

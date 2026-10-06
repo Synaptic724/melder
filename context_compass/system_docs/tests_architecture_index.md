@@ -12,7 +12,7 @@ Line numbers are 1-based and inclusive on both ends.
 | --- | --- |
 | document | `tests_architecture.md` |
 | index_version | 1.1.0 |
-| generated_at | 2026-10-05T11:55:03Z |
+| generated_at | 2026-10-06T00:22:37Z |
 | line_count | 933 |
 | line_ending | lf |
 | content_sha256 | `476ae4e9f87de92954cdb98709b76fe59e6df0c3a0d0f8a643c81f6d5fe36b8b` |

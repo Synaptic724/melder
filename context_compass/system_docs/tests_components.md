@@ -2234,9 +2234,9 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-09-26T22:11:36Z
 - path: `.github/workflows/test-runtime.yml`
   start_line: 1
-  end_line: 158
-  loc: 158
-  verified_at: 2026-09-26T22:11:36Z
+  end_line: 178
+  loc: 178
+  verified_at: 2026-10-06T00:22:33Z
 - path: `tests/unit/github_workflows/conftest.py`
   start_line: 1
   end_line: 73
@@ -2369,14 +2369,14 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-09-27T23:41:28Z
 - path: `tests/unit/github_workflows/test_ci_policy.py`
   start_line: 1
-  end_line: 511
-  loc: 511
-  verified_at: 2026-09-26T22:11:36Z
+  end_line: 557
+  loc: 557
+  verified_at: 2026-10-06T00:22:33Z
 - path: `tests/unit/github_workflows/test_workflow_contracts.py`
   start_line: 1
-  end_line: 773
-  loc: 773
-  verified_at: 2026-10-05T11:36:52Z
+  end_line: 823
+  loc: 823
+  verified_at: 2026-10-06T00:22:33Z
 - path: `tests/unit/github_workflows/test_candidate_publication.py`
   start_line: 1
   end_line: 357
@@ -2384,14 +2384,14 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-09-26T22:11:36Z
 - path: `tests/unit/github_workflows/test_source_qualification.py`
   start_line: 1
-  end_line: 408
-  loc: 408
-  verified_at: 2026-09-26T22:11:36Z
+  end_line: 414
+  loc: 414
+  verified_at: 2026-10-06T00:22:33Z
 - path: `tests/unit/github_workflows/test_python_runtime_matrix.py`
   start_line: 1
   end_line: 421
   loc: 421
-  verified_at: 2026-10-05T11:36:52Z
+  verified_at: 2026-10-06T00:22:33Z
 - path: `tests/unit/github_workflows/test_distributions.py`
   start_line: 1
   end_line: 185

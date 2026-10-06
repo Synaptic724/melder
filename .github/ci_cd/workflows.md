@@ -35,6 +35,9 @@ same pull request cancels the older run. Ordinary pushes do not run it.
 | `release_candidate` PR into `prod` | no | no | no | no |
 | Manual run on a permanent branch | yes | yes, except on `dev` | no | no |
 
+Every route with `runtime` set runs the whole matrix: every manifest release on every runner (27 cells today). The
+owner ruled out a smaller matrix for any route, pull requests into `dev` included (2026-10-05).
+
 `merge-ready` runs even when a job before it failed (`if: always()`). `ci_policy.py merge-ready` recomputes the
 four flags from the event, refuses if `branch-policy` reported different ones, and requires a result for every
 job in its `needs`: a required job must succeed, an optional one may succeed or be skipped, and a failure or a

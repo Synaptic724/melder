@@ -8,7 +8,7 @@
 - Agent Name: melder_1
 - Priority: p2
 - Created: 2026-10-04T20:51:55Z
-- Updated: 2026-10-05T11:42:00Z
+- Updated: 2026-10-06T00:26:16Z
 
 ## Objective
 Make CI explicit and manifest-driven (owner, 2026-10-05; Notes 24-25). Every Python release CI runs is named
@@ -36,6 +36,8 @@ bare 3.14 setups (Notes 1-6), the newest-patch speed tests (Notes 7-11) and ever
   install source, both workflow test files and the branch guide.
   Documentation the change made false joins it (Note 30): CONTRIBUTING.md's CI paragraph, the tests system
   documents' CI entrypoint, flow, unknown and C1 extents (indexes regenerated) and one release-note line.
+  Reverted on the owner's ruling (Note 41): every file the floor-and-newest slice changed returns to its
+  5fbcd2baa content; the persistent-gauntlet fix (Notes 32-35) stays.
 - DEPENDENCIES: none. The llm_support bundles are rebuilt once, as the last write of this session's work,
   because the SpellMap lane edits src/ after this task.
 - EXIT_GATE: every setup-python request is a manifest release or the 3.14.7 helper pin;
@@ -52,8 +54,22 @@ bare 3.14 setups (Notes 1-6), the newest-patch speed tests (Notes 7-11) and ever
 ## State Transition Event
 - from_state: in_progress
 - to_state: review
-- transition_reason: (2026-10-05T11:42:00Z) manifest-driven CI implemented and validated here (Notes 26-31); the
-  owner's commit and push, the hosted runs and acceptance remain.
+- transition_reason: (2026-10-06T00:26:16Z) the floor-and-newest slice is reverted: every route that runs the runtime
+  tests runs all 27 cells again, the persistent-gauntlet fix stays, 503 passed, assets and llm_support current
+  (Notes 41-47). The owner's commit, push, the hosted runs and acceptance remain.
+- previous: review -> in_progress (2026-10-05T23:46:08Z) the owner ruled that every route runs all 27 runtime
+  cells; the floor-and-newest slice is reverted (Note 41).
+- previous: in_progress -> review (2026-10-05T23:19:01Z) PRs into dev tested the floor and newest manifests,
+  every other route all of them; implemented, proven and documented, assets and llm_support current
+  (Notes 37-40). The owner committed it (281aae254) and rejected it on the first PR into dev (Note 41).
+- previous: review -> in_progress (2026-10-05T23:02:42Z) the owner chose option 2 of Note 33, a sliced matrix
+  for PRs into dev (Note 36).
+- previous: in_progress -> review (2026-10-05T22:54:36Z) the persistent gauntlet's import fixed and proven here,
+  assets and llm_support current (Notes 34-35); the owner's choice on Note 33 remained.
+- previous: review -> in_progress (2026-10-05T22:41:49Z) the owner's hosted run showed the persistent gauntlet
+  failing in its provenance step (Note 32), and the owner asked about the dev-to-preprod matrix (Note 33).
+- previous: in_progress -> review (2026-10-05T11:42:00Z) manifest-driven CI implemented and validated here
+  (Notes 26-31); the owner's commit and push, the hosted runs and acceptance remained.
 - previous: review -> in_progress (2026-10-05T01:53:09Z) the owner reported the speed-test install failing
   on hosted 3.14.8t runners and asked for per-minor pins (Notes 12-15).
 - previous: in_progress -> review (2026-10-04T23:59:15Z) the speed tests follow the newest stable 3.14
@@ -76,7 +92,17 @@ bare 3.14 setups (Notes 1-6), the newest-patch speed tests (Notes 7-11) and ever
 - [x] Scratch-run the cell install and speed-install on the device VM (Note 29).
 - [x] Update the branch guide, CONTRIBUTING, the tests system documents and the release note (Note 30).
 - [x] Rebuild the build assets and llm_support last and run both checks (Note 31).
-- [ ] Owner: commit (git add -A: the ten new manifests are untracked) and push; hosted runs; accept or redirect.
+- [x] Owner: commit and push (a357e2307); hosted runs (Note 32).
+- [x] Put the checkout on sys.path in the persistent gauntlet's provenance step; add its regression test
+      (Notes 34-35).
+- [x] Owner: choose the PR-into-dev matrix (Note 33): option 2 (Note 36).
+- [x] Slice the PR-into-dev matrix to the floor and newest manifests; every other route keeps all
+      (Notes 36-40). Rejected by the owner and reverted (Note 41).
+- [x] Revert the slice: every route, PRs into dev included, runs all 27 runtime cells; the persistent-gauntlet
+      fix and Codecov stay; the CI guide states the ruling (Notes 41-46).
+- [x] Rebuild the build assets and llm_support last and run their checks (Note 47).
+- [ ] Owner: commit and push; see the next PR into dev run all 27 runtime cells; rerun the persistent gauntlet;
+      accept or redirect.
 
 ## Deliverables
 - Ten manifests; the manifest-driven script and its tests; every workflow's Python request on a manifest or
@@ -91,6 +117,7 @@ bare 3.14 setups (Notes 1-6), the newest-patch speed tests (Notes 7-11) and ever
 - .github/workflows/real-world-gauntlet.yml, persistent-runtime-gauntlet.yml, shallow-all-thread-scaling.yml
 - tests/unit/github_workflows/test_python_runtime_matrix.py, test_workflow_contracts.py
 - .github/BRANCH_WORKFLOW.md, CONTRIBUTING.md, release_docs/next_version_release.md
+- .github/ci_cd/extending.md, validating.md (the persistent fix) and workflows.md (the every-route ruling)
 - context_compass/system_docs/tests_architecture.md, tests_components.md and their indexes
 - src/melder/_build_assets manifests and llm_support bundles (regenerated)
 
@@ -102,6 +129,24 @@ bare 3.14 setups (Notes 1-6), the newest-patch speed tests (Notes 7-11) and ever
   - Build assets rebuilt, --check OK; llm_support rebuilt, --check --include-untracked OK (three lines).
 - Not run: the hosted workflows (27 runtime cells, the RC matrix, the three speed jobs), the Windows and macOS
   dependency-injector source builds, and a tracked-only llm_support --check before the manifests are committed.
+- 2026-10-05 22:40-22:54Z, the persistent gauntlet fix (Notes 32-35): owner-reported hosted run - the speed
+  installs passed on ubuntu-24.04 and windows-2025 (dependency-injector built from source on Windows), the
+  persistent provenance step failed on the benchmarks import, the other runs passed. Here: regression test red
+  then green; tests/unit/github_workflows 503 passed; the import reproduced and fixed from a file outside the
+  checkout; build assets and llm_support rebuilt, both --check OK, the tracked-only llm_support --check OK.
+- Not run: the hosted rerun of the persistent gauntlet; its third-party imports and series locally.
+- 2026-10-05 23:05-23:20Z, the sliced dev matrix (Notes 36-40; reverted, see the next entry): the new and changed
+  cases red first (25 failed), then tests/unit/github_workflows 524 passed; nine mutations caught and restored
+  byte for byte; the real manifests give 6 cells for floor-and-newest and 27 for all; the branch gate writes
+  floor-and-newest for a PR into dev and all for dev -> preprod. Build assets and llm_support rebuilt; both
+  --check OK, and the tracked-only llm_support --check OK.
+- Not run: a hosted PR into dev (6 runtime cells) and a hosted dev -> preprod run (27 cells and the record).
+- 2026-10-06 00:20-00:30Z, the revert (Notes 41-47): the restored files compared with git blobs, 0 mismatches
+  (15 equal 5fbcd2baa, three persistent-fix files equal 281aae254, test_workflow_contracts.py is 5fbcd2baa plus
+  the 24 carried lines); tests/unit/github_workflows 503 passed; both tests indexes --check OK; build assets
+  rebuilt and --check OK; llm_support rebuilt, --check --include-untracked and the tracked-only --check OK.
+- Not run: the hosted runs of the reverted CI (27 runtime cells on a PR into dev and on dev -> preprod) and the
+  persistent gauntlet's rerun.
 
 ## Risks / Rollback Notes
 - Risk: dependency-injector's source build on the Windows (MSVC) and macOS (clang) runners is UNKNOWN until
@@ -718,15 +763,339 @@ bare 3.14 setups (Notes 1-6), the newest-patch speed tests (Notes 7-11) and ever
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-10-05T22:41:49Z
+  TYPE: FACT
+  CLAIM: The owner's hosted run of the committed manifest CI (a357e2307, merged into codex_features2 as
+    5fbcd2baa): the persistent gauntlet failed on ubuntu-24.04 and windows-2025 in "Record persistent benchmark
+    provenance" with ModuleNotFoundError: No module named 'benchmarks'; the owner reports the other runs pass.
+    The install step before it succeeded on both runners, so dependency-injector built from source on Windows
+    too, and SPEED_PYTHON was 3.14.7 as the manifest says. Cause: `shell: python` runs a step from a file in the
+    runner's temporary directory, so sys.path[0] is that directory and PYTHONPATH names only src. The
+    real-world and thread-scaling provenance steps call sys.path.insert(0, str(Path.cwd())) before importing
+    benchmarks; the persistent step never did, from its first version (b9c5fa5f2, 2026-10-03). It stayed
+    hidden while the job failed earlier, at its install step.
+  EVIDENCE:
+  - .github/workflows/persistent-runtime-gauntlet.yml:88-96
+  - .github/workflows/persistent-runtime-gauntlet.yml:68-68
+  - .github/workflows/real-world-gauntlet.yml:102-103
+  - .github/workflows/shallow-all-thread-scaling.yml:94-96
+  IMPACT: The persistent series never starts on hosted runners, which blocks this lane's hosted acceptance.
+  NEXT: Add a regression contract test, watch it fail, then insert the line before the import.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-05T22:41:49Z
+  TYPE: DECISION_REQUEST
+  CLAIM: The owner asked whether dev -> preprod should rerun the 27-cell 3.14.0-3.14.8 matrix every PR into dev
+    already ran. In the release design that run is not a repeat: it records source qualification for the exact
+    preprod tree (full runtime and packages), which the preprod -> release_candidate check and the
+    release-candidate workflow reuse instead of testing again. A PR into dev cannot supply it (no package build,
+    a different PR). Dropping it would make the RC promotion refuse ("No full CI qualification found") until
+    full CI is run by hand on preprod, which runs the same matrix. The three gauntlets on that PR take hours,
+    so the matrix adds no wall-clock time there. The duplicated work is on PRs into dev. Options: (1) keep as is;
+    (2) recommended if runner time matters: PRs into dev test the floor and the newest release (3.14.0 and
+    3.14.8) on the three runners, 6 cells instead of 27, while dev -> preprod, release fixes and manual runs keep
+    all 27; a defect specific to a middle patch is then caught at promotion rather than on its PR.
+  EVIDENCE:
+  - .github/scripts/ci_policy.py:104-125
+  - .github/workflows/ci.yml:135-151
+  - .github/scripts/ci_qualification.py:138-169
+  - .github/scripts/ci_qualification.py:236-269
+  - .github/BRANCH_WORKFLOW.md:283-320
+  IMPACT: Decides whether the dev route changes; nothing changes until the owner picks.
+  NEXT: Owner picks option 1 or 2.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-05T22:44:45Z
+  TYPE: MEASURE
+  CLAIM: Fixed and reproduced. New regression test test_speed_provenance_can_import_benchmarks_from_the_checkout
+    (all three speed workflows): before the fix 1 failed (persistent, "Record persistent benchmark provenance")
+    and 2 passed; after inserting sys.path.insert(0, str(Path.cwd())) right before the import (CRLF kept) all
+    pass. The hosted mechanism reproduced on the device VM (3.14.7t, PYTHONPATH=src, the script run from a file
+    outside the checkout as shell: python does): without the insert, ModuleNotFoundError: No module named
+    'benchmarks'; with it the runner imports, _series_counts and _names return 60/180/300 s, 3/5 threads, the
+    three libraries and both scenarios, and the four hashed files exist. Not run locally: the third-party
+    imports and the rest of the step (the VM disk has 123 MB free and no pip). Guide: the speed-test recipe in
+    extending.md and the failed-run table in validating.md name the insert. tests_components' C1 extent of
+    test_workflow_contracts.py remeasured to 823 lines (it said 773, stale since the guide tests landed);
+    tests_components index regenerated, check OK (66 sections).
+  EVIDENCE:
+  - .github/workflows/persistent-runtime-gauntlet.yml:93-97
+  - tests/unit/github_workflows/test_workflow_contracts.py:199-220
+  - .github/ci_cd/extending.md:48-66
+  - context_compass/system_docs/tests_components.md:2375-2379
+  IMPACT: The persistent series can start on hosted runners; a later step that drops the insert fails here.
+  NEXT: Run the workflow suite, then rebuild the assets and llm_support last.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-05T22:54:36Z
+  TYPE: MEASURE
+  CLAIM: Validated and rebuilt last. tests/unit/github_workflows: 503 passed (500 plus the three new cases). The
+    build-asset runner first stopped with PermissionError while deleting
+    src/melder/_build_assets/_system_documents/payloads/src_architecture_payload.py (it deletes and rewrites its
+    three payloads on every build, and the device session no longer had delete access); its --check still passed.
+    The owner's approval granted delete access for the folder, and the rerun exited 0 in 56 s (agent
+    documentation 462, bind guard 622, system documents 4, v0.2.8227). llm_support --include-untracked rewrote
+    tests (1063 files) and other (402); src unchanged. Both checks print only OK lines, and so does the
+    tracked-only llm_support --check: nothing is untracked any more. No .git/index.lock. No src/ change, no notch.
+  EVIDENCE: src/melder/_build_assets/_system_documents/_builder.py:542-578
+  IMPACT: The fix is ready for the owner's commit; CI's asset and bundle checks pass on the working tree.
+  NEXT: Owner: commit and push, rerun the persistent gauntlet, choose an option on Note 33, accept or redirect.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-05T23:02:42Z
+  TYPE: DECISION
+  CLAIM: Owner (chat, about 23:00Z): "ok lets slice PR into dev and just do dev to preprod and if it fails we can
+    catch it there", option 2 of Note 33. PRs into dev test the floor and the newest test manifest (today 3.14.0
+    and 3.14.8) on the three runners; dev -> preprod, release-fix PRs, manual CI and publication keep every
+    manifest. A sliced run issues no source-qualification record, so only a full run can qualify a release. The
+    slice is chosen by the route in ci_policy.py, never by a workflow default, and discovery picks the two
+    manifests by version, so adding or retiring a release needs no edit. Codecov stays as it is (owner: "no I
+    want to keep codecov just didn't see it").
+  EVIDENCE:
+  - .github/scripts/ci_policy.py:104-125
+  - .github/workflows/ci.yml:62-70
+  - .github/workflows/ci.yml:135-151
+  IMPACT: PRs into dev run 6 cells instead of 27; a defect specific to a middle patch surfaces at promotion.
+  NEXT: Read the route output, discovery, the qualification record and their tests in full, then implement.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-05T23:05:14Z
+  TYPE: PLAN
+  CLAIM: Implementation map, from reading the route, discovery, record and their tests. ci_policy.py gains
+    runtime_releases(event...): "floor-and-newest" for a validated PR into dev, "all" for every other route; the
+    branch gate writes runtime-releases and require_ci_results verifies CI_RUNTIME_RELEASES, so a wrong output
+    cannot shrink a promotion's matrix. python_runtime_matrix.py discover gains --releases all|floor-and-newest
+    (default all; the two picked by version, so the RC probes keep every manifest). test-runtime.yml takes a
+    releases input (call: string, default all; manual: choice) and passes it to discovery through env. ci.yml
+    emits the output, hands it to tests, gives merge-ready the env, and records/uploads the qualification only
+    when releases is all; ci_qualification.full_record refuses a sliced run. Tests: test_ci_policy,
+    test_python_runtime_matrix, test_source_qualification, test_workflow_contracts (new cases red first).
+    Docs: .github/ci_cd (workflows, python_versions, scripts), BRANCH_WORKFLOW.md, CONTRIBUTING.md where it names
+    the matrix, tests_architecture, tests_components C1 extents.
+  EVIDENCE:
+  - .github/scripts/ci_policy.py:104-125
+  - .github/scripts/ci_policy.py:158-174
+  - .github/scripts/ci_policy.py:307-314
+  - .github/scripts/python_runtime_matrix.py:208-224
+  - .github/workflows/test-runtime.yml:1-36
+  - .github/workflows/ci.yml:20-31
+  - .github/workflows/ci.yml:109-151
+  - .github/scripts/ci_qualification.py:236-269
+  IMPACT: One route decision drives the slice; every release-qualifying run still tests all manifests.
+  NEXT: Write the new tests, see them fail, then implement.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-05T23:12:25Z
+  TYPE: MEASURE
+  CLAIM: Implemented per Note 37 and proven. The new and changed cases were red first (25 failed, 499 passed)
+    and pass after the change: tests/unit/github_workflows 524 passed. Nine mutations, each caught and restored
+    byte for byte: a PR into dev not sliced, merge-ready ignoring CI_RUNTIME_RELEASES, the record accepting a
+    sliced run, the record step's if without the releases test, discovery ignoring the slice, the tests job
+    without its releases input, discovery called without --releases, and the manual or called workflow
+    defaulting to the slice. On the real manifests: --releases floor-and-newest selects 6 cells (3.14.0, 3.14.8),
+    all selects 27; the branch gate writes runtime-releases=floor-and-newest for a PR from codex_features2 into
+    dev and all for dev -> preprod. Line endings kept per file (test-runtime.yml stays mixed, committed LF).
+  EVIDENCE:
+  - .github/scripts/ci_policy.py:134-162
+  - .github/scripts/ci_policy.py:195-215
+  - .github/scripts/ci_policy.py:348-358
+  - .github/scripts/python_runtime_matrix.py:208-239
+  - .github/scripts/ci_qualification.py:236-250
+  - .github/workflows/ci.yml:26-32
+  - .github/workflows/ci.yml:65-75
+  - .github/workflows/ci.yml:131-158
+  - .github/workflows/test-runtime.yml:3-24
+  - .github/workflows/test-runtime.yml:42-46
+  IMPACT: PRs into dev run 6 runtime cells instead of 27; every run that can qualify a release still runs 27.
+  NEXT: Update the CI guide, BRANCH_WORKFLOW.md, CONTRIBUTING.md and the tests system documents.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-05T23:16:19Z
+  TYPE: FACT
+  CLAIM: Documentation follows in the same change. .github/ci_cd: workflows.md (the route table gains a runtime
+    releases column and the ruling; merge-ready recomputes the selection and records only full runs; the
+    releases input of test-runtime.yml), python_versions.md, scripts.md (CIPolicy's selections,
+    runtime_releases, discover --releases, the record's refusal) and the README diagram. BRANCH_WORKFLOW.md:
+    the required-checks table's "Runtime matrix" column, the runtime-tests contract, Supported Python versions,
+    Reusing full qualification and the coverage paragraph. CONTRIBUTING.md: one sentence. tests_architecture:
+    the matrix bullet, the CI/CD Pipeline section, the runtime qualification flow and a handoff entry. C1 extents
+    remeasured for every touched CI file: test-runtime.yml 195 (tests_components said 158, tests_architecture
+    178), test_ci_policy 633 (511, stale from earlier lanes), test_workflow_contracts 848, test_source_qualification
+    432, test_python_runtime_matrix 477; both indexes regenerated and checked (32 and 66 sections). The workflow
+    suite still passes 524, the guide's coverage and link tests included.
+  EVIDENCE:
+  - .github/ci_cd/workflows.md:27-41
+  - .github/BRANCH_WORKFLOW.md:14-23
+  - context_compass/system_docs/tests_architecture.md:181-192
+  - context_compass/system_docs/tests_components.md:2235-2239
+  IMPACT: Readers of the guide, the branch policy and the system documents see the sliced dev matrix.
+  NEXT: Rebuild the build assets and llm_support last and run both checks.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-05T23:19:01Z
+  TYPE: MEASURE
+  CLAIM: Rebuilt last. The build-asset runner exited 0 in 58 s (agent documentation 462, bind guard 622, system
+    documents 4, v0.2.8227); llm_support --include-untracked rewrote tests (1063 files) and other (402), src
+    unchanged. The asset runner's --check, llm_support's --check --include-untracked and the tracked-only
+    --check all print only OK lines; nothing is untracked. No .git/index.lock. No src/ change, no notch, and no
+    release-note entry: nothing a library user can notice changed.
+  EVIDENCE: .github/workflows/ci.yml:131-158
+  IMPACT: The sliced dev matrix is ready for the owner's commit; CI's own asset and bundle checks pass.
+  NEXT: Owner: commit and push, watch a PR into dev run 6 runtime cells and dev -> preprod run 27, accept or
+    redirect.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-05T23:46:08Z
+  TYPE: DECISION
+  CLAIM: Owner (chat, about 23:30Z), on seeing a PR from codex_features2 into dev run only Python 3.14.0 and
+    3.14.8: "why are you doing only the beginning and end ... its either you keep it on or remove them", then
+    "just keep them its fine, if we rerun them its a multithreading process anyways" and "I want to see all of
+    them run every time its all good". Ruling: every route that runs the runtime tests, PRs into dev included,
+    runs every test manifest (27 cells, 3.14.0-3.14.8 on three runners). The floor-and-newest slice of Notes
+    36-40, committed by the owner as 281aae254 on top of 5fbcd2baa, is reverted. My error: I read "slice PR into
+    dev" (Note 36) as testing a subset of releases; the owner meant all or none, and now chooses all. Kept: the
+    persistent gauntlet's sys.path insert and its regression test (Notes 32-35), and Codecov exactly as it is.
+  EVIDENCE:
+  - .github/scripts/ci_policy.py:134-162
+  - .github/workflows/ci.yml:65-75
+  - .github/workflows/test-runtime.yml:3-24
+  IMPACT: Every PR, into dev too, runs 27 runtime cells again; source qualification is unchanged because
+    dev -> preprod always ran all 27.
+  NEXT: Read each file's 5fbcd2baa..281aae254 diff to separate the slice hunks from the persistent fix, then
+    restore the slice files.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-05T23:46:08Z
+  TYPE: FACT
+  CLAIM: Gate deviation, disclosed: after this lane's latest context compaction one read-only device command
+    (git diff --stat --ignore-cr-at-eol 5fbcd2baa 281aae254) ran before REONBOARD, the third compaction in
+    this lane with such a deviation. It changed nothing. REONBOARD then completed through the whole readset and
+    was self-certified as melder_1 under the owner's re-onboarding rule; the revert's evidence is gathered again
+    after certification.
+  EVIDENCE: context_compass/AGENTS.MD:120-134
+  IMPACT: No state was affected; the record stays honest about the order of events.
+  NEXT: Gather the per-file diffs (Note 41 NEXT).
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
+- DATETIME: 2026-10-05T23:48:26Z
+  TYPE: FACT
+  CLAIM: Read the 5fbcd2baa..281aae254 diff file by file. Slice only, restorable whole: BRANCH_WORKFLOW.md,
+    CONTRIBUTING.md, .github/ci_cd README, python_versions, scripts and workflows, ci_policy.py,
+    ci_qualification.py, python_runtime_matrix.py, ci.yml, test-runtime.yml, test_ci_policy.py,
+    test_python_runtime_matrix.py, test_source_qualification.py and tests_architecture.md. Persistent fix only,
+    kept: persistent-runtime-gauntlet.yml, extending.md, validating.md. Mixed: test_workflow_contracts.py (four
+    slice hunks plus the persistent regression test) and tests_components.md (five C1 extents). Every one of
+    those files in the working tree equals 281aae254 apart from line endings, so restoring the 5fbcd2baa content
+    loses no uncommitted work. A dry run (restore, keep each line's ending) gives test-runtime.yml 178 lines,
+    test_ci_policy 557, test_workflow_contracts 823 (799 plus the 24 carried lines), test_source_qualification
+    414 and test_python_runtime_matrix 421, and its diff of test_workflow_contracts against 281aae254 is exactly
+    the slice hunks reversed. The pre-slice discovery test already pins the bare `discover` command, so a
+    release selection added again would fail it.
+  EVIDENCE:
+  - .github/scripts/ci_policy.py:134-162
+  - .github/workflows/persistent-runtime-gauntlet.yml:93-97
+  - tests/unit/github_workflows/test_workflow_contracts.py:202-223
+  - .github/ci_cd/extending.md:56-58
+  - .github/ci_cd/validating.md:39-39
+  IMPACT: A content restore is exact and keeps the persistent fix; no hand edits of code are needed.
+  NEXT: Record the plan, then write the restore.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-05T23:48:26Z
+  TYPE: PLAN
+  CLAIM: Write the restore (scratch revert_slice.py --write): 15 files to their 5fbcd2baa content and
+    test_workflow_contracts.py to 5fbcd2baa plus the persistent test, each line keeping its ending. Add one
+    sentence under the route table of .github/ci_cd/workflows.md stating the owner's ruling (every route that runs
+    the runtime tests runs every manifest), so the next agent does not try a subset again. Remeasure the five C1
+    extents in tests_components.md; regenerate and check both tests indexes. Run tests/unit/github_workflows
+    (503 expected: 524 less the 21 slice cases). Then the ticket and board, and the asset and llm_support rebuild
+    and checks last.
+  EVIDENCE:
+  - .github/ci_cd/workflows.md:13-45
+  - context_compass/system_docs/tests_components.md:2235-2239
+  IMPACT: One pass returns CI to the full matrix on every route with the guide and system documents in step.
+  NEXT: Run revert_slice.py --write and verify each file against its target.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-06T00:22:24Z
+  TYPE: FACT
+  CLAIM: Restore written and verified against git blobs: the 15 slice files equal 5fbcd2baa, the three
+    persistent-fix files still equal 281aae254, and test_workflow_contracts.py is 5fbcd2baa plus the 24 carried
+    lines with no runtime-releases text left (scratch revert_check.py: 0 mismatches). Every line kept its ending
+    (CRLF files stay CRLF; test-runtime.yml stays mixed, 16 CRLF and 162 LF). workflows.md gains one sentence
+    under the route table: every route with runtime set runs every manifest release on every runner, 27 cells
+    today, and the owner ruled out a smaller matrix for any route. Incident: a working-tree `git diff` I ran was
+    cut off when the device bridge restarted (about 23:50Z) and left an empty .git/index.lock, which would have
+    blocked the owner's commit; no git process was left, and I removed the lock under the delete permission the
+    owner granted for it (about 00:21Z). Verification now uses git show and Python only, never a working-tree
+    git diff, which can take the index lock.
+  EVIDENCE:
+  - .github/ci_cd/workflows.md:36-39
+  - .github/workflows/test-runtime.yml:1-30
+  - tests/unit/github_workflows/test_workflow_contracts.py:199-222
+  IMPACT: CI is back to the full matrix on every route, with the guide stating the ruling; the owner can commit.
+  NEXT: Remeasure the five C1 extents in tests_components.md, regenerate both tests indexes, run the workflow
+    suite.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-06T00:23:21Z
+  TYPE: MEASURE
+  CLAIM: Validated (device VM, CPython 3.14.7t): tests/unit/github_workflows 503 passed - the 524 of Note 38 less
+    the 21 slice cases, and the same count as after the persistent fix (Note 35); the carried persistent test and
+    the guide's coverage and link tests pass. tests_architecture.md is back to its 5fbcd2baa text (test-runtime.yml
+    178 lines, verified 2026-10-05T11:36:52Z, true again); tests_components.md's five C1 extents remeasured on
+    disk: test-runtime.yml 178 (it said 195), test_ci_policy 557 (633), test_workflow_contracts 823 (848),
+    test_source_qualification 414 (432), test_python_runtime_matrix 421 (477). Both indexes regenerated; --check
+    OK (32 sections over 933 lines, 66 over 2798). No .git/index.lock after the run.
+  EVIDENCE:
+  - context_compass/system_docs/tests_components.md:2235-2239
+  - context_compass/system_docs/tests_components.md:2370-2394
+  IMPACT: The revert passes the contract suite and the system documents describe the files as they are.
+  NEXT: Rebuild the build assets and llm_support last and run their checks.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-06T00:26:16Z
+  TYPE: MEASURE
+  CLAIM: Rebuilt last. The build-asset runner exited 0 in 50 s (agent documentation 462, bind guard 622, system
+    documents 4, v0.2.8227) and its --check prints only OK lines; llm_support --include-untracked rewrote tests
+    (1063 files) and other (402), src unchanged, and --check --include-untracked and the tracked-only --check
+    print only OK lines. No .git/index.lock. No src/ change, no notch, no release-note entry.
+  EVIDENCE: .github/ci_cd/workflows.md:36-39
+  IMPACT: The revert is ready for the owner's commit; CI's own asset and bundle checks pass on the working tree.
+  NEXT: Owner: commit and push, see the next PR into dev run all 27 runtime cells, rerun the persistent gauntlet,
+    accept or redirect.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
 ## Context / Handoff Summary
-Review (Notes 24-31): CI is manifest-driven. .github/python/tests/ holds one manifest per release (3.14.0-3.14.8,
+Review (Notes 24-47): CI is manifest-driven. .github/python/tests/ holds one manifest per release (3.14.0-3.14.8,
 the uv.lock test pins); discovery builds the 27-cell matrix from them with no network lookup and each cell
 installs exactly its pins plus Melder with uv pip --no-deps. .github/python/speed/3.14.7.toml drives the three
 speed tests through a manifest job and the speed-install operation (dependency-injector built from source).
 Every helper setup pins 3.14.7; nothing uses check-latest or a version file. Contract suite 498 passed with nine
 mutations caught; Linux scratch installs pass; docs, system documents, assets and llm_support are current
-(--include-untracked). Owner-owed: git add -A (the ten manifests are untracked), push, the hosted runs
-(including the Windows and macOS source builds) and acceptance.
+(--include-untracked). The owner committed it (a357e2307) and ran it: the speed installs passed on Linux and
+Windows, and the persistent gauntlet's provenance step could not import benchmarks; that step now puts the checkout
+on sys.path first, under a regression test (Notes 32-35). A floor-and-newest slice for PRs into dev (Notes 36-40,
+committed as 281aae254) was rejected by the owner and reverted (Notes 41-47): every route that runs the runtime
+tests runs all 27 cells, the CI guide states that ruling, the persistent fix stays; 503 passed, assets and
+llm_support current. Owner-owed: commit, push, the hosted runs (27 cells on the next PR into dev, the persistent
+gauntlet rerun) and acceptance.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

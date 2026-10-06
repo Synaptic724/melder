@@ -53,13 +53,16 @@ BRANCH_WORKFLOW.md.
    with `freethreaded: true`, the install step
    `python .github/scripts/python_runtime_matrix.py speed-install --results <its results folder>`, a provenance
    step asserting `platform.python_version() == os.environ['SPEED_PYTHON']`, `PYTHON_GIL=0` on the measured steps
-   only, and an upload of the results folder with `if: always()`.
+   only, and an upload of the results folder with `if: always()`. A `shell: python` step runs from a temporary
+   file, so the checkout is not on `sys.path`: call `sys.path.insert(0, str(Path.cwd()))` before importing
+   `benchmarks`, or the step fails with "No module named 'benchmarks'".
 2. Pin any new benchmark library in the speed manifest, and list it under `build_from_source` if it publishes no
    free-threaded wheel.
 3. Call it from `ci.yml` with `if: needs.branch-policy.outputs.gauntlet-required == 'true'`, and add it to
    `merge-ready`'s `needs` and to `CIPolicy.GAUNTLET_JOBS`.
 4. Add the workflow to the speed-test parametrizations in `test_workflow_contracts.py` (Python from the speed
-   manifest, the install, the GIL-off setup) and to `test_reusable_mandatory_jobs_cannot_be_disabled`.
+   manifest, the install, the benchmarks import, the GIL-off setup) and to
+   `test_reusable_mandatory_jobs_cannot_be_disabled`.
 
 ## Add a script
 

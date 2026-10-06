@@ -93,6 +93,7 @@ jobs:
           import hashlib, json, os, platform, shutil, subprocess, sys, sysconfig
           from pathlib import Path
           import dependency_injector.containers, dependency_injector.providers, dishka, melder
+          sys.path.insert(0, str(Path.cwd()))
           from benchmarks.testing_other_di import persistent_runtime_gauntlet_series_runner as series
           report = Path('persistent-gauntlet-results')
           durations, counts = series._series_counts()
