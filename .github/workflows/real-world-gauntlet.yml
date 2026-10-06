@@ -1,6 +1,6 @@
 name: Real-world gauntlet (three OSes)
 
-# ci.yml invokes this only for dev-to-preprod promotion PRs.
+# speed-tests.yml calls this on dev-to-preprod pull requests, beside CI; nothing waits for it.
 # CI/manual iteration defaults are smaller than the local benchmark configuration.
 on:
   workflow_call:

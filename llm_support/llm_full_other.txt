@@ -1,8 +1,8 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: other
-SOURCE FINGERPRINT: 74350e29d1f570007197568c23cab39ee44192ea5f30c701b117a2bba743d19b
-FILE COUNT: 402
+SOURCE FINGERPRINT: ea0521ae8dbcd9c944f8aab658c5ae7cdbc5b41d60fe8e94d1168bf20184a98c
+FILE COUNT: 403
 
 ================================================================================
 BEGIN FILE: .gitattributes
@@ -64,7 +64,7 @@ END FILE: .gitattributes
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/BRANCH_WORKFLOW.md
-CONTENT SHA256: 92f6258958cfee9ea207ac18327efe528e070e376f42e4ba395aef831969977a
+CONTENT SHA256: 34b83c639f5b527eea2670fc12bb8bb3db82b03072d4de0b29e13a6e85947128
 SOURCE ENCODING: utf-8
 ================================================================================
 # Branch CI and release workflow
@@ -83,7 +83,7 @@ which checks must run; the final gate independently verifies that selection.
 | Event | Full runtime matrix | Other required work |
 | --- | --- | --- |
 | Feature PR into `dev` | Yes | Hygiene, source/repository assets and documentation |
-| `dev` PR into `preprod` | Yes | The same checks plus distribution verification and the three benchmark jobs |
+| `dev` PR into `preprod` | Yes | The same checks plus distribution verification; the three speed tests run beside CI and block nothing |
 | `preprod` PR into `release_candidate` | No | Hygiene and exact-tree full preprod proof |
 | `release-fix/*` PR into `release_candidate` | Yes | Full checks and distribution verification for changed contents |
 | `release_candidate` PR into `prod` | No | Hygiene and exact-source successful TestPyPI qualification |
@@ -105,7 +105,9 @@ The checks enforce these contracts:
 - Full runtime tests: unit, component, and integration tiers on Linux, Windows, and macOS,
   on every Python release that has a test manifest, with the GIL disabled
   in the actual pytest process.
-  The macOS job uses `macos-latest` on native Apple Silicon (arm64).
+  The macOS job uses `macos-latest` on native Apple Silicon (arm64). Linux jobs
+  run on a pinned `ubuntu-24.04`, so GitHub moving `ubuntu-latest` to Ubuntu
+  26.04 changes nothing until a commit moves them.
 - Distribution verification in full CI outside dev: wheel and sdist boundaries,
   source/metadata/asset versions, and an isolated installed-wheel smoke test.
 - Prod candidate proof: the exact source head must have successful TestPyPI
@@ -113,6 +115,9 @@ The checks enforce these contracts:
   This runs last inside `CI / merge-ready`, after the other required checks succeed.
 - Source qualification: unchanged preprod promotions must prove that their entire
   merge tree passed full CI before the source suite may be skipped.
+- Speed tests: not a required check. The Speed workflow (speed-tests.yml) runs the three
+  benchmarks beside CI on dev-to-preprod PRs; a failure is red on the PR and blocks neither
+  the merge nor a later promotion (owner, 2026-10-06).
 
 The final status fails for missing evidence, failure, cancellation, or an
 unexpected skipped job. Optional jobs may succeed or be explicitly skipped, never
@@ -127,9 +132,12 @@ still reject an unsupported interpreter or an enabled GIL during qualification.
 
 ## Real-world gauntlet
 
-Automatic CI runs real-world-gauntlet.yml only for this repository's dev-to-preprod
-promotion PRs. CI / merge-ready requires its success on that route and accepts the planned
-skip on feature PRs into dev, later promotions, release-fix PRs, and manual full CI.
+The Speed workflow (speed-tests.yml) starts real-world-gauntlet.yml for this repository's
+dev-to-preprod promotion PRs, beside CI. Nothing waits for it (owner, 2026-10-06):
+CI / merge-ready does not need it, and the CI run that later promotions reuse does not
+contain it, so a failure shows red on the PR and blocks neither the merge nor the
+release-candidate promotion. Merging or closing the PR does not cancel it; a newer commit
+on the PR does.
 The gauntlet workflow itself remains manually runnable for a one-off test. Its YAML
 iteration-counts input defaults to [500, 1000, 2500, 5000, 10000] for both reusable calls
 and manual runs; local pytest defaults remain unchanged.
@@ -161,10 +169,10 @@ and account for hosted hardware variation. A short correctness run is not a perf
 
 ## Persistent runtime series
 
-The dev-to-preprod PR also starts persistent-runtime-gauntlet.yml. It depends only on
-branch-policy, just like the real-world gauntlet, so they may run concurrently on separate
-GitHub-hosted runner VMs. Each uses its own Ubuntu, Windows and Intel macOS jobs; runner
-availability may queue them. Every benchmark job must succeed for promotion.
+The Speed workflow also starts persistent-runtime-gauntlet.yml on the dev-to-preprod PR. It
+depends only on the speed route, just like the real-world gauntlet, so they may run concurrently
+on separate GitHub-hosted runner VMs. Each uses its own Ubuntu, Windows and Intel macOS jobs;
+runner availability may queue them. Like the real-world gauntlet, it blocks nothing.
 
 Run benchmarks/testing_other_di/test_persistent_runtime_gauntlet_series.py with pytest -s.
 Edit persistent_runtime_gauntlet_series_runner.py for local settings and aggregation:
@@ -185,10 +193,10 @@ under its own persistent-gauntlet artifact. The standalone workflow also support
 
 ## Shallow thread scaling
 
-The dev-to-preprod PR also starts shallow-all-thread-scaling.yml. Like the other two benchmarks it
-depends only on branch-policy, so all three may run concurrently on separate GitHub-hosted runner
-VMs; runner availability may queue them. CI / merge-ready requires its success on that route and
-accepts the planned skip on every other route. The workflow itself remains manually runnable.
+The Speed workflow also starts shallow-all-thread-scaling.yml on the dev-to-preprod PR. Like the
+other two benchmarks it depends only on the speed route, so all three may run concurrently on
+separate GitHub-hosted runner VMs; runner availability may queue them. It blocks nothing either.
+The workflow itself remains manually runnable.
 
 It runs benchmarks/testing_other_di/test_shallow_all_thread_scaling.py on the speed manifest's release
 (3.14.7 today; free-threaded, GIL off) with the same pinned dependencies as the other benchmarks, on Ubuntu x64,
@@ -237,7 +245,7 @@ pytest; the installed-package probe also verifies GIL-off state. Discovery, asse
 may use ordinary Python because those jobs do not qualify Melder's runtime behavior.
 
 Single-version helper jobs (discovery, hygiene, assets, docs, source qualification, publication, RC
-bookkeeping, distribution builds and the speed tests' manifest jobs) request exactly
+bookkeeping, distribution builds, the speed route and the speed tests' manifest jobs) request exactly
 `python-version: "3.14.7"`, a release with a test manifest; none uses `check-latest` or a version file.
 The three speed tests (real-world gauntlet, persistent runtime series, shallow thread scaling) are not
 part of the matrix: each runs once, on the speed manifest's release, never across versions, and only on
@@ -569,7 +577,7 @@ END FILE: .github/FUNDING.yml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/ci_cd/README.md
-CONTENT SHA256: 2442b6c41e9adbebf49e1b6891f32fe74db55a4417be1d77993079d55a962ed9
+CONTENT SHA256: 7784c6c8ec6ec6e0553548922b508c8aa36ee5bc8260ebfa08aee4f54c47e64c
 SOURCE ENCODING: utf-8
 ================================================================================
 # CI/CD guide for agents
@@ -591,7 +599,7 @@ repeating it.
 
 ## How CI fits together
 
-Three workflows start runs. Every other workflow is reusable (`on: workflow_call`): it proves one thing, the entry
+Four workflows start runs. Every other workflow is reusable (`on: workflow_call`): it proves one thing, the entry
 workflows call it, and it can also be started by hand from the Actions tab.
 
 ```text
@@ -599,11 +607,13 @@ pull request into dev, preprod, release_candidate or prod, or a manual run  --> 
   branch-policy         refuses an invalid route, decides what this PR must run (ci_policy.py branch)
   hygiene               every time
   source-assets, repo-assets, tests, documentation      when the route needs the full checks
-  real-world-gauntlet, persistent-runtime-gauntlet,
-  shallow-all-thread-scaling                            only for a dev -> preprod PR
   packages              full checks outside dev
   source-qualification  only for a preprod -> release_candidate PR
   merge-ready           the one required status, "CI / merge-ready" (ci_policy.py merge-ready)
+
+pull request into preprod  -->  speed-tests.yml, beside ci.yml; nothing waits for it
+  route                 refuses an invalid route; true only for dev -> preprod (ci_policy.py speed-route)
+  real-world-gauntlet, persistent-runtime-gauntlet, shallow-all-thread-scaling     when route says so
 
 push to release_candidate, or a manual run there  -->  release-candidate.yml
   authorize -> source-qualification -> build -> publish (TestPyPI)
@@ -622,7 +632,9 @@ Python releases CI may use are data: one manifest per release in `.github/python
 1. CI runs only the Python releases a manifest names ([python_versions.md](python_versions.md)). Never add
    `check-latest`, a `python-version-file`, a pre-release or a floating version such as `"3.14"`.
 2. `CI / merge-ready` is the only required status. A job that must pass goes into `merge-ready`'s `needs` in
-   `ci.yml` and into `CIPolicy` in `ci_policy.py` in the same change ([extending.md](extending.md)).
+   `ci.yml` and into `CIPolicy` in `ci_policy.py` in the same change ([extending.md](extending.md)). A job that
+   only reports, like the speed tests, gets its own workflow and never runs in `ci.yml`: later promotions reuse a
+   CI run only when the whole run finished green.
 3. Logic goes in a script with a test, not in YAML. Scripts stay standard-library only: CI runs them before
    anything is installed.
 4. Check every CI change locally ([validating.md](validating.md)). Hosted runs belong to the owner: report them as
@@ -636,7 +648,7 @@ END FILE: .github/ci_cd/README.md
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/ci_cd/extending.md
-CONTENT SHA256: 0451bef8c7baeaf8f41f5bb0ed08f5d5752cf0ce4162671524764b1a3dd4fae1
+CONTENT SHA256: d18189a2e624572b05c8e40c80af8edd3f980b82e51da7d617f13b354194d546
 SOURCE ENCODING: utf-8
 ================================================================================
 # Extending CI
@@ -655,8 +667,14 @@ Every change below ends the same way: run the workflow tests, update this folder
 - In the mandatory reusable workflows (the list in `test_reusable_mandatory_jobs_cannot_be_disabled`) no job has
   an `if`, `continue-on-error` or an `environment`, and every job has `timeout-minutes`, so a required check can
   never turn into a skipped success. The one exception is `test-runtime.yml`'s `coverage` job, which only reports.
-  Add a new mandatory reusable workflow to that list.
+  Add a new mandatory reusable workflow to that list. The speed workflows follow the same rule in
+  `test_speed_workflows_measure_everything_once_started`: they block nothing, but a started speed test never skips
+  itself or hides a failure.
 - Python comes from a manifest or is the helper release ([python_versions.md](python_versions.md)).
+- Linux jobs run on `ubuntu-24.04`, never `ubuntu-latest`: GitHub moves that label to Ubuntu 26.04 from
+  2026-10-19, and setup-python's Linux builds are made per Ubuntu release, so a moved label could fail a
+  manifest release that passes today. Move to a newer Ubuntu deliberately: change every label and
+  `RuntimeMatrixPolicy.TARGETS` together and run the full matrix.
 - `PYTHON_GIL=0` goes on the steps that run Melder, never on a whole job: Python's setup on macOS runs a
   certificate installer that cannot start with the GIL disabled.
 - Secrets are passed explicitly and only where needed: `tests` receives `CODECOV_TOKEN` and nothing else, and the
@@ -672,11 +690,15 @@ Every change below ends the same way: run the workflow tests, update this folder
 1. Add the job to `ci.yml` with `needs: branch-policy` and an `if:` on the flag that should require it (no `if`
    if it must always run).
 2. Add it to `merge-ready`'s `needs`.
-3. Add its name to `CIPolicy` in `ci_policy.py`: `FULL_JOBS` when it belongs to the full checks, `GAUNTLET_JOBS`
-   for a dev-to-preprod benchmark, or `REQUIRED_JOBS` with its own rule in `require_success` for a new kind.
-   `merge-ready` refuses when its `needs` and `CIPolicy` disagree, so steps 2 and 3 land together.
+3. Add its name to `CIPolicy` in `ci_policy.py`: `FULL_JOBS` when it belongs to the full checks, or
+   `REQUIRED_JOBS` with its own rule in `require_success` for a new kind. `merge-ready` refuses when its `needs`
+   and `CIPolicy` disagree, so steps 2 and 3 land together.
 4. Update `test_ci_policy.py`, the assertions in `test_every_pr_reports_a_fail_closed_required_status`, and the
    required-checks table at the top of BRANCH_WORKFLOW.md.
+
+A job that should only report does not belong in `ci.yml` at all, not even as an optional job: later promotions
+reuse a CI run only when the whole run finished green, so it could hold or refuse a promotion. Give it its own
+workflow, as `speed-tests.yml` does for the speed tests.
 
 ## Add a stage to the release-candidate or publication run
 
@@ -685,9 +707,9 @@ and that list together. A publication job that must finish before the upload goe
 
 ## Add or change a route
 
-Routes are decided only by `validate_route` and `validation_requirements` in `ci_policy.py`. Change them there,
-add cases to `test_ci_policy.py`, and update the route tables in [workflows.md](workflows.md) and
-BRANCH_WORKFLOW.md.
+Routes are decided only by `validate_route`, `validation_requirements` and, for the speed tests, `speed_required`
+in `ci_policy.py`. Change them there, add cases to `test_ci_policy.py`, and update the route tables in
+[workflows.md](workflows.md) and BRANCH_WORKFLOW.md.
 
 ## Add a speed test
 
@@ -702,11 +724,13 @@ BRANCH_WORKFLOW.md.
    `benchmarks`, or the step fails with "No module named 'benchmarks'".
 2. Pin any new benchmark library in the speed manifest, and list it under `build_from_source` if it publishes no
    free-threaded wheel.
-3. Call it from `ci.yml` with `if: needs.branch-policy.outputs.gauntlet-required == 'true'`, and add it to
-   `merge-ready`'s `needs` and to `CIPolicy.GAUNTLET_JOBS`.
+3. Call it from `speed-tests.yml` with `needs: route` and `if: needs.route.outputs.speed-required == 'true'`, and
+   nothing more: no `continue-on-error`, so a failure stays red on the pull request, and never from `ci.yml`, so it
+   blocks nothing.
 4. Add the workflow to the speed-test parametrizations in `test_workflow_contracts.py` (Python from the speed
-   manifest, the install, the benchmarks import, the GIL-off setup) and to
-   `test_reusable_mandatory_jobs_cannot_be_disabled`.
+   manifest, the install, the benchmarks import, the GIL-off setup), to
+   `test_speed_workflows_measure_everything_once_started`, and to the job set in
+   `test_speed_tests_start_beside_ci_and_block_nothing`.
 
 ## Add a script
 
@@ -852,7 +876,7 @@ END FILE: .github/ci_cd/python_versions.md
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/ci_cd/scripts.md
-CONTENT SHA256: 3ed5c71fee3284027d1bdd2b64269bb2f560a538da01bfa8f1fa76e1a476514d
+CONTENT SHA256: de41c5413ed18c6cfcf986332f851cb9498ceeb62907f6155c935a3ff48048fe
 SOURCE ENCODING: utf-8
 ================================================================================
 # Scripts and other `.github` files
@@ -866,7 +890,7 @@ non-zero; nothing falls back to a default. Tests load each script by path throug
 
 | Script | Operations or options | Called by | Tested in |
 | --- | --- | --- | --- |
-| `ci_policy.py` | `branch`, `merge-ready`, `hygiene`, `release-head`, `candidate-head`, `candidate-ready` | `ci.yml`, `release-candidate.yml`, `python-publish.yml` | `test_ci_policy.py` |
+| `ci_policy.py` | `branch`, `speed-route`, `merge-ready`, `hygiene`, `release-head`, `candidate-head`, `candidate-ready` | `ci.yml`, `speed-tests.yml`, `release-candidate.yml`, `python-publish.yml` | `test_ci_policy.py` |
 | `python_runtime_matrix.py` | `discover`, `speed`, `speed-install`, `requirements`, `coverage` | `test-runtime.yml`, `release-candidate.yml`, the three speed tests | `test_python_runtime_matrix.py` |
 | `run_runtime_tests.py` | `--report`, `--coverage-report` | `test-runtime.yml` | `test_ci_policy.py` |
 | `ci_qualification.py` | `record`, `select`, `verify` | `ci.yml`, `verify-source-qualification.yml` | `test_source_qualification.py`, `test_checkout_identity.py` |
@@ -884,12 +908,13 @@ scripts rely on (job names, needs, flags, artifact names, Python requests, insta
 ### `ci_policy.py`
 
 `CIPolicy` names the permanent branches (`dev`, `preprod`, `release_candidate`, `prod`), the promotion order, and
-the job lists that `merge-ready` and `package-ready` require: `FULL_JOBS`, `GAUNTLET_JOBS`, `REQUIRED_JOBS` and
-`CANDIDATE_JOBS`. `validate_route` refuses a pull request that skips a promotion step or comes from a fork, and
-`validation_requirements` turns an event into the runtime, package, source and gauntlet flags (table in
-[workflows.md](workflows.md)). `require_success` is the merge-ready rule. The `release-head` and `candidate-head`
-gates compare full commit SHAs from the event, the checkout and the live remote, so a branch or tag that moved
-during a run is refused. The script also provides the input helpers the others import (`object_value`,
+the job lists that `merge-ready` and `package-ready` require: `FULL_JOBS`, `REQUIRED_JOBS` and `CANDIDATE_JOBS`.
+`validate_route` refuses a pull request that skips a promotion step or comes from a fork,
+`validation_requirements` turns an event into the runtime, package and source flags (table in
+[workflows.md](workflows.md)), and `speed_required` says whether the same validated event starts the speed tests
+in `speed-tests.yml` (only a `dev` pull request into `preprod`). `require_success` is the merge-ready rule. The
+`release-head` and `candidate-head` gates compare full commit SHAs from the event, the checkout and the live
+remote, so a branch or tag that moved during a run is refused. The script also provides the input helpers the others import (`object_value`,
 `text_value`, `git_output`, `read_event`).
 
 ### `python_runtime_matrix.py`
@@ -953,7 +978,7 @@ END FILE: .github/ci_cd/scripts.md
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/ci_cd/validating.md
-CONTENT SHA256: 02339fc80b9ca52c06d11ca1c216f6af160567c41f8afbbcf2b7b1e2dc0b2210
+CONTENT SHA256: 5a89ece4a4be49e0958df37f157b5f93ee49b61733a1b0a89cacab3b4451b119
 SOURCE ENCODING: utf-8
 ================================================================================
 # Validating a CI change
@@ -994,6 +1019,8 @@ Start with `CI / merge-ready`: its message lists every required job that did not
 | `discover`: a manifest is refused | The message names the file and the rule; fix the manifest ([python_versions.md](python_versions.md)). |
 | A test cell fails to install | A pin has no wheel for that release or runner; change the pin in that manifest. |
 | A speed test fails in its install step | A benchmark library has no free-threaded wheel on that runner: pin another version or list it under `build_from_source`. Read `install.log` in the results artifact. |
+| A speed test is red on a `dev` -> `preprod` pull request | It blocks nothing: merge when `CI / merge-ready` is green. Its results artifact says why; a speed test fails only when the benchmark fails or is incomplete, or its settings or GIL state are wrong. |
+| `Speed / route` refused | The pull request into `preprod` does not come from this repository's `dev`, and `branch-policy` refuses it too. Retarget it. |
 | A speed test's inline step fails with "No module named 'benchmarks'" | The step imports `benchmarks` before putting the checkout on `sys.path`; add `sys.path.insert(0, str(Path.cwd()))` above the import ([extending.md](extending.md)). |
 | `source-qualification` refused | No full CI run tested this exact tree. Run CI by hand on the branch (BRANCH_WORKFLOW.md, "Reusing full qualification"). |
 | `RC / publish-to-TestPyPI`: HTTP 503 or another 5xx from TestPyPI after six tries | TestPyPI is down. When it answers again, use **Re-run failed jobs**; the run's build is reused. |
@@ -1018,7 +1045,7 @@ END FILE: .github/ci_cd/validating.md
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/ci_cd/workflows.md
-CONTENT SHA256: 36a66617f770bbb7ecaeca9b9088628fc5bea729c90b57426d881e71b446513c
+CONTENT SHA256: 69de74eca4c069d2ff8b24cd178d9c01ec03e6446b1fbc5667a304ecfb70b390
 SOURCE ENCODING: utf-8
 ================================================================================
 # Workflows
@@ -1036,38 +1063,48 @@ same pull request cancels the older run. Ordinary pushes do not run it.
 
 | Job | Runs when | What it proves |
 | --- | --- | --- |
-| `branch-policy` (CI / branch-policy) | always | The route is allowed; it sets the four flags below (`ci_policy.py branch`). |
+| `branch-policy` (CI / branch-policy) | always | The route is allowed; it sets the three flags below (`ci_policy.py branch`). |
 | `hygiene` (CI / repository-hygiene) | always | No two tracked paths differ only by letter case (`ci_policy.py hygiene`). |
 | `source-assets` | runtime | The committed build assets match their builders (`build-src-assets.yml`). |
 | `repo-assets` | runtime | The committed LLM bundles match the tracked files (`build-repo-assets.yml`). |
 | `tests` | runtime | Every test tier passes on every manifest release and runner (`test-runtime.yml`). |
 | `documentation` | runtime | The documentation site and handbooks build and validate (`docs.yml`). |
-| `real-world-gauntlet`, `persistent-runtime-gauntlet`, `shallow-all-thread-scaling` | gauntlet | The three speed tests complete (see below). |
 | `packages` | package | The wheel and sdist build, verify and install (`build-distributions.yml`). |
 | `source-qualification` | source | An earlier full CI run tested this exact tree (`verify-source-qualification.yml`). |
 | `merge-ready` (CI / merge-ready) | always | Every required job succeeded (below). |
 
 `ci_policy.py` sets the flags from the event alone (`validation_requirements`):
 
-| Event | runtime | package | source | gauntlet |
-| --- | --- | --- | --- | --- |
-| PR into `dev` | yes | no | no | no |
-| `dev` PR into `preprod` | yes | yes | no | yes |
-| `preprod` PR into `release_candidate` | no | no | yes | no |
-| `release-fix/*` PR into `release_candidate` | yes | yes | no | no |
-| `release_candidate` PR into `prod` | no | no | no | no |
-| Manual run on a permanent branch | yes | yes, except on `dev` | no | no |
+| Event | runtime | package | source |
+| --- | --- | --- | --- |
+| PR into `dev` | yes | no | no |
+| `dev` PR into `preprod` | yes | yes | no |
+| `preprod` PR into `release_candidate` | no | no | yes |
+| `release-fix/*` PR into `release_candidate` | yes | yes | no |
+| `release_candidate` PR into `prod` | no | no | no |
+| Manual run on a permanent branch | yes | yes, except on `dev` | no |
 
 Every route with `runtime` set runs the whole matrix: every manifest release on every runner (27 cells today). The
 owner ruled out a smaller matrix for any route, pull requests into `dev` included (2026-10-05).
 
 `merge-ready` runs even when a job before it failed (`if: always()`). `ci_policy.py merge-ready` recomputes the
-four flags from the event, refuses if `branch-policy` reported different ones, and requires a result for every
+three flags from the event, refuses if `branch-policy` reported different ones, and requires a result for every
 job in its `needs`: a required job must succeed, an optional one may succeed or be skipped, and a failure or a
 cancellation never passes. After a full run it records the tested tree (`ci_qualification.py record`) as the
 artifact `source-qualification-<run>-<attempt>`, kept 90 days, which later promotions reuse. On a pull request
 into `prod`, or a manual run there, it then waits up to ten minutes for that candidate's release-candidate run to
 succeed (`check_candidate_run.py --wait-seconds 600`).
+
+### `speed-tests.yml`: the speed tests beside CI (Speed)
+
+Runs on pull requests into `preprod` (opened, updated, reopened or marked ready for review), beside `ci.yml`.
+`route` (Speed / route) refuses an invalid route as `branch-policy` does and starts the three speed tests only for
+this repository's `dev` pull request (`ci_policy.py speed-route`). Nothing waits for them (owner, 2026-10-06):
+`merge-ready` does not need them, and the CI run that later promotions reuse does not contain them, so a pending or
+failed speed test can neither hold nor refuse a promotion. A failure shows red on the pull request and blocks
+nothing. A newer commit on the pull request cancels the older run; merging or closing the pull request does not,
+and neither does editing its title or description: `edited` is deliberately not a trigger, so a pull request
+retargeted to `preprod` starts them on its next commit.
 
 ### `release-candidate.yml`: TestPyPI qualification of the candidate
 
@@ -1105,7 +1142,7 @@ Publication runs are serialized.
 
 - `discover` (Runtime / read the test manifests) builds the matrix from `.github/python/tests/`
   (`python_runtime_matrix.py discover`) and keeps it as `runtime-python-matrix-<run>-<attempt>` for 90 days.
-- `test` (Runtime / <os> / Python <release> no-GIL) is one job per release and runner (`ubuntu-latest` x64,
+- `test` (Runtime / <os> / Python <release> no-GIL) is one job per release and runner (`ubuntu-24.04` x64,
   `windows-latest` x64, `macos-latest` arm64). It sets up that free-threaded release, installs exactly its
   manifest's pins plus Melder with `uv pip install --no-deps`, and runs `run_runtime_tests.py` with
   `PYTHON_GIL=0`: the unit, component and integration tiers in one pytest process, with JUnit and coverage XML
@@ -1150,7 +1187,7 @@ current tree and repeats the selection, so evidence that changed in the meantime
 ### The three speed tests
 
 `real-world-gauntlet.yml`, `persistent-runtime-gauntlet.yml` and `shallow-all-thread-scaling.yml` run only for a
-`dev` pull request into `preprod`, and by hand. Each has two jobs:
+`dev` pull request into `preprod`, called by `speed-tests.yml`, and by hand. Each has two jobs:
 
 - `manifest` (Speed manifest / <branch>) reads the single speed manifest in `.github/python/speed/` and outputs
   its release (`python_runtime_matrix.py speed`).
@@ -1161,7 +1198,7 @@ current tree and repeats the selection, so evidence that changed in the meantime
   the benchmark from `benchmarks/testing_other_di/` with `PYTHON_GIL=0`, and keeps the results for 30 days.
 
 They compare Melder with dependency-injector and dishka. There is no speed threshold: a run fails only when the
-benchmark fails or is incomplete, or when its settings or GIL state are wrong. Their inputs (thread counts,
+benchmark fails or is incomplete, or when its settings or GIL state are wrong, and a failed run blocks nothing. Their inputs (thread counts,
 iteration counts, durations) are described in each workflow and in [BRANCH_WORKFLOW.md](../BRANCH_WORKFLOW.md).
 ================================================================================
 END FILE: .github/ci_cd/workflows.md
@@ -1716,7 +1753,7 @@ END FILE: .github/scripts/check_candidate_run.py
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/scripts/ci_policy.py
-CONTENT SHA256: 0e4ee8e6293c59fbd38a4e094ea456a7676085f470ee99f204fa973797a63a54
+CONTENT SHA256: 0398d1bd965da79dc1f628cff33da3d658728ed5898069250193277835a89f9a
 SOURCE ENCODING: utf-8
 ================================================================================
 """Read-only branch, merge-result, repository, and publication gates for CI."""
@@ -1741,12 +1778,8 @@ class CIPolicy:
     }
     CANDIDATE_JOBS: tuple[str, ...] = ("authorize", "source-qualification", "build", "publish", "install")
     FULL_JOBS: tuple[str, ...] = ("source-assets", "repo-assets", "tests", "documentation")
-    GAUNTLET_JOBS: tuple[str, ...] = (
-        "real-world-gauntlet", "persistent-runtime-gauntlet", "shallow-all-thread-scaling",
-    )
-    REQUIRED_JOBS: tuple[str, ...] = (
-        "branch-policy", "hygiene", *FULL_JOBS, *GAUNTLET_JOBS, "source-qualification",
-    )
+    # The speed tests are not CI jobs: speed-tests.yml runs them beside CI and nothing waits for them.
+    REQUIRED_JOBS: tuple[str, ...] = ("branch-policy", "hygiene", *FULL_JOBS, "source-qualification")
 
 
 def object_value(value: object, label: str) -> Mapping[str, object]:
@@ -1823,32 +1856,50 @@ def package_required(event_name: str, event: Mapping[str, object], ref: str,
 
 
 def validation_requirements(event_name: str, event: Mapping[str, object], ref: str,
-                            repository: str) -> tuple[bool, bool, bool, bool]:
-    """Return runtime, package, source-proof, and gauntlet requirements for a validated event.
+                            repository: str) -> tuple[bool, bool, bool]:
+    """Return runtime, package, and source-proof requirements for a validated event.
 
     Dev/preprod PRs, release-fix PRs and manual CI run full qualification.
-    Only the validated dev-to-preprod PR also requires all three benchmark jobs.
     Unchanged preprod promotions reuse source evidence; prod promotions consume
     the separate exact-candidate gate. Ordinary pushes have no source-CI profile.
+    The speed tests are not part of any profile; see speed_required.
     """
     packages = package_required(event_name, event, ref, repository)
     if event_name == "workflow_dispatch":
-        return True, packages, False, False
+        return True, packages, False
     if event_name != "pull_request":
         raise ValueError("Source CI runs on pull requests or explicit manual qualification, not pushes.")
     pr = object_value(event["pull_request"], "pull_request")
     base = object_value(pr["base"], "base")["ref"]
     head = object_value(pr["head"], "head")["ref"]
     if base == "prod":
-        return False, False, False, False
+        return False, False, False
     if base == "release_candidate" and head == "preprod":
-        return False, False, True, False
-    return True, packages, False, base == "preprod" and head == "dev"
+        return False, False, True
+    return True, packages, False
+
+
+def speed_required(event_name: str, event: Mapping[str, object], ref: str, repository: str) -> bool:
+    """Return whether a validated event starts the three speed tests in speed-tests.yml.
+
+    Only this repository's dev-to-preprod pull request starts them; every other valid
+    pull request route returns False. They run beside CI and gate nothing (owner,
+    2026-10-06): CI / merge-ready does not need them, and the CI run that later
+    promotions reuse never contains them, so it cannot wait for them or fail with them.
+    An invalid or forked route raises ValueError, as it does for CI, and so does any
+    event other than a pull request: each speed workflow keeps its own manual dispatch.
+    """
+    package_required(event_name, event, ref, repository)
+    if event_name != "pull_request":
+        raise ValueError("The speed tests start only for pull requests; run a speed workflow by hand instead.")
+    pr = object_value(event["pull_request"], "pull_request")
+    base = object_value(pr["base"], "base")["ref"]
+    head = object_value(pr["head"], "head")["ref"]
+    return base == "preprod" and head == "dev"
 
 
 def require_success(results: Mapping[str, object], require_package: bool,
-                    require_runtime: bool = True, require_source: bool = False,
-                    require_gauntlet: bool = False) -> None:
+                    require_runtime: bool = True, require_source: bool = False) -> None:
     """Require complete dependency evidence and success for the selected validation profile.
 
     Optional jobs may succeed or be explicitly skipped; failure/cancellation
@@ -1867,8 +1918,7 @@ def require_success(results: Mapping[str, object], require_package: bool,
         required = (name in ("branch-policy", "hygiene")
                     or name in CIPolicy.FULL_JOBS and require_runtime
                     or name == "packages" and require_package
-                    or name == "source-qualification" and require_source
-                    or name in CIPolicy.GAUNTLET_JOBS and require_gauntlet)
+                    or name == "source-qualification" and require_source)
         allowed = ("success",) if required else ("success", "skipped")
         if result not in allowed:
             failures.append(f"{name}={result!r}")
@@ -1876,7 +1926,7 @@ def require_success(results: Mapping[str, object], require_package: bool,
         raise ValueError("Required CI did not succeed: " + ", ".join(failures))
 
 
-def require_ci_results() -> tuple[bool, bool, bool, bool]:
+def require_ci_results() -> tuple[bool, bool, bool]:
     """Recompute requirements from event identity and verify both flags and job results.
 
     The branch job's outputs control scheduling, but cannot silently waive a
@@ -1887,11 +1937,11 @@ def require_ci_results() -> tuple[bool, bool, bool, bool]:
         os.environ.get("GITHUB_EVENT_NAME", ""), read_event(),
         os.environ.get("GITHUB_REF", ""), os.environ.get("GITHUB_REPOSITORY", ""),
     )
-    for name, required in zip(("RUNTIME", "PACKAGE", "SOURCE", "GAUNTLET"), requirements, strict=True):
+    for name, required in zip(("RUNTIME", "PACKAGE", "SOURCE"), requirements, strict=True):
         if os.environ.get(f"CI_{name}_REQUIRED") != str(required).lower():
             raise ValueError(f"Missing/invalid {name.lower()} requirement from branch-policy.")
     require_success(object_value(json.loads(os.environ["CI_JOB_RESULTS"]), "needs"),
-                    requirements[1], requirements[0], requirements[2], requirements[3])
+                    requirements[1], requirements[0], requirements[2])
     return requirements
 
 
@@ -2021,7 +2071,7 @@ def read_event() -> Mapping[str, object]:
 def main(argv: Optional[Sequence[str]] = None) -> int:
     """Execute one read-only CI gate; print a diagnostic and return nonzero on refusal."""
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("gate", choices=("branch", "merge-ready", "hygiene", "release-head",
+    parser.add_argument("gate", choices=("branch", "speed-route", "merge-ready", "hygiene", "release-head",
                                         "candidate-head", "candidate-ready"))
     args = parser.parse_args(argv)
     try:
@@ -2031,8 +2081,15 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                 os.environ.get("GITHUB_REPOSITORY", ""),
             )
             with pathlib.Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as output:
-                for name, required in zip(("runtime", "package", "source", "gauntlet"), requirements, strict=True):
+                for name, required in zip(("runtime", "package", "source"), requirements, strict=True):
                     output.write(f"{name}-required={str(required).lower()}\n")
+        elif args.gate == "speed-route":
+            started = speed_required(
+                os.environ.get("GITHUB_EVENT_NAME", ""), read_event(), os.environ.get("GITHUB_REF", ""),
+                os.environ.get("GITHUB_REPOSITORY", ""),
+            )
+            with pathlib.Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as output:
+                output.write(f"speed-required={str(started).lower()}\n")
         elif args.gate == "merge-ready":
             require_ci_results()
         elif args.gate == "hygiene":
@@ -2075,7 +2132,7 @@ END FILE: .github/scripts/ci_policy.py
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/scripts/ci_qualification.py
-CONTENT SHA256: 604a239e8689dcb68a721120d2bc0f2c4b28403e72b02842215e2490415a9051
+CONTENT SHA256: 3e955bbad047805ccda9fb2a603ff74d6ef025c22149e5aeb1ac56d9f49aa35a
 SOURCE ENCODING: utf-8
 ================================================================================
 """Record full CI evidence and verify it before reusing an unchanged source tree."""
@@ -2304,7 +2361,7 @@ def select_source() -> dict[str, object]:
     ref = os.environ.get("GITHUB_REF", "")
     sha, tree = checkout_identity()
     if event_name == "pull_request":
-        if validation_requirements(event_name, event, ref, repository) != (False, False, True, False):
+        if validation_requirements(event_name, event, ref, repository) != (False, False, True):
             raise ValueError("This PR does not use preprod source qualification.")
         head = object_value(object_value(event["pull_request"], "pull_request")["head"], "head")
         return select_for_commit(repository, commit_id(head.get("sha")), "preprod", tree)
@@ -2320,7 +2377,7 @@ def full_record() -> dict[str, object]:
     confusing the run API's head SHA with the actual merge checkout.
     Light profiles cannot emit this record, even if their other jobs are green.
     """
-    runtime, package, _, _ = require_ci_results()
+    runtime, package, _ = require_ci_results()
     if not runtime:
         raise ValueError("A light CI run cannot issue full runtime qualification.")
     sha, tree = checkout_identity()
@@ -2494,7 +2551,7 @@ END FILE: .github/scripts/normalize_sdist.py
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/scripts/python_runtime_matrix.py
-CONTENT SHA256: 8c8718c42bb9b468d5c93073b3e955512e0eb4c7f9b227d0361fdda112107320
+CONTENT SHA256: 9188b26db32ccb9df2dd5f4ad2fe750224e17f278af7f7c7b059e507f54cbae9
 SOURCE ENCODING: utf-8
 ================================================================================
 """Build CI's Python matrices and installs from the repository's per-release manifests; verify coverage.
@@ -2530,7 +2587,7 @@ class RuntimeMatrixPolicy:
     MANIFEST_KEYS = frozenset({"python", "freethreaded", "dependencies", "build_from_source"})
     MAX_JOBS = 256
     TARGETS = (
-        ("ubuntu-latest", "linux", "x64"),
+        ("ubuntu-24.04", "linux", "x64"),
         ("windows-latest", "win32", "x64"),
         ("macos-latest", "darwin", "arm64"),
     )
@@ -3546,7 +3603,7 @@ END FILE: .github/scripts/verify_distributions.py
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/workflows/build-distributions.yml
-CONTENT SHA256: f5b08b425ae4e46c333bc32ea837f8cf1f551bee014476aca06a350254c11093
+CONTENT SHA256: b0ca0dc10fddedd8d74f2a4279f9491e06751f33d8842b900ae24f484c0d9454
 SOURCE ENCODING: utf-8
 ================================================================================
 name: Build distributions
@@ -3581,7 +3638,7 @@ permissions:
 jobs:
   build:
     name: Distributions / build-and-verify
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     outputs:
       # A failed-jobs re-run does not repeat a successful build, and keeps this output from the attempt that built.
@@ -3635,7 +3692,7 @@ END FILE: .github/workflows/build-distributions.yml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/workflows/build-repo-assets.yml
-CONTENT SHA256: e0ea2f0f50634dd65eca999ec8f0a8b4712651bf11438ec9d35db2f038bd2050
+CONTENT SHA256: a3c54c7b340342afa0bf59fcd62f6b9787e3ecb274a8241930937ea8fe344522
 SOURCE ENCODING: utf-8
 ================================================================================
 name: build-repo-assets
@@ -3653,7 +3710,7 @@ permissions:
 jobs:
   repo-assets-current:
     name: Repository assets / verify
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
@@ -3675,7 +3732,7 @@ END FILE: .github/workflows/build-repo-assets.yml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/workflows/build-src-assets.yml
-CONTENT SHA256: 46c9b27666216bd7731b6bb3c17e4ec6c4005da87c0aeae7a5691162983f0067
+CONTENT SHA256: 83a826dbd3fa3203a9e8b8fe627a821814c2b40e62a6ee19d554f16e8eb3a6f9
 SOURCE ENCODING: utf-8
 ================================================================================
 name: build-src-assets
@@ -3696,7 +3753,7 @@ permissions:
 jobs:
   assets-current:
     name: Source assets / verify
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
@@ -3720,7 +3777,7 @@ END FILE: .github/workflows/build-src-assets.yml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/workflows/ci.yml
-CONTENT SHA256: acefcb452d832fba28f3c9abd0d6006de963b2f68bc5fb10ff9d11330478dab4
+CONTENT SHA256: 3ccd4996bf6479c6ac7e3cbf10fa9572a455ad9dd05068747e06d92f4ad2b151
 SOURCE ENCODING: utf-8
 ================================================================================
 name: CI
@@ -3728,6 +3785,8 @@ name: CI
 # A required check must be reported for every PR, including docs-only changes.
 # PRs qualify changes; later promotions verify that qualification. Ordinary
 # pushes do not repeat the source suite. Manual CI performs full qualification.
+# The speed tests run beside this workflow in speed-tests.yml: a run of this workflow is what
+# later promotions reuse, so it must never wait for them or fail with them.
 on:
   pull_request:
     branches: [dev, preprod, release_candidate, prod]
@@ -3744,7 +3803,7 @@ concurrency:
 jobs:
   branch-policy:
     name: CI / branch-policy
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
       contents: read
@@ -3752,7 +3811,6 @@ jobs:
       runtime-required: ${{ steps.route.outputs.runtime-required }}
       package-required: ${{ steps.route.outputs.package-required }}
       source-required: ${{ steps.route.outputs.source-required }}
-      gauntlet-required: ${{ steps.route.outputs.gauntlet-required }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -3766,7 +3824,7 @@ jobs:
 
   hygiene:
     name: CI / repository-hygiene
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v7
@@ -3795,21 +3853,6 @@ jobs:
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
-  real-world-gauntlet:
-    needs: branch-policy
-    if: needs.branch-policy.outputs.gauntlet-required == 'true'
-    uses: ./.github/workflows/real-world-gauntlet.yml
-
-  persistent-runtime-gauntlet:
-    needs: branch-policy
-    if: needs.branch-policy.outputs.gauntlet-required == 'true'
-    uses: ./.github/workflows/persistent-runtime-gauntlet.yml
-
-  shallow-all-thread-scaling:
-    needs: branch-policy
-    if: needs.branch-policy.outputs.gauntlet-required == 'true'
-    uses: ./.github/workflows/shallow-all-thread-scaling.yml
-
   documentation:
     needs: branch-policy
     if: needs.branch-policy.outputs.runtime-required == 'true'
@@ -3833,11 +3876,11 @@ jobs:
 
   merge-ready:
     name: CI / merge-ready
-    needs: [branch-policy, hygiene, source-assets, repo-assets, tests, real-world-gauntlet, persistent-runtime-gauntlet, shallow-all-thread-scaling, documentation, packages, source-qualification]
+    needs: [branch-policy, hygiene, source-assets, repo-assets, tests, documentation, packages, source-qualification]
     # Without always(), a failed dependency skips the very check required to
     # block merging. The script accepts only explicitly successful evidence.
     if: always()
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
       contents: read
@@ -3855,7 +3898,6 @@ jobs:
           CI_RUNTIME_REQUIRED: ${{ needs.branch-policy.outputs.runtime-required }}
           CI_PACKAGE_REQUIRED: ${{ needs.branch-policy.outputs.package-required }}
           CI_SOURCE_REQUIRED: ${{ needs.branch-policy.outputs.source-required }}
-          CI_GAUNTLET_REQUIRED: ${{ needs.branch-policy.outputs.gauntlet-required }}
         run: python .github/scripts/ci_policy.py merge-ready
       - name: Record the exact full CI qualification
         if: needs.branch-policy.outputs.runtime-required == 'true'
@@ -3864,7 +3906,6 @@ jobs:
           CI_RUNTIME_REQUIRED: ${{ needs.branch-policy.outputs.runtime-required }}
           CI_PACKAGE_REQUIRED: ${{ needs.branch-policy.outputs.package-required }}
           CI_SOURCE_REQUIRED: ${{ needs.branch-policy.outputs.source-required }}
-          CI_GAUNTLET_REQUIRED: ${{ needs.branch-policy.outputs.gauntlet-required }}
         run: python .github/scripts/ci_qualification.py record
       - name: Retain full CI source evidence
         if: needs.branch-policy.outputs.runtime-required == 'true'
@@ -3886,7 +3927,7 @@ END FILE: .github/workflows/ci.yml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/workflows/docs.yml
-CONTENT SHA256: 304ae77fa13f5d8baa871b9c00b346c3e28735928120e750f0eeb7c7103823a9
+CONTENT SHA256: 0351f452b4a89b865a40b386228aaf8f943ff899a4d6050cbee6ea3d8559aff8
 SOURCE ENCODING: utf-8
 ================================================================================
 name: Documentation
@@ -3901,7 +3942,7 @@ permissions:
 jobs:
   site:
     name: Docs / site and handbook
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:
       # Exercise real canonical/sitemap output in CI without changing RTD's version-specific base.
@@ -3953,12 +3994,12 @@ END FILE: .github/workflows/docs.yml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/workflows/persistent-runtime-gauntlet.yml
-CONTENT SHA256: 75a6e60f9f5a0d6881833b0b1d07c8f2a4726e7886fe747110f23c862cd9ac9f
+CONTENT SHA256: 2b7600d4cf167dd6dcde921a0ad90d4d8b84b8928aad04c383c98e9b93c3dd0f
 SOURCE ENCODING: utf-8
 ================================================================================
 name: Persistent runtime gauntlet (three OSes)
 
-# ci.yml invokes this only for dev-to-preprod promotion PRs.
+# speed-tests.yml calls this on dev-to-preprod pull requests, beside CI; nothing waits for it.
 # This benchmark has its own runners and runs alongside the real-world gauntlet.
 on:
   workflow_call:
@@ -4135,7 +4176,7 @@ END FILE: .github/workflows/persistent-runtime-gauntlet.yml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/workflows/python-publish.yml
-CONTENT SHA256: fb9ff4f1c62d740397e2a7fba4c3eeb73a92814573d48f47f32d33d6ad612897
+CONTENT SHA256: cad372d9be323acc4ea29dd11eae6ec41db2eedd780250ddcf23f5d56fa38458
 SOURCE ENCODING: utf-8
 ================================================================================
 name: Publish Python Package
@@ -4160,7 +4201,7 @@ jobs:
     name: Require current prod HEAD
     # Publishing an RC on GitHub must not publish a final package automatically.
     if: github.event_name != 'release' || !github.event.release.prerelease
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
       contents: read
@@ -4182,7 +4223,7 @@ jobs:
   hygiene:
     name: Release / repository-hygiene
     needs: release-gate
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v7
@@ -4218,7 +4259,7 @@ jobs:
   pypi-publish:
     name: Publish to PyPI
     needs: [release-gate, hygiene, source-assets, repo-assets, tests, release-build]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
       contents: read
@@ -4275,12 +4316,12 @@ END FILE: .github/workflows/python-publish.yml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/workflows/real-world-gauntlet.yml
-CONTENT SHA256: 56a36ca3d334eb2707bd468452c0a0f2568ece0633a4cbd9857d969ad01a1848
+CONTENT SHA256: 254d50a63db8747bd2064940f28e278bfe71100337d073a8b92303bd04cc556b
 SOURCE ENCODING: utf-8
 ================================================================================
 name: Real-world gauntlet (three OSes)
 
-# ci.yml invokes this only for dev-to-preprod promotion PRs.
+# speed-tests.yml calls this on dev-to-preprod pull requests, beside CI; nothing waits for it.
 # CI/manual iteration defaults are smaller than the local benchmark configuration.
 on:
   workflow_call:
@@ -4501,7 +4542,7 @@ END FILE: .github/workflows/real-world-gauntlet.yml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/workflows/release-candidate.yml
-CONTENT SHA256: 773e45b993da63d8af96f3ac8a810632ea91f226ffc6079af917749d071999de
+CONTENT SHA256: a7dc4d030add2388b612d6bddebe7b6295ef8b40c6ecaf596b3d02540820b6d6
 SOURCE ENCODING: utf-8
 ================================================================================
 name: Release candidate
@@ -4523,7 +4564,7 @@ concurrency:
 jobs:
   authorize:
     name: RC / authorize
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     outputs:
       matrix: ${{ steps.runtimes.outputs.matrix }}
@@ -4561,7 +4602,7 @@ jobs:
   publish:
     name: RC / publish-to-TestPyPI
     needs: [authorize, source-qualification, build]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     environment:
       name: pypitest
@@ -4651,7 +4692,7 @@ jobs:
     name: RC / package-ready
     needs: [authorize, source-qualification, build, publish, install]
     if: always()
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v7
@@ -4669,12 +4710,12 @@ END FILE: .github/workflows/release-candidate.yml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/workflows/shallow-all-thread-scaling.yml
-CONTENT SHA256: 89383a168fe9f6be2424cc93c2d520ea34e8962027d25865d9fb336454f7d9fc
+CONTENT SHA256: 2aa71e4835b87f12c2a0901db2c283a9bf9f3f5420432d4fe513712c03ba3bf4
 SOURCE ENCODING: utf-8
 ================================================================================
 name: Shallow thread scaling (three OSes)
 
-# ci.yml invokes this only for dev-to-preprod promotion PRs.
+# speed-tests.yml calls this on dev-to-preprod pull requests, beside CI; nothing waits for it.
 # This benchmark has its own runners and runs alongside the other two benchmark workflows.
 on:
   workflow_call:
@@ -4894,8 +4935,68 @@ jobs:
 END FILE: .github/workflows/shallow-all-thread-scaling.yml
 ================================================================================
 ================================================================================
+BEGIN FILE: .github/workflows/speed-tests.yml
+CONTENT SHA256: 74799ae6da6249ec4463dbb23c5749d89b31cd03c3616a2ed1aa383d357f9646
+SOURCE ENCODING: utf-8
+================================================================================
+name: Speed
+
+# The three speed tests start on every dev-to-preprod pull request, beside ci.yml, and gate nothing:
+# CI / merge-ready does not wait for them and the CI run that later promotions reuse does not contain
+# them (owner, 2026-10-06). A failure shows red on the pull request. Merging or closing the pull request
+# does not cancel a run; a newer commit on it does.
+on:
+  pull_request:
+    branches: [preprod]
+    # Not `edited`: with cancel-in-progress, a title or description edit would cancel hours of
+    # measurement. A pull request retargeted to preprod starts them on its next commit.
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: speed-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  route:
+    name: Speed / route
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      speed-required: ${{ steps.route.outputs.speed-required }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.14.7"
+      - name: Start the speed tests only for this repository's dev-to-preprod pull request
+        id: route
+        run: python .github/scripts/ci_policy.py speed-route
+
+  real-world-gauntlet:
+    needs: route
+    if: needs.route.outputs.speed-required == 'true'
+    uses: ./.github/workflows/real-world-gauntlet.yml
+
+  persistent-runtime-gauntlet:
+    needs: route
+    if: needs.route.outputs.speed-required == 'true'
+    uses: ./.github/workflows/persistent-runtime-gauntlet.yml
+
+  shallow-all-thread-scaling:
+    needs: route
+    if: needs.route.outputs.speed-required == 'true'
+    uses: ./.github/workflows/shallow-all-thread-scaling.yml
+================================================================================
+END FILE: .github/workflows/speed-tests.yml
+================================================================================
+================================================================================
 BEGIN FILE: .github/workflows/test-runtime.yml
-CONTENT SHA256: 4f22ef8e5a9ed192da11516825a93f9f3eae962a5c217e7941e6f4eddca7df21
+CONTENT SHA256: ff2782817b87166f50886154e3939d58b1da87bd5117cea5e34475bff1b80de1
 SOURCE ENCODING: utf-8
 ================================================================================
 name: Runtime tests
@@ -4914,7 +5015,7 @@ permissions:
 jobs:
   discover:
     name: Runtime / read the test manifests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     outputs:
       matrix: ${{ steps.runtimes.outputs.matrix }}
@@ -5005,7 +5106,7 @@ jobs:
       actions: read
     # Forks still run tests and retain XML, but never receive upload credentials.
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     # Reporting availability must not turn passing tests into a release failure.
     continue-on-error: true
@@ -5081,7 +5182,7 @@ END FILE: .github/workflows/test-runtime.yml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/workflows/verify-source-qualification.yml
-CONTENT SHA256: ac93114e1e48f99f461e6f88743c19c681c47a306fa99ebd7eac2ab1e2750909
+CONTENT SHA256: 44f68a64097dc6135b07c39ac4aa7aea59ad716d4972a0b377558de882843905
 SOURCE ENCODING: utf-8
 ================================================================================
 name: Verify source qualification
@@ -5097,7 +5198,7 @@ permissions:
 jobs:
   verify:
     name: Source / full qualification
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7

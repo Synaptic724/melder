@@ -14,7 +14,7 @@ which checks must run; the final gate independently verifies that selection.
 | Event | Full runtime matrix | Other required work |
 | --- | --- | --- |
 | Feature PR into `dev` | Yes | Hygiene, source/repository assets and documentation |
-| `dev` PR into `preprod` | Yes | The same checks plus distribution verification and the three benchmark jobs |
+| `dev` PR into `preprod` | Yes | The same checks plus distribution verification; the three speed tests run beside CI and block nothing |
 | `preprod` PR into `release_candidate` | No | Hygiene and exact-tree full preprod proof |
 | `release-fix/*` PR into `release_candidate` | Yes | Full checks and distribution verification for changed contents |
 | `release_candidate` PR into `prod` | No | Hygiene and exact-source successful TestPyPI qualification |
@@ -36,7 +36,9 @@ The checks enforce these contracts:
 - Full runtime tests: unit, component, and integration tiers on Linux, Windows, and macOS,
   on every Python release that has a test manifest, with the GIL disabled
   in the actual pytest process.
-  The macOS job uses `macos-latest` on native Apple Silicon (arm64).
+  The macOS job uses `macos-latest` on native Apple Silicon (arm64). Linux jobs
+  run on a pinned `ubuntu-24.04`, so GitHub moving `ubuntu-latest` to Ubuntu
+  26.04 changes nothing until a commit moves them.
 - Distribution verification in full CI outside dev: wheel and sdist boundaries,
   source/metadata/asset versions, and an isolated installed-wheel smoke test.
 - Prod candidate proof: the exact source head must have successful TestPyPI
@@ -44,6 +46,9 @@ The checks enforce these contracts:
   This runs last inside `CI / merge-ready`, after the other required checks succeed.
 - Source qualification: unchanged preprod promotions must prove that their entire
   merge tree passed full CI before the source suite may be skipped.
+- Speed tests: not a required check. The Speed workflow (speed-tests.yml) runs the three
+  benchmarks beside CI on dev-to-preprod PRs; a failure is red on the PR and blocks neither
+  the merge nor a later promotion (owner, 2026-10-06).
 
 The final status fails for missing evidence, failure, cancellation, or an
 unexpected skipped job. Optional jobs may succeed or be explicitly skipped, never
@@ -58,9 +63,12 @@ still reject an unsupported interpreter or an enabled GIL during qualification.
 
 ## Real-world gauntlet
 
-Automatic CI runs real-world-gauntlet.yml only for this repository's dev-to-preprod
-promotion PRs. CI / merge-ready requires its success on that route and accepts the planned
-skip on feature PRs into dev, later promotions, release-fix PRs, and manual full CI.
+The Speed workflow (speed-tests.yml) starts real-world-gauntlet.yml for this repository's
+dev-to-preprod promotion PRs, beside CI. Nothing waits for it (owner, 2026-10-06):
+CI / merge-ready does not need it, and the CI run that later promotions reuse does not
+contain it, so a failure shows red on the PR and blocks neither the merge nor the
+release-candidate promotion. Merging or closing the PR does not cancel it; a newer commit
+on the PR does.
 The gauntlet workflow itself remains manually runnable for a one-off test. Its YAML
 iteration-counts input defaults to [500, 1000, 2500, 5000, 10000] for both reusable calls
 and manual runs; local pytest defaults remain unchanged.
@@ -92,10 +100,10 @@ and account for hosted hardware variation. A short correctness run is not a perf
 
 ## Persistent runtime series
 
-The dev-to-preprod PR also starts persistent-runtime-gauntlet.yml. It depends only on
-branch-policy, just like the real-world gauntlet, so they may run concurrently on separate
-GitHub-hosted runner VMs. Each uses its own Ubuntu, Windows and Intel macOS jobs; runner
-availability may queue them. Every benchmark job must succeed for promotion.
+The Speed workflow also starts persistent-runtime-gauntlet.yml on the dev-to-preprod PR. It
+depends only on the speed route, just like the real-world gauntlet, so they may run concurrently
+on separate GitHub-hosted runner VMs. Each uses its own Ubuntu, Windows and Intel macOS jobs;
+runner availability may queue them. Like the real-world gauntlet, it blocks nothing.
 
 Run benchmarks/testing_other_di/test_persistent_runtime_gauntlet_series.py with pytest -s.
 Edit persistent_runtime_gauntlet_series_runner.py for local settings and aggregation:
@@ -116,10 +124,10 @@ under its own persistent-gauntlet artifact. The standalone workflow also support
 
 ## Shallow thread scaling
 
-The dev-to-preprod PR also starts shallow-all-thread-scaling.yml. Like the other two benchmarks it
-depends only on branch-policy, so all three may run concurrently on separate GitHub-hosted runner
-VMs; runner availability may queue them. CI / merge-ready requires its success on that route and
-accepts the planned skip on every other route. The workflow itself remains manually runnable.
+The Speed workflow also starts shallow-all-thread-scaling.yml on the dev-to-preprod PR. Like the
+other two benchmarks it depends only on the speed route, so all three may run concurrently on
+separate GitHub-hosted runner VMs; runner availability may queue them. It blocks nothing either.
+The workflow itself remains manually runnable.
 
 It runs benchmarks/testing_other_di/test_shallow_all_thread_scaling.py on the speed manifest's release
 (3.14.7 today; free-threaded, GIL off) with the same pinned dependencies as the other benchmarks, on Ubuntu x64,
@@ -168,7 +176,7 @@ pytest; the installed-package probe also verifies GIL-off state. Discovery, asse
 may use ordinary Python because those jobs do not qualify Melder's runtime behavior.
 
 Single-version helper jobs (discovery, hygiene, assets, docs, source qualification, publication, RC
-bookkeeping, distribution builds and the speed tests' manifest jobs) request exactly
+bookkeeping, distribution builds, the speed route and the speed tests' manifest jobs) request exactly
 `python-version: "3.14.7"`, a release with a test manifest; none uses `check-latest` or a version file.
 The three speed tests (real-world gauntlet, persistent runtime series, shallow thread scaling) are not
 part of the matrix: each runs once, on the speed manifest's release, never across versions, and only on

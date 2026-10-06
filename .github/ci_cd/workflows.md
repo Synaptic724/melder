@@ -13,38 +13,48 @@ same pull request cancels the older run. Ordinary pushes do not run it.
 
 | Job | Runs when | What it proves |
 | --- | --- | --- |
-| `branch-policy` (CI / branch-policy) | always | The route is allowed; it sets the four flags below (`ci_policy.py branch`). |
+| `branch-policy` (CI / branch-policy) | always | The route is allowed; it sets the three flags below (`ci_policy.py branch`). |
 | `hygiene` (CI / repository-hygiene) | always | No two tracked paths differ only by letter case (`ci_policy.py hygiene`). |
 | `source-assets` | runtime | The committed build assets match their builders (`build-src-assets.yml`). |
 | `repo-assets` | runtime | The committed LLM bundles match the tracked files (`build-repo-assets.yml`). |
 | `tests` | runtime | Every test tier passes on every manifest release and runner (`test-runtime.yml`). |
 | `documentation` | runtime | The documentation site and handbooks build and validate (`docs.yml`). |
-| `real-world-gauntlet`, `persistent-runtime-gauntlet`, `shallow-all-thread-scaling` | gauntlet | The three speed tests complete (see below). |
 | `packages` | package | The wheel and sdist build, verify and install (`build-distributions.yml`). |
 | `source-qualification` | source | An earlier full CI run tested this exact tree (`verify-source-qualification.yml`). |
 | `merge-ready` (CI / merge-ready) | always | Every required job succeeded (below). |
 
 `ci_policy.py` sets the flags from the event alone (`validation_requirements`):
 
-| Event | runtime | package | source | gauntlet |
-| --- | --- | --- | --- | --- |
-| PR into `dev` | yes | no | no | no |
-| `dev` PR into `preprod` | yes | yes | no | yes |
-| `preprod` PR into `release_candidate` | no | no | yes | no |
-| `release-fix/*` PR into `release_candidate` | yes | yes | no | no |
-| `release_candidate` PR into `prod` | no | no | no | no |
-| Manual run on a permanent branch | yes | yes, except on `dev` | no | no |
+| Event | runtime | package | source |
+| --- | --- | --- | --- |
+| PR into `dev` | yes | no | no |
+| `dev` PR into `preprod` | yes | yes | no |
+| `preprod` PR into `release_candidate` | no | no | yes |
+| `release-fix/*` PR into `release_candidate` | yes | yes | no |
+| `release_candidate` PR into `prod` | no | no | no |
+| Manual run on a permanent branch | yes | yes, except on `dev` | no |
 
 Every route with `runtime` set runs the whole matrix: every manifest release on every runner (27 cells today). The
 owner ruled out a smaller matrix for any route, pull requests into `dev` included (2026-10-05).
 
 `merge-ready` runs even when a job before it failed (`if: always()`). `ci_policy.py merge-ready` recomputes the
-four flags from the event, refuses if `branch-policy` reported different ones, and requires a result for every
+three flags from the event, refuses if `branch-policy` reported different ones, and requires a result for every
 job in its `needs`: a required job must succeed, an optional one may succeed or be skipped, and a failure or a
 cancellation never passes. After a full run it records the tested tree (`ci_qualification.py record`) as the
 artifact `source-qualification-<run>-<attempt>`, kept 90 days, which later promotions reuse. On a pull request
 into `prod`, or a manual run there, it then waits up to ten minutes for that candidate's release-candidate run to
 succeed (`check_candidate_run.py --wait-seconds 600`).
+
+### `speed-tests.yml`: the speed tests beside CI (Speed)
+
+Runs on pull requests into `preprod` (opened, updated, reopened or marked ready for review), beside `ci.yml`.
+`route` (Speed / route) refuses an invalid route as `branch-policy` does and starts the three speed tests only for
+this repository's `dev` pull request (`ci_policy.py speed-route`). Nothing waits for them (owner, 2026-10-06):
+`merge-ready` does not need them, and the CI run that later promotions reuse does not contain them, so a pending or
+failed speed test can neither hold nor refuse a promotion. A failure shows red on the pull request and blocks
+nothing. A newer commit on the pull request cancels the older run; merging or closing the pull request does not,
+and neither does editing its title or description: `edited` is deliberately not a trigger, so a pull request
+retargeted to `preprod` starts them on its next commit.
 
 ### `release-candidate.yml`: TestPyPI qualification of the candidate
 
@@ -82,7 +92,7 @@ Publication runs are serialized.
 
 - `discover` (Runtime / read the test manifests) builds the matrix from `.github/python/tests/`
   (`python_runtime_matrix.py discover`) and keeps it as `runtime-python-matrix-<run>-<attempt>` for 90 days.
-- `test` (Runtime / <os> / Python <release> no-GIL) is one job per release and runner (`ubuntu-latest` x64,
+- `test` (Runtime / <os> / Python <release> no-GIL) is one job per release and runner (`ubuntu-24.04` x64,
   `windows-latest` x64, `macos-latest` arm64). It sets up that free-threaded release, installs exactly its
   manifest's pins plus Melder with `uv pip install --no-deps`, and runs `run_runtime_tests.py` with
   `PYTHON_GIL=0`: the unit, component and integration tiers in one pytest process, with JUnit and coverage XML
@@ -127,7 +137,7 @@ current tree and repeats the selection, so evidence that changed in the meantime
 ### The three speed tests
 
 `real-world-gauntlet.yml`, `persistent-runtime-gauntlet.yml` and `shallow-all-thread-scaling.yml` run only for a
-`dev` pull request into `preprod`, and by hand. Each has two jobs:
+`dev` pull request into `preprod`, called by `speed-tests.yml`, and by hand. Each has two jobs:
 
 - `manifest` (Speed manifest / <branch>) reads the single speed manifest in `.github/python/speed/` and outputs
   its release (`python_runtime_matrix.py speed`).
@@ -138,5 +148,5 @@ current tree and repeats the selection, so evidence that changed in the meantime
   the benchmark from `benchmarks/testing_other_di/` with `PYTHON_GIL=0`, and keeps the results for 30 days.
 
 They compare Melder with dependency-injector and dishka. There is no speed threshold: a run fails only when the
-benchmark fails or is incomplete, or when its settings or GIL state are wrong. Their inputs (thread counts,
+benchmark fails or is incomplete, or when its settings or GIL state are wrong, and a failed run blocks nothing. Their inputs (thread counts,
 iteration counts, durations) are described in each workflow and in [BRANCH_WORKFLOW.md](../BRANCH_WORKFLOW.md).

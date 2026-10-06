@@ -9,7 +9,7 @@ non-zero; nothing falls back to a default. Tests load each script by path throug
 
 | Script | Operations or options | Called by | Tested in |
 | --- | --- | --- | --- |
-| `ci_policy.py` | `branch`, `merge-ready`, `hygiene`, `release-head`, `candidate-head`, `candidate-ready` | `ci.yml`, `release-candidate.yml`, `python-publish.yml` | `test_ci_policy.py` |
+| `ci_policy.py` | `branch`, `speed-route`, `merge-ready`, `hygiene`, `release-head`, `candidate-head`, `candidate-ready` | `ci.yml`, `speed-tests.yml`, `release-candidate.yml`, `python-publish.yml` | `test_ci_policy.py` |
 | `python_runtime_matrix.py` | `discover`, `speed`, `speed-install`, `requirements`, `coverage` | `test-runtime.yml`, `release-candidate.yml`, the three speed tests | `test_python_runtime_matrix.py` |
 | `run_runtime_tests.py` | `--report`, `--coverage-report` | `test-runtime.yml` | `test_ci_policy.py` |
 | `ci_qualification.py` | `record`, `select`, `verify` | `ci.yml`, `verify-source-qualification.yml` | `test_source_qualification.py`, `test_checkout_identity.py` |
@@ -27,12 +27,13 @@ scripts rely on (job names, needs, flags, artifact names, Python requests, insta
 ### `ci_policy.py`
 
 `CIPolicy` names the permanent branches (`dev`, `preprod`, `release_candidate`, `prod`), the promotion order, and
-the job lists that `merge-ready` and `package-ready` require: `FULL_JOBS`, `GAUNTLET_JOBS`, `REQUIRED_JOBS` and
-`CANDIDATE_JOBS`. `validate_route` refuses a pull request that skips a promotion step or comes from a fork, and
-`validation_requirements` turns an event into the runtime, package, source and gauntlet flags (table in
-[workflows.md](workflows.md)). `require_success` is the merge-ready rule. The `release-head` and `candidate-head`
-gates compare full commit SHAs from the event, the checkout and the live remote, so a branch or tag that moved
-during a run is refused. The script also provides the input helpers the others import (`object_value`,
+the job lists that `merge-ready` and `package-ready` require: `FULL_JOBS`, `REQUIRED_JOBS` and `CANDIDATE_JOBS`.
+`validate_route` refuses a pull request that skips a promotion step or comes from a fork,
+`validation_requirements` turns an event into the runtime, package and source flags (table in
+[workflows.md](workflows.md)), and `speed_required` says whether the same validated event starts the speed tests
+in `speed-tests.yml` (only a `dev` pull request into `preprod`). `require_success` is the merge-ready rule. The
+`release-head` and `candidate-head` gates compare full commit SHAs from the event, the checkout and the live
+remote, so a branch or tag that moved during a run is refused. The script also provides the input helpers the others import (`object_value`,
 `text_value`, `git_output`, `read_event`).
 
 ### `python_runtime_matrix.py`

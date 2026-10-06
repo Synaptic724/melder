@@ -1,0 +1,52 @@
+name: Speed
+
+# The three speed tests start on every dev-to-preprod pull request, beside ci.yml, and gate nothing:
+# CI / merge-ready does not wait for them and the CI run that later promotions reuse does not contain
+# them (owner, 2026-10-06). A failure shows red on the pull request. Merging or closing the pull request
+# does not cancel a run; a newer commit on it does.
+on:
+  pull_request:
+    branches: [preprod]
+    # Not `edited`: with cancel-in-progress, a title or description edit would cancel hours of
+    # measurement. A pull request retargeted to preprod starts them on its next commit.
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: speed-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  route:
+    name: Speed / route
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      speed-required: ${{ steps.route.outputs.speed-required }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.14.7"
+      - name: Start the speed tests only for this repository's dev-to-preprod pull request
+        id: route
+        run: python .github/scripts/ci_policy.py speed-route
+
+  real-world-gauntlet:
+    needs: route
+    if: needs.route.outputs.speed-required == 'true'
+    uses: ./.github/workflows/real-world-gauntlet.yml
+
+  persistent-runtime-gauntlet:
+    needs: route
+    if: needs.route.outputs.speed-required == 'true'
+    uses: ./.github/workflows/persistent-runtime-gauntlet.yml
+
+  shallow-all-thread-scaling:
+    needs: route
+    if: needs.route.outputs.speed-required == 'true'
+    uses: ./.github/workflows/shallow-all-thread-scaling.yml

@@ -12,7 +12,7 @@ import pytest
 def result_map() -> dict[str, object]:
     """Build the complete, successful dependency report emitted by the CI workflow."""
     return {name: {"result": "success"} for name in
-            ("branch-policy", "hygiene", "source-assets", "repo-assets", "tests", "real-world-gauntlet", "persistent-runtime-gauntlet", "shallow-all-thread-scaling", "documentation",
+            ("branch-policy", "hygiene", "source-assets", "repo-assets", "tests", "documentation",
              "source-qualification", "packages")}
 
 
@@ -178,7 +178,7 @@ def test_stale_or_wrong_context_candidate_cannot_publish(policy: ModuleType, eve
 
 
 @pytest.mark.parametrize("job", ["branch-policy", "hygiene", "source-assets", "repo-assets", "tests",
-                                "real-world-gauntlet", "persistent-runtime-gauntlet", "shallow-all-thread-scaling", "documentation", "source-qualification", "packages"])
+                                "documentation", "source-qualification", "packages"])
 def test_missing_dependency_evidence_never_passes(policy: ModuleType, job: str) -> None:
     """Deleting a failed job from the report must not conceal its absence."""
     results = result_map()
@@ -350,7 +350,6 @@ def test_merge_cli_propagates_failure_and_missing_stage(policy: ModuleType,
     monkeypatch.setenv("CI_PACKAGE_REQUIRED", "false")
     monkeypatch.setenv("CI_RUNTIME_REQUIRED", "true")
     monkeypatch.setenv("CI_SOURCE_REQUIRED", "false")
-    monkeypatch.setenv("CI_GAUNTLET_REQUIRED", "false")
     monkeypatch.setenv("GITHUB_EVENT_NAME", "pull_request")
     monkeypatch.setenv("GITHUB_REPOSITORY", "owner/repo")
     monkeypatch.setattr(policy, "read_event", pr_event)
@@ -377,20 +376,20 @@ def test_branch_cli_writes_the_actual_package_requirement(policy: ModuleType,
     monkeypatch.setenv("GITHUB_REF", "refs/pull/1/merge")
     assert policy.main(["branch"]) == 0
     assert output.read_text(encoding="utf-8") == (
-        "runtime-required=true\npackage-required=true\nsource-required=false\ngauntlet-required=true\n"
+        "runtime-required=true\npackage-required=true\nsource-required=false\n"
     )
 
 
 @pytest.mark.parametrize(("base", "head", "expected"), [
-    ("dev", "feature/work", (True, False, False, False)),
-    ("dev", "codex_features2", (True, False, False, False)),
-    ("preprod", "dev", (True, True, False, True)),
-    ("release_candidate", "preprod", (False, False, True, False)),
-    ("release_candidate", "release-fix/correction", (True, True, False, False)),
-    ("prod", "release_candidate", (False, False, False, False)),
+    ("dev", "feature/work", (True, False, False)),
+    ("dev", "codex_features2", (True, False, False)),
+    ("preprod", "dev", (True, True, False)),
+    ("release_candidate", "preprod", (False, False, True)),
+    ("release_candidate", "release-fix/correction", (True, True, False)),
+    ("prod", "release_candidate", (False, False, False)),
 ])
 def test_pr_stages_select_full_or_proven_promotion(policy: ModuleType, base: str, head: str,
-                                                   expected: tuple[bool, bool, bool, bool]) -> None:
+                                                   expected: tuple[bool, bool, bool]) -> None:
     """Only dev/preprod and changed candidate PRs run full CI; unchanged promotions require evidence."""
     assert policy.validation_requirements(
         "pull_request", pr_event(base, head), "refs/pull/1/merge", "owner/repo",
@@ -402,7 +401,7 @@ def test_manual_ci_always_requalifies_the_selected_branch(policy: ModuleType, br
     """Manual CI can establish fresh full evidence, including historical/expired candidate proof."""
     assert policy.validation_requirements(
         "workflow_dispatch", {}, f"refs/heads/{branch}", "owner/repo",
-    ) == (True, branch != "dev", False, False)
+    ) == (True, branch != "dev", False)
     with pytest.raises(ValueError, match="not pushes"):
         policy.validation_requirements("push", {}, f"refs/heads/{branch}", "owner/repo")
 
@@ -415,9 +414,6 @@ def test_light_ci_accepts_only_intentional_skips_and_required_proof(policy: Modu
     for name in policy.CIPolicy.FULL_JOBS:
         results[name] = {"result": "skipped"}
     results["packages"] = {"result": "skipped"}
-    results["real-world-gauntlet"] = {"result": "skipped"}
-    results["persistent-runtime-gauntlet"] = {"result": "skipped"}
-    results["shallow-all-thread-scaling"] = {"result": "skipped"}
     results["source-qualification"] = {"result": "success" if source_required else "skipped"}
     policy.require_success(results, False, False, source_required)
     if source_required:
@@ -430,8 +426,7 @@ def test_light_ci_accepts_only_intentional_skips_and_required_proof(policy: Modu
 
 
 @pytest.mark.parametrize(("flag", "value"), [
-    ("RUNTIME", "false"), ("PACKAGE", "false"), ("SOURCE", "true"), ("RUNTIME", ""),
-    ("GAUNTLET", "false"), ("GAUNTLET", ""),
+    ("RUNTIME", "false"), ("PACKAGE", "false"), ("SOURCE", "true"), ("RUNTIME", ""), ("SOURCE", ""),
 ])
 def test_reported_flags_cannot_waive_event_requirements(policy: ModuleType,
                                                        monkeypatch: pytest.MonkeyPatch,
@@ -443,7 +438,6 @@ def test_reported_flags_cannot_waive_event_requirements(policy: ModuleType,
     monkeypatch.setenv("CI_RUNTIME_REQUIRED", "true")
     monkeypatch.setenv("CI_PACKAGE_REQUIRED", "true")
     monkeypatch.setenv("CI_SOURCE_REQUIRED", "false")
-    monkeypatch.setenv("CI_GAUNTLET_REQUIRED", "true")
     monkeypatch.setenv(f"CI_{flag}_REQUIRED", value)
     monkeypatch.setenv("CI_JOB_RESULTS", json.dumps(result_map()))
     with pytest.raises(ValueError, match="Missing/invalid"):
@@ -519,39 +513,92 @@ def test_coverage_driver_preserves_runtime_contract_and_pytest_exit(runtime: Mod
 
 
 @pytest.mark.parametrize("job", ["real-world-gauntlet", "persistent-runtime-gauntlet", "shallow-all-thread-scaling"])
-@pytest.mark.parametrize("required", [False, True])
-@pytest.mark.parametrize("result", ["success", "skipped", "failure", "cancelled", "timed_out", None])
-def test_gauntlet_skip_depends_on_the_promotion_requirement(policy: ModuleType,
-                                                           required: bool, result: object, job: str) -> None:
-    """Only an intentionally omitted gauntlet may be skipped; failures always refuse merging."""
+@pytest.mark.parametrize("result", ["success", "skipped", "failure"])
+def test_speed_tests_are_not_merge_evidence(policy: ModuleType, result: object, job: str) -> None:
+    """The speed tests run in their own workflow and never gate a merge (owner, 2026-10-06).
+
+    A speed job in merge-ready's dependency report would mean ci.yml runs it again: the CI run that later
+    promotions reuse would then stay open until it finished and fail when it failed. Refuse it as unexpected
+    evidence, whatever it reported.
+    """
     results = result_map()
     results[job] = {"result": result}
-    if result == "success" or result == "skipped" and not required:
-        policy.require_success(results, False, require_gauntlet=required)
-    else:
-        with pytest.raises(ValueError, match=job):
-            policy.require_success(results, False, require_gauntlet=required)
+    with pytest.raises(ValueError, match=f"unexpected=.*{job}"):
+        policy.require_success(results, True)
 
 
-@pytest.mark.parametrize(("base", "head", "required", "exit_code"), [
-    ("dev", "codex_features2", False, 0),
-    ("preprod", "dev", True, 1),
+@pytest.mark.parametrize(("base", "head", "package"), [
+    ("dev", "codex_features2", False),
+    ("preprod", "dev", True),
 ])
-def test_merge_gate_allows_feature_skip_but_refuses_promotion_skip(
-    policy: ModuleType, monkeypatch: pytest.MonkeyPatch,
-    base: str, head: str, required: bool, exit_code: int,
-) -> None:
-    """Exercise the real CLI gate with a skipped gauntlet and the two relevant PR routes."""
+def test_merge_gate_passes_without_speed_results(policy: ModuleType, monkeypatch: pytest.MonkeyPatch,
+                                                 base: str, head: str, package: bool) -> None:
+    """Exercise the real CLI gate: a full run passes with no speed result and refuses one that carries one."""
     monkeypatch.setenv("GITHUB_EVENT_NAME", "pull_request")
     monkeypatch.setenv("GITHUB_REPOSITORY", "owner/repo")
     monkeypatch.setattr(policy, "read_event", lambda: pr_event(base, head))
     monkeypatch.setenv("CI_RUNTIME_REQUIRED", "true")
-    monkeypatch.setenv("CI_PACKAGE_REQUIRED", str(required).lower())
+    monkeypatch.setenv("CI_PACKAGE_REQUIRED", str(package).lower())
     monkeypatch.setenv("CI_SOURCE_REQUIRED", "false")
-    monkeypatch.setenv("CI_GAUNTLET_REQUIRED", str(required).lower())
     results = result_map()
-    results["real-world-gauntlet"] = {"result": "skipped"}
-    results["persistent-runtime-gauntlet"] = {"result": "skipped"}
-    results["shallow-all-thread-scaling"] = {"result": "skipped"}
+    results["source-qualification"] = {"result": "skipped"}
     monkeypatch.setenv("CI_JOB_RESULTS", json.dumps(results))
-    assert policy.main(["merge-ready"]) == exit_code
+    assert policy.main(["merge-ready"]) == 0
+    results["shallow-all-thread-scaling"] = {"result": "success"}
+    monkeypatch.setenv("CI_JOB_RESULTS", json.dumps(results))
+    assert policy.main(["merge-ready"]) == 1
+
+
+@pytest.mark.parametrize(("base", "head", "expected"), [
+    ("preprod", "dev", True),
+    ("dev", "feature/work", False),
+    ("dev", "preprod", False),
+    ("release_candidate", "preprod", False),
+    ("release_candidate", "release-fix/correction", False),
+    ("prod", "release_candidate", False),
+])
+def test_speed_tests_start_only_for_the_dev_to_preprod_pull_request(policy: ModuleType, base: str, head: str,
+                                                                    expected: bool) -> None:
+    """The speed workflow's route comes from the same validated pull request event as CI's flags."""
+    assert policy.speed_required(
+        "pull_request", pr_event(base, head), "refs/pull/1/merge", "owner/repo",
+    ) is expected
+
+
+@pytest.mark.parametrize(("event_name", "event", "ref"), [
+    ("pull_request", pr_event("preprod", "feature/example"), "refs/pull/1/merge"),
+    ("pull_request", pr_event("preprod", "dev", "fork/repo"), "refs/pull/1/merge"),
+    ("workflow_dispatch", {}, "refs/heads/preprod"),
+    ("push", {}, "refs/heads/preprod"),
+])
+def test_speed_route_refuses_forged_routes_and_other_events(policy: ModuleType, event_name: str,
+                                                            event: dict[str, object], ref: str) -> None:
+    """A skipped or forked promotion never starts the speed tests, and only a pull request starts them."""
+    with pytest.raises(ValueError):
+        policy.speed_required(event_name, event, ref, "owner/repo")
+
+
+@pytest.mark.parametrize(("base", "head", "expected"), [
+    ("preprod", "dev", "true"),
+    ("dev", "feature/work", "false"),
+])
+def test_speed_route_cli_writes_one_output_and_refuses_an_invalid_route(policy: ModuleType,
+                                                                        tmp_path: pathlib.Path,
+                                                                        monkeypatch: pytest.MonkeyPatch,
+                                                                        base: str, head: str,
+                                                                        expected: str) -> None:
+    """The speed workflow's route job writes its answer only after the event passes route validation."""
+    event = tmp_path / "event.json"
+    output = tmp_path / "output.txt"
+    event.write_text(json.dumps(pr_event(base, head)), encoding="utf-8")
+    monkeypatch.setenv("GITHUB_EVENT_PATH", str(event))
+    monkeypatch.setenv("GITHUB_OUTPUT", str(output))
+    monkeypatch.setenv("GITHUB_EVENT_NAME", "pull_request")
+    monkeypatch.setenv("GITHUB_REPOSITORY", "owner/repo")
+    monkeypatch.setenv("GITHUB_REF", "refs/pull/1/merge")
+    assert policy.main(["speed-route"]) == 0
+    assert output.read_text(encoding="utf-8") == f"speed-required={expected}\n"
+    output.unlink()
+    event.write_text(json.dumps(pr_event("preprod", "feature/example")), encoding="utf-8")
+    assert policy.main(["speed-route"]) == 1
+    assert not output.exists()

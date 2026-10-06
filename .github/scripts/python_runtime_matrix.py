@@ -31,7 +31,7 @@ class RuntimeMatrixPolicy:
     MANIFEST_KEYS = frozenset({"python", "freethreaded", "dependencies", "build_from_source"})
     MAX_JOBS = 256
     TARGETS = (
-        ("ubuntu-latest", "linux", "x64"),
+        ("ubuntu-24.04", "linux", "x64"),
         ("windows-latest", "win32", "x64"),
         ("macos-latest", "darwin", "arm64"),
     )

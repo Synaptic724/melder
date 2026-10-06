@@ -5,7 +5,7 @@
 - Status: in_progress
 - Owner:
 - Created: 2026-01-22
-- Updated: 2026-10-05
+- Updated: 2026-10-06
 
 ## Scope
 This document defines C3 components, C2 subcomponents, and C1 code references
@@ -2369,24 +2369,24 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-09-27T23:41:28Z
 - path: `tests/unit/github_workflows/test_ci_policy.py`
   start_line: 1
-  end_line: 557
-  loc: 557
-  verified_at: 2026-10-06T00:22:33Z
+  end_line: 604
+  loc: 604
+  verified_at: 2026-10-06T11:24:15Z
 - path: `tests/unit/github_workflows/test_workflow_contracts.py`
   start_line: 1
-  end_line: 860
-  loc: 860
-  verified_at: 2026-10-06T09:52:58Z
+  end_line: 940
+  loc: 940
+  verified_at: 2026-10-06T11:24:15Z
 - path: `tests/unit/github_workflows/test_candidate_publication.py`
   start_line: 1
   end_line: 434
   loc: 434
-  verified_at: 2026-10-06T09:52:58Z
+  verified_at: 2026-10-06T10:40:31Z
 - path: `tests/unit/github_workflows/test_source_qualification.py`
   start_line: 1
-  end_line: 414
-  loc: 414
-  verified_at: 2026-10-06T00:22:33Z
+  end_line: 412
+  loc: 412
+  verified_at: 2026-10-06T11:24:15Z
 - path: `tests/unit/github_workflows/test_python_runtime_matrix.py`
   start_line: 1
   end_line: 421
@@ -2673,6 +2673,10 @@ graph TD
   scan/bind coverage grows.
 
 ## Context / Handoff Summary
+
+2026-10-06 speed tests beside CI (no notch): the speed tests left ci.yml for their own workflow, so the three CI
+test modules this change rewrote, `test_ci_policy.py`, `test_workflow_contracts.py` and
+`test_source_qualification.py`, carry remeasured C1 extents.
 
 2026-10-05 manifest-driven CI (no notch): the per-run Python matrix unknown is resolved - the test manifests
 in `.github/python/tests/` name every release CI runs. The two CI test files this change rewrote,

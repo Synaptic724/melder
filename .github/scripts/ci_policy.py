@@ -20,12 +20,8 @@ class CIPolicy:
     }
     CANDIDATE_JOBS: tuple[str, ...] = ("authorize", "source-qualification", "build", "publish", "install")
     FULL_JOBS: tuple[str, ...] = ("source-assets", "repo-assets", "tests", "documentation")
-    GAUNTLET_JOBS: tuple[str, ...] = (
-        "real-world-gauntlet", "persistent-runtime-gauntlet", "shallow-all-thread-scaling",
-    )
-    REQUIRED_JOBS: tuple[str, ...] = (
-        "branch-policy", "hygiene", *FULL_JOBS, *GAUNTLET_JOBS, "source-qualification",
-    )
+    # The speed tests are not CI jobs: speed-tests.yml runs them beside CI and nothing waits for them.
+    REQUIRED_JOBS: tuple[str, ...] = ("branch-policy", "hygiene", *FULL_JOBS, "source-qualification")
 
 
 def object_value(value: object, label: str) -> Mapping[str, object]:
@@ -102,32 +98,50 @@ def package_required(event_name: str, event: Mapping[str, object], ref: str,
 
 
 def validation_requirements(event_name: str, event: Mapping[str, object], ref: str,
-                            repository: str) -> tuple[bool, bool, bool, bool]:
-    """Return runtime, package, source-proof, and gauntlet requirements for a validated event.
+                            repository: str) -> tuple[bool, bool, bool]:
+    """Return runtime, package, and source-proof requirements for a validated event.
 
     Dev/preprod PRs, release-fix PRs and manual CI run full qualification.
-    Only the validated dev-to-preprod PR also requires all three benchmark jobs.
     Unchanged preprod promotions reuse source evidence; prod promotions consume
     the separate exact-candidate gate. Ordinary pushes have no source-CI profile.
+    The speed tests are not part of any profile; see speed_required.
     """
     packages = package_required(event_name, event, ref, repository)
     if event_name == "workflow_dispatch":
-        return True, packages, False, False
+        return True, packages, False
     if event_name != "pull_request":
         raise ValueError("Source CI runs on pull requests or explicit manual qualification, not pushes.")
     pr = object_value(event["pull_request"], "pull_request")
     base = object_value(pr["base"], "base")["ref"]
     head = object_value(pr["head"], "head")["ref"]
     if base == "prod":
-        return False, False, False, False
+        return False, False, False
     if base == "release_candidate" and head == "preprod":
-        return False, False, True, False
-    return True, packages, False, base == "preprod" and head == "dev"
+        return False, False, True
+    return True, packages, False
+
+
+def speed_required(event_name: str, event: Mapping[str, object], ref: str, repository: str) -> bool:
+    """Return whether a validated event starts the three speed tests in speed-tests.yml.
+
+    Only this repository's dev-to-preprod pull request starts them; every other valid
+    pull request route returns False. They run beside CI and gate nothing (owner,
+    2026-10-06): CI / merge-ready does not need them, and the CI run that later
+    promotions reuse never contains them, so it cannot wait for them or fail with them.
+    An invalid or forked route raises ValueError, as it does for CI, and so does any
+    event other than a pull request: each speed workflow keeps its own manual dispatch.
+    """
+    package_required(event_name, event, ref, repository)
+    if event_name != "pull_request":
+        raise ValueError("The speed tests start only for pull requests; run a speed workflow by hand instead.")
+    pr = object_value(event["pull_request"], "pull_request")
+    base = object_value(pr["base"], "base")["ref"]
+    head = object_value(pr["head"], "head")["ref"]
+    return base == "preprod" and head == "dev"
 
 
 def require_success(results: Mapping[str, object], require_package: bool,
-                    require_runtime: bool = True, require_source: bool = False,
-                    require_gauntlet: bool = False) -> None:
+                    require_runtime: bool = True, require_source: bool = False) -> None:
     """Require complete dependency evidence and success for the selected validation profile.
 
     Optional jobs may succeed or be explicitly skipped; failure/cancellation
@@ -146,8 +160,7 @@ def require_success(results: Mapping[str, object], require_package: bool,
         required = (name in ("branch-policy", "hygiene")
                     or name in CIPolicy.FULL_JOBS and require_runtime
                     or name == "packages" and require_package
-                    or name == "source-qualification" and require_source
-                    or name in CIPolicy.GAUNTLET_JOBS and require_gauntlet)
+                    or name == "source-qualification" and require_source)
         allowed = ("success",) if required else ("success", "skipped")
         if result not in allowed:
             failures.append(f"{name}={result!r}")
@@ -155,7 +168,7 @@ def require_success(results: Mapping[str, object], require_package: bool,
         raise ValueError("Required CI did not succeed: " + ", ".join(failures))
 
 
-def require_ci_results() -> tuple[bool, bool, bool, bool]:
+def require_ci_results() -> tuple[bool, bool, bool]:
     """Recompute requirements from event identity and verify both flags and job results.
 
     The branch job's outputs control scheduling, but cannot silently waive a
@@ -166,11 +179,11 @@ def require_ci_results() -> tuple[bool, bool, bool, bool]:
         os.environ.get("GITHUB_EVENT_NAME", ""), read_event(),
         os.environ.get("GITHUB_REF", ""), os.environ.get("GITHUB_REPOSITORY", ""),
     )
-    for name, required in zip(("RUNTIME", "PACKAGE", "SOURCE", "GAUNTLET"), requirements, strict=True):
+    for name, required in zip(("RUNTIME", "PACKAGE", "SOURCE"), requirements, strict=True):
         if os.environ.get(f"CI_{name}_REQUIRED") != str(required).lower():
             raise ValueError(f"Missing/invalid {name.lower()} requirement from branch-policy.")
     require_success(object_value(json.loads(os.environ["CI_JOB_RESULTS"]), "needs"),
-                    requirements[1], requirements[0], requirements[2], requirements[3])
+                    requirements[1], requirements[0], requirements[2])
     return requirements
 
 
@@ -300,7 +313,7 @@ def read_event() -> Mapping[str, object]:
 def main(argv: Optional[Sequence[str]] = None) -> int:
     """Execute one read-only CI gate; print a diagnostic and return nonzero on refusal."""
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("gate", choices=("branch", "merge-ready", "hygiene", "release-head",
+    parser.add_argument("gate", choices=("branch", "speed-route", "merge-ready", "hygiene", "release-head",
                                         "candidate-head", "candidate-ready"))
     args = parser.parse_args(argv)
     try:
@@ -310,8 +323,15 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                 os.environ.get("GITHUB_REPOSITORY", ""),
             )
             with pathlib.Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as output:
-                for name, required in zip(("runtime", "package", "source", "gauntlet"), requirements, strict=True):
+                for name, required in zip(("runtime", "package", "source"), requirements, strict=True):
                     output.write(f"{name}-required={str(required).lower()}\n")
+        elif args.gate == "speed-route":
+            started = speed_required(
+                os.environ.get("GITHUB_EVENT_NAME", ""), read_event(), os.environ.get("GITHUB_REF", ""),
+                os.environ.get("GITHUB_REPOSITORY", ""),
+            )
+            with pathlib.Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as output:
+                output.write(f"speed-required={str(started).lower()}\n")
         elif args.gate == "merge-ready":
             require_ci_results()
         elif args.gate == "hygiene":

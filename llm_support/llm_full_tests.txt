@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: tests
-SOURCE FINGERPRINT: 3a0df29b0791f2019d17de3258da9384ae0fca9fde8ca5ee92951bba4764b041
+SOURCE FINGERPRINT: ac107d67bd810cd996d5d9cea55db0da5a8e7c7999ec68158f6e35909978552f
 FILE COUNT: 1063
 
 ================================================================================
@@ -160813,7 +160813,7 @@ END FILE: tests/unit/github_workflows/test_checkout_identity.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/github_workflows/test_ci_policy.py
-CONTENT SHA256: 3bc8882a37851d3a0e5aa806072a5fb4b8670728748f941cdd28f415e7626e7b
+CONTENT SHA256: a0ae74d2d54dc54cd888bf7909758e83b3f22093f688213600fd0a1ac5284a4c
 SOURCE ENCODING: utf-8
 ================================================================================
 """Behavioral regression tests for branch routes, required results, and release authorization."""
@@ -160830,7 +160830,7 @@ import pytest
 def result_map() -> dict[str, object]:
     """Build the complete, successful dependency report emitted by the CI workflow."""
     return {name: {"result": "success"} for name in
-            ("branch-policy", "hygiene", "source-assets", "repo-assets", "tests", "real-world-gauntlet", "persistent-runtime-gauntlet", "shallow-all-thread-scaling", "documentation",
+            ("branch-policy", "hygiene", "source-assets", "repo-assets", "tests", "documentation",
              "source-qualification", "packages")}
 
 
@@ -160996,7 +160996,7 @@ def test_stale_or_wrong_context_candidate_cannot_publish(policy: ModuleType, eve
 
 
 @pytest.mark.parametrize("job", ["branch-policy", "hygiene", "source-assets", "repo-assets", "tests",
-                                "real-world-gauntlet", "persistent-runtime-gauntlet", "shallow-all-thread-scaling", "documentation", "source-qualification", "packages"])
+                                "documentation", "source-qualification", "packages"])
 def test_missing_dependency_evidence_never_passes(policy: ModuleType, job: str) -> None:
     """Deleting a failed job from the report must not conceal its absence."""
     results = result_map()
@@ -161168,7 +161168,6 @@ def test_merge_cli_propagates_failure_and_missing_stage(policy: ModuleType,
     monkeypatch.setenv("CI_PACKAGE_REQUIRED", "false")
     monkeypatch.setenv("CI_RUNTIME_REQUIRED", "true")
     monkeypatch.setenv("CI_SOURCE_REQUIRED", "false")
-    monkeypatch.setenv("CI_GAUNTLET_REQUIRED", "false")
     monkeypatch.setenv("GITHUB_EVENT_NAME", "pull_request")
     monkeypatch.setenv("GITHUB_REPOSITORY", "owner/repo")
     monkeypatch.setattr(policy, "read_event", pr_event)
@@ -161195,20 +161194,20 @@ def test_branch_cli_writes_the_actual_package_requirement(policy: ModuleType,
     monkeypatch.setenv("GITHUB_REF", "refs/pull/1/merge")
     assert policy.main(["branch"]) == 0
     assert output.read_text(encoding="utf-8") == (
-        "runtime-required=true\npackage-required=true\nsource-required=false\ngauntlet-required=true\n"
+        "runtime-required=true\npackage-required=true\nsource-required=false\n"
     )
 
 
 @pytest.mark.parametrize(("base", "head", "expected"), [
-    ("dev", "feature/work", (True, False, False, False)),
-    ("dev", "codex_features2", (True, False, False, False)),
-    ("preprod", "dev", (True, True, False, True)),
-    ("release_candidate", "preprod", (False, False, True, False)),
-    ("release_candidate", "release-fix/correction", (True, True, False, False)),
-    ("prod", "release_candidate", (False, False, False, False)),
+    ("dev", "feature/work", (True, False, False)),
+    ("dev", "codex_features2", (True, False, False)),
+    ("preprod", "dev", (True, True, False)),
+    ("release_candidate", "preprod", (False, False, True)),
+    ("release_candidate", "release-fix/correction", (True, True, False)),
+    ("prod", "release_candidate", (False, False, False)),
 ])
 def test_pr_stages_select_full_or_proven_promotion(policy: ModuleType, base: str, head: str,
-                                                   expected: tuple[bool, bool, bool, bool]) -> None:
+                                                   expected: tuple[bool, bool, bool]) -> None:
     """Only dev/preprod and changed candidate PRs run full CI; unchanged promotions require evidence."""
     assert policy.validation_requirements(
         "pull_request", pr_event(base, head), "refs/pull/1/merge", "owner/repo",
@@ -161220,7 +161219,7 @@ def test_manual_ci_always_requalifies_the_selected_branch(policy: ModuleType, br
     """Manual CI can establish fresh full evidence, including historical/expired candidate proof."""
     assert policy.validation_requirements(
         "workflow_dispatch", {}, f"refs/heads/{branch}", "owner/repo",
-    ) == (True, branch != "dev", False, False)
+    ) == (True, branch != "dev", False)
     with pytest.raises(ValueError, match="not pushes"):
         policy.validation_requirements("push", {}, f"refs/heads/{branch}", "owner/repo")
 
@@ -161233,9 +161232,6 @@ def test_light_ci_accepts_only_intentional_skips_and_required_proof(policy: Modu
     for name in policy.CIPolicy.FULL_JOBS:
         results[name] = {"result": "skipped"}
     results["packages"] = {"result": "skipped"}
-    results["real-world-gauntlet"] = {"result": "skipped"}
-    results["persistent-runtime-gauntlet"] = {"result": "skipped"}
-    results["shallow-all-thread-scaling"] = {"result": "skipped"}
     results["source-qualification"] = {"result": "success" if source_required else "skipped"}
     policy.require_success(results, False, False, source_required)
     if source_required:
@@ -161248,8 +161244,7 @@ def test_light_ci_accepts_only_intentional_skips_and_required_proof(policy: Modu
 
 
 @pytest.mark.parametrize(("flag", "value"), [
-    ("RUNTIME", "false"), ("PACKAGE", "false"), ("SOURCE", "true"), ("RUNTIME", ""),
-    ("GAUNTLET", "false"), ("GAUNTLET", ""),
+    ("RUNTIME", "false"), ("PACKAGE", "false"), ("SOURCE", "true"), ("RUNTIME", ""), ("SOURCE", ""),
 ])
 def test_reported_flags_cannot_waive_event_requirements(policy: ModuleType,
                                                        monkeypatch: pytest.MonkeyPatch,
@@ -161261,7 +161256,6 @@ def test_reported_flags_cannot_waive_event_requirements(policy: ModuleType,
     monkeypatch.setenv("CI_RUNTIME_REQUIRED", "true")
     monkeypatch.setenv("CI_PACKAGE_REQUIRED", "true")
     monkeypatch.setenv("CI_SOURCE_REQUIRED", "false")
-    monkeypatch.setenv("CI_GAUNTLET_REQUIRED", "true")
     monkeypatch.setenv(f"CI_{flag}_REQUIRED", value)
     monkeypatch.setenv("CI_JOB_RESULTS", json.dumps(result_map()))
     with pytest.raises(ValueError, match="Missing/invalid"):
@@ -161337,42 +161331,95 @@ def test_coverage_driver_preserves_runtime_contract_and_pytest_exit(runtime: Mod
 
 
 @pytest.mark.parametrize("job", ["real-world-gauntlet", "persistent-runtime-gauntlet", "shallow-all-thread-scaling"])
-@pytest.mark.parametrize("required", [False, True])
-@pytest.mark.parametrize("result", ["success", "skipped", "failure", "cancelled", "timed_out", None])
-def test_gauntlet_skip_depends_on_the_promotion_requirement(policy: ModuleType,
-                                                           required: bool, result: object, job: str) -> None:
-    """Only an intentionally omitted gauntlet may be skipped; failures always refuse merging."""
+@pytest.mark.parametrize("result", ["success", "skipped", "failure"])
+def test_speed_tests_are_not_merge_evidence(policy: ModuleType, result: object, job: str) -> None:
+    """The speed tests run in their own workflow and never gate a merge (owner, 2026-10-06).
+
+    A speed job in merge-ready's dependency report would mean ci.yml runs it again: the CI run that later
+    promotions reuse would then stay open until it finished and fail when it failed. Refuse it as unexpected
+    evidence, whatever it reported.
+    """
     results = result_map()
     results[job] = {"result": result}
-    if result == "success" or result == "skipped" and not required:
-        policy.require_success(results, False, require_gauntlet=required)
-    else:
-        with pytest.raises(ValueError, match=job):
-            policy.require_success(results, False, require_gauntlet=required)
+    with pytest.raises(ValueError, match=f"unexpected=.*{job}"):
+        policy.require_success(results, True)
 
 
-@pytest.mark.parametrize(("base", "head", "required", "exit_code"), [
-    ("dev", "codex_features2", False, 0),
-    ("preprod", "dev", True, 1),
+@pytest.mark.parametrize(("base", "head", "package"), [
+    ("dev", "codex_features2", False),
+    ("preprod", "dev", True),
 ])
-def test_merge_gate_allows_feature_skip_but_refuses_promotion_skip(
-    policy: ModuleType, monkeypatch: pytest.MonkeyPatch,
-    base: str, head: str, required: bool, exit_code: int,
-) -> None:
-    """Exercise the real CLI gate with a skipped gauntlet and the two relevant PR routes."""
+def test_merge_gate_passes_without_speed_results(policy: ModuleType, monkeypatch: pytest.MonkeyPatch,
+                                                 base: str, head: str, package: bool) -> None:
+    """Exercise the real CLI gate: a full run passes with no speed result and refuses one that carries one."""
     monkeypatch.setenv("GITHUB_EVENT_NAME", "pull_request")
     monkeypatch.setenv("GITHUB_REPOSITORY", "owner/repo")
     monkeypatch.setattr(policy, "read_event", lambda: pr_event(base, head))
     monkeypatch.setenv("CI_RUNTIME_REQUIRED", "true")
-    monkeypatch.setenv("CI_PACKAGE_REQUIRED", str(required).lower())
+    monkeypatch.setenv("CI_PACKAGE_REQUIRED", str(package).lower())
     monkeypatch.setenv("CI_SOURCE_REQUIRED", "false")
-    monkeypatch.setenv("CI_GAUNTLET_REQUIRED", str(required).lower())
     results = result_map()
-    results["real-world-gauntlet"] = {"result": "skipped"}
-    results["persistent-runtime-gauntlet"] = {"result": "skipped"}
-    results["shallow-all-thread-scaling"] = {"result": "skipped"}
+    results["source-qualification"] = {"result": "skipped"}
     monkeypatch.setenv("CI_JOB_RESULTS", json.dumps(results))
-    assert policy.main(["merge-ready"]) == exit_code
+    assert policy.main(["merge-ready"]) == 0
+    results["shallow-all-thread-scaling"] = {"result": "success"}
+    monkeypatch.setenv("CI_JOB_RESULTS", json.dumps(results))
+    assert policy.main(["merge-ready"]) == 1
+
+
+@pytest.mark.parametrize(("base", "head", "expected"), [
+    ("preprod", "dev", True),
+    ("dev", "feature/work", False),
+    ("dev", "preprod", False),
+    ("release_candidate", "preprod", False),
+    ("release_candidate", "release-fix/correction", False),
+    ("prod", "release_candidate", False),
+])
+def test_speed_tests_start_only_for_the_dev_to_preprod_pull_request(policy: ModuleType, base: str, head: str,
+                                                                    expected: bool) -> None:
+    """The speed workflow's route comes from the same validated pull request event as CI's flags."""
+    assert policy.speed_required(
+        "pull_request", pr_event(base, head), "refs/pull/1/merge", "owner/repo",
+    ) is expected
+
+
+@pytest.mark.parametrize(("event_name", "event", "ref"), [
+    ("pull_request", pr_event("preprod", "feature/example"), "refs/pull/1/merge"),
+    ("pull_request", pr_event("preprod", "dev", "fork/repo"), "refs/pull/1/merge"),
+    ("workflow_dispatch", {}, "refs/heads/preprod"),
+    ("push", {}, "refs/heads/preprod"),
+])
+def test_speed_route_refuses_forged_routes_and_other_events(policy: ModuleType, event_name: str,
+                                                            event: dict[str, object], ref: str) -> None:
+    """A skipped or forked promotion never starts the speed tests, and only a pull request starts them."""
+    with pytest.raises(ValueError):
+        policy.speed_required(event_name, event, ref, "owner/repo")
+
+
+@pytest.mark.parametrize(("base", "head", "expected"), [
+    ("preprod", "dev", "true"),
+    ("dev", "feature/work", "false"),
+])
+def test_speed_route_cli_writes_one_output_and_refuses_an_invalid_route(policy: ModuleType,
+                                                                        tmp_path: pathlib.Path,
+                                                                        monkeypatch: pytest.MonkeyPatch,
+                                                                        base: str, head: str,
+                                                                        expected: str) -> None:
+    """The speed workflow's route job writes its answer only after the event passes route validation."""
+    event = tmp_path / "event.json"
+    output = tmp_path / "output.txt"
+    event.write_text(json.dumps(pr_event(base, head)), encoding="utf-8")
+    monkeypatch.setenv("GITHUB_EVENT_PATH", str(event))
+    monkeypatch.setenv("GITHUB_OUTPUT", str(output))
+    monkeypatch.setenv("GITHUB_EVENT_NAME", "pull_request")
+    monkeypatch.setenv("GITHUB_REPOSITORY", "owner/repo")
+    monkeypatch.setenv("GITHUB_REF", "refs/pull/1/merge")
+    assert policy.main(["speed-route"]) == 0
+    assert output.read_text(encoding="utf-8") == f"speed-required={expected}\n"
+    output.unlink()
+    event.write_text(json.dumps(pr_event("preprod", "feature/example")), encoding="utf-8")
+    assert policy.main(["speed-route"]) == 1
+    assert not output.exists()
 ================================================================================
 END FILE: tests/unit/github_workflows/test_ci_policy.py
 ================================================================================
@@ -161571,7 +161618,7 @@ END FILE: tests/unit/github_workflows/test_distributions.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/github_workflows/test_python_runtime_matrix.py
-CONTENT SHA256: adcea7c42c1112b8ab980d2598505386bc1c70c446215ff4171ca159db62cb39
+CONTENT SHA256: 13a34ff466ecdc148248309bcbb7cea02085e8ae181559618264b6aa0d9a23dd
 SOURCE ENCODING: utf-8
 ================================================================================
 """Prove manifest-driven Python selection and complete version-aware coverage report handling."""
@@ -161607,7 +161654,7 @@ def test_discovers_every_manifest_on_every_runner(runtime_matrix: ModuleType, tm
     assert matrix == {"include": [
         {"os": runner, "python": version, "architecture": architecture}
         for version in ("3.14.0", "3.14.9", "3.14.10", "3.15.0")
-        for runner, architecture in (("ubuntu-latest", "x64"), ("windows-latest", "x64"), ("macos-latest", "arm64"))
+        for runner, architecture in (("ubuntu-24.04", "x64"), ("windows-latest", "x64"), ("macos-latest", "arm64"))
     ]}
 
 
@@ -161853,7 +161900,7 @@ def test_matrix_keeps_every_patch_of_a_minor(runtime_matrix: ModuleType) -> None
     """Several patches of one minor are separate entries, each on all three runners, in release order."""
     matrix = runtime_matrix.version_matrix(["3.14.1", "3.14.0", "3.14.2"], (3, 14, 0))
     assert [row["python"] for row in matrix["include"]] == ["3.14.0"] * 3 + ["3.14.1"] * 3 + ["3.14.2"] * 3
-    assert [row["os"] for row in matrix["include"][:3]] == ["ubuntu-latest", "windows-latest", "macos-latest"]
+    assert [row["os"] for row in matrix["include"][:3]] == ["ubuntu-24.04", "windows-latest", "macos-latest"]
 
 
 def test_job_limit_is_not_silent_truncation(runtime_matrix: ModuleType, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -161934,9 +161981,9 @@ def test_partial_rerun_archive_merge_preserves_each_platform(runtime_matrix: Mod
     """Unique XML payloads survive merged extraction and choose Ubuntu 2 with Windows/macOS 1."""
     root = tmp_path / "downloads"
     root.mkdir()
-    entries = [("ubuntu-latest", "3.14.7", 1), ("ubuntu-latest", "3.14.7", 2),
+    entries = [("ubuntu-24.04", "3.14.7", 1), ("ubuntu-24.04", "3.14.7", 2),
                ("windows-latest", "3.14.7", 1), ("macos-latest", "3.14.7", 1),
-               ("ubuntu-latest", "3.14.6", 1)]
+               ("ubuntu-24.04", "3.14.6", 1)]
     for runner, version, attempt in entries:
         filename = f"coverage-{runner}-python-{version}-70-{attempt}.xml"
         archive = tmp_path / (filename + ".zip")
@@ -161946,19 +161993,19 @@ def test_partial_rerun_archive_merge_preserves_each_platform(runtime_matrix: Mod
             reader.extractall(root)
     matrix = runtime_matrix.version_matrix(["3.14.7"], (3, 14, 0))
     reports = runtime_matrix.require_coverage(root, matrix, "70", "2")
-    expected = {"coverage-ubuntu-latest-python-3.14.7-70-2.xml",
+    expected = {"coverage-ubuntu-24.04-python-3.14.7-70-2.xml",
                 "coverage-windows-latest-python-3.14.7-70-1.xml",
                 "coverage-macos-latest-python-3.14.7-70-1.xml"}
     assert {path.name for path in reports} == expected
     selected = tmp_path / "selected"
     runtime_matrix.stage_coverage(reports, selected, tmp_path / "selection.json")
     assert {path.name for path in selected.iterdir()} == expected
-    assert 'attempt="2"' in (selected / "coverage-ubuntu-latest-python-3.14.7-70-2.xml").read_text()
+    assert 'attempt="2"' in (selected / "coverage-ubuntu-24.04-python-3.14.7-70-2.xml").read_text()
 
 
 @pytest.mark.parametrize("filename", [
-    "coverage.xml", "coverage-ubuntu-latest-python-3.14.7-71-1.xml",
-    "coverage-ubuntu-latest-python-3.14.7-70-3.xml", "coverage-other-python-3.14.7-70-1.xml",
+    "coverage.xml", "coverage-ubuntu-24.04-python-3.14.7-71-1.xml",
+    "coverage-ubuntu-24.04-python-3.14.7-70-3.xml", "coverage-other-python-3.14.7-70-1.xml",
 ])
 def test_ambiguous_foreign_and_future_payloads_refuse(runtime_matrix: ModuleType, tmp_path: pathlib.Path,
                                                     filename: str) -> None:
@@ -161975,14 +162022,14 @@ def test_invalid_newest_report_cannot_fall_back_to_older_success(runtime_matrix:
     matrix = runtime_matrix.version_matrix(["3.14.7"], (3, 14, 0))
     for row in matrix["include"]:
         (tmp_path / f"coverage-{row['os']}-python-3.14.7-70-1.xml").write_text("<coverage/>", encoding="utf-8")
-    (tmp_path / "coverage-ubuntu-latest-python-3.14.7-70-2.xml").write_text("", encoding="utf-8")
+    (tmp_path / "coverage-ubuntu-24.04-python-3.14.7-70-2.xml").write_text("", encoding="utf-8")
     with pytest.raises(ValueError, match="Newest coverage report is empty"):
         runtime_matrix.require_coverage(tmp_path, matrix, "70", "2")
 
 
 def test_one_flat_report_cannot_claim_a_complete_matrix(runtime_matrix: ModuleType, tmp_path: pathlib.Path) -> None:
     """The exact singleton-download symptom still refuses if the other platforms truly have no evidence."""
-    (tmp_path / "coverage-ubuntu-latest-python-3.14.7-70-2.xml").write_text("<coverage/>", encoding="utf-8")
+    (tmp_path / "coverage-ubuntu-24.04-python-3.14.7-70-2.xml").write_text("<coverage/>", encoding="utf-8")
     matrix = runtime_matrix.version_matrix(["3.14.7"], (3, 14, 0))
     with pytest.raises(ValueError, match="missing OS/Python cells"):
         runtime_matrix.require_coverage(tmp_path, matrix, "70", "2")
@@ -162094,7 +162141,7 @@ END FILE: tests/unit/github_workflows/test_sdist_normalization.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/github_workflows/test_source_qualification.py
-CONTENT SHA256: 35dbdaca0d50975f49bb0bbb6de0a3343cdf028fbb26ebcf57429bae6693ab53
+CONTENT SHA256: d00479cd0453dca8762982f00d7298d02d480efd3658a660f9a8ef7236144108
 SOURCE ENCODING: utf-8
 ================================================================================
 """Exercise full-CI evidence across distinct merge SHAs, source changes, and stale GitHub state."""
@@ -162195,9 +162242,8 @@ def record_environment(source_qualification: ModuleType, tmp_path: pathlib.Path,
     monkeypatch.setenv("CI_RUNTIME_REQUIRED", "true")
     monkeypatch.setenv("CI_PACKAGE_REQUIRED", "true")
     monkeypatch.setenv("CI_SOURCE_REQUIRED", "false")
-    monkeypatch.setenv("CI_GAUNTLET_REQUIRED", "true")
     results = {name: {"result": "success"} for name in (
-        "branch-policy", "hygiene", "source-assets", "repo-assets", "tests", "real-world-gauntlet", "persistent-runtime-gauntlet", "shallow-all-thread-scaling", "documentation", "packages",
+        "branch-policy", "hygiene", "source-assets", "repo-assets", "tests", "documentation", "packages",
     )}
     results["source-qualification"] = {"result": "skipped"}
     monkeypatch.setenv("CI_JOB_RESULTS", json.dumps(results))
@@ -162358,7 +162404,7 @@ def test_rc_fix_uses_its_own_full_pr_qualification(source_qualification: ModuleT
     assert result["expected"]["pull_request"] == 12
 
 
-@pytest.mark.parametrize("mode", ["sha", "dirty", "parents", "failed-tests", "failed-gauntlet", "skipped-gauntlet", "failed-persistent", "skipped-persistent", "failed-scaling", "skipped-scaling"])
+@pytest.mark.parametrize("mode", ["sha", "dirty", "parents", "failed-tests", "skipped-tests", "speed-result"])
 def test_record_refuses_unqualified_checkout(source_qualification: ModuleType, record_environment: GitState,
                                             monkeypatch: pytest.MonkeyPatch, mode: str) -> None:
     """Only the exact clean tested checkout and genuinely successful required jobs can issue a record."""
@@ -162370,10 +162416,11 @@ def test_record_refuses_unqualified_checkout(source_qualification: ModuleType, r
         record_environment["parents"][-1] = "f" * 40
     else:
         results = json.loads(os.environ["CI_JOB_RESULTS"])
-        job = ("persistent-runtime-gauntlet" if mode.endswith("persistent")
-               else "shallow-all-thread-scaling" if mode.endswith("scaling")
-               else "real-world-gauntlet" if mode.endswith("gauntlet") else "tests")
-        results[job]["result"] = "skipped" if mode.startswith("skipped-") else "failure"
+        if mode == "speed-result":
+            # A run that carries a speed test is not one later promotions may reuse (owner, 2026-10-06).
+            results["real-world-gauntlet"] = {"result": "success"}
+        else:
+            results["tests"]["result"] = "skipped" if mode.startswith("skipped-") else "failure"
         monkeypatch.setenv("CI_JOB_RESULTS", json.dumps(results))
     with pytest.raises(ValueError):
         source_qualification.full_record()
@@ -162388,9 +162435,8 @@ def test_light_run_cannot_record_full_evidence(source_qualification: ModuleType,
     monkeypatch.setenv("CI_RUNTIME_REQUIRED", "false")
     monkeypatch.setenv("CI_PACKAGE_REQUIRED", "false")
     monkeypatch.setenv("CI_SOURCE_REQUIRED", "true")
-    monkeypatch.setenv("CI_GAUNTLET_REQUIRED", "false")
     results = json.loads(os.environ["CI_JOB_RESULTS"])
-    for name in ("source-assets", "repo-assets", "tests", "real-world-gauntlet", "persistent-runtime-gauntlet", "shallow-all-thread-scaling", "documentation", "packages"):
+    for name in ("source-assets", "repo-assets", "tests", "documentation", "packages"):
         results[name]["result"] = "skipped"
     results["source-qualification"]["result"] = "success"
     monkeypatch.setenv("CI_JOB_RESULTS", json.dumps(results))
@@ -162440,7 +162486,6 @@ def test_manual_record_binds_the_exact_run_head(source_qualification: ModuleType
     record_environment["sha"] = "a" * 40
     monkeypatch.setenv("GITHUB_SHA", "a" * 40)
     monkeypatch.setenv("GITHUB_EVENT_NAME", "workflow_dispatch")
-    monkeypatch.setenv("CI_GAUNTLET_REQUIRED", "false")
     monkeypatch.setenv("GITHUB_REF", "refs/heads/preprod")
     pathlib.Path(os.environ["GITHUB_EVENT_PATH"]).write_text("{}", encoding="utf-8")
     proof = source_qualification.full_record()
@@ -162516,7 +162561,7 @@ END FILE: tests/unit/github_workflows/test_source_qualification.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/github_workflows/test_workflow_contracts.py
-CONTENT SHA256: 9131e242cf60fbdccd9b8ae74e75fc7b25b026372f7ff09524c39a14903a8ce1
+CONTENT SHA256: 379d734d354a20f3305ff7be870cae3cec117d225eee8213a080d6357a90a432
 SOURCE ENCODING: utf-8
 ================================================================================
 """Prove safety-relevant workflow wiring using parsed YAML rather than substring matches."""
@@ -162564,9 +162609,12 @@ def test_every_pr_reports_a_fail_closed_required_status(policy: ModuleType) -> N
     assert aggregate["env"]["CI_PACKAGE_REQUIRED"] == "${{ needs.branch-policy.outputs.package-required }}"
     assert aggregate["env"]["CI_RUNTIME_REQUIRED"] == "${{ needs.branch-policy.outputs.runtime-required }}"
     assert aggregate["env"]["CI_SOURCE_REQUIRED"] == "${{ needs.branch-policy.outputs.source-required }}"
-    assert aggregate["env"]["CI_GAUNTLET_REQUIRED"] == "${{ needs.branch-policy.outputs.gauntlet-required }}"
-    assert jobs["branch-policy"]["outputs"]["gauntlet-required"] == "${{ steps.route.outputs.gauntlet-required }}"
-    assert jobs["real-world-gauntlet"]["if"] == "needs.branch-policy.outputs.gauntlet-required == 'true'"
+    assert set(aggregate["env"]) == {"CI_JOB_RESULTS", "CI_PACKAGE_REQUIRED", "CI_RUNTIME_REQUIRED", "CI_SOURCE_REQUIRED"}
+    assert set(jobs["branch-policy"]["outputs"]) == {"runtime-required", "package-required", "source-required"}
+    # The speed tests run in speed-tests.yml: a CI run that later promotions reuse never waits for them.
+    speed = {f"./.github/workflows/{name}.yml" for name in
+             ("real-world-gauntlet", "persistent-runtime-gauntlet", "shallow-all-thread-scaling")}
+    assert not [name for name, job in jobs.items() if job.get("uses") in speed]
     assert jobs["packages"]["if"] == "needs.branch-policy.outputs.package-required == 'true'"
     for name in policy.CIPolicy.FULL_JOBS:
         assert jobs[name]["needs"] == "branch-policy"
@@ -162578,7 +162626,7 @@ def test_every_pr_reports_a_fail_closed_required_status(policy: ModuleType) -> N
     assert jobs["source-qualification"]["if"] == "needs.branch-policy.outputs.source-required == 'true'"
 
 
-@pytest.mark.parametrize("name", ["build-src-assets.yml", "build-repo-assets.yml", "test-runtime.yml", "real-world-gauntlet.yml", "persistent-runtime-gauntlet.yml", "shallow-all-thread-scaling.yml", "docs.yml"])
+@pytest.mark.parametrize("name", ["build-src-assets.yml", "build-repo-assets.yml", "test-runtime.yml", "docs.yml"])
 def test_reusable_mandatory_jobs_cannot_be_disabled(name: str) -> None:
     """Callers own triggers/concurrency; no helper silently skips a mandatory validation job."""
     document = workflow(name)
@@ -162593,6 +162641,61 @@ def test_reusable_mandatory_jobs_cannot_be_disabled(name: str) -> None:
         assert "continue-on-error" not in job
         assert "environment" not in job
         assert "timeout-minutes" in job
+
+
+@pytest.mark.parametrize("name", ["real-world-gauntlet.yml", "persistent-runtime-gauntlet.yml",
+                                  "shallow-all-thread-scaling.yml"])
+def test_speed_workflows_measure_everything_once_started(name: str) -> None:
+    """A speed test gates nothing (owner, 2026-10-06), but once started no job skips itself or hides a failure.
+
+    Its caller owns the trigger and the concurrency, and a red result stays red on the pull request.
+    """
+    document = workflow(name)
+    assert set(document["on"]) == {"workflow_call", "workflow_dispatch"}
+    assert document["permissions"] == {"contents": "read"}
+    assert "concurrency" not in document
+    for job in document["jobs"].values():
+        assert "if" not in job
+        assert "continue-on-error" not in job
+        assert "environment" not in job
+        assert "timeout-minutes" in job
+
+
+def test_speed_tests_start_beside_ci_and_block_nothing() -> None:
+    """The three speed tests start on every dev-to-preprod pull request in their own workflow (owner, 2026-10-06).
+
+    Promotions reuse a CI run only when the whole run finished green (`ci_qualification.select_run`), so a speed
+    test inside ci.yml would hold that run open for hours and fail it when it failed. Their own workflow takes its
+    route from `ci_policy.py speed-route`, keeps a failure red on the pull request without any required status, and
+    is cancelled only by a newer commit: not by a merge, and not by a title or description edit.
+    """
+    document = workflow("speed-tests.yml")
+    assert document["name"] == "Speed"
+    assert set(document["on"]) == {"pull_request"}
+    trigger = document["on"]["pull_request"]
+    assert trigger["branches"] == ["preprod"]
+    assert trigger["types"] == ["opened", "synchronize", "reopened", "ready_for_review"]
+    assert "paths" not in trigger and "paths-ignore" not in trigger
+    assert document["permissions"] == {"contents": "read"}
+    assert document["concurrency"] == {"group": "speed-${{ github.event.pull_request.number }}",
+                                       "cancel-in-progress": "true"}
+    jobs = document["jobs"]
+    speed = ("real-world-gauntlet", "persistent-runtime-gauntlet", "shallow-all-thread-scaling")
+    assert set(jobs) == {"route", *speed}
+    route = jobs["route"]
+    assert route["name"] == "Speed / route"
+    assert "if" not in route and "continue-on-error" not in route
+    assert route["outputs"] == {"speed-required": "${{ steps.route.outputs.speed-required }}"}
+    step = next(step for step in route["steps"] if step.get("id") == "route")
+    assert step["run"] == "python .github/scripts/ci_policy.py speed-route"
+    for name in speed:
+        assert jobs[name] == {"needs": "route", "if": "needs.route.outputs.speed-required == 'true'",
+                              "uses": f"./.github/workflows/{name}.yml"}
+    root = pathlib.Path(__file__).resolve().parents[3]
+    targets = {f"./.github/workflows/{name}.yml" for name in speed}
+    callers = [(path.name, job_name) for path in sorted((root / ".github/workflows").glob("*.yml"))
+               for job_name, job in workflow(path.name)["jobs"].items() if job.get("uses") in targets]
+    assert sorted(callers) == sorted(("speed-tests.yml", name) for name in speed)
 
 
 def test_docs_metadata_validation_precedes_artifact_upload_and_rtd_staging() -> None:
@@ -162880,6 +162983,30 @@ def test_runtime_callers_forward_only_the_coverage_secret(name: str) -> None:
     assert caller["secrets"] == {"CODECOV_TOKEN": "${{ secrets.CODECOV_TOKEN }}"}
     assert caller["permissions"] == {"contents": "read", "actions": "read"}
     assert caller.get("permissions", {}).get("id-token") != "write"
+
+
+def test_linux_jobs_pin_ubuntu_24_04(runtime_matrix: ModuleType) -> None:
+    """No job follows the moving ubuntu-latest label: Linux runs on ubuntu-24.04 until a commit moves it.
+
+    GitHub moves ubuntu-latest from Ubuntu 24.04 to 26.04 between 2026-10-19 and 2026-11-19, and setup-python's
+    Linux builds are made per Ubuntu release, so a moved label could fail manifest releases that pass today. The
+    parsed workflows are searched, so a comment may name the label but no runner, matrix or input may.
+    """
+    def strings(value: object) -> list[str]:
+        """Collect every string key and value of one parsed workflow."""
+        if isinstance(value, dict):
+            return [text for key, item in value.items() for text in strings(key) + strings(item)]
+        if isinstance(value, list):
+            return [text for item in value for text in strings(item)]
+        return [value] if isinstance(value, str) else []
+
+    root = pathlib.Path(__file__).resolve().parents[3]
+    for path in sorted((root / ".github" / "workflows").glob("*.yml")):
+        floating = [text for text in strings(workflow(path.name)) if "ubuntu-latest" in text]
+        assert not floating, f"{path.name} names ubuntu-latest: {floating}"
+    linux = [runner for runner, platform, _ in runtime_matrix.RuntimeMatrixPolicy.TARGETS if platform == "linux"]
+    assert linux == ["ubuntu-24.04"]
+
 
 
 def test_codecov_does_not_create_extra_required_coverage_statuses() -> None:
@@ -163220,7 +163347,7 @@ def test_gauntlet_reports_all_counts_and_keeps_setup_outside_gil_override() -> N
     assert retained["if"] == "always()"
     assert retained["with"]["path"] == "gauntlet-results/"
     assert retained["with"]["retention-days"] == "30"
-    caller = workflow("ci.yml")["jobs"]["real-world-gauntlet"]
+    caller = workflow("speed-tests.yml")["jobs"]["real-world-gauntlet"]
     assert caller["uses"] == "./.github/workflows/real-world-gauntlet.yml"
     assert "secrets" not in caller
 
@@ -163235,11 +163362,9 @@ def test_gauntlet_inline_python_parses_after_yaml_indentation() -> None:
 
 def test_persistent_gauntlet_runs_in_parallel_on_independent_promotion_runners() -> None:
     """Neither benchmark waits for the other; each owns its OS jobs and result artifacts."""
-    jobs = workflow("ci.yml")["jobs"]
+    jobs = workflow("speed-tests.yml")["jobs"]
     for name in ("real-world-gauntlet", "persistent-runtime-gauntlet", "shallow-all-thread-scaling"):
-        assert jobs[name]["needs"] == "branch-policy"
-        assert jobs[name]["if"] == "needs.branch-policy.outputs.gauntlet-required == 'true'"
-        assert name in jobs["merge-ready"]["needs"]
+        assert jobs[name]["needs"] == "route"
     assert jobs["persistent-runtime-gauntlet"]["uses"] == "./.github/workflows/persistent-runtime-gauntlet.yml"
     document = workflow("persistent-runtime-gauntlet.yml")
     for event in document["on"].values():
@@ -163268,7 +163393,7 @@ def test_persistent_gauntlet_runs_in_parallel_on_independent_promotion_runners()
 
 def test_shallow_thread_scaling_measures_each_library_in_its_own_gil_off_process() -> None:
     """The scaling benchmark is a parallel promotion job that isolates every library in a fresh interpreter."""
-    caller = workflow("ci.yml")["jobs"]["shallow-all-thread-scaling"]
+    caller = workflow("speed-tests.yml")["jobs"]["shallow-all-thread-scaling"]
     assert caller["uses"] == "./.github/workflows/shallow-all-thread-scaling.yml"
     assert "secrets" not in caller
     document = workflow("shallow-all-thread-scaling.yml")

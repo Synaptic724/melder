@@ -17,7 +17,7 @@ concurrency:
 jobs:
   authorize:
     name: RC / authorize
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     outputs:
       matrix: ${{ steps.runtimes.outputs.matrix }}
@@ -55,7 +55,7 @@ jobs:
   publish:
     name: RC / publish-to-TestPyPI
     needs: [authorize, source-qualification, build]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     environment:
       name: pypitest
@@ -145,7 +145,7 @@ jobs:
     name: RC / package-ready
     needs: [authorize, source-qualification, build, publish, install]
     if: always()
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v7

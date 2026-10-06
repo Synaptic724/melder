@@ -17,7 +17,7 @@ repeating it.
 
 ## How CI fits together
 
-Three workflows start runs. Every other workflow is reusable (`on: workflow_call`): it proves one thing, the entry
+Four workflows start runs. Every other workflow is reusable (`on: workflow_call`): it proves one thing, the entry
 workflows call it, and it can also be started by hand from the Actions tab.
 
 ```text
@@ -25,11 +25,13 @@ pull request into dev, preprod, release_candidate or prod, or a manual run  --> 
   branch-policy         refuses an invalid route, decides what this PR must run (ci_policy.py branch)
   hygiene               every time
   source-assets, repo-assets, tests, documentation      when the route needs the full checks
-  real-world-gauntlet, persistent-runtime-gauntlet,
-  shallow-all-thread-scaling                            only for a dev -> preprod PR
   packages              full checks outside dev
   source-qualification  only for a preprod -> release_candidate PR
   merge-ready           the one required status, "CI / merge-ready" (ci_policy.py merge-ready)
+
+pull request into preprod  -->  speed-tests.yml, beside ci.yml; nothing waits for it
+  route                 refuses an invalid route; true only for dev -> preprod (ci_policy.py speed-route)
+  real-world-gauntlet, persistent-runtime-gauntlet, shallow-all-thread-scaling     when route says so
 
 push to release_candidate, or a manual run there  -->  release-candidate.yml
   authorize -> source-qualification -> build -> publish (TestPyPI)
@@ -48,7 +50,9 @@ Python releases CI may use are data: one manifest per release in `.github/python
 1. CI runs only the Python releases a manifest names ([python_versions.md](python_versions.md)). Never add
    `check-latest`, a `python-version-file`, a pre-release or a floating version such as `"3.14"`.
 2. `CI / merge-ready` is the only required status. A job that must pass goes into `merge-ready`'s `needs` in
-   `ci.yml` and into `CIPolicy` in `ci_policy.py` in the same change ([extending.md](extending.md)).
+   `ci.yml` and into `CIPolicy` in `ci_policy.py` in the same change ([extending.md](extending.md)). A job that
+   only reports, like the speed tests, gets its own workflow and never runs in `ci.yml`: later promotions reuse a
+   CI run only when the whole run finished green.
 3. Logic goes in a script with a test, not in YAML. Scripts stay standard-library only: CI runs them before
    anything is installed.
 4. Check every CI change locally ([validating.md](validating.md)). Hosted runs belong to the owner: report them as

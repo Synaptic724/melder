@@ -5,7 +5,7 @@
 - Status: in_progress
 - Owner:
 - Created: 2026-01-22
-- Updated: 2026-10-05
+- Updated: 2026-10-06
 
 ## Scope and Intent
 This document describes the tests architecture (C4) for `tests/` and how it
@@ -181,7 +181,7 @@ CI entrypoint (verified 2026-09-26 against the files named):
 - Matrix (re-verified 2026-10-05): `.github/scripts/python_runtime_matrix.py` builds
   it from the test manifests in `.github/python/tests/` - one TOML file per exact
   Python release holding the release, `freethreaded = true` and that release's exact
-  test-dependency pins - for ubuntu-latest (x64), windows-latest (x64) and macos-latest
+  test-dependency pins - for ubuntu-24.04 (x64), windows-latest (x64) and macos-latest
   (arm64), with no network lookup. The floor release from `requires-python` must have
   a manifest and none may sit below it. Each cell installs exactly its manifest's pins
   plus Melder from the checkout (`uv pip install --no-deps`, no resolver, no lockfile)
@@ -233,11 +233,12 @@ Representative runtime-heavy entry fixtures:
 The CI/CD that runs these tiers lives under `.github/`. Its agent guide, the folder `.github/ci_cd/`
 (start at `.github/ci_cd/README.md`), describes every workflow, script, ruleset and Python manifest, how they
 connect and how to extend them; read it before changing CI. Branch and release policy stays in
-`.github/BRANCH_WORKFLOW.md`. In brief, verified 2026-10-05 against the files named:
-- Three workflows start runs. `.github/workflows/ci.yml` qualifies pull requests and manual runs and reports
-  the one required status, `CI / merge-ready`; `.github/workflows/release-candidate.yml` uploads a candidate to
-  TestPyPI and probes the installed wheel on every manifest release; `.github/workflows/python-publish.yml`
-  requalifies a published release from scratch and uploads it to PyPI.
+`.github/BRANCH_WORKFLOW.md`. In brief, verified 2026-10-06 against the files named:
+- Four workflows start runs. `.github/workflows/ci.yml` qualifies pull requests and manual runs and reports
+  the one required status, `CI / merge-ready`; `.github/workflows/speed-tests.yml` runs the three speed tests
+  beside it on dev-to-preprod pull requests and blocks nothing; `.github/workflows/release-candidate.yml`
+  uploads a candidate to TestPyPI and probes the installed wheel on every manifest release;
+  `.github/workflows/python-publish.yml` requalifies a published release from scratch and uploads it to PyPI.
 - Every other workflow is reusable and proves one thing: `test-runtime.yml` (the three tiers on every manifest
   release and runner, then coverage), the two asset checks, `docs.yml`, `build-distributions.yml`,
   `verify-source-qualification.yml` and the three speed tests.
@@ -852,6 +853,7 @@ graph TD
 - `tests/unit/melder/aether/test_workstation.py`
 - `tests/unit/melder/aether/test_command_system_direct.py`
 - `.github/workflows/ci.yml`
+- `.github/workflows/speed-tests.yml`
 - `.github/workflows/test-runtime.yml`
 - `.github/scripts/run_runtime_tests.py`
 - `.github/scripts/python_runtime_matrix.py`
@@ -868,6 +870,10 @@ graph TD
 - direct filesystem inventory of `tests/`
 
 ## Context / Handoff Summary
+
+2026-10-06 speed tests beside CI (no notch; CI and documentation only): `### CI/CD Pipeline` names a fourth entry
+workflow, `speed-tests.yml`, which runs the three speed tests on dev-to-preprod pull requests beside `ci.yml`. They
+are no longer CI jobs, so neither `CI / merge-ready` nor the CI run that later promotions reuse waits for them.
 
 2026-10-05 CI/CD guide (no notch): `### CI/CD Pipeline` under the system boundary points at `.github/ci_cd/`,
 the agent guide to every workflow, script, ruleset and Python manifest, and sketches the three entry workflows.

@@ -278,6 +278,20 @@ and fix the extra 'l' in its file name (on disk it is test_shallow_all_thread_sc
   NEXT: Owner accepts or redirects; on acceptance, close the ticket and sync the board.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
+- DATETIME: 2026-10-06T11:24:36Z
+  TYPE: DECISION
+  CLAIM: Superseded in part by the owner's 2026-10-06 ruling "Run, never block": the thread-scaling job still
+    starts on every dev-to-preprod pull request with the two gauntlets, but from the new speed-tests.yml, not
+    ci.yml; merge-ready no longer needs it and CIPolicy has no GAUNTLET_JOBS. The benchmark workflow itself only
+    changed its header comment.
+  EVIDENCE:
+  - context_compass/tickets/tasks/2026-10-06_make_speed_tests_nonblocking_task.md:235-266
+  - .github/workflows/speed-tests.yml:1-52
+  IMPACT: This ticket's "must succeed for merge-ready" outcome no longer holds; acceptance now covers the benchmark
+    and its wiring through the Speed workflow.
+  NEXT: Owner: accept or redirect both tickets together.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
 
 ## Context / Handoff Summary
 Done and validated on the device VM (Notes 7-9): benchmark renamed, reusable workflow, ci.yml job

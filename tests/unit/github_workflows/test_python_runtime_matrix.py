@@ -31,7 +31,7 @@ def test_discovers_every_manifest_on_every_runner(runtime_matrix: ModuleType, tm
     assert matrix == {"include": [
         {"os": runner, "python": version, "architecture": architecture}
         for version in ("3.14.0", "3.14.9", "3.14.10", "3.15.0")
-        for runner, architecture in (("ubuntu-latest", "x64"), ("windows-latest", "x64"), ("macos-latest", "arm64"))
+        for runner, architecture in (("ubuntu-24.04", "x64"), ("windows-latest", "x64"), ("macos-latest", "arm64"))
     ]}
 
 
@@ -277,7 +277,7 @@ def test_matrix_keeps_every_patch_of_a_minor(runtime_matrix: ModuleType) -> None
     """Several patches of one minor are separate entries, each on all three runners, in release order."""
     matrix = runtime_matrix.version_matrix(["3.14.1", "3.14.0", "3.14.2"], (3, 14, 0))
     assert [row["python"] for row in matrix["include"]] == ["3.14.0"] * 3 + ["3.14.1"] * 3 + ["3.14.2"] * 3
-    assert [row["os"] for row in matrix["include"][:3]] == ["ubuntu-latest", "windows-latest", "macos-latest"]
+    assert [row["os"] for row in matrix["include"][:3]] == ["ubuntu-24.04", "windows-latest", "macos-latest"]
 
 
 def test_job_limit_is_not_silent_truncation(runtime_matrix: ModuleType, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -358,9 +358,9 @@ def test_partial_rerun_archive_merge_preserves_each_platform(runtime_matrix: Mod
     """Unique XML payloads survive merged extraction and choose Ubuntu 2 with Windows/macOS 1."""
     root = tmp_path / "downloads"
     root.mkdir()
-    entries = [("ubuntu-latest", "3.14.7", 1), ("ubuntu-latest", "3.14.7", 2),
+    entries = [("ubuntu-24.04", "3.14.7", 1), ("ubuntu-24.04", "3.14.7", 2),
                ("windows-latest", "3.14.7", 1), ("macos-latest", "3.14.7", 1),
-               ("ubuntu-latest", "3.14.6", 1)]
+               ("ubuntu-24.04", "3.14.6", 1)]
     for runner, version, attempt in entries:
         filename = f"coverage-{runner}-python-{version}-70-{attempt}.xml"
         archive = tmp_path / (filename + ".zip")
@@ -370,19 +370,19 @@ def test_partial_rerun_archive_merge_preserves_each_platform(runtime_matrix: Mod
             reader.extractall(root)
     matrix = runtime_matrix.version_matrix(["3.14.7"], (3, 14, 0))
     reports = runtime_matrix.require_coverage(root, matrix, "70", "2")
-    expected = {"coverage-ubuntu-latest-python-3.14.7-70-2.xml",
+    expected = {"coverage-ubuntu-24.04-python-3.14.7-70-2.xml",
                 "coverage-windows-latest-python-3.14.7-70-1.xml",
                 "coverage-macos-latest-python-3.14.7-70-1.xml"}
     assert {path.name for path in reports} == expected
     selected = tmp_path / "selected"
     runtime_matrix.stage_coverage(reports, selected, tmp_path / "selection.json")
     assert {path.name for path in selected.iterdir()} == expected
-    assert 'attempt="2"' in (selected / "coverage-ubuntu-latest-python-3.14.7-70-2.xml").read_text()
+    assert 'attempt="2"' in (selected / "coverage-ubuntu-24.04-python-3.14.7-70-2.xml").read_text()
 
 
 @pytest.mark.parametrize("filename", [
-    "coverage.xml", "coverage-ubuntu-latest-python-3.14.7-71-1.xml",
-    "coverage-ubuntu-latest-python-3.14.7-70-3.xml", "coverage-other-python-3.14.7-70-1.xml",
+    "coverage.xml", "coverage-ubuntu-24.04-python-3.14.7-71-1.xml",
+    "coverage-ubuntu-24.04-python-3.14.7-70-3.xml", "coverage-other-python-3.14.7-70-1.xml",
 ])
 def test_ambiguous_foreign_and_future_payloads_refuse(runtime_matrix: ModuleType, tmp_path: pathlib.Path,
                                                     filename: str) -> None:
@@ -399,14 +399,14 @@ def test_invalid_newest_report_cannot_fall_back_to_older_success(runtime_matrix:
     matrix = runtime_matrix.version_matrix(["3.14.7"], (3, 14, 0))
     for row in matrix["include"]:
         (tmp_path / f"coverage-{row['os']}-python-3.14.7-70-1.xml").write_text("<coverage/>", encoding="utf-8")
-    (tmp_path / "coverage-ubuntu-latest-python-3.14.7-70-2.xml").write_text("", encoding="utf-8")
+    (tmp_path / "coverage-ubuntu-24.04-python-3.14.7-70-2.xml").write_text("", encoding="utf-8")
     with pytest.raises(ValueError, match="Newest coverage report is empty"):
         runtime_matrix.require_coverage(tmp_path, matrix, "70", "2")
 
 
 def test_one_flat_report_cannot_claim_a_complete_matrix(runtime_matrix: ModuleType, tmp_path: pathlib.Path) -> None:
     """The exact singleton-download symptom still refuses if the other platforms truly have no evidence."""
-    (tmp_path / "coverage-ubuntu-latest-python-3.14.7-70-2.xml").write_text("<coverage/>", encoding="utf-8")
+    (tmp_path / "coverage-ubuntu-24.04-python-3.14.7-70-2.xml").write_text("<coverage/>", encoding="utf-8")
     matrix = runtime_matrix.version_matrix(["3.14.7"], (3, 14, 0))
     with pytest.raises(ValueError, match="missing OS/Python cells"):
         runtime_matrix.require_coverage(tmp_path, matrix, "70", "2")
