@@ -11,16 +11,16 @@ and how to extend them. Read it before changing CI.
 `CI / merge-ready` remains the stable required status. The branch route selects
 which checks must run; the final gate independently verifies that selection.
 
-| Event | Runtime matrix | Other required work |
+| Event | Full runtime matrix | Other required work |
 | --- | --- | --- |
-| Feature PR into `dev` | Floor and newest release | Hygiene, source/repository assets and documentation |
-| `dev` PR into `preprod` | Every release | The same checks plus distribution verification and the three benchmark jobs |
+| Feature PR into `dev` | Yes | Hygiene, source/repository assets and documentation |
+| `dev` PR into `preprod` | Yes | The same checks plus distribution verification and the three benchmark jobs |
 | `preprod` PR into `release_candidate` | No | Hygiene and exact-tree full preprod proof |
-| `release-fix/*` PR into `release_candidate` | Every release | Full checks and distribution verification for changed contents |
+| `release-fix/*` PR into `release_candidate` | Yes | Full checks and distribution verification for changed contents |
 | `release_candidate` PR into `prod` | No | Hygiene and exact-source successful TestPyPI qualification |
-| Manual `CI` on a permanent branch | Every release | Full checks; distributions on every branch except dev |
+| Manual `CI` on a permanent branch | Yes | Full checks; distributions on every branch except dev |
 | Ordinary branch push | No source CI | RC pushes retain their dedicated package workflow |
-| Final publication | Every release | Fresh package validation and final tag/prod checks |
+| Final publication | Yes | Fresh package validation and final tag/prod checks |
 
 The checks enforce these contracts:
 
@@ -35,10 +35,7 @@ The checks enforce these contracts:
 - Documentation in full CI: the shared documentation validation workflow must succeed.
 - Full runtime tests: unit, component, and integration tiers on Linux, Windows, and macOS,
   on every Python release that has a test manifest, with the GIL disabled
-  in the actual pytest process. A feature PR into dev runs only the floor and the
-  newest of those releases; the dev-to-preprod promotion, release fixes, manual CI
-  and publication run them all, so a problem on a middle release is caught at the
-  promotion, and only a run of every release can record source qualification.
+  in the actual pytest process.
   The macOS job uses `macos-latest` on native Apple Silicon (arm64).
 - Distribution verification in full CI outside dev: wheel and sdist boundaries,
   source/metadata/asset versions, and an isolated installed-wheel smoke test.
@@ -163,11 +160,9 @@ that does not install on that release. To move the speed tests, replace the spee
 their first run afterwards is the new baseline. When Melder gains a runtime dependency, pin it in every
 test manifest; a contract test refuses a manifest that leaves one out.
 
-Every test release runs on Linux x64, Windows x64 and macOS arm64. A pull request into dev runs only the
-floor and the newest test release (owner ruling, 2026-10-05: six cells instead of twenty-seven); every
-other runtime run covers all of them. Each cell installs exactly its manifest's pins plus Melder from the
-checkout with `uv pip install --no-deps`, so nothing unpinned enters. Release-candidate installation
-probes run every release. Runtime tests and RC probes use
+Every test release runs on Linux x64, Windows x64 and macOS arm64. Each cell installs exactly its
+manifest's pins plus Melder from the checkout with `uv pip install --no-deps`, so nothing unpinned enters.
+Release-candidate installation probes run the same releases. Runtime tests and RC probes use
 `freethreaded: true`. The test driver verifies free-threading support and GIL-off state before and after
 pytest; the installed-package probe also verifies GIL-off state. Discovery, asset and policy tooling
 may use ordinary Python because those jobs do not qualify Melder's runtime behavior.
@@ -195,10 +190,9 @@ tests every release named by the test manifests afresh.
 The existing OS/version runtime runs also produce line/branch coverage XML for Melder.
 They do not run the suite a second time. Successful cells retain coverage artifacts for 14 days;
 JUnit results remain available even when tests fail. One reporting job uploads coverage after
-the run's matrix succeeds (six cells for a PR into dev). It selects the newest available report for
-every current OS/Python cell within the same workflow run. Partial reruns may therefore use Ubuntu
-attempt 2 with Windows and macOS attempt 1: GitHub preserves the original event commit/ref across
-attempts of that run.
+the full matrix succeeds. It selects the newest available report for every current OS/Python cell
+within the same workflow run. Partial reruns may therefore use Ubuntu attempt 2 with Windows and
+macOS attempt 1: GitHub preserves the original event commit/ref across attempts of that run.
 
 The XML filename itself carries OS, Python version, run ID and attempt. Downloads explicitly select
 the current repository/run through the read-only Actions API, merge those unique filenames, and
@@ -288,10 +282,10 @@ back into dev through a reviewed synchronization PR.
 
 ## Reusing full qualification
 
-A successful full CI run that tested every release retains `source-qualification-<run-id>-<attempt>`
-for 90 days; a feature PR into dev tests only the floor and newest releases and records none. Its JSON
-record binds the repository, run/attempt, event/PR identity and the actual tested checkout and Git tree.
-A PR run's head SHA is not assumed to be its tested merge SHA.
+A successful full CI run retains `source-qualification-<run-id>-<attempt>` for
+90 days. Its JSON record binds the repository, run/attempt, event/PR identity and
+the actual tested checkout and Git tree. A PR run's head SHA is not assumed to
+be its tested merge SHA.
 
 Checkout verification requires an unchanged Git index and rejects actual tracked content or mode
 changes. Git can report older committed CRLF files as modified under a newer LF attribute policy

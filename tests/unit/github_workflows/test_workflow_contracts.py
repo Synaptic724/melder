@@ -44,10 +44,7 @@ def test_every_pr_reports_a_fail_closed_required_status(policy: ModuleType) -> N
     assert aggregate["env"]["CI_RUNTIME_REQUIRED"] == "${{ needs.branch-policy.outputs.runtime-required }}"
     assert aggregate["env"]["CI_SOURCE_REQUIRED"] == "${{ needs.branch-policy.outputs.source-required }}"
     assert aggregate["env"]["CI_GAUNTLET_REQUIRED"] == "${{ needs.branch-policy.outputs.gauntlet-required }}"
-    assert aggregate["env"]["CI_RUNTIME_RELEASES"] == "${{ needs.branch-policy.outputs.runtime-releases }}"
     assert jobs["branch-policy"]["outputs"]["gauntlet-required"] == "${{ steps.route.outputs.gauntlet-required }}"
-    assert jobs["branch-policy"]["outputs"]["runtime-releases"] == "${{ steps.route.outputs.runtime-releases }}"
-    assert jobs["tests"]["with"] == {"releases": "${{ needs.branch-policy.outputs.runtime-releases }}"}
     assert jobs["real-world-gauntlet"]["if"] == "needs.branch-policy.outputs.gauntlet-required == 'true'"
     assert jobs["packages"]["if"] == "needs.branch-policy.outputs.package-required == 'true'"
     for name in policy.CIPolicy.FULL_JOBS:
@@ -255,12 +252,7 @@ def test_discovery_is_required_and_retains_the_selected_matrix(name: str, job_na
     assert "if" not in job and "continue-on-error" not in job
     assert job["outputs"]["matrix"] == "${{ steps.runtimes.outputs.matrix }}"
     selection = next(step for step in job["steps"] if step.get("id") == "runtimes")
-    if name == "test-runtime.yml":
-        assert selection["run"] == 'python .github/scripts/python_runtime_matrix.py discover --releases "$RUNTIME_RELEASES"'
-        assert selection["env"] == {"RUNTIME_RELEASES": "${{ inputs.releases }}"}
-    else:
-        # The release candidate probes the installed wheel on every manifest release.
-        assert selection["run"] == "python .github/scripts/python_runtime_matrix.py discover"
+    assert selection["run"] == "python .github/scripts/python_runtime_matrix.py discover"
     assert "continue-on-error" not in selection and "if" not in selection
     retained = job["steps"][-1]
     assert retained["uses"].startswith("actions/upload-artifact@")
@@ -271,20 +263,6 @@ def test_discovery_is_required_and_retains_the_selected_matrix(name: str, job_na
         setup = next(step for step in job["steps"] if step.get("uses", "").startswith("actions/setup-python@"))
         assert "python-version-file" not in setup["with"]
         assert setup["with"]["allow-prereleases"] == "false"
-
-
-def test_runtime_releases_default_to_every_manifest() -> None:
-    """Only the CI route can slice the runtime matrix; a caller or manual run that names nothing tests all.
-
-    ci.yml hands the branch-policy output to the tests job (floor-and-newest for a PR into dev, owner ruling
-    2026-10-05). Publication calls the same workflow without it and so requalifies every manifest.
-    """
-    events = workflow("test-runtime.yml")["on"]
-    called = events["workflow_call"]["inputs"]["releases"]
-    assert (called["type"], called["required"], called["default"]) == ("string", "false", "all")
-    manual = events["workflow_dispatch"]["inputs"]["releases"]
-    assert (manual["type"], manual["default"], manual["options"]) == ("choice", "all", ["all", "floor-and-newest"])
-    assert "with" not in workflow("python-publish.yml")["jobs"]["tests"]
 
 
 def test_coverage_uses_existing_tests_and_separate_current_run_artifacts() -> None:
@@ -606,7 +584,7 @@ def test_prod_promotion_and_publication_consume_candidate_proof() -> None:
 
 
 def test_only_full_ci_records_qualification_after_successful_aggregation() -> None:
-    """Light promotions and sliced PRs into dev cannot issue a substitute full-test record."""
+    """Light promotions cannot issue a substitute full-test record."""
     final = workflow("ci.yml")["jobs"]["merge-ready"]
     steps = final["steps"]
     aggregate = next(index for index, step in enumerate(steps)
@@ -616,10 +594,7 @@ def test_only_full_ci_records_qualification_after_successful_aggregation() -> No
     upload = next(index for index, step in enumerate(steps)
                   if step.get("uses", "").startswith("actions/upload-artifact@"))
     assert aggregate < record < upload
-    assert steps[record]["if"] == steps[upload]["if"] == (
-        "needs.branch-policy.outputs.runtime-required == 'true'"
-        " && needs.branch-policy.outputs.runtime-releases == 'all'"
-    )
+    assert steps[record]["if"] == steps[upload]["if"] == "needs.branch-policy.outputs.runtime-required == 'true'"
     assert steps[record]["env"] == steps[aggregate]["env"]
     assert steps[upload]["with"]["name"] == "source-qualification-${{ github.run_id }}-${{ github.run_attempt }}"
     assert steps[upload]["with"]["if-no-files-found"] == "error"

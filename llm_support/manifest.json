@@ -2,13 +2,13 @@
   "corpora": {
     "other": {
       "bundle": {
-        "bytes": 3262355,
-        "lines": 76648,
+        "bytes": 3254462,
+        "lines": 76535,
         "path": "llm_support/llm_full_other.txt",
-        "sha256": "c8fb54e440ca6e15e925d2587a309e0ec9244211c76f85f1e00a8d62281e975e"
+        "sha256": "74d1b8f0adb9c918edd0326eb98afcb5cd3e0bb09773fd4d9197defb285e8d55"
       },
-      "content_bytes": 3039189,
-      "content_lines": 73426,
+      "content_bytes": 3031296,
+      "content_lines": 73313,
       "file_count": 402,
       "files": {
         ".gitattributes": {
@@ -18,9 +18,9 @@
           "source_encoding": "utf-8"
         },
         ".github/BRANCH_WORKFLOW.md": {
-          "content_bytes": 31342,
-          "content_lines": 474,
-          "content_sha256": "a2c74647bdf64a13acb86d3b4618581a9bb3cd50075159fc5b2773d814c1ebb8",
+          "content_bytes": 30680,
+          "content_lines": 468,
+          "content_sha256": "bc4291dba961f69aaebb166327b9e356e6241601985f0500176fffbf3cbc76b4",
           "source_encoding": "utf-8"
         },
         ".github/FUNDING.yml": {
@@ -30,9 +30,9 @@
           "source_encoding": "utf-8"
         },
         ".github/ci_cd/README.md": {
-          "content_bytes": 4184,
-          "content_lines": 61,
-          "content_sha256": "0ecffb09dd3db9acd71708aa3194295916b00d3429447141aff1d1d4d4ae1bf5",
+          "content_bytes": 3990,
+          "content_lines": 59,
+          "content_sha256": "2442b6c41e9adbebf49e1b6891f32fe74db55a4417be1d77993079d55a962ed9",
           "source_encoding": "utf-8"
         },
         ".github/ci_cd/extending.md": {
@@ -42,15 +42,15 @@
           "source_encoding": "utf-8"
         },
         ".github/ci_cd/python_versions.md": {
-          "content_bytes": 6948,
-          "content_lines": 121,
-          "content_sha256": "4b7aaf7fb77d947ac3603284e0968622d29e57abae9d1e94a40b735114ba6bac",
+          "content_bytes": 6721,
+          "content_lines": 120,
+          "content_sha256": "e2a72d05f65e7586a0c4d16fa899aa6f52adf8e5e85252ab37e6cf2376041800",
           "source_encoding": "utf-8"
         },
         ".github/ci_cd/scripts.md": {
-          "content_bytes": 7082,
-          "content_lines": 96,
-          "content_sha256": "3493280119a690cbc7159ff796145fdad958c4c309bb8f645ebf6ad50afa381a",
+          "content_bytes": 6515,
+          "content_lines": 91,
+          "content_sha256": "6f08985b05dbc13d43a1efb35315e7aae7bbeecc5c6a1dbee9691a12e7d5303c",
           "source_encoding": "utf-8"
         },
         ".github/ci_cd/validating.md": {
@@ -60,9 +60,9 @@
           "source_encoding": "utf-8"
         },
         ".github/ci_cd/workflows.md": {
-          "content_bytes": 10219,
-          "content_lines": 142,
-          "content_sha256": "c6b4e70138f242c62c220fe114d0d68880c81894263cc4ee457aae06189fadef",
+          "content_bytes": 9608,
+          "content_lines": 137,
+          "content_sha256": "9997cc1773e3c35a5c1caa83dfa7a345ca68515da168ef2b5da4ad157738777b",
           "source_encoding": "utf-8"
         },
         ".github/python/speed/3.14.7.toml": {
@@ -156,15 +156,15 @@
           "source_encoding": "utf-8"
         },
         ".github/scripts/ci_policy.py": {
-          "content_bytes": 20824,
-          "content_lines": 395,
-          "content_sha256": "a3823aa68ae69068d0330296fda4d705b2527b32f895cfd37728fea08fd794b4",
+          "content_bytes": 18351,
+          "content_lines": 351,
+          "content_sha256": "0e4ee8e6293c59fbd38a4e094ea456a7676085f470ee99f204fa973797a63a54",
           "source_encoding": "utf-8"
         },
         ".github/scripts/ci_qualification.py": {
-          "content_bytes": 18035,
-          "content_lines": 328,
-          "content_sha256": "556e1d564f375626d945ecc2c1ca259e0e425ff7913a1c67aa2e45c76b696608",
+          "content_bytes": 17629,
+          "content_lines": 323,
+          "content_sha256": "604a239e8689dcb68a721120d2bc0f2c4b28403e72b02842215e2490415a9051",
           "source_encoding": "utf-8"
         },
         ".github/scripts/normalize_sdist.py": {
@@ -174,9 +174,9 @@
           "source_encoding": "utf-8"
         },
         ".github/scripts/python_runtime_matrix.py": {
-          "content_bytes": 25291,
-          "content_lines": 456,
-          "content_sha256": "1b4bb2842f5b4523dfd97bac3692044d340a6c7eee15e7cb884b5fae87b5beb6",
+          "content_bytes": 23908,
+          "content_lines": 436,
+          "content_sha256": "8c8718c42bb9b468d5c93073b3e955512e0eb4c7f9b227d0361fdda112107320",
           "source_encoding": "utf-8"
         },
         ".github/scripts/run_runtime_tests.py": {
@@ -222,9 +222,9 @@
           "source_encoding": "utf-8"
         },
         ".github/workflows/ci.yml": {
-          "content_bytes": 6494,
-          "content_lines": 165,
-          "content_sha256": "85d48bddacfd38669cdb8e0c7e56ae0ee78e3f469cbcb6199cd8aa07194e831d",
+          "content_bytes": 5861,
+          "content_lines": 158,
+          "content_sha256": "acefcb452d832fba28f3c9abd0d6006de963b2f68bc5fb10ff9d11330478dab4",
           "source_encoding": "utf-8"
         },
         ".github/workflows/docs.yml": {
@@ -264,9 +264,9 @@
           "source_encoding": "utf-8"
         },
         ".github/workflows/test-runtime.yml": {
-          "content_bytes": 8022,
-          "content_lines": 195,
-          "content_sha256": "52f74c58843ca2473709e58b27a2773783dbcb7654d05d7e990464e8e22fcb3e",
+          "content_bytes": 7399,
+          "content_lines": 178,
+          "content_sha256": "4f22ef8e5a9ed192da11516825a93f9f3eae962a5c217e7941e6f4eddca7df21",
           "source_encoding": "utf-8"
         },
         ".github/workflows/verify-source-qualification.yml": {
@@ -288,9 +288,9 @@
           "source_encoding": "utf-8"
         },
         "CONTRIBUTING.md": {
-          "content_bytes": 3897,
-          "content_lines": 82,
-          "content_sha256": "215e35959c1c65d685b75372f4f43e8acc03ed359dd43c09fdbb3a92a315161b",
+          "content_bytes": 3783,
+          "content_lines": 81,
+          "content_sha256": "09c03408c19d95f5089ae71d25ae0d833a3c333f15a69085688db4942a74fd7f",
           "source_encoding": "utf-8"
         },
         "LICENSE": {
@@ -2425,12 +2425,12 @@
         }
       },
       "index": {
-        "bytes": 67128,
+        "bytes": 67115,
         "lines": 424,
         "path": "llm_support/llm_full_other_index.md",
-        "sha256": "8cba87a27778a88e361f6042d6a2ebf1fe13e00e79a004b326ae7b7fc904d4d7"
+        "sha256": "71c28213d90f0c88d30d36ebca681de17ce4ca8b431ba933761ee414eaec0260"
       },
-      "source_fingerprint": "14a5806160916354afd7b7506eb1b6b96684fda29b6581e18736819be26db9da"
+      "source_fingerprint": "a970b9b11357354e8ec8f7dec3ea3595c0a63ba12dfb48b97ae51fbd99dfc0e6"
     },
     "src": {
       "bundle": {
@@ -5928,13 +5928,13 @@
     },
     "tests": {
       "bundle": {
-        "bytes": 12452543,
-        "lines": 344759,
+        "bytes": 12441500,
+        "lines": 344584,
         "path": "llm_support/llm_full_tests.txt",
-        "sha256": "1df5bc22d13b260793a4633ad39327d0309615bf14b3bcdfe419d954aeea13fb"
+        "sha256": "5b7ad32e5af8d84dbec608e8b04b3a74e2ff6bbe219ca8ae5cbcbedd322c4dd9"
       },
-      "content_bytes": 11803771,
-      "content_lines": 336249,
+      "content_bytes": 11792728,
+      "content_lines": 336074,
       "file_count": 1063,
       "files": {
         "tests/_annotation_audit_support.py": {
@@ -9448,9 +9448,9 @@
           "source_encoding": "utf-8"
         },
         "tests/unit/github_workflows/test_ci_policy.py": {
-          "content_bytes": 33710,
-          "content_lines": 633,
-          "content_sha256": "29032b8f73c7d74eb1e9eeaa215d4c7dd2daf212c94d9b1842865dc741a62b06",
+          "content_bytes": 29020,
+          "content_lines": 557,
+          "content_sha256": "3bc8882a37851d3a0e5aa806072a5fb4b8670728748f941cdd28f415e7626e7b",
           "source_encoding": "utf-8"
         },
         "tests/unit/github_workflows/test_distributions.py": {
@@ -9460,9 +9460,9 @@
           "source_encoding": "utf-8"
         },
         "tests/unit/github_workflows/test_python_runtime_matrix.py": {
-          "content_bytes": 28395,
-          "content_lines": 477,
-          "content_sha256": "92482336a86a8ef4e7e133969b3aed4f9c630b789f7e24731f3a88c9ce6f92b6",
+          "content_bytes": 24756,
+          "content_lines": 421,
+          "content_sha256": "adcea7c42c1112b8ab980d2598505386bc1c70c446215ff4171ca159db62cb39",
           "source_encoding": "utf-8"
         },
         "tests/unit/github_workflows/test_sdist_normalization.py": {
@@ -9472,15 +9472,15 @@
           "source_encoding": "utf-8"
         },
         "tests/unit/github_workflows/test_source_qualification.py": {
-          "content_bytes": 23634,
-          "content_lines": 432,
-          "content_sha256": "fb0cc05774cf4f9889e93009b809f62ed5eebc65654949385c8faa778a3daee4",
+          "content_bytes": 22541,
+          "content_lines": 414,
+          "content_sha256": "35dbdaca0d50975f49bb0bbb6de0a3343cdf028fbb26ebcf57429bae6693ab53",
           "source_encoding": "utf-8"
         },
         "tests/unit/github_workflows/test_workflow_contracts.py": {
-          "content_bytes": 51310,
-          "content_lines": 848,
-          "content_sha256": "3a23cfda0c88591844c69325abfca1b7894c5c9eba30ed2e4f141323f43d0740",
+          "content_bytes": 49689,
+          "content_lines": 823,
+          "content_sha256": "99cd7489a8920b65f1262a0856aa5c08269a05ab39f07dae4ef8b85111ac2a15",
           "source_encoding": "utf-8"
         },
         "tests/unit/llm_support/test_builder.py": {
@@ -12320,9 +12320,9 @@
         "bytes": 209077,
         "lines": 1085,
         "path": "llm_support/llm_full_tests_index.md",
-        "sha256": "2b99c4898910390ab9d2ee5835e332625845e5fad3782409b9a20c16aead8d24"
+        "sha256": "cf54e922de79f239e34373f28495f8d4fcb8fd6687ea90241cd26169459ca1e5"
       },
-      "source_fingerprint": "a7faeb607fe7798bb6aaee07e501a051ab587b05626102fb6b89a20abb53549d"
+      "source_fingerprint": "d5e3fd9b2c770609bc048daa3d1706d3a781be3f111350668a76bf7c84b42335"
     }
   },
   "generator_sha256": "d75f1de961817875c099e1b3bc6eaa3a6c670dc89752cd94864d977e452b88e3",

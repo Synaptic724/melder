@@ -183,12 +183,9 @@ CI entrypoint (verified 2026-09-26 against the files named):
   Python release holding the release, `freethreaded = true` and that release's exact
   test-dependency pins - for ubuntu-latest (x64), windows-latest (x64) and macos-latest
   (arm64), with no network lookup. The floor release from `requires-python` must have
-  a manifest and none may sit below it. A pull request into dev builds it from the floor
-  and the newest manifest only (`--releases floor-and-newest`, chosen by `ci_policy.py`
-  `runtime_releases`); every other runtime run uses them all, and only such a run
-  records source qualification. Each cell installs exactly its manifest's pins plus
-  Melder from the checkout (`uv pip install --no-deps`, no resolver, no lockfile) and
-  runs with `PYTHON_GIL=0`. Coverage uploads only after every cell reported, and an
+  a manifest and none may sit below it. Each cell installs exactly its manifest's pins
+  plus Melder from the checkout (`uv pip install --no-deps`, no resolver, no lockfile)
+  and runs with `PYTHON_GIL=0`. Coverage uploads only after every cell reported, and an
   upload failure does not fail the run.
 - Nothing in the repository runs the GIL-enabled posture. Lanes that need it run the
   suites by hand with `PYTHON_GIL=1` on the same interpreter.
@@ -242,8 +239,8 @@ connect and how to extend them; read it before changing CI. Branch and release p
   TestPyPI and probes the installed wheel on every manifest release; `.github/workflows/python-publish.yml`
   requalifies a published release from scratch and uploads it to PyPI.
 - Every other workflow is reusable and proves one thing: `test-runtime.yml` (the three tiers on every manifest
-  release and runner - only the floor and newest for a pull request into dev - then coverage), the two asset
-  checks, `docs.yml`, `build-distributions.yml`, `verify-source-qualification.yml` and the three speed tests.
+  release and runner, then coverage), the two asset checks, `docs.yml`, `build-distributions.yml`,
+  `verify-source-qualification.yml` and the three speed tests.
 - The decisions live in standard-library scripts in `.github/scripts/`, tested in
   `tests/unit/github_workflows/`: `ci_policy.py` routes a pull request to the jobs it requires and checks their
   results, and `python_runtime_matrix.py` turns the manifests in `.github/python/` into matrices and installs.
@@ -365,9 +362,8 @@ The most important recent integration addition is the dedicated
 ### Flow: CI Runtime Qualification
 1. `ci.yml` routes a pull request through `branch-policy`; when the runtime is in
    scope it calls `test-runtime.yml` (and the asset and documentation checks).
-2. `discover` builds the OS/Python matrix from the test manifests (no network lookup) -
-   every manifest, or the floor and newest for a pull request into dev - and keeps it as
-   an artifact.
+2. `discover` builds the OS/Python matrix from the test manifests (no network lookup)
+   and keeps it as an artifact.
 3. each cell sets up its free-threaded release, installs exactly that release's manifest
    pins plus Melder and runs `run_runtime_tests.py` with `PYTHON_GIL=0`.
 4. the driver checks the runtime, runs the three tiers in one pytest process,
@@ -751,9 +747,9 @@ constituent files.
   verified_at: 2026-09-26T21:51:55Z
 - path: `.github/workflows/test-runtime.yml`
   start_line: 1
-  end_line: 195
-  loc: 195
-  verified_at: 2026-10-05T23:15:37Z
+  end_line: 178
+  loc: 178
+  verified_at: 2026-10-05T11:36:52Z
 - path: `.github/scripts/run_runtime_tests.py`
   start_line: 1
   end_line: 54
@@ -872,11 +868,6 @@ graph TD
 - direct filesystem inventory of `tests/`
 
 ## Context / Handoff Summary
-
-2026-10-05 sliced dev matrix (no notch; CI only, owner ruling): a pull request into dev runs the runtime tiers on
-the floor and the newest test manifest (3.14.0 and 3.14.8 today, six cells instead of twenty-seven); every other
-runtime run uses every manifest, and only such a run records source qualification. The matrix bullet, the CI/CD
-Pipeline section and the runtime qualification flow carry it; C1 extents of the touched CI files remeasured.
 
 2026-10-05 CI/CD guide (no notch): `### CI/CD Pipeline` under the system boundary points at `.github/ci_cd/`,
 the agent guide to every workflow, script, ruleset and Python manifest, and sketches the three entry workflows.

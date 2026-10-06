@@ -2,26 +2,11 @@ name: Runtime tests
 
 on:
   workflow_call:
-    inputs:
-      releases:
-        # ci.yml passes ci_policy.py's runtime-releases; a caller that passes nothing tests every manifest.
-        description: Test manifests to run - all, or floor-and-newest (a pull request into dev).
-        type: string
-        required: false
-        default: all
     secrets:
       CODECOV_TOKEN:
         description: Optional repository upload token; reporting is skipped when absent.
         required: false
   workflow_dispatch:
-    inputs:
-      releases:
-        description: Test manifests to run - all, or floor-and-newest (a pull request into dev).
-        type: choice
-        options:
-          - all
-          - floor-and-newest
-        default: all
 
 permissions:
   contents: read
@@ -41,9 +26,7 @@ jobs:
           allow-prereleases: false
       - name: Build the runtime matrix from the test manifests
         id: runtimes
-        env:
-          RUNTIME_RELEASES: ${{ inputs.releases }}
-        run: python .github/scripts/python_runtime_matrix.py discover --releases "$RUNTIME_RELEASES"
+        run: python .github/scripts/python_runtime_matrix.py discover
       - name: Retain the selected runtime matrix
         uses: actions/upload-artifact@v7
         with:

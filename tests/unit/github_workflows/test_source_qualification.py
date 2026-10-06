@@ -97,7 +97,6 @@ def record_environment(source_qualification: ModuleType, tmp_path: pathlib.Path,
     monkeypatch.setenv("CI_PACKAGE_REQUIRED", "true")
     monkeypatch.setenv("CI_SOURCE_REQUIRED", "false")
     monkeypatch.setenv("CI_GAUNTLET_REQUIRED", "true")
-    monkeypatch.setenv("CI_RUNTIME_RELEASES", "all")
     results = {name: {"result": "success"} for name in (
         "branch-policy", "hygiene", "source-assets", "repo-assets", "tests", "real-world-gauntlet", "persistent-runtime-gauntlet", "shallow-all-thread-scaling", "documentation", "packages",
     )}
@@ -297,23 +296,6 @@ def test_light_run_cannot_record_full_evidence(source_qualification: ModuleType,
     results["source-qualification"]["result"] = "success"
     monkeypatch.setenv("CI_JOB_RESULTS", json.dumps(results))
     with pytest.raises(ValueError, match="light CI"):
-        source_qualification.full_record()
-
-
-def test_sliced_dev_run_cannot_record_full_evidence(source_qualification: ModuleType, record_environment: GitState,
-                                                    monkeypatch: pytest.MonkeyPatch) -> None:
-    """A PR into dev tests only the floor and newest manifests, so its green run cannot qualify a release."""
-    pathlib.Path(os.environ["GITHUB_EVENT_PATH"]).write_text(json.dumps({
-        "pull_request": pull_request("dev", "feature/work", "c" * 40),
-    }), encoding="utf-8")
-    monkeypatch.setenv("CI_PACKAGE_REQUIRED", "false")
-    monkeypatch.setenv("CI_GAUNTLET_REQUIRED", "false")
-    monkeypatch.setenv("CI_RUNTIME_RELEASES", "floor-and-newest")
-    results = json.loads(os.environ["CI_JOB_RESULTS"])
-    for name in ("real-world-gauntlet", "persistent-runtime-gauntlet", "shallow-all-thread-scaling", "packages"):
-        results[name]["result"] = "skipped"
-    monkeypatch.setenv("CI_JOB_RESULTS", json.dumps(results))
-    with pytest.raises(ValueError, match="sliced"):
         source_qualification.full_record()
 
 

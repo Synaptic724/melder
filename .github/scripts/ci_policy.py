@@ -26,11 +26,6 @@ class CIPolicy:
     REQUIRED_JOBS: tuple[str, ...] = (
         "branch-policy", "hygiene", *FULL_JOBS, *GAUNTLET_JOBS, "source-qualification",
     )
-    # Which test manifests a run's runtime tests cover (runtime_releases): every one, or only the floor and
-    # the newest. python_runtime_matrix.py discover accepts exactly these values.
-    FULL_RELEASES: str = "all"
-    SLICED_RELEASES: str = "floor-and-newest"
-    RUNTIME_RELEASES: tuple[str, ...] = (FULL_RELEASES, SLICED_RELEASES)
 
 
 def object_value(value: object, label: str) -> Mapping[str, object]:
@@ -110,8 +105,7 @@ def validation_requirements(event_name: str, event: Mapping[str, object], ref: s
                             repository: str) -> tuple[bool, bool, bool, bool]:
     """Return runtime, package, source-proof, and gauntlet requirements for a validated event.
 
-    Dev/preprod PRs, release-fix PRs and manual CI run full qualification; runtime_releases decides how
-    many test manifests that covers (a PR into dev tests only the floor and the newest).
+    Dev/preprod PRs, release-fix PRs and manual CI run full qualification.
     Only the validated dev-to-preprod PR also requires all three benchmark jobs.
     Unchanged preprod promotions reuse source evidence; prod promotions consume
     the separate exact-candidate gate. Ordinary pushes have no source-CI profile.
@@ -129,37 +123,6 @@ def validation_requirements(event_name: str, event: Mapping[str, object], ref: s
     if base == "release_candidate" and head == "preprod":
         return False, False, True, False
     return True, packages, False, base == "preprod" and head == "dev"
-
-
-def runtime_releases(event_name: str, event: Mapping[str, object], ref: str, repository: str) -> str:
-    """Return which test manifests a validated event's runtime tests cover: every one, or the floor and newest.
-
-    A pull request into dev tests the floor and the newest manifest on every runner (owner ruling,
-    2026-10-05). Every route that can produce release evidence - the dev-to-preprod promotion,
-    release-fix pull requests and manual CI - tests every manifest, so a defect specific to a middle
-    patch is caught at the promotion at the latest, and a sliced run never qualifies a release
-    (ci_qualification.py refuses to record one). Routes that skip the runtime tests report "all",
-    which nothing reads.
-
-    Args:
-        event_name: GITHUB_EVENT_NAME.
-        event: The parsed GitHub event payload.
-        ref: GITHUB_REF.
-        repository: GITHUB_REPOSITORY.
-
-    Returns:
-        CIPolicy.SLICED_RELEASES for a pull request into dev, otherwise CIPolicy.FULL_RELEASES.
-
-    Raises:
-        ValueError: When validation_requirements refuses the event; an invalid route never selects a
-            smaller matrix.
-    """
-    validation_requirements(event_name, event, ref, repository)
-    if event_name == "pull_request":
-        pr = object_value(event["pull_request"], "pull_request")
-        if object_value(pr["base"], "base")["ref"] == "dev":
-            return CIPolicy.SLICED_RELEASES
-    return CIPolicy.FULL_RELEASES
 
 
 def require_success(results: Mapping[str, object], require_package: bool,
@@ -196,20 +159,16 @@ def require_ci_results() -> tuple[bool, bool, bool, bool]:
     """Recompute requirements from event identity and verify both flags and job results.
 
     The branch job's outputs control scheduling, but cannot silently waive a
-    requirement by emitting an empty or incorrect flag, nor shrink the runtime
-    matrix by reporting the wrong release selection (CI_RUNTIME_RELEASES). Return
-    the verified profile for consumers such as the full-qualification record writer.
+    requirement by emitting an empty or incorrect flag. Return the verified
+    profile for consumers such as the full-qualification record writer.
     """
-    event_name = os.environ.get("GITHUB_EVENT_NAME", "")
-    event = read_event()
-    ref = os.environ.get("GITHUB_REF", "")
-    repository = os.environ.get("GITHUB_REPOSITORY", "")
-    requirements = validation_requirements(event_name, event, ref, repository)
+    requirements = validation_requirements(
+        os.environ.get("GITHUB_EVENT_NAME", ""), read_event(),
+        os.environ.get("GITHUB_REF", ""), os.environ.get("GITHUB_REPOSITORY", ""),
+    )
     for name, required in zip(("RUNTIME", "PACKAGE", "SOURCE", "GAUNTLET"), requirements, strict=True):
         if os.environ.get(f"CI_{name}_REQUIRED") != str(required).lower():
             raise ValueError(f"Missing/invalid {name.lower()} requirement from branch-policy.")
-    if os.environ.get("CI_RUNTIME_RELEASES") != runtime_releases(event_name, event, ref, repository):
-        raise ValueError("Missing/invalid runtime releases from branch-policy.")
     require_success(object_value(json.loads(os.environ["CI_JOB_RESULTS"]), "needs"),
                     requirements[1], requirements[0], requirements[2], requirements[3])
     return requirements
@@ -346,16 +305,13 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     args = parser.parse_args(argv)
     try:
         if args.gate == "branch":
-            event_name = os.environ.get("GITHUB_EVENT_NAME", "")
-            event = read_event()
-            ref = os.environ.get("GITHUB_REF", "")
-            repository = os.environ.get("GITHUB_REPOSITORY", "")
-            requirements = validation_requirements(event_name, event, ref, repository)
-            releases = runtime_releases(event_name, event, ref, repository)
+            requirements = validation_requirements(
+                os.environ.get("GITHUB_EVENT_NAME", ""), read_event(), os.environ.get("GITHUB_REF", ""),
+                os.environ.get("GITHUB_REPOSITORY", ""),
+            )
             with pathlib.Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as output:
                 for name, required in zip(("runtime", "package", "source", "gauntlet"), requirements, strict=True):
                     output.write(f"{name}-required={str(required).lower()}\n")
-                output.write(f"runtime-releases={releases}\n")
         elif args.gate == "merge-ready":
             require_ci_results()
         elif args.gate == "hygiene":

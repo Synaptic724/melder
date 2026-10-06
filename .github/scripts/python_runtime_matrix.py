@@ -20,7 +20,7 @@ import tomllib
 from collections.abc import Mapping, Sequence
 from typing import Optional
 
-from ci_policy import CIPolicy, object_value
+from ci_policy import object_value
 
 
 class RuntimeMatrixPolicy:
@@ -205,37 +205,22 @@ def load_manifests(directory: pathlib.Path, floor: tuple[int, int, int]) -> list
     return loaded
 
 
-def discover_matrix(directory: pathlib.Path, floor: tuple[int, int, int],
-                    releases: str = CIPolicy.FULL_RELEASES) -> dict[str, list[dict[str, str]]]:
-    """Build the runtime (and release-candidate) matrix from the test manifests: the selected releases, every runner.
+def discover_matrix(directory: pathlib.Path, floor: tuple[int, int, int]) -> dict[str, list[dict[str, str]]]:
+    """Build the runtime (and release-candidate) matrix from the test manifests: every manifest, every runner.
 
     Nothing is looked up on the network: a Python release runs only once a manifest names it (owner
     ruling, 2026-10-05). The supported floor release itself must have a manifest, so CI tests the oldest
     release the package claims.
 
-    Args:
-        directory: The test manifest directory.
-        floor: The supported floor read from project.requires-python.
-        releases: CIPolicy.FULL_RELEASES ("all", the default) keeps every manifest. CIPolicy.SLICED_RELEASES
-            ("floor-and-newest") keeps the floor and the newest manifest, picked by version, which is what a
-            pull request into dev runs (ci_policy.runtime_releases); with one manifest that is one release.
-
     Raises:
-        ValueError: For an unknown release selection, as load_manifests, when the floor release has no
-            manifest, or when the matrix needs more jobs than RuntimeMatrixPolicy.MAX_JOBS.
+        ValueError: As load_manifests, when the floor release has no manifest, or when the matrix needs
+            more jobs than RuntimeMatrixPolicy.MAX_JOBS.
     """
-    if releases not in CIPolicy.RUNTIME_RELEASES:
-        raise ValueError(f"Unknown runtime release selection {releases!r}; expected one of "
-                         f"{list(CIPolicy.RUNTIME_RELEASES)}.")
     loaded = load_manifests(directory, floor)
     if floor not in {manifest.release for manifest in loaded}:
         floor_label = ".".join(map(str, floor))
         raise ValueError(f"Python {floor_label} (the supported floor) has no test manifest; add {floor_label}.toml "
                          "or raise project.requires-python.")
-    if releases == CIPolicy.SLICED_RELEASES:
-        # load_manifests orders by release and refuses anything below the floor, so the first manifest is the
-        # floor release itself and the last is the newest.
-        loaded = [loaded[0]] if len(loaded) == 1 else [loaded[0], loaded[-1]]
     return version_matrix([manifest.python for manifest in loaded], floor)
 
 
@@ -392,9 +377,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     """Build a matrix, name or install the speed-test release, write one cell's pins, or verify coverage.
 
     discover writes the runtime/RC matrix built from the test manifests to --report and to
-    GITHUB_OUTPUT (matrix=...); --releases picks every manifest (all, the default) or the floor and newest
-    (floor-and-newest, for a pull request into dev). speed writes the single speed-test release to
-    GITHUB_OUTPUT (python=...).
+    GITHUB_OUTPUT (matrix=...). speed writes the single speed-test release to GITHUB_OUTPUT (python=...).
     speed-install installs the speed manifest's pins into the running interpreter, which must be that
     manifest's free-threaded release, keeps the evidence under --results and returns pip's exit status.
     requirements writes one manifest's pins to --output for an install without dependency resolution.
@@ -404,7 +387,6 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("operation", choices=("discover", "speed", "speed-install", "requirements", "coverage"))
     parser.add_argument("--manifests", type=pathlib.Path)
-    parser.add_argument("--releases", choices=CIPolicy.RUNTIME_RELEASES, default=CIPolicy.FULL_RELEASES)
     parser.add_argument("--manifest", type=pathlib.Path)
     parser.add_argument("--output", type=pathlib.Path, default=pathlib.Path("reports/requirements.txt"))
     parser.add_argument("--results", type=pathlib.Path)
@@ -416,14 +398,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     floor = supported_floor()
     root = pathlib.Path(__file__).resolve().parents[2]
     if args.operation == "discover":
-        directory = args.manifests or root / RuntimeMatrixPolicy.TESTS_DIRECTORY
-        matrix = discover_matrix(directory, floor, args.releases)
+        matrix = discover_matrix(args.manifests or root / RuntimeMatrixPolicy.TESTS_DIRECTORY, floor)
         args.report.parent.mkdir(parents=True, exist_ok=True)
         args.report.write_text(json.dumps(matrix, indent=2) + "\n", encoding="utf-8")
         with pathlib.Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as output:
             output.write("matrix=" + json.dumps(matrix, separators=(",", ":")) + "\n")
-        print(f"Selected {len(matrix['include'])} OS/Python combinations from the test manifests "
-              f"({args.releases}).")
+        print(f"Selected {len(matrix['include'])} OS/Python combinations from the test manifests.")
     elif args.operation == "speed":
         manifest = speed_manifest(args.manifests or root / RuntimeMatrixPolicy.SPEED_DIRECTORY, floor)
         with pathlib.Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as output:

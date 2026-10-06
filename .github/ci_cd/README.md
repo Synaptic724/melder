@@ -24,9 +24,7 @@ workflows call it, and it can also be started by hand from the Actions tab.
 pull request into dev, preprod, release_candidate or prod, or a manual run  -->  ci.yml
   branch-policy         refuses an invalid route, decides what this PR must run (ci_policy.py branch)
   hygiene               every time
-  source-assets, repo-assets, tests, documentation      when the route needs the full checks; tests run every
-                                                        manifest release, or only the floor and newest for a
-                                                        PR into dev
+  source-assets, repo-assets, tests, documentation      when the route needs the full checks
   real-world-gauntlet, persistent-runtime-gauntlet,
   shallow-all-thread-scaling                            only for a dev -> preprod PR
   packages              full checks outside dev

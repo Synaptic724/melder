@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: tests
-SOURCE FINGERPRINT: a7faeb607fe7798bb6aaee07e501a051ab587b05626102fb6b89a20abb53549d
+SOURCE FINGERPRINT: d5e3fd9b2c770609bc048daa3d1706d3a781be3f111350668a76bf7c84b42335
 FILE COUNT: 1063
 
 ================================================================================
@@ -160736,7 +160736,7 @@ END FILE: tests/unit/github_workflows/test_checkout_identity.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/github_workflows/test_ci_policy.py
-CONTENT SHA256: 29032b8f73c7d74eb1e9eeaa215d4c7dd2daf212c94d9b1842865dc741a62b06
+CONTENT SHA256: 3bc8882a37851d3a0e5aa806072a5fb4b8670728748f941cdd28f415e7626e7b
 SOURCE ENCODING: utf-8
 ================================================================================
 """Behavioral regression tests for branch routes, required results, and release authorization."""
@@ -161092,7 +161092,6 @@ def test_merge_cli_propagates_failure_and_missing_stage(policy: ModuleType,
     monkeypatch.setenv("CI_RUNTIME_REQUIRED", "true")
     monkeypatch.setenv("CI_SOURCE_REQUIRED", "false")
     monkeypatch.setenv("CI_GAUNTLET_REQUIRED", "false")
-    monkeypatch.setenv("CI_RUNTIME_RELEASES", "floor-and-newest")
     monkeypatch.setenv("GITHUB_EVENT_NAME", "pull_request")
     monkeypatch.setenv("GITHUB_REPOSITORY", "owner/repo")
     monkeypatch.setattr(policy, "read_event", pr_event)
@@ -161120,56 +161119,7 @@ def test_branch_cli_writes_the_actual_package_requirement(policy: ModuleType,
     assert policy.main(["branch"]) == 0
     assert output.read_text(encoding="utf-8") == (
         "runtime-required=true\npackage-required=true\nsource-required=false\ngauntlet-required=true\n"
-        "runtime-releases=all\n"
     )
-
-
-def test_branch_cli_slices_the_runtime_releases_of_a_pull_request_into_dev(policy: ModuleType,
-                                                                          tmp_path: pathlib.Path,
-                                                                          monkeypatch: pytest.MonkeyPatch) -> None:
-    """The branch job tells the runtime tests to run the floor and newest manifests for a PR into dev only."""
-    event = tmp_path / "event.json"
-    output = tmp_path / "output.txt"
-    event.write_text(json.dumps(pr_event("dev", "feature/work")), encoding="utf-8")
-    monkeypatch.setenv("GITHUB_EVENT_PATH", str(event))
-    monkeypatch.setenv("GITHUB_OUTPUT", str(output))
-    monkeypatch.setenv("GITHUB_EVENT_NAME", "pull_request")
-    monkeypatch.setenv("GITHUB_REPOSITORY", "owner/repo")
-    monkeypatch.setenv("GITHUB_REF", "refs/pull/1/merge")
-    assert policy.main(["branch"]) == 0
-    assert output.read_text(encoding="utf-8") == (
-        "runtime-required=true\npackage-required=false\nsource-required=false\ngauntlet-required=false\n"
-        "runtime-releases=floor-and-newest\n"
-    )
-
-
-@pytest.mark.parametrize(("event_name", "base", "head", "ref", "releases"), [
-    ("pull_request", "dev", "feature/work", "refs/pull/1/merge", "floor-and-newest"),
-    ("pull_request", "dev", "preprod", "refs/pull/1/merge", "floor-and-newest"),
-    ("pull_request", "preprod", "dev", "refs/pull/1/merge", "all"),
-    ("pull_request", "release_candidate", "release-fix/correction", "refs/pull/1/merge", "all"),
-    ("pull_request", "release_candidate", "preprod", "refs/pull/1/merge", "all"),
-    ("pull_request", "prod", "release_candidate", "refs/pull/1/merge", "all"),
-    ("workflow_dispatch", "", "", "refs/heads/dev", "all"),
-    ("workflow_dispatch", "", "", "refs/heads/preprod", "all"),
-])
-def test_only_pull_requests_into_dev_slice_the_runtime_releases(policy: ModuleType, event_name: str, base: str,
-                                                                head: str, ref: str, releases: str) -> None:
-    """A PR into dev tests the floor and newest manifests; every route that can qualify a release tests all.
-
-    Owner ruling, 2026-10-05: the dev-to-preprod promotion, release fixes and manual CI test every manifest,
-    so a defect specific to a middle patch is caught there, while a PR into dev gets the fast slice.
-    """
-    event = pr_event(base, head) if event_name == "pull_request" else {}
-    assert policy.runtime_releases(event_name, event, ref, "owner/repo") == releases
-
-
-def test_runtime_releases_refuse_an_invalid_route(policy: ModuleType) -> None:
-    """The slice is decided only for a validated route; a forged route or a push selects nothing."""
-    with pytest.raises(ValueError, match="Promotion into preprod"):
-        policy.runtime_releases("pull_request", pr_event("preprod", "feature/work"), "refs/pull/1/merge", "owner/repo")
-    with pytest.raises(ValueError, match="not pushes"):
-        policy.runtime_releases("push", {}, "refs/heads/dev", "owner/repo")
 
 
 @pytest.mark.parametrize(("base", "head", "expected"), [
@@ -161235,34 +161185,9 @@ def test_reported_flags_cannot_waive_event_requirements(policy: ModuleType,
     monkeypatch.setenv("CI_PACKAGE_REQUIRED", "true")
     monkeypatch.setenv("CI_SOURCE_REQUIRED", "false")
     monkeypatch.setenv("CI_GAUNTLET_REQUIRED", "true")
-    monkeypatch.setenv("CI_RUNTIME_RELEASES", "all")
     monkeypatch.setenv(f"CI_{flag}_REQUIRED", value)
     monkeypatch.setenv("CI_JOB_RESULTS", json.dumps(result_map()))
     with pytest.raises(ValueError, match="Missing/invalid"):
-        policy.require_ci_results()
-
-
-@pytest.mark.parametrize(("base", "head", "reported"), [
-    ("preprod", "dev", "floor-and-newest"),
-    ("preprod", "dev", ""),
-    ("release_candidate", "release-fix/correction", "floor-and-newest"),
-    ("dev", "feature/work", "all"),
-    ("dev", "feature/work", ""),
-])
-def test_reported_runtime_releases_must_match_the_route(policy: ModuleType, monkeypatch: pytest.MonkeyPatch,
-                                                        base: str, head: str, reported: str) -> None:
-    """A wrong or missing runtime-releases output fails merge-ready instead of shrinking a release's matrix."""
-    requirements = policy.validation_requirements("pull_request", pr_event(base, head), "refs/pull/1/merge",
-                                                  "owner/repo")
-    monkeypatch.setenv("GITHUB_EVENT_NAME", "pull_request")
-    monkeypatch.setenv("GITHUB_REPOSITORY", "owner/repo")
-    monkeypatch.setenv("GITHUB_REF", "refs/pull/1/merge")
-    monkeypatch.setattr(policy, "read_event", lambda: pr_event(base, head))
-    for name, required in zip(("RUNTIME", "PACKAGE", "SOURCE", "GAUNTLET"), requirements, strict=True):
-        monkeypatch.setenv(f"CI_{name}_REQUIRED", str(required).lower())
-    monkeypatch.setenv("CI_RUNTIME_RELEASES", reported)
-    monkeypatch.setenv("CI_JOB_RESULTS", json.dumps(result_map()))
-    with pytest.raises(ValueError, match="runtime releases"):
         policy.require_ci_results()
 
 
@@ -161365,7 +161290,6 @@ def test_merge_gate_allows_feature_skip_but_refuses_promotion_skip(
     monkeypatch.setenv("CI_PACKAGE_REQUIRED", str(required).lower())
     monkeypatch.setenv("CI_SOURCE_REQUIRED", "false")
     monkeypatch.setenv("CI_GAUNTLET_REQUIRED", str(required).lower())
-    monkeypatch.setenv("CI_RUNTIME_RELEASES", "floor-and-newest" if base == "dev" else "all")
     results = result_map()
     results["real-world-gauntlet"] = {"result": "skipped"}
     results["persistent-runtime-gauntlet"] = {"result": "skipped"}
@@ -161570,7 +161494,7 @@ END FILE: tests/unit/github_workflows/test_distributions.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/github_workflows/test_python_runtime_matrix.py
-CONTENT SHA256: 92482336a86a8ef4e7e133969b3aed4f9c630b789f7e24731f3a88c9ce6f92b6
+CONTENT SHA256: adcea7c42c1112b8ab980d2598505386bc1c70c446215ff4171ca159db62cb39
 SOURCE ENCODING: utf-8
 ================================================================================
 """Prove manifest-driven Python selection and complete version-aware coverage report handling."""
@@ -161632,62 +161556,6 @@ def test_raised_floor_selects_only_its_manifests(runtime_matrix: ModuleType, tmp
         write_manifest(tmp_path, version)
     matrix = runtime_matrix.discover_matrix(tmp_path, (3, 15, 1))
     assert [row["python"] for row in matrix["include"]] == ["3.15.1"] * 3 + ["3.15.2"] * 3
-
-
-def test_floor_and_newest_selection_runs_only_the_two_edge_releases(runtime_matrix: ModuleType,
-                                                                     tmp_path: pathlib.Path) -> None:
-    """A pull request into dev tests the floor and the newest manifest on every runner (owner, 2026-10-05).
-
-    The two are picked by version, not by file name, so adding or retiring a release needs no edit, and the
-    sliced matrix still passes the coverage check's shape validation. "all" is the unsliced matrix.
-    """
-    for version in ("3.14.10", "3.15.0", "3.14.0", "3.14.9"):
-        write_manifest(tmp_path, version)
-    matrix = runtime_matrix.discover_matrix(tmp_path, (3, 14, 0), "floor-and-newest")
-    assert [row["python"] for row in matrix["include"]] == ["3.14.0"] * 3 + ["3.15.0"] * 3
-    assert runtime_matrix.validate_matrix(matrix, (3, 14, 0)) == matrix
-    assert runtime_matrix.discover_matrix(tmp_path, (3, 14, 0), "all") == runtime_matrix.discover_matrix(
-        tmp_path, (3, 14, 0))
-
-
-def test_floor_and_newest_of_a_single_manifest_is_that_release(runtime_matrix: ModuleType,
-                                                                tmp_path: pathlib.Path) -> None:
-    """With one manifest the floor is also the newest release: three cells, never a duplicate entry."""
-    write_manifest(tmp_path, "3.14.0")
-    matrix = runtime_matrix.discover_matrix(tmp_path, (3, 14, 0), "floor-and-newest")
-    assert [row["python"] for row in matrix["include"]] == ["3.14.0"] * 3
-
-
-def test_unknown_release_selection_refuses(runtime_matrix: ModuleType, tmp_path: pathlib.Path,
-                                           monkeypatch: pytest.MonkeyPatch) -> None:
-    """Only the two named selections exist; anything else stops discovery instead of guessing a matrix."""
-    write_manifest(tmp_path, "3.14.0")
-    with pytest.raises(ValueError, match="release selection"):
-        runtime_matrix.discover_matrix(tmp_path, (3, 14, 0), "latest")
-    monkeypatch.setattr(runtime_matrix, "supported_floor", lambda: (3, 14, 0))
-    monkeypatch.setenv("GITHUB_OUTPUT", str(tmp_path / "outputs"))
-    with pytest.raises(SystemExit):
-        runtime_matrix.main(["discover", "--manifests", str(tmp_path), "--report", str(tmp_path / "matrix.json"),
-                             "--releases", ""])
-
-
-def test_discover_cli_writes_the_selected_releases(runtime_matrix: ModuleType, tmp_path: pathlib.Path,
-                                                   monkeypatch: pytest.MonkeyPatch) -> None:
-    """The workflow's --releases reaches discovery; without it the CLI keeps every manifest (the RC probes)."""
-    manifests = tmp_path / "manifests"
-    for version in ("3.14.0", "3.14.7", "3.14.8"):
-        write_manifest(manifests, version)
-    monkeypatch.setattr(runtime_matrix, "supported_floor", lambda: (3, 14, 0))
-    for label, arguments, expected in (("default", [], ["3.14.0", "3.14.7", "3.14.8"]),
-                                       ("sliced", ["--releases", "floor-and-newest"], ["3.14.0", "3.14.8"])):
-        outputs = tmp_path / f"outputs-{label}"
-        report = tmp_path / f"reports-{label}/python-matrix.json"
-        monkeypatch.setenv("GITHUB_OUTPUT", str(outputs))
-        assert runtime_matrix.main(["discover", "--manifests", str(manifests), "--report", str(report),
-                                    *arguments]) == 0
-        matrix = json.loads(report.read_text(encoding="utf-8"))
-        assert sorted({row["python"] for row in matrix["include"]}, key=runtime_matrix.stable_version) == expected
-        assert json.loads(outputs.read_text(encoding="utf-8").removeprefix("matrix=")) == matrix
 
 
 @pytest.mark.parametrize(("name", "text"), [
@@ -162149,7 +162017,7 @@ END FILE: tests/unit/github_workflows/test_sdist_normalization.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/github_workflows/test_source_qualification.py
-CONTENT SHA256: fb0cc05774cf4f9889e93009b809f62ed5eebc65654949385c8faa778a3daee4
+CONTENT SHA256: 35dbdaca0d50975f49bb0bbb6de0a3343cdf028fbb26ebcf57429bae6693ab53
 SOURCE ENCODING: utf-8
 ================================================================================
 """Exercise full-CI evidence across distinct merge SHAs, source changes, and stale GitHub state."""
@@ -162251,7 +162119,6 @@ def record_environment(source_qualification: ModuleType, tmp_path: pathlib.Path,
     monkeypatch.setenv("CI_PACKAGE_REQUIRED", "true")
     monkeypatch.setenv("CI_SOURCE_REQUIRED", "false")
     monkeypatch.setenv("CI_GAUNTLET_REQUIRED", "true")
-    monkeypatch.setenv("CI_RUNTIME_RELEASES", "all")
     results = {name: {"result": "success"} for name in (
         "branch-policy", "hygiene", "source-assets", "repo-assets", "tests", "real-world-gauntlet", "persistent-runtime-gauntlet", "shallow-all-thread-scaling", "documentation", "packages",
     )}
@@ -162454,23 +162321,6 @@ def test_light_run_cannot_record_full_evidence(source_qualification: ModuleType,
         source_qualification.full_record()
 
 
-def test_sliced_dev_run_cannot_record_full_evidence(source_qualification: ModuleType, record_environment: GitState,
-                                                    monkeypatch: pytest.MonkeyPatch) -> None:
-    """A PR into dev tests only the floor and newest manifests, so its green run cannot qualify a release."""
-    pathlib.Path(os.environ["GITHUB_EVENT_PATH"]).write_text(json.dumps({
-        "pull_request": pull_request("dev", "feature/work", "c" * 40),
-    }), encoding="utf-8")
-    monkeypatch.setenv("CI_PACKAGE_REQUIRED", "false")
-    monkeypatch.setenv("CI_GAUNTLET_REQUIRED", "false")
-    monkeypatch.setenv("CI_RUNTIME_RELEASES", "floor-and-newest")
-    results = json.loads(os.environ["CI_JOB_RESULTS"])
-    for name in ("real-world-gauntlet", "persistent-runtime-gauntlet", "shallow-all-thread-scaling", "packages"):
-        results[name]["result"] = "skipped"
-    monkeypatch.setenv("CI_JOB_RESULTS", json.dumps(results))
-    with pytest.raises(ValueError, match="sliced"):
-        source_qualification.full_record()
-
-
 @pytest.mark.parametrize("change", ["attempt", "failed-run"])
 def test_record_select_verify_roundtrip_rejects_changed_attempt(source_qualification: ModuleType,
                                                                source_api: SourceApiData,
@@ -162589,7 +162439,7 @@ END FILE: tests/unit/github_workflows/test_source_qualification.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/github_workflows/test_workflow_contracts.py
-CONTENT SHA256: 3a23cfda0c88591844c69325abfca1b7894c5c9eba30ed2e4f141323f43d0740
+CONTENT SHA256: 99cd7489a8920b65f1262a0856aa5c08269a05ab39f07dae4ef8b85111ac2a15
 SOURCE ENCODING: utf-8
 ================================================================================
 """Prove safety-relevant workflow wiring using parsed YAML rather than substring matches."""
@@ -162638,10 +162488,7 @@ def test_every_pr_reports_a_fail_closed_required_status(policy: ModuleType) -> N
     assert aggregate["env"]["CI_RUNTIME_REQUIRED"] == "${{ needs.branch-policy.outputs.runtime-required }}"
     assert aggregate["env"]["CI_SOURCE_REQUIRED"] == "${{ needs.branch-policy.outputs.source-required }}"
     assert aggregate["env"]["CI_GAUNTLET_REQUIRED"] == "${{ needs.branch-policy.outputs.gauntlet-required }}"
-    assert aggregate["env"]["CI_RUNTIME_RELEASES"] == "${{ needs.branch-policy.outputs.runtime-releases }}"
     assert jobs["branch-policy"]["outputs"]["gauntlet-required"] == "${{ steps.route.outputs.gauntlet-required }}"
-    assert jobs["branch-policy"]["outputs"]["runtime-releases"] == "${{ steps.route.outputs.runtime-releases }}"
-    assert jobs["tests"]["with"] == {"releases": "${{ needs.branch-policy.outputs.runtime-releases }}"}
     assert jobs["real-world-gauntlet"]["if"] == "needs.branch-policy.outputs.gauntlet-required == 'true'"
     assert jobs["packages"]["if"] == "needs.branch-policy.outputs.package-required == 'true'"
     for name in policy.CIPolicy.FULL_JOBS:
@@ -162849,12 +162696,7 @@ def test_discovery_is_required_and_retains_the_selected_matrix(name: str, job_na
     assert "if" not in job and "continue-on-error" not in job
     assert job["outputs"]["matrix"] == "${{ steps.runtimes.outputs.matrix }}"
     selection = next(step for step in job["steps"] if step.get("id") == "runtimes")
-    if name == "test-runtime.yml":
-        assert selection["run"] == 'python .github/scripts/python_runtime_matrix.py discover --releases "$RUNTIME_RELEASES"'
-        assert selection["env"] == {"RUNTIME_RELEASES": "${{ inputs.releases }}"}
-    else:
-        # The release candidate probes the installed wheel on every manifest release.
-        assert selection["run"] == "python .github/scripts/python_runtime_matrix.py discover"
+    assert selection["run"] == "python .github/scripts/python_runtime_matrix.py discover"
     assert "continue-on-error" not in selection and "if" not in selection
     retained = job["steps"][-1]
     assert retained["uses"].startswith("actions/upload-artifact@")
@@ -162865,20 +162707,6 @@ def test_discovery_is_required_and_retains_the_selected_matrix(name: str, job_na
         setup = next(step for step in job["steps"] if step.get("uses", "").startswith("actions/setup-python@"))
         assert "python-version-file" not in setup["with"]
         assert setup["with"]["allow-prereleases"] == "false"
-
-
-def test_runtime_releases_default_to_every_manifest() -> None:
-    """Only the CI route can slice the runtime matrix; a caller or manual run that names nothing tests all.
-
-    ci.yml hands the branch-policy output to the tests job (floor-and-newest for a PR into dev, owner ruling
-    2026-10-05). Publication calls the same workflow without it and so requalifies every manifest.
-    """
-    events = workflow("test-runtime.yml")["on"]
-    called = events["workflow_call"]["inputs"]["releases"]
-    assert (called["type"], called["required"], called["default"]) == ("string", "false", "all")
-    manual = events["workflow_dispatch"]["inputs"]["releases"]
-    assert (manual["type"], manual["default"], manual["options"]) == ("choice", "all", ["all", "floor-and-newest"])
-    assert "with" not in workflow("python-publish.yml")["jobs"]["tests"]
 
 
 def test_coverage_uses_existing_tests_and_separate_current_run_artifacts() -> None:
@@ -163200,7 +163028,7 @@ def test_prod_promotion_and_publication_consume_candidate_proof() -> None:
 
 
 def test_only_full_ci_records_qualification_after_successful_aggregation() -> None:
-    """Light promotions and sliced PRs into dev cannot issue a substitute full-test record."""
+    """Light promotions cannot issue a substitute full-test record."""
     final = workflow("ci.yml")["jobs"]["merge-ready"]
     steps = final["steps"]
     aggregate = next(index for index, step in enumerate(steps)
@@ -163210,10 +163038,7 @@ def test_only_full_ci_records_qualification_after_successful_aggregation() -> No
     upload = next(index for index, step in enumerate(steps)
                   if step.get("uses", "").startswith("actions/upload-artifact@"))
     assert aggregate < record < upload
-    assert steps[record]["if"] == steps[upload]["if"] == (
-        "needs.branch-policy.outputs.runtime-required == 'true'"
-        " && needs.branch-policy.outputs.runtime-releases == 'all'"
-    )
+    assert steps[record]["if"] == steps[upload]["if"] == "needs.branch-policy.outputs.runtime-required == 'true'"
     assert steps[record]["env"] == steps[aggregate]["env"]
     assert steps[upload]["with"]["name"] == "source-qualification-${{ github.run_id }}-${{ github.run_attempt }}"
     assert steps[upload]["with"]["if-no-files-found"] == "error"

@@ -13,39 +13,36 @@ same pull request cancels the older run. Ordinary pushes do not run it.
 
 | Job | Runs when | What it proves |
 | --- | --- | --- |
-| `branch-policy` (CI / branch-policy) | always | The route is allowed; it sets the four flags and the runtime releases below (`ci_policy.py branch`). |
+| `branch-policy` (CI / branch-policy) | always | The route is allowed; it sets the four flags below (`ci_policy.py branch`). |
 | `hygiene` (CI / repository-hygiene) | always | No two tracked paths differ only by letter case (`ci_policy.py hygiene`). |
 | `source-assets` | runtime | The committed build assets match their builders (`build-src-assets.yml`). |
 | `repo-assets` | runtime | The committed LLM bundles match the tracked files (`build-repo-assets.yml`). |
-| `tests` | runtime | Every test tier passes on each selected manifest release and runner (`test-runtime.yml`). |
+| `tests` | runtime | Every test tier passes on every manifest release and runner (`test-runtime.yml`). |
 | `documentation` | runtime | The documentation site and handbooks build and validate (`docs.yml`). |
 | `real-world-gauntlet`, `persistent-runtime-gauntlet`, `shallow-all-thread-scaling` | gauntlet | The three speed tests complete (see below). |
 | `packages` | package | The wheel and sdist build, verify and install (`build-distributions.yml`). |
 | `source-qualification` | source | An earlier full CI run tested this exact tree (`verify-source-qualification.yml`). |
 | `merge-ready` (CI / merge-ready) | always | Every required job succeeded (below). |
 
-`ci_policy.py` sets the flags from the event alone (`validation_requirements`), and with them which test
-manifests the runtime tests cover (`runtime_releases`, the output `runtime-releases`):
+`ci_policy.py` sets the flags from the event alone (`validation_requirements`):
 
-| Event | runtime | runtime releases | package | source | gauntlet |
-| --- | --- | --- | --- | --- | --- |
-| PR into `dev` | yes | floor and newest | no | no | no |
-| `dev` PR into `preprod` | yes | all | yes | no | yes |
-| `preprod` PR into `release_candidate` | no | (none run) | no | yes | no |
-| `release-fix/*` PR into `release_candidate` | yes | all | yes | no | no |
-| `release_candidate` PR into `prod` | no | (none run) | no | no | no |
-| Manual run on a permanent branch | yes | all | yes, except on `dev` | no | no |
+| Event | runtime | package | source | gauntlet |
+| --- | --- | --- | --- | --- |
+| PR into `dev` | yes | no | no | no |
+| `dev` PR into `preprod` | yes | yes | no | yes |
+| `preprod` PR into `release_candidate` | no | no | yes | no |
+| `release-fix/*` PR into `release_candidate` | yes | yes | no | no |
+| `release_candidate` PR into `prod` | no | no | no | no |
+| Manual run on a permanent branch | yes | yes, except on `dev` | no | no |
 
-A PR into `dev` tests only the floor and the newest manifest (today 3.14.0 and 3.14.8, six cells instead of
-twenty-seven); the `dev` -> `preprod` promotion tests every manifest, so a problem that shows on a middle release
-is caught there (owner ruling, 2026-10-05).
+Every route with `runtime` set runs the whole matrix: every manifest release on every runner (27 cells today). The
+owner ruled out a smaller matrix for any route, pull requests into `dev` included (2026-10-05).
 
 `merge-ready` runs even when a job before it failed (`if: always()`). `ci_policy.py merge-ready` recomputes the
-four flags and the runtime releases from the event, refuses if `branch-policy` reported different ones, and
-requires a result for every job in its `needs`: a required job must succeed, an optional one may succeed or be
-skipped, and a failure or a cancellation never passes. After a full run that tested every manifest it records the
-tested tree (`ci_qualification.py record`) as the artifact `source-qualification-<run>-<attempt>`, kept 90 days,
-which later promotions reuse; a PR into `dev` tests only two releases and records nothing. On a pull request
+four flags from the event, refuses if `branch-policy` reported different ones, and requires a result for every
+job in its `needs`: a required job must succeed, an optional one may succeed or be skipped, and a failure or a
+cancellation never passes. After a full run it records the tested tree (`ci_qualification.py record`) as the
+artifact `source-qualification-<run>-<attempt>`, kept 90 days, which later promotions reuse. On a pull request
 into `prod`, or a manual run there, it then waits up to ten minutes for that candidate's release-candidate run to
 succeed (`check_candidate_run.py --wait-seconds 600`).
 
@@ -77,12 +74,10 @@ Publication runs are serialized.
 
 ## Reusable workflows
 
-### `test-runtime.yml`: the test tiers on the selected releases
+### `test-runtime.yml`: the test tiers on every release
 
 - `discover` (Runtime / read the test manifests) builds the matrix from `.github/python/tests/`
-  (`python_runtime_matrix.py discover --releases`) and keeps it as `runtime-python-matrix-<run>-<attempt>` for 90
-  days. The input `releases` selects `all` manifests (the default, so publication tests every release) or
-  `floor-and-newest`, which `ci.yml` passes for a PR into `dev`; a manual run offers both.
+  (`python_runtime_matrix.py discover`) and keeps it as `runtime-python-matrix-<run>-<attempt>` for 90 days.
 - `test` (Runtime / <os> / Python <release> no-GIL) is one job per release and runner (`ubuntu-latest` x64,
   `windows-latest` x64, `macos-latest` arm64). It sets up that free-threaded release, installs exactly its
   manifest's pins plus Melder with `uv pip install --no-deps`, and runs `run_runtime_tests.py` with

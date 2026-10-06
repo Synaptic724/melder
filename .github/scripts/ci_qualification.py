@@ -11,7 +11,7 @@ from collections.abc import Mapping, Sequence
 from typing import Optional
 
 from check_candidate_run import commit_id, positive_integer
-from ci_policy import (CIPolicy, git_output, object_value, read_event, require_ci_results, text_value,
+from ci_policy import (git_output, object_value, read_event, require_ci_results, text_value,
                        validate_route, validation_requirements)
 
 
@@ -238,16 +238,11 @@ def full_record() -> dict[str, object]:
 
     A PR record identifies its tested merge parents and tree, rather than
     confusing the run API's head SHA with the actual merge checkout.
-    Light profiles cannot emit this record, even if their other jobs are green,
-    and neither can a PR into dev, which tests only the floor and newest manifests
-    (CI_RUNTIME_RELEASES, already verified against the route by require_ci_results).
+    Light profiles cannot emit this record, even if their other jobs are green.
     """
     runtime, package, _, _ = require_ci_results()
     if not runtime:
         raise ValueError("A light CI run cannot issue full runtime qualification.")
-    if os.environ.get("CI_RUNTIME_RELEASES") != CIPolicy.FULL_RELEASES:
-        raise ValueError("A sliced CI run (the floor and newest test manifests only) cannot issue full runtime "
-                         "qualification.")
     sha, tree = checkout_identity()
     event_name = os.environ["GITHUB_EVENT_NAME"]
     event = read_event()
