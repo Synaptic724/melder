@@ -1,0 +1,88 @@
+              TypeError naming what was passed and the two accepted forms. Before
+            spellframe: The value passed to `bind(..., spellframe=...)`.
+              TypeError naming what was passed and the two accepted forms. Before
+            spellframe: The value passed to `bind(..., spellframe=...)`.
+              TypeError naming what was passed and the two accepted forms. Before
+            spellframe: The value passed to `bind(..., spellframe=...)`.
+              TypeError naming what was passed and the two accepted forms. Before
+            spellframe: The value passed to `bind(..., spellframe=...)`.
+              TypeError naming what was passed and the two accepted forms. Before
+            spellframe: The value passed to `bind(..., spellframe=...)`.
+              TypeError naming what was passed and the two accepted forms. Before
+            spellframe: The value passed to `bind(..., spellframe=...)`.
+              TypeError naming what was passed and the two accepted forms. Before
+            spellframe: The value passed to `bind(..., spellframe=...)`.
+              TypeError naming what was passed and the two accepted forms. Before
+            spellframe: The value passed to `bind(..., spellframe=...)`.
+              TypeError naming what was passed and the two accepted forms. Before
+            spellframe: The value passed to `bind(..., spellframe=...)`.
+              TypeError naming what was passed and the two accepted forms. Before
+            spellframe: The value passed to `bind(..., spellframe=...)`.
+              TypeError naming what was passed and the two accepted forms. Before
+            spellframe: The value passed to `bind(..., spellframe=...)`.
+              TypeError naming what was passed and the two accepted forms. Before
+            spellframe: The value passed to `bind(..., spellframe=...)`.
+              TypeError naming what was passed and the two accepted forms. Before
+            spellframe: The value passed to `bind(..., spellframe=...)`.
+              TypeError naming what was passed and the two accepted forms. Before
+            spellframe: The value passed to `bind(..., spellframe=...)`.
+              TypeError naming what was passed and the two accepted forms. Before
+            spellframe: The value passed to `bind(..., spellframe=...)`.
+              TypeError naming what was passed and the two accepted forms. Before
+            spellframe: The value passed to `bind(..., spellframe=...)`.
+              TypeError naming what was passed and the two accepted forms. Before
+            spellframe: The value passed to `bind(..., spellframe=...)`.
+              TypeError naming what was passed and the two accepted forms. Before
+            spellframe: The value passed to `bind(..., spellframe=...)`.
+              TypeError naming what was passed and the two accepted forms. Before
+            spellframe: The value passed to `bind(..., spellframe=...)`.
+              TypeError naming what was passed and the two accepted forms. Before
+            spellframe: The value passed to `bind(..., spellframe=...)`.
+              TypeError naming what was passed and the two accepted forms. Before
+            spellframe: The value passed to `bind(..., spellframe=...)`.
+              TypeError naming what was passed and the two accepted forms. Before
+            spellframe: The value passed to `bind(..., spellframe=...)`.
+              TypeError naming what was passed and the two accepted forms. Before
+            spellframe: The value passed to `bind(..., spellframe=...)`.
+              TypeError naming what was passed and the two accepted forms. Before
+            spellframe: The value passed to `bind(..., spellframe=...)`.
+              TypeError naming what was passed and the two accepted forms. Before
+            spellframe: The value passed to `bind(..., spellframe=...)`.
+              TypeError naming what was passed and the two accepted forms. Before
+            spellframe: The value passed to `bind(..., spellframe=...)`.
+              TypeError naming what was passed and the two accepted forms. Before
+            spellframe: The value passed to `bind(..., spellframe=...)`.
+              TypeError naming what was passed and the two accepted forms. Before
+            spellframe: The value passed to `bind(..., spellframe=...)`.
+              TypeError naming what was passed and the two accepted forms. Before
+            spellframe: The value passed to `bind(..., spellframe=...)`.
+FAILED tests/component/melder/aether/conduit/test_conduit_component_non_resolvable_admission.py::test_explicit_false_selection_does_not_fall_back_to_a_resolvable_provider[False]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_non_resolvable_admission.py::test_explicit_false_selection_does_not_fall_back_to_a_resolvable_provider[True]
+FAILED tests/component/melder/spellbook/test_conjure_cache_restage.py::test_function_provider_book_reaches_a_full_hit_in_the_next_world
+FAILED tests/component/melder/spellbook/test_existing_instance_protocol_admission.py::test_non_protocol_frames_keep_grouping_semantics[concrete-class]
+FAILED tests/component/melder/spellbook/test_existing_instance_protocol_admission.py::test_non_protocol_frames_keep_grouping_semantics[concrete-instance]
+FAILED tests/component/melder/spellbook/test_spellbook_component_collection_many_instances.py::test_each_collection_member_builds_its_own_many_dependency[many]
+FAILED tests/component/melder/spellbook/test_spellbook_component_collection_many_instances.py::test_each_collection_member_builds_its_own_many_dependency[unique_per_conduit]
+FAILED tests/component/melder/spellbook/test_spellbook_component_collection_many_instances.py::test_many_config_below_members_is_one_object_per_leaf
+FAILED tests/component/melder/spellbook/test_spellbook_component_override_key_set_plans.py::test_path_through_a_collection_reaches_every_member
+FAILED tests/component/melder/spellbook/test_spellbook_component_collection_many_instances.py::test_shared_config_below_members_stays_one_object
+FAILED tests/component/melder/spellbook/test_spellbook_component_collection_many_instances.py::test_second_meld_builds_new_many_objects
+FAILED tests/component/melder/spellbook/test_spellbook_component_override_required.py::test_real_provider_takes_precedence_over_descriptive_definition[False]
+FAILED tests/component/melder/spellbook/test_spellbook_component_override_required.py::test_real_provider_takes_precedence_over_descriptive_definition[True]
+FAILED tests/component/melder/spellbook/test_spellbook_component_override_required.py::test_collections_exclude_false_definitions_and_preserve_provider_order[1-False]
+FAILED tests/component/melder/spellbook/test_spellbook_component_override_required.py::test_collections_exclude_false_definitions_and_preserve_provider_order[1-True]
+FAILED tests/component/melder/spellbook/test_spellbook_component_override_required.py::test_collections_exclude_false_definitions_and_preserve_provider_order[2-False]
+FAILED tests/component/melder/spellbook/test_spellbook_component_override_required.py::test_collections_exclude_false_definitions_and_preserve_provider_order[2-True]
+FAILED tests/component/melder/spellbook/test_spellbook_component_override_required.py::test_explicit_spellmap_keeps_the_false_target_even_with_a_provider
+FAILED tests/component/melder/spellbook/test_spellbook_component_override_required.py::test_late_contract_compilation_refuses_non_resolvable_provider
+FAILED tests/component/melder/spellbook/test_spellbook_component_override_required.py::test_new_provider_revalidates_an_existing_override_required_consumer[Consumer]
+FAILED tests/component/melder/spellbook/test_spellbook_component_override_required.py::test_new_provider_revalidates_an_existing_override_required_consumer[OptionalConsumer]
+FAILED tests/component/melder/spellbook/test_spellbook_component_signature_release_on_removal.py::test_component_removing_a_spell_releases_its_framewide_signature
+FAILED tests/component/melder/spellbook/test_spellbook_component_signature_release_on_removal.py::test_component_signature_is_rebindable_after_its_spell_is_removed
+FAILED tests/component/melder/spellbook/test_spellbook_component_structural_snapshot_capture.py::test_eq_risky_pool_marks_every_payload_non_replayable
+FAILED tests/component/melder/spellbook/test_spellbook_component_signature_release_on_removal.py::test_component_full_spellbook_cleanup_releases_signatures
+FAILED tests/component/melder/spellbook/test_spellbook_component_unresolved_input.py::test_late_provider_turns_the_unresolved_input_into_a_normal_edge[Consumer]
+FAILED tests/component/melder/spellbook/test_spellbook_component_unresolved_input.py::test_late_provider_turns_the_unresolved_input_into_a_normal_edge[OptionalConsumer]
+FAILED tests/component/melder/spellbook/test_spellbook_component_unresolved_input.py::test_existing_socket_kinds_are_unchanged[one_provider-SocketKind.NORMAL]
+FAILED tests/component/melder/spellbook/test_spellbook_component_unresolved_input.py::test_two_providers_remain_an_ambiguity_error
+29 failed, 2264 passed, 23 skipped, 1 xfailed in 11.56s

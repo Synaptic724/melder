@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aether.py",
- "source_sha256": "296eed9ba6fd9a882efda8140efc93a64da0ceace552e6695cc98d3cbbc30d1b",
+ "source_sha256": "d9d4e77ea97558b16352686343b2db93f805ddf0546ca011c87ca2ab8d1143e5",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aether": {
@@ -51,36 +51,43 @@
     "crystallizer",
     "enable_logging",
     "enroll_load_worker",
+    "find_frame",
     "find_root_conduit_id_by_name",
     "get_conduit_by_id",
     "get_conduit_by_name",
     "get_conduit_cloud",
+    "get_frame",
     "get_root_conduit_by_id",
     "get_root_conduit_by_name",
     "has_root_conduit_id",
     "has_root_conduit_name",
+    "list_frame_names",
     "list_root_conduit_ids",
     "list_root_conduit_names",
     "logger",
     "logger",
     "mutation_research",
     "nexus",
+    "process_wide_unique_spell_ids",
     "release_load_authority",
     "withdraw_load_worker"
    ],
    "shape": {
-    "method_count": 63,
+    "method_count": 69,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "95fd21b3f6b118804b7ab9d73d0d5d9b8a63b8e10db2094e645325a021d5cd37",
+   "span_sha256": "db53c03cc27c36d6a2c950dd432a91b52d21b1d3cd4d76efe1377c328eab5a72",
    "role": "Global Melder substrate root.",
    "responsibilities": [
     "owns frames and frame registries",
     "hosts hidden support roots",
     "binds frame configuration",
     "registers conduits and spell lineage state",
-    "answers frame-scoped conduit lookups: root maps (*_root_*), the frame Cloud's named scopes (get_conduit_by_name) and every live conduit via root-ward lineage snapshots (get_conduit_by_id)"
+    "answers frame-scoped conduit lookups: root maps (*_root_*), the frame Cloud's named scopes (get_conduit_by_name) and every live conduit via root-ward lineage snapshots (get_conduit_by_id)",
+    "answers non-creating frame lookups (find_frame, get_frame, list_frame_names)",
+    "seals the spell-id regime at the first frame and refuses configure/activate of a configuration with a different process_wide_unique_spell_ids while frames exist",
+    "reports the spell-id regime in force (process_wide_unique_spell_ids, lock-free): the sealed value once a frame exists, else the installed configuration's, else True"
    ],
    "owns_state": [
     "_aetheric_frames",
@@ -92,7 +99,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "e992b694b108621e1320ba5a01e0e3b9e306173b97b0c7316c02db43666206ef"
+   "semantics_authored_against": "78a64373553a44e18a251d2ced3f4b236e5758c8bb6125db88d9776f41d942f2"
   }
  },
  "edges_out": [
@@ -191,6 +198,8 @@
  ],
  "published_aliases": [],
  "imports": {
+  "logging": "logging",
+  "time": "time",
   "contextmanager": "contextlib.contextmanager",
   "RLock": "threading.RLock",
   "TracebackType": "types.TracebackType",

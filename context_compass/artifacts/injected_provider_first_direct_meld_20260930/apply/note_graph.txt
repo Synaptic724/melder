@@ -1,0 +1,19 @@
+- DATETIME: {NOW}
+  TYPE: MEASURE
+  CLAIM: Graph: the extractor (--strict, Python 3.14.7, 584 descriptors, skipped 0, orphaned 0) refreshed the
+    mechanical tier (SpellbookCreationSystem lists flag_dependencies_without_own_plan among its public methods);
+    one authored responsibility each on Meld (the deferred lane's routing and verdict check) and
+    SpellbookCreationSystem (the success-path flag, under the dependency's spell lock); the extractor re-run
+    normalized the two descriptors and src_graph.md was reassembled (27569 lines, all 584 ranges verified, index
+    line count and hash recomputed and equal, no tooling path). The CreationContextRebuild and Spellbook prose
+    still holds (neither states the old lane rule). As in earlier lanes the touched nodes are not accepted: they
+    stay SEMANTICS_STALE with the rest of the pre-existing census (204 stale, 9 unsemantic).
+  EVIDENCE:
+  - system_docs/src_graph.md:5517-5600
+  - system_docs/src_graph.md:15430-15500
+  - context_compass/artifacts/injected_provider_first_direct_meld_20260930/apply/apply_graph_semantics.py:1-48
+  IMPACT: The generated graph names the lane's two behaviours; the release note, the patch archive and the
+    rebuild remain.
+  NEXT: Add the release-note section and bump the header to 0.2.8215, then archive the patch docs.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7

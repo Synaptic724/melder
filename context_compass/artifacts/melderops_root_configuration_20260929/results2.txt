@@ -1,0 +1,16 @@
+== aether_policy_after_first_frame
+fresh: configured False | activated False
+after the host's first Spellbook: policy installed True | frozen True | activated False | process_wide_unique_spell_ids True
+after configure+activate: Aether.configuration is the replacement True | reported process_wide_unique_spell_ids False
+OBSERVED same class bound in a second frame: accepted (per-frame ids)
+rc=0
+== aether_policy_before_first_frame
+OBSERVED control, policy installed before the first frame: second-frame bind accepted
+rc=0
+== crystallizer_late_activation
+OBSERVED profile right after a late activation: {'profile_name': 'default', 'emission_sequence': 1, 'has_aether_crystal': False, 'has_nexus_crystal': False, 'has_mutation_research_crystal': False, 'nexus_state': None, 'mutation_research_state': None, 'frame_count': 0, 'spellbook_count': 0, 'conduit_count': 0, 'spell_index_count': 0, 'contract_count': 0, 'cluster_count': 0, 'spell_crystal_count': 0, 'inactive_spell_crystal_count': 0}
+OBSERVED profile after one bind made after activation: {'profile_name': 'default', 'emission_sequence': 3, 'has_aether_crystal': False, 'has_nexus_crystal': False, 'has_mutation_research_crystal': False, 'nexus_state': None, 'mutation_research_state': None, 'frame_count': 0, 'spellbook_count': 0, 'conduit_count': 0, 'spell_index_count': 1, 'contract_count': 0, 'cluster_count': 0, 'spell_crystal_count': 1, 'inactive_spell_crystal_count': 0}
+rc=0
+== crystallizer_early_activation
+OBSERVED control, activation before the Book: {'profile_name': 'default', 'emission_sequence': 1, 'has_aether_crystal': False, 'has_nexus_crystal': False, 'has_mutation_research_crystal': False, 'nexus_state': None, 'mutation_research_state': None, 'frame_count': 0, 'spellbook_count': 0, 'conduit_count': 0, 'spell_index_count': 0, 'contract_count': 0, 'cluster_count': 0, 'spell_crystal_count': 0, 'inactive_spell_crystal_count': 0}
+rc=0

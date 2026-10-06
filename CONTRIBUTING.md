@@ -37,11 +37,12 @@ uv run --locked python llm_support/_builder.py --check
 The test driver runs unit, component and integration tests and verifies the GIL remains disabled.
 To focus on one test file, use `uv run --locked python -X gil=0 -m pytest <path>`.
 
-CI uses this same lock. Its dynamic OS/Python matrix first selects a free-threaded interpreter,
-then passes that interpreter to `uv sync --locked --no-default-groups --group test`.
-The lock chooses dependencies for each matrix environment; it does not collapse the Python matrix.
+CI's runtime tests do not use this lock: each Python release CI tests has a manifest in
+`.github/python/tests/` with that release's exact test-dependency pins, and a test cell installs exactly
+those pins plus Melder with `uv pip install --no-deps` (see `.github/BRANCH_WORKFLOW.md` and the CI
+guide in `.github/ci_cd/`).
 Distribution jobs install only the locked `build` group. CI uses the minimum supported uv version
-declared in `pyproject.toml`, and a stale lock fails the install step.
+declared in `pyproject.toml`, and a stale lock fails the distribution install step.
 
 Extra development groups are opt-in:
 

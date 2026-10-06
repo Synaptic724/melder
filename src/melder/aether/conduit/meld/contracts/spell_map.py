@@ -156,9 +156,12 @@ class SpellMap(Cleanable):
 
             binding_name:
                 Optional named binding used to disambiguate multiple providers
-                under the same frame. Normalized via `SpellInputUtils` for
-                case-insensitive matching. When `None`, default-binding semantics
-                remain intact.
+                under the same frame. Kept exactly as written, the way `Bind`
+                keeps a spell's binding name (0.2.8226; it was lowercased here
+                before). Matching is case-insensitive: Phase 3 compares
+                normalized names, so "ScanProfile", "scanprofile" and
+                "SCANPROFILE" select the provider bound as "ScanProfile", as
+                `meld` does. `None` (or "") keeps default-binding semantics.
 
             override:
                 Optional construction payload for the provider spell this descriptor
@@ -181,6 +184,7 @@ class SpellMap(Cleanable):
         Raises:
             ValueError: If both `spell` and `spellframe` are omitted, because
                 the descriptor would have no DI identity.
+            TypeError: If `binding_name` is neither a string nor `None`.
 
         Returns:
             None.
@@ -190,14 +194,17 @@ class SpellMap(Cleanable):
                 "SpellMap requires at least one of `spell` or `spellframe` "
                 "to be provided."
             )
+        if binding_name is not None and not isinstance(binding_name, str):
+            raise TypeError(
+                "SpellMap binding_name must be a string or None; "
+                f"got {type(binding_name).__name__}."
+            )
         super().__init__()
         self.spell = spell
         self.spellframe = spellframe
-        self.binding_name = (
-            SpellInputUtils.normalize_binding_name(binding_name)
-            if binding_name is not None
-            else None
-        )
+        # Kept as written, as Bind keeps a spell's binding name; `canonical_key`
+        # and Phase 3 compare its normalized form, so case never decides a match.
+        self.binding_name = binding_name
         # Preserve the caller payload by reference; None means no payload is attached.
         self.override = override
 
@@ -259,7 +266,8 @@ class SpellMap(Cleanable):
               `binding_name` contribute to the runtime identity.
             - For fully explicit SpellMaps, higher layers may use both `spell`
               and `spellframe` when enforcing resolution rules.
-            - Binding names are already normalized when provided.
+            - The binding name is the caller's text (0.2.8226); `canonical_key`
+              carries the normalized form that matching uses.
         """
         return (self.spell, self.spellframe, self.binding_name)
 

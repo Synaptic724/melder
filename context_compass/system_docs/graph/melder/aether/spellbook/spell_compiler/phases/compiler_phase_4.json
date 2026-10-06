@@ -54,6 +54,7 @@
  ],
  "published_aliases": [],
  "imports": {
+  "time": "time",
   "TYPE_CHECKING": "typing.TYPE_CHECKING",
   "Any": "typing.Any",
   "Dict": "typing.Dict",

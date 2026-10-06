@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aether_configuration.py",
- "source_sha256": "a3b7d28622c5a5b3e30824a1640c1a24d24ee3d625dc2d28b8f858f39321ba17",
+ "source_sha256": "4eb3c8bd77df5421714ed145465c7cbef11c55ca7a65f9f2626c14bb05930d00",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aether_configuration": {
@@ -43,6 +43,7 @@
     "freeze",
     "from_recorded_payload",
     "frozen",
+    "get_configuration_dictionary",
     "id",
     "process_wide_unique_spell_ids",
     "set_channel_logger_activation_enabled",
@@ -57,16 +58,18 @@
     "with_process_wide_unique_spell_ids"
    ],
    "shape": {
-    "method_count": 23,
+    "method_count": 24,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "203abc9b6860567c9e2599953c0dcdc3c00e1d0af90233f6a59690f9a169051f",
+   "span_sha256": "d130cfb20c85498b302611514491bdb2555a2a92fc82132a60747853d7611303",
    "role": "Mutable-to-frozen root configuration surface for process-wide Aether policy.",
    "responsibilities": [
     "stores the root logger activation and resolver policy for AetherUtilitySystem",
     "validates, freezes, and activates the root configuration before Aether applies it",
-    "keeps root policy separate from frame-level AethericFrameConfiguration concerns"
+    "keeps root policy separate from frame-level AethericFrameConfiguration concerns",
+    "exposes a lock-guarded value snapshot of its properties (get_configuration_dictionary) for host-side policy comparison",
+    "records process_wide_unique_spell_ids in the Aether root twin and reloads it in from_recorded_payload (reported missing when absent)"
    ],
    "owns_state": [
     "_id",
@@ -79,7 +82,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "07094b1dde4af04185b6bd2568ef1fa2be659db08527f0b3aba4e8f0baa9df3c"
+   "semantics_authored_against": "3f76e67618dc71cdc8fd79b6b81f130e5b79427c4a41c433280c24e3f77d0f97"
   }
  },
  "edges_out": [
@@ -130,6 +133,8 @@
  ],
  "published_aliases": [],
  "imports": {
+  "logging": "logging",
+  "threading": "threading",
   "Callable": "collections.abc.Callable",
   "Any": "typing.Any",
   "Crystallizer": "melder.crystallizer.crystallizer.Crystallizer",

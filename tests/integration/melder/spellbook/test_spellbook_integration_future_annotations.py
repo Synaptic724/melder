@@ -149,7 +149,7 @@ class _FuturePipeline:
         self.handlers = handlers
 
 
-class _FutureFrame:
+class _FutureFrame(Protocol):
     """
     Purpose:
         Provide a class-based spellframe for forward-ref list DI.
@@ -1031,7 +1031,7 @@ def test_future_annotations_local_forward_ref_collection_resolves_by_name() -> N
     Raises:
         AssertionError: If collection DI is incomplete.
     """
-    class _LocalFrame:
+    class _LocalFrame(Protocol):
         """
         Purpose:
             Provide a local class-based frame for list DI.

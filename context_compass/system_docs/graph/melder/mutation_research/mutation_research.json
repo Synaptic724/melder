@@ -215,6 +215,10 @@
  ],
  "published_aliases": [],
  "imports": {
+  "ast": "ast",
+  "difflib": "difflib",
+  "hashlib": "hashlib",
+  "threading": "threading",
   "Callable": "collections.abc.Callable",
   "Path": "pathlib.Path",
   "TYPE_CHECKING": "typing.TYPE_CHECKING",

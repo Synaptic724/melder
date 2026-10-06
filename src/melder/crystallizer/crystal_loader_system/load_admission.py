@@ -21,6 +21,7 @@ from typing import Dict, List, Optional, TYPE_CHECKING
 
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.crystallizer.crystal_loader_system.load_plan import LoadPlan
+from melder.crystallizer.crystals.spell_crystal import SpellCrystal
 
 if TYPE_CHECKING:
     from melder.aether.aether import Aether
@@ -285,6 +286,10 @@ class LoadAdmission(Cleanable):
               rewrites to the target (formations are single-frame slices;
               the engine derives conduit frames from their books, so
               conduit payloads carry no frame edge of their own).
+            - Spell custody payloads rewrite their `frame_name` too; a
+              frame-scoped custody key ("<spell_id>@<frame>", per-frame ids)
+              is rebuilt for the target and its entry re-keyed, while a
+              process-wide key (the bare spell id) stays (0.2.8214).
             - Inputs are never mutated: touched kinds are shallow-copied
               per payload before rewrite.
 
@@ -326,6 +331,19 @@ class LoadAdmission(Cleanable):
                 kind_payloads[key] = adjusted
             if kind_payloads:
                 rewritten[kind] = kind_payloads
+        custody = dict(rewritten.get("spell_crystal", {}))
+        if custody:
+            retargeted: Dict[str, object] = {}
+            for key, payload in custody.items():
+                adjusted = dict(payload)
+                if "frame_name" in adjusted:
+                    adjusted["frame_name"] = target_frame_name
+                spell_id = str(adjusted.get("id", SpellCrystal.spell_id_of_custody_key(key)))
+                if key != spell_id:
+                    key = SpellCrystal.compose_custody_key(spell_id, target_frame_name)
+                    adjusted["custody_key"] = key
+                retargeted[key] = adjusted
+            rewritten["spell_crystal"] = retargeted
         return rewritten
 
     # ------------------------------------------------------------------

@@ -119,6 +119,8 @@
  ],
  "published_aliases": [],
  "imports": {
+  "json": "json",
+  "threading": "threading",
   "datetime": "datetime.datetime",
   "timezone": "datetime.timezone",
   "Any": "typing.Any",

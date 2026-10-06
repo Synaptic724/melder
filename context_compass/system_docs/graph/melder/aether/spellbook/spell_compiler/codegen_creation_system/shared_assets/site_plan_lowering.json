@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py",
- "source_sha256": "b3bc6588ce783cec33d8d1821bfc150b8018b300b5076d70b2a725d8eb533be8",
+ "source_sha256": "c3ae5abb6146c5fbdca9d59ac392875aa7552e427f1d527180e509918141d94e",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering": {
@@ -147,11 +147,11 @@
     "render"
    ],
    "shape": {
-    "method_count": 22,
+    "method_count": 24,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "0d2bf71f62e7342c8f3079154830e029cf1be7cfa9d06612e306bb23c996d6be",
+   "span_sha256": "a3ad143daa5556411747e7ed0403cbe7d873a57c7426fa68588d480a9495a893",
    "include": true,
    "role": "Per-plan emission state: places steps at top level or inside shared-site misses and renders the plan source.",
    "responsibilities": [
@@ -159,27 +159,29 @@
     "emits hit reads with out-of-line misses that build children before taking the build guard",
     "chooses a direct call or generic construction per step and builds call arguments",
     "emits conflict guards and unresolved-input refusals at context tops",
-    "leaves out the root miss's guard in a normal plan whose calling route door already holds it (unique_per_conduit and spellspace roots, 0.2.73)"
+    "leaves out the root miss's guard in a normal plan whose calling route door already holds it (unique_per_conduit and spellspace roots, 0.2.73)",
+    "emits a dict literal of exactly the dependency values a generic construction reads, where it runs (lazy instance_results, 2026-10-03): no dict at the plan top, no per-step stores, no dict parameter on misses; _place passes a generic member's providers into its miss like a direct member's operands",
+    "binds an automatic world's unique-site owner store as a plan constant (owner-store constants, 2026-10-03): _owner_store_constant admits a unique site whose provider spell is owned by an automatic conduit and has an owner store; _emit_shared_hit then binds c{i} in the namespace and emits no alias line, while dynamic, unowned and meld.<store> sites keep the per-creation read and the miss keeps its c{i} parameter"
    ],
    "owns_state": [
     "_lines",
     "_miss_lines",
     "_masked",
     "_direct",
-    "_dict_mode",
     "_shared",
     "_home",
     "_children",
     "_miss_value_params",
     "_root_index",
     "_context_params",
-    "_root_guard_held_by_door"
+    "_root_guard_held_by_door",
+    "_index_by_key"
    ],
    "phases": [
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "0d2bf71f62e7342c8f3079154830e029cf1be7cfa9d06612e306bb23c996d6be"
+   "semantics_authored_against": "a3ad143daa5556411747e7ed0403cbe7d873a57c7426fa68588d480a9495a893"
   }
  },
  "edges_out": [

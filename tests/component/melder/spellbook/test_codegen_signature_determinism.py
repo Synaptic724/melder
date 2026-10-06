@@ -278,7 +278,7 @@ def _compile_contract_payload_book(consumer_class: type) -> Tuple[Any, Any, Any,
 
     Contract:
         - Two dynamic books in the default frame with the system creation cache disabled
-          (so every process computes fresh signatures instead of loading a `.melc`).
+          (so every process computes fresh signatures instead of loading a `.meldercache`).
         - The owner book provides `BasicService` as `IService`/`primary`; the borrower book
           binds `consumer_class`; the conduits are linked, the provider is added to the
           contract, contracts are validated and the consumer is melded once so phases 8-11

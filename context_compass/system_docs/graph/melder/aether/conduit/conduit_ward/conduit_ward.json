@@ -146,6 +146,8 @@
  ],
  "published_aliases": [],
  "imports": {
+  "inspect": "inspect",
+  "threading": "threading",
   "Format": "annotationlib.Format",
   "TracebackType": "types.TracebackType",
   "TYPE_CHECKING": "typing.TYPE_CHECKING",

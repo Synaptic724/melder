@@ -1,0 +1,3 @@
+FAILED tests/integration/melder/spellbook/test_spellbook_integration_core.py::test_spellbook_integration_begin_transaction_bind_allows_post_conjure_bind
+FAILED tests/integration/melder/spellbook/test_spellbook_integration_resolution.py::test_meld_resolves_multiple_dependencies_and_reuses_singletons
+2 failed, 602 passed, 2 skipped, 2 xpassed in 38.10s

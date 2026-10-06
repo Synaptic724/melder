@@ -113,6 +113,8 @@
  ],
  "published_aliases": [],
  "imports": {
+  "weakref": "weakref",
+  "threading": "threading",
   "Any": "typing.Any",
   "Callable": "typing.Callable",
   "Generic": "typing.Generic",

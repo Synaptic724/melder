@@ -1,0 +1,8 @@
+variant=idle     iterations=50 cycles=20 before_median=  220.4us after_median=  290.2us after_p90=  337.9us
+variant=pool_only iterations=50 cycles=20 before_median=  213.1us after_median=  234.1us after_p90=  307.6us
+variant=local_touch iterations=50 cycles=20 before_median=  227.4us after_median=  343.0us after_p90=  415.9us
+variant=lesser   iterations=50 cycles=20 before_median=  218.3us after_median=  273.6us after_p90=  335.8us
+variant=idle     iterations=50 cycles=20 before_median=  225.9us after_median=  224.4us after_p90=  275.7us
+variant=pool_only iterations=50 cycles=20 before_median=  211.2us after_median=  299.2us after_p90=  334.1us
+variant=local_touch iterations=50 cycles=20 before_median=  211.6us after_median=  307.4us after_p90=  340.4us
+variant=lesser   iterations=50 cycles=20 before_median=  210.8us after_median=  238.2us after_p90=  305.4us

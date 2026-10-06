@@ -721,3 +721,64 @@ def test_loader_cleanup_cleans_the_owned_restore_pool():
         assert pool.cleaned is True
     finally:
         record_system.cleanup()
+
+
+def _custody_record(custody_key, spell_id):
+    """A retargetable formation holding one custody entry recorded in frame alpha under `custody_key`."""
+    record = _retargetable_record()
+    record["payloads"]["spell_crystal"] = {
+        custody_key: {
+            "id": spell_id, "spellbook_id": "book-1", "frame_name": "alpha",
+            "custody_key": custody_key, "custody_location": "active",
+        },
+    }
+    return record
+
+
+def test_retarget_rekeys_frame_scoped_custody_for_the_target_frame():
+    """
+    Contract (0.2.8214): a formation recorded under per-frame ids keys custody by frame; retargeting rebuilds each
+    frame-scoped key for the target frame, rewrites the payload's frame_name and custody_key, and the minted journal
+    names the new key. The caller's record is not mutated.
+    """
+    record_system = PersistenceSystem()
+    admission_plane = LoadAdmission(record_system)
+    formation_record = _custody_record("sha-a@alpha", "sha-a")
+    try:
+        plan = admission_plane.plan_formation_load(formation_record, target_frame_name="beta")
+        try:
+            window = plan.chain[0]
+            custody = window["payloads"]["spell_crystal"]
+            assert list(custody) == ["sha-a@beta"]
+            assert custody["sha-a@beta"]["id"] == "sha-a"
+            assert custody["sha-a@beta"]["frame_name"] == "beta"
+            assert custody["sha-a@beta"]["custody_key"] == "sha-a@beta"
+            assert [entry[2] for entry in window["journal"] if entry[1] == "spell_crystal"] == ["sha-a@beta"]
+            assert list(formation_record["payloads"]["spell_crystal"]) == ["sha-a@alpha"]
+        finally:
+            plan.cleanup()
+    finally:
+        admission_plane.cleanup()
+        record_system.cleanup()
+
+
+def test_retarget_keeps_process_wide_custody_keys():
+    """
+    Contract (0.2.8214): a formation recorded under process-wide ids keys custody by the spell id alone; retargeting
+    keeps that key and rewrites only the payload's frame_name.
+    """
+    record_system = PersistenceSystem()
+    admission_plane = LoadAdmission(record_system)
+    formation_record = _custody_record("sha-b", "sha-b")
+    try:
+        plan = admission_plane.plan_formation_load(formation_record, target_frame_name="beta")
+        try:
+            custody = plan.chain[0]["payloads"]["spell_crystal"]
+            assert list(custody) == ["sha-b"]
+            assert custody["sha-b"]["frame_name"] == "beta"
+            assert custody["sha-b"]["custody_key"] == "sha-b"
+        finally:
+            plan.cleanup()
+    finally:
+        admission_plane.cleanup()
+        record_system.cleanup()

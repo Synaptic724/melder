@@ -71,6 +71,7 @@
   }
  ],
  "imports": {
+  "threading": "threading",
   "Any": "typing.Any",
   "Callable": "typing.Callable",
   "ClassVar": "typing.ClassVar",

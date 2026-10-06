@@ -135,8 +135,9 @@ def _append_step_resolution_source(
         if has_disposal_methods:
             # `many` is transient (a new instance per meld, never cached), so
             # there is no build guard. The append goes through
-            # `add_many_creations`, which takes the store lock as a leaf (the
-            # former lockless inline append could lose a first-use bucket).
+            # `register_many`, which takes the store lock as a leaf (the
+            # former lockless inline append could lose a first-use bucket)
+            # and records the step's disposal list once per key (2026-10-01).
             _append_register_source(
                 lines=lines,
                 step_index=step_index,
@@ -506,9 +507,10 @@ def _append_register_source(
           duplicate check are needed (the same reasoning as the lock-free
           branch of `Creations.add_creation`; measured to matter on the cold
           path). A store retired by `cleanup()` fails on its missing registry.
-        - Singleton entries WITH disposal methods, and every disposal-bearing
-          `many` append, go through `add_creation` / `add_many_creations`,
-          which take the store lock as a LEAF so the live and disposal writes
+        - Singleton entries WITH disposal methods go through `add_creation`,
+          and every disposal-bearing `many` append through `register_many`
+          (positional; the key's disposal list is recorded once, 2026-10-01);
+          both take the store lock as a LEAF so the live and disposal writes
           land together, and refuse a store cleaned during the build.
         - Both storage shapes retain the bound Spell disposal list directly,
           matching Creations registration without allocating a copied policy.
@@ -544,12 +546,13 @@ def _append_register_source(
         return
 
     if existence is Existence.many:
-        # Callers emit this block only when disposal truth is present.
+        # Callers emit this block only when disposal truth is present, so the
+        # positional hot verb takes the step's bound method list directly.
         lines.extend([
-            f"{indent}creations_{step_index}.add_many_creations(",
+            f"{indent}creations_{step_index}.register_many(",
             f"{indent}    spell_id_{step_index},",
             f"{indent}    instance_{step_index},",
-            *disposal_arguments,
+            f"{indent}    disposal_methods_{step_index},",
             f"{indent})",
         ])
         return

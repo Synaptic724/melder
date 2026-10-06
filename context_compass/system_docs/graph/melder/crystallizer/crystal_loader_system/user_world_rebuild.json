@@ -26,6 +26,7 @@
  "edge_candidates": [],
  "published_aliases": [],
  "imports": {
+  "sys": "sys",
   "Path": "pathlib.Path",
   "Any": "typing.Any",
   "Callable": "typing.Callable",

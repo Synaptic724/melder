@@ -145,6 +145,8 @@ def logging_spell(spell_id: str, events: List[Event], existence: Existence,
         existence=existence,
         _lock=threading.RLock(),
         _owner_creations=owner_store,
+        # Mirror the live Spell: False until an owning conduit stamps a dynamic environment.
+        _dynamic_environment=False,
     )
 
 

@@ -19,11 +19,11 @@ Regenerate with:
 """
 
 MANIFEST_VERSION = "2.0.0"
-BUILT_FOR_VERSION = "0.2.8207"
-SOURCE_SHA256 = "e8bd2231ae3b3e260e3ecb55110ff084597ca462123fc06f18e12e59cd360029"
-MARKED_COUNT = 460
+BUILT_FOR_VERSION = "0.2.8227"
+SOURCE_SHA256 = "62d28e84748a8d656a54b819ea3ca02dd7a9051aca2280b3c01dfa34131fe294"
+MARKED_COUNT = 462
 EXEMPT_COUNT = 142
-PENDING_COUNT = 17
+PENDING_COUNT = 18
 
 AGENT_METADATA = {
     ('melder.aether.aether', 'Aether'): ('public', 'access: public. The global singleton root. `Aether()` returns the process-wide instance and boots the hidden substrate (utility system, Crystallizer, Nexus, LoadGate). Creates ZERO frames - the first Spellbook births the frame it names. Use create_configuration()/configure()/activate() for root logger policy, attach_logger(...) to install one directly.'),
@@ -141,6 +141,7 @@ AGENT_METADATA = {
     ('melder.aether.conduit.creations.cluster_creations', 'ClusterCreations'): ('internal', "access: internal. Facade over a cluster's elected-leader live creation store. Melder kernel machinery: read it to understand the runtime, do not drive it directly."),
     ('melder.aether.conduit.creations.conduit_creations', 'ConduitCreations'): ('internal', 'access: internal. Conduit-owned live creation registry. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
     ('melder.aether.conduit.creations.creations', 'Creations'): ('internal', 'access: internal. Scoped live creation registry. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
+    ('melder.aether.conduit.creations.creations', 'ManyDisposalBucket'): ('internal', ''),
     ('melder.aether.conduit.meld.conduit_meld', 'ConduitMeld'): ('internal', 'access: internal. Concrete conduit-facing meld front door. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
     ('melder.aether.conduit.meld.contracts.spell_contract', 'SpellContract'): ('public', 'access: public. Declares a LATE-BOUND dependency hole for dynamic conduit linking. Write it as a constructor default when the provider will arrive from another conduit. Requires at least spell or spellframe. Unsatisfied is an ERROR in automatic mode, a warning in dynamic.'),
     ('melder.aether.conduit.meld.contracts.spell_map', 'SpellMap'): ('public', "access: public. Declarative DI descriptor for normal in-graph resolution. Write it as a constructor default: SpellMap(MyRepo), SpellMap(ILogic, binding_name='primary'), or frame-only with spell=None. Zero or multiple matches raise at build time."),
@@ -184,7 +185,7 @@ AGENT_METADATA = {
     ('melder.aether.spellbook.spell_compiler.dag.dag_node', 'DagNode'): ('internal', 'access: internal. A node in the resolution DAG: a keyed unit of work with dependency/dependent DagNode sets and param-aware edges (children_by_param / incoming_params). Lightweight - no separate Edge objects.'),
     ('melder.aether.spellbook.spell_compiler.dag.directed_acyclic_work_graph', 'DirectedAcyclicWorkGraph'): ('internal', 'access: internal. Minimal DAG of DagNodes keyed by id: add_node/add_dependency (+ bulk), topological_sort, topological_levels (parallel-execution peeling), collect_dependency_ids, execute. Static build-then-sort; RLock-guarded. Not a general workflow engine.'),
     ('melder.aether.spellbook.spell_compiler.dag.resolution_frame.resolution_frame', 'ResolutionFrame'): ('internal', 'access: internal. Per-meld resolution state: caller overrides, per-node results, and per-node errors keyed by node id. Created once per resolution run, RLock-guarded, cleaned after. Knows no graph structure.'),
-    ('melder.aether.spellbook.spell_compiler.dag.socket_kind', 'SocketKind'): ('internal', 'access: internal. Phase-3 DAG edge classifier: NORMAL (regular DI socket) vs SPELL_CONTRACT (late-bound provider socket), OVERRIDE_REQUIRED (required supplied input), UNRESOLVED_INPUT (typed dependency with no provider; supplied by the call or reported).'),
+    ('melder.aether.spellbook.spell_compiler.dag.socket_kind', 'SocketKind'): ('internal', 'access: internal. Phase-3 DAG edge classifier: NORMAL (regular DI socket) vs SPELL_CONTRACT (late-bound provider socket), OVERRIDE_REQUIRED (required supplied input), UNRESOLVED_INPUT (typed dependency with no provider; supplied by the call or reported), AMBIGUOUS_INPUT (typed dependency with several providers; refused by Phase 4 with the candidates).'),
     ('melder.aether.spellbook.spell_compiler.dag.target_spec', 'TargetSpec'): ('internal', 'access: internal. Parsed override target key: kind (TargetSpecKind) plus path (PATH segments) or param_name (UNIQUE/BROADCAST). Built by TargetSpec.parse(raw).'),
     ('melder.aether.spellbook.spell_compiler.dag.target_spec', 'TargetSpecKind'): ('internal', 'access: internal. Override-targeting mode: PATH (a>b>c param path), UNIQUE (*name), BROADCAST (**name). Classifies how an override key targets DAG sockets.'),
     ('melder.aether.spellbook.spell_compiler.profiles.resolution_profile', 'SpellResolutionFrame'): ('internal', "access: internal. Phase-3 concrete resolution frame in the profile family: spell_id plus ordered_node_ids (the topological order the resolver walks). Distinct from dag/resolution_frame's ResolutionFrame."),
@@ -214,6 +215,7 @@ AGENT_METADATA = {
     ('melder.aether.spellbook.spell_compiler.validation.spell_validation_context', 'SpellValidationContext'): ('internal', 'access: internal. Phase-4 per-spell validation context handed to each strategy: the spell, spellbook, and the Phase 1/2/3 artifacts, plus the shared mutable issues list and an optional pass-scoped memo cache. Strategies read fields and append issues; they do not own the list.'),
     ('melder.aether.spellbook.spell_compiler.validation.spell_validation_issue', 'SpellValidationIssue'): ('internal', "access: internal. One Phase-4 validation finding: severity ('error'|'warning'), code, message, optional source (emitting strategy) and details. The unit strategies append into the context's issues list."),
     ('melder.aether.spellbook.spell_compiler.validation.spell_validation_result', 'SpellValidationResult'): ('internal', 'access: internal. Aggregate Phase-4 result for one spell version: spell_id, spell_name, the full issues list, plus derived errors/warnings/has_errors/has_warnings views. The artifact Spell.validated / is_broken reads from.'),
+    ('melder.aether.spellbook.spell_compiler.validation.strategies.ambiguous_provider_strategy', 'AmbiguousProviderStrategy'): ('internal', "access: internal. Phase-4 strategy: emits one AMBIGUOUS_PROVIDER error per AMBIGUOUS_INPUT socket, naming the parameter, the expected type, every candidate's address and the remedies."),
     ('melder.aether.spellbook.spell_compiler.validation.strategies.annotation_shape_guard_strategy', 'AnnotationShapeGuardStrategy'): ('internal', 'access: internal. Phase-4 strategy: warns about list[T] elements and forward references Melder cannot inject. Emits LIST_ELEMENT_NOT_DI_TARGET (only when a user class sits inside the element, e.g. list[Optional[Plugin]]; plain data such as list[str] gets nothing) and UNRESOLVED_FORWARD_REF (warnings). Only list[FrameType] is collection DI; set/dict/tuple parameters are caller inputs, reported by RequiredHolesStrategy.'),
     ('melder.aether.spellbook.spell_compiler.validation.strategies.binding_resolution_cycle_strategy', 'BindingResolutionCycleStrategy'): ('internal', "access: internal. Phase-4 strategy: builds a binding-KEY adjacency graph from the pool's Phase-1 requirements (pass-cached) and emits BINDING_RESOLUTION_CYCLE (error) per cycle reachable from the current spell's key. Catches loops invisible at the spell-id level."),
     ('melder.aether.spellbook.spell_compiler.validation.strategies.callable_profile_hygiene_strategy', 'CallableProfileHygieneStrategy'): ('internal', 'access: internal. Phase-4 strategy: checks the spell target matches its binding profile and kind - class spells must be classes with a ClassBindingProfile, method/lambda spells callable with a CallableBindingProfile, existing creations an instance with an instance profile. Validation only.'),
@@ -227,7 +229,7 @@ AGENT_METADATA = {
     ('melder.aether.spellbook.spell_compiler.validation.strategies.resolution_frame_presence_strategy', 'ResolutionFramePresenceStrategy'): ('internal', 'access: internal. Phase-4 structural gate: emits MISSING_RESOLUTION_FRAME (error) when Phase 3 produced no resolution frame. (MISSING_DEPENDENCY_GRAPH retired 2026-09-26.)'),
     ('melder.aether.spellbook.spell_compiler.validation.strategies.self_validation_strategy', 'SelfDependencyStrategy'): ('internal', "access: internal. Phase-4 strategy: emits one SELF_DEPENDENCY error if a spell's dependency list contains its own selected_spell_id. Direct self-dependency only, not longer cycles."),
     ('melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy', 'SpellValidationStrategy'): ('internal', 'access: internal. Base class for Phase-4 validation strategies: implement validate(context) to inspect one spell and append SpellValidationIssue; name/description identify it in the registry. Never mutate the spell/spellbook; prefer appending issues to raising.'),
-    ('melder.aether.spellbook.spell_compiler.validation.strategies.spellmap_shape_validation_strategy', 'SpellMapShapeValidationStrategy'): ('internal', 'access: internal. Phase-4 strategy for SPELLMAP_DEFAULT params: errors on missing / invalid SpellMap or a SpellMap with no spell/spellframe target; warns when binding_name is not normalized. Validation only.'),
+    ('melder.aether.spellbook.spell_compiler.validation.strategies.spellmap_shape_validation_strategy', 'SpellMapShapeValidationStrategy'): ('internal', 'access: internal. Phase-4 strategy for SPELLMAP_DEFAULT params: errors on missing / invalid SpellMap or a SpellMap with no spell/spellframe target. Validation only.'),
     ('melder.aether.spellbook.spell_compiler.validation.validation_system', 'SpellValidationSystem'): ('internal', 'access: internal. Phase-4 registry+runner: auto-registers the built-in SpellValidationStrategy set, runs them in order over one SpellValidationContext per spell, tags issues with their strategy, and returns a SpellValidationResult. Ephemeral - one per validation run, cleaned after.'),
     ('melder.aether.spellbook.spell_types.spell_types', 'SpellType'): ('internal', 'access: internal. Canonical runtime binding-family classification for bound spells. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
     ('melder.aether.spellbook.spellbinder', 'SpellBinder'): ('public', 'access: public. Fluent alternative to Spellbook.bind(...). Chain the bind-time choices then finalize() to submit. Holds one pending registration at a time; bind(...) resets in-flight state. Holds the Spellbook weakly.'),
@@ -446,7 +448,7 @@ AGENT_METADATA = {
     ('melder.utilities.ai_native_support_tools.system_document_view', 'Section'): ('public', "access: public. One addressable span of a system document, as `index()` returns it. Read `line_count` to budget a read BEFORE making it, then pass `key` to `get()`, `reader()` or `stream()`. `start_line`/`end_line` are 1-based inclusive, matching the source index and the repo's `path:start-end` citation convention."),
     ('melder.utilities.ai_native_support_tools.system_document_view', 'SystemDocumentView'): ('public', 'access: public. What `melder.__architecture__` and `__components__` return. Ask `index()` or `groups()` what is here and what each piece costs, `search(needle)` which sections discuss a term, then `get(key)` for one slice or `reader()`/`stream()` when a section is itself too large. `cite(key)` gives a ready-to-use `document:start-end`. `verify()` re-checks the shipped bytes. Slicing a document that failed its build-time proof RAISES rather than returning empty.'),
     ('melder.utilities.ai_native_support_tools.system_document_view', 'SystemGraphView'): ('public', 'access: public. What `melder.__graph_network__` and `__graph_details__` return - everything `SystemDocumentView` does, plus traversal. `edges_from`/`edges_to`/`neighbors`/`walk` move through adjacency resolved at build time, so reverse lookup costs the same as forward. `impact(node)` turns a change into the files it would touch. `describe(node)` reads the prose for any node a walk reached. Extractor guesses are absent by construction.'),
-    ('melder.utilities.caching_system.caching_system', 'CachingSystem'): ('internal', "access: internal. Per-conduit on-disk payload cache (one .melc marshal bundle per frame_name/conduit_name); upsert/get/remove_spell_payload plus emit() to write. Melder-owned and guarded - the owning conduit gives you this behaviour, you do not construct or bind it. Distinct from the crystallizer's restore record."),
+    ('melder.utilities.caching_system.caching_system', 'CachingSystem'): ('internal', "access: internal. Per-conduit on-disk payload cache (one .meldercache marshal bundle per frame_name/conduit_name); upsert/get/remove_spell_payload plus emit() to write. Melder-owned and guarded - the owning conduit gives you this behaviour, you do not construct or bind it. Distinct from the crystallizer's restore record."),
     ('melder.utilities.custom_exceptions.dead_reference_error', 'DeadReferenceError'): ('public', 'access: public. Raised when a weak-reference target is requested after collection; catch it (it subclasses ReferenceError) or hold a strong reference. It means you outlived the referent.'),
     ('melder.utilities.custom_exceptions.empty_error', 'Empty'): ('public', 'access: public. The contextless empty-container signal; catch it when an operation required at least one item. Not queue.Empty - import this one explicitly.'),
     ('melder.utilities.custom_exceptions.hook_execution_error', 'HookExecutionError'): ('public', 'access: public. Raised when a user lifecycle hook raises during bind or meld; read original_exception, phase, hook_name. It means YOUR callback failed, not Melder.'),
@@ -635,6 +637,7 @@ EXEMPT = (
 
 PENDING = (
     ('melder.aether.conduit.meld.creation_context.creation_context_rebuild', 'CreationContextRebuild'),
+    ('melder.aether.spellbook.spellframe_kind.spellframe_kind', 'SpellframeKind'),
     ('melder.crystallizer.crystal_analysis.conduit_hierarchy', 'ConduitHierarchy'),
     ('melder.crystallizer.crystal_analysis.preflight.conduit_hierarchy_strategy', 'ConduitHierarchyStrategy'),
     ('melder.nexus.configuration.nexus_configuration_builder', 'NexusConfigurationBuilder'),
@@ -918,6 +921,7 @@ CLASS_BASES = {
     ('melder.aether.spellbook.spell_compiler.validation.spell_validation_context', 'SpellValidationContext'): ('Cleanable',),
     ('melder.aether.spellbook.spell_compiler.validation.spell_validation_issue', 'SpellValidationIssue'): ('Cleanable',),
     ('melder.aether.spellbook.spell_compiler.validation.spell_validation_result', 'SpellValidationResult'): ('Cleanable',),
+    ('melder.aether.spellbook.spell_compiler.validation.strategies.ambiguous_provider_strategy', 'AmbiguousProviderStrategy'): ('SpellValidationStrategy',),
     ('melder.aether.spellbook.spell_compiler.validation.strategies.annotation_shape_guard_strategy', 'AnnotationShapeGuardStrategy'): ('SpellValidationStrategy',),
     ('melder.aether.spellbook.spell_compiler.validation.strategies.binding_resolution_cycle_strategy', 'BindingResolutionCycleStrategy'): ('SpellValidationStrategy',),
     ('melder.aether.spellbook.spell_compiler.validation.strategies.callable_profile_hygiene_strategy', 'CallableProfileHygieneStrategy'): ('SpellValidationStrategy',),
@@ -937,6 +941,7 @@ CLASS_BASES = {
     ('melder.aether.spellbook.spellbinder', 'SpellBinder'): ('Cleanable',),
     ('melder.aether.spellbook.spellbook', 'Spellbook'): ('Cleanable',),
     ('melder.aether.spellbook.spellbook_creation_system', 'SpellbookCreationSystem'): ('Cleanable',),
+    ('melder.aether.spellbook.spellframe_kind.spellframe_kind', 'SpellframeKind'): ('Enum',),
     ('melder.crystallizer.asset_management.adapters.sqlite_mesh_adapter', 'SqliteMeshAdapter'): ('Cleanable',),
     ('melder.crystallizer.asset_management.asset_management_system', 'AssetManagementSystem'): ('Cleanable',),
     ('melder.crystallizer.asset_management.crystallizer_cache', 'CrystallizerCache'): ('Cleanable',),

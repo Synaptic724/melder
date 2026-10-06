@@ -68,6 +68,7 @@
  ],
  "published_aliases": [],
  "imports": {
+  "hashlib": "hashlib",
   "RLock": "threading.RLock",
   "Iterable": "typing.Iterable",
   "List": "typing.List",

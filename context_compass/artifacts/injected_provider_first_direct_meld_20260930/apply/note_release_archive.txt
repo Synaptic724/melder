@@ -1,0 +1,22 @@
+- DATETIME: {NOW}
+  TYPE: MEASURE
+  CLAIM: Release note and patch archive: release_docs/next_version_release.md reads "# Melder 0.2.8215" and gains
+    "Fixed: a class bound after conjure melds directly after it was injected" (symptom, cause in user terms, the
+    example, what stays the same) before Packaging and documentation, which gains a system-documents bullet and
+    the rebuild line for 0.2.8215; CRLF kept (335 lines, 335 CR). The example ran as written in the VM mirror
+    (Python 3.14.7t, GIL off): the direct meld returns the consumer's instance (True, value 7). The four patch
+    docs moved with mv -n to system_docs/patches/completed/injected_provider_first_direct_meld_2026_09_30/; the
+    artifact board row and this task's Artifact Links point there, and the PLAN note's patch citations
+    (19:31:23Z) now resolve under patches/completed/ with the same line ranges.
+  EVIDENCE:
+  - release_docs/next_version_release.md:282-306
+  - release_docs/next_version_release.md:308-335
+  - context_compass/artifacts/injected_provider_first_direct_meld_20260930/release/release_example.py:1-23
+  - context_compass/artifacts/injected_provider_first_direct_meld_20260930/apply/apply_release_note.py:1-59
+  - system_docs/patches/completed/injected_provider_first_direct_meld_2026_09_30/architecture_patch.md:1-59
+  - artifact_board.md:67-67
+  IMPACT: Everything before the rebuild is in place; the rebuild is the last write of the lane.
+  NEXT: Sync the system docs and release note into the VM mirror, run the asset runner there, copy the assets
+    back, run the asset --check on the device, then the LLM builder with --check.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8

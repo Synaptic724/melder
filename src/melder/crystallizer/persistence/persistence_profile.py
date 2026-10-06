@@ -52,6 +52,10 @@ class PersistenceProfile(Cleanable):
         - The L3 spell node IS the SpellCrystal: it carries both the bind
           signatures (binding_name / spellframe / existence / permissions /
           rebindability) and the module-world custody in one object.
+        - Spell custody is keyed by `SpellCrystal.custody_key`: the spell id
+          under process-wide ids, "<spell_id>@<frame>" under per-frame ids,
+          so one spell id bound in several frames keeps one crystal per frame
+          (0.2.8214).
         - Emission sequence: every record is journaled with a monotonically
           increasing sequence number; replay order derives from it.
         - L3 rule (documented for the restore engine): spell crystals replay
@@ -162,6 +166,9 @@ class PersistenceProfile(Cleanable):
         self._spell_index_crystals_by_index_id: Dict[str, SpellIndexCrystal] = {}
         self._contract_crystals_by_contract_id: Dict[str, ContractCrystal] = {}
         self._cluster_crystals_by_cluster_id: Dict[str, ClusterCrystal] = {}
+        # Custody maps, keyed by SpellCrystal.custody_key: the spell id under
+        # process-wide ids, "<spell_id>@<frame>" under per-frame ids (0.2.8214;
+        # the map names predate the frame-scoped key).
         self._spell_crystals_by_spell_id: Dict[str, SpellCrystal] = {}
         self._inactive_spell_crystals_by_spell_id: Dict[str, SpellCrystal] = {}
 
@@ -341,8 +348,9 @@ class PersistenceProfile(Cleanable):
             record into the inactive location.
 
         Contract:
-            - Replace-on-emit across BOTH locations: any prior crystal for
-              the spell_id is cleaned wherever it lived.
+            - Replace-on-emit across BOTH locations: any prior crystal under
+              the same custody key is cleaned wherever it lived; one frame's
+              copy never displaces another frame's (0.2.8214).
 
         Args:
             crystal:
@@ -361,7 +369,7 @@ class PersistenceProfile(Cleanable):
         with self._lock:
             self._record_spell_crystal_locked(crystal, active=active)
 
-    def record_spell_activity(self, spell_id: str, active: bool) -> None:
+    def record_spell_activity(self, custody_key: str, active: bool) -> None:
         """
         Move one spell's crystal between the active/inactive locations.
 
@@ -370,13 +378,15 @@ class PersistenceProfile(Cleanable):
             (`_deactivate_owned_spell` / `_reactivate_owned_spell`).
 
         Contract:
+            - Addresses one custody key, so under per-frame ids only the named
+              frame's copy moves (0.2.8214).
             - Tolerates missing custody (activity for a spell the record
               never held): the activity is journaled either way so
               checkpoints capture the transition truthfully.
 
         Args:
-            spell_id:
-                The spell whose activity flipped.
+            custody_key:
+                The flipped crystal's record key (`SpellCrystal.custody_key`).
             active:
                 True = promoted to active; False = parked inactive.
 
@@ -390,16 +400,16 @@ class PersistenceProfile(Cleanable):
         self.check_cleaned()
         with self._lock:
             if active:
-                crystal = self._inactive_spell_crystals_by_spell_id.pop(spell_id, None)
+                crystal = self._inactive_spell_crystals_by_spell_id.pop(custody_key, None)
                 if crystal is not None:
-                    self._spell_crystals_by_spell_id[spell_id] = crystal
+                    self._spell_crystals_by_spell_id[custody_key] = crystal
             else:
-                crystal = self._spell_crystals_by_spell_id.pop(spell_id, None)
+                crystal = self._spell_crystals_by_spell_id.pop(custody_key, None)
                 if crystal is not None:
-                    self._inactive_spell_crystals_by_spell_id[spell_id] = crystal
-            self._journal("spell_activity", spell_id)
+                    self._inactive_spell_crystals_by_spell_id[custody_key] = crystal
+            self._journal("spell_activity", custody_key)
 
-    def remove_spell_crystal(self, spell_id: str) -> None:
+    def remove_spell_crystal(self, custody_key: str) -> None:
         """
         Evict one spell's custody from the record entirely.
 
@@ -409,11 +419,13 @@ class PersistenceProfile(Cleanable):
             restore never over-builds a world that shed spells.
 
         Contract:
+            - Addresses one custody key, so under per-frame ids only the named
+              frame's copy leaves (0.2.8214).
             - Tolerates missing custody; journals "spell_removed" either way.
 
         Args:
-            spell_id:
-                The removed spell's SHA256 identity.
+            custody_key:
+                The removed crystal's record key (`SpellCrystal.custody_key`).
 
         Returns:
             None.
@@ -428,10 +440,10 @@ class PersistenceProfile(Cleanable):
                     self._spell_crystals_by_spell_id,
                     self._inactive_spell_crystals_by_spell_id,
             ):
-                crystal = location.pop(spell_id, None)
+                crystal = location.pop(custody_key, None)
                 if crystal is not None and not crystal.cleaned:
                     crystal.cleanup()
-            self._journal("spell_removed", spell_id)
+            self._journal("spell_removed", custody_key)
 
     def remove_conduit_crystal(self, conduit_id: str) -> None:
         """Retire one conduit record without evicting its shared Book or siblings.
@@ -747,7 +759,8 @@ class PersistenceProfile(Cleanable):
 
         Contract:
             - Caller holds `self._lock`.
-            - Displaces + cleans any prior crystal from both locations.
+            - Displaces + cleans any prior crystal under the same custody key
+              from both locations, and journals that key.
 
         Args:
             crystal:
@@ -762,7 +775,7 @@ class PersistenceProfile(Cleanable):
                 self._spell_crystals_by_spell_id,
                 self._inactive_spell_crystals_by_spell_id,
         ):
-            previous = location.pop(crystal.id, None)
+            previous = location.pop(crystal.custody_key, None)
             if previous is not None and not previous.cleaned:
                 previous.cleanup()
         target = (
@@ -770,10 +783,14 @@ class PersistenceProfile(Cleanable):
             if active
             else self._inactive_spell_crystals_by_spell_id
         )
-        target[crystal.id] = crystal
-        self._journal("spell_crystal", crystal.id)
+        target[crystal.custody_key] = crystal
+        self._journal("spell_crystal", crystal.custody_key)
 
-    def get_spell_crystal(self, spell_id: str) -> SpellCrystal:
+    def get_spell_crystal(
+            self,
+            spell_id: str,
+            frame_name: Optional[str] = None,
+    ) -> SpellCrystal:
         """
         Return the custody crystal recorded for one spell.
 
@@ -783,9 +800,21 @@ class PersistenceProfile(Cleanable):
             owner; replace-on-emit cleans displaced crystals, so holders
             must not retain long-lived references).
 
+        Contract (0.2.8214: custody is keyed per frame under per-frame ids):
+            - With `frame_name`, that frame's key ("<spell_id>@<frame_name>")
+              answers first.
+            - Then the exact key: a bare spell id (a process-wide record,
+              where the frame is not part of the key) or a full custody key.
+            - Without `frame_name`, a spell id recorded only under
+              frame-scoped keys answers with its lowest key, active copies
+              before inactive ones; with `frame_name`, another frame's copy
+              never answers.
+
         Args:
             spell_id:
-                The spell's SHA256 identity.
+                The spell's SHA256 identity, or a full custody key.
+            frame_name:
+                Optional frame whose copy is wanted.
 
         Returns:
             SpellCrystal:
@@ -795,24 +824,38 @@ class PersistenceProfile(Cleanable):
             RuntimeError:
                 If the profile has been cleaned.
             KeyError:
-                If no crystal is recorded under `spell_id`; the message
-                reports the recorded count so callers can self-correct.
+                If no crystal answers; the message reports the recorded count
+                so callers can self-correct.
         """
         self.check_cleaned()
         with self._lock:
-            crystal = self._spell_crystals_by_spell_id.get(spell_id)
-            if crystal is None:
-                crystal = self._inactive_spell_crystals_by_spell_id.get(spell_id)
-            if crystal is None:
-                raise KeyError(
-                    "No spell crystal recorded for spell_id {0!r} in "
-                    "profile {1!r} ({2} crystals recorded).".format(
-                        spell_id,
-                        self._profile_name,
-                        len(self._spell_crystals_by_spell_id),
-                    )
+            keys = [spell_id]
+            if frame_name is not None:
+                keys.insert(0, SpellCrystal.compose_custody_key(spell_id, frame_name))
+            for key in keys:
+                crystal = self._spell_crystals_by_spell_id.get(key)
+                if crystal is None:
+                    crystal = self._inactive_spell_crystals_by_spell_id.get(key)
+                if crystal is not None:
+                    return crystal
+            if frame_name is None:
+                prefix = spell_id + "@"
+                for location in (
+                        self._spell_crystals_by_spell_id,
+                        self._inactive_spell_crystals_by_spell_id,
+                ):
+                    matches = [key for key in location if key.startswith(prefix)]
+                    if matches:
+                        return location[min(matches)]
+            raise KeyError(
+                "No spell crystal recorded for spell_id {0!r}{1} in "
+                "profile {2!r} ({3} crystals recorded).".format(
+                    spell_id,
+                    "" if frame_name is None else " in frame {0!r}".format(frame_name),
+                    self._profile_name,
+                    len(self._spell_crystals_by_spell_id),
                 )
-            return crystal
+            )
 
     def describe_spell_crystals(self) -> Dict[str, Dict[str, object]]:
         """
@@ -831,7 +874,8 @@ class PersistenceProfile(Cleanable):
 
         Returns:
             Dict[str, Dict[str, object]]:
-                spell_id -> crystal describe() payload + custody_state.
+                custody key (the spell id, or "<spell_id>@<frame>" under
+                per-frame ids) -> crystal describe() payload + custody_state.
 
         Raises:
             RuntimeError: If the profile has been cleaned.
@@ -869,6 +913,9 @@ class PersistenceProfile(Cleanable):
             - Members missing custody report under "members_without_
               custody" instead of raising (shortfall honesty; the runner
               refuses those members at graft time).
+            - Each member's custody is the copy recorded for the index's own
+              Book: under per-frame ids another frame's Book may hold the same
+              spell id (0.2.8214). The members map stays keyed by spell id.
 
         Args:
             index_id:
@@ -903,13 +950,9 @@ class PersistenceProfile(Cleanable):
             members: Dict[str, Dict[str, object]] = {}
             missing: List[str] = []
             for spell_id in list(index_payload.get("member_spell_ids", [])):
-                crystal = self._spell_crystals_by_spell_id.get(spell_id)
-                custody_state = "active"
-                if crystal is None:
-                    crystal = self._inactive_spell_crystals_by_spell_id.get(
-                        spell_id
-                    )
-                    custody_state = "inactive"
+                crystal, custody_state = self._find_book_custody_locked(
+                    str(spell_id), index_payload.get("spellbook_id")
+                )
                 if crystal is None:
                     missing.append(str(spell_id))
                     continue
@@ -924,6 +967,51 @@ class PersistenceProfile(Cleanable):
                 "members": members,
                 "members_without_custody": missing,
             })
+
+    def _find_book_custody_locked(
+            self,
+            spell_id: str,
+            spellbook_id: object,
+    ) -> Tuple[Optional[SpellCrystal], str]:
+        """
+        Internal
+
+        Find the custody crystal one Book holds for a spell id, under the held lock.
+
+        Contract:
+            - Caller holds `self._lock`.
+            - Matches the crystal's spell id and parent edge, active location
+              first, so a spell id recorded in several frames (per-frame ids,
+              0.2.8214) answers the named Book's copy.
+            - Falls back to the exact key (a process-wide record keyed by the
+              spell id), whichever Book holds it.
+
+        Args:
+            spell_id:
+                The member's spell SHA.
+            spellbook_id:
+                The index's owning Book.
+
+        Returns:
+            Tuple[Optional[SpellCrystal], str]:
+                The crystal (None when absent) and its location, "active" or
+                "inactive".
+        """
+        for location_name, location in (
+                ("active", self._spell_crystals_by_spell_id),
+                ("inactive", self._inactive_spell_crystals_by_spell_id),
+        ):
+            for crystal in location.values():
+                if crystal.id == spell_id and crystal.spellbook_id == spellbook_id:
+                    return crystal, location_name
+        for location_name, location in (
+                ("active", self._spell_crystals_by_spell_id),
+                ("inactive", self._inactive_spell_crystals_by_spell_id),
+        ):
+            crystal = location.get(spell_id)
+            if crystal is not None:
+                return crystal, location_name
+        return None, "active"
 
     def describe_mutation_research_record(self) -> Optional[Dict[str, object]]:
         """
@@ -1147,8 +1235,11 @@ class PersistenceProfile(Cleanable):
                     }
                     continue
                 if kind == "spell_removed":
+                    # The key is the custody key; the crystal is gone, so the
+                    # spell id is read from the key (0.2.8214).
                     payloads.setdefault(kind, {})[key] = {
-                        "spell_id": key,
+                        "spell_id": SpellCrystal.spell_id_of_custody_key(key),
+                        "custody_key": key,
                         "removed": True,
                     }
                     continue
@@ -1156,7 +1247,8 @@ class PersistenceProfile(Cleanable):
                     # Activity transitions have no twin object; capture the
                     # CURRENT truth: which location holds custody now.
                     payloads.setdefault(kind, {})[key] = {
-                        "spell_id": key,
+                        "spell_id": SpellCrystal.spell_id_of_custody_key(key),
+                        "custody_key": key,
                         "active": key in self._spell_crystals_by_spell_id,
                         "custody_present": (
                             key in self._spell_crystals_by_spell_id

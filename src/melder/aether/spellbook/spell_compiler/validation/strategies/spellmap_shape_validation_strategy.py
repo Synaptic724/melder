@@ -13,7 +13,6 @@ from melder.aether.spellbook.spell_compiler.validation.spell_validation_issue im
 from melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy import (
     SpellValidationStrategy,
 )
-from melder.utilities.helpers.general_helpers import SpellInputUtils
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell_compiler.validation.spell_validation_context import (
         SpellValidationContext,
@@ -24,22 +23,23 @@ class SpellMapShapeValidationStrategy(SpellValidationStrategy):
     """
     Validate SpellMap defaults for structural correctness.
 
-    This checks that SpellMap defaults are present, have valid targets,
-    and use normalized binding names.
+    This checks that SpellMap defaults are present and have valid targets.
+    Binding names are not checked: SpellMap keeps the caller's text, as Bind
+    does, and Phase 3 matches it case-insensitively, so the lowercase-advice
+    warning SPELLMAP_BINDING_NAME_NOT_NORMALIZED was retired at 0.2.8226.
 
     Contract:
         Runs per SPELLMAP_DEFAULT parameter. Errors on SPELLMAP_DEFAULT_MISSING (no
         captured SpellMap), SPELLMAP_DEFAULT_INVALID (default is not a SpellMap), and
-        SPELLMAP_MISSING_TARGET (neither spell nor spellframe). Warns
-        SPELLMAP_BINDING_NAME_NOT_NORMALIZED. Validation only; mutates nothing.
+        SPELLMAP_MISSING_TARGET (neither spell nor spellframe). Validation only;
+        mutates nothing.
 
     Registration:
         MELDER KERNEL. A built-in strategy; registered, never bound.
 
     Subsystem Context:
         A built-in of the `validation/strategies` family; it inspects the SpellMap
-        defaults captured on Phase-1 parameters and normalizes binding names via
-        `SpellInputUtils`.
+        defaults captured on Phase-1 parameters.
 
     System Context:
         Phase 4 (validation) of the conjure pipeline, guarding the explicit
@@ -49,8 +49,7 @@ class SpellMapShapeValidationStrategy(SpellValidationStrategy):
 
     AGENT_PURPOSE:
         access: internal. Phase-4 strategy for SPELLMAP_DEFAULT params: errors on missing /
-        invalid SpellMap or a SpellMap with no spell/spellframe target; warns when binding_name
-        is not normalized. Validation only.
+        invalid SpellMap or a SpellMap with no spell/spellframe target. Validation only.
     """
 
     __slots__ = SpellValidationStrategy.__slots__
@@ -61,7 +60,7 @@ class SpellMapShapeValidationStrategy(SpellValidationStrategy):
         """
         super().__init__(
             name="spellmap_shape_validation",
-            description="Validates SpellMap defaults for required fields and normalized binding names.",
+            description="Validates SpellMap defaults for required fields.",
         )
 
     def validate(self, context: SpellValidationContext) -> None:
@@ -71,9 +70,8 @@ class SpellMapShapeValidationStrategy(SpellValidationStrategy):
         Contract:
             Honors the context cancel event, returns early when the spell has no
             requirements, and otherwise scans each parameter's SpellMap default,
-            appending issues for missing required fields and non-normalized
-            binding names. Read-only; appends to `context.issues` rather than
-            raising.
+            appending issues for missing required fields. Read-only; appends to
+            `context.issues` rather than raising.
 
         Args:
             context:
@@ -143,23 +141,6 @@ class SpellMapShapeValidationStrategy(SpellValidationStrategy):
                     )
                 )
 
-            binding_name = spellmap.binding_name
-            if binding_name is not None:
-                normalized = SpellInputUtils.normalize_binding_name(binding_name)
-                if normalized != binding_name:
-                    context.issues.append(
-                        SpellValidationIssue(
-                            severity="warning",
-                            code="SPELLMAP_BINDING_NAME_NOT_NORMALIZED",
-                            message=(
-                                f"Parameter {param.name!r} on spell {spell.spell_name!r} "
-                                f"uses a SpellMap binding_name {binding_name!r} that is not normalized. "
-                                f"Use {normalized!r} for consistent lookup behavior."
-                            ),
-                            details={
-                                "parameter_name": param.name,
-                                "binding_name": binding_name,
-                                "normalized_binding_name": normalized,
-                            },
-                        )
-                    )
+            # No binding-name check: SpellMap keeps the caller's text, as Bind does,
+            # and Phase 3 matches it case-insensitively, so there is no unnormalized
+            # form to warn about (SPELLMAP_BINDING_NAME_NOT_NORMALIZED, retired at 0.2.8226).

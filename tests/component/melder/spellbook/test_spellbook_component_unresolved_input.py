@@ -4,7 +4,7 @@ import annotationlib
 import inspect
 import logging
 from collections.abc import Iterator
-from typing import Optional, Union
+from typing import Optional, Protocol, Union
 
 import pytest
 
@@ -26,7 +26,7 @@ from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutio
 from melder.utilities.custom_exceptions.unresolved_input_error import UnresolvedInputError
 
 
-class Unregistered:
+class Unregistered(Protocol):
     """A type deliberately absent from every registration pool."""
 
 
@@ -181,12 +181,19 @@ def test_existing_socket_kinds_are_unchanged(
 
 
 def test_two_providers_remain_an_ambiguity_error(compiler_book: Spellbook) -> None:
-    """Ambiguity is a configuration error, never an input the caller could supply."""
-    compiler_book.bind(spell=Provider, spellframe=Unregistered, existence="unique", binding_name="one")
-    compiler_book.bind(spell=OtherProvider, spellframe=Unregistered, existence="unique", binding_name="two")
+    """
+    Ambiguity is a configuration error, never an input the caller could supply. Since 2026-10-04 Phase 3
+    records it as an AMBIGUOUS_INPUT socket (no target, the candidates as references, the frame key kept)
+    and Phase 4 refuses the spell with AMBIGUOUS_PROVIDER instead of a Phase-3 RuntimeError.
+    """
+    one = compiler_book.bind(spell=Provider, spellframe=Unregistered, existence="unique", binding_name="one")
+    two = compiler_book.bind(spell=OtherProvider, spellframe=Unregistered, existence="unique", binding_name="two")
     consumer_id = compiler_book.bind(spell=Consumer, existence="unique")
-    with pytest.raises(RuntimeError, match="multiple DI candidates"):
-        _local_topology(compiler_book, consumer_id, indexed=True)
+    socket, = _local_topology(compiler_book, consumer_id, indexed=True).sockets
+    assert socket.socket_kind is SocketKind.AMBIGUOUS_INPUT
+    assert socket.target_spell_ids == ()
+    assert set(socket.referenced_spell_ids) == {one, two}
+    assert socket.dependency_key is not None and socket.dependency_key[0] == "unregistered"
 
 
 @pytest.mark.parametrize(("consumer_type", "expected_kind"), [

@@ -1,0 +1,210 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel>=0.37"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "melderops"
+version = "0.0.1"
+description = "MelderOps™ - AI-native actor concurrency and orchestration framework for free-threaded Python."
+readme = { file = "README.md", content-type = "text/markdown" }
+requires-python = ">=3.14"
+license = "AGPL-3.0-or-later"
+license-files = ["LICENSE", "NOTICE"]
+
+
+authors = [
+    { name = "Mark Geleta", email = "SynapticAISystems@gmail.com" }
+]
+
+maintainers = [
+    { name = "Mark Geleta", email = "SynapticAISystems@gmail.com" }
+]
+
+keywords = [
+    "concurrency",
+    "parallelism",
+    "thread-safe",
+    "no-GIL",
+    "threading",
+    "parallel processing",
+    "concurrent collections",
+    "multithreading",
+    "high-performance",
+    "python concurrency",
+    "free-threading",
+    "melderops",
+    "MelderOps"
+]
+
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: System :: Distributed Computing",
+    "Topic :: System :: Networking",
+    "Topic :: Utilities",
+    "Environment :: Console",
+]
+
+dependencies = [
+    # REMOVED 2026-08-07: python-ulid. Every ULID mint in src (161 sites, 103 files) and
+    # tests (40 sites, 19 files) now goes through melder's `new_ulid()`. The point was not
+    # tidiness - importing `ulid` drags importlib.metadata -> email -> zipfile into every
+    # process, measured at ~27.7ms of a 237.7ms cold-import wall, to produce 26-char strings.
+    # melder's factory is stdlib os+time only, and unlike the package it replaced it can also
+    # READ a ULID back (ULID_Factory.timestamp_ms / .datetime / .is_ulid).
+    # UNDECLARED UNTIL 2026-08-07 despite being a hard runtime import in 10 src modules
+    # (stack_context.py, operations.py, operational_memory.py and the rest of
+    # agents/utilities). Nothing pinned it, so a fresh install resolved whatever pip picked.
+    #
+    # EXACT VERSION selected by the owner on 2026-09-08: 3.5.5.
+    # Historical free-threaded CPython 3.14t runs encountered a native stack-switch crash:
+    # Windows access violation 0xC0000005 inside `greenlet.switch()` in
+    # StackContext._resume (stack_context.py:243), i.e. a native stack switch with the GIL
+    # disabled. It is not a Python exception, so nothing catches it, pytest dies mid-run with
+    # exit code -1073741819, and the traceback prints
+    # "<Cannot show all threads while the GIL is disabled>". 3.5.3 passed those earlier
+    # runs; that history does not override the owner's current 3.5.5 version selection.
+    #
+    # greenlet does stack manipulation in C and is tightly coupled to CPython's threading
+    # internals, so verify native stack behavior with the selected version using
+    # tests/command_center/agents/test_stack_context_unit.py and
+    # tests/system_integration/greenlet_stacks/ on 3.14t. A green run on a GIL build proves
+    # nothing here.
+    "greenlet==3.5.5",
+    # `Cleanable` now comes from melder rather than being duplicated here - the two
+    # copies had drifted to 0.38 code similarity behind an identical 8-method surface,
+    # and each carried a defect the other did not. One class now, so they cannot fork.
+    #
+    # COST, so nobody is surprised: importing anything from melder executes
+    # melder/__init__.py, which eagerly loads 557 modules and calls Aether() at
+    # import time. Python runs parent package __init__ files on submodule import, so
+    # reaching for melder.utilities.general_base.cleanable does NOT avoid this.
+    # Importing melder_ops therefore boots melder's runtime. If that becomes a
+    # problem the fix is a PEP 562 lazy __getattr__ in melder/__init__.py.
+    # Native Spectrum composition requires public creation purge for rollback while
+    # preserving class registrations, available in the verified 0.2.50 runtime.
+    # 0.2.54 adds caller-supplied constructor inputs: configure declares CommandCenter,
+    # whose inputs all arrive through meld overrides, and older builds refuse it.
+    # 0.2.55 stops its Phase-4 shape guard judging caller-input dict fields, so AgentsBootstrap
+    # keeps its dataclasses as normal registrations that callers build through meld overrides.
+    # 0.2.64 stops a meld override that supplies an input from also building a throwaway
+    # provider for it (0.2.55 built one per supplied input and never cleaned it).
+    # 0.2.79 renames Aether's root-only conduit lookups to *_root_* names (count_root_conduits,
+    # has_root_conduit_name); MelderRuntime calls them by those names, so 0.2.77 and 0.2.78 no
+    # longer run it. 0.2.8206 keys the duplicate-spell-name check on the normalized (spellframe,
+    # binding name) instead of the bare class name, so same-named classes coexist at distinct
+    # addresses; configure registers the concurrency, synchronization and utilities packages that
+    # way (ForkUnit, Waiter, the MCP* trio), which 0.2.82 refused at conjure. The floor is 0.2.8206
+    # (owner decision 2026-09-28), the version MelderOps is validated against.
+    # 0.2.8208 adds Aether.find_frame / get_frame / list_frame_names, which never create a frame, and
+    # public reads for the frame, configuration and conduit state melder_setup inspects.
+    # 0.2.8212 adds get_configuration_dictionary() on the four root configurations, which melder_setup
+    # compares host and supplied policies with, and native refusals of a sealed spell-id regime change
+    # and of reconfiguring an active Nexus. The floor is 0.2.8212 (owner direction 2026-09-30).
+    "melder>=0.2.8212",
+]
+
+[project.optional-dependencies]
+uvloop = ["uvloop>=0.19; sys_platform != 'win32'"]  # pip install .[uvloop]
+# pip install .[test] - declares what the suite actually needs to run correctly.
+# pytest-timeout is not cosmetic here: `@pytest.mark.timeout` is used 14 times, and without
+# the plugin installed pytest treats `timeout` as an unknown marker, emits a warning, and
+# runs the test UNBOUNDED. The guard silently stops guarding, which returns exactly the
+# hang that tests/conftest.py's session hard-exit exists to contain.
+test = [
+    # pytest 9.1 captures non-propagating loggers by iterating the live loggerDict.
+    # Normal background logger creation can interrupt capture before fixture teardown,
+    # then the next setup fails with "previous item was not torn down properly".
+    # Keep the verified 9.0 capture path until that upstream registry race is fixed.
+    "pytest>=8.0,<9.1",
+    "pytest-timeout>=2.3",
+]
+
+
+[project.urls]
+Homepage = "https://github.com/Synaptic724/commandops"
+Repository = "https://github.com/Synaptic724/commandops"
+Issues = "https://github.com/Synaptic724/commandops/issues"
+Documentation = "https://commandops.readthedocs.io/en/latest/"
+LinkedIn = "https://www.linkedin.com/in/mark-geleta-4b59b752/"
+
+[tool.pytest.ini_options]
+# REQUIRED BY THE unittest -> pytest PORT. Not a style preference.
+#
+# pytest collects ANY `unittest.TestCase` subclass regardless of its name, because the
+# unittest plugin handles it. A plain (ported) class is only collected if its name matches
+# `python_classes`, which defaults to `Test*` alone. So a class named
+# `HighPerformanceAgenticDictTest` runs 24 tests before the port and ZERO after it - same
+# file, same methods, same assertions, no error, no warning, no failure. It simply stops
+# existing.
+#
+# Measured on this suite at the time of writing: 39 tests in 6 classes had already gone
+# silent this way, and a further 12 in `test_controller_with_clock_barrier.py` were one file
+# away from doing the same. 51 tests total.
+#
+# The patterns below are the exact set needed to cover every test-bearing class name in
+# `tests/`; verified by AST sweep, not guessed. Adding a class whose name matches none of
+# these will silently disable it, so extend this list rather than renaming test classes.
+#
+# Verified: with this setting, a ported plain class and its pre-port TestCase form collect
+# the identical set of test ids.
+python_classes = ["Test*", "*Test", "*Tests", "Debug*", "Stress*"]
+
+# REQUIRED BY THE REMOVAL OF tests/**/__init__.py (2026-08-07). Not a style preference.
+#
+# The 77 __init__.py files under tests/ were what unittest needed for package-based
+# discovery. pytest does not need them - but ONLY under this import mode.
+#
+# Under the DEFAULT mode ("prepend"), pytest derives a test module's importable name from its
+# BASENAME when there is no enclosing package. This suite has 13 duplicate basenames across
+# 33 files - two `test_arsenal.py`, two `test_spectrum.py`, two `test_iris.py`, five
+# `test_base.py`, six `test_general.py`, and so on. Delete the __init__.py files without this
+# line and every one of those collides: pytest raises "import file mismatch" and ABORTS
+# COLLECTION. That is an error, not a failure - the run stops, no tests execute, and the
+# message points at __pycache__ rather than at the real cause.
+#
+# "importlib" mode imports each test module by its full path instead, so duplicate basenames
+# in different directories are unambiguous and no __init__.py is required.
+#
+# Safe here because the suite has ZERO cross-test imports (verified by AST sweep): nothing
+# under tests/ imports another test module or relies on a tests.* package path, which is the
+# one thing importlib mode would break.
+# NOTE ON THE KEY NAME: `--import-mode` is a pytest COMMAND-LINE option. There is no bare
+# `import-mode` ini key - setting one is silently ignored, pytest falls back to "prepend", and
+# you get exactly the "import file mismatch" error this block exists to prevent. It has to go
+# through addopts.
+addopts = "--import-mode=importlib"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.package-data]
+# Advertise the package's inline annotations to installed-library type checkers.
+melder_ops = ["py.typed"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["melder_ops*"]
+# REQUIRED, not decorative. `melder_ops` carries exactly one __init__.py - the top-level
+# one - and its 63 subpackages are PEP 420 implicit namespace packages. find_packages()
+# only discovers directories that contain __init__.py, so it resolves 1 package here;
+# find_namespace_packages() resolves 64. setuptools currently defaults this key to true in
+# pyproject.toml mode, so the build works today by relying on an undeclared default.
+# Stating it explicitly costs nothing and removes the failure mode: if that default ever
+# changes, or if this config is ported to setup.py/setup.cfg where find_packages() IS the
+# default, the wheel silently ships `melder_ops/__init__.py` and nothing else. The build
+# succeeds, `import melder_ops` succeeds, and `import melder_ops.command_center` fails at
+# the consumer's runtime.
+namespaces = true
+exclude = [
+    "tests*", "docs*", "examples*", "Plans*", "benchmarks*", "benchmark_data*",
+    ".github*", ".venv*", "__pycache__", "*.egg-info", "TestIdeas"
+]

@@ -51,6 +51,17 @@ class SpellRuntimeProcessorStrategy(SpellArtifactProcessorStrategy):
             - Writes only `model.spell_runtime_shape`.
             - Borrows each Spell's resolved disposal list without conversion;
               binding has already established its order and presence flag.
+
+        Raises:
+            RuntimeError: Without a live owning Spellbook, or without graph or
+                order truth.
+            KeyError: `(spell_id, message)` when a scoped spell id is not in the
+                live Spellbook pool. A meld-time target pass reads the pool
+                without the Spellbook lock, so a link sever, an uncontract or an
+                unbind can remove a spell after Phase 8 saw it; `args[0]` names
+                it, and the target pass records a visibility failure, like the
+                analyzer's and the instance processor's misses (0.2.8227; it was
+                a RuntimeError the pass could not classify).
         """
         _ = artifact
         spellbook = spell._spellbook
@@ -77,8 +88,9 @@ class SpellRuntimeProcessorStrategy(SpellArtifactProcessorStrategy):
         for spell_id in ordered_spell_ids:
             spell_obj = spellbook._spell_id_pool.get(spell_id)
             if spell_obj is None:
-                raise RuntimeError(
-                    f"SpellRuntimeProcessorStrategy could not resolve spell_id '{spell_id}'."
+                raise KeyError(
+                    spell_id,
+                    f"SpellRuntimeProcessorStrategy could not resolve spell_id '{spell_id}'.",
                 )
             records_by_spell_id[spell_id] = SpellRuntimeRecord(
                 spell_id=spell_id,

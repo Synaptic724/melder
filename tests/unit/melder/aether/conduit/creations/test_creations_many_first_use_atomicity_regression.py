@@ -19,6 +19,8 @@ Contract under test:
 import threading
 from typing import Any, Dict, List, Optional
 
+import pytest
+
 from melder.aether.conduit.creations.creations import Creations
 
 
@@ -167,7 +169,7 @@ def test_concurrent_first_use_retains_both_creations_and_disposals() -> None:
         "(the audited BUG-073 loss)"
     )
     disposal_bucket = store._disposable_creations["spell-many"]
-    assert len(disposal_bucket) == len(bucket) == 2, (
+    assert disposal_bucket.entries is bucket and len(bucket) == 2, (
         "disposal tracking does not mirror the live bucket"
     )
 
@@ -181,23 +183,33 @@ def test_sequential_many_registrations_preserve_order_and_metadata() -> None:
 
     Contract assertions:
         - Repeated registrations append in order to one bucket.
-        - Disposal metadata is recorded only for disposal-declaring entries.
+        - One many key carries one disposal declaration (2026-10-01): a
+          registration without disposal methods under a disposal-bearing
+          key is refused and leaves the bucket untouched. Before, the
+          disposal metadata was allowed to be sparse.
     """
     store = Creations(owner_conduit_id="conduit-1", id="conduit-1")
     probe = DisposalProbe("tracked")
+    second = DisposalProbe("second")
     plain = object()
 
     store.add_many_creations(
         "spell-seq", probe,
         has_disposal_methods=True, disposal_methods=["dispose"],
     )
-    store.add_many_creations("spell-seq", plain)
+    store.add_many_creations(
+        "spell-seq", second,
+        has_disposal_methods=True, disposal_methods=["dispose"],
+    )
+    with pytest.raises(ValueError, match="one disposal declaration"):
+        store.add_many_creations("spell-seq", plain)
 
     bucket = store._creations["spell-seq"]
-    assert bucket == [probe, plain]
+    assert bucket == [probe, second]
     disposal_bucket = store._disposable_creations["spell-seq"]
-    assert len(disposal_bucket) == 1
-    assert disposal_bucket[0][0] is probe
+    assert disposal_bucket.entries is bucket
+    assert disposal_bucket.methods == ["dispose"]
 
     store.cleanup()
     assert probe.dispose_calls == 1
+    assert second.dispose_calls == 1

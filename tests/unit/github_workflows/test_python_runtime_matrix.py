@@ -1,66 +1,250 @@
-"""Prove stable no-GIL discovery and complete version-aware report handling at external boundaries."""
+"""Prove manifest-driven Python selection and complete version-aware coverage report handling."""
 
-import io
 import json
 import pathlib
-import urllib.error
+import platform
+import re
+import sys
+import sysconfig
+import tomllib
 import zipfile
 from types import ModuleType
 
 import pytest
 
 
-def release(version: str, stable: bool = True) -> dict[str, object]:
-    """Model the official manifest's three required free-threaded platform assets."""
-    return {"version": version, "stable": stable, "files": [
-        {"platform": "linux", "arch": "x64-freethreaded"},
-        {"platform": "win32", "arch": "x64-freethreaded"},
-        {"platform": "darwin", "arch": "arm64-freethreaded"},
-    ]}
+def write_manifest(directory: pathlib.Path, version: str, dependencies: tuple[str, ...] = ("pytest==9.1.1",),
+                   extra: str = "") -> pathlib.Path:
+    """Write one manifest the way a maintainer adds a Python release; json renders valid TOML strings."""
+    directory.mkdir(parents=True, exist_ok=True)
+    pins = ", ".join(json.dumps(pin) for pin in dependencies)
+    path = directory / f"{version}.toml"
+    path.write_text(f'python = "{version}"\nfreethreaded = true\ndependencies = [{pins}]\n{extra}', encoding="utf-8")
+    return path
 
 
-def test_discovers_latest_patch_for_every_stable_minor(runtime_matrix: ModuleType) -> None:
-    """Future stable minors enter automatically; numeric patch ordering excludes RCs and older Python."""
-    payload = [release("3.14.9"), release("3.13.12"), release("3.16.0-rc.2", False),
-               release("3.15.0"), release("3.14.10"), release("4.0.0"), release("3.15.1-beta.1", False)]
-    matrix = runtime_matrix.discover_matrix(payload, (3, 14, 0))
+def test_discovers_every_manifest_on_every_runner(runtime_matrix: ModuleType, tmp_path: pathlib.Path) -> None:
+    """Every manifest is one release on all three runners, ordered numerically, not by file name."""
+    for version in ("3.14.10", "3.15.0", "3.14.0", "3.14.9"):
+        write_manifest(tmp_path, version)
+    matrix = runtime_matrix.discover_matrix(tmp_path, (3, 14, 0))
     assert matrix == {"include": [
         {"os": runner, "python": version, "architecture": architecture}
-        for version in ("3.14.10", "3.15.0", "4.0.0")
+        for version in ("3.14.0", "3.14.9", "3.14.10", "3.15.0")
         for runner, architecture in (("ubuntu-latest", "x64"), ("windows-latest", "x64"), ("macos-latest", "arm64"))
     ]}
 
 
-@pytest.mark.parametrize("position", [0, 1, 2])
-def test_missing_free_threaded_platform_cannot_fall_back(runtime_matrix: ModuleType, position: int) -> None:
-    """An older working patch or standard-Python archive cannot hide absent newest-patch support."""
-    newest = release("3.14.2")
-    newest["files"][position]["arch"] = "x64"
-    with pytest.raises(ValueError, match="lacks free-threaded assets"):
-        runtime_matrix.discover_matrix([release("3.14.1"), newest], (3, 14, 0))
+def test_floor_release_needs_a_manifest(runtime_matrix: ModuleType, tmp_path: pathlib.Path) -> None:
+    """The oldest release the package claims must be one CI actually tests."""
+    for version in ("3.14.1", "3.14.2"):
+        write_manifest(tmp_path, version)
+    with pytest.raises(ValueError, match="supported floor"):
+        runtime_matrix.discover_matrix(tmp_path, (3, 14, 0))
 
 
-@pytest.mark.parametrize("payload", [
-    {}, [], [release("3.15.0")], [release("3.14.0-rc.1", False)],
-    [release("3.14.0-rc.1")], [{"version": "3.14.1", "stable": "true"}],
-    [{"version": "3.14.1", "stable": True}],
-    [{"version": "3.14.1", "stable": True, "files": [None]}],
-    [{"version": "3.14.1", "stable": True, "files": [{"arch": "x64-freethreaded"}]}],
-], ids=["not-list", "empty", "missing-floor", "only-prerelease", "false-stable-claim", "bad-stable-flag",
-        "no-files", "bad-asset", "missing-platform"])
-def test_incomplete_or_malformed_discovery_refuses(runtime_matrix: ModuleType, payload: object) -> None:
-    """Discovery cannot quietly yield a smaller or imaginary compatibility guarantee."""
+def test_manifest_below_the_floor_must_be_removed(runtime_matrix: ModuleType, tmp_path: pathlib.Path) -> None:
+    """Raising requires-python retires old manifests explicitly instead of leaving them silently unused."""
+    for version in ("3.13.9", "3.14.0"):
+        write_manifest(tmp_path, version)
+    with pytest.raises(ValueError, match="below the supported floor"):
+        runtime_matrix.discover_matrix(tmp_path, (3, 14, 0))
+
+
+def test_raised_floor_selects_only_its_manifests(runtime_matrix: ModuleType, tmp_path: pathlib.Path) -> None:
+    """A floor of 3.15.1 needs a 3.15.1 manifest and runs exactly what the directory lists."""
+    for version in ("3.15.1", "3.15.2"):
+        write_manifest(tmp_path, version)
+    matrix = runtime_matrix.discover_matrix(tmp_path, (3, 15, 1))
+    assert [row["python"] for row in matrix["include"]] == ["3.15.1"] * 3 + ["3.15.2"] * 3
+
+
+@pytest.mark.parametrize(("name", "text"), [
+    ("3.14.1.toml", 'python = "3.14.2"\nfreethreaded = true\ndependencies = ["pytest==9.1.1"]\n'),
+    ("3.14.0rc1.toml", 'python = "3.14.0rc1"\nfreethreaded = true\ndependencies = ["pytest==9.1.1"]\n'),
+    ("3.14.1.toml", 'python = "3.14.1"\nfreethreaded = false\ndependencies = ["pytest==9.1.1"]\n'),
+    ("3.14.1.toml", 'python = "3.14.1"\nfreethreaded = true\ndependencies = ["pytest>=9"]\n'),
+    ("3.14.1.toml", 'python = "3.14.1"\nfreethreaded = true\ndependencies = ["pytest"]\n'),
+    ("3.14.1.toml", 'python = "3.14.1"\nfreethreaded = true\ndependencies = ["pytest==9.1.1", "PyTest==9.1.0"]\n'),
+    ("3.14.1.toml", 'python = "3.14.1"\nfreethreaded = true\ndependencies = []\n'),
+    ("3.14.1.toml", 'python = "3.14.1"\nfreethreaded = true\ndependencies = ["pytest==9.1.1"]\nlatest = true\n'),
+    ("3.14.1.toml", 'python = "3.14.1"\nfreethreaded = true\n'),
+    ("3.14.1.toml", 'python = "3.14.1"\nfreethreaded = true\ndependencies = ["pytest==9.1.1"]\n'
+                    'build_from_source = ["dishka"]\n'),
+    ("3.14.1.toml", 'python = "3.14.1\nfreethreaded = true\n'),
+    ("README.md", "Python releases live here.\n"),
+], ids=["file-names-another-release", "prerelease", "not-free-threaded", "range-pin", "unpinned",
+        "pinned-twice", "no-pins", "unknown-key", "missing-dependencies", "source-build-not-pinned",
+        "invalid-toml", "stray-file"])
+def test_malformed_manifest_refuses(runtime_matrix: ModuleType, tmp_path: pathlib.Path, name: str, text: str) -> None:
+    """A manifest cannot widen a pin, name the wrong release, or slip a non-manifest file into the directory."""
+    (tmp_path / name).write_text(text, encoding="utf-8")
     with pytest.raises(ValueError):
-        runtime_matrix.discover_matrix(payload, (3, 14, 0))
+        runtime_matrix.load_manifests(tmp_path, (3, 14, 0))
 
 
-def test_raised_support_floor_and_duplicate_build_records(runtime_matrix: ModuleType) -> None:
-    """Project metadata selects the floor; duplicate build records do not duplicate test cells."""
-    matrix = runtime_matrix.discover_matrix(
-        [release("3.14.10"), release("3.15.0"), release("3.15.1"), release("3.15.1")], (3, 15, 1),
-    )
-    assert len(matrix["include"]) == 3
-    assert {row["python"] for row in matrix["include"]} == {"3.15.1"}
+def test_empty_or_missing_manifest_directory_refuses(runtime_matrix: ModuleType, tmp_path: pathlib.Path) -> None:
+    """No manifest means no release to run, which is an error, never a default."""
+    with pytest.raises(ValueError, match="missing"):
+        runtime_matrix.discover_matrix(tmp_path / "absent", (3, 14, 0))
+    with pytest.raises(ValueError, match="empty"):
+        runtime_matrix.discover_matrix(tmp_path, (3, 14, 0))
+
+
+def test_manifest_keeps_markers_and_source_builds(runtime_matrix: ModuleType, tmp_path: pathlib.Path) -> None:
+    """Platform markers and source builds pass through unchanged, in manifest order."""
+    path = write_manifest(tmp_path, "3.14.7",
+                          ("dependency-injector==4.49.1", "colorama==0.4.6; sys_platform == 'win32'"),
+                          'build_from_source = ["dependency_injector"]\n')
+    manifest = runtime_matrix.load_manifest(path)
+    assert manifest.python == "3.14.7" and manifest.release == (3, 14, 7)
+    assert manifest.dependencies == ("dependency-injector==4.49.1", "colorama==0.4.6; sys_platform == 'win32'")
+    assert manifest.build_from_source == ("dependency_injector",)
+    assert runtime_matrix.requirements_text(manifest) == (
+        "dependency-injector==4.49.1\ncolorama==0.4.6; sys_platform == 'win32'\n")
+
+
+@pytest.mark.parametrize("versions", [(), ("3.14.7", "3.14.8")])
+def test_speed_tests_need_exactly_one_manifest(runtime_matrix: ModuleType, tmp_path: pathlib.Path,
+                                               versions: tuple[str, ...]) -> None:
+    """Benchmarks compare only on one fixed release, so zero or two speed manifests refuse."""
+    for version in versions:
+        write_manifest(tmp_path, version)
+    with pytest.raises(ValueError):
+        runtime_matrix.speed_manifest(tmp_path, (3, 14, 0))
+
+
+def test_speed_and_requirements_operations_write_their_outputs(runtime_matrix: ModuleType, tmp_path: pathlib.Path,
+                                                             monkeypatch: pytest.MonkeyPatch) -> None:
+    """The speed job names its release for setup-python; a test cell gets its exact pins as a requirements file."""
+    speed = tmp_path / "speed"
+    write_manifest(speed, "3.14.7")
+    test_manifest = write_manifest(tmp_path / "tests", "3.14.0", ("pytest==9.1.1", "PyYAML==6.0.3"))
+    monkeypatch.setattr(runtime_matrix, "supported_floor", lambda: (3, 14, 0))
+    outputs = tmp_path / "outputs"
+    monkeypatch.setenv("GITHUB_OUTPUT", str(outputs))
+    assert runtime_matrix.main(["speed", "--manifests", str(speed)]) == 0
+    assert outputs.read_text(encoding="utf-8") == "python=3.14.7\n"
+    requirements = tmp_path / "reports/requirements.txt"
+    assert runtime_matrix.main(["requirements", "--manifest", str(test_manifest), "--output", str(requirements)]) == 0
+    assert requirements.read_text(encoding="utf-8") == "pytest==9.1.1\nPyYAML==6.0.3\n"
+
+
+
+def test_speed_install_command_builds_only_the_listed_sources(runtime_matrix: ModuleType,
+                                                              tmp_path: pathlib.Path) -> None:
+    """Wheels only, except each build_from_source entry; :all: comes first or it would erase the exceptions."""
+    manifest = runtime_matrix.load_manifest(write_manifest(
+        tmp_path, "3.14.7", ("dependency-injector==4.49.1", "dishka==1.10.1", "lagom==2.7.7"),
+        'build_from_source = ["dependency-injector", "lagom"]\n'))
+    requirements, report = tmp_path / "requirements.txt", tmp_path / "install-report.json"
+    assert runtime_matrix.speed_install_command(manifest, requirements, report) == [
+        sys.executable, "-m", "pip", "install", "--only-binary=:all:", "--no-binary=dependency-injector",
+        "--no-binary=lagom", "--report", str(report), "-r", str(requirements)]
+    wheels_only = runtime_matrix.load_manifest(write_manifest(tmp_path / "wheels", "3.14.7"))
+    assert runtime_matrix.speed_install_command(wheels_only, requirements, report)[4:6] == [
+        "--only-binary=:all:", "--report"]
+
+
+@pytest.mark.parametrize("status", [0, 1])
+def test_speed_install_runs_pip_once_and_keeps_the_evidence(runtime_matrix: ModuleType, tmp_path: pathlib.Path,
+                                                            monkeypatch: pytest.MonkeyPatch, status: int) -> None:
+    """The pins and pip's log land in the results directory, pip runs once, and its exit status is returned."""
+    manifest = runtime_matrix.load_manifest(write_manifest(
+        tmp_path / "speed", "3.14.7", ("dependency-injector==4.49.1", "dishka==1.10.1"),
+        'build_from_source = ["dependency-injector"]\n'))
+    commands: list[list[str]] = []
+
+    class RecordingPip:
+        """Stand in for the pip process: record its command, replay two output lines, exit with the case's status."""
+
+        def __init__(self, command: list[str], **options: object) -> None:
+            """Record the command; the streaming options belong to the caller."""
+            commands.append(command)
+            self.stdout = iter(["Collecting dishka==1.10.1\n", "Successfully installed dishka-1.10.1\n"])
+
+        def wait(self) -> int:
+            """Return the exit status this case simulates."""
+            return status
+
+    monkeypatch.setattr(runtime_matrix.subprocess, "Popen", RecordingPip)
+    results = tmp_path / "results"
+    assert runtime_matrix.install_speed_manifest(manifest, results, "3.14.7", True) == status
+    assert commands == [runtime_matrix.speed_install_command(manifest, results / "requirements.txt",
+                                                             results / "install-report.json")]
+    assert (results / "requirements.txt").read_text(encoding="utf-8") == (
+        "dependency-injector==4.49.1\ndishka==1.10.1\n")
+    assert (results / "install.log").read_text(encoding="utf-8") == (
+        "Collecting dishka==1.10.1\nSuccessfully installed dishka-1.10.1\n")
+
+
+@pytest.mark.parametrize(("release", "freethreaded"), [("3.14.8", True), ("3.14.7", False)])
+def test_speed_install_refuses_another_interpreter(runtime_matrix: ModuleType, tmp_path: pathlib.Path,
+                                                   monkeypatch: pytest.MonkeyPatch, release: str,
+                                                   freethreaded: bool) -> None:
+    """Libraries installed into another release or a GIL build would be measured on the wrong interpreter."""
+    manifest = runtime_matrix.load_manifest(write_manifest(tmp_path / "speed", "3.14.7"))
+
+    def refuse_pip(*arguments: object, **options: object) -> None:
+        """Fail the test if a refused install still reaches pip."""
+        raise AssertionError("pip must not run for a refused interpreter")
+
+    monkeypatch.setattr(runtime_matrix.subprocess, "Popen", refuse_pip)
+    with pytest.raises(ValueError, match="free-threaded Python 3.14.7"):
+        runtime_matrix.install_speed_manifest(manifest, tmp_path / "results", release, freethreaded)
+    assert not (tmp_path / "results").exists()
+
+
+def test_speed_install_operation_passes_the_running_interpreter(runtime_matrix: ModuleType, tmp_path: pathlib.Path,
+                                                                monkeypatch: pytest.MonkeyPatch) -> None:
+    """speed-install reads the one speed manifest, judges the interpreter running it, and returns pip's status."""
+    speed = tmp_path / "speed"
+    write_manifest(speed, "3.14.7")
+    monkeypatch.setattr(runtime_matrix, "supported_floor", lambda: (3, 14, 0))
+    received: list[tuple[object, pathlib.Path, str, bool]] = []
+
+    def install(manifest: object, results: pathlib.Path, release: str, freethreaded: bool) -> int:
+        """Record what the operation hands the installer and report a failed pip run."""
+        received.append((manifest, results, release, freethreaded))
+        return 3
+
+    monkeypatch.setattr(runtime_matrix, "install_speed_manifest", install)
+    results = tmp_path / "results"
+    assert runtime_matrix.main(["speed-install", "--manifests", str(speed), "--results", str(results)]) == 3
+    assert received == [(runtime_matrix.speed_manifest(speed, (3, 14, 0)), results, platform.python_version(),
+                         sysconfig.get_config_var("Py_GIL_DISABLED") == 1)]
+    with pytest.raises(SystemExit):
+        runtime_matrix.main(["speed-install", "--manifests", str(speed)])
+
+def test_repository_manifests_cover_the_floor_and_pin_every_runtime_dependency(runtime_matrix: ModuleType) -> None:
+    """The committed manifests build a matrix, and each test cell pins every runtime dependency Melder declares.
+
+    Cells install with --no-deps, so a runtime dependency (LogXide, once added) must be pinned in every test
+    manifest or that cell would test without it.
+    """
+    root = pathlib.Path(__file__).resolve().parents[3]
+    floor = runtime_matrix.supported_floor()
+    tests = root / runtime_matrix.RuntimeMatrixPolicy.TESTS_DIRECTORY
+    runtime_matrix.discover_matrix(tests, floor)
+    project = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))["project"]
+    declared = {runtime_matrix.canonical_name(re.match(r"[A-Za-z0-9][A-Za-z0-9._-]*", requirement)[0])
+                for requirement in project.get("dependencies", [])}
+    for manifest in runtime_matrix.load_manifests(tests, floor):
+        pinned = {runtime_matrix.canonical_name(pin.split("==")[0]) for pin in manifest.dependencies}
+        assert declared <= pinned, (manifest.python, sorted(declared - pinned))
+
+
+def test_repository_speed_manifest_is_tested_and_builds_dependency_injector_from_source(
+        runtime_matrix: ModuleType,
+) -> None:
+    """The speed release is one the test matrix covers, and only dependency-injector is built from source."""
+    root = pathlib.Path(__file__).resolve().parents[3]
+    floor = runtime_matrix.supported_floor()
+    speed = runtime_matrix.speed_manifest(root / runtime_matrix.RuntimeMatrixPolicy.SPEED_DIRECTORY, floor)
+    tested = {manifest.python for manifest in runtime_matrix.load_manifests(
+        root / runtime_matrix.RuntimeMatrixPolicy.TESTS_DIRECTORY, floor)}
+    assert speed.python in tested
+    assert speed.build_from_source == ("dependency-injector",)
 
 
 @pytest.mark.parametrize(("constraint", "expected"), [(">=3.14", (3, 14, 0)), (">=3.15.1", (3, 15, 1))])
@@ -82,11 +266,18 @@ def test_new_constraint_forms_require_deliberate_policy(runtime_matrix: ModuleTy
         runtime_matrix.supported_floor(project)
 
 
-@pytest.mark.parametrize("versions", [[], ["3.13.9"], ["3.14.1", "3.14.2"], ["3.14t"], ["../escape"]])
+@pytest.mark.parametrize("versions", [[], ["3.13.9"], ["3.14.1", "3.14.1"], ["3.15.0"], ["3.14t"], ["../escape"]])
 def test_matrix_refuses_empty_duplicate_or_unsafe_versions(runtime_matrix: ModuleType, versions: list[str]) -> None:
-    """The canonical OS product cannot be empty, repeat a minor or introduce unsafe path labels."""
+    """The OS product cannot be empty, repeat a release, skip the floor's minor or carry unsafe path labels."""
     with pytest.raises(ValueError):
         runtime_matrix.version_matrix(versions, (3, 14, 0))
+
+
+def test_matrix_keeps_every_patch_of_a_minor(runtime_matrix: ModuleType) -> None:
+    """Several patches of one minor are separate entries, each on all three runners, in release order."""
+    matrix = runtime_matrix.version_matrix(["3.14.1", "3.14.0", "3.14.2"], (3, 14, 0))
+    assert [row["python"] for row in matrix["include"]] == ["3.14.0"] * 3 + ["3.14.1"] * 3 + ["3.14.2"] * 3
+    assert [row["os"] for row in matrix["include"][:3]] == ["ubuntu-latest", "windows-latest", "macos-latest"]
 
 
 def test_job_limit_is_not_silent_truncation(runtime_matrix: ModuleType, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -96,33 +287,10 @@ def test_job_limit_is_not_silent_truncation(runtime_matrix: ModuleType, monkeypa
         runtime_matrix.version_matrix(["3.14.1", "3.15.1"], (3, 14, 0))
 
 
-@pytest.mark.parametrize("oversized", [False, True])
-def test_manifest_fetch_is_bounded_public_and_closes_stream(runtime_matrix: ModuleType,
-                                                          monkeypatch: pytest.MonkeyPatch, oversized: bool) -> None:
-    """Only public metadata is fetched; credentials, interpreter downloads and unbounded reads are absent."""
-    response = io.BytesIO(b"x" * 33 if oversized else b"[]")
-    monkeypatch.setattr(runtime_matrix.RuntimeMatrixPolicy, "MAX_MANIFEST_BYTES", 32)
-
-    def open_manifest(request: object, timeout: int) -> io.BytesIO:
-        """Observe the real HTTP boundary without contacting the service."""
-        assert request.full_url == "https://raw.githubusercontent.com/actions/python-versions/main/versions-manifest.json"
-        assert request.get_header("Authorization") is None
-        assert timeout == 30
-        return response
-
-    monkeypatch.setattr(runtime_matrix.urllib.request, "urlopen", open_manifest)
-    if oversized:
-        with pytest.raises(ValueError, match="size"):
-            runtime_matrix.fetch_manifest()
-    else:
-        assert runtime_matrix.fetch_manifest() == []
-    assert response.closed
-
-
 @pytest.mark.parametrize("defect", ["missing-os", "duplicate", "architecture", "extra-field", "unsafe-version"])
 def test_report_matrix_must_match_the_whole_product(runtime_matrix: ModuleType, defect: str) -> None:
     """An incomplete or forged matrix cannot make a partial coverage upload appear complete."""
-    matrix = runtime_matrix.version_matrix(["3.14.1", "3.15.0"], (3, 14, 0))
+    matrix = runtime_matrix.version_matrix(["3.14.0", "3.14.1", "3.15.0"], (3, 14, 0))
     if defect == "missing-os":
         matrix["include"].pop()
     elif defect == "duplicate":
@@ -140,13 +308,15 @@ def test_report_matrix_must_match_the_whole_product(runtime_matrix: ModuleType, 
 @pytest.mark.parametrize("defect", ["none", "missing", "empty", "unexpected", "reporting-rerun", "future-attempt"])
 def test_discovery_to_coverage_cli_checks_every_version(runtime_matrix: ModuleType, tmp_path: pathlib.Path,
                                                        monkeypatch: pytest.MonkeyPatch, defect: str) -> None:
-    """Exercise discovery outputs, retained JSON and coverage verification through real filesystem boundaries."""
-    monkeypatch.setattr(runtime_matrix, "fetch_manifest", lambda: [release("3.14.7"), release("3.15.0")])
+    """Exercise manifest discovery, retained JSON and coverage verification through real filesystem boundaries."""
+    manifests = tmp_path / "manifests"
+    for version in ("3.14.0", "3.14.7", "3.15.0"):
+        write_manifest(manifests, version)
     monkeypatch.setattr(runtime_matrix, "supported_floor", lambda: (3, 14, 0))
     outputs = tmp_path / "outputs"
     report = tmp_path / "reports/python-matrix.json"
     monkeypatch.setenv("GITHUB_OUTPUT", str(outputs))
-    assert runtime_matrix.main(["discover", "--report", str(report)]) == 0
+    assert runtime_matrix.main(["discover", "--manifests", str(manifests), "--report", str(report)]) == 0
     matrix = json.loads(report.read_text(encoding="utf-8"))
     assert json.loads(outputs.read_text(encoding="utf-8").removeprefix("matrix=")) == matrix
     monkeypatch.setenv("CI_PYTHON_MATRIX", json.dumps(matrix))
@@ -249,19 +419,3 @@ def test_staging_preserves_existing_output(runtime_matrix: ModuleType, tmp_path:
     with pytest.raises(ValueError, match="must be empty"):
         runtime_matrix.stage_coverage([], tmp_path, tmp_path / "selection.json")
     assert existing.read_text(encoding="utf-8") == "preserve"
-
-
-def test_network_failure_never_issues_fallback_matrix(runtime_matrix: ModuleType, tmp_path: pathlib.Path,
-                                                     monkeypatch: pytest.MonkeyPatch) -> None:
-    """A failed discovery must block downstream tests/publication, not issue an old static version."""
-    def unavailable() -> object:
-        """Fail at the HTTP boundary."""
-        raise urllib.error.URLError("unavailable")
-
-    monkeypatch.setattr(runtime_matrix, "fetch_manifest", unavailable)
-    output = tmp_path / "outputs"
-    report = tmp_path / "matrix.json"
-    monkeypatch.setenv("GITHUB_OUTPUT", str(output))
-    with pytest.raises(urllib.error.URLError):
-        runtime_matrix.main(["discover", "--report", str(report)])
-    assert not output.exists() and not report.exists()

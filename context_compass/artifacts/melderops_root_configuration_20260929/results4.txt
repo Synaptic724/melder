@@ -1,0 +1,23 @@
+== crystallizer_early_activation_dynamic
+OBSERVED control, activation before a dynamic Book: {'profile_name': 'default', 'emission_sequence': 4, 'has_aether_crystal': False, 'has_nexus_crystal': False, 'has_mutation_research_crystal': False, 'nexus_state': None, 'mutation_research_state': None, 'frame_count': 1, 'spellbook_count': 1, 'conduit_count': 1, 'spell_index_count': 0, 'contract_count': 0, 'cluster_count': 0, 'spell_crystal_count': 0, 'inactive_spell_crystal_count': 0}
+rc=0
+== host_conjure_after_crystallizer_turned_on
+OBSERVED host dynamic conjure refused -> [SPELLBOOK] Dynamic-mode conjure with an active Crystallizer requires the 
+OBSERVED host automatic conjure refused -> RuntimeError [SPELLBOOK] Dynamic-mode conjure with an active Crystallizer requires the 
+SpellbookConfiguration to be finalized BEFORE the first bind. 1 spell(s) 
+w
+rc=0
+== melderops_conflict_with_active_crystallizer
+OBSERVED prepare refused -> AttributeError 'CrystallizerConfiguration' object has no attribute 'get_configuration_dictionary'
+rc=0
+== melderops_replaces_inactive_crystallizer
+OBSERVED after MelderRuntime.initialize: installed is MelderOps' policy True | host policy displaced True | max_persistence_crystals 3 | activated True
+rc=0
+== melderops_reactivates_deactivated_crystallizer
+host switched recording off: activated False
+OBSERVED after MelderRuntime.initialize (AI preset, nothing supplied): activated True | same host policy True
+rc=0
+== melderops_aether_after_host_frame
+after MelderRuntime.initialize: installed is MelderOps' policy True | activated True | reported process_wide_unique_spell_ids False
+OBSERVED second-frame bind accepted
+rc=0

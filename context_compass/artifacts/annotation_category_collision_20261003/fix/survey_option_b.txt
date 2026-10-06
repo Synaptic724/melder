@@ -1,0 +1,20 @@
+# option B prototype (single annotations match type keys only: class name, or a class/Protocol object used as the
+# spellframe; string spellframes are categories) on the mirror = tree 0.2.8221, CPython 3.14.7t, 2026-10-04T00:2xZ
+regression module: 9/9 with --runxfail (the four strict-xfail defect cases pass -> markers come off at landing)
+tests/unit:        2 failed, 8868 passed  - test_compiler_phase_3.py::test_indexed_candidates_equal_the_scan_for_an_existing_object
+                                            pins the index layout {"by_key"} (now {"by_key","by_type_key"}) - a layout pin, re-pinned
+                                            with the fix; test_package_version_metadata (assets stamped 0.2.8220 vs tree 0.2.8221) is
+                                            fable_0's pending rebuild, not this change
+tests/component:   2293 passed, 23 skipped, 1 xfailed
+tests/integration: 6 failed, 2025 passed - 4 are the strict-xfail defect cases XPASSing (expected);
+                   test_spellbook_integration_future_annotations_more.py::test_future_annotations_string_literal_frame_annotation_resolves_single
+                     - `repo: "extra_frame"` (a string annotation naming a STRING category) expects the single member: the one
+                       test in the suite that uses a frame name as a single annotation (grep: one occurrence repo-wide);
+                   test_rebind_after_first_meld_integration.py::test_dependent_consumer_is_rebuilt_against_the_replacement_class
+                     - my 2026-10-03 M2 guard binds ProviderV2 under the STRING frame "provider" to satisfy `p: Provider`;
+                       under B the replacement must be bound under the class object (`spellframe=Provider`) - the idiom B endorses
+tests/tests + experimentation + experiments: 250 passed, 4 skipped
+suite-wide: 218 string spellframe bindings; exactly 1 single string-literal frame annotation (the test above); the
+README's spellframe section already says "a plain string when you just want grouping, or a Protocol when you want a
+shape", and its DI paragraph (0.2.8218) is the sentence B changes ("a spell bound under a spellframe to that frame's
+name as well").

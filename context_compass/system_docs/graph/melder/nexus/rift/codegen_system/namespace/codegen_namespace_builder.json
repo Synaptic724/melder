@@ -121,6 +121,7 @@
  ],
  "published_aliases": [],
  "imports": {
+  "threading": "threading",
   "TYPE_CHECKING": "typing.TYPE_CHECKING",
   "Dict": "typing.Dict",
   "CodegenNamespace": "melder.nexus.rift.codegen_system.namespace.codegen_namespace.CodegenNamespace",

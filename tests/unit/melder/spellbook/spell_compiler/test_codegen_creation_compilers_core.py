@@ -79,9 +79,14 @@ def _make_recording_creations() -> SimpleNamespace:
     def _add_many_creations(*args, **kwargs):
         add_many_calls.append((args, kwargs))
 
+    def _register_many(*args, **kwargs):
+        # The solo templates call the positional hot verb (2026-10-01).
+        add_many_calls.append((args, kwargs))
+
     return SimpleNamespace(
         add_creation=_add_creation,
         add_many_creations=_add_many_creations,
+        register_many=_register_many,
         add_creation_calls=add_creation_calls,
         add_many_calls=add_many_calls,
     )

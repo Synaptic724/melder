@@ -18,7 +18,7 @@ No conjure here on purpose. `claim_lookup` runs at BIND, so the signature exists
 before any Conduit does, and the defect is reachable without one.
 """
 
-from typing import Any
+from typing import Any, Protocol
 
 import pytest
 
@@ -27,7 +27,7 @@ from melder.aether.conduit.conduit import Conduit
 from melder.aether.spellbook.spellbook import Spellbook
 
 
-class ISignatureFrame:
+class ISignatureFrame(Protocol):
     """Shared spellframe: forces both services onto ONE binding signature."""
     pass
 

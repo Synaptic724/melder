@@ -1,0 +1,128 @@
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+_ ERROR at setup of test_unit_synthetic_case_reports_no_walk_errors_for_closed_graphs[linear_depth_1] _
+request = <SubRequest 'synthetic_case_crystal' for <Function test_unit_synthetic_case_reports_no_walk_errors_for_closed_graphs[linear_depth_1]>>
+        # sources, walk errors) now ride ONE carried result assigned at the
+_ ERROR at setup of test_unit_synthetic_case_reports_no_walk_errors_for_closed_graphs[linear_depth_2] _
+request = <SubRequest 'synthetic_case_crystal' for <Function test_unit_synthetic_case_reports_no_walk_errors_for_closed_graphs[linear_depth_2]>>
+        # sources, walk errors) now ride ONE carried result assigned at the
+_ ERROR at setup of test_unit_synthetic_case_reports_no_walk_errors_for_closed_graphs[linear_depth_3] _
+request = <SubRequest 'synthetic_case_crystal' for <Function test_unit_synthetic_case_reports_no_walk_errors_for_closed_graphs[linear_depth_3]>>
+        # sources, walk errors) now ride ONE carried result assigned at the
+_ ERROR at setup of test_unit_synthetic_case_reports_no_walk_errors_for_closed_graphs[linear_depth_4] _
+request = <SubRequest 'synthetic_case_crystal' for <Function test_unit_synthetic_case_reports_no_walk_errors_for_closed_graphs[linear_depth_4]>>
+        # sources, walk errors) now ride ONE carried result assigned at the
+_ ERROR at setup of test_unit_synthetic_case_reports_no_walk_errors_for_closed_graphs[linear_depth_5] _
+request = <SubRequest 'synthetic_case_crystal' for <Function test_unit_synthetic_case_reports_no_walk_errors_for_closed_graphs[linear_depth_5]>>
+        # sources, walk errors) now ride ONE carried result assigned at the
+_ ERROR at setup of test_unit_synthetic_case_reports_no_walk_errors_for_closed_graphs[branch_width_2] _
+request = <SubRequest 'synthetic_case_crystal' for <Function test_unit_synthetic_case_reports_no_walk_errors_for_closed_graphs[branch_width_2]>>
+        # sources, walk errors) now ride ONE carried result assigned at the
+_ ERROR at setup of test_unit_synthetic_case_reports_no_walk_errors_for_closed_graphs[branch_width_3] _
+request = <SubRequest 'synthetic_case_crystal' for <Function test_unit_synthetic_case_reports_no_walk_errors_for_closed_graphs[branch_width_3]>>
+        # sources, walk errors) now ride ONE carried result assigned at the
+_ ERROR at setup of test_unit_synthetic_case_reports_no_walk_errors_for_closed_graphs[relative_depth_3] _
+request = <SubRequest 'synthetic_case_crystal' for <Function test_unit_synthetic_case_reports_no_walk_errors_for_closed_graphs[relative_depth_3]>>
+        # sources, walk errors) now ride ONE carried result assigned at the
+_ ERROR at setup of test_unit_synthetic_case_reports_no_walk_errors_for_closed_graphs[reexport_surface] _
+request = <SubRequest 'synthetic_case_crystal' for <Function test_unit_synthetic_case_reports_no_walk_errors_for_closed_graphs[reexport_surface]>>
+        # sources, walk errors) now ride ONE carried result assigned at the
+_ ERROR at setup of test_unit_synthetic_case_reports_no_walk_errors_for_closed_graphs[duplicate_imports] _
+request = <SubRequest 'synthetic_case_crystal' for <Function test_unit_synthetic_case_reports_no_walk_errors_for_closed_graphs[duplicate_imports]>>
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        shutil.rmtree(temp_root.parent, ignore_errors=True)
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # sources, walk errors) now ride ONE carried result assigned at the
+FAILED tests/unit/melder/crystallizer/persistence/test_restore_engine.py::test_spell_crystal_harvests_synthetic_module_sources
+FAILED tests/unit/melder/crystallizer/test_crystallizer.py::test_crystallizer_create_spell_crystal_uses_configured_user_source_roots
+FAILED tests/unit/melder/crystallizer/test_spell_crystal.py::test_spell_crystal_records_unknown_import_targets_honestly
+FAILED tests/unit/melder/crystallizer/test_spell_crystal.py::test_spell_crystal_uses_configured_user_source_roots
+FAILED tests/unit/melder/crystallizer/test_spell_crystal.py::test_spell_crystal_default_custody_key_is_the_spell_id_and_records_the_frame
+FAILED tests/unit/melder/crystallizer/test_spell_crystal.py::test_spell_crystal_per_frame_custody_key_composes_the_frame
+FAILED tests/unit/melder/crystallizer/test_spell_crystal.py::test_facade_keys_custody_per_frame_under_per_frame_ids
+FAILED tests/unit/melder/crystallizer/test_spell_crystal.py::test_facade_keeps_bare_keys_under_process_wide_ids
+8 failed, 8789 passed, 3 skipped, 7 xfailed, 90 errors in 21.69s

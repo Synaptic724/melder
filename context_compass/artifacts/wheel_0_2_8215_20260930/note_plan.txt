@@ -1,0 +1,24 @@
+- DATETIME: {NOW}
+  TYPE: PLAN
+  CLAIM: Facts: priv_commandops/.venv314 (Windows uv CPython 3.14t) holds melder 0.2.8212 installed by uv with a
+    direct_url to the Windows dist path, and has no _to_delete folder any more; MelderOps pins melder>=0.2.8212
+    (left alone); the VM env venvs/melderops314t holds 0.2.8212 plus an editable copy of MelderOps at
+    $HOME/melderops_copy; the VM has 1.2G free, uv 0.12.13 and CPython 3.14.7t; dist/ is git-ignored. Plan:
+    (1) stage the files git lists as tracked or untracked-not-ignored under pyproject.toml, README.md, LICENSE,
+    NOTICE and src into VM scratch, `uv build --wheel`, verify_wheel for 0.2.8215, member diff against the 0.2.8212
+    wheel, the CI smoke script and the release example in an isolated 3.14t venv (GIL off), copy the wheel into
+    dist/. (2) `uv pip install --target` into scratch (no bytecode), point direct_url.json at the Windows wheel
+    path and fix RECORD, move melder/ and melder-0.2.8212.dist-info/ into .venv314/_to_delete/melder-0.2.8212/,
+    copy the new tree in, check every RECORD hash, import a VM copy. (3) Upgrade the VM env with the wheel and
+    rsync the device MelderOps tree into its copy (no .venv314, .git or caches). (4) On the installed wheel: the
+    epic's diagnostic, command_0's order matrix, the Toolbox tests, the melder_setup set, then the whole MelderOps
+    suite in shards (junit, since its conftest hard-exits). (5) A NOTICE to command_0 in priv_commandops.
+  EVIDENCE:
+  - ../priv_commandops/.venv314/Lib/site-packages/melder-0.2.8212.dist-info/direct_url.json:1-1
+  - ../priv_commandops/pyproject.toml:112-112
+  - tickets/tasks/completed/2026-09-29_build_0_2_8208_wheel_into_melderops_env_task.md:122-217
+  - ../priv_commandops/context_compass/artifacts/2026-09-30_toolbox_native_dispense/test_native_dependency_lookup.py:1-35
+  IMPACT: The same install method as 0.2.8208 and 0.2.8212; the diagnostic runs on the installed wheel, not source.
+  NEXT: Stage the packaging inputs and build the wheel with uv.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9

@@ -31,7 +31,7 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-python@v7
         with:
-          python-version: "3.14"
+          python-version: "3.14.7"
       - name: Authorize the selected final release
         run: python .github/scripts/ci_policy.py release-head
       - name: Require successful TestPyPI qualification of the candidate source
@@ -48,7 +48,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
         with:
-          python-version: "3.14"
+          python-version: "3.14.7"
       - run: python .github/scripts/ci_policy.py hygiene
 
   source-assets:
@@ -93,7 +93,18 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-python@v7
         with:
-          python-version: "3.14"
+          python-version: "3.14.7"
+      - name: Refuse a failed-jobs re-run of the upload
+        # Publication never reuses an earlier attempt's build: a failed-jobs re-run does not repeat release-build,
+        # whose output then still names that attempt's artifact. Recover with "Re-run all jobs".
+        env:
+          BUILT_ARTIFACT: ${{ needs.release-build.outputs.artifact-name }}
+          EXPECTED_ARTIFACT: release-dists-${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          if [ "$BUILT_ARTIFACT" != "$EXPECTED_ARTIFACT" ]; then
+            echo "::error::Use Re-run all jobs: this attempt did not build the distributions ($BUILT_ARTIFACT)."
+            exit 1
+          fi
       - name: Retrieve this run's verified distributions
         uses: actions/download-artifact@v8
         with:

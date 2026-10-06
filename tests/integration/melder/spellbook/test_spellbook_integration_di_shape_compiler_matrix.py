@@ -635,13 +635,15 @@ def test_spellmap_construction_rejects_empty_target() -> None:
         SpellMap(spell=None, spellframe=None)
 
 
-def test_spellmap_normalizes_binding_name_at_construction() -> None:
+def test_spellmap_keeps_binding_name_as_written() -> None:
     """
-    SpellMap lowercases binding_name at construction, so the Phase-4
-    SPELLMAP_BINDING_NAME_NOT_NORMALIZED warning is a defensive guard a
-    constructor-built SpellMap can never trip.
+    SpellMap keeps binding_name exactly as written, as Bind keeps a spell's binding name
+    (0.2.8226; it lowercased the name before), and exposes the case-insensitive form
+    through canonical_key, which Phase 3 matching agrees with.
     """
-    assert SpellMap(Engine, binding_name="PRIMARY").binding_name == "primary"
+    spellmap = SpellMap(Engine, binding_name="PRIMARY")
+    assert spellmap.binding_name == "PRIMARY"
+    assert spellmap.canonical_key[1] == "primary"
 
 
 def test_phase4_dangling_dependency_marks_broken() -> None:

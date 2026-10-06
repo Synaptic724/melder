@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="1.029" timestamp="2026-09-30T09:36:59.971892-06:00" hostname="DESKTOP-HCNUTDQ"><testcase classname="context_compass.artifacts.2026-09-30_toolbox_native_dispense.test_native_dependency_lookup" name="test_native_dependency_can_be_melded_directly_after_injection" time="0.467"><failure message="RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.">context_compass\artifacts\2026-09-30_toolbox_native_dispense\test_native_dependency_lookup.py:35: in test_native_dependency_can_be_melded_directly_after_injection
+    assert scope.meld(spellframe="native_probe", binding_name="NativeService") is consumer.service
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv314\Lib\site-packages\melder\aether\conduit\conduit.py:4845: in meld
+    return meld_component.meld(
+.venv314\Lib\site-packages\melder\aether\conduit\meld\conduit_meld.py:593: in meld
+    instance = self._execute_admitted(
+.venv314\Lib\site-packages\melder\aether\conduit\meld\meld.py:882: in _execute_admitted
+    creation_context = spell._get_or_build_creation_context()
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv314\Lib\site-packages\melder\aether\spellbook\spell.py:847: in _get_or_build_creation_context
+    return creation_context_factory.get_or_build_for_spell(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv314\Lib\site-packages\melder\aether\conduit\meld\creation_context\creation_context_factory.py:361: in get_or_build_for_spell
+    built_creation_context = CreationContextBuilder.build(
+.venv314\Lib\site-packages\melder\aether\conduit\meld\creation_context\creation_context_builder.py:121: in build
+    raise RuntimeError(
+E   RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.</failure></testcase></testsuite></testsuites>

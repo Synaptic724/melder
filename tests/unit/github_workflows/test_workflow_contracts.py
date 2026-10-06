@@ -1,8 +1,10 @@
 """Prove safety-relevant workflow wiring using parsed YAML rather than substring matches."""
 
+import ast
 import pathlib
 import json
-from types import ModuleType
+import re
+from types import ModuleType, SimpleNamespace
 from typing import cast
 
 import pytest
@@ -41,6 +43,9 @@ def test_every_pr_reports_a_fail_closed_required_status(policy: ModuleType) -> N
     assert aggregate["env"]["CI_PACKAGE_REQUIRED"] == "${{ needs.branch-policy.outputs.package-required }}"
     assert aggregate["env"]["CI_RUNTIME_REQUIRED"] == "${{ needs.branch-policy.outputs.runtime-required }}"
     assert aggregate["env"]["CI_SOURCE_REQUIRED"] == "${{ needs.branch-policy.outputs.source-required }}"
+    assert aggregate["env"]["CI_GAUNTLET_REQUIRED"] == "${{ needs.branch-policy.outputs.gauntlet-required }}"
+    assert jobs["branch-policy"]["outputs"]["gauntlet-required"] == "${{ steps.route.outputs.gauntlet-required }}"
+    assert jobs["real-world-gauntlet"]["if"] == "needs.branch-policy.outputs.gauntlet-required == 'true'"
     assert jobs["packages"]["if"] == "needs.branch-policy.outputs.package-required == 'true'"
     for name in policy.CIPolicy.FULL_JOBS:
         assert jobs[name]["needs"] == "branch-policy"
@@ -52,7 +57,7 @@ def test_every_pr_reports_a_fail_closed_required_status(policy: ModuleType) -> N
     assert jobs["source-qualification"]["if"] == "needs.branch-policy.outputs.source-required == 'true'"
 
 
-@pytest.mark.parametrize("name", ["build-src-assets.yml", "build-repo-assets.yml", "test-runtime.yml", "docs.yml"])
+@pytest.mark.parametrize("name", ["build-src-assets.yml", "build-repo-assets.yml", "test-runtime.yml", "real-world-gauntlet.yml", "persistent-runtime-gauntlet.yml", "shallow-all-thread-scaling.yml", "docs.yml"])
 def test_reusable_mandatory_jobs_cannot_be_disabled(name: str) -> None:
     """Callers own triggers/concurrency; no helper silently skips a mandatory validation job."""
     document = workflow(name)
@@ -91,6 +96,9 @@ def test_docs_metadata_validation_precedes_artifact_upload_and_rtd_staging() -> 
 
 @pytest.mark.parametrize(("name", "job_name"), [
     ("test-runtime.yml", "test"),
+    ("real-world-gauntlet.yml", "gauntlet"),
+    ("persistent-runtime-gauntlet.yml", "gauntlet"),
+    ("shallow-all-thread-scaling.yml", "scaling"),
     ("release-candidate.yml", "install"),
     ("build-distributions.yml", "build"),
 ])
@@ -105,6 +113,111 @@ def test_python_setup_does_not_force_gil_off_in_standard_bootstrap_helpers(name:
     setup = next(step for step in job["steps"] if step.get("uses", "").startswith("actions/setup-python@"))
     inherited = {**document.get("env", {}), **job.get("env", {}), **setup.get("env", {})}
     assert inherited.get("PYTHON_GIL") != "0"
+
+
+def test_every_python_ci_runs_is_named_by_a_manifest_or_is_the_helper_pin(runtime_matrix: ModuleType) -> None:
+    """CI never chooses a Python release itself: a manifest names it, or it is the one helper release.
+
+    Test cells and release-candidate probes take their release from the matrix built out of the test
+    manifests, and the speed tests from their manifest job. Every single-version helper job requests one
+    exact release that a test manifest also covers. Nothing asks for the newest patch (check-latest),
+    reads a version file or allows a pre-release, so a new Python runs only once a manifest adds it
+    (owner, 2026-10-05).
+    """
+    speed_tests = {"real-world-gauntlet.yml", "persistent-runtime-gauntlet.yml", "shallow-all-thread-scaling.yml"}
+    from_manifests = {"${{ matrix.python }}": {"test-runtime.yml", "release-candidate.yml"},
+                      "${{ needs.manifest.outputs.python }}": speed_tests}
+    root = pathlib.Path(__file__).resolve().parents[3]
+    helpers: set[str] = set()
+    for path in sorted((root / ".github/workflows").glob("*.yml")):
+        for job in workflow(path.name)["jobs"].values():
+            for step in job.get("steps", []):
+                if not step.get("uses", "").startswith("actions/setup-python@"):
+                    continue
+                settings = step["with"]
+                assert settings.get("allow-prereleases", "false") == "false", path.name
+                assert "check-latest" not in settings and "python-version-file" not in settings, path.name
+                version = settings["python-version"]
+                if version.startswith("${{"):
+                    assert path.name in from_manifests.get(version, set()), (path.name, version)
+                    continue
+                runtime_matrix.stable_version(version)
+                helpers.add(version)
+    assert len(helpers) == 1, helpers
+    tested = root / runtime_matrix.RuntimeMatrixPolicy.TESTS_DIRECTORY / f"{min(helpers)}.toml"
+    assert tested.is_file(), tested
+
+
+@pytest.mark.parametrize(("name", "job_name"), [
+    ("real-world-gauntlet.yml", "gauntlet"),
+    ("persistent-runtime-gauntlet.yml", "gauntlet"),
+    ("shallow-all-thread-scaling.yml", "scaling"),
+])
+def test_speed_tests_take_their_python_from_the_speed_manifest(name: str, job_name: str) -> None:
+    """Each speed test measures the one release its manifest names and asserts it before measuring.
+
+    A manifest job reads .github/python/speed/ (exactly one manifest) and hands the release to the
+    benchmark job, which sets it up free-threaded with no Python matrix. The provenance step asserts the
+    running interpreter is that release, so replacing the manifest is the only way to move the speed tests.
+    """
+    jobs = workflow(name)["jobs"]
+    assert set(jobs) == {"manifest", job_name}
+    reader = jobs["manifest"]
+    assert reader["outputs"] == {"python": "${{ steps.speed.outputs.python }}"}
+    speed = next(step for step in reader["steps"] if step.get("id") == "speed")
+    assert speed["run"] == "python .github/scripts/python_runtime_matrix.py speed"
+    job = jobs[job_name]
+    assert job["needs"] == "manifest"
+    assert "python" not in job["strategy"]["matrix"]
+    assert job["env"]["SPEED_PYTHON"] == "${{ needs.manifest.outputs.python }}"
+    setup = next(step for step in job["steps"] if step.get("uses", "").startswith("actions/setup-python@"))
+    assert setup["with"]["python-version"] == "${{ needs.manifest.outputs.python }}"
+    assert setup["with"]["freethreaded"] == "true"
+    scripts = "\n".join(step.get("run", "") for step in job["steps"])
+    assert scripts.count("assert platform.python_version() == os.environ['SPEED_PYTHON']") == 1
+    assert "version_info[:3]" not in scripts and "version_info[:2]" not in scripts
+
+
+@pytest.mark.parametrize(("name", "job_name"), [
+    ("real-world-gauntlet.yml", "gauntlet"),
+    ("persistent-runtime-gauntlet.yml", "gauntlet"),
+    ("shallow-all-thread-scaling.yml", "scaling"),
+])
+def test_speed_tests_install_the_speed_manifest_into_their_evidence(name: str, job_name: str) -> None:
+    """The install step installs the speed manifest and keeps its pins, log and pip report with the results.
+
+    The pins live only in the manifest. The step names the directory the upload step preserves, so the
+    install evidence travels with the benchmark's artifact.
+    """
+    steps = workflow(name)["jobs"][job_name]["steps"]
+    install = next(step for step in steps if step.get("name") == "Install identical pinned benchmark dependencies")
+    results = steps[-1]["with"]["path"].rstrip("/")
+    assert install["run"] == f"python .github/scripts/python_runtime_matrix.py speed-install --results {results}"
+    assert "if" not in install and "continue-on-error" not in install
+
+
+@pytest.mark.parametrize(("name", "job_name"), [
+    ("real-world-gauntlet.yml", "gauntlet"),
+    ("persistent-runtime-gauntlet.yml", "gauntlet"),
+    ("shallow-all-thread-scaling.yml", "scaling"),
+])
+def test_speed_provenance_can_import_benchmarks_from_the_checkout(name: str, job_name: str) -> None:
+    """An inline Python step puts the checkout on sys.path before it imports the benchmarks package.
+
+    `shell: python` runs a step from a file in the runner's temporary directory, so sys.path[0] is that
+    directory, not the checkout, and the job's PYTHONPATH names only src/. Without the insert the import fails
+    with "No module named 'benchmarks'", as the persistent gauntlet's provenance step did on the owner's
+    2026-10-05 hosted run.
+    """
+    importing = re.compile(r"^\s*(?:from|import) benchmarks\b", re.MULTILINE)
+    steps = [step for step in workflow(name)["jobs"][job_name]["steps"]
+             if step.get("shell") == "python" and importing.search(step.get("run", ""))]
+    assert steps, f"{name}: no inline Python step imports benchmarks"
+    for step in steps:
+        script = step["run"]
+        first_import = importing.search(script)
+        assert first_import is not None
+        assert "sys.path.insert(0, str(Path.cwd()))" in script[:first_import.start()], step["name"]
 
 
 def test_supported_runtime_matrix_and_test_driver_are_shared() -> None:
@@ -148,7 +261,7 @@ def test_discovery_is_required_and_retains_the_selected_matrix(name: str, job_na
     assert retained["with"]["if-no-files-found"] == "error"
     if name == "test-runtime.yml":
         setup = next(step for step in job["steps"] if step.get("uses", "").startswith("actions/setup-python@"))
-        assert setup["with"]["python-version-file"] == "pyproject.toml"
+        assert "python-version-file" not in setup["with"]
         assert setup["with"]["allow-prereleases"] == "false"
 
 
@@ -205,19 +318,38 @@ def test_coverage_upload_is_nonblocking_token_only_and_skips_fork_prs() -> None:
     assert credential_check["id"] == "credentials"
     assert credential_check["env"] == {"CODECOV_TOKEN": "${{ secrets.CODECOV_TOKEN }}"}
     assert 'enabled=false' in credential_check["run"] and '::warning::' in credential_check["run"]
-    assert all(step["if"] == "steps.credentials.outputs.enabled == 'true'" for step in job["steps"][1:])
-    upload = job["steps"][-1]
-    assert upload["uses"] == "codecov/codecov-action@v7"
-    assert upload["with"]["token"] == "${{ secrets.CODECOV_TOKEN }}"
-    assert upload["with"]["directory"] == "selected-coverage"
-    assert upload["with"]["fail_ci_if_error"] == "true"
-    assert upload["with"].get("use_oidc", "false") == "false"
-    assert upload["with"]["override_branch"] == "${{ github.event_name == 'release' && 'prod' || '' }}"
-    selection = job["steps"][-2]
+    assert all(step["if"] == "steps.credentials.outputs.enabled == 'true'" for step in job["steps"][1:-1])
+    assert job["steps"][-1]["if"].startswith("steps.credentials.outputs.enabled == 'true' && ")
+    for upload in job["steps"][-2:]:
+        assert upload["uses"] == "codecov/codecov-action@v7"
+        assert upload["with"]["token"] == "${{ secrets.CODECOV_TOKEN }}"
+        assert upload["with"]["directory"] == "selected-coverage"
+        assert upload["with"]["fail_ci_if_error"] == "true"
+        assert upload["with"].get("use_oidc", "false") == "false"
+        assert upload["with"]["override_branch"] == "${{ github.event_name == 'release' && 'prod' || '' }}"
+    selection = job["steps"][-3]
     assert selection["uses"].startswith("actions/upload-artifact@")
     assert selection["with"]["name"] == "selected-coverage-${{ github.run_id }}-${{ github.run_attempt }}"
     assert selection["with"]["path"] == "reports/coverage-selection.json"
     assert selection["with"]["if-no-files-found"] == "error"
+
+
+def test_codecov_upload_retries_with_the_pypi_uploader_only_after_a_failed_first_attempt() -> None:
+    """A Codecov download outage gets one PyPI-installed retry; the signed download stays the first attempt."""
+    job = workflow("test-runtime.yml")["jobs"]["coverage"]
+    uploads = [step for step in job["steps"] if step.get("uses", "").startswith("codecov/codecov-action@")]
+    assert uploads == job["steps"][-2:]
+    first, fallback = uploads
+    assert first["id"] == "codecov"
+    assert first["continue-on-error"] == "true"
+    assert first["with"].get("use_pypi", "false") == "false"
+    assert first["with"].get("skip_validation", "false") == "false"
+    assert fallback["if"] == (
+        "steps.credentials.outputs.enabled == 'true' && steps.codecov.outcome == 'failure'"
+    )
+    assert "continue-on-error" not in fallback
+    assert fallback["with"].get("use_pypi") == "true"
+    assert {key: value for key, value in fallback["with"].items() if key != "use_pypi"} == first["with"]
 
 
 @pytest.mark.parametrize("name", ["ci.yml", "python-publish.yml"])
@@ -263,6 +395,41 @@ def test_publication_repeats_validation_and_checks_prod_last() -> None:
     assert all("environment" not in job for name, job in jobs.items() if name != "pypi-publish")
 
 
+def test_publication_refuses_a_failed_jobs_rerun_by_name() -> None:
+    """Final publication never uploads an earlier attempt's build, and says how to recover instead.
+
+    A failed-jobs re-run does not repeat release-build, so the build job's output still names the earlier
+    attempt's artifact. The upload job stops before its download with an error naming "Re-run all jobs",
+    rather than the opaque "Artifact not found" the release candidate showed on 2026-10-06.
+    """
+    jobs = workflow("python-publish.yml")["jobs"]
+    steps = jobs["pypi-publish"]["steps"]
+    uploaded = jobs["release-build"]["with"]["artifact-name"]
+    guard = next(step for step in steps if "BUILT_ARTIFACT" in step.get("env", {}))
+    download = next(step for step in steps if step.get("uses", "").startswith("actions/download-artifact@"))
+    assert steps.index(guard) < steps.index(download)
+    assert guard["env"] == {"BUILT_ARTIFACT": "${{ needs.release-build.outputs.artifact-name }}",
+                            "EXPECTED_ARTIFACT": uploaded}
+    assert '[ "$BUILT_ARTIFACT" != "$EXPECTED_ARTIFACT" ]' in guard["run"]
+    assert "Re-run all jobs" in guard["run"] and "exit 1" in guard["run"]
+    assert "if" not in guard and "continue-on-error" not in guard
+    assert download["with"]["name"] == uploaded
+
+
+def test_distribution_build_reports_the_artifact_it_uploaded() -> None:
+    """A consumer in the same run names the build by the build job's output, never by its own attempt.
+
+    A failed-jobs re-run does not repeat a successful build, so a consumer that formed the name from its own
+    github.run_attempt asked for an artifact that attempt never made (release candidate run 37443362134).
+    """
+    document = workflow("build-distributions.yml")
+    output = document["on"]["workflow_call"]["outputs"]["artifact-name"]
+    assert output["value"] == "${{ jobs.build.outputs.artifact-name }}"
+    build = document["jobs"]["build"]
+    assert build["outputs"] == {"artifact-name": "${{ inputs.artifact-name }}"}
+    assert build["steps"][-1]["with"]["name"] == "${{ inputs.artifact-name }}"
+
+
 def test_package_verification_precedes_artifact_upload() -> None:
     """Only built, inspected, installed-wheel-verified files become distributable artifacts."""
     document = workflow("build-distributions.yml")
@@ -278,23 +445,17 @@ def test_package_verification_precedes_artifact_upload() -> None:
     assert steps[smoke]["env"]["PYTHON_GIL"] == "0"
     assert steps[-1]["uses"].startswith("actions/upload-artifact@")
     setup = next(step for step in steps if step.get("uses", "").startswith("actions/setup-python@"))
-    assert setup["with"]["python-version-file"] == "pyproject.toml"
+    assert "python-version-file" not in setup["with"]
     assert setup["with"]["freethreaded"] == "true"
     assert setup["with"]["allow-prereleases"] == "false"
-    assert "python-version" not in setup["with"]
     assert "uv run --no-sync python -m build --no-isolation --sdist --wheel" in commands
     assert 'uv venv --python "${{ steps.python.outputs.python-path }}"' in commands[smoke]
     assert 'uv pip install --python "$RUNNER_TEMP/melder-wheel-probe/bin/python" --no-deps dist/*.whl' in commands[smoke]
 
 
-@pytest.mark.parametrize(("name", "job_name", "groups"), [
-    ("test-runtime.yml", "test", "--no-default-groups --group test"),
-    ("build-distributions.yml", "build", "--only-group build"),
-])
-def test_locked_ci_uses_the_selected_matrix_interpreter(name: str, job_name: str, groups: str) -> None:
-    """Dependency locking must preserve the chosen no-GIL interpreter and refuse stale-lock installs."""
-    job = workflow(name)["jobs"][job_name]
-    steps = job["steps"]
+def test_locked_build_uses_the_selected_interpreter() -> None:
+    """Distribution builds install the locked build group into the chosen no-GIL interpreter and refuse a stale lock."""
+    steps = workflow("build-distributions.yml")["jobs"]["build"]["steps"]
     python = next(step for step in steps if step.get("uses", "").startswith("actions/setup-python@"))
     uv = next(step for step in steps if step.get("uses", "").startswith("astral-sh/setup-uv@"))
     sync = next(step for step in steps if step.get("run", "").startswith("uv sync "))
@@ -305,15 +466,43 @@ def test_locked_ci_uses_the_selected_matrix_interpreter(name: str, job_name: str
     assert "python-version" not in uv["with"]
     assert uv["with"]["enable-cache"] == "true"
     assert uv["with"]["cache-dependency-glob"] == "uv.lock"
-    assert sync["run"] == f'uv sync --locked {groups} --python "${{{{ steps.python.outputs.python-path }}}}"'
+    assert uv["with"]["cache-suffix"] == "build-${{ steps.python.outputs.python-version }}-${{ runner.arch }}"
+    assert sync["run"] == 'uv sync --locked --only-group build --python "${{ steps.python.outputs.python-path }}"'
     assert "if" not in sync and "continue-on-error" not in sync
     assert steps.index(python) < steps.index(uv) < steps.index(sync)
-    if job_name == "test":
-        assert python["with"]["python-version"] == "${{ matrix.python }}"
-        assert python["with"]["architecture"] == "${{ matrix.architecture }}"
-        assert uv["with"]["cache-suffix"] == "runtime-${{ matrix.python }}t-${{ matrix.architecture }}"
-    else:
-        assert uv["with"]["cache-suffix"] == "build-${{ steps.python.outputs.python-version }}-${{ runner.arch }}"
+
+
+def test_runtime_cells_install_exactly_their_release_manifest() -> None:
+    """Each test cell installs its own manifest's pins and Melder, with no resolver and no lockfile.
+
+    The manifest named after the cell's release is the whole dependency set: --no-deps keeps anything unpinned
+    out, and the uv cache follows that manifest. The test driver then runs in the same environment.
+    """
+    steps = workflow("test-runtime.yml")["jobs"]["test"]["steps"]
+    python = next(step for step in steps if step.get("uses", "").startswith("actions/setup-python@"))
+    uv = next(step for step in steps if step.get("uses", "").startswith("astral-sh/setup-uv@"))
+    install = next(step for step in steps
+                   if step.get("name") == "Install exactly this release's manifest pins and Melder")
+    runner = next(step for step in steps if "run_runtime_tests.py" in step.get("run", ""))
+    assert python["id"] == "python" and "cache" not in python["with"]
+    assert python["with"]["python-version"] == "${{ matrix.python }}"
+    assert python["with"]["architecture"] == "${{ matrix.architecture }}"
+    assert uv["with"]["version-file"] == "pyproject.toml"
+    assert "python-version" not in uv["with"]
+    assert uv["with"]["enable-cache"] == "true"
+    assert uv["with"]["cache-dependency-glob"] == ".github/python/tests/${{ matrix.python }}.toml"
+    assert uv["with"]["cache-suffix"] == "runtime-${{ matrix.python }}t-${{ matrix.architecture }}"
+    assert install["shell"] == "bash"
+    assert install["run"].splitlines() == [
+        'python .github/scripts/python_runtime_matrix.py requirements --manifest '
+        '".github/python/tests/${{ matrix.python }}.toml" --output reports/requirements.txt',
+        'uv venv --python "${{ steps.python.outputs.python-path }}" .venv',
+        "uv pip install --no-deps -r reports/requirements.txt",
+        "uv pip install --no-deps -e .",
+    ]
+    assert "if" not in install and "continue-on-error" not in install
+    assert steps.index(python) < steps.index(uv) < steps.index(install) < steps.index(runner)
+    assert not any(step.get("run", "").startswith("uv sync") for step in steps)
 
 
 @pytest.mark.parametrize("branch", ["dev", "preprod", "release_candidate", "prod"])
@@ -385,12 +574,14 @@ def test_candidate_workflow_is_slim_and_publishing_authority_is_isolated(policy:
     )
     probe = next(step for step in install["steps"] if "probe-install" in step.get("run", ""))
     assert probe["env"]["PYTHON_GIL"] == "0"
-    artifact = jobs["build"]["with"]["artifact-name"]
+    # Each attempt that builds names a fresh artifact; publish and install download the one the build job
+    # reports, so a failed-jobs re-run of either uses the run's verified build instead of a missing name.
+    assert jobs["build"]["with"]["artifact-name"] == "candidate-dists-${{ github.run_id }}-${{ github.run_attempt }}"
     for job in (publisher, install):
+        assert "build" in job["needs"]
         download = next(step for step in job["steps"]
                         if step.get("uses", "").startswith("actions/download-artifact@"))
-        assert download["with"]["name"] == artifact
-    assert "github.run_attempt" in artifact
+        assert download["with"]["name"] == "${{ needs.build.outputs.artifact-name }}"
     ready = jobs["package-ready"]
     assert ready["if"] == "always()"
     assert set(ready["needs"]) == set(policy.CIPolicy.CANDIDATE_JOBS)
@@ -472,3 +663,198 @@ def test_source_proof_download_is_pinned_and_has_only_read_permissions() -> None
     for name in ("ci.yml", "release-candidate.yml"):
         caller = workflow(name)["jobs"]["source-qualification"]
         assert caller["permissions"] == document["permissions"]
+
+
+def test_gauntlet_reports_all_counts_and_keeps_setup_outside_gil_override() -> None:
+    """Promotion CI uses its smaller iteration relay and preserves evidence from all three OSes."""
+    document = workflow("real-world-gauntlet.yml")
+    assert set(document["on"]) == {"workflow_call", "workflow_dispatch"}
+    for event in document["on"].values():
+        assert event["inputs"]["thread-counts"]["default"] == ""
+        assert event["inputs"]["iteration-counts"]["default"] == "500,1000,2500,5000,10000"
+    job = document["jobs"]["gauntlet"]
+    assert job["strategy"]["matrix"]["os"] == ["ubuntu-24.04", "windows-2025", "macos-15-intel"]
+    assert job["strategy"]["fail-fast"] == "false"
+    assert "PYTHON_GIL" not in job["env"]
+    assert "DI_GAUNTLET_THREADS" not in job["env"]
+    assert "DI_GAUNTLET_ITERS" not in job["env"]
+    assert job["env"]["REAL_WORLD_GAUNTLET_ITERATION_COUNTS"] == "${{ inputs.iteration-counts }}"
+    steps = job["steps"]
+    setup = next(step for step in steps if step.get("uses", "").startswith("actions/setup-python@"))
+    assert setup["with"]["python-version"] == "${{ needs.manifest.outputs.python }}"
+    assert "check-latest" not in setup["with"]
+    assert setup["with"]["architecture"] == "x64"
+    assert setup["with"]["freethreaded"] == "true"
+    install = next(index for index, step in enumerate(steps) if step.get("name") == "Install identical pinned benchmark dependencies")
+    provenance = next(index for index, step in enumerate(steps) if step.get("name") == "Record source and runtime provenance")
+    assert install < provenance
+    assert "gauntlet._gauntlet_thread_counts()" in steps[provenance]["run"]
+    measured = next(step for step in steps if step.get("name") == "Run configured real-world gauntlet")
+    assert measured["env"]["PYTHON_GIL"] == "0"
+    assert int(measured["timeout-minutes"]) < int(job["timeout-minutes"])
+    assert "GITHUB_STEP_SUMMARY" in measured["run"]
+    assert "expected_pairs" in measured["run"]
+    assert "assert all(verified.values())" in measured["run"]
+    retained = steps[-1]
+    assert retained["if"] == "always()"
+    assert retained["with"]["path"] == "gauntlet-results/"
+    assert retained["with"]["retention-days"] == "30"
+    caller = workflow("ci.yml")["jobs"]["real-world-gauntlet"]
+    assert caller["uses"] == "./.github/workflows/real-world-gauntlet.yml"
+    assert "secrets" not in caller
+
+
+def test_gauntlet_inline_python_parses_after_yaml_indentation() -> None:
+    """Every Python step is valid executable syntax after YAML removes its indentation."""
+    import ast
+    for step in workflow("real-world-gauntlet.yml")["jobs"]["gauntlet"]["steps"]:
+        if step.get("shell") == "python":
+            ast.parse(step["run"], filename=step["name"])
+
+
+def test_persistent_gauntlet_runs_in_parallel_on_independent_promotion_runners() -> None:
+    """Neither benchmark waits for the other; each owns its OS jobs and result artifacts."""
+    jobs = workflow("ci.yml")["jobs"]
+    for name in ("real-world-gauntlet", "persistent-runtime-gauntlet", "shallow-all-thread-scaling"):
+        assert jobs[name]["needs"] == "branch-policy"
+        assert jobs[name]["if"] == "needs.branch-policy.outputs.gauntlet-required == 'true'"
+        assert name in jobs["merge-ready"]["needs"]
+    assert jobs["persistent-runtime-gauntlet"]["uses"] == "./.github/workflows/persistent-runtime-gauntlet.yml"
+    document = workflow("persistent-runtime-gauntlet.yml")
+    for event in document["on"].values():
+        assert event["inputs"]["duration-seconds"]["default"] == "60,180,300"
+        assert event["inputs"]["thread-counts"]["default"] == "3,5"
+    job = document["jobs"]["gauntlet"]
+    assert job["strategy"]["matrix"]["os"] == ["ubuntu-24.04", "windows-2025", "macos-15-intel"]
+    assert job["env"]["PERSISTENT_SERIES_SECONDS"] == "${{ inputs.duration-seconds }}"
+    assert job["env"]["PERSISTENT_SERIES_THREADS"] == "${{ inputs.thread-counts }}"
+    assert job["env"]["PERSISTENT_SERIES_OUTPUT_DIR"] == "${{ github.workspace }}/persistent-gauntlet-results"
+    assert "PYTHON_GIL" not in job["env"]
+    measured = next(step for step in job["steps"] if step.get("name") == "Run persistent duration and thread series")
+    assert measured["env"]["PYTHON_GIL"] == "0"
+    assert int(measured["timeout-minutes"]) < int(job["timeout-minutes"])
+    assert "test_persistent_runtime_gauntlet_series.py" in measured["run"]
+    assert "observed == cells" in measured["run"] and "assert valid" in measured["run"]
+    assert "GITHUB_STEP_SUMMARY" in measured["run"]
+    upload = job["steps"][-1]
+    assert upload["if"] == "always()"
+    assert upload["with"]["path"] == "persistent-gauntlet-results/"
+    assert upload["with"]["name"].startswith("persistent-gauntlet-")
+    for step in job["steps"]:
+        if step.get("shell") == "python":
+            compile(step["run"], step["name"], "exec")
+
+
+def test_shallow_thread_scaling_measures_each_library_in_its_own_gil_off_process() -> None:
+    """The scaling benchmark is a parallel promotion job that isolates every library in a fresh interpreter."""
+    caller = workflow("ci.yml")["jobs"]["shallow-all-thread-scaling"]
+    assert caller["uses"] == "./.github/workflows/shallow-all-thread-scaling.yml"
+    assert "secrets" not in caller
+    document = workflow("shallow-all-thread-scaling.yml")
+    for event in document["on"].values():
+        assert event["inputs"]["thread-counts"]["default"] == "1,2,3,4,5"
+        assert event["inputs"]["duration-seconds"]["default"] == "15"
+    job = document["jobs"]["scaling"]
+    assert job["strategy"]["matrix"]["os"] == ["ubuntu-24.04", "windows-2025", "macos-15-intel"]
+    assert job["strategy"]["fail-fast"] == "false"
+    assert job["env"]["DI_THREAD_COUNTS"] == "${{ inputs.thread-counts }}"
+    assert job["env"]["DI_DURATION_S"] == "${{ inputs.duration-seconds }}"
+    assert "PYTHON_GIL" not in job["env"]
+    assert "DI_LIBS" not in job["env"]
+    steps = job["steps"]
+    setup = next(step for step in steps if step.get("uses", "").startswith("actions/setup-python@"))
+    assert setup["with"]["python-version"] == "${{ needs.manifest.outputs.python }}"
+    assert "check-latest" not in setup["with"]
+    assert setup["with"]["architecture"] == "x64"
+    assert setup["with"]["freethreaded"] == "true"
+    names = [step.get("name") for step in steps]
+    install = names.index("Install identical pinned benchmark dependencies")
+    provenance = names.index("Record thread scaling provenance")
+    measured = names.index("Run thread scaling for each library in its own process")
+    assert install < provenance < measured
+    assert steps[provenance]["env"]["PYTHON_GIL"] == "0"
+    assert steps[measured]["env"]["PYTHON_GIL"] == "0"
+    assert int(steps[measured]["timeout-minutes"]) < int(job["timeout-minutes"])
+    script = steps[measured]["run"]
+    assert "DI_LIBS=lib" in script and "'-X', 'gil=0'" in script
+    assert "test_shallow_all_thread_scaling.py" in script
+    assert "GITHUB_STEP_SUMMARY" in script and "assert valid" in script
+    retained = steps[-1]
+    assert retained["if"] == "always()"
+    assert retained["with"]["path"] == "thread-scaling-results/"
+    assert retained["with"]["name"].startswith("shallow-thread-scaling-")
+    assert retained["with"]["retention-days"] == "30"
+    for step in steps:
+        if step.get("shell") == "python":
+            compile(step["run"], step["name"], "exec")
+
+
+def test_shallow_thread_scaling_parser_accepts_the_lines_the_benchmark_prints() -> None:
+    """Render the benchmark's own print expressions and require the workflow's parser to read them back."""
+    root = pathlib.Path(__file__).resolve().parents[3]
+    benchmark = ast.parse((root / "benchmarks/testing_other_di/test_shallow_all_thread_scaling.py")
+                          .read_text(encoding="utf-8"))
+    printed = sorted((call for call in ast.walk(benchmark)
+                      if isinstance(call, ast.Call) and isinstance(call.func, ast.Name) and call.func.id == "print"),
+                     key=lambda call: call.lineno)
+    assert len(printed) == 2, "The workflow parses exactly one config line and one result line per thread count."
+    namespace = {
+        "lib": "dependency-injector",
+        "_gil_status": lambda: "disabled",
+        "cfg": SimpleNamespace(duration_s=15.0, thread_counts=(1, 2, 3, 4, 5),
+                               graph_pattern="random", root_pattern="alternating"),
+        "graphs": [SimpleNamespace(name="solo"), SimpleNamespace(name="deep")],
+        "thread_count": 4,
+        "result": SimpleNamespace(elapsed_s=15.004, steps=1234567, steps_per_s=82271.1, spellspaces=61728, errors=0),
+        "speedup": 3.2,
+        "efficiency": 0.8,
+        "per_graph_summary": "solo=1, deep=2",
+    }
+    config_text, result_text = (eval(compile(ast.Expression(call.args[0]), "<benchmark print>", "eval"), namespace)
+                                for call in printed)
+    measured = next(step for step in workflow("shallow-all-thread-scaling.yml")["jobs"]["scaling"]["steps"]
+                    if step.get("name") == "Run thread scaling for each library in its own process")
+    patterns = {node.targets[0].id: ast.literal_eval(node.value) for node in ast.parse(measured["run"]).body
+                if isinstance(node, ast.Assign) and isinstance(node.targets[0], ast.Name)
+                and node.targets[0].id in ("config_line", "result_line")}
+    assert set(patterns) == {"config_line", "result_line"}
+    node_id = ("benchmarks/testing_other_di/test_shallow_all_thread_scaling.py::"
+               "test_threaded_shallow_all_graph_mix_scaling[dependency-injector] ")
+
+    def pattern(name: str, lib: str) -> str:
+        """Specialize one workflow regular expression for a library, as the measured step does."""
+        return patterns[name].replace("{lib}", re.escape(lib))
+
+    # With -s -v pytest prints the first benchmark line directly after the node id.
+    assert re.findall(pattern("config_line", "dependency-injector"), node_id + config_text) == [
+        ("disabled", "15.00", "(1, 2, 3, 4, 5)")]
+    assert re.findall(pattern("result_line", "dependency-injector"), result_text) == [
+        ("4", "15.00", "1234567", "82,271", "3.20", "80.0", "61728", "0")]
+    assert not re.findall(pattern("config_line", "melder"), node_id + config_text)
+    assert not re.findall(pattern("result_line", "melder"), result_text)
+
+
+def test_ci_guide_names_every_workflow_script_and_ruleset() -> None:
+    """The agent CI guide in .github/ci_cd/ covers every CI file, so a new one cannot arrive undocumented.
+
+    Agents learn from that folder what each workflow, script and ruleset is for and how to extend it (owner,
+    2026-10-05). A file counts as covered when its name appears in backticks on one of the guide's pages.
+    """
+    root = pathlib.Path(__file__).resolve().parents[3]
+    guide = "\n".join(page.read_text(encoding="utf-8") for page in sorted((root / ".github/ci_cd").glob("*.md")))
+    files = [*sorted((root / ".github/workflows").glob("*.yml")), *sorted((root / ".github/scripts").glob("*.py")),
+             *sorted((root / ".github/rulesets").glob("*.json"))]
+    missing = [path.name for path in files if f"`{path.name}`" not in guide]
+    assert not missing, f"Describe these in .github/ci_cd/: {missing}"
+
+
+def test_ci_guide_pages_are_linked_and_their_links_resolve() -> None:
+    """The guide's README links every page, and every relative link in the guide names an existing file."""
+    root = pathlib.Path(__file__).resolve().parents[3]
+    pages = sorted((root / ".github/ci_cd").glob("*.md"))
+    readme = (root / ".github/ci_cd/README.md").read_text(encoding="utf-8")
+    assert [page.name for page in pages if page.name != "README.md" and f"]({page.name})" not in readme] == []
+    broken = [f"{page.name} -> {target}" for page in pages
+              for target in re.findall(r"\]\(([^)#\s]+)(?:#[^)]*)?\)", page.read_text(encoding="utf-8"))
+              if "://" not in target and not (page.parent / target).resolve().is_file()]
+    assert broken == []

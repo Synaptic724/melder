@@ -543,6 +543,79 @@ class ConduitResolutionState(Cleanable):
                     pass
 
     # ------------------------------------------------------------------ #
+    # Verdict retirement                                                 #
+    # ------------------------------------------------------------------ #
+    def forget_spell(
+            self,
+            spell_id: str,
+            *,
+            change_reason: Optional[SpellStateChangeReason] = None,
+    ) -> bool:
+        """
+        Retire every verdict this conduit holds for one spell id.
+
+        Purpose:
+            A spell id leaves or re-enters the frame: its definition was cleaned
+            up (`SpellSystemStates.unregister_index`), or a definition was bound
+            under the same content-stable id (`SpellSystemStates.register_index`,
+            which a rebind of the same class at the same address, a notch and an
+            ownership transfer all reach). The verdicts this conduit recorded for
+            that id describe a version that is no longer the one a meld will
+            build, so they are dropped rather than carried forward.
+
+        Contract:
+            - Pops the spell-level and the root-level verdict for `spell_id`.
+              Other ids, the diagnostics snapshot and `last_validated_at` are
+              untouched.
+            - After the call `get_spell_validity(spell_id)` and
+              `get_root_validity(spell_id)` answer `initial_validity` again,
+              exactly as for an id this conduit never resolved, so
+              `Meld._ensure_resolution_resolvable` reruns phases 5-11 for this
+              conduit before it builds the id again.
+            - Marks the state dirty with `change_reason` only when a verdict was
+              actually removed; a miss changes nothing.
+            - Does NOT notify the `RiskManager`. Forgetting is a change of
+              scope, not of verdict: lineage membership in the risk model is
+              owned by `RiskManager.register_spell` / `unregister_spell`, which
+              the Spellbook calls on bind and on removal and which recompute
+              risk from the live verdict. A callback from here would leave a
+              risky key behind in every conduit that never registers the
+              lineage again (a peer that resolved the id through a contract).
+
+        Args:
+            spell_id:
+                Versioned spell id whose verdicts are retired.
+            change_reason:
+                Reason recorded on the state when a verdict was removed.
+
+        Returns:
+            bool:
+                True when this conduit held a spell-level or root-level verdict
+                for the id, False when there was nothing to forget.
+
+        Raises:
+            ValueError:
+                If spell_id is empty.
+            RuntimeError:
+                If this state has been cleaned.
+
+        Threading:
+            Acquires the internal lock; takes no other lock and runs no
+            callback, so the owning registry may hold its own lock across the
+            call.
+        """
+        self.check_cleaned()
+        if not spell_id:
+            raise ValueError("spell_id cannot be empty.")
+        with self._lock:
+            had_spell_verdict = self._spell_validity.pop(spell_id, None) is not None
+            had_root_verdict = self._root_validity.pop(spell_id, None) is not None
+            forgotten = had_spell_verdict or had_root_verdict
+            if forgotten:
+                self.mark_dirty(change_reason=change_reason)
+        return forgotten
+
+    # ------------------------------------------------------------------ #
     # Diagnostics                                                        #
     # ------------------------------------------------------------------ #
     def record_diagnostics(self, diagnostics: Sequence[SystemDiagnostic]) -> None:

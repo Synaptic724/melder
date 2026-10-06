@@ -1,0 +1,14 @@
+proto=False
+  SpellSpace.meld door call: [(679, 'CALL_PY_EXACT_ARGS'), (681, 'CALL')]
+  Conduit.meld door call:    []
+  door <creation_context_no_overrides_only_template:spellspace:0:0>: ['COPY_FREE_VARS', 'LOAD_ATTR_SLOT', 'LOAD_ATTR_SLOT', 'LOAD_ATTR_METHOD_NO_DICT', 'LOAD_DEREF', 'LOAD_ATTR_SLOT', 'LOAD_ATTR_METHOD_NO_DICT', 'LOAD_DEREF', 'LOAD_ATTR', 'LOAD_DEREF', 'LOAD_ATTR_SLOT', 'LOAD_ATTR_METHOD_NO_DICT', 'LOAD_DEREF', 'LOAD_DEREF']
+  door <creation_context_no_overrides_only_template:unique_per_conduit:0:0>: ['COPY_FREE_VARS', 'LOAD_ATTR_SLOT', 'LOAD_ATTR_SLOT', 'LOAD_ATTR_METHOD_NO_DICT', 'LOAD_DEREF', 'LOAD_ATTR_SLOT', 'LOAD_ATTR_METHOD_NO_DICT', 'LOAD_DEREF', 'LOAD_ATTR', 'LOAD_DEREF', 'LOAD_ATTR_SLOT', 'LOAD_ATTR_METHOD_NO_DICT', 'LOAD_DEREF', 'LOAD_DEREF']
+  door <creation_context_no_overrides_only_template:many:0:0>: ['COPY_FREE_VARS', 'LOAD_DEREF']
+  door <creation_context_no_overrides_only_template:unique:0:0>: ['COPY_FREE_VARS', 'LOAD_DEREF', 'LOAD_ATTR_SLOT', 'LOAD_ATTR_METHOD_NO_DICT', 'LOAD_DEREF', 'LOAD_DEREF', 'LOAD_ATTR_SLOT', 'LOAD_DEREF', 'LOAD_ATTR_SLOT', 'LOAD_ATTR_METHOD_NO_DICT', 'LOAD_DEREF', 'LOAD_DEREF']
+proto=True
+  SpellSpace.meld door call: [(679, 'CALL'), (681, 'CALL')]
+  Conduit.meld door call:    []
+  door <creation_context_door_no_overrides:unique_per_conduit:0:0>: ['LOAD_ATTR_SLOT', 'LOAD_ATTR_SLOT', 'LOAD_ATTR_METHOD_NO_DICT', 'LOAD_GLOBAL_MODULE', 'LOAD_ATTR_SLOT', 'LOAD_ATTR_METHOD_NO_DICT', 'LOAD_GLOBAL_MODULE', 'LOAD_ATTR', 'LOAD_GLOBAL', 'LOAD_ATTR_SLOT', 'LOAD_ATTR_METHOD_NO_DICT', 'LOAD_GLOBAL_MODULE', 'LOAD_GLOBAL_MODULE']
+  door <creation_context_door_no_overrides:spellspace:0:0>: ['LOAD_ATTR_SLOT', 'LOAD_ATTR_SLOT', 'LOAD_ATTR_METHOD_NO_DICT', 'LOAD_GLOBAL_MODULE', 'LOAD_ATTR_SLOT', 'LOAD_ATTR_METHOD_NO_DICT', 'LOAD_GLOBAL_MODULE', 'LOAD_ATTR', 'LOAD_GLOBAL', 'LOAD_ATTR_SLOT', 'LOAD_ATTR_METHOD_NO_DICT', 'LOAD_GLOBAL_MODULE', 'LOAD_GLOBAL_MODULE']
+  door <creation_context_door_no_overrides:many:0:0>: ['LOAD_GLOBAL_MODULE']
+  door <creation_context_door_no_overrides:unique:0:0>: ['LOAD_GLOBAL_MODULE', 'LOAD_ATTR_SLOT', 'LOAD_ATTR_METHOD_NO_DICT', 'LOAD_GLOBAL_MODULE', 'LOAD_GLOBAL', 'LOAD_ATTR', 'LOAD_GLOBAL', 'LOAD_ATTR', 'LOAD_ATTR', 'LOAD_GLOBAL', 'LOAD_GLOBAL']

@@ -1,0 +1,24 @@
+{
+  "captured_at_utc": "2026-09-30T15:45:47.127401+00:00",
+  "python_version": "3.14.7 free-threading build (main, Sep  1 2026, 14:18:33) [MSC v.1944 64 bit (AMD64)]",
+  "python_executable": "C:\\Users\\Mark\\PycharmProjects\\priv_commandops\\.venv314\\Scripts\\python.exe",
+  "free_threaded_build": 1,
+  "gil_enabled": false,
+  "platform": "Windows-11-10.0.26200-SP0",
+  "melder_version": "0.2.8212",
+  "pytest_version": "9.0.3",
+  "melder_module_origin": "C:\\Users\\Mark\\PycharmProjects\\priv_commandops\\.venv314\\Lib\\site-packages\\melder\\__init__.py",
+  "melderops_head": "45c9ff67d2e6ffaea02f72c846da3c1acf6fe66d",
+  "tested_worktree": "Uncommitted Toolbox native construction and preceding Spectrum migration; HEAD alone does not identify tested source.",
+  "sha256": {
+    "src/melder_ops/command_center/spectrum/toolbox/toolbox.py": "b5dfb9ad1a3ca14779de6a1111a0779183682fc2af02be9d16934188a04ff400",
+    "src/melder_ops/command_center/spectrum/spectrum.py": "a55398da6c6ab8b8d5979a0065313ff0de07f020451188e444c6ed1a9159de7c",
+    "src/melder_ops/command_center/command_group.py": "f70462bf86be0d30307c8ed3917ef25e59406506cbeacd835efe5fccb06b5aea",
+    "tests/component/spectrum/test_toolbox_native_dispense.py": "0f9e219bc4dffc963973686c0dd43fdbf861aae1a5f03e53c428e4d224a90db8",
+    "tests/component/spectrum/conftest.py": "7004ccf7eb8cb274d3e46bc4a49af517f9cfb2115f77f05947eea03fcf634556",
+    "tests/mocks/melder_isolation.py": "a3fceabf1ad175d250c3c66c93bb5704f483aeb82d2aad1105f20a1225fccce5",
+    ".venv314/Lib/site-packages/melder/aether/conduit/meld/meld.py": "0c3239b0476b96a19741c13eb552da9d9f121ec5c68d793ee8ee5a424719b6f8",
+    ".venv314/Lib/site-packages/melder/aether/conduit/meld/creation_context/creation_context_builder.py": "49100a2cc7bb7a1a5af2cc0bc81398a6b410263d9307e44276764c98826c96cc",
+    ".venv314/Lib/site-packages/melder/aether/conduit/meld/creation_context/creation_context_factory.py": "be275f0a16588b5c5560d1fe4cac422e875fdcd2409cbc0f64c89e1d6a00d232"
+  }
+}

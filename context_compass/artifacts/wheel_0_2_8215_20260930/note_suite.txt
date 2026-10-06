@@ -1,0 +1,22 @@
+- DATETIME: {NOW}
+  TYPE: MEASURE
+  CLAIM: The whole MelderOps suite on the installed 0.2.8215 wheel (VM env, CPython 3.14.7t, GIL off, a clean
+    PYTHONPYCACHEPREFIX, eight shards under 170 s): 6573 tests, 6561 passed, 9 skipped, 3 failed, none from Melder.
+    command_center 2902/2905 (3 skipped), component 473/473, system_integration and test_idea 29/30 (1 skipped),
+    utilities 975/977 (2 skipped), concurrency 1296/1296, synchronization 886/892. The three failures are timing
+    tests of MelderOps' own primitives: AgenticCoordinator test_28 measures 0.1496-0.1500 s against >= 0.15 and
+    fails 6 of 6 runs on 0.2.8212 as on 0.2.8215; FlowRegulator fairness fails 1 of 6 isolated runs on 0.2.8215
+    and failed in the 0.2.8212 control too; FlowRegulator latency ratio passes 6 of 6 in isolation. Focused sets:
+    Toolbox 85/87 (2 skipped), melder_setup 265/265 - the Toolbox fixture failure recorded in the epic now passes.
+    A first utilities run showed 18 failures caused by Windows-compiled .pyc in the VM copy's __pycache__ (code
+    objects named C:\Users\...); the clean-prefix run passes, and the stale runs are kept under suite/superseded/.
+  EVIDENCE:
+  - context_compass/artifacts/wheel_0_2_8215_20260930/suite/summary.txt:1-67
+  - context_compass/artifacts/wheel_0_2_8215_20260930/suite/test_28_repeats_control_0_2_8212.log:1-12
+  - context_compass/artifacts/wheel_0_2_8215_20260930/suite/timing_repeats_0_2_8215.log:1-12
+  - context_compass/artifacts/wheel_0_2_8215_20260930/junit_summary.py:1-25
+  IMPACT: No MelderOps regression from 0.2.8215; the epic's consumer revalidation is complete in the VM. The
+    Windows interpreter itself: Not run (the same RECORD-verified files are in .venv314).
+  NEXT: Close work package C, this task and the epic on the owner's directive, then sync boards and mailboxes.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9

@@ -4,6 +4,7 @@ from types import SimpleNamespace
 
 import pytest
 
+from melder.aether.spellbook.spellframe_kind.spellframe_kind import SpellframeKind
 from melder.aether.aether import Aether
 from melder.aether.aether_utility_system import AetherUtilitySystem
 from melder.nexus.nexus import Nexus
@@ -27,11 +28,15 @@ class _DummySpell:
             None.
         """
         self.spell_id = spell_id
+        self.aetheric_frame = "default"
         self.spell = spell
         # Bind-signature fields consumed by SpellCrystal.__init__ (test doubles).
         self.spell_name = spell_id
         self.binding_name = None
         self.spellframe = None
+        # Frame kind (record 4.1.0): SpellCrystal reads the enum member's name.
+        self.spellframe_kind = SpellframeKind.none
+        self.implemented_protocols = ()
         self.existence = SimpleNamespace(name="present")
         self.permissions = SimpleNamespace(name="default")
         self.resolvable = True

@@ -6,7 +6,7 @@ WHAT THIS IS
 `bind.py` imports `INTERNAL_MANIFEST` at module scope and there is no runtime
 rebuild lane, so whatever this resolves to IS the enforced registration policy.
 That is why the truth lives in a COMMITTED manifest
-(`manifest/bind_guard_manifest.py`) and the `.melc` under `__melder_cache__` is
+(`manifest/bind_guard_manifest.py`) and the `.meldercache` under `__melder_cache__` is
 only ever an accelerator - see `_asset_cache` for why the cache must never be
 the source.
 
@@ -38,7 +38,7 @@ class BindGuardAsset:
 
     Attributes:
         ASSET_NAME: Bare asset name; drives the cache path
-            `__melder_cache__/__bind_guard__/bind_guard.melc`.
+            `__melder_cache__/__bind_guard__/bind_guard.meldercache`.
         MANIFEST_DIR_NAME: Directory holding the committed manifest.
         MANIFEST_MODULE_NAME: Generated manifest module filename.
     """

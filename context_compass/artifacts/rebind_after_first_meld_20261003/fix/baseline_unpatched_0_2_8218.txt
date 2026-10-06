@@ -1,0 +1,4 @@
+# unpatched tree 0.2.8218 (mirror with the two files restored from the tree), 2026-10-03T20:05:33Z
+FAILED m1 (verdict survives: valid is not unknown), m3 (same), m4 (RuntimeError at meld #2), m5 (flag False after rebind), m7 (RuntimeError), probe[True-False], probe[True-True]
+PASSED m2 (dependent rebuilt via structural impact closure), m2b, probe[False-False], probe[False-True]
+7 failed, 4 passed in 0.27s

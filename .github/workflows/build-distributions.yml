@@ -9,6 +9,10 @@ on:
       release-tag:
         type: string
         default: ""
+    outputs:
+      artifact-name:
+        description: The artifact this build uploaded; consumers in the same run download it by this name.
+        value: ${{ jobs.build.outputs.artifact-name }}
   workflow_dispatch:
     inputs:
       artifact-name:
@@ -28,12 +32,15 @@ jobs:
     name: Distributions / build-and-verify
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    outputs:
+      # A failed-jobs re-run does not repeat a successful build, and keeps this output from the attempt that built.
+      artifact-name: ${{ inputs.artifact-name }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
         id: python
         with:
-          python-version-file: pyproject.toml
+          python-version: "3.14.7"
           freethreaded: true
           allow-prereleases: false
       - name: Set up uv for locked build tools

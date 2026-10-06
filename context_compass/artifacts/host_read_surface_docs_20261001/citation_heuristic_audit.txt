@@ -1,0 +1,27 @@
+SUSPECT src_architecture.md 438 src/melder/aether/conduit/conduit.py 5280, 5352 | names: add_to_spell_index,notch_spell | line: with self._lock:
+SUSPECT src_architecture.md 440 src/melder/aether/conduit/conduit.py 5448, 5496 | names: _add_to_spell_index,add_to_spell_index,notch_spell,remove_from_spell_index | line: # spell.spell_index to the target and destroys the source if
+SUSPECT src_architecture.md 540 src/melder/aether/spellbook/bind/bind.py 404 | names: ProtocolCrafter,assert_allowed | line: phase: str,
+SUSPECT src_architecture.md 1289 src/melder/aether/aether.py 100 | names: _instance | line: coverage - a crystallizer load acquires exclusive system aut
+SUSPECT src_architecture.md 1291 src/melder/aether/aether.py 201 | names: _instance | line: # construction that lived here was REMOVED - frames are lazy
+SUSPECT src_architecture.md 1380 src/melder/aether/spellbook/spellbook_creation_system.py 1253-1292 | names: unique | line: def check_system_state(spellbook: Spellbook, policy: str, dy
+SUSPECT src_components.md 468 src/melder/aether/spellbook/spellbook.py 3686 | names: _add_to_spell_index,_apply_add_to_index,_apply_remove_from_index,_remove_from_sp | line: # The owning Conduit admits the `notch` transaction (it owns
+SUSPECT src_components.md 469 src/melder/aether/conduit/conduit.py 5329, 5405, 5485 | names: _apply_remove_from_index,_get_required_transaction_mediator,_remove_from_spell_i | line: an ordinary selection rather than a mutation. Pass a mutatio
+SUSPECT src_components.md 732 src/melder/aether/spellbook/bind/bind.py 84-97 | names: assert_allowed | line: Threading / Concurrency:
+SUSPECT src_components.md 1254 src/melder/aether/aetheric_frame/aetheric_frame_configuration.py 1984 | names: SafeGuard | line: other: object,
+SUSPECT src_components.md 1556 src/melder/crystallizer/crystallizer.py 1587-1594 | names: _emit_policy_twin,create_checkpoint,emit,flush_checkpoint | line: Contract:
+SUSPECT src_components.md 3976 src/melder/aether/spellbook/spell_compiler/spell_analyzer/strategies/spell_occurrence_graph_analyzer_strategy.py 1085-1127 | names: occurrence_plan_local | line: def _iter_spell_contract_defaults(
+SUSPECT src_components.md 4930 src/melder/aether/spellbook/bind/bind.py 946-956 | names: fingerprint_repr | line: if isinstance(profile, ClassBindingProfile):
+SUSPECT src_components.md 5143 src/melder/aether/spellbook/bind/bind.py 404 | names: assert_allowed | line: phase: str,
+SUSPECT src_components.md 5321 src/melder/aether/conduit/conduit.py 5496 | names: _apply_add_to_index,_remove_from_spell_index,remove_from_index,remove_from_spell | line: 
+SUSPECT src_components.md 5331 src/melder/aether/spellbook/spellbook.py 3686 | names: start_transaction | line: # The owning Conduit admits the `notch` transaction (it owns
+SUSPECT src_components.md 5880 src/melder/mutation_research/mutation_research.py 220 | names: _emission_lock | line: assigned. Every later `_reset_singleton_for_tests` then rais
+SUSPECT src_components.md 5881 src/melder/mutation_research/mutation_research.py 830-831 | names: _emission_lock,on_mutation | line: """
+SUSPECT src_components.md 5882 src/melder/mutation_research/mutation_research.py 837-840 | names: _emission_lock,on_mutation | line: 
+SUSPECT src_components.md 5883 src/melder/mutation_research/mutation_research.py 845 | names: on_mutation | line: Raises:
+SUSPECT src_components.md 5884 src/melder/mutation_research/mutation_research.py 944-945 | names: _emission_lock,on_mutation | line: Guarded by `check_cleaned()`.
+SUSPECT src_components.md 5885 src/melder/mutation_research/mutation_research.py 3900 | names: _emission_lock | line: continue
+SUSPECT src_components.md 6853 src/melder/aether/spellbook/spellbook_creation_system.py 616-723 | names: _enforce_conduit_resolution_valid | line: def _build_conjure_cache_state(
+SUSPECT src_components.md 9420 src/melder/aether/aether.py 893 | names: _ensure_frame | line: inactive, and `activated` is the separate bit that answers t
+SUSPECT src_components.md 9426 src/melder/aether/aether.py 323 | names: _ensure_default_frame | line: finally:
+SUSPECT src_components.md 9631 src/melder/aether/aetheric_frame/aetheric_frame.py 867 | names: find_index_for_spell | line: if not spell_id:
+SUMMARY {'ok': 71, 'suspect': 26, 'unverifiable': 80, 'missing': 0}

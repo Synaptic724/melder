@@ -73,6 +73,8 @@
  "published_aliases": [],
  "imports": {
   "annotations": "__future__.annotations",
+  "inspect": "inspect",
+  "typing": "typing",
   "TYPE_CHECKING": "typing.TYPE_CHECKING",
   "Any": "typing.Any",
   "ParameterDIShape": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_di_shape.ParameterDIShape",

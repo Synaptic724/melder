@@ -1,0 +1,27 @@
+== melderops_equal_policy_with_active_crystallizer
+OBSERVED equal-valued supplied crystallizer policy: prepare refused -> AttributeError 'CrystallizerConfiguration' object has no attribute 'get_configuration_dictionary'
+rc=0
+== melderops_supplied_nexus_with_active_nexus
+OBSERVED supplied Nexus policy over an active Nexus: prepare refused -> AttributeError 'NexusConfiguration' object has no attribute 'get_configuration_dictionary'
+rc=0
+== melderops_aether_regime_after_host_frame
+installed is MelderOps' policy True | reported process_wide_unique_spell_ids False
+OBSERVED MelderOps per-frame policy after the host's first frame: same class in a second frame refused -> RuntimeError Spell ID collision detected. spell_id is computed from the spell's bind-time 
+fingerprint (e.g., structural profile, lookup signature, existence, and resolved 
+
+rc=0
+== melderops_aether_regime_no_host_frame
+OBSERVED MelderOps per-frame policy with no host frame first: same class in a second frame accepted (per-frame ids)
+rc=0
+== host_automatic_conjure_after_crystallizer_on
+OBSERVED host automatic conjure (no dynamic attempt first): accepted
+rc=0
+== refused_dynamic_conjure_settles_frame
+before: frozen False | system_state SystemState.automatic
+dynamic conjure refused -> [SPELLBOOK] Dynamic-mode conjure with an active Crystallizer requires the 
+OBSERVED after the refused dynamic conjure: frozen True | system_state SystemState.dynamic
+rc=0
+== host_dynamic_conjure_after_melderops_ai
+after MelderOps AI preset: crystallizer activated True
+OBSERVED host dynamic conjure after MelderOps AI preset: refused -> [SPELLBOOK] Dynamic-mode conjure with an active Crystallizer requires the 
+rc=0

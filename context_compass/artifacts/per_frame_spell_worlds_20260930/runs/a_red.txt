@@ -1,0 +1,28 @@
+E   AttributeError: 'Aether' object has no attribute 'process_wide_unique_spell_ids'
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/wt2_new/tests/component/melder/aether/test_aether_spell_id_regime_property_component.py:51: AttributeError: 'Aether' object has no attribute 'process_wide_unique_spell_ids'
+E   AttributeError: 'Aether' object has no attribute 'process_wide_unique_spell_ids'
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/wt2_new/tests/component/melder/aether/test_aether_spell_id_regime_property_component.py:58: AttributeError: 'Aether' object has no attribute 'process_wide_unique_spell_ids'
+E   AttributeError: 'Aether' object has no attribute 'process_wide_unique_spell_ids'
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/wt2_new/tests/component/melder/aether/test_aether_spell_id_regime_property_component.py:69: AttributeError: 'Aether' object has no attribute 'process_wide_unique_spell_ids'
+E   AttributeError: 'Aether' object has no attribute 'process_wide_unique_spell_ids'
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/wt2_new/tests/component/melder/aether/test_aether_spell_id_regime_property_component.py:80: AttributeError: 'Aether' object has no attribute 'process_wide_unique_spell_ids'
+E   AttributeError: 'Aether' object has no attribute 'process_wide_unique_spell_ids'
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/wt2_new/tests/component/melder/aether/test_aether_spell_id_regime_property_component.py:88: AttributeError: 'Aether' object has no attribute 'process_wide_unique_spell_ids'
+E   KeyError: 'process_wide_unique_spell_ids'
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/wt2_new/tests/integration/melder/crystallizer/test_crystallizer_aether_twin_integration.py:127: KeyError: 'process_wide_unique_spell_ids'
+E   KeyError: 'process_wide_unique_spell_ids'
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/wt2_new/tests/integration/melder/crystallizer/test_crystallizer_aether_twin_integration.py:145: KeyError: 'process_wide_unique_spell_ids'
+E   AssertionError: assert ['channel_log...tion_enabled'] == ['channel_log...ue_spell_ids']
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/wt2_new/tests/unit/melder/aether/test_configuration_reload_lanes.py:234: AssertionError: assert ['channel_log...tion_enabled'] == ['channel_log...ue_spell_ids']
+E   assert True is False
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/wt2_new/tests/unit/melder/aether/test_configuration_reload_lanes.py:258: assert True is False
+E   AttributeError: 'Aether' object has no attribute 'process_wide_unique_spell_ids'
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/wt2_new/tests/unit/melder/crystallizer/crystal_loader_system/test_restore_spell_id_regime.py:115: AttributeError: 'Aether' object has no attribute 'process_wide_unique_spell_ids'
+E   AssertionError: assert [] == ['recorded_pe...ess_wide_ids']
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/wt2_new/tests/unit/melder/crystallizer/crystal_loader_system/test_restore_spell_id_regime.py:123: AssertionError: assert [] == ['recorded_pe...ess_wide_ids']
+E   AssertionError: assert [] == ['recorded_pe...ess_wide_ids']
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/wt2_new/tests/unit/melder/crystallizer/crystal_loader_system/test_restore_spell_id_regime.py:140: AssertionError: assert [] == ['recorded_pe...ess_wide_ids']
+E   AssertionError: assert [] == ['recorded_pr...er_frame_ids']
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/wt2_new/tests/unit/melder/crystallizer/crystal_loader_system/test_restore_spell_id_regime.py:151: AssertionError: assert [] == ['recorded_pr...er_frame_ids']
+E   AssertionError: assert [] == ['root_config..._with_report']
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/wt2_new/tests/unit/melder/crystallizer/crystal_loader_system/test_restore_spell_id_regime.py:159: AssertionError: assert [] == ['root_config..._with_report']

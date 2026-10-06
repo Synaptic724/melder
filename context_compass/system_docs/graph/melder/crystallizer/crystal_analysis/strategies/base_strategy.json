@@ -119,6 +119,7 @@
  "edge_candidates": [],
  "published_aliases": [],
  "imports": {
+  "ast": "ast",
   "ABC": "abc.ABC",
   "abstractmethod": "abc.abstractmethod",
   "Dict": "typing.Dict",

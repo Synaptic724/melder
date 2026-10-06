@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/_build_assets/_agent_documentation/agent_documentation.py",
- "source_sha256": "97d18a65dca4046578e0354a3aecafe376e9fff01a15cbc1ec5727514b31793c",
+ "source_sha256": "e758ba88c1b412f0511615b11495ecab9088ce50c73524165f138d4364f5c98b",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder._build_assets._agent_documentation.agent_documentation": {
@@ -35,7 +35,7 @@
     "has_bases": false,
     "trivial": true
    },
-   "span_sha256": "488eca11a70a3ec87bf390cdf44297faec49f1f06baabf6d96d436819d3619c8",
+   "span_sha256": "32ea265e5f5aa64509b190571de07a20b938d646e4948762307372d23c0dc2ec",
    "include": true,
    "role": "Static identity namespace for the agent-documentation asset.",
    "responsibilities": [
@@ -51,6 +51,7 @@
  "edge_candidates": [],
  "published_aliases": [],
  "imports": {
+  "os": "os",
   "hydrate": "melder.utilities.caching_system.asset_cache.hydrate",
   "source": "melder._build_assets._agent_documentation.manifest.agent_documentation_manifest"
  },

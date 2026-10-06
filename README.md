@@ -387,8 +387,11 @@ primary = conduit.meld("PostgresStore", binding_name="primary")
 ## 🟢 Spellframes — Categories Inside a World
 <sub>**Beginner.** The organizing half of every address.</sub>
 
-A `spellframe` is the **category** half of the Address Law. It can be a plain
-string when you just want grouping, or a `Protocol` when you want a *shape*:
+A `spellframe` is the **category** half of the Address Law. It is a plain
+string when you just want grouping, or a `Protocol` when you want a *contract*.
+Nothing else is a spellframe: a concrete class is refused at `bind()` with a
+`TypeError` that names the two forms (pass `spellframe="Name"` to group under
+its name, or declare the shape as a `typing.Protocol`).
 
 ```python
 # strings — organize by role
@@ -402,9 +405,12 @@ api  = conduit.meld(spellframe="web",     binding_name="users")
 ```
 
 Same `binding_name`, two categories, **two distinct addresses** — names never
-collide across spellframes. And because a `Protocol` works as a spellframe, one
-category can mean "everything that satisfies this shape," which is exactly what
-collection DI resolves:
+collide across spellframes. A string frame is only a label: it groups, it is
+addressable, and it never makes its members providers of anything. A `Protocol`
+frame is a label **and a contract**: `bind()` checks the spell against the
+Protocol's own public members, records the Protocol on the binding, and a
+parameter annotated with that Protocol resolves exactly its recorded
+implementers — which is what collection DI gathers:
 
 ```python
 book.bind(spell=EmailHandler, existence="unique",
@@ -415,6 +421,14 @@ book.bind(spell=EmailHandler, existence="unique",
 <sub>**Beginner → Intermediate.** Annotations, explicit targets, collections.</sub>
 
 Annotate a constructor parameter. Melder builds the graph.
+
+What an annotation selects depends on what it is. A **class** selects the spells of that type — a class
+bound bare, or an existing object of that class — and nothing else: a category that happens to share the
+class's name does not turn its members into providers. A **Protocol** selects the spells bound under it as
+their contract. A **`TYPE_CHECKING`-only import**, which leaves a string at runtime, resolves by name to a
+type or a contract, never to a string category. `list[...]` gathers the group the annotation's kind names:
+every spell of the class, every implementer of the Protocol, or — for a string — every member of the
+category or type of that name.
 
 ```python
 class ReportService:
@@ -440,6 +454,10 @@ class Consumer:
 `SpellMap` takes the full address: a concrete spell, a `spellframe`, a
 `binding_name`, or a combination. It obeys an **exactly-one law** — a target
 that matches zero spells or several fails at `conjure()`, not at runtime.
+When a plain annotation has several providers (two classes that share a name,
+two bindings of one class), `conjure()` refuses with an `AMBIGUOUS_PROVIDER`
+report that lists every candidate's address and the fix — a `SpellMap`
+default, a meld `override`, or one provider — never a guess.
 
 Ask for a list and get every implementation — the plugin pattern in one
 annotation:

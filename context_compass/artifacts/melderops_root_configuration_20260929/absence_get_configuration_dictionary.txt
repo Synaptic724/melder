@@ -1,0 +1,24 @@
+# Absence check by melder_0 at 2026-09-29T23:07:27Z (melder_private working tree, __version__ 0.2.8208)
+## grep -rn 'get_configuration_dictionary' --include=*.py src/melder  (no output = no definition or use)
+## native configuration classes and their only base
+src/melder/aether/aether_configuration.py:12:class AetherConfiguration(Cleanable):
+src/melder/crystallizer/configuration/crystallizer_configuration.py:10:class CrystallizerConfiguration(Cleanable):
+src/melder/mutation_research/mutation_configuration.py:10:class MutationResearchConfiguration(Cleanable):
+src/melder/nexus/configuration/nexus_configuration.py:17:class NexusConfiguration(Cleanable):
+src/melder/aether/spellbook/configuration/spellbook_configuration.py:17:class SpellbookConfiguration(Cleanable):
+src/melder/aether/aetheric_frame/aetheric_frame_configuration.py:16:class AethericFrameConfiguration(Cleanable):
+## Cleanable defines no such method
+83:    def __init__(self) -> None:
+98:    def cleaned(self) -> bool:
+114:    def is_cleaned(self) -> bool:
+129:    def check_cleaned(self) -> None:
+147:    def cleanup(self) -> None:
+166:    async def async_cleanup(self) -> None:
+204:        def __init__(self, owner: "Cleanable") -> None:
+222:        def __enter__(self) -> "Cleanable":
+252:        def __exit__(
+322:        def __init__(self, owner: "Cleanable") -> None:
+335:        async def __aenter__(self) -> "Cleanable":
+358:        async def __aexit__(
+397:    def using_cleanup(self) -> "Cleanable._CleanupContext":
+414:    def async_using_cleanup(self) -> "Cleanable._AsyncCleanupContext":

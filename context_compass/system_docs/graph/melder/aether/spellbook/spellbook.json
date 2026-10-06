@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spellbook.py",
- "source_sha256": "efb7508bf66e82631ceff8b914371830638b627add6e81505ce1391c07f9e071",
+ "source_sha256": "6a63e51ec649b05f474fa7b887ddfd2f0e950bc01d78fa34e0246c2b494c5a46",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spellbook": {
@@ -56,11 +56,11 @@
     "transaction"
    ],
    "shape": {
-    "method_count": 138,
+    "method_count": 140,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "98c57c169731ba3c6530546d56741f478805d0f6473f6068123be0cd018dd373",
+   "span_sha256": "3b0d31e87f5c95a592c76ab33418ff9784e93f30eae5feab98125fd210f5c0a3",
    "role": "Public binding, validation, and conjure surface.",
    "responsibilities": [
     "binds and scans spells into local and contracted lookup surfaces",
@@ -76,7 +76,8 @@
     "preserves same-identity name admission during existing-conduit conjure",
     "records owning Book and frame twins when public frame setup already locked configuration before conjure",
     "offers beginners an opt-in conjure report of Phase-4 validation warnings (validation_warnings=True); the default and internal conjure routes are silent",
-    "caches a creation only when it carries a manifest package (_emit_spell_cache)"
+    "caches a creation only when it carries a manifest package (_emit_spell_cache)",
+    "refuses the recorded-world configuration discipline on the predicted conjure mode before settling the frame posture, and re-checks it on the settled mode inside the transaction window"
    ],
    "owns_state": [
     "_bind",
@@ -93,7 +94,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "1c873b1232c8c227ba25492a2ee7197f3b3647590137ad2bad7797728d0d7edb"
+   "semantics_authored_against": "dd9f0d196fb1e62e47f93ee99c1d2a18a36839b3f1195dfc0d39a190b20c39a4"
   }
  },
  "edges_out": [
@@ -198,6 +199,8 @@
  ],
  "published_aliases": [],
  "imports": {
+  "threading": "threading",
+  "time": "time",
   "Generator": "collections.abc.Generator",
   "Iterable": "collections.abc.Iterable",
   "Mapping": "collections.abc.Mapping",

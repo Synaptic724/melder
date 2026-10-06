@@ -1,0 +1,10 @@
+# melder_0 2026-09-29T21:53:30Z: VM copy of the device tree at 0.2.8208 (rsync -c of src, tests, pyproject); assets not yet rebuilt
+--- 3.14t GIL off: tests/unit (github_workflows not collectable: no PyYAML)
+1 failed, 8279 passed, 3 skipped, 7 xfailed in 32.77s (the one failure: assets not yet rebuilt for 0.2.8208)
+FAILED tests/unit/melder/test_package_version_metadata.py::test_generated_build_assets_are_stamped_for_the_live_version
+--- 3.14t GIL off: tests/integration + tests/component
+4223 passed, 25 skipped, 5 xfailed, 2 xpassed in 100.90s (0:01:40)
+--- 3.14t GIL off: tests/component/melder/spellbook (the 36 refused-delete errors on the device tree)
+776 passed in 6.61s
+--- new tests (27): 3.14t GIL off, 3.14t GIL on, GIL build, device tree
+27 passed x4

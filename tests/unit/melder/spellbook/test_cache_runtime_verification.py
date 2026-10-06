@@ -8,6 +8,9 @@ from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_asset
 from melder.aether.conduit.meld.creation_context.creation_context_factory import (
     CreationContextFactory,
 )
+from melder.aether.spellbook.spell_compiler.structural_snapshot.structural_snapshot import (
+    StructuralSnapshot,
+)
 from melder.aether.spellbook.spellbook import Spellbook
 from melder.aether.spellbook.spellbook_creation_system import SpellbookCreationSystem
 
@@ -19,6 +22,8 @@ class _StubCachingSystem:
         self._payloads: Dict[str, Any] = dict(payloads or {})
         self.emit_calls = 0
         self.fail_emit = False
+        # Mirror the envelope's world stamp: "" until a staging records one.
+        self.world_stamp = ""
 
     @property
     def cached_spell_ids(self):  # type: ignore[no-untyped-def]
@@ -32,6 +37,15 @@ class _StubCachingSystem:
 
     def upsert_spell_payload(self, spell_id: str, spell_payload: Any) -> None:
         self._payloads[spell_id] = spell_payload
+
+    def remove_spell_payload(self, spell_id: str) -> bool:
+        return self._payloads.pop(spell_id, None) is not None
+
+    def set_world_stamp(self, world_stamp: str) -> bool:
+        if self.world_stamp == world_stamp:
+            return False
+        self.world_stamp = world_stamp
+        return True
 
     def emit(self) -> None:
         self.emit_calls += 1
@@ -93,6 +107,9 @@ def _make_spellbook_stub(
         _lock=threading.RLock(),
         _cache_emit_required=False,
         _spell_id_pool=payload,
+        # The world stamp reads the posture and the borrowed ids: none bound here.
+        _aetheric_frame_configuration=None,
+        _contracted_spells={},
         _system_caching_enabled_in_aether=lambda: caching_enabled,
         _get_or_create_caching_system=lambda conduit_name=None: caching_system,
         _logger=SimpleNamespace(error=lambda *args, **kwargs: None),
@@ -137,32 +154,42 @@ def test_resolve_conjure_cache_path_reports_expected_label(
 
 
 @pytest.mark.parametrize(
-    ("caching_enabled", "cached_ids", "expected_path", "expected_full_hit", "expected_mixed", "expected_full_miss"),
+    ("caching_enabled", "cached_ids", "stamp", "expected_path", "expected_full_hit", "expected_mixed", "expected_full_miss"),
     [
-        (False, (), "disabled", False, False, True),
-        (True, ("spell-a", "spell-b"), "full_hit", True, False, False),
-        (True, ("spell-a", "spell-b", "stale-spell"), "full_hit", True, False, False),
-        (True, ("spell-a",), "mixed", False, True, False),
-        (True, (), "full_miss", False, False, True),
-        (True, ("stale-spell",), "full_miss", False, False, True),
+        (False, (), "live", "disabled", False, False, True),
+        (True, ("spell-a", "spell-b"), "live", "full_hit", True, False, False),
+        (True, ("spell-a", "spell-b", "stale-spell"), "live", "full_hit", True, False, False),
+        (True, ("spell-a",), "live", "mixed", False, True, False),
+        (True, (), "live", "full_miss", False, False, True),
+        (True, ("stale-spell",), "live", "full_miss", False, False, True),
+        # A bundle staged in another world (or never stamped) is never a full hit, however
+        # complete its payload set: every payload matched is the mixed path, none the full miss.
+        (True, ("spell-a", "spell-b"), "other", "mixed", False, True, False),
+        (True, ("spell-a", "spell-b", "stale-spell"), "", "mixed", False, True, False),
+        (True, ("spell-a",), "other", "mixed", False, True, False),
+        (True, (), "other", "full_miss", False, False, True),
+        (True, ("stale-spell",), "", "full_miss", False, False, True),
     ],
 )
 def test_build_conjure_cache_state_classifies_live_vs_cached_spell_sets(
         monkeypatch: pytest.MonkeyPatch,
         caching_enabled: bool,
         cached_ids: tuple[str, ...],
+        stamp: str,
         expected_path: str,
         expected_full_hit: bool,
         expected_mixed: bool,
         expected_full_miss: bool,
 ) -> None:
-    """Verify cache-state classification is driven by live subset coverage."""
+    """Verify cache-state classification is driven by live subset coverage and the world stamp."""
     caching_system = _StubCachingSystem({spell_id: {"spell_id": spell_id} for spell_id in cached_ids})
     spellbook = _make_spellbook_stub(
         live_spell_ids=("spell-a", "spell-b"),
         caching_enabled=caching_enabled,
         caching_system=caching_system,
     )
+    live_stamp = StructuralSnapshot.world_stamp(spellbook)
+    caching_system.world_stamp = live_stamp if stamp == "live" else ("x" * 64 if stamp == "other" else "")
 
     cache_state = SpellbookCreationSystem._build_conjure_cache_state(
         spellbook=spellbook,
@@ -174,6 +201,8 @@ def test_build_conjure_cache_state_classifies_live_vs_cached_spell_sets(
     assert cache_state["is_full_hit"] is expected_full_hit
     assert cache_state["is_mixed"] is expected_mixed
     assert cache_state["is_full_miss"] is expected_full_miss
+    assert cache_state["world_stamp"] == (live_stamp if caching_enabled else "")
+    assert cache_state["world_matches"] is (caching_enabled and stamp == "live")
 
 
 @pytest.mark.parametrize("dynamic", [True, False])
@@ -606,3 +635,62 @@ def test_load_cached_creation_contexts_for_conjure_skips_missing_spell_objects(
     )
 
     assert load_calls == []
+
+
+def _stage(spellbook: Any, caching_system: _StubCachingSystem, world_stamp: str) -> None:
+    """Run the conjure-end staging with no live spells and the given live stamp."""
+    SpellbookCreationSystem._stage_spell_payloads_at_conjure_end(
+        spellbook=spellbook,
+        cache_state={
+            "caching_system": caching_system,
+            "live_spell_ids": set(),
+            "world_stamp": world_stamp,
+        },
+    )
+
+
+def test_stage_spell_payloads_records_the_world_stamp_and_flags_the_emit_when_it_changed() -> None:
+    """A changed world reaches the disk even when no payload was removed or re-staged."""
+    caching_system = _StubCachingSystem()
+    spellbook = _make_spellbook_stub(live_spell_ids=(), caching_enabled=True, caching_system=caching_system)
+
+    _stage(spellbook, caching_system, "s" * 64)
+
+    assert caching_system.world_stamp == "s" * 64
+    assert spellbook._cache_emit_required is True
+
+
+def test_stage_spell_payloads_does_not_flag_the_emit_for_an_unchanged_stamp() -> None:
+    """Re-staging an unchanged world with nothing to remove writes nothing."""
+    caching_system = _StubCachingSystem()
+    caching_system.world_stamp = "s" * 64
+    spellbook = _make_spellbook_stub(live_spell_ids=(), caching_enabled=True, caching_system=caching_system)
+
+    _stage(spellbook, caching_system, "s" * 64)
+
+    assert caching_system.world_stamp == "s" * 64
+    assert spellbook._cache_emit_required is False
+
+
+def test_stage_spell_payloads_still_flags_the_emit_for_a_pruned_payload() -> None:
+    """A stale payload removed under an unchanged stamp is persisted as before."""
+    caching_system = _StubCachingSystem({"stale-spell": {"spell_id": "stale-spell"}})
+    caching_system.world_stamp = "s" * 64
+    spellbook = _make_spellbook_stub(live_spell_ids=(), caching_enabled=True, caching_system=caching_system)
+
+    _stage(spellbook, caching_system, "s" * 64)
+
+    assert tuple(caching_system.cached_spell_ids) == ()
+    assert spellbook._cache_emit_required is True
+
+
+def test_stage_spell_payloads_noops_without_a_cache_utility() -> None:
+    """Caching off: no stamp is read or written."""
+    spellbook = _make_spellbook_stub(live_spell_ids=(), caching_enabled=False)
+
+    SpellbookCreationSystem._stage_spell_payloads_at_conjure_end(
+        spellbook=spellbook,
+        cache_state={"caching_system": None, "live_spell_ids": set(), "world_stamp": "s" * 64},
+    )
+
+    assert spellbook._cache_emit_required is False

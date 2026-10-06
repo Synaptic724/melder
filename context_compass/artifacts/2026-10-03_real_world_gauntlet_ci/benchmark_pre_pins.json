@@ -1,0 +1,5 @@
+{
+  "benchmarks/testing_other_di/test_real_world_gauntlet.py": "08cfc9c02384e9a204bf5e992d5c82e371cd75afb08e316c02051e7a70392cc7",
+  "benchmarks/testing_other_di/test_real_world_gauntlet_isolation.py": "2b4c9ddb7b6a48082703a43dee1c776d7456af198900a9af9dbf703fffedf920",
+  "benchmarks/testing_other_di/real_world_gauntlet_gil_runner.py": "bc008fb77ba8fde065fecb26dc6580a97e4852086f55f53dc906738bd59a387f"
+}
