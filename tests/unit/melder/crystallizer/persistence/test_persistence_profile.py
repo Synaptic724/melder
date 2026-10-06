@@ -21,6 +21,7 @@ from melder.crystallizer.crystals.nexus_crystal import NexusCrystal
 from melder.crystallizer.crystals.spellbook_crystal import (
     SpellbookCrystal,
 )
+from melder.crystallizer.crystals.spell_index_crystal import SpellIndexCrystal
 from melder.crystallizer.persistence.persistence_profile import PersistenceProfile
 from melder.crystallizer.crystals.recorded_unit_state import RecordedUnitState
 
@@ -31,13 +32,16 @@ class _StubSpellCrystal:
 
     Contract:
         - `id` is the spell SHA identity (SpellCrystal.id contract).
+        - `custody_key` is the record key (SpellCrystal.custody_key contract): the spell id, or
+          "<spell_id>@<frame>" for a crystal recorded under per-frame spell ids (0.2.8214).
         - `spellbook_id` is the parent edge the subtree sweeps match on.
         - `cleaned`/`cleanup()` mirror the Cleanable surface.
         - `describe()` returns detached plain data for segment capture.
     """
 
-    def __init__(self, spell_id, spellbook_id=None):
+    def __init__(self, spell_id, spellbook_id=None, frame_name=None):
         self.id = spell_id
+        self.custody_key = spell_id if frame_name is None else f"{spell_id}@{frame_name}"
         self.spellbook_id = spellbook_id
         self.cleaned = False
 
@@ -467,10 +471,10 @@ def test_capture_segment_payload_special_cases():
     profile.record_nexus_state(RecordedUnitState.disabled)
     payloads, _entries, _rng = profile.capture_segment_since(0)
     assert payloads["spell_activity"]["sha-a"] == {
-        "spell_id": "sha-a", "active": False, "custody_present": False,
+        "spell_id": "sha-a", "custody_key": "sha-a", "active": False, "custody_present": False,
     }
     assert payloads["spell_removed"]["sha-a"] == {
-        "spell_id": "sha-a", "removed": True,
+        "spell_id": "sha-a", "custody_key": "sha-a", "removed": True,
     }
     assert payloads["spellbook_removed"]["book-x"] == {
         "spellbook_id": "book-x", "removed": True,
@@ -542,3 +546,126 @@ def test_cleanup_is_idempotent_and_blocks_further_use():
     assert twin.cleaned is True and custody.cleaned is True
     with pytest.raises(RuntimeError):
         profile.record(AetherCrystal())
+
+
+def _record_one_class_in_two_frames(profile):
+    """Record one spell id bound in two frames (two Books) the way per-frame ids key it; return both copies."""
+    first = _StubSpellCrystal("sha", "book-a", frame_name="tenant_a")
+    second = _StubSpellCrystal("sha", "book-b", frame_name="tenant_b")
+    profile.record_spell_crystal(first, active=True)
+    profile.record_spell_crystal(second, active=True)
+    return first, second
+
+
+def test_one_spell_id_in_two_frames_keeps_both_custody_entries():
+    """
+    Purpose:
+        Verify custody keyed per frame: one spell id bound in two frames records twice (0.2.8214).
+    Contract:
+        Neither copy displaces the other; describe_spell_crystals is keyed by custody key; a lookup naming a frame
+        answers that frame's copy, a bare spell id answers the lowest key, and a full key answers exactly.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If one frame's copy displaces the other or a lookup picks the wrong copy.
+    """
+    profile = PersistenceProfile("p")
+    first, second = _record_one_class_in_two_frames(profile)
+    assert first.cleaned is False and second.cleaned is False
+    assert profile.describe()["spell_crystal_count"] == 2
+    assert sorted(profile.describe_spell_crystals()) == ["sha@tenant_a", "sha@tenant_b"]
+    assert profile.get_spell_crystal("sha", frame_name="tenant_b") is second
+    assert profile.get_spell_crystal("sha") is first
+    assert profile.get_spell_crystal("sha@tenant_b") is second
+
+
+def test_frame_lookup_never_answers_another_frames_copy():
+    """
+    Purpose:
+        Verify a lookup that names a frame is exact.
+    Contract:
+        A frame holding no copy raises KeyError although another frame holds one; a bare (process-wide) key still
+        answers a lookup that names a frame, because the frame is not part of that key.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If a frame-scoped lookup falls back to another frame's copy.
+    """
+    profile = PersistenceProfile("p")
+    _record_one_class_in_two_frames(profile)
+    with pytest.raises(KeyError):
+        profile.get_spell_crystal("sha", frame_name="tenant_c")
+    bare = _StubSpellCrystal("sha-bare", "book-a")
+    profile.record_spell_crystal(bare, active=True)
+    assert profile.get_spell_crystal("sha-bare", frame_name="tenant_a") is bare
+
+
+def test_activity_and_removal_address_one_frames_copy():
+    """
+    Purpose:
+        Verify park/promote and removal move or evict one frame's copy only.
+    Contract:
+        Parking "sha@tenant_a" leaves tenant_b's copy active; removing "sha@tenant_b" cleans only that copy.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If a verb reaches the other frame's copy.
+    """
+    profile = PersistenceProfile("p")
+    first, second = _record_one_class_in_two_frames(profile)
+    profile.record_spell_activity("sha@tenant_a", active=False)
+    summary = profile.describe()
+    assert summary["spell_crystal_count"] == 1
+    assert summary["inactive_spell_crystal_count"] == 1
+    profile.remove_spell_crystal("sha@tenant_b")
+    assert second.cleaned is True and first.cleaned is False
+    assert profile.get_spell_crystal("sha", frame_name="tenant_a") is first
+
+
+def test_segment_payloads_name_the_spell_and_its_custody_key():
+    """
+    Purpose:
+        Verify activity and removal tombstones carry both names.
+    Contract:
+        Entries journal under the custody key; spell_activity and spell_removed payloads carry the bare "spell_id"
+        (read from the key once the crystal is gone) and the "custody_key".
+    Returns:
+        None.
+    Raises:
+        AssertionError: If a tombstone loses either name.
+    """
+    profile = PersistenceProfile("p")
+    profile.record_spell_crystal(_StubSpellCrystal("sha", "book-a", frame_name="tenant_a"), active=True)
+    profile.record_spell_activity("sha@tenant_a", active=False)
+    profile.remove_spell_crystal("sha@tenant_a")
+    payloads, entries, _rng = profile.capture_segment_since(0)
+    assert [entry[2] for entry in entries] == ["sha@tenant_a", "sha@tenant_a", "sha@tenant_a"]
+    assert payloads["spell_activity"]["sha@tenant_a"] == {
+        "spell_id": "sha", "custody_key": "sha@tenant_a", "active": False, "custody_present": False,
+    }
+    assert payloads["spell_removed"]["sha@tenant_a"] == {
+        "spell_id": "sha", "custody_key": "sha@tenant_a", "removed": True,
+    }
+
+
+def test_index_graft_takes_each_members_custody_from_the_index_book():
+    """
+    Purpose:
+        Verify a graft reads its members' custody from the index's own Book.
+    Contract:
+        With one spell id recorded in two frames, the graft of tenant_a's index (the copy recorded first) carries
+        tenant_a's copy; the members map stays keyed by spell id, because one index lives in one Book.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the graft picks up another Book's copy.
+    """
+    profile = PersistenceProfile("p")
+    _record_one_class_in_two_frames(profile)
+    profile.record(SpellIndexCrystal(
+        index_id="index-a", spellbook_id="book-a", selected_spell_id="sha", member_spell_ids=["sha"],
+    ))
+    record = profile.capture_index_graft("index-a")
+    assert list(record["members"]) == ["sha"]
+    assert record["members"]["sha"]["payload"]["spellbook_id"] == "book-a"
+    assert record["members_without_custody"] == []

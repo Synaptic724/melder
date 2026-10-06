@@ -5,7 +5,7 @@ acceptance test; no factory wrappers are used to make existing values callable.
 """
 
 from collections.abc import Iterator
-from typing import Union
+from typing import Protocol, Union
 
 import pytest
 
@@ -19,6 +19,10 @@ from melder.aether.spellbook.spell_compiler.spell_analyzer.strategies.spell_occu
 from melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_occurrence_contract_processor_strategy import (
     SpellOccurrenceContractProcessorStrategy,
 )
+
+
+class IExistingValue(Protocol):
+    """The contract an existing value is framed under (a concrete class is not a valid frame since 2026-10-04)."""
 
 
 class ExistingValue:
@@ -48,7 +52,7 @@ class NestedValueConsumer:
 class CollectionValueConsumer:
     """Request registered existing values as a collection."""
 
-    def __init__(self, values: list[ExistingValue]) -> None:
+    def __init__(self, values: list[IExistingValue]) -> None:
         """Retain the injected collection and its original element identities."""
         self.values = values
 
@@ -118,7 +122,7 @@ def test_existing_value_root_returns_original_without_factory_execution(
     supplied = ExistingValue("supplied-before-bind")
     spell_id = instance_book.bind(
         spell=supplied, existence="unique",
-        spellframe=ExistingValue if registration == "typed" else "named-values" if registration == "named" else None,
+        spellframe=IExistingValue if registration == "typed" else "named-values" if registration == "named" else None,
         binding_name="chosen" if registration == "named" else None,
     )
     root = instance_book.conjure(dynamic=True)
@@ -130,7 +134,7 @@ def test_existing_value_dependency_retains_identity_without_contract_inspection(
 ) -> None:
     """Construct a real dependent root without inspecting the supplied dependency as callable."""
     supplied = ExistingValue("supplied-before-bind")
-    instance_book.bind(spell=supplied, existence="unique", spellframe=ExistingValue)
+    instance_book.bind(spell=supplied, existence="unique", spellframe=IExistingValue)
     consumer_id = instance_book.bind(spell=ValueConsumer, existence="many")
     root = instance_book.conjure(dynamic=True)
     assert root.meld(spell_id=consumer_id).value is supplied
@@ -139,7 +143,7 @@ def test_existing_value_dependency_retains_identity_without_contract_inspection(
 def test_existing_value_transitive_dependency_retains_identity(instance_book: Spellbook) -> None:
     """A second dependency level must still end at the exact supplied object."""
     supplied = ExistingValue("supplied-before-bind")
-    instance_book.bind(spell=supplied, existence="unique", spellframe=ExistingValue)
+    instance_book.bind(spell=supplied, existence="unique", spellframe=IExistingValue)
     instance_book.bind(spell=ValueConsumer, existence="many")
     root_id = instance_book.bind(spell=NestedValueConsumer, existence="many")
     root = instance_book.conjure(dynamic=True)
@@ -149,7 +153,7 @@ def test_existing_value_transitive_dependency_retains_identity(instance_book: Sp
 def test_existing_values_in_collection_retain_identity(instance_book: Spellbook) -> None:
     """Collection planning must not discover constructors on existing elements."""
     supplied = ExistingValue("supplied-before-bind")
-    instance_book.bind(spell=supplied, existence="unique", spellframe=ExistingValue)
+    instance_book.bind(spell=supplied, existence="unique", spellframe=IExistingValue)
     consumer_id = instance_book.bind(spell=CollectionValueConsumer, existence="many")
     root = instance_book.conjure(dynamic=True)
     values = root.meld(spell_id=consumer_id).values
@@ -170,7 +174,7 @@ def test_explicit_map_injects_existing_value(instance_book: Spellbook) -> None:
 def test_late_bound_consumer_injects_existing_value(instance_book: Spellbook) -> None:
     """An existing provider remains a value when its dependent is bound after conjure."""
     supplied = ExistingValue("supplied-before-bind")
-    instance_book.bind(spell=supplied, existence="unique", spellframe=ExistingValue)
+    instance_book.bind(spell=supplied, existence="unique", spellframe=IExistingValue)
     root = instance_book.conjure(dynamic=True)
     consumer_id = instance_book.bind(spell=ValueConsumer, existence="many")
     assert root.meld(spell_id=consumer_id).value is supplied

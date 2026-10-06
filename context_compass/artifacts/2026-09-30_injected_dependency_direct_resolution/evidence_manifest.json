@@ -1,0 +1,120 @@
+{
+  "captured_at_utc": "2026-09-30T15:53:08.966473+00:00",
+  "origin_repository": "C:\\Users\\Mark\\PycharmProjects\\priv_commandops",
+  "files": [
+    {
+      "path": "focused.xml",
+      "source": "context_compass\\artifacts\\2026-09-30_toolbox_native_dispense\\focused.xml",
+      "sha256": "9a1487418bd228fc37d8526dd9a0d807d6fcadfdaae20e44a9c9abec336afd2d",
+      "bytes": 20132
+    },
+    {
+      "path": "dependency_lookup.xml",
+      "source": "context_compass\\artifacts\\2026-09-30_toolbox_native_dispense\\dependency_lookup.xml",
+      "sha256": "63273a947afa1cea6a304fdaf0f9a7a77aea2456be1963703683108b866ae89b",
+      "bytes": 2101
+    },
+    {
+      "path": "native_dependency_lookup.xml",
+      "source": "context_compass\\artifacts\\2026-09-30_toolbox_native_dispense\\native_dependency_lookup.xml",
+      "sha256": "2ca16e725974cac46e370ad45b04c946f9a5e5eaafb7d0338e85855c948f153e",
+      "bytes": 2150
+    },
+    {
+      "path": "native_contracts.xml",
+      "source": "context_compass\\artifacts\\2026-09-30_toolbox_native_dispense\\native_contracts.xml",
+      "sha256": "5c61127a6a6bf1029ad38b07f7be8273e03ab4f4643d02834f06120309d3e21a",
+      "bytes": 2565
+    },
+    {
+      "path": "regression.xml",
+      "source": "context_compass\\artifacts\\2026-09-30_toolbox_native_dispense\\regression.xml",
+      "sha256": "ca6ca9bb97e49eb74c40f5a85c846bfcfde7e6c43901e662702cfbe1e424b7ad",
+      "bytes": 303576
+    },
+    {
+      "path": "runtime_provenance.json",
+      "source": "context_compass\\artifacts\\2026-09-30_toolbox_native_dispense\\runtime_provenance.json",
+      "sha256": "670f2288ff6a0f71f2860dcefb4f067fb220fd4213d8f6c0e51706dd69afa7e3",
+      "bytes": 2025
+    },
+    {
+      "path": "test_native_dependency_lookup.py",
+      "source": "context_compass\\artifacts\\2026-09-30_toolbox_native_dispense\\test_native_dependency_lookup.py",
+      "sha256": "8d3e47ade38cec80cddb238e8f9822d861936c30b46cc605bacbd0b3278ac657",
+      "bytes": 1592
+    },
+    {
+      "path": "source_snapshot/tests/component/spectrum/test_toolbox_native_dispense.py",
+      "source": "tests\\component\\spectrum\\test_toolbox_native_dispense.py",
+      "sha256": "0f9e219bc4dffc963973686c0dd43fdbf861aae1a5f03e53c428e4d224a90db8",
+      "bytes": 10202
+    },
+    {
+      "path": "source_snapshot/tests/component/spectrum/conftest.py",
+      "source": "tests\\component\\spectrum\\conftest.py",
+      "sha256": "7004ccf7eb8cb274d3e46bc4a49af517f9cfb2115f77f05947eea03fcf634556",
+      "bytes": 1014
+    },
+    {
+      "path": "source_snapshot/tests/mocks/melder_isolation.py",
+      "source": "tests\\mocks\\melder_isolation.py",
+      "sha256": "a3fceabf1ad175d250c3c66c93bb5704f483aeb82d2aad1105f20a1225fccce5",
+      "bytes": 2404
+    },
+    {
+      "path": "source_snapshot/src/melder_ops/command_center/spectrum/toolbox/toolbox.py",
+      "source": "src\\melder_ops\\command_center\\spectrum\\toolbox\\toolbox.py",
+      "sha256": "b5dfb9ad1a3ca14779de6a1111a0779183682fc2af02be9d16934188a04ff400",
+      "bytes": 16347
+    },
+    {
+      "path": "source_snapshot/src/melder_ops/command_center/spectrum/spectrum.py",
+      "source": "src\\melder_ops\\command_center\\spectrum\\spectrum.py",
+      "sha256": "a55398da6c6ab8b8d5979a0065313ff0de07f020451188e444c6ed1a9159de7c",
+      "bytes": 83699
+    },
+    {
+      "path": "source_snapshot/src/melder_ops/command_center/command_group.py",
+      "source": "src\\melder_ops\\command_center\\command_group.py",
+      "sha256": "f70462bf86be0d30307c8ed3917ef25e59406506cbeacd835efe5fccb06b5aea",
+      "bytes": 92769
+    },
+    {
+      "path": "installed_native/meld.py",
+      "source": ".venv314\\Lib\\site-packages\\melder\\aether\\conduit\\meld\\meld.py",
+      "sha256": "0c3239b0476b96a19741c13eb552da9d9f121ec5c68d793ee8ee5a424719b6f8",
+      "bytes": 89556
+    },
+    {
+      "path": "installed_native/creation_context_builder.py",
+      "source": ".venv314\\Lib\\site-packages\\melder\\aether\\conduit\\meld\\creation_context\\creation_context_builder.py",
+      "sha256": "49100a2cc7bb7a1a5af2cc0bc81398a6b410263d9307e44276764c98826c96cc",
+      "bytes": 9731
+    },
+    {
+      "path": "installed_native/creation_context_factory.py",
+      "source": ".venv314\\Lib\\site-packages\\melder\\aether\\conduit\\meld\\creation_context\\creation_context_factory.py",
+      "sha256": "be275f0a16588b5c5560d1fe4cac422e875fdcd2409cbc0f64c89e1d6a00d232",
+      "bytes": 17394
+    },
+    {
+      "path": "results_summary.json",
+      "source": "Authored or derived for this handoff",
+      "sha256": "d6fc1d39a677e4364741db9bc0ff0220c005f461abca9ba5a8728eeddc9ee3cb",
+      "bytes": 639
+    },
+    {
+      "path": "README.md",
+      "source": "Authored or derived for this handoff",
+      "sha256": "e85c96071f572d425ce96798da4506e2a4e006ff4876b9427078c2f82688b500",
+      "bytes": 1971
+    },
+    {
+      "path": "reproduce_from_melderops.ps1",
+      "source": "Authored or derived for this handoff",
+      "sha256": "59bfba7c3859a01131a8409ff9076102a253c08035380304f69a57c211726e5c",
+      "bytes": 1372
+    }
+  ]
+}

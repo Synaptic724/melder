@@ -83,6 +83,7 @@
  ],
  "published_aliases": [],
  "imports": {
+  "threading": "threading",
   "Optional": "typing.Optional",
   "Tuple": "typing.Tuple",
   "ConduitState": "melder.aether.conduit.conduit_state.conduit_state.ConduitState",

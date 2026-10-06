@@ -1,0 +1,4 @@
+proto=False doors: {'total': 58, 'nested': 58, 'with_cells': 58, 'deferred': 0}
+sample: _creation_context_no_overrides_only_template.<locals>._creation_context_execute_no_overrides_only file=<creation_context_no_overrides_only_template:many:0:0> cells=('_no_overrides_executor',)
+proto=True doors: {'total': 58, 'nested': 31, 'with_cells': 31, 'deferred': 27}
+sample: _creation_context_execute_no_overrides_only file=<creation_context_door_no_overrides:spellspace:0:0> cells=()

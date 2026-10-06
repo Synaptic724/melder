@@ -107,9 +107,9 @@ def _write_cache_bundle(cache_root: Path, contents: bytes) -> Path:
         contents: Serialized bundle or deliberately corrupt bytes.
 
     Returns:
-        Path: The frame-a/root.melc file read by _make_cache_utility.
+        Path: The frame-a/root.meldercache file read by _make_cache_utility.
     """
-    bundle_path = cache_root / "frame-a" / "root.melc"
+    bundle_path = cache_root / "frame-a" / "root.meldercache"
     bundle_path.parent.mkdir(parents=True, exist_ok=True)
     bundle_path.write_bytes(contents)
     return bundle_path
@@ -198,7 +198,7 @@ def test_caching_system_builds_expected_bundle_metadata() -> None:
 
     assert caching_system.conduit_name == "alpha"
     assert caching_system.bundle_path == (
-        cache_root_path / "frame-b" / "alpha.melc"
+        cache_root_path / "frame-b" / "alpha.meldercache"
     )
 
 
@@ -344,6 +344,7 @@ def test_caching_system_resident_store_holds_untracked_bytes() -> None:
         pytest.param("spell_payloads", [], id="wrong-payload-map"),
         pytest.param("spell_payloads", {"a" * 64: {}}, id="decoded-payload"),
         pytest.param("structural_payloads", {"a" * 64: {}}, id="decoded-structural-payload"),
+        pytest.param("world_stamp", 7, id="non-string-world-stamp"),
         pytest.param("melder_version", __version__ + ".other", id="different-release"),
         pytest.param("melder_version", "", id="empty-release"),
         pytest.param("melder_version", None, id="null-release"),
@@ -446,7 +447,7 @@ def test_caching_system_rejects_missing_release_then_emits_current_bundle(tmp_pa
 @pytest.mark.parametrize("contents", [b"not-marshal", marshal.dumps([])])
 def test_caching_system_rejects_corrupt_real_bundle(tmp_path: Path, contents: bytes) -> None:
     """
-    Treat unreadable or non-dictionary .melc contents as a cold cache.
+    Treat unreadable or non-dictionary .meldercache contents as a cold cache.
 
     Args:
         tmp_path: Isolated test-owned cache root.
@@ -459,6 +460,34 @@ def test_caching_system_rejects_corrupt_real_bundle(tmp_path: Path, contents: by
     caching_system = _make_cache_utility(cache_root_path=tmp_path)
     try:
         assert tuple(caching_system.cached_spell_ids) == ()
+    finally:
+        caching_system.cleanup()
+
+
+def test_caching_system_never_reads_a_legacy_melc_bundle(tmp_path: Path) -> None:
+    """
+    Regression: a current-format bundle under the retired `.melc` name is never read.
+
+    Contract:
+        Since 0.2.8223 a conduit cache bundle is `<frame>/<conduit>.meldercache`. A bundle that
+        would be admitted under that name, written beside it under the old `.melc` name, leaves
+        the cache cold: Melder neither migrates nor deletes such a file.
+
+    Args:
+        tmp_path: Isolated test-owned cache root.
+
+    Returns:
+        None. The legacy file is untouched and no cached spell is exposed.
+    """
+    legacy_path = tmp_path / "frame-a" / "root.melc"
+    legacy_path.parent.mkdir(parents=True, exist_ok=True)
+    legacy_bytes = marshal.dumps(_make_populated_cache_bundle())
+    legacy_path.write_bytes(legacy_bytes)
+    caching_system = _make_cache_utility(cache_root_path=tmp_path)
+    try:
+        assert caching_system.bundle_path == tmp_path / "frame-a" / "root.meldercache"
+        assert tuple(caching_system.cached_spell_ids) == ()
+        assert legacy_path.read_bytes() == legacy_bytes
     finally:
         caching_system.cleanup()
 
@@ -653,10 +682,61 @@ def test_caching_system_emit_writes_structural_tier_in_envelope(tmp_path: Path) 
         assert persisted["version"] == CachingSystem.CURRENT_VERSION
         assert set(persisted) == {
             "version", "melder_version", "python", "frame_name", "conduit_name",
-            "spell_payloads", "structural_payloads",
+            "spell_payloads", "structural_payloads", "world_stamp",
         }
         assert isinstance(persisted["structural_payloads"]["i" * 64], bytes)
         assert marshal.loads(persisted["structural_payloads"]["i" * 64]) == _make_structural_payload("rows")
     finally:
         caching_system.cleanup()
 
+
+def test_caching_system_new_store_carries_an_empty_world_stamp(tmp_path: Path) -> None:
+    """An empty store records no world: the stamp is "" until a staging sets it."""
+    caching_system = _make_cache_utility(cache_root_path=tmp_path)
+    try:
+        assert caching_system.world_stamp == ""
+    finally:
+        caching_system.cleanup()
+
+
+def test_caching_system_set_world_stamp_reports_a_change_and_round_trips(tmp_path: Path) -> None:
+    """
+    The setter reports whether the recorded value changed, and the stamp survives emit and reload.
+
+    Contract: the first set of a fresh store changes it; the same value again does not; a different value
+    does; the persisted envelope carries the stamp and a reload exposes it.
+    """
+    caching_system = _make_cache_utility(cache_root_path=tmp_path)
+    try:
+        assert caching_system.set_world_stamp("a" * 64) is True
+        assert caching_system.set_world_stamp("a" * 64) is False
+        assert caching_system.set_world_stamp("b" * 64) is True
+        assert caching_system.world_stamp == "b" * 64
+        caching_system.upsert_spell_payload("c" * 64, _make_spell_payload("stamped"))
+        caching_system.emit()
+        persisted = marshal.loads(caching_system.bundle_path.read_bytes())
+        assert persisted["world_stamp"] == "b" * 64
+    finally:
+        caching_system.cleanup()
+    reloaded = _make_cache_utility(cache_root_path=tmp_path)
+    try:
+        assert reloaded.world_stamp == "b" * 64
+        assert reloaded.get_spell_payload("c" * 64) == _make_spell_payload("stamped")
+    finally:
+        reloaded.cleanup()
+
+
+def test_caching_system_accepts_current_bundle_without_world_stamp_as_unstamped(tmp_path: Path) -> None:
+    """A current-generation bundle written without the field loads with an empty stamp (never a full hit)."""
+    bundle = _make_populated_cache_bundle()
+    assert "world_stamp" not in bundle
+    _write_cache_bundle(tmp_path, marshal.dumps(bundle))
+    caching_system = _make_cache_utility(cache_root_path=tmp_path)
+    try:
+        assert caching_system.get_spell_payload("a" * 64) == _make_spell_payload("cached")
+        assert caching_system.world_stamp == ""
+        assert caching_system.set_world_stamp("d" * 64) is True
+        caching_system.emit()
+        assert marshal.loads(caching_system.bundle_path.read_bytes())["world_stamp"] == "d" * 64
+    finally:
+        caching_system.cleanup()

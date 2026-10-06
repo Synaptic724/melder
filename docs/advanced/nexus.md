@@ -10,6 +10,11 @@ The Nexus factory returns a fresh, defaulted configuration. `nexus.activate(conf
 installs and finalizes it. The lesson checks `is_configured` and `is_activated`
 separately, including after deactivation.
 
+While Nexus is active its policy stays in force: `configure(...)`, and `activate(...)`
+handed a different configuration, raise `RuntimeError` (since 0.2.8210), because live Rifts
+were admitted under the installed policy. Call `nexus.deactivate()` first, then install
+the new configuration; `nexus.activate()` alone re-enables the installed one.
+
 For a Rift, create a new configuration, choose its space type and name, then pass
 it to `create_rift(...)`. That configuration is consumed: a second Rift needs a
 second configuration object. Registration and active state are distinct; the

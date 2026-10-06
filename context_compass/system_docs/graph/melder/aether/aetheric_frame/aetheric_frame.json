@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_frame/aetheric_frame.py",
- "source_sha256": "e470e3977783eaf04a1966bef19d9024ba87c6545dd236073e6645211941c75c",
+ "source_sha256": "501779c86c3d04db9b7261ef45d2d40df1774d53d34c624d3b45a2e63f262fd4",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_frame.aetheric_frame": {
@@ -46,6 +46,7 @@
     "register_spell_index",
     "release_lookup",
     "release_lookup_by_spell_id",
+    "shared_spellbook_configuration",
     "spell_system_states",
     "spells_in_index",
     "unregister_conduit_spells",
@@ -55,11 +56,11 @@
     "update_lookup"
    ],
    "shape": {
-    "method_count": 30,
+    "method_count": 31,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "4117048949e826e2d98ee7120258da71cd59f7c7e5cb45b93e101912157a2196",
+   "span_sha256": "d4e1cad5c745c1c664bbb7c45f181cf8a689c446f58fb2bd5dc3864cc1bf78a1",
    "role": "Per-frame runtime container.",
    "responsibilities": [
     "stores frame-local conduits and registries",
@@ -68,7 +69,8 @@
     "holds the frame-bound configuration snapshot",
     "owns the frame-local dev-ops information registry used by reporting and transaction topology",
     "bridges normal-root registration into Cloud's shared name collision authority",
-    "logs a conduit that raises during frame teardown through the Aether logger and cleans the rest"
+    "logs a conduit that raises during frame teardown through the Aether logger and cleans the rest",
+    "reports the frame-wide shared rich Spellbook configuration (shared_spellbook_configuration) only while its posture shares one; None otherwise or before a Book binds one"
    ],
    "owns_state": [
     "_conduits",
@@ -159,6 +161,7 @@
  ],
  "published_aliases": [],
  "imports": {
+  "threading": "threading",
   "TracebackType": "types.TracebackType",
   "TYPE_CHECKING": "typing.TYPE_CHECKING",
   "Optional": "typing.Optional",

@@ -71,6 +71,7 @@
  "published_aliases": [],
  "imports": {
   "annotations": "__future__.annotations",
+  "inspect": "inspect",
   "TYPE_CHECKING": "typing.TYPE_CHECKING",
   "CallableBindingProfile": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.CallableBindingProfile",
   "ClassBindingProfile": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.ClassBindingProfile",

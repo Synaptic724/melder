@@ -72,22 +72,39 @@ def test_init_accepts_spell_frame_binding() -> None:
     assert contract.binding_name == "primary"
 
 
-def test_init_normalizes_binding_name_when_provided() -> None:
+def test_init_keeps_binding_name_as_written() -> None:
     """
-    Verify SpellContract normalizes binding names when provided.
+    Verify SpellContract keeps the binding name exactly as written, as Bind does (0.2.8226).
 
     Contract:
-        - binding_name is lowercased for case-insensitive matching.
+        - binding_name is the caller's text; it was lowercased before 0.2.8226.
+        - canonical_key carries the lowercase form, so matching stays case-insensitive.
 
     Raises:
-        AssertionError: If binding_name is not normalized.
+        AssertionError: If binding_name is changed or the key is not normalized.
     """
     contract = SpellContract(
         spell="alpha",
         spellframe="frame",
         binding_name="Primary",
     )
-    assert contract.binding_name == "primary"
+    assert contract.binding_name == "Primary"
+    assert contract.lookup_triplet == ("alpha", "frame", "Primary")
+    assert contract.canonical_key == ("frame", "primary")
+
+
+def test_init_rejects_a_non_string_binding_name() -> None:
+    """
+    Verify SpellContract refuses a binding name that is neither a string nor None.
+
+    Contract:
+        - TypeError names the received type before any field is set.
+
+    Raises:
+        AssertionError: If construction does not raise TypeError.
+    """
+    with pytest.raises(TypeError, match="binding_name must be a string or None; got int"):
+        SpellContract(spell="alpha", binding_name=7)
 
 
 def test_default_override_is_none() -> None:

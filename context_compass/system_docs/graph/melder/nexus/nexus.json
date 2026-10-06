@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/nexus.py",
- "source_sha256": "b5372e65a57bc56d147a79fa4bd33d79779aa9e9534a04e9a974e3bb92c8ad29",
+ "source_sha256": "dc00c866a0497777153b4a4c2208823cca049c32a80c7b744a4ad817d7e78852",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.nexus": {
@@ -97,7 +97,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "862c8b7f2cd2244149a09c0f86fb223a6d78b2bdd5189b2e30ee24afbb258f41",
+   "span_sha256": "fed73958c9e7ff2514407cade997110c9ba5faba67627aa9f61918a6d7895ab5",
    "role": "Public AR root.",
    "responsibilities": [
     "creates and registers live Rift instances",
@@ -105,7 +105,8 @@
     "owns descriptor publication",
     "owns frame ACL management",
     "coordinates projection refresh across affected Rifts",
-    "facades existing-ID pooled publication without refreshing admitted Rift commands"
+    "facades existing-ID pooled publication without refreshing admitted Rift commands",
+    "keeps its installed policy while active: configure, and activate with another configuration, refuse until deactivate"
    ],
    "owns_state": [
     "_rifts_by_id",
@@ -121,7 +122,7 @@
     "refresh",
     "cleanup"
    ],
-   "semantics_authored_against": "8c0e8105b8307048442f52b382ee6c8a4422438c943c901cfce6d1736532e9a8"
+   "semantics_authored_against": "fed73958c9e7ff2514407cade997110c9ba5faba67627aa9f61918a6d7895ab5"
   }
  },
  "edges_out": [
@@ -244,6 +245,8 @@
  ],
  "published_aliases": [],
  "imports": {
+  "threading": "threading",
+  "time": "time",
   "TYPE_CHECKING": "typing.TYPE_CHECKING",
   "Any": "typing.Any",
   "ClassVar": "typing.ClassVar",

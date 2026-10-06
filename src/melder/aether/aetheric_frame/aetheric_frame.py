@@ -588,6 +588,41 @@ class AethericFrame(Cleanable):
         self.check_cleaned()
         return self._frame_configuration
 
+    @property
+    def shared_spellbook_configuration(self) -> Optional[SpellbookConfiguration]:
+        """
+        Return the frame-wide shared rich Spellbook configuration, when this frame shares one.
+
+        Purpose:
+            Public read of the configuration Spellbooks in this frame adopt while the frame posture shares the rich
+            configuration, so a host can compare a configuration against it without reading `_configuration`.
+
+        Contract:
+            - Returns the configuration only while `frame_configuration.shared_framewide_spellbook_configuration` is
+              True, and None otherwise: the same gate a Spellbook applies before adopting it.
+            - Also None while sharing is on but no Spellbook has bound one yet. The first conjuring Spellbook binds
+              its frozen configuration; later Spellbooks adopt that object.
+            - Returns the live object by reference. The frame owns it and cleans it with the frame; the caller must
+              not clean it.
+
+        Threading:
+            Unsynchronized reads: the posture flag (read under the posture's own lock), then the bound reference,
+            which is set once under the Aether lock and not replaced while the frame lives.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Returns:
+            Optional[SpellbookConfiguration]: The shared configuration, or None.
+
+        Raises:
+            RuntimeError: If the frame has been cleaned.
+        """
+        self.check_cleaned()
+        if not self._frame_configuration.shared_framewide_spellbook_configuration:
+            return None
+        return self._configuration
+
     def freeze_frame_configuration(
             self,
             origin_spellbook_id: Optional[str] = None,

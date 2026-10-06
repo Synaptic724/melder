@@ -15,6 +15,7 @@ from melder.utilities.custom_exceptions.unresolved_input_error import Unresolved
 from tests.integration.melder.spellbook.test_existing_instance_planning import (
     CollectionValueConsumer,
     ExistingValue,
+    IExistingValue,
     MappedValueConsumer,
     NestedValueConsumer,
     ValueConsumer,
@@ -65,7 +66,7 @@ def test_characterize_existing_instance_injection(instance_book: Spellbook, mode
     typed = mode.endswith("typed")
     spell_id = instance_book.bind(
         spell=supplied, existence="unique",
-        spellframe="named-values" if named else ExistingValue if typed else None,
+        spellframe="named-values" if named else IExistingValue if typed else None,
         binding_name="chosen" if named else None,
     )
     spell = instance_book._spell_id_pool[spell_id]

@@ -52,6 +52,8 @@
  "edges_out": [],
  "edge_candidates": [],
  "published_aliases": [],
- "imports": {},
+ "imports": {
+  "enum": "enum"
+ },
  "collapse_candidate": null
 }

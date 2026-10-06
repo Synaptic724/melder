@@ -52,6 +52,10 @@
  "edge_candidates": [],
  "published_aliases": [],
  "imports": {
+  "hashlib": "hashlib",
+  "json": "json",
+  "pathlib": "pathlib",
+  "re": "re",
   "Dict": "typing.Dict",
   "List": "typing.List",
   "Optional": "typing.Optional",

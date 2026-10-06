@@ -81,6 +81,7 @@
  ],
  "published_aliases": [],
  "imports": {
+  "threading": "threading",
   "Tuple": "typing.Tuple",
   "SystemState": "melder.aether.spellbook.configuration.system_state.SystemState",
   "Cleanable": "melder.utilities.general_base.cleanable.Cleanable"

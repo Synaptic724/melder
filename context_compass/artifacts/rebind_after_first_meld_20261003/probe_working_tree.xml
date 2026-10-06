@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="4" time="0.874" timestamp="2026-10-03T19:16:51.480379+00:00" hostname="claude"><testcase classname="rebind.test_rebind_probe_melder_only" name="test_rebind_rebuilds_creation_context[False-False]" time="0.091" /><testcase classname="rebind.test_rebind_probe_melder_only" name="test_rebind_rebuilds_creation_context[False-True]" time="0.011" /><testcase classname="rebind.test_rebind_probe_melder_only" name="test_rebind_rebuilds_creation_context[True-False]" time="0.012"><failure message="RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.">../rebind/test_rebind_probe_melder_only.py:81: in test_rebind_rebuilds_creation_context
+    assert scope.meld(spellframe="actions", binding_name="probe", override={"value": 2}).value == 2
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/melder/aether/conduit/conduit.py:4845: in meld
+    return meld_component.meld(
+src/melder/aether/conduit/meld/conduit_meld.py:593: in meld
+    instance = self._execute_admitted(
+src/melder/aether/conduit/meld/meld.py:882: in _execute_admitted
+    creation_context = spell._get_or_build_creation_context()
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell.py:847: in _get_or_build_creation_context
+    return creation_context_factory.get_or_build_for_spell(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/melder/aether/conduit/meld/creation_context/creation_context_factory.py:361: in get_or_build_for_spell
+    built_creation_context = CreationContextBuilder.build(
+src/melder/aether/conduit/meld/creation_context/creation_context_builder.py:121: in build
+    raise RuntimeError(
+E   RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.</failure></testcase><testcase classname="rebind.test_rebind_probe_melder_only" name="test_rebind_rebuilds_creation_context[True-True]" time="0.012"><failure message="RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.">../rebind/test_rebind_probe_melder_only.py:81: in test_rebind_rebuilds_creation_context
+    assert scope.meld(spellframe="actions", binding_name="probe", override={"value": 2}).value == 2
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/melder/aether/conduit/conduit.py:4845: in meld
+    return meld_component.meld(
+src/melder/aether/conduit/meld/conduit_meld.py:593: in meld
+    instance = self._execute_admitted(
+src/melder/aether/conduit/meld/meld.py:882: in _execute_admitted
+    creation_context = spell._get_or_build_creation_context()
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell.py:847: in _get_or_build_creation_context
+    return creation_context_factory.get_or_build_for_spell(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/melder/aether/conduit/meld/creation_context/creation_context_factory.py:361: in get_or_build_for_spell
+    built_creation_context = CreationContextBuilder.build(
+src/melder/aether/conduit/meld/creation_context/creation_context_builder.py:121: in build
+    raise RuntimeError(
+E   RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.</failure></testcase></testsuite></testsuites>

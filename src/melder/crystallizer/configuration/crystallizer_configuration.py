@@ -322,6 +322,40 @@ class CrystallizerConfiguration(Cleanable):
         self.check_cleaned()
         return self._properties[key]
 
+    def get_configuration_dictionary(self) -> Dict[str, object]:
+        """
+        Return a snapshot of the properties this configuration currently holds.
+
+        Purpose:
+            Let a host compare two configurations - for example a policy it was
+            handed against the one installed on the root - without reading the
+            private property bag.
+
+        Contract:
+            - Returns a NEW dict of every property currently set, name to value.
+              Changing the returned dict never changes this configuration.
+            - Values are the stored objects BY REFERENCE (no deep copy, no
+              serialization); a property that was never set is absent, not defaulted.
+            - Never validates, freezes, activates or emits a recorded twin, and
+              works in every lifecycle state until cleanup.
+
+        Threading:
+            Taken under the configuration lock, so the snapshot never sees a
+            half-applied write.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
+
+        Returns:
+            Dict[str, object]: Property name to stored value.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return dict(self._properties)
+
     @property
     def retain_user_sources(self) -> bool:
         """

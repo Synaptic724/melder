@@ -102,7 +102,7 @@ def test_unverified_extra_upload_file_is_refused(distributions: ModuleType,
 
 @pytest.mark.parametrize("member", [
     "../escaped.py", "/absolute.py", "C:/drive.py", "melder\\bad.py", "melder/ok.py\x00bad",
-    "other_package/module.py", "melder/cache.melc", "melder/__pycache__/a.pyc",
+    "other_package/module.py", "melder/cache.melc", "melder/cache.meldercache", "melder/__pycache__/a.pyc",
 ])
 def test_wheel_rejects_unsafe_or_unrelated_members(distributions: ModuleType,
                                                  tmp_path: pathlib.Path, member: str) -> None:

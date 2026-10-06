@@ -92,3 +92,54 @@ def test_unconfigured_aether_records_no_root_twin():
     crystallizer = Crystallizer()
     crystallizer.activate(configuration)
     assert crystallizer.describe_profile()["has_aether_crystal"] is False
+
+
+def _activated_crystallizer() -> Crystallizer:
+    """Activate the Aether-hosted crystallizer with default knobs."""
+    configuration = CrystallizerConfiguration().with_defaults()
+    configuration.activate()
+    crystallizer = Crystallizer()
+    crystallizer.activate(configuration)
+    return crystallizer
+
+
+def _recorded_aether_payload(crystallizer: Crystallizer) -> dict:
+    """Seal one checkpoint and return the Aether twin configuration payload it captured."""
+    checkpoint_id = crystallizer.create_checkpoint()
+    replay = crystallizer.checkpoint_replay_data(checkpoint_id)
+    return dict(replay["payloads"]["aether"]["root"]["configuration_payload"])
+
+
+def test_aether_root_twin_records_the_spell_id_regime() -> None:
+    """
+    Purpose:
+        A world run under per-frame spell ids must say so in its record, or a restore rebuilds it process-wide.
+    Contract:
+        Activating a per-frame root configuration while recording puts process_wide_unique_spell_ids False in the
+        Aether twin; activating it on Aether (which re-applies the logger policy through the utility system, and the
+        utility system re-emits the twin from live truth) keeps it False.
+    Returns:
+        None.
+    """
+    crystallizer = _activated_crystallizer()
+    aether_configuration = AetherConfiguration().with_defaults().with_process_wide_unique_spell_ids(False)
+    aether_configuration.activate()
+    assert _recorded_aether_payload(crystallizer)["process_wide_unique_spell_ids"] is False
+    Aether().activate(aether_configuration)
+    assert _recorded_aether_payload(crystallizer)["process_wide_unique_spell_ids"] is False
+
+
+def test_utility_system_reemission_records_the_regime_in_force() -> None:
+    """
+    Purpose:
+        The utility system's logger verbs re-emit the Aether twin from live truth, and that twin replaces the
+        configuration's own, so it must carry the regime too or it would erase it.
+    Contract:
+        On an Aether that was never configured, a logger verb re-emits a twin carrying the default regime in force
+        (True).
+    Returns:
+        None.
+    """
+    crystallizer = _activated_crystallizer()
+    AetherUtilitySystem().set_channel_logger_activation_enabled(False)
+    assert _recorded_aether_payload(crystallizer)["process_wide_unique_spell_ids"] is True

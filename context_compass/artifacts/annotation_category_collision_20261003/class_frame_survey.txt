@@ -1,0 +1,16 @@
+# class-object spellframe survey, mirror = tree 0.2.8221, 2026-10-04T00:58Z (regex `spellframe=<Identifier>` over
+# tests/, benchmarks/, src/, examples/ - 1692 files; definition kind resolved in the using file first, else globally)
+uses: 441  distinct names: 62
+by kind: Protocol 158, Protocol-in-this-file-but-plain-elsewhere 120 (IService etc.), plain class 127, UNRESOLVED 22
+ABC frames: 0
+plain-class frames: 127 uses in 28 files - FrameA 22, FrameB 17, IService(plain defs) 11, _ServiceFrame 7,
+  Definition 6, ISignatureFrame 5, ExistingValue 5, ProtoWithFoo 5, P 5, Unregistered 4, _Frame 4, BasicConfig 3,
+  _FrameType 3, Config 2, ServiceFrame 2, ...
+top files: test_binding_resolution_cycle_strategy.py 33, test_compiler_phase_3.py 14, test_bind.py 10,
+  test_contract_provider_presence_strategy.py 9, test_spellbook_component_override_required.py 6,
+  test_contract_graph_cycle_strategy.py 6, commandops_shape_probe.py 5,
+  test_spellbook_component_signature_release_on_removal.py 5, test_existing_instance_planning.py 5,
+  test_spellbook_component_unresolved_input.py 4, test_spellbook_integration_future_annotations.py 4,
+  test_spellbook_integration_resolution_contract.py 4
+unresolved (dynamic): SuppliedValue 14, `BasicService.__name__` 7 (a string), ILogic 4, IAuthService 2, IAppConfig 1,
+  Cls 1 - classified at runtime by the bind refusal.

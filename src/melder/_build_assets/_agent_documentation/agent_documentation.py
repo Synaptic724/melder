@@ -5,7 +5,7 @@ WHAT THIS IS
 ------------
 `AGENT_ACCESS:` / `AGENT_PURPOSE:` sections are authored in class docstrings and
 harvested into a COMMITTED manifest (`manifest/agent_documentation_manifest.py`)
-so the classes themselves stop carrying the facts. The `.melc` under
+so the classes themselves stop carrying the facts. The `.meldercache` under
 `__melder_cache__` is only an accelerator - see `_asset_cache` for why the cache
 must never be the source.
 
@@ -57,7 +57,7 @@ class AgentDocumentationAsset:
 
     Attributes:
         ASSET_NAME: Bare asset name; drives the cache path
-            `__melder_cache__/__agent_documentation__/agent_documentation.melc`.
+            `__melder_cache__/__agent_documentation__/agent_documentation.meldercache`.
         MANIFEST_DIR_NAME: Directory holding the committed manifest.
         MANIFEST_MODULE_NAME: Generated manifest module filename.
     """

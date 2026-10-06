@@ -58,6 +58,20 @@ frame (pass `aetheric_frame_name` for another frame), and
 anonymous. The root-only lookups carry root names, such as
 `get_root_conduit_by_name`.
 
+Frames have lookups of their own that never create anything (0.2.8208):
+`Aether().find_frame("ops")` returns the live frame or `None`,
+`Aether().get_frame("ops")` raises `ValueError` when it is missing, and
+`Aether().list_frame_names()` lists the live frames in the order they were
+created. The frame-scoped calls above create the default frame when it is
+missing; these never do, not even for "default". A frame you find is borrowed,
+so its owner can still clean it. For checks before you hand a configuration
+over: `frame.shared_spellbook_configuration` is the configuration Spellbooks in
+that frame adopt when the frame shares one, `job.spellbook` is the Spellbook a
+conduit resolves through, `SpellbookConfiguration.aether_frame` and `frozen`
+report a configuration's frame and whether it is settled, and
+`AethericFrameConfiguration.frozen` does the same for a frame's posture. None
+of them changes anything.
+
 ### Promote only when independent ownership is needed
 
 In a dynamic world, `upgrade_to_normal(name=...)` promotes the existing child.

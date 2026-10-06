@@ -1,0 +1,4 @@
+FAILED tests/unit/melder/spellbook/spell_crafter/spell_examiner/inspectors/test_method_inspector.py::test_header_and_source_metadata
+FAILED tests/unit/melder/spellbook/spell_crafter/spell_examiner/inspectors/test_method_inspector.py::test_preview_is_capped_to_first_five_lines
+FAILED tests/unit/melder/spellbook/spell_crafter/spell_examiner/inspectors/test_method_inspector.py::test_preview_truncated_when_max_repr_small
+3 failed, 8886 passed, 3 skipped, 7 xfailed in 158.35s (0:02:38)

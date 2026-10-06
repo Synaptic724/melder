@@ -65,6 +65,11 @@ class SpellOccurrenceContractProcessorStrategy(SpellArtifactProcessorStrategy):
             - Writes only `model.contract_shape` plus compatible top-level
               `contract_payload_count`.
             - Does not write back onto `SpellCompilerArtifact`.
+
+        Raises:
+            RuntimeError: Without `graph_shape` or a live owning Spellbook.
+            KeyError: `(spell_id, message)` when an occurrence's spell has left
+                the Spellbook pool (see `_compile_contract_overrides_for_occurrence`).
         """
         _ = artifact
         graph_shape = model.graph_shape
@@ -199,11 +204,24 @@ class SpellOccurrenceContractProcessorStrategy(SpellArtifactProcessorStrategy):
               dependency occurrence of that parameter (the analyzer already routed
               the edge); a parameter with no dependency edge records nothing.
             - Each recorded payload is accompanied by its reference map.
+
+        Raises:
+            KeyError: `(spell_id, message)` when the occurrence's spell is not in
+                `spell_lookup` (the live Spellbook pool). A meld-time target pass
+                reads the pool without the Spellbook lock, so a link sever or an
+                uncontract can remove a borrowed provider after Phase 8 saw it;
+                `args[0]` names the missing spell id, which the target pass
+                records as a visibility failure, like the analyzer's and the
+                instance processor's misses (0.2.8227; it was a RuntimeError the
+                pass could not classify, so the meld raised PhaseExecutionError).
+            MeldExecutionError: When a SpellContract resolves to several
+                contracted spells, or to none outside dynamic mode.
         """
         spell = spell_lookup.get(occurrence[0])
         if spell is None:
-            raise RuntimeError(
-                "Occurrence spell could not be resolved from the spell lookup."
+            raise KeyError(
+                occurrence[0],
+                "Occurrence spell could not be resolved from the spell lookup.",
             )
 
         complete = True

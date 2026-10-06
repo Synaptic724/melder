@@ -158,6 +158,7 @@
  ],
  "published_aliases": [],
  "imports": {
+  "threading": "threading",
   "ABC": "abc.ABC",
   "abstractmethod": "abc.abstractmethod",
   "TracebackType": "types.TracebackType",

@@ -50,6 +50,8 @@
  "edge_candidates": [],
  "published_aliases": [],
  "imports": {
+  "hashlib": "hashlib",
+  "pickle": "pickle",
   "Any": "typing.Any",
   "Optional": "typing.Optional",
   "Tuple": "typing.Tuple",

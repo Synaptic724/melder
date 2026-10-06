@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py",
- "source_sha256": "0f74333e023f731fea4f8e38d311c8ebb7044fb1cf91409a13ccb09cbb8f062e",
+ "source_sha256": "b5c087b8ff5b43055550a4bbd75ce18e3cb21966924d2c89d785151b016111f2",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.phases.compiler_phase_3": {
@@ -22,18 +22,18 @@
    "label": "CompilerPhase3",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py",
-   "lineno": 52,
+   "lineno": 66,
    "bases": [],
    "markers": [],
    "public_methods": [
     "run"
    ],
    "shape": {
-    "method_count": 17,
+    "method_count": 26,
     "has_bases": false,
     "trivial": false
    },
-   "span_sha256": "37e4f31ea72655a701e04d1c67cd252bb2dd16ad4bfd2730298f0bc71dbd91ec",
+   "span_sha256": "81ecd42c575e2d2eb750b9b9ce79b65d4b6be6d32218e7c147abb9b640bc1007",
    "role": "Compiler-owned phase-3 local-frame and DAG build surface.",
    "responsibilities": [
     "resolves symbolic constructor sockets into concrete dependency spell ids",
@@ -42,13 +42,17 @@
     "selects resolvable providers or OVERRIDE_REQUIRED references while preserving declarations and False-root topology",
     "republishes enabled late-compiled Nexus records after local topology is available",
     "records an UNRESOLVED_INPUT socket, keeping its frame key, when a single typed parameter has no registered provider; ambiguity still raises",
-    "scans candidate providers over a copy of the Spellbook spell pool taken in one call, so a concurrent bind cannot change it mid-scan"
+    "scans candidate providers over a copy of the Spellbook spell pool taken in one call, so a concurrent bind cannot change it mid-scan",
+    "matches an annotation to candidates by KIND (0.2.8222): _annotation_kind classifies it as a Protocol contract, a class type or a string name; _spell_keys_for gives the keys a spell answers under for that kind - its type key for a class, its implemented_protocols (plus its own definition key when it is a Protocol bound resolvable=False) for a Protocol, type-or-contract for a single string and the frame key for a string collection - so a string category never provides for a same-named class",
+    "indexes candidates once per resolution pass into four buckets (by_type, by_label, by_contract, by_definition) read through _index_buckets_for; one predicate (_matches_annotation) serves the scan and the index; _eq_safe_object is kept only as the structural snapshot's replayability rule",
+    "records a single annotation with several resolvable candidates as an AMBIGUOUS_INPUT socket (candidate ids as references, no dependency id) instead of raising, so Phase 4 reports AMBIGUOUS_PROVIDER through the readable report (0.2.8224)",
+    "resolves a SpellMap default by normalized binding names and string-frame keys (_spellmap_frame_matches; class and Protocol frames by identity), the address rule bind and meld use (0.2.8226)"
    ],
    "phases": [
     "validation",
     "runtime"
    ],
-   "semantics_authored_against": "37e4f31ea72655a701e04d1c67cd252bb2dd16ad4bfd2730298f0bc71dbd91ec"
+   "semantics_authored_against": "dbe8c6e04316910263f762230b92cc4db81b642f39b5cb52d2ac24aa9066cdac"
   }
  },
  "edges_out": [],
@@ -86,8 +90,12 @@
  ],
  "published_aliases": [],
  "imports": {
+  "inspect": "inspect",
+  "types": "types",
+  "typing": "typing",
   "TYPE_CHECKING": "typing.TYPE_CHECKING",
   "Any": "typing.Any",
+  "ClassVar": "typing.ClassVar",
   "Dict": "typing.Dict",
   "Generator": "typing.Generator",
   "List": "typing.List",
@@ -105,6 +113,7 @@
   "SpellLocalTopology": "melder.aether.spellbook.spell_compiler.topology.spell_local_topology.SpellLocalTopology",
   "SpellSocketDescriptor": "melder.aether.spellbook.spell_compiler.topology.spell_local_topology.SpellSocketDescriptor",
   "SpellType": "melder.aether.spellbook.spell_types.spell_types.SpellType",
+  "SpellframeKind": "melder.aether.spellbook.spellframe_kind.spellframe_kind.SpellframeKind",
   "SpellInputUtils": "melder.utilities.helpers.general_helpers.SpellInputUtils",
   "Spell": "melder.aether.spellbook.spell.Spell",
   "Spellbook": "melder.aether.spellbook.spellbook.Spellbook",

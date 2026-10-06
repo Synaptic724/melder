@@ -75,7 +75,13 @@ class RecordVersion:
 
     # Major 2 fenced non-resolvable capability. Major 3 additionally fences child
     # topology: older loaders would otherwise mistake a lesser row for a Book root.
-    CURRENT: ClassVar[str] = "3.0.0"
+    # Major 4 fences frame-scoped custody keys ("<spell_id>@<frame>", per-frame
+    # spell ids): an older loader would fold one frame's copy over another's.
+    # Minor 4.1 adds the spell crystal's frame kind and the Protocol coordinates
+    # of a contract frame (`spellframe_kind`, `spellframe_module`,
+    # `spellframe_qualname`); 4.0 readers ignore them, and a 4.0 record read by
+    # a 4.1 loader rebinds frames by name as before.
+    CURRENT: ClassVar[str] = "4.1.0"
     KEY: ClassVar[str] = "record_version"
 
     @staticmethod

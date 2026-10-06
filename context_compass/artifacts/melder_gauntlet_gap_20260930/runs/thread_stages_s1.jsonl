@@ -1,0 +1,14 @@
+{"tag": "s1", "lib": "melder", "stage": "bare", "gc_objects": 19681, "median_us": 238.4795, "p90_us": 282.112}
+{"tag": "s1", "lib": "melder", "stage": "harness_import", "gc_objects": 39500, "median_us": 204.105, "p90_us": 242.699}
+{"tag": "s1", "lib": "melder", "stage": "library_import", "gc_objects": 97970, "median_us": 194.4565, "p90_us": 236.601}
+{"tag": "s1", "lib": "melder", "stage": "build_ops", "gc_objects": 97818, "median_us": 230.7615, "p90_us": 273.34}
+{"tag": "s1", "lib": "melder", "stage": "warm_50", "gc_objects": 100274, "median_us": 755.6555, "p90_us": 834.511}
+{"tag": "s1", "lib": "melder", "stage": "loop_1000", "gc_objects": 100275, "median_us": 729.4014999999999, "p90_us": 805.877}
+{"tag": "s1", "lib": "melder", "stage": "after_gc", "gc_objects": 96529, "median_us": 707.961, "p90_us": 758.965}
+{"tag": "s1", "lib": "dishka", "stage": "bare", "gc_objects": 19681, "median_us": 205.5, "p90_us": 245.054}
+{"tag": "s1", "lib": "dishka", "stage": "harness_import", "gc_objects": 39500, "median_us": 171.91649999999998, "p90_us": 200.76}
+{"tag": "s1", "lib": "dishka", "stage": "library_import", "gc_objects": 51413, "median_us": 178.897, "p90_us": 252.527}
+{"tag": "s1", "lib": "dishka", "stage": "build_ops", "gc_objects": 52315, "median_us": 181.518, "p90_us": 256.977}
+{"tag": "s1", "lib": "dishka", "stage": "warm_50", "gc_objects": 52611, "median_us": 603.0229999999999, "p90_us": 669.786}
+{"tag": "s1", "lib": "dishka", "stage": "loop_1000", "gc_objects": 52612, "median_us": 635.2180000000001, "p90_us": 688.343}
+{"tag": "s1", "lib": "dishka", "stage": "after_gc", "gc_objects": 49432, "median_us": 598.043, "p90_us": 657.037}

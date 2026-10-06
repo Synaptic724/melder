@@ -1,0 +1,2 @@
+FAILED tests/integration/melder/spellbook/test_existing_instance_additional_regressions.py::test_existing_root_public_lookup_preserves_identity[instance]
+1 failed, 2035 passed, 2 skipped, 4 xfailed, 2 xpassed in 70.62s (0:01:10)

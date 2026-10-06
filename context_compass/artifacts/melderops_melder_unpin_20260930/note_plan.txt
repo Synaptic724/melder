@@ -1,0 +1,17 @@
+- DATETIME: {NOW}
+  TYPE: PLAN
+  CLAIM: MelderOps requires `melder>=0.2.8212` on pyproject.toml line 112, under a comment (lines 82-111) that
+    records why each earlier floor was raised and which Melder APIs MelderOps calls (0.2.79 root lookups, 0.2.8206
+    address keys, 0.2.8208 frame lookups, 0.2.8212 get_configuration_dictionary). The file is CRLF. Edit: the line
+    becomes `"melder",`; the comment keeps that history (it tells which build carries what MelderOps calls) and its
+    last floor sentence is replaced by the unpin and its consequence. Measured consequence: PyPI's newest Melder is
+    0.2.8207 - an empty 3.14t env resolves `melder` to 0.2.8207 and refuses `melder>=0.2.8212` - so without a
+    floor a fresh install that does not take the local wheel gets a Melder lacking 0.2.8212's APIs and the 0.2.8215
+    fix, and fails at runtime instead of at install. The owner chose this tradeoff; the NOTICE says it.
+  EVIDENCE:
+  - context_compass/artifacts/melderops_melder_unpin_20260930/pyproject_before.toml:82-113
+  - context_compass/artifacts/melderops_melder_unpin_20260930/pypi_probe.log:1-14
+  IMPACT: A new Melder build installs into MelderOps' environments without a pyproject change.
+  NEXT: Edit the dependency line and comment (CRLF kept) and parse-check the file.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8

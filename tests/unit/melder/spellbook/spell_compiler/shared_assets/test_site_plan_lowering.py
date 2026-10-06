@@ -1,6 +1,7 @@
 """Unit contracts for key-set plan lowering and the override runtime (override design S3a)."""
 
 import functools
+import re
 import threading
 from collections import Counter
 from types import FunctionType, SimpleNamespace
@@ -55,6 +56,10 @@ class FakeStore:
         """Record one disposal-bearing many instance."""
         self.disposal_adds.append((key, item))
 
+    def register_many(self, key: str, item: Any, disposal_methods: List[str]) -> None:
+        """Record one disposal-bearing many instance registered through the hot verb (2026-10-01)."""
+        self.disposal_adds.append((key, item))
+
 
 def _factory(name: str, built: Counter) -> Callable[..., Any]:
     """Return a constructor that counts builds and keeps its arguments."""
@@ -83,6 +88,8 @@ def _spell(spell_id: str, built: Counter, existence: Existence = Existence.many,
         existence=existence,
         _lock=threading.RLock(),
         _owner_creations=FakeStore(),
+        # Mirror the live Spell: False until an owning conduit stamps a dynamic environment.
+        _dynamic_environment=False,
     )
 
 
@@ -1120,6 +1127,11 @@ class _DisposalRecordingStore(FakeStore):
         )
         self.disposal_lists.append((key, disposal_methods))
 
+    def register_many(self, key: str, item: Any, disposal_methods: List[str]) -> None:
+        """Record the hot-verb many registration and the list passed (2026-10-01)."""
+        super().register_many(key, item, disposal_methods)
+        self.disposal_lists.append((key, disposal_methods))
+
 
 def test_registration_passes_each_spells_live_ordered_disposal_list() -> None:
     """A many dependency and a shared site both register with their Spell's own list object, order intact."""
@@ -1177,3 +1189,196 @@ def test_unique_warm_hit_takes_neither_the_spell_lock_nor_a_slot_guard() -> None
     result = plan(SimpleNamespace(_spellspace_creations=None, _conduit_creations=FakeStore()), {})
     assert result.args == (stored,)
     assert built == Counter({"root": 1})
+
+
+# ---------------------------------------------------------------------------------------------------------------
+# Lazy instance_results (S8, 2026-10-03): no dict on the warm path; a literal per generic construction.
+
+
+def _generic_miss_world() -> Tuple[Counter, Dict[str, SimpleNamespace], Tuple[SitePlanStep, ...], Dict[str, Any]]:
+    """Root(s: S(x: X(y: Y, z: Z, c=contract)), z: Z) with S and Z shared and X generic (contract payload)."""
+    built: Counter = Counter()
+    shared = Existence.unique_per_conduit
+    spells = {
+        "y": _spell("y", built), "z": _spell("z", built, shared), "x": _spell("x", built),
+        "s": _spell("s", built, shared), "root": _spell("root", built),
+    }
+    generic = SitePlanStep(
+        instance_key=("x", 3), spell=spells["x"], existence=Existence.many,
+        dependency_resolution_order=(("y", (("y", 4),)), ("z", (("z", None),))),
+        collection_param_names=frozenset(), uses_positional_override=False, contract_positional_override=None,
+        has_contract_payload=True, contract_payload={"c": "contract"}, use_spell_lock_hint=False,
+    )
+    steps = (
+        _step(("y", 4), spells["y"]),
+        _step(("z", None), spells["z"]),
+        generic,
+        _step(("s", None), spells["s"], ("x", (("x", 3),))),
+        _step(("root", 0), spells["root"], ("s", (("s", None),)), ("z", (("z", None),))),
+    )
+    topologies = {
+        "root": SpellLocalTopology("root", (_socket("root", "s", 0), _socket("root", "z", 1))),
+        "s": SpellLocalTopology("s", (_socket("s", "x", 0),)),
+        "x": SpellLocalTopology("x", (_socket("x", "y", 0), _socket("x", "z", 1))),
+    }
+    return built, spells, steps, topologies
+
+
+def _emit_source(steps: Tuple[SitePlanStep, ...], topologies: Dict[str, Any], root_key: Key,
+                 keys: Tuple[str, ...] = ()) -> Tuple[Callable[..., Any], str]:
+    """Resolve, emit and compile one override-mode plan; return it with its source."""
+    graph = SitePlanLowering.build_site_graph(
+        root_spell_id="root", root_instance_key=root_key, steps=steps, topology_for=topologies.get,
+    )
+    resolution = OverrideKeyResolver.resolve(graph, keys)
+    source, namespace, _ = SitePlanLowering.emit(
+        steps=steps, site_graph=graph, resolution=resolution, root_instance_key=root_key,
+        root_spell_id="root", root_spell_name="root", arity=0,
+    )
+    exec(compile(source, "<test>", "exec"), namespace)
+    graph.cleanup()
+    return namespace[SitePlanLowering.PLAN_FUNCTION_NAME], source
+
+
+def test_dict_mode_plan_builds_no_dict_on_the_warm_path_and_a_literal_in_the_miss() -> None:
+    """The plan top allocates and stores nothing; X, built inside S's miss, gets a literal of exactly {y, z}."""
+    built, _spells, steps, topologies = _generic_miss_world()
+    plan, source = _emit_source(steps, topologies, ("root", 0))
+    body = source[source.index(f"def {SitePlanLowering.PLAN_FUNCTION_NAME}"):]
+    assert "instance_results" not in body
+    assert "instance_results[" not in source
+    assert re.search(r"def _miss3\(meld, ov, c3, v1\):", source), source
+    assert source.count("instance_results = ") == 1
+    assert "instance_results = {key0: v0, key1: v1}" in source
+    meld = SimpleNamespace(_conduit_creations=FakeStore())
+    first = plan(meld, {})
+    x = first.args[0].args[0]
+    assert x.kwargs["y"].name == "y" and x.kwargs["c"] == "contract" and x.kwargs["z"] is first.args[1]
+    second = plan(meld, {})
+    assert second.args == first.args
+    assert built == Counter({"y": 1, "z": 1, "x": 1, "s": 1, "root": 2})
+
+
+def test_generic_step_without_dependencies_gets_an_empty_literal() -> None:
+    """An existing-object site reads no key: its miss builds from `{}` and the warm hit reads the store only."""
+    built: Counter = Counter()
+    existing = _spell("e", built, Existence.unique)
+    existing.is_existing_creation = True
+    existing.user_created_object = object()
+    spells = {"e": existing, "root": _spell("root", built)}
+    steps = (_step(("e", None), spells["e"]), _step(("root", 0), spells["root"], ("e", (("e", None),))))
+    topologies = {"root": SpellLocalTopology("root", (_socket("root", "e", 0),))}
+    plan, source = _emit_source(steps, topologies, ("root", 0))
+    assert source.count("instance_results = {}") == 1
+    assert "instance_results[" not in source
+    assert "instance_results" not in source[source.index(f"def {SitePlanLowering.PLAN_FUNCTION_NAME}"):]
+    meld = SimpleNamespace(_conduit_creations=FakeStore())
+    first = plan(meld, {})
+    assert first.args[0] is existing.user_created_object
+    assert plan(meld, {}).args[0] is first.args[0]
+    assert built == Counter({"root": 2})
+
+
+def test_masked_generic_step_literal_omits_the_supplied_parameter() -> None:
+    """With X's `y` supplied, X's literal carries only Z (Y is cut from the plan) and the value is applied last."""
+    built, _spells, steps, topologies = _generic_miss_world()
+    plan, source = _emit_source(steps, topologies, ("root", 0), ("s>x>y",))
+    # The demand cuts Y, so the kept steps renumber (z=0, x=1, s=2, root=3): X's literal is Z alone.
+    assert source.count("instance_results = ") == 1
+    assert "instance_results = {key0: v0}" in source
+    meld = SimpleNamespace(_conduit_creations=FakeStore())
+    first = plan(meld, {"s>x>y": "given"})
+    x = first.args[0].args[0]
+    assert x.kwargs["y"] == "given" and x.kwargs["c"] == "contract" and x.kwargs["z"] is first.args[1]
+    assert built == Counter({"z": 1, "x": 1, "s": 1, "root": 1})
+
+
+def test_generic_collection_parameter_literal_carries_every_member_key() -> None:
+    """A contract-payload step with a two-member list parameter gets both member keys and a two-element list."""
+    built: Counter = Counter()
+    spells = {
+        "m1": _spell("m1", built), "m2": _spell("m2", built), "x": _spell("x", built), "root": _spell("root", built),
+    }
+    generic = SitePlanStep(
+        instance_key=("x", 3), spell=spells["x"], existence=Existence.many,
+        dependency_resolution_order=(("items", (("m1", 1), ("m2", 2))),), collection_param_names=frozenset({"items"}),
+        uses_positional_override=False, contract_positional_override=None, has_contract_payload=True,
+        contract_payload={"c": "contract"}, use_spell_lock_hint=False,
+    )
+    steps = (
+        _step(("m1", 1), spells["m1"]), _step(("m2", 2), spells["m2"]), generic,
+        _step(("root", 0), spells["root"], ("x", (("x", 3),))),
+    )
+    topologies = {
+        "root": SpellLocalTopology("root", (_socket("root", "x", 0),)),
+        "x": SpellLocalTopology("x", (_socket("x", "items", 0, collection=True),)),
+    }
+    plan, source = _emit_source(steps, topologies, ("root", 0))
+    assert "instance_results = {key0: v0, key1: v1}" in source
+    first = plan(SimpleNamespace(_conduit_creations=FakeStore()), {})
+    x = first.args[0]
+    assert [member.name for member in x.kwargs["items"]] == ["m1", "m2"] and x.kwargs["c"] == "contract"
+    assert built == Counter({"m1": 1, "m2": 1, "x": 1, "root": 1})
+
+
+def _shared_source(steps: Tuple[SitePlanStep, ...], topologies: Dict[str, Any],
+                   keys: Tuple[str, ...]) -> Tuple[str, Dict[str, Any]]:
+    """Emit one plan over the shared world and return its (source, namespace) without executing it."""
+    graph = SitePlanLowering.build_site_graph(
+        root_spell_id="root", root_instance_key=("root", 0), steps=steps, topology_for=topologies.get,
+    )
+    resolution = OverrideKeyResolver.resolve(graph, keys)
+    source, namespace, _ = SitePlanLowering.emit(
+        steps=steps, site_graph=graph, resolution=resolution, root_instance_key=("root", 0),
+        root_spell_id="root", root_spell_name="root", arity=0,
+    )
+    graph.cleanup()
+    return source, namespace
+
+
+def test_unique_site_of_an_automatic_provider_binds_its_owner_store_as_a_constant() -> None:
+    """S9: the alias line is gone, `c1` is the owner store itself, and the plan publishes and reuses through it."""
+    built, spells, steps, topologies = _shared_world(existence=Existence.unique)
+    source, namespace = _shared_source(steps, topologies, ())
+
+    assert "c1 = spells[1]._owner_creations" not in source
+    assert "v1 = c1._creations.get(sid1)" in source
+    assert namespace["c1"] is spells["s"]._owner_creations
+    exec(compile(source, "<test>", "exec"), namespace)
+    plan = namespace[SitePlanLowering.PLAN_FUNCTION_NAME]
+    first = plan(SimpleNamespace(), {})
+    second = plan(SimpleNamespace(), {})
+    assert first.args[0] is second.args[0] is spells["s"]._owner_creations._creations["s"]
+    assert built == Counter({"x": 1, "s": 1, "root": 2})
+
+
+def test_unique_site_of_a_dynamic_provider_keeps_the_per_creation_store_read() -> None:
+    """A provider owned by a dynamic conduit (transfer can repoint its store) is read as before."""
+    built, spells, steps, topologies = _shared_world(existence=Existence.unique)
+    spells["s"]._dynamic_environment = True
+    source, namespace = _shared_source(steps, topologies, ())
+
+    assert "    c1 = spells[1]._owner_creations" in source
+    assert "c1" not in namespace
+    exec(compile(source, "<test>", "exec"), namespace)
+    result = namespace[SitePlanLowering.PLAN_FUNCTION_NAME](SimpleNamespace(), {})
+    assert spells["s"]._owner_creations._creations["s"] is result.args[0]
+
+
+def test_unique_site_of_an_unowned_provider_keeps_the_read() -> None:
+    """A provider with no owner store yet emits today's line, so its failure mode is unchanged."""
+    _built, spells, steps, topologies = _shared_world(existence=Existence.unique)
+    spells["s"]._owner_creations = None
+    source, namespace = _shared_source(steps, topologies, ())
+
+    assert "    c1 = spells[1]._owner_creations" in source
+    assert "c1" not in namespace
+
+
+def test_per_conduit_site_read_is_unchanged_by_the_owner_store_constant() -> None:
+    """The `meld.<store>` routes never bind a constant: the store is one attribute read on the parameter."""
+    _built, _spells, steps, topologies = _shared_world()
+    source, namespace = _shared_source(steps, topologies, ())
+
+    assert "    c1 = meld._conduit_creations" in source
+    assert "c1" not in namespace

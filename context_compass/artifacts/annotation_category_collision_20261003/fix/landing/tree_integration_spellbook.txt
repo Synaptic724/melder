@@ -1,0 +1,5 @@
+FAILED tests/integration/melder/spellbook/test_spellbook_integration.py::test_bind_conjure_and_meld_existing_creation
+FAILED tests/integration/melder/spellbook/test_spellbook_integration_resolution_contract.py::test_collection_di_by_list_frame_injects_all
+FAILED tests/integration/melder/spellbook/test_spellbook_integration_resolution_contract.py::test_meld_by_spell_id_resolves_class_instance
+3 failed, 601 passed, 2 skipped, 2 xpassed in 21.38s
+exit 0

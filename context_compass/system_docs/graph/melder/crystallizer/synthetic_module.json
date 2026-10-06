@@ -159,12 +159,14 @@
   {
    "from": "melder.crystallizer.synthetic_module._SyntheticModuleImportLoader",
    "to_label": "Loader",
-   "relation": "specializes"
+   "relation": "specializes",
+   "to": "importlib.abc.Loader"
   },
   {
    "from": "melder.crystallizer.synthetic_module._SyntheticModuleMetaPathFinder",
    "to_label": "MetaPathFinder",
-   "relation": "specializes"
+   "relation": "specializes",
+   "to": "importlib.abc.MetaPathFinder"
   },
   {
    "from": "melder.crystallizer.synthetic_module.SyntheticModule",
@@ -207,6 +209,13 @@
  ],
  "published_aliases": [],
  "imports": {
+  "hashlib": "hashlib",
+  "importlib": "importlib",
+  "importlib.abc": "importlib.abc",
+  "importlib.util": "importlib.util",
+  "linecache": "linecache",
+  "sys": "sys",
+  "threading": "threading",
   "ModuleSpec": "importlib.machinery.ModuleSpec",
   "ModuleType": "types.ModuleType",
   "Any": "typing.Any",

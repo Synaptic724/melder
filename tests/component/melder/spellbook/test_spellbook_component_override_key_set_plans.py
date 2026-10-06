@@ -11,7 +11,7 @@ import marshal
 import threading
 from collections import Counter
 from collections.abc import Iterator
-from typing import Any, List, Tuple
+from typing import Any, List, Protocol, Tuple
 
 import pytest
 
@@ -111,7 +111,7 @@ class Consumer:
         self.parts = (p1, p2, p3, p4, p5)
 
 
-class IMember:
+class IMember(Protocol):
     """Frame type for collection members."""
 
 

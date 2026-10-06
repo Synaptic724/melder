@@ -1,0 +1,25 @@
+# landing of rebind_after_first_meld_2026_10_03 in the tree (0.2.8218 -> 0.2.8219), 2026-10-03T20:5xZ, CPython 3.14.7t
+source: fix/apply_forget_verdicts.py applied to the tree; both files byte-identical to the validated mirror copies
+tests added (CRLF, tree convention):
+  tests/unit/melder/aether/dev_ops/spell_system_states/test_conduit_resolution_state_forget_spell.py   (12)
+  tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system_states_verdict_retirement.py (12)
+  tests/component/melder/aether/dev_ops/spell_system_states/test_rebind_validation_flag_component.py  (3)
+  tests/integration/melder/aether/conduit/test_rebind_after_first_meld_integration.py                (10)
+regressions on the UNPATCHED files: 30 failed / 7 passed (regressions_unpatched.txt); on the patched tree: 37 passed
+tiers on the landed content (mirror synced from the tree, -n 2):
+  tests/unit:        8853 passed, 3 skipped, 7 xfailed in 20.55s
+  tests/component:   2286 passed, 23 skipped, 1 xfailed in 11.90s
+  tests/integration: 2021 passed, 2 skipped, 4 xfailed, 2 xpassed in 70.03s
+  tests/tests tests/experimentation tests/experiments: 250 passed, 4 skipped in 7.02s
+notch: src/melder/__version__.py 0.2.8218 -> 0.2.8219 (read at landing)
+release note: header 0.2.8219; section "Fixed: a definition removed after use can be bound again at the same
+  address and melded" (example executed: first.value 1, second.value 2, distinct objects); Packaging bullet; rebuild line
+system docs: src_architecture.md (+ meld-time gate step 6, invariant, failure mode, code map, handoff) and
+  src_components.md (SpellSystemStates Registry: verbs corrected + retirement; Conduit Resolution State: forget_spell;
+  bind flow; meld-time gate flow; code map; handoff); both indexes regenerated and --check OK
+graph: extract_graph.py --strict (584 descriptors, skipped=0), the two class nodes re-authored and --accept'ed,
+  assemble_graph.py (27592 lines, 584 ranges verified)
+rebuild (last): _build_asset_runner.py -> WROTE x3 (v0.2.8219); --check -> OK x3
+  llm_support/_builder.py --include-untracked -> WROTE src/tests/other; --check --include-untracked -> OK x3
+  (plain --check flags `tests` until the four new files are tracked by git)
+delete permission for the connected folder was granted by the owner for the asset rebuild's unlink step.

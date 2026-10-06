@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/configuration/spellbook_configuration.py",
- "source_sha256": "8067f7151d356fa6d1bf20acd495162ae836a897fb2090fe27c1fb945348908b",
+ "source_sha256": "6e989ddcb9c3d8def3d4da8df973eeb13bdbd43ccc36103ebe39ebf4a045c00a",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.configuration.spellbook_configuration": {
@@ -29,12 +29,14 @@
     "add_disposal_methods",
     "add_hook",
     "add_hooks",
+    "aether_frame",
     "build",
     "cleanup",
     "clear_bind_hooks",
     "clear_properties",
     "finalize",
     "freeze",
+    "frozen",
     "get_bind_hooks",
     "get_conduit_hooks",
     "get_hooks",
@@ -57,11 +59,11 @@
     "with_phase_scheduler_workers"
    ],
    "shape": {
-    "method_count": 34,
+    "method_count": 36,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "a969eded1b9fcaf39cfc2b8329ae1df51a06585d48fb756a755071074a21aaeb",
+   "span_sha256": "12963784de6a84baf48d3893e2f7aefb7d64ed4a22743026e1c003d26d7a64ea",
    "role": "Mutable build-time configuration surface for one spellbook/runtime context.",
    "responsibilities": [
     "stores typed runtime posture properties and idempotent keys",
@@ -69,7 +71,8 @@
     "owns default and per-Book hook registration for Meld, Conduit, link and contract events",
     "supplies immutable initial Bind callbacks for independently adjustable Book registries",
     "freezes hook seeds and records effective callback presence without serializing callables",
-    "accepts origin Bind stage markers at freeze and re-freeze and preserves them in complete Book-twin emission"
+    "accepts origin Bind stage markers at freeze and re-freeze and preserves them in complete Book-twin emission",
+    "reports its target frame (aether_frame, fixed at construction) and its freeze state (frozen, read under its lock) without changing either"
    ],
    "owns_state": [
     "_aether_frame",
@@ -142,6 +145,7 @@
  ],
  "published_aliases": [],
  "imports": {
+  "threading": "threading",
   "TYPE_CHECKING": "typing.TYPE_CHECKING",
   "Any": "typing.Any",
   "Callable": "typing.Callable",

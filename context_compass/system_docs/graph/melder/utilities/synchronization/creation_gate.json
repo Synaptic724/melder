@@ -110,6 +110,8 @@
  ],
  "published_aliases": [],
  "imports": {
+  "threading": "threading",
+  "time": "time",
   "deque": "collections.deque",
   "ClassVar": "typing.ClassVar",
   "Cleanable": "melder.utilities.general_base.cleanable.Cleanable"

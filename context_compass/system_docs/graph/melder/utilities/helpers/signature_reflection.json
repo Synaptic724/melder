@@ -53,6 +53,7 @@
  "edge_candidates": [],
  "published_aliases": [],
  "imports": {
+  "inspect": "inspect",
   "ForwardRef": "annotationlib.ForwardRef",
   "Format": "annotationlib.Format",
   "get_annotations": "annotationlib.get_annotations",

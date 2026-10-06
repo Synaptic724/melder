@@ -1,0 +1,123 @@
+{
+  "timestamp": "2026-10-03T17:09:18.447181+00:00",
+  "branch": "codex_features2",
+  "python": "3.14.7 free-threading",
+  "repository_bundle_check": [
+    "OK src fingerprint and output proofs match",
+    "OK tests fingerprint and output proofs match",
+    "OK other fingerprint and output proofs match"
+  ],
+  "hosted_matrix_run": false,
+  "committed_or_pushed_by_command_0": false,
+  "hashes": {
+    ".github/BRANCH_WORKFLOW.md": "DC60422731C5F37A9A2107A41EA70CDA13449B8DF58489CCB77584E2C43461D8",
+    "llm_support/llm_full_other_index.md": "A9F00B7DCF2515B025C38D9122C6383F6F5F3F14AE78F92279B40E742D52CE31",
+    "llm_support/llm_full_tests_index.md": "8AD66513592E77ECE4373E664225A25D9FBF646CB06A227F0AA602A5BE7F3D8F",
+    "benchmarks/testing_other_di/test_real_world_gauntlet_isolation.py": "7EDA952DAD6747F310DDD6E4BD7F80EA6D8C34F644ACB769D922206B2E85FEA9",
+    "llm_support/llm_full_tests.txt": "F2178FFE5B72B5C6C465524677CD577A43CC1D0072A83847FA2CF763063124BC",
+    ".github/workflows/real-world-gauntlet.yml": "739319F3399C929EE0650823C1301B54CC49D871B85371B4ACD73A054A22F246",
+    ".github/scripts/ci_policy.py": "F3E0438877A35279CF95696E18317F741E79D874AE1B5CFE531029980F60EEB1",
+    "benchmarks/testing_other_di/real_world_gauntlet_gil_runner.py": "07290E7FD68A464D2F2574924528491B838AA8F3D554B2C637B57C33F71CDF21",
+    "tests/unit/github_workflows/test_ci_policy.py": "4A6C3B086983C48571FBC32DB0A29F124790893B299A7F536F611486A511C130",
+    "llm_support/manifest.json": "E5AE7ED80B776C2ECC9E88F382ADDE089E2F7EAC8C3DE7440F5691F980CCF08B",
+    "llm_support/llm_full_other.txt": "5389A8E9C2CCEC982F02B1A78FA0FDDD2A2583A27E43560C2E05F4B5B9B754E0",
+    "benchmarks/testing_other_di/test_real_world_gauntlet_threads.py": "F654A13782FD62FBEBA58DECC1260F0AE60989A4234588A8B8AB688EC5B0FCCE",
+    "tests/unit/github_workflows/test_source_qualification.py": "F7AC79E138103ECFA171A5F3F4D5D17A0680550D421D4C5BFD5FA0A93E8F093E",
+    ".github/workflows/ci.yml": "3EA5BB627BC94DF8B3B58AFCF353B9A8A15E1F30EA846F600376E7D0A648F7EC",
+    "benchmarks/testing_other_di/test_real_world_gauntlet.py": "71B9F0746D93FAF3200261D56A4239453E1E8AEC81B5815F4EB234F953ED0B97",
+    "tests/unit/github_workflows/test_workflow_contracts.py": "9CFB0F7936C6F62BA50D7862E7E7B76278A2939825FA9CF4ED9D2BCFB5EC8B87",
+    ".github/scripts/ci_qualification.py": "8F155858BDD545830BBD5583E06DCDBC9198D9471E5BB6D74B34AC18C2FEB7BB"
+  },
+  "historical_validation_before_iteration_list": {
+    "ci_tests": 427,
+    "final_benchmark_tests": 34,
+    "benchmark_failures": 0,
+    "benchmark_errors": 0,
+    "benchmark_skips": 0,
+    "workflow_smoke": {
+      "exit_code": 0,
+      "verified_libraries": {
+        "dependency-injector": true,
+        "dishka": true,
+        "melder": true
+      },
+      "validation_passed": true,
+      "thread_counts": [
+        3,
+        5,
+        7,
+        9
+      ],
+      "rounds": 1,
+      "elapsed_seconds": 6.714253399986774,
+      "command": [
+        "C:\\Users\\Mark\\PycharmProjects\\melder_private\\.venv_new\\Scripts\\python.exe",
+        "-X",
+        "gil=0",
+        "-m",
+        "pytest",
+        "-s",
+        "-v",
+        "-o",
+        "addopts=",
+        "-o",
+        "markers=timeout: timeout metadata (bounded by Actions)",
+        "--junitxml=context_compass/artifacts/2026-10-03_real_world_gauntlet_ci/workflow_results/junit.xml",
+        "benchmarks/testing_other_di/test_real_world_gauntlet.py::test_real_world_gauntlet"
+      ]
+    }
+  },
+  "selected_defaults": {
+    "thread_counts": [
+      3,
+      5,
+      7,
+      9
+    ],
+    "iteration_counts": [
+      5000,
+      10000,
+      15000,
+      25000,
+      50000
+    ],
+    "rounds": 1
+  },
+  "previous_startup_validation": {
+    "passed": 71,
+    "deselected_real_subprocess_cases": 4,
+    "junit": "startup_contracts.xml",
+    "startup_output_receipt": "startup_output.txt",
+    "startup_before_child_verified": true,
+    "defaults_and_overrides_verified": true,
+    "workflow_python_compiles": true,
+    "full_iteration_thread_matrix_run": false
+  },
+  "latest_validation": {
+    "tests": 279,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "junit": "promotion_contracts.xml",
+    "local_benchmark_unchanged": true,
+    "full_hosted_gauntlet_run": false
+  },
+  "ci_profile": {
+    "automatic_route": "dev -> preprod pull_request only",
+    "manual_gauntlet_available": true,
+    "iteration_counts": [
+      500,
+      1000,
+      2500,
+      5000,
+      10000
+    ],
+    "thread_counts": [
+      3,
+      5,
+      7,
+      9
+    ],
+    "local_benchmark_defaults_unchanged": true
+  }
+}

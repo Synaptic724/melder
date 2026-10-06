@@ -14,9 +14,9 @@ Regenerate with:
 """
 
 MANIFEST_VERSION = "2.0.0"
-BUILT_FOR_VERSION = "0.2.8207"
-SOURCE_SHA256 = "e8bd2231ae3b3e260e3ecb55110ff084597ca462123fc06f18e12e59cd360029"
-ENTRY_COUNT = 619
+BUILT_FOR_VERSION = "0.2.8227"
+SOURCE_SHA256 = "62d28e84748a8d656a54b819ea3ca02dd7a9051aca2280b3c01dfa34131fe294"
+ENTRY_COUNT = 622
 
 ENTRIES = (
     ('melder.aether.aether', 'Aether'),
@@ -134,6 +134,7 @@ ENTRIES = (
     ('melder.aether.conduit.creations.cluster_creations', 'ClusterCreations'),
     ('melder.aether.conduit.creations.conduit_creations', 'ConduitCreations'),
     ('melder.aether.conduit.creations.creations', 'Creations'),
+    ('melder.aether.conduit.creations.creations', 'ManyDisposalBucket'),
     ('melder.aether.conduit.meld.conduit_meld', 'ConduitMeld'),
     ('melder.aether.conduit.meld.contracts.spell_contract', 'SpellContract'),
     ('melder.aether.conduit.meld.contracts.spell_map', 'SpellMap'),
@@ -350,6 +351,7 @@ ENTRIES = (
     ('melder.aether.spellbook.spell_compiler.validation.spell_validation_context', 'SpellValidationContext'),
     ('melder.aether.spellbook.spell_compiler.validation.spell_validation_issue', 'SpellValidationIssue'),
     ('melder.aether.spellbook.spell_compiler.validation.spell_validation_result', 'SpellValidationResult'),
+    ('melder.aether.spellbook.spell_compiler.validation.strategies.ambiguous_provider_strategy', 'AmbiguousProviderStrategy'),
     ('melder.aether.spellbook.spell_compiler.validation.strategies.annotation_shape_guard_strategy', 'AnnotationShapeGuardStrategy'),
     ('melder.aether.spellbook.spell_compiler.validation.strategies.binding_resolution_cycle_strategy', 'BindingResolutionCycleStrategy'),
     ('melder.aether.spellbook.spell_compiler.validation.strategies.callable_profile_hygiene_strategy', 'CallableProfileHygieneStrategy'),
@@ -369,6 +371,7 @@ ENTRIES = (
     ('melder.aether.spellbook.spellbinder', 'SpellBinder'),
     ('melder.aether.spellbook.spellbook', 'Spellbook'),
     ('melder.aether.spellbook.spellbook_creation_system', 'SpellbookCreationSystem'),
+    ('melder.aether.spellbook.spellframe_kind.spellframe_kind', 'SpellframeKind'),
     ('melder.crystallizer.asset_management.adapters.sqlite_mesh_adapter', 'SqliteMeshAdapter'),
     ('melder.crystallizer.asset_management.asset_management_system', 'AssetManagementSystem'),
     ('melder.crystallizer.asset_management.crystallizer_cache', 'CrystallizerCache'),

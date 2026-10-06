@@ -25,6 +25,11 @@ EXPECTED_CACHE_VERSION_HISTORY = {
     13: "collection_member_paths",
     14: "override_site_plan_lanes",
     15: "structural_snapshot_rows",
+    16: "many_registration_per_key_methods",
+    17: "lazy_instance_results",
+    18: "annotation_address_matching",
+    19: "executor_world_stamp",
+    20: "annotation_kind_matching",
 }
 
 
@@ -54,7 +59,7 @@ def test_cache_schema_version_history_accepts_only_current_bundle(
     conduit_name = "root"
     spell_id = "a" * 64
     cache_root = tmp_path / "cache"
-    bundle_path = cache_root / frame_name / f"{conduit_name}.melc"
+    bundle_path = cache_root / frame_name / f"{conduit_name}.meldercache"
     bundle_path.parent.mkdir(parents=True, exist_ok=True)
     bundle_path.write_bytes(marshal.dumps({
         "version": bundle_version,

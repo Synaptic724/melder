@@ -27,13 +27,14 @@ jobs:
       runtime-required: ${{ steps.route.outputs.runtime-required }}
       package-required: ${{ steps.route.outputs.package-required }}
       source-required: ${{ steps.route.outputs.source-required }}
+      gauntlet-required: ${{ steps.route.outputs.gauntlet-required }}
     steps:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 2
       - uses: actions/setup-python@v7
         with:
-          python-version: "3.14"
+          python-version: "3.14.7"
       - name: Validate the branch route
         id: route
         run: python .github/scripts/ci_policy.py branch
@@ -46,7 +47,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
         with:
-          python-version: "3.14"
+          python-version: "3.14.7"
       - run: python .github/scripts/ci_policy.py hygiene
 
   source-assets:
@@ -68,6 +69,21 @@ jobs:
     uses: ./.github/workflows/test-runtime.yml
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  real-world-gauntlet:
+    needs: branch-policy
+    if: needs.branch-policy.outputs.gauntlet-required == 'true'
+    uses: ./.github/workflows/real-world-gauntlet.yml
+
+  persistent-runtime-gauntlet:
+    needs: branch-policy
+    if: needs.branch-policy.outputs.gauntlet-required == 'true'
+    uses: ./.github/workflows/persistent-runtime-gauntlet.yml
+
+  shallow-all-thread-scaling:
+    needs: branch-policy
+    if: needs.branch-policy.outputs.gauntlet-required == 'true'
+    uses: ./.github/workflows/shallow-all-thread-scaling.yml
 
   documentation:
     needs: branch-policy
@@ -92,7 +108,7 @@ jobs:
 
   merge-ready:
     name: CI / merge-ready
-    needs: [branch-policy, hygiene, source-assets, repo-assets, tests, documentation, packages, source-qualification]
+    needs: [branch-policy, hygiene, source-assets, repo-assets, tests, real-world-gauntlet, persistent-runtime-gauntlet, shallow-all-thread-scaling, documentation, packages, source-qualification]
     # Without always(), a failed dependency skips the very check required to
     # block merging. The script accepts only explicitly successful evidence.
     if: always()
@@ -107,13 +123,14 @@ jobs:
           fetch-depth: 2
       - uses: actions/setup-python@v7
         with:
-          python-version: "3.14"
+          python-version: "3.14.7"
       - name: Require every mandatory check to succeed
         env:
           CI_JOB_RESULTS: ${{ toJSON(needs) }}
           CI_RUNTIME_REQUIRED: ${{ needs.branch-policy.outputs.runtime-required }}
           CI_PACKAGE_REQUIRED: ${{ needs.branch-policy.outputs.package-required }}
           CI_SOURCE_REQUIRED: ${{ needs.branch-policy.outputs.source-required }}
+          CI_GAUNTLET_REQUIRED: ${{ needs.branch-policy.outputs.gauntlet-required }}
         run: python .github/scripts/ci_policy.py merge-ready
       - name: Record the exact full CI qualification
         if: needs.branch-policy.outputs.runtime-required == 'true'
@@ -122,6 +139,7 @@ jobs:
           CI_RUNTIME_REQUIRED: ${{ needs.branch-policy.outputs.runtime-required }}
           CI_PACKAGE_REQUIRED: ${{ needs.branch-policy.outputs.package-required }}
           CI_SOURCE_REQUIRED: ${{ needs.branch-policy.outputs.source-required }}
+          CI_GAUNTLET_REQUIRED: ${{ needs.branch-policy.outputs.gauntlet-required }}
         run: python .github/scripts/ci_qualification.py record
       - name: Retain full CI source evidence
         if: needs.branch-policy.outputs.runtime-required == 'true'

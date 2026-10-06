@@ -151,6 +151,9 @@
  ],
  "published_aliases": [],
  "imports": {
+  "ast": "ast",
+  "inspect": "inspect",
+  "json": "json",
   "Path": "pathlib.Path",
   "Any": "typing.Any",
   "Dict": "typing.Dict",

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/_build_assets/_bind_guard/_builder.py",
- "source_sha256": "d489c6f750871953f94521c402a00ede1d84a598f071017b4e015fbe0d340241",
+ "source_sha256": "c93f2f2aa05b7a4b4d5be6f0a6b345052c1798902ed77e26b11539e8dc853854",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder._build_assets._bind_guard._builder": {
@@ -51,6 +51,9 @@
  "edge_candidates": [],
  "published_aliases": [],
  "imports": {
+  "ast": "ast",
+  "hashlib": "hashlib",
+  "pathlib": "pathlib",
   "Iterable": "typing.Iterable",
   "List": "typing.List",
   "Set": "typing.Set",

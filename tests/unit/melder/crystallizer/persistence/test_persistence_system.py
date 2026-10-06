@@ -20,6 +20,7 @@ class _StubSpellCrystal:
 
     def __init__(self, spell_id, spellbook_id=None):
         self.id = spell_id
+        self.custody_key = spell_id  # the record key (the bare spell id under process-wide ids)
         self.spellbook_id = spellbook_id
         self.cleaned = False
 
@@ -358,3 +359,30 @@ def test_cleanup_is_idempotent_and_blocks_further_use():
     system.cleanup()
     with pytest.raises(RuntimeError):
         system.create_checkpoint()
+
+
+def test_spell_custody_verbs_route_frame_scoped_keys_to_the_active_profile():
+    """
+    Purpose:
+        Verify the system passes custody keys and the lookup frame through to the active profile (0.2.8214).
+    Contract:
+        Two copies of one spell id recorded under per-frame keys coexist; activity and removal address one key;
+        get_spell_crystal with a frame answers that frame's copy.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If a verb loses the key or the frame on the way down.
+    """
+    system = PersistenceSystem()
+    first = _StubSpellCrystal("sha", "book-a")
+    first.custody_key = "sha@tenant_a"
+    second = _StubSpellCrystal("sha", "book-b")
+    second.custody_key = "sha@tenant_b"
+    system.record_spell_crystal(first, active=True)
+    system.record_spell_crystal(second, active=True)
+    system.record_spell_activity("sha@tenant_a", active=False)
+    assert system.get_spell_crystal("sha", frame_name="tenant_a") is first
+    system.remove_spell_crystal("sha@tenant_b")
+    assert second.cleaned is True and first.cleaned is False
+    assert sorted(system.describe_spell_crystals()) == ["sha@tenant_a"]
+    system.cleanup()

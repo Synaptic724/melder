@@ -146,6 +146,16 @@ class _FreshCreationsProbe:
         _ = disposal_methods
         self._disposable_creations.setdefault(spell_id, []).append(instance)
 
+    def register_many(
+            self,
+            spell_id: str,
+            instance: Any,
+            disposal_methods: Sequence[str],
+    ) -> None:
+        """Stand-in for the positional hot verb emitted since 2026-10-01."""
+        _ = disposal_methods
+        self._disposable_creations.setdefault(spell_id, []).append(instance)
+
 
 class _NullLock:
     """

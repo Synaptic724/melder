@@ -1,0 +1,19 @@
+77269f9b41da33c359c0afe2d3e9fc93aca59c2a65233a3b68834775d97355ca  scopes.md
+6e36280d990497136c73d06db8d178faba53463c2fa5fd1dc652d3e814c320a3  src_architecture.md
+e6d9d838a25bfa173d2fbdd78086550196c75d615c45e1d662c456c6f60c2bc7  src_architecture_index.md
+ef9c3073baeab4b947a99911c535ea8ea4baaabca13226c9f85230f2228680b7  src_components.md
+831c65d76cb18ebbcd543cd6ce1159a2a0895ddf1bdcd1cdb5745770d73a9b7b  src_components_index.md
+639d574623566598fd695866f5e3051d55554352e9d83fdcda1f267073fbc000  src_graph.md
+7a34fb7c96e6a82e98c43ca0abfc4cd23c486f59655f3a9ce1db0e3a337afb8f  src_graph_index.md
+7434a4e5bad314cc78f7d13d9090da9a9dfe9151de591e1813e2fa90c8f1b12c  tests_components.md
+a682c4cce705c7865d31a73f4d3a01e32957bd329ea8de8ef25961f54d9f10b0  tests_components_index.md
+    128 scopes.md
+   3418 src_architecture.md
+     86 src_architecture_index.md
+  10383 src_components.md
+    176 src_components_index.md
+  27569 src_graph.md
+    610 src_graph_index.md
+   2763 tests_components.md
+     95 tests_components_index.md
+  45228 total

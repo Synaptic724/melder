@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spellbook_creation_system.py",
- "source_sha256": "e6b809f366399aa2bb9532e66c8e449c98d99375198b6b9f352189e00a9ff1e0",
+ "source_sha256": "e4111934a050c3512cc4a1ba2694e3d4cfa0ad7905c56c0ea93d21794f56d8b6",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spellbook_creation_system": {
@@ -31,6 +31,7 @@
     "conjure",
     "define_conduit_into_spells",
     "fire_conjure_hooks",
+    "flag_dependencies_without_own_plan",
     "get_conjure_hook_map",
     "phase_change_control_factory",
     "phase_execution_plan_factory",
@@ -54,11 +55,11 @@
     "run_structural_phases"
    ],
    "shape": {
-    "method_count": 68,
+    "method_count": 69,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "21eb75527072e88f7af94dd2ca433c8615c376992329c352594a08a03ad1572e",
+   "span_sha256": "40d4dd3b30c39c9ca98215947d6d4648649ccaa63d681199e8ea2d44d05e25f9",
    "role": "Conjure-only orchestration helper for Spellbook.",
    "responsibilities": [
     "prepares spellbook configuration and structural phase execution before conjure",
@@ -70,7 +71,9 @@
     "when the public conjure passes validation_warnings=True, logs one WARNING grouping every Phase-4 warning by code before phase artifacts are released; otherwise logs nothing",
     "on a non-full-hit conjure, rebuilds the conduit cache bundle from that compile: removes every payload and re-stages every live payload-eligible spell in sorted id order, so a full hit never hydrates a plan naming a spell id outside the live pool",
     "hands the conduit resolution diagnostics to SpellbookValidationError at the conjure gate and the local-rerun gate, so a conduit-verdict refusal states its reasons (the phase artifacts are already cleaned)",
-    "publishes cached creation contexts from manifest packages only; any other payload is a cache miss"
+    "publishes cached creation contexts from manifest packages only; any other payload is a cache miss",
+    "after a successful target-local pass, flags each owned, resolvable, non-existing-creation dependency in its scope that has no phase-11 plan, no published context and no flag yet with resolution_required and a door-epoch bump, under that dependency's spell lock (flag_dependencies_without_own_plan)",
+    "admits an executor-cache full hit only when the bundle's recorded world stamp equals the live structural world stamp (generation 19); a world that differs by an existing creation or a non-resolvable definition recompiles phases 8-11 and re-stages the bundle under the new stamp"
    ],
    "owns_state": [
     "_spellbook",
@@ -86,7 +89,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "21eb75527072e88f7af94dd2ca433c8615c376992329c352594a08a03ad1572e"
+   "semantics_authored_against": "40d4dd3b30c39c9ca98215947d6d4648649ccaa63d681199e8ea2d44d05e25f9"
   }
  },
  "edges_out": [
@@ -155,6 +158,7 @@
  ],
  "published_aliases": [],
  "imports": {
+  "threading": "threading",
   "Callable": "collections.abc.Callable",
   "Collection": "collections.abc.Collection",
   "Iterable": "collections.abc.Iterable",

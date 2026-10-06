@@ -1,0 +1,17 @@
+# Speed tests (real-world gauntlet, persistent runtime series, shallow thread scaling): one exact Python.
+# Benchmark numbers compare run to run only while this file stays the same; change it deliberately,
+# replacing it rather than adding a second manifest. See .github/BRANCH_WORKFLOW.md.
+python = "3.14.7"
+freethreaded = true
+dependencies = [
+    "dependency-injector==4.49.1",
+    "dishka==1.10.1",
+    "pytest==9.1.1",
+    "iniconfig==2.3.0",
+    "packaging==26.3",
+    "pluggy==1.6.0",
+    "Pygments==2.21.0",
+    "colorama==0.4.6",
+]
+# dependency-injector publishes no free-threaded (cp314t) wheel, so it alone is built from its sdist.
+build_from_source = ["dependency-injector"]

@@ -74,7 +74,8 @@
   "Optional": "typing.Optional",
   "Tuple": "typing.Tuple",
   "ClassVar": "typing.ClassVar",
-  "SourceCustodyStrategy": "melder.crystallizer.crystal_analysis.custody.source_custody_strategy.SourceCustodyStrategy"
+  "SourceCustodyStrategy": "melder.crystallizer.crystal_analysis.custody.source_custody_strategy.SourceCustodyStrategy",
+  "importlib_metadata": "importlib.metadata"
  },
  "collapse_candidate": {
   "module": "melder.crystallizer.crystal_analysis.custody.site_package_custody_strategy",
