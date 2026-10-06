@@ -38,6 +38,9 @@ Start with `CI / merge-ready`: its message lists every required job that did not
 | A speed test fails in its install step | A benchmark library has no free-threaded wheel on that runner: pin another version or list it under `build_from_source`. Read `install.log` in the results artifact. |
 | A speed test's inline step fails with "No module named 'benchmarks'" | The step imports `benchmarks` before putting the checkout on `sys.path`; add `sys.path.insert(0, str(Path.cwd()))` above the import ([extending.md](extending.md)). |
 | `source-qualification` refused | No full CI run tested this exact tree. Run CI by hand on the branch (BRANCH_WORKFLOW.md, "Reusing full qualification"). |
+| `RC / publish-to-TestPyPI`: HTTP 503 or another 5xx from TestPyPI after six tries | TestPyPI is down. When it answers again, use **Re-run failed jobs**; the run's build is reused. |
+| An RC job: "Artifact not found for name: candidate-dists-<run>-<n>" | A failed-jobs re-run of a run that started before the build reported its artifact (2026-10-06); use **Re-run all jobs**. |
+| `Publish to PyPI`: "Use Re-run all jobs: this attempt did not build the distributions" | A failed-jobs re-run of the upload; publication never reuses an earlier attempt's build. Use **Re-run all jobs**. |
 | Prod pull request: "Candidate qualification has not passed" | The release-candidate run for that commit is pending or failed; finish or fix it, then rerun the check. |
 | The Codecov upload fails | Reporting only: it never blocks a merge. |
 

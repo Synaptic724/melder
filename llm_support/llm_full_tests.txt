@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: tests
-SOURCE FINGERPRINT: d5e3fd9b2c770609bc048daa3d1706d3a781be3f111350668a76bf7c84b42335
+SOURCE FINGERPRINT: 3a0df29b0791f2019d17de3258da9384ae0fca9fde8ca5ee92951bba4764b041
 FILE COUNT: 1063
 
 ================================================================================
@@ -160233,7 +160233,7 @@ END FILE: tests/unit/github_workflows/conftest.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/github_workflows/test_candidate_publication.py
-CONTENT SHA256: ad7b7cd06d69f9b2e1fc6a94fb1bd0c6a8705a6e883c0af6dc4e09b05d1d4097
+CONTENT SHA256: d8bd651834dfb3b9357c0c3983c98d8d2ec4424cf6718ad8b220c77ba7584e2d
 SOURCE ENCODING: utf-8
 ================================================================================
 """Prove exact-source qualification, immutable uploads, and isolated TestPyPI installation."""
@@ -160490,20 +160490,97 @@ def test_remote_file_reads_close_stream_and_preserve_exact_identity(candidate: M
     assert response.closed
 
 
-@pytest.mark.parametrize("status", [404, 403, 500])
+def unexpected_retry(seconds: float) -> None:
+    """Expose a retry of an answer that is definitive, not a service outage."""
+    raise AssertionError("A definitive index answer must not be retried.")
+
+
+@pytest.mark.parametrize("status", [404, 400, 403])
 def test_only_index_404_means_no_previous_upload(candidate: ModuleType, monkeypatch: pytest.MonkeyPatch,
                                                 status: int) -> None:
-    """Authorization/network/service failures must not be mistaken for an empty package version."""
+    """Authorization and request failures must not be mistaken for an empty package version, nor retried."""
+    calls: list[int] = []
+
     def failure(*arguments: object, **keywords: object) -> None:
         """Raise a representative HTTP boundary error without opening a network connection."""
+        calls.append(status)
         raise urllib.error.HTTPError("https://test.pypi.org/", status, "test failure", {}, None)
 
     monkeypatch.setattr(candidate.urllib.request, "urlopen", failure)
+    monkeypatch.setattr(candidate.time, "sleep", unexpected_retry)
     if status == 404:
         assert candidate.remote_files("0.2.4") == {}
     else:
         with pytest.raises(urllib.error.HTTPError):
             candidate.remote_files("0.2.4")
+    assert calls == [status]
+
+
+@pytest.mark.parametrize("failure", [
+    urllib.error.HTTPError("https://test.pypi.org/", 503, "Backend is unhealthy", {}, None),
+    urllib.error.HTTPError("https://test.pypi.org/", 500, "Internal Server Error", {}, None),
+    urllib.error.HTTPError("https://test.pypi.org/", 429, "Too Many Requests", {}, None),
+    urllib.error.URLError("connection refused"),
+    TimeoutError("The read operation timed out"),
+], ids=["503", "500", "429", "connection", "timeout"])
+def test_index_outage_is_retried_within_a_bound(candidate: ModuleType, monkeypatch: pytest.MonkeyPatch,
+                                               failure: Exception) -> None:
+    """A TestPyPI outage gets a bounded retry, then its last failure propagates; it never reads as no upload.
+
+    TestPyPI answered 503 "Backend is unhealthy" to the release lookup of run 37443362134 (2026-10-06), which
+    failed the whole candidate on one request.
+    """
+    calls: list[int] = []
+    pauses: list[float] = []
+
+    def unavailable(*arguments: object, **keywords: object) -> None:
+        """Fail the index boundary the same way on every attempt."""
+        calls.append(1)
+        raise failure
+
+    monkeypatch.setattr(candidate.urllib.request, "urlopen", unavailable)
+    monkeypatch.setattr(candidate.time, "sleep", pauses.append)
+    with pytest.raises(type(failure)):
+        candidate.remote_files("0.2.4")
+    policy = candidate.TestIndexPolicy
+    assert len(calls) == policy.LOOKUP_ATTEMPTS
+    assert pauses == [policy.RETRY_SECONDS] * (policy.LOOKUP_ATTEMPTS - 1)
+
+
+def test_index_outage_that_recovers_reads_the_release(candidate: ModuleType,
+                                                      monkeypatch: pytest.MonkeyPatch) -> None:
+    """A brief outage is ridden out: the first good answer is used and its stream is closed."""
+    response = io.BytesIO(json.dumps({"info": {"version": "0.2.4rc1"}, "urls": [{
+        "filename": "melder.whl", "digests": {"sha256": "a" * 64}, "size": 100,
+    }]}).encode())
+    answers: list[object] = [
+        urllib.error.HTTPError("https://test.pypi.org/", 503, "Backend is unhealthy", {}, None),
+        urllib.error.HTTPError("https://test.pypi.org/", 502, "Bad Gateway", {}, None),
+        response,
+    ]
+    pauses: list[float] = []
+
+    def get_release(request: object, timeout: int) -> object:
+        """Answer with two outages, then the release document."""
+        answer = answers.pop(0)
+        if isinstance(answer, BaseException):
+            raise answer
+        return answer
+
+    monkeypatch.setattr(candidate.urllib.request, "urlopen", get_release)
+    monkeypatch.setattr(candidate.time, "sleep", pauses.append)
+    assert candidate.remote_files("0.2.4rc1") == {"melder.whl": {"sha256": "a" * 64, "size": 100}}
+    assert response.closed and not answers
+    assert pauses == [candidate.TestIndexPolicy.RETRY_SECONDS] * 2
+
+
+def test_unreadable_index_answer_is_refused_without_retry(candidate: ModuleType,
+                                                          monkeypatch: pytest.MonkeyPatch) -> None:
+    """A body that is not JSON is a broken answer, not an outage, and fails closed at once."""
+    monkeypatch.setattr(candidate.urllib.request, "urlopen", lambda *args, **kwargs: io.BytesIO(b"<html></html>"))
+    monkeypatch.setattr(candidate.time, "sleep", unexpected_retry)
+    with pytest.raises(ValueError):
+        candidate.remote_files("0.2.4")
 
 
 @pytest.mark.parametrize("file", [
@@ -162439,7 +162516,7 @@ END FILE: tests/unit/github_workflows/test_source_qualification.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/github_workflows/test_workflow_contracts.py
-CONTENT SHA256: 99cd7489a8920b65f1262a0856aa5c08269a05ab39f07dae4ef8b85111ac2a15
+CONTENT SHA256: 9131e242cf60fbdccd9b8ae74e75fc7b25b026372f7ff09524c39a14903a8ce1
 SOURCE ENCODING: utf-8
 ================================================================================
 """Prove safety-relevant workflow wiring using parsed YAML rather than substring matches."""
@@ -162839,6 +162916,41 @@ def test_publication_repeats_validation_and_checks_prod_last() -> None:
     assert all("environment" not in job for name, job in jobs.items() if name != "pypi-publish")
 
 
+def test_publication_refuses_a_failed_jobs_rerun_by_name() -> None:
+    """Final publication never uploads an earlier attempt's build, and says how to recover instead.
+
+    A failed-jobs re-run does not repeat release-build, so the build job's output still names the earlier
+    attempt's artifact. The upload job stops before its download with an error naming "Re-run all jobs",
+    rather than the opaque "Artifact not found" the release candidate showed on 2026-10-06.
+    """
+    jobs = workflow("python-publish.yml")["jobs"]
+    steps = jobs["pypi-publish"]["steps"]
+    uploaded = jobs["release-build"]["with"]["artifact-name"]
+    guard = next(step for step in steps if "BUILT_ARTIFACT" in step.get("env", {}))
+    download = next(step for step in steps if step.get("uses", "").startswith("actions/download-artifact@"))
+    assert steps.index(guard) < steps.index(download)
+    assert guard["env"] == {"BUILT_ARTIFACT": "${{ needs.release-build.outputs.artifact-name }}",
+                            "EXPECTED_ARTIFACT": uploaded}
+    assert '[ "$BUILT_ARTIFACT" != "$EXPECTED_ARTIFACT" ]' in guard["run"]
+    assert "Re-run all jobs" in guard["run"] and "exit 1" in guard["run"]
+    assert "if" not in guard and "continue-on-error" not in guard
+    assert download["with"]["name"] == uploaded
+
+
+def test_distribution_build_reports_the_artifact_it_uploaded() -> None:
+    """A consumer in the same run names the build by the build job's output, never by its own attempt.
+
+    A failed-jobs re-run does not repeat a successful build, so a consumer that formed the name from its own
+    github.run_attempt asked for an artifact that attempt never made (release candidate run 37443362134).
+    """
+    document = workflow("build-distributions.yml")
+    output = document["on"]["workflow_call"]["outputs"]["artifact-name"]
+    assert output["value"] == "${{ jobs.build.outputs.artifact-name }}"
+    build = document["jobs"]["build"]
+    assert build["outputs"] == {"artifact-name": "${{ inputs.artifact-name }}"}
+    assert build["steps"][-1]["with"]["name"] == "${{ inputs.artifact-name }}"
+
+
 def test_package_verification_precedes_artifact_upload() -> None:
     """Only built, inspected, installed-wheel-verified files become distributable artifacts."""
     document = workflow("build-distributions.yml")
@@ -162983,12 +163095,14 @@ def test_candidate_workflow_is_slim_and_publishing_authority_is_isolated(policy:
     )
     probe = next(step for step in install["steps"] if "probe-install" in step.get("run", ""))
     assert probe["env"]["PYTHON_GIL"] == "0"
-    artifact = jobs["build"]["with"]["artifact-name"]
+    # Each attempt that builds names a fresh artifact; publish and install download the one the build job
+    # reports, so a failed-jobs re-run of either uses the run's verified build instead of a missing name.
+    assert jobs["build"]["with"]["artifact-name"] == "candidate-dists-${{ github.run_id }}-${{ github.run_attempt }}"
     for job in (publisher, install):
+        assert "build" in job["needs"]
         download = next(step for step in job["steps"]
                         if step.get("uses", "").startswith("actions/download-artifact@"))
-        assert download["with"]["name"] == artifact
-    assert "github.run_attempt" in artifact
+        assert download["with"]["name"] == "${{ needs.build.outputs.artifact-name }}"
     ready = jobs["package-ready"]
     assert ready["if"] == "always()"
     assert set(ready["needs"]) == set(policy.CIPolicy.CANDIDATE_JOBS)

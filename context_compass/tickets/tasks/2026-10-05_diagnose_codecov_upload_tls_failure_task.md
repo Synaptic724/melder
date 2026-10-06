@@ -8,7 +8,7 @@
 - Agent Name: melder_1
 - Priority: p2
 - Created: 2026-10-05T00:55:17Z
-- Updated: 2026-10-05T01:53:09Z
+- Updated: 2026-10-06T09:45:54Z
 
 ## Objective
 Explain why the hosted "Upload coverage to Codecov" step failed, whether it blocks CI or merging, and whether a
@@ -300,6 +300,59 @@ repository change is warranted; recommend one path.
   IMPACT: The change set is complete and CI's bundle check will agree once it is committed.
   NEXT: Owner commits and pushes; the fallback runs from the next upload on; accept or redirect.
   REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-06T09:42:08Z
+  TYPE: FACT
+  CLAIM: Owner (chat, 2026-10-06 about 09:30Z): "codecov isn't populating anymore in the cicd". Uploads work on
+    every route that runs the tests. In CI run 37397870593 (the dev -> preprod PR, d2bf3fe1e) "tests / Coverage /
+    Codecov" succeeded 01:38:46-01:39:07Z; its first upload attempt succeeded and the PyPI fallback was skipped
+    (GitHub's public jobs API). Codecov's public API lists dev updated 2026-10-06T01:39:52Z and codex_features2
+    00:56:59Z, commits 0b28a066d and d2bf3fe1e complete at 86.93%. What stays still is by design: Codecov's
+    default branch for the repository is prod (86.71%, updated 2026-09-28T13:28Z) and the README badge tracks
+    prod, which receives coverage only from the final publication's tests or a manual Runtime tests run on prod;
+    the preprod -> release_candidate and release_candidate -> prod PRs run no tests; and codecov.yml turns off
+    Codecov's PR comments and project/patch statuses, so no PR check ever shows Codecov. Codecov's status page
+    records the 2026-10-05 outage behind Notes 1-8 as an expired SSL certificate, resolved at 09:15Z.
+  EVIDENCE:
+  - codecov.yml:1-6
+  - README.md:24-24
+  - .github/BRANCH_WORKFLOW.md:229-233
+  - .github/workflows/test-runtime.yml:156-178
+  - .github/workflows/python-publish.yml:62-69
+  IMPACT: Nothing is broken; the fallback has not been needed since the outage ended.
+  NEXT: Owner decides whether the prod-only dashboard and badge are what they want (Note 15).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-06T09:42:08Z
+  TYPE: DECISION_REQUEST
+  CLAIM: How should coverage show? (1) Keep the design: dev and feature data land every run, prod's number and
+    the badge move at each release. (2) Refresh prod now without a release: Actions -> Runtime tests -> Run
+    workflow on prod (the branch guide's documented seed). (3) Make Codecov track dev: set the default branch to
+    dev in Codecov's repository settings (owner's account) and point the README badge at dev. (4) Show Codecov in
+    PR checks: enable informational project/patch statuses or comments in codecov.yml.
+  EVIDENCE:
+  - codecov.yml:1-6
+  - .github/BRANCH_WORKFLOW.md:229-233
+  IMPACT: Changes only what is displayed; the uploads already work.
+  NEXT: Owner picks one or more options; (3) and (4) are small repository edits under this ticket.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-06T09:45:54Z
+  TYPE: DECISION
+  CLAIM: Owner (chat, about 09:45Z): "Keep as is" for how coverage shows, and "its just weird codecov wasn't
+    showing up in the CICD and it used to". No repository change: tested routes (PRs into dev, dev -> preprod,
+    release fixes, manual CI, publication) upload and show the "Coverage / Codecov" job; the promotion PRs into
+    release_candidate and prod run no tests, so they show no Codecov job, likely what the owner saw on today's
+    promotion (UNKNOWN until confirmed); prod's number and badge move at the next publication.
+  EVIDENCE:
+  - codecov.yml:1-6
+  - .github/BRANCH_WORKFLOW.md:229-233
+  IMPACT: The Codecov lane needs no further work; it waits for the owner's acceptance.
+  NEXT: Owner accepts or redirects; then close.
+  REREAD: HELPFUL
   SCORE_0_TO_10: 8
 
 ## Context / Handoff Summary

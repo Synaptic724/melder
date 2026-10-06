@@ -21,7 +21,10 @@ Every change below ends the same way: run the workflow tests, update this folder
 - Secrets are passed explicitly and only where needed: `tests` receives `CODECOV_TOKEN` and nothing else, and the
   publication tokens live in the `pypitest` and `pypi` environments, each used by one job.
 - Artifact names carry `${{ github.run_id }}-${{ github.run_attempt }}`, so a rerun never picks up another
-  attempt's files.
+  attempt's files by accident. A job that downloads a build made earlier in the same run names it from the build
+  job's output (`needs.<build>.outputs.artifact-name`), never from its own attempt, because a failed-jobs re-run
+  does not repeat a successful build. The release candidate reuses that build on such a re-run; final publication
+  refuses one and asks for "Re-run all jobs".
 
 ## Add a job that must pass before a merge
 

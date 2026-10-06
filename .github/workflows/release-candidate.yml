@@ -67,9 +67,13 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.14.7"
-      - uses: actions/download-artifact@v8
+      - name: Retrieve this run's verified build
+        # Named by the build job's output, so a failed-jobs re-run (after a TestPyPI outage, for example) reuses
+        # this run's build instead of asking for one its own attempt never made. prepare-upload verifies the
+        # files again before anything is uploaded.
+        uses: actions/download-artifact@v8
         with:
-          name: candidate-dists-${{ github.run_id }}-${{ github.run_attempt }}
+          name: ${{ needs.build.outputs.artifact-name }}
           path: dist/
       - name: Verify existing files and prepare an exact upload
         id: upload
@@ -119,9 +123,11 @@ jobs:
           architecture: ${{ matrix.architecture }}
           freethreaded: true
           allow-prereleases: false
-      - uses: actions/download-artifact@v8
+      - name: Retrieve this run's verified build
+        # The same build the publish job verified and uploaded; probe-install pins the wheel's hash.
+        uses: actions/download-artifact@v8
         with:
-          name: candidate-dists-${{ github.run_id }}-${{ github.run_attempt }}
+          name: ${{ needs.build.outputs.artifact-name }}
           path: dist/
       - name: Download the hash-pinned wheel and test its isolated installation
         env:
