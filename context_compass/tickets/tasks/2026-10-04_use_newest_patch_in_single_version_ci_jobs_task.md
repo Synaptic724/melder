@@ -8,7 +8,7 @@
 - Agent Name: melder_1
 - Priority: p2
 - Created: 2026-10-04T20:51:55Z
-- Updated: 2026-10-06T00:26:16Z
+- Updated: 2026-10-06T09:56:35Z
 
 ## Objective
 Make CI explicit and manifest-driven (owner, 2026-10-05; Notes 24-25). Every Python release CI runs is named
@@ -1079,6 +1079,23 @@ bare 3.14 setups (Notes 1-6), the newest-patch speed tests (Notes 7-11) and ever
   IMPACT: The revert is ready for the owner's commit; CI's own asset and bundle checks pass on the working tree.
   NEXT: Owner: commit and push, see the next PR into dev run all 27 runtime cells, rerun the persistent gauntlet,
     accept or redirect.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-06T09:56:35Z
+  TYPE: FACT
+  CLAIM: Hosted evidence after the owner's commit of the revert (0b28a066d, merged to dev as d2bf3fe1e), read from
+    GitHub's public jobs API: CI run 37397870593 (dev -> preprod) completed 48 of 49 jobs successfully, the 49th
+    being source-qualification, which that route skips by design. 49 = 8 route and check jobs + discover, 27
+    runtime cells and coverage + 3 speed-manifest jobs and 9 speed runs, so all 27 cells ran. The persistent
+    gauntlet passed on windows-2025, ubuntu-24.04 and macos-15-intel, so the sys.path fix (Notes 32-35) works
+    hosted; the real-world gauntlet and thread scaling passed too, and the Codecov upload succeeded on its first
+    attempt. The PR-into-dev run's own cell count was not readable (API 403), only its success.
+  EVIDENCE:
+  - .github/workflows/persistent-runtime-gauntlet.yml:93-97
+  - .github/workflows/test-runtime.yml:15-45
+  IMPACT: The lane's owner-owed hosted checks have passed; only the owner's acceptance remains.
+  NEXT: Owner accepts or redirects; then close.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 

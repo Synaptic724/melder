@@ -252,20 +252,97 @@ def test_remote_file_reads_close_stream_and_preserve_exact_identity(candidate: M
     assert response.closed
 
 
-@pytest.mark.parametrize("status", [404, 403, 500])
+def unexpected_retry(seconds: float) -> None:
+    """Expose a retry of an answer that is definitive, not a service outage."""
+    raise AssertionError("A definitive index answer must not be retried.")
+
+
+@pytest.mark.parametrize("status", [404, 400, 403])
 def test_only_index_404_means_no_previous_upload(candidate: ModuleType, monkeypatch: pytest.MonkeyPatch,
                                                 status: int) -> None:
-    """Authorization/network/service failures must not be mistaken for an empty package version."""
+    """Authorization and request failures must not be mistaken for an empty package version, nor retried."""
+    calls: list[int] = []
+
     def failure(*arguments: object, **keywords: object) -> None:
         """Raise a representative HTTP boundary error without opening a network connection."""
+        calls.append(status)
         raise urllib.error.HTTPError("https://test.pypi.org/", status, "test failure", {}, None)
 
     monkeypatch.setattr(candidate.urllib.request, "urlopen", failure)
+    monkeypatch.setattr(candidate.time, "sleep", unexpected_retry)
     if status == 404:
         assert candidate.remote_files("0.2.4") == {}
     else:
         with pytest.raises(urllib.error.HTTPError):
             candidate.remote_files("0.2.4")
+    assert calls == [status]
+
+
+@pytest.mark.parametrize("failure", [
+    urllib.error.HTTPError("https://test.pypi.org/", 503, "Backend is unhealthy", {}, None),
+    urllib.error.HTTPError("https://test.pypi.org/", 500, "Internal Server Error", {}, None),
+    urllib.error.HTTPError("https://test.pypi.org/", 429, "Too Many Requests", {}, None),
+    urllib.error.URLError("connection refused"),
+    TimeoutError("The read operation timed out"),
+], ids=["503", "500", "429", "connection", "timeout"])
+def test_index_outage_is_retried_within_a_bound(candidate: ModuleType, monkeypatch: pytest.MonkeyPatch,
+                                               failure: Exception) -> None:
+    """A TestPyPI outage gets a bounded retry, then its last failure propagates; it never reads as no upload.
+
+    TestPyPI answered 503 "Backend is unhealthy" to the release lookup of run 37443362134 (2026-10-06), which
+    failed the whole candidate on one request.
+    """
+    calls: list[int] = []
+    pauses: list[float] = []
+
+    def unavailable(*arguments: object, **keywords: object) -> None:
+        """Fail the index boundary the same way on every attempt."""
+        calls.append(1)
+        raise failure
+
+    monkeypatch.setattr(candidate.urllib.request, "urlopen", unavailable)
+    monkeypatch.setattr(candidate.time, "sleep", pauses.append)
+    with pytest.raises(type(failure)):
+        candidate.remote_files("0.2.4")
+    policy = candidate.TestIndexPolicy
+    assert len(calls) == policy.LOOKUP_ATTEMPTS
+    assert pauses == [policy.RETRY_SECONDS] * (policy.LOOKUP_ATTEMPTS - 1)
+
+
+def test_index_outage_that_recovers_reads_the_release(candidate: ModuleType,
+                                                      monkeypatch: pytest.MonkeyPatch) -> None:
+    """A brief outage is ridden out: the first good answer is used and its stream is closed."""
+    response = io.BytesIO(json.dumps({"info": {"version": "0.2.4rc1"}, "urls": [{
+        "filename": "melder.whl", "digests": {"sha256": "a" * 64}, "size": 100,
+    }]}).encode())
+    answers: list[object] = [
+        urllib.error.HTTPError("https://test.pypi.org/", 503, "Backend is unhealthy", {}, None),
+        urllib.error.HTTPError("https://test.pypi.org/", 502, "Bad Gateway", {}, None),
+        response,
+    ]
+    pauses: list[float] = []
+
+    def get_release(request: object, timeout: int) -> object:
+        """Answer with two outages, then the release document."""
+        answer = answers.pop(0)
+        if isinstance(answer, BaseException):
+            raise answer
+        return answer
+
+    monkeypatch.setattr(candidate.urllib.request, "urlopen", get_release)
+    monkeypatch.setattr(candidate.time, "sleep", pauses.append)
+    assert candidate.remote_files("0.2.4rc1") == {"melder.whl": {"sha256": "a" * 64, "size": 100}}
+    assert response.closed and not answers
+    assert pauses == [candidate.TestIndexPolicy.RETRY_SECONDS] * 2
+
+
+def test_unreadable_index_answer_is_refused_without_retry(candidate: ModuleType,
+                                                          monkeypatch: pytest.MonkeyPatch) -> None:
+    """A body that is not JSON is a broken answer, not an outage, and fails closed at once."""
+    monkeypatch.setattr(candidate.urllib.request, "urlopen", lambda *args, **kwargs: io.BytesIO(b"<html></html>"))
+    monkeypatch.setattr(candidate.time, "sleep", unexpected_retry)
+    with pytest.raises(ValueError):
+        candidate.remote_files("0.2.4")
 
 
 @pytest.mark.parametrize("file", [

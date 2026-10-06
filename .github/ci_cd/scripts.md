@@ -65,7 +65,9 @@ that is still in progress.
 ### `testpypi_candidate.py`
 
 `prepare-upload` verifies the built files and compares them with TestPyPI: identical files already there are
-accepted, missing ones are staged for upload, and different ones are refused (choose a new version).
+accepted, missing ones are staged for upload, and different ones are refused (choose a new version). Its release
+lookup retries HTTP 429 and 5xx answers, timeouts and failed connections up to six times, ten seconds apart; only a
+404 means nothing is uploaded yet.
 `probe-install` downloads the exact wheel from TestPyPI by its hash, installs it alone into a fresh environment
 and runs `smoke_wheel.py` against the expected version.
 

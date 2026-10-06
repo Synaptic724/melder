@@ -395,6 +395,41 @@ def test_publication_repeats_validation_and_checks_prod_last() -> None:
     assert all("environment" not in job for name, job in jobs.items() if name != "pypi-publish")
 
 
+def test_publication_refuses_a_failed_jobs_rerun_by_name() -> None:
+    """Final publication never uploads an earlier attempt's build, and says how to recover instead.
+
+    A failed-jobs re-run does not repeat release-build, so the build job's output still names the earlier
+    attempt's artifact. The upload job stops before its download with an error naming "Re-run all jobs",
+    rather than the opaque "Artifact not found" the release candidate showed on 2026-10-06.
+    """
+    jobs = workflow("python-publish.yml")["jobs"]
+    steps = jobs["pypi-publish"]["steps"]
+    uploaded = jobs["release-build"]["with"]["artifact-name"]
+    guard = next(step for step in steps if "BUILT_ARTIFACT" in step.get("env", {}))
+    download = next(step for step in steps if step.get("uses", "").startswith("actions/download-artifact@"))
+    assert steps.index(guard) < steps.index(download)
+    assert guard["env"] == {"BUILT_ARTIFACT": "${{ needs.release-build.outputs.artifact-name }}",
+                            "EXPECTED_ARTIFACT": uploaded}
+    assert '[ "$BUILT_ARTIFACT" != "$EXPECTED_ARTIFACT" ]' in guard["run"]
+    assert "Re-run all jobs" in guard["run"] and "exit 1" in guard["run"]
+    assert "if" not in guard and "continue-on-error" not in guard
+    assert download["with"]["name"] == uploaded
+
+
+def test_distribution_build_reports_the_artifact_it_uploaded() -> None:
+    """A consumer in the same run names the build by the build job's output, never by its own attempt.
+
+    A failed-jobs re-run does not repeat a successful build, so a consumer that formed the name from its own
+    github.run_attempt asked for an artifact that attempt never made (release candidate run 37443362134).
+    """
+    document = workflow("build-distributions.yml")
+    output = document["on"]["workflow_call"]["outputs"]["artifact-name"]
+    assert output["value"] == "${{ jobs.build.outputs.artifact-name }}"
+    build = document["jobs"]["build"]
+    assert build["outputs"] == {"artifact-name": "${{ inputs.artifact-name }}"}
+    assert build["steps"][-1]["with"]["name"] == "${{ inputs.artifact-name }}"
+
+
 def test_package_verification_precedes_artifact_upload() -> None:
     """Only built, inspected, installed-wheel-verified files become distributable artifacts."""
     document = workflow("build-distributions.yml")
@@ -539,12 +574,14 @@ def test_candidate_workflow_is_slim_and_publishing_authority_is_isolated(policy:
     )
     probe = next(step for step in install["steps"] if "probe-install" in step.get("run", ""))
     assert probe["env"]["PYTHON_GIL"] == "0"
-    artifact = jobs["build"]["with"]["artifact-name"]
+    # Each attempt that builds names a fresh artifact; publish and install download the one the build job
+    # reports, so a failed-jobs re-run of either uses the run's verified build instead of a missing name.
+    assert jobs["build"]["with"]["artifact-name"] == "candidate-dists-${{ github.run_id }}-${{ github.run_attempt }}"
     for job in (publisher, install):
+        assert "build" in job["needs"]
         download = next(step for step in job["steps"]
                         if step.get("uses", "").startswith("actions/download-artifact@"))
-        assert download["with"]["name"] == artifact
-    assert "github.run_attempt" in artifact
+        assert download["with"]["name"] == "${{ needs.build.outputs.artifact-name }}"
     ready = jobs["package-ready"]
     assert ready["if"] == "always()"
     assert set(ready["needs"]) == set(policy.CIPolicy.CANDIDATE_JOBS)

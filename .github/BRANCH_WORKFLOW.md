@@ -395,9 +395,13 @@ cannot turn an rc1 wheel into a final wheel.
 TestPyPI filenames are immutable. A changed package requires a new version.
 An identical retry is verified by filename, size, and hash; a partial upload
 stages only missing files after checking the existing ones. Different remote
-bytes fail rather than being hidden by `skip-existing`. Use **Re-run all jobs**
-for fresh same-run/attempt artifacts. Download retries are bounded for index
-propagation; failed consumer tests are not retried or ignored.
+bytes fail rather than being hidden by `skip-existing`. After a failed upload or
+install, **Re-run failed jobs** reuses this run's verified build: the build job
+reports the artifact it made, and the upload job verifies the files again first.
+**Re-run all jobs** builds fresh. The TestPyPI release lookup retries HTTP 429
+and 5xx answers, timeouts and failed connections up to six times, ten seconds
+apart. Download retries are bounded for index propagation; failed consumer tests
+are not retried or ignored.
 
 `RC / package-ready` reports explicit success only when authorization, source proof, build,
 upload, and every selected OS/version probe succeeded. Prod's existing required CI gate
@@ -431,8 +435,10 @@ or claim byte identity with an earlier rcN package.
 Artifacts include the workflow run and attempt in their names. After a failed
 publication, use **Re-run all jobs** to obtain fresh qualification and fresh
 artifacts; rerunning only a failed upload must not reuse an earlier attempt's
-unqualified artifact implicitly. Confirm PyPI state before retrying an upload
-whose outcome is uncertain; existing package versions are never silently skipped.
+unqualified artifact implicitly, so a failed-jobs re-run of the upload stops
+before downloading anything, with an error naming **Re-run all jobs**. Confirm
+PyPI state before retrying an upload whose outcome is uncertain; existing
+package versions are never silently skipped.
 
 ## Activating GitHub enforcement
 

@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: other
-SOURCE FINGERPRINT: a970b9b11357354e8ec8f7dec3ea3595c0a63ba12dfb48b97ae51fbd99dfc0e6
+SOURCE FINGERPRINT: 74350e29d1f570007197568c23cab39ee44192ea5f30c701b117a2bba743d19b
 FILE COUNT: 402
 
 ================================================================================
@@ -64,7 +64,7 @@ END FILE: .gitattributes
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/BRANCH_WORKFLOW.md
-CONTENT SHA256: bc4291dba961f69aaebb166327b9e356e6241601985f0500176fffbf3cbc76b4
+CONTENT SHA256: 92f6258958cfee9ea207ac18327efe528e070e376f42e4ba395aef831969977a
 SOURCE ENCODING: utf-8
 ================================================================================
 # Branch CI and release workflow
@@ -464,9 +464,13 @@ cannot turn an rc1 wheel into a final wheel.
 TestPyPI filenames are immutable. A changed package requires a new version.
 An identical retry is verified by filename, size, and hash; a partial upload
 stages only missing files after checking the existing ones. Different remote
-bytes fail rather than being hidden by `skip-existing`. Use **Re-run all jobs**
-for fresh same-run/attempt artifacts. Download retries are bounded for index
-propagation; failed consumer tests are not retried or ignored.
+bytes fail rather than being hidden by `skip-existing`. After a failed upload or
+install, **Re-run failed jobs** reuses this run's verified build: the build job
+reports the artifact it made, and the upload job verifies the files again first.
+**Re-run all jobs** builds fresh. The TestPyPI release lookup retries HTTP 429
+and 5xx answers, timeouts and failed connections up to six times, ten seconds
+apart. Download retries are bounded for index propagation; failed consumer tests
+are not retried or ignored.
 
 `RC / package-ready` reports explicit success only when authorization, source proof, build,
 upload, and every selected OS/version probe succeeded. Prod's existing required CI gate
@@ -500,8 +504,10 @@ or claim byte identity with an earlier rcN package.
 Artifacts include the workflow run and attempt in their names. After a failed
 publication, use **Re-run all jobs** to obtain fresh qualification and fresh
 artifacts; rerunning only a failed upload must not reuse an earlier attempt's
-unqualified artifact implicitly. Confirm PyPI state before retrying an upload
-whose outcome is uncertain; existing package versions are never silently skipped.
+unqualified artifact implicitly, so a failed-jobs re-run of the upload stops
+before downloading anything, with an error naming **Re-run all jobs**. Confirm
+PyPI state before retrying an upload whose outcome is uncertain; existing
+package versions are never silently skipped.
 
 ## Activating GitHub enforcement
 
@@ -630,7 +636,7 @@ END FILE: .github/ci_cd/README.md
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/ci_cd/extending.md
-CONTENT SHA256: ba2e5c80ed24e07b2387b3e8b4951242521710d026373a814ac2ae6dc2c627d8
+CONTENT SHA256: 0451bef8c7baeaf8f41f5bb0ed08f5d5752cf0ce4162671524764b1a3dd4fae1
 SOURCE ENCODING: utf-8
 ================================================================================
 # Extending CI
@@ -656,7 +662,10 @@ Every change below ends the same way: run the workflow tests, update this folder
 - Secrets are passed explicitly and only where needed: `tests` receives `CODECOV_TOKEN` and nothing else, and the
   publication tokens live in the `pypitest` and `pypi` environments, each used by one job.
 - Artifact names carry `${{ github.run_id }}-${{ github.run_attempt }}`, so a rerun never picks up another
-  attempt's files.
+  attempt's files by accident. A job that downloads a build made earlier in the same run names it from the build
+  job's output (`needs.<build>.outputs.artifact-name`), never from its own attempt, because a failed-jobs re-run
+  does not repeat a successful build. The release candidate reuses that build on such a re-run; final publication
+  refuses one and asks for "Re-run all jobs".
 
 ## Add a job that must pass before a merge
 
@@ -843,7 +852,7 @@ END FILE: .github/ci_cd/python_versions.md
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/ci_cd/scripts.md
-CONTENT SHA256: 6f08985b05dbc13d43a1efb35315e7aae7bbeecc5c6a1dbee9691a12e7d5303c
+CONTENT SHA256: 3ed5c71fee3284027d1bdd2b64269bb2f560a538da01bfa8f1fa76e1a476514d
 SOURCE ENCODING: utf-8
 ================================================================================
 # Scripts and other `.github` files
@@ -913,7 +922,9 @@ that is still in progress.
 ### `testpypi_candidate.py`
 
 `prepare-upload` verifies the built files and compares them with TestPyPI: identical files already there are
-accepted, missing ones are staged for upload, and different ones are refused (choose a new version).
+accepted, missing ones are staged for upload, and different ones are refused (choose a new version). Its release
+lookup retries HTTP 429 and 5xx answers, timeouts and failed connections up to six times, ten seconds apart; only a
+404 means nothing is uploaded yet.
 `probe-install` downloads the exact wheel from TestPyPI by its hash, installs it alone into a fresh environment
 and runs `smoke_wheel.py` against the expected version.
 
@@ -942,7 +953,7 @@ END FILE: .github/ci_cd/scripts.md
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/ci_cd/validating.md
-CONTENT SHA256: 7bfc9d99e51016d95642d3a1d5273e8ec439980ef5280b1d7fc918ca651e1357
+CONTENT SHA256: 02339fc80b9ca52c06d11ca1c216f6af160567c41f8afbbcf2b7b1e2dc0b2210
 SOURCE ENCODING: utf-8
 ================================================================================
 # Validating a CI change
@@ -985,6 +996,9 @@ Start with `CI / merge-ready`: its message lists every required job that did not
 | A speed test fails in its install step | A benchmark library has no free-threaded wheel on that runner: pin another version or list it under `build_from_source`. Read `install.log` in the results artifact. |
 | A speed test's inline step fails with "No module named 'benchmarks'" | The step imports `benchmarks` before putting the checkout on `sys.path`; add `sys.path.insert(0, str(Path.cwd()))` above the import ([extending.md](extending.md)). |
 | `source-qualification` refused | No full CI run tested this exact tree. Run CI by hand on the branch (BRANCH_WORKFLOW.md, "Reusing full qualification"). |
+| `RC / publish-to-TestPyPI`: HTTP 503 or another 5xx from TestPyPI after six tries | TestPyPI is down. When it answers again, use **Re-run failed jobs**; the run's build is reused. |
+| An RC job: "Artifact not found for name: candidate-dists-<run>-<n>" | A failed-jobs re-run of a run that started before the build reported its artifact (2026-10-06); use **Re-run all jobs**. |
+| `Publish to PyPI`: "Use Re-run all jobs: this attempt did not build the distributions" | A failed-jobs re-run of the upload; publication never reuses an earlier attempt's build. Use **Re-run all jobs**. |
 | Prod pull request: "Candidate qualification has not passed" | The release-candidate run for that commit is pending or failed; finish or fix it, then rerun the check. |
 | The Codecov upload fails | Reporting only: it never blocks a merge. |
 
@@ -1004,7 +1018,7 @@ END FILE: .github/ci_cd/validating.md
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/ci_cd/workflows.md
-CONTENT SHA256: 9997cc1773e3c35a5c1caa83dfa7a345ca68515da168ef2b5da4ad157738777b
+CONTENT SHA256: 36a66617f770bbb7ecaeca9b9088628fc5bea729c90b57426d881e71b446513c
 SOURCE ENCODING: utf-8
 ================================================================================
 # Workflows
@@ -1065,9 +1079,13 @@ midway.
 | `authorize` (RC / authorize) | Refuses a stale or moved head (`ci_policy.py candidate-head`), builds the release matrix from the test manifests (`python_runtime_matrix.py discover`) and keeps it as an artifact. |
 | `source-qualification` | Reuses the full CI evidence for this tree (`verify-source-qualification.yml`). |
 | `build` | Builds and verifies the wheel and sdist (`build-distributions.yml`). |
-| `publish` (RC / publish-to-TestPyPI) | In the `pypitest` environment: compares the files with what TestPyPI already has and stages only the missing ones (`testpypi_candidate.py prepare-upload`), requires the `melder_api_token` secret, checks the head again and uploads. |
+| `publish` (RC / publish-to-TestPyPI) | In the `pypitest` environment: compares the files with what TestPyPI already has, retrying a TestPyPI outage up to six times, and stages only the missing ones (`testpypi_candidate.py prepare-upload`), requires the `melder_api_token` secret, checks the head again and uploads. |
 | `install` (RC / installed-package / ...) | For every test-manifest release on Linux, Windows and macOS: downloads the exact uploaded wheel by its hash, installs it alone into a fresh environment and runs `smoke_wheel.py` (`testpypi_candidate.py probe-install`). |
 | `package-ready` (RC / package-ready) | Requires all five stages to have succeeded and the head to be unchanged (`ci_policy.py candidate-ready`, `candidate-head`). |
+
+`publish` and `install` download the build that `build` reports (`needs.build.outputs.artifact-name`), so **Re-run
+failed jobs** after a TestPyPI outage or a failed probe reuses this run's verified build; **Re-run all jobs** builds
+a fresh one.
 
 ### `python-publish.yml`: PyPI publication
 
@@ -1079,7 +1097,7 @@ Publication runs are serialized.
 | `release-gate` (Require current prod HEAD) | The event, the checkout and the current `prod` head (and the live release tag) are one commit (`ci_policy.py release-head`), and that commit's candidate passed TestPyPI qualification (`check_candidate_run.py`). |
 | `hygiene`, `source-assets`, `repo-assets`, `tests` | The full checks again, fresh. |
 | `release-build` | Builds and verifies the distributions and compares the release tag with the package version (`build-distributions.yml`). |
-| `pypi-publish` (Publish to PyPI) | In the `pypi` environment: rechecks the files, the candidate and the release head immediately before uploading with `PYPI_API_TOKEN`. |
+| `pypi-publish` (Publish to PyPI) | In the `pypi` environment: refuses a failed-jobs re-run, because publication never reuses an earlier attempt's build (use **Re-run all jobs**), then rechecks the files, the candidate and the release head immediately before uploading with `PYPI_API_TOKEN`. |
 
 ## Reusable workflows
 
@@ -1120,7 +1138,8 @@ Takes `artifact-name` and an optional `release-tag`. On free-threaded Python it 
 (`uv sync --locked --only-group build`), checks the build assets, builds the wheel and sdist with the commit's
 timestamp, normalizes the sdist (`normalize_sdist.py`), checks both archives (`verify_distributions.py`),
 installs the wheel alone into a fresh environment and runs `smoke_wheel.py` there with `PYTHON_GIL=0`, then keeps
-the files under the given artifact name for 14 days.
+the files under the given artifact name for 14 days and returns that name as the output `artifact-name`, which jobs
+later in the same run download by.
 
 ### `verify-source-qualification.yml` (Source / full qualification)
 
@@ -3072,7 +3091,7 @@ END FILE: .github/scripts/smoke_wheel.py
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/scripts/testpypi_candidate.py
-CONTENT SHA256: f5e5617dc90572280c5fe3ec9fceba9504f8d5142eb0dae61f8fbb9b70c52cbd
+CONTENT SHA256: 23443c183fee6e900a64d29ab46d86f50fa9b5438ae2236ad1f6af47ba38939e
 SOURCE ENCODING: utf-8
 ================================================================================
 """Verify TestPyPI uploads and exercise the exact downloaded wheel without checkout imports."""
@@ -3107,12 +3126,16 @@ class FileIdentity(TypedDict):
 
 
 class TestIndexPolicy:
-    """Keep fixed service endpoints and bounded index-propagation retry policy together."""
+    """Keep fixed service endpoints and the bounded retry policies (index propagation, service outages) together."""
 
     INDEX = "https://test.pypi.org/simple/"
     JSON_ROOT = "https://test.pypi.org/pypi/melder/"
     DOWNLOAD_ATTEMPTS = 6
     RETRY_SECONDS = 10
+    # The release lookup rides out short TestPyPI outages (it answered 503 "Backend is unhealthy" on 2026-10-06).
+    # Only these statuses, timeouts and failed connections are retried; every other answer is definitive.
+    LOOKUP_ATTEMPTS = 6
+    TRANSIENT_STATUSES: tuple[int, ...] = (429, 500, 502, 503, 504)
 
 
 def package_version() -> str:
@@ -3138,24 +3161,50 @@ def verified_files(directory: pathlib.Path, version: str) -> dict[str, FileIdent
     return {path.name: file_identity(path) for path in sorted(directory.iterdir())}
 
 
-def remote_files(version: str) -> dict[str, FileIdentity]:
-    """Read one exact TestPyPI release; only a 404 means no previous upload.
+def release_document(version: str) -> Optional[Mapping[str, object]]:
+    """Read one exact TestPyPI release document, or None when TestPyPI has no such release.
 
-    Missing/duplicate/malformed file evidence fails closed. Every HTTP stream is
-    closed, and no credentials are needed or sent to this public index endpoint.
+    Only a 404 means no previous upload. An HTTP status in TRANSIENT_STATUSES, a timeout or a failed
+    connection is a service outage: it is retried up to LOOKUP_ATTEMPTS times, RETRY_SECONDS apart, each
+    retry printed, and the last failure propagates. Any other HTTP status, and a body that is not JSON,
+    raises at once. Every HTTP stream is closed, and no credentials are needed or sent to this public
+    index endpoint.
     """
     request = urllib.request.Request(
         TestIndexPolicy.JSON_ROOT + urllib.parse.quote(version, safe="") + "/json",
         headers={"User-Agent": "melder-candidate-ci", "Accept": "application/json"},
     )
-    try:
-        with urllib.request.urlopen(request, timeout=30) as response:
-            payload = object_value(json.load(response), "TestPyPI release")
-    except urllib.error.HTTPError as error:
-        error.close()
-        if error.code == 404:
-            return {}
-        raise
+    attempt = 1
+    while True:
+        try:
+            with urllib.request.urlopen(request, timeout=30) as response:
+                return object_value(json.load(response), "TestPyPI release")
+        except urllib.error.HTTPError as error:
+            error.close()
+            if error.code == 404:
+                return None
+            if error.code not in TestIndexPolicy.TRANSIENT_STATUSES or attempt == TestIndexPolicy.LOOKUP_ATTEMPTS:
+                raise
+            failure = f"HTTP {error.code}"
+        except (urllib.error.URLError, TimeoutError, ConnectionError) as error:
+            if attempt == TestIndexPolicy.LOOKUP_ATTEMPTS:
+                raise
+            failure = type(error).__name__
+        print(f"TestPyPI release lookup failed ({failure}), attempt {attempt} of {TestIndexPolicy.LOOKUP_ATTEMPTS}; "
+              f"retrying in {TestIndexPolicy.RETRY_SECONDS}s.", flush=True)
+        time.sleep(TestIndexPolicy.RETRY_SECONDS)
+        attempt += 1
+
+
+def remote_files(version: str) -> dict[str, FileIdentity]:
+    """Read one exact TestPyPI release's file identities; a release TestPyPI does not have has none.
+
+    release_document owns the request, its outage retries and the 404 rule. Missing, duplicate or
+    malformed file evidence fails closed.
+    """
+    payload = release_document(version)
+    if payload is None:
+        return {}
     if object_value(payload.get("info"), "release.info").get("version") != version:
         raise ValueError("TestPyPI returned a different package version.")
     urls = payload.get("urls")
@@ -3497,7 +3546,7 @@ END FILE: .github/scripts/verify_distributions.py
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/workflows/build-distributions.yml
-CONTENT SHA256: f5140ed37965edd213dd8d0ec1b1ddb13a5287214d13714ca3ed6850397b63e2
+CONTENT SHA256: f5b08b425ae4e46c333bc32ea837f8cf1f551bee014476aca06a350254c11093
 SOURCE ENCODING: utf-8
 ================================================================================
 name: Build distributions
@@ -3511,6 +3560,10 @@ on:
       release-tag:
         type: string
         default: ""
+    outputs:
+      artifact-name:
+        description: The artifact this build uploaded; consumers in the same run download it by this name.
+        value: ${{ jobs.build.outputs.artifact-name }}
   workflow_dispatch:
     inputs:
       artifact-name:
@@ -3530,6 +3583,9 @@ jobs:
     name: Distributions / build-and-verify
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    outputs:
+      # A failed-jobs re-run does not repeat a successful build, and keeps this output from the attempt that built.
+      artifact-name: ${{ inputs.artifact-name }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -4079,7 +4135,7 @@ END FILE: .github/workflows/persistent-runtime-gauntlet.yml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/workflows/python-publish.yml
-CONTENT SHA256: 341d6679a31e2ff541dd32f31b0cbca10a8757dfa2e560d3f15bce38804984ba
+CONTENT SHA256: fb9ff4f1c62d740397e2a7fba4c3eeb73a92814573d48f47f32d33d6ad612897
 SOURCE ENCODING: utf-8
 ================================================================================
 name: Publish Python Package
@@ -4178,6 +4234,17 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.14.7"
+      - name: Refuse a failed-jobs re-run of the upload
+        # Publication never reuses an earlier attempt's build: a failed-jobs re-run does not repeat release-build,
+        # whose output then still names that attempt's artifact. Recover with "Re-run all jobs".
+        env:
+          BUILT_ARTIFACT: ${{ needs.release-build.outputs.artifact-name }}
+          EXPECTED_ARTIFACT: release-dists-${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          if [ "$BUILT_ARTIFACT" != "$EXPECTED_ARTIFACT" ]; then
+            echo "::error::Use Re-run all jobs: this attempt did not build the distributions ($BUILT_ARTIFACT)."
+            exit 1
+          fi
       - name: Retrieve this run's verified distributions
         uses: actions/download-artifact@v8
         with:
@@ -4434,7 +4501,7 @@ END FILE: .github/workflows/real-world-gauntlet.yml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/workflows/release-candidate.yml
-CONTENT SHA256: b8006878f4edbe72144100ac8865a7ca62909c0c7895f569c21f9df7dc725e28
+CONTENT SHA256: 773e45b993da63d8af96f3ac8a810632ea91f226ffc6079af917749d071999de
 SOURCE ENCODING: utf-8
 ================================================================================
 name: Release candidate
@@ -4506,9 +4573,13 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.14.7"
-      - uses: actions/download-artifact@v8
+      - name: Retrieve this run's verified build
+        # Named by the build job's output, so a failed-jobs re-run (after a TestPyPI outage, for example) reuses
+        # this run's build instead of asking for one its own attempt never made. prepare-upload verifies the
+        # files again before anything is uploaded.
+        uses: actions/download-artifact@v8
         with:
-          name: candidate-dists-${{ github.run_id }}-${{ github.run_attempt }}
+          name: ${{ needs.build.outputs.artifact-name }}
           path: dist/
       - name: Verify existing files and prepare an exact upload
         id: upload
@@ -4558,9 +4629,11 @@ jobs:
           architecture: ${{ matrix.architecture }}
           freethreaded: true
           allow-prereleases: false
-      - uses: actions/download-artifact@v8
+      - name: Retrieve this run's verified build
+        # The same build the publish job verified and uploaded; probe-install pins the wheel's hash.
+        uses: actions/download-artifact@v8
         with:
-          name: candidate-dists-${{ github.run_id }}-${{ github.run_attempt }}
+          name: ${{ needs.build.outputs.artifact-name }}
           path: dist/
       - name: Download the hash-pinned wheel and test its isolated installation
         env:

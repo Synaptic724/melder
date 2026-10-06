@@ -30,12 +30,16 @@ class FileIdentity(TypedDict):
 
 
 class TestIndexPolicy:
-    """Keep fixed service endpoints and bounded index-propagation retry policy together."""
+    """Keep fixed service endpoints and the bounded retry policies (index propagation, service outages) together."""
 
     INDEX = "https://test.pypi.org/simple/"
     JSON_ROOT = "https://test.pypi.org/pypi/melder/"
     DOWNLOAD_ATTEMPTS = 6
     RETRY_SECONDS = 10
+    # The release lookup rides out short TestPyPI outages (it answered 503 "Backend is unhealthy" on 2026-10-06).
+    # Only these statuses, timeouts and failed connections are retried; every other answer is definitive.
+    LOOKUP_ATTEMPTS = 6
+    TRANSIENT_STATUSES: tuple[int, ...] = (429, 500, 502, 503, 504)
 
 
 def package_version() -> str:
@@ -61,24 +65,50 @@ def verified_files(directory: pathlib.Path, version: str) -> dict[str, FileIdent
     return {path.name: file_identity(path) for path in sorted(directory.iterdir())}
 
 
-def remote_files(version: str) -> dict[str, FileIdentity]:
-    """Read one exact TestPyPI release; only a 404 means no previous upload.
+def release_document(version: str) -> Optional[Mapping[str, object]]:
+    """Read one exact TestPyPI release document, or None when TestPyPI has no such release.
 
-    Missing/duplicate/malformed file evidence fails closed. Every HTTP stream is
-    closed, and no credentials are needed or sent to this public index endpoint.
+    Only a 404 means no previous upload. An HTTP status in TRANSIENT_STATUSES, a timeout or a failed
+    connection is a service outage: it is retried up to LOOKUP_ATTEMPTS times, RETRY_SECONDS apart, each
+    retry printed, and the last failure propagates. Any other HTTP status, and a body that is not JSON,
+    raises at once. Every HTTP stream is closed, and no credentials are needed or sent to this public
+    index endpoint.
     """
     request = urllib.request.Request(
         TestIndexPolicy.JSON_ROOT + urllib.parse.quote(version, safe="") + "/json",
         headers={"User-Agent": "melder-candidate-ci", "Accept": "application/json"},
     )
-    try:
-        with urllib.request.urlopen(request, timeout=30) as response:
-            payload = object_value(json.load(response), "TestPyPI release")
-    except urllib.error.HTTPError as error:
-        error.close()
-        if error.code == 404:
-            return {}
-        raise
+    attempt = 1
+    while True:
+        try:
+            with urllib.request.urlopen(request, timeout=30) as response:
+                return object_value(json.load(response), "TestPyPI release")
+        except urllib.error.HTTPError as error:
+            error.close()
+            if error.code == 404:
+                return None
+            if error.code not in TestIndexPolicy.TRANSIENT_STATUSES or attempt == TestIndexPolicy.LOOKUP_ATTEMPTS:
+                raise
+            failure = f"HTTP {error.code}"
+        except (urllib.error.URLError, TimeoutError, ConnectionError) as error:
+            if attempt == TestIndexPolicy.LOOKUP_ATTEMPTS:
+                raise
+            failure = type(error).__name__
+        print(f"TestPyPI release lookup failed ({failure}), attempt {attempt} of {TestIndexPolicy.LOOKUP_ATTEMPTS}; "
+              f"retrying in {TestIndexPolicy.RETRY_SECONDS}s.", flush=True)
+        time.sleep(TestIndexPolicy.RETRY_SECONDS)
+        attempt += 1
+
+
+def remote_files(version: str) -> dict[str, FileIdentity]:
+    """Read one exact TestPyPI release's file identities; a release TestPyPI does not have has none.
+
+    release_document owns the request, its outage retries and the 404 rule. Missing, duplicate or
+    malformed file evidence fails closed.
+    """
+    payload = release_document(version)
+    if payload is None:
+        return {}
     if object_value(payload.get("info"), "release.info").get("version") != version:
         raise ValueError("TestPyPI returned a different package version.")
     urls = payload.get("urls")
