@@ -5,7 +5,7 @@
 - Status: in_progress
 - Owner:
 - Created: 2026-01-17
-- Updated: 2026-10-04
+- Updated: 2026-10-10
 
 ## Scope and Intent
 This document describes the Melder core architecture at the C4 level for
@@ -419,6 +419,9 @@ External interfaces are Python APIs:
 - `Spellbook.bind(...)` and `SpellBinder` fluent binding helpers.
 - `Spellbook.scan(...)` and `Scan.scan_module(...)` for deferred module
   registration through `scan_bind` metadata
+  (0.2.8228: `scan_bind` takes `bind()`'s target options - `resolvable`, per-target
+  `disposal_method_names`, keyword metadata - and only an object's own declaration
+  makes it a target, bound once per scan)
 - `Conduit.notch_spell(...)`, `Conduit.add_to_spell_index(...)`, and
   `Conduit.remove_from_spell_index(...)` for transaction-backed SpellIndex
   member switching, move-in, and move-out flows. THE CONDUIT ADMITS THE
@@ -917,6 +920,21 @@ each entry in `src_components.md`; this list is the set that crosses components.
 - Validation strategies registered in `SpellValidationSystem`.
 
 ## Operational Invariants
+- Scan declarations (2026-10-10, 0.2.8228): a module scan registers what the module's source declares, through
+  the one bind pipeline. `scan_bind` takes every target option `Spellbook.bind` takes - `resolvable`, per-target
+  `disposal_method_names` and keyword application metadata, with bind's defaults (`permissions` stays required);
+  `Scan.scan_module` replays them into `Spellbook.bind`, so a scanned registration matches a direct bind of the
+  same target with the same options, and Bind alone validates them (the strict bool check, the Protocol rule,
+  the Book's disposal overlap and priority). A declaration is checked at decoration and immutable after it: hook
+  and disposal groups must be lists or tuples of the right element type, and the 24 keys the bind chain takes
+  natively are refused as metadata keys; metadata values are borrowed by identity and every bind gets a fresh
+  dict, so a Spell's cleanup never empties the declaration a later scan replays. Eligibility is the object's OWN
+  `__dict__` - an inherited, instance-level, metaclass or `__getattr__` answer does not count - and each object
+  binds once per scan (by identity; the first name in module order), while distinct targets sharing a binding
+  key and rescans still raise. A scan is not atomic in any window: ending a bind window unregisters nothing, so
+  a failed scan keeps the targets it bound before the failure.
+  EVIDENCE: `src/melder/aether/spellbook/bind/scan.py:scan_bind`, `ScanBindMetadata.to_bind_kwargs`,
+  `Scan._own_scan_bind_metadata`, `Scan.scan_module` and `src/melder/aether/spellbook/spellbook.py:Spellbook.scan`.
 - Descriptor binding names (2026-10-04, 0.2.8226): `SpellMap` and `SpellContract` keep `binding_name` exactly as
   written, as Bind keeps a spell's, and every match goes through the normalized address key bind registers and
   meld resolves by. Phase 3 compares a SpellMap default's binding name by `normalize_binding_name` on both sides
@@ -1528,6 +1546,24 @@ each entry in `src_components.md`; this list is the set that crosses components.
   not the same thing as a Rift-level event orchestrator.
 
 ## Failure Modes and Error Paths
+- Breaking (0.2.8228): a module scan no longer registers an undecorated subclass of a `scan_bind`-decorated
+  class; decorate the subclass to register it. Before, the subclass was bound with its parent's declaration.
+  A module-level instance of a decorated class, a class whose metaclass was decorated and a module object
+  answering every attribute are skipped too - the instance used to fail the scan with "Binding signature
+  already active in this frame" and the proxy with "scan_bind metadata for '<name>' is invalid or corrupted."
+  A second module name for one decorated object no longer fails with "Spell ID collision": the object is bound
+  once.
+  EVIDENCE: `src/melder/aether/spellbook/bind/scan.py:Scan._own_scan_bind_metadata` and `Scan.scan_module`.
+- `scan_bind(...)` raises TypeError at decoration for a metadata key the bind pipeline takes natively (the
+  message names every such key), for a `disposal_method_names` that is not a list or tuple of strings (a bare
+  string included) and, as before, for hook groups that are not lists or tuples of callables. A non-bool
+  `resolvable`, or a Protocol target left resolvable, raises from Bind when the module is scanned (0.2.8228).
+  EVIDENCE: `src/melder/aether/spellbook/bind/scan.py:_normalize_disposal_method_names` and
+  `_normalize_spell_metadata`.
+- A scan that fails part-way keeps the targets it bound before the failure - before conjure and after it, in
+  its own bind window or an outer one - and the error propagates. The `Spellbook.scan` docstring promised a
+  rollback with the window until 0.2.8228 (a documentation correction; the behaviour did not change).
+  EVIDENCE: `src/melder/aether/spellbook/spellbook.py:Spellbook.scan`.
 - A meld that races a link sever, an uncontract or an unbind of a spell its resolution pass is planning no
   longer fails with PhaseExecutionError ("Phase 'injection_plan_local' ... Occurrence spell could not be resolved
   from the spell lookup." or "... SpellRuntimeProcessorStrategy could not resolve spell_id ..."; fixed in
@@ -2020,7 +2056,7 @@ Spellbook and binding:
   start_line: 1
   end_line: 7341
   loc: 7341
-  verified_at: 2026-09-30T19:57:20Z
+  verified_at: 2026-10-10T09:33:01Z
   note: Spellbook core and conjure pipeline.
 - path: `src/melder/aether/spellbook/spellbook_creation_system.py`
   start_line: 1
@@ -2050,10 +2086,11 @@ Spellbook and binding:
   note: `SpellframeKind` - none / category / contract, the kind a binding records (0.2.8222).
 - path: `src/melder/aether/spellbook/bind/scan.py`
   start_line: 1
-  end_line: 373
-  loc: 373
-  verified_at: 2026-08-02T13:00:45Z
-  note: deferred module scan and `scan_bind` metadata replay.
+  end_line: 755
+  loc: 755
+  verified_at: 2026-10-10T09:33:01Z
+  note: deferred module scan and `scan_bind` metadata replay; bind()'s target options, own-declaration
+    eligibility and one bind per object per scan (0.2.8228).
 - path: `src/melder/aether/spellbook/bind/spell_index.py`
   start_line: 1
   end_line: 507
@@ -3361,6 +3398,14 @@ without rewriting the original record or existing live IDs.
 - `src/melder/utilities/ai_native_support_tools/protocol_crafter.py`
 
 ## Context / Handoff Summary
+
+2026-10-10 scan_bind option parity (0.2.8228): `scan_bind` takes bind()'s target options (`resolvable`, per-target
+disposal names, keyword metadata) and a scan replays them through `Spellbook.bind`; only an object's own
+declaration makes it a target and each object binds once per scan (undecorated subclasses and instances of a
+decorated class are no longer registered - Breaking; aliases no longer collide); a failed scan keeps what it
+bound, and the `Spellbook.scan` docstring no longer claims a rollback. The boundary list, the operational
+invariants, the failure modes and the code map carry it; the component map carries the declaration contract
+and the scan flow.
 
 2026-10-04 live unlink race (0.2.8227): a meld racing a link sever, uncontract or unbind of a spell its pass is
 planning raises SpellbookValidationError instead of PhaseExecutionError - the Phase 9 contract and runtime

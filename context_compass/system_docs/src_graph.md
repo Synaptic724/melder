@@ -317,7 +317,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_agent_documentation/manifest/agent_documentation_manifest.py
 
-- source_sha256: `2768e2297fea44d8a32d06f344d6c9211bd9cb9efaf3e3659565fa4093d191a0`
+- source_sha256: `a61b2acd5ad94741ac2b64aa1ab97181d6f8ee071176636e3d8041eae49a4822`
 - nodes: 1
 
 ### Nodes
@@ -396,7 +396,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py
 
-- source_sha256: `bbbec0eee20d53b62537ba0fec96dae1b38752ffd3cb8f9062eeb057f2b988df`
+- source_sha256: `8302f82c736f381820ed94b8c46156908e3caa0d6ee500f13467089b1d62dfb9`
 - nodes: 1
 
 ### Nodes
@@ -474,7 +474,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/graph_adjacency_manifest.py
 
-- source_sha256: `3a1820c4a6d246fecb3c505bdedb37f96e18282e53bc19458a16128da705cecc`
+- source_sha256: `22f978c943ab1c919d11225683b01e3b0e89f2473ce067e43a706886f23df924`
 - nodes: 1
 
 ### Nodes
@@ -491,7 +491,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_index.py
 
-- source_sha256: `dfe7bfd42a16c7b9178ec10e205d172b06fa185d83cbbf3330da1b2383d92171`
+- source_sha256: `945be229d2ba35562fa16b4a319a03486ca83183517f5e5ad331f89965af6e23`
 - nodes: 1
 
 ### Nodes
@@ -508,7 +508,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_manifest.py
 
-- source_sha256: `8eae79f754cd3e4f6efffb6241abb41ecb3be796c8dd35ed747f1dd55e67f6ab`
+- source_sha256: `0e0c6ab5cf0ce713ca2eb41493a67d7eb2541be78b5a2ed7f28274797375d9c3`
 - nodes: 1
 
 ### Nodes
@@ -528,7 +528,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_architecture_payload.py
 
-- source_sha256: `4fe5ef65250e60825eb2513383e7e9dcd79e9a149e0a890fe3ea896bbce3e671`
+- source_sha256: `99e2ae4fa1986bfc338f8014ed99f4b3b0e87fd959b60f01998c6d06f0d3ed02`
 - nodes: 1
 
 ### Nodes
@@ -545,7 +545,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_components_payload.py
 
-- source_sha256: `1273abb029ce45ac16a9e4becc286bce853ca8ff7a8d2ab76b8cf7703b60f918`
+- source_sha256: `1469d9e68f19b2b10ce1d85153034ca3d28e6a4c3ef45b300c0a5fdf0fd70ba8`
 - nodes: 1
 
 ### Nodes
@@ -562,7 +562,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_graph_payload.py
 
-- source_sha256: `42bf39c29874b5bcf26227241c11e0a004a31f48daa471f26e82781a18d99fab`
+- source_sha256: `de2695b125ca5585127ebe45f6b1ae8a9cde4c718a57c027fc415b1e57de77fa`
 - nodes: 1
 
 ### Nodes
@@ -5946,7 +5946,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/bind/scan.py
 
-- source_sha256: `6cbb2802397dff4ad3094b11e3db1a4dedb8981611680184c3e143a0cfd35a26`
+- source_sha256: `b04d454805ecb35fc17930cef41a7b4a58786168dd284daddb3ff393f486a139`
 - nodes: 3
 
 ### Nodes
@@ -5960,24 +5960,26 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `ScanBindMetadata` (class)
 
 - id: `melder.aether.spellbook.bind.scan.ScanBindMetadata`
-- defined at: `src/melder/aether/spellbook/bind/scan.py:55`
+- defined at: `src/melder/aether/spellbook/bind/scan.py:137`
 - role: The frozen payload a scan_bind decoration leaves behind - bind-time policy captured now, registration replayed later.
 - responsibilities:
-  - carry every input Spellbook.bind needs during a later module scan
+  - carry every input Spellbook.bind takes for a target during a later module scan: native policy, resolvable, the per-target disposal group, hooks, profile and application metadata
   - preserve Existence|str and Permissions|str AS PROVIDED, so the later replay takes the same normalization path as direct binding
   - store hook collections as tuples at rest and materialize fresh lists on use
-  - stay immutable once created; safe to share across threads
+  - hold application metadata as a read-only shallow copy and hand every bind a fresh dict of it, so a Spell's cleanup never empties the declaration a later scan replays
+  - stay immutable once created - a slotted class that refuses attribute writes, not a dataclass, because it holds callables, Protocol classes and application objects; safe to share across threads
 - phases: `bind`
 - public methods: `to_bind_kwargs`
 
 #### `Scan` (class)
 
 - id: `melder.aether.spellbook.bind.scan.Scan`
-- defined at: `src/melder/aether/spellbook/bind/scan.py:239`
+- defined at: `src/melder/aether/spellbook/bind/scan.py:544`
 - extends: `Cleanable`
 - role: Module-only scanner for scan_bind metadata.
 - responsibilities:
-  - reads scan_bind metadata from one module
+  - reads scan_bind metadata from one module, and only from each object's own __dict__ (no inherited, instance, metaclass or __getattr__ answers)
+  - binds each declared object at most once per scan, by identity, and rejects re-exports by __module__
   - delegates actual registration to Spellbook.bind during scan time
 - owns_state: `_spellbook`
 - phases: `runtime`
@@ -5992,10 +5994,12 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - `melder.aether.spellbook.bind.scan.Scan` -> `melder.aether.spellbook.spellbook.Spellbook`: Scan borrows its owning Spellbook and delegates actual registration through Spellbook.bind.
 
-### Edge candidates (2, unconfirmed)
+### Edge candidates (4, unconfirmed)
 
 Instantiation guesses from the AST. Over-generated roughly 8x against the reference graph; confirm or drop before relying on them.
 
+- `melder.aether.spellbook.bind.scan.ScanBindMetadata` creates `AttributeError`
+- `melder.aether.spellbook.bind.scan.ScanBindMetadata` creates `MappingProxyType`
 - `melder.aether.spellbook.bind.scan.Scan` creates `ValueError`
 - `melder.aether.spellbook.bind.scan.Scan` creates `TypeError`
 
@@ -15417,7 +15421,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spellbook.py
 
-- source_sha256: `6a63e51ec649b05f474fa7b887ddfd2f0e950bc01d78fa34e0246c2b494c5a46`
+- source_sha256: `13988deba96febe2ffb830b8cc0039463185f7443146e539df196d150c1580ae`
 - nodes: 2
 
 ### Nodes

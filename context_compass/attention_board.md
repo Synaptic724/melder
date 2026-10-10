@@ -184,8 +184,6 @@ Message alert rules
 | work_item | status | agent_name | ticket | note | closed_at |
 | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: closed_anchors -->
-| static_codegen_strategies | done | fable_0 | tickets/stories/completed/2026-10-01_lazy_instance_results_story.md | S8 lazy instance_results shipped at 0.2.8217 (plan -26..-32% on dict-mode roots, generation 17); story and task turned in by owner directive; gauntlet Not run. Next: S2a (with S9/S11) on the owner's word. | 2026-10-03T21:22:15Z |
-| flat_warm_body | done | fable_0 | tickets/tasks/completed/2026-10-03_certify_and_implement_site_store_constants_task.md | S9 owner-store constants landed at 0.2.8221 (plan -7..-17% on roots with unique providers; dynamic plans byte-identical; no generation bump); S11 already true. Turned in by owner directive; suites and gauntlet Not run. Next: none. | 2026-10-04T00:13:33Z |
 | flat_warm_body_story | done | fable_0 | tickets/stories/completed/2026-10-03_flat_warm_body_constants_story.md | The S9/S11 story behind the task; S2a parked. Turned in by owner directive. Next: none. | 2026-10-04T00:13:33Z |
 | static_codegen_and_door_strategies | done | fable_0 | tickets/epics/completed/2026-10-01_static_codegen_and_door_strategies_epic.md | S1, S8 and S9 shipped (0.2.8216/0.2.8217/0.2.8221); S4 dropped, S2a parked; the door lane (D1-D5) not reached, its story parked in the backlog. Closed by owner directive; gauntlet ranking Not run. Next: the door lane under a new epic on the owner's word. | 2026-10-04T00:13:33Z |
 | reproduce_annotation_category_collision | done | fable_1 | tickets/tasks/completed/2026-10-03_reproduce_annotation_category_collision_task.md | Melder-only reproduction on 0.2.8221 (2 failed / 2 passed), the matcher read, the 441-frame survey, three options and the owner's DECISION (kind rule + concrete-class refusal). Closed by owner directive. Next: none. | 2026-10-04T12:05:00Z |
@@ -196,6 +194,8 @@ Message alert rules
 | rebind_after_first_meld_epic | done | fable_1 | tickets/epics/completed/2026-10-03_rebind_after_first_meld_epic.md | Verdict retirement on unregister/register (0.2.8219); closed by owner directive, work package C not reported (owner). Next: none. | 2026-10-04T12:20:00Z |
 | ambiguous_provider_report | done | fable_1 | tickets/tasks/completed/2026-10-04_report_ambiguous_providers_in_validation_task.md | Ambiguous providers refuse through the readable report with every candidate's address and the remedies (0.2.8224); five pinned tests converted, 9 regressions. Closed by owner directive; full tiers owner-owed. Next: none. | 2026-10-04T17:35:00Z |
 | graph_external_base_targets | done | fable_1 | tickets/tasks/completed/2026-10-04_resolve_external_base_targets_in_graph_task.md | Extractor resolves `import X` dotted bases and builtins; zero unresolved targets in the shipped adjacency; the system-document-view test green; assets/bundles rebuilt (no notch). Next: none. | 2026-10-04T18:35:00Z |
+| scan_bind_option_parity | done | melder_1 | tickets/tasks/completed/2026-10-08_restore_scan_bind_option_parity_task.md | Landed at 0.2.8228: scan_bind takes bind()'s target options and registers only an object's own declaration, once per scan (Breaking for undecorated subclasses); patch docs promoted and archived; evidence pack retained. Accepted by the owner; commits, Windows tiers and hosted CI owner-owed. Next: none. | 2026-10-10T13:44:41Z |
+| core_protection_review | done | melder_1 | tickets/tasks/completed/2026-10-08_review_core_protection_fork_aware_updates_task.md | Review accepted (governed evolution on approved application source only); contract C1-C6, D1-D8 disposition and evidence handed back; D-10, D-11 and D-20 stay open as p1 draft backlog tickets. No source change. Next: the owner assigns the defect tickets and answers D1-D8. | 2026-10-10T13:44:41Z |
 <!-- END USER-DEFINED: closed_anchors -->
 
 ## Notes
@@ -245,6 +245,10 @@ Message alert rules
   Notch above it if you land after.
 - melder_1 landed 0.2.8227 (a meld racing a link sever or uncontract raises SpellbookValidationError, not
   PhaseExecutionError). Notch above it if you land after.
+### Notch notice (melder_1, 2026-10-10)
+- melder_1 landed 0.2.8228 (scan_bind takes bind()'s target options; only an object's own declaration is
+  registered, once per scan). It is the first notch after the 0.2.8227 release and opens the running release
+  note. Notch above it if you land after.
 ### Device VM git hazard (melder_2, 2026-09-26)
 - The connected folder refuses deletes, so any git command that refreshes the index from the device VM
   (plain `git status`, `git diff`) can leave an empty .git/index.lock that blocks the owner's commits.

@@ -5,7 +5,7 @@
 - Status: in_progress
 - Owner:
 - Created: 2026-01-22
-- Updated: 2026-10-06
+- Updated: 2026-10-10
 
 ## Scope
 This document defines C3 components, C2 subcomponents, and C1 code references
@@ -393,7 +393,7 @@ Concurrency/Threading:
 
 Invariants/Guarantees:
 - unit tests stay close to class/method behavior
-- the densest tier: 468 `test_*.py` modules among 471 `.py` files
+- the densest tier: 476 `test_*.py` modules among 479 `.py` files
 - CI-script tests never import `melder`; each script is loaded as a standalone module
 
 Failure Modes:
@@ -410,10 +410,10 @@ Extension Points:
 
 Key Files (C1):
 - `tests/unit/melder/aether/conduit/conftest.py`
-- The aether tree carries 186 `test_*.py` modules beneath these; they are the
+- The aether tree carries 189 `test_*.py` modules beneath these; they are the
   CONTENT of this component rather than its key surfaces, and are counted here
   rather than cited so the core set stays a set an agent can verify.
-- No harness or support module of its own; the 46 test_*.py modules in
+- No harness or support module of its own; the 47 test_*.py modules in
   tests/unit/melder/crystallizer/ depend only on the shared surfaces at tests/ and the scoped
   conftests named in `tests_architecture.md`. Paths in this bullet are written
   WITHOUT backticks because they are directories - descriptive, never citations.
@@ -422,7 +422,7 @@ Key Files (C1):
   conftests named in `tests_architecture.md`. Paths in this bullet are written
   WITHOUT backticks because they are directories - descriptive, never citations.
 - `tests/unit/melder/spellbook/spell_compiler/support/compiler_test_support.py`
-- The spellbook tree carries 142 `test_*.py` modules beneath these; they are the
+- The spellbook tree carries 146 `test_*.py` modules beneath these; they are the
   CONTENT of this component rather than its key surfaces, and are counted here
   rather than cited so the core set stays a set an agent can verify.
 - No harness or support module of its own; the 52 test_*.py modules in
@@ -478,7 +478,7 @@ Concurrency/Threading:
 Invariants/Guarantees:
 - tier intent is explicitly documented in `tests/component/INFO.MD`: real core
   objects, stubbed external boundaries, deterministic, contract-level assertions
-- 149 `test_*.py` modules among 151 `.py` files
+- 156 `test_*.py` modules among 158 `.py` files
 
 Failure Modes:
 - component tests drift into unit-style internals or full integration sprawl
@@ -491,7 +491,7 @@ Extension Points:
 
 Key Files (C1):
 - `tests/component/INFO.MD`
-- No harness or support module of its own; the 65 test_*.py modules in
+- No harness or support module of its own; the 70 test_*.py modules in
   tests/component/melder/aether/ depend only on the shared surfaces at tests/ and the scoped
   conftests named in `tests_architecture.md`. Paths in this bullet are written
   WITHOUT backticks because they are directories - descriptive, never citations.
@@ -505,7 +505,7 @@ Key Files (C1):
   WITHOUT backticks because they are directories - descriptive, never citations.
 - `tests/component/melder/spellbook/compiler_test_helpers.py`
 - `tests/component/melder/spellbook/spell_compiler_runtime_test_support.py`
-- The spellbook tree carries 72 `test_*.py` modules beneath these; they are the
+- The spellbook tree carries 74 `test_*.py` modules beneath these; they are the
   CONTENT of this component rather than its key surfaces, and are counted here
   rather than cited so the core set stays a set an agent can verify.
 - No harness or support module of its own; the 4 test_*.py modules in
@@ -560,7 +560,7 @@ Concurrency/Threading:
 
 Invariants/Guarantees:
 - integration tests use real runtime stacks rather than hand-built shallow mocks
-- 149 `test_*.py` modules among 156 `.py` files; the others are benches and the
+- 157 `test_*.py` modules among 164 `.py` files; the others are benches and the
   live-sim application
 
 Failure Modes:
@@ -579,7 +579,7 @@ Key Files (C1):
 - `tests/integration/melder/aether/rift/capability_rift_json_testbench_support.py`
 - `tests/integration/melder/aether/rift/codegen_rift_json_testbench_support.py`
 - `tests/integration/melder/aether/rift/static_rift_json_testbench_support.py`
-- The aether tree carries 38 `test_*.py` modules beneath these; they are the
+- The aether tree carries 44 `test_*.py` modules beneath these; they are the
   CONTENT of this component rather than its key surfaces, and are counted here
   rather than cited so the core set stays a set an agent can verify.
 - The rift tree (inside the aether tree) carries 3 `test_*.py` modules over the
@@ -588,7 +588,7 @@ Key Files (C1):
   tests/integration/melder/conduit/ depend only on the shared surfaces at tests/ and the scoped
   conftests named in `tests_architecture.md`. Paths in this bullet are written
   WITHOUT backticks because they are directories - descriptive, never citations.
-- No harness or support module of its own; the 15 test_*.py modules in
+- No harness or support module of its own; the 17 test_*.py modules in
   tests/integration/melder/crystallizer/ depend only on the shared surfaces at tests/ and the scoped
   conftests named in `tests_architecture.md`. Paths in this bullet are written
   WITHOUT backticks because they are directories - descriptive, never citations.
@@ -599,15 +599,15 @@ Key Files (C1):
 - The live_sim tree carries 2 `test_*.py` modules beneath these; they are the
   CONTENT of this component rather than its key surfaces, and are counted here
   rather than cited so the core set stays a set an agent can verify.
-- No harness or support module of its own; the 5 test_*.py modules in
+- No harness or support module of its own; the 6 test_*.py modules in
   tests/integration/melder/multithreading/ depend only on the shared surfaces at tests/ and the scoped
   conftests named in `tests_architecture.md`. Paths in this bullet are written
   WITHOUT backticks because they are directories - descriptive, never citations.
-- No harness or support module of its own; the 2 test_*.py modules in
+- No harness or support module of its own; the 3 test_*.py modules in
   tests/integration/melder/mutation_research/ depend only on the shared surfaces at tests/ and the scoped
   conftests named in `tests_architecture.md`. Paths in this bullet are written
   WITHOUT backticks because they are directories - descriptive, never citations.
-- No harness or support module of its own; the 48 test_*.py modules in
+- No harness or support module of its own; the 49 test_*.py modules in
   tests/integration/melder/spellbook/ depend only on the shared surfaces at tests/ and the scoped
   conftests named in `tests_architecture.md`. Paths in this bullet are written
   WITHOUT backticks because they are directories - descriptive, never citations.
@@ -927,12 +927,18 @@ Protects:
   the record, with lookups, activity, removal, segment payloads and index grafts addressing one copy; the facade
   verbs needing the frame under per-frame ids and ignoring it otherwise; the retarget re-key; the impact read by
   payload id; restore stage 1 (install, both shortfalls, the missing key, the refusal) and per-Book translation
+- the custody boundary as it stands (2026-10-10; pins today's behaviour while root precedence awaits an owner
+  decision): a virtual environment nested in the user root classifies as user source, is walked, fingerprinted
+  and has its text retained, whatever the descent setting; a root that excludes it makes its packages
+  site-package leaves, walked only with descent on and never fingerprinted; user roots never make a module
+  importable; `with_defaults()` takes the working directory as the user root, with descent off
 Key Files (C1):
 - `tests/unit/melder/crystallizer/test_crystallizer.py`
 - `tests/unit/melder/crystallizer/test_crystallizer_configuration.py`
 - `tests/unit/melder/crystallizer/test_spell_crystal.py`
 - `tests/unit/melder/crystallizer/test_synthetic_module.py`
 - `tests/unit/melder/crystallizer/crystal_loader_system/test_restore_spell_id_regime.py` (2026-09-30)
+- `tests/unit/melder/crystallizer/crystal_analysis/test_custody_boundary_characterization.py` (2026-10-10)
 
 ### Subcomponent: MutationResearch Unit Cluster
 Parent Component: Unit Test Suite
@@ -967,16 +973,30 @@ Protects:
   or borrowed spells, the target and already-flagged spells are left alone. The deferred lane that reads the
   flag is pinned in the aether tree's `test_meld.py`: a spell that is neither an existing creation nor its
   Phase 5 root runs the full target pass and must read resolution-valid; a failed pass re-flags and re-raises
+- scan_bind option parity (0.2.8228): the new options' defaults and storage (resolvable kept as given,
+  disposal names and metadata snapshotted at decoration, bare strings and the 24 reserved keys refused, the
+  reserved set checked against the bind chain's signatures), the immutable declaration, scanned
+  registrations matching direct binds (native policy, Book disposal order under both priorities, Protocol
+  definitions, Bind's refusals) and discovery - undecorated subclasses, instances of a decorated class,
+  metaclass declarations and attribute-answering proxies skipped, a directly decorated instance bound as a
+  unique-only existing object, aliases bound once, distinct collisions and rescans still raising,
+  wraps-based wrappers kept
+- the internal-registration guard's identity (2026-10-10): a user subclass of a guarded class registers, an
+  instance of one is refused while staying usable, and the guard compares `(module, qualname)` strings - a
+  class under another top-level package passes, a user class claiming a Melder identity is refused - with
+  every manifest entry rooted at `melder`
 Key Files (C1):
 - `tests/unit/melder/spellbook/test_spellbook.py`
 - `tests/unit/melder/spellbook/test_spell.py`
 - `tests/unit/melder/spellbook/test_scan_bind.py`
+- `tests/unit/melder/spellbook/test_scan_bind_option_parity.py` (scan_bind option parity, 2026-10-10)
 - `tests/unit/melder/spellbook/test_spellbinder.py`
 - `tests/unit/melder/spellbook/test_cache_runtime_verification.py`
 - `tests/unit/melder/spellbook/configuration/test_configuration.py`
 - `tests/unit/melder/spellbook/bind/test_bind.py`
 - `tests/unit/melder/spellbook/bind/test_spell_index.py`
 - `tests/unit/melder/spellbook/bind/test_stable_spell_fingerprint.py` (address-free fingerprints, 2026-09-26)
+- `tests/unit/melder/spellbook/bind/test_internal_registration_identity.py` (guard identity, 2026-10-10)
 - `tests/unit/melder/spellbook/test_spellbook_creation_system_dependency_flags.py` (target-pass flags, 2026-09-30)
 
 ### Subcomponent: Spellbook Compiler Unit Cluster
@@ -1191,6 +1211,10 @@ Protects:
   that agree across two fresh interpreters
 - a dynamic conjure refused by the recorded-world configuration discipline leaving its frame unsettled, and
   the predicted conjure mode agreeing with settlement for every posture and flag (0.2.8211)
+- scanned registrations over real Book wiring (0.2.8228): registration callbacks run once per registered
+  object before and after conjure, a post-conjure scan carries disposal order and a non-resolvable
+  definition into a live world, and a failed scan keeps the registrations made before the failure in all
+  five transaction modes
 Key Files (C1):
 - `tests/component/melder/spellbook/test_spellbook_component_bind.py`
 - `tests/component/melder/spellbook/test_spellbook_component_configuration.py`
@@ -1202,6 +1226,7 @@ Key Files (C1):
 - `tests/component/melder/spellbook/test_conjure_cache_restage.py` (bundle rebuilt per non-full-hit conjure, 2026-09-26)
 - `tests/component/melder/spellbook/test_spell_id_process_stability.py` (spell ids in two fresh interpreters, 2026-09-26)
 - `tests/component/melder/spellbook/test_conjure_refusal_leaves_frame_unsettled_component.py` (refusal before settlement, 2026-09-30)
+- `tests/component/melder/spellbook/test_scan_bind_parity_component.py` (scan parity over real wiring, 2026-10-10)
 
 ### Subcomponent: Spellbook Compiler Component Cluster
 Parent Component: Component Test Suite
@@ -1261,12 +1286,18 @@ Protects:
   cleaned-Aether refusals; listing and lookups while other threads create and clean frames; the frame's shared
   configuration (None without sharing, the bound object with it, the one the next Book adopts) and
   `Conduit.spellbook` for roots, lessers, a torn-down root and an upgraded lesser
+- what the codegen room's profiles stop around the core today (2026-10-10; a characterization, not
+  protection): an `import melder` statement refused under every standard profile but full_access, hybrid
+  refusing import statements of its denied roots, and two known gaps held as their profiles' documented
+  contracts under strict xfail - safe codegen writing files through the `open` builtin, and `__import__`
+  loading roots the hybrid profile and the precision overlay deny
 Key Files (C1):
 - `tests/integration/melder/aether/test_nexus_frame_surface_projection_integration.py`
 - `tests/integration/melder/aether/test_nexus_viewer_extended_surface_integration_matrix.py`
 - `tests/integration/melder/aether/test_frame_acl_chain_integration.py`
 - `tests/integration/melder/aether/test_aether_named_lesser_lookup.py`
 - `tests/integration/melder/aether/test_aether_frame_lookups.py` (frame lookups and read accessors, 2026-09-29)
+- `tests/integration/melder/aether/test_codegen_core_boundary_integration.py` (characterization, 2026-10-10)
 
 ### Subcomponent: Crystallizer Integration Cluster
 Parent Component: Integration Runtime Suite
@@ -1283,6 +1314,10 @@ Protects:
   activation and the utility re-emission; one class bound in two frames restoring both tenants under per-frame
   ids; distinct classes restoring per-frame; a process-wide world keeping bare custody keys; a process-wide host
   refusing a same-class per-frame record; removal in one frame keeping the other frame's custody
+- recorded installed-package leaves staying readable (2026-10-10): with descent off a site-package leaf is
+  recorded unwalked, `MutationResearch.source_view` and a safe-profile codegen room's `research_source` read
+  its text from the live disk, its unwalked interior answers `unknown_module`, and an edit after recording
+  reads back with no drift verdict while the fingerprinted project module reports drift
 Key Files (C1):
 - `tests/integration/melder/crystallizer/test_spell_crystal_integration.py`
 - `tests/integration/melder/crystallizer/test_synthetic_module_integration.py`
@@ -1290,6 +1325,7 @@ Key Files (C1):
 - `tests/integration/melder/crystallizer/test_restore_over_active_nexus_integration.py` (2026-09-30)
 - `tests/integration/melder/crystallizer/test_crystallizer_aether_twin_integration.py` (2026-09-30)
 - `tests/integration/melder/crystallizer/test_restore_per_frame_spell_worlds_integration.py` (2026-09-30)
+- `tests/integration/melder/crystallizer/test_recorded_leaf_source_read_integration.py` (leaf source reads, 2026-10-10)
 
 ### Subcomponent: MutationResearch Integration Cluster
 Parent Component: Integration Runtime Suite
@@ -1301,8 +1337,12 @@ Protects:
   bound spell ids registering into the default set; dynamic binds auto-declaring
   research; the residency view joining live runtime; research lines surviving a
   composition round trip
+- a research lane is not a runtime fork (2026-10-10): a lane anchored at a running spell starts empty and
+  names its anchor, a version registered into it is research only, and the running spell's lane, `active`
+  residency and meld result do not move
 Key Files (C1):
 - `tests/integration/melder/mutation_research/test_mutation_research_root_integration.py`
+- `tests/integration/melder/mutation_research/test_research_lane_runtime_isolation_integration.py` (2026-10-10)
 
 ### Subcomponent: Spellbook Integration Cluster
 Parent Component: Integration Runtime Suite
@@ -1514,12 +1554,12 @@ Key Files (C1):
   note: frame-isolated automatic/dynamic qualified-name regressions and real collision controls.
 
 Core is the DEDUPLICATED UNION OF EVERY `Key Files (C1)` LIST in the catalogs
-above - 206 paths - and nothing else. Change a component's key files and this set
+above - 214 paths - and nothing else. Change a component's key files and this set
 follows; if the two ever disagree, this section is wrong, not the catalog.
 
 WHAT COUNTS AS A KEY FILE ON THIS SIDE. A test component's key files are its
 HARNESS AND SUPPORT SURFACES - conftests, benches, mock packages, shared
-builders - not every `test_*.py` module beneath it. The 766 test modules of the
+builders - not every `test_*.py` module beneath it. The 789 test modules of the
 three CI tiers (and the 33 experimentation modules) are the component's CONTENT;
 they are counted in each entry rather than cited, because a
 core set that lists the entire tree is not a set anyone can verify, which is the
@@ -1911,6 +1951,12 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   end_line: 234
   loc: 234
   verified_at: 2026-09-30T18:35:14Z
+- path: `tests/unit/melder/crystallizer/crystal_analysis/test_custody_boundary_characterization.py`
+  start_line: 1
+  end_line: 345
+  loc: 345
+  verified_at: 2026-10-10T11:47:06Z
+  note: custody classification, descent and retention around a nested virtual environment; roots never grant import.
 - path: `tests/unit/melder/mutation_research/test_mutation_research_root.py`
   start_line: 1
   end_line: 944
@@ -1936,6 +1982,12 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   end_line: 334
   loc: 334
   verified_at: 2026-09-26T22:11:36Z
+- path: `tests/unit/melder/spellbook/test_scan_bind_option_parity.py`
+  start_line: 1
+  end_line: 768
+  loc: 768
+  verified_at: 2026-10-10T09:48:53Z
+  note: scan_bind decoration contract, parity with direct bind and own-declaration discovery (0.2.8228).
 - path: `tests/unit/melder/spellbook/test_spellbinder.py`
   start_line: 1
   end_line: 432
@@ -2146,6 +2198,12 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   end_line: 275
   loc: 275
   verified_at: 2026-10-01T10:23:50Z
+- path: `tests/integration/melder/aether/test_codegen_core_boundary_integration.py`
+  start_line: 1
+  end_line: 206
+  loc: 206
+  verified_at: 2026-10-10T12:34:42Z
+  note: codegen import gate around melder and two strict-xfail profile gaps (open writes, __import__).
 - path: `tests/integration/melder/crystallizer/test_spell_crystal_integration.py`
   start_line: 1
   end_line: 215
@@ -2171,6 +2229,12 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   end_line: 295
   loc: 295
   verified_at: 2026-09-30T18:35:14Z
+- path: `tests/integration/melder/crystallizer/test_recorded_leaf_source_read_integration.py`
+  start_line: 1
+  end_line: 221
+  loc: 221
+  verified_at: 2026-10-10T11:47:06Z
+  note: recorded site-package leaves read from the live disk by source_view and research_source, no drift verdict.
 - path: `tests/integration/melder/crystallizer/test_synthetic_module_integration.py`
   start_line: 1
   end_line: 142
@@ -2181,6 +2245,12 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   end_line: 251
   loc: 251
   verified_at: 2026-09-26T22:11:36Z
+- path: `tests/integration/melder/mutation_research/test_research_lane_runtime_isolation_integration.py`
+  start_line: 1
+  end_line: 115
+  loc: 115
+  verified_at: 2026-10-10T11:47:06Z
+  note: an anchored lane and its versions leave the running selection, residency and meld result unchanged.
 - path: `tests/integration/melder/spellbook/test_spellbook_integration_core.py`
   start_line: 1
   end_line: 1459
@@ -2252,6 +2322,12 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   end_line: 257
   loc: 257
   verified_at: 2026-09-26T22:11:36Z
+- path: `tests/unit/melder/spellbook/bind/test_internal_registration_identity.py`
+  start_line: 1
+  end_line: 141
+  loc: 141
+  verified_at: 2026-10-10T11:47:06Z
+  note: the registration guard's string identity - no MRO walk, instances by type, forked and claimed identities.
 - path: `tests/unit/melder/spellbook/test_spellbook_creation_system_dependency_flags.py`
   start_line: 1
   end_line: 283
@@ -2432,6 +2508,12 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   end_line: 148
   loc: 148
   verified_at: 2026-09-30T00:31:41Z
+- path: `tests/component/melder/spellbook/test_scan_bind_parity_component.py`
+  start_line: 1
+  end_line: 201
+  loc: 201
+  verified_at: 2026-10-10T09:33:01Z
+  note: scanned registrations over real Book wiring and the failed-scan boundary in five modes (0.2.8228).
 - path: `tests/component/melder/utilities/synchronization/test_creation_gate_component.py`
   start_line: 1
   end_line: 303
@@ -2507,6 +2589,12 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   end_line: 1069
   loc: 1069
   verified_at: 2026-09-26T22:11:36Z
+- path: `tests/integration/melder/multithreading/test_contract_mutation_during_meld_resolution_integration.py`
+  start_line: 1
+  end_line: 325
+  loc: 325
+  verified_at: 2026-10-10T09:33:01Z
+  note: a contract mutation forced inside a meld's resolution pass (0.2.8227).
 - path: `tests/integration/melder/multithreading/test_multithreading_spell_system_states.py`
   start_line: 1
   end_line: 959
@@ -2624,6 +2712,14 @@ graph TD
 - `tests/unit/melder/test_system_document_view.py`
 - `tests/unit/melder/test_melder_registration_guard.py`
 - `tests/unit/melder/spellbook/spell_compiler/phases/test_compiler_pool_snapshot_reads.py`
+- `tests/unit/melder/spellbook/test_scan_bind_option_parity.py`
+- `tests/component/melder/spellbook/test_scan_bind_parity_component.py`
+- `tests/integration/melder/multithreading/test_contract_mutation_during_meld_resolution_integration.py`
+- `tests/unit/melder/crystallizer/crystal_analysis/test_custody_boundary_characterization.py`
+- `tests/unit/melder/spellbook/bind/test_internal_registration_identity.py`
+- `tests/integration/melder/crystallizer/test_recorded_leaf_source_read_integration.py`
+- `tests/integration/melder/mutation_research/test_research_lane_runtime_isolation_integration.py`
+- `tests/integration/melder/aether/test_codegen_core_boundary_integration.py`
 - `tests/experiments/cprofile_testing/README.md`
 - `src/melder/aether/spellbook/spellbook.py` (`Spellbook._aether`, the one `ClassVar` Aether cache)
 - `src/melder/nexus/rift/command_system/command_system.py` (`CommandSystem._aether`)
@@ -2673,6 +2769,24 @@ graph TD
   scan/bind coverage grows.
 
 ## Context / Handoff Summary
+
+2026-10-10 core-protection review regression suite (no notch; tests only): five new files pin the review's
+findings - the custody boundary around a nested virtual environment (unit crystallizer), the registration
+guard's string identity (unit spellbook), recorded site-package leaves staying readable (integration
+crystallizer), research lanes leaving the running world alone (integration mutation_research) and a codegen
+characterization around the core - not protection - holding two known gaps under strict xfail (integration aether).
+Each joins its cluster's key files, so the C1 core set is 214 paths; the tier and tree counts they change are
+recounted from disk (789 test modules in the three tiers). Only the five new code-map entries were measured.
+
+2026-10-10 scan_bind option parity (0.2.8228): two new files join the spellbook clusters - the decoration
+contract, parity with direct bind and own-declaration discovery (unit), and scanned registrations over real Book
+wiring, including a failed scan's registrations in all five transaction modes (component). The C1 core set gains
+them and `test_contract_mutation_during_meld_resolution_integration.py`, the 0.2.8227 regression that joined the
+multithreading cluster's key files without a code-map entry (209 paths; the stated 206 had matched the map, not
+the 207-path union). Tier and tree counts are recounted from disk (784 test modules in the three tiers); several
+had not followed earlier lanes' files: the three tier totals, the unit aether and spellbook trees, the component
+aether and spellbook trees and the integration aether, crystallizer, multithreading and spellbook trees. Only the
+three new code-map entries were measured in this pass.
 
 2026-10-06 speed tests beside CI (no notch): the speed tests left ci.yml for their own workflow, so the three CI
 test modules this change rewrote, `test_ci_policy.py`, `test_workflow_contracts.py` and

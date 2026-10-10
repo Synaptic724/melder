@@ -559,12 +559,12 @@ Prefer to declare registration where the class lives? Tag it with
 import melder as md
 
 
-@md.scan_bind(existence="unique")
+@md.scan_bind(existence="unique", permissions="create")
 class MetricsHub:
     pass
 
 
-@md.scan_bind(existence="many")
+@md.scan_bind(existence="many", permissions="create")
 class JobTicket:
     pass
 ```
@@ -588,6 +588,12 @@ container filling up behind your back, no import-order puzzle to debug. You
 still decide when binding happens, and where.
 
 Mix freely: scan a module, then `bind()` a few more by hand.
+
+`scan_bind` takes everything `bind()` takes for a target — `spellframe`,
+`binding_name`, `resolvable`, `disposal_method_names` and your own metadata
+keywords — and `permissions` is required. Only the decorated class or function
+itself is registered: its subclasses and instances are not, unless they are
+decorated too.
 
 
 ---

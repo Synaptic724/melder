@@ -1,0 +1,30 @@
+command: python -X gil=0 -m pytest -q -p no:cacheprovider -rsxX tests/component/melder/aether tests/component/melder/crystallizer tests/component/melder/mutation_research tests/component/melder/utilities
+started: 2026-10-10T13:21:24Z
+........................................................................ [  4%]
+........................................................................ [  9%]
+........................................................................ [ 14%]
+........................................................................ [ 18%]
+........................................................................ [ 23%]
+........................................................................ [ 28%]
+........................................................................ [ 33%]
+........................................................................ [ 37%]
+........................................................................ [ 42%]
+........................................................................ [ 47%]
+........................................................................ [ 51%]
+........................................................................ [ 56%]
+........................................................................ [ 61%]
+......x................................................................. [ 66%]
+........................................................................ [ 70%]
+........................................................................ [ 75%]
+........................................................................ [ 80%]
+........................................................................ [ 84%]
+........................................................................ [ 89%]
+........................................................................ [ 94%]
+.............................................ss..ss..ss..ss..ss..ss..sss [ 99%]
+s..ss..sss..ss                                                           [100%]
+=========================== short test summary info ============================
+SKIPPED [11] tests/component/melder/utilities/test_agent_text_reader_component.py:83: readable_src_graph.json not present in this checkout
+SKIPPED [12] tests/component/melder/utilities/test_agent_text_reader_component.py:83: src_graph.json not present in this checkout
+XFAIL tests/component/melder/aether/test_aether_component_process_wide_spell_id_regime.py::test_component_concurrent_conjures_across_frames_admit_at_most_one - OPEN: the conjure sweep is a PREFLIGHT, not a mutual exclusion. It reads the frame set under the Spellbook lock while the write lands later under the FRAME lock inside Conduit.__init__, so every thread can pass before any thread registers. Closing it needs the atomic check-and-set in AethericFrame.register_conduit_spells - STORY-2026-08-02-aether-unified-spell-id-set. STRICT ON PURPOSE: when that story lands this test starts passing, xfail(strict) turns that into a FAILURE, and whoever fixed it is told to delete this marker. Do NOT loosen the assertion below to make this green.
+1502 passed, 23 skipped, 1 xfailed in 36.92s
+exit: 0 finished: 2026-10-10T13:22:02Z

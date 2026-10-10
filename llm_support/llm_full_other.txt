@@ -1,8 +1,8 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: other
-SOURCE FINGERPRINT: ea0521ae8dbcd9c944f8aab658c5ae7cdbc5b41d60fe8e94d1168bf20184a98c
-FILE COUNT: 403
+SOURCE FINGERPRINT: 1ca8caeafa7ac6064a9c68a8ac2f674aa62def829e05092a06403df8bd433433
+FILE COUNT: 404
 
 ================================================================================
 BEGIN FILE: .gitattributes
@@ -6365,7 +6365,7 @@ END FILE: NOTICE
 ================================================================================
 ================================================================================
 BEGIN FILE: README.md
-CONTENT SHA256: db94a6955e3c182416fdec8be75e289c2cc1c05e2108c0d5ed2c940f33b183fc
+CONTENT SHA256: 6a0e6be1c5a3c19c9cb3f045458601366c0c64b6da321bb4aac41125e6954987
 SOURCE ENCODING: utf-8
 ================================================================================
 <div align="center">
@@ -6929,12 +6929,12 @@ Prefer to declare registration where the class lives? Tag it with
 import melder as md
 
 
-@md.scan_bind(existence="unique")
+@md.scan_bind(existence="unique", permissions="create")
 class MetricsHub:
     pass
 
 
-@md.scan_bind(existence="many")
+@md.scan_bind(existence="many", permissions="create")
 class JobTicket:
     pass
 ```
@@ -6958,6 +6958,12 @@ container filling up behind your back, no import-order puzzle to debug. You
 still decide when binding happens, and where.
 
 Mix freely: scan a module, then `bind()` a few more by hand.
+
+`scan_bind` takes everything `bind()` takes for a target — `spellframe`,
+`binding_name`, `resolvable`, `disposal_method_names` and your own metadata
+keywords — and `permissions` is required. Only the decorated class or function
+itself is registered: its subclasses and instances are not, unless they are
+decorated too.
 
 
 ---
@@ -75012,7 +75018,7 @@ a book whose `disposal_method_names` is `["close", "release"]`, an object whose 
 END FILE: release_docs/0.2.82.md
 ================================================================================
 ================================================================================
-BEGIN FILE: release_docs/next_version_release.md
+BEGIN FILE: release_docs/0.2.8227.md
 CONTENT SHA256: 6646878d3aebed185dead51cc1b2bb7f935906dc74e6ffa74cb7625b0177af79
 SOURCE ENCODING: utf-8
 ================================================================================
@@ -75621,6 +75627,61 @@ unchanged.
 - CONTRIBUTING.md and the test system documents describe how CI installs test dependencies: every Python
   release CI tests has a manifest in `.github/python/tests/` with that release's exact pins.
 - Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8227.
+================================================================================
+END FILE: release_docs/0.2.8227.md
+================================================================================
+================================================================================
+BEGIN FILE: release_docs/next_version_release.md
+CONTENT SHA256: a3bb2d2ea30cd18d6fd5e28e285c95dc24bce2f57a55c5de91b08c4e8de0d8b0
+SOURCE ENCODING: utf-8
+================================================================================
+# Melder 0.2.8228
+
+**Unreleased**
+
+## `scan_bind` takes every option `bind` takes, and registers only what a module declares
+
+`@scan_bind(...)` now accepts the three target options it was missing - `resolvable`, per-target
+`disposal_method_names` and keyword application metadata - with the defaults `Spellbook.bind` uses, and a scan
+passes them through `bind`. A scanned registration therefore matches a direct `bind` of the same target with
+the same options: a `Protocol` can be declared as a non-resolvable definition, a target can name its own
+disposal methods (combined with the Book's configured names and priority exactly as in `bind`), and metadata
+lands in `Spell.metadata`.
+
+```python
+@md.scan_bind(existence="unique", permissions="create", disposal_method_names=["close"], owner="billing")
+class Ledger:
+    def close(self) -> None: ...
+```
+
+The declaration is checked when the decorator runs: `disposal_method_names` must be a list or tuple of method
+names (a bare string is refused - `bind` would read it one character at a time), and a metadata key that names
+an argument the bind pipeline takes itself (`spell`, `existence`, `profile`, `spell_id` and the rest, 24 in all)
+raises `TypeError` naming every such key. Metadata is kept as a shallow snapshot: later changes to your dict do
+not reach the declaration, while the values are the objects you passed. `resolvable` is stored as given, and
+`bind` checks it when the module is scanned.
+
+**Breaking change:** only an object that carries its own declaration is registered. An undecorated subclass of
+a decorated class used to be bound with its parent's declaration; it is now skipped - decorate the subclass to
+register it. A module-level instance of a decorated class, a class whose metaclass was decorated and an object
+that answers every attribute are skipped too (the instance and that object used to make the scan fail). A second
+module name for the same object (`Alias = Thing`) no longer fails the scan with "Spell ID collision": the object
+is bound once, under the first name in module order.
+
+What stays the same: `existence` and `permissions` are still required on `scan_bind`, and hooks are still
+validated at decoration; only the module you pass is scanned and re-exports are still refused; two different
+objects that share a binding key, and scanning the same module twice, still raise. A scan is still not atomic:
+if one target's bind fails, the targets bound before it stay registered. The `Spellbook.scan` docstring said the
+scan rolled back with its transaction window; it never did, and the docstring now says so.
+
+## Packaging and documentation
+
+- The README's "Declarative Binding by Module" example passes `permissions="create"`, without which it raised
+  `TypeError`, and says that `scan_bind` takes `bind()`'s target options and does not register subclasses or
+  instances of a decorated class.
+- The packaged system documents (`melder.__components__`, `melder.__architecture__`) describe the scan
+  declaration contract, the eligibility change and a scan flow; the scan code-map extent is remeasured.
+- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8228.
 ================================================================================
 END FILE: release_docs/next_version_release.md
 ================================================================================

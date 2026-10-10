@@ -13,7 +13,7 @@ Regenerate with:
     python src/melder/_build_assets/_build_asset_runner.py
 """
 
-BUILT_FOR_VERSION = "0.2.8227"
+BUILT_FOR_VERSION = "0.2.8228"
 NODE_COUNT = 1217
 EDGE_COUNT = 1395
 WHY_COUNT = 939
@@ -294,8 +294,8 @@ NODES = {
     'melder.aether.spellbook.bind.bind': ('src/melder/aether/spellbook/bind/bind.py', 'bind', 'module', 1, False),
     'melder.aether.spellbook.bind.bind.Bind': ('src/melder/aether/spellbook/bind/bind.py', 'Bind', 'class', 128, False),
     'melder.aether.spellbook.bind.scan': ('src/melder/aether/spellbook/bind/scan.py', 'scan', 'module', 1, False),
-    'melder.aether.spellbook.bind.scan.Scan': ('src/melder/aether/spellbook/bind/scan.py', 'Scan', 'class', 239, False),
-    'melder.aether.spellbook.bind.scan.ScanBindMetadata': ('src/melder/aether/spellbook/bind/scan.py', 'ScanBindMetadata', 'class', 55, False),
+    'melder.aether.spellbook.bind.scan.Scan': ('src/melder/aether/spellbook/bind/scan.py', 'Scan', 'class', 544, False),
+    'melder.aether.spellbook.bind.scan.ScanBindMetadata': ('src/melder/aether/spellbook/bind/scan.py', 'ScanBindMetadata', 'class', 137, False),
     'melder.aether.spellbook.bind.spell_index': ('src/melder/aether/spellbook/bind/spell_index.py', 'spell_index', 'module', 1, False),
     'melder.aether.spellbook.bind.spell_index.SpellIndex': ('src/melder/aether/spellbook/bind/spell_index.py', 'SpellIndex', 'class', 12, False),
     'melder.aether.spellbook.configuration.spellbook_configuration': ('src/melder/aether/spellbook/configuration/spellbook_configuration.py', 'spellbook_configuration', 'module', 1, False),

@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_components.md'
-LINE_COUNT = 10786
-CONTENT_SHA256 = 'ead221dd60cb0447efe780b909c6094a5ead214856e8063373e601c259708f47'
+LINE_COUNT = 10860
+CONTENT_SHA256 = '9e9717337839a50d0d3339ce244b98bab6c779fa65ffd5618dac316be526ef91'
 
 TEXT = """# Src Components (C3/C2/C1)
 
@@ -24,7 +24,7 @@ TEXT = """# Src Components (C3/C2/C1)
 - Status: in_progress
 - Owner:
 - Created: 2026-01-17
-- Updated: 2026-10-04
+- Updated: 2026-10-10
 
 ## Scope
 This document defines C3 components, C2 subcomponents, and C1 code references
@@ -507,6 +507,8 @@ Responsibilities:
 - Conjure exactly one Conduit per Spellbook instance.
 - Provide SpellBinder fluent adapter.
 - Scan user-supplied modules for `scan_bind` metadata and bind spells.
+  Since 0.2.8228 only an object's own declaration makes it a target, each object binds once per scan,
+  and a declaration carries bind()'s full target options (Subcomponent: Scan-Bind Module Scanner).
 
 Inputs:
 - User spell objects, configuration inputs, policy/automatic flags.
@@ -5452,13 +5454,57 @@ Key Files (C1):
 Parent Component: Spellbook Core (Binding and Conjure)
 Purpose:
 - Replay `scan_bind` metadata from one module into `Spellbook.bind(...)`.
+- A declaration carries every target option `Spellbook.bind` takes (0.2.8228), so a scanned registration
+  matches a direct bind of the same target with the same options; Bind alone validates them.
 Contract/Interface:
 - `Spellbook.scan(...)`
 - `Scan.scan_module(...)`
+- `scan_bind(*, existence, permissions, spellframe=None, binding_name=None, profile="general",
+  pre_hooks=None, activation_hooks=None, post_hooks=None, resolvable=True, disposal_method_names=None,
+  **spell_metadata)` stores one declaration on the decorated object and returns the object unchanged. The
+  new options take bind's defaults; `permissions` stays required here (direct bind defaults it to "create").
+- Checked at decoration, each a TypeError: hook groups that are not lists or tuples of callables;
+  `disposal_method_names` that is not a list or tuple of strings (a bare string too - bind would iterate it
+  per character and match nothing); a metadata key in `ScanBindMetadata.RESERVED_SPELL_METADATA_KEYS`, the
+  24 names the bind chain takes natively (`Spellbook.bind`, `Bind.bind`, `Bind._bind_logic`,
+  `Spell.__init__`, plus the three hook keys) - the message names every offending key, sorted.
+  `resolvable` is stored as given: Bind's strict bool check and its Protocol rule run at scan time, so a
+  Protocol target scans only when it is declared `resolvable=False`.
+- An empty `disposal_method_names` group, like an omitted one, leaves the Book's configured candidates in
+  force; Bind applies the Book overlap and the `enforce_priority_disposal_methods` order exactly as for a
+  direct bind.
+- Eligibility: an object is a target only when its OWN `__dict__` holds the declaration
+  (`Scan._own_scan_bind_metadata`). An undecorated subclass, a module-level instance of a decorated class,
+  a class whose metaclass was decorated and an object answering every attribute are skipped; an
+  explicitly decorated subclass registers with its own declaration, and a `functools.wraps` wrapper
+  carries its own copy because wraps copies the wrapped `__dict__`. Until 0.2.8228 the scanner read the
+  declaration with `getattr`, which answered through all four (Breaking change).
+- Each object binds at most once per `scan_module` call, keyed by `id()` while the call holds the object,
+  so a second module name for it adds nothing and the first name in module order is reported. Distinct
+  targets sharing a binding key, and a rescan, still raise.
+- Re-exports raise ValueError (`__module__` must equal the module name); a stored declaration that is not
+  a `ScanBindMetadata` raises TypeError ("invalid or corrupted").
+  EVIDENCE: `src/melder/aether/spellbook/bind/scan.py:scan_bind`, `_normalize_disposal_method_names`,
+  `_normalize_spell_metadata`, `Scan._own_scan_bind_metadata` and `Scan.scan_module`.
 Data Structures:
 - Frozen `ScanBindMetadata` payloads attached under `__melder_scan_bind__`.
+- `ScanBindMetadata` is an immutable slotted class, not a dataclass (0.2.8228): it holds callables,
+  Protocol classes and application objects. It keeps its keyword constructor and attribute names and adds
+  `resolvable`, `disposal_method_names` (a tuple or None) and `spell_metadata`, a read-only mapping over a
+  private shallow copy - keys fixed, values borrowed by identity and never copied or frozen.
+  `__setattr__` and `__delattr__` raise AttributeError; its repr lists metadata keys, never values.
+- `ScanBindMetadata.to_bind_kwargs()` returns a dict that is new on every call: the metadata entries,
+  fresh hook lists and `profile`. A Spell's cleanup clears its own `metadata` dict in place, so the
+  declaration must never be the dict a bind receives.
 Concurrency/Threading:
 - Delegates actual binding synchronization to the owning Spellbook.
+- Declarations are immutable and safe to share across threads; metadata values keep their own thread
+  safety.
+Failure Modes:
+- Not atomic in any transaction mode: when one target's bind raises, the targets bound before it stay
+  registered and the error propagates - before conjure, inside scan's own bind window and inside an outer
+  Book or conduit bind window, because ending a bind window unregisters nothing.
+  EVIDENCE: `src/melder/aether/spellbook/spellbook.py:Spellbook.scan`.
 Key Files (C1):
 - `src/melder/aether/spellbook/bind/scan.py`
 - `src/melder/aether/spellbook/spellbook.py`
@@ -7104,6 +7150,25 @@ These flows describe concrete method sequences for core behaviors.
    - Completes normal publication and calls Bind.execute_post_hooks with the captured set.
    - Ends the existing transaction; the returned spell_id contract is unchanged.
 
+### Flow: Scan Module -> Bind Each Declared Object Once
+1. `scan_bind(...)` at decoration: `_normalize_hooks`, `_normalize_disposal_method_names` and
+   `_normalize_spell_metadata` validate and snapshot the inputs; the decorator stores one
+   `ScanBindMetadata` in the object's own `__dict__` under `__melder_scan_bind__` and returns the object.
+2. `Spellbook.scan(module)`: `check_cleaned()`, the bind-family posture gate
+   (`_bind_family_disabled_for_current_posture`), then `Scan(self).scan_module(module)` - directly when a
+   bind-capable window is already active (always before conjure), otherwise inside its own `"bind"`
+   transaction.
+3. `Scan.scan_module(module)` walks `vars(module)` in definition order. For each value:
+   - `Scan._own_scan_bind_metadata(obj)` reads the object's own `__dict__` only; None skips the value and
+     anything but a `ScanBindMetadata` raises TypeError.
+   - An `id(obj)` this call already bound is skipped (a module alias).
+   - `obj.__module__` must equal the module name, or ValueError (a re-export).
+   - `Spellbook.bind(spell=obj, existence, permissions, spellframe, binding_name, resolvable,
+     disposal_method_names, **ScanBindMetadata.to_bind_kwargs())` runs the Bind Spell flow above; the
+     object is then held by id until the call returns.
+4. Returns the spell ids in module order. A raise in step 3 propagates and leaves the earlier targets
+   registered; no window rolls them back.
+
 ### Flow: Conjure -> Phases -> Conduit
 1. `Spellbook.conjure(...)`:
    - Starts the CONJURE transaction, refuses the recorded-world configuration discipline on the predicted
@@ -7386,7 +7451,7 @@ expanded into its real modules rather than given a plausible number.
   start_line: 1
   end_line: 7341
   loc: 7341
-  verified_at: 2026-09-30T19:58:34Z
+  verified_at: 2026-10-10T09:33:01Z
 - path: `src/melder/aether/spellbook/spellbinder.py`
   start_line: 1
   end_line: 870
@@ -7394,9 +7459,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/spellbook/bind/scan.py`
   start_line: 1
-  end_line: 373
-  loc: 373
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 755
+  loc: 755
+  verified_at: 2026-10-10T09:33:01Z
 - path: `src/melder/aether/spellbook/bind/bind.py`
   start_line: 1
   end_line: 1316
@@ -10386,6 +10451,15 @@ Companion documents:
   component and code-description patches are inputs to this document while a lane is open.
 
 ## Context / Handoff Summary
+
+2026-10-10 scan_bind option parity (0.2.8228): the Scan-Bind Module Scanner subcomponent carries the full
+declaration contract - `scan_bind` takes bind()'s target options (`resolvable`, per-target disposal names,
+keyword application metadata) and refuses the 24 reserved metadata keys at decoration; `ScanBindMetadata` is
+an immutable slotted class with a read-only metadata mapping; only an object's own declaration makes it a
+target (undecorated subclasses and instances of a decorated class are no longer bound - Breaking) and each
+object binds once per scan, so module aliases no longer collide; a failed scan keeps what it bound before
+the failure. A scan flow joins the C1 flows; the code map's scan.py extent is remeasured (373 -> 755) and
+spellbook.py is re-verified (the `Spellbook.scan` docstring no longer claims a rollback).
 
 2026-10-04 live unlink race (0.2.8227): the SpellCompiler entry's failure modes state that a Phase 8 or 9 pool
 miss is KeyError(spell_id, message), which a meld-time target pass records as a visibility failure; the Phase 9

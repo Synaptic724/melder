@@ -5488,20 +5488,20 @@ class Spellbook(Cleanable):
               system state is anything other than `dynamic`. In practice:
               POST-CONJURE SCANNING REQUIRES A DYNAMIC FRAME. The refusal is a
               `RuntimeError` raised here, before any binding is attempted.
-            - Transaction window is chosen, not always opened. When a
-              bind-capable transaction is already active, scan runs inside the
-              caller's window and opens nothing, so the whole scan commits or
-              rolls back with that outer window. Only when no such window
-              exists does scan open its own `"bind"` transaction, which makes
-              the scan atomic in isolation.
+            - Transaction window is chosen, not always opened: inside an active
+              bind-capable window scan opens nothing; otherwise it opens its own
+              `"bind"` transaction. Neither window makes the scan atomic: ending
+              a bind window unregisters nothing, so when one target's bind
+              raises, the targets bound before it stay registered and the error
+              propagates. (Corrected 2026-10-10; this claimed a rollback.)
             - Pre-conjure books always take the "already active" branch, so a
               pre-conjure scan never opens a transaction of its own.
             - Post-conjure, "already active" means a live BIND session on this
               spellbook's transaction identity, or - failing that - on its
               conduit's identity, and that session must advertise the `bind`
               capability.
-            - Binding is delegated to `Scan.scan_module`, which walks the
-              module dict in definition order.
+            - Binding is delegated to `Scan.scan_module`, which walks the module dict
+              in definition order and binds each self-declared object once.
 
         Threading:
             Takes no lock itself; serialization comes from the bind lane and

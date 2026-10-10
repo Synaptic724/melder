@@ -1,0 +1,5 @@
+command: python -X gil=0 -m pytest -q -p no:cacheprovider -rsxX tests/integration/melder/crystallizer/test_bind_hook_recording.py tests/integration/melder/crystallizer/test_crystallizer_aether_twin_integration.py tests/integration/melder/crystallizer/test_crystallizer_lifecycle_integration.py tests/integration/melder/crystallizer/test_crystallizer_membership_integration.py tests/integration/melder/crystallizer/test_crystallizer_parked_disposal_integration.py tests/integration/melder/crystallizer/test_crystallizer_record_integration.py tests/integration/melder/crystallizer/test_crystallizer_record_lanes_integration.py
+started: 2026-10-10T13:07:01Z
+..............................................                           [100%]
+46 passed in 38.04s
+exit: 0 finished: 2026-10-10T13:07:39Z
