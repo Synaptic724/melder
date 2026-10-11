@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/conduit.py",
- "source_sha256": "864666ef1814d51fc9ae5ab990fd8317fd2117a9fedd573b9ec185b907f0992f",
+ "source_sha256": "498277406f84eaaeb5ce5f04d86972aeae2266bdaa53e1cfe0cbb229fdf27229",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.conduit": {
@@ -119,7 +119,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "81eeb5f3e6fd82e3c16d958addc183d05ff425711a66da1bb8993592de39f13e",
+   "span_sha256": "85241944fbeb21642ac1fa55e7e7b916b81fdff417ba6c3d161a5805f42fd81a",
    "role": "Runtime execution scope for spell resolution.",
    "responsibilities": [
     "hosts meld execution",
@@ -141,7 +141,9 @@
     "creates a lesser for a `with` block through enter_lesser_conduit, which returns create_lesser_conduit's result unchanged",
     "returns a lesser to its pool descendants first, then SpellSpaces, then its own store, and raises the collected disposal failures after the shell is pooled; soft cleanup of a pooled lesser is a no-op",
     "finishes permanent teardown when a disposal method fails and then raises the collected disposal groups",
-    "returns the Spellbook it resolves through, borrowed (spellbook): the conjuring Book for a root, the root's Book for a lesser, the new Book after upgrade_to_normal"
+    "returns the Spellbook it resolves through, borrowed (spellbook): the conjuring Book for a root, the root's Book for a lesser, the new Book after upgrade_to_normal",
+    "emits an index destroy to index-link borrowers exactly when the Book's disposal reports the index it destroyed (cleanup_spell, 0.2.8231)",
+    "looks up contracted spells over a one-call copy of the Book's contracted peer ids and inspects objects, both with no conduit lock held (find_contracted_spell, inspect_spell, 0.2.8232)"
    ],
    "owns_state": [
     "_meld",
@@ -158,7 +160,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "3ebdc50daec4b5914caaf0a6b6eedf0be3aa6066b4b02fb2cae03319b1e333ba"
+   "semantics_authored_against": "85241944fbeb21642ac1fa55e7e7b916b81fdff417ba6c3d161a5805f42fd81a"
   }
  },
  "edges_out": [

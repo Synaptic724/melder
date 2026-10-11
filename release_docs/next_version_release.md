@@ -1,4 +1,4 @@
-# Melder 0.2.8230
+# Melder 0.2.8233
 
 **Unreleased**
 
@@ -67,6 +67,57 @@ Answers on a quiet Book are unchanged.
 the frame claims, as `get_*` lookups do (a `find_*` lookup returns `None`); their docstrings said they return
 `None`, and now document the raise. `get_conduit_by_spell_id` is annotated as returning a `Conduit`.
 
+## Index links, contract reads and binds across frames hold up under concurrent changes
+
+On the free-threaded build, a few operations that touch more than one object could fail - or leave linked conduits
+out of step - when another thread changed one of those objects at the same moment (0.2.8231-0.2.8233):
+
+- `Conduit.cleanup_spell`, `notch_spell`, `add_to_spell_index`, `remove_from_spell_index` and `bind_inactive` tell
+  index-link borrowers about the change after the change has committed. A `link` or `sever_link` of the same conduit
+  at that moment made them raise `RuntimeError: dictionary changed size during iteration` with the change already
+  made, and could leave a borrower subscribed to an index that no longer exists, or holding no active copy of the
+  lineage after a notch. The notification now holds the conduit's ward lock, so the link or sever waits for it.
+- `Conduit.get_spell_in_contracts` and `get_spells_in_contract_by_conduit` (and its by-name variant) could raise the
+  same error, `RuntimeError: Detail has already been cleaned.` or an `AttributeError` while the lending conduit added
+  or removed index members. They now read each contract under its own lock, by key where they can.
+- `get_spells_in_contract_by_conduit` could hang for good when the same conduit ran `sever_link` or `link` at the
+  same time: the two took the same two locks in opposite orders. It now resolves spells through the conduit's
+  Spellbook and never takes the conduit's lock.
+- With two or more frames under process-wide spell ids (the default), `bind` checks every other frame for the new
+  spell id. A frame born (a tenant's first Spellbook) or torn down at that moment made the bind fail with
+  `dictionary changed size during iteration`, `AethericFrame has already been cleaned.` or an `AttributeError`. The
+  check now reads a list of frames that Aether replaces whenever a frame is born or removed, so a bind copies nothing.
+- `conjure` could fail its duplicate-id check with `RuntimeError: Set changed size during iteration` while another
+  Spellbook of the same frame bound spells. The frame now copies each Spellbook's ids in one step, which is also
+  faster.
+- `Conduit.find_contracted_spell` could raise `RuntimeError: dictionary changed size during iteration` while another
+  conduit linked to or severed from the one it was asked on. It now copies the list of linked conduits in one step
+  and takes no lock (0.2.8232).
+- `Spellbook.inspect_spell` and `Conduit.inspect_spell` could return `None` for a registered object while a
+  Spellbook was conjured or torn down in the same frame, and could hang against a frame being torn down at the same
+  moment, because they held the Spellbook's (and the conduit's) lock while asking the frames. They now walk a copy of
+  the frame's conduits and hold no lock while the frames answer (0.2.8232).
+- Two `cleanup_spell` calls for the same spell at the same moment both ran the disposal, and one of them then
+  failed part-way through. The second now raises
+  `RuntimeError: cleanup_spell: spell <id> is already being disposed by another call.` before it changes anything,
+  and borrowers hear of a destroyed index once (0.2.8232).
+- Calling `cleanup()` directly on a live `Spell` could hang for good when its Spellbook was torn down (`cleanup()` on
+  the root conduit, the Spellbook or its frame) or conjured at the same moment: the call held the spell's lock while
+  it waited for the Spellbook's, and the teardown or conjure held the Spellbook's lock while it waited for the
+  spell's. The call now lets go of the spell's lock before it asks the Spellbook to remove the spell, and a second
+  direct `cleanup()` of the same spell still waits for the first and returns. A direct call racing its Spellbook's
+  teardown returns once the teardown has cleaned the spell, or raises `RuntimeError: Spellbook has already been
+  cleaned.` (0.2.8233).
+
+Three errors change type: a second `cleanup_spell` of a spell already disposed raises
+`RuntimeError: cleanup_spell: spell <id> has already been disposed.` instead of
+`AttributeError: 'Spell' object has no attribute 'spell_index'`; `AethericFrame.has_spell` or `spells_in_index`
+racing the frame's cleanup raises the documented `RuntimeError: AethericFrame has already been cleaned.` instead of an
+`AttributeError`; and `Spellbook.cleanup_and_remove_spell` waiting on a Spellbook that is torn down meanwhile raises
+`RuntimeError: Spellbook has already been cleaned.` (or returns, when the teardown has cleaned the spell it was given)
+instead of `AttributeError: ... object has no attribute '_spells_by_id'` (0.2.8233). Everything a quiet system returns
+is unchanged, and the only new lock is one per spell that a direct `Spell.cleanup()` takes and nothing else does.
+
 ## Packaging and documentation
 
 - The README's "Declarative Binding by Module" example passes `permissions="create"`, without which it raised
@@ -79,4 +130,11 @@ the frame claims, as `get_*` lookups do (a `find_*` lookup returns `None`); thei
 - The packaged system documents describe the Book-lock rule for the spell maps' writers, the snapshot rule for
   walks that cannot hold that lock, the cleanup-safe membership probe and the documented ValueError of the
   Conduit spell lookups.
-- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8230.
+- The packaged system documents describe the ward-lock rule for index-link notifications, the contract-lock
+  rule for contract reads, the frame list bind's cross-frame check reads, and how `cleanup_spell` reports the
+  index it destroyed.
+- The packaged system documents describe the lock-free contracted lookup and inspection and the in-flight disposal
+  mark of `cleanup_spell`.
+- The packaged system documents describe how a direct `Spell.cleanup()` removes the spell outside the spell lock and
+  how `cleanup_and_remove_spell` treats a Spellbook torn down while it waits.
+- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8233.

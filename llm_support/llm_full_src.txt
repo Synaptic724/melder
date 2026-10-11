@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: src
-SOURCE FINGERPRINT: 26dffe9ead9b7ca3ff200f699abd7f6dd50899015f51fb80eaeb8bc5d8643f32
+SOURCE FINGERPRINT: df0fd949d5dc5775690094cd42746fd4a55c33e459044f0709f1522704e963ea
 FILE COUNT: 579
 
 ================================================================================
@@ -599,7 +599,7 @@ END FILE: src/melder/__melder_cache__/__melder_cache__.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/__version__.py
-CONTENT SHA256: c86b1470313ea2da68cd9b07bf4fbe6c3f3df699eb61d2446225c4641af4b50d
+CONTENT SHA256: b80aa82ac03f322329546db9a778ca39394f576e921f383a1ca84604ec42092b
 SOURCE ENCODING: utf-8
 ================================================================================
 
@@ -613,7 +613,7 @@ Contract:
   negotiation or runtime compatibility checks by itself.
 """
 
-__version__ = "0.2.8230"
+__version__ = "0.2.8233"
 ================================================================================
 END FILE: src/melder/__version__.py
 ================================================================================
@@ -3677,7 +3677,7 @@ END FILE: src/melder/_build_assets/_system_documents/system_documents.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/aether.py
-CONTENT SHA256: 4147e37fb324fe891ca6922431d6cfbc3083488ac8c7763f33479dbc6da87956
+CONTENT SHA256: 1e5eee096a382c6e3a076fef80b911d3ea241f81c1ad0e666fedc5cf048b41a1
 SOURCE ENCODING: utf-8
 ================================================================================
 import logging
@@ -3873,6 +3873,11 @@ class Aether(Cleanable):
                 self._activated: bool = False
                 self._logger = InitHelpers.resolve_safe_logger(None)
                 self._aetheric_frames: dict[str, AethericFrame] = {}
+                # Immutable (name, frame) view of _aetheric_frames, republished under the Aether lock by
+                # every registry write (frame birth, detach, teardown). Readers that must visit every frame -
+                # bind's cross-frame duplicate sweep - take it in one read instead of copying the dict per
+                # call (cross_object_lock_gaps, 0.2.8231).
+                self._aetheric_frame_view: tuple[tuple[str, AethericFrame], ...] = ()
                 self._default_frame: AethericFrame | None = None
                 self._aether_utility_system: AetherUtilitySystem = AetherUtilitySystem()
                 # Crystallizer is constructed FIRST so it can be unfolded into
@@ -3978,6 +3983,7 @@ class Aether(Cleanable):
                 if self._aetheric_frames is not None:
                     self.cleanup_aetheric_frames() # This will clean each individual frame
                     self._aetheric_frames.clear() # This cleans the ConcurrentDictionary
+                    self._aetheric_frame_view = ()
                 if self._crystallizer is not None:
                     self._crystallizer.cleanup()
                 self._mutation_research.cleanup()
@@ -3992,6 +3998,7 @@ class Aether(Cleanable):
 
                 del self._aether_utility_system
                 del self._aetheric_frames
+                del self._aetheric_frame_view
                 del self._crystallizer
                 del self._mutation_research
                 del self._configuration
@@ -4136,6 +4143,7 @@ class Aether(Cleanable):
                     )
 
             self._aetheric_frames.pop(frame_name, None)
+            self._aetheric_frame_view = tuple(self._aetheric_frames.items())
             if self._default_frame is frame:
                 self._default_frame = None
 
@@ -4978,6 +4986,7 @@ class Aether(Cleanable):
 
             frame = AethericFrame(self, aetheric_frame_name)
             self._aetheric_frames[aetheric_frame_name] = frame
+            self._aetheric_frame_view = tuple(self._aetheric_frames.items())
             if aetheric_frame_name == "default":
                 self._default_frame = frame
 
@@ -5111,6 +5120,7 @@ class Aether(Cleanable):
                 )
             frame = AethericFrame(self, aetheric_frame_name)
             self._aetheric_frames[aetheric_frame_name] = frame
+            self._aetheric_frame_view = tuple(self._aetheric_frames.items())
             if aetheric_frame_name == "default":
                 self._default_frame = frame
             return frame
@@ -6214,6 +6224,12 @@ class Aether(Cleanable):
 
         Returns:
             SpellIndex | None: The SpellIndex containing the spell ID, or None if not found.
+        Threading:
+            The cross-frame sweep holds no Aether lock and copies nothing: it walks
+            the immutable frame view the registry's writers republish under the
+            Aether lock, and asks each other frame through its cleanup-safe probes,
+            so a frame born, cleaned or detached meanwhile never makes it raise.
+            (cross_object_lock_gaps, 0.2.8231)
         """
         self.check_cleaned()
         # Pick frame
@@ -6254,14 +6270,21 @@ class Aether(Cleanable):
         # silently does not, and that difference is one pair of brackets.
         if not self._process_wide_unique_spell_ids:
             return None
-        if len(self._aetheric_frames) <= 1:
+        # The published frame view: one read, no copy of the registry per call. Frame birth
+        # (_ensure_frame_locked, _create_frame) and detach (_detach_cleaned_frame) write the registry
+        # under the Aether lock and the plane's FRAME_CREATE claim, neither of which a bind holds, so a
+        # live walk raised "dictionary changed size during iteration". A frame born after the view
+        # was read holds no spell yet; one being torn down holds nothing, so the cleanup-safe probes
+        # answer for it as empty (cross_object_lock_gaps, 0.2.8231).
+        frames = self._aetheric_frame_view
+        if len(frames) <= 1:
             return None
 
-        for other_name, other_frame in self._aetheric_frames.items():
+        for other_name, other_frame in frames:
             if other_name == aetheric_frame_name:
                 continue
-            if other_frame.has_spell(spell_id):
-                return other_frame.find_index_for_spell(spell_id)
+            if other_frame._has_spell_unless_cleaned(spell_id):
+                return other_frame._find_index_for_spell_unless_cleaned(spell_id)
 
         return None
 
@@ -6456,6 +6479,12 @@ class Aether(Cleanable):
         Returns:
             set[str]:
                 All cached spell version ids for the frame.
+        Threading:
+            The cross-frame sweep holds no Aether lock and copies nothing: it walks
+            the immutable frame view the registry's writers republish under the
+            Aether lock, and asks each other frame through its cleanup-safe probes,
+            so a frame born, cleaned or detached meanwhile never makes it raise.
+            (cross_object_lock_gaps, 0.2.8231)
         """
         self.check_cleaned()
         if aetheric_frame_name != "default":
@@ -6478,14 +6507,21 @@ class Aether(Cleanable):
         # and conjure enforce different rules and a collision slips between them.
         if not self._process_wide_unique_spell_ids:
             return spell_ids
-        if len(self._aetheric_frames) <= 1:
+        # The published frame view: one read, no copy of the registry per call. Frame birth
+        # (_ensure_frame_locked, _create_frame) and detach (_detach_cleaned_frame) write the registry
+        # under the Aether lock and the plane's FRAME_CREATE claim, neither of which a bind holds, so a
+        # live walk raised "dictionary changed size during iteration". A frame born after the view
+        # was read holds no spell yet; one being torn down holds nothing, so the cleanup-safe probes
+        # answer for it as empty (cross_object_lock_gaps, 0.2.8231).
+        frames = self._aetheric_frame_view
+        if len(frames) <= 1:
             return spell_ids
 
         combined = set(spell_ids)
-        for other_name, other_frame in self._aetheric_frames.items():
+        for other_name, other_frame in frames:
             if other_name == aetheric_frame_name:
                 continue
-            combined |= other_frame.spells_in_index()
+            combined |= other_frame._spells_in_index_unless_cleaned()
         return combined
 
     # endregion Spell Management
@@ -8381,7 +8417,7 @@ END FILE: src/melder/aether/aether_utility_system.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/aetheric_frame/aetheric_frame.py
-CONTENT SHA256: 17395c9e39bbd9112f3c6e531085dc4269d753e3cb0de288ec908db9d92bc4a2
+CONTENT SHA256: a2588db3424a1c5aa66ebf66bd1086e30a4fa7c073099f06cc7e525365f84464
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -8626,6 +8662,12 @@ class AethericFrame(Cleanable):
 
         Returns:
             None.
+
+        Lifecycle:
+            Deletes the frame's owned references but keeps `_lock` (and the
+            `_cleaned` flag), so a reader that holds the frame - Aether's cross-frame
+            sweep - can take the lock on a cleaned frame and read `_cleaned` under it.
+            (cross_object_lock_gaps, 0.2.8231)
         """
         if self._cleaned:
             return
@@ -8653,7 +8695,10 @@ class AethericFrame(Cleanable):
             del self.name
             del self._aether
             del self._crystallizer
-        del self._lock
+        # `_lock` is kept, a documented post-cleanup field: the cleanup-safe probes
+        # (`_has_spell_unless_cleaned` and kin) and the re-checks in has_spell and
+        # spells_in_index take it on a frame another thread may have cleaned, as Spell
+        # keeps its lock for `_spell_index_unless_cleaned` (cross_object_lock_gaps, 0.2.8231).
 
 
 
@@ -9248,12 +9293,19 @@ class AethericFrame(Cleanable):
             bool:
                 True when any conduit in this frame owns a `SpellIndex` whose
                 member-id set contains `spell_id`.
+
+        Raises:
+            RuntimeError: If the frame is cleaned, including by a cleanup that
+                races this call (checked again under the frame lock). (cross_object_lock_gaps, 0.2.8231)
         """
         self.check_cleaned()
         if not spell_id:
             return False
 
         with self._lock:
+            # Again under the lock cleanup() deletes the registries under: a racing cleanup raises the
+            # documented RuntimeError, never AttributeError (cross_object_lock_gaps, 0.2.8231).
+            self.check_cleaned()
             if self._selected_spell_registry is None:
                 return False
 
@@ -9273,16 +9325,30 @@ class AethericFrame(Cleanable):
         Returns:
             set[str]:
                 All cached version ids across every conduit in the frame.
+
+        Raises:
+            RuntimeError: If the frame is cleaned, including by a cleanup that
+                races this call (checked again under the frame lock). (cross_object_lock_gaps, 0.2.8231)
+
+        Threading:
+            Holds the frame lock for the read and takes each conjured Book's live
+            `_spell_ids` with one `set.update` call, so a bind into that Book on
+            another thread cannot tear the copy. (cross_object_lock_gaps, 0.2.8231)
         """
         self.check_cleaned()
         result: set[str] = set()
         with self._lock:
+            # Again under the lock cleanup() deletes the registries under: a racing cleanup raises the
+            # documented RuntimeError, never AttributeError (cross_object_lock_gaps, 0.2.8231).
+            self.check_cleaned()
             if self._selected_spell_registry is None:
                 return result
 
+            # One update call per conjured Book: each value is a LIVE reference to that Book's `_spell_ids`, which
+            # the Book writes under its own lock, not this one, so an element-by-element copy raised "Set changed
+            # size during iteration" while that Book bound (cross_object_lock_gaps, 0.2.8231).
             for spell_id_set in self._selected_spell_registry.values():
-                for spell_id in spell_id_set:
-                    result.add(spell_id)
+                result.update(spell_id_set)
         return result
 
     def find_index_for_spell(self, spell_id: str) -> SpellIndex | None:
@@ -9320,6 +9386,92 @@ class AethericFrame(Cleanable):
     # ------------------------------------------------------------------
     # Facade over the frame-owned LookupContainer, which carries its own
     # lock -- these never take the frame RLock.
+    def _has_spell_unless_cleaned(self, spell_id: str) -> bool:
+        """
+        Internal
+
+        `has_spell` for a caller that does not own this frame: False once the
+        frame is cleaned instead of raising.
+
+        Purpose:
+            Let Aether's cross-frame duplicate sweep ask a frame that another
+            thread may be tearing down; a frame being torn down holds nothing.
+
+        Returns:
+            bool: `has_spell(spell_id)` while the frame is live; False when cleaned.
+
+        Threading:
+            Takes the frame lock once - the lock cleanup() sets `_cleaned` and
+            deletes the registries under, and keeps - so the check and the read
+            cannot interleave with it. The membership test is `has_spell`'s: one
+            `in` per conjured Book's live `_spell_ids`, a single call that a
+            concurrent bind into that Book cannot tear. No re-entry, no second
+            check on the bind path, no other lock. (cross_object_lock_gaps, 0.2.8231)
+        """
+        if not spell_id:
+            return False
+        with self._lock:
+            if self._cleaned:
+                return False
+            for spell_id_set in self._selected_spell_registry.values():
+                if spell_id in spell_id_set:
+                    return True
+        return False
+
+    def _find_index_for_spell_unless_cleaned(self, spell_id: str) -> Optional[SpellIndex]:
+        """
+        Internal
+
+        `find_index_for_spell` for a caller that does not own this frame: None
+        once the frame is cleaned instead of raising.
+
+        Returns:
+            Optional[SpellIndex]: The index whose lineage holds `spell_id` while the
+                frame is live; None when none does or the frame is cleaned.
+
+        Threading:
+            Takes the frame lock once, as `_has_spell_unless_cleaned`, and asks each
+            index `SpellIndex._has_spell_unless_cleaned` under that index's lock (the
+            frame -> index order `find_index_for_spell` already takes): one O(1)
+            membership test per index, where `find_index_for_spell` copies every
+            index's member set, and an index cleaned meanwhile answers False
+            instead of raising. (cross_object_lock_gaps, 0.2.8231)
+        """
+        if not spell_id:
+            return None
+        with self._lock:
+            if self._cleaned:
+                return None
+            for spell_set in self._spell_registry.values():
+                for spell_index in spell_set:
+                    if spell_index._has_spell_unless_cleaned(spell_id):
+                        return spell_index
+        return None
+
+    def _spells_in_index_unless_cleaned(self) -> set[str]:
+        """
+        Internal
+
+        `spells_in_index` for a caller that does not own this frame: an empty
+        set once the frame is cleaned instead of raising.
+
+        Returns:
+            set[str]: The frame's cached version ids while it is live; empty when
+                cleaned.
+
+        Threading:
+            As `_has_spell_unless_cleaned`; each conjured Book's live `_spell_ids`
+            is taken with one `set.update` call, exact while that Book binds.
+            (cross_object_lock_gaps, 0.2.8231)
+        """
+        result: set[str] = set()
+        with self._lock:
+            if self._cleaned:
+                return result
+            for spell_id_set in self._selected_spell_registry.values():
+                result.update(spell_id_set)
+        return result
+
     def claim_lookup(self, key: Tuple[str, str], spell_id: str) -> None:
         """
         Claim a binding signature for `spell_id` frame-wide.
@@ -43110,7 +43262,7 @@ END FILE: src/melder/aether/aetheric_mediator/unwind_conflict_error.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/conduit/conduit.py
-CONTENT SHA256: dec298a29845af58ee37d40e2c423329a07ffc3438274df1487c7aedc00d2915
+CONTENT SHA256: 2c68726ce16976e5b0d86f1b36015016ba1b4fd66dca702e15fc9f83992a96ad
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -46321,10 +46473,23 @@ class Conduit(Cleanable):
               not an error.
 
         Threading:
-            Walks the contract maps under the conduit lock.
+            Lock-free, like the other Conduit lookups. A link or sever started by a
+            peer adds or removes that peer's id in the Book's `_contracted_spells`
+            under the Book lock, holding the peer's conduit lock, not this one, so
+            the peer ids are taken with one `list(...)` call - exact under
+            concurrent writers on 3.14t, where walking the live keys raised
+            "dictionary changed size during iteration" - and each peer is answered
+            by `Spellbook._find_contracted_spell_by_id`, lock-free and keyed first.
+            The copy is O(peers), the order of the walk itself. The Book lock is
+            not taken: conjure holds it while phase workers and hooks run, and a
+            hook calling this would deadlock. The conduit lock this used to take
+            excluded none of those writers and made the parked-copy branch take a
+            spell lock under it. A peer linked or severed during the call may be
+            missed or still answered. (lock_residuals, 0.2.8232)
 
         Lifecycle / Cleanup:
-            Guarded by `check_cleaned()`.
+            Guarded by `check_cleaned()`. A teardown of this conduit racing the
+            call is unsupported, as for every Conduit lookup.
 
         Raises:
             RuntimeError: If the conduit has been cleaned.
@@ -46333,15 +46498,15 @@ class Conduit(Cleanable):
             Optional[Spell]: The contracted spell instance, or None if not found.
         """
         self.check_cleaned()
-        with self._lock:
-            spellbook = self._spellbook
+        spellbook = self._spellbook
 
-            # Walk all peer conduit contract maps in this spellbook
-            for conduit_id in spellbook._contracted_spells.keys():
-                # Delegate per-conduit search to Spellbook's helper
-                spell = spellbook._find_contracted_spell_by_id(spell_id, conduit_id)
-                if spell is not None:
-                    return spell
+        # Walk all peer conduit contract maps in this spellbook. No lock is held: the peer ids are copied in one
+        # call, because a link or sever the peer starts writes them under the Book lock (lock_residuals, 0.2.8232).
+        for conduit_id in list(spellbook._contracted_spells):
+            # Delegate per-conduit search to Spellbook's helper
+            spell = spellbook._find_contracted_spell_by_id(spell_id, conduit_id)
+            if spell is not None:
+                return spell
 
         return None
 
@@ -46457,17 +46622,22 @@ class Conduit(Cleanable):
             aetheric_frame (str): The Aetheric Frame to search within. Defaults to "default".
 
         Contract:
-            - Delegates to the spellbook's frame-wide inspection while holding the
-              CONDUIT lock, so it inherits that method's three-stage search and its
-              habit of collapsing every failure into None.
+            - Delegates to the spellbook's frame-wide inspection, so it inherits
+              that method's three-stage search and its habit of collapsing every
+              failure into None.
             - A None result is therefore AMBIGUOUS between "not registered" and
               "lookup failed"; do not treat it as proof of absence.
 
         Threading:
-            Holds the conduit lock across the spellbook call.
+            Takes no lock of its own. Until 0.2.8232 it held the conduit lock across
+            the spellbook call, which reaches frame locks (`Aether._check_for_spell`),
+            while frame teardown takes the frame lock and then each conduit's lock
+            (`Conduit.permanent_cleanup`): the two could hang each other.
+            (lock_residuals, 0.2.8232)
 
         Lifecycle / Cleanup:
-            Guarded by `check_cleaned()`.
+            Guarded by `check_cleaned()`. A teardown of this conduit racing the
+            call is unsupported, as for every Conduit lookup.
 
         Raises:
             RuntimeError: If the conduit has been cleaned.
@@ -46476,8 +46646,7 @@ class Conduit(Cleanable):
             Optional[str]: The SHA256 unique ID of the spell if found, otherwise None.
         """
         self.check_cleaned()
-        with self._lock:
-            return self._spellbook.inspect_spell(spell, aetheric_frame)
+        return self._spellbook.inspect_spell(spell, aetheric_frame)
 
     def begin_transaction(
             self,
@@ -48669,14 +48838,37 @@ class Conduit(Cleanable):
 
         Conduit facade for fully disposing an owned spell. Delegates to the
         owning Spellbook, which removes the spell from every resolution surface,
-        drops its Creations, destroys its index if it was the sole member, and
-        tears the spell object down.
+        destroys its index if it was the sole member, and tears the spell object
+        down; when the index was destroyed, its index-link borrowers drop their
+        subscription to it.
+
+        Contract:
+            - The Spellbook decides, under its own lock, whether the disposal
+              destroys the spell's index, and reports the destroyed index's id;
+              the destroy is emitted to index-link borrowers exactly then, with
+              the disposed spell as the index's one member (an index is destroyed
+              only when the spell was its sole member). Nothing about the spell or
+              its index is read here before that decision.
+            - Not admitted through a transaction (no cleanup strategy exists).
 
         Args:
             spell: The owned spell to dispose.
 
         Raises:
             RuntimeError: If the Conduit is cleaned or has no owning Spellbook.
+            RuntimeError: If the spell has already been disposed, is being disposed
+                by another call, is not owned by the owning Spellbook, or is the
+                active member of a multi-member index (raised by
+                `Spellbook.cleanup_spell`).
+
+        Threading:
+            Takes no lock of its own. The Spellbook takes the Book lock and the
+            spell's own lock (never nested); the destroy emission walks the
+            ward's contracts under the ward lock, so a concurrent link or sever
+            of this conduit waits for it. (cross_object_lock_gaps, 0.2.8231)
+            Of two calls for one spell that overlap, the Spellbook lets the first
+            dispose it and refuses the second, so the destroy is emitted once.
+            (lock_residuals, 0.2.8232)
 
         Returns:
             None.
@@ -48684,19 +48876,15 @@ class Conduit(Cleanable):
         self.check_cleaned()
         if self._spellbook is None:
             raise RuntimeError("[CONDUIT] No owning Spellbook for cleanup_spell.")
-        # Capture the lineage id and whether disposal will destroy the index (the
-        # spell is the sole member) BEFORE the spell is torn down.
-        index = spell.spell_index
-        index_id = index.id
-        will_destroy = index.is_sole_member(spell.spell_id)
-        # Capture the members BEFORE teardown: cleanup_spell destroys the index when the
-        # spell is its sole member, so they cannot be read off the (cleaned) index after.
-        destroyed_member_ids = index.spells_in_index() if will_destroy else set()
-        self._spellbook.cleanup_spell(spell=spell)
+        spell_id = spell.spell_id
+        # The Spellbook's own locked decision says whether the index went with the spell; the old unlocked
+        # pre-read of spell.spell_index here raised AttributeError for a disposed spell and could disagree with
+        # what the Spellbook then did (cross_object_lock_gaps, 0.2.8231).
+        destroyed_index_id = self._spellbook._dispose_spell(spell)
         # A destroyed index-linked lineage must be dropped on its receivers so they
         # do not keep a subscription to a dead index.
-        if will_destroy:
-            self._conduit_ward._emit_index_destroy(index_id, destroyed_member_ids)
+        if destroyed_index_id is not None:
+            self._conduit_ward._emit_index_destroy(destroyed_index_id, (spell_id,))
 
     def _deactivate_borrowed_spell(self, spell_id: str) -> None:
         """
@@ -51883,7 +52071,7 @@ END FILE: src/melder/aether/conduit/conduit_state/conduit_state.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/conduit/conduit_ward/conduit_ward.py
-CONTENT SHA256: b816e400b7e2af0626407475ff7254cef3054c84cb80a2e4b09fc0b6f65d37a0
+CONTENT SHA256: 424f886ed9ad45e06be55a004e6b16163d8ee5061e02755d3b169b7ecb9fb798
 SOURCE ENCODING: utf-8
 ================================================================================
 import inspect
@@ -54225,31 +54413,44 @@ class ConduitWard(Cleanable):
             index: The notched lineage.
             old_spell_id: The outgoing active member id (parked on receivers).
             new_spell_id: The new active member id (activated on receivers).
+
+        Threading:
+            Walks this ward's contract registry under the ward lock, the lock link
+            (`_create_new_contract`) and sever (`_remove_contract`) write it under.
+            The caller runs this after its transaction has ended (notch, index moves,
+            bind_inactive) or with none (`Conduit.cleanup_spell`), so the mediator
+            does not order it against a link or sever; the ward lock does. Inside it
+            the walk takes peer Book and contract locks in the order sever already
+            takes (ward -> contract -> Book); contract records, when any, are
+            emitted after the lock is released. (cross_object_lock_gaps, 0.2.8231)
         """
         self.check_cleaned()
         index_id = index.id
         owner_conduit_id = self._conduit._id
         record_affected_contracts = []
-        for contract in self._contracts.values():
-            index_detail = (
-                contract._index_details_a.get(index_id)
-                or contract._index_details_b.get(index_id)
-            )
-            if index_detail is None:
-                continue
-            index_detail.update_selected(new_spell_id)
-            record_affected_contracts.append(contract)
-            peer = contract._get_peer(self)._conduit
-            if peer is None or peer._spellbook is None:
-                continue
-            receiver_book = peer._spellbook
-            if old_spell_id is not None:
-                receiver_book._inactivate_contract_spell(owner_conduit_id, old_spell_id)
-            # Eager follow: ensure the receiver holds the new active member, minting
-            # the contracted copy if it has never seen this version.
-            new_spell = self._conduit._spellbook.spells.get(index)
-            if new_spell is not None:
-                receiver_book._ensure_contracted_active(new_spell, owner_conduit_id)
+        # Under this ward's lock: link and sever write _contracts under it, and this emission runs outside any
+        # transaction window, so the mediator does not order it against them (cross_object_lock_gaps, 0.2.8231).
+        with self._lock:
+            for contract in self._contracts.values():
+                index_detail = (
+                    contract._index_details_a.get(index_id)
+                    or contract._index_details_b.get(index_id)
+                )
+                if index_detail is None:
+                    continue
+                index_detail.update_selected(new_spell_id)
+                record_affected_contracts.append(contract)
+                peer = contract._get_peer(self)._conduit
+                if peer is None or peer._spellbook is None:
+                    continue
+                receiver_book = peer._spellbook
+                if old_spell_id is not None:
+                    receiver_book._inactivate_contract_spell(owner_conduit_id, old_spell_id)
+                # Eager follow: ensure the receiver holds the new active member, minting
+                # the contracted copy if it has never seen this version.
+                new_spell = self._conduit._spellbook.spells.get(index)
+                if new_spell is not None:
+                    receiver_book._ensure_contracted_active(new_spell, owner_conduit_id)
         # Record: subscription heads moved on these contracts.
         for record_contract in record_affected_contracts:
             self._emit_contract_record(record_contract)
@@ -54268,26 +54469,39 @@ class ConduitWard(Cleanable):
             index_id: Stable id of the destroyed index.
             member_ids: The index's member version ids, captured by the caller BEFORE
                 teardown (the live index is already cleaned when this runs).
+
+        Threading:
+            Walks this ward's contract registry under the ward lock, the lock link
+            (`_create_new_contract`) and sever (`_remove_contract`) write it under.
+            The caller runs this after its transaction has ended (notch, index moves,
+            bind_inactive) or with none (`Conduit.cleanup_spell`), so the mediator
+            does not order it against a link or sever; the ward lock does. Inside it
+            the walk takes peer Book and contract locks in the order sever already
+            takes (ward -> contract -> Book); contract records, when any, are
+            emitted after the lock is released. (cross_object_lock_gaps, 0.2.8231)
         """
         self.check_cleaned()
         record_affected_contracts = []
-        for contract in self._contracts.values():
-            detail_map = contract._get_index_detail_map(self)
-            index_detail = detail_map.get(index_id)
-            if index_detail is None:
-                continue
-            record_affected_contracts.append(contract)
-            peer = contract._get_peer(self)._conduit
-            if peer is not None and peer._spellbook is not None:
-                peer._spellbook._remove_contracted_index(index_id)
-            with contract._lock:
-                contract._remove_index(self, index_id)
-            # Tear down the per-member spell Details for the destroyed index. The live
-            # index is already cleaned by this point (cleanup_spell destroyed it before
-            # emitting), so `member_ids` is captured by the caller before teardown.
-            for member_id in member_ids:
-                self._uncontract_member_spell(contract, self, member_id)
-            index_detail.cleanup()
+        # Under this ward's lock: link and sever write _contracts under it, and this emission runs outside any
+        # transaction window, so the mediator does not order it against them (cross_object_lock_gaps, 0.2.8231).
+        with self._lock:
+            for contract in self._contracts.values():
+                detail_map = contract._get_index_detail_map(self)
+                index_detail = detail_map.get(index_id)
+                if index_detail is None:
+                    continue
+                record_affected_contracts.append(contract)
+                peer = contract._get_peer(self)._conduit
+                if peer is not None and peer._spellbook is not None:
+                    peer._spellbook._remove_contracted_index(index_id)
+                with contract._lock:
+                    contract._remove_index(self, index_id)
+                # Tear down the per-member spell Details for the destroyed index. The live
+                # index is already cleaned by this point (cleanup_spell destroyed it before
+                # emitting), so `member_ids` is captured by the caller before teardown.
+                for member_id in member_ids:
+                    self._uncontract_member_spell(contract, self, member_id)
+                index_detail.cleanup()
         # Record: the destroyed lineage's subscriptions left these contracts.
         for record_contract in record_affected_contracts:
             self._emit_contract_record(record_contract)
@@ -54321,10 +54535,17 @@ class ConduitWard(Cleanable):
         Returns:
             None. Idempotent: `contract._add` merges when the member Detail already
             exists, so re-links and re-adds are safe.
+        Threading:
+            Writes the owner's Detail under the contract lock (the lock its readers
+            and `_uncontract_member_spell` hold) and calls the borrower's Book after
+            releasing it. (cross_object_lock_gaps, 0.2.8231)
         """
         self.check_cleaned()
         detail = self._create_detail(member_spell, permission, ContractTypes.received, reason=reason)
-        added = contract._add(owner_ward, detail)
+        # Under the contract lock, as _uncontract_member_spell removes under it: a borrower's contract
+        # inspection walks this detail map under that lock (cross_object_lock_gaps, 0.2.8231).
+        with contract._lock:
+            added = contract._add(owner_ward, detail)
         if not added:
             return
         borrower = contract._get_peer(owner_ward)._conduit
@@ -54375,19 +54596,32 @@ class ConduitWard(Cleanable):
         Args:
             index: The lineage that gained a member.
             member_id: Version id of the newly added member.
+
+        Threading:
+            Walks this ward's contract registry under the ward lock, the lock link
+            (`_create_new_contract`) and sever (`_remove_contract`) write it under.
+            The caller runs this after its transaction has ended (notch, index moves,
+            bind_inactive) or with none (`Conduit.cleanup_spell`), so the mediator
+            does not order it against a link or sever; the ward lock does. Inside it
+            the walk takes peer Book and contract locks in the order sever already
+            takes (ward -> contract -> Book); contract records, when any, are
+            emitted after the lock is released. (cross_object_lock_gaps, 0.2.8231)
         """
         self.check_cleaned()
         member_spell = self._conduit._spellbook._get_owned_spell(member_id)
         if member_spell is None:
             return
         index_id = index.id
-        for contract in self._contracts.values():
-            index_detail = contract._get_index_detail_map(self).get(index_id)
-            if index_detail is None:
-                continue
-            self._contract_member_spell(
-                contract, self, member_spell, index_detail.permissions, DetailReason.manual,
-            )
+        # Under this ward's lock: link and sever write _contracts under it, and this emission runs outside any
+        # transaction window, so the mediator does not order it against them (cross_object_lock_gaps, 0.2.8231).
+        with self._lock:
+            for contract in self._contracts.values():
+                index_detail = contract._get_index_detail_map(self).get(index_id)
+                if index_detail is None:
+                    continue
+                self._contract_member_spell(
+                    contract, self, member_spell, index_detail.permissions, DetailReason.manual,
+                )
 
     def _emit_index_member_removed(self, index_id: str, member_id: str) -> None:
         """
@@ -54400,15 +54634,28 @@ class ConduitWard(Cleanable):
         Args:
             index_id: Stable id of the lineage that lost a member.
             member_id: Version id of the removed member.
+
+        Threading:
+            Walks this ward's contract registry under the ward lock, the lock link
+            (`_create_new_contract`) and sever (`_remove_contract`) write it under.
+            The caller runs this after its transaction has ended (notch, index moves,
+            bind_inactive) or with none (`Conduit.cleanup_spell`), so the mediator
+            does not order it against a link or sever; the ward lock does. Inside it
+            the walk takes peer Book and contract locks in the order sever already
+            takes (ward -> contract -> Book); contract records, when any, are
+            emitted after the lock is released. (cross_object_lock_gaps, 0.2.8231)
         """
         self.check_cleaned()
-        for contract in self._contracts.values():
-            index_detail = contract._get_index_detail_map(self).get(index_id)
-            if index_detail is None:
-                continue
-            # The index dropped this member; eagerly remove its per-member contract
-            # (and the borrower's copy). Idempotent -- a no-op if it was never mapped.
-            self._uncontract_member_spell(contract, self, member_id)
+        # Under this ward's lock: link and sever write _contracts under it, and this emission runs outside any
+        # transaction window, so the mediator does not order it against them (cross_object_lock_gaps, 0.2.8231).
+        with self._lock:
+            for contract in self._contracts.values():
+                index_detail = contract._get_index_detail_map(self).get(index_id)
+                if index_detail is None:
+                    continue
+                # The index dropped this member; eagerly remove its per-member contract
+                # (and the borrower's copy). Idempotent -- a no-op if it was never mapped.
+                self._uncontract_member_spell(contract, self, member_id)
 
     def _find_governing_index_link(self, contract: Contract, spell_id: str) -> Optional[IndexDetail]:
         """
@@ -55412,39 +55659,55 @@ class ConduitWard(Cleanable):
             The returned spell object is the current head for the matched
             lineage, not necessarily the historical version string the caller
             searched with.
+        Threading:
+            Holds this ward's lock for the walk of its contracts and each contract's
+            lock for the walk of that contract's detail map (the lock its writers
+            hold); tries the detail keyed by the id (O(1)) before walking; resolves the
+            matched index through this conduit's Book after the contract lock is
+            released. (cross_object_lock_gaps, 0.2.8231)
         """
         with self._lock:
             for contract in self._contracts.values():
                 peer_ward = contract._get_peer(self)
-                detail_map = contract._get_detail_map(peer_ward)
-
-                if not detail_map:
+                # The peer writes this detail map under the contract lock (members gained or lost, contract
+                # grants), outside any lock this ward holds; walk it under the same lock so the walk never
+                # meets a resize or a Detail being torn down, and resolve after releasing it
+                # (cross_object_lock_gaps, 0.2.8231).
+                spell_index = None
+                with contract._lock:
+                    detail_map = contract._get_detail_map(peer_ward)
+                    # O(1) first: the detail contracted for exactly this version. The lineage walk runs
+                    # only when the id is another version of a contracted lineage; every detail whose index
+                    # holds the id shares that index, so both paths resolve the same head.
+                    detail = detail_map.get(spell_id)
+                    if detail is not None and detail.has_spell(spell_id):
+                        spell_index = detail.spell_index
+                    else:
+                        for detail in detail_map.values():
+                            if detail.has_spell(spell_id):
+                                spell_index = detail.spell_index
+                                break
+                if spell_index is None:
                     continue
+                try:
+                    spell = self._conduit._spellbook._find_contracted_spell(spell_index)
+                except Exception as e:
+                    self._logger.error(
+                        f"_get_spell_in_contracts: contracted spell lookup failed "
+                        f"for version={spell_id}, index={spell_index}: {e}",
+                        method_name="_get_spell_in_contracts",
+                        exc_info=True,
+                        owner_id=self._id,
+                        owner_display=self._display_name,
+                        mask=True,
+                        groups=self._log_groups,
+                        system_groups=self._log_sysgroups,
+                    )
+                    return None
 
-                for detail in detail_map.values():
-                    if not detail.has_spell(spell_id):
-                        continue
-
-                    spell_index = detail.spell_index
-                    try:
-                        spell = self._conduit._spellbook._find_contracted_spell(spell_index)
-                    except Exception as e:
-                        self._logger.error(
-                            f"_get_spell_in_contracts: contracted spell lookup failed "
-                            f"for version={spell_id}, index={spell_index}: {e}",
-                            method_name="_get_spell_in_contracts",
-                            exc_info=True,
-                            owner_id=self._id,
-                            owner_display=self._display_name,
-                            mask=True,
-                            groups=self._log_groups,
-                            system_groups=self._log_sysgroups,
-                        )
-                        return None
-
-                    if spell is None:
-                        return None
-                    return peer_ward._id, spell
+                if spell is None:
+                    return None
+                return peer_ward._id, spell
 
         return None
 
@@ -55470,6 +55733,12 @@ class ConduitWard(Cleanable):
 
         Raises:
             RuntimeError: If the Conduit is cleaned.
+        Threading:
+            Holds this ward's lock throughout and the contract's lock while it walks
+            the two detail maps; resolves each id by key through this conduit's Book,
+            taking no conduit lock (link and sever take the conduit lock before the
+            ward lock, and the Conduit lookups used here before deadlocked with
+            them). (cross_object_lock_gaps, 0.2.8231)
         """
         with self._lock:
             contract = self._find_contract_by_id(conduit_id)
@@ -55479,26 +55748,25 @@ class ConduitWard(Cleanable):
             spells_result: dict[str, list[tuple[str, Spell]]] = {"inbound": [], "outbound": []}
 
             peer_ward = contract._get_peer(self)
+            spellbook = self._conduit._spellbook
 
-            # Inbound: spells the peer has granted to us (live in peer's detail map).
-            received_map = contract._get_detail_map(peer_ward)
-            for sid, detail in received_map.items():
-                spell = self._conduit.find_contracted_spell(sid)
-                if spell:
-                    spells_result["inbound"].append((sid, spell))
+            # Walk both detail maps under the contract lock their writers hold and resolve each id by key
+            # through this conduit's Book. Never through the Conduit lookups: find_contracted_spell takes the
+            # conduit lock, which link and sever hold before the ward lock held here, and the two deadlocked
+            # (cross_object_lock_gaps, 0.2.8231).
+            with contract._lock:
+                # Inbound: spells the peer has granted to us (live in peer's detail map).
+                for sid in contract._get_detail_map(peer_ward):
+                    spell = spellbook._find_contracted_spell_by_id(sid, peer_ward._id)
+                    if spell:
+                        spells_result["inbound"].append((sid, spell))
 
-            # Outbound: spells we have granted to the peer (live in our detail map).
-            our_map = contract._get_detail_map(self)
-            for sid, detail in our_map.items():
-                owned_spell: Optional[Spell] = None
-                try:
-                    # This is a local spell we own; resolve via SpellIndex-aware get_spell_by_id.
-                    owned_spell = self._conduit.get_spell_by_id(sid)
-                except Exception:
-                    owned_spell = None
-
-                if owned_spell is not None:
-                    spells_result["outbound"].append((sid, owned_spell))
+                # Outbound: spells we have granted to the peer (live in our detail map), answered from this
+                # Book's own id maps in O(1).
+                for sid in contract._get_detail_map(self):
+                    owned_spell = spellbook.find_spell_by_id(sid)
+                    if owned_spell is not None:
+                        spells_result["outbound"].append((sid, owned_spell))
 
         return spells_result
 
@@ -73344,7 +73612,7 @@ END FILE: src/melder/aether/spellbook/resolution_style_matrix.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell.py
-CONTENT SHA256: 8c61c28cddcb9f602501a3f02833182f27be281f2b9a6c15eed60a820f1a6abe
+CONTENT SHA256: c86cdb5516d9a53c86753a8533ad27589f760ce01dc3d1cef78a2d2b7c1955e9
 SOURCE ENCODING: utf-8
 ================================================================================
 from collections.abc import Callable, Sequence
@@ -73646,6 +73914,7 @@ class Spell(Cleanable):
         "_creation_gate",
         "spellframe_kind",
         "implemented_protocols",
+        "_removal_lock",
     ]
     def __init__(
             self,
@@ -73732,7 +74001,8 @@ class Spell(Cleanable):
             Creates the reentrant `_lock` that guards later configuration and
             cleanup; construction itself is unsynchronized because the object
             is not yet reachable by other threads. `_door_epoch` starts at 0 and
-            its bump sites assume per-spell serialization.
+            its bump sites assume per-spell serialization. `_removal_lock` starts
+            as None; the first direct `cleanup()` creates it under `_lock`.
 
         Lifecycle / Cleanup:
             Born unowned and uncompiled. Ownership fields, the creation-context
@@ -73749,6 +74019,9 @@ class Spell(Cleanable):
         """
         super().__init__()
         self._lock = RLock()
+        # Serializes direct cleanup() removals of this spell, which run outside `_lock`; created by the first direct
+        # cleanup (`_direct_removal_route`) and taken by nothing else (direct_spell_cleanup_lock_order, 0.2.8233).
+        self._removal_lock: Optional[RLock] = None
         self._active = True  # active in its index; flipped by notch/disable
         self._resolvable: bool = resolvable
         self._id: str = new_ulid()  # Unique internal ID for tracking
@@ -73909,6 +74182,13 @@ class Spell(Cleanable):
             - Idempotent: repeated calls become no-ops after `_cleaned` flips.
             - Thread-safe: acquires `_lock`, re-checks `_cleaned`, and then
               performs teardown under the guarded section.
+            - A direct call on a live spell - one its Spellbook is not driving
+              (`_spellbook_cleanup` unset) - removes the spell through
+              `Spellbook.cleanup_and_remove_spell`, which takes it off every
+              registry and then calls back here for the local teardown. That
+              removal runs outside `_lock`, under this spell's `_removal_lock`
+              (created by the first direct call), so a second direct call waits
+              for it and then returns.
             - Best-effort child cleanup: owned child cleanup failures are
               swallowed so teardown still reaches the final cleared state.
             - Clears hooks, metadata, dependency/build artifacts, execution-plan
@@ -73917,8 +74197,25 @@ class Spell(Cleanable):
             - Sets `_cleaned` before the guarded section exits. `_lock` is kept,
               not deleted with the other fields, so a lock-guarded reader such as
               `_spell_index_unless_cleaned` can still take it on a cleaned spell.
+              `_removal_lock` is deleted with the other fields; a direct call
+              waiting on it holds its own reference.
             - Deletes the disposal-name reference without clearing its list;
               creation entries may still retain that established metadata.
+
+        Threading:
+            The Book removal takes the Spellbook lock, frame locks and the Nexus
+            record, while Book teardown (`Spellbook._cleanup_spells`, also
+            reached from root and frame teardown) and conjure's ownership
+            stamping (`define_conduit_into_spells`) take this spell's `_lock`
+            under the Spellbook lock. Holding `_lock` across the removal hung both
+            threads when they met (before 0.2.8233); now `_lock` covers only the
+            decision (`_direct_removal_route`) and the local teardown. Nothing
+            else in Melder takes `_removal_lock`, so it closes no lock-order
+            cycle; a caller holding this spell's lock (`with spell:`) or another
+            Melder lock around a direct call brings the old order back. A direct
+            call racing its Book's teardown returns when the teardown cleaned the
+            spell first, or raises the Book's cleaned RuntimeError; it does not
+            hang. (direct_spell_cleanup_lock_order, 0.2.8233)
 
         Runtime resolution and instance lifecycle remain owned by the Resolution
         / Meld layer, not by this class.
@@ -73926,14 +74223,28 @@ class Spell(Cleanable):
         Returns:
             None.
 
+        Raises:
+            RuntimeError: On a direct call, from
+                `Spellbook.cleanup_and_remove_spell`: the spell is not its Book's
+                current active version (a parked version, for one), or the Book
+                has been cleaned and did not clean this spell.
+
         """
         if self._cleaned:
             return
+        direct_removal = self._direct_removal_route()
+        if direct_removal is not None:
+            # A direct call on a live spell: the Book takes it off its registries and calls back here with
+            # `_spellbook_cleanup` set. Run that outside `_lock` - Book and frame teardown and conjure take `_lock`
+            # under the Book lock - and serialize it per spell on the removal lock
+            # (direct_spell_cleanup_lock_order, 0.2.8233).
+            spellbook, removal_lock = direct_removal
+            with removal_lock:
+                if not self._cleaned:
+                    spellbook.cleanup_and_remove_spell(self)
+            return
         with self._lock:
             if self._cleaned:
-                return
-            if not self._spellbook_cleanup:
-                self._spellbook.cleanup_and_remove_spell(self)
                 return
 
             if self.profile is not None and isinstance(self.profile, Cleanable):
@@ -73974,6 +74285,7 @@ class Spell(Cleanable):
             del self._owner_creations
             del self.user_created_object
             del self._spellbook_cleanup
+            del self._removal_lock
             del self._spell_system_states
             del self._spellbook
             del self._pre_hooks
@@ -73996,6 +74308,46 @@ class Spell(Cleanable):
             del self._caching_enabled
             del self._compiler_artifact
             del self.spell_index
+
+    def _direct_removal_route(self) -> Optional[tuple[Spellbook, RLock]]:
+        """
+        Internal
+
+        Decide under `_lock` whether `cleanup()` must remove this spell through
+        its Spellbook, and hand back what that removal runs with.
+
+        Purpose:
+            Let `cleanup()` take its decision under the spell lock and run the
+            Book removal after leaving it, so the spell lock is never held while
+            the Spellbook, frame and Nexus locks are taken
+            (direct_spell_cleanup_lock_order, 0.2.8233).
+
+        Contract:
+            - Returns None for a cleaned spell, and for a cleanup its Spellbook
+              drives (`_spellbook_cleanup` set: Book teardown,
+              `cleanup_and_remove_spell`, the parked disposal, Bind's retirement
+              of an unpublished spell); `cleanup()` then runs the local teardown.
+            - Otherwise returns the owning Spellbook and this spell's removal
+              lock, creating the lock into `_removal_lock` on first use, so every
+              direct cleanup of this spell meets the same lock.
+
+        Threading:
+            Reads and creates under `_lock` - the lock the teardown deletes the
+            fields under - and calls nothing while holding it. The returned lock
+            is taken by `cleanup()` alone, after this returns.
+
+        Returns:
+            Optional[tuple[Spellbook, RLock]]:
+                The Book and the removal lock for a direct cleanup, or None.
+        """
+        with self._lock:
+            if self._cleaned or self._spellbook_cleanup:
+                return None
+            removal_lock = self._removal_lock
+            if removal_lock is None:
+                removal_lock = RLock()
+                self._removal_lock = removal_lock
+            return self._spellbook, removal_lock
 
 
     #endregion Disposal
@@ -127216,7 +127568,7 @@ END FILE: src/melder/aether/spellbook/spellbinder.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spellbook.py
-CONTENT SHA256: 5ae3b3dd3f2a232a54ac41336c11d69df6e9b7fa8431fd95aac156f41c8e7c73
+CONTENT SHA256: cf06e4736acdb2288f69e0fe61add488d9161ee80971bb39d7fe3aa35aec4389
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -127556,6 +127908,9 @@ class Spellbook(Cleanable):
         # EXISTENCE — all owned ids (active ∪ inactive); KEPT on inactivate, dropped only on full unregister
         self._spell_ids: set[str] = set()                   # ALL owned ids (Nexus snapshot reads this; the frame will reference it)
         self._inactive_spells: dict[str, Spell] = {}  # INACTIVE owned: spell_id -> parked spell (off resolution; repopulates the 7 active maps on notch-back)
+        # DISPOSAL IN FLIGHT: ids `cleanup_spell` is disposing right now, read and written only under `_lock`, so a
+        # second disposal of the same spell refuses instead of repeating the first (lock_residuals, 0.2.8232).
+        self._disposing_spell_ids: set[str] = set()
 
         # Contracted (borrowed, keyed by peer conduit id) — same split
         self._contracted_spells: dict[str, dict[SpellIndex, Spell]] = {}        # ACTIVE: conduit -> {index -> active borrowed spell}
@@ -127627,7 +127982,7 @@ class Spellbook(Cleanable):
         Contract:
             - Cleans local spells and SpellIndex instances.
             - Clears and nulls owned and contracted registries, lookup maps,
-              version caches, and spell_id maps.
+              version caches, spell_id maps, and the in-flight disposal marks.
             - Cleans local rich configuration only when it is not the
               frame-owned shared configuration object.
             - Cleans validation subsystems.
@@ -127764,6 +128119,12 @@ class Spellbook(Cleanable):
             self._logger.error(f"Error cleaning _contracted_indexes: {e}", "_cleanup_components", exc_info=True)
         del self._contracted_indexes
 
+        try:
+            self._disposing_spell_ids.clear()
+        except Exception as e:
+            self._logger.error(f"Error cleaning _disposing_spell_ids: {e}", "_cleanup_components", exc_info=True)
+        del self._disposing_spell_ids
+
     def _cleanup_spells(self) -> None:
         """
         Internal
@@ -127844,11 +128205,39 @@ class Spellbook(Cleanable):
             RuntimeError:
                 If the spell is not found locally or is not owned by this
                 Spellbook.
+            RuntimeError:
+                If this Spellbook has been cleaned - including one torn down
+                while the call waited for its lock, unless that teardown cleaned
+                the Spell given (then the call returns).
+
+        Threading:
+            Resolves the spell, unregisters its index and drops it from `_spells`
+            and `_lookup_spells` under the Spellbook lock; releases the lock for
+            the risk-manager and Aether/frame calls; takes it again to drop the
+            id maps (the Nexus record is removed after); releases the frame
+            lookup; and cleans the spell and its index last, holding no Spellbook
+            or frame lock itself. A direct `Spell.cleanup()` reaches here outside
+            its spell lock (0.2.8233), so Book teardown and conjure's ownership
+            stamping, which take spell locks under the Spellbook lock, never wait
+            on a removal that waits on them. A call that passes `check_cleaned()`
+            and then waits for the lock while the Book is torn down re-checks
+            under it: teardown cleaned every active spell, so a Spell it cleaned
+            returns and anything else raises the cleaned-Book error. A teardown
+            that starts after the first locked section is not ordered against the
+            rest of the removal (callers quiesce removals before tearing a Book
+            down). (direct_spell_cleanup_lock_order, 0.2.8233)
         """
         self.check_cleaned()
         target_spell: Spell | None
         target_spell_id: str
         with self._lock:
+            if self._cleaned:
+                # Torn down while this call waited for the lock: the maps below are gone. Book teardown cleaned every
+                # active spell, so a Spell it cleaned has nothing left to remove; anything else gets the error a call
+                # made after the teardown gets (direct_spell_cleanup_lock_order, 0.2.8233).
+                if not isinstance(spell, str) and spell._cleaned:
+                    return
+                self.check_cleaned()
             if isinstance(spell, str):
                 target_spell_id = spell
                 target_spell = self._spells_by_id.get(target_spell_id)
@@ -129727,63 +130116,82 @@ class Spellbook(Cleanable):
                 the object is unbound.
 
         Threading:
-            Holds the Spellbook lock for the entire search, including the frame-wide walk
-            across other conduits' spellbooks.
+            Holds this Spellbook's lock only while stage 1 walks this Spellbook's own
+            spells, the lock bind and removal write them under. Stage 2, stage 3 and
+            every registry confirmation run with no lock held here: the Aether and
+            frame reads take frame locks, and frame teardown takes this Spellbook's
+            lock under its frame lock, so holding it through them could hang
+            against a racing frame teardown (until 0.2.8232 it was held for the
+            whole search). Stage 2 walks a one-call copy of the frame's conduit map,
+            which root registration and removal write under the frame lock, and a
+            one-call copy of each other Spellbook's spell map (0.2.8230); a conduit
+            or spell added or removed during the walk may be missed or still seen.
+            (lock_residuals, 0.2.8232)
         """
-        with self._lock:
-            try:
-                # The spell fingerprint composes bind-time facts (existence,
-                # disposal methods, binding name, spell name) that a bare
-                # class/function/instance cannot supply, so re-deriving the
-                # id from the object alone can never match a registered
-                # binding. Resolve by object identity against this
-                # Spellbook's registered spells first; fall back to the
-                # legacy default-fact fingerprint for foreign objects so
-                # cross-book inspection semantics stay unchanged.
+        try:
+            # The spell fingerprint composes bind-time facts (existence,
+            # disposal methods, binding name, spell name) that a bare
+            # class/function/instance cannot supply, so re-deriving the
+            # id from the object alone can never match a registered
+            # binding. Resolve by object identity against this
+            # Spellbook's registered spells first; fall back to the
+            # legacy default-fact fingerprint for foreign objects so
+            # cross-book inspection semantics stay unchanged.
+            # Only this walk holds this Spellbook's lock, the lock its writers hold: the confirmation and the stages
+            # below take frame locks, and frame teardown takes this lock under its frame lock
+            # (lock_residuals, 0.2.8232).
+            matched = False
+            candidate_spell_id: Optional[str] = None
+            with self._lock:
                 for candidate_spell in self._spells.values():
                     if (
                             candidate_spell.spell is spell
                             or candidate_spell.user_created_object is spell
                     ):
                         candidate_spell_id = candidate_spell.spell_index.selected_spell_id
+                        matched = True
+                        break
+            if matched:
+                found = Spellbook._aether._check_for_spell(
+                    candidate_spell_id,
+                    aetheric_frame,
+                )
+                return candidate_spell_id if found else None
+            # Frame-wide object inspection: walk the frame's registered
+            # conduits' spellbooks so foreign spells (cluster shares,
+            # dynamic-link providers) remain inspectable by object, which
+            # the legacy fingerprint path provided before bind-time facts
+            # joined the id composition.
+            if aetheric_frame != "default":
+                frame = Spellbook._aether._aetheric_frames[aetheric_frame]
+            else:
+                frame = Spellbook._aether._ensure_default_frame()
+            # Root registration and removal write the frame's conduit map under the frame lock, which is not held
+            # here: walk a one-call snapshot (lock_residuals, 0.2.8232).
+            for frame_conduit in list(frame._conduits.values()):
+                conduit_spellbook = frame_conduit._spellbook
+                if conduit_spellbook is None or conduit_spellbook is self:
+                    continue
+                # Another Book's map, read without that Book's lock: walk a one-call snapshot.
+                for candidate_spell in list(conduit_spellbook._spells.values()):
+                    if (
+                            candidate_spell.spell is spell
+                            or candidate_spell.user_created_object is spell
+                    ):
+                        candidate_spell_id = (
+                            candidate_spell.spell_index.selected_spell_id
+                        )
                         found = Spellbook._aether._check_for_spell(
                             candidate_spell_id,
                             aetheric_frame,
                         )
                         return candidate_spell_id if found else None
-                # Frame-wide object inspection: walk the frame's registered
-                # conduits' spellbooks so foreign spells (cluster shares,
-                # dynamic-link providers) remain inspectable by object, which
-                # the legacy fingerprint path provided before bind-time facts
-                # joined the id composition.
-                if aetheric_frame != "default":
-                    frame = Spellbook._aether._aetheric_frames[aetheric_frame]
-                else:
-                    frame = Spellbook._aether._ensure_default_frame()
-                for frame_conduit in frame._conduits.values():
-                    conduit_spellbook = frame_conduit._spellbook
-                    if conduit_spellbook is None or conduit_spellbook is self:
-                        continue
-                    # Another Book's map, read without that Book's lock: walk a one-call snapshot.
-                    for candidate_spell in list(conduit_spellbook._spells.values()):
-                        if (
-                                candidate_spell.spell is spell
-                                or candidate_spell.user_created_object is spell
-                        ):
-                            candidate_spell_id = (
-                                candidate_spell.spell_index.selected_spell_id
-                            )
-                            found = Spellbook._aether._check_for_spell(
-                                candidate_spell_id,
-                                aetheric_frame,
-                            )
-                            return candidate_spell_id if found else None
-                spell_id = self._bind.spell_id_inspector(spell)
-                found = Spellbook._aether._check_for_spell(spell_id, aetheric_frame)
-                return spell_id if found else None
-            except Exception as e:
-                self._logger.error(f"Failed to inspect spell: {e}", "inspect_spell", exc_info=True)
-                return None
+            spell_id = self._bind.spell_id_inspector(spell)
+            found = Spellbook._aether._check_for_spell(spell_id, aetheric_frame)
+            return spell_id if found else None
+        except Exception as e:
+            self._logger.error(f"Failed to inspect spell: {e}", "inspect_spell", exc_info=True)
+            return None
 
     def _register_conduit_spells_in_aether(self, conduit_id: str) -> None:
         """
@@ -130189,15 +130597,36 @@ class Spellbook(Cleanable):
             Optional[Spell]: The resolved spell, or None if not found.
 
         Threading:
-            Lock-free. Walks a one-call snapshot of the contracted map, which grants and revocations change
-            while no lock is held here, and probes each index with `SpellIndex._has_spell_unless_cleaned`:
-            the lender can clean an index this map still holds, and a cleaned index owns nothing (0.2.8230).
+            Lock-free. Answers by key first (cross_object_lock_gaps, 0.2.8231): the active borrowed copy is held in
+            `_contracted_spells_by_id` under its own version id, and a parked one in
+            `_inactive_contracted_spells`, whose index (read under the parked spell's own lock) keys the
+            lineage's active copy in `_contracted_spells` - single-key reads, no copy. Only a version this
+            Book holds no copy of falls back to the walk: a one-call snapshot of the contracted map, which
+            grants and revocations change while no lock is held here, probing each index with
+            `SpellIndex._has_spell_unless_cleaned` (the lender can clean an index this map still holds, and
+            a cleaned index owns nothing; 0.2.8230).
         """
 
+        # O(1) first: the active borrowed copy under its own version id.
+        active_by_id = self._contracted_spells_by_id.get(conduit_id)
+        if active_by_id is not None:
+            active = active_by_id.get(spell_id)
+            if active is not None:
+                return active
         # Pull the map of SpellIndex? Spell for this conduit
         spell_map = self._contracted_spells.get(conduit_id)
         if spell_map is None:
             return None
+        # Still O(1): a parked borrowed copy's index keys its lineage's active copy.
+        parked = self._inactive_contracted_spells.get(conduit_id)
+        if parked is not None:
+            parked_spell = parked.get(spell_id)
+            if parked_spell is not None:
+                parked_index = parked_spell._spell_index_unless_cleaned()
+                if parked_index is not None:
+                    head = spell_map.get(parked_index)
+                    if head is not None:
+                        return head
 
         # Search for a SpellIndex whose version list contains this SHA
         for spell_index, spell in list(spell_map.items()):
@@ -131437,15 +131866,102 @@ class Spellbook(Cleanable):
             spell: The owned spell to dispose.
 
         Raises:
-            RuntimeError: If the spell is not owned here, or it is the active
+            RuntimeError: If the spell has already been disposed ("cleanup_spell:
+                spell <id> has already been disposed."; before 0.2.8231 a second
+                call raised AttributeError), is not owned here, or is the active
                 member of a multi-member index.
+            RuntimeError: If another cleanup_spell of the same spell is still
+                running ("cleanup_spell: spell <id> is already being disposed by
+                another call."; before 0.2.8232 both calls ran the disposal).
+
+        Threading:
+            Ownership, activity and sole membership are read under the Book lock
+            from the Book's own maps; a spell no longer in them is classified
+            through the spell's own lock (`Spell._spell_index_unless_cleaned`),
+            outside the Book lock, so the two locks are never nested here: Book
+            cleanup and conjure's ownership stamping take them Book -> spell, and
+            a direct `Spell.cleanup` no longer holds its spell lock when it
+            reaches the Book (direct_spell_cleanup_lock_order, 0.2.8233).
+            (cross_object_lock_gaps, 0.2.8231)
+            The same locked section marks the spell id as being disposed and the
+            disposal clears the mark when it ends, so of two calls for one spell
+            that overlap, the second refuses before touching anything. The spell
+            lock is not held across the disposal: that would take the Book and
+            frame locks under it, against Book and frame teardown, which take the
+            spell lock under theirs. (lock_residuals, 0.2.8232)
 
         Returns:
             None.
         """
+        self._dispose_spell(spell)
+
+    def _dispose_spell(self, spell: Spell) -> Optional[str]:
+        """
+        Internal
+
+        The body of `cleanup_spell`, returning what the owning Conduit needs to
+        tell index-link borrowers: the id of the index the disposal destroyed, or
+        None when the index survived.
+
+        Contract:
+            - Same checks, order and disposal as `cleanup_spell`.
+            - Returns the destroyed index's id when the spell was the sole member
+              of its index (an active sole member, or the last inactive member);
+              None when other members keep the index alive.
+            - Marks the spell id in `_disposing_spell_ids` in the decision's own
+              Book-locked section, and clears it under the Book lock when the
+              disposal ends (finished or failed), so a second call for the same
+              spell that starts meanwhile refuses before it touches anything.
+
+        Args:
+            spell: The owned spell to dispose.
+
+        Returns:
+            Optional[str]: The destroyed index's id, or None.
+
+        Raises:
+            RuntimeError: As `cleanup_spell`.
+
+        Threading:
+            As `cleanup_spell`. (cross_object_lock_gaps, 0.2.8231; the in-flight
+            mark, lock_residuals, 0.2.8232)
+        """
         self.check_cleaned()
         spell_id = spell.spell_id
-        if spell._spellbook is not self:
+        owned = False
+        is_active = False
+        is_sole = False
+        already_disposing = False
+        with self._lock:
+            # A disposal of this spell already in flight: refuse before reading or touching anything
+            # (lock_residuals, 0.2.8232).
+            already_disposing = spell_id in self._disposing_spell_ids
+            if not already_disposing:
+                is_active = self._spells_by_id.get(spell_id) is spell
+                owned = is_active or self._inactive_spells.get(spell_id) is spell
+                if owned:
+                    # Still in this Book's maps, so no cleanup has popped it, and Spell.cleanup deletes the spell's
+                    # fields only after that pop (under this lock): its index is live here. Index moves repoint it
+                    # under this lock too.
+                    index = spell.spell_index
+                    index_id = index.id
+                    is_sole = index.is_sole_member(spell_id)
+                    if is_sole or not is_active:
+                        # This call disposes it: mark it in the decision's own locked section, so a second call
+                        # that starts before this one ends refuses instead of repeating the disposal; cleared in the
+                        # finally below (lock_residuals, 0.2.8232).
+                        self._disposing_spell_ids.add(spell_id)
+        if already_disposing:
+            raise RuntimeError(
+                f"cleanup_spell: spell {spell_id} is already being disposed by another call."
+            )
+        if not owned:
+            # Classified outside the Book lock, so the two locks are never nested here: Book cleanup and conjure's
+            # ownership stamping take the spell lock under this Book's lock (cross_object_lock_gaps, 0.2.8231;
+            # corrected lock_residuals, 0.2.8232), and a direct Spell.cleanup no longer takes this Book's lock under
+            # the spell lock (direct_spell_cleanup_lock_order, 0.2.8233).
+            if spell._spell_index_unless_cleaned() is None:
+                raise RuntimeError(f"cleanup_spell: spell {spell_id} has already been disposed.")
             self._logger.error(
                 f"cleanup_spell: spell {spell_id} is not owned by this spellbook.",
                 "cleanup_spell",
@@ -131454,10 +131970,7 @@ class Spellbook(Cleanable):
             raise RuntimeError(
                 f"cleanup_spell: spell {spell_id} is not owned by this spellbook."
             )
-        index = spell.spell_index
         with self._lock:
-            is_active = spell_id in self._spells_by_id
-            is_sole = index.is_sole_member(spell_id)
             if is_active and not is_sole:
                 self._logger.error(
                     f"cleanup_spell: spell {spell_id} is the active member of a multi-member index.",
@@ -131468,53 +131981,62 @@ class Spellbook(Cleanable):
                     f"cleanup_spell: spell {spell_id} is the active member of a multi-member "
                     f"index; notch away from it before disposing it."
                 )
-        # CLEAN UP. Only an ACTIVE spell is invalidated first: flag it + its lineage
-        # dirty (clear the creation context, force a next-meld rebuild) while the index
-        # and dependency edges still exist, so dependents can be rechecked before
-        # teardown. An INACTIVE member is off the resolution surface -- nothing resolves
-        # through it and dependents run through the active member -- so it is dropped
-        # without invalidation (invalidating a parked spell is pointless, and pre-notch
-        # it is not even valid).
-        if is_active:
-            # Authoritative disposal: unregisters the index (its compute_impact_closure
-            # fans the dependent closure), removes every id/lookup map, and cleans the
-            # spell and the index. Self-guards re-entry via _spellbook_cleanup.
-            spell.invalidate_spell(change_reason=SpellStateChangeReason.cleaned_up_spell)
-            self.cleanup_and_remove_spell(spell)
-        else:
-            # Inactive member: drop just this member; the shared index and its other
-            # members survive unless this empties it.
-            binding_key = spell._key
-            owner_conduit_id = spell._owner_conduit_id
+        # Reached only when this call marked the spell above: nothing between the mark and here can raise.
+        try:
+            # CLEAN UP. Only an ACTIVE spell is invalidated first: flag it + its lineage
+            # dirty (clear the creation context, force a next-meld rebuild) while the index
+            # and dependency edges still exist, so dependents can be rechecked before
+            # teardown. An INACTIVE member is off the resolution surface -- nothing resolves
+            # through it and dependents run through the active member -- so it is dropped
+            # without invalidation (invalidating a parked spell is pointless, and pre-notch
+            # it is not even valid).
+            if is_active:
+                # Authoritative disposal: unregisters the index (its compute_impact_closure
+                # fans the dependent closure), removes every id/lookup map, and cleans the
+                # spell and the index. Self-guards re-entry via _spellbook_cleanup.
+                spell.invalidate_spell(change_reason=SpellStateChangeReason.cleaned_up_spell)
+                self.cleanup_and_remove_spell(spell)
+                return index_id
+            else:
+                # Inactive member: drop just this member; the shared index and its other
+                # members survive unless this empties it.
+                binding_key = spell._key
+                owner_conduit_id = spell._owner_conduit_id
+                with self._lock:
+                    self._inactive_spells.pop(spell_id, None)
+                    self._spell_ids.discard(spell_id)
+                    # True removal (parked lane): custody leaves the record
+                    # entirely so restore never rebuilds a shed spell.
+                    if self._crystallizer.activated:
+                        self._crystallizer.emit_spell_removed(
+                            spell_id, frame_name=self._aetheric_frame_name
+                        )
+                    index.remove_member(spell_id)
+                    index_emptied = index.is_empty()
+                if index_emptied:
+                    self._destroy_spell_index(
+                        index,
+                        binding_key=binding_key,
+                        owner_conduit_id=owner_conduit_id,
+                    )
+                elif self._crystallizer.activated:
+                    # The shared index survived minus one member: re-emit its
+                    # membership snapshot.
+                    self._crystallizer.emit(
+                        self._crystallizer.create_spell_index_crystal(
+                            index, self._id
+                        )
+                    )
+                # Local teardown only (already off the maps); set the guard so
+                # Spell.cleanup() does not re-enter cleanup_and_remove_spell.
+                spell._spellbook_cleanup = True
+                spell.cleanup()
+                return index_id if index_emptied else None
+        finally:
+            # The disposal is over, finished or failed: a later call for this spell decides afresh
+            # (lock_residuals, 0.2.8232).
             with self._lock:
-                self._inactive_spells.pop(spell_id, None)
-                self._spell_ids.discard(spell_id)
-                # True removal (parked lane): custody leaves the record
-                # entirely so restore never rebuilds a shed spell.
-                if self._crystallizer.activated:
-                    self._crystallizer.emit_spell_removed(
-                        spell_id, frame_name=self._aetheric_frame_name
-                    )
-                index.remove_member(spell_id)
-                index_emptied = index.is_empty()
-            if index_emptied:
-                self._destroy_spell_index(
-                    index,
-                    binding_key=binding_key,
-                    owner_conduit_id=owner_conduit_id,
-                )
-            elif self._crystallizer.activated:
-                # The shared index survived minus one member: re-emit its
-                # membership snapshot.
-                self._crystallizer.emit(
-                    self._crystallizer.create_spell_index_crystal(
-                        index, self._id
-                    )
-                )
-            # Local teardown only (already off the maps); set the guard so
-            # Spell.cleanup() does not re-enter cleanup_and_remove_spell.
-            spell._spellbook_cleanup = True
-            spell.cleanup()
+                self._disposing_spell_ids.discard(spell_id)
 
     def begin_transaction(
             self,

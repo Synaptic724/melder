@@ -180,6 +180,8 @@ Message alert rules
 | speed_tests_nonblocking | review | handoff | claude | melder_1 | none | Owner: git add -A (speed-tests.yml is new), commit and push; on a dev-to-preprod PR confirm merge-ready goes green without the Speed checks; accept or redirect. | The three speed tests start on every dev-to-preprod PR from speed-tests.yml and never block merge-ready or the RC qualification. | Workflow suite passes here (491), assets and llm_support current, and the owner accepts or redirects. | tickets/tasks/2026-10-06_make_speed_tests_nonblocking_task.md | 2026-10-06T11:29:00Z | REQUIRED |
 | spell_lookup_race | review | handoff | claude | melder_1 | none | Owner: git add -A (two new test files, the archived patch folder, r6/ evidence), commit and push; accept or redirect. | find_spell_by_id answers from the Book's id maps (0.2.8229); regression tests lock the lineage contract, the no-walk rule and the parked-disposal window. | The owner accepts or redirects; Windows tiers and hosted CI are the owner's. | tickets/tasks/2026-10-10_investigate_spell_lookup_by_id_race_task.md | 2026-10-11T08:49:47Z | REQUIRED |
 | spell_map_followups | review | handoff | claude | melder_1 | none | Owner: git add -A (three new test files, the archived patch folder, followups evidence), commit and push; accept or redirect. | Spell-map walks no longer race binds or index cleanup, and the Conduit spell lookups document their ValueError (0.2.8230). | The owner accepts or redirects; Windows tiers and hosted CI are the owner's. | tickets/tasks/2026-10-11_close_remaining_spell_map_races_task.md | 2026-10-11T15:56:27Z | REQUIRED |
+| cross_object_lock_gaps | review | handoff | claude | melder_1 | none | Owner: git add -A (three new test files, the archived patch folder, the cross_object_lock_gaps evidence folder), commit and push; accept or redirect. | Index-link notifications, contract reads and bind's cross-frame sweep hold under concurrent link/sever, member moves and frame birth/teardown; the listing deadlock is gone (0.2.8231). | The owner accepts or redirects; Windows tiers and hosted CI are the owner's. | tickets/tasks/2026-10-11_prove_and_fix_cross_object_lock_gaps_task.md | 2026-10-11T19:02:58Z | REQUIRED |
+| lock_residuals_and_admission | review | handoff | claude | melder_1 | none | Owner: git add -A (two new test files, two archived patch folders, the lock_residuals evidence folder), commit and push; accept or redirect. | find_contracted_spell and inspect_spell hold up under concurrent links and root registration, overlapping cleanup_spell refuses (0.2.8232), and a direct Spell.cleanup() no longer hangs against Book teardown or conjure (0.2.8233). | The owner accepts or redirects; Windows tiers and hosted CI are the owner's. | tickets/tasks/2026-10-11_close_lock_residuals_and_evaluate_mediator_admission_task.md | 2026-10-11T22:03:34Z | REQUIRED |
 <!-- END USER-DEFINED: active_items -->
 
 ## Recently Closed Anchors
@@ -238,6 +240,10 @@ Message alert rules
 - spell_lookup_race: SWITCH_TRIGGER is the owner's acceptance of the 0.2.8229 landing, or an owner redirect.
   RESUME_HIERARCHY: tickets/tasks/2026-10-10_investigate_spell_lookup_by_id_race_task.md.
 - spell_map_followups: SWITCH_TRIGGER is the owner's acceptance of the 0.2.8230 landing, or an owner redirect. RESUME_HIERARCHY: tickets/tasks/2026-10-11_close_remaining_spell_map_races_task.md.
+- cross_object_lock_gaps: SWITCH_TRIGGER is the owner's acceptance of the 0.2.8231 landing, or an owner redirect.
+  RESUME_HIERARCHY: tickets/tasks/2026-10-11_prove_and_fix_cross_object_lock_gaps_task.md.
+- lock_residuals_and_admission: SWITCH_TRIGGER is the owner's acceptance of the 0.2.8232 and 0.2.8233 landings, or an owner redirect.
+  RESUME_HIERARCHY: tickets/tasks/2026-10-11_close_lock_residuals_and_evaluate_mediator_admission_task.md.
 ### Notch notice (fable_1, 2026-10-04)
 - fable_1 landed 0.2.8224 (ambiguous providers reported through Phase 4) and, before it, 0.2.8222 (annotation
   matching by kind; caching_system.py generation 20 `annotation_kind_matching`).
@@ -260,6 +266,14 @@ Message alert rules
 - melder_1 landed 0.2.8230 (bind publishes the spell maps under the Book lock; unlocked spell-map walks take
   snapshots; SpellIndex.has_spell and the contract details survive a racing cleanup; the Conduit spell lookups
   document their ValueError). Notch above it if you land after.
+- melder_1 landed 0.2.8231 (index-link notifications walk the ward's contracts under the ward lock; contract reads
+  under the contract lock and the listing deadlock removed; cleanup_spell emits what the Book's disposal reports;
+  bind's cross-frame sweep reads a published frame view). Notch above it if you land after.
+- melder_1 landed 0.2.8232 (find_contracted_spell and inspect_spell walk one-call copies and hold no Book or conduit lock
+  while asking the frames; an overlapping cleanup_spell of one spell refuses). Notch above it if you land after.
+- melder_1 landed 0.2.8233 (a direct Spell.cleanup() removes the spell outside the spell lock, under a per-spell removal
+  lock, so it no longer hangs against Book teardown or conjure; cleanup_and_remove_spell re-checks a torn-down Book).
+  Notch above it if you land after.
 ### Device VM git hazard (melder_2, 2026-09-26)
 - The connected folder refuses deletes, so any git command that refreshes the index from the device VM
   (plain `git status`, `git diff`) can leave an empty .git/index.lock that blocks the owner's commits.

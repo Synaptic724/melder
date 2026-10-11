@@ -3206,10 +3206,23 @@ class Conduit(Cleanable):
               not an error.
 
         Threading:
-            Walks the contract maps under the conduit lock.
+            Lock-free, like the other Conduit lookups. A link or sever started by a
+            peer adds or removes that peer's id in the Book's `_contracted_spells`
+            under the Book lock, holding the peer's conduit lock, not this one, so
+            the peer ids are taken with one `list(...)` call - exact under
+            concurrent writers on 3.14t, where walking the live keys raised
+            "dictionary changed size during iteration" - and each peer is answered
+            by `Spellbook._find_contracted_spell_by_id`, lock-free and keyed first.
+            The copy is O(peers), the order of the walk itself. The Book lock is
+            not taken: conjure holds it while phase workers and hooks run, and a
+            hook calling this would deadlock. The conduit lock this used to take
+            excluded none of those writers and made the parked-copy branch take a
+            spell lock under it. A peer linked or severed during the call may be
+            missed or still answered. (lock_residuals, 0.2.8232)
 
         Lifecycle / Cleanup:
-            Guarded by `check_cleaned()`.
+            Guarded by `check_cleaned()`. A teardown of this conduit racing the
+            call is unsupported, as for every Conduit lookup.
 
         Raises:
             RuntimeError: If the conduit has been cleaned.
@@ -3218,15 +3231,15 @@ class Conduit(Cleanable):
             Optional[Spell]: The contracted spell instance, or None if not found.
         """
         self.check_cleaned()
-        with self._lock:
-            spellbook = self._spellbook
+        spellbook = self._spellbook
 
-            # Walk all peer conduit contract maps in this spellbook
-            for conduit_id in spellbook._contracted_spells.keys():
-                # Delegate per-conduit search to Spellbook's helper
-                spell = spellbook._find_contracted_spell_by_id(spell_id, conduit_id)
-                if spell is not None:
-                    return spell
+        # Walk all peer conduit contract maps in this spellbook. No lock is held: the peer ids are copied in one
+        # call, because a link or sever the peer starts writes them under the Book lock (lock_residuals, 0.2.8232).
+        for conduit_id in list(spellbook._contracted_spells):
+            # Delegate per-conduit search to Spellbook's helper
+            spell = spellbook._find_contracted_spell_by_id(spell_id, conduit_id)
+            if spell is not None:
+                return spell
 
         return None
 
@@ -3342,17 +3355,22 @@ class Conduit(Cleanable):
             aetheric_frame (str): The Aetheric Frame to search within. Defaults to "default".
 
         Contract:
-            - Delegates to the spellbook's frame-wide inspection while holding the
-              CONDUIT lock, so it inherits that method's three-stage search and its
-              habit of collapsing every failure into None.
+            - Delegates to the spellbook's frame-wide inspection, so it inherits
+              that method's three-stage search and its habit of collapsing every
+              failure into None.
             - A None result is therefore AMBIGUOUS between "not registered" and
               "lookup failed"; do not treat it as proof of absence.
 
         Threading:
-            Holds the conduit lock across the spellbook call.
+            Takes no lock of its own. Until 0.2.8232 it held the conduit lock across
+            the spellbook call, which reaches frame locks (`Aether._check_for_spell`),
+            while frame teardown takes the frame lock and then each conduit's lock
+            (`Conduit.permanent_cleanup`): the two could hang each other.
+            (lock_residuals, 0.2.8232)
 
         Lifecycle / Cleanup:
-            Guarded by `check_cleaned()`.
+            Guarded by `check_cleaned()`. A teardown of this conduit racing the
+            call is unsupported, as for every Conduit lookup.
 
         Raises:
             RuntimeError: If the conduit has been cleaned.
@@ -3361,8 +3379,7 @@ class Conduit(Cleanable):
             Optional[str]: The SHA256 unique ID of the spell if found, otherwise None.
         """
         self.check_cleaned()
-        with self._lock:
-            return self._spellbook.inspect_spell(spell, aetheric_frame)
+        return self._spellbook.inspect_spell(spell, aetheric_frame)
 
     def begin_transaction(
             self,
@@ -5554,14 +5571,37 @@ class Conduit(Cleanable):
 
         Conduit facade for fully disposing an owned spell. Delegates to the
         owning Spellbook, which removes the spell from every resolution surface,
-        drops its Creations, destroys its index if it was the sole member, and
-        tears the spell object down.
+        destroys its index if it was the sole member, and tears the spell object
+        down; when the index was destroyed, its index-link borrowers drop their
+        subscription to it.
+
+        Contract:
+            - The Spellbook decides, under its own lock, whether the disposal
+              destroys the spell's index, and reports the destroyed index's id;
+              the destroy is emitted to index-link borrowers exactly then, with
+              the disposed spell as the index's one member (an index is destroyed
+              only when the spell was its sole member). Nothing about the spell or
+              its index is read here before that decision.
+            - Not admitted through a transaction (no cleanup strategy exists).
 
         Args:
             spell: The owned spell to dispose.
 
         Raises:
             RuntimeError: If the Conduit is cleaned or has no owning Spellbook.
+            RuntimeError: If the spell has already been disposed, is being disposed
+                by another call, is not owned by the owning Spellbook, or is the
+                active member of a multi-member index (raised by
+                `Spellbook.cleanup_spell`).
+
+        Threading:
+            Takes no lock of its own. The Spellbook takes the Book lock and the
+            spell's own lock (never nested); the destroy emission walks the
+            ward's contracts under the ward lock, so a concurrent link or sever
+            of this conduit waits for it. (cross_object_lock_gaps, 0.2.8231)
+            Of two calls for one spell that overlap, the Spellbook lets the first
+            dispose it and refuses the second, so the destroy is emitted once.
+            (lock_residuals, 0.2.8232)
 
         Returns:
             None.
@@ -5569,19 +5609,15 @@ class Conduit(Cleanable):
         self.check_cleaned()
         if self._spellbook is None:
             raise RuntimeError("[CONDUIT] No owning Spellbook for cleanup_spell.")
-        # Capture the lineage id and whether disposal will destroy the index (the
-        # spell is the sole member) BEFORE the spell is torn down.
-        index = spell.spell_index
-        index_id = index.id
-        will_destroy = index.is_sole_member(spell.spell_id)
-        # Capture the members BEFORE teardown: cleanup_spell destroys the index when the
-        # spell is its sole member, so they cannot be read off the (cleaned) index after.
-        destroyed_member_ids = index.spells_in_index() if will_destroy else set()
-        self._spellbook.cleanup_spell(spell=spell)
+        spell_id = spell.spell_id
+        # The Spellbook's own locked decision says whether the index went with the spell; the old unlocked
+        # pre-read of spell.spell_index here raised AttributeError for a disposed spell and could disagree with
+        # what the Spellbook then did (cross_object_lock_gaps, 0.2.8231).
+        destroyed_index_id = self._spellbook._dispose_spell(spell)
         # A destroyed index-linked lineage must be dropped on its receivers so they
         # do not keep a subscription to a dead index.
-        if will_destroy:
-            self._conduit_ward._emit_index_destroy(index_id, destroyed_member_ids)
+        if destroyed_index_id is not None:
+            self._conduit_ward._emit_index_destroy(destroyed_index_id, (spell_id,))
 
     def _deactivate_borrowed_spell(self, spell_id: str) -> None:
         """

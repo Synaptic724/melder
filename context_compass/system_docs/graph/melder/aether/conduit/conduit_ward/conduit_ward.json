@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/conduit_ward/conduit_ward.py",
- "source_sha256": "7282a938ec3345fd7c2e294b6c65327267feb0e44d5924d97618b2fb389b0dc2",
+ "source_sha256": "0f581f69871c99263da5c06f842783d101ea345d20fd36ae247e9bd5f89731f3",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.conduit_ward.conduit_ward": {
@@ -43,7 +43,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "e1f2348b34b8b7eea3e4c8417188220100630cabd5c4a31bb484bd9501853eef",
+   "span_sha256": "8ec29e937744a09886e133eaa345971ae18f55892f8e1e8faa541cc2fb823f2a",
    "role": "Contract and lineage graph manager for a conduit.",
    "responsibilities": [
     "manages peer contracts",
@@ -53,7 +53,9 @@
     "updates contracted spell visibility",
     "retains a descendant that could not finish its pool return and prevents ancestor pooling; a child that finished but raised disposal failures is returned to the pooling parent",
     "resolves attached lessers by id over per-level dict.copy() snapshots of its child map, skipping children whose ward was torn down",
-    "raises its lesser children's disposal failures after finishing its own teardown"
+    "raises its lesser children's disposal failures after finishing its own teardown",
+    "walks its contract registry under its own lock when it tells index-link borrowers about the owner's notch, member moves and index destroy, so a concurrent link or sever waits (0.2.8231)",
+    "reads and writes a contract's detail maps under that contract's lock, answers contract reads by key first and resolves contract listings through the Book's id maps without taking the conduit lock (0.2.8231)"
    ],
    "owns_state": [
     "_contracts",
@@ -65,7 +67,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "e1f2348b34b8b7eea3e4c8417188220100630cabd5c4a31bb484bd9501853eef"
+   "semantics_authored_against": "8ec29e937744a09886e133eaa345971ae18f55892f8e1e8faa541cc2fb823f2a"
   }
  },
  "edges_out": [

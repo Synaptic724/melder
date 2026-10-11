@@ -2337,31 +2337,44 @@ class ConduitWard(Cleanable):
             index: The notched lineage.
             old_spell_id: The outgoing active member id (parked on receivers).
             new_spell_id: The new active member id (activated on receivers).
+
+        Threading:
+            Walks this ward's contract registry under the ward lock, the lock link
+            (`_create_new_contract`) and sever (`_remove_contract`) write it under.
+            The caller runs this after its transaction has ended (notch, index moves,
+            bind_inactive) or with none (`Conduit.cleanup_spell`), so the mediator
+            does not order it against a link or sever; the ward lock does. Inside it
+            the walk takes peer Book and contract locks in the order sever already
+            takes (ward -> contract -> Book); contract records, when any, are
+            emitted after the lock is released. (cross_object_lock_gaps, 0.2.8231)
         """
         self.check_cleaned()
         index_id = index.id
         owner_conduit_id = self._conduit._id
         record_affected_contracts = []
-        for contract in self._contracts.values():
-            index_detail = (
-                contract._index_details_a.get(index_id)
-                or contract._index_details_b.get(index_id)
-            )
-            if index_detail is None:
-                continue
-            index_detail.update_selected(new_spell_id)
-            record_affected_contracts.append(contract)
-            peer = contract._get_peer(self)._conduit
-            if peer is None or peer._spellbook is None:
-                continue
-            receiver_book = peer._spellbook
-            if old_spell_id is not None:
-                receiver_book._inactivate_contract_spell(owner_conduit_id, old_spell_id)
-            # Eager follow: ensure the receiver holds the new active member, minting
-            # the contracted copy if it has never seen this version.
-            new_spell = self._conduit._spellbook.spells.get(index)
-            if new_spell is not None:
-                receiver_book._ensure_contracted_active(new_spell, owner_conduit_id)
+        # Under this ward's lock: link and sever write _contracts under it, and this emission runs outside any
+        # transaction window, so the mediator does not order it against them (cross_object_lock_gaps, 0.2.8231).
+        with self._lock:
+            for contract in self._contracts.values():
+                index_detail = (
+                    contract._index_details_a.get(index_id)
+                    or contract._index_details_b.get(index_id)
+                )
+                if index_detail is None:
+                    continue
+                index_detail.update_selected(new_spell_id)
+                record_affected_contracts.append(contract)
+                peer = contract._get_peer(self)._conduit
+                if peer is None or peer._spellbook is None:
+                    continue
+                receiver_book = peer._spellbook
+                if old_spell_id is not None:
+                    receiver_book._inactivate_contract_spell(owner_conduit_id, old_spell_id)
+                # Eager follow: ensure the receiver holds the new active member, minting
+                # the contracted copy if it has never seen this version.
+                new_spell = self._conduit._spellbook.spells.get(index)
+                if new_spell is not None:
+                    receiver_book._ensure_contracted_active(new_spell, owner_conduit_id)
         # Record: subscription heads moved on these contracts.
         for record_contract in record_affected_contracts:
             self._emit_contract_record(record_contract)
@@ -2380,26 +2393,39 @@ class ConduitWard(Cleanable):
             index_id: Stable id of the destroyed index.
             member_ids: The index's member version ids, captured by the caller BEFORE
                 teardown (the live index is already cleaned when this runs).
+
+        Threading:
+            Walks this ward's contract registry under the ward lock, the lock link
+            (`_create_new_contract`) and sever (`_remove_contract`) write it under.
+            The caller runs this after its transaction has ended (notch, index moves,
+            bind_inactive) or with none (`Conduit.cleanup_spell`), so the mediator
+            does not order it against a link or sever; the ward lock does. Inside it
+            the walk takes peer Book and contract locks in the order sever already
+            takes (ward -> contract -> Book); contract records, when any, are
+            emitted after the lock is released. (cross_object_lock_gaps, 0.2.8231)
         """
         self.check_cleaned()
         record_affected_contracts = []
-        for contract in self._contracts.values():
-            detail_map = contract._get_index_detail_map(self)
-            index_detail = detail_map.get(index_id)
-            if index_detail is None:
-                continue
-            record_affected_contracts.append(contract)
-            peer = contract._get_peer(self)._conduit
-            if peer is not None and peer._spellbook is not None:
-                peer._spellbook._remove_contracted_index(index_id)
-            with contract._lock:
-                contract._remove_index(self, index_id)
-            # Tear down the per-member spell Details for the destroyed index. The live
-            # index is already cleaned by this point (cleanup_spell destroyed it before
-            # emitting), so `member_ids` is captured by the caller before teardown.
-            for member_id in member_ids:
-                self._uncontract_member_spell(contract, self, member_id)
-            index_detail.cleanup()
+        # Under this ward's lock: link and sever write _contracts under it, and this emission runs outside any
+        # transaction window, so the mediator does not order it against them (cross_object_lock_gaps, 0.2.8231).
+        with self._lock:
+            for contract in self._contracts.values():
+                detail_map = contract._get_index_detail_map(self)
+                index_detail = detail_map.get(index_id)
+                if index_detail is None:
+                    continue
+                record_affected_contracts.append(contract)
+                peer = contract._get_peer(self)._conduit
+                if peer is not None and peer._spellbook is not None:
+                    peer._spellbook._remove_contracted_index(index_id)
+                with contract._lock:
+                    contract._remove_index(self, index_id)
+                # Tear down the per-member spell Details for the destroyed index. The live
+                # index is already cleaned by this point (cleanup_spell destroyed it before
+                # emitting), so `member_ids` is captured by the caller before teardown.
+                for member_id in member_ids:
+                    self._uncontract_member_spell(contract, self, member_id)
+                index_detail.cleanup()
         # Record: the destroyed lineage's subscriptions left these contracts.
         for record_contract in record_affected_contracts:
             self._emit_contract_record(record_contract)
@@ -2433,10 +2459,17 @@ class ConduitWard(Cleanable):
         Returns:
             None. Idempotent: `contract._add` merges when the member Detail already
             exists, so re-links and re-adds are safe.
+        Threading:
+            Writes the owner's Detail under the contract lock (the lock its readers
+            and `_uncontract_member_spell` hold) and calls the borrower's Book after
+            releasing it. (cross_object_lock_gaps, 0.2.8231)
         """
         self.check_cleaned()
         detail = self._create_detail(member_spell, permission, ContractTypes.received, reason=reason)
-        added = contract._add(owner_ward, detail)
+        # Under the contract lock, as _uncontract_member_spell removes under it: a borrower's contract
+        # inspection walks this detail map under that lock (cross_object_lock_gaps, 0.2.8231).
+        with contract._lock:
+            added = contract._add(owner_ward, detail)
         if not added:
             return
         borrower = contract._get_peer(owner_ward)._conduit
@@ -2487,19 +2520,32 @@ class ConduitWard(Cleanable):
         Args:
             index: The lineage that gained a member.
             member_id: Version id of the newly added member.
+
+        Threading:
+            Walks this ward's contract registry under the ward lock, the lock link
+            (`_create_new_contract`) and sever (`_remove_contract`) write it under.
+            The caller runs this after its transaction has ended (notch, index moves,
+            bind_inactive) or with none (`Conduit.cleanup_spell`), so the mediator
+            does not order it against a link or sever; the ward lock does. Inside it
+            the walk takes peer Book and contract locks in the order sever already
+            takes (ward -> contract -> Book); contract records, when any, are
+            emitted after the lock is released. (cross_object_lock_gaps, 0.2.8231)
         """
         self.check_cleaned()
         member_spell = self._conduit._spellbook._get_owned_spell(member_id)
         if member_spell is None:
             return
         index_id = index.id
-        for contract in self._contracts.values():
-            index_detail = contract._get_index_detail_map(self).get(index_id)
-            if index_detail is None:
-                continue
-            self._contract_member_spell(
-                contract, self, member_spell, index_detail.permissions, DetailReason.manual,
-            )
+        # Under this ward's lock: link and sever write _contracts under it, and this emission runs outside any
+        # transaction window, so the mediator does not order it against them (cross_object_lock_gaps, 0.2.8231).
+        with self._lock:
+            for contract in self._contracts.values():
+                index_detail = contract._get_index_detail_map(self).get(index_id)
+                if index_detail is None:
+                    continue
+                self._contract_member_spell(
+                    contract, self, member_spell, index_detail.permissions, DetailReason.manual,
+                )
 
     def _emit_index_member_removed(self, index_id: str, member_id: str) -> None:
         """
@@ -2512,15 +2558,28 @@ class ConduitWard(Cleanable):
         Args:
             index_id: Stable id of the lineage that lost a member.
             member_id: Version id of the removed member.
+
+        Threading:
+            Walks this ward's contract registry under the ward lock, the lock link
+            (`_create_new_contract`) and sever (`_remove_contract`) write it under.
+            The caller runs this after its transaction has ended (notch, index moves,
+            bind_inactive) or with none (`Conduit.cleanup_spell`), so the mediator
+            does not order it against a link or sever; the ward lock does. Inside it
+            the walk takes peer Book and contract locks in the order sever already
+            takes (ward -> contract -> Book); contract records, when any, are
+            emitted after the lock is released. (cross_object_lock_gaps, 0.2.8231)
         """
         self.check_cleaned()
-        for contract in self._contracts.values():
-            index_detail = contract._get_index_detail_map(self).get(index_id)
-            if index_detail is None:
-                continue
-            # The index dropped this member; eagerly remove its per-member contract
-            # (and the borrower's copy). Idempotent -- a no-op if it was never mapped.
-            self._uncontract_member_spell(contract, self, member_id)
+        # Under this ward's lock: link and sever write _contracts under it, and this emission runs outside any
+        # transaction window, so the mediator does not order it against them (cross_object_lock_gaps, 0.2.8231).
+        with self._lock:
+            for contract in self._contracts.values():
+                index_detail = contract._get_index_detail_map(self).get(index_id)
+                if index_detail is None:
+                    continue
+                # The index dropped this member; eagerly remove its per-member contract
+                # (and the borrower's copy). Idempotent -- a no-op if it was never mapped.
+                self._uncontract_member_spell(contract, self, member_id)
 
     def _find_governing_index_link(self, contract: Contract, spell_id: str) -> Optional[IndexDetail]:
         """
@@ -3524,39 +3583,55 @@ class ConduitWard(Cleanable):
             The returned spell object is the current head for the matched
             lineage, not necessarily the historical version string the caller
             searched with.
+        Threading:
+            Holds this ward's lock for the walk of its contracts and each contract's
+            lock for the walk of that contract's detail map (the lock its writers
+            hold); tries the detail keyed by the id (O(1)) before walking; resolves the
+            matched index through this conduit's Book after the contract lock is
+            released. (cross_object_lock_gaps, 0.2.8231)
         """
         with self._lock:
             for contract in self._contracts.values():
                 peer_ward = contract._get_peer(self)
-                detail_map = contract._get_detail_map(peer_ward)
-
-                if not detail_map:
+                # The peer writes this detail map under the contract lock (members gained or lost, contract
+                # grants), outside any lock this ward holds; walk it under the same lock so the walk never
+                # meets a resize or a Detail being torn down, and resolve after releasing it
+                # (cross_object_lock_gaps, 0.2.8231).
+                spell_index = None
+                with contract._lock:
+                    detail_map = contract._get_detail_map(peer_ward)
+                    # O(1) first: the detail contracted for exactly this version. The lineage walk runs
+                    # only when the id is another version of a contracted lineage; every detail whose index
+                    # holds the id shares that index, so both paths resolve the same head.
+                    detail = detail_map.get(spell_id)
+                    if detail is not None and detail.has_spell(spell_id):
+                        spell_index = detail.spell_index
+                    else:
+                        for detail in detail_map.values():
+                            if detail.has_spell(spell_id):
+                                spell_index = detail.spell_index
+                                break
+                if spell_index is None:
                     continue
+                try:
+                    spell = self._conduit._spellbook._find_contracted_spell(spell_index)
+                except Exception as e:
+                    self._logger.error(
+                        f"_get_spell_in_contracts: contracted spell lookup failed "
+                        f"for version={spell_id}, index={spell_index}: {e}",
+                        method_name="_get_spell_in_contracts",
+                        exc_info=True,
+                        owner_id=self._id,
+                        owner_display=self._display_name,
+                        mask=True,
+                        groups=self._log_groups,
+                        system_groups=self._log_sysgroups,
+                    )
+                    return None
 
-                for detail in detail_map.values():
-                    if not detail.has_spell(spell_id):
-                        continue
-
-                    spell_index = detail.spell_index
-                    try:
-                        spell = self._conduit._spellbook._find_contracted_spell(spell_index)
-                    except Exception as e:
-                        self._logger.error(
-                            f"_get_spell_in_contracts: contracted spell lookup failed "
-                            f"for version={spell_id}, index={spell_index}: {e}",
-                            method_name="_get_spell_in_contracts",
-                            exc_info=True,
-                            owner_id=self._id,
-                            owner_display=self._display_name,
-                            mask=True,
-                            groups=self._log_groups,
-                            system_groups=self._log_sysgroups,
-                        )
-                        return None
-
-                    if spell is None:
-                        return None
-                    return peer_ward._id, spell
+                if spell is None:
+                    return None
+                return peer_ward._id, spell
 
         return None
 
@@ -3582,6 +3657,12 @@ class ConduitWard(Cleanable):
 
         Raises:
             RuntimeError: If the Conduit is cleaned.
+        Threading:
+            Holds this ward's lock throughout and the contract's lock while it walks
+            the two detail maps; resolves each id by key through this conduit's Book,
+            taking no conduit lock (link and sever take the conduit lock before the
+            ward lock, and the Conduit lookups used here before deadlocked with
+            them). (cross_object_lock_gaps, 0.2.8231)
         """
         with self._lock:
             contract = self._find_contract_by_id(conduit_id)
@@ -3591,26 +3672,25 @@ class ConduitWard(Cleanable):
             spells_result: dict[str, list[tuple[str, Spell]]] = {"inbound": [], "outbound": []}
 
             peer_ward = contract._get_peer(self)
+            spellbook = self._conduit._spellbook
 
-            # Inbound: spells the peer has granted to us (live in peer's detail map).
-            received_map = contract._get_detail_map(peer_ward)
-            for sid, detail in received_map.items():
-                spell = self._conduit.find_contracted_spell(sid)
-                if spell:
-                    spells_result["inbound"].append((sid, spell))
+            # Walk both detail maps under the contract lock their writers hold and resolve each id by key
+            # through this conduit's Book. Never through the Conduit lookups: find_contracted_spell takes the
+            # conduit lock, which link and sever hold before the ward lock held here, and the two deadlocked
+            # (cross_object_lock_gaps, 0.2.8231).
+            with contract._lock:
+                # Inbound: spells the peer has granted to us (live in peer's detail map).
+                for sid in contract._get_detail_map(peer_ward):
+                    spell = spellbook._find_contracted_spell_by_id(sid, peer_ward._id)
+                    if spell:
+                        spells_result["inbound"].append((sid, spell))
 
-            # Outbound: spells we have granted to the peer (live in our detail map).
-            our_map = contract._get_detail_map(self)
-            for sid, detail in our_map.items():
-                owned_spell: Optional[Spell] = None
-                try:
-                    # This is a local spell we own; resolve via SpellIndex-aware get_spell_by_id.
-                    owned_spell = self._conduit.get_spell_by_id(sid)
-                except Exception:
-                    owned_spell = None
-
-                if owned_spell is not None:
-                    spells_result["outbound"].append((sid, owned_spell))
+                # Outbound: spells we have granted to the peer (live in our detail map), answered from this
+                # Book's own id maps in O(1).
+                for sid in contract._get_detail_map(self):
+                    owned_spell = spellbook.find_spell_by_id(sid)
+                    if owned_spell is not None:
+                        spells_result["outbound"].append((sid, owned_spell))
 
         return spells_result
 

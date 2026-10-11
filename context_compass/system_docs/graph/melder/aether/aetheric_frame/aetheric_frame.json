@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_frame/aetheric_frame.py",
- "source_sha256": "501779c86c3d04db9b7261ef45d2d40df1774d53d34c624d3b45a2e63f262fd4",
+ "source_sha256": "ed598c0e3af1a47dc4de4f517ab11e59cdbf532e22ad14e552d2d8ad92321aa3",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_frame.aetheric_frame": {
@@ -56,11 +56,11 @@
     "update_lookup"
    ],
    "shape": {
-    "method_count": 31,
+    "method_count": 34,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "d4e1cad5c745c1c664bbb7c45f181cf8a689c446f58fb2bd5dc3864cc1bf78a1",
+   "span_sha256": "c4f7986e85df11359e323caa3916b0ac4ffba4b55c56074a7e8191eac1a1f2f2",
    "role": "Per-frame runtime container.",
    "responsibilities": [
     "stores frame-local conduits and registries",
@@ -70,7 +70,9 @@
     "owns the frame-local dev-ops information registry used by reporting and transaction topology",
     "bridges normal-root registration into Cloud's shared name collision authority",
     "logs a conduit that raises during frame teardown through the Aether logger and cleans the rest",
-    "reports the frame-wide shared rich Spellbook configuration (shared_spellbook_configuration) only while its posture shares one; None otherwise or before a Book binds one"
+    "reports the frame-wide shared rich Spellbook configuration (shared_spellbook_configuration) only while its posture shares one; None otherwise or before a Book binds one",
+    "answers cleanup-safe membership probes for Aether's cross-frame sweep (False, None or an empty set once cleaned) and keeps its lock after cleanup (0.2.8231)",
+    "reads each conjured Book's live id set in one call, so a bind into that Book cannot tear the read (0.2.8231)"
    ],
    "owns_state": [
     "_conduits",
@@ -86,7 +88,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "4117048949e826e2d98ee7120258da71cd59f7c7e5cb45b93e101912157a2196"
+   "semantics_authored_against": "c4f7986e85df11359e323caa3916b0ac4ffba4b55c56074a7e8191eac1a1f2f2"
   }
  },
  "edges_out": [

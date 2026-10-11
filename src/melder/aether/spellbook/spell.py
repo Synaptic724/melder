@@ -297,6 +297,7 @@ class Spell(Cleanable):
         "_creation_gate",
         "spellframe_kind",
         "implemented_protocols",
+        "_removal_lock",
     ]
     def __init__(
             self,
@@ -383,7 +384,8 @@ class Spell(Cleanable):
             Creates the reentrant `_lock` that guards later configuration and
             cleanup; construction itself is unsynchronized because the object
             is not yet reachable by other threads. `_door_epoch` starts at 0 and
-            its bump sites assume per-spell serialization.
+            its bump sites assume per-spell serialization. `_removal_lock` starts
+            as None; the first direct `cleanup()` creates it under `_lock`.
 
         Lifecycle / Cleanup:
             Born unowned and uncompiled. Ownership fields, the creation-context
@@ -400,6 +402,9 @@ class Spell(Cleanable):
         """
         super().__init__()
         self._lock = RLock()
+        # Serializes direct cleanup() removals of this spell, which run outside `_lock`; created by the first direct
+        # cleanup (`_direct_removal_route`) and taken by nothing else (direct_spell_cleanup_lock_order, 0.2.8233).
+        self._removal_lock: Optional[RLock] = None
         self._active = True  # active in its index; flipped by notch/disable
         self._resolvable: bool = resolvable
         self._id: str = new_ulid()  # Unique internal ID for tracking
@@ -560,6 +565,13 @@ class Spell(Cleanable):
             - Idempotent: repeated calls become no-ops after `_cleaned` flips.
             - Thread-safe: acquires `_lock`, re-checks `_cleaned`, and then
               performs teardown under the guarded section.
+            - A direct call on a live spell - one its Spellbook is not driving
+              (`_spellbook_cleanup` unset) - removes the spell through
+              `Spellbook.cleanup_and_remove_spell`, which takes it off every
+              registry and then calls back here for the local teardown. That
+              removal runs outside `_lock`, under this spell's `_removal_lock`
+              (created by the first direct call), so a second direct call waits
+              for it and then returns.
             - Best-effort child cleanup: owned child cleanup failures are
               swallowed so teardown still reaches the final cleared state.
             - Clears hooks, metadata, dependency/build artifacts, execution-plan
@@ -568,8 +580,25 @@ class Spell(Cleanable):
             - Sets `_cleaned` before the guarded section exits. `_lock` is kept,
               not deleted with the other fields, so a lock-guarded reader such as
               `_spell_index_unless_cleaned` can still take it on a cleaned spell.
+              `_removal_lock` is deleted with the other fields; a direct call
+              waiting on it holds its own reference.
             - Deletes the disposal-name reference without clearing its list;
               creation entries may still retain that established metadata.
+
+        Threading:
+            The Book removal takes the Spellbook lock, frame locks and the Nexus
+            record, while Book teardown (`Spellbook._cleanup_spells`, also
+            reached from root and frame teardown) and conjure's ownership
+            stamping (`define_conduit_into_spells`) take this spell's `_lock`
+            under the Spellbook lock. Holding `_lock` across the removal hung both
+            threads when they met (before 0.2.8233); now `_lock` covers only the
+            decision (`_direct_removal_route`) and the local teardown. Nothing
+            else in Melder takes `_removal_lock`, so it closes no lock-order
+            cycle; a caller holding this spell's lock (`with spell:`) or another
+            Melder lock around a direct call brings the old order back. A direct
+            call racing its Book's teardown returns when the teardown cleaned the
+            spell first, or raises the Book's cleaned RuntimeError; it does not
+            hang. (direct_spell_cleanup_lock_order, 0.2.8233)
 
         Runtime resolution and instance lifecycle remain owned by the Resolution
         / Meld layer, not by this class.
@@ -577,14 +606,28 @@ class Spell(Cleanable):
         Returns:
             None.
 
+        Raises:
+            RuntimeError: On a direct call, from
+                `Spellbook.cleanup_and_remove_spell`: the spell is not its Book's
+                current active version (a parked version, for one), or the Book
+                has been cleaned and did not clean this spell.
+
         """
         if self._cleaned:
             return
+        direct_removal = self._direct_removal_route()
+        if direct_removal is not None:
+            # A direct call on a live spell: the Book takes it off its registries and calls back here with
+            # `_spellbook_cleanup` set. Run that outside `_lock` - Book and frame teardown and conjure take `_lock`
+            # under the Book lock - and serialize it per spell on the removal lock
+            # (direct_spell_cleanup_lock_order, 0.2.8233).
+            spellbook, removal_lock = direct_removal
+            with removal_lock:
+                if not self._cleaned:
+                    spellbook.cleanup_and_remove_spell(self)
+            return
         with self._lock:
             if self._cleaned:
-                return
-            if not self._spellbook_cleanup:
-                self._spellbook.cleanup_and_remove_spell(self)
                 return
 
             if self.profile is not None and isinstance(self.profile, Cleanable):
@@ -625,6 +668,7 @@ class Spell(Cleanable):
             del self._owner_creations
             del self.user_created_object
             del self._spellbook_cleanup
+            del self._removal_lock
             del self._spell_system_states
             del self._spellbook
             del self._pre_hooks
@@ -647,6 +691,46 @@ class Spell(Cleanable):
             del self._caching_enabled
             del self._compiler_artifact
             del self.spell_index
+
+    def _direct_removal_route(self) -> Optional[tuple[Spellbook, RLock]]:
+        """
+        Internal
+
+        Decide under `_lock` whether `cleanup()` must remove this spell through
+        its Spellbook, and hand back what that removal runs with.
+
+        Purpose:
+            Let `cleanup()` take its decision under the spell lock and run the
+            Book removal after leaving it, so the spell lock is never held while
+            the Spellbook, frame and Nexus locks are taken
+            (direct_spell_cleanup_lock_order, 0.2.8233).
+
+        Contract:
+            - Returns None for a cleaned spell, and for a cleanup its Spellbook
+              drives (`_spellbook_cleanup` set: Book teardown,
+              `cleanup_and_remove_spell`, the parked disposal, Bind's retirement
+              of an unpublished spell); `cleanup()` then runs the local teardown.
+            - Otherwise returns the owning Spellbook and this spell's removal
+              lock, creating the lock into `_removal_lock` on first use, so every
+              direct cleanup of this spell meets the same lock.
+
+        Threading:
+            Reads and creates under `_lock` - the lock the teardown deletes the
+            fields under - and calls nothing while holding it. The returned lock
+            is taken by `cleanup()` alone, after this returns.
+
+        Returns:
+            Optional[tuple[Spellbook, RLock]]:
+                The Book and the removal lock for a direct cleanup, or None.
+        """
+        with self._lock:
+            if self._cleaned or self._spellbook_cleanup:
+                return None
+            removal_lock = self._removal_lock
+            if removal_lock is None:
+                removal_lock = RLock()
+                self._removal_lock = removal_lock
+            return self._spellbook, removal_lock
 
 
     #endregion Disposal

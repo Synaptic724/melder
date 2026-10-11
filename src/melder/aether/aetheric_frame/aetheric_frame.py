@@ -240,6 +240,12 @@ class AethericFrame(Cleanable):
 
         Returns:
             None.
+
+        Lifecycle:
+            Deletes the frame's owned references but keeps `_lock` (and the
+            `_cleaned` flag), so a reader that holds the frame - Aether's cross-frame
+            sweep - can take the lock on a cleaned frame and read `_cleaned` under it.
+            (cross_object_lock_gaps, 0.2.8231)
         """
         if self._cleaned:
             return
@@ -267,7 +273,10 @@ class AethericFrame(Cleanable):
             del self.name
             del self._aether
             del self._crystallizer
-        del self._lock
+        # `_lock` is kept, a documented post-cleanup field: the cleanup-safe probes
+        # (`_has_spell_unless_cleaned` and kin) and the re-checks in has_spell and
+        # spells_in_index take it on a frame another thread may have cleaned, as Spell
+        # keeps its lock for `_spell_index_unless_cleaned` (cross_object_lock_gaps, 0.2.8231).
 
 
 
@@ -862,12 +871,19 @@ class AethericFrame(Cleanable):
             bool:
                 True when any conduit in this frame owns a `SpellIndex` whose
                 member-id set contains `spell_id`.
+
+        Raises:
+            RuntimeError: If the frame is cleaned, including by a cleanup that
+                races this call (checked again under the frame lock). (cross_object_lock_gaps, 0.2.8231)
         """
         self.check_cleaned()
         if not spell_id:
             return False
 
         with self._lock:
+            # Again under the lock cleanup() deletes the registries under: a racing cleanup raises the
+            # documented RuntimeError, never AttributeError (cross_object_lock_gaps, 0.2.8231).
+            self.check_cleaned()
             if self._selected_spell_registry is None:
                 return False
 
@@ -887,16 +903,30 @@ class AethericFrame(Cleanable):
         Returns:
             set[str]:
                 All cached version ids across every conduit in the frame.
+
+        Raises:
+            RuntimeError: If the frame is cleaned, including by a cleanup that
+                races this call (checked again under the frame lock). (cross_object_lock_gaps, 0.2.8231)
+
+        Threading:
+            Holds the frame lock for the read and takes each conjured Book's live
+            `_spell_ids` with one `set.update` call, so a bind into that Book on
+            another thread cannot tear the copy. (cross_object_lock_gaps, 0.2.8231)
         """
         self.check_cleaned()
         result: set[str] = set()
         with self._lock:
+            # Again under the lock cleanup() deletes the registries under: a racing cleanup raises the
+            # documented RuntimeError, never AttributeError (cross_object_lock_gaps, 0.2.8231).
+            self.check_cleaned()
             if self._selected_spell_registry is None:
                 return result
 
+            # One update call per conjured Book: each value is a LIVE reference to that Book's `_spell_ids`, which
+            # the Book writes under its own lock, not this one, so an element-by-element copy raised "Set changed
+            # size during iteration" while that Book bound (cross_object_lock_gaps, 0.2.8231).
             for spell_id_set in self._selected_spell_registry.values():
-                for spell_id in spell_id_set:
-                    result.add(spell_id)
+                result.update(spell_id_set)
         return result
 
     def find_index_for_spell(self, spell_id: str) -> SpellIndex | None:
@@ -934,6 +964,92 @@ class AethericFrame(Cleanable):
     # ------------------------------------------------------------------
     # Facade over the frame-owned LookupContainer, which carries its own
     # lock -- these never take the frame RLock.
+    def _has_spell_unless_cleaned(self, spell_id: str) -> bool:
+        """
+        Internal
+
+        `has_spell` for a caller that does not own this frame: False once the
+        frame is cleaned instead of raising.
+
+        Purpose:
+            Let Aether's cross-frame duplicate sweep ask a frame that another
+            thread may be tearing down; a frame being torn down holds nothing.
+
+        Returns:
+            bool: `has_spell(spell_id)` while the frame is live; False when cleaned.
+
+        Threading:
+            Takes the frame lock once - the lock cleanup() sets `_cleaned` and
+            deletes the registries under, and keeps - so the check and the read
+            cannot interleave with it. The membership test is `has_spell`'s: one
+            `in` per conjured Book's live `_spell_ids`, a single call that a
+            concurrent bind into that Book cannot tear. No re-entry, no second
+            check on the bind path, no other lock. (cross_object_lock_gaps, 0.2.8231)
+        """
+        if not spell_id:
+            return False
+        with self._lock:
+            if self._cleaned:
+                return False
+            for spell_id_set in self._selected_spell_registry.values():
+                if spell_id in spell_id_set:
+                    return True
+        return False
+
+    def _find_index_for_spell_unless_cleaned(self, spell_id: str) -> Optional[SpellIndex]:
+        """
+        Internal
+
+        `find_index_for_spell` for a caller that does not own this frame: None
+        once the frame is cleaned instead of raising.
+
+        Returns:
+            Optional[SpellIndex]: The index whose lineage holds `spell_id` while the
+                frame is live; None when none does or the frame is cleaned.
+
+        Threading:
+            Takes the frame lock once, as `_has_spell_unless_cleaned`, and asks each
+            index `SpellIndex._has_spell_unless_cleaned` under that index's lock (the
+            frame -> index order `find_index_for_spell` already takes): one O(1)
+            membership test per index, where `find_index_for_spell` copies every
+            index's member set, and an index cleaned meanwhile answers False
+            instead of raising. (cross_object_lock_gaps, 0.2.8231)
+        """
+        if not spell_id:
+            return None
+        with self._lock:
+            if self._cleaned:
+                return None
+            for spell_set in self._spell_registry.values():
+                for spell_index in spell_set:
+                    if spell_index._has_spell_unless_cleaned(spell_id):
+                        return spell_index
+        return None
+
+    def _spells_in_index_unless_cleaned(self) -> set[str]:
+        """
+        Internal
+
+        `spells_in_index` for a caller that does not own this frame: an empty
+        set once the frame is cleaned instead of raising.
+
+        Returns:
+            set[str]: The frame's cached version ids while it is live; empty when
+                cleaned.
+
+        Threading:
+            As `_has_spell_unless_cleaned`; each conjured Book's live `_spell_ids`
+            is taken with one `set.update` call, exact while that Book binds.
+            (cross_object_lock_gaps, 0.2.8231)
+        """
+        result: set[str] = set()
+        with self._lock:
+            if self._cleaned:
+                return result
+            for spell_id_set in self._selected_spell_registry.values():
+                result.update(spell_id_set)
+        return result
+
     def claim_lookup(self, key: Tuple[str, str], spell_id: str) -> None:
         """
         Claim a binding signature for `spell_id` frame-wide.

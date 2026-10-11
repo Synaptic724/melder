@@ -335,6 +335,9 @@ class Spellbook(Cleanable):
         # EXISTENCE — all owned ids (active ∪ inactive); KEPT on inactivate, dropped only on full unregister
         self._spell_ids: set[str] = set()                   # ALL owned ids (Nexus snapshot reads this; the frame will reference it)
         self._inactive_spells: dict[str, Spell] = {}  # INACTIVE owned: spell_id -> parked spell (off resolution; repopulates the 7 active maps on notch-back)
+        # DISPOSAL IN FLIGHT: ids `cleanup_spell` is disposing right now, read and written only under `_lock`, so a
+        # second disposal of the same spell refuses instead of repeating the first (lock_residuals, 0.2.8232).
+        self._disposing_spell_ids: set[str] = set()
 
         # Contracted (borrowed, keyed by peer conduit id) — same split
         self._contracted_spells: dict[str, dict[SpellIndex, Spell]] = {}        # ACTIVE: conduit -> {index -> active borrowed spell}
@@ -406,7 +409,7 @@ class Spellbook(Cleanable):
         Contract:
             - Cleans local spells and SpellIndex instances.
             - Clears and nulls owned and contracted registries, lookup maps,
-              version caches, and spell_id maps.
+              version caches, spell_id maps, and the in-flight disposal marks.
             - Cleans local rich configuration only when it is not the
               frame-owned shared configuration object.
             - Cleans validation subsystems.
@@ -543,6 +546,12 @@ class Spellbook(Cleanable):
             self._logger.error(f"Error cleaning _contracted_indexes: {e}", "_cleanup_components", exc_info=True)
         del self._contracted_indexes
 
+        try:
+            self._disposing_spell_ids.clear()
+        except Exception as e:
+            self._logger.error(f"Error cleaning _disposing_spell_ids: {e}", "_cleanup_components", exc_info=True)
+        del self._disposing_spell_ids
+
     def _cleanup_spells(self) -> None:
         """
         Internal
@@ -623,11 +632,39 @@ class Spellbook(Cleanable):
             RuntimeError:
                 If the spell is not found locally or is not owned by this
                 Spellbook.
+            RuntimeError:
+                If this Spellbook has been cleaned - including one torn down
+                while the call waited for its lock, unless that teardown cleaned
+                the Spell given (then the call returns).
+
+        Threading:
+            Resolves the spell, unregisters its index and drops it from `_spells`
+            and `_lookup_spells` under the Spellbook lock; releases the lock for
+            the risk-manager and Aether/frame calls; takes it again to drop the
+            id maps (the Nexus record is removed after); releases the frame
+            lookup; and cleans the spell and its index last, holding no Spellbook
+            or frame lock itself. A direct `Spell.cleanup()` reaches here outside
+            its spell lock (0.2.8233), so Book teardown and conjure's ownership
+            stamping, which take spell locks under the Spellbook lock, never wait
+            on a removal that waits on them. A call that passes `check_cleaned()`
+            and then waits for the lock while the Book is torn down re-checks
+            under it: teardown cleaned every active spell, so a Spell it cleaned
+            returns and anything else raises the cleaned-Book error. A teardown
+            that starts after the first locked section is not ordered against the
+            rest of the removal (callers quiesce removals before tearing a Book
+            down). (direct_spell_cleanup_lock_order, 0.2.8233)
         """
         self.check_cleaned()
         target_spell: Spell | None
         target_spell_id: str
         with self._lock:
+            if self._cleaned:
+                # Torn down while this call waited for the lock: the maps below are gone. Book teardown cleaned every
+                # active spell, so a Spell it cleaned has nothing left to remove; anything else gets the error a call
+                # made after the teardown gets (direct_spell_cleanup_lock_order, 0.2.8233).
+                if not isinstance(spell, str) and spell._cleaned:
+                    return
+                self.check_cleaned()
             if isinstance(spell, str):
                 target_spell_id = spell
                 target_spell = self._spells_by_id.get(target_spell_id)
@@ -2506,63 +2543,82 @@ class Spellbook(Cleanable):
                 the object is unbound.
 
         Threading:
-            Holds the Spellbook lock for the entire search, including the frame-wide walk
-            across other conduits' spellbooks.
+            Holds this Spellbook's lock only while stage 1 walks this Spellbook's own
+            spells, the lock bind and removal write them under. Stage 2, stage 3 and
+            every registry confirmation run with no lock held here: the Aether and
+            frame reads take frame locks, and frame teardown takes this Spellbook's
+            lock under its frame lock, so holding it through them could hang
+            against a racing frame teardown (until 0.2.8232 it was held for the
+            whole search). Stage 2 walks a one-call copy of the frame's conduit map,
+            which root registration and removal write under the frame lock, and a
+            one-call copy of each other Spellbook's spell map (0.2.8230); a conduit
+            or spell added or removed during the walk may be missed or still seen.
+            (lock_residuals, 0.2.8232)
         """
-        with self._lock:
-            try:
-                # The spell fingerprint composes bind-time facts (existence,
-                # disposal methods, binding name, spell name) that a bare
-                # class/function/instance cannot supply, so re-deriving the
-                # id from the object alone can never match a registered
-                # binding. Resolve by object identity against this
-                # Spellbook's registered spells first; fall back to the
-                # legacy default-fact fingerprint for foreign objects so
-                # cross-book inspection semantics stay unchanged.
+        try:
+            # The spell fingerprint composes bind-time facts (existence,
+            # disposal methods, binding name, spell name) that a bare
+            # class/function/instance cannot supply, so re-deriving the
+            # id from the object alone can never match a registered
+            # binding. Resolve by object identity against this
+            # Spellbook's registered spells first; fall back to the
+            # legacy default-fact fingerprint for foreign objects so
+            # cross-book inspection semantics stay unchanged.
+            # Only this walk holds this Spellbook's lock, the lock its writers hold: the confirmation and the stages
+            # below take frame locks, and frame teardown takes this lock under its frame lock
+            # (lock_residuals, 0.2.8232).
+            matched = False
+            candidate_spell_id: Optional[str] = None
+            with self._lock:
                 for candidate_spell in self._spells.values():
                     if (
                             candidate_spell.spell is spell
                             or candidate_spell.user_created_object is spell
                     ):
                         candidate_spell_id = candidate_spell.spell_index.selected_spell_id
+                        matched = True
+                        break
+            if matched:
+                found = Spellbook._aether._check_for_spell(
+                    candidate_spell_id,
+                    aetheric_frame,
+                )
+                return candidate_spell_id if found else None
+            # Frame-wide object inspection: walk the frame's registered
+            # conduits' spellbooks so foreign spells (cluster shares,
+            # dynamic-link providers) remain inspectable by object, which
+            # the legacy fingerprint path provided before bind-time facts
+            # joined the id composition.
+            if aetheric_frame != "default":
+                frame = Spellbook._aether._aetheric_frames[aetheric_frame]
+            else:
+                frame = Spellbook._aether._ensure_default_frame()
+            # Root registration and removal write the frame's conduit map under the frame lock, which is not held
+            # here: walk a one-call snapshot (lock_residuals, 0.2.8232).
+            for frame_conduit in list(frame._conduits.values()):
+                conduit_spellbook = frame_conduit._spellbook
+                if conduit_spellbook is None or conduit_spellbook is self:
+                    continue
+                # Another Book's map, read without that Book's lock: walk a one-call snapshot.
+                for candidate_spell in list(conduit_spellbook._spells.values()):
+                    if (
+                            candidate_spell.spell is spell
+                            or candidate_spell.user_created_object is spell
+                    ):
+                        candidate_spell_id = (
+                            candidate_spell.spell_index.selected_spell_id
+                        )
                         found = Spellbook._aether._check_for_spell(
                             candidate_spell_id,
                             aetheric_frame,
                         )
                         return candidate_spell_id if found else None
-                # Frame-wide object inspection: walk the frame's registered
-                # conduits' spellbooks so foreign spells (cluster shares,
-                # dynamic-link providers) remain inspectable by object, which
-                # the legacy fingerprint path provided before bind-time facts
-                # joined the id composition.
-                if aetheric_frame != "default":
-                    frame = Spellbook._aether._aetheric_frames[aetheric_frame]
-                else:
-                    frame = Spellbook._aether._ensure_default_frame()
-                for frame_conduit in frame._conduits.values():
-                    conduit_spellbook = frame_conduit._spellbook
-                    if conduit_spellbook is None or conduit_spellbook is self:
-                        continue
-                    # Another Book's map, read without that Book's lock: walk a one-call snapshot.
-                    for candidate_spell in list(conduit_spellbook._spells.values()):
-                        if (
-                                candidate_spell.spell is spell
-                                or candidate_spell.user_created_object is spell
-                        ):
-                            candidate_spell_id = (
-                                candidate_spell.spell_index.selected_spell_id
-                            )
-                            found = Spellbook._aether._check_for_spell(
-                                candidate_spell_id,
-                                aetheric_frame,
-                            )
-                            return candidate_spell_id if found else None
-                spell_id = self._bind.spell_id_inspector(spell)
-                found = Spellbook._aether._check_for_spell(spell_id, aetheric_frame)
-                return spell_id if found else None
-            except Exception as e:
-                self._logger.error(f"Failed to inspect spell: {e}", "inspect_spell", exc_info=True)
-                return None
+            spell_id = self._bind.spell_id_inspector(spell)
+            found = Spellbook._aether._check_for_spell(spell_id, aetheric_frame)
+            return spell_id if found else None
+        except Exception as e:
+            self._logger.error(f"Failed to inspect spell: {e}", "inspect_spell", exc_info=True)
+            return None
 
     def _register_conduit_spells_in_aether(self, conduit_id: str) -> None:
         """
@@ -2968,15 +3024,36 @@ class Spellbook(Cleanable):
             Optional[Spell]: The resolved spell, or None if not found.
 
         Threading:
-            Lock-free. Walks a one-call snapshot of the contracted map, which grants and revocations change
-            while no lock is held here, and probes each index with `SpellIndex._has_spell_unless_cleaned`:
-            the lender can clean an index this map still holds, and a cleaned index owns nothing (0.2.8230).
+            Lock-free. Answers by key first (cross_object_lock_gaps, 0.2.8231): the active borrowed copy is held in
+            `_contracted_spells_by_id` under its own version id, and a parked one in
+            `_inactive_contracted_spells`, whose index (read under the parked spell's own lock) keys the
+            lineage's active copy in `_contracted_spells` - single-key reads, no copy. Only a version this
+            Book holds no copy of falls back to the walk: a one-call snapshot of the contracted map, which
+            grants and revocations change while no lock is held here, probing each index with
+            `SpellIndex._has_spell_unless_cleaned` (the lender can clean an index this map still holds, and
+            a cleaned index owns nothing; 0.2.8230).
         """
 
+        # O(1) first: the active borrowed copy under its own version id.
+        active_by_id = self._contracted_spells_by_id.get(conduit_id)
+        if active_by_id is not None:
+            active = active_by_id.get(spell_id)
+            if active is not None:
+                return active
         # Pull the map of SpellIndex? Spell for this conduit
         spell_map = self._contracted_spells.get(conduit_id)
         if spell_map is None:
             return None
+        # Still O(1): a parked borrowed copy's index keys its lineage's active copy.
+        parked = self._inactive_contracted_spells.get(conduit_id)
+        if parked is not None:
+            parked_spell = parked.get(spell_id)
+            if parked_spell is not None:
+                parked_index = parked_spell._spell_index_unless_cleaned()
+                if parked_index is not None:
+                    head = spell_map.get(parked_index)
+                    if head is not None:
+                        return head
 
         # Search for a SpellIndex whose version list contains this SHA
         for spell_index, spell in list(spell_map.items()):
@@ -4216,15 +4293,102 @@ class Spellbook(Cleanable):
             spell: The owned spell to dispose.
 
         Raises:
-            RuntimeError: If the spell is not owned here, or it is the active
+            RuntimeError: If the spell has already been disposed ("cleanup_spell:
+                spell <id> has already been disposed."; before 0.2.8231 a second
+                call raised AttributeError), is not owned here, or is the active
                 member of a multi-member index.
+            RuntimeError: If another cleanup_spell of the same spell is still
+                running ("cleanup_spell: spell <id> is already being disposed by
+                another call."; before 0.2.8232 both calls ran the disposal).
+
+        Threading:
+            Ownership, activity and sole membership are read under the Book lock
+            from the Book's own maps; a spell no longer in them is classified
+            through the spell's own lock (`Spell._spell_index_unless_cleaned`),
+            outside the Book lock, so the two locks are never nested here: Book
+            cleanup and conjure's ownership stamping take them Book -> spell, and
+            a direct `Spell.cleanup` no longer holds its spell lock when it
+            reaches the Book (direct_spell_cleanup_lock_order, 0.2.8233).
+            (cross_object_lock_gaps, 0.2.8231)
+            The same locked section marks the spell id as being disposed and the
+            disposal clears the mark when it ends, so of two calls for one spell
+            that overlap, the second refuses before touching anything. The spell
+            lock is not held across the disposal: that would take the Book and
+            frame locks under it, against Book and frame teardown, which take the
+            spell lock under theirs. (lock_residuals, 0.2.8232)
 
         Returns:
             None.
         """
+        self._dispose_spell(spell)
+
+    def _dispose_spell(self, spell: Spell) -> Optional[str]:
+        """
+        Internal
+
+        The body of `cleanup_spell`, returning what the owning Conduit needs to
+        tell index-link borrowers: the id of the index the disposal destroyed, or
+        None when the index survived.
+
+        Contract:
+            - Same checks, order and disposal as `cleanup_spell`.
+            - Returns the destroyed index's id when the spell was the sole member
+              of its index (an active sole member, or the last inactive member);
+              None when other members keep the index alive.
+            - Marks the spell id in `_disposing_spell_ids` in the decision's own
+              Book-locked section, and clears it under the Book lock when the
+              disposal ends (finished or failed), so a second call for the same
+              spell that starts meanwhile refuses before it touches anything.
+
+        Args:
+            spell: The owned spell to dispose.
+
+        Returns:
+            Optional[str]: The destroyed index's id, or None.
+
+        Raises:
+            RuntimeError: As `cleanup_spell`.
+
+        Threading:
+            As `cleanup_spell`. (cross_object_lock_gaps, 0.2.8231; the in-flight
+            mark, lock_residuals, 0.2.8232)
+        """
         self.check_cleaned()
         spell_id = spell.spell_id
-        if spell._spellbook is not self:
+        owned = False
+        is_active = False
+        is_sole = False
+        already_disposing = False
+        with self._lock:
+            # A disposal of this spell already in flight: refuse before reading or touching anything
+            # (lock_residuals, 0.2.8232).
+            already_disposing = spell_id in self._disposing_spell_ids
+            if not already_disposing:
+                is_active = self._spells_by_id.get(spell_id) is spell
+                owned = is_active or self._inactive_spells.get(spell_id) is spell
+                if owned:
+                    # Still in this Book's maps, so no cleanup has popped it, and Spell.cleanup deletes the spell's
+                    # fields only after that pop (under this lock): its index is live here. Index moves repoint it
+                    # under this lock too.
+                    index = spell.spell_index
+                    index_id = index.id
+                    is_sole = index.is_sole_member(spell_id)
+                    if is_sole or not is_active:
+                        # This call disposes it: mark it in the decision's own locked section, so a second call
+                        # that starts before this one ends refuses instead of repeating the disposal; cleared in the
+                        # finally below (lock_residuals, 0.2.8232).
+                        self._disposing_spell_ids.add(spell_id)
+        if already_disposing:
+            raise RuntimeError(
+                f"cleanup_spell: spell {spell_id} is already being disposed by another call."
+            )
+        if not owned:
+            # Classified outside the Book lock, so the two locks are never nested here: Book cleanup and conjure's
+            # ownership stamping take the spell lock under this Book's lock (cross_object_lock_gaps, 0.2.8231;
+            # corrected lock_residuals, 0.2.8232), and a direct Spell.cleanup no longer takes this Book's lock under
+            # the spell lock (direct_spell_cleanup_lock_order, 0.2.8233).
+            if spell._spell_index_unless_cleaned() is None:
+                raise RuntimeError(f"cleanup_spell: spell {spell_id} has already been disposed.")
             self._logger.error(
                 f"cleanup_spell: spell {spell_id} is not owned by this spellbook.",
                 "cleanup_spell",
@@ -4233,10 +4397,7 @@ class Spellbook(Cleanable):
             raise RuntimeError(
                 f"cleanup_spell: spell {spell_id} is not owned by this spellbook."
             )
-        index = spell.spell_index
         with self._lock:
-            is_active = spell_id in self._spells_by_id
-            is_sole = index.is_sole_member(spell_id)
             if is_active and not is_sole:
                 self._logger.error(
                     f"cleanup_spell: spell {spell_id} is the active member of a multi-member index.",
@@ -4247,53 +4408,62 @@ class Spellbook(Cleanable):
                     f"cleanup_spell: spell {spell_id} is the active member of a multi-member "
                     f"index; notch away from it before disposing it."
                 )
-        # CLEAN UP. Only an ACTIVE spell is invalidated first: flag it + its lineage
-        # dirty (clear the creation context, force a next-meld rebuild) while the index
-        # and dependency edges still exist, so dependents can be rechecked before
-        # teardown. An INACTIVE member is off the resolution surface -- nothing resolves
-        # through it and dependents run through the active member -- so it is dropped
-        # without invalidation (invalidating a parked spell is pointless, and pre-notch
-        # it is not even valid).
-        if is_active:
-            # Authoritative disposal: unregisters the index (its compute_impact_closure
-            # fans the dependent closure), removes every id/lookup map, and cleans the
-            # spell and the index. Self-guards re-entry via _spellbook_cleanup.
-            spell.invalidate_spell(change_reason=SpellStateChangeReason.cleaned_up_spell)
-            self.cleanup_and_remove_spell(spell)
-        else:
-            # Inactive member: drop just this member; the shared index and its other
-            # members survive unless this empties it.
-            binding_key = spell._key
-            owner_conduit_id = spell._owner_conduit_id
+        # Reached only when this call marked the spell above: nothing between the mark and here can raise.
+        try:
+            # CLEAN UP. Only an ACTIVE spell is invalidated first: flag it + its lineage
+            # dirty (clear the creation context, force a next-meld rebuild) while the index
+            # and dependency edges still exist, so dependents can be rechecked before
+            # teardown. An INACTIVE member is off the resolution surface -- nothing resolves
+            # through it and dependents run through the active member -- so it is dropped
+            # without invalidation (invalidating a parked spell is pointless, and pre-notch
+            # it is not even valid).
+            if is_active:
+                # Authoritative disposal: unregisters the index (its compute_impact_closure
+                # fans the dependent closure), removes every id/lookup map, and cleans the
+                # spell and the index. Self-guards re-entry via _spellbook_cleanup.
+                spell.invalidate_spell(change_reason=SpellStateChangeReason.cleaned_up_spell)
+                self.cleanup_and_remove_spell(spell)
+                return index_id
+            else:
+                # Inactive member: drop just this member; the shared index and its other
+                # members survive unless this empties it.
+                binding_key = spell._key
+                owner_conduit_id = spell._owner_conduit_id
+                with self._lock:
+                    self._inactive_spells.pop(spell_id, None)
+                    self._spell_ids.discard(spell_id)
+                    # True removal (parked lane): custody leaves the record
+                    # entirely so restore never rebuilds a shed spell.
+                    if self._crystallizer.activated:
+                        self._crystallizer.emit_spell_removed(
+                            spell_id, frame_name=self._aetheric_frame_name
+                        )
+                    index.remove_member(spell_id)
+                    index_emptied = index.is_empty()
+                if index_emptied:
+                    self._destroy_spell_index(
+                        index,
+                        binding_key=binding_key,
+                        owner_conduit_id=owner_conduit_id,
+                    )
+                elif self._crystallizer.activated:
+                    # The shared index survived minus one member: re-emit its
+                    # membership snapshot.
+                    self._crystallizer.emit(
+                        self._crystallizer.create_spell_index_crystal(
+                            index, self._id
+                        )
+                    )
+                # Local teardown only (already off the maps); set the guard so
+                # Spell.cleanup() does not re-enter cleanup_and_remove_spell.
+                spell._spellbook_cleanup = True
+                spell.cleanup()
+                return index_id if index_emptied else None
+        finally:
+            # The disposal is over, finished or failed: a later call for this spell decides afresh
+            # (lock_residuals, 0.2.8232).
             with self._lock:
-                self._inactive_spells.pop(spell_id, None)
-                self._spell_ids.discard(spell_id)
-                # True removal (parked lane): custody leaves the record
-                # entirely so restore never rebuilds a shed spell.
-                if self._crystallizer.activated:
-                    self._crystallizer.emit_spell_removed(
-                        spell_id, frame_name=self._aetheric_frame_name
-                    )
-                index.remove_member(spell_id)
-                index_emptied = index.is_empty()
-            if index_emptied:
-                self._destroy_spell_index(
-                    index,
-                    binding_key=binding_key,
-                    owner_conduit_id=owner_conduit_id,
-                )
-            elif self._crystallizer.activated:
-                # The shared index survived minus one member: re-emit its
-                # membership snapshot.
-                self._crystallizer.emit(
-                    self._crystallizer.create_spell_index_crystal(
-                        index, self._id
-                    )
-                )
-            # Local teardown only (already off the maps); set the guard so
-            # Spell.cleanup() does not re-enter cleanup_and_remove_spell.
-            spell._spellbook_cleanup = True
-            spell.cleanup()
+                self._disposing_spell_ids.discard(spell_id)
 
     def begin_transaction(
             self,

@@ -2,6 +2,7 @@
 
 import threading
 from types import SimpleNamespace
+from typing import Optional
 
 import pytest
 from unittest.mock import MagicMock, patch
@@ -161,6 +162,13 @@ class FakeSpellbook:
         self._detach_link_calls: list[str] = []
         self._reattach_link_calls: list[str] = []
         self._destroy_detached_calls: list[str] = []
+
+    def find_spell_by_id(self, spell_id: str) -> Optional[FakeSpell]:
+        """Resolve a locally owned spell by version id, as Spellbook.find_spell_by_id answers from its id maps."""
+        for spell in self._spells.values():
+            if spell.spell_id == spell_id:
+                return spell
+        return None
 
     def add_local_spell(self, spell: FakeSpell) -> None:
         """Register a locally owned spell for lineage checks."""
@@ -2527,10 +2535,16 @@ def test_get_spell_in_contracts_returns_none_when_contracts_exist_but_no_detail_
     assert borrower._conduit_ward._get_spell_in_contracts("spell-missing") is None
 
 
-def test_get_spells_in_contract_by_conduit_skips_outbound_resolution_exception(
+def test_get_spells_in_contract_by_conduit_resolves_outbound_through_the_book_not_the_conduit_lookup(
     linked_pair: tuple[FakeConduit, FakeConduit],
 ) -> None:
-    """Verify outbound spell resolution exceptions are skipped instead of propagating."""
+    """
+    Verify outbound spells are answered from this conduit's Book, never through the Conduit lookup.
+
+    The listing holds the ward lock; the Conduit lookups take the conduit lock, which link and sever take before
+    the ward lock, so calling them here deadlocked with a concurrent sever (cross_object_lock_gaps, 0.2.8231).
+    A failing Conduit lookup therefore no longer matters: it is not called.
+    """
     owner, borrower = linked_pair
     inbound_spell = _register_spell(owner, "spell-outbound-skip", permissions=Permissions.create)
     outbound_spell = _register_spell(borrower, "spell-outbound-local", permissions=Permissions.create)
@@ -2557,8 +2571,10 @@ def test_get_spells_in_contract_by_conduit_skips_outbound_resolution_exception(
     result = borrower._conduit_ward._get_spells_in_contract_by_conduit(owner._id)
 
     inbound = {sid: found for sid, found in result["inbound"]}
+    outbound = {sid: found for sid, found in result["outbound"]}
     assert inbound[inbound_spell.spell_id] is inbound_spell
-    assert result["outbound"] == []
+    assert outbound[outbound_spell.spell_id] is outbound_spell
+    borrower.get_spell_by_id.assert_not_called()
 
 
 def test_describe_contract_raises_when_missing(

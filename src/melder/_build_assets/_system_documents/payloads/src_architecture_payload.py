@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_architecture.md'
-LINE_COUNT = 3863
-CONTENT_SHA256 = '5408d7844bc1bcd5f480107966e5f3e01671012a4c617954a811ad91cea1b2cb'
+LINE_COUNT = 3973
+CONTENT_SHA256 = 'cf16e9605abd581df9f06aab86a2a57cbce69fd747cffc31dbbe97bd2960ca7d'
 
 TEXT = """# Src Architecture (C4)
 
@@ -454,14 +454,14 @@ External interfaces are Python APIs:
   CORRECTED 2026-08-02: this document previously said the Conduit "delegates to
   the owning Spellbook, WHICH ADMITS the change-control transaction". It does
   not. That wording was inherited from the Conduit docstrings, which say the
-  same thing and are also wrong - see `src/melder/aether/spellbook/spellbook.py:3686`, which states the
+  same thing and are also wrong - see `src/melder/aether/spellbook/spellbook.py:3742`, which states the
   opposite correctly. The code settles it.
   EVIDENCE:
-  - src/melder/aether/conduit/conduit.py:5309, 5381 (`notch_spell`; starts the transaction)
-  - src/melder/aether/conduit/conduit.py:5399, 5454 (`add_to_spell_index`; starts it)
-  - src/melder/aether/conduit/conduit.py:5477, 5525 (`remove_from_spell_index`; starts it)
-  - src/melder/aether/spellbook/spellbook.py:3843 (`_add_to_spell_index` entry)
-  - src/melder/aether/spellbook/spellbook.py:3876 (`_apply_add_to_index` seam)
+  - src/melder/aether/conduit/conduit.py:5326, 5398 (`notch_spell`; starts the transaction)
+  - src/melder/aether/conduit/conduit.py:5416, 5471 (`add_to_spell_index`; starts it)
+  - src/melder/aether/conduit/conduit.py:5494, 5542 (`remove_from_spell_index`; starts it)
+  - src/melder/aether/spellbook/spellbook.py:3899 (`_add_to_spell_index` entry)
+  - src/melder/aether/spellbook/spellbook.py:3932 (`_apply_add_to_index` seam)
 - `Spellbook.conjure(...)` for building a root Conduit.
 - `Conduit.meld(...)` for resolving instances.
 - `Conduit.create_lesser_conduit(...)` for child scopes.
@@ -536,7 +536,7 @@ the member-store work is IMPLEMENTED behind the `_apply_notch`,
 inside the held transaction window. Notch is currently OWNER-SIDE ONLY:
 contracted borrowers are not fanned out, so a notch on a shared index does not
 yet update borrowers' contracted maps.
-EVIDENCE: src/melder/aether/spellbook/spellbook.py:3701-4136 (the three seams, remeasured 2026-09-30).
+EVIDENCE: src/melder/aether/spellbook/spellbook.py:3757-4192 (the three seams, remeasured 2026-09-30).
 
 ## Entrypoints and Runtime Guardrails
 - `melder/__init__.py` warns on Python < 3.14 and on GIL-enabled builds
@@ -849,9 +849,9 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:3701-4136 (the three seams, r
    so borrowers of a SHARED index keep stale contracted maps until the
    cross-conduit slice lands.
    EVIDENCE:
-   - src/melder/aether/spellbook/spellbook.py:3701-3841
-   - src/melder/aether/spellbook/spellbook.py:3876-3970
-   - src/melder/aether/spellbook/spellbook.py:4051-4136
+   - src/melder/aether/spellbook/spellbook.py:3757-3897
+   - src/melder/aether/spellbook/spellbook.py:3932-4026
+   - src/melder/aether/spellbook/spellbook.py:4107-4192
 
 ### Sequence: Change-Control Revalidation
 1. `ChangeControlManager.revalidate_dirty_roots(conduit_id, ...)`:
@@ -918,7 +918,7 @@ check and raises `TypeError("Expected Conduit-compatible object, got {type}")`.
 THIS IS NOT A STRUCTURAL CONTRACT AND CANNOT BE SATISFIED BY DUCK TYPING - a
 conduit-shaped object that is not a `Conduit` subclass is rejected outright.
   EVIDENCE:
-  - src/melder/aether/conduit/conduit.py:5258-5260 (the check and the raise -
+  - src/melder/aether/conduit/conduit.py:5275-5277 (the check and the raise -
     cited as :4342-4344 in the patch lane, which was off by one)
   - src/melder/nexus/nexus_frame_builder.py:254 (`create(...) -> Conduit`)
   - src/melder/nexus/rift/rift_space/event_system/rift_event.py
@@ -939,6 +939,58 @@ each entry in `src_components.md`; this list is the set that crosses components.
 - Validation strategies registered in `SpellValidationSystem`.
 
 ## Operational Invariants
+- Direct spell cleanup (2026-10-11, 0.2.8233): `Spell.cleanup()` never holds the spell lock while it waits for or holds
+  the Book, frame or Nexus locks. A direct call on a live spell (its Book is not driving the cleanup) decides under the
+  spell lock (`Spell._direct_removal_route`), leaves it, and runs `Spellbook.cleanup_and_remove_spell` under the spell's
+  own removal lock (`_removal_lock`, created on first use), which nothing else takes; the Book's call back with
+  `_spellbook_cleanup` set runs the local teardown under the spell lock. Book teardown (`_cleanup_spells`, reached from
+  root and frame teardown) and conjure, which holds the Book lock across its creation system (the structural hydration
+  and `define_conduit_into_spells`), take spell locks under the Book lock, so the old order hung both threads when they
+  met; two direct cleanups of one spell still serialize, on the removal lock. `cleanup_and_remove_spell` re-checks the
+  Book under its lock: a Book torn down while the call waited returns for a Spell the teardown cleaned and raises the
+  cleaned-Book RuntimeError otherwise. A teardown that starts after its first locked section is not ordered against the
+  rest of the removal (callers quiesce removals before tearing a Book down).
+  EVIDENCE: `src/melder/aether/spellbook/spell.py:Spell.cleanup`, `Spell._direct_removal_route`,
+  `src/melder/aether/spellbook/spellbook.py:Spellbook.cleanup_and_remove_spell`, `Spellbook._cleanup_spells` and
+  `src/melder/aether/spellbook/spellbook_creation_system.py:SpellbookCreationSystem.define_conduit_into_spells`.
+- Lock residuals (2026-10-11, 0.2.8232): `Conduit.find_contracted_spell` takes no lock and walks a one-call copy of
+  the Book's contracted peer ids, which a link or sever the peer starts writes under the Book lock while holding the
+  peer's conduit lock, not this one; each peer is answered by the keyed, lock-free `_find_contracted_spell_by_id`.
+  `Spellbook.inspect_spell` holds its Book lock only while it walks its own spells and `Conduit.inspect_spell` takes no
+  conduit lock: the registry confirmations (`Aether._check_for_spell`) take frame locks, and frame teardown takes
+  frame -> conduit -> Book (`AethericFrame._cleanup_data_structures` -> `Conduit.permanent_cleanup` ->
+  `Spellbook.cleanup`), so holding either lock there could hang; the frame-wide walk reads a one-call copy of the
+  frame's conduit map. `Spellbook._dispose_spell` marks the spell id in `_disposing_spell_ids` in the Book-locked
+  section that decides ownership and clears it under the Book lock when the disposal ends, so two `cleanup_spell`
+  calls of one spell never both dispose it. The spell lock is never held across a disposal: Book teardown
+  (`_cleanup_spells`) and frame teardown take spell locks under the Book and frame locks the disposal needs. A direct
+  `Spell.cleanup()`, which still held the spell lock across its removal here, follows the same rule since 0.2.8233
+  (entry above).
+  EVIDENCE: `src/melder/aether/conduit/conduit.py:Conduit.find_contracted_spell`, `Conduit.inspect_spell`,
+  `src/melder/aether/spellbook/spellbook.py:Spellbook.inspect_spell`, `Spellbook._dispose_spell`,
+  `Spellbook._cleanup_spells` and `src/melder/aether/aetheric_frame/aetheric_frame.py:AethericFrame.cleanup`.
+- Cross-object locks (2026-10-11, 0.2.8231): a reader and a writer of one map take the same lock, or the reader
+  takes a view its writers publish whole. The owner-side index emissions (`ConduitWard._emit_index_notch`,
+  `_emit_index_destroy`, `_emit_index_member_added`, `_emit_index_member_removed`) walk the ward's contract registry
+  under the ward lock, the lock link and sever write it under: they run after the owner's transaction has ended
+  (notch, index moves, bind_inactive) or with none (`Conduit.cleanup_spell`), so the frame mediator, which serializes
+  LINK/UNLINK against those transactions, never orders them against a link or sever. Contract detail maps are read
+  and written under the contract lock (`_contract_member_spell` included); the borrower reads answer by key first,
+  and the contract listing resolves ids through the Book (`_find_contracted_spell_by_id`, `find_spell_by_id`), never
+  through the Conduit lookups, whose conduit lock taken under the ward lock deadlocked with link and sever (conduit
+  lock, then ward locks). `Conduit.cleanup_spell` emits the index destroy that `Spellbook._dispose_spell` reports
+  from its decision under the Book lock. Bind's cross-frame sweep and `_get_all_spell_ids` read
+  `Aether._aetheric_frame_view`, a tuple of `(name, frame)` pairs republished under the Aether lock by frame birth,
+  detach and teardown - no copy per bind - and ask each other frame through cleanup-safe probes that take its lock
+  once (frame cleanup keeps the lock) and answer a cleaned frame as empty. Frame reads of a conjured Book's live
+  `_spell_ids` take each set in one call. Lock orders: ward -> contract -> Book (as sever), ward -> Book (as link),
+  frame -> SpellIndex; nothing these walks run under a ward lock takes a conduit, frame or Aether lock, so frame
+  teardown (frame -> conduit -> ward) closes no cycle with them, and links are same-frame only.
+  EVIDENCE: `src/melder/aether/conduit/conduit_ward/conduit_ward.py:ConduitWard._emit_index_destroy`,
+  `ConduitWard._get_spells_in_contract_by_conduit`, `src/melder/aether/conduit/conduit.py:Conduit.cleanup_spell`,
+  `src/melder/aether/spellbook/spellbook.py:Spellbook._dispose_spell`,
+  `src/melder/aether/aether.py:Aether._check_for_spell` and
+  `src/melder/aether/aetheric_frame/aetheric_frame.py:AethericFrame._has_spell_unless_cleaned`.
 - Spell-map walks (2026-10-11, 0.2.8230): every writer of `Spellbook._spells`, `_lookup_spells`, `_spells_by_id`
   and `_spell_id_pool` holds the Book lock - bind now publishes all four inside one `with self._lock` block (its
   frame lookup claim and its callbacks stay outside), as removal, notch, index destruction and ownership transfer
@@ -1498,8 +1550,8 @@ each entry in `src_components.md`; this list is the set that crosses components.
   merely refusing to be: the state that would answer the question is gone.
   EVIDENCE:
   - src/melder/aether/spellbook/spellbook.py:267 (`_conjured` initialised)
-  - src/melder/aether/spellbook/spellbook.py:667 (ownership check reads it)
-  - src/melder/aether/spellbook/spellbook.py:725 (deleted on cleanup)
+  - src/melder/aether/spellbook/spellbook.py:704 (ownership check reads it)
+  - src/melder/aether/spellbook/spellbook.py:762 (deleted on cleanup)
 - `SpellbookConfiguration` must be frozen before Conduit creation.
 - Disposal order is established at bind: both groups contribute and book order owns shared
   names. `enforce_priority_disposal_methods=False` puts the book block last; True puts it first.
@@ -1545,10 +1597,10 @@ each entry in `src_components.md`; this list is the set that crosses components.
     gone, because the `dynamic` argument reaching it is now the EFFECTIVE mode
     resolved from the posture, which makes a mismatch structurally impossible.
   EVIDENCE:
-  - src/melder/aether/spellbook/spellbook.py:6516-6559
+  - src/melder/aether/spellbook/spellbook.py:6612-6655
     (`Spellbook._settle_or_inherit_conjure_mode`; in-place settle :6546-6558,
     effective-mode return :6559; remeasured 2026-09-30 at 0.2.8215)
-  - src/melder/aether/spellbook/spellbook.py:6772
+  - src/melder/aether/spellbook/spellbook.py:6868
     (`conjure` resolves the effective mode as it enters the transaction window,
     passing `dynamic=self._settle_or_inherit_conjure_mode(dynamic)`)
   - src/melder/aether/aetheric_frame/aetheric_frame.py:726-787
@@ -1597,6 +1649,37 @@ each entry in `src_components.md`; this list is the set that crosses components.
   not the same thing as a Rift-level event orchestrator.
 
 ## Failure Modes and Error Paths
+- A direct `Spell.cleanup()` no longer hangs against a concurrent teardown or conjure of its Spellbook (fixed in
+  0.2.8233): the call held the spell lock while it waited for the Book lock, and root, Spellbook or frame teardown, or a
+  conjure, held the Book lock while it waited for the spell lock. A direct call racing its Book's teardown now returns
+  once the teardown has cleaned the spell, or raises RuntimeError "Spellbook has already been cleaned. ";
+  `Spellbook.cleanup_and_remove_spell` waiting on a Book torn down meanwhile raises that error, or returns for a spell
+  the teardown cleaned, instead of AttributeError "... has no attribute '_spells_by_id'".
+  EVIDENCE: `src/melder/aether/spellbook/spell.py:Spell.cleanup` and
+  `src/melder/aether/spellbook/spellbook.py:Spellbook.cleanup_and_remove_spell`.
+- Contracted lookups, object inspection and overlapping disposals no longer fail under concurrent changes (fixed in
+  0.2.8232): `Conduit.find_contracted_spell` no longer raises RuntimeError "dictionary changed size during iteration"
+  while a peer links or severs; `inspect_spell` no longer answers None for a registered object while a root registers
+  or retires in the frame, and no longer holds the Book or conduit lock where a racing frame teardown could hang it; a
+  `cleanup_spell` that overlaps another of the same spell raises RuntimeError "cleanup_spell: spell <id> is already
+  being disposed by another call." (before, both disposed it and one failed part-way).
+  EVIDENCE: `src/melder/aether/conduit/conduit.py:Conduit.find_contracted_spell` and
+  `src/melder/aether/spellbook/spellbook.py:Spellbook._dispose_spell`.
+- Index-link notifications, contract reads and binds across frames no longer fail under concurrent changes (fixed in
+  0.2.8231): `cleanup_spell`, `notch_spell`, `add_to_spell_index`, `remove_from_spell_index` and `bind_inactive` no
+  longer raise RuntimeError "dictionary changed size during iteration" after their change committed when a link or
+  sever of the same conduit runs, and no longer leave a borrower subscribed to a destroyed index or without an active
+  copy; `get_spell_in_contracts` and `get_spells_in_contract_by_conduit` no longer raise that error, "Detail has
+  already been cleaned." or AttributeError while the lender moves index members, and the listing no longer hangs
+  against `sever_link` or `link` of the same conduit; `bind` with two or more frames no longer fails with that error,
+  "AethericFrame has already been cleaned." or AttributeError while a frame is born or torn down; and a conjure's
+  duplicate-id check no longer raises "Set changed size during iteration" while another Book of the frame binds. A
+  second `cleanup_spell` of a disposed spell raises RuntimeError "cleanup_spell: spell <id> has already been
+  disposed." (it raised AttributeError), and `AethericFrame.has_spell` / `spells_in_index` racing the frame's
+  cleanup raise their documented RuntimeError (they raised AttributeError).
+  EVIDENCE: `src/melder/aether/conduit/conduit_ward/conduit_ward.py:ConduitWard._emit_index_notch`,
+  `src/melder/aether/spellbook/spellbook.py:Spellbook._dispose_spell` and
+  `src/melder/aether/aetheric_frame/aetheric_frame.py:AethericFrame.spells_in_index`.
 - Concurrent binds and removals no longer make `Conduit.validate_resolution`, `Conduit.get_spell_permissions`, the
   Rift command surface's spell lookup, `inspect_spell`, contract lookups or the transfer impact check raise
   RuntimeError "dictionary changed size during iteration", and a walk under the Book lock no longer meets bind's
@@ -2127,11 +2210,13 @@ Spellbook and binding:
 
 - path: `src/melder/aether/spellbook/spellbook.py`
   start_line: 1
-  end_line: 7394
-  loc: 7394
-  verified_at: 2026-10-11T15:21:03Z
+  end_line: 7564
+  loc: 7564
+  verified_at: 2026-10-11T21:54:42Z
   note: Spellbook core and conjure pipeline; `find_spell_by_id` answers from the id maps (0.2.8229); bind
-    publishes its spell maps under the Book lock (0.2.8230).
+    publishes its spell maps under the Book lock (0.2.8230); `cleanup_spell` decides through `_dispose_spell` and
+    contracted lookups answer by key (0.2.8231); overlapping disposals refuse and `inspect_spell` asks the frames
+    with no lock held (0.2.8232); `cleanup_and_remove_spell` re-checks a Book torn down while it waits (0.2.8233).
 - path: `src/melder/aether/spellbook/spellbook_creation_system.py`
   start_line: 1
   end_line: 3508
@@ -2175,11 +2260,12 @@ Spellbook and binding:
     is the cleanup-safe probe (0.2.8230).
 - path: `src/melder/aether/spellbook/spell.py`
   start_line: 1
-  end_line: 1770
-  loc: 1770
-  verified_at: 2026-10-11T08:43:02Z
+  end_line: 1854
+  loc: 1854
+  verified_at: 2026-10-11T21:54:42Z
   note: spell metadata and hooks; carries `spellframe_kind` and `implemented_protocols` (0.2.8222);
-    `_spell_index_unless_cleaned`, the cleanup-safe index read (0.2.8229).
+    `_spell_index_unless_cleaned`, the cleanup-safe index read (0.2.8229); a direct `cleanup()` removes the spell
+    outside the spell lock, under its removal lock (0.2.8233).
 - path: `src/melder/aether/spellbook/existence/existence.py`
   start_line: 1
   end_line: 138
@@ -2312,10 +2398,11 @@ Aether and frames:
 
 - path: `src/melder/aether/aether.py`
   start_line: 1
-  end_line: 2954
-  loc: 2954
-  verified_at: 2026-10-01T10:18:17Z
-  note: global singleton, frame registry and the noncreating frame lookups (0.2.8208).
+  end_line: 2990
+  loc: 2990
+  verified_at: 2026-10-11T18:42:56Z
+  note: global singleton, frame registry and the noncreating frame lookups (0.2.8208); the published frame view
+    the cross-frame sweeps read (0.2.8231).
 - path: `src/melder/aether/aether_utility_system.py`
   start_line: 1
   end_line: 495
@@ -2433,10 +2520,10 @@ Aether and frames:
   note: expanded from the directory entry `src/melder/mutation_research/research_set/`
 - path: `src/melder/aether/aetheric_frame/aetheric_frame.py`
   start_line: 1
-  end_line: 1180
-  loc: 1180
-  verified_at: 2026-10-01T10:18:17Z
-  note: per-frame state and control plane.
+  end_line: 1296
+  loc: 1296
+  verified_at: 2026-10-11T18:42:56Z
+  note: per-frame state and control plane; cleanup-safe probes, the frame lock kept after cleanup (0.2.8231).
 
 Aetheric mediator plane (WIRED - FRAME_CREATE LIVE, held by Aether):
 
@@ -2822,10 +2909,11 @@ Conduit runtime:
 
 - path: `src/melder/aether/conduit/conduit.py`
   start_line: 1
-  end_line: 7142
-  loc: 7142
-  verified_at: 2026-10-11T15:21:03Z
-  note: conduit lifecycle and meld facade.
+  end_line: 7178
+  loc: 7178
+  verified_at: 2026-10-11T20:29:47Z
+  note: conduit lifecycle and meld facade; `cleanup_spell` emits the index destroy the Book reports (0.2.8231);
+    `find_contracted_spell` and `inspect_spell` take no conduit lock (0.2.8232).
 - path: `src/melder/aether/conduit/conduit_state/conduit_state.py`
   start_line: 1
   end_line: 94
@@ -2834,10 +2922,11 @@ Conduit runtime:
   note: conduit state enum.
 - path: `src/melder/aether/conduit/conduit_ward/conduit_ward.py`
   start_line: 1
-  end_line: 3872
-  loc: 3872
-  verified_at: 2026-09-27T23:41:28Z
-  note: contracts and lineage.
+  end_line: 3952
+  loc: 3952
+  verified_at: 2026-10-11T18:42:56Z
+  note: contracts and lineage; owner-side emissions under the ward lock, contract reads under the contract
+    lock, the listing resolved through the Book (0.2.8231).
 - path: `src/melder/aether/conduit/conduit_ward/policies/policies.py`
   start_line: 1
   end_line: 75
@@ -3475,6 +3564,27 @@ without rewriting the original record or existing live IDs.
 
 ## Context / Handoff Summary
 
+2026-10-11 direct spell cleanup (0.2.8233): a direct `Spell.cleanup()` decides under the spell lock and runs the Book
+removal outside it, serialized per spell by a removal lock nothing else takes, so it no longer hangs against Book, root
+or frame teardown or a conjure of its Book, which take spell locks under the Book lock; `cleanup_and_remove_spell`
+re-checks a Book torn down while it waits. The operational invariants (the 0.2.8232 entry's recorded residual is
+closed), the failure modes and the code map carry it; the component map carries the per-component rules.
+
+2026-10-11 lock residuals (0.2.8232): `find_contracted_spell` walks a one-call copy of the Book's contracted peer ids
+with no lock, `inspect_spell` walks a one-call copy of the frame's conduits and holds no Book or conduit lock while it
+asks the frames (which frame teardown could hang against), and `cleanup_spell` refuses a second disposal of a spell
+while the first runs, through an id mark kept under the Book lock - not the spell lock, which Book and frame teardown
+take under theirs. The operational invariants, the failure modes and the code map carry it; the component map carries
+the per-component rules.
+
+2026-10-11 cross-object locks (0.2.8231): the owner-side index emissions walk a ward's contracts under the ward lock,
+contract detail maps are read and written under the contract lock, the contract listing resolves through the Book
+instead of the conduit-locked Conduit lookups (a deadlock with link and sever), `cleanup_spell` emits the destroy the
+Book's locked decision reports, and bind's cross-frame sweep reads a frame view Aether republishes on frame birth and
+detach and asks frames through cleanup-safe probes; the frame copies each Book's live id set in one call. The
+operational invariants, the failure modes and the code map carry it; the component map carries the per-component
+rules.
+
 2026-10-11 spell-map walks (0.2.8230): bind publishes its four maps under the Book lock; the walks of a Book's spells
 that cannot hold that lock (the `validate_resolution` phases and cleanup pass, foreign-Book inspection, contracted
 lookups, the transfer impact walk) take one-call snapshots; `get_spell_permissions` and the command surface's spell
@@ -3566,7 +3676,7 @@ emitted line.
 manifest holds 619 entries at 0.2.8215 (cited as 582) and is 641 lines; the conjure sequence's
 evidence now covers the whole verdict gate (242-263) and the two cache-classifying methods (616-721).
 The other suspect citations here read true when opened: the Spellbook comment at
-`src/melder/aether/spellbook/spellbook.py:3686` and `check_system_state` at 1253-1292. Citations
+`src/melder/aether/spellbook/spellbook.py:3742` and `check_system_state` at 1253-1292. Citations
 the audit heuristic could not tie to a symbol were not opened.
 
 2026-10-01 frame lookups and read accessors (0.2.8208, documented now): the boundary list, the operational

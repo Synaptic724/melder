@@ -228,7 +228,7 @@ descriptors and reassemble.
 
 ## src/melder/__version__.py
 
-- source_sha256: `16dcc0c0c89584a724ba1fb9432d8f7e6263073a93492d94f25d73fa6d6a7c92`
+- source_sha256: `b7eb74b4f6ee6cc11f33daf0968442fcfc3f79185836af7b8163da67f44228dd`
 - nodes: 1
 
 ### Nodes
@@ -317,7 +317,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_agent_documentation/manifest/agent_documentation_manifest.py
 
-- source_sha256: `657eb78ef00bcf6fa7f42fcb99e478e7347178e3a25904183aae9307614173c7`
+- source_sha256: `535d310adb401b8a14cc6fd4e2f6b8929c1afd7881e16ae31ffe494cbdfaf066`
 - nodes: 1
 
 ### Nodes
@@ -396,7 +396,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py
 
-- source_sha256: `f7628ae55004ff6cacb5120df8bc9c7b7f320ea3bbf1b0b8946b05b47cd79fdc`
+- source_sha256: `6746c4e3358683fc9f0a71586131013194965cc4b5ca82575837e1e1dba99d76`
 - nodes: 1
 
 ### Nodes
@@ -474,7 +474,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/graph_adjacency_manifest.py
 
-- source_sha256: `002d1acf8222e745c2c4ae726bc4670b9f3749b4d4b50ca114b170fa750b0838`
+- source_sha256: `7b7a4b465722c80d0716388e948d024cca1f7b11f8503a71dcaf004b05543012`
 - nodes: 1
 
 ### Nodes
@@ -491,7 +491,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_index.py
 
-- source_sha256: `f840ae5457e61a301a739a952b22d8c82f601006cfdf74acf4796e0ffee1ee12`
+- source_sha256: `8663f70052028fb2b55f810733b5899cb296c76cd994f5008debaf54486cf529`
 - nodes: 1
 
 ### Nodes
@@ -508,7 +508,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_manifest.py
 
-- source_sha256: `788dfb341a9f19860120d0a049981f91389f7f07123233af31244f44a4fb9e74`
+- source_sha256: `62617747825edf8c4b62c84f74b6b6c9e2518d32249366a7fc6ebd7f77bb04f1`
 - nodes: 1
 
 ### Nodes
@@ -528,7 +528,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_architecture_payload.py
 
-- source_sha256: `9a0bd7687b610538a30d1fe9139586ddb3ac64ec93df3224de74709f10177bc2`
+- source_sha256: `ef514f19dd4086ea55f0d09fe4e17eb0df8f6290f2992270613327b4e8a1f387`
 - nodes: 1
 
 ### Nodes
@@ -545,7 +545,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_components_payload.py
 
-- source_sha256: `6cf40d13558684380e5aadd15ae910b3299d667bb2379d7a80e7bbf99c2104ab`
+- source_sha256: `a848efcb2165eb75a9faf5fc4eb88fdc7264d0308922ee8f07fc6104eb6652c3`
 - nodes: 1
 
 ### Nodes
@@ -562,7 +562,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_graph_payload.py
 
-- source_sha256: `373364ff146b6992652fb3d423b9aea9c3b38493fcb2c9f4d41972df10488fa6`
+- source_sha256: `8b15e6f77ac646f72ee4e86fac49af28f5f8901f4595a2e582f986dfe4fcb47e`
 - nodes: 1
 
 ### Nodes
@@ -606,7 +606,7 @@ descriptors and reassemble.
 
 ## src/melder/aether/aether.py
 
-- source_sha256: `d9d4e77ea97558b16352686343b2db93f805ddf0546ca011c87ca2ab8d1143e5`
+- source_sha256: `642ffc29b6bc04f3fe5d6d67620f08cb5fc0795b5d812f8612b8041fc19d7656`
 - nodes: 2
 
 ### Nodes
@@ -637,7 +637,8 @@ descriptors and reassemble.
   - answers non-creating frame lookups (find_frame, get_frame, list_frame_names)
   - seals the spell-id regime at the first frame and refuses configure/activate of a configuration with a different process_wide_unique_spell_ids while frames exist
   - reports the spell-id regime in force (process_wide_unique_spell_ids, lock-free): the sealed value once a frame exists, else the installed configuration's, else True
-- owns_state: `_aetheric_frames`, `_default_frame`, `_logger`
+  - republishes an immutable (name, frame) view of its frame registry under its lock on every frame birth, detach and teardown; bind's cross-frame duplicate sweep reads it without copying (0.2.8231)
+- owns_state: `_aetheric_frames`, `_default_frame`, `_logger`, `_aetheric_frame_view`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `acquire_load_authority`, `activate`, `activated`, `aetheric_mediator`, `attach_logger`, `cleanup`, `cleanup_aetheric_frames`, `configuration`, `configure`, `configured`, `count_root_conduits`, `create_configuration` (+24 more)
 
@@ -858,7 +859,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/aetheric_frame.py
 
-- source_sha256: `501779c86c3d04db9b7261ef45d2d40df1774d53d34c624d3b45a2e63f262fd4`
+- source_sha256: `ed598c0e3af1a47dc4de4f517ab11e59cdbf532e22ad14e552d2d8ad92321aa3`
 - nodes: 2
 
 ### Nodes
@@ -884,6 +885,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - bridges normal-root registration into Cloud's shared name collision authority
   - logs a conduit that raises during frame teardown through the Aether logger and cleans the rest
   - reports the frame-wide shared rich Spellbook configuration (shared_spellbook_configuration) only while its posture shares one; None otherwise or before a Book binds one
+  - answers cleanup-safe membership probes for Aether's cross-frame sweep (False, None or an empty set once cleaned) and keeps its lock after cleanup (0.2.8231)
+  - reads each conjured Book's live id set in one call, so a bind into that Book cannot tear the read (0.2.8231)
 - owns_state: `_conduits`, `_spell_registry`, `_selected_spell_registry`, `_spell_system_states`, `_dev_ops_manager`, `_devops_information_registry`, `_configuration`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `bind_frame_configuration`, `claim_lookup`, `cleanup`, `conduit_cloud`, `dev_ops_manager`, `devops_information_registry`, `find_conduit_id_for_spell`, `find_index_for_spell`, `frame_configuration`, `freeze_frame_configuration`, `get_lookup`, `get_lookup_sig_by_spell_id` (+17 more)
@@ -4416,7 +4419,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/conduit.py
 
-- source_sha256: `864666ef1814d51fc9ae5ab990fd8317fd2117a9fedd573b9ec185b907f0992f`
+- source_sha256: `498277406f84eaaeb5ce5f04d86972aeae2266bdaa53e1cfe0cbb229fdf27229`
 - nodes: 2
 
 ### Nodes
@@ -4459,6 +4462,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - returns a lesser to its pool descendants first, then SpellSpaces, then its own store, and raises the collected disposal failures after the shell is pooled; soft cleanup of a pooled lesser is a no-op
   - finishes permanent teardown when a disposal method fails and then raises the collected disposal groups
   - returns the Spellbook it resolves through, borrowed (spellbook): the conjuring Book for a root, the root's Book for a lesser, the new Book after upgrade_to_normal
+  - emits an index destroy to index-link borrowers exactly when the Book's disposal reports the index it destroyed (cleanup_spell, 0.2.8231)
+  - looks up contracted spells over a one-call copy of the Book's contracted peer ids and inspects objects, both with no conduit lock held (find_contracted_spell, inspect_spell, 0.2.8232)
 - owns_state: `_meld`, `_creations`, `_conduit_ward`, `_creation_gate`, `_spellspace_stack`, `_spellspace_pool`, `_conduit_pool`, `_transaction_identity`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `add_bind_hooks`, `add_index_to_contract`, `add_spell_to_contract`, `add_spell_to_contract_with_dependencies`, `add_spells_to_contract`, `add_to_spell_index`, `begin_transaction`, `bind`, `bind_inactive`, `check_spell_id`, `cleanup`, `cleanup_lesser_conduits` (+66 more)
@@ -4664,7 +4669,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/conduit_ward/conduit_ward.py
 
-- source_sha256: `7282a938ec3345fd7c2e294b6c65327267feb0e44d5924d97618b2fb389b0dc2`
+- source_sha256: `0f581f69871c99263da5c06f842783d101ea345d20fd36ae247e9bd5f89731f3`
 - nodes: 2
 
 ### Nodes
@@ -4695,6 +4700,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - retains a descendant that could not finish its pool return and prevents ancestor pooling; a child that finished but raised disposal failures is returned to the pooling parent
   - resolves attached lessers by id over per-level dict.copy() snapshots of its child map, skipping children whose ward was torn down
   - raises its lesser children's disposal failures after finishing its own teardown
+  - walks its contract registry under its own lock when it tells index-link borrowers about the owner's notch, member moves and index destroy, so a concurrent link or sever waits (0.2.8231)
+  - reads and writes a contract's detail maps under that contract's lock, answers contract reads by key first and resolves contract listings through the Book's id maps without taking the conduit lock (0.2.8231)
 - owns_state: `_contracts`, `_lesser_conduits`, `_parent_conduit`, `_root_conduit`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `cleanup_all_lesser_conduits`, `root_conduit`
@@ -6212,7 +6219,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell.py
 
-- source_sha256: `ddffc3046e8f181be6667f724474daab6f981f5d26c02d82a06df702f68e4419`
+- source_sha256: `8e197eacf330138ce730c5361d5339cbeac7808637d2672d979232ca9bc6b5bd`
 - nodes: 2
 
 ### Nodes
@@ -6238,7 +6245,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - records conduit ownership changes and publishes structural changes into SpellSystemStates
   - keeps a borrowed spell-index CreationGate under dynamic ownership and the cause of its last failed context build
   - carries the binding's spellframe_kind and implemented_protocols (the Protocol it was checked against, else ()) as identity data that survives cleanup (0.2.8222)
-- owns_state: `_resolvable`, `_compiler_artifact`, `_creation_context`, `_creation_context_factory`, `_creation_context_switch`, `_spellbook`, `_spell_system_states`, `dependency_graph`, `dependencies`, `disposal_method_names`, `_creation_context_failure`, `spellframe_kind`, `implemented_protocols`
+  - on a direct cleanup removes itself through its Spellbook outside its own lock, serialized per spell by a removal lock nothing else takes, so Book teardown and conjure, which take its lock under the Book lock, never wait on it (_direct_removal_route, 0.2.8233)
+- owns_state: `_resolvable`, `_compiler_artifact`, `_creation_context`, `_creation_context_factory`, `_creation_context_switch`, `_spellbook`, `_spell_system_states`, `dependency_graph`, `dependencies`, `disposal_method_names`, `_creation_context_failure`, `spellframe_kind`, `implemented_protocols`, `_removal_lock`
 - phases: `init`, `validation`, `runtime`, `cleanup`
 - public methods: `apply_mutation_override`, `cleanup`, `clear_mutation_override`, `emit_cache`, `emit_cache_file`, `has_existing_object`, `has_mutation_override`, `invalidate_spell`, `is_broken`, `is_class_spell`, `is_existing_creation`, `is_lambda_spell` (+12 more)
 
@@ -15425,7 +15433,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spellbook.py
 
-- source_sha256: `469e28abb50de2fac66eb6c5a134e804ca8e916bbf16cfa2a291a0f88c4eec3b`
+- source_sha256: `630a6ef213414fee28cbb8261f674f1b4d7aa15bd24300f66989358937557f30`
 - nodes: 2
 
 ### Nodes
@@ -15458,6 +15466,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - offers beginners an opt-in conjure report of Phase-4 validation warnings (validation_warnings=True); the default and internal conjure routes are silent
   - caches a creation only when it carries a manifest package (_emit_spell_cache)
   - refuses the recorded-world configuration discipline on the predicted conjure mode before settling the frame posture, and re-checks it on the settled mode inside the transaction window
+  - disposes a spell under the Book lock and reports the index the disposal destroyed (_dispose_spell); a spell already disposed raises RuntimeError (0.2.8231), and a second disposal of a spell while one runs is refused through an id mark kept under the Book lock (0.2.8232)
+  - answers contracted-spell lookups by key - the active copy by version id, a parked copy through its index - before walking (0.2.8231)
+  - inspects objects holding its lock only for its own spells and asks the frames with no lock held, over a one-call copy of the frame's conduits (inspect_spell, 0.2.8232)
+  - re-checks under its lock a Book torn down while a removal waited for it (cleanup_and_remove_spell): a spell the teardown cleaned returns, anything else raises the cleaned-Book RuntimeError (0.2.8233)
 - owns_state: `_bind`, `_spells`, `_spells_by_id`, `_lookup_spells`, `_contracted_spells`, `_configuration`, `_conduit`
 - phases: `init`, `validation`, `runtime`, `cleanup`
 - public methods: `add_bind_hooks`, `begin_transaction`, `bind`, `bind_inactive`, `cleanup`, `cleanup_and_remove_spell`, `cleanup_spell`, `clear_bind_hooks`, `conduit`, `configure_aether_frame`, `conjure`, `contracted_spells` (+17 more)
