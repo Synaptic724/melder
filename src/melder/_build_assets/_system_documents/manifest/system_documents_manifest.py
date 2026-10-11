@@ -19,8 +19,8 @@ Regenerate with:
 """
 
 MANIFEST_VERSION = "2.0.0"
-BUILT_FOR_VERSION = "0.2.8228"
-SOURCE_SHA256 = "71ffc11bdf14bb727e475b3480a366335e73ad4220d41d48bbc5d7f03f735ede"
+BUILT_FOR_VERSION = "0.2.8229"
+SOURCE_SHA256 = "c467dfabf102439349fca7e3fa5e444f34b259ec989668f4940c15d41175c2a6"
 DOCUMENT_COUNT = 4
 
 READ_ORDER = (
@@ -40,8 +40,8 @@ DOCUMENTS = {
         'addressing': 'section',
         'document_file': 'src_architecture.md',
         'payload_module': 'src_architecture_payload',
-        'line_count': 3791,
-        'content_sha256': '75aa6f132ab28685a41307daad9184b06fda6da28781d3d4357aa48a55fc4e4f',
+        'line_count': 3820,
+        'content_sha256': '3bb30de1d9ca871e696b3cc88d4d53b55b604c9ee49af496d4535a25059548c7',
     },
     '__components__': {
         'name': '__components__',
@@ -52,8 +52,8 @@ DOCUMENTS = {
         'addressing': 'section',
         'document_file': 'src_components.md',
         'payload_module': 'src_components_payload',
-        'line_count': 10860,
-        'content_sha256': '9e9717337839a50d0d3339ce244b98bab6c779fa65ffd5618dac316be526ef91',
+        'line_count': 10881,
+        'content_sha256': '2b4bbdc50274c3b0cb13335c180dccf7922ffa1855e217bc00eb630a73af746a',
     },
     '__graph_network__': {
         'name': '__graph_network__',
@@ -65,7 +65,7 @@ DOCUMENTS = {
         'document_file': 'src_graph.md',
         'payload_module': 'src_graph_payload',
         'line_count': 27718,
-        'content_sha256': '862bb9aeffce946bb5da906d01751da6052a6e274dd7bf5df0e77f2a88a2d9b6',
+        'content_sha256': '22b75d1aefc1ed82bf3113e39eef408218f64c79f80cb83981685e1e4fcb9e12',
     },
     '__graph_details__': {
         'name': '__graph_details__',
@@ -77,6 +77,6 @@ DOCUMENTS = {
         'document_file': 'src_graph.md',
         'payload_module': 'src_graph_payload',
         'line_count': 27718,
-        'content_sha256': '862bb9aeffce946bb5da906d01751da6052a6e274dd7bf5df0e77f2a88a2d9b6',
+        'content_sha256': '22b75d1aefc1ed82bf3113e39eef408218f64c79f80cb83981685e1e4fcb9e12',
     },
 }

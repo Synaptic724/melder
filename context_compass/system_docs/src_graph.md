@@ -228,7 +228,7 @@ descriptors and reassemble.
 
 ## src/melder/__version__.py
 
-- source_sha256: `1b99a878f8de58beebcea428fc4a688f1ab539dc30af5fb1b01695d3fae6765b`
+- source_sha256: `46cbce85659909941ff3a77914a0269a5d9e4914d8e184647dd5193eee901027`
 - nodes: 1
 
 ### Nodes
@@ -317,7 +317,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_agent_documentation/manifest/agent_documentation_manifest.py
 
-- source_sha256: `a61b2acd5ad94741ac2b64aa1ab97181d6f8ee071176636e3d8041eae49a4822`
+- source_sha256: `054c345622ec612dcc04b9feaf2e88f5d6dd774fb95dded939c8b1ba1ce0a5a1`
 - nodes: 1
 
 ### Nodes
@@ -396,7 +396,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py
 
-- source_sha256: `8302f82c736f381820ed94b8c46156908e3caa0d6ee500f13467089b1d62dfb9`
+- source_sha256: `b1ac0d0b7490f433fa59d482478b7ddcf691c955729dfbd3d6fd5f7bae5d7a79`
 - nodes: 1
 
 ### Nodes
@@ -474,7 +474,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/graph_adjacency_manifest.py
 
-- source_sha256: `22f978c943ab1c919d11225683b01e3b0e89f2473ce067e43a706886f23df924`
+- source_sha256: `8ace71045f8b7c3383e912a94f572144e31378b06073c68e6d243b6bc0926c70`
 - nodes: 1
 
 ### Nodes
@@ -491,7 +491,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_index.py
 
-- source_sha256: `945be229d2ba35562fa16b4a319a03486ca83183517f5e5ad331f89965af6e23`
+- source_sha256: `e78722b447831a6b8cfc72d5a085e1ef364edbc852a1bd9cdb966b8e20ad6fa5`
 - nodes: 1
 
 ### Nodes
@@ -508,7 +508,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_manifest.py
 
-- source_sha256: `0e0c6ab5cf0ce713ca2eb41493a67d7eb2541be78b5a2ed7f28274797375d9c3`
+- source_sha256: `fc0cfc5144266b72dc34bc70b46c7c4b30438b1710e2123fb6bd9a74ef152450`
 - nodes: 1
 
 ### Nodes
@@ -528,7 +528,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_architecture_payload.py
 
-- source_sha256: `99e2ae4fa1986bfc338f8014ed99f4b3b0e87fd959b60f01998c6d06f0d3ed02`
+- source_sha256: `d98407072787cefc214ad15cc4043f896a198b9ec3e30b6fcd265575f92fa6ed`
 - nodes: 1
 
 ### Nodes
@@ -545,7 +545,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_components_payload.py
 
-- source_sha256: `1469d9e68f19b2b10ce1d85153034ca3d28e6a4c3ef45b300c0a5fdf0fd70ba8`
+- source_sha256: `a9ac16a688aee4dfecae17c160340201b2db01cadd1f8c75ca67118e554fc356`
 - nodes: 1
 
 ### Nodes
@@ -562,7 +562,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_graph_payload.py
 
-- source_sha256: `de2695b125ca5585127ebe45f6b1ae8a9cde4c718a57c027fc415b1e57de77fa`
+- source_sha256: `5425efdaa79dd26c55ef2412fa2415641ee071f9aa77ff4b0a18726f5b36cc78`
 - nodes: 1
 
 ### Nodes
@@ -6208,7 +6208,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell.py
 
-- source_sha256: `268ee4d536156f3bc072884a3829e2a855354386104f2d5afd31e871d1e1cd64`
+- source_sha256: `ddffc3046e8f181be6667f724474daab6f981f5d26c02d82a06df702f68e4419`
 - nodes: 2
 
 ### Nodes
@@ -15421,7 +15421,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spellbook.py
 
-- source_sha256: `13988deba96febe2ffb830b8cc0039463185f7443146e539df196d150c1580ae`
+- source_sha256: `4e2c7eeadd8c46f0c3308072842c223f05236124081883fee236d76ff45c84d8`
 - nodes: 2
 
 ### Nodes

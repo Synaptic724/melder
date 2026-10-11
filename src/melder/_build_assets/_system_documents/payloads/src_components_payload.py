@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_components.md'
-LINE_COUNT = 10860
-CONTENT_SHA256 = '9e9717337839a50d0d3339ce244b98bab6c779fa65ffd5618dac316be526ef91'
+LINE_COUNT = 10881
+CONTENT_SHA256 = '2b4bbdc50274c3b0cb13335c180dccf7922ffa1855e217bc00eb630a73af746a'
 
 TEXT = """# Src Components (C3/C2/C1)
 
@@ -24,7 +24,7 @@ TEXT = """# Src Components (C3/C2/C1)
 - Status: in_progress
 - Owner:
 - Created: 2026-01-17
-- Updated: 2026-10-10
+- Updated: 2026-10-11
 
 ## Scope
 This document defines C3 components, C2 subcomponents, and C1 code references
@@ -582,6 +582,14 @@ Concurrency/Threading:
   - src/melder/aether/spellbook/spellbook_creation_system.py:2055-2083
     (`_run_scheduler_with_phases` - the only acquisition, with its rationale)
   - src/melder/aether/spellbook/spellbook.py:1055-1066 (the cache-emit flag re-checked and set under `_lock`)
+- `find_spell_by_id` is lock-free on purpose (0.2.8229): it reads `_spells_by_id`, then `_inactive_spells` and
+  `Spell._spell_index_unless_cleaned`, then `_spells.get(index)` - single-key reads, never an iteration - so a
+  concurrent writer can neither raise a size-change error in it nor make it skip an entry. A Book-lock reader was
+  measured and rejected: conjure holds `_lock` across the creation pipeline while phase-4 workers
+  (`AmbiguousProviderStrategy` calls the lookup) and conduit lifecycle hooks run, so a locked lookup on another
+  thread stalled the conjure until the 60 s phase barrier timed out. A notch, and a transfer between
+  `_flip_registry_and_spellbooks` and `_migrate_inactive_members`, are the only windows in which a lineage id
+  briefly answers None.
 
 Invariants/Guarantees:
 - Conjure allowed once per Spellbook instance, tracked by the `_conjured` flag
@@ -599,6 +607,10 @@ Invariants/Guarantees:
 
 Failure Modes:
 - `SpellbookValidationError` when Phase 1-4 produces broken spells.
+- `find_spell_by_id` returns None for an id no local index claims - unknown, another Book's, a contracted
+  spell's, a parked version split into a fresh index, a parked version disposed during the lookup - and raises
+  only RuntimeError for a cleaned Book (0.2.8229; before, concurrent binds and removals made it raise the
+  size-change RuntimeError or the SpellIndex AttributeError/RuntimeError, or miss a registered spell).
 - RuntimeError "... requires the SpellbookConfiguration to be finalized BEFORE the first bind" when a conjure
   would run dynamic, the Crystallizer is active and binds ran while the configuration was still mutable
   (`_binds_before_configuration_count`). Since 0.2.8211 the refusal leaves the frame posture as it was; before,
@@ -795,6 +807,10 @@ Lifecycle/Cleanup:
 
 Concurrency/Threading:
 - SpellIndex and Spell use RLock to protect mutation and cleanup.
+- `Spell._spell_index_unless_cleaned()` (0.2.8229) reads `spell_index` under the spell's `_lock` and answers
+  None once `_cleaned` is set. `Spell.cleanup` sets `_cleaned` and deletes `spell_index` under that lock and keeps
+  `_lock` itself, so the read never raises on a cleaned Spell; it holds no other lock, and an index move (which
+  repoints `spell_index` under the Spellbook lock) is seen as the old or the new index.
 
 Invariants/Guarantees:
 - SpellIndex hash identity is stable and never changes.
@@ -7449,9 +7465,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-09-26T20:10:34Z
 - path: `src/melder/aether/spellbook/spellbook.py`
   start_line: 1
-  end_line: 7341
-  loc: 7341
-  verified_at: 2026-10-10T09:33:01Z
+  end_line: 7369
+  loc: 7369
+  verified_at: 2026-10-11T08:43:02Z
 - path: `src/melder/aether/spellbook/spellbinder.py`
   start_line: 1
   end_line: 870
@@ -7474,9 +7490,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/spellbook/spell.py`
   start_line: 1
-  end_line: 1717
-  loc: 1717
-  verified_at: 2026-09-26T20:10:34Z
+  end_line: 1770
+  loc: 1770
+  verified_at: 2026-10-11T08:43:02Z
 - path: `src/melder/aether/spellbook/spell_types/spell_types.py`
   start_line: 1
   end_line: 101
@@ -10451,6 +10467,11 @@ Companion documents:
   component and code-description patches are inputs to this document while a lane is open.
 
 ## Context / Handoff Summary
+
+2026-10-11 lookup by version id (0.2.8229): Spellbook Core carries why `find_spell_by_id` reads the id maps
+without the Book lock (conjure holds it while phase-4 workers and hooks run) and its None windows (a notch, a
+transfer between flip and migration); the Binding Pipeline carries `Spell._spell_index_unless_cleaned` and the
+`_lock` that `Spell.cleanup` keeps; the code map's spellbook.py and spell.py extents are remeasured.
 
 2026-10-10 scan_bind option parity (0.2.8228): the Scan-Bind Module Scanner subcomponent carries the full
 declaration contract - `scan_bind` takes bind()'s target options (`resolvable`, per-target disposal names,

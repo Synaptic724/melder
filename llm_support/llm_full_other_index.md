@@ -10,9 +10,9 @@ Line numbers are 1-based and inclusive.
 | bundle | llm_full_other.txt |
 | schema_version | 1.0.0 |
 | generator_sha256 | d75f1de961817875c099e1b3bc6eaa3a6c670dc89752cd94864d977e452b88e3 |
-| source_fingerprint | 1ca8caeafa7ac6064a9c68a8ac2f674aa62def829e05092a06403df8bd433433 |
-| bundle_sha256 | 4041fa3ffe8988ae78f8f56144d819e3394557ecc4ec0968771417030146a5d4 |
-| bundle_line_count | 76770 |
+| source_fingerprint | 99d526d4e43c49c34f836176dac250e5d545289b9514a6eff0197e645c32fc5f |
+| bundle_sha256 | 01d473b36f68232d20016654ad6fd3810fa08d6ee7b0c858f4bb8cdd24ae9e7b |
+| bundle_line_count | 76788 |
 | bundle_line_ending | lf |
 | files | 404 |
 
@@ -419,8 +419,8 @@ Line numbers are 1-based and inclusive.
 | 74328-74936 | 74333-74933 | 41553 | utf-8 | f9f4960cbdb865f03a17d87d0bb81d0c630d745ac9128bc61e03e47733e6a068 | release_docs/0.2.77.md |
 | 74937-75019 | 74942-75016 | 4947 | utf-8 | 18956953a24a740fcba9c3b4e02a43941d8106b8ee2c74d16bac07d5875d7abe | release_docs/0.2.82.md |
 | 75020-75632 | 75025-75629 | 41777 | utf-8 | 6646878d3aebed185dead51cc1b2bb7f935906dc74e6ffa74cb7625b0177af79 | release_docs/0.2.8227.md |
-| 75633-75687 | 75638-75684 | 3184 | utf-8 | a3bb2d2ea30cd18d6fd5e28e285c95dc24bce2f57a55c5de91b08c4e8de0d8b0 | release_docs/next_version_release.md |
-| 75688-75756 | 75693-75753 | 2442 | utf-8 | 45f6cd2e3085d0fb0116dd67ce8d3ac1dfe2f4a32007841ef5e571baa874f7f0 | requirements.txt |
-| 75757-75783 | 75762-75780 | 1035 | utf-8 | f2d8050c4a7c4e4ee7cd5067e7d71636969e0387f7a8dd6b7e9c3fbbc1d5cc52 | roadmap.md |
-| 75784-76284 | 75789-76281 | 26171 | utf-8 | c88d2075a3fdea71e193bb3a1082ce0fba894e11d2259b283940453c0cc7ed23 | roadmap/melder-roadmap-expanded.md |
-| 76285-76770 | 76290-76767 | 22675 | utf-8 | 83f37b9881d1f47c25415e94e5b018b5c130677d8adc59e587456ca1d104e32f | roadmap/melder-roadmap-source-notes.md |
+| 75633-75705 | 75638-75702 | 4676 | utf-8 | 82d6f7411e0c323b771455bcba4175065bec6ad2e6db7d0a599c36828067e743 | release_docs/next_version_release.md |
+| 75706-75774 | 75711-75771 | 2442 | utf-8 | 45f6cd2e3085d0fb0116dd67ce8d3ac1dfe2f4a32007841ef5e571baa874f7f0 | requirements.txt |
+| 75775-75801 | 75780-75798 | 1035 | utf-8 | f2d8050c4a7c4e4ee7cd5067e7d71636969e0387f7a8dd6b7e9c3fbbc1d5cc52 | roadmap.md |
+| 75802-76302 | 75807-76299 | 26171 | utf-8 | c88d2075a3fdea71e193bb3a1082ce0fba894e11d2259b283940453c0cc7ed23 | roadmap/melder-roadmap-expanded.md |
+| 76303-76788 | 76308-76785 | 22675 | utf-8 | 83f37b9881d1f47c25415e94e5b018b5c130677d8adc59e587456ca1d104e32f | roadmap/melder-roadmap-source-notes.md |

@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_architecture.md'
-LINE_COUNT = 3791
-CONTENT_SHA256 = '75aa6f132ab28685a41307daad9184b06fda6da28781d3d4357aa48a55fc4e4f'
+LINE_COUNT = 3820
+CONTENT_SHA256 = '3bb30de1d9ca871e696b3cc88d4d53b55b604c9ee49af496d4535a25059548c7'
 
 TEXT = """# Src Architecture (C4)
 
@@ -24,7 +24,7 @@ TEXT = """# Src Architecture (C4)
 - Status: in_progress
 - Owner:
 - Created: 2026-01-17
-- Updated: 2026-10-10
+- Updated: 2026-10-11
 
 ## Scope and Intent
 This document describes the Melder core architecture at the C4 level for
@@ -939,6 +939,21 @@ each entry in `src_components.md`; this list is the set that crosses components.
 - Validation strategies registered in `SpellValidationSystem`.
 
 ## Operational Invariants
+- Lookup by version id (2026-10-11, 0.2.8229): `Spellbook.find_spell_by_id` answers from the Book's id maps and
+  never iterates a live map. A current version id is one read of `_spells_by_id`; a superseded or parked id is a
+  read of `_inactive_spells`, then of the parked Spell's index through `Spell._spell_index_unless_cleaned` (under
+  that Spell's own lock, the one `Spell.cleanup` deletes `spell_index` under, which cleanup keeps), then of
+  `_spells` for that index's live spell. Every owned lineage id is in one of the two maps: a notch parks the
+  outgoing version, add/remove-from-index move only parked versions and repoint their index under the Book lock,
+  parked disposal drops the id with its membership, and an ownership transfer migrates the whole lineage
+  (`_flip_registry_and_spellbooks`, then `_migrate_inactive_members`). The lookup takes no Book lock, by design:
+  conjure holds that lock while phase-4 workers (the ambiguity report calls the lookup) and conduit hooks run, and
+  both may call it from other threads. A concurrent bind, removal, notch, index move or transfer therefore never
+  makes it raise or skip a registered spell; a lookup inside a notch, or between a transfer's flip and its
+  migration, answers None for that lineage, and the returned Spell is borrowed, not leased.
+  EVIDENCE: `src/melder/aether/spellbook/spellbook.py:Spellbook.find_spell_by_id`,
+  `src/melder/aether/spellbook/spell.py:Spell._spell_index_unless_cleaned`, `Spell.cleanup` and
+  `src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py:TransferOfOwnership.execute`.
 - Scan declarations (2026-10-10, 0.2.8228): a module scan registers what the module's source declares, through
   the one bind pipeline. `scan_bind` takes every target option `Spellbook.bind` takes - `resolvable`, per-target
   `disposal_method_names` and keyword application metadata, with bind's defaults (`permissions` stays required);
@@ -1565,6 +1580,13 @@ each entry in `src_components.md`; this list is the set that crosses components.
   not the same thing as a Rift-level event orchestrator.
 
 ## Failure Modes and Error Paths
+- `Spellbook.find_spell_by_id`, and `Conduit.get_spell_by_id` through it, no longer fail while other spells are
+  bound, removed or parked on other threads (fixed in 0.2.8229; MelderOps hit it on 0.2.8226, reproduced on
+  0.2.8228). The old walk over the live index map raised RuntimeError "dictionary changed size during
+  iteration", AttributeError "'SpellIndex' object has no attribute '_spells_in_index'" or RuntimeError
+  "SpellIndex has already been cleaned.", or returned None for a spell that was still registered. A parked
+  version disposed during a lookup now answers None instead of raising.
+  EVIDENCE: `src/melder/aether/spellbook/spellbook.py:Spellbook.find_spell_by_id`.
 - Breaking (0.2.8228): a module scan no longer registers an undecorated subclass of a `scan_bind`-decorated
   class; decorate the subclass to register it. Before, the subclass was bound with its parent's declaration.
   A module-level instance of a decorated class, a class whose metaclass was decorated and a module object
@@ -2073,10 +2095,10 @@ Spellbook and binding:
 
 - path: `src/melder/aether/spellbook/spellbook.py`
   start_line: 1
-  end_line: 7341
-  loc: 7341
-  verified_at: 2026-10-10T09:33:01Z
-  note: Spellbook core and conjure pipeline.
+  end_line: 7369
+  loc: 7369
+  verified_at: 2026-10-11T08:43:02Z
+  note: Spellbook core and conjure pipeline; `find_spell_by_id` answers from the id maps (0.2.8229).
 - path: `src/melder/aether/spellbook/spellbook_creation_system.py`
   start_line: 1
   end_line: 3482
@@ -2119,10 +2141,11 @@ Spellbook and binding:
     selected spell.
 - path: `src/melder/aether/spellbook/spell.py`
   start_line: 1
-  end_line: 1734
-  loc: 1734
-  verified_at: 2026-10-04T11:45:00Z
-  note: spell metadata and hooks; carries `spellframe_kind` and `implemented_protocols` (0.2.8222).
+  end_line: 1770
+  loc: 1770
+  verified_at: 2026-10-11T08:43:02Z
+  note: spell metadata and hooks; carries `spellframe_kind` and `implemented_protocols` (0.2.8222);
+    `_spell_index_unless_cleaned`, the cleanup-safe index read (0.2.8229).
 - path: `src/melder/aether/spellbook/existence/existence.py`
   start_line: 1
   end_line: 138
@@ -3417,6 +3440,12 @@ without rewriting the original record or existing live IDs.
 - `src/melder/utilities/ai_native_support_tools/protocol_crafter.py`
 
 ## Context / Handoff Summary
+
+2026-10-11 lookup by version id (0.2.8229): `Spellbook.find_spell_by_id` answers from the Book's id maps
+(`_spells_by_id`, then `_inactive_spells` and the parked spell's index) instead of walking the live index map, so
+concurrent binds and removals no longer make it raise or miss a registered spell; the new internal
+`Spell._spell_index_unless_cleaned` keeps the parked branch safe against a concurrent disposal. The operational
+invariants, the failure modes and the code map carry it; the component map carries the threading rationale.
 
 2026-10-10 scan_bind option parity (0.2.8228): `scan_bind` takes bind()'s target options (`resolvable`, per-target
 disposal names, keyword metadata) and a scan replays them through `Spellbook.bind`; only an object's own

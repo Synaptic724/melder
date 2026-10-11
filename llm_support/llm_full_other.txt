@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: other
-SOURCE FINGERPRINT: 1ca8caeafa7ac6064a9c68a8ac2f674aa62def829e05092a06403df8bd433433
+SOURCE FINGERPRINT: 99d526d4e43c49c34f836176dac250e5d545289b9514a6eff0197e645c32fc5f
 FILE COUNT: 404
 
 ================================================================================
@@ -75632,10 +75632,10 @@ END FILE: release_docs/0.2.8227.md
 ================================================================================
 ================================================================================
 BEGIN FILE: release_docs/next_version_release.md
-CONTENT SHA256: a3bb2d2ea30cd18d6fd5e28e285c95dc24bce2f57a55c5de91b08c4e8de0d8b0
+CONTENT SHA256: 82d6f7411e0c323b771455bcba4175065bec6ad2e6db7d0a599c36828067e743
 SOURCE ENCODING: utf-8
 ================================================================================
-# Melder 0.2.8228
+# Melder 0.2.8229
 
 **Unreleased**
 
@@ -75674,6 +75674,22 @@ objects that share a binding key, and scanning the same module twice, still rais
 if one target's bind fails, the targets bound before it stay registered. The `Spellbook.scan` docstring said the
 scan rolled back with its transaction window; it never did, and the docstring now says so.
 
+## `Spellbook.find_spell_by_id` no longer fails while other spells change
+
+`Spellbook.find_spell_by_id`, and `Conduit.get_spell_by_id` on top of it, used to walk the Book's index map while
+other threads bound, removed or parked spells. On the free-threaded build a lookup of a spell nobody was touching
+could then raise `RuntimeError: dictionary changed size during iteration`, raise
+`AttributeError: 'SpellIndex' object has no attribute '_spells_in_index'`, or return `None` for a spell that was
+still registered. The lookup now answers from the Book's id maps: one read for a current version id, three for a
+superseded or parked one, the same cost at any Book size, and no lock taken.
+
+What stays the same: any id in a spell's version lineage resolves to the live spell that represents it now -
+after a notch, an index move or an ownership transfer too - and an id the Book does not own still returns `None`,
+as does a parked version moved out into an index of its own. Two answers sharpen: a parked version disposed while
+a lookup runs returns `None` instead of raising, and a lookup that lands inside a notch or an ownership transfer
+of that same lineage can return `None` for that instant, as a lookup inside a notch already could. The returned
+spell is a reference you borrow, not a lease: a later removal, notch or transfer can retire or move it.
+
 ## Packaging and documentation
 
 - The README's "Declarative Binding by Module" example passes `permissions="create"`, without which it raised
@@ -75681,7 +75697,9 @@ scan rolled back with its transaction window; it never did, and the docstring no
   instances of a decorated class.
 - The packaged system documents (`melder.__components__`, `melder.__architecture__`) describe the scan
   declaration contract, the eligibility change and a scan flow; the scan code-map extent is remeasured.
-- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8228.
+- The packaged system documents describe how `find_spell_by_id` resolves version ids from the Book's id maps
+  and why it takes no lock.
+- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8229.
 ================================================================================
 END FILE: release_docs/next_version_release.md
 ================================================================================

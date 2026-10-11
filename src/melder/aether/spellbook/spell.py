@@ -565,8 +565,9 @@ class Spell(Cleanable):
             - Clears hooks, metadata, dependency/build artifacts, execution-plan
               metrics, spell-owned factory/context state, conduit ownership
               state, spellbook references, and reflective profile state.
-            - Sets `_cleaned` before the guarded section exits, then drops the
-              `_lock` reference itself after the teardown completes.
+            - Sets `_cleaned` before the guarded section exits. `_lock` is kept,
+              not deleted with the other fields, so a lock-guarded reader such as
+              `_spell_index_unless_cleaned` can still take it on a cleaned spell.
             - Deletes the disposal-name reference without clearing its list;
               creation entries may still retain that established metadata.
 
@@ -715,6 +716,41 @@ class Spell(Cleanable):
             )
             # Invalidate fast-meld-door entries: the hook gate changed.
             self._door_epoch += 1
+
+    def _spell_index_unless_cleaned(self) -> Optional[SpellIndex]:
+        """
+        Internal
+
+        Return this spell's SpellIndex, or None once the spell has been cleaned.
+
+        Purpose:
+            Let a lock-free reader that already holds this Spell - the parked
+            branch of `Spellbook.find_spell_by_id` - read its index without
+            racing `cleanup()`, which deletes `spell_index`.
+
+        Contract:
+            - Returns the index the spell belongs to while the spell is live, and
+              None after `cleanup()` has run. Never raises for a cleaned spell,
+              unlike a direct `spell_index` read.
+            - Pure read: creates, registers, and mutates nothing.
+
+        Threading:
+            Takes `self._lock`, the lock `cleanup()` sets `_cleaned` and deletes
+            `spell_index` under, so the check and the read cannot interleave with
+            a concurrent cleanup; `cleanup()` keeps `_lock`, so the read works on
+            a cleaned spell too. Holds no other lock and calls nothing while it
+            holds this one. Index moves repoint `spell_index` under the Spellbook
+            lock, not this one; a read racing a move returns the old or the new
+            index.
+
+        Returns:
+            Optional[SpellIndex]:
+                The spell's index, or None when the spell is cleaned.
+        """
+        with self._lock:
+            if self._cleaned:
+                return None
+            return self.spell_index
 
     def _cleanup_creation_context(self) -> None:
         """

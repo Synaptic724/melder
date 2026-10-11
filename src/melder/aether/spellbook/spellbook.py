@@ -2001,22 +2001,42 @@ class Spellbook(Cleanable):
             - Searches THIS spellbook's registry only. Spells reachable through
               contracted conduits or through other books in the frame are not
               consulted; `inspect_spell` is the frame-wide search.
-            - Ownership is decided by `SpellIndex.has_spell`, which tests
-              MEMBERSHIP of the index's version lineage rather than equality
-              with the currently selected id. A superseded or parked version id
-              therefore still resolves - and it resolves to the spell as it
-              exists NOW, not to the state that version described.
+            - Answers from the Book's id maps and never walks `_spells`. The
+              current version id of every owned lineage is a key of
+              `_spells_by_id`; every superseded or parked version is a key of
+              `_inactive_spells` (a notch parks the outgoing version there,
+              index moves and parked disposal keep it in step, and ownership
+              transfer migrates the whole lineage). A superseded or parked id
+              therefore still resolves - to the live spell of the index that
+              holds it, the spell as it exists NOW, not the state that version
+              described.
+            - O(1): at most three dict reads and one lock-guarded attribute read.
             - Returns None on a miss. This is deliberately unlike the
               `find_spell_index` / `find_spell_key` siblings, which raise on a
               miss; a None here means "no local index claims this id", not
-              "lookup failed".
+              "lookup failed". A parked version whose index has no active member
+              (a fresh index split off by `remove_from_spell_index`) also
+              answers None.
             - Pure lookup: creates, registers, and mutates nothing.
 
         Threading:
-            Does not acquire `self._lock`. The returned object is a live
-            reference, so a concurrent removal or graft can invalidate it after
-            this returns. Callers that need the result to stay valid must hold
-            the lock across their own use of it.
+            Does not acquire `self._lock`, by design: conjure holds that lock
+            while it waits on phase workers and runs conduit hooks, and both can
+            call this lookup from another thread. Each map read is one atomic
+            dict operation and no live map is iterated, so a concurrent bind,
+            removal, notch, index move or transfer can never make this raise or
+            skip a registered spell. A notch, and a transfer between its flip
+            and its inactive-member migration, move ids between maps in steps;
+            a lookup that lands between two steps answers None for that
+            lineage, so answers are not linearized against writers. An index
+            move only repoints a parked version's index, so a lookup racing it
+            answers as before the move or as after it.
+            The parked branch reads the parked spell's index through
+            `Spell._spell_index_unless_cleaned`, under that spell's own lock, so a
+            version disposed concurrently answers None instead of raising.
+            The returned `Spell` is a borrowed reference, not a lease: a
+            concurrent removal, notch or transfer can retire or move it after
+            this returns.
 
         Lifecycle / Cleanup:
             Guarded by `check_cleaned()`.
@@ -2033,12 +2053,20 @@ class Spellbook(Cleanable):
             RuntimeError: If the spellbook has already been cleaned.
         """
         self.check_cleaned()
-        for spell_index, spell in self._spells.items():
-            # SpellIndex is responsible for telling us whether it owns this version
-            if spell_index.has_spell(spell_id):
-                return spell
-
-        return None
+        # Current version: one atomic read of the active-id map.
+        spell = self._spells_by_id.get(spell_id)
+        if spell is not None:
+            return spell
+        # Superseded or parked version: the parked spell names its index, and that
+        # index's live spell is the answer. Reading the index under the parked
+        # spell's lock turns a concurrent disposal into a miss instead of an error.
+        parked = self._inactive_spells.get(spell_id)
+        if parked is None:
+            return None
+        spell_index = parked._spell_index_unless_cleaned()
+        if spell_index is None:
+            return None
+        return self._spells.get(spell_index)
 
     def get_spell_permissions(self, spell_index: SpellIndex) -> str | None:
         """
