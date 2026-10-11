@@ -834,13 +834,14 @@ class TransferOfOwnership(Cleanable):
         spellbook = conduit._spellbook
         if spellbook is None:
             return False
+        # One-call snapshots: these maps belong to another Book, read without its lock.
         owned = spellbook._spells or {}
-        for spell_index in owned.keys():
+        for spell_index in list(owned):
             if spell_index is not None and spell_index.id in impacted_lineages:
                 return True
         contracted = spellbook._contracted_spells or {}
-        for spell_map in contracted.values():
-            for spell_index in spell_map.keys():
+        for spell_map in list(contracted.values()):
+            for spell_index in list(spell_map):
                 if spell_index is not None and spell_index.id in impacted_lineages:
                     return True
         return False

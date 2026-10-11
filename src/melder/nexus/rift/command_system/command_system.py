@@ -881,9 +881,11 @@ class CommandSystem(Cleanable):
                 raise ValueError(
                     "Owner conduit for spell '{0}' has no spellbook.".format(spell_id)
                 )
-            for spell_index, spell in spellbook._spells.items():
-                if spell_index.has_spell(spell_id):
-                    return spell
+            # The owner Book's id maps answer the lineage lookup in O(1), without walking its
+            # live index map, which a concurrent bind or removal could resize mid-walk.
+            spell = spellbook.find_spell_by_id(spell_id)
+            if spell is not None:
+                return spell
             raise ValueError(
                 "Spell id '{0}' was not found in the owner spellbook.".format(spell_id)
             )

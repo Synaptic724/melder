@@ -13,7 +13,7 @@ Regenerate with:
     python src/melder/_build_assets/_build_asset_runner.py
 """
 
-BUILT_FOR_VERSION = "0.2.8229"
+BUILT_FOR_VERSION = "0.2.8230"
 NODE_COUNT = 1217
 EDGE_COUNT = 1395
 WHY_COUNT = 939
@@ -252,7 +252,7 @@ NODES = {
     'melder.aether.conduit.conduit_ward.contract.detail_reason.DetailReason': ('src/melder/aether/conduit/conduit_ward/contract/detail_reason.py', 'DetailReason', 'enum', 3, False),
     'melder.aether.conduit.conduit_ward.contract.details': ('src/melder/aether/conduit/conduit_ward/contract/details.py', 'details', 'module', 1, False),
     'melder.aether.conduit.conduit_ward.contract.details.Detail': ('src/melder/aether/conduit/conduit_ward/contract/details.py', 'Detail', 'class', 14, False),
-    'melder.aether.conduit.conduit_ward.contract.details.IndexDetail': ('src/melder/aether/conduit/conduit_ward/contract/details.py', 'IndexDetail', 'class', 245, False),
+    'melder.aether.conduit.conduit_ward.contract.details.IndexDetail': ('src/melder/aether/conduit/conduit_ward/contract/details.py', 'IndexDetail', 'class', 249, False),
     'melder.aether.conduit.conduit_ward.permissions.permissions': ('src/melder/aether/conduit/conduit_ward/permissions/permissions.py', 'permissions', 'module', 1, False),
     'melder.aether.conduit.conduit_ward.permissions.permissions.Permissions': ('src/melder/aether/conduit/conduit_ward/permissions/permissions.py', 'Permissions', 'enum', 3, False),
     'melder.aether.conduit.conduit_ward.policies.policies': ('src/melder/aether/conduit/conduit_ward/policies/policies.py', 'policies', 'module', 1, False),

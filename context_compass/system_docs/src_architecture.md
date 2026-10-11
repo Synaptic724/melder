@@ -920,6 +920,23 @@ each entry in `src_components.md`; this list is the set that crosses components.
 - Validation strategies registered in `SpellValidationSystem`.
 
 ## Operational Invariants
+- Spell-map walks (2026-10-11, 0.2.8230): every writer of `Spellbook._spells`, `_lookup_spells`, `_spells_by_id`
+  and `_spell_id_pool` holds the Book lock - bind now publishes all four inside one `with self._lock` block (its
+  frame lookup claim and its callbacks stay outside), as removal, notch, index destruction and ownership transfer
+  already did - so a walk that holds the Book lock never meets a resize. A walk that cannot hold it iterates a
+  one-call snapshot (`list(...)`, exact under concurrent writers on 3.14t, where a comprehension or
+  `next(iter(...))` over the live view is not): the book-wide phase factories and the resolution cleanup pass,
+  which public `Conduit.validate_resolution` runs with no Book lock, `inspect_spell` over another Book, the
+  contracted-spell lookup and the transfer impact walk. `Conduit.get_spell_permissions` and
+  `CommandSystem.get_spell_by_id` resolve lineages through `Spellbook.find_spell_by_id` instead of walking.
+  `SpellIndex.has_spell` repeats its cleaned check under the index lock, so a racing cleanup raises the documented
+  RuntimeError, never AttributeError; walks over indexes the caller neither owns nor locks (contracted maps,
+  contract details) probe with `SpellIndex._has_spell_unless_cleaned`, which answers False for a cleaned index.
+  No reader-side Book lock was added (conjure holds that lock while phase workers and hooks run).
+  EVIDENCE: `src/melder/aether/spellbook/spellbook.py:Spellbook.bind`, `Spellbook._find_contracted_spell_by_id`,
+  `src/melder/aether/spellbook/bind/spell_index.py:SpellIndex.has_spell`, `SpellIndex._has_spell_unless_cleaned`,
+  `src/melder/aether/conduit/conduit_ward/contract/details.py:Detail.has_spell`, `IndexDetail.has_spell` and
+  `src/melder/aether/spellbook/spellbook_creation_system.py:SpellbookCreationSystem.cleanup_phase_artifacts_after_resolution`.
 - Lookup by version id (2026-10-11, 0.2.8229): `Spellbook.find_spell_by_id` answers from the Book's id maps and
   never iterates a live map. A current version id is one read of `_spells_by_id`; a superseded or parked id is a
   read of `_inactive_spells`, then of the parked Spell's index through `Spell._spell_index_unless_cleaned` (under
@@ -1561,6 +1578,21 @@ each entry in `src_components.md`; this list is the set that crosses components.
   not the same thing as a Rift-level event orchestrator.
 
 ## Failure Modes and Error Paths
+- Concurrent binds and removals no longer make `Conduit.validate_resolution`, `Conduit.get_spell_permissions`, the
+  Rift command surface's spell lookup, `inspect_spell`, contract lookups or the transfer impact check raise
+  RuntimeError "dictionary changed size during iteration", and a walk under the Book lock no longer meets bind's
+  insert mid-walk (fixed in 0.2.8230). `SpellIndex.has_spell` racing the index's cleanup raises its documented
+  RuntimeError "SpellIndex has already been cleaned." instead of AttributeError "... has no attribute
+  '_spells_in_index'", and a contract detail over an index its owner cleaned answers False instead of raising.
+  EVIDENCE: `src/melder/aether/spellbook/bind/spell_index.py:SpellIndex.has_spell` and
+  `src/melder/aether/spellbook/spellbook.py:Spellbook.bind`.
+- `Conduit.get_spell_by_id` and `Conduit.get_conduit_by_spell_id` raise ValueError "Spell version <id> not found in
+  any conduit." for an id no conduit in the frame claims - unknown or removed, bound in another frame, its owner
+  cleaned, or a lineage between owners while an ownership transfer runs - and "Aetheric frame '<name>' does not
+  exist." for an unknown frame. They always did; until 0.2.8230 their docstrings said they return None. A `get_*`
+  lookup raises on a miss and a `find_*` lookup returns None (owner decision 2026-10-11).
+  EVIDENCE: `src/melder/aether/aether.py:Aether._get_conduit_by_spell_id` and
+  `src/melder/aether/spellbook/spellbook.py:Spellbook._get_conduit_by_spell_id`.
 - `Spellbook.find_spell_by_id`, and `Conduit.get_spell_by_id` through it, no longer fail while other spells are
   bound, removed or parked on other threads (fixed in 0.2.8229; MelderOps hit it on 0.2.8226, reproduced on
   0.2.8228). The old walk over the live index map raised RuntimeError "dictionary changed size during
@@ -2076,18 +2108,19 @@ Spellbook and binding:
 
 - path: `src/melder/aether/spellbook/spellbook.py`
   start_line: 1
-  end_line: 7369
-  loc: 7369
-  verified_at: 2026-10-11T08:43:02Z
-  note: Spellbook core and conjure pipeline; `find_spell_by_id` answers from the id maps (0.2.8229).
+  end_line: 7394
+  loc: 7394
+  verified_at: 2026-10-11T15:21:03Z
+  note: Spellbook core and conjure pipeline; `find_spell_by_id` answers from the id maps (0.2.8229); bind
+    publishes its spell maps under the Book lock (0.2.8230).
 - path: `src/melder/aether/spellbook/spellbook_creation_system.py`
   start_line: 1
-  end_line: 3482
-  loc: 3482
-  verified_at: 2026-10-03T21:03:41Z
+  end_line: 3508
+  loc: 3508
+  verified_at: 2026-10-11T15:21:03Z
   note: conjure and target-local resolution orchestration; a successful target pass flags the owned
     dependencies it compiled without a plan of their own (0.2.8215); the executor-cache full hit requires
-    the recorded world stamp (0.2.8220).
+    the recorded world stamp (0.2.8220); the book-wide factories and the cleanup pass walk snapshots (0.2.8230).
 - path: `src/melder/aether/spellbook/spellbinder.py`
   start_line: 1
   end_line: 870
@@ -2115,11 +2148,12 @@ Spellbook and binding:
     eligibility and one bind per object per scan (0.2.8228).
 - path: `src/melder/aether/spellbook/bind/spell_index.py`
   start_line: 1
-  end_line: 507
-  loc: 507
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 548
+  loc: 548
+  verified_at: 2026-10-11T15:21:03Z
   note: stable index that categorizes/targets spells and holds the active
-    selected spell.
+    selected spell; `has_spell` re-checks cleaned under its lock and `_has_spell_unless_cleaned`
+    is the cleanup-safe probe (0.2.8230).
 - path: `src/melder/aether/spellbook/spell.py`
   start_line: 1
   end_line: 1770
@@ -2624,9 +2658,9 @@ Aetheric mediator plane (WIRED - FRAME_CREATE LIVE, held by Aether):
   note: immutable room-memory record object.
 - path: `src/melder/nexus/rift/command_system/command_system.py`
   start_line: 1
-  end_line: 1696
-  loc: 1696
-  verified_at: 2026-09-27T11:46:59Z
+  end_line: 1698
+  loc: 1698
+  verified_at: 2026-10-11T15:21:03Z
   note: shared room-local command surface.
 - path: `src/melder/nexus/rift/command_system/static_command_system.py`
   start_line: 1
@@ -2769,9 +2803,9 @@ Conduit runtime:
 
 - path: `src/melder/aether/conduit/conduit.py`
   start_line: 1
-  end_line: 7131
-  loc: 7131
-  verified_at: 2026-10-01T10:18:17Z
+  end_line: 7142
+  loc: 7142
+  verified_at: 2026-10-11T15:21:03Z
   note: conduit lifecycle and meld facade.
 - path: `src/melder/aether/conduit/conduit_state/conduit_state.py`
   start_line: 1
@@ -2799,9 +2833,9 @@ Conduit runtime:
   note: permission enum.
 - path: `src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py`
   start_line: 1
-  end_line: 2000
-  loc: 2000
-  verified_at: 2026-09-27T11:46:59Z
+  end_line: 2001
+  loc: 2001
+  verified_at: 2026-10-11T15:21:03Z
   note: ownership transfer.
 
 Resolution and creations:
@@ -3421,6 +3455,15 @@ without rewriting the original record or existing live IDs.
 - `src/melder/utilities/ai_native_support_tools/protocol_crafter.py`
 
 ## Context / Handoff Summary
+
+2026-10-11 spell-map walks (0.2.8230): bind publishes its four maps under the Book lock; the walks of a Book's spells
+that cannot hold that lock (the `validate_resolution` phases and cleanup pass, foreign-Book inspection, contracted
+lookups, the transfer impact walk) take one-call snapshots; `get_spell_permissions` and the command surface's spell
+lookup read the id maps; `SpellIndex.has_spell` re-checks cleaned under its lock and contract details probe through
+the new `SpellIndex._has_spell_unless_cleaned`. `Conduit.get_spell_by_id` and `get_conduit_by_spell_id` document
+the ValueError they raise for an unclaimed id (owner decision: `get_*` raises, `find_*` returns None). The
+operational invariants, the failure modes and the code map carry it; the component map carries the per-component
+rules.
 
 2026-10-11 lookup by version id (0.2.8229): `Spellbook.find_spell_by_id` answers from the Book's id maps
 (`_spells_by_id`, then `_inactive_spells` and the parked spell's index) instead of walking the live index map, so

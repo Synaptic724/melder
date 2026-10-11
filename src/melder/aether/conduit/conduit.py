@@ -3033,7 +3033,7 @@ class Conduit(Cleanable):
 
 
 
-    def get_conduit_by_spell_id(self, spell_id: str, aetheric_frame_name: str = "default") -> Optional["Conduit"]:
+    def get_conduit_by_spell_id(self, spell_id: str, aetheric_frame_name: str = "default") -> "Conduit":
         """
         Public API
 
@@ -3042,9 +3042,13 @@ class Conduit(Cleanable):
         This method queries the Aether to find the original source conduit for a specific spell ID.
 
         Contract:
-            - Resolves through the spellbook's Aether-wide lookup, so it can find a
-              conduit in ANOTHER frame - it is not scoped to this conduit's frame
-              unless you pass one.
+            - Searches ONE frame: this conduit's Spellbook frame by default ("default"
+              means that frame), or the frame you name. An id bound only in another
+              frame is not found unless you name that frame.
+            - A miss RAISES; it never returns None. The `get_*` lookups raise ValueError on
+              a miss and the `find_*` lookups return None (owner decision 2026-10-11; the
+              convention of the Aether conduit and frame lookups). Until 0.2.8230 this
+              docstring and the annotation promised None, which the method never returned.
             - Runs under the conduit lock.
 
         Args:
@@ -3052,10 +3056,13 @@ class Conduit(Cleanable):
             aetheric_frame_name (str): The aetheric frame to check against. Defaults to "default".
 
         Returns:
-            Optional[Conduit]: The conduit that registered the spell, or None if not found.
+            Conduit: The root conduit that owns the spell.
 
         Raises:
             RuntimeError: If the Conduit is cleaned.
+            ValueError: If no conduit in the frame claims the id - unknown or removed, bound in
+                another frame, its owner cleaned, or a lineage between owners while an
+                ownership transfer runs - or the frame does not exist.
         """
         self.check_cleaned()
         with self._lock:
@@ -3103,9 +3110,9 @@ class Conduit(Cleanable):
 
         The method:
           1) Uses Aether to locate the owning conduit.
-          2) Searches that conduit's spellbook for a SpellIndex whose lineage contains
-             this version ID.
-          3) Returns the corresponding Spell instance if found.
+          2) Resolves the id in that conduit's spellbook (`Spellbook.find_spell_by_id`):
+             the live spell of the lineage that contains this version ID.
+          3) Returns that Spell instance.
 
         Contract:
             - Resolves via the spellbook's Aether-wide lookup, so the returned spell may
@@ -3119,10 +3126,16 @@ class Conduit(Cleanable):
             aetheric_frame_name (str): The aetheric frame to check against. Defaults to "default".
 
         Returns:
-            Optional[Spell]: The spell object if found, otherwise None.
+            Optional[Spell]: The spell object, or None when the owner's spellbook does not
+            resolve the id to a live spell.
 
         Raises:
-            RuntimeError: If the Conduit is cleaned.
+            RuntimeError: If the Conduit is cleaned, or the owning conduit has no spellbook.
+            ValueError: If no conduit in the frame claims the id - unknown or removed, bound in
+                another frame, its owner cleaned, or a lineage between owners while an
+                ownership transfer runs - or the frame does not exist. A miss raises, as the
+                `get_*` lookups do (owner decision 2026-10-11); until 0.2.8230 this docstring
+                promised None.
         """
         self.check_cleaned()
         return self._spellbook._get_spell_by_id_via_aether(
@@ -4020,11 +4033,15 @@ class Conduit(Cleanable):
         spell was bound.
 
         Contract:
-            - LOCAL ONLY. It walks THIS conduit's spellbook lineages, so a spell
-              reachable by contract from a peer conduit is NOT found here.
-            - Matches by LINEAGE MEMBERSHIP (`SpellIndex.has_spell`), so a superseded
-              version id still resolves - and it resolves to the CURRENT permissions,
-              not the permissions that version was bound with.
+            - LOCAL ONLY. It resolves through THIS conduit's spellbook
+              (`Spellbook.find_spell_by_id`), so a spell reachable by contract from a
+              peer conduit is NOT found here.
+            - Matches by LINEAGE, so a superseded or parked version id still resolves -
+              and it resolves to the CURRENT permissions, not the permissions that
+              version was bound with.
+            - Lock-free (0.2.8230): the lookup answers from the Book's id maps instead of
+              walking its live index map under the conduit lock, which a concurrent bind
+              or removal could resize mid-walk.
             - NEVER RETURNS None despite the `Optional[str]` annotation: a miss RAISES
               `RuntimeError`. Treat the annotation as wrong and the Raises block as
               authoritative.
@@ -4040,14 +4057,8 @@ class Conduit(Cleanable):
             RuntimeError: If the spell with the given ID is not found in the spellbook.
         """
         self.check_cleaned()
-        with self._lock:
-            target_spell: Optional[Spell] = None
-
-            # Walk local SpellIndex keys and check which lineage owns this version
-            for spell_index, spell in self._spellbook._spells.items():
-                if spell_index.has_spell(spell_id):
-                    target_spell = spell
-                    break
+        # Resolve the lineage from the Book's id maps: O(1) and no walk of the live index map.
+        target_spell: Optional[Spell] = self._spellbook.find_spell_by_id(spell_id)
 
         if target_spell is not None:
             perms = target_spell.permissions.name

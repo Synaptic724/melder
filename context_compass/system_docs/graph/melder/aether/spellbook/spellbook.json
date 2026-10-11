@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spellbook.py",
- "source_sha256": "4e2c7eeadd8c46f0c3308072842c223f05236124081883fee236d76ff45c84d8",
+ "source_sha256": "469e28abb50de2fac66eb6c5a134e804ca8e916bbf16cfa2a291a0f88c4eec3b",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spellbook": {
@@ -60,7 +60,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "4c204f1f5f2b1038afc38b8d18824d9e48bf9261217e404c2a02349ee8a4e9c8",
+   "span_sha256": "54ba95157b64be5c736645343a9bf06204b5e80756c026925b48578cca6802dd",
    "role": "Public binding, validation, and conjure surface.",
    "responsibilities": [
     "binds and scans spells into local and contracted lookup surfaces",

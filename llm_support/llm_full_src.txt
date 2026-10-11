@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: src
-SOURCE FINGERPRINT: 02e4ed55397e7038eebd51151cd2c828858a9deb2b14735863cef4ac85b0658b
+SOURCE FINGERPRINT: 26dffe9ead9b7ca3ff200f699abd7f6dd50899015f51fb80eaeb8bc5d8643f32
 FILE COUNT: 579
 
 ================================================================================
@@ -599,7 +599,7 @@ END FILE: src/melder/__melder_cache__/__melder_cache__.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/__version__.py
-CONTENT SHA256: 1d71cd6ce80a5f7a1db88f43adef342b94cf7504079238bd64907947c9d68ce0
+CONTENT SHA256: c86b1470313ea2da68cd9b07bf4fbe6c3f3df699eb61d2446225c4641af4b50d
 SOURCE ENCODING: utf-8
 ================================================================================
 
@@ -613,7 +613,7 @@ Contract:
   negotiation or runtime compatibility checks by itself.
 """
 
-__version__ = "0.2.8229"
+__version__ = "0.2.8230"
 ================================================================================
 END FILE: src/melder/__version__.py
 ================================================================================
@@ -43110,7 +43110,7 @@ END FILE: src/melder/aether/aetheric_mediator/unwind_conflict_error.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/conduit/conduit.py
-CONTENT SHA256: 224bb70be311771e8bcd8e3b5e6e8e1afe34dfa6ce2534f6e8b92ecc00322fff
+CONTENT SHA256: dec298a29845af58ee37d40e2c423329a07ffc3438274df1487c7aedc00d2915
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -46148,7 +46148,7 @@ class Conduit(Cleanable):
 
 
 
-    def get_conduit_by_spell_id(self, spell_id: str, aetheric_frame_name: str = "default") -> Optional["Conduit"]:
+    def get_conduit_by_spell_id(self, spell_id: str, aetheric_frame_name: str = "default") -> "Conduit":
         """
         Public API
 
@@ -46157,9 +46157,13 @@ class Conduit(Cleanable):
         This method queries the Aether to find the original source conduit for a specific spell ID.
 
         Contract:
-            - Resolves through the spellbook's Aether-wide lookup, so it can find a
-              conduit in ANOTHER frame - it is not scoped to this conduit's frame
-              unless you pass one.
+            - Searches ONE frame: this conduit's Spellbook frame by default ("default"
+              means that frame), or the frame you name. An id bound only in another
+              frame is not found unless you name that frame.
+            - A miss RAISES; it never returns None. The `get_*` lookups raise ValueError on
+              a miss and the `find_*` lookups return None (owner decision 2026-10-11; the
+              convention of the Aether conduit and frame lookups). Until 0.2.8230 this
+              docstring and the annotation promised None, which the method never returned.
             - Runs under the conduit lock.
 
         Args:
@@ -46167,10 +46171,13 @@ class Conduit(Cleanable):
             aetheric_frame_name (str): The aetheric frame to check against. Defaults to "default".
 
         Returns:
-            Optional[Conduit]: The conduit that registered the spell, or None if not found.
+            Conduit: The root conduit that owns the spell.
 
         Raises:
             RuntimeError: If the Conduit is cleaned.
+            ValueError: If no conduit in the frame claims the id - unknown or removed, bound in
+                another frame, its owner cleaned, or a lineage between owners while an
+                ownership transfer runs - or the frame does not exist.
         """
         self.check_cleaned()
         with self._lock:
@@ -46218,9 +46225,9 @@ class Conduit(Cleanable):
 
         The method:
           1) Uses Aether to locate the owning conduit.
-          2) Searches that conduit's spellbook for a SpellIndex whose lineage contains
-             this version ID.
-          3) Returns the corresponding Spell instance if found.
+          2) Resolves the id in that conduit's spellbook (`Spellbook.find_spell_by_id`):
+             the live spell of the lineage that contains this version ID.
+          3) Returns that Spell instance.
 
         Contract:
             - Resolves via the spellbook's Aether-wide lookup, so the returned spell may
@@ -46234,10 +46241,16 @@ class Conduit(Cleanable):
             aetheric_frame_name (str): The aetheric frame to check against. Defaults to "default".
 
         Returns:
-            Optional[Spell]: The spell object if found, otherwise None.
+            Optional[Spell]: The spell object, or None when the owner's spellbook does not
+            resolve the id to a live spell.
 
         Raises:
-            RuntimeError: If the Conduit is cleaned.
+            RuntimeError: If the Conduit is cleaned, or the owning conduit has no spellbook.
+            ValueError: If no conduit in the frame claims the id - unknown or removed, bound in
+                another frame, its owner cleaned, or a lineage between owners while an
+                ownership transfer runs - or the frame does not exist. A miss raises, as the
+                `get_*` lookups do (owner decision 2026-10-11); until 0.2.8230 this docstring
+                promised None.
         """
         self.check_cleaned()
         return self._spellbook._get_spell_by_id_via_aether(
@@ -47135,11 +47148,15 @@ class Conduit(Cleanable):
         spell was bound.
 
         Contract:
-            - LOCAL ONLY. It walks THIS conduit's spellbook lineages, so a spell
-              reachable by contract from a peer conduit is NOT found here.
-            - Matches by LINEAGE MEMBERSHIP (`SpellIndex.has_spell`), so a superseded
-              version id still resolves - and it resolves to the CURRENT permissions,
-              not the permissions that version was bound with.
+            - LOCAL ONLY. It resolves through THIS conduit's spellbook
+              (`Spellbook.find_spell_by_id`), so a spell reachable by contract from a
+              peer conduit is NOT found here.
+            - Matches by LINEAGE, so a superseded or parked version id still resolves -
+              and it resolves to the CURRENT permissions, not the permissions that
+              version was bound with.
+            - Lock-free (0.2.8230): the lookup answers from the Book's id maps instead of
+              walking its live index map under the conduit lock, which a concurrent bind
+              or removal could resize mid-walk.
             - NEVER RETURNS None despite the `Optional[str]` annotation: a miss RAISES
               `RuntimeError`. Treat the annotation as wrong and the Raises block as
               authoritative.
@@ -47155,14 +47172,8 @@ class Conduit(Cleanable):
             RuntimeError: If the spell with the given ID is not found in the spellbook.
         """
         self.check_cleaned()
-        with self._lock:
-            target_spell: Optional[Spell] = None
-
-            # Walk local SpellIndex keys and check which lineage owns this version
-            for spell_index, spell in self._spellbook._spells.items():
-                if spell_index.has_spell(spell_id):
-                    target_spell = spell
-                    break
+        # Resolve the lineage from the Book's id maps: O(1) and no walk of the live index map.
+        target_spell: Optional[Spell] = self._spellbook.find_spell_by_id(spell_id)
 
         if target_spell is not None:
             perms = target_spell.permissions.name
@@ -56379,7 +56390,7 @@ END FILE: src/melder/aether/conduit/conduit_ward/contract/detail_reason.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/conduit/conduit_ward/contract/details.py
-CONTENT SHA256: 3332ef0549850da01367ed597b4f33f02859ebe3c41b64876ccee682fea3ab00
+CONTENT SHA256: 653179a5c731e71b91c384ed23213813258c8a36659a596e58e362de36e6b43c
 SOURCE ENCODING: utf-8
 ================================================================================
 from threading import RLock
@@ -56582,13 +56593,17 @@ class Detail(Cleanable):
             spell_id: SHA fingerprint to check within the index member history.
 
         Returns:
-            bool: True if the lineage advertises the version, else False.
+            bool: True if the lineage advertises the version, else False; False once the
+            owning Book has cleaned the index.
+
+        Threading:
+            The index belongs to the Book that owns the lineage, which can clean it while
+            this detail still holds it, so membership is read through
+            `SpellIndex._has_spell_unless_cleaned` under the index lock (0.2.8230; it read
+            the member set unlocked, which raised AttributeError when the cleanup won).
         """
         self.check_cleaned()
-        member_ids = self.spell_index._spells_in_index
-        if not member_ids:
-            return False
-        return spell_id in member_ids
+        return self.spell_index._has_spell_unless_cleaned(spell_id)
 
     def add_source(self, root_spell_id: str) -> None:
         """
@@ -56814,13 +56829,17 @@ class IndexDetail(Cleanable):
             spell_id: SHA fingerprint to check within the index member set.
 
         Returns:
-            bool: True if the lineage advertises the version, else False.
+            bool: True if the lineage advertises the version, else False; False once the
+            owning Book has cleaned the index.
+
+        Threading:
+            The index belongs to the Book that owns the lineage, which can clean it while
+            this detail still holds it, so membership is read through
+            `SpellIndex._has_spell_unless_cleaned` under the index lock (0.2.8230; it read
+            the member set unlocked, which raised AttributeError when the cleanup won).
         """
         self.check_cleaned()
-        member_ids = self.spell_index._spells_in_index
-        if not member_ids:
-            return False
-        return spell_id in member_ids
+        return self.spell_index._has_spell_unless_cleaned(spell_id)
 
     def add_source(self, root_spell_id: str) -> None:
         """
@@ -57032,7 +57051,7 @@ END FILE: src/melder/aether/conduit/conduit_ward/policies/policies.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py
-CONTENT SHA256: 693ea13cd94573cacb79617c659d10a0bc8005f66203c0f91e9554ad506329f5
+CONTENT SHA256: a7e63aa1ee56d046e40c3f002fa4660b76ba8943ec8336f4568797b40d588897
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -57871,13 +57890,14 @@ class TransferOfOwnership(Cleanable):
         spellbook = conduit._spellbook
         if spellbook is None:
             return False
+        # One-call snapshots: these maps belong to another Book, read without its lock.
         owned = spellbook._spells or {}
-        for spell_index in owned.keys():
+        for spell_index in list(owned):
             if spell_index is not None and spell_index.id in impacted_lineages:
                 return True
         contracted = spellbook._contracted_spells or {}
-        for spell_map in contracted.values():
-            for spell_index in spell_map.keys():
+        for spell_map in list(contracted.values()):
+            for spell_index in list(spell_map):
                 if spell_index is not None and spell_index.id in impacted_lineages:
                     return True
         return False
@@ -70574,7 +70594,7 @@ END FILE: src/melder/aether/spellbook/bind/scan.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/bind/spell_index.py
-CONTENT SHA256: 3cea4f79f6baa980185023948e89eb4656c97b24b53e45e487b24d721f2226c0
+CONTENT SHA256: 46e4d9b1c0a2653087281bdfe9b499b83ce4fd9e86b91118e91b917adddc1f41
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -70878,10 +70898,13 @@ class SpellIndex(Cleanable):
 
         Threading:
             Reads and writes under `self._lock`, so the result is a coherent
-            snapshot rather than a torn read.
+            snapshot rather than a torn read. The cleaned check is repeated under
+            that lock, the one `cleanup()` marks the index cleaned and deletes the
+            member set under, so a cleanup racing this call raises the documented
+            RuntimeError, never AttributeError (0.2.8230).
 
         Lifecycle / Cleanup:
-            Guarded by `check_cleaned()`.
+            Guarded by `check_cleaned()`, before and after taking the lock.
 
         Raises:
             RuntimeError: If the object has been cleaned.
@@ -70891,6 +70914,44 @@ class SpellIndex(Cleanable):
         """
         self.check_cleaned()
         with self._lock:
+            # Re-check under the lock: a cleanup between the unlocked check and the acquire has
+            # already deleted the member set.
+            self.check_cleaned()
+            return spell_id in self._spells_in_index
+
+    def _has_spell_unless_cleaned(self, spell_id: str) -> bool:
+        """
+        Internal
+
+        Return whether `spell_id` is a member of this index, answering False once
+        the index is cleaned.
+
+        Purpose:
+            Membership probe for walks over indexes the caller neither owns nor
+            locks - a contracted map, a contract detail - which can reach an index
+            after its owner cleaned it. A cleaned index owns nothing, so for such a
+            walk "not a member" is the truthful answer, where `has_spell` raises.
+
+        Contract:
+            - Same membership semantics as `has_spell` (the whole version
+              lineage, not only the selected id) while the index is live.
+            - Never raises for a cleaned index; returns False.
+
+        Threading:
+            Reads the cleaned flag and the member set under `self._lock`, the lock
+            `cleanup` holds while it marks the index cleaned and deletes the
+            member set, so a concurrent cleanup cannot tear the answer.
+
+        Args:
+            spell_id (str): The spell id to check.
+
+        Returns:
+            bool: True if this live index's member set contains `spell_id`;
+            False otherwise, and False once the index is cleaned.
+        """
+        with self._lock:
+            if self._cleaned:
+                return False
             return spell_id in self._spells_in_index
 
     def is_empty(self) -> bool:
@@ -127155,7 +127216,7 @@ END FILE: src/melder/aether/spellbook/spellbinder.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spellbook.py
-CONTENT SHA256: 512e3a13a2ba01f8c5eb7c529e688def86338fb220297e36d9acec6bf7d53131
+CONTENT SHA256: 5ae3b3dd3f2a232a54ac41336c11d69df6e9b7fa8431fd95aac156f41c8e7c73
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -129703,7 +129764,8 @@ class Spellbook(Cleanable):
                     conduit_spellbook = frame_conduit._spellbook
                     if conduit_spellbook is None or conduit_spellbook is self:
                         continue
-                    for candidate_spell in conduit_spellbook._spells.values():
+                    # Another Book's map, read without that Book's lock: walk a one-call snapshot.
+                    for candidate_spell in list(conduit_spellbook._spells.values()):
                         if (
                                 candidate_spell.spell is spell
                                 or candidate_spell.user_created_object is spell
@@ -129773,7 +129835,7 @@ class Spellbook(Cleanable):
             self,
             spell_id: str,
             aetheric_frame_name: str = "default",
-    ) -> Conduit | None:
+    ) -> Conduit:
         """
         Internal
 
@@ -129787,8 +129849,14 @@ class Spellbook(Cleanable):
                 Spellbook's current frame.
 
         Returns:
-            Optional[Conduit]:
-                Owning conduit when found, otherwise "None".
+            Conduit:
+                The root conduit that owns the spell id.
+
+        Raises:
+            ValueError: If no conduit in the frame claims the id - unknown or removed, bound in
+                another frame, its owner cleaned, or a lineage between owners while an ownership
+                transfer runs - or the frame does not exist (`Aether._get_conduit_by_spell_id`).
+                It always raised; until 0.2.8230 this docstring promised None.
         """
         if aetheric_frame_name == "default":
             aetheric_frame_name = self._aetheric_frame_name
@@ -129982,7 +130050,13 @@ class Spellbook(Cleanable):
 
         Returns:
             Optional[Spell]:
-                Matching spell when found, otherwise "None".
+                The live spell of the lineage holding the id, or None when the owning conduit's
+                Spellbook does not resolve it (`Spellbook.find_spell_by_id`).
+
+        Raises:
+            ValueError: If no conduit in the frame claims the id, or the frame does not exist
+                (`_get_conduit_by_spell_id`).
+            RuntimeError: If the owning conduit has no spellbook.
         """
         owner = self._get_conduit_by_spell_id(spell_id, aetheric_frame_name)
         if owner is None:
@@ -130113,6 +130187,11 @@ class Spellbook(Cleanable):
 
         Returns:
             Optional[Spell]: The resolved spell, or None if not found.
+
+        Threading:
+            Lock-free. Walks a one-call snapshot of the contracted map, which grants and revocations change
+            while no lock is held here, and probes each index with `SpellIndex._has_spell_unless_cleaned`:
+            the lender can clean an index this map still holds, and a cleaned index owns nothing (0.2.8230).
         """
 
         # Pull the map of SpellIndex? Spell for this conduit
@@ -130121,8 +130200,8 @@ class Spellbook(Cleanable):
             return None
 
         # Search for a SpellIndex whose version list contains this SHA
-        for spell_index, spell in spell_map.items():
-            if spell_index.has_spell(spell_id):
+        for spell_index, spell in list(spell_map.items()):
+            if spell_index._has_spell_unless_cleaned(spell_id):
                 return spell
 
         return None
@@ -132542,9 +132621,16 @@ class Spellbook(Cleanable):
                 # local-only lookup-key check): claim before committing local maps.
                 self._aetheric_frame.claim_lookup(new_spell._key, new_spell.spell_id)
                 registration_started = True
-                self._lookup_spells[new_spell._key] = spell_index
-                self._spells[spell_index] = new_spell
-                self._register_owned_spell_id(new_spell.spell_id, new_spell)
+                # Publish into the four active maps (_lookup_spells, _spells, and through
+                # _register_owned_spell_id _spells_by_id and _spell_id_pool) under the Book lock, as every
+                # other writer of `_spells` does (removal, notch park and promote, index destruction,
+                # transfer and its rollback), so a walk that holds the lock never meets this insert
+                # mid-walk. Narrow on purpose: claim_lookup above and the bind callbacks stay outside it.
+                # No new lock-order edge: _register_owned_spell_id always took this lock at this point.
+                with self._lock:
+                    self._lookup_spells[new_spell._key] = spell_index
+                    self._spells[spell_index] = new_spell
+                    self._register_owned_spell_id(new_spell.spell_id, new_spell)
 
                 # Configuration-discipline evidence: count binds that ran
                 # while the SpellbookConfiguration was still mutable. The
@@ -134532,7 +134618,7 @@ END FILE: src/melder/aether/spellbook/spellbook.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spellbook_creation_system.py
-CONTENT SHA256: b882b94105514d0e2ea4eb6cbbb31c83fbabbc354ffb5b856629ca50f1f7957a
+CONTENT SHA256: b298448109558cda951e33f48890c24da283f4d2827b75955f7b8efd4692945b
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -136067,8 +136153,10 @@ class SpellbookCreationSystem(Cleanable):
                 ),
             )
 
+            # One-call snapshot (list(...)): this pass also runs from Conduit.validate_resolution, where no Book lock
+            # keeps a concurrent bind or removal from resizing the live map mid-walk.
             broken_spells = SpellbookCreationSystem._collect_broken_spells(
-                spells=spellbook._spells.values(),
+                spells=list(spellbook._spells.values()),
             )
             if broken_spells:
                 SpellbookCreationSystem._raise_structural_validation_error(
@@ -137177,7 +137265,9 @@ class SpellbookCreationSystem(Cleanable):
         compiler_system = SpellCompilerSystem()
         try:
             if spell_ids is None:
-                for spell in spellbook._spells.values():
+                # One-call snapshot (list(...)): this pass also runs from Conduit.validate_resolution, where no Book lock
+                # keeps a concurrent bind or removal from resizing the live map mid-walk.
+                for spell in list(spellbook._spells.values()):
                     try:
                         compiler_system.cleanup_phase_artifacts(spell)
                     except Exception:
@@ -137639,10 +137729,14 @@ class SpellbookCreationSystem(Cleanable):
             RuntimeError: If the spellbook has already been cleaned.
         """
         spellbook.check_cleaned()
-        if not spellbook._spells:
+        # One-call snapshot: next(iter(...)) over the live map raises when a concurrent bind
+        # resizes it between the two calls, and these factories also run from
+        # Conduit.validate_resolution, where no Book lock keeps binds out.
+        spells = list(spellbook._spells.values())
+        if not spells:
             return []
 
-        lead_spell = next(iter(spellbook._spells.values()))
+        lead_spell = spells[0]
         return [
             scheduler.create_unit_of_work(
                 func=compiler_system.run_phase_root_blueprints,
@@ -137679,9 +137773,11 @@ class SpellbookCreationSystem(Cleanable):
             RuntimeError: If the spellbook has already been cleaned.
         """
         spellbook.check_cleaned()
+        # One-call snapshot (list(...)): this pass also runs from Conduit.validate_resolution, where no Book lock
+        # keeps a concurrent bind or removal from resizing the live map mid-walk.
         eligible_spells = [
             spell
-            for spell in spellbook._spells.values()
+            for spell in list(spellbook._spells.values())
             if SpellbookCreationSystem._is_spell_plan_phase_eligible(spell)
         ]
         if not eligible_spells:
@@ -137735,9 +137831,11 @@ class SpellbookCreationSystem(Cleanable):
             RuntimeError: If the spellbook has already been cleaned.
         """
         spellbook.check_cleaned()
+        # One-call snapshot (list(...)): this pass also runs from Conduit.validate_resolution, where no Book lock
+        # keeps a concurrent bind or removal from resizing the live map mid-walk.
         eligible_spells = [
             spell
-            for spell in spellbook._spells.values()
+            for spell in list(spellbook._spells.values())
             if SpellbookCreationSystem._is_spell_plan_phase_eligible(spell)
         ]
         if not eligible_spells:
@@ -137785,9 +137883,11 @@ class SpellbookCreationSystem(Cleanable):
             RuntimeError: If the spellbook has already been cleaned.
         """
         spellbook.check_cleaned()
+        # One-call snapshot (list(...)): this pass also runs from Conduit.validate_resolution, where no Book lock
+        # keeps a concurrent bind or removal from resizing the live map mid-walk.
         eligible_spells = [
             spell
-            for spell in spellbook._spells.values()
+            for spell in list(spellbook._spells.values())
             if SpellbookCreationSystem._is_spell_plan_phase_eligible(spell)
         ]
         if not eligible_spells:
@@ -137835,9 +137935,11 @@ class SpellbookCreationSystem(Cleanable):
             RuntimeError: If the spellbook has already been cleaned.
         """
         spellbook.check_cleaned()
+        # One-call snapshot (list(...)): this pass also runs from Conduit.validate_resolution, where no Book lock
+        # keeps a concurrent bind or removal from resizing the live map mid-walk.
         eligible_spells = [
             spell
-            for spell in spellbook._spells.values()
+            for spell in list(spellbook._spells.values())
             if SpellbookCreationSystem._is_spell_plan_phase_eligible(spell)
         ]
         if not eligible_spells:
@@ -137900,9 +138002,11 @@ class SpellbookCreationSystem(Cleanable):
             RuntimeError: If the spellbook has already been cleaned.
         """
         spellbook.check_cleaned()
+        # One-call snapshot (list(...)): this pass also runs from Conduit.validate_resolution, where no Book lock
+        # keeps a concurrent bind or removal from resizing the live map mid-walk.
         eligible_spells = [
             spell
-            for spell in spellbook._spells.values()
+            for spell in list(spellbook._spells.values())
             if SpellbookCreationSystem._is_spell_plan_phase_eligible(spell)
         ]
         if not eligible_spells:
@@ -137960,10 +138064,14 @@ class SpellbookCreationSystem(Cleanable):
             RuntimeError: If the spellbook has already been cleaned.
         """
         spellbook.check_cleaned()
-        if not spellbook._spells:
+        # One-call snapshot: next(iter(...)) over the live map raises when a concurrent bind
+        # resizes it between the two calls, and these factories also run from
+        # Conduit.validate_resolution, where no Book lock keeps binds out.
+        spells = list(spellbook._spells.values())
+        if not spells:
             return []
 
-        lead_spell = next(iter(spellbook._spells.values()))
+        lead_spell = spells[0]
         return [
             scheduler.create_unit_of_work(
                 func=compiler_system.run_phase_system_validation,
@@ -138001,10 +138109,14 @@ class SpellbookCreationSystem(Cleanable):
             RuntimeError: If the spellbook has already been cleaned.
         """
         spellbook.check_cleaned()
-        if not spellbook._spells:
+        # One-call snapshot: next(iter(...)) over the live map raises when a concurrent bind
+        # resizes it between the two calls, and these factories also run from
+        # Conduit.validate_resolution, where no Book lock keeps binds out.
+        spells = list(spellbook._spells.values())
+        if not spells:
             return []
 
-        lead_spell = next(iter(spellbook._spells.values()))
+        lead_spell = spells[0]
         return [
             scheduler.create_unit_of_work(
                 func=compiler_system.run_phase_change_control,
@@ -222386,7 +222498,7 @@ END FILE: src/melder/nexus/rift/command_system/codegen_command_system.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/nexus/rift/command_system/command_system.py
-CONTENT SHA256: eb5c779b21a605a4203642fec9e1cd6b4fa6335a756909274069e3b6ec68bb39
+CONTENT SHA256: 937c03c3ad85b6af6b525d1723f18a772c0ed6d2a05e904093511b31ad628e34
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -223272,9 +223384,11 @@ class CommandSystem(Cleanable):
                 raise ValueError(
                     "Owner conduit for spell '{0}' has no spellbook.".format(spell_id)
                 )
-            for spell_index, spell in spellbook._spells.items():
-                if spell_index.has_spell(spell_id):
-                    return spell
+            # The owner Book's id maps answer the lineage lookup in O(1), without walking its
+            # live index map, which a concurrent bind or removal could resize mid-walk.
+            spell = spellbook.find_spell_by_id(spell_id)
+            if spell is not None:
+                return spell
             raise ValueError(
                 "Spell id '{0}' was not found in the owner spellbook.".format(spell_id)
             )

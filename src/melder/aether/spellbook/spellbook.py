@@ -2543,7 +2543,8 @@ class Spellbook(Cleanable):
                     conduit_spellbook = frame_conduit._spellbook
                     if conduit_spellbook is None or conduit_spellbook is self:
                         continue
-                    for candidate_spell in conduit_spellbook._spells.values():
+                    # Another Book's map, read without that Book's lock: walk a one-call snapshot.
+                    for candidate_spell in list(conduit_spellbook._spells.values()):
                         if (
                                 candidate_spell.spell is spell
                                 or candidate_spell.user_created_object is spell
@@ -2613,7 +2614,7 @@ class Spellbook(Cleanable):
             self,
             spell_id: str,
             aetheric_frame_name: str = "default",
-    ) -> Conduit | None:
+    ) -> Conduit:
         """
         Internal
 
@@ -2627,8 +2628,14 @@ class Spellbook(Cleanable):
                 Spellbook's current frame.
 
         Returns:
-            Optional[Conduit]:
-                Owning conduit when found, otherwise "None".
+            Conduit:
+                The root conduit that owns the spell id.
+
+        Raises:
+            ValueError: If no conduit in the frame claims the id - unknown or removed, bound in
+                another frame, its owner cleaned, or a lineage between owners while an ownership
+                transfer runs - or the frame does not exist (`Aether._get_conduit_by_spell_id`).
+                It always raised; until 0.2.8230 this docstring promised None.
         """
         if aetheric_frame_name == "default":
             aetheric_frame_name = self._aetheric_frame_name
@@ -2822,7 +2829,13 @@ class Spellbook(Cleanable):
 
         Returns:
             Optional[Spell]:
-                Matching spell when found, otherwise "None".
+                The live spell of the lineage holding the id, or None when the owning conduit's
+                Spellbook does not resolve it (`Spellbook.find_spell_by_id`).
+
+        Raises:
+            ValueError: If no conduit in the frame claims the id, or the frame does not exist
+                (`_get_conduit_by_spell_id`).
+            RuntimeError: If the owning conduit has no spellbook.
         """
         owner = self._get_conduit_by_spell_id(spell_id, aetheric_frame_name)
         if owner is None:
@@ -2953,6 +2966,11 @@ class Spellbook(Cleanable):
 
         Returns:
             Optional[Spell]: The resolved spell, or None if not found.
+
+        Threading:
+            Lock-free. Walks a one-call snapshot of the contracted map, which grants and revocations change
+            while no lock is held here, and probes each index with `SpellIndex._has_spell_unless_cleaned`:
+            the lender can clean an index this map still holds, and a cleaned index owns nothing (0.2.8230).
         """
 
         # Pull the map of SpellIndex? Spell for this conduit
@@ -2961,8 +2979,8 @@ class Spellbook(Cleanable):
             return None
 
         # Search for a SpellIndex whose version list contains this SHA
-        for spell_index, spell in spell_map.items():
-            if spell_index.has_spell(spell_id):
+        for spell_index, spell in list(spell_map.items()):
+            if spell_index._has_spell_unless_cleaned(spell_id):
                 return spell
 
         return None
@@ -5382,9 +5400,16 @@ class Spellbook(Cleanable):
                 # local-only lookup-key check): claim before committing local maps.
                 self._aetheric_frame.claim_lookup(new_spell._key, new_spell.spell_id)
                 registration_started = True
-                self._lookup_spells[new_spell._key] = spell_index
-                self._spells[spell_index] = new_spell
-                self._register_owned_spell_id(new_spell.spell_id, new_spell)
+                # Publish into the four active maps (_lookup_spells, _spells, and through
+                # _register_owned_spell_id _spells_by_id and _spell_id_pool) under the Book lock, as every
+                # other writer of `_spells` does (removal, notch park and promote, index destruction,
+                # transfer and its rollback), so a walk that holds the lock never meets this insert
+                # mid-walk. Narrow on purpose: claim_lookup above and the bind callbacks stay outside it.
+                # No new lock-order edge: _register_owned_spell_id always took this lock at this point.
+                with self._lock:
+                    self._lookup_spells[new_spell._key] = spell_index
+                    self._spells[spell_index] = new_spell
+                    self._register_owned_spell_id(new_spell.spell_id, new_spell)
 
                 # Configuration-discipline evidence: count binds that ran
                 # while the SpellbookConfiguration was still mutable. The

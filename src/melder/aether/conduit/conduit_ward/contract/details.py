@@ -198,13 +198,17 @@ class Detail(Cleanable):
             spell_id: SHA fingerprint to check within the index member history.
 
         Returns:
-            bool: True if the lineage advertises the version, else False.
+            bool: True if the lineage advertises the version, else False; False once the
+            owning Book has cleaned the index.
+
+        Threading:
+            The index belongs to the Book that owns the lineage, which can clean it while
+            this detail still holds it, so membership is read through
+            `SpellIndex._has_spell_unless_cleaned` under the index lock (0.2.8230; it read
+            the member set unlocked, which raised AttributeError when the cleanup won).
         """
         self.check_cleaned()
-        member_ids = self.spell_index._spells_in_index
-        if not member_ids:
-            return False
-        return spell_id in member_ids
+        return self.spell_index._has_spell_unless_cleaned(spell_id)
 
     def add_source(self, root_spell_id: str) -> None:
         """
@@ -430,13 +434,17 @@ class IndexDetail(Cleanable):
             spell_id: SHA fingerprint to check within the index member set.
 
         Returns:
-            bool: True if the lineage advertises the version, else False.
+            bool: True if the lineage advertises the version, else False; False once the
+            owning Book has cleaned the index.
+
+        Threading:
+            The index belongs to the Book that owns the lineage, which can clean it while
+            this detail still holds it, so membership is read through
+            `SpellIndex._has_spell_unless_cleaned` under the index lock (0.2.8230; it read
+            the member set unlocked, which raised AttributeError when the cleanup won).
         """
         self.check_cleaned()
-        member_ids = self.spell_index._spells_in_index
-        if not member_ids:
-            return False
-        return spell_id in member_ids
+        return self.spell_index._has_spell_unless_cleaned(spell_id)
 
     def add_source(self, root_spell_id: str) -> None:
         """

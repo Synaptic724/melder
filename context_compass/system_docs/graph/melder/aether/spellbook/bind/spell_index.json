@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/bind/spell_index.py",
- "source_sha256": "b77b5ba0916c17f8185a6960f12201a4db9e7d00d7ab6c8219e4032927e72659",
+ "source_sha256": "6eb16bc814fff8b3dcde5ba692f2d4243de3e022e1a64a307bd4043054858904",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.bind.spell_index": {
@@ -37,31 +37,30 @@
     "update"
    ],
    "shape": {
-    "method_count": 10,
+    "method_count": 11,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "55f5436affce929f462f8383ba0c2218bcaf9bd2783d829238636192e8c4c82d",
-   "role": "Stable index identity with a mutable selected-spell pointer.",
+   "span_sha256": "5666eafdf844fdafaac1a8699f69c6356925b9b29dce853cefca06a5b9bd797c",
+   "role": "Stable lineage identity (an immutable ULID) with a mutable selected-spell pointer and the lineage's member set.",
    "responsibilities": [
-    "provides hash-stable index identity for spell registries",
-    "tracks selected and historical spell ids for one spell index",
-    "propagates selected-spell changes into owner and contracted spellbooks",
-    "stores owner and contract attachment metadata for one index"
+    "provides hash- and equality-stable index identity (the ULID) for spell registries",
+    "holds the selected spell id and the lineage's member set; selecting an id adds it as a member and never retires the previous one",
+    "answers lineage membership: has_spell re-checks cleaned under its lock and raises RuntimeError for a cleaned index; _has_spell_unless_cleaned answers False for one, for walks over indexes the caller neither owns nor locks",
+    "leaves lookup-map propagation on a notch to the Spellbook (the notch seam), not the index"
    ],
    "owns_state": [
     "_id",
     "_selected_spell_id",
     "_spells_in_index",
-    "_owner_spellbook",
-    "_contracted_spellbooks"
+    "_lock"
    ],
    "phases": [
     "init",
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "55f5436affce929f462f8383ba0c2218bcaf9bd2783d829238636192e8c4c82d"
+   "semantics_authored_against": "5666eafdf844fdafaac1a8699f69c6356925b9b29dce853cefca06a5b9bd797c"
   }
  },
  "edges_out": [

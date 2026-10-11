@@ -228,7 +228,7 @@ descriptors and reassemble.
 
 ## src/melder/__version__.py
 
-- source_sha256: `46cbce85659909941ff3a77914a0269a5d9e4914d8e184647dd5193eee901027`
+- source_sha256: `16dcc0c0c89584a724ba1fb9432d8f7e6263073a93492d94f25d73fa6d6a7c92`
 - nodes: 1
 
 ### Nodes
@@ -317,7 +317,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_agent_documentation/manifest/agent_documentation_manifest.py
 
-- source_sha256: `054c345622ec612dcc04b9feaf2e88f5d6dd774fb95dded939c8b1ba1ce0a5a1`
+- source_sha256: `657eb78ef00bcf6fa7f42fcb99e478e7347178e3a25904183aae9307614173c7`
 - nodes: 1
 
 ### Nodes
@@ -396,7 +396,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py
 
-- source_sha256: `b1ac0d0b7490f433fa59d482478b7ddcf691c955729dfbd3d6fd5f7bae5d7a79`
+- source_sha256: `f7628ae55004ff6cacb5120df8bc9c7b7f320ea3bbf1b0b8946b05b47cd79fdc`
 - nodes: 1
 
 ### Nodes
@@ -474,7 +474,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/graph_adjacency_manifest.py
 
-- source_sha256: `8ace71045f8b7c3383e912a94f572144e31378b06073c68e6d243b6bc0926c70`
+- source_sha256: `002d1acf8222e745c2c4ae726bc4670b9f3749b4d4b50ca114b170fa750b0838`
 - nodes: 1
 
 ### Nodes
@@ -491,7 +491,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_index.py
 
-- source_sha256: `e78722b447831a6b8cfc72d5a085e1ef364edbc852a1bd9cdb966b8e20ad6fa5`
+- source_sha256: `f840ae5457e61a301a739a952b22d8c82f601006cfdf74acf4796e0ffee1ee12`
 - nodes: 1
 
 ### Nodes
@@ -508,7 +508,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_manifest.py
 
-- source_sha256: `fc0cfc5144266b72dc34bc70b46c7c4b30438b1710e2123fb6bd9a74ef152450`
+- source_sha256: `788dfb341a9f19860120d0a049981f91389f7f07123233af31244f44a4fb9e74`
 - nodes: 1
 
 ### Nodes
@@ -528,7 +528,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_architecture_payload.py
 
-- source_sha256: `d98407072787cefc214ad15cc4043f896a198b9ec3e30b6fcd265575f92fa6ed`
+- source_sha256: `9a0bd7687b610538a30d1fe9139586ddb3ac64ec93df3224de74709f10177bc2`
 - nodes: 1
 
 ### Nodes
@@ -545,7 +545,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_components_payload.py
 
-- source_sha256: `a9ac16a688aee4dfecae17c160340201b2db01cadd1f8c75ca67118e554fc356`
+- source_sha256: `6cf40d13558684380e5aadd15ae910b3299d667bb2379d7a80e7bbf99c2104ab`
 - nodes: 1
 
 ### Nodes
@@ -562,7 +562,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_graph_payload.py
 
-- source_sha256: `5425efdaa79dd26c55ef2412fa2415641ee071f9aa77ff4b0a18726f5b36cc78`
+- source_sha256: `373364ff146b6992652fb3d423b9aea9c3b38493fcb2c9f4d41972df10488fa6`
 - nodes: 1
 
 ### Nodes
@@ -4416,7 +4416,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/conduit.py
 
-- source_sha256: `2a7cc7f3b78898874c115aff01272019f04f19202600ef5791375deff159a89e`
+- source_sha256: `864666ef1814d51fc9ae5ab990fd8317fd2117a9fedd573b9ec185b907f0992f`
 - nodes: 2
 
 ### Nodes
@@ -4856,7 +4856,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/conduit_ward/contract/details.py
 
-- source_sha256: `d54ab07715f910d8acde02ad5305cd12248cd372db60529b7d4f71a4f429beeb`
+- source_sha256: `b25660d18b022bbd5dae89f1322888d086f3f54949edc02bba7450fdaa8854de`
 - nodes: 3
 
 ### Nodes
@@ -4879,6 +4879,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - responsibilities:
   - stores lineage identity, version-at-contract time, permission, and direction metadata
   - tracks source root spell ids for reversible dependency-linked sharing
+  - answers lineage membership through SpellIndex._has_spell_unless_cleaned, so an index its owner cleaned answers False instead of raising
 - owns_state: `spell_index`, `spell_id`, `permissions`, `contract_type`, `reason`, `sources`
 - phases: `runtime`, `cleanup`
 - public methods: `add_source`, `cleanup`, `has_spell`, `remove_source`
@@ -4886,11 +4887,13 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `IndexDetail` (class)
 
 - id: `melder.aether.conduit.conduit_ward.contract.details.IndexDetail`
-- defined at: `src/melder/aether/conduit/conduit_ward/contract/details.py:245`
+- defined at: `src/melder/aether/conduit/conduit_ward/contract/details.py:249`
 - extends: `Cleanable`
 - role: Index-level entry subscribing a peer to a whole SpellIndex rather than one version.
 - responsibilities:
   - follow the index's selected member rather than pinning a version
+  - answers lineage membership through SpellIndex._has_spell_unless_cleaned, so an index its owner cleaned answers False instead of raising
+- owns_state: `spell_index`, `selected_spell_id`, `permissions`, `contract_type`, `reason`, `sources`
 - phases: `runtime`
 - public methods: `add_source`, `cleanup`, `has_spell`, `index_id`, `remove_source`, `update_selected`
 
@@ -4985,7 +4988,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py
 
-- source_sha256: `4ba34aecd53378bb5cf926d261da11264ce9109ee865d30b14bbc6fa47bbc37c`
+- source_sha256: `ec2dab5d1d62e342cc1dbe3c428034bae6e7d495bad7e58c482d7a80d3a7ae11`
 - nodes: 2
 
 ### Nodes
@@ -5010,6 +5013,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - preflights and executes dynamic spell ownership transfer between conduits
   - owns rollback bookkeeping, change-intent registration, and incident reporting for transfer operations
   - sweeps ROOT conduits only (Aether root-named lookups) for impacted lineages; lessers own nothing but the lifecycle of what they create
+  - reads other Books' owned and contracted spell maps in its impact sweep through one-call snapshots, holding no foreign Book lock
 - owns_state: `source_conduit`, `target_conduit`, `spell`, `_preflight_summary`, `_change_control_manager`, `_incident_manager`, `_rollback_actions`
 - phases: `runtime`
 - public methods: `cleanup`, `execute`, `preflight`
@@ -6009,7 +6013,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/bind/spell_index.py
 
-- source_sha256: `b77b5ba0916c17f8185a6960f12201a4db9e7d00d7ab6c8219e4032927e72659`
+- source_sha256: `6eb16bc814fff8b3dcde5ba692f2d4243de3e022e1a64a307bd4043054858904`
 - nodes: 2
 
 ### Nodes
@@ -6025,13 +6029,13 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.bind.spell_index.SpellIndex`
 - defined at: `src/melder/aether/spellbook/bind/spell_index.py:12`
 - extends: `Cleanable`
-- role: Stable index identity with a mutable selected-spell pointer.
+- role: Stable lineage identity (an immutable ULID) with a mutable selected-spell pointer and the lineage's member set.
 - responsibilities:
-  - provides hash-stable index identity for spell registries
-  - tracks selected and historical spell ids for one spell index
-  - propagates selected-spell changes into owner and contracted spellbooks
-  - stores owner and contract attachment metadata for one index
-- owns_state: `_id`, `_selected_spell_id`, `_spells_in_index`, `_owner_spellbook`, `_contracted_spellbooks`
+  - provides hash- and equality-stable index identity (the ULID) for spell registries
+  - holds the selected spell id and the lineage's member set; selecting an id adds it as a member and never retires the previous one
+  - answers lineage membership: has_spell re-checks cleaned under its lock and raises RuntimeError for a cleaned index; _has_spell_unless_cleaned answers False for one, for walks over indexes the caller neither owns nor locks
+  - leaves lookup-map propagation on a notch to the Spellbook (the notch seam), not the index
+- owns_state: `_id`, `_selected_spell_id`, `_spells_in_index`, `_lock`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `add_member`, `cleanup`, `has_spell`, `id`, `is_empty`, `is_sole_member`, `remove_member`, `selected_spell_id`, `spells_in_index`, `update`
 
@@ -15421,7 +15425,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spellbook.py
 
-- source_sha256: `4e2c7eeadd8c46f0c3308072842c223f05236124081883fee236d76ff45c84d8`
+- source_sha256: `469e28abb50de2fac66eb6c5a134e804ca8e916bbf16cfa2a291a0f88c4eec3b`
 - nodes: 2
 
 ### Nodes
@@ -15523,7 +15527,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spellbook_creation_system.py
 
-- source_sha256: `e4111934a050c3512cc4a1ba2694e3d4cfa0ad7905c56c0ea93d21794f56d8b6`
+- source_sha256: `34aadde5cd10390ce7d41b48d9a0bbc3cbf41072236d97040ce6fc67925b0504`
 - nodes: 2
 
 ### Nodes
@@ -15539,7 +15543,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem`
 - defined at: `src/melder/aether/spellbook/spellbook_creation_system.py:54`
 - extends: `Cleanable`
-- role: Conjure-only orchestration helper for Spellbook.
+- role: Conjure orchestration helper for Spellbook; its static phase drivers also serve Conduit.validate_resolution and meld-time reruns.
 - responsibilities:
   - prepares spellbook configuration and structural phase execution before conjure
   - runs conduit-scoped resolution phases and policy gating for conjure
@@ -15553,6 +15557,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - publishes cached creation contexts from manifest packages only; any other payload is a cache miss
   - after a successful target-local pass, flags each owned, resolvable, non-existing-creation dependency in its scope that has no phase-11 plan, no published context and no flag yet with resolution_required and a door-epoch bump, under that dependency's spell lock (flag_dependencies_without_own_plan)
   - admits an executor-cache full hit only when the bundle's recorded world stamp equals the live structural world stamp (generation 19); a world that differs by an existing creation or a non-resolvable definition recompiles phases 8-11 and re-stages the bundle under the new stamp
+  - walks the Book's spells in its book-wide phase factories and resolution cleanup pass through one-call snapshots, because Conduit.validate_resolution reaches them without the Book lock
 - owns_state: `_spellbook`, `_policy`, `_dynamic`, `_name`, `_conduit_logger`, `_phase_scheduler_cls`, `_validation_warnings`, `_lock`
 - phases: `runtime`, `cleanup`
 - public methods: `check_system_state`, `cleanup`, `cleanup_phase_artifacts_after_resolution`, `conjure`, `define_conduit_into_spells`, `fire_conjure_hooks`, `flag_dependencies_without_own_plan`, `get_conjure_hook_map`, `phase_change_control_factory`, `phase_execution_plan_factory`, `phase_injection_plan_factory`, `phase_local_frame_factory` (+16 more)
@@ -24051,7 +24056,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/command_system/command_system.py
 
-- source_sha256: `6d75cc09c7f8f9198e1199d3946b8ade70076507d1664c15514ea702a88dfc0b`
+- source_sha256: `d5bc442f3e6e0f8925af0d602af96078a52c1ca65ac69e0cfce80b30acb0045a`
 - nodes: 2
 
 ### Nodes

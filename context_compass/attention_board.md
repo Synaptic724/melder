@@ -179,6 +179,7 @@ Message alert rules
 | ubuntu_runner_pin | review | handoff | claude | melder_1 | none | Owner: commit and push; accept or redirect. | No Linux job changes OS when ubuntu-latest moves to Ubuntu 26.04. | Workflow suite passes here (513), assets and llm_support current, and the owner accepts or redirects. | tickets/tasks/2026-10-06_pin_ubuntu_runner_image_task.md | 2026-10-06T10:43:14Z | REQUIRED |
 | speed_tests_nonblocking | review | handoff | claude | melder_1 | none | Owner: git add -A (speed-tests.yml is new), commit and push; on a dev-to-preprod PR confirm merge-ready goes green without the Speed checks; accept or redirect. | The three speed tests start on every dev-to-preprod PR from speed-tests.yml and never block merge-ready or the RC qualification. | Workflow suite passes here (491), assets and llm_support current, and the owner accepts or redirects. | tickets/tasks/2026-10-06_make_speed_tests_nonblocking_task.md | 2026-10-06T11:29:00Z | REQUIRED |
 | spell_lookup_race | review | handoff | claude | melder_1 | none | Owner: git add -A (two new test files, the archived patch folder, r6/ evidence), commit and push; accept or redirect. | find_spell_by_id answers from the Book's id maps (0.2.8229); regression tests lock the lineage contract, the no-walk rule and the parked-disposal window. | The owner accepts or redirects; Windows tiers and hosted CI are the owner's. | tickets/tasks/2026-10-10_investigate_spell_lookup_by_id_race_task.md | 2026-10-11T08:49:47Z | REQUIRED |
+| spell_map_followups | review | handoff | claude | melder_1 | none | Owner: git add -A (three new test files, the archived patch folder, followups evidence), commit and push; accept or redirect. | Spell-map walks no longer race binds or index cleanup, and the Conduit spell lookups document their ValueError (0.2.8230). | The owner accepts or redirects; Windows tiers and hosted CI are the owner's. | tickets/tasks/2026-10-11_close_remaining_spell_map_races_task.md | 2026-10-11T15:56:27Z | REQUIRED |
 <!-- END USER-DEFINED: active_items -->
 
 ## Recently Closed Anchors
@@ -236,6 +237,7 @@ Message alert rules
   tickets/tasks/2026-10-06_make_speed_tests_nonblocking_task.md.
 - spell_lookup_race: SWITCH_TRIGGER is the owner's acceptance of the 0.2.8229 landing, or an owner redirect.
   RESUME_HIERARCHY: tickets/tasks/2026-10-10_investigate_spell_lookup_by_id_race_task.md.
+- spell_map_followups: SWITCH_TRIGGER is the owner's acceptance of the 0.2.8230 landing, or an owner redirect. RESUME_HIERARCHY: tickets/tasks/2026-10-11_close_remaining_spell_map_races_task.md.
 ### Notch notice (fable_1, 2026-10-04)
 - fable_1 landed 0.2.8224 (ambiguous providers reported through Phase 4) and, before it, 0.2.8222 (annotation
   matching by kind; caching_system.py generation 20 `annotation_kind_matching`).
@@ -255,6 +257,9 @@ Message alert rules
 ### Notch notice (melder_1, 2026-10-11)
 - melder_1 landed 0.2.8229 (Spellbook.find_spell_by_id answers from the Book's id maps instead of walking the
   live index map). Notch above it if you land after.
+- melder_1 landed 0.2.8230 (bind publishes the spell maps under the Book lock; unlocked spell-map walks take
+  snapshots; SpellIndex.has_spell and the contract details survive a racing cleanup; the Conduit spell lookups
+  document their ValueError). Notch above it if you land after.
 ### Device VM git hazard (melder_2, 2026-09-26)
 - The connected folder refuses deletes, so any git command that refreshes the index from the device VM
   (plain `git status`, `git diff`) can leave an empty .git/index.lock that blocks the owner's commits.

@@ -15,6 +15,7 @@ from melder.aether.aether_utility_system import AetherUtilitySystem
 from melder.aether.aetheric_frame.aetheric_frame_configuration import AethericFrameConfiguration
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
+from melder.aether.spellbook.bind.spell_index import SpellIndex
 from melder.aether.spellbook.configuration.system_state import SystemState
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
@@ -329,7 +330,7 @@ class DummySpellIndex:
     Purpose:
         Provide a minimal SpellIndex stub with version tracking.
     Contract:
-        Exposes has_spell and cleanup for Spellbook internals.
+        Exposes has_spell, the cleanup-safe membership probe and cleanup for Spellbook internals.
     """
     def __init__(self, versions=None, sid="sid", current="sid"):
         """
@@ -376,6 +377,21 @@ class DummySpellIndex:
             bool: True when version_id is registered.
         """
         return version_id in self._spells_in_index
+
+    def _has_spell_unless_cleaned(self, version_id):
+        """
+        Purpose:
+            Mirror SpellIndex._has_spell_unless_cleaned for walks over indexes the caller does not own.
+        Contract:
+            Returns False once the stub is cleaned; otherwise the has_spell answer.
+        Args:
+            version_id: Version id to check.
+        Returns:
+            bool: True when the live stub registers version_id.
+        """
+        if self._cleaned:
+            return False
+        return self.has_spell(version_id)
 
     def _set_owner_conduit_id(self, conduit_id):
         """
@@ -4303,6 +4319,26 @@ def test_find_contracted_spell_by_id_returns_none_when_missing():
     sb = Spellbook()
     sb._contracted_spells = {"c": {DummySpellIndex(versions={"v1"}): DummySpell()}}
     assert sb._find_contracted_spell_by_id("v2", "c") is None
+
+
+def test_find_contracted_spell_by_id_skips_an_index_its_owner_cleaned():
+    """
+    Purpose:
+        Ensure a contracted lookup treats an index its owner cleaned as holding nothing.
+    Contract:
+        _find_contracted_spell_by_id returns None instead of raising when the only index that held
+        the version was cleaned while the contracted map still referenced it (0.2.8230; before, the
+        index's has_spell raised RuntimeError or AttributeError).
+    Returns:
+        None.
+    Raises:
+        AssertionError: If a spell is returned or the cleaned index raises.
+    """
+    sb = Spellbook()
+    idx = SpellIndex("v1")
+    idx.cleanup()
+    sb._contracted_spells = {"c": {idx: DummySpell()}}
+    assert sb._find_contracted_spell_by_id("v1", "c") is None
 
 
 def test_find_contracted_spell_by_id_returns_none_for_unknown_conduit():

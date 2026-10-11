@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/rift/command_system/command_system.py",
- "source_sha256": "6d75cc09c7f8f9198e1199d3946b8ade70076507d1664c15514ea702a88dfc0b",
+ "source_sha256": "d5bc442f3e6e0f8925af0d602af96078a52c1ca65ac69e0cfce80b30acb0045a",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.rift.command_system.command_system": {
@@ -50,7 +50,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "c8c2bc754ebe294400b68beec34ca08107b9a02af7ac39f51a37d2278645a10a",
+   "span_sha256": "d6c58ad48221474959185d5975927812e1ff6f56b538c6e2e4ea2c60f72b30bc",
    "role": "Room-local mediated command layer.",
    "responsibilities": [
     "resolves room-scoped records and runtime objects",

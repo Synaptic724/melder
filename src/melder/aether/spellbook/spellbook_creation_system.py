@@ -1530,8 +1530,10 @@ class SpellbookCreationSystem(Cleanable):
                 ),
             )
 
+            # One-call snapshot (list(...)): this pass also runs from Conduit.validate_resolution, where no Book lock
+            # keeps a concurrent bind or removal from resizing the live map mid-walk.
             broken_spells = SpellbookCreationSystem._collect_broken_spells(
-                spells=spellbook._spells.values(),
+                spells=list(spellbook._spells.values()),
             )
             if broken_spells:
                 SpellbookCreationSystem._raise_structural_validation_error(
@@ -2640,7 +2642,9 @@ class SpellbookCreationSystem(Cleanable):
         compiler_system = SpellCompilerSystem()
         try:
             if spell_ids is None:
-                for spell in spellbook._spells.values():
+                # One-call snapshot (list(...)): this pass also runs from Conduit.validate_resolution, where no Book lock
+                # keeps a concurrent bind or removal from resizing the live map mid-walk.
+                for spell in list(spellbook._spells.values()):
                     try:
                         compiler_system.cleanup_phase_artifacts(spell)
                     except Exception:
@@ -3102,10 +3106,14 @@ class SpellbookCreationSystem(Cleanable):
             RuntimeError: If the spellbook has already been cleaned.
         """
         spellbook.check_cleaned()
-        if not spellbook._spells:
+        # One-call snapshot: next(iter(...)) over the live map raises when a concurrent bind
+        # resizes it between the two calls, and these factories also run from
+        # Conduit.validate_resolution, where no Book lock keeps binds out.
+        spells = list(spellbook._spells.values())
+        if not spells:
             return []
 
-        lead_spell = next(iter(spellbook._spells.values()))
+        lead_spell = spells[0]
         return [
             scheduler.create_unit_of_work(
                 func=compiler_system.run_phase_root_blueprints,
@@ -3142,9 +3150,11 @@ class SpellbookCreationSystem(Cleanable):
             RuntimeError: If the spellbook has already been cleaned.
         """
         spellbook.check_cleaned()
+        # One-call snapshot (list(...)): this pass also runs from Conduit.validate_resolution, where no Book lock
+        # keeps a concurrent bind or removal from resizing the live map mid-walk.
         eligible_spells = [
             spell
-            for spell in spellbook._spells.values()
+            for spell in list(spellbook._spells.values())
             if SpellbookCreationSystem._is_spell_plan_phase_eligible(spell)
         ]
         if not eligible_spells:
@@ -3198,9 +3208,11 @@ class SpellbookCreationSystem(Cleanable):
             RuntimeError: If the spellbook has already been cleaned.
         """
         spellbook.check_cleaned()
+        # One-call snapshot (list(...)): this pass also runs from Conduit.validate_resolution, where no Book lock
+        # keeps a concurrent bind or removal from resizing the live map mid-walk.
         eligible_spells = [
             spell
-            for spell in spellbook._spells.values()
+            for spell in list(spellbook._spells.values())
             if SpellbookCreationSystem._is_spell_plan_phase_eligible(spell)
         ]
         if not eligible_spells:
@@ -3248,9 +3260,11 @@ class SpellbookCreationSystem(Cleanable):
             RuntimeError: If the spellbook has already been cleaned.
         """
         spellbook.check_cleaned()
+        # One-call snapshot (list(...)): this pass also runs from Conduit.validate_resolution, where no Book lock
+        # keeps a concurrent bind or removal from resizing the live map mid-walk.
         eligible_spells = [
             spell
-            for spell in spellbook._spells.values()
+            for spell in list(spellbook._spells.values())
             if SpellbookCreationSystem._is_spell_plan_phase_eligible(spell)
         ]
         if not eligible_spells:
@@ -3298,9 +3312,11 @@ class SpellbookCreationSystem(Cleanable):
             RuntimeError: If the spellbook has already been cleaned.
         """
         spellbook.check_cleaned()
+        # One-call snapshot (list(...)): this pass also runs from Conduit.validate_resolution, where no Book lock
+        # keeps a concurrent bind or removal from resizing the live map mid-walk.
         eligible_spells = [
             spell
-            for spell in spellbook._spells.values()
+            for spell in list(spellbook._spells.values())
             if SpellbookCreationSystem._is_spell_plan_phase_eligible(spell)
         ]
         if not eligible_spells:
@@ -3363,9 +3379,11 @@ class SpellbookCreationSystem(Cleanable):
             RuntimeError: If the spellbook has already been cleaned.
         """
         spellbook.check_cleaned()
+        # One-call snapshot (list(...)): this pass also runs from Conduit.validate_resolution, where no Book lock
+        # keeps a concurrent bind or removal from resizing the live map mid-walk.
         eligible_spells = [
             spell
-            for spell in spellbook._spells.values()
+            for spell in list(spellbook._spells.values())
             if SpellbookCreationSystem._is_spell_plan_phase_eligible(spell)
         ]
         if not eligible_spells:
@@ -3423,10 +3441,14 @@ class SpellbookCreationSystem(Cleanable):
             RuntimeError: If the spellbook has already been cleaned.
         """
         spellbook.check_cleaned()
-        if not spellbook._spells:
+        # One-call snapshot: next(iter(...)) over the live map raises when a concurrent bind
+        # resizes it between the two calls, and these factories also run from
+        # Conduit.validate_resolution, where no Book lock keeps binds out.
+        spells = list(spellbook._spells.values())
+        if not spells:
             return []
 
-        lead_spell = next(iter(spellbook._spells.values()))
+        lead_spell = spells[0]
         return [
             scheduler.create_unit_of_work(
                 func=compiler_system.run_phase_system_validation,
@@ -3464,10 +3486,14 @@ class SpellbookCreationSystem(Cleanable):
             RuntimeError: If the spellbook has already been cleaned.
         """
         spellbook.check_cleaned()
-        if not spellbook._spells:
+        # One-call snapshot: next(iter(...)) over the live map raises when a concurrent bind
+        # resizes it between the two calls, and these factories also run from
+        # Conduit.validate_resolution, where no Book lock keeps binds out.
+        spells = list(spellbook._spells.values())
+        if not spells:
             return []
 
-        lead_spell = next(iter(spellbook._spells.values()))
+        lead_spell = spells[0]
         return [
             scheduler.create_unit_of_work(
                 func=compiler_system.run_phase_change_control,

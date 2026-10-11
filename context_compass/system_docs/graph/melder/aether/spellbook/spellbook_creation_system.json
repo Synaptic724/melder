@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spellbook_creation_system.py",
- "source_sha256": "e4111934a050c3512cc4a1ba2694e3d4cfa0ad7905c56c0ea93d21794f56d8b6",
+ "source_sha256": "34aadde5cd10390ce7d41b48d9a0bbc3cbf41072236d97040ce6fc67925b0504",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spellbook_creation_system": {
@@ -59,8 +59,8 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "40d4dd3b30c39c9ca98215947d6d4648649ccaa63d681199e8ea2d44d05e25f9",
-   "role": "Conjure-only orchestration helper for Spellbook.",
+   "span_sha256": "7fa6c27892be54998cfc4e9d75a908e9116d428915535cc73eae651555167777",
+   "role": "Conjure orchestration helper for Spellbook; its static phase drivers also serve Conduit.validate_resolution and meld-time reruns.",
    "responsibilities": [
     "prepares spellbook configuration and structural phase execution before conjure",
     "runs conduit-scoped resolution phases and policy gating for conjure",
@@ -73,7 +73,8 @@
     "hands the conduit resolution diagnostics to SpellbookValidationError at the conjure gate and the local-rerun gate, so a conduit-verdict refusal states its reasons (the phase artifacts are already cleaned)",
     "publishes cached creation contexts from manifest packages only; any other payload is a cache miss",
     "after a successful target-local pass, flags each owned, resolvable, non-existing-creation dependency in its scope that has no phase-11 plan, no published context and no flag yet with resolution_required and a door-epoch bump, under that dependency's spell lock (flag_dependencies_without_own_plan)",
-    "admits an executor-cache full hit only when the bundle's recorded world stamp equals the live structural world stamp (generation 19); a world that differs by an existing creation or a non-resolvable definition recompiles phases 8-11 and re-stages the bundle under the new stamp"
+    "admits an executor-cache full hit only when the bundle's recorded world stamp equals the live structural world stamp (generation 19); a world that differs by an existing creation or a non-resolvable definition recompiles phases 8-11 and re-stages the bundle under the new stamp",
+    "walks the Book's spells in its book-wide phase factories and resolution cleanup pass through one-call snapshots, because Conduit.validate_resolution reaches them without the Book lock"
    ],
    "owns_state": [
     "_spellbook",
@@ -89,7 +90,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "40d4dd3b30c39c9ca98215947d6d4648649ccaa63d681199e8ea2d44d05e25f9"
+   "semantics_authored_against": "7fa6c27892be54998cfc4e9d75a908e9116d428915535cc73eae651555167777"
   }
  },
  "edges_out": [

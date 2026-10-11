@@ -3429,13 +3429,10 @@ def test_command_system_can_get_spell_by_id(
     _attach_projection_backed_viewer(space, viewer)
     spell = object()
 
-    class _SpellIndex:
-        def has_spell(self, version_id: str) -> bool:
-            return version_id == "sha-1"
-
     owner_conduit = SimpleNamespace(
         _spellbook=SimpleNamespace(
-            _spells={_SpellIndex(): spell},
+            # The owner Book answers the lineage lookup from its id maps (0.2.8230).
+            find_spell_by_id={"sha-1": spell}.get,
         )
     )
     aether_stub = SimpleNamespace(

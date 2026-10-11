@@ -299,10 +299,13 @@ class SpellIndex(Cleanable):
 
         Threading:
             Reads and writes under `self._lock`, so the result is a coherent
-            snapshot rather than a torn read.
+            snapshot rather than a torn read. The cleaned check is repeated under
+            that lock, the one `cleanup()` marks the index cleaned and deletes the
+            member set under, so a cleanup racing this call raises the documented
+            RuntimeError, never AttributeError (0.2.8230).
 
         Lifecycle / Cleanup:
-            Guarded by `check_cleaned()`.
+            Guarded by `check_cleaned()`, before and after taking the lock.
 
         Raises:
             RuntimeError: If the object has been cleaned.
@@ -312,6 +315,44 @@ class SpellIndex(Cleanable):
         """
         self.check_cleaned()
         with self._lock:
+            # Re-check under the lock: a cleanup between the unlocked check and the acquire has
+            # already deleted the member set.
+            self.check_cleaned()
+            return spell_id in self._spells_in_index
+
+    def _has_spell_unless_cleaned(self, spell_id: str) -> bool:
+        """
+        Internal
+
+        Return whether `spell_id` is a member of this index, answering False once
+        the index is cleaned.
+
+        Purpose:
+            Membership probe for walks over indexes the caller neither owns nor
+            locks - a contracted map, a contract detail - which can reach an index
+            after its owner cleaned it. A cleaned index owns nothing, so for such a
+            walk "not a member" is the truthful answer, where `has_spell` raises.
+
+        Contract:
+            - Same membership semantics as `has_spell` (the whole version
+              lineage, not only the selected id) while the index is live.
+            - Never raises for a cleaned index; returns False.
+
+        Threading:
+            Reads the cleaned flag and the member set under `self._lock`, the lock
+            `cleanup` holds while it marks the index cleaned and deletes the
+            member set, so a concurrent cleanup cannot tear the answer.
+
+        Args:
+            spell_id (str): The spell id to check.
+
+        Returns:
+            bool: True if this live index's member set contains `spell_id`;
+            False otherwise, and False once the index is cleaned.
+        """
+        with self._lock:
+            if self._cleaned:
+                return False
             return spell_id in self._spells_in_index
 
     def is_empty(self) -> bool:

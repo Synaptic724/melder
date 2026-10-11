@@ -399,12 +399,14 @@ def test_get_spell_permissions_returns_name(
     Raises:
         AssertionError: If permissions are not resolved.
     """
-    spell_index = SpellIndex("sha-1")
-    spellbook_stub._spells = {spell_index: _make_spell("sha-1", permissions=Permissions.create)}
+    spell = _make_spell("sha-1", permissions=Permissions.create)
+    # The lineage lookup is the Book's id-map lookup (0.2.8230), not a walk of its index map.
+    spellbook_stub.find_spell_by_id.side_effect = {"sha-1": spell}.get
 
     result = conduit_lesser.get_spell_permissions("sha-1")
 
     assert result == "create"
+    spellbook_stub.find_spell_by_id.assert_called_once_with("sha-1")
 
 
 def test_get_spell_permissions_raises_when_missing(
@@ -424,8 +426,10 @@ def test_get_spell_permissions_raises_when_missing(
     Raises:
         AssertionError: If missing spell id does not raise.
     """
-    spell_index = SpellIndex("sha-2")
-    spellbook_stub._spells = {spell_index: _make_spell("sha-2", permissions=Permissions.read)}
+    # The Book knows only "sha-2", so its id-map lookup misses "sha-1" (0.2.8230).
+    spellbook_stub.find_spell_by_id.side_effect = {
+        "sha-2": _make_spell("sha-2", permissions=Permissions.read),
+    }.get
 
     with pytest.raises(RuntimeError, match="not found"):
         conduit_lesser.get_spell_permissions("sha-1")
