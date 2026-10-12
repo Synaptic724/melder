@@ -2,12 +2,12 @@
 
 ## Metadata
 - Epic ID: EPIC-2026-10-05-melder_services_and_pools
-- Status: draft
+- Status: in_progress
 - Owner: user
-- Agent Name: opus_command_0
+- Agent Name: melder_1
 - Priority: p1
 - Created: 2026-10-05T15:35:41Z
-- Updated: 2026-10-05T16:28:09Z
+- Updated: 2026-10-11T23:09:18Z
 - Target Window: 2026-Q4
 - Related Program/Initiative: MelderOps Iris logger churn (priv_commandops TASK-2026-10-05-channel_logger_pooling)
 
@@ -89,6 +89,11 @@ not a special case.
 - from_state: draft
 - to_state: draft
 - transition_reason: opened from the owner's MelderOps discussion; stays draft until the open questions are decided.
+- from_state: draft
+- to_state: in_progress
+- transition_reason: the owner chose to work from this epic with melder_1 and set the pool direction in chat
+  (2026-10-11): pools as an Existence family that Creations services, configured on the Spell, with limits,
+  exhaustion and elasticity; design discussion first ("lets think about this stuff a bit please").
 
 ## Success Metrics
 - After the first resolution, a meld of a spell without SpellContract defaults calls inspect.signature zero times
@@ -202,6 +207,20 @@ not a special case.
   before Iris retires its conduit?
 
 ## Decision Log
+- 2026-10-11: a new Existence member, `pooled_spell`, extended through everything; Creations maintains the pools
+  in conduits and spellspaces; the ConduitPool / SpellSpacePool elastic system is reused as it is; users configure
+  a pooled spell, including a limit that raises; scope rank between unique_per_spell_space and many. The owner:
+  "I never said use many, I said make a new existence, called pooled_spell and thats it thats the point we then
+  extend everything and we allow users to configure a spell thats pooled in specific ways and resolution matches
+  that process and they can even have a limit that throws an exeception" ... "a pooled object should be more
+  significant than a many object but less significant than a unique_per_spellspace so resolution order still
+  permits it lets discuss these ideas and trade offs".
+- 2026-10-11: pools live in the existing machinery, not in a new service object. The owner: "I think the last time we
+  talked about this, you suggested a different service kinda like a spellspace, but I'm thinking we just extend melder
+  so that the creations system can service a new kind of object, and we extend the existence framework to allow for
+  pools and we can have different kind of pool configurations that can be managed on the spell object, and we can even
+  introduce concepts like exhaustion and limits or elasticity". Then: "lets think about this stuff a bit please" -
+  design discussion before any story.
 - 2026-10-05: async arrives later as conduit types with thread-local behavior, replacing the per-execution-context
   tracking suggested in the async entry below. The owner: "it just means providing more conduit types that have
   threadlocal behavior because async generally is single threaded but I have parallelized asyncio in melderops ... So
@@ -218,9 +237,10 @@ not a special case.
   MelderOps pool is held until these primitives exist (priv_commandops TASK-2026-10-05-channel_logger_pooling).
 
 ## Artifact Links (Optional)
-- ARTIFACTS_REQUIRED: false
+- ARTIFACTS_REQUIRED: true
 - ARTIFACT_PATHS:
-  - none in this repository yet; receipts live in priv_commandops (see Dependencies / External References)
+  - artifacts/melder_object_pools_20261011/ (design probes and their run logs)
+  - the MelderOps receipts live in priv_commandops (see Dependencies / External References)
 - DISPOSITION: retain_as_reference
 - CLEANUP_TRIGGER: none
 
@@ -313,6 +333,236 @@ not a special case.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-10-11T22:37:13Z
+  TYPE: DECISION
+  CLAIM: Owner, chat 2026-10-11: work from this epic with melder_1 (taken over from opus_command_0). Direction for
+    the pool: no separate service or scope object; Creations services a new kind of object, the Existence framework
+    gains pooled lifetimes, pool configurations (limits, exhaustion, elasticity) are managed on the Spell. Service
+    methods and the signature-scan memo stay in the epic, unordered for now. The owner asked to think it through
+    before anything is drafted: the next step is a design discussion grounded in Existence, Creations, the scope
+    exits and AbstractElasticPool as they are today.
+  EVIDENCE:
+  - context_compass/tickets/epics/2026-10-05_melder_services_and_pools_epic.md:208-214
+  IMPACT: Replaces the "service scope" idea (Goal 4, STORY-TBD-service_scope) with pooled existences inside Creations;
+    the open questions are re-framed around Existence and the Spell's pool configuration.
+  NEXT: Read existence.py, the Creations stores and scope-exit disposal, AbstractElasticPool and the scope-ordering
+    validation, then bring the owner a design sketch with the decisions it needs.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-11T22:41:03Z
+  TYPE: FACT
+  CLAIM: What the owner's direction lands on today. (1) An Existence member is pure routing - it picks which Creations
+    store holds an instance (`SitePlanEmission._route`: conduit, spellspace, lineage root, cluster leader, the spell's
+    owner store); the enum caches nothing. (2) A scope ends by retiring its store (`Creations.clear_all`,
+    `reset_for_pool`, `cleanup`): the disposal registry is detached and walked newest-first, dispatching on the entry
+    type (a tuple for a slotted object, a `ManyDisposalBucket` for many), failures aggregated - so a third entry type
+    is the natural "new kind of object Creations services". (3) A disposal-bearing `many` registers in the meld's
+    innermost scope store (spellspace, else conduit), also when it is built as a child inside a slotted holder's miss,
+    so it retires with that scope, not with its holder. (4) `AbstractElasticPool` already implements elasticity
+    (stretch target_idle on a miss, decay when quiet, idle retention between baseline_idle and max_idle) but no
+    limit or exhaustion: acquire creates on every miss, and its counters are advisory (racy by design), so they cannot
+    enforce a hard cap. (5) Phase 6 `ScopeOrderingStrategy` ranks lifetimes (unique 0 ... many 5) and refuses a
+    broader holder of a narrower dependency; `many` holders are exempt. (6) Existence is switched on across the meld
+    doors and code generation (by text: conduit_meld 20 references, spellspace_meld 18, the generalized compilers 34,
+    lane plans 17, site-plan lowering 13, bind 11, spellbinder 8): a new member threads through all of them, plus the
+    cache generation and the crystallizer record.
+  EVIDENCE:
+  - src/melder/aether/spellbook/existence/existence.py:1-138
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1323-1338
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1390-1475
+  - src/melder/aether/conduit/creations/creations.py:57-293
+  - src/melder/aether/conduit/creations/creations.py:376-468
+  - src/melder/aether/conduit/creations/creations.py:1227-1323
+  - src/melder/utilities/general_base/abstract_elastic_pool.py:13-470
+  - src/melder/aether/spellbook/spell_compiler/system/validation/scope_ordering_strategy.py:1-148
+  IMPACT: Pools fit the store-retirement machinery; limits/exhaustion are new pool code; where a lease is registered
+    (innermost scope vs the holder's store) is the decision the design turns on; a new Existence member is a
+    cross-cutting change.
+  NEXT: Bring the owner the design sketch and its decisions (lease boundary, member vs policy, pool home, exhaustion).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-11T22:54:29Z
+  TYPE: HYPOTHESIS
+  CLAIM: Re-read after compaction. Correction to the previous note: Phase 6 `ScopeOrderingStrategy` skips `many` on
+    BOTH sides - a `many` holder may depend on anything, and a `many` dependency of any holder is never ranked. But a
+    disposal-bearing `many` is not unowned: built as a child inside a slotted holder's miss it registers in the meld's
+    innermost scope store (`many_store` = spellspace store, else the meld's conduit store), while the holder publishes
+    in its own route (conduit, owner, lineage or cluster store). Hypothesis: a `unique_per_conduit` holder first built
+    inside a spellspace, or a `unique` holder first built through a lesser conduit, keeps a child that is disposed
+    when that spellspace exits or that lesser returns to its pool, and later melds return the same holder holding the
+    disposed child. If true it is a live gap in today's `many` (not caused by pools), and it is exactly the stale-lease
+    failure a pooled lifetime would turn into "another holder's object".
+  EVIDENCE:
+  - src/melder/aether/spellbook/spell_compiler/system/validation/scope_ordering_strategy.py:80-121
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1323-1338
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1390-1471
+  - src/melder/aether/conduit/creations/creations.py:419-467
+  - context_compass/system_docs/src_components.md:3582-3592
+  IMPACT: Decides the lease boundary for pools (innermost scope vs the holder's store) and may be a separate defect
+    for the owner to rule on; the design discussion should state it as measured, not inferred.
+  NEXT: Run a public-API probe on a /tmp copy of src (spellspace and lesser cases plus a root-built control) and
+    record the result as a MEASURE note.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-11T22:55:37Z
+  TYPE: MEASURE
+  CLAIM: The hypothesis holds on 0.2.8233 (3.14.7 free-threaded, GIL off and on; public API, a /tmp copy of src).
+    A: a `unique_per_conduit` holder first built inside a spellspace - after the space exits, root melds return the
+    same holder and its `many` Child has been disposed (`close` ran). B: a `unique` holder first built through a lesser
+    conduit - after the lesser's pool return, the same holder with a disposed Child. C (control): the holder built at
+    the root keeps an open Child across a spellspace cycle; it closes at root teardown. So a disposal-bearing `many`
+    dependency follows the innermost scope, not its holder, and Phase 6 does not refuse the shape. This is today's
+    `many`, not a pool effect; a pooled lease registered the same way would go back to the pool and be reissued to
+    another consumer while the holder still uses it.
+  EVIDENCE:
+  - context_compass/artifacts/melder_object_pools_20261011/probe_disposal_many_under_slotted_holder.py:1-102
+  - context_compass/artifacts/melder_object_pools_20261011/runs/probe_disposal_many_under_slotted_holder.txt:1-17
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1390-1451
+  IMPACT: A pooled lease must end with its holder (or slotted holders of a pooled dependency must be refused at
+    Phase 6); the existing `many` gap is a separate defect question for the owner.
+  NEXT: Re-read AbstractElasticPool, the SpellSpacePool lease flag and bind's forced-unique rule, then send the owner
+    the design discussion with this measured gap.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-11T22:56:11Z
+  TYPE: FACT
+  CLAIM: `AbstractElasticPool` documents that a release into a retired pool destroys the object ("those releases find
+    a retired pool and destroy rather than retain"), but `release()` never reads `_cleaned`: it appends to `_idle` and
+    keeps the object whenever the idle count is within `target_idle`, so the object is neither destroyed nor reachable
+    by cleanup, and `acquire()` can still pop it. `SpellSpacePool.release` has the same shape. `acquire()` constructs
+    through the abstract `create_object(...)`, so the pool owns construction; counters are advisory and nothing caps
+    the live count (`max_idle` caps retention only). For a Spell pool this means: construction must stay in the
+    compiled plan (the pool hands out idle objects and accounts, it does not build), exact limits need new accounting,
+    and the retired-pool release path must be implemented, not inherited.
+  EVIDENCE:
+  - src/melder/utilities/general_base/abstract_elastic_pool.py:54-60
+  - src/melder/utilities/general_base/abstract_elastic_pool.py:192-212
+  - src/melder/utilities/general_base/abstract_elastic_pool.py:290-345
+  - src/melder/aether/conduit/spell_space/spell_space_pool.py:270-301
+  IMPACT: Reuse the elastic retention policy, not the acquire/release pair as-is; the doc/code gap in the base is a
+    small separate fix (or correction) to raise with the owner.
+  NEXT: Read bind's forced-unique rule and whether the bind fingerprint hashes existence, then send the design
+    discussion.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-11T22:58:20Z
+  TYPE: STRATEGY_DISCUSSION
+  CLAIM: Pooled-existence design sent to the owner. Objective: Creations services leased objects, Existence declares
+    pooled lifetimes, the Spell carries limits/exhaustion/elasticity, with no change to the six existing modes.
+    Options for the shape: (A) new members threaded through every Existence switch; (B) a pool modifier on many /
+    unique_per_spell_space / unique_per_conduit, enum unchanged; (C) hybrid - members at the API and on the Spell,
+    each with a routing base (pooled -> many), so routing switches read the base and only construction, registration
+    and retirement learn pooling. Recommended: C, `Existence.pooled` first, per-scope members after. Mechanics
+    recommended: one pool per Spell version (lease carries its pool; a return to a retired pool destroys); the pool
+    hands out idle objects and accounts while the compiled plan still builds on a miss; a lease registers in the store
+    of the nearest stored site above it (the holder's `c{i}` already passed into its miss), or the innermost scope at
+    the meld's top level - correct for any holder, unlike today's many (MEASURE above); a third disposal-registry
+    entry type returns instead of disposing (purge of one instance = early return); Phase 6 refuses pooled spells
+    whose dependencies do not outlive the pool (scoped lifetimes, disposal-bearing many, other pooled spells,
+    unresolved inputs) and supplied override values on pooled sites; exhaustion raise (default) and overflow first,
+    wait later and root-meld-only with a timeout (a waiter inside a holder's miss holds build locks); exact live
+    accounting under a leaf pool lock only when a limit is set; elastic idle retention reused from
+    AbstractElasticPool; configuration frozen at bind and fingerprinted (new parts only for pooled bindings, so
+    existing ids do not move). Cost: about 120 Existence references by text, cache generation 21, a RecordVersion
+    bump, Phase 6 rules, patch docs, graph and docs.
+  EVIDENCE:
+  - src/melder/aether/spellbook/existence/existence.py:3-138
+  - src/melder/aether/spellbook/bind/bind.py:1009-1022
+  - src/melder/aether/spellbook/bind/bind.py:1120-1158
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1366-1451
+  - src/melder/aether/conduit/creations/creations.py:419-467
+  - src/melder/utilities/general_base/abstract_elastic_pool.py:290-345
+  IMPACT: Gives the owner one recommended path with the decisions that change it; nothing is drafted or built yet.
+  NEXT: Owner decides (1) shape, (2) lease boundary and whether today's many gets the same fix as a separate task,
+    (3) exhaustion set, (4) configuration frozen vs live-managed, (5) whether the signature-scan memo lands first.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+- DATETIME: 2026-10-11T22:58:20Z
+  TYPE: DECISION_REQUEST
+  CLAIM: Five owner decisions gate the first story: the five listed in the NEXT line above. Until then no patch docs,
+    stories or code.
+  EVIDENCE: context_compass/tickets/epics/2026-10-05_melder_services_and_pools_epic.md:208-215
+  IMPACT: The patch docs (architecture, Creations, site-plan lowering, Phase 6, pool) are written from these answers.
+  NEXT: Record the owner's answers in the Decision Log, then draft the patch docs and the pooled-existence story.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-11T23:04:15Z
+  TYPE: DECISION
+  CLAIM: Owner, chat 2026-10-11, answering the shape question: a new Existence member named `pooled_spell`, not a
+    `many`-based modifier or hybrid ("I never said use many, I said make a new existence, called pooled_spell"), and
+    everything is extended for it. Users configure a pooled spell in specific ways and resolution follows that
+    configuration, including a limit that raises an exception. The elastic system of ConduitPool / SpellSpacePool is
+    reused as it is in the pooled backend. Creations maintains the pools; pooled objects live in conduits and in
+    spellspaces. Scope rank sits between `unique_per_spell_space` and `many` ("more significant than a many object
+    but less significant than a unique_per_spellspace so resolution order still permits it"). The owner asked to
+    discuss these ideas and their trade-offs next, so nothing is drafted yet.
+  EVIDENCE: context_compass/tickets/epics/2026-10-05_melder_services_and_pools_epic.md:208-215
+  IMPACT: Supersedes options B and C of the previous STRATEGY_DISCUSSION (option A, named `pooled_spell`); moves the
+    pool home from the Spell to the Creations stores; fixes the Phase 6 rank. Open: lease end, pool lifetime across
+    store resets, limit scope, the pooled object's own dependencies, and the transitive holder check.
+  NEXT: Read resolution_style_matrix.py, ConduitPool and the Existence switch map, then answer with the trade-offs of
+    this design.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-11T23:09:18Z
+  TYPE: FACT
+  CLAIM: Grounding for the owner's design. (1) `ConduitPool.create_object` never constructs: it returns an idle shell
+    or None and the conduit layer builds on a miss; `return_lesser_conduit` appends, then trims - the shape a pooled
+    backend needs, because the compiled plan must build the object and its dependencies on a miss. (2) Every conduit
+    builds a `SpellSpacePool` and every normal root a `ConduitPool`, both baseline_idle 20 / max_idle 20, so stretch
+    and decay never move today; a pooled spell configured with baseline < max would be their first real user. (3)
+    `ResolutionStyleMatrix` is the drift-tested support policy: six members expected, class spells support all,
+    method / lambda / existing-object families unique-only. (4) About 180 Existence references in 31 source files:
+    the two meld doors 38, generalized manifest compiler 27, generalized lane plan 17, site-plan lowering 13, bind 11,
+    spellbinder 8, Phase 6 8, many-only discovery and plan 9, artifact processor 6, static command system 6,
+    Creations / Conduit / SpellSpace 11. (5) `SpellSpaceMeld.purge` admits only many and unique_per_spell_space; a
+    managed space's store is cleared lock-free on exit under a thread-confinement contract.
+  EVIDENCE:
+  - src/melder/aether/conduit/conduit_pool.py:106-161
+  - src/melder/aether/conduit/conduit.py:349-363
+  - src/melder/aether/spellbook/resolution_style_matrix.py:107-162
+  - src/melder/aether/conduit/meld/spellspace_meld.py:222-239
+  - src/melder/aether/conduit/creations/creations.py:1286-1322
+  IMPACT: "Reuse the elastic system as it is" maps onto an AbstractElasticPool subclass in the ConduitPool style; the
+    reference count sizes "extend everything".
+  NEXT: Send the owner the trade-offs of the new member (name, pool scope, lease end, Phase 6, configuration).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+- DATETIME: 2026-10-11T23:09:18Z
+  TYPE: STRATEGY_DISCUSSION
+  CLAIM: Trade-offs of the owner's design, sent with recommendations. Name (owner asked mid-turn for a Melder-style
+    name): members name the instance's lifetime, so drop `_spell`; `summoned` recommended (meld summons from the
+    scope's pool, `dismiss(obj)` returns it), `leased` the plain alternative (the kernel's own lease word),
+    `resource_managed` accurate but silent about return; decide before the first landing because `existence.name` is
+    hashed into spell ids and written into records. Rank between unique_per_spell_space and many: Phase 6 then
+    refuses every longer-lived holder of a pooled object, but it skips many on both sides (S -> many -> pooled passes,
+    the measured gap) and does not cover the pooled object's own dependencies across leases (disposal-bearing many,
+    nested pooled) - walk through many for pooled holders and refuse those dependencies in slice 1. Pool scope per
+    spell in the configuration: `conduit` (default; spellspace melds lease from the owner conduit's pool, reuse across
+    requests, no unique_per_spell_space dependencies) or `spell_space` (drained at space exit); store reset or
+    teardown destroys a pool's idle objects and outstanding leases; limits are per pool, not frame-wide. Limit: exact
+    live count under the pool lock only when set; exhaustion raises before anything is built (reserve, build,
+    unreserve on failure). Lease end: explicit return (`purge` / `dismiss`, identity-keyed) or the end of the store it
+    was registered in; reset hooks before reuse. Extension: ~180 references, the resolution matrix, cache generation,
+    RecordVersion, Nexus, docs, graph, plus a member-exhaustiveness test for every Existence switch.
+  EVIDENCE:
+  - src/melder/aether/spellbook/bind/bind.py:1009-1022
+  - src/melder/aether/spellbook/spell_compiler/system/validation/scope_ordering_strategy.py:80-121
+  - src/melder/aether/conduit/conduit_pool.py:106-161
+  - context_compass/artifacts/melder_object_pools_20261011/runs/probe_disposal_many_under_slotted_holder.txt:1-17
+  IMPACT: Replaces the previous five asks with five for this design.
+  NEXT: Owner decides: (1) name, (2) pool scope per spell (conduit default / spell_space) or the meld's own store,
+    (3) lease end with reset hooks, (4) the Phase 6 additions, (5) configuration frozen in the spell id or live.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Acceptance criteria confirmed by user
@@ -325,10 +575,17 @@ not a special case.
 - Keep notes append-only and preserve UNKNOWN-first promotion discipline.
 
 ## Context / Handoff Summary
-Draft epic opened from the MelderOps logger-pool discussion. Three parts: memoize the per-meld SpellContract scan
-(behavior-neutral, about 78 -> 21 us per ChannelLogger meld), service methods (an owned object supplies and takes
-back what Melder injects, with the consumer's context), and a Melder-hosted pooled lifetime with service-scope
-semantics. Next: the owner answers the six open questions; Milestone 1 can start independently.
+In progress under melder_1. Owner direction (2026-10-11): pools are Existence lifetimes that Creations services,
+configured on the Spell (limits, exhaustion, elasticity); service methods and the signature-scan memo stay in the
+epic, unordered. Findings (Notes, 2026-10-11): Existence is routing; Creations retires a store newest-first and
+dispatches on the registry entry type; AbstractElasticPool gives elastic idle retention only (no limit, and its
+documented release-into-a-retired-pool destroy is not implemented); a disposal-bearing many under a slotted holder
+follows the innermost scope and is disposed under a live holder (measured, artifacts/melder_object_pools_20261011/).
+The owner then chose a first-class member (working name `pooled_spell`, a Melder-style name under discussion),
+pools maintained by Creations in conduits and spellspaces, the ConduitPool/SpellSpacePool elastic system reused,
+per-spell configuration with a raising limit, and a rank between unique_per_spell_space and many. Trade-offs and
+five asks went back (latest STRATEGY_DISCUSSION note). Next: record the answers, then patch docs and the story.
+No source changed in this epic.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

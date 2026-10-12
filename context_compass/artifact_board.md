@@ -52,7 +52,8 @@ Scope rules
 - `attention_board.md` routes tickets only; do not add artifact paths there.
 - Tickets remain canonical memory; this board is an association index.
 - Add rows only when a ticket has one or more active artifact files.
-- Every artifact row must include a ticket path and retention decision.
+- Every artifact row must include a ticket reference and retention decision:
+  a context-compass-relative path in local mode or Issue URL in plugin mode.
 
 Disposition values
 - `delete_on_close`: remove artifact when ticket closes.
@@ -99,6 +100,7 @@ Disposition values
 | tickets/tasks/2026-10-11_close_remaining_spell_map_races_task.md | artifacts/spell_lookup_race_20261010/followups/ | investigation_evidence | active | retain_as_reference | Walker inventory, snapshot probe, analysis helpers; scratch_0.2.8230/ (apply, test-update and doc scripts, diffs, new tests, red/green, full-tree, graph, asset and bundle logs; README.txt). | 2026-10-11T15:56:27Z | REQUIRED |
 | tickets/tasks/2026-10-11_prove_and_fix_cross_object_lock_gaps_task.md | artifacts/cross_object_lock_gaps_20261011/ | investigation_evidence | active | retain_as_reference | Probes and run logs for (a)-(c), (c2) and the deadlock (runs/); scratch_0.2.8231/ (apply, test-update, test-install and doc scripts, new tests, diffs, red/green, repeats, full-tree, graph, asset and bundle logs). | 2026-10-11T18:51:37Z | REQUIRED |
 | tickets/tasks/2026-10-11_close_lock_residuals_and_evaluate_mediator_admission_task.md | artifacts/lock_residuals_20261011/ | investigation_evidence | active | retain_as_reference | Residual stress with base/cand GIL-off/on logs (runs/); scratch_0.2.8232/ (apply, doc, citation-remap and graph scripts, new test, diffs, red/green, repeats, full tree, benchmarks, graph and post-landing logs; README.txt); scratch_0.2.8233/ (apply, deadlock probe, doc, remap and graph scripts, new test, diff, red/green, repeats, full tree, benchmarks, graph, post-landing, asset and bundle logs; README.txt). | 2026-10-11T22:03:34Z | REQUIRED |
+| tickets/epics/2026-10-05_melder_services_and_pools_epic.md | artifacts/melder_object_pools_20261011/ | investigation_evidence | active | retain_as_reference | Pooled-existence design probes: a disposal-bearing many under a slotted holder (A/B disposed under a live holder, C control) and its run log (runs/). | 2026-10-11T22:55:37Z | REQUIRED |
 <!-- END USER-DEFINED: active_artifacts -->
 
 ## Recently Cleared Artifacts

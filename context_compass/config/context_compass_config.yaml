@@ -107,3 +107,17 @@ reading:
   viewer_tool_read_limit: 500 # Maximum lines per view/read operation
   read_loc_max: 500 # Maximum LOC per manual chunked read operation
 
+# This chooses where Epic/Story/Task tickets live. It does not change the
+# system-of-record mandate or move system docs, mailbox, or agent coordination.
+work_tracking:
+  backend: local # local | github_codex_plugin; absent means local
+  github_codex_plugin:
+    connection_nickname: "" # Codex connection nickname; required only for plugin operations
+    issues_repository: "" # owner/repo; required only for github_codex_plugin
+    project_url: "" # optional context link; Issue body Status remains authoritative
+
+# This selects agent-to-agent message transport, not ticket storage or state.
+# Roster, request counters and setup outcomes remain on the existing local board.
+
+agent_communication:
+  backend: codex_mcp # mailbox | codex_mcp; absent means mailbox

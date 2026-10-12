@@ -35,8 +35,9 @@ What belongs in each region on this board:
 | region | put this here |
 | --- | --- |
 | `checked_in` | one row per agent currently active, with `last_checked` |
+| `request_tracking` | one counter checkpoint per session; user requests advance turns |
 | `messages` | structured messages in the format below; delete each one after consuming it |
-| `notes` | recurring instructions and standing context for agent-to-agent handoff in this repository |
+| `notes` | standing handoff context and per-session custom-instruction setup outcomes |
 
 **Regions ship empty and stay yours.** The package writes nothing into them in any
 mode, which also means it can never correct what is written there - so a repeated
@@ -44,15 +45,25 @@ policy pasted into a region will not update when the package's own copy does. Pu
 standing instructions in `notes` once; do not restate MANAGED text.
 
 Purpose
-- Targeted agent-to-agent message passing (point-to-point handoffs,
-  notices, questions, acks).
+- Shared registration, request counters and setup outcomes in every communication mode.
+- Mailbox-mode message passing (point-to-point handoffs, notices, questions, acks).
 - Companion to `attention_board.md` (which stays routing/broadcast-only).
-- Canonical protocol: `agent_onboarding/default/general/skills/mailbox_protocol.md`.
+- Shared state: `agent_onboarding/default/general/skills/agent_session_state.md`.
+- Message transport: `agent_communication.backend` in the config selects mailbox or codex_mcp.
+  MCP agents read only Checked-In Agents, Request Tracking and relevant Notes; they skip
+  the messaging rules below and the Messages region. Existing messages remain untouched.
 
-Core rules (summary; the protocol doc is authoritative)
+Shared state rules
 - Check in at onboarding/re-onboarding: add or update your row below.
+- Keep request counters in `## Request Tracking`, separately from the roster.
+  Follow `agent_onboarding/default/general/skills/request_tracking.md`; do not
+  increment for each response or tool call. State writes need effective onboarding authorization.
+- Keep per-session setup outcomes in Notes and preserve other agents' state.
+- Data races on this file are expected: re-read and retry, never overwrite another agent's edit.
+
+Mailbox messaging rules (mailbox mode only; mailbox_protocol.md is authoritative)
 - Single-agent sessions: if you are the only checked-in agent, the
-  message section needs no monitoring - check-in itself is the only duty.
+  message section needs no monitoring. Maintain your request counter separately.
 - Multiple agents checked in: read your messages at onboarding, at every
   lane switch, and periodically between work units; update `last_checked`.
 - Sending: append a structured message below AND add an alert line to
@@ -60,12 +71,10 @@ Core rules (summary; the protocol doc is authoritative)
 - Receiving: copy any actionable content into your active ticket's
   `## Notes` (tickets are the durable truth), DELETE the message here,
   and clear your alert line in `attention_board.md` in the same pass.
-- Data races on this file are expected: re-read and retry, never
-  overwrite another agent's concurrent edit.
 - No secrets, ever. Keep messages pointer-heavy (paths/ticket refs),
   not content-heavy.
 
-Message format (append-only; delete after consumption)
+Message format (mailbox mode only; append-only, delete after consumption)
 ```
 - TO: <agent_name>
   FROM: <agent_name>
@@ -94,6 +103,12 @@ Message format (append-only; delete after consumption)
 | seo_0 | codex | 2026-09-26T22:22:03Z | 2026-09-27T14:29:31Z | departed |
 | muse_0 | opencode | 2026-09-27T15:41:12Z | 2026-09-27T15:41:12Z | active |
 <!-- END USER-DEFINED: checked_in -->
+
+## Request Tracking
+| session_key | agent_name | prompt_id | request_ref | request_status | compaction_ref |
+| --- | --- | --- | --- | --- | --- |
+<!-- BEGIN USER-DEFINED: request_tracking -->
+<!-- END USER-DEFINED: request_tracking -->
 
 ## Messages
 <!-- BEGIN USER-DEFINED: messages -->
