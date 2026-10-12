@@ -3,12 +3,17 @@
 ## Metadata
 - Task ID: TASK-2026-10-04-fix_live_unlink_churn_phase_error
 - Story: none (standalone task; owner request)
-- Status: review
+- Status: done
 - Owner: claude
 - Agent Name: melder_1
 - Priority: p1
 - Created: 2026-10-04T23:11:22Z
-- Updated: 2026-10-04T23:59:15Z
+- Updated: 2026-10-12T21:14:45Z
+
+- Completed: 2026-10-12T21:14:45Z
+- Summary: Landed, notched 0.2.8227: a meld racing a link sever or an uncontract raises SpellbookValidationError, not
+  PhaseExecutionError; release note 'Fixed: a meld that races a link change fails cleanly instead of with an
+  internal phase error' (release_docs/0.2.8227.md). Patch docs archived at turn-in. Turned in 2026-10-12.
 
 ## Objective
 The hosted macOS 3.14.8 runtime job failed test_multithreading_live_link_unlink_and_contract_churn_cycles: during a
@@ -45,6 +50,10 @@ correct the test if the test is what drifted), and guard it with a regression te
   tier-tested (Notes 7-11); the owner's push and acceptance remain.
 - previous: draft -> in_progress: (2026-10-04T23:11:22Z) the owner's directive with failure evidence; ticket and board
   row exist before the investigation starts.
+- from_state: review
+- to_state: done
+- transition_reason: (2026-10-12T21:14:45Z) the owner turned in every finished melder_1 ticket (chat 2026-10-12: "just close everything you finished");
+  push remain the owner's.
 
 ## Steps / Checklist
 - [x] Read the churn harness and its allowed-error contract in the failing test.
@@ -97,15 +106,15 @@ correct the test if the test is what drifted), and guard it with a regression te
 - [ ] Notes quality maintained (`SCORE_0_TO_10` >=
       `workflow.ticket_microcycle.minimum_note_score`)
 - [ ] Applicable anti-pattern checks are clear or escalated with evidence.
-- [ ] Acceptance criteria reviewed with user and confirmed
-- [ ] Board sync completed for successor routing or closure anchor update.
+- [x] Acceptance criteria reviewed with user and confirmed (owner turn-in, 2026-10-12)
+- [x] Board sync completed for successor routing or closure anchor update.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
 - ARTIFACT_PATHS:
-  - system_docs/patches/active/live_unlink_visibility_race_2026_10_04/architecture_patch.md
-  - system_docs/patches/active/live_unlink_visibility_race_2026_10_04/component_patch_target_resolution_pass.md
-  - system_docs/patches/active/live_unlink_visibility_race_2026_10_04/code_description_patch_target_pass_visibility.md
+  - system_docs/patches/completed/live_unlink_visibility_race_2026_10_04/architecture_patch.md
+  - system_docs/patches/completed/live_unlink_visibility_race_2026_10_04/component_patch_target_resolution_pass.md
+  - system_docs/patches/completed/live_unlink_visibility_race_2026_10_04/code_description_patch_target_pass_visibility.md
 - DISPOSITION: promote_to_documentation
 - CLEANUP_TRIGGER: on acceptance, promote into src_architecture and src_components and archive the folder
   under system_docs/patches/completed/.

@@ -3,12 +3,18 @@
 ## Metadata
 - Task ID: TASK-2026-10-11-close-lock-residuals-and-evaluate-mediator-admission
 - Story: none (follow-up of TASK-2026-10-11-prove-and-fix-cross-object-lock-gaps, its Note 13 residuals)
-- Status: review
+- Status: done
 - Owner: claude (directed by the owner 2026-10-11)
 - Agent Name: melder_1
 - Priority: p1
 - Created: 2026-10-11T19:37:07Z
-- Updated: 2026-10-11T22:03:34Z
+- Updated: 2026-10-12T21:14:45Z
+
+- Completed: 2026-10-12T21:14:45Z
+- Summary: Landed, notched 0.2.8232 and 0.2.8233: find_contracted_spell and inspect_spell hold up under concurrent links
+  and root registration, an overlapping cleanup_spell refuses, and a direct Spell.cleanup() no longer hangs
+  against Book teardown or conjure (release note 'Index links, contract reads and binds across frames hold up
+  under concurrent changes'). F2, F3 and the meld-time reruns stay recorded (Note 9). Turned in 2026-10-12.
 
 ## Objective
 Fix the residuals the 0.2.8231 lane left - Conduit.find_contracted_spell's live walk under the conduit lock, the
@@ -65,6 +71,10 @@ transactions - with no change to what the mediator admits until the owner decide
 - to_state: review
 - transition_reason: 0.2.8233 landed with its tests and checks (2026-10-11T22:03:34Z); acceptance, commit and
   push are the owner's.
+- from_state: review
+- to_state: done
+- transition_reason: (2026-10-12T21:14:45Z) the owner turned in every finished melder_1 ticket (chat 2026-10-12: "just close everything you finished");
+  git add -A, commit, push, the Windows tiers and hosted CI remain the owner's.
 
 ## Steps / Checklist
 - [x] Read the three residuals and prove or retract each through the real locks (Notes 1-3: the contracted lookup and
@@ -135,15 +145,15 @@ transactions - with no change to what the mediator admits until the owner decide
 - [ ] Notes quality maintained (`SCORE_0_TO_10` >=
       `workflow.ticket_microcycle.minimum_note_score`)
 - [ ] Applicable anti-pattern checks are clear or escalated with evidence.
-- [ ] Acceptance criteria reviewed with user and confirmed
-- [ ] Board sync completed for successor routing or closure anchor update.
+- [x] Acceptance criteria reviewed with user and confirmed (owner turn-in, 2026-10-12)
+- [x] Board sync completed for successor routing or closure anchor update.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
 - ARTIFACT_PATHS:
   - artifacts/lock_residuals_20261011/
   - system_docs/patches/completed/lock_residuals_2026_10_11/
-  - system_docs/patches/active/direct_spell_cleanup_lock_order_2026_10_11/
+  - system_docs/patches/completed/direct_spell_cleanup_lock_order_2026_10_11/
 - DISPOSITION: retain_as_reference (evidence); promote_to_documentation (patch docs, archived at landing)
 - CLEANUP_TRIGGER: evidence decided at turn-in.
 

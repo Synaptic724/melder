@@ -3,12 +3,17 @@
 ## Metadata
 - Task ID: TASK-2026-10-06-pin_ubuntu_runner_image
 - Story: none (standalone task; owner request)
-- Status: review
+- Status: done
 - Owner: claude
 - Agent Name: melder_1
 - Priority: p1
 - Created: 2026-10-06T10:38:56Z
-- Updated: 2026-10-06T10:43:14Z
+- Updated: 2026-10-12T21:14:45Z
+
+- Completed: 2026-10-12T21:14:45Z
+- Summary: Every Linux CI job is pinned to ubuntu-24.04 before ubuntu-latest moves to Ubuntu 26.04, and a contract test
+  refuses ubuntu-latest; 513 workflow tests passed. No notch. Turned in by the owner 2026-10-12; commit and push
+  are the owner's.
 
 ## Objective
 Keep CI on the Linux image it runs today. GitHub moves the ubuntu-latest label from Ubuntu 24.04 to Ubuntu
@@ -40,6 +45,10 @@ manifest.
   contract test; 513 passed, mutations caught, docs, assets and llm_support current (Notes 3-4).
 - previous: draft -> in_progress (2026-10-06T10:38:56Z) the owner asked for the fix if it applies here; it does
   (Notes 1-2).
+- from_state: review
+- to_state: done
+- transition_reason: (2026-10-12T21:14:45Z) the owner turned in every finished melder_1 ticket (chat 2026-10-12: "just close everything you finished");
+  commit and push remain the owner's.
 
 ## Steps / Checklist
 - [x] Check what the move changes for this repository (Note 1) and decide (Note 2).
@@ -86,8 +95,8 @@ manifest.
 - [ ] Notes quality maintained (`SCORE_0_TO_10` >=
       `workflow.ticket_microcycle.minimum_note_score`)
 - [ ] Applicable anti-pattern checks are clear or escalated with evidence.
-- [ ] Acceptance criteria reviewed with user and confirmed
-- [ ] Board sync completed for successor routing or closure anchor update.
+- [x] Acceptance criteria reviewed with user and confirmed (owner turn-in, 2026-10-12)
+- [x] Board sync completed for successor routing or closure anchor update.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: false

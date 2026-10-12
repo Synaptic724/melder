@@ -3,12 +3,17 @@
 ## Metadata
 - Task ID: TASK-2026-10-04-match_descriptor_binding_names_like_bind
 - Story: none (standalone task; owner request)
-- Status: review
+- Status: done
 - Owner: claude
 - Agent Name: melder_1
 - Priority: p1
 - Created: 2026-10-04T21:00:53Z
-- Updated: 2026-10-04T21:37:58Z
+- Updated: 2026-10-12T21:14:45Z
+
+- Completed: 2026-10-12T21:14:45Z
+- Summary: Landed, notched 0.2.8226: SpellMap and SpellContract keep binding names as written and resolve like bind and
+  meld, locked by regression tests; release note 'Fixed: a SpellMap or SpellContract binding name matches the way
+  bind and meld do' (release_docs/0.2.8227.md). Patch docs archived at turn-in. Turned in 2026-10-12.
 
 ## Objective
 `bind(binding_name="ScanProfile")` and `SpellMap(..., binding_name="ScanProfile")` must name the same
@@ -44,6 +49,10 @@ to one pattern.
 - transition_reason: (2026-10-04T21:37:58Z) implemented, validated, documented, notched and rebuilt (Notes 5-8); the
   owner's acceptance, commit and push remain; the llm_support rebuild follows this note as the last write.
 - previous: draft -> in_progress (2026-10-04T21:00:53Z) on the owner's chat directives (Notes 1-4).
+- from_state: review
+- to_state: done
+- transition_reason: (2026-10-12T21:14:45Z) the owner turned in every finished melder_1 ticket (chat 2026-10-12: "just close everything you finished");
+  commit and push remain the owner's.
 
 ## Steps / Checklist
 - [x] Investigate Bind, the descriptors, Phase 3 and every reader of a descriptor's binding name (Notes 1-2).
@@ -98,14 +107,14 @@ to one pattern.
 - [ ] Notes quality maintained (`SCORE_0_TO_10` >=
       `workflow.ticket_microcycle.minimum_note_score`)
 - [ ] Applicable anti-pattern checks are clear or escalated with evidence.
-- [ ] Acceptance criteria reviewed with user and confirmed
-- [ ] Board sync completed for successor routing or closure anchor update.
+- [x] Acceptance criteria reviewed with user and confirmed (owner turn-in, 2026-10-12)
+- [x] Board sync completed for successor routing or closure anchor update.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
 - ARTIFACT_PATHS:
-  - system_docs/patches/active/spellmap_binding_name_case_2026_10_04/architecture_patch.md
-  - system_docs/patches/active/spellmap_binding_name_case_2026_10_04/component_patch_di_descriptors.md
+  - system_docs/patches/completed/spellmap_binding_name_case_2026_10_04/architecture_patch.md
+  - system_docs/patches/completed/spellmap_binding_name_case_2026_10_04/component_patch_di_descriptors.md
 - DISPOSITION: promote_to_documentation
 - CLEANUP_TRIGGER: on closure, move the patch folder to system_docs/patches/completed/
 

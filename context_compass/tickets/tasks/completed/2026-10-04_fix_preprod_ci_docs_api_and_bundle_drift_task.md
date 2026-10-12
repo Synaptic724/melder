@@ -3,12 +3,17 @@
 ## Metadata
 - Task ID: TASK-2026-10-04-fix_preprod_ci_docs_api_and_bundle_drift
 - Story: none (standalone task; owner request)
-- Status: review
+- Status: done
 - Owner: claude
 - Agent Name: melder_1
 - Priority: p1
 - Created: 2026-10-04T18:55:59Z
-- Updated: 2026-10-04T20:09:37Z
+- Updated: 2026-10-12T21:14:45Z
+
+- Completed: 2026-10-12T21:14:45Z
+- Summary: Landed, notched 0.2.8225: SpellframeKind is off the package root (owner ruling), so the dev-to-preprod docs
+  API check passes, and the llm_support bundle drift is fixed (packaging note in release_docs/0.2.8227.md).
+  Turned in by the owner 2026-10-12; commit and push, with the four ignore-file changes, are the owner's.
 
 ## Objective
 Fix the two checks that failed on the owner's dev-to-preprod push: the docs tests (public API selection
@@ -33,6 +38,10 @@ drift on SpellframeKind) and `llm_support/_builder.py --check` (STALE other).
 - from_state: in_progress
 - to_state: review
 - transition_reason: (2026-10-04T20:09:37Z) redirect applied and validated (Notes 6-7); owner commits and pushes.
+- from_state: review
+- to_state: done
+- transition_reason: (2026-10-12T21:14:45Z) the owner turned in every finished melder_1 ticket (chat 2026-10-12: "just close everything you finished");
+  commit and push, with the four ignore-file changes remain the owner's.
 
 ## Steps / Checklist
 - [x] Diagnose both failures (Notes 1-2).
@@ -72,8 +81,8 @@ drift on SpellframeKind) and `llm_support/_builder.py --check` (STALE other).
 - [ ] Notes quality maintained (`SCORE_0_TO_10` >=
       `workflow.ticket_microcycle.minimum_note_score`)
 - [ ] Applicable anti-pattern checks are clear or escalated with evidence.
-- [ ] Acceptance criteria reviewed with user and confirmed
-- [ ] Board sync completed for successor routing or closure anchor update.
+- [x] Acceptance criteria reviewed with user and confirmed (owner turn-in, 2026-10-12)
+- [x] Board sync completed for successor routing or closure anchor update.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: false

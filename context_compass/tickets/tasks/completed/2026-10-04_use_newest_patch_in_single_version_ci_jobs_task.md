@@ -3,12 +3,17 @@
 ## Metadata
 - Task ID: TASK-2026-10-04-use_newest_patch_in_single_version_ci_jobs
 - Story: none (standalone task; owner request)
-- Status: review
+- Status: done
 - Owner: claude
 - Agent Name: melder_1
 - Priority: p2
 - Created: 2026-10-04T20:51:55Z
-- Updated: 2026-10-06T09:56:35Z
+- Updated: 2026-10-12T21:14:45Z
+
+- Completed: 2026-10-12T21:14:45Z
+- Summary: Every Python CI run comes from a per-release manifest (tests 3.14.0-3.14.8, speed 3.14.7) or the 3.14.7
+  helper pin, and every route runs all 27 runtime cells; 503 workflow tests passed. No source change, no notch.
+  Turned in by the owner 2026-10-12; commit, push and the hosted runs are the owner's.
 
 ## Objective
 Make CI explicit and manifest-driven (owner, 2026-10-05; Notes 24-25). Every Python release CI runs is named
@@ -79,6 +84,10 @@ bare 3.14 setups (Notes 1-6), the newest-patch speed tests (Notes 7-11) and ever
 - previous: in_progress -> review (2026-10-04T20:53:47Z) implemented and validated (Notes 5-6); the
   owner's acceptance and the session's llm_support rebuild remained.
 - previous: draft -> in_progress (2026-10-04T20:51:55Z) on the owner's chat directives (Notes 1-4).
+- from_state: review
+- to_state: done
+- transition_reason: (2026-10-12T21:14:45Z) the owner turned in every finished melder_1 ticket (chat 2026-10-12: "just close everything you finished");
+  commit, push and the hosted runs remain the owner's.
 
 ## Steps / Checklist
 - [x] Earlier passes: check-latest (Notes 1-6), newest-patch speed tests (Notes 7-11), the dependency-injector
@@ -170,8 +179,8 @@ bare 3.14 setups (Notes 1-6), the newest-patch speed tests (Notes 7-11) and ever
 - [ ] Notes quality maintained (`SCORE_0_TO_10` >=
       `workflow.ticket_microcycle.minimum_note_score`)
 - [ ] Applicable anti-pattern checks are clear or escalated with evidence.
-- [ ] Acceptance criteria reviewed with user and confirmed
-- [ ] Board sync completed for successor routing or closure anchor update.
+- [x] Acceptance criteria reviewed with user and confirmed (owner turn-in, 2026-10-12)
+- [x] Board sync completed for successor routing or closure anchor update.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: false

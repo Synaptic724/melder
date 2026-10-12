@@ -3,12 +3,18 @@
 ## Metadata
 - Task ID: TASK-2026-10-12-make_kernel_pools_elastic
 - Story: none - directly under EPIC-2026-10-05-melder_services_and_pools
-- Status: review
+- Status: done
 - Owner: user
 - Agent Name: melder_1
 - Priority: p1
 - Created: 2026-10-12T19:00:57Z
-- Updated: 2026-10-12T21:05:24Z
+- Updated: 2026-10-12T21:14:45Z
+
+- Completed: 2026-10-12T21:14:45Z
+- Summary: Landed, notched 0.2.8234: SpellSpacePool and ConduitPool keep what a burst needed, up to 256, and decay to 20
+  when quiet; the owner's native big test shows no regression at 20 threads and a 3-22x shorter return tail past
+  20; release note 'Lesser conduits and spellspaces past 20 are kept and reused, then let go when quiet'.
+  Accepted and turned in by the owner 2026-10-12; evidence kept.
 
 ## Objective
 `AbstractElasticPool` keeps what demand needs and lets it go when demand falls: the retained target (`target_idle`)
@@ -50,6 +56,10 @@ regression.
 - to_state: review
 - transition_reason: 0.2.8234 landed (src, tests, docs, graph, release note, notch, assets and bundles) and the owner's
   native 20-thread before/after run is recorded (2026-10-12); acceptance, commit and push are the owner's.
+- from_state: review
+- to_state: done
+- transition_reason: (2026-10-12T21:14:45Z) the owner turned in every finished melder_1 ticket (chat 2026-10-12: "just close everything you finished");
+  git add -A (the new component test, the archived patch folder, the evidence folder), commit, push, the Windows tiers and hosted CI remain the owner's.
 
 ## Steps / Checklist
 - [x] Record the workload, the tests that pin the old algorithm and the machine limits.
@@ -111,8 +121,8 @@ regression.
 - [ ] Notes quality maintained (`SCORE_0_TO_10` >=
       `workflow.ticket_microcycle.minimum_note_score`)
 - [ ] Applicable anti-pattern checks are clear or escalated with evidence.
-- [ ] Acceptance criteria reviewed with user and confirmed
-- [ ] Board sync completed for successor routing or closure anchor update.
+- [x] Acceptance criteria reviewed with user and confirmed (owner turn-in, 2026-10-12)
+- [x] Board sync completed for successor routing or closure anchor update.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
@@ -441,6 +451,27 @@ regression.
   IMPACT: The landing is complete; what remains is the owner's: git add of the new files, commit, push, Windows tiers,
     hosted CI, and acceptance.
   NEXT: Move the ticket and its board row to review/handoff and report to the owner.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-12T21:12:30Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: Owner turn-in directive, chat 2026-10-12: "you can close the tickets and call it", then "all your tickets
+    all of them were reviewed turn them all in" and "just close everything you finished". The set is every finished
+    melder_1 ticket routed on the board: the 15 review tasks of 2026-10-04 to 2026-10-11 (CI/CD lanes and the
+    0.2.8223-0.2.8233 landings) and this task. The services-and-pools epic is not finished (its pooled_spell design
+    and five asks are open) and stays open; backlog tickets are not in the set. Per ticket: a completion summary
+    naming the notch and release-note section, review -> done, a move to tickets/tasks/completed/; the three patch
+    folders still under patches/active (meldercache_suffix, spellmap_binding_name_case, live_unlink_visibility_race;
+    promoted at landing) are archived, evidence folders are kept as reference, and board rows, details and anchors
+    are synced.
+  EVIDENCE:
+  - context_compass/attention_board.md:192-213
+  - context_compass/artifact_board.md:89-104
+  IMPACT: Owner-owed items (commits, pushes, Windows tiers, hosted CI) stay recorded in each closure note.
+  NEXT: Apply the scripted turn-in, then verify the boards and the asset and bundle checks.
   REREAD: HELPFUL
   SCORE_0_TO_10: 8
 

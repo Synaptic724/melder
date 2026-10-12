@@ -3,12 +3,17 @@
 ## Metadata
 - Task ID: TASK-2026-10-05-write_agent_cicd_guide
 - Story: none (standalone task; owner request)
-- Status: review
+- Status: done
 - Owner: claude
 - Agent Name: melder_1
 - Priority: p2
 - Created: 2026-10-05T11:45:56Z
-- Updated: 2026-10-05T20:51:52Z
+- Updated: 2026-10-12T21:14:45Z
+
+- Completed: 2026-10-12T21:14:45Z
+- Summary: .github/ci_cd/ holds six guide pages for agents, special_instructions/ci_cd_guide.md points onboarding at it,
+  and two contract tests keep it complete; 500 workflow tests passed. No notch. Turned in by the owner
+  2026-10-12; git add -A of the six pages and push are the owner's.
 
 ## Objective
 A folder, .github/ci_cd/, that explains from the code what every workflow, job, script, Python manifest and
@@ -44,6 +49,10 @@ document's CI section pointing at it; and a contract test that keeps the guide c
   coverage tests landed and validated here, assets and bundles current (Notes 4-8); the owner's commit, push and
   acceptance remain.
 - previous: draft -> in_progress (2026-10-05T11:45:56Z) the owner's directives above.
+- from_state: review
+- to_state: done
+- transition_reason: (2026-10-12T21:14:45Z) the owner turned in every finished melder_1 ticket (chat 2026-10-12: "just close everything you finished");
+  git add -A of the six guide pages and push remain the owner's.
 
 ## Steps / Checklist
 - [x] Read every workflow, script and ruleset; note what each is for (Notes 2-3).
@@ -100,8 +109,8 @@ document's CI section pointing at it; and a contract test that keeps the guide c
 - [x] Notes quality maintained (`SCORE_0_TO_10` >=
       `workflow.ticket_microcycle.minimum_note_score`)
 - [x] Applicable anti-pattern checks are clear or escalated with evidence.
-- [ ] Acceptance criteria reviewed with user and confirmed
-- [ ] Board sync completed for successor routing or closure anchor update.
+- [x] Acceptance criteria reviewed with user and confirmed (owner turn-in, 2026-10-12)
+- [x] Board sync completed for successor routing or closure anchor update.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: false

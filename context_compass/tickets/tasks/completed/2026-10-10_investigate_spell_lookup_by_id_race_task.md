@@ -3,12 +3,17 @@
 ## Metadata
 - Task ID: TASK-2026-10-10-investigate-spell-lookup-by-id-race
 - Story: none (standalone; owner-assigned investigation)
-- Status: review
+- Status: done
 - Owner: claude (assigned by the owner 2026-10-10; investigation and isolated diagnostic tests only)
 - Agent Name: melder_1
 - Priority: p1
 - Created: 2026-10-10T18:18:25Z
-- Updated: 2026-10-11T08:49:47Z
+- Updated: 2026-10-12T21:14:45Z
+
+- Completed: 2026-10-12T21:14:45Z
+- Summary: Landed, notched 0.2.8229: Spellbook.find_spell_by_id answers from the Book's id maps instead of walking the
+  live index map, locked by regression tests; release note 'Spell lookups and validation no longer fail while
+  other spells change'. Turned in by the owner 2026-10-12; evidence kept.
 
 ## Objective
 Investigate the reported race between `Spellbook.find_spell_by_id` and concurrent changes to the collection it
@@ -103,6 +108,10 @@ spell should be used. After Note 25: R6 seems reasonable - send the fix if it ho
 - to_state: review
 - transition_reason: (2026-10-11T08:49:47Z) R6 landed as 0.2.8229 with its tests, docs, graph, release note and rebuilt
   assets (Notes 31-33); the owner accepts or redirects. No commit or push.
+- from_state: review
+- to_state: done
+- transition_reason: (2026-10-12T21:14:45Z) the owner turned in every finished melder_1 ticket (chat 2026-10-12: "just close everything you finished");
+  git add -A, commit, push, the Windows tiers and hosted CI remain the owner's.
 
 ## Steps / Checklist
 - [x] Pin branch, commit, version and uncommitted changes.
@@ -177,8 +186,8 @@ spell should be used. After Note 25: R6 seems reasonable - send the fix if it ho
 - [ ] Notes quality maintained (`SCORE_0_TO_10` >=
       `workflow.ticket_microcycle.minimum_note_score`)
 - [ ] Applicable anti-pattern checks are clear or escalated with evidence.
-- [ ] Acceptance criteria reviewed with user and confirmed
-- [ ] Board sync completed for successor routing or closure anchor update.
+- [x] Acceptance criteria reviewed with user and confirmed (owner turn-in, 2026-10-12)
+- [x] Board sync completed for successor routing or closure anchor update.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true

@@ -3,12 +3,17 @@
 ## Metadata
 - Task ID: TASK-2026-10-04-add_shallow_thread_scaling_to_preprod_benchmarks
 - Story: none (standalone task; owner request)
-- Status: review
+- Status: done
 - Owner: claude
 - Agent Name: melder_1
 - Priority: p2
 - Created: 2026-10-04T11:52:50Z
-- Updated: 2026-10-04T12:52:00Z
+- Updated: 2026-10-12T21:14:45Z
+
+- Completed: 2026-10-12T21:14:45Z
+- Summary: The shallow thread-scaling benchmark runs on dev-to-preprod pull requests beside the two gauntlets
+  (from speed-tests.yml since 2026-10-06, gating nothing); 475 workflow tests passed. No source change, no notch.
+  Turned in by the owner 2026-10-12; staging, commit, push and the hosted three-OS run are the owner's.
 
 ## Objective
 Add benchmarks/testing_other_di/test_shallow_all_thread_scaling.py to the benchmarks that run when a
@@ -46,6 +51,10 @@ and fix the extra 'l' in its file name (on disk it is test_shallow_all_thread_sc
 - transition_reason: (2026-10-04T12:52:00Z) implementation and validation are complete (Notes 7-9); the owner's
   acceptance, staging of the rename and the hosted three-OS run remain.
 - previous: draft -> in_progress (2026-10-04T11:58:17Z), on the owner's chat directives of 2026-10-04.
+- from_state: review
+- to_state: done
+- transition_reason: (2026-10-12T21:14:45Z) the owner turned in every finished melder_1 ticket (chat 2026-10-12: "just close everything you finished");
+  staging, commit, push and the hosted three-OS run remain the owner's.
 
 ## Steps / Checklist
 - [x] Investigate the CI wiring, the benchmark's output contract and the isolation evidence (Notes 1-3).
@@ -105,8 +114,8 @@ and fix the extra 'l' in its file name (on disk it is test_shallow_all_thread_sc
 - [ ] Notes quality maintained (`SCORE_0_TO_10` >=
       `workflow.ticket_microcycle.minimum_note_score`)
 - [ ] Applicable anti-pattern checks are clear or escalated with evidence.
-- [ ] Acceptance criteria reviewed with user and confirmed
-- [ ] Board sync completed for successor routing or closure anchor update.
+- [x] Acceptance criteria reviewed with user and confirmed (owner turn-in, 2026-10-12)
+- [x] Board sync completed for successor routing or closure anchor update.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: false

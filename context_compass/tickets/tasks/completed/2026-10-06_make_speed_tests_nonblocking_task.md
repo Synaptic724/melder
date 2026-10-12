@@ -3,12 +3,17 @@
 ## Metadata
 - Task ID: TASK-2026-10-06-make_speed_tests_nonblocking
 - Story: none (standalone task; owner request)
-- Status: review
+- Status: done
 - Owner: claude
 - Agent Name: melder_1
 - Priority: p1
 - Created: 2026-10-06T11:05:00Z
-- Updated: 2026-10-06T11:29:00Z
+- Updated: 2026-10-12T21:14:45Z
+
+- Completed: 2026-10-12T21:14:45Z
+- Summary: The three speed tests start on every dev-to-preprod pull request from speed-tests.yml and never block
+  merge-ready or the release-candidate qualification. No notch. Turned in by the owner 2026-10-12; git add -A,
+  commit, push and a hosted dev-to-preprod run are the owner's.
 
 ## Objective
 The real-world gauntlet, the persistent runtime gauntlet and the shallow thread-scaling benchmark keep starting on
@@ -47,6 +52,10 @@ dev-to-preprod qualification whatever the speed tests did.
   and llm_support current (Notes 7-10).
 - previous: draft -> in_progress (2026-10-06T11:05:00Z) the owner chose "Run, never block"; ticket and board row
   opened right after re-onboarding (Notes 1-2).
+- from_state: review
+- to_state: done
+- transition_reason: (2026-10-12T21:14:45Z) the owner turned in every finished melder_1 ticket (chat 2026-10-12: "just close everything you finished");
+  git add -A, commit, push and a hosted dev-to-preprod run remain the owner's.
 
 ## Steps / Checklist
 - [x] Record the owner's decision and the re-onboarding deviations (Notes 1-2).
@@ -99,8 +108,8 @@ dev-to-preprod qualification whatever the speed tests did.
 - [ ] Notes quality maintained (`SCORE_0_TO_10` >=
       `workflow.ticket_microcycle.minimum_note_score`)
 - [ ] Applicable anti-pattern checks are clear or escalated with evidence.
-- [ ] Acceptance criteria reviewed with user and confirmed
-- [ ] Board sync completed for successor routing or closure anchor update.
+- [x] Acceptance criteria reviewed with user and confirmed (owner turn-in, 2026-10-12)
+- [x] Board sync completed for successor routing or closure anchor update.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: false

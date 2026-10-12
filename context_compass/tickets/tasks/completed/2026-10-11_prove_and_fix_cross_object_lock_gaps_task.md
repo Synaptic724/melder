@@ -3,12 +3,17 @@
 ## Metadata
 - Task ID: TASK-2026-10-11-prove-and-fix-cross-object-lock-gaps
 - Story: none (follow-up of TASK-2026-10-11-close-remaining-spell-map-races, its Note 13 items a-c)
-- Status: review
+- Status: done
 - Owner: claude (directed by the owner 2026-10-11)
 - Agent Name: melder_1
 - Priority: p1
 - Created: 2026-10-11T17:10:00Z
-- Updated: 2026-10-11T19:02:34Z
+- Updated: 2026-10-12T21:14:45Z
+
+- Completed: 2026-10-12T21:14:45Z
+- Summary: Landed, notched 0.2.8231: index-link notifications, contract reads and bind's cross-frame sweep hold under
+  concurrent link/sever, member moves and frame birth/teardown, and the listing deadlock is gone; release note
+  'Index links, contract reads and binds across frames hold up under concurrent changes'. Turned in 2026-10-12.
 
 ## Objective
 Take the three architecture-level residuals of the predecessor's Note 13 - (a) Conduit.cleanup_spell's walk of the
@@ -56,6 +61,10 @@ In scope: (a)-(c). Out of scope unless the owner adds them: (d)-(g) of Note 13 (
 - to_state: review
 - transition_reason: (a), (b), (c), (c2) and the listing deadlock proven and landed as 0.2.8231 with checks green;
   acceptance, commit and push are the owner's. (Earlier: draft -> in_progress on the owner's chat direction.)
+- from_state: review
+- to_state: done
+- transition_reason: (2026-10-12T21:14:45Z) the owner turned in every finished melder_1 ticket (chat 2026-10-12: "just close everything you finished");
+  git add -A, commit, push, the Windows tiers and hosted CI remain the owner's.
 
 ## Steps / Checklist
 - [x] (c): deterministic interleaving through real frame creation, an unforced stress, and a read of what bind and
@@ -109,7 +118,7 @@ In scope: (a)-(c). Out of scope unless the owner adds them: (d)-(g) of Note 13 (
 - [x] Notes quality maintained (`SCORE_0_TO_10` >=
       `workflow.ticket_microcycle.minimum_note_score`)
 - [x] Applicable anti-pattern checks are clear or escalated with evidence.
-- [ ] Acceptance criteria reviewed with user and confirmed
+- [x] Acceptance criteria reviewed with user and confirmed (owner turn-in, 2026-10-12)
 - [x] Board sync completed for successor routing or closure anchor update.
 
 ## Artifact Links (Optional)

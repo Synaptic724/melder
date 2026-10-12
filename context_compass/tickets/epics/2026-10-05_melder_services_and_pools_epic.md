@@ -7,7 +7,7 @@
 - Agent Name: melder_1
 - Priority: p1
 - Created: 2026-10-05T15:35:41Z
-- Updated: 2026-10-12T18:53:50Z
+- Updated: 2026-10-12T21:15:14Z
 - Target Window: 2026-Q4
 - Related Program/Initiative: MelderOps Iris logger churn (priv_commandops TASK-2026-10-05-channel_logger_pooling)
 
@@ -160,7 +160,7 @@ not a special case.
 - [ ] Task: Complete story STORY-TBD-service_method_bindings
 - [ ] Task: Complete story STORY-TBD-pooled_existence
 - [ ] Task: Complete story STORY-TBD-service_scope
-- [ ] Task: TASK-2026-10-12-make_kernel_pools_elastic - the elastic retention the pooled backend reuses
+- [x] Task: TASK-2026-10-12-make_kernel_pools_elastic - the elastic retention the pooled backend reuses (0.2.8234)
 - [ ] Task: Benchmark meld and lease costs on the reference VM before and after each milestone.
 - [ ] Task: Verify Ticket Microcycle enforcement across active tickets/stories/tasks.
 
@@ -668,6 +668,21 @@ not a special case.
   NEXT: Locate melder_gauntlet and its knobs, open the task ticket and board row, then patch docs and the baseline.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-12T21:15:14Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: TASK-2026-10-12-make_kernel_pools_elastic landed at 0.2.8234 and the owner turned it in (2026-10-12):
+    AbstractElasticPool stretches to what a burst needed and decays when quiet, and both kernel pools run 20/256; the
+    owner's native big test shows no regression at 20 threads and a 3-22x shorter return tail past 20. The pooled
+    backend this epic plans can reuse that elastic system as it is. The pooled_spell design, its five asks and the
+    release-into-a-retired-pool gap stay open; the owner moved to new work, so the epic stays open and unscheduled.
+  EVIDENCE: context_compass/tickets/tasks/completed/2026-10-12_make_kernel_pools_elastic_task.md:13-17
+  IMPACT: The first pooled-spell story still waits on the owner's answers to the five asks.
+  NEXT: When the owner returns to pools, record his answers to the five asks, then patch docs and the first story.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
 
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user

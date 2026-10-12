@@ -3,12 +3,17 @@
 ## Metadata
 - Task ID: TASK-2026-10-11-close-remaining-spell-map-races
 - Story: none (standalone; follow-ups R2/R3 and the transfer-lookup gap from TASK-2026-10-10-investigate-spell-lookup-by-id-race)
-- Status: review
+- Status: done
 - Owner: claude (assigned by the owner 2026-10-11)
 - Agent Name: melder_1
 - Priority: p1
 - Created: 2026-10-11T11:49:06Z
-- Updated: 2026-10-11T16:05:18Z
+- Updated: 2026-10-12T21:14:45Z
+
+- Completed: 2026-10-12T21:14:45Z
+- Summary: Landed, notched 0.2.8230: bind publishes the spell maps under the Book lock, unlocked walks take snapshots,
+  has_spell and contract details survive a racing cleanup, the Conduit spell lookups document their ValueError;
+  release note 'Spell lookups and validation no longer fail while other spells change'. Turned in 2026-10-12.
 
 ## Objective
 Close the races the find_spell_by_id lane left open and the contract gap it found: (1) bind publishes into
@@ -46,6 +51,10 @@ please and iterate on fixes". Items in scope are 1-3 of that list. D-10, D-11 an
 - from_state: in_progress
 - to_state: review
 - transition_reason: items 1-3 landed as 0.2.8230 with checks green; acceptance, commit and push are the owner's.
+- from_state: review
+- to_state: done
+- transition_reason: (2026-10-12T21:14:45Z) the owner turned in every finished melder_1 ticket (chat 2026-10-12: "just close everything you finished");
+  git add -A, commit, push, the Windows tiers and hosted CI remain the owner's.
 
 ## Steps / Checklist
 - [x] Item 1: read every writer and walker of _spells; reproduce the reachable races; fix and test in scratch.
@@ -92,8 +101,8 @@ please and iterate on fixes". Items in scope are 1-3 of that list. D-10, D-11 an
 - [x] Notes quality maintained (`SCORE_0_TO_10` >=
       `workflow.ticket_microcycle.minimum_note_score`)
 - [x] Applicable anti-pattern checks are clear or escalated with evidence.
-- [ ] Acceptance criteria reviewed with user and confirmed
-- [ ] Board sync completed for successor routing or closure anchor update.
+- [x] Acceptance criteria reviewed with user and confirmed (owner turn-in, 2026-10-12)
+- [x] Board sync completed for successor routing or closure anchor update.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true

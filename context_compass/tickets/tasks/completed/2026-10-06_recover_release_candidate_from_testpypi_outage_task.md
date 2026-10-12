@@ -3,12 +3,17 @@
 ## Metadata
 - Task ID: TASK-2026-10-06-recover_release_candidate_from_testpypi_outage
 - Story: none (standalone task; owner report)
-- Status: review
+- Status: done
 - Owner: claude
 - Agent Name: melder_1
 - Priority: p1
 - Created: 2026-10-06T09:37:20Z
-- Updated: 2026-10-06T09:56:18Z
+- Updated: 2026-10-12T21:14:45Z
+
+- Completed: 2026-10-12T21:14:45Z
+- Summary: A TestPyPI blip is retried and a failed-jobs release-candidate re-run reuses the run's verified build;
+  publication stays fresh-only; 512 workflow tests passed. No notch. Turned in by the owner 2026-10-12;
+  commit, push and 'Re-run all jobs' on run 37443362134 are the owner's.
 
 ## Objective
 Explain the owner's failed release-candidate run and, on the owner's approval, make it recoverable: a transient
@@ -44,6 +49,10 @@ instead of asking for an artifact that attempt never made. Until then the recove
 - previous: in_progress -> blocked (2026-10-06T09:38:38Z) diagnosed; the fixes waited for the owner's choice among the
   options of Note 3.
 - previous: draft -> in_progress (2026-10-06T09:37:20Z) the owner reported both failures in chat (Notes 1-2).
+- from_state: review
+- to_state: done
+- transition_reason: (2026-10-12T21:14:45Z) the owner turned in every finished melder_1 ticket (chat 2026-10-12: "just close everything you finished");
+  commit, push and the release-candidate re-run remain the owner's.
 
 ## Steps / Checklist
 - [x] Diagnose attempt 1 (Note 1) and attempt 2 (Note 2).
@@ -94,8 +103,8 @@ instead of asking for an artifact that attempt never made. Until then the recove
 - [ ] Notes quality maintained (`SCORE_0_TO_10` >=
       `workflow.ticket_microcycle.minimum_note_score`)
 - [ ] Applicable anti-pattern checks are clear or escalated with evidence.
-- [ ] Acceptance criteria reviewed with user and confirmed
-- [ ] Board sync completed for successor routing or closure anchor update.
+- [x] Acceptance criteria reviewed with user and confirmed (owner turn-in, 2026-10-12)
+- [x] Board sync completed for successor routing or closure anchor update.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: false

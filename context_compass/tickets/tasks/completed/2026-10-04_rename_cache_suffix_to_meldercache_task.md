@@ -3,12 +3,17 @@
 ## Metadata
 - Task ID: TASK-2026-10-04-rename_cache_suffix_to_meldercache
 - Story: none (standalone task; owner request)
-- Status: review
+- Status: done
 - Owner: claude
 - Agent Name: melder_1
 - Priority: p2
 - Created: 2026-10-04T13:11:56Z
-- Updated: 2026-10-04T13:26:39Z
+- Updated: 2026-10-12T21:14:45Z
+
+- Completed: 2026-10-12T21:14:45Z
+- Summary: Landed, notched 0.2.8223: Melder's cache bundles are named .meldercache and old .melc files are inert;
+  release note 'Cache files are named .meldercache' (release_docs/0.2.8227.md). Patch docs promoted at landing,
+  archived at turn-in. Turned in by the owner 2026-10-12; the Windows tiers are the owner's.
 
 ## Objective
 Rename the cache bundle extension from `.melc` to `.meldercache` so a file under `__melder_cache__`
@@ -41,6 +46,10 @@ plainly reads as a Melder cache: the per-conduit creation caches and the build-a
 - transition_reason: (2026-10-04T13:26:39Z) implemented, validated and rebuilt (Notes 4-6); owner acceptance
   remains.
 - previous: draft -> in_progress on the owner's chat request (Notes 1-3).
+- from_state: review
+- to_state: done
+- transition_reason: (2026-10-12T21:14:45Z) the owner turned in every finished melder_1 ticket (chat 2026-10-12: "just close everything you finished");
+  the Windows tiers remain the owner's.
 
 ## Steps / Checklist
 - [x] Inventory every `.melc` reference (Note 1).
@@ -96,14 +105,14 @@ plainly reads as a Melder cache: the per-conduit creation caches and the build-a
 - [ ] Notes quality maintained (`SCORE_0_TO_10` >=
       `workflow.ticket_microcycle.minimum_note_score`)
 - [ ] Applicable anti-pattern checks are clear or escalated with evidence.
-- [ ] Acceptance criteria reviewed with user and confirmed
-- [ ] Board sync completed for successor routing or closure anchor update.
+- [x] Acceptance criteria reviewed with user and confirmed (owner turn-in, 2026-10-12)
+- [x] Board sync completed for successor routing or closure anchor update.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
 - ARTIFACT_PATHS:
-  - system_docs/patches/active/meldercache_suffix_2026_10_04/architecture_patch.md
-  - system_docs/patches/active/meldercache_suffix_2026_10_04/component_patch_caching_system.md
+  - system_docs/patches/completed/meldercache_suffix_2026_10_04/architecture_patch.md
+  - system_docs/patches/completed/meldercache_suffix_2026_10_04/component_patch_caching_system.md
 - DISPOSITION: promote_to_documentation
 - CLEANUP_TRIGGER: on closure, move the patch folder to system_docs/patches/completed/
 

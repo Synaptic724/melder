@@ -3,12 +3,17 @@
 ## Metadata
 - Task ID: TASK-2026-10-05-diagnose_codecov_upload_tls_failure
 - Story: none (standalone task; owner request)
-- Status: review
+- Status: done
 - Owner: claude
 - Agent Name: melder_1
 - Priority: p2
 - Created: 2026-10-05T00:55:17Z
-- Updated: 2026-10-06T09:45:54Z
+- Updated: 2026-10-12T21:14:45Z
+
+- Completed: 2026-10-12T21:14:45Z
+- Summary: Diagnosed: the Codecov upload failed because Codecov's servers broke TLS; on the owner's directive it retries
+  once with the PyPI-installed uploader when the signed download fails; 481 workflow tests passed. No notch.
+  Turned in by the owner 2026-10-12; commit and push are the owner's.
 
 ## Objective
 Explain why the hosted "Upload coverage to Codecov" step failed, whether it blocks CI or merging, and whether a
@@ -42,6 +47,10 @@ repository change is warranted; recommend one path.
 - previous: in_progress -> review (2026-10-05T00:58:41Z) diagnosis complete (Notes 1-4): a Codecov-side
   TLS and certificate failure, no repository change recommended; the owner's acceptance remained.
 - previous: draft -> in_progress (2026-10-05T00:55:17Z) on the owner's report.
+- from_state: review
+- to_state: done
+- transition_reason: (2026-10-12T21:14:45Z) the owner turned in every finished melder_1 ticket (chat 2026-10-12: "just close everything you finished");
+  commit and push remain the owner's.
 
 ## Steps / Checklist
 - [x] Read the failing step's log and the coverage job (Note 1).
@@ -81,8 +90,8 @@ repository change is warranted; recommend one path.
 - [ ] Notes quality maintained (`SCORE_0_TO_10` >=
       `workflow.ticket_microcycle.minimum_note_score`)
 - [ ] Applicable anti-pattern checks are clear or escalated with evidence.
-- [ ] Acceptance criteria reviewed with user and confirmed
-- [ ] Board sync completed for successor routing or closure anchor update.
+- [x] Acceptance criteria reviewed with user and confirmed (owner turn-in, 2026-10-12)
+- [x] Board sync completed for successor routing or closure anchor update.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: false
