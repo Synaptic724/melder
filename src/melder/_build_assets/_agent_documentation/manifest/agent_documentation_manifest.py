@@ -19,8 +19,8 @@ Regenerate with:
 """
 
 MANIFEST_VERSION = "2.0.0"
-BUILT_FOR_VERSION = "0.2.8233"
-SOURCE_SHA256 = "f9b2ee55c46d6c3df974e4005bae710953c5dc74f964451626f4b9f4c9fbd464"
+BUILT_FOR_VERSION = "0.2.8234"
+SOURCE_SHA256 = "d02558e7da336fbdc78c6f2769181465e0a79117dd64e383d494fbeb7a635c65"
 MARKED_COUNT = 462
 EXEMPT_COUNT = 142
 PENDING_COUNT = 18
@@ -465,7 +465,7 @@ AGENT_METADATA = {
     ('melder.utilities.data_structures.weak_data_structures.weak_concurrent_list', 'WeakConcurrentList'): ('public', 'access: public. Ordered container holding elements WEAKLY - it never keeps its contents alive. Indices are NOT stable: entries vanish on collection, so iterate directly rather than by index, and expect DeadReferenceError from a stale one.'),
     ('melder.utilities.data_structures.weak_data_structures.weak_concurrent_set', 'WeakConcurrentSet'): ('public', 'access: public. Set holding members WEAKLY - membership is a question about lifetime, since a member nothing else references drops out on its own. `x in s` is point-in-time and len() is advisory unless you just pruned. freeze() speeds reads but does not stop collection.'),
     ('melder.utilities.data_structures.weak_data_structures.weak_ref_node', 'WeakRefNode'): ('public', 'access: public. Weak-reference cell with GC notification - the element type inside every weak container. Holds no lock: the owning container synchronizes it. Its on_collect callback runs on the GC thread, so anything it touches must be small and best-effort.'),
-    ('melder.utilities.general_base.abstract_elastic_pool', 'AbstractElasticPool'): ('public', 'access: public. Base elastic object pool. Subclass this to pool expensive reusable objects; implement create_object/destroy_object and the pool handles stretch, decay, and overflow trimming. Your subclasses stay bindable.'),
+    ('melder.utilities.general_base.abstract_elastic_pool', 'AbstractElasticPool'): ('public', 'access: public. Base elastic object pool. Subclass this to pool expensive reusable objects; implement create_object/destroy_object and the pool keeps what demand needed, up to max_idle, and decays back to baseline_idle when demand falls.'),
     ('melder.utilities.general_base.cleanable', 'Cleanable'): ('public', 'access: public. Base cleanup contract. Subclass this when your object owns resources that need deterministic teardown; implement cleanup() idempotently and guard live-only methods with check_cleaned(). Your subclasses stay bindable.'),
     ('melder.utilities.general_base.sync', 'Sync'): ('public', 'access: public. Base mix-in for thread-safe value wrappers. Subclass this when you need a shared scalar touched from multiple threads; supply _value, _lock, get(), and _coerce(). Your subclasses stay bindable.'),
     ('melder.utilities.helpers.class_surface_ast_describer', 'ClassSurfaceAstDescriber'): ('public', 'access: public. THE consumer of the generated agent-documentation asset: pass any Melder object and get a source-defined (AST, no import) class-surface description - members, signatures, docstrings, and the inherited agent-purpose chain - as a dict or minified JSON.'),

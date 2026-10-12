@@ -5,7 +5,7 @@
 - Status: in_progress
 - Owner:
 - Created: 2026-01-22
-- Updated: 2026-10-10
+- Updated: 2026-10-12
 
 ## Scope
 This document defines C3 components, C2 subcomponents, and C1 code references
@@ -1098,6 +1098,11 @@ Protects:
   persistence round trips; exact line accounting in the agent text reader
 - the Cleanable cleanup contexts (0.2.8203): `using_cleanup()` and `async_using_cleanup()` clean up at
   most once and let the cleanup error propagate, chained to the block's error
+- the elastic pool algorithm (0.2.8234), one test per rule with a fake clock: a miss records pressure, a burst
+  is kept whole (with optional headroom, capped at `max_idle`), returns without pressure trim, decay waits for the
+  settle time, steps per interval, catches up and stops at the baseline, a later miss postpones it, a fixed pool
+  evicts without the clock, and a failing destroy keeps the rest of its trim pooled; concurrent band returns and a
+  concurrent burst stay within bounds
 Key Files (C1):
 - `tests/unit/melder/utilities/synchronization/test_creation_gate.py`
 - `tests/unit/melder/utilities/synchronization/test_creation_gate_controller.py`
@@ -1162,6 +1167,9 @@ Protects:
   many - in named and unnamed lessers, on the root, in sibling lessers (isolated), on a root holding a spell
   at conjure, with system caching cold and warm, and through the SpellSpace door; provider-first and
   bind-before-conjure controls
+- elastic kernel pools (0.2.8234): a repeat burst of 30 lessers or 30 nested managed spellspaces reuses every
+  shell, a burst past 256 keeps 256, the root pool decays to 20 after the settle time with catch-up (fake clock
+  through `_time_func`) and stretches again, and prewarming keeps 40 of each
 Key Files (C1):
 - `tests/component/melder/aether/test_frame_descriptor_manager_component.py`
 - `tests/component/melder/aether/test_frame_acl_component.py`
@@ -1172,6 +1180,7 @@ Key Files (C1):
 - `tests/component/melder/aether/test_nexus_active_reconfiguration_guard_component.py` (active Nexus, 2026-09-30)
 - `tests/component/melder/aether/test_aether_spell_id_regime_property_component.py` (regime in force, 2026-09-30)
 - `tests/component/melder/aether/conduit/test_conduit_component_injected_provider_direct_meld.py` (2026-09-30)
+- `tests/component/melder/aether/conduit/test_kernel_pool_elastic_retention.py` (elastic pools, 2026-10-12)
 
 ### Subcomponent: Crystallizer Component Cluster
 Parent Component: Component Test Suite
@@ -2093,6 +2102,11 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   end_line: 286
   loc: 286
   verified_at: 2026-09-30T20:10:45Z
+- path: `tests/component/melder/aether/conduit/test_kernel_pool_elastic_retention.py`
+  start_line: 1
+  end_line: 169
+  loc: 169
+  verified_at: 2026-10-12T20:34:01Z
 - path: `tests/component/melder/crystallizer/test_spell_crystal_component.py`
   start_line: 1
   end_line: 135
@@ -2435,9 +2449,9 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-09-26T22:11:36Z
 - path: `tests/unit/melder/utilities/data_structures/test_abstract_elastic_pool_multithreaded.py`
   start_line: 1
-  end_line: 243
-  loc: 243
-  verified_at: 2026-09-26T22:11:36Z
+  end_line: 265
+  loc: 265
+  verified_at: 2026-10-12T20:34:01Z
 - path: `tests/unit/melder/utilities/general_base/test_cleanable_cleanup_contexts.py`
   start_line: 1
   end_line: 114
@@ -2769,6 +2783,11 @@ graph TD
   scan/bind coverage grows.
 
 ## Context / Handoff Summary
+
+2026-10-12 elastic pool retention (0.2.8234): the Aether Component Cluster gains
+`test_kernel_pool_elastic_retention.py` (repeat bursts, the 256 cap, decay and catch-up on the root pool, prewarm
+past 20) and the Utilities Unit Cluster's elastic-pool files carry the new algorithm, one test per rule; two tests
+that force a pool to keep nothing now set its baseline and ceiling too.
 
 2026-10-10 core-protection review regression suite (no notch; tests only): five new files pin the review's
 findings - the custody boundary around a nested virtual environment (unit crystallizer), the registration

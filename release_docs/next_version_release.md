@@ -1,4 +1,4 @@
-# Melder 0.2.8233
+# Melder 0.2.8234
 
 **Unreleased**
 
@@ -118,6 +118,31 @@ racing the frame's cleanup raises the documented `RuntimeError: AethericFrame ha
 instead of `AttributeError: ... object has no attribute '_spells_by_id'` (0.2.8233). Everything a quiet system returns
 is unchanged, and the only new lock is one per spell that a direct `Spell.cleanup()` takes and nothing else does.
 
+## Lesser conduits and spellspaces past 20 are kept and reused, then let go when quiet
+
+The pools behind `create_lesser_conduit()` and `enter_spellspace()` now keep what a burst needed. Each conduit's
+spellspace pool and each root's lesser-conduit pool still always keep 20 idle shells; when more than 20 were out at
+once, the extra shells now stay pooled when they come back (up to 256 per pool) instead of being destroyed, so the next
+burst reuses them instead of building new lesser conduits and spellspaces. Once no burst has needed a new shell for 30
+minutes, the pool lets the extras go a step at a time (10% every 10 minutes) until it is back to 20.
+
+In melder_gauntlet past 20 threads the old pools rebuilt and destroyed up to 11 lesser conduits per iteration on a
+2-core machine; they now build each one once. At 1 to 3 threads nothing changes (measured within noise), and returning
+a shell while 20 or fewer are idle costs what it did.
+
+`prewarm_lesser_conduits(count)` and `prewarm_spellspaces(count)` now keep up to 256 shells (they were capped at 20);
+shells above 20 decay like a burst's.
+
+For subclasses of `AbstractElasticPool`: while a miss happened within `settle_time_seconds`, a return raises the
+target to the idle count it sees (up to `max_idle`); after that the target falls by `decay_percent_per_interval` of
+its stretched value every `decay_interval_seconds`, with the steps of a quiet period applied at the next return, and
+the oldest surplus is destroyed outside the pool lock. `stretch_percent` is now headroom over that count and defaults
+to 0 (it was the growth per miss, default 200). A pool built with `max_idle == baseline_idle` behaves as before. No
+signature changes, and `describe()` keeps its keys.
+
+What stays the same: the number of live shells is never capped (a miss always builds), a returning shell is cleaned
+before it is pooled, and a released spellspace still refuses `meld` and `purge`.
+
 ## Packaging and documentation
 
 - The README's "Declarative Binding by Module" example passes `permissions="create"`, without which it raised
@@ -137,4 +162,6 @@ is unchanged, and the only new lock is one per spell that a direct `Spell.cleanu
   mark of `cleanup_spell`.
 - The packaged system documents describe how a direct `Spell.cleanup()` removes the spell outside the spell lock and
   how `cleanup_and_remove_spell` treats a Spellbook torn down while it waits.
-- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8233.
+- The packaged system documents describe the elastic retention of the kernel pools: the sizes, the stretch
+  under pressure, the timed decay and the prewarm ceiling.
+- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8234.

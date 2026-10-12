@@ -352,14 +352,16 @@ class Conduit(Cleanable):
             owner_conduit_creations=self._creations,
             spellspace_registry=self._spellspace_registry,
             spellspace_stack_state=self._spellspace_stack,
+            # Elastic retention (0.2.8234): 20 idle shells always kept; under
+            # demand the pool keeps up to 256 and decays back when quiet.
             baseline_idle=20,
-            max_idle=20,
+            max_idle=256,
         )
         if conduit_state is ConduitState.normal:
             self._conduit_pool: ConduitPool = ConduitPool(
                 root_conduit=self,
                 baseline_idle=20,
-                max_idle=20,
+                max_idle=256,
             )
             # Lineage-root store: a normal conduit is its own lineage root, so
             # its meld defaults `_root_creations` to its own creations at
@@ -1385,6 +1387,10 @@ class Conduit(Cleanable):
               idle pool holds at least `min(count, pool.max_idle)` shells.
             - Clamped to pool capacity: never builds shells the pool would
               immediately evict and destroy.
+            - Shells above the pool's `baseline_idle` stay idle like any burst
+              the pool has seen (the builds count as misses) and decay back
+              toward `baseline_idle` once no miss has happened for the pool's
+              settle time (0.2.8234; through 0.2.8233 at most 20 were kept).
             - Prewarmed shells carry no scope contents and are not pushed on
               any thread's active-scope stack.
             - Idempotent in effect: already-idle shells count toward the
@@ -1440,6 +1446,10 @@ class Conduit(Cleanable):
               exactly as they would for real traffic.
             - Clamped to pool capacity: ensures at most
               `min(count, pool.max_idle)` idle shells.
+            - Shells above the pool's `baseline_idle` stay idle like any burst
+              the pool has seen (the builds count as misses) and decay back
+              toward `baseline_idle` once no miss has happened for the pool's
+              settle time (0.2.8234; through 0.2.8233 at most 20 were kept).
             - Idempotent in effect: already-idle shells are drained and
               returned, not duplicated.
 
@@ -2500,7 +2510,7 @@ class Conduit(Cleanable):
                     new_book.get_configuration().validate()
                     # Retain Creations; its owner/scope already use this conduit ID.
                     # New root resources replace borrowed ones without cleaning them.
-                    self._conduit_pool = ConduitPool(root_conduit=self, baseline_idle=20, max_idle=20)
+                    self._conduit_pool = ConduitPool(root_conduit=self, baseline_idle=20, max_idle=256)
                     self._cluster_creations = ClusterCreations()
                     prepared = True
                     self._conduit_state = ConduitState.normal

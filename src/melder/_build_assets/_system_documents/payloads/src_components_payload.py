@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_components.md'
-LINE_COUNT = 11041
-CONTENT_SHA256 = '575c21f9ada055667945acba6895d1e44efde17ade77ac8091a589e48256d4f9'
+LINE_COUNT = 11069
+CONTENT_SHA256 = 'df5a751d18e890109531c2722d91203581c5917f02357cc302ff8851e25042f9'
 
 TEXT = """# Src Components (C3/C2/C1)
 
@@ -24,7 +24,7 @@ TEXT = """# Src Components (C3/C2/C1)
 - Status: in_progress
 - Owner:
 - Created: 2026-01-17
-- Updated: 2026-10-11
+- Updated: 2026-10-12
 
 ## Scope
 This document defines C3 components, C2 subcomponents, and C1 code references
@@ -501,7 +501,7 @@ Responsibilities:
   - src/melder/aether/spellbook/spellbook.py:3899, 3932 (`_add_to_spell_index` -> `_apply_add_to_index`)
   - src/melder/aether/spellbook/spellbook.py:4075, 4107 (`_remove_from_spell_index` -> `_apply_remove_from_index`)
   - src/melder/aether/spellbook/spellbook.py:3742 (states the Conduit admits it)
-  - src/melder/aether/conduit/conduit.py:5375, 5451, 5531 (notch/add/remove
+  - src/melder/aether/conduit/conduit.py:5396, 5472, 5552 (notch/add/remove
     acquire `_get_required_transaction_mediator()`)
 - Run phase pipelines before conjure.
 - Conjure exactly one Conduit per Spellbook instance.
@@ -2687,6 +2687,19 @@ Key Files (C1):
 Purpose:
 - Execution scope for resolving spells and managing object lifecycles.
 
+Elastic pool retention (2026-10-12, 0.2.8234): the conduit's `SpellSpacePool` and a normal root's `ConduitPool` are
+built with baseline 20 and max 256 (`Conduit.__init__`; `upgrade_to_normal` builds the new root's pool the same way).
+`ConduitPool.create_object` records a miss (`_note_miss`) before `create_lesser_conduit` builds the lesser;
+`return_lesser_conduit` appends and, above 20 idle, runs `_rebalance_after_return`: a burst returning within 30
+minutes of a miss raises the target to the idle count (up to 256) and is kept whole, so its repeat reuses every
+shell; once quiet the target falls 10% per 10 minutes and the oldest shells are permanently cleaned outside the pool
+lock. `prewarm_lesser_conduits` and `prewarm_spellspaces` clamp to 256 and their shells above 20 decay the same way.
+Through 0.2.8233 both pools were 20/20 and every shell past 20 out at once was destroyed on its return.
+EVIDENCE: `src/melder/aether/conduit/conduit_pool.py:ConduitPool.create_object`,
+`ConduitPool.return_lesser_conduit`, `src/melder/aether/conduit/conduit.py:Conduit.__init__`,
+`Conduit.prewarm_lesser_conduits` and
+`src/melder/utilities/general_base/abstract_elastic_pool.py:AbstractElasticPool._rebalance_locked`.
+
 Scope exits (2026-09-27, 0.2.8203): `with conduit:` is a dispose scope. `__enter__` returns the conduit and
 takes no lock; `__exit__` calls `cleanup()` and never suppresses the block's exception, so at block exit a
 lesser returns to its root's pool and a root is torn down. `enter_lesser_conduit(logger=None, *, name=None)`
@@ -2778,7 +2791,8 @@ Responsibilities:
 - Own one `CreationGate` registered through the frame-owned
   `CreationGateController`.
 - Own one `SpellSpacePool` for request-local spellspace surfaces and one
-  `ConduitPool` for lesser-conduit reuse.
+  `ConduitPool` for lesser-conduit reuse. Both are elastic: 20 idle always kept,
+  up to 256 after a burst, decaying back when quiet (0.2.8234).
 - Manage ConduitWard and hook wiring.
 - Create lesser conduits and manage lineage trees.
 - Upgrade childless lessers in dynamic mode by retaining their creation stores, preparing independent
@@ -2861,7 +2875,7 @@ Failure Modes:
 - TypeError if `link` target is not a `Conduit`. This is a CONCRETE isinstance
   check, not a structural one: a conduit-shaped object that is not a `Conduit`
   subclass is rejected with "Expected Conduit-compatible object, got {type}".
-  EVIDENCE: src/melder/aether/conduit/conduit.py:5275-5277.
+  EVIDENCE: src/melder/aether/conduit/conduit.py:5296-5298.
 - RuntimeError if `link` target lacks a valid creation context.
 - RuntimeError if `transfer_spell_ownership` is called in non-dynamic mode.
 - Meld calls block while the local `CreationGate` is disabled.
@@ -3123,6 +3137,15 @@ Text is preserved as authored; only its location changed.
 ### Component: Creations and SpellSpace
 Purpose:
 - Instance lifecycle registry for Conduits and scoped spellspaces.
+
+SpellSpace pool retention (2026-10-12, 0.2.8234): `SpellSpacePool.acquire` and `acquire_untracked` record a miss
+(`_note_miss`) after building a space; `release` sets the lease flag, appends and, above 20 idle, runs the elastic
+band of `AbstractElasticPool`, so a burst of nested or concurrent managed spaces past 20 is kept (up to 256) and
+reused, then decays when quiet; surplus spaces are destroyed oldest first outside the pool lock. The lease flag and
+the release order are unchanged.
+EVIDENCE: `src/melder/aether/conduit/spell_space/spell_space_pool.py:SpellSpacePool.acquire`,
+`SpellSpacePool.acquire_untracked`, `SpellSpacePool.release` and
+`src/melder/utilities/general_base/abstract_elastic_pool.py:AbstractElasticPool._rebalance_after_return`.
 
 Many registration trim (2026-10-02, 0.2.8216): a disposal-bearing `many` key holds ONE cleanup record, `ManyDisposalBucket`,
 whose `entries` IS the key's live bucket (the same list object, aliased, never a copy) and whose `methods` is the
@@ -5735,13 +5758,13 @@ Purpose:
   switching and member movement between indices.
 Contract/Interface:
 - `Conduit.notch_spell(...)` opens the `notch` transaction at
-  `src/melder/aether/conduit/conduit.py:5398`, then calls `Spellbook._notch_spell(...)`, which delegates
+  `src/melder/aether/conduit/conduit.py:5419`, then calls `Spellbook._notch_spell(...)`, which delegates
   the member-store switch to the seam `_apply_notch(...)`.
 - `Conduit.add_to_spell_index(spell=, target_index=)` opens `add_to_index` at
-  `src/melder/aether/conduit/conduit.py:5471`, then calls `Spellbook._add_to_spell_index(...)`, which
+  `src/melder/aether/conduit/conduit.py:5492`, then calls `Spellbook._add_to_spell_index(...)`, which
   delegates the move-in to `_apply_add_to_index(...)`.
 - `Conduit.remove_from_spell_index(spell=, source_index=)` opens
-  `remove_from_index` at `src/melder/aether/conduit/conduit.py:5542`, then calls
+  `remove_from_index` at `src/melder/aether/conduit/conduit.py:5563`, then calls
   `Spellbook._remove_from_spell_index(...)`, which delegates the split to
   `_apply_remove_from_index(...)`.
   THE SPLIT OF OWNERSHIP IS THE POINT: the Conduit admits the transaction
@@ -5754,7 +5777,7 @@ Contract/Interface:
   `mediator.start_transaction(...)` a few lines further down. `src/melder/aether/spellbook/spellbook.py:3742`
   states it correctly. Raised on TASK-2026-08-02-stale-source-docstrings.
   EVIDENCE:
-  - src/melder/aether/conduit/conduit.py:5326, 5416, 5494 (public verbs)
+  - src/melder/aether/conduit/conduit.py:5347, 5437, 5515 (public verbs)
   - src/melder/aether/spellbook/spellbook.py:3757, 3932, 4107 (applied seams)
 Data Structures:
 - Transaction metadata carrying spellbook/conduit ids, binding key, member id,
@@ -7957,9 +7980,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-09-26T20:10:34Z
 - path: `src/melder/aether/conduit/conduit.py`
   start_line: 1
-  end_line: 7178
-  loc: 7178
-  verified_at: 2026-10-11T20:29:47Z
+  end_line: 7188
+  loc: 7188
+  verified_at: 2026-10-12T20:34:01Z
 - path: `src/melder/utilities/synchronization/creation_gate.py`
   start_line: 1
   end_line: 603
@@ -8002,9 +8025,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-09-27T23:41:28Z
 - path: `src/melder/aether/conduit/spell_space/spell_space_pool.py`
   start_line: 1
-  end_line: 301
-  loc: 301
-  verified_at: 2026-09-27T23:41:28Z
+  end_line: 307
+  loc: 307
+  verified_at: 2026-10-12T20:34:01Z
 - path: `src/melder/aether/conduit/meld/meld.py`
   start_line: 1
   end_line: 2110
@@ -8899,7 +8922,7 @@ still owed.
   A `Conduit` is the runtime scope, execution boundary, and contract-aware access surface for o...
 - `src/melder/aether/conduit/conduit_cluster.py`
   A membership group of conduits with TWO INDEPENDENT LAYERS: leaderless spell-sharing (the cor...
-- `src/melder/aether/conduit/conduit_pool.py` - Root-conduit-owned elastic pool scaffold for reusable lesser conduits
+- `src/melder/aether/conduit/conduit_pool.py` - Root-conduit-owned elastic pool for reusable lesser conduits
 - `src/melder/aether/conduit/conduit_state/conduit_state.py` - Lifecycle classification for a conduit instance
 - `src/melder/aether/conduit/conduit_ward/conduit_ward.py`
   Control-plane for a single Conduit: contracts, index, and policy
@@ -9742,7 +9765,7 @@ through it; see `src/melder/aether/aether.py:222` and `:1225-1249`.)
   WeakConcurrentSet ================= A thread-safe, *weakly referenced* set of objects
 - `src/melder/utilities/data_structures/weak_data_structures/weak_ref_node.py`
   WeakRefNode =========== A reusable weak-reference node for weak data structures, with phantom...
-- `src/melder/utilities/general_base/abstract_elastic_pool.py` - Reusable bounded elastic object-pool base
+- `src/melder/utilities/general_base/abstract_elastic_pool.py` - Elastic object-pool base: stretch, timed decay, bounded trims
 - `src/melder/utilities/general_base/cleanable.py`
   Purpose: Abstract base class for objects that own an explicit cleanup lifecycle
 - `src/melder/utilities/general_base/sync.py` - Purpose: Abstract helper mix-in for thread-safe sync-value wrappers
@@ -10603,6 +10626,11 @@ Companion documents:
   component and code-description patches are inputs to this document while a lane is open.
 
 ## Context / Handoff Summary
+
+2026-10-12 elastic pool retention (0.2.8234): Conduit Runtime carries the kernel pool sizes (20/256), the ConduitPool
+miss and return paths and the prewarm ceiling; Creations and SpellSpace carries the SpellSpacePool paths; the code map
+extents of conduit.py and spell_space_pool.py are remeasured, and the conduit.py citations moved 10 lines (those of
+the index-mutation verbs and `Conduit.link`'s type check, stale by 11 before, now point at their code).
 
 2026-10-11 direct spell cleanup (0.2.8233): the Binding Pipeline carries the direct `Spell.cleanup` route (decision
 under `_lock`, Book removal under the per-spell `_removal_lock`) and why; Spellbook Core carries

@@ -209,6 +209,7 @@ Message alert rules
 | cross_object_lock_gaps | review | handoff | claude | melder_1 | none | Owner: git add -A (three new test files, the archived patch folder, the cross_object_lock_gaps evidence folder), commit and push; accept or redirect. | Index-link notifications, contract reads and bind's cross-frame sweep hold under concurrent link/sever, member moves and frame birth/teardown; the listing deadlock is gone (0.2.8231). | The owner accepts or redirects; Windows tiers and hosted CI are the owner's. | tickets/tasks/2026-10-11_prove_and_fix_cross_object_lock_gaps_task.md | 2026-10-11T19:02:58Z | REQUIRED |
 | lock_residuals_and_admission | review | handoff | claude | melder_1 | none | Owner: git add -A (two new test files, two archived patch folders, the lock_residuals evidence folder), commit and push; accept or redirect. | find_contracted_spell and inspect_spell hold up under concurrent links and root registration, overlapping cleanup_spell refuses (0.2.8232), and a direct Spell.cleanup() no longer hangs against Book teardown or conjure (0.2.8233). | The owner accepts or redirects; Windows tiers and hosted CI are the owner's. | tickets/tasks/2026-10-11_close_lock_residuals_and_evaluate_mediator_admission_task.md | 2026-10-11T22:03:34Z | REQUIRED |
 | melder_object_pools | in_progress | discovery | claude | melder_1 | none | Owner answers the five asks on the new pooled member (name, pool scope, lease end, Phase 6, configuration); then patch docs and the first story. | A pooled Existence family serviced by Creations with per-spell pool configuration (limits, exhaustion, elasticity), designed and decided. | The owner accepts a design direction and the first story is drafted, or redirects. | tickets/epics/2026-10-05_melder_services_and_pools_epic.md | 2026-10-11T23:09:18Z | REQUIRED |
+| elastic_pool_retention | review | handoff | claude | melder_1 | none | Owner: git add -A (the new component test, the archived patch folder, the evidence folder), commit and push; accept or redirect. | SpellSpacePool and ConduitPool keep what a burst needed, up to 256, and decay to 20 when quiet (0.2.8234), proven by gauntlet runs before and after. | The owner accepts or redirects; Windows tiers and hosted CI are the owner's. | tickets/tasks/2026-10-12_make_kernel_pools_elastic_task.md | 2026-10-12T21:05:40Z | REQUIRED |
 <!-- END USER-DEFINED: active_items -->
 
 ## Active Attention Details
@@ -277,6 +278,9 @@ Message alert rules
   RESUME_HIERARCHY: tickets/tasks/2026-10-11_close_lock_residuals_and_evaluate_mediator_admission_task.md.
 - melder_object_pools: SWITCH_TRIGGER is the owner's decision on the pooled-existence design direction, or an owner
   redirect. RESUME_HIERARCHY: tickets/epics/2026-10-05_melder_services_and_pools_epic.md.
+- elastic_pool_retention: SWITCH_TRIGGER is the owner's acceptance of the 0.2.8234 landing, or an owner redirect.
+  RESUME_HIERARCHY: tickets/epics/2026-10-05_melder_services_and_pools_epic.md ->
+  tickets/tasks/2026-10-12_make_kernel_pools_elastic_task.md.
 ### Notch notice (fable_1, 2026-10-04)
 - fable_1 landed 0.2.8224 (ambiguous providers reported through Phase 4) and, before it, 0.2.8222 (annotation
   matching by kind; caching_system.py generation 20 `annotation_kind_matching`).
@@ -307,6 +311,9 @@ Message alert rules
 - melder_1 landed 0.2.8233 (a direct Spell.cleanup() removes the spell outside the spell lock, under a per-spell removal
   lock, so it no longer hangs against Book teardown or conjure; cleanup_and_remove_spell re-checks a torn-down Book).
   Notch above it if you land after.
+### Notch notice (melder_1, 2026-10-12)
+- melder_1 landed 0.2.8234 (the kernel pools keep what a burst needed, up to 256, and decay back to 20 when quiet;
+  AbstractElasticPool's stretch and decay rewritten). Notch above it if you land after.
 ### Device VM git hazard (melder_2, 2026-09-26)
 - The connected folder refuses deletes, so any git command that refreshes the index from the device VM
   (plain `git status`, `git diff`) can leave an empty .git/index.lock that blocks the owner's commits.

@@ -7,7 +7,7 @@
 - Agent Name: melder_1
 - Priority: p1
 - Created: 2026-10-05T15:35:41Z
-- Updated: 2026-10-11T23:09:18Z
+- Updated: 2026-10-12T18:53:50Z
 - Target Window: 2026-Q4
 - Related Program/Initiative: MelderOps Iris logger churn (priv_commandops TASK-2026-10-05-channel_logger_pooling)
 
@@ -160,6 +160,7 @@ not a special case.
 - [ ] Task: Complete story STORY-TBD-service_method_bindings
 - [ ] Task: Complete story STORY-TBD-pooled_existence
 - [ ] Task: Complete story STORY-TBD-service_scope
+- [ ] Task: TASK-2026-10-12-make_kernel_pools_elastic - the elastic retention the pooled backend reuses
 - [ ] Task: Benchmark meld and lease costs on the reference VM before and after each milestone.
 - [ ] Task: Verify Ticket Microcycle enforcement across active tickets/stories/tasks.
 
@@ -207,6 +208,11 @@ not a special case.
   before Iris retires its conduit?
 
 ## Decision Log
+- 2026-10-12: fix the elastic retention of the kernel pools first, proven by gauntlet runs before and after
+  (1-3 threads, then a 20-thread maximum on the owner's machine). The owner: "shells are not cheap a conduit is
+  very expensive to build" ... "experiment prove its good then lets do it, then prepare a big test before you
+  do the codechange on my computer with 20 threads and lets push it to the max baseline, then codechange and
+  test again".
 - 2026-10-11: a new Existence member, `pooled_spell`, extended through everything; Creations maintains the pools
   in conduits and spellspaces; the ConduitPool / SpellSpacePool elastic system is reused as it is; users configure
   a pooled spell, including a limit that raises; scope rank between unique_per_spell_space and many. The owner:
@@ -560,6 +566,106 @@ not a special case.
   IMPACT: Replaces the previous five asks with five for this design.
   NEXT: Owner decides: (1) name, (2) pool scope per spell (conduit default / spell_space) or the meld's own store,
     (3) lease end with reset hooks, (4) the Phase 6 additions, (5) configuration frozen in the spell id or live.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-12T18:35:40Z
+  TYPE: FACT
+  CLAIM: Owner challenged "stretch and decay never move today" (the kernel pools behave elastically). Read through:
+    the kernel pools ARE elastic in live count - a miss always builds (SpellSpacePool.acquire / acquire_untracked
+    call `create_object`; lesser creation builds a new Conduit when `ConduitPool.create_object()` returns None), and
+    a return keeps the object only while `len(idle) <= _target_idle`, destroying the overflow, so bursts grow without
+    a cap and shrink back to the retained target. What does not move is `_target_idle` itself: only the base class's
+    `_advisory_stretch_after_miss` / `_advisory_decay_after_overflow` write it, only the base `acquire()` / `release()`
+    call them, SpellSpacePool overrides both and ConduitPool is driven through `create_object()` /
+    `return_lesser_conduit()`, and both pools are built with baseline_idle 20 = max_idle 20 (stretch needs target <
+    max, decay target > baseline). SpellSpacePool's own docstring says the pools are created fixed for that reason.
+    `prewarm_spellspaces` / `prewarm_lesser_conduits` clamp to `max_idle`.
+  EVIDENCE:
+  - src/melder/utilities/general_base/abstract_elastic_pool.py:290-345
+  - src/melder/utilities/general_base/abstract_elastic_pool.py:416-470
+  - src/melder/aether/conduit/spell_space/spell_space_pool.py:188-301
+  - src/melder/aether/conduit/conduit_pool.py:106-161
+  - src/melder/aether/conduit/conduit.py:349-363
+  - src/melder/aether/conduit/conduit.py:1372-1470
+  - src/melder/aether/conduit/conduit.py:2816-2833
+  IMPACT: For the pooled backend, "copy the elastic system as it is" gives demand-driven growth plus a fixed retained
+    target; a moving target needs the base acquire/release (or their stretch/decay calls) wired into the new pool.
+  NEXT: Confirm with a burst probe (50 nested spellspaces, 50 lessers) reading each pool's describe(), then answer.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-12T18:36:37Z
+  TYPE: MEASURE
+  CLAIM: Burst probe on the working tree's source (byte-identical copy, 0.2.8233): both kernel pools are elastic in
+    live count - 50 nested managed spellspaces gave 50 distinct live spaces and 50 lessers gave 50 distinct live
+    shells, and after each burst the pools kept 20 idle and destroyed the rest; a second burst reused the 20 and built
+    30 more. `target_idle` read 20 before, during and after both bursts of both pools (baseline 20, max 20), so the
+    retained target does not stretch or decay; growth and shrink come from build-on-miss plus trim-on-return.
+  EVIDENCE:
+  - context_compass/artifacts/melder_object_pools_20261011/probe_kernel_pool_elasticity.py:1-65
+  - context_compass/artifacts/melder_object_pools_20261011/runs/probe_kernel_pool_elasticity.txt:1-14
+  IMPACT: The owner is right that the pools behave elastically; the narrower claim stands. A pooled spell can copy
+    the kernel behaviour as its default and opt into a moving target (baseline < max, the base stretch/decay calls,
+    tested with the base's `time_func` clock); its limit caps the elastic live count.
+  NEXT: Answer the owner with the measurement; the five design asks stay open.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-12T18:39:12Z
+  TYPE: FACT
+  CLAIM: How `target_idle` behaves in the base pool, for the moving-target question. It is the retained-idle count
+    a release keeps (append, then trim one oldest object if the deque exceeds it); it never limits live objects.
+    Stretch runs only in the base `acquire()` after a miss: +stretch_percent of the current target (default 200%,
+    at least 1), capped at max_idle. Decay runs only in the base `release()` after an overflow trim: once 1800 s have
+    passed since the last stretch and 600 s since the last decay, -10% of the stretched target (at least 1), floored
+    at baseline_idle. So decay is event-driven - a pool that goes quiet keeps its stretched idle objects until releases
+    overflow again - and each release trims at most one object, so after a decay the idle count only reaches the new
+    target as acquires drain it. The constructor defaults max_idle to baseline_idle (0 by default), so a pool built
+    with defaults retains nothing.
+  EVIDENCE:
+  - src/melder/utilities/general_base/abstract_elastic_pool.py:114-190
+  - src/melder/utilities/general_base/abstract_elastic_pool.py:290-345
+  - src/melder/utilities/general_base/abstract_elastic_pool.py:416-470
+  IMPACT: A pooled spell that wants retained objects to shrink when quiet needs a time-based trim (or accepts the
+    event-driven decay); this belongs in the pooled-backend design, not in the kernel pools.
+  NEXT: Answer the owner's question about target_idle; the six design asks stay open.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-12T18:42:12Z
+  TYPE: MEASURE
+  CLAIM: Exact simulation of the real AbstractElasticPool (base acquire/release, fake clock, single thread) for
+    bursts of 20..200 live up, 180..20 down, then 220 every ten minutes. Kernel settings (20/20): target 20 and 20
+    kept throughout; each burst reuses 20 and builds and destroys the rest - 1,640 built and 1,620 destroyed over
+    the 19 up/down bursts. Elastic settings (20/200): the first burst's first three misses stretch the target
+    20 -> 60 -> 180 -> 200; ramping up keeps everything (200 built, 0 destroyed over up/down); ramping down keeps 200
+    idle with no decay, because decay only runs inside a release that overflows; under overload (220) decay fires
+    every 40 minutes (200 -> 180) and the next burst's misses stretch it back to 200, and kept idle stays 200 while
+    the target is 180 (one trim per release).
+  EVIDENCE:
+  - context_compass/artifacts/melder_object_pools_20261011/sim_elastic_pool_target_idle.py:1-142
+  - context_compass/artifacts/melder_object_pools_20261011/runs/sim_elastic_pool_target_idle.txt:1-79
+  - src/melder/utilities/general_base/abstract_elastic_pool.py:290-345
+  - src/melder/utilities/general_base/abstract_elastic_pool.py:416-470
+  IMPACT: The base algorithm's stretch saturates and its decay does not run when quiet; the kernel pools sidestep it
+    by pinning baseline = max. A pooled spell should either copy the fixed retention or get a time-based decay.
+  NEXT: Send the owner the steps-to-variables table and the 20-200 results; ask fixed retention vs fixed decay.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-12T18:53:50Z
+  TYPE: DECISION
+  CLAIM: Owner, chat 2026-10-12: fix the elastic retention of the pools (target_idle stretch and decay), noting that
+    pooled shells are not cheap - "a conduit is very expensive to build". Sequence the owner set: show the whole fix;
+    baseline melder_gauntlet with many iterations on the current version; run 1-3 threads before and after; push the
+    load past the 20 retained shells so retention and elasticity are exercised; experiment until the fix is proven,
+    then do it; before the code change, prepare a big 20-thread test pushed to the maximum and record that baseline
+    on the owner's machine; then make the code change and run the same test again.
+  EVIDENCE: context_compass/artifacts/melder_object_pools_20261011/runs/sim_elastic_pool_target_idle.txt:1-79
+  IMPACT: Opens a separate task under this epic for the AbstractElasticPool / SpellSpacePool / ConduitPool fix; the
+    pooled-spell design waits on it (the pooled backend reuses this elastic system).
+  NEXT: Locate melder_gauntlet and its knobs, open the task ticket and board row, then patch docs and the baseline.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 

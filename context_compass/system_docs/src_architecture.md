@@ -5,7 +5,7 @@
 - Status: in_progress
 - Owner:
 - Created: 2026-01-17
-- Updated: 2026-10-11
+- Updated: 2026-10-12
 
 ## Scope and Intent
 This document describes the Melder core architecture at the C4 level for
@@ -438,9 +438,9 @@ External interfaces are Python APIs:
   same thing and are also wrong - see `src/melder/aether/spellbook/spellbook.py:3742`, which states the
   opposite correctly. The code settles it.
   EVIDENCE:
-  - src/melder/aether/conduit/conduit.py:5326, 5398 (`notch_spell`; starts the transaction)
-  - src/melder/aether/conduit/conduit.py:5416, 5471 (`add_to_spell_index`; starts it)
-  - src/melder/aether/conduit/conduit.py:5494, 5542 (`remove_from_spell_index`; starts it)
+  - src/melder/aether/conduit/conduit.py:5347, 5419 (`notch_spell`; starts the transaction)
+  - src/melder/aether/conduit/conduit.py:5437, 5492 (`add_to_spell_index`; starts it)
+  - src/melder/aether/conduit/conduit.py:5515, 5563 (`remove_from_spell_index`; starts it)
   - src/melder/aether/spellbook/spellbook.py:3899 (`_add_to_spell_index` entry)
   - src/melder/aether/spellbook/spellbook.py:3932 (`_apply_add_to_index` seam)
 - `Spellbook.conjure(...)` for building a root Conduit.
@@ -899,7 +899,7 @@ check and raises `TypeError("Expected Conduit-compatible object, got {type}")`.
 THIS IS NOT A STRUCTURAL CONTRACT AND CANNOT BE SATISFIED BY DUCK TYPING - a
 conduit-shaped object that is not a `Conduit` subclass is rejected outright.
   EVIDENCE:
-  - src/melder/aether/conduit/conduit.py:5275-5277 (the check and the raise -
+  - src/melder/aether/conduit/conduit.py:5296-5298 (the check and the raise -
     cited as :4342-4344 in the patch lane, which was off by one)
   - src/melder/nexus/nexus_frame_builder.py:254 (`create(...) -> Conduit`)
   - src/melder/nexus/rift/rift_space/event_system/rift_event.py
@@ -920,6 +920,25 @@ each entry in `src_components.md`; this list is the set that crosses components.
 - Validation strategies registered in `SpellValidationSystem`.
 
 ## Operational Invariants
+- Elastic pool retention (2026-10-12, 0.2.8234): the kernel pools keep what demand needed and let it go when demand
+  falls. Every conduit's `SpellSpacePool` and every normal root's `ConduitPool` are built with `baseline_idle` 20 and
+  `max_idle` 256. A miss always builds (live objects are never capped) and records pressure (`_note_miss`); a return
+  that leaves at most 20 idle is one append and one compare, with no clock read and no lock. Above that,
+  `_rebalance_after_return` reads the clock: under pressure (a miss within the settle time, 30 minutes) the target
+  rises to the idle count a return observes, up to 256, and only shells above 256 are trimmed, so a burst is kept
+  whole even while its returns race and its repeat builds nothing; once settled, the target falls by 10% of its
+  stretched value every 10 minutes, with the steps of a quiet period applied together at the next return, never
+  below 20, and the oldest idle shells are trimmed one decay step per return and destroyed outside the pool lock. A
+  destroy that raises propagates from that return and the shells detached after it go back to the pool. A pool
+  built with `max_idle == baseline_idle` keeps the one-eviction return with no clock read. There is no timer thread:
+  a pool that sees no return keeps its shells. Through 0.2.8233 both kernel pools were pinned at 20/20, so every
+  shell beyond 20 out at once was built and destroyed on each burst, and the base class's stretch (+200% per miss)
+  and decay (only inside an overflowing return) never ran for them.
+  EVIDENCE: `src/melder/utilities/general_base/abstract_elastic_pool.py:AbstractElasticPool._note_miss`,
+  `AbstractElasticPool._rebalance_after_return`, `AbstractElasticPool._rebalance_locked`,
+  `src/melder/aether/conduit/spell_space/spell_space_pool.py:SpellSpacePool.release`,
+  `src/melder/aether/conduit/conduit_pool.py:ConduitPool.return_lesser_conduit` and
+  `src/melder/aether/conduit/conduit.py:Conduit.__init__`.
 - Direct spell cleanup (2026-10-11, 0.2.8233): `Spell.cleanup()` never holds the spell lock while it waits for or holds
   the Book, frame or Nexus locks. A direct call on a live spell (its Book is not driving the cleanup) decides under the
   spell lock (`Spell._direct_removal_route`), leaves it, and runs `Spellbook.cleanup_and_remove_spell` under the spell's
@@ -2890,11 +2909,18 @@ Conduit runtime:
 
 - path: `src/melder/aether/conduit/conduit.py`
   start_line: 1
-  end_line: 7178
-  loc: 7178
-  verified_at: 2026-10-11T20:29:47Z
+  end_line: 7188
+  loc: 7188
+  verified_at: 2026-10-12T20:34:01Z
   note: conduit lifecycle and meld facade; `cleanup_spell` emits the index destroy the Book reports (0.2.8231);
-    `find_contracted_spell` and `inspect_spell` take no conduit lock (0.2.8232).
+    `find_contracted_spell` and `inspect_spell` take no conduit lock (0.2.8232); builds its SpellSpacePool and a
+    root's ConduitPool elastic, baseline 20 / max 256 (0.2.8234).
+- path: `src/melder/aether/conduit/conduit_pool.py`
+  start_line: 1
+  end_line: 165
+  loc: 165
+  verified_at: 2026-10-12T20:34:01Z
+  note: root-owned lesser pool; a miss records pressure and a return above 20 idle runs the elastic band (0.2.8234).
 - path: `src/melder/aether/conduit/conduit_state/conduit_state.py`
   start_line: 1
   end_line: 94
@@ -2973,10 +2999,11 @@ Resolution and creations:
   note: spellspace scoping; lease flag and finished exits.
 - path: `src/melder/aether/conduit/spell_space/spell_space_pool.py`
   start_line: 1
-  end_line: 301
-  loc: 301
-  verified_at: 2026-09-27T23:41:28Z
-  note: spellspace pool; release sets and acquisition clears the lease flag.
+  end_line: 307
+  loc: 307
+  verified_at: 2026-10-12T20:34:01Z
+  note: spellspace pool; release sets and acquisition clears the lease flag; misses record pressure and returns
+    above 20 idle run the elastic band (0.2.8234).
 - path: `src/melder/aether/conduit/spell_space/spell_space_thread_state.py`
   start_line: 1
   end_line: 328
@@ -3045,6 +3072,13 @@ Utilities:
   note: release-bound creation-cache admission, the envelope's world stamp and atomic persistence;
     generation 20 (0.2.8222).
 
+- path: `src/melder/utilities/general_base/abstract_elastic_pool.py`
+  start_line: 1
+  end_line: 599
+  loc: 599
+  verified_at: 2026-10-12T20:34:01Z
+  note: elastic pool base of both kernel pools: stretch under pressure, timed decay with catch-up, bounded trims
+    outside the lock, the fixed-capacity eviction (0.2.8234).
 - path: `src/melder/utilities/general_base/cleanable.py`
   start_line: 1
   end_line: 429
@@ -3516,6 +3550,8 @@ without rewriting the original record or existing live IDs.
 - `src/melder/aether/conduit/conduit_ward/conduit_ward.py`
 - `src/melder/aether/conduit/spell_space/spell_space.py`
 - `src/melder/aether/conduit/spell_space/spell_space_pool.py`
+- `src/melder/aether/conduit/conduit_pool.py`
+- `src/melder/utilities/general_base/abstract_elastic_pool.py`
 - `src/melder/aether/conduit/spell_space/spell_space_thread_state.py`
 - `src/melder/aether/conduit/meld/spellspace_meld.py`
 - `src/melder/utilities/general_base/cleanable.py`
@@ -3544,6 +3580,13 @@ without rewriting the original record or existing live IDs.
 - `src/melder/utilities/ai_native_support_tools/protocol_crafter.py`
 
 ## Context / Handoff Summary
+
+2026-10-12 elastic pool retention (0.2.8234): the kernel pools keep what a burst needed, up to 256, and decay back to
+20 once no miss has happened for 30 minutes - a miss records pressure, a return above 20 idle stretches, decays (with
+catch-up) or trims outside the lock, and a fixed-capacity pool keeps the old eviction. The operational invariants,
+the code map and the sources carry it; the component map carries the per-pool rules. Citations into conduit.py moved
+10 lines with the prewarm docstrings, and the stale ones for the index-mutation verbs and `Conduit.link`'s type
+check (off by 11 before this change) now point at their code.
 
 2026-10-11 direct spell cleanup (0.2.8233): a direct `Spell.cleanup()` decides under the spell lock and runs the Book
 removal outside it, serialized per spell by a removal lock nothing else takes, so it no longer hangs against Book, root

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/_build_assets/_system_documents/manifest/graph_adjacency_manifest.py",
- "source_sha256": "7b7a4b465722c80d0716388e948d024cca1f7b11f8503a71dcaf004b05543012",
+ "source_sha256": "11d91e22d0fc468cb1a35cdb5e05da27187af369c4577edc8f8d53be483ed678",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder._build_assets._system_documents.manifest.graph_adjacency_manifest": {

@@ -1,8 +1,8 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: tests
-SOURCE FINGERPRINT: 86b46977d15d4befa13e328737468a6225d2d1148a3c1eed5e5cdb9252765e4a
-FILE COUNT: 1080
+SOURCE FINGERPRINT: cee3d351904e041f255a769ea692a940c4e2631ecea7bc7a759fde75a2cf8a53
+FILE COUNT: 1081
 
 ================================================================================
 BEGIN FILE: tests/_annotation_audit_support.py
@@ -20511,6 +20511,183 @@ def test_valid_hooks_still_register_during_upgrade(
 END FILE: tests/component/melder/aether/conduit/test_conduit_upgrade_validate_before_mutate_regression.py
 ================================================================================
 ================================================================================
+BEGIN FILE: tests/component/melder/aether/conduit/test_kernel_pool_elastic_retention.py
+CONTENT SHA256: ad406c16e2688b697f3b93aa3b8b84797f7d29caa0984d6d7c9ccf5ff9754d57
+SOURCE ENCODING: utf-8
+================================================================================
+"""Kernel pools keep what a burst needed and let it go when quiet (0.2.8234).
+
+Why component tests:
+    The contracts run through a real root conduit, its ConduitPool and its SpellSpacePool - the pools the runtime
+    takes every lesser conduit and every managed spellspace from - so they prove what a caller of
+    `create_lesser_conduit()` and `enter_spellspace()` observes. The pool clock is swapped through `_time_func`, the
+    seam the pool unit tests use, so 30-minute settle and 10-minute decay periods run instantly.
+
+Contracts under test:
+    - A burst of lessers past the 20 always kept is kept whole on return, and repeating it reuses every shell
+      (through 0.2.8233 the pool kept 20 and rebuilt the rest on every repeat).
+    - A burst of nested managed spellspaces past 20 is kept the same way.
+    - A burst past `max_idle` (256) keeps 256 and destroys the rest.
+    - With no miss for the settle time the root keeps fewer: one decay step per interval, back to the baseline
+      after a long quiet, oldest shells first; a later burst is kept whole again.
+    - `prewarm_lesser_conduits` and `prewarm_spellspaces` keep up to `max_idle`, not 20.
+"""
+
+from collections.abc import Iterator
+from contextlib import ExitStack
+import time
+from typing import Any, List
+
+import pytest
+
+from melder.aether.conduit.conduit import Conduit
+from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
+from melder.aether.spellbook.spellbook import Spellbook
+from tests._frame_posture_test_support import configure_frame_posture_for_spellbook_configuration
+
+
+class _Clock:
+    """Hand-advanced monotonic clock that starts at the real monotonic time."""
+
+    __slots__ = ["value"]
+
+    def __init__(self) -> None:
+        self.value = time.monotonic()
+
+    def __call__(self) -> float:
+        return self.value
+
+
+def _make_root(frame: str = "kernel-pool-retention") -> Conduit:
+    """
+    Build a real empty automatic root with one phase worker and no runtime cache writes.
+
+    Contract:
+        The caller owns the returned root's cleanup.
+    """
+    configuration = SpellbookConfiguration(frame).with_defaults()
+    configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
+    book = Spellbook(aetheric_frame=frame, configuration=configuration)
+    if not book._aetheric_frame_configuration._frozen:
+        posture = configure_frame_posture_for_spellbook_configuration(configuration, dynamic=False)
+        posture.with_system_caching_enabled(False)
+    try:
+        return book.conjure(name="kernel_pool_root")
+    except Exception:
+        book.cleanup()
+        raise
+
+
+@pytest.fixture
+def root() -> Iterator[Conduit]:
+    """Own one root and tear it down, with its pools, after each test."""
+    conduit = _make_root()
+    try:
+        yield conduit
+    finally:
+        conduit.permanent_cleanup()
+
+
+def _lesser_burst(root: Conduit, count: int) -> List[Any]:
+    """Hold `count` lessers at once, return them all, and hand back the shells (kept referenced)."""
+    held = [root.create_lesser_conduit() for _ in range(count)]
+    for lesser in held:
+        lesser.cleanup()
+    return held
+
+
+def _space_burst(root: Conduit, count: int) -> List[Any]:
+    """Hold `count` nested managed spellspaces on one conduit, exit them all, and hand back the spaces."""
+    with ExitStack() as stack:
+        held = [stack.enter_context(root.enter_spellspace()) for _ in range(count)]
+    return held
+
+
+def _lesser_cycle(root: Conduit) -> None:
+    """One ordinary scope cycle: take one lesser (a hit while any is idle) and return it."""
+    root.create_lesser_conduit().cleanup()
+
+
+def test_repeat_lesser_burst_past_twenty_reuses_every_shell(root: Conduit) -> None:
+    """A burst of 30 lessers is kept whole and its repeat builds no new shell."""
+    pool = root._conduit_pool
+    first = _lesser_burst(root, 30)
+
+    assert pool.idle_count == 30
+    assert pool.target_idle == 30
+    second = _lesser_burst(root, 30)
+    assert {id(shell) for shell in second} == {id(shell) for shell in first}
+    assert not any(shell._cleaned for shell in first)
+
+
+def test_repeat_spellspace_burst_past_twenty_reuses_every_space(root: Conduit) -> None:
+    """30 nested managed spellspaces are kept on exit and the next 30 reuse them all."""
+    pool = root._spellspace_pool
+    first = _space_burst(root, 30)
+
+    assert pool.idle_count == 30
+    assert pool.target_idle == 30
+    second = _space_burst(root, 30)
+    assert {id(space) for space in second} == {id(space) for space in first}
+
+
+def test_lesser_burst_past_max_idle_keeps_max_idle(root: Conduit) -> None:
+    """A burst past max_idle keeps max_idle shells and destroys exactly the rest."""
+    pool = root._conduit_pool
+    count = pool.max_idle + 20
+    held = _lesser_burst(root, count)
+
+    assert pool.max_idle == 256
+    assert pool.idle_count == pool.max_idle
+    assert pool.target_idle == pool.max_idle
+    assert sum(1 for shell in held if shell._cleaned) == 20
+
+
+def test_quiet_root_pool_decays_to_baseline_and_burst_restretches(root: Conduit) -> None:
+    """Settle, one decay step per interval, catch-up after a long quiet, then a new burst kept whole."""
+    pool = root._conduit_pool
+    clock = _Clock()
+    pool._time_func = clock
+    held = _lesser_burst(root, 40)
+    settle = pool.describe()["settle_time_seconds"]
+    interval = pool.describe()["decay_interval_seconds"]
+
+    clock.value += settle - 1.0
+    _lesser_cycle(root)
+    assert pool.target_idle == 40
+
+    clock.value += 1.0
+    _lesser_cycle(root)
+    assert pool.target_idle == 36
+    assert pool.idle_count == 36
+    assert sum(1 for shell in held if shell._cleaned) == 4
+
+    clock.value += interval
+    _lesser_cycle(root)
+    assert pool.target_idle == 32
+
+    clock.value += 10 * 3600.0
+    _lesser_cycle(root)
+    assert pool.target_idle == pool.baseline_idle == 20
+    for _ in range(4):
+        _lesser_cycle(root)
+    assert pool.idle_count == 20
+
+    _lesser_burst(root, 40)
+    assert pool.target_idle == 40
+    assert pool.idle_count == 40
+
+
+def test_prewarm_keeps_more_than_twenty_shells(root: Conduit) -> None:
+    """Prewarming 40 lessers and 40 spellspaces leaves 40 of each idle."""
+    assert root.prewarm_lesser_conduits(40) == 40
+    assert root._conduit_pool.idle_count == 40
+    assert root.prewarm_spellspaces(40) == 40
+    assert root._spellspace_pool.idle_count == 40
+================================================================================
+END FILE: tests/component/melder/aether/conduit/test_kernel_pool_elastic_retention.py
+================================================================================
+================================================================================
 BEGIN FILE: tests/component/melder/aether/conduit/test_mutation_research_accessor_doors.py
 CONTENT SHA256: e54157eaa3316378ddeda3ace78522c4ec2a0bc83914d93b82585ad56587e2a5
 SOURCE ENCODING: utf-8
@@ -20685,7 +20862,7 @@ END FILE: tests/component/melder/aether/conduit/test_mutation_research_accessor_
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/aether/conduit/test_named_lesser_directory_lifecycle.py
-CONTENT SHA256: 7628000f7c99a9775aa871df4c28d84b64630b151ea067ded7f33a62d6cfaf8d
+CONTENT SHA256: ef17cf97c269dba7069e5359075085f8d3e41caa8db8000eabd911c8ad5b9919
 SOURCE ENCODING: utf-8
 ================================================================================
 """Named scopes retire discovery before pooled reuse without changing root ownership."""
@@ -20898,7 +21075,10 @@ def test_permanent_cleanup_and_overflow_leave_no_named_entries(root: Conduit) ->
     child = root.create_lesser_conduit(name="direct")
     child.permanent_cleanup()
     assert not root.get_conduit_cloud().has_conduit_name("direct")
+    # A pool that keeps nothing (baseline = target = max = 0) destroys every return.
+    root._conduit_pool._baseline_idle = 0
     root._conduit_pool._target_idle = 0
+    root._conduit_pool._max_idle = 0
     overflow = root.create_lesser_conduit(name="overflow")
     overflow.cleanup()
     assert not root.get_conduit_cloud().has_conduit_name("overflow")
@@ -84256,7 +84436,7 @@ END FILE: tests/experimentation/test_spellspace_cross_thread_scope_experiment.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/experimentation/test_targeted_lesser_spellspace_meld_cycle_harness.py
-CONTENT SHA256: 3ea96bef77f3b24af676171f77efd6c200157aeda5bccf0c29165578c96f62d6
+CONTENT SHA256: 406776fd502a4f07d21dfe1b27a2f7c144fdc06cbd15a7725517aa5972c4f8a3
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -84535,18 +84715,19 @@ def _measure_average_ns(
     return (end_ns - start_ns) / float(iterations)
 
 
-def _snapshot_pool_policy(pool: Any) -> Tuple[int, int]:
+def _snapshot_pool_policy(pool: Any) -> Tuple[int, int, int]:
     """
     Snapshot the elastic-pool retention policy fields for later restore.
 
     Contract:
-        Pools are elastic now (`AbstractElasticPool`); there is no boolean
-        enabled flag. Retention is governed by `_target_idle` (release keeps
-        while `len(_idle) <= _target_idle` after append-then-trim) and
-        `_max_idle` (stretch ceiling), so those two fields ARE the policy
-        this harness toggles.
+        Pools are elastic (`AbstractElasticPool`); there is no boolean
+        enabled flag. Retention is governed by `_baseline_idle` (a return
+        that leaves at most this many idle is kept on the fast path),
+        `_target_idle` (the elastic target above it) and `_max_idle` (the
+        ceiling), so those three fields ARE the policy this harness toggles
+        (0.2.8234; through 0.2.8233 the harness toggled target and max only).
     """
-    return (pool._target_idle, pool._max_idle)
+    return (pool._baseline_idle, pool._target_idle, pool._max_idle)
 
 
 def _set_pool_pooled(pool: Any) -> None:
@@ -84558,8 +84739,9 @@ def _set_pool_pooled(pool: Any) -> None:
         regardless of the configured baseline; existing larger policies are
         left untouched.
     """
-    pool._target_idle = max(pool._target_idle, 8)
-    pool._max_idle = max(pool._max_idle, 8)
+    pool._baseline_idle = max(pool._baseline_idle, 8)
+    pool._target_idle = max(pool._target_idle, pool._baseline_idle)
+    pool._max_idle = max(pool._max_idle, pool._baseline_idle)
 
 
 def _set_pool_unpooled(pool: Any) -> None:
@@ -84567,21 +84749,22 @@ def _set_pool_unpooled(pool: Any) -> None:
     Force the elastic pool into a non-retaining posture for cold measurement.
 
     Contract:
-        With `_target_idle == 0` release's append-then-trim destroys every
-        returned object, and with `_max_idle == 0` the post-miss stretch path
-        returns immediately, so retention cannot re-enable mid-measurement.
+        With `_baseline_idle == _max_idle == 0` the pool is fixed-capacity at
+        zero: every return destroys the returned object and nothing can
+        stretch, so retention cannot re-enable mid-measurement.
     """
     with pool._lock:
         pool._idle.clear()
+    pool._baseline_idle = 0
     pool._target_idle = 0
     pool._max_idle = 0
 
 
-def _restore_pool_policy(pool: Any, policy: Tuple[int, int]) -> None:
+def _restore_pool_policy(pool: Any, policy: Tuple[int, int, int]) -> None:
     """
     Restore a previously snapshotted elastic-pool retention policy.
     """
-    pool._target_idle, pool._max_idle = policy
+    pool._baseline_idle, pool._target_idle, pool._max_idle = policy
 
 
 def _measure_lesser_cycle_components(
@@ -338120,10 +338303,12 @@ END FILE: tests/unit/melder/utilities/custom_exceptions/test_spellbook_validatio
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/utilities/data_structures/test_abstract_elastic_pool.py
-CONTENT SHA256: f5edd8bcba3c0be16596fc34596a94b0683c935463948f6024f358bfccc478bb
+CONTENT SHA256: 4423cdd762fe8678e425ed0964e2c3e4c393246ddcdb6470032e2d783de8503b
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import Any, Dict, List
+
+import pytest
 
 from melder.utilities.general_base.abstract_elastic_pool import (
     AbstractElasticPool,
@@ -338303,85 +338488,248 @@ def test_release_without_matching_acquire_retains_when_capacity_allows() -> None
     assert pool.destroyed_ids == []
 
 
-def test_acquire_stretches_target_when_demand_exceeds_capacity() -> None:
+def _burst(pool: _TestElasticPool, count: int) -> List[Dict[str, Any]]:
     """
-    Acquire should stretch target idle on each direct miss until capped.
+    Take `count` objects at once (every one a miss on an empty pool) and return them all.
+
+    Returns:
+        List[Dict[str, Any]]: The objects, in the order they were taken and returned.
+    """
+    held = [pool.acquire() for _ in range(count)]
+    for obj in held:
+        pool.release(obj)
+    return held
+
+
+def _cycle(pool: _TestElasticPool) -> None:
+    """One ordinary use: take one object (a hit while any is idle) and return it."""
+    pool.release(pool.acquire())
+
+
+def _elastic_pool(clock: _Clock, **overrides: Any) -> _TestElasticPool:
+    """Build a pool with baseline 2, max 20, settle 10 s, 20% decay per 5 s, unless overridden."""
+    settings: Dict[str, Any] = {
+        "baseline_idle": 2,
+        "max_idle": 20,
+        "settle_time_seconds": 10.0,
+        "decay_percent_per_interval": 20,
+        "decay_interval_seconds": 5.0,
+    }
+    settings.update(overrides)
+    return _TestElasticPool(time_func=clock, **settings)
+
+
+def test_miss_records_pressure_without_moving_the_target() -> None:
+    """
+    A miss builds and records pressure; the target moves only when returns overflow it.
     """
     clock = _Clock()
-    pool = _TestElasticPool(
-        baseline_idle=2,
-        stretch_percent=50,
-        max_idle=10,
-        time_func=clock,
-    )
+    pool = _elastic_pool(clock)
 
-    first = pool.acquire()
-    second = pool.acquire()
-    third = pool.acquire()
+    held = [pool.acquire() for _ in range(5)]
 
-    assert first["id"] == 1
-    assert second["id"] == 2
-    assert third["id"] == 3
+    assert [obj["id"] for obj in held] == [1, 2, 3, 4, 5]
+    assert pool.target_idle == 2
+    assert pool.in_use_count == 5
+
+
+def test_burst_under_pressure_is_kept_whole() -> None:
+    """
+    Returns of a burst past the baseline raise the target to the idle count; nothing is destroyed.
+    """
+    clock = _Clock()
+    pool = _elastic_pool(clock)
+
+    _burst(pool, 8)
+
+    assert pool.target_idle == 8
+    assert pool.idle_count == 8
+    assert pool.destroyed_ids == []
+
+
+def test_repeat_burst_reuses_every_kept_object() -> None:
+    """
+    A repeat of a kept burst is served entirely from idle objects.
+    """
+    clock = _Clock()
+    pool = _elastic_pool(clock)
+    _burst(pool, 8)
+
+    _burst(pool, 8)
+
+    assert pool.created_ids == [1, 2, 3, 4, 5, 6, 7, 8]
+    assert pool.idle_count == 8
+
+
+def test_stretch_adds_headroom_percent() -> None:
+    """
+    stretch_percent adds headroom over the idle count the stretching return observed.
+    """
+    clock = _Clock()
+    pool = _elastic_pool(clock, stretch_percent=50)
+
+    _burst(pool, 6)
+
+    assert pool.target_idle == 7
+    assert pool.idle_count == 6
+
+
+def test_stretch_caps_at_max_idle_and_trims_the_rest() -> None:
+    """
+    A burst past max_idle keeps max_idle objects and destroys the oldest surplus.
+    """
+    clock = _Clock()
+    pool = _elastic_pool(clock, max_idle=4, decay_percent_per_interval=10)
+
+    _burst(pool, 6)
+
+    assert pool.target_idle == 4
+    assert pool.idle_count == 4
+    assert pool.destroyed_ids == [1, 2]
+
+
+def test_return_without_pressure_trims_to_the_target() -> None:
+    """
+    Objects returned past the baseline with no recent miss are trimmed, not kept.
+    """
+    clock = _Clock()
+    pool = _elastic_pool(clock)
+
+    for item_id in range(100, 105):
+        pool.release({"id": item_id, "prepared_tag": None, "reset_count": 0})
+
+    assert pool.target_idle == 2
+    assert pool.idle_count == 2
+    assert pool.destroyed_ids == [100, 101, 102]
+
+
+def test_no_decay_inside_the_settle_window() -> None:
+    """
+    The target holds while the last miss is within settle_time_seconds.
+    """
+    clock = _Clock()
+    pool = _elastic_pool(clock)
+    _burst(pool, 10)
+
+    clock.value = 9.9
+    _cycle(pool)
+
+    assert pool.target_idle == 10
+    assert pool.idle_count == 10
+
+
+def test_decay_one_step_per_interval_after_settling() -> None:
+    """
+    Once settled, each interval lowers the target by one step of the stretched value and trims the oldest.
+    """
+    clock = _Clock()
+    pool = _elastic_pool(clock)
+    _burst(pool, 10)
+
+    clock.value = 10.0
+    _cycle(pool)
+    assert pool.target_idle == 8
+    assert pool.idle_count == 8
+    assert pool.destroyed_ids == [1, 2]
+
+    clock.value = 12.0
+    _cycle(pool)
+    assert pool.target_idle == 8
+
+    clock.value = 15.0
+    _cycle(pool)
     assert pool.target_idle == 6
-    assert pool.in_use_count == 3
+    assert pool.idle_count == 6
 
 
-def test_acquire_does_not_stretch_when_reusing_idle_object() -> None:
+def test_decay_catches_up_after_a_long_quiet_period() -> None:
     """
-    Reusing an idle object should not trigger a target stretch.
+    Steps missed while no return happened apply together; trims stay bounded per return.
     """
     clock = _Clock()
-    pool = _TestElasticPool(
-        baseline_idle=2,
-        stretch_percent=50,
-        max_idle=10,
-        time_func=clock,
-    )
+    pool = _elastic_pool(clock)
+    _burst(pool, 10)
+
+    clock.value = 100.0
+    _cycle(pool)
+
+    assert pool.target_idle == 2
+    assert pool.idle_count == 8
+    _cycle(pool)
+    _cycle(pool)
+    _cycle(pool)
+    assert pool.idle_count == 2
+    assert len(pool.destroyed_ids) == 8
+
+
+def test_decay_never_drops_below_baseline() -> None:
+    """
+    Decay stops at baseline_idle however long the pool stayed quiet.
+    """
+    clock = _Clock()
+    pool = _elastic_pool(clock, baseline_idle=3, decay_percent_per_interval=50)
+    _burst(pool, 12)
+
+    clock.value = 10_000.0
+    for _ in range(6):
+        _cycle(pool)
+
+    assert pool.target_idle == 3
+    assert pool.idle_count == 3
+
+
+def test_miss_inside_the_settle_window_postpones_decay() -> None:
+    """
+    A later miss restarts the settle period, so decay waits a full period after it.
+    """
+    clock = _Clock()
+    pool = _elastic_pool(clock)
+    _burst(pool, 10)
+
+    clock.value = 8.0
+    _burst(pool, 11)
+    assert pool.target_idle == 11
+
+    clock.value = 17.9
+    _cycle(pool)
+    assert pool.target_idle == 11
+
+    clock.value = 18.0
+    _cycle(pool)
+    assert pool.target_idle == 9
+
+
+def test_burst_after_decay_stretches_again() -> None:
+    """
+    Pressure after a decay raises the target to the new burst.
+    """
+    clock = _Clock()
+    pool = _elastic_pool(clock)
+    _burst(pool, 10)
+    clock.value = 100.0
+    for _ in range(4):
+        _cycle(pool)
+    assert pool.idle_count == 2
+
+    _burst(pool, 12)
+
+    assert pool.target_idle == 12
+    assert pool.idle_count == 12
+
+
+def test_fixed_capacity_pool_evicts_without_the_clock() -> None:
+    """
+    max_idle == baseline_idle keeps the one-eviction return: oldest first, no clock read.
+    """
+    clock = _Clock()
+    pool = _TestElasticPool(baseline_idle=1, max_idle=1, time_func=clock)
     first = pool.acquire()
     second = pool.acquire()
-    pool.release(first)
 
-    reused = pool.acquire()
+    def exploding_clock() -> float:
+        raise AssertionError("A fixed-capacity return must not read the clock.")
 
-    assert reused is first
-    assert pool.target_idle == 4
-    assert pool.in_use_count == 2
-
-
-def test_stretch_caps_at_max_idle() -> None:
-    """
-    Stretch should never increase target idle beyond max_idle.
-    """
-    clock = _Clock()
-    pool = _TestElasticPool(
-        baseline_idle=2,
-        stretch_percent=100,
-        max_idle=4,
-        time_func=clock,
-    )
-
-    pool.acquire()
-    pool.acquire()
-    pool.acquire()
-    pool.acquire()
-    pool.acquire()
-
-    assert pool.target_idle == 4
-
-
-def test_release_destroys_excess_when_idle_already_full() -> None:
-    """
-    Release should destroy the cold retained object once idle retention is full.
-    """
-    clock = _Clock()
-    pool = _TestElasticPool(
-        baseline_idle=1,
-        max_idle=1,
-        time_func=clock,
-    )
-    first = pool.acquire()
-    second = pool.acquire()
-
+    pool._time_func = exploding_clock
     pool.release(first)
     pool.release(second)
 
@@ -338389,121 +338737,47 @@ def test_release_destroys_excess_when_idle_already_full() -> None:
     assert pool.destroyed_ids == [1]
 
 
-def test_no_decay_before_cooldown_elapses() -> None:
+class _FailingDestroyPool(_TestElasticPool):
     """
-    Overflow trim should not decay before settle time has elapsed.
+    Test pool whose destroy_object raises for the ids listed in `fail_ids`.
     """
-    clock = _Clock()
-    pool = _TestElasticPool(
-        baseline_idle=2,
-        stretch_percent=50,
-        settle_time_seconds=10.0,
-        decay_percent_per_interval=25,
-        decay_interval_seconds=5.0,
-        max_idle=10,
-        time_func=clock,
-    )
 
-    pool.acquire()
-    pool.acquire()
-    pool.acquire()
-    assert pool.target_idle == 6
+    __slots__ = ["fail_ids"]
 
-    for item_id in range(100, 106):
-        pool._idle.append({"id": item_id, "prepared_tag": None, "reset_count": 0})
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+        self.fail_ids: List[int] = []
 
-    clock.value = 9.0
-    returned = {"id": 999, "prepared_tag": None, "reset_count": 0}
-    pool.release(returned)
-
-    assert pool.target_idle == 6
+    def destroy_object(self, obj: Dict[str, Any]) -> None:
+        if obj["id"] in self.fail_ids:
+            raise RuntimeError(f"destroy failed for {obj['id']}")
+        super().destroy_object(obj)
 
 
-def test_decay_reduces_target_after_cooldown() -> None:
+def test_destroy_failure_keeps_the_rest_of_the_trim_pooled() -> None:
     """
-    Overflow trim should reduce target idle by one step after cooldown.
+    A destroy that raises propagates; the detached objects after it go back to the idle deque, none is lost.
     """
     clock = _Clock()
-    pool = _TestElasticPool(
-        baseline_idle=2,
-        stretch_percent=50,
-        settle_time_seconds=10.0,
-        decay_percent_per_interval=25,
-        decay_interval_seconds=5.0,
+    pool = _FailingDestroyPool(
+        baseline_idle=0,
         max_idle=10,
+        settle_time_seconds=10.0,
+        decay_percent_per_interval=100,
+        decay_interval_seconds=5.0,
         time_func=clock,
     )
-
-    pool.acquire()
-    pool.acquire()
-    pool.acquire()
-    assert pool.target_idle == 6
-
-    for item_id in range(100, 106):
-        pool._idle.append({"id": item_id, "prepared_tag": None, "reset_count": 0})
-
-    clock.value = 16.0
-    pool.release({"id": 999, "prepared_tag": None, "reset_count": 0})
-
+    _burst(pool, 5)
     assert pool.target_idle == 5
+    pool.fail_ids.append(2)
 
+    clock.value = 10.0
+    obj = pool.acquire()
+    with pytest.raises(RuntimeError, match="destroy failed for 2"):
+        pool.release(obj)
 
-def test_decay_applies_single_step_per_overflow() -> None:
-    """
-    Overflow-triggered decay should apply only one step per release.
-    """
-    clock = _Clock()
-    pool = _TestElasticPool(
-        baseline_idle=10,
-        stretch_percent=100,
-        settle_time_seconds=10.0,
-        decay_percent_per_interval=10,
-        decay_interval_seconds=5.0,
-        max_idle=100,
-        time_func=clock,
-    )
-
-    for _ in range(11):
-        pool.acquire()
-    assert pool.target_idle == 100
-
-    for item_id in range(1000, 1100):
-        pool._idle.append({"id": item_id, "prepared_tag": None, "reset_count": 0})
-
-    clock.value = 31.0
-    pool.release({"id": 999, "prepared_tag": None, "reset_count": 0})
-
-    assert pool.target_idle == 90
-
-
-def test_decay_never_drops_below_baseline() -> None:
-    """
-    Overflow-triggered decay should stop at baseline_idle.
-    """
-    clock = _Clock()
-    pool = _TestElasticPool(
-        baseline_idle=3,
-        stretch_percent=100,
-        settle_time_seconds=1.0,
-        decay_percent_per_interval=50,
-        decay_interval_seconds=1.0,
-        max_idle=50,
-        time_func=clock,
-    )
-
-    for _ in range(4):
-        pool.acquire()
-    assert pool.target_idle == 48
-
-    for item_id in range(2000, 2048):
-        pool._idle.append({"id": item_id, "prepared_tag": None, "reset_count": 0})
-
-    clock.value = 100.0
-    pool.release({"id": 999, "prepared_tag": None, "reset_count": 0})
-    clock.value = 101.0
-    pool.release({"id": 1000, "prepared_tag": None, "reset_count": 0})
-
-    assert pool.target_idle == 3
+    assert pool.destroyed_ids == [1]
+    assert [item["id"] for item in pool._idle] == [3, 4, 5]
 
 
 def test_describe_reports_current_pool_state() -> None:
@@ -338524,7 +338798,7 @@ def test_describe_reports_current_pool_state() -> None:
     snapshot = pool.describe()
 
     assert snapshot["baseline_idle"] == 4
-    assert snapshot["target_idle"] == 5
+    assert snapshot["target_idle"] == 4
     assert snapshot["max_idle"] == 12
     assert snapshot["idle_count"] == 0
     assert snapshot["in_use_count"] == 1
@@ -338578,7 +338852,7 @@ END FILE: tests/unit/melder/utilities/data_structures/test_abstract_elastic_pool
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/utilities/data_structures/test_abstract_elastic_pool_multithreaded.py
-CONTENT SHA256: a0fafed9fbe4f2e813f1cc057a42cad0468d4167eea14f4dab03a9f842c4d683
+CONTENT SHA256: ccc0d8da9e071153a39fcb6e121f014c767a4c797da234c142814fe073ccc2a7
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -338764,12 +339038,11 @@ def test_multithreaded_concurrent_releases_account_for_every_acquired_object(
 
 
 @pytest.mark.parametrize("worker_count", [4, 8])
-def test_multithreaded_overflow_decay_stays_within_bounds(worker_count: int) -> None:
-    """Concurrent overflow trims should keep advisory target idle within bounds."""
+def test_multithreaded_band_returns_keep_target_within_bounds(worker_count: int) -> None:
+    """Concurrent returns into the elastic band with a decay due keep the target within bounds and trim the excess."""
     clock = _Clock(value=100.0)
     pool = _ThreadedElasticPool(
         baseline_idle=2,
-        stretch_percent=50,
         settle_time_seconds=10.0,
         decay_percent_per_interval=25,
         decay_interval_seconds=5.0,
@@ -338778,8 +339051,8 @@ def test_multithreaded_overflow_decay_stays_within_bounds(worker_count: int) -> 
     )
     pool._target_idle = 6
     pool._decay_step = 1
-    pool._last_expand_at = 0.0
-    pool._last_decay_at = 0.0
+    pool._last_miss_at = 0.0
+    pool._next_decay_at = 0.0
     for item_id in range(100, 106):
         pool._idle.append({"id": item_id})
 
@@ -338791,6 +339064,29 @@ def test_multithreaded_overflow_decay_stays_within_bounds(worker_count: int) -> 
     assert not errors
     assert pool.baseline_idle <= pool.target_idle <= 6
     assert pool.idle_count == 6
+    assert len(pool.destroyed_ids) == worker_count
+
+
+@pytest.mark.parametrize("worker_count", [4, 8, 16])
+def test_multithreaded_burst_under_pressure_is_kept_whole(worker_count: int) -> None:
+    """Objects returned concurrently after a burst of misses are all kept; the target ends at the burst size."""
+    clock = _Clock()
+    pool = _ThreadedElasticPool(
+        baseline_idle=1,
+        max_idle=32,
+        time_func=clock,
+    )
+    held = [pool.acquire() for _ in range(worker_count)]
+
+    def worker(index: int) -> None:
+        pool.release(held[index])
+
+    errors = _run_threaded_workers(worker_count, worker)
+
+    assert not errors
+    assert pool.target_idle == worker_count
+    assert pool.idle_count == worker_count
+    assert pool.destroyed_ids == []
 
 
 @pytest.mark.parametrize(

@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_graph.md'
-LINE_COUNT = 27735
-CONTENT_SHA256 = '2830ce5b17368670e423cec712fd87916ecc1b317762623008d263ed67cade57'
+LINE_COUNT = 27739
+CONTENT_SHA256 = '70c2fa87107c0f5d900e53a7cf78e148b85844f4f981eafa22b6ea708c6ae511'
 
 TEXT = """# src_graph
 
@@ -336,7 +336,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_agent_documentation/manifest/agent_documentation_manifest.py
 
-- source_sha256: `535d310adb401b8a14cc6fd4e2f6b8929c1afd7881e16ae31ffe494cbdfaf066`
+- source_sha256: `0447bd19faa4622da96724b3ffd541960c5813753c395526650f545f2459ee1c`
 - nodes: 1
 
 ### Nodes
@@ -415,7 +415,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py
 
-- source_sha256: `6746c4e3358683fc9f0a71586131013194965cc4b5ca82575837e1e1dba99d76`
+- source_sha256: `76c4bc32ba9740b7cc290ad8022638cae65c465a1b3386b5c3afdd40c3abe92e`
 - nodes: 1
 
 ### Nodes
@@ -493,7 +493,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/graph_adjacency_manifest.py
 
-- source_sha256: `7b7a4b465722c80d0716388e948d024cca1f7b11f8503a71dcaf004b05543012`
+- source_sha256: `11d91e22d0fc468cb1a35cdb5e05da27187af369c4577edc8f8d53be483ed678`
 - nodes: 1
 
 ### Nodes
@@ -510,7 +510,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_index.py
 
-- source_sha256: `8663f70052028fb2b55f810733b5899cb296c76cd994f5008debaf54486cf529`
+- source_sha256: `3912b679e6baebba845f21ab21c756fdda37ecca8eddc71a557056cb7335a8c5`
 - nodes: 1
 
 ### Nodes
@@ -527,7 +527,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_manifest.py
 
-- source_sha256: `62617747825edf8c4b62c84f74b6b6c9e2518d32249366a7fc6ebd7f77bb04f1`
+- source_sha256: `2231a921997550cad0be54df5c90c7ea3e7e04b658a4dd7306d4d08b790e32dc`
 - nodes: 1
 
 ### Nodes
@@ -547,7 +547,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_architecture_payload.py
 
-- source_sha256: `ef514f19dd4086ea55f0d09fe4e17eb0df8f6290f2992270613327b4e8a1f387`
+- source_sha256: `11474f38dae04df0ee2cc6363a95fa28a21d04a995a2811b36be9fc332105fcd`
 - nodes: 1
 
 ### Nodes
@@ -564,7 +564,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_components_payload.py
 
-- source_sha256: `a848efcb2165eb75a9faf5fc4eb88fdc7264d0308922ee8f07fc6104eb6652c3`
+- source_sha256: `326b949401076f5029b04de23d2fc7c38d3f06da5e624e9c4a9b2cdabf842b96`
 - nodes: 1
 
 ### Nodes
@@ -581,7 +581,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_graph_payload.py
 
-- source_sha256: `8b15e6f77ac646f72ee4e86fac49af28f5f8901f4595a2e582f986dfe4fcb47e`
+- source_sha256: `e654c0fcd28bd0180da9c159a86079b220294651a395553a51b853a5a350acd2`
 - nodes: 1
 
 ### Nodes
@@ -4438,7 +4438,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/conduit.py
 
-- source_sha256: `498277406f84eaaeb5ce5f04d86972aeae2266bdaa53e1cfe0cbb229fdf27229`
+- source_sha256: `b19ccc41ece9f3b57e4c74b842c185f7c04ba67ae7dcb3b89cd14c8f2b051ae7`
 - nodes: 2
 
 ### Nodes
@@ -4483,6 +4483,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - returns the Spellbook it resolves through, borrowed (spellbook): the conjuring Book for a root, the root's Book for a lesser, the new Book after upgrade_to_normal
   - emits an index destroy to index-link borrowers exactly when the Book's disposal reports the index it destroyed (cleanup_spell, 0.2.8231)
   - looks up contracted spells over a one-call copy of the Book's contracted peer ids and inspects objects, both with no conduit lock held (find_contracted_spell, inspect_spell, 0.2.8232)
+  - builds its SpellSpacePool and, as a normal root, its ConduitPool elastic: 20 idle always kept, up to 256 after a burst, decaying when quiet (0.2.8234)
 - owns_state: `_meld`, `_creations`, `_conduit_ward`, `_creation_gate`, `_spellspace_stack`, `_spellspace_pool`, `_conduit_pool`, `_transaction_identity`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `add_bind_hooks`, `add_index_to_contract`, `add_spell_to_contract`, `add_spell_to_contract_with_dependencies`, `add_spells_to_contract`, `add_to_spell_index`, `begin_transaction`, `bind`, `bind_inactive`, `check_spell_id`, `cleanup`, `cleanup_lesser_conduits` (+66 more)
@@ -4605,7 +4606,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/conduit_pool.py
 
-- source_sha256: `d6865864423b5c48579f0d9beedec8058e6c88cb7bb9ca8e12bb8b772fe28343`
+- source_sha256: `c2a6f7ded18036be66e5451ea3eb0b9ff6a4b039684f12eb5b827d585ae956d7`
 - nodes: 2
 
 ### Nodes
@@ -4628,7 +4629,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - responsibilities:
   - retains reusable lesser conduit shells for one root conduit
   - returns one idle lesser shell when available
-  - destroys overflow lesser conduits through the permanent cleanup lane
+  - destroys surplus lessers (above the elastic target, or past max_idle under pressure) through the permanent cleanup lane, outside the pool lock (0.2.8234)
+  - records a miss when no idle lesser exists, so the elastic target follows the burst (0.2.8234)
 - owns_state: `_root_conduit`, `_root_conduit_id`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `create_object`, `destroy_object`, `return_lesser_conduit`, `root_conduit`, `root_conduit_id`
@@ -5779,7 +5781,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/spell_space/spell_space_pool.py
 
-- source_sha256: `a94d43b51830e427f0dad45ee9cd23e2a27636b499579941956547d432851339`
+- source_sha256: `29df107fa7447da60ea3c3c406d8aafba5f9a73659ce707e3357bc94e539ff09`
 - nodes: 2
 
 ### Nodes
@@ -5802,7 +5804,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - responsibilities:
   - creates pooled SpellSpace instances for one owner conduit
   - reactivates or acquires spellspaces for managed and manual paths
-  - returns or destroys spellspaces according to fixed-capacity idle policy
+  - keeps returned spellspaces up to the elastic target and destroys the oldest surplus; records a miss when it builds one (0.2.8234)
   - adopts the immediate owner's current local hook map at acquisition only when its divergence bool is set
   - sets a space's released flag on release and clears it on every acquisition
 - owns_state: `_owner_conduit_creations`, `_conduit_meld`, `_owner_conduit_id`, `_spellspace_registry`, `_spellspace_stack_state`
@@ -26417,7 +26419,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/utilities/general_base/abstract_elastic_pool.py
 
-- source_sha256: `6ad1b046eeb87da980c5d0982901c4d9d3345d446d38318f501ac6717a0a9898`
+- source_sha256: `b2d8e8c8b3c2ffecb1cca776a062b79fa5676670013f4905537a47fdcfe3aaf4`
 - nodes: 2
 
 ### Nodes
@@ -26437,12 +26439,14 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/utilities/general_base/abstract_elastic_pool.py:13`
 - extends: `Cleanable`
 - markers: `Generic`, `ABC`
-- role: Reusable bounded elastic object-pool base for expensive runtime shells.
+- role: Elastic object-pool base for expensive runtime shells: idle retention follows demand between a baseline and a ceiling.
 - responsibilities:
   - implements bounded acquire and release policy over one idle deque
-  - stretches and decays advisory idle targets under changing demand
+  - records a miss as pressure; under pressure a return past the baseline raises the target to the idle count (up to max_idle) and trims only past max_idle; once settled the target decays one step per interval with catch-up, never below the baseline (0.2.8234)
   - defines subclass hooks for object creation, preparation, and destruction
-- owns_state: `_baseline_idle`, `_target_idle`, `_max_idle`, `_idle`, `_in_use_count`, `_last_expand_at`, `_last_decay_at`
+  - keeps the within-baseline return to one append and compare, with no clock read and no lock
+  - trims the oldest surplus one decay step per return and destroys it outside the lock, re-pooling the rest of a trim when a destroy raises; a fixed-capacity pool evicts one per return without the clock
+- owns_state: `_baseline_idle`, `_target_idle`, `_max_idle`, `_idle`, `_in_use_count`, `_last_miss_at`, `_next_decay_at`, `_decay_step`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `acquire`, `baseline_idle`, `cleanup`, `create_object`, `describe`, `destroy_object`, `idle_count`, `in_use_count`, `max_idle`, `prepare_object`, `release`, `target_idle`
 
