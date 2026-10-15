@@ -93,9 +93,9 @@ Message format (mailbox mode only; append-only, delete after consumption)
 | knowledge_expert_0 | codex | 2026-09-13T18:03:36Z | 2026-09-13T18:18:14Z | stale |
 | muse | opencode | 2026-09-20T23:16:22Z | 2026-09-21T00:16:57Z | stale |
 | updater_1 | codex | 2026-09-22T22:42:07Z | 2026-09-26T22:19:19Z | departed |
-| melder_0 | claude | 2026-09-26T22:24:06Z | 2026-10-01T20:34:16Z | active |
-| melder_1 | claude | 2026-09-26T17:46:30Z | 2026-10-12T20:54:12Z | active |
-| fable_0 | claude | 2026-09-25T21:08:55Z | 2026-10-02T14:51:50Z | active |
+| melder_0 | claude | 2026-09-26T22:24:06Z | 2026-10-15T00:11:26Z | active |
+| melder_1 | claude | 2026-09-26T17:46:30Z | 2026-10-14T23:55:59Z | active |
+| fable_0 | claude | 2026-09-25T21:08:55Z | 2026-10-14T22:58:09Z | active |
 | melder_2 | claude | 2026-09-26T15:14:40Z | 2026-09-26T23:03:04Z | active |
 | seo_0 | codex | 2026-09-26T22:22:03Z | 2026-09-27T14:29:31Z | departed |
 | muse_0 | opencode | 2026-09-27T15:41:12Z | 2026-09-27T15:41:12Z | active |

@@ -162,7 +162,8 @@ class TransferOfOwnership(Cleanable):
 
         The constructor captures both the source/target endpoints and the
         policy choices that define how aggressive the move should be. Those
-        options decide whether creations are carried forward or torn down,
+        options decide whether existing instances are carried to the target or
+        left out of the transfer (taken out of the source store, not disposed),
         whether owned dependencies move with the root lineage, whether existing
         shares are force-unshared or repointed, and whether impacted lineages
         should remain gated after the move so validation reruns before normal
@@ -173,8 +174,13 @@ class TransferOfOwnership(Cleanable):
             target_conduit: Conduit that should become the new owner.
             spell: Spell object, spell id, or `SpellIndex` identifying the
                 lineage to move.
-            move_creations: When true, transfer creation-side state to the
-                target instead of tearing it down.
+            move_creations: When true, move the lineage's instances from the
+                source conduit's store into the target's (`_move_creations`);
+                when false, take the active member's instances out of the
+                source store without moving or disposing them
+                (`_teardown_creations`). The public verbs default to True
+                (0.2.8239) and always pass the value; this constructor keeps
+                False as its own default for direct construction.
             include_dependencies: When true, transfer owned dependency lineages
                 with the root instead of requiring the target side to resolve
                 them independently.
@@ -1508,14 +1514,19 @@ class TransferOfOwnership(Cleanable):
         Rehome existing creation state onto the target conduit.
 
         This branch preserves runtime object continuity across ownership
-        transfer. Instead of destroying existing creations and forcing the new
-        owner to rebuild them later, it extracts the lineage's creation payload
+        transfer, and it is the public verbs' default (`move_creations=True`,
+        0.2.8239). Instead of leaving the existing instances behind and having
+        the new owner build its own, it extracts the lineage's creation payload
         from the source and restores that payload into the target conduit's
-        `Creations` store. This applies only to conduit-owned creation state;
-        spellspace-local request objects are intentionally excluded because
-        their lifetime is owned by the source spellspace request surface, not
-        by conduit ownership transfer. A rollback handler is then registered so
-        the payload can be put back if a later transfer step fails.
+        `Creations` store, so a `unique` stays one object and a holder's row
+        carries the `many` children recorded with it (0.2.8238). The restore
+        replaces whatever the target store already holds under a member id;
+        the replaced instances are not disposed. This applies only to
+        conduit-owned creation state; spellspace-local request objects are
+        intentionally excluded because their lifetime is owned by the source
+        spellspace request surface, not by conduit ownership transfer. A
+        rollback handler is then registered so the payload can be put back if
+        a later transfer step fails.
 
         Args:
             spell_obj: Spell whose existing creations should follow the new
@@ -1545,17 +1556,22 @@ class TransferOfOwnership(Cleanable):
 
     def _teardown_creations(self, spell_obj: Any) -> None:
         """
-        Remove source-side creation state instead of preserving it on the
-        target.
+        Take the active member's instances out of the source store without
+        moving them.
 
-        This is the destructive transfer posture. It is used when the caller
-        wants ownership to move but does not want live creation objects to be
-        carried across with it. The extracted payload is still kept for rollback
-        so a failed transfer can restore the pre-transfer runtime state.
+        This is the `move_creations=False` posture, which a caller chooses
+        explicitly: ownership moves, the existing instances do not (the public
+        verbs default to moving them, 0.2.8239). The extracted payload is kept
+        only for this transfer's rollback, so a failed transfer restores the
+        pre-transfer runtime state; on success it is dropped, so the instances
+        are neither moved nor disposed and Melder stops tracking them. The
+        target builds its own on its next meld - for a `unique`, a second
+        instance beside any that the application or other objects still hold.
+        Parked members' instances stay in the source store.
 
         Args:
-            spell_obj: Spell whose current creations should be torn down rather
-                than migrated.
+            spell_obj: Spell whose active member's instances leave the source
+                store.
         """
         self.check_cleaned()
         try:

@@ -9,4 +9,4 @@ Contract:
   negotiation or runtime compatibility checks by itself.
 """
 
-__version__ = "0.2.8234"
+__version__ = "0.2.8240"

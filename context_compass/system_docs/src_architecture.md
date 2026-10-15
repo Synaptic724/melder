@@ -5,7 +5,7 @@
 - Status: in_progress
 - Owner:
 - Created: 2026-01-17
-- Updated: 2026-10-12
+- Updated: 2026-10-14
 
 ## Scope and Intent
 This document describes the Melder core architecture at the C4 level for
@@ -519,6 +519,33 @@ contracted borrowers are not fanned out, so a notch on a shared index does not
 yet update borrowers' contracted maps.
 EVIDENCE: src/melder/aether/spellbook/spellbook.py:3757-4192 (the three seams, remeasured 2026-09-30).
 
+## Runtime Model: Structure Is the Contract
+
+Owner ruling (2026-10-14). Melder is a runtime that agents work inside, not a container that owns every object it
+hands out. An agent loads its world into the Python runtime and iterates there: it binds a tool, melds it in a
+conduit, tries it, binds a new version and notches to the one it wants, tears scopes down, records the blueprint and
+builds the next thing - sometimes the subsystem it is working in. Codegen is iterative, so the iteration happens in
+the runtime, not outside it.
+
+What must be correct is the structure: bindings, spell indexes and their versions, which conduit owns which spell,
+contracts and links, lineage and clusters, verdicts, and the record the Crystallizer keeps of them. That is what
+Melder validates, gates, records and restores; a restore rebuilds structure with fresh identities and no saved
+application objects.
+
+Generated objects are working material. An object may be superseded by a newer version, left pending after a
+transfer or a contract change, or kept by application code after Melder lets go of it, and agents clean such objects
+up when they choose. Melder's infrastructure cleans up its own state: a store disposes what it records when it ends,
+a scope teardown ends its stores, and a purge disposes what it retires. It does not police userland objects: it does
+not dispose an object because something else changed (a transfer, a contract change, a removed definition), and an
+object it lets go of is not a leak. A transfer hands over stewardship, not a working setup (Sequence: Transfer Spell
+Ownership).
+
+So a defect is structure that is wrong or stuck: a record that names the wrong owner, so the wrong teardown disposes
+an object (a cluster's shared object recorded in its leader's store, a moved holder's `many` children left in the old
+root's store), or state an agent cannot get past (a torn-down root still recorded in its cluster). An object that
+still references something its owner has since disposed - after a transfer, a contract change or a teardown - is
+pending work for the agent, not a defect.
+
 ## Entrypoints and Runtime Guardrails
 - `melder/__init__.py` warns on Python < 3.14 and on GIL-enabled builds
   via `_detect_nogil_mode()`.
@@ -731,6 +758,8 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:3757-4192 (the three seams, r
    unique); the store lock is only taken as a leaf around publication (2026-09-25).
    The door takes that lock once: for a per-conduit or SpellSpace root, the normal site plan it calls
    does not take the root's lock again (0.2.73).
+   A slotted site's disposal-bearing `many` children are registered in that site's store, with the
+   holder's owner, not in the meld's innermost scope (0.2.8235).
 5. A meld that would construct a spell without one of its unresolved inputs raises `UnresolvedInputError`
    naming the consumer, parameter, expected type and override keys, before anything under it is built
    (2026-09-26).
@@ -799,10 +828,17 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:3757-4192 (the three seams, r
 2. `TransferOfOwnership.preflight()` captures borrowers, deps, creations.
 3. `TransferOfOwnership.execute()`:
    - Marks lineage disabled (transfer_in_progress) and flips registries under lock.
-   - Moves or tears down creations.
+   - With `move_creations=True` (the default since 0.2.8239) moves the source store's instances of every index
+     member into the target's store, a holder's adopted `many` children with it (0.2.8238); with `False` takes
+     the active member's instances out of the source store, neither moved nor disposed. Lineage instances stay
+     where they were resolved. A transfer disposes nothing.
    - Unshares or repoints contracts/clusters.
    - Optionally transfers or dirties dependencies.
    - Marks lineage dirty/gated for revalidation.
+4. The target receives stewardship, not a working setup (0.2.8240). The spells the transferred one depends on
+   stay with the source unless `include_dependencies` moves the direct ones, so once the source tears down, a
+   moved instance can hold dependencies that were just disposed; the target purges what it does not want, binds
+   what it needs (`UnresolvedInputError` names each missing input) and melds its own version.
 
 ### Sequence: SpellIndex Mutation Entry
 1. Caller targets one live SpellIndex member through `Conduit.notch_spell(...)`,
@@ -920,6 +956,82 @@ each entry in `src_components.md`; this list is the set that crosses components.
 - Validation strategies registered in `SpellValidationSystem`.
 
 ## Operational Invariants
+- Ownership transfer moves by default and disposes nothing (2026-10-14, 0.2.8239-0.2.8240, owner ruling):
+  `Conduit.transfer_spell_ownership` and `ConduitWard._transfer_spell_ownership` default to `move_creations=True`, so
+  `TransferOfOwnership._move_creations` extracts every index member's entries from the source root's store and
+  restores them into the target's - a `unique` stays one object and a holder's adopted children travel in its row -
+  while `move_creations=False` (`_teardown_creations`) takes the active member's entries out and keeps them only for
+  the transfer's rollback. A moved entry replaces what the target's store holds under that id, undisposed; lineage
+  instances stay where they were resolved; spellspace and cluster instances are not in a conduit store. No step of a
+  transfer disposes anything, and it hands over stewardship, not a working setup: the spells the transferred one
+  depends on stay with the source unless `include_dependencies` moves the direct ones, so once the source tears down
+  the target purges what it does not want, binds what it needs and melds its own version. `TransferOfOwnership`'s own
+  constructor keeps `move_creations=False`; the public verbs always pass the value.
+  EVIDENCE: `src/melder/aether/conduit/conduit.py:Conduit.transfer_spell_ownership`,
+  `src/melder/aether/conduit/conduit_ward/conduit_ward.py:ConduitWard._transfer_spell_ownership`,
+  `src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py:TransferOfOwnership.execute`,
+  `TransferOfOwnership._move_creations` and `TransferOfOwnership._teardown_creations`.
+- Holder records (2026-10-14, 0.2.8238): a slotted holder's disposal-bearing `many` children are recorded with the
+  holder. Right after a miss publishes holder i, under its build lock, it calls `c{i}.adopt_children(sid{i}, v{i},
+  ((sidK, vK), ...))`, and `Creations.adopt_children` moves those children out of their spells' `many` buckets into
+  the holder's `HolderDisposalEntry` (a holder without disposal methods gets one with `methods=[]`); a child is in
+  exactly one place. Every store verb keyed by the holder reaches its children with one dict read: purging the holder
+  disposes it, then its children newest first; `extract_spell_creations` / `restore_spell_creations` carry them, so an
+  ownership move takes them along; whole-store disposal runs the holder's methods, then its children's. A `many` purge
+  or live-creation probe of the child's spell counts only children no holder adopted. The store lock stays a leaf,
+  adoption is cold-path only, and every warm `_site_plan_executor` body is byte-identical (emission 0.2.8235 ->
+  0.2.8240: the only change is the adoption line in the misses).
+  EVIDENCE: `src/melder/aether/conduit/creations/creations.py:HolderDisposalEntry`, `Creations.adopt_children`,
+  `Creations.purge`, `Creations.extract_spell_creations`, `Creations.restore_spell_creations` and
+  `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:SitePlanEmission._emit_miss`.
+- The cluster owns its team store (2026-10-14, 0.2.8237): `ConduitCluster._team_store` is a `Creations` the cluster
+  owns (owner and scope id the cluster id). `bind_elected_leader` binds every member root's `ClusterCreations` facade
+  to it with the elected leader's id, which is the purge authority (`ConduitMeld._get_purge_creations`), and a root
+  that joins while a leader is elected is bound the same way (`bind_member`); unelect, a leader's leave and a
+  leader's teardown unbind the facades and keep the store, so the next election serves the same instances. The
+  cluster's cleanup - `ConduitCloud.delete_cluster`, or the cloud's cleanup in frame teardown - disposes the store
+  once; `delete_cluster` raises its disposal failures after the cluster is deleted, and frame teardown logs them.
+  While no leader is elected `resolved_store()` raises, as before.
+  EVIDENCE: `src/melder/aether/conduit/conduit_cluster.py:ConduitCluster.bind_elected_leader`,
+  `ConduitCluster.bind_member`, `ConduitCluster.cleanup`,
+  `src/melder/aether/conduit/creations/cluster_creations.py:ClusterCreations.resolved_store`,
+  `src/melder/aether/aetheric_frame/conduit_cloud.py:ConduitCloud.delete_cluster` and
+  `src/melder/aether/aetheric_frame/aetheric_frame.py:AethericFrame._cleanup_data_structures`.
+- A root's teardown leaves its cluster (2026-10-14, 0.2.8236): `Conduit._cleanup_normal_conduit` first calls
+  `_leave_cluster_for_teardown`, which finds the root's cluster through the frame's DevOps conduit->cluster index (one
+  keyed read; membership is exclusive) and, while the frame is live, runs `ConduitCluster.release_member`: unelect
+  first when the root leads, then one CLUSTER_LEAVE transaction that leaves `members` and unshares both directions
+  while the share record is still present, then `remove_member`. During frame teardown, when no transaction can
+  start, or when the exit raises (logged), `ConduitCluster.drop_member` makes the same changes without transactions
+  (unbind the leader's facades, remove the membership, unbind its own facade; the ward's cleanup severs its
+  contracts). `ConduitCloud.remove_conduit_from_cluster` takes the same ordered exit, so a leaver's shared roots no
+  longer stay contracted to the remaining members, and `get_clusters_for_conduit` answers from the membership index
+  through the cloud's `_cluster_names_by_id` map. No meld path changes.
+  EVIDENCE: `src/melder/aether/conduit/conduit.py:Conduit._leave_cluster_for_teardown`,
+  `Conduit._cleanup_normal_conduit`, `src/melder/aether/conduit/conduit_cluster.py:ConduitCluster.release_member`,
+  `ConduitCluster.drop_member`,
+  `src/melder/aether/aetheric_frame/conduit_cloud.py:ConduitCloud.remove_conduit_from_cluster` and
+  `ConduitCloud.get_clusters_for_conduit`.
+- Holder-owned many children (2026-10-14, 0.2.8235): a disposal-bearing `many` child built for a slotted holder is
+  recorded in, and disposed with, the store that owns the holder - the Spell owner's for `unique`, the conduit's for
+  `unique_per_conduit`, the space's for `unique_per_spell_space`, the lineage root's, the cluster's team
+  store (0.2.8237; the elected leader's own store before).
+  The site plan builds such a child only inside its holder's first build (`_miss{i}`) and registers it in that
+  site's store `c{i}`; a `many` root and its own `many` children still register in the meld's innermost scope (the
+  spellspace store, else the melding conduit's). Through 0.2.8234 every child registered in the innermost scope,
+  so a lesser's pool return, a spellspace exit, or a borrowing root's or cluster member's teardown ran its disposal
+  while the holder, owned elsewhere, kept handing it out. Children are built before the site's build lock and
+  `register_many` stays a leaf, so no lock or lock-order edge is added and every warm `_site_plan_executor` body
+  is unchanged; a lost cold race's children stay in the holder's store until it is disposed. Purge semantics
+  changed in 0.2.8238 (Holder records, above): purging a holder disposes its children too. The opt-in singleton
+  specializer, whose straight-line body would rebuild a captured holder's child on every warm meld, declines
+  graphs in which a `many` step feeds a non-`many` step and
+  keeps the plain door. Plans are emitted at hydration from manifest rows, so no cache generation or record
+  format moves.
+  EVIDENCE: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:SitePlanEmission._emit_context`,
+  `SitePlanEmission._emit_many`, `SitePlanEmission._emit_miss`,
+  `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_no_overrides_compiler.py:rows_feed_many_into_non_many_step`
+  and `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_hydrator.py:_install_specializing_door`.
 - Elastic pool retention (2026-10-12, 0.2.8234): the kernel pools keep what demand needed and let it go when demand
   falls. Every conduit's `SpellSpacePool` and every normal root's `ConduitPool` are built with `baseline_idle` 20 and
   `max_idle` 256. A miss always builds (live objects are never capped) and records pressure (`_note_miss`); a return
@@ -1649,6 +1761,43 @@ each entry in `src_components.md`; this list is the set that crosses components.
   not the same thing as a Rift-level event orchestrator.
 
 ## Failure Modes and Error Paths
+- A transfer's new owner can start out broken, by design (documented in 0.2.8240): once the source tears down, a
+  moved instance may hold dependencies the source disposed, and a meld that must build the spell again without them
+  raises `UnresolvedInputError` naming each missing input ("<Spell>.<param> expects <Type>, but nothing registered
+  provides it and this meld did not supply it. ... or bind a provider for <Type>."). Bind the providers (or transfer
+  with `include_dependencies=True`) and meld again.
+  EVIDENCE: `src/melder/aether/conduit/conduit.py:Conduit.transfer_spell_ownership` and
+  `src/melder/utilities/custom_exceptions/unresolved_input_error.py:UnresolvedInputError`.
+- Breaking (0.2.8239): `transfer_spell_ownership` defaults to `move_creations=True`. Pass `False` for the old
+  behaviour: the active member's instances leave the source store, neither moved nor disposed, and the target builds
+  its own - for a `unique`, a second instance.
+  EVIDENCE: `src/melder/aether/conduit/conduit.py:Conduit.transfer_spell_ownership`.
+- Purging a holder disposes the `many` children built for it, after it, and raises their disposal failures with its
+  own; through 0.2.8237 they stayed registered and open until their store ended. An ownership move carries them;
+  through 0.2.8237 the old root's teardown disposed them under the moved holder (0.2.8238).
+  EVIDENCE: `src/melder/aether/conduit/creations/creations.py:Creations.purge` and `Creations.extract_spell_creations`.
+- A cluster's shared object survives a leader change and is disposed once, by the cluster's deletion or its frame's
+  teardown (0.2.8237); `delete_cluster` raises ExceptionGroup "Conduit cluster cleaned with disposal failures." after
+  deleting the cluster. Through 0.2.8236 a leader change built a second object and the old leader's teardown disposed
+  the first while members still used it.
+  EVIDENCE: `src/melder/aether/conduit/conduit_cluster.py:ConduitCluster.cleanup` and
+  `src/melder/aether/aetheric_frame/conduit_cloud.py:ConduitCloud.delete_cluster`.
+- A torn-down root no longer stays in its cluster (0.2.8236): through 0.2.8235 `unelect_leader()` then failed
+  part-way, `elect_leader()` refused because the dead leader was still recorded, adding a conduit raised, and
+  `delete_cluster()` removed the cluster and then raised before cleaning it up; an explicit leave left the leaver's
+  roots contracted to every remaining member.
+  EVIDENCE: `src/melder/aether/conduit/conduit.py:Conduit._leave_cluster_for_teardown` and
+  `src/melder/aether/conduit/conduit_cluster.py:ConduitCluster.release_member`.
+- A disposal-bearing `many` child of a slotted holder is no longer disposed while its holder is still in use (fixed
+  in 0.2.8235). A `unique` holder first melded through a lesser, in a root spellspace or in a lesser's spellspace
+  (also as the dependency of a per-conduit consumer melded in a lesser, and by an override meld through a lesser),
+  a `unique_per_conduit` holder first melded in a spellspace, a lineage holder first melded through a lesser or in
+  a root spellspace, a borrowed `unique` first melded by its borrower and a cluster holder first melded by a member
+  each had the child's disposal methods run when that scope ended (pool return, spellspace exit, borrower or member
+  teardown), and the holder kept returning the disposed child. The child is now disposed when the holder's
+  owner's store is.
+  EVIDENCE: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:SitePlanEmission._emit_context`
+  and `tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py`.
 - A direct `Spell.cleanup()` no longer hangs against a concurrent teardown or conjure of its Spellbook (fixed in
   0.2.8233): the call held the spell lock while it waited for the Book lock, and root, Spellbook or frame teardown, or a
   conjure, held the Book lock while it waited for the spell lock. A direct call racing its Book's teardown now returns
@@ -2376,11 +2525,13 @@ SpellCompiler and validation:
   note: DI shape classification.
 - path: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py`
   start_line: 1
-  end_line: 1588
-  loc: 1588
-  verified_at: 2026-10-03T22:12:00Z
+  end_line: 1666
+  loc: 1666
+  verified_at: 2026-10-14T23:59:35Z
   note: key-set plan lowering: site graph from steps, placement, emission, call shape; an automatic
-    world's `unique` sites read their owner store as a plan constant (0.2.8221).
+    world's `unique` sites read their owner store as a plan constant (0.2.8221); a shared site's
+    `many` children register in that site's store (0.2.8235) and its miss records them with the holder
+    (`adopt_children`, 0.2.8238).
 - path: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_override_runtime.py`
   start_line: 1
   end_line: 405
@@ -2520,10 +2671,11 @@ Aether and frames:
   note: expanded from the directory entry `src/melder/mutation_research/research_set/`
 - path: `src/melder/aether/aetheric_frame/aetheric_frame.py`
   start_line: 1
-  end_line: 1296
-  loc: 1296
-  verified_at: 2026-10-11T18:42:56Z
-  note: per-frame state and control plane; cleanup-safe probes, the frame lock kept after cleanup (0.2.8231).
+  end_line: 1307
+  loc: 1307
+  verified_at: 2026-10-14T23:59:35Z
+  note: per-frame state and control plane; cleanup-safe probes, the frame lock kept after cleanup (0.2.8231);
+    frame teardown logs the cloud's cluster disposal failures (0.2.8237).
 
 Aetheric mediator plane (WIRED - FRAME_CREATE LIVE, held by Aether):
 
@@ -2867,16 +3019,24 @@ Aetheric mediator plane (WIRED - FRAME_CREATE LIVE, held by Aether):
   note: room-event publisher for codegen lifecycle signals.
 - path: `src/melder/aether/aetheric_frame/conduit_cloud.py`
   start_line: 1
-  end_line: 1051
-  loc: 1051
-  verified_at: 2026-09-27T11:46:59Z
-  note: dynamic conduit registry.
+  end_line: 1103
+  loc: 1103
+  verified_at: 2026-10-14T23:59:35Z
+  note: dynamic conduit registry; explicit leaves take the cluster's ordered exit, cluster lookups read the
+    membership index (0.2.8236), `delete_cluster` raises disposal failures after deleting (0.2.8237).
 - path: `src/melder/aether/conduit/conduit_cluster.py`
   start_line: 1
-  end_line: 1344
-  loc: 1344
-  verified_at: 2026-08-02T13:00:45Z
-  note: cluster auto-sharing.
+  end_line: 1516
+  loc: 1516
+  verified_at: 2026-10-14T23:59:35Z
+  note: cluster auto-sharing; the ordered leave (0.2.8236) and the team store the cluster owns (0.2.8237).
+- path: `src/melder/aether/conduit/creations/cluster_creations.py`
+  start_line: 1
+  end_line: 301
+  loc: 301
+  verified_at: 2026-10-14T23:59:35Z
+  note: a member root's facade over the cluster's team store; the elected leader's id is the purge
+    authority (0.2.8237).
 
 Introspection and tooling:
 
@@ -2909,12 +3069,14 @@ Conduit runtime:
 
 - path: `src/melder/aether/conduit/conduit.py`
   start_line: 1
-  end_line: 7188
-  loc: 7188
-  verified_at: 2026-10-12T20:34:01Z
+  end_line: 7302
+  loc: 7302
+  verified_at: 2026-10-14T23:59:35Z
   note: conduit lifecycle and meld facade; `cleanup_spell` emits the index destroy the Book reports (0.2.8231);
     `find_contracted_spell` and `inspect_spell` take no conduit lock (0.2.8232); builds its SpellSpacePool and a
-    root's ConduitPool elastic, baseline 20 / max 256 (0.2.8234).
+    root's ConduitPool elastic, baseline 20 / max 256 (0.2.8234); a root's teardown leaves its cluster first
+    (0.2.8236); `transfer_spell_ownership` defaults to `move_creations=True` (0.2.8239) and documents the
+    handover (0.2.8240).
 - path: `src/melder/aether/conduit/conduit_pool.py`
   start_line: 1
   end_line: 165
@@ -2929,9 +3091,9 @@ Conduit runtime:
   note: conduit state enum.
 - path: `src/melder/aether/conduit/conduit_ward/conduit_ward.py`
   start_line: 1
-  end_line: 3952
-  loc: 3952
-  verified_at: 2026-10-11T18:42:56Z
+  end_line: 3957
+  loc: 3957
+  verified_at: 2026-10-14T23:59:35Z
   note: contracts and lineage; owner-side emissions under the ward lock, contract reads under the contract
     lock, the listing resolved through the Book (0.2.8231).
 - path: `src/melder/aether/conduit/conduit_ward/policies/policies.py`
@@ -2948,10 +3110,10 @@ Conduit runtime:
   note: permission enum.
 - path: `src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py`
   start_line: 1
-  end_line: 2001
-  loc: 2001
-  verified_at: 2026-10-11T15:21:03Z
-  note: ownership transfer.
+  end_line: 2017
+  loc: 2017
+  verified_at: 2026-10-14T23:59:35Z
+  note: ownership transfer; moves by default and disposes nothing (0.2.8239).
 
 Resolution and creations:
 
@@ -2981,10 +3143,11 @@ Resolution and creations:
   note: SpellContract descriptor; keeps binding_name as written (0.2.8226).
 - path: `src/melder/aether/conduit/creations/creations.py`
   start_line: 1
-  end_line: 1343
-  loc: 1343
-  verified_at: 2026-10-02T17:50:04Z
-  note: instance registry; `ManyDisposalBucket` and `register_many` (0.2.8216).
+  end_line: 1592
+  loc: 1592
+  verified_at: 2026-10-14T23:59:35Z
+  note: instance registry; `ManyDisposalBucket` and `register_many` (0.2.8216); `HolderDisposalEntry` and
+    `adopt_children` (0.2.8238).
 - path: `src/melder/aether/conduit/creations/conduit_creations.py`
   start_line: 1
   end_line: 134
@@ -2995,7 +3158,7 @@ Resolution and creations:
   start_line: 1
   end_line: 792
   loc: 792
-  verified_at: 2026-09-27T23:41:28Z
+  verified_at: 2026-10-14T23:59:35Z
   note: spellspace scoping; lease flag and finished exits.
 - path: `src/melder/aether/conduit/spell_space/spell_space_pool.py`
   start_line: 1
@@ -3443,6 +3606,7 @@ without rewriting the original record or existing live IDs.
 - `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_override_runtime.py`
 - `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/override_key_resolver.py`
 - `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_hydrator.py`
+- `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_no_overrides_compiler.py`
 - `src/melder/utilities/helpers/signature_reflection.py`
 - `src/melder/utilities/custom_exceptions/unresolved_input_error.py`
 - `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py`
@@ -3546,6 +3710,8 @@ without rewriting the original record or existing live IDs.
 - `src/melder/nexus/rift/command_system/codegen_command_system.py`
 - `src/melder/aether/conduit/conduit.py`
 - `src/melder/aether/conduit/conduit_cluster.py`
+- `src/melder/aether/conduit/creations/cluster_creations.py`
+- `src/melder/aether/aetheric_frame/conduit_cloud.py`
 - `src/melder/aether/conduit/creations/creations.py`
 - `src/melder/aether/conduit/conduit_ward/conduit_ward.py`
 - `src/melder/aether/conduit/spell_space/spell_space.py`
@@ -3580,6 +3746,24 @@ without rewriting the original record or existing live IDs.
 - `src/melder/utilities/ai_native_support_tools/protocol_crafter.py`
 
 ## Context / Handoff Summary
+
+2026-10-14 slotted lifetimes and the runtime model (0.2.8236-0.2.8240): the new section "Runtime Model: Structure
+Is the Contract" records the owner's ruling - correctness lives in the structure; generated objects are working
+material agents iterate on, leave pending and clean up; Melder's infrastructure cleans up its own state, not
+userland objects. A root's teardown leaves its cluster (0.2.8236), the cluster owns its team store (0.2.8237), a
+holder's `many` children are recorded with it (0.2.8238), and a transfer moves by default, disposes nothing
+(0.2.8239) and hands over stewardship, not a working setup (0.2.8240). The transfer sequence, the operational
+invariants, the failure modes and the code map carry it; the component map carries the per-component rules, and
+the 0.2.8235 invariant's cluster-store and purge sentences point at the newer entries. Contract invalidation (a
+retired consumer leaves the root's store undisposed; lessers keep theirs) is intended behaviour by the same ruling
+and is not listed as a failure.
+
+2026-10-14 holder-owned many children (0.2.8235): a slotted holder's disposal-bearing `many` children register in
+the holder's store (the site's `c{i}`) instead of the meld's innermost scope, so a lesser, spellspace, borrower or
+cluster member that first melded the holder no longer disposes them under it; the opt-in specializer declines
+graphs that feed a `many` step into a non-`many` step. The meld sequence, the operational invariants, the failure
+modes, the code map and the sources carry it; the component map carries the emission rule, the store selection
+and the live-creation probe.
 
 2026-10-12 elastic pool retention (0.2.8234): the kernel pools keep what a burst needed, up to 256, and decay back to
 20 once no miss has happened for 30 minutes - a miss records pressure, a return above 20 idle stretches, decays (with

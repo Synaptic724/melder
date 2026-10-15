@@ -1,0 +1,8 @@
+# PYTHON_GIL=0 2026-10-14T18:20:49Z
+........................................................................ [ 94%]
+....                                                                     [100%]
+76 passed in 1.05s
+# PYTHON_GIL=1 2026-10-14T18:20:54Z
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+76 passed, 1 warning in 1.04s

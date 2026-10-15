@@ -5,6 +5,7 @@ from melder.aether.spellbook.existence.existence import Existence
 
 if TYPE_CHECKING:
     from melder.aether.conduit.creations.conduit_creations import ConduitCreations
+    from melder.aether.conduit.creations.creations import Creations
     from melder.aether.conduit.creations.cluster_creations import ClusterCreations
     from melder.aether.spellbook.spellbook import Spellbook
     from melder.aether.spellbook.spell import Spell
@@ -23,8 +24,9 @@ class ConduitMeld(Meld):
           `unique_per_conduit` and `many` storage.
         - Uses the shared store each broad-lived existence names: the Spell
           owner's `owner_creations` for `unique`, the lineage-root store
-          (`_root_creations`) for `unique_per_conduit_lineage`, and the elected
-          leader's store (`_cluster_creations.resolved_store()`) for
+          (`_root_creations`) for `unique_per_conduit_lineage`, and the
+          cluster's team store (`_cluster_creations.resolved_store()`, served
+          while the cluster has an elected leader) for
           `unique_per_conduit_cluster`.
         - Rejects `requires_spellspace_request` spells because the conduit door
           is not allowed to fabricate request-local spellspace scope.
@@ -69,7 +71,7 @@ class ConduitMeld(Meld):
         existences (`unique_per_conduit`, `many`) use the conduit's own store,
         while broader-lived ones resolve against shared storage - the Spell
         owner's store for `unique`, the lineage root's for
-        `unique_per_conduit_lineage`, the elected leader's for
+        `unique_per_conduit_lineage`, the cluster's team store for
         `unique_per_conduit_cluster` - so peers in a cluster or lineage
         genuinely observe the same instance.
 
@@ -206,16 +208,20 @@ class ConduitMeld(Meld):
             creation=spell if not purge_all else None,
         )
 
-    def _get_purge_creations(self, spell: Spell) -> ConduitCreations:
+    def _get_purge_creations(self, spell: Spell) -> Creations:
         """
         Select and authorize the conduit store for one discovered definition.
 
         Contract:
             - Many and per-conduit lifetimes use this caller's local store.
             - Unique uses the Spell owner, lineage uses this lineage's root,
-              and cluster uses the currently elected leader's concrete store.
-            - Shared-store purge requires the actual `_conduit_id` to own that
-              store. A lesser's `_resolution_conduit_id` grants no authority.
+              and cluster uses the cluster's team store.
+            - Shared-store purge requires the actual `_conduit_id` to hold the
+              authority: to own the store for unique and lineage, and to be the
+              elected leader recorded on the cluster facade for cluster (the
+              team store belongs to the cluster, so its owner id is the
+              cluster's, 0.2.8237). A lesser's `_resolution_conduit_id` grants no
+              authority.
             - SpellSpace lifetime is refused even when a space is active.
             - Does not remove entries, take creation locks, or invoke callbacks.
 
@@ -223,7 +229,8 @@ class ConduitMeld(Meld):
             spell: Existing definition obtained through this door's discovery.
 
         Returns:
-            ConduitCreations: Existing store that this conduit may purge.
+            Creations: Existing store that this conduit may purge (a
+                `ConduitCreations` except for the cluster's team store).
 
         Raises:
             RuntimeError: If the lifetime is unsupported here, the cluster is
@@ -242,22 +249,29 @@ class ConduitMeld(Meld):
                 f"Cannot purge spell '{spell.spell_name}' from a conduit; "
                 "call purge on the specific SpellSpace."
             )
+        creations: Creations
         if existence is Existence.unique:
             creations = spell._owner_creations
             authority = "spell-owning conduit"
+            authority_conduit_id = creations.owner_conduit_id
         elif existence is Existence.unique_per_conduit_lineage:
             creations = self._root_creations
             authority = "lineage root conduit"
+            authority_conduit_id = creations.owner_conduit_id
         elif existence is Existence.unique_per_conduit_cluster:
+            # The team store belongs to the cluster (0.2.8237), so its owner id is
+            # the cluster's; the elected leader recorded on the facade holds the
+            # purge authority.
             creations = self._cluster_creations.resolved_store()
             authority = "elected cluster leader"
+            authority_conduit_id = self._cluster_creations.leader_conduit_id
         else:
             raise RuntimeError(f"Unsupported purge existence: {existence!r}.")
-        if self._conduit_id != creations.owner_conduit_id:
+        if self._conduit_id != authority_conduit_id:
             raise RuntimeError(
                 f"Cannot purge spell '{spell.spell_name}' ({spell.spell_id}) "
                 f"from conduit '{self._conduit_id}'; the {authority} "
-                f"'{creations.owner_conduit_id}' must call purge."
+                f"'{authority_conduit_id}' must call purge."
             )
         return creations
 
@@ -323,8 +337,8 @@ class ConduitMeld(Meld):
               conduit's `ConduitCreations`.
             - Routes broader-lived existences through their shared stores:
               the Spell owner's `owner_creations` for `unique`, the lineage
-              root for `unique_per_conduit_lineage`, the elected leader for
-              `unique_per_conduit_cluster`.
+              root for `unique_per_conduit_lineage`, the cluster's team store
+              for `unique_per_conduit_cluster`.
             - Reuses the shared validation, resolution, and hook machinery
               provided by `Meld`.
             - Warm id-string melds may take the guarded fast meld door: after
@@ -737,8 +751,8 @@ class ConduitMeld(Meld):
             - Rejects spellspace-request lineages on the conduit-facing door.
             - Reads caller-local conduit storage for `unique_per_conduit`, the
               Spell owner's `owner_creations` for `unique`, the lineage root for
-              `unique_per_conduit_lineage` and the elected leader for
-              `unique_per_conduit_cluster` (not live while none is elected).
+              `unique_per_conduit_lineage` and the cluster's team store for
+              `unique_per_conduit_cluster` (not live while no leader is elected).
 
         Args:
             spell_name:
@@ -839,8 +853,8 @@ class ConduitMeld(Meld):
             Existence.unique_per_conduit_lineage,
         }:
             # Only `unique` resolves into the binding owner's _owner_creations.
-            # cluster/lineage live in the meld-supplied store (elected leader /
-            # lineage-root), mirroring the front-door store selection above.
+            # cluster/lineage live in the meld-supplied store (cluster team store
+            # / lineage root), mirroring the front-door store selection above.
             if existence is Existence.unique:
                 store = target_spell._owner_creations
             elif existence is Existence.unique_per_conduit_lineage:
@@ -982,7 +996,7 @@ class ConduitMeld(Meld):
               reports 0.
             - `unique` reads the Spell owner's `owner_creations`;
               `unique_per_conduit_lineage` the lineage-root store;
-              `unique_per_conduit_cluster` the elected leader's store, and is
+              `unique_per_conduit_cluster` the cluster's team store, and is
               not live while no leader is elected.
             - spellspace-request spells never reach this helper because the
               conduit-facing door rejects them earlier.
@@ -1044,8 +1058,8 @@ class ConduitMeld(Meld):
             Existence.unique_per_conduit_lineage,
         }:
             # Only `unique` lives in the binding owner's _owner_creations.
-            # cluster/lineage live in the meld-supplied store (elected leader /
-            # lineage-root); a cluster with no elected leader is simply not live.
+            # cluster/lineage live in the meld-supplied store (cluster team store
+            # / lineage root); a cluster with no elected leader is simply not live.
             if existence is Existence.unique:
                 store = spell._owner_creations
                 storage_scope_kind = "owner_creations"
@@ -1063,6 +1077,9 @@ class ConduitMeld(Meld):
                     )
                     else None
                 )
+                # The label predates the team store (0.2.8237: the store is the
+                # cluster's, served while a leader is elected); it is kept because
+                # it is a published diagnostics value.
                 storage_scope_kind = "cluster_leader"
                 storage_owner_conduit_id = None
             creation = (

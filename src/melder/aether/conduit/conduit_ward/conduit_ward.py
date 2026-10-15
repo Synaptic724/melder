@@ -3762,7 +3762,7 @@ class ConduitWard(Cleanable):
             *,
             spell: Spell | str | SpellIndex,
             target_conduit: Conduit,
-            move_creations: bool = False,
+            move_creations: bool = True,
             include_dependencies: bool = False,
             force_unshare: bool = True,
             invalidate_after_transfer: bool = True,
@@ -3779,7 +3779,12 @@ class ConduitWard(Cleanable):
         Args:
             spell: Spell object, spell_id, or SpellIndex to transfer.
             target_conduit: The conduit that will become the new steward.
-            move_creations: If True, move creations; else tear them down at source.
+            move_creations: True (the default since 0.2.8239, as on
+                `Conduit.transfer_spell_ownership`) moves this conduit's stored
+                instances of every index member into the target's store with
+                the spell; False takes the active member's instances out of this
+                conduit's store without moving or disposing them. A transfer
+                never disposes anything.
             include_dependencies: If True, transfer owned dependencies as well.
             force_unshare: If True, strip all contracts/shares for this spell during transfer.
             invalidate_after_transfer: If True, mark lineage dirty after transfer.

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/meld/spellspace_meld.py",
- "source_sha256": "76fdebc208f912df89b2df6404a6db1ed93c6b36882376361d9fbf6fe2ac4422",
+ "source_sha256": "47fcd3edf4f8a4353fd6ab7cc7cddfa57d203c060822b95b81df5d56a2d4cdb9",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.meld.spellspace_meld": {
@@ -43,7 +43,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "3014f2a341446e50d9225380ec4333571e130a60d8108bbe5d53464a9ae2d541",
+   "span_sha256": "de9e3c768d8d964b1e1957cd700b90eff12e8efdf3ce50a01bd75590eec84f2c",
    "role": "Spellspace-facing meld front door.",
    "responsibilities": [
     "routes unique_per_spell_space storage through spellspace-local Creations, which also hold the disposal-bearing many objects melded through this door (the innermost scope)",

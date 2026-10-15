@@ -1,0 +1,23 @@
+def _miss0(meld, c0):
+    with spells[0]._lock:
+        v0 = c0._creations.get(sid0)
+        if v0 is None:
+            try:
+                v0 = t0()
+            except Exception as exc:
+                _raise_meld_construction_error(spells[0], exc)
+            c0.add_creation(sid0, v0, has_disposal_methods=True, disposal_methods=dm0)
+        return v0
+def _site_plan_executor(meld):
+    many_store = meld._spellspace_creations
+    if many_store is None:
+        many_store = meld._conduit_creations
+    v0 = c0._creations.get(sid0)
+    if v0 is None:
+        v0 = _miss0(meld, c0)
+    try:
+        v1 = t1(v0)
+    except Exception as exc:
+        _raise_meld_construction_error(spells[1], exc)
+    many_store.register_many(sid1, v1, dm1)
+    return v1

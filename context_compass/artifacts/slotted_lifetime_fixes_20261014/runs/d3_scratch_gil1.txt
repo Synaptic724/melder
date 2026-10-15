@@ -1,0 +1,10 @@
+tree | int_conduit | rc=0 | secs=3 | 301 passed in 3.35s
+tree | int_aether | rc=0 | secs=17 | 785 passed, 5 xfailed in 16.42s
+tree | comp_aether | rc=0 | secs=14 | 1352 passed, 1 xfailed in 13.89s
+tree | unit_aether | rc=0 | secs=15 | 4228 passed in 14.18s
+tree | unit_sb | rc=0 | secs=3 | 2355 passed in 3.53s
+tree | comp_sb | rc=0 | secs=9 | 819 passed in 8.61s
+tree | int_sb | rc=0 | secs=6 | 613 passed, 2 skipped, 2 xpassed in 5.35s
+tree | unit_cryst | rc=0 | secs=4 | 599 passed in 3.66s
+tree | comp_cryst | rc=0 | secs=0 | 110 passed in 0.38s
+tree | int_cryst | rc=0 | secs=70 | 273 passed, 3 xfailed in 69.95s (0:01:09)

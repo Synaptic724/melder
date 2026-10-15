@@ -1175,8 +1175,12 @@ def _make_facade_cluster(*conduits: _FacadeConduit) -> ConduitCluster:
     return _make_cluster("facade-cluster", registry=registry)
 
 
-def test_bind_member_binds_joiner_facade_to_leader_store() -> None:
-    """bind_member activates a joiner's facade and points it at the leader store."""
+def test_bind_member_binds_joiner_facade_to_the_team_store() -> None:
+    """bind_member activates a joiner's facade on the cluster's team store under the current leader.
+
+    Updated with 0.2.8237: the facade used to point at the leader conduit's own `_creations`; the store is now the
+    cluster's, and the facade records the leader as the conduit with purge authority.
+    """
     leader = _FacadeConduit("leader")
     joiner = _FacadeConduit("joiner")
     cluster = _make_facade_cluster(leader, joiner)
@@ -1185,7 +1189,9 @@ def test_bind_member_binds_joiner_facade_to_leader_store() -> None:
     cluster.bind_member(joiner)
 
     assert joiner._cluster_creations.is_active() is True
-    assert joiner._cluster_creations.resolved_store() is leader._creations
+    assert joiner._cluster_creations.resolved_store() is cluster._team_store
+    assert joiner._cluster_creations.resolved_store() is not leader._creations
+    assert joiner._cluster_creations.leader_conduit_id == leader._id
 
 
 def test_bind_member_is_noop_when_cluster_inert() -> None:
@@ -1211,8 +1217,12 @@ def test_bind_member_leaves_master_unchanged() -> None:
     assert cluster.master_conduit_id == leader._id
 
 
-def test_bind_member_binds_to_the_current_leader_store() -> None:
-    """bind_member resolves master_conduit_id, binding to the current leader."""
+def test_bind_member_records_the_current_leader() -> None:
+    """bind_member reads master_conduit_id: the joiner's facade names the current leader.
+
+    Updated with 0.2.8237: every leader serves the same team store, so the current leader shows in the facade's
+    leader id rather than in which conduit's store it fronts.
+    """
     leader_a = _FacadeConduit("leader-a")
     leader_b = _FacadeConduit("leader-b")
     joiner = _FacadeConduit("joiner")
@@ -1221,8 +1231,8 @@ def test_bind_member_binds_to_the_current_leader_store() -> None:
 
     cluster.bind_member(joiner)
 
-    assert joiner._cluster_creations.resolved_store() is leader_b._creations
-    assert joiner._cluster_creations.resolved_store() is not leader_a._creations
+    assert joiner._cluster_creations.resolved_store() is cluster._team_store
+    assert joiner._cluster_creations.leader_conduit_id == leader_b._id
 
 
 def test_bind_member_raises_after_cleanup() -> None:
@@ -1243,7 +1253,7 @@ def test_unbind_member_deactivates_bound_leaver_facade() -> None:
     leaver = _FacadeConduit("leaver")
     cluster = _make_facade_cluster(leader, leaver)
     cluster.master_conduit_id = leader._id
-    leaver._cluster_creations.bind(leader._creations)
+    leaver._cluster_creations.bind(cluster._team_store, leader._id)
 
     cluster.unbind_member(leaver)
 
@@ -1258,8 +1268,8 @@ def test_unbind_member_does_not_touch_master_or_other_members() -> None:
     leaver = _FacadeConduit("leaver")
     cluster = _make_facade_cluster(leader, leaver)
     cluster.master_conduit_id = leader._id
-    leader._cluster_creations.bind(leader._creations)
-    leaver._cluster_creations.bind(leader._creations)
+    leader._cluster_creations.bind(cluster._team_store, leader._id)
+    leaver._cluster_creations.bind(cluster._team_store, leader._id)
 
     cluster.unbind_member(leaver)
 
@@ -1270,13 +1280,13 @@ def test_unbind_member_does_not_touch_master_or_other_members() -> None:
 def test_unbind_member_is_unconditional_when_master_cleared() -> None:
     """unbind_member drops a still-bound facade even after the cluster dissolved.
 
-    Mirrors the leader-leave path: `unelect_leader` already cleared
-    master_conduit_id and the cloud removed the leader from `members`, so the
-    departed leader's own facade must still be dropped unconditionally.
+    Mirrors a late or repeated exit: the cluster was already unelected
+    (master_conduit_id cleared), and the departed member's own facade must still
+    be dropped unconditionally.
     """
     leaver = _FacadeConduit("leaver")
     cluster = _make_facade_cluster(leaver)
-    leaver._cluster_creations.bind(leaver._creations)
+    leaver._cluster_creations.bind(cluster._team_store, leaver._id)
     cluster.master_conduit_id = None
 
     cluster.unbind_member(leaver)
@@ -1302,4 +1312,195 @@ def test_unbind_member_raises_after_cleanup() -> None:
 
     with pytest.raises(RuntimeError):
         cluster.unbind_member(leaver)
+
+
+# ----------------------------------------------------------------------
+# Ordered exit (release_member) and the effect-only drop (drop_member), 0.2.8236
+# ----------------------------------------------------------------------
+def test_release_member_leaves_while_the_share_record_exists_then_drops_the_membership(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """release_member runs handle_leave first, while the leaver's share record exists, then remove_member.
+
+    Regression (0.2.8236): the cloud removed the membership first, which popped the share record the leave's unshare
+    reads, so the leaver's roots stayed contracted to every remaining member.
+    """
+    leaver = _FacadeConduit("leaver")
+    cluster = _make_facade_cluster(leaver)
+    cluster.add_member(leaver._id)
+    cluster.add_shared_spell(leaver._id, SpellIndex("spell-1"))
+    seen: list[tuple[str, bool]] = []
+
+    def record_leave(self: ConduitCluster, conduit: Any) -> None:
+        seen.append((conduit._id, conduit._id in self.shared_spells))
+
+    monkeypatch.setattr(ConduitCluster, "handle_leave", record_leave)
+
+    cluster.release_member(leaver)
+
+    assert seen == [("leaver", True)]
+    assert leaver._id not in cluster.get_members()
+    assert leaver._id not in cluster.get_shared_spells()
+    assert cluster._devops_information_registry.get_clusters_for_conduit(leaver._id) == ()
+
+
+def test_drop_member_of_the_elected_leader_leaves_the_cluster_inert() -> None:
+    """Dropping the elected leader unbinds every member facade, clears the leader and removes its membership."""
+    leader = _FacadeConduit("leader")
+    member = _FacadeConduit("member")
+    cluster = _make_facade_cluster(leader, member)
+    cluster.add_member(leader._id)
+    cluster.add_member(member._id)
+    cluster.bind_elected_leader(leader._id)
+
+    cluster.drop_member(leader)
+
+    assert cluster.master_conduit_id is None
+    assert cluster.get_members() == {member._id}
+    assert leader._cluster_creations.is_active() is False
+    assert member._cluster_creations.is_active() is False
+    assert cluster._devops_information_registry.get_clusters_for_conduit(leader._id) == ()
+
+
+def test_drop_member_of_a_member_keeps_the_leader_elected() -> None:
+    """Dropping a non-leader removes only that member and its facade; the leader stays elected."""
+    leader = _FacadeConduit("leader")
+    member = _FacadeConduit("member")
+    cluster = _make_facade_cluster(leader, member)
+    cluster.add_member(leader._id)
+    cluster.add_member(member._id)
+    cluster.bind_elected_leader(leader._id)
+
+    cluster.drop_member(member)
+
+    assert cluster.master_conduit_id == leader._id
+    assert cluster.get_members() == {leader._id}
+    assert leader._cluster_creations.is_active() is True
+    assert member._cluster_creations.is_active() is False
+
+
+def test_drop_member_is_idempotent_for_a_conduit_that_is_not_a_member() -> None:
+    """drop_member of a non-member, or a second drop, changes nothing and does not raise."""
+    leaver = _FacadeConduit("leaver")
+    cluster = _make_facade_cluster(leaver)
+    cluster.add_member(leaver._id)
+
+    cluster.drop_member(leaver)
+    cluster.drop_member(leaver)
+
+    assert cluster.get_members() == set()
+    assert leaver._cluster_creations.is_active() is False
+
+
+def test_drop_member_raises_after_cleanup() -> None:
+    """drop_member is guarded by check_cleaned after the cluster is cleaned."""
+    leaver = _FacadeConduit("leaver")
+    cluster = _make_facade_cluster(leaver)
+    cluster.cleanup()
+
+    with pytest.raises(RuntimeError):
+        cluster.drop_member(leaver)
+
+
+# ----------------------------------------------------------------------
+# The cluster's team store (0.2.8237)
+# ----------------------------------------------------------------------
+class _Closable:
+    """A team-store instance whose `close` counts its calls and can be told to fail."""
+
+    def __init__(self, fail: bool = False) -> None:
+        """Start unclosed."""
+        self.closes = 0
+        self.fail = fail
+
+    def close(self) -> None:
+        """Count one disposal; raise when told to fail."""
+        self.closes += 1
+        if self.fail:
+            raise RuntimeError("close failed")
+
+
+def test_bind_elected_leader_binds_every_member_to_the_cluster_team_store() -> None:
+    """Election binds every member facade to the store the cluster owns, under the leader's id."""
+    leader = _FacadeConduit("leader")
+    member = _FacadeConduit("member")
+    cluster = _make_facade_cluster(leader, member)
+    cluster.add_member(leader._id)
+    cluster.add_member(member._id)
+
+    cluster.bind_elected_leader(leader._id)
+
+    for conduit in (leader, member):
+        assert conduit._cluster_creations.resolved_store() is cluster._team_store
+        assert conduit._cluster_creations.leader_conduit_id == leader._id
+    assert cluster.master_conduit_id == leader._id
+
+
+def test_a_later_election_serves_the_same_team_store() -> None:
+    """Unelecting and electing another leader keeps the store, so its instances are served again, not rebuilt."""
+    leader = _FacadeConduit("leader")
+    member = _FacadeConduit("member")
+    cluster = _make_facade_cluster(leader, member)
+    cluster.add_member(leader._id)
+    cluster.add_member(member._id)
+    cluster.bind_elected_leader(leader._id)
+    instance = object()
+    member._cluster_creations.add_creation("spell-1", instance)
+
+    cluster.unbind_elected_leader()
+    cluster.bind_elected_leader(member._id)
+
+    assert member._cluster_creations.get_creation("spell-1") is instance
+    assert leader._cluster_creations.leader_conduit_id == member._id
+
+
+def test_bind_elected_leader_refuses_an_unresolvable_leader() -> None:
+    """Electing a conduit the frame registry does not hold raises and leaves the cluster inert."""
+    member = _FacadeConduit("member")
+    cluster = _make_facade_cluster(member)
+    cluster.add_member(member._id)
+
+    with pytest.raises(RuntimeError, match="could not be resolved"):
+        cluster.bind_elected_leader("missing")
+
+    assert cluster.master_conduit_id is None
+    assert member._cluster_creations.is_active() is False
+
+
+def test_cleanup_disposes_the_team_store_once() -> None:
+    """Cleaning the cluster runs its instances' disposal methods once; a second cleanup does nothing."""
+    cluster = _make_cluster("team")
+    instance = _Closable()
+    cluster._team_store.add_creation(
+        "spell-1", instance, has_disposal_methods=True, disposal_methods=["close"]
+    )
+
+    cluster.cleanup()
+    cluster.cleanup()
+
+    assert instance.closes == 1
+    assert cluster.cleaned is True
+
+
+def test_cleanup_raises_team_store_disposal_failures_after_finishing() -> None:
+    """A failing disposal method is raised as one ExceptionGroup after the cluster is fully cleaned."""
+    cluster = _make_cluster("team")
+    cluster.add_member("conduit-1")
+    failing = _Closable(fail=True)
+    healthy = _Closable()
+    cluster._team_store.add_creation(
+        "spell-1", failing, has_disposal_methods=True, disposal_methods=["close"]
+    )
+    cluster._team_store.add_creation(
+        "spell-2", healthy, has_disposal_methods=True, disposal_methods=["close"]
+    )
+    registry = cluster._devops_information_registry
+
+    with pytest.raises(ExceptionGroup, match="Conduit cluster cleaned with disposal failures."):
+        cluster.cleanup()
+
+    assert cluster.cleaned is True
+    assert failing.closes == 1
+    assert healthy.closes == 1
+    assert registry.get_clusters_for_conduit("conduit-1") == ()
 

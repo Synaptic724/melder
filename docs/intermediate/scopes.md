@@ -131,7 +131,7 @@ purge or normal scope cleanup. The same options work on `SpellSpace`.
 | `unique` | The spell's owning conduit |
 
 A spell space always stays within its own creations. It cannot purge objects
-belonging to its conduit, lineage root, or cluster leader.
+belonging to its conduit, lineage root, or cluster.
 
 Purge follows the configured disposal methods and their ordering. It attempts
 other selected objects after an object's disposal fails, then raises an
@@ -140,3 +140,8 @@ fresh factory-backed instance using the existing compiled context. References
 already held by application objects are not rewritten. An externally supplied
 object remains referenced by its registration, so purging its store entry does
 not unbind it or turn it into a factory.
+
+A `many` dependency with configured disposal that was built for a longer-lived
+object belongs to that object: purging the object disposes the dependency too,
+right after the object. Purging the dependency's own binding removes only the
+instances that no object holds.

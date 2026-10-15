@@ -964,6 +964,71 @@ class Conduit(Cleanable):
         return failures
 
 
+    def _leave_cluster_for_teardown(self) -> None:
+        """
+        Internal
+
+        Take this root out of its cluster as the first step of its teardown.
+
+        Purpose:
+            A torn-down root must leave no trace in a cluster: not in `members`,
+            not as `master_conduit_id`, not in the share records, not in the
+            DevOps membership index. Until 0.2.8236 root teardown never touched
+            cluster membership, so the cluster kept the dead id and every later
+            member walk (unelect, elect, join, delete) failed on it.
+
+        Contract:
+            - Finds the root's clusters through the frame's DevOps conduit->cluster
+              index: one keyed read, and membership is exclusive, so at most one
+              cluster. A root in no cluster pays only that read.
+            - While the frame is live, runs the cluster's ordered exit
+              (`ConduitCluster.release_member`: unelect first when this root leads,
+              unshare both directions, then drop the membership) inside its
+              transactions. It runs before any other teardown step, while this
+              root is registered, its creation gate is live (the unelect drains
+              member lineages through it) and its cluster facade is not cleaned.
+            - During frame teardown the frame is marked cleaned before its roots
+              are torn down, so no transaction can start; the root then runs
+              `ConduitCluster.drop_member`, the same effects without transactions.
+              That is the designed path, not a failure, and logs nothing.
+            - A transactional exit that raises is logged and replaced by
+              `drop_member`: the root is going away and cannot retry. A failing
+              drop is logged too. Nothing is re-raised, so the teardown keeps
+              going, as its other steps do.
+
+        Threading:
+            Reads the frame's registry slot directly, because the frame's public
+            accessor refuses once the frame is marked cleaned. Takes no lock of
+            its own: the cluster's transactions and its leaf lock serialize the
+            exit.
+
+        Returns:
+            None.
+        """
+        frame = self._aetheric_frame
+        clusters = frame._devops_information_registry.get_cluster_objects_for_conduit(
+            self._id
+        )
+        for cluster in clusters:
+            if not frame._cleaned:
+                try:
+                    cluster.release_member(self)
+                    continue
+                except Exception:
+                    self._logger.error(
+                        "Error leaving the cluster during root teardown; dropping the membership",
+                        "_leave_cluster_for_teardown",
+                        exc_info=True,
+                    )
+            try:
+                cluster.drop_member(self)
+            except Exception:
+                self._logger.error(
+                    "Error dropping the cluster membership during root teardown",
+                    "_leave_cluster_for_teardown",
+                    exc_info=True,
+                )
+
     def _cleanup_normal_conduit(self) -> List[Exception]:
         """
         Internal
@@ -971,15 +1036,20 @@ class Conduit(Cleanable):
         Cleans up a normal Conduit.
 
         Contract:
-            The cluster facade, the ward (lesser lineage), the SpellSpaces and the
-            own store raise their disposal failures only after finishing; those
-            groups are collected and returned, other step errors stay logged, and
-            every later step still runs.
+            - First leaves its cluster (`_leave_cluster_for_teardown`), while this
+              root is registered, its creation gate is live and its cluster facade
+              is not cleaned, so no cluster keeps a torn-down root (0.2.8236).
+            - The cluster facade, the ward (lesser lineage), the SpellSpaces and the
+              own store raise their disposal failures only after finishing; those
+              groups are collected and returned, other step errors stay logged, and
+              every later step still runs.
 
         Returns:
             List[Exception]: Collected disposal failure groups; empty when none failed.
         """
         failures: List[Exception] = []
+        # 0) Leave the cluster first; failures are logged and teardown keeps going.
+        self._leave_cluster_for_teardown()
         self._remove_conduit_record_from_nexus()
         # 1) Meld runtime (stop new object creation paths)
         if self._creation_gate_controller is not None:
@@ -2426,6 +2496,13 @@ class Conduit(Cleanable):
             - The new root has no parent or inherited definitions/contracts.
               Old spell IDs are no longer resolvable; retained objects remain
               in their existing stores for eventual disposal.
+            - A retained object may hold references to instances the former
+              lineage owns (a `unique` instance of a former root's spell, a
+              lineage instance): those are disposed by their own owner, on that
+              owner's schedule, not with this conduit, so a retained holder can
+              outlive what it references. Melder does not serve a retained
+              holder again (its spell ID no longer resolves) and never revokes
+              references application code keeps.
             - Uses ordinary Spellbook configuration selection: omitted local
               configuration means fresh defaults; frame-wide sharing adopts its
               canonical configuration and refuses a conflicting supplied object.
@@ -4142,7 +4219,7 @@ class Conduit(Cleanable):
             *,
             spell: Spell | str | SpellIndex,
             target_conduit: "Conduit",
-            move_creations: bool = False,
+            move_creations: bool = True,
             include_dependencies: bool = False,
             force_unshare: bool = True,
             invalidate_after_transfer: bool = True,
@@ -4154,6 +4231,27 @@ class Conduit(Cleanable):
         Transfer stewardship of a spell to another conduit.
 
         Contract:
+            - The whole lineage moves: the spell's index, with its active and
+              parked members, leaves this conduit's Spellbook and frame registry
+              entry and joins the target's. The target becomes the spell's
+              owner, so a `unique` instance lives in the target's store from
+              then on, and this conduit can no longer meld the spell.
+            - Existing instances follow `move_creations` (below). A transfer
+              never disposes anything.
+            - A transfer hands over stewardship, not a working setup. The
+              spells the transferred spell depends on stay with this conduit
+              unless `include_dependencies` moves the direct ones, so the
+              target can start out broken: a moved instance keeps the
+              dependencies it was built with, and this conduit's teardown
+              disposes the ones it owns while the moved instance still holds
+              them. That is expected in a runtime agents iterate in. The
+              target purges what it does not want, binds the dependencies it
+              needs (a meld that must build the spell without them raises
+              `UnresolvedInputError` naming each missing input) and melds its
+              own version, while this conduit cleans up its own scope.
+            - Borrowers are unshared (`force_unshare`) or repointed at the
+              target; with `include_dependencies`, each direct dependency this
+              conduit owns is transferred with the same options.
             - Uses the normal `TRANSFER_OWNERSHIP` transaction path before the
               existing `TransferOfOwnership` execution helper runs.
             - Keeps request planning and admission in the mediator/strategy
@@ -4164,12 +4262,28 @@ class Conduit(Cleanable):
             spell: Spell object, spell_id, or SpellIndex to transfer.
             target_conduit: The conduit that will become the new steward.
             move_creations:
-                If True, move conduit-owned creation state; otherwise tear that
-                source-side conduit-owned state down.
-                Spellspace-local request objects are intentionally excluded from
-                ownership transfer and are not preserved onto the target
-                conduit.
-            include_dependencies: If True, transfer owned dependencies as well.
+                True (the default since 0.2.8239): the instances this conduit's
+                store holds for every member of the spell's index move into the
+                target's store with the spell. A `unique` stays one object:
+                whatever already holds it keeps the instance the target now
+                serves, and the `many` children recorded with a moved holder
+                move with it. A moved entry replaces whatever the target's store
+                already holds under that spell id; the replaced instances are
+                not disposed.
+                False: nothing moves. The active member's instances are taken
+                out of this conduit's store and kept only until the transfer
+                has finished (for its rollback); they are neither moved nor
+                disposed, Melder stops tracking them, and the target builds its
+                own on its next meld - for a `unique`, a second instance beside
+                any that the application or other objects still hold.
+                Either way, `unique_per_conduit_lineage` instances stay where
+                they were resolved, and spellspace-local and cluster instances
+                are not in this conduit's store, so a transfer never touches
+                them.
+            include_dependencies: If True, also transfer each direct dependency
+                this conduit owns, with the same options, so the target
+                receives those spells (and, with `move_creations`, their
+                instances) instead of depending on this conduit for them.
             force_unshare: If True, strip all contracts/shares for this spell during transfer.
             invalidate_after_transfer: If True, mark lineage dirty after transfer.
             mark_dependencies_dirty: If True, mark dependency lineages dirty (even if not moved).

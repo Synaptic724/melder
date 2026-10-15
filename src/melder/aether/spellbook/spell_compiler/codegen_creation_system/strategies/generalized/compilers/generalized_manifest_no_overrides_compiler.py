@@ -1155,6 +1155,58 @@ def select_specializable_step_indexes(
     )
 
 
+def rows_feed_many_into_non_many_step(
+        rows: Sequence[Dict[str, Any]],
+) -> bool:
+    """
+    Return True when a `many` row is a direct dependency of a non-`many` row.
+
+    Purpose:
+        Decide whether the singleton warm-tail specializer can express a graph.
+        Its body is straight-line: it emits every non-captured step, in order,
+        on every warm call. A `many` step whose consumer is a shared (slotted)
+        step would therefore be built on every call even when that consumer is
+        captured or already stored, and recorded in the meld's innermost scope
+        rather than with the holder's owner. The site plan builds such a child
+        only inside its holder's first build and records it with the holder's
+        owner (many_child_follows_holder, 2026-10-14), so these graphs keep the
+        plain door.
+
+    Contract:
+        - Pure function of manifest row data; no live spells consulted.
+        - Only direct edges count: a `many` step that feeds only `many` steps
+          (a transient root's own children) does not make the graph ineligible,
+          and a chain `many -> many -> holder` is caught at its last edge.
+        - Instance keys compare as `(spell_id, occurrence)` pairs, so list- and
+          tuple-shaped keys from a decoded package compare equal.
+
+    Args:
+        rows:
+            Manifest step rows for the no-overrides lane.
+
+    Returns:
+        bool: True when some non-`many` row lists a `many` row's instance key
+        among its dependency keys; False otherwise, including for a graph with
+        no `many` rows.
+    """
+    many_name = Existence.many.name
+    many_keys = {
+        (row["instance_key"][0], row["instance_key"][1])
+        for row in rows
+        if row["existence"] == many_name
+    }
+    if not many_keys:
+        return False
+    for row in rows:
+        if row["existence"] == many_name:
+            continue
+        for _param_name, dependency_keys in row["dependency_resolution_order"]:
+            for dependency_key in dependency_keys:
+                if (dependency_key[0], dependency_key[1]) in many_keys:
+                    return True
+    return False
+
+
 def emit_specialized_step_plan_source(
         *,
         rows: Sequence[Dict[str, Any]],

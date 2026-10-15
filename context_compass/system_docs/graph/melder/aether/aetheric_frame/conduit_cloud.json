@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_frame/conduit_cloud.py",
- "source_sha256": "7e8ced6177cb929bb34294315e7306e741d52e573673cfbcbc16a1305d07cb3b",
+ "source_sha256": "445492d504f2ab1c9fafb438b5cc95af35bfb0b50c26636ceb3bc75ad4ae284f",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_frame.conduit_cloud": {
@@ -53,7 +53,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "be9342d96a90ce3aca9d0fe2cca2d8f317e6c640ba3c7b39a5923ab1585e58f1",
+   "span_sha256": "c797e1e9022ef636c3aa964a6e0f89da01e68dd2a8bb42675f43ae5edac989d4",
    "role": "Frame-scoped registry of named conduits.",
    "responsibilities": [
     "stores conduit name to conduit mappings",
@@ -61,7 +61,8 @@
     "provides the frame-local named conduit lookup surface",
     "owns active named root/lesser discovery separately from borrowed normal-root maps",
     "serializes frame-wide name admission, identity-safe retirement and temporary promotion claims",
-    "lists its named conduits as a tuple snapshot under its lock (list_conduits)"
+    "lists its named conduits as a tuple snapshot under its lock (list_conduits)",
+    "runs an explicit cluster leave through ConduitCluster.release_member and answers get_clusters_for_conduit from the frame's membership index through _cluster_names_by_id (0.2.8236); delete_cluster raises the deleted cluster's disposal failures after removing it (0.2.8237)"
    ],
    "owns_state": [
     "_named_conduits",
@@ -70,7 +71,8 @@
     "_conduit_clusters",
     "_devops_identity",
     "_id",
-    "_name"
+    "_name",
+    "_cluster_names_by_id"
    ],
    "phases": [
     "init",
@@ -104,6 +106,12 @@
   {
    "from": "melder.aether.aetheric_frame.conduit_cloud.ConduitCloud",
    "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.aetheric_frame.conduit_cloud.ConduitCloud",
+   "to_label": "ExceptionGroup",
    "relation": "creates",
    "confidence": "candidate"
   },

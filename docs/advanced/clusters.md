@@ -13,9 +13,10 @@ The example binds a cluster bus with `create` permissions, conjures two named
 conduits, and links them. It creates the cluster through the cloud, adds the owner,
 elects the owner as leader, and then adds the second member.
 
-Leader election matters: the shared creations store belongs to the elected leader.
-Membership alone does not establish that store. Links matter too: the sharing
-contracts use the relationship between the conduits.
+Leader election matters: the shared creations store belongs to the cluster, and it is
+served only while a leader is elected. Membership alone does not serve it. A leader
+change keeps the shared object, and deleting the cluster disposes it. Links matter
+too: the sharing contracts use the relationship between the conduits.
 
 The final assertion checks that both members resolve the **same bus object**.
 Use that identity check when adapting the pattern, not merely the membership list.

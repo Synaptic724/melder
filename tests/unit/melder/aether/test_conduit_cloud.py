@@ -353,6 +353,41 @@ def test_get_clusters_for_conduit_returns_empty_when_missing(conduit_cloud) -> N
     assert cloud.get_clusters_for_conduit("missing") == []
 
 
+def test_get_clusters_for_conduit_answers_from_the_membership_index(conduit_cloud, registry) -> None:
+    """
+    get_clusters_for_conduit names clusters from the frame's DevOps conduit->cluster index (0.2.8236).
+
+    The index edge alone decides the answer - no member set is walked, so an edge for a conduit the cluster's member
+    set lacks still names the cluster - and an edge naming a cluster this cloud does not map (deleted, or another
+    cloud's) names nothing.
+    """
+    cloud, _, _ = conduit_cloud
+    cloud.create_cluster("cluster-1")
+    cluster = cloud.get_cluster("cluster-1")
+    registry.register_cluster_membership(cluster_id=cluster.id, conduit_id="conduit-7")
+    registry.register_cluster_membership(cluster_id="unmapped-cluster", conduit_id="conduit-8")
+
+    assert cloud.get_clusters_for_conduit("conduit-7") == ["cluster-1"]
+    assert "conduit-7" not in cluster.get_members()
+    assert cloud.get_clusters_for_conduit("conduit-8") == []
+
+
+def test_delete_cluster_forgets_the_cluster_for_membership_lookups(conduit_cloud, mock_conduit) -> None:
+    """
+    A deleted cluster is named for no conduit, and its name is free for a new cluster that holds nobody.
+    """
+    cloud, _, _ = conduit_cloud
+    cloud.create_cluster("cluster-1")
+    cloud.add_conduit_to_cluster(mock_conduit, "cluster-1")
+    assert cloud.get_clusters_for_conduit("conduit-1") == ["cluster-1"]
+
+    cloud.delete_cluster("cluster-1")
+    assert cloud.get_clusters_for_conduit("conduit-1") == []
+
+    cloud.create_cluster("cluster-1")
+    assert cloud.get_clusters_for_conduit("conduit-1") == []
+
+
 def test_cluster_operations_require_dynamic_mode(conduit_cloud, mock_frame) -> None:
     """
     Verify public cluster operations reject automatic posture.
@@ -408,7 +443,12 @@ def test_add_conduit_to_cluster_delegates_to_cluster(conduit_cloud, mock_conduit
 
 def test_remove_conduit_from_cluster_delegates_to_cluster(conduit_cloud, mock_conduit) -> None:
     """
-    Verify remove_conduit_from_cluster delegates membership removal and leave handling.
+    Verify remove_conduit_from_cluster runs the cluster's ordered exit.
+
+    Updated with 0.2.8236: the cloud used to call `remove_member` and then `handle_leave`, which popped the leaver's
+    share record before the leave read it, so the leaver's roots stayed contracted to every peer. The cloud now hands
+    the whole exit to `ConduitCluster.release_member` (leave first, membership record after) and calls neither step
+    itself.
     """
     cloud, _, _ = conduit_cloud
     cluster = MagicMock()
@@ -416,24 +456,32 @@ def test_remove_conduit_from_cluster_delegates_to_cluster(conduit_cloud, mock_co
 
     cloud.remove_conduit_from_cluster(mock_conduit, "cluster-1")
 
-    cluster.remove_member.assert_called_once_with("conduit-1")
-    cluster.handle_leave.assert_called_once_with(mock_conduit)
+    cluster.release_member.assert_called_once_with(mock_conduit)
+    cluster.remove_member.assert_not_called()
+    cluster.handle_leave.assert_not_called()
 
 
 def test_refresh_cluster_shares_for_conduit_only_hits_matching_clusters(
         conduit_cloud,
         mock_conduit,
+        registry,
 ) -> None:
     """
     Verify refresh_cluster_shares_for_conduit calls refresh only on matching clusters.
+
+    Updated with 0.2.8236: membership is read from the frame's DevOps conduit->cluster index (the cloud names a cluster
+    by its id), not from each cluster's member set, so the doubles are registered in the index instead of answering
+    `get_members`.
     """
     cloud, _, _ = conduit_cloud
     matching_cluster = MagicMock()
-    matching_cluster.get_members.return_value = {"conduit-1"}
     other_cluster = MagicMock()
-    other_cluster.get_members.return_value = {"other"}
     cloud._conduit_clusters["cluster-1"] = matching_cluster
     cloud._conduit_clusters["cluster-2"] = other_cluster
+    cloud._cluster_names_by_id["cluster-id-1"] = "cluster-1"
+    cloud._cluster_names_by_id["cluster-id-2"] = "cluster-2"
+    registry.register_cluster_membership(cluster_id="cluster-id-1", conduit_id="conduit-1")
+    registry.register_cluster_membership(cluster_id="cluster-id-2", conduit_id="other")
 
     cloud.refresh_cluster_shares_for_conduit(mock_conduit)
 

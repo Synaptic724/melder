@@ -18,6 +18,7 @@ Contracts under test:
 
 from collections.abc import Iterator
 from contextlib import ExitStack
+import math
 import time
 from typing import Any, List
 
@@ -30,12 +31,25 @@ from tests._frame_posture_test_support import configure_frame_posture_for_spellb
 
 
 class _Clock:
-    """Hand-advanced monotonic clock that starts at the real monotonic time."""
+    """
+    Hand-advanced monotonic clock that starts on a whole second at or after the real monotonic time.
+
+    Contract:
+        - Starts no earlier than the real reading, so the pool, built on the real clock before this clock is
+          installed, never keeps a deadline later than this clock's origin plus the pool's own periods.
+        - Starts on a whole number of seconds. Whole numbers below 2**53 add exactly in binary64, so every
+          whole-second advance a test makes and every deadline the pool derives from this clock (`origin + settle`,
+          `now + interval`) is exact, and a test that lands on a deadline lands on it to the bit.
+        - Fixed 2026-10-14: a real-valued origin made the advance to `origin + settle` fall one ulp short, or read
+          the burst's miss one ulp inside the pressure window, for about 0.2-1% of origins, so the quiet-pool test
+          saw no decay step (target 40, not 36).
+    """
 
     __slots__ = ["value"]
 
     def __init__(self) -> None:
-        self.value = time.monotonic()
+        """Start the clock on the first whole second at or after the real monotonic time."""
+        self.value = float(math.ceil(time.monotonic()))
 
     def __call__(self) -> float:
         return self.value

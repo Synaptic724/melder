@@ -193,20 +193,37 @@ Message alert rules
 | gauntlet_runtime_speed | in_progress | discovery | claude | melder_2 | none | Owner decides whether an open lever (thread-affine pools, one-lock anonymous link, single-check fast door) is worth a task. | Per-scope-cycle cost map vs dishka and dependency-injector, with ranked and prototyped candidates. | Next lever validated and its task opened, or the owner redirects. | tickets/tasks/2026-09-26_measure_gauntlet_scope_cycle_costs_task.md | 2026-09-26T23:01:16Z | REQUIRED |
 | defect_hunting_spellbook | in_progress | discovery | opencode | muse_0 | none | Slice spellbook component sections then read the surface behind each claim. | Contradiction list with evidence; meaty issues flagged apart from polish. | Sweep list triaged or owner redirects to conduit/meld or arch diffs. | tickets/tasks/2026-09-27_spellbook_sweep_task.md | 2026-09-27T15:56:49Z | REQUIRED |
 | defect_hunting_fixes_1 | in_progress | implementation | opencode | muse_0 | none | Re-slice each target fresh then repair findings 1-8 in order. | Corrected blocks with verified ranges; index check clean. | Batch repaired with gates passing or owner redirects scope. | tickets/tasks/2026-09-27_sweep_fixes_batch_1_task.md | 2026-09-27T16:07:16Z | REQUIRED |
-| melder_object_pools | in_progress | discovery | claude | melder_1 | none | Owner answers the five asks on the new pooled member (name, pool scope, lease end, Phase 6, configuration); then patch docs and the first story. | A pooled Existence family serviced by Creations with per-spell pool configuration (limits, exhaustion, elasticity), designed and decided. | The owner accepts a design direction and the first story is drafted, or redirects. | tickets/epics/2026-10-05_melder_services_and_pools_epic.md | 2026-10-11T23:09:18Z | REQUIRED |
+| melder_object_pools | in_progress | discovery | claude | melder_1 | none | Prerequisite fix landed (0.2.8235, in review); wait for the owner's answers on defaults (a)-(j), then the patch docs and the first story. | `managed_spell_quantity`: root-owned pools in the root's Creations, per-spell modes, explicit releases through ReleaseManagedSpell, designed and decided. | The owner settles the open questions and the patch docs and first story are drafted, or redirects. | tickets/epics/2026-10-14_managed_spell_quantity_epic.md | 2026-10-14T17:19:37Z | REQUIRED |
+| many_child_registration | review | handoff | claude | melder_1 | none | Owner reviews 0.2.8235 and turns the task and epic in, or redirects; git add, commit and push are the owner's. | The owner's rule (a slotted holder's many children belong to its owner) landed as 0.2.8235 with green tests. | The owner accepts and the task and epic are turned in, or the owner redirects. | tickets/tasks/2026-10-14_fix_many_child_follows_holder_task.md | 2026-10-14T17:19:37Z | REQUIRED |
+| pool_decay_clock_rounding | review | handoff | claude | melder_1 | none | Owner reviews the test-only fix and turns the task in, or redirects; the commit is the owner's. | A quiet-pool decay test that passes for every fake-clock origin. | The owner accepts and the task is turned in, or redirects. | tickets/tasks/2026-10-14_fix_pool_decay_fake_clock_rounding_task.md | 2026-10-14T18:24:58Z | REQUIRED |
+| slotted_lifetime_fixes | in_progress | implementation | claude | melder_1 | none | D1, D2, D4/D5 (0.2.8236-0.2.8238) and the D3 transfer default (0.2.8239) landed; the owner rules on contract invalidation (b7, l1/l2), then the audit probe, full tree, benchmarks, docs, graph and the rebuild. | D1-D6 fixed: every slotted instance and its children recorded with, moved with and disposed with the object its lifetime names. | Every task's fix landed with green tests and the owner accepts, or the owner redirects. | tickets/epics/2026-10-14_slotted_lifetime_ownership_fixes_epic.md | 2026-10-14T22:38:51Z | REQUIRED |
 <!-- END USER-DEFINED: active_items -->
 
 ## Active Attention Details
 <!-- BEGIN USER-DEFINED: active_attention_details -->
+- WORK_ITEM: melder_object_pools
+  SWITCH_TRIGGER: The owner settles the open questions and the patch docs and first story are drafted, or redirects.
+  RESUME_HIERARCHY:
+    - tickets/epics/2026-10-14_managed_spell_quantity_epic.md
+- WORK_ITEM: many_child_registration
+  SWITCH_TRIGGER: The owner accepts and the task and epic are turned in, or the owner redirects.
+  RESUME_HIERARCHY:
+    - tickets/epics/2026-10-14_many_child_follows_holder_epic.md
+    - tickets/tasks/2026-10-14_fix_many_child_follows_holder_task.md
+- WORK_ITEM: pool_decay_clock_rounding
+  SWITCH_TRIGGER: The owner accepts and the task is turned in, or redirects.
+  RESUME_HIERARCHY:
+    - tickets/tasks/2026-10-14_fix_pool_decay_fake_clock_rounding_task.md
+- WORK_ITEM: slotted_lifetime_fixes
+  SWITCH_TRIGGER: Every task's fix landed with green tests and the owner accepts, or the owner redirects.
+  RESUME_HIERARCHY:
+    - tickets/epics/2026-10-14_slotted_lifetime_ownership_fixes_epic.md
 <!-- END USER-DEFINED: active_attention_details -->
 
 ## Recently Closed Anchors
 | work_item | status | agent_name | ticket | note | closed_at |
 | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: closed_anchors -->
-| descriptor_binding_name_case | done | melder_1 | tickets/tasks/completed/2026-10-04_match_descriptor_binding_names_like_bind_task.md | Landed 0.2.8226 (descriptor binding names); patch archived; turned in by owner directive. Next: none. | 2026-10-12T21:14:45Z |
-| live_unlink_churn_phase_error | done | melder_1 | tickets/tasks/completed/2026-10-04_fix_live_unlink_churn_phase_error_task.md | Landed 0.2.8227 (live unlink race); patch archived; turned in by owner directive. Next: none. | 2026-10-12T21:14:45Z |
-| codecov_upload_tls | done | melder_1 | tickets/tasks/completed/2026-10-05_diagnose_codecov_upload_tls_failure_task.md | Codecov TLS diagnosis and PyPI-uploader retry (no notch); turned in by owner directive. Next: none. | 2026-10-12T21:14:45Z |
 | agent_cicd_guide | done | melder_1 | tickets/tasks/completed/2026-10-05_write_agent_cicd_guide_task.md | Agent CI/CD guide folder (no notch); turned in by owner directive. Next: none. | 2026-10-12T21:14:45Z |
 | rc_testpypi_recovery | done | melder_1 | tickets/tasks/completed/2026-10-06_recover_release_candidate_from_testpypi_outage_task.md | Release-candidate recovery from a TestPyPI outage (no notch); turned in by owner directive. Next: none. | 2026-10-12T21:14:45Z |
 | ubuntu_runner_pin | done | melder_1 | tickets/tasks/completed/2026-10-06_pin_ubuntu_runner_image_task.md | Linux runners pinned to ubuntu-24.04 (no notch); turned in by owner directive. Next: none. | 2026-10-12T21:14:45Z |
@@ -216,6 +233,9 @@ Message alert rules
 | cross_object_lock_gaps | done | melder_1 | tickets/tasks/completed/2026-10-11_prove_and_fix_cross_object_lock_gaps_task.md | Landed 0.2.8231 (cross-object locks); evidence kept; turned in by owner directive. Next: none. | 2026-10-12T21:14:45Z |
 | lock_residuals_and_admission | done | melder_1 | tickets/tasks/completed/2026-10-11_close_lock_residuals_and_evaluate_mediator_admission_task.md | Landed 0.2.8232 and 0.2.8233 (lock residuals, direct cleanup); evidence kept; turned in. Next: none. | 2026-10-12T21:14:45Z |
 | elastic_pool_retention | done | melder_1 | tickets/tasks/completed/2026-10-12_make_kernel_pools_elastic_task.md | Landed 0.2.8234 (elastic kernel pools); evidence kept; accepted and turned in by the owner. Next: none. | 2026-10-12T21:14:45Z |
+| many_child_registration_proof | done | melder_1 | tickets/tasks/completed/2026-10-14_prove_many_child_registration_bug_task.md | Defect proven by 11 red tests and 5 controls (no notch); successor TASK-2026-10-14-fix_many_child_follows_holder. | 2026-10-14T15:30:51Z |
+| slotted_lifetime_audit | done | melder_1 | tickets/tasks/completed/2026-10-14_audit_slotted_lifetime_ownership_task.md | Audit done (no notch): D1-D6 proven; successor EPIC-2026-10-14-slotted_lifetime_ownership_fixes. | 2026-10-14T18:54:48Z |
+| managed_shell_spike | done | fable_0 | tickets/tasks/completed/2026-10-14_investigate_managed_shell_design_task.md | Shell/deque investigation for managed_spell_quantity (no notch); the settled shape and plan are in the epic's Notes. Next: implementation by the owner's next agent. | 2026-10-14T23:46:57Z |
 <!-- END USER-DEFINED: closed_anchors -->
 
 ## Notes
@@ -225,8 +245,6 @@ Message alert rules
 - gauntlet_runtime_speed: SWITCH_TRIGGER is the owner's pick among the open levers, or the owner's
   answer on the SpellSpace scope RISK; P1, P4, the tail, build locks and nested slot guard are turned in. The lever-1 lifecycle is closed as measured (21:15Z). RESUME_HIERARCHY: tickets/stories/2026-09-26_gauntlet_runtime_speed_story.md ->
   tickets/tasks/2026-09-26_measure_gauntlet_scope_cycle_costs_task.md.
-- melder_object_pools: SWITCH_TRIGGER is the owner's decision on the pooled-existence design direction, or an owner
-  redirect. RESUME_HIERARCHY: tickets/epics/2026-10-05_melder_services_and_pools_epic.md.
 ### Notch notice (fable_1, 2026-10-04)
 - fable_1 landed 0.2.8224 (ambiguous providers reported through Phase 4) and, before it, 0.2.8222 (annotation
   matching by kind; caching_system.py generation 20 `annotation_kind_matching`).
@@ -260,6 +278,22 @@ Message alert rules
 ### Notch notice (melder_1, 2026-10-12)
 - melder_1 landed 0.2.8234 (the kernel pools keep what a burst needed, up to 256, and decay back to 20 when quiet;
   AbstractElasticPool's stretch and decay rewritten). Notch above it if you land after.
+### Notch notice (melder_1, 2026-10-14)
+- melder_1 landed 0.2.8235 (a slotted holder's disposal-bearing `many` children register in the holder's store,
+  not the meld's innermost scope; the opt-in singleton specializer declines graphs that feed a `many` step into
+  a non-`many` step). Notch above it if you land after.
+- melder_1 landed 0.2.8236 (a root's teardown leaves its cluster; the cloud's leave unshares the leaver's roots;
+  the cloud finds a conduit's cluster through the frame's membership index). Notch above it if you land after.
+- melder_1 landed 0.2.8237 (a cluster owns its team store: `unique_per_conduit_cluster` objects survive leader
+  changes, die with the cluster, and `delete_cluster` raises their disposal failures). Notch above it if you land after.
+- melder_1 landed 0.2.8238 (a slotted holder's disposal-bearing `many` children are recorded with the holder: purging
+  the holder disposes them, an ownership move carries them, a `many` purge of their spell leaves them). Notch above it
+  if you land after.
+- melder_1 landed 0.2.8239 (`transfer_spell_ownership` defaults to `move_creations=True`: the source's objects for
+  the spell move with it and a transfer disposes nothing). Notch above it if you land after.
+- melder_1 landed 0.2.8240 (docstring and docs only: `transfer_spell_ownership` says a transfer hands over
+  stewardship, not a working setup, and `include_dependencies` moves the direct dependencies). Notch above it if
+  you land after.
 ### Device VM git hazard (melder_2, 2026-09-26)
 - The connected folder refuses deletes, so any git command that refreshes the index from the device VM
   (plain `git status`, `git diff`) can leave an empty .git/index.lock that blocks the owner's commits.

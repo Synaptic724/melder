@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/conduit_ward/conduit_ward.py",
- "source_sha256": "0f581f69871c99263da5c06f842783d101ea345d20fd36ae247e9bd5f89731f3",
+ "source_sha256": "c9aac63535490967f4d8824843948061e41d4ac496f9dbe56dc0960865c9669e",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.conduit_ward.conduit_ward": {
@@ -43,7 +43,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "8ec29e937744a09886e133eaa345971ae18f55892f8e1e8faa541cc2fb823f2a",
+   "span_sha256": "23e0ac1dda8236fd1cd013ded118298e9fb8aaf05d2562cc9efabd49ba0c6821",
    "role": "Contract and lineage graph manager for a conduit.",
    "responsibilities": [
     "manages peer contracts",

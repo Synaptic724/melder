@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_graph.md'
-LINE_COUNT = 27739
-CONTENT_SHA256 = '70c2fa87107c0f5d900e53a7cf78e148b85844f4f981eafa22b6ea708c6ae511'
+LINE_COUNT = 27767
+CONTENT_SHA256 = '0cb7769888b89f841b441bda98b78d671a7f52face4167df897fde9fea36066e'
 
 TEXT = """# src_graph
 
@@ -247,7 +247,7 @@ descriptors and reassemble.
 
 ## src/melder/__version__.py
 
-- source_sha256: `b7eb74b4f6ee6cc11f33daf0968442fcfc3f79185836af7b8163da67f44228dd`
+- source_sha256: `e3c6e204b24e8163026312d122caeab6422f2639aca14b229ab13518f3ec3a28`
 - nodes: 1
 
 ### Nodes
@@ -336,7 +336,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_agent_documentation/manifest/agent_documentation_manifest.py
 
-- source_sha256: `0447bd19faa4622da96724b3ffd541960c5813753c395526650f545f2459ee1c`
+- source_sha256: `c25dd576d0bcaca0649ceaba9d7362bc22e094b10b30dce331215d14ad7b4383`
 - nodes: 1
 
 ### Nodes
@@ -415,7 +415,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py
 
-- source_sha256: `76c4bc32ba9740b7cc290ad8022638cae65c465a1b3386b5c3afdd40c3abe92e`
+- source_sha256: `67a3a9a4f739effc87e9c250f05faac1d7b6c070deabd8b695a3710fdfe79d39`
 - nodes: 1
 
 ### Nodes
@@ -493,7 +493,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/graph_adjacency_manifest.py
 
-- source_sha256: `11d91e22d0fc468cb1a35cdb5e05da27187af369c4577edc8f8d53be483ed678`
+- source_sha256: `58f6bd6028e1104e3609ad2a897079a8fca72d5ae8db88c66fde5a4588051f5d`
 - nodes: 1
 
 ### Nodes
@@ -510,7 +510,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_index.py
 
-- source_sha256: `3912b679e6baebba845f21ab21c756fdda37ecca8eddc71a557056cb7335a8c5`
+- source_sha256: `a7fc0821a15faccdba836aeef50d4a43c85af448d8502d2bddc14a6c37105030`
 - nodes: 1
 
 ### Nodes
@@ -527,7 +527,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_manifest.py
 
-- source_sha256: `2231a921997550cad0be54df5c90c7ea3e7e04b658a4dd7306d4d08b790e32dc`
+- source_sha256: `af82aab902c9b7fb95b98c5d3453fa6db9e763bb802c692151483aa572383ea9`
 - nodes: 1
 
 ### Nodes
@@ -547,7 +547,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_architecture_payload.py
 
-- source_sha256: `11474f38dae04df0ee2cc6363a95fa28a21d04a995a2811b36be9fc332105fcd`
+- source_sha256: `9875d5675815c2514c924c9ae35487a32c2ddfaac3e4f37442f34e05d9939c9d`
 - nodes: 1
 
 ### Nodes
@@ -564,7 +564,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_components_payload.py
 
-- source_sha256: `326b949401076f5029b04de23d2fc7c38d3f06da5e624e9c4a9b2cdabf842b96`
+- source_sha256: `0c31d1fd96e674072ca043e50b8f1ceba6bcb074e650983f9cea61c716dd993e`
 - nodes: 1
 
 ### Nodes
@@ -581,7 +581,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_graph_payload.py
 
-- source_sha256: `e654c0fcd28bd0180da9c159a86079b220294651a395553a51b853a5a350acd2`
+- source_sha256: `a52b84a99971c96c2d2183fc8d4bd25b7c919b5fb56ff6926494ce8973762793`
 - nodes: 1
 
 ### Nodes
@@ -878,7 +878,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/aetheric_frame.py
 
-- source_sha256: `ed598c0e3af1a47dc4de4f517ab11e59cdbf532e22ad14e552d2d8ad92321aa3`
+- source_sha256: `eebc642ec0a37f78618820cde0367b9b215e3467feabb4717efd7bb48e78bfb0`
 - nodes: 2
 
 ### Nodes
@@ -1007,7 +1007,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/conduit_cloud.py
 
-- source_sha256: `7e8ced6177cb929bb34294315e7306e741d52e573673cfbcbc16a1305d07cb3b`
+- source_sha256: `445492d504f2ab1c9fafb438b5cc95af35bfb0b50c26636ceb3bc75ad4ae284f`
 - nodes: 2
 
 ### Nodes
@@ -1031,7 +1031,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - owns active named root/lesser discovery separately from borrowed normal-root maps
   - serializes frame-wide name admission, identity-safe retirement and temporary promotion claims
   - lists its named conduits as a tuple snapshot under its lock (list_conduits)
-- owns_state: `_named_conduits`, `_conduit_names_by_id`, `_reserved_conduit_names`, `_conduit_clusters`, `_devops_identity`, `_id`, `_name`
+  - runs an explicit cluster leave through ConduitCluster.release_member and answers get_clusters_for_conduit from the frame's membership index through _cluster_names_by_id (0.2.8236); delete_cluster raises the deleted cluster's disposal failures after removing it (0.2.8237)
+- owns_state: `_named_conduits`, `_conduit_names_by_id`, `_reserved_conduit_names`, `_conduit_clusters`, `_devops_identity`, `_id`, `_name`, `_cluster_names_by_id`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `add_conduit_to_cluster`, `cleanup`, `count_conduits`, `create_cluster`, `delete_cluster`, `find_conduit_id_by_name`, `frame_name`, `get_cluster`, `get_clusters_for_conduit`, `get_conduit`, `get_conduit_by_id`, `get_conduit_by_name` (+10 more)
 
@@ -1041,13 +1042,14 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 | --- | --- | --- | --- | --- | --- |
 | `melder.aether.aetheric_frame.conduit_cloud.ConduitCloud` | specializes | `melder.utilities.general_base.cleanable.Cleanable` | - | - | derived |
 
-### Edge candidates (6, unconfirmed)
+### Edge candidates (7, unconfirmed)
 
 Instantiation guesses from the AST. Over-generated roughly 8x against the reference graph; confirm or drop before relying on them.
 
 - `melder.aether.aetheric_frame.conduit_cloud.ConduitCloud` creates `RLock`
 - `melder.aether.aetheric_frame.conduit_cloud.ConduitCloud` creates `DevopsIdentity`
 - `melder.aether.aetheric_frame.conduit_cloud.ConduitCloud` creates `ValueError`
+- `melder.aether.aetheric_frame.conduit_cloud.ConduitCloud` creates `ExceptionGroup`
 - `melder.aether.aetheric_frame.conduit_cloud.ConduitCloud` creates `TypeError`
 - `melder.aether.aetheric_frame.conduit_cloud.ConduitCloud` creates `RuntimeError`
 - `melder.aether.aetheric_frame.conduit_cloud.ConduitCloud` creates `ConduitCluster`
@@ -4438,7 +4440,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/conduit.py
 
-- source_sha256: `b19ccc41ece9f3b57e4c74b842c185f7c04ba67ae7dcb3b89cd14c8f2b051ae7`
+- source_sha256: `8eac316b4750f30774b4cf9706a57baa39e59cc0018f4800e6a84b507615d686`
 - nodes: 2
 
 ### Nodes
@@ -4484,6 +4486,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - emits an index destroy to index-link borrowers exactly when the Book's disposal reports the index it destroyed (cleanup_spell, 0.2.8231)
   - looks up contracted spells over a one-call copy of the Book's contracted peer ids and inspects objects, both with no conduit lock held (find_contracted_spell, inspect_spell, 0.2.8232)
   - builds its SpellSpacePool and, as a normal root, its ConduitPool elastic: 20 idle always kept, up to 256 after a burst, decaying when quiet (0.2.8234)
+  - leaves its cluster as the first step of a root's teardown (_leave_cluster_for_teardown, 0.2.8236): the cluster's ordered exit while the frame is live, drop_member during frame teardown or after a failed exit
 - owns_state: `_meld`, `_creations`, `_conduit_ward`, `_creation_gate`, `_spellspace_stack`, `_spellspace_pool`, `_conduit_pool`, `_transaction_identity`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `add_bind_hooks`, `add_index_to_contract`, `add_spell_to_contract`, `add_spell_to_contract_with_dependencies`, `add_spells_to_contract`, `add_to_spell_index`, `begin_transaction`, `bind`, `bind_inactive`, `check_spell_id`, `cleanup`, `cleanup_lesser_conduits` (+66 more)
@@ -4550,7 +4553,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/conduit_cluster.py
 
-- source_sha256: `a7730aab488936d977dee4c983fd4c0a92aa61036ac139c6aaacbc4abb2f581a`
+- source_sha256: `c22b8a7d35f07bee03cbceecb7010f67f66effef79a29c2dd8ee9a5178811d41`
 - nodes: 2
 
 ### Nodes
@@ -4559,7 +4562,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.conduit.conduit_cluster`
 - defined at: `src/melder/aether/conduit/conduit_cluster.py:1`
-- role: Frame-local membership group with leaderless spell sharing plus an optional elected-leader store.
+- role: Frame-local membership group with leaderless spell sharing plus an optional team store the cluster owns, served while a leader is elected.
 - responsibilities:
   - share cluster-scoped roots among members
   - elect a leader only for the optional team store
@@ -4568,16 +4571,18 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `ConduitCluster` (class)
 
 - id: `melder.aether.conduit.conduit_cluster.ConduitCluster`
-- defined at: `src/melder/aether/conduit/conduit_cluster.py:26`
+- defined at: `src/melder/aether/conduit/conduit_cluster.py:27`
 - extends: `Cleanable`
 - role: Cluster-local conduit membership and shared-root manager.
 - responsibilities:
   - tracks conduit membership by cluster
   - tracks shareable root spell lineages per owner
   - coordinates automatic sharing and teardown between cluster members
-- owns_state: `members`, `shared_spells`, `auto_link_dependencies`, `_devops_identity`, `_devops_information_registry`
+  - owns the cluster's team store (_team_store, 0.2.8237): binds every member root's ClusterCreations facade to it with the elected leader's id at election and on join, unbinds at unelect and a leader's exit, keeps its instances across leader changes, and disposes it once in cleanup, raising the failures as an ExceptionGroup
+  - runs every leave as one ordered exit (release_member, 0.2.8236): unelect first when the leaver leads, unshare both directions while its share record exists, then remove the membership; drop_member makes the same changes without transactions for a root torn down with its frame or whose exit failed
+- owns_state: `members`, `shared_spells`, `auto_link_dependencies`, `_devops_identity`, `_devops_information_registry`, `_team_store`
 - phases: `runtime`, `cleanup`
-- public methods: `add_and_share_spell`, `add_member`, `add_shared_spell`, `bind_elected_leader`, `bind_member`, `cleanup`, `describe`, `elect_leader`, `get_members`, `get_shared_spells`, `handle_join`, `handle_leave` (+13 more)
+- public methods: `add_and_share_spell`, `add_member`, `add_shared_spell`, `bind_elected_leader`, `bind_member`, `cleanup`, `describe`, `drop_member`, `elect_leader`, `get_members`, `get_shared_spells`, `handle_join` (+15 more)
 
 ### Edges out
 
@@ -4590,13 +4595,15 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - `melder.aether.conduit.conduit_cluster.ConduitCluster` -> `melder.aether.aetheric_frame.dev_ops.devops_identity.DevopsIdentity`: ConduitCluster creates and owns one cluster-scoped DevopsIdentity for membership reporting.
 - `melder.aether.conduit.conduit_cluster.ConduitCluster` -> `melder.aether.aetheric_frame.dev_ops.devops_information_registry.DevopsInformationRegistry`: ConduitCluster borrows the frame dev-ops information registry to publish cluster membership relations.
 
-### Edge candidates (5, unconfirmed)
+### Edge candidates (7, unconfirmed)
 
 Instantiation guesses from the AST. Over-generated roughly 8x against the reference graph; confirm or drop before relying on them.
 
 - `melder.aether.conduit.conduit_cluster.ConduitCluster` creates `RLock`
 - `melder.aether.conduit.conduit_cluster.ConduitCluster` creates `DevopsIdentity`
+- `melder.aether.conduit.conduit_cluster.ConduitCluster` creates `Creations`
 - `melder.aether.conduit.conduit_cluster.ConduitCluster` creates `Crystallizer`
+- `melder.aether.conduit.conduit_cluster.ConduitCluster` creates `ExceptionGroup`
 - `melder.aether.conduit.conduit_cluster.ConduitCluster` creates `RuntimeError`
 - `melder.aether.conduit.conduit_cluster.ConduitCluster` creates `ClusterCrystal`
 
@@ -4690,7 +4697,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/conduit_ward/conduit_ward.py
 
-- source_sha256: `0f581f69871c99263da5c06f842783d101ea345d20fd36ae247e9bd5f89731f3`
+- source_sha256: `c9aac63535490967f4d8824843948061e41d4ac496f9dbe56dc0960865c9669e`
 - nodes: 2
 
 ### Nodes
@@ -5016,7 +5023,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py
 
-- source_sha256: `ec2dab5d1d62e342cc1dbe3c428034bae6e7d495bad7e58c482d7a80d3a7ae11`
+- source_sha256: `2627ce6757a94ad4ef10392c0e2b6775f7226d4c2494cf5ff01c3e1c40939027`
 - nodes: 2
 
 ### Nodes
@@ -5042,6 +5049,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - owns rollback bookkeeping, change-intent registration, and incident reporting for transfer operations
   - sweeps ROOT conduits only (Aether root-named lookups) for impacted lineages; lessers own nothing but the lifecycle of what they create
   - reads other Books' owned and contracted spell maps in its impact sweep through one-call snapshots, holding no foreign Book lock
+  - moves the source root store's entries of every index member to the target's store when move_creations is True (the public verbs' default since 0.2.8239; a holder's row carries its adopted children) or takes the active member's out when False; disposes nothing, and hands over stewardship, not a working setup
 - owns_state: `source_conduit`, `target_conduit`, `spell`, `_preflight_summary`, `_change_control_manager`, `_incident_manager`, `_rollback_actions`
 - phases: `runtime`
 - public methods: `cleanup`, `execute`, `preflight`
@@ -5078,7 +5086,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/creations/cluster_creations.py
 
-- source_sha256: `2d92c86c7b7da8cfea51a6146135b5e1c60a8dae18dd2bc9065540fa8283168d`
+- source_sha256: `ca00b4aecf283080ecdecf13bce0f0d36d0b768342a27e2c49131c42dcae5d4b`
 - nodes: 2
 
 ### Nodes
@@ -5087,9 +5095,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.conduit.creations.cluster_creations`
 - defined at: `src/melder/aether/conduit/creations/cluster_creations.py:1`
-- role: Facade pointing at whichever conduit is the cluster's elected leader.
+- role: Facade a member root resolves the cluster's team store through.
 - responsibilities:
-  - give members one stable handle while the real store moves with the leader
+  - give members one stable handle to the cluster's team store, which stays with the cluster across leader changes (0.2.8237)
 - phases: `runtime`, `cleanup`
 
 #### `ClusterCreations` (class)
@@ -5097,12 +5105,13 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.conduit.creations.cluster_creations.ClusterCreations`
 - defined at: `src/melder/aether/conduit/creations/cluster_creations.py:9`
 - extends: `Cleanable`
-- role: Facade over the elected leader's store; references, never owns.
+- role: Facade over the cluster's team store, bound while a leader is elected; references, never owns.
 - responsibilities:
   - refuse use while no leader is elected
   - never clean the store it points at
+  - records the elected leader's id as the purge authority for the team store, whose owner id is the cluster's (0.2.8237)
 - phases: `runtime`, `cleanup`
-- public methods: `add_creation`, `bind`, `cleanup`, `get_creation`, `is_active`, `resolved_store`, `unbind`
+- public methods: `add_creation`, `bind`, `cleanup`, `get_creation`, `is_active`, `leader_conduit_id`, `resolved_store`, `unbind`
 
 ### Edges out
 
@@ -5165,8 +5174,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/creations/creations.py
 
-- source_sha256: `b04d18f532396894c808a240265ea151a753f4997541f014e0fc544efd76cff5`
-- nodes: 3
+- source_sha256: `086a15ad6a9b8ddf9400c6163dc32e81a51e15d6a6d97015cc29aff03fccbccb`
+- nodes: 4
 
 ### Nodes
 
@@ -5193,12 +5202,25 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - owns_state: `entries`, `methods`
 - phases: `runtime`, `cleanup`
 
+#### `HolderDisposalEntry` (class)
+
+- id: `melder.aether.conduit.creations.creations.HolderDisposalEntry`
+- defined at: `src/melder/aether/conduit/creations/creations.py:53`
+- role: Cleanup-only record of one slotted holder and the disposal-bearing many children adopted for it (0.2.8238).
+- responsibilities:
+  - item is the holder the store holds under the holder's spell id; methods is the holder Spell's ordered disposal list, borrowed (empty when the holder declares none, the record then exists for its children)
+  - children lists (child, child_methods) pairs in build order; a child is in exactly one place, its spell's many bucket or one holder record
+  - disposal runs the holder's methods, then each child's, newest child first, so a holder whose own disposal uses a child still finds it open
+  - every field is borrowed: the owning Creations store detaches the record and disposes from it; the record owns nothing and needs no cleanup
+- owns_state: `item`, `methods`, `children`
+- phases: `runtime`, `cleanup`
+
 #### `Creations` (class)
 
 - id: `melder.aether.conduit.creations.creations.Creations`
-- defined at: `src/melder/aether/conduit/creations/creations.py:57`
+- defined at: `src/melder/aether/conduit/creations/creations.py:118`
 - extends: `Cleanable`
-- role: Generic scoped live-object registry with disposal metadata kept beside it: a (object, methods) tuple per unique key, a ManyDisposalBucket per disposal-bearing many key.
+- role: Generic scoped live-object registry with disposal metadata kept beside it: a (object, methods) tuple per unique key, a ManyDisposalBucket per disposal-bearing many key, a HolderDisposalEntry per slotted holder that adopted many children.
 - responsibilities:
   - stores raw objects in one scoped live registry and cleanup records in a separate registry: unique keys hold (object, methods), disposal-bearing many keys hold a ManyDisposalBucket that aliases the live bucket and records the key's method list once
   - register_many(spell_id, instance, disposal_methods) is the hot verb emitted plans and executors call (0.2.8216): explicit store-lock acquire/release, cleaned check, one dict read, first use creates the bucket and its record, one append; add_many_creations keeps its signature, writes the same shape and refuses a non-list slot or a disposal declaration that disagrees with the key's entries
@@ -5208,9 +5230,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - owns one re-entrant build guard per slot (slot_guard) so generated code builds each slotted object once without holding the store lock
   - keeps the store lock a leaf around dict work; refuses (and disposes) publication into a store cleaned during the build
   - purges a whole selected target or one supplied creation under the slot's build lock then the store lock, with paired registry removal and shared disposal helpers; no scope discovery or authorization
+  - records a just-published slotted holder's disposal-bearing many children with the holder (adopt_children, 0.2.8238): moves them out of their spells' buckets into the holder's HolderDisposalEntry, so purge, extract/restore and whole-store disposal reach them through the holder's key with one dict read; a many purge or live-creation probe of a child's spell counts only children no holder adopted
 - owns_state: `_creations`, `_disposable_creations`, `_slot_guards`, `_owner_conduit_id`, `_id`, `_lock`
 - phases: `init`, `runtime`, `cleanup`
-- public methods: `add_creation`, `add_many_creations`, `cleanup`, `clear_all`, `extract_spell_creations`, `get_creation`, `id`, `owner_conduit_id`, `purge`, `register_many`, `reset_for_pool`, `reset_for_pool_unlocked` (+2 more)
+- public methods: `add_creation`, `add_many_creations`, `adopt_children`, `cleanup`, `clear_all`, `extract_spell_creations`, `get_creation`, `id`, `owner_conduit_id`, `purge`, `register_many`, `reset_for_pool` (+3 more)
 
 ### Edges out
 
@@ -5218,7 +5241,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 | --- | --- | --- | --- | --- | --- |
 | `melder.aether.conduit.creations.creations.Creations` | specializes | `melder.utilities.general_base.cleanable.Cleanable` | - | - | derived |
 
-### Edge candidates (5, unconfirmed)
+### Edge candidates (6, unconfirmed)
 
 Instantiation guesses from the AST. Over-generated roughly 8x against the reference graph; confirm or drop before relying on them.
 
@@ -5227,6 +5250,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - `melder.aether.conduit.creations.creations.Creations` creates `ValueError`
 - `melder.aether.conduit.creations.creations.Creations` creates `ExceptionGroup`
 - `melder.aether.conduit.creations.creations.Creations` creates `ManyDisposalBucket`
+- `melder.aether.conduit.creations.creations.Creations` creates `HolderDisposalEntry`
 
 <!-- END FILE: src/melder/aether/conduit/creations/creations.py -->
 
@@ -5234,7 +5258,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/meld/conduit_meld.py
 
-- source_sha256: `657bb3db1ca40e08ab5c5d9831fc3325fb51f742412d3f393fe0fc6d98acecff`
+- source_sha256: `e4f3125944f51a24a0f9f560199ab100d1154b5b4ce297b3a88231c5832a33f3`
 - nodes: 2
 
 ### Nodes
@@ -5253,7 +5277,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `ConduitMeld` (class)
 
 - id: `melder.aether.conduit.meld.conduit_meld.ConduitMeld`
-- defined at: `src/melder/aether/conduit/meld/conduit_meld.py:13`
+- defined at: `src/melder/aether/conduit/meld/conduit_meld.py:14`
 - extends: `Meld`
 - role: Conduit-facing meld front door.
 - responsibilities:
@@ -5265,6 +5289,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - admits a dynamic spell through its spell-index gate before reading the context (both lanes, via Meld._execute_admitted); automatic spells keep the unticketed lane and fast-door memo
   - serves warm automatic id melds from the fast-door entry: plain melds (an existing object's bound object directly) and non-empty dict override payloads through the live override executor slot
   - mints the name/class warm entries (Meld._fast_input_doors) on the same success arms as the id entry for meld('Name') and meld(Cls) shapes; it never reads them - the public front doors do
+  - grants purge of a unique_per_conduit_cluster instance to the elected leader recorded on its cluster facade, since the team store's owner id is the cluster's (0.2.8237)
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `cleanup`, `describe_live_creation_status`, `meld`, `meld_existing_spell`, `purge`
 
@@ -5659,7 +5684,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/meld/spellspace_meld.py
 
-- source_sha256: `76fdebc208f912df89b2df6404a6db1ed93c6b36882376361d9fbf6fe2ac4422`
+- source_sha256: `47fcd3edf4f8a4353fd6ab7cc7cddfa57d203c060822b95b81df5d56a2d4cdb9`
 - nodes: 2
 
 ### Nodes
@@ -5720,7 +5745,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/spell_space/spell_space.py
 
-- source_sha256: `88882c5fe2771320077f670f8ace3d57645122930ff21780b0610d8025ca155f`
+- source_sha256: `d8e56bea1485d8cc383a3c0e2aee9580344cac7578d8ebe21f6a5baef44b1a6e`
 - nodes: 2
 
 ### Nodes
@@ -7820,7 +7845,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/creation_runtime_door_compiler.py
 
-- source_sha256: `6df0b2f8337e4f4e6fbe8b3a3210146e5b62cefc185dd3ac12321cd08da9e749`
+- source_sha256: `cfc6ac7f9e183652d60a0da28ebeac1ab06b335dc2c75e53ae3cb0b0bd12d7c0`
 - nodes: 1
 
 ### Nodes
@@ -7951,7 +7976,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py
 
-- source_sha256: `c3ae5abb6146c5fbdca9d59ac392875aa7552e427f1d527180e509918141d94e`
+- source_sha256: `0126552765aee7124501ad400b981339177ca18d8bf0ede456f35c14af9e551b`
 - nodes: 5
 
 ### Nodes
@@ -8020,6 +8045,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - leaves out the root miss's guard in a normal plan whose calling route door already holds it (unique_per_conduit and spellspace roots, 0.2.73)
   - emits a dict literal of exactly the dependency values a generic construction reads, where it runs (lazy instance_results, 2026-10-03): no dict at the plan top, no per-step stores, no dict parameter on misses; _place passes a generic member's providers into its miss like a direct member's operands
   - binds an automatic world's unique-site owner store as a plan constant (owner-store constants, 2026-10-03): _owner_store_constant admits a unique site whose provider spell is owned by an automatic conduit and has an owner store; _emit_shared_hit then binds c{i} in the namespace and emits no alias line, while dynamic, unowned and meld.<store> sites keep the per-creation read and the miss keeps its c{i} parameter
+  - registers a disposal-bearing many site in the store that owns its context (holder-owned many children, 0.2.8235): many_store, the meld's innermost scope, at the top level; c{i} inside shared site i's miss, so a slotted holder's many children are recorded and disposed with the holder's owner; a miss emits no innermost-scope prologue
+  - emits c{i}.adopt_children(sid{i}, v{i}, ((sidK, vK), ...)) right after holder i's publication in its miss, naming exactly the disposal-bearing many children registered in c{i} for it (holder records, 0.2.8238); warm _site_plan_executor bodies are unchanged
 - owns_state: `_lines`, `_miss_lines`, `_masked`, `_direct`, `_shared`, `_home`, `_children`, `_miss_value_params`, `_root_index`, `_context_params`, `_root_guard_held_by_door`, `_index_by_key`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `render`
@@ -8235,7 +8262,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_no_overrides_compiler.py
 
-- source_sha256: `3d0b84324e3c1fa83c1531b971d4b692af929b036324e1623bd8550e6c7191bb`
+- source_sha256: `c27641fce7f68010f5df0ef01cfffa071d799c54c1aed4c33a02aa30cb8e6df5`
 - nodes: 1
 
 ### Nodes
@@ -8249,6 +8276,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - selects specializable steps and emits the singleton specializer's row-driven source
   - hydrates the specialized executor through the process-wide executor factory cache; it deopts to the site-plan normal plan
   - resolves contract payload rows and the root instance key, and computes inlinable shapes and positional-prefix names (P1)
+  - decides which graphs the straight-line specializer can express: rows_feed_many_into_non_many_step is True when a many row feeds a non-many row, whose child only the site plan builds in the holder's first build (0.2.8235)
 - owns_state: `_STEP_STATIC_NAMESPACE`, `SPECIALIZED_EXECUTOR_NAME`, `_SPECIALIZED_FACTORY_SOURCE_NAME`
 - phases: `runtime`
 
@@ -8565,7 +8593,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_hydrator.py
 
-- source_sha256: `c7cce38ac21f461fab54ab0f072a7325dbfdfbad9ab9469b5b9272fadcf00a76`
+- source_sha256: `96573430fd6c5a9972558518818a55772b1145e5c01c3f106507ad84fdaa93da`
 - nodes: 2
 
 ### Nodes
@@ -8579,13 +8607,13 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - hydrates both generalized runtime doors from one manifest plus one resolver
   - publishes cold lazy doors that hydrate once at first meld and swap in hot executors
   - builds one SitePlanOverrideRuntime per root from the manifest's no-overrides step rows: its normal plan is the inner executor and its dispatcher backs the lazily compiled override door
-  - optionally installs the singleton warm-tail specializer, which deopts to the normal plan
+  - optionally installs the singleton warm-tail specializer, which deopts to the normal plan; it keeps the plain door for graphs with no capturable step, a root-only capture on a short-circuiting route, or a many step feeding a non-many step (0.2.8235)
 - phases: `runtime`
 
 #### `GeneralizedHydratedExecutors` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.hydration.generalized_hydrator.GeneralizedHydratedExecutors`
-- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_hydrator.py:62`
+- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_hydrator.py:63`
 - extends: `Cleanable`
 - role: Hydration result container for generalized family runtime doors.
 - responsibilities:

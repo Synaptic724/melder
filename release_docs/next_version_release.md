@@ -1,4 +1,4 @@
-# Melder 0.2.8234
+# Melder 0.2.8240
 
 **Unreleased**
 
@@ -143,6 +143,168 @@ signature changes, and `describe()` keeps its keys.
 What stays the same: the number of live shells is never capped (a miss always builds), a returning shell is cleaned
 before it is pooled, and a released spellspace still refuses `meld` and `purge`.
 
+## A `many` dependency is disposed with the object that holds it
+
+A `many` dependency that declares disposal methods and is built for a longer-lived object - a `unique`,
+`unique_per_conduit`, `unique_per_spell_space`, `unique_per_conduit_lineage` or `unique_per_conduit_cluster` spell -
+now belongs to that object: it is disposed when the object's owner is cleaned up, it is disposed right after the
+object when the object is purged, and it moves with the object to another root. Until 0.2.8234 it was recorded with
+the scope that happened to build the holder first: when a lesser conduit, a spellspace, a borrowing root or a cluster
+member built the holder and then ended, Melder ran the dependency's disposal methods while the holder - kept by the
+root, the conduit, the lineage root or the cluster - went on handing out the disposed object. Until 0.2.8237 purging
+the holder disposed the holder alone, leaving its dependencies registered and open until their scope ended (one more
+for every purge-and-meld cycle), and `transfer_spell_ownership(..., move_creations=True)` moved the holder and left
+its dependencies with the old root, whose teardown disposed them while the new owner kept serving the holder.
+
+```python
+class Connection:
+    def __init__(self) -> None:
+        self.closed = False
+
+    def close(self) -> None:
+        self.closed = True
+
+
+class Repository:
+    def __init__(self, connection: Connection) -> None:
+        self.connection = connection
+
+
+book = md.Spellbook()
+book.bind(spell=Connection, existence="many", disposal_method_names=["close"])
+book.bind(spell=Repository, existence="unique")
+root = book.conjure()
+
+with root.enter_lesser_conduit() as request:
+    repository = request.meld("Repository")      # first built inside the request scope
+
+assert not repository.connection.closed          # 0.2.8234 closed it when the request scope ended
+assert root.meld("Repository") is repository
+
+root.purge("Repository")                          # disposes the repository, then its connection
+assert repository.connection.closed               # 0.2.8237 left it open, registered, until root.cleanup()
+```
+
+A dependency that belongs to an object is no longer one of its `many` spell's own entries: `purge` and
+`has_live_creation` for that spell count only the instances no object holds, so purging the spell never disposes a
+dependency a live object still uses. Purging the object raises the dependencies' disposal failures together with its
+own, after the object is retired, and the object is disposed before its dependencies, as at teardown.
+
+What stays the same: a `many` spell melded directly, and the `many` dependencies of a `many` spell, are still
+recorded with the scope that melds them (the spellspace, else the conduit), so a lesser conduit or a spellspace still
+disposes the transients it built for itself. `purge` still returns the number of the target's own entries it removed.
+Warm melds run exactly the code they ran before.
+
+With `generalized_singleton_specialization_enabled` (opt-in, off by default), a root whose graph passes a `many`
+dependency to a longer-lived object is no longer specialized: the specialized path built and recorded a new
+dependency on every warm meld, which the stored holder never used.
+
+## A root that is torn down leaves its cluster, and leaving a cluster unshares its roots
+
+A root conduit that is torn down - `cleanup()`, the end of a `with` block, or its frame's teardown - now leaves its
+conduit cluster first, as `remove_conduit_from_cluster()` would. Until 0.2.8235 it stayed in the cluster as a member,
+and as the leader when it led: `unelect_leader()` then failed part-way, `elect_leader()` refused because a leader was
+still recorded, adding another conduit raised, and `delete_cluster()` removed the cluster and then raised before
+cleaning it up. A torn-down leader now leaves the cluster with no leader, ready to elect another member.
+
+```python
+cloud = owner.get_conduit_cloud()
+cloud.create_cluster("workers")
+for root in (owner, leader, member):
+    cloud.add_conduit_to_cluster(root, "workers")
+workers = cloud.get_cluster("workers")
+workers.elect_leader(leader.id)
+
+leader.cleanup()                    # leaves "workers"; the cluster has no leader now
+workers.elect_leader(member.id)     # 0.2.8235 refused: the torn-down leader was still recorded
+cloud.delete_cluster("workers")     # 0.2.8235 removed the cluster, then raised before cleaning it up
+```
+
+`remove_conduit_from_cluster()` now also takes the leaving conduit's shared roots back from every remaining member,
+and theirs from it. Until 0.2.8235 the leave dropped its record of what the conduit had shared before it unshared it,
+so every remaining member kept the leaving conduit's roots in its contracts.
+
+What stays the same: `remove_conduit_from_cluster()` still needs a dynamic frame with clusters enabled, a conduit
+belongs to at most one cluster, and `get_clusters_for_conduit()` returns the same list - it now reads the frame's
+membership index instead of walking every cluster.
+
+## A cluster's shared object belongs to the cluster, not to its leader
+
+A `unique_per_conduit_cluster` object now lives in the cluster's own store for as long as the cluster exists. Electing
+a leader serves it to every member; a leader leaving the cluster or being torn down keeps it; the next leader serves
+the same object; and deleting the cluster, or tearing its frame down, disposes it once. Until 0.2.8236 the object
+lived in the elected leader conduit's own store: after a leader change the next election built a second object, and
+tearing the old leader down disposed the first one while members' objects still used it. Deleting a cluster disposed
+nothing.
+
+```python
+workers.elect_leader(leader.id)
+bus = member.meld("ClusterBus")
+cloud.remove_conduit_from_cluster(leader, "workers")
+workers.elect_leader(member.id)
+assert member.meld("ClusterBus") is bus      # 0.2.8236 built a second bus
+leader.cleanup()                              # 0.2.8236 closed the first bus here
+cloud.delete_cluster("workers")               # closes the bus, once
+```
+
+`delete_cluster()` now raises an `ExceptionGroup` of the cluster objects' disposal failures, after the cluster is
+deleted; frame teardown logs them and keeps going.
+
+What stays the same: a cluster still needs an elected leader before its object can be melded, only the elected leader
+can purge it, and `describe_live_creation_status()` still reports `"cluster_leader"` as its `storage_scope_kind`.
+
+## An ownership transfer brings the spell's objects with it by default
+
+**Breaking change:** `Conduit.transfer_spell_ownership()` now defaults to `move_creations=True`: the objects the old
+owner's creations hold for the transferred spell, for every version of it, move into the new owner's creations. A
+`unique` spell therefore stays one object - the new owner serves the instance the old owner's consumers already hold,
+and disposes it once, when the new owner is cleaned up. Until 0.2.8238 the default was `False`, which took the old
+owner's objects for the spell's active version out of its creations and neither moved nor disposed them: the new
+owner built a second instance of a `unique` spell while the old owner's consumers kept the first, and nothing ever ran
+the first one's disposal methods.
+
+```python
+class Tool:
+    def close(self) -> None: ...
+
+
+class Worker:
+    def __init__(self, tool: Tool) -> None:
+        self.tool = tool
+
+
+book = md.Spellbook()
+tool_id = book.bind(spell=Tool, existence="unique", disposal_method_names=["close"])
+book.bind(spell=Worker, existence="unique_per_conduit")
+owner = book.conjure(dynamic=True, name="owner")
+target = md.Spellbook().conjure(dynamic=True, name="target")
+
+worker = owner.meld("Worker")
+owner.transfer_spell_ownership(spell=tool_id, target_conduit=target)
+assert target.meld("Tool") is worker.tool     # 0.2.8238 built a second Tool here
+owner.cleanup()                                # leaves the Tool open: the target owns it now
+target.cleanup()                               # closes it, once
+```
+
+To keep the old behaviour, pass `move_creations=False`; the transfer report's `options` show the value used.
+
+A transfer hands over stewardship, not a working setup, and the docstring and the ownership guide now say so
+(0.2.8240). The spells the transferred spell depends on stay with the old owner unless `include_dependencies=True`
+moves the direct ones, so the new owner can start out broken: the moved objects keep the dependencies they were
+built with, and the old owner's teardown disposes the ones it owns while the moved objects still hold them. That
+is expected in a runtime agents iterate in. The new owner purges what it does not want, binds the dependencies it
+needs - a meld that must build the spell without them raises `UnresolvedInputError` naming each missing input -
+and melds its own version, while the old owner cleans up its own scope.
+
+What stays the same: a transfer disposes nothing. With `move_creations=False` the old owner's objects for the spell's
+active version are taken out of its creations, neither moved nor disposed, and the new owner builds its own; objects
+of parked versions stay in the old owner's creations. A moved object replaces whatever the new owner's creations
+already hold for the same spell - for example a `unique_per_conduit` object it melded while borrowing the spell - and
+the replaced object is not disposed. `unique_per_conduit_lineage` objects stay with the lineage that resolved them,
+and spellspace and cluster objects are not kept in a conduit's creations, so `move_creations` does not reach them.
+Everything else a transfer does is unchanged: stewardship of every version of the spell moves, borrowers are unshared
+or repointed, and owned dependencies move only with `include_dependencies=True`.
+
 ## Packaging and documentation
 
 - The README's "Declarative Binding by Module" example passes `permissions="create"`, without which it raised
@@ -164,4 +326,18 @@ before it is pooled, and a released spellspace still refuses `meld` and `purge`.
   how `cleanup_and_remove_spell` treats a Spellbook torn down while it waits.
 - The packaged system documents describe the elastic retention of the kernel pools: the sizes, the stretch
   under pressure, the timed decay and the prewarm ceiling.
-- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8234.
+- The packaged system documents describe where a `many` dependency built for a longer-lived object is recorded (with
+  the holder's owner), the store selection and live-creation probe that follow, and the specializer's eligibility.
+- The ownership guide (`docs/intermediate/ownership.md`) says a transfer moves the spell's objects by default and
+  hands over stewardship, not a working setup, and how the new owner rebuilds.
+- The packaged system documents (`melder.__architecture__`) open with Melder's runtime model: correctness lives in
+  the structure - bindings, indexes and versions, ownership, contracts and links, lineage and clusters, verdicts and
+  the Crystallizer's record; the objects Melder builds are working material that agents iterate on, leave pending
+  and clean up; Melder disposes what its own creations record when they end and does not police the objects it
+  hands out.
+- The packaged system documents describe a root leaving its cluster at teardown, the team store a cluster owns,
+  the record that carries a slotted object's `many` children through purge, transfer and disposal, and the
+  transfer default and handover; the code-map extents of the files these changes touched are remeasured.
+- The internal-bind guard manifest holds 623 entries at 0.2.8238 (622 at 0.2.8227): `HolderDisposalEntry`, the
+  record that keeps a slotted object's `many` children with it, joined.
+- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8240.

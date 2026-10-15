@@ -1,0 +1,7 @@
+elastic, no reset: inline pop + ReleaseManagedSpell.release 140 ns; inline pop + holder put_back 90 ns; idle 1, count 1
+elastic, reset(): inline pop + ReleaseManagedSpell.release 215 ns; inline pop + holder put_back 149 ns; idle 1, count 1
+limited_quantity(4): inline pop + ReleaseManagedSpell.release 124 ns; inline pop + holder put_back 82 ns; idle 1, count 1
+queue(4, 1.0s): inline pop + ReleaseManagedSpell.release 265 ns; inline pop + holder put_back 239 ns; idle 1, count 1
+limited(3) under 8 threads: peak count 3 (built 3), exhausted 13792, idle 3
+queue(1, 0.25s): waits then raises at the timeout (0.25s)
+queue: a waiter is served by a release: True, count 1

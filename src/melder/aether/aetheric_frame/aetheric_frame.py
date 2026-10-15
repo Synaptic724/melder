@@ -292,7 +292,9 @@ class AethericFrame(Cleanable):
           after `DevOpsManager` drops its borrowed reference.
         - Clears spell and version registries owned by the frame.
         - Cleans conduit cloud, spell-system-state, and DevOps services when
-          present.
+          present. The cloud raises its clusters' team-store disposal failures
+          after it finished (0.2.8237); frame teardown logs them through the
+          Aether logger, as it does a failing conduit, and keeps going.
 
         Returns:
             None.
@@ -326,9 +328,18 @@ class AethericFrame(Cleanable):
         if self._selected_spell_registry is not None:
             self._selected_spell_registry.clear()
 
-        # Dynamic conduit cloud
+        # Dynamic conduit cloud (cleaned after every root, so each root has left
+        # its cluster and only the clusters' team stores remain to dispose).
         if self._conduit_cloud is not None:
-            self._conduit_cloud.cleanup()
+            try:
+                self._conduit_cloud.cleanup()
+            except Exception:
+                if self._aether._logger is not None:
+                    self._aether._logger.error(
+                        "Error cleaning the conduit cloud during frame teardown",
+                        "_cleanup_data_structures",
+                        exc_info=True,
+                    )
 
         # Spell system states registry
         if self._spell_system_states is not None:

@@ -14,9 +14,9 @@ Regenerate with:
 """
 
 MANIFEST_VERSION = "2.0.0"
-BUILT_FOR_VERSION = "0.2.8234"
-SOURCE_SHA256 = "d02558e7da336fbdc78c6f2769181465e0a79117dd64e383d494fbeb7a635c65"
-ENTRY_COUNT = 622
+BUILT_FOR_VERSION = "0.2.8240"
+SOURCE_SHA256 = "195e4b4575e3382c1b962bb9280de757127f4a953a091ae3649ff24abc88ba98"
+ENTRY_COUNT = 623
 
 ENTRIES = (
     ('melder.aether.aether', 'Aether'),
@@ -134,6 +134,7 @@ ENTRIES = (
     ('melder.aether.conduit.creations.cluster_creations', 'ClusterCreations'),
     ('melder.aether.conduit.creations.conduit_creations', 'ConduitCreations'),
     ('melder.aether.conduit.creations.creations', 'Creations'),
+    ('melder.aether.conduit.creations.creations', 'HolderDisposalEntry'),
     ('melder.aether.conduit.creations.creations', 'ManyDisposalBucket'),
     ('melder.aether.conduit.meld.conduit_meld', 'ConduitMeld'),
     ('melder.aether.conduit.meld.contracts.spell_contract', 'SpellContract'),

@@ -5,7 +5,7 @@
 - Status: in_progress
 - Owner:
 - Created: 2026-01-22
-- Updated: 2026-10-12
+- Updated: 2026-10-14
 
 ## Scope
 This document defines C3 components, C2 subcomponents, and C1 code references
@@ -393,7 +393,7 @@ Concurrency/Threading:
 
 Invariants/Guarantees:
 - unit tests stay close to class/method behavior
-- the densest tier: 476 `test_*.py` modules among 479 `.py` files
+- the densest tier: 480 `test_*.py` modules among 483 `.py` files (recounted 2026-10-14)
 - CI-script tests never import `melder`; each script is loaded as a standalone module
 
 Failure Modes:
@@ -478,7 +478,7 @@ Concurrency/Threading:
 Invariants/Guarantees:
 - tier intent is explicitly documented in `tests/component/INFO.MD`: real core
   objects, stubbed external boundaries, deterministic, contract-level assertions
-- 156 `test_*.py` modules among 158 `.py` files
+- 164 `test_*.py` modules among 166 `.py` files (recounted 2026-10-14)
 
 Failure Modes:
 - component tests drift into unit-style internals or full integration sprawl
@@ -491,7 +491,7 @@ Extension Points:
 
 Key Files (C1):
 - `tests/component/INFO.MD`
-- No harness or support module of its own; the 70 test_*.py modules in
+- No harness or support module of its own; the 75 test_*.py modules in
   tests/component/melder/aether/ depend only on the shared surfaces at tests/ and the scoped
   conftests named in `tests_architecture.md`. Paths in this bullet are written
   WITHOUT backticks because they are directories - descriptive, never citations.
@@ -560,7 +560,7 @@ Concurrency/Threading:
 
 Invariants/Guarantees:
 - integration tests use real runtime stacks rather than hand-built shallow mocks
-- 157 `test_*.py` modules among 164 `.py` files; the others are benches and the
+- 158 `test_*.py` modules among 165 `.py` files (recounted 2026-10-14); the others are benches and the
   live-sim application
 
 Failure Modes:
@@ -584,7 +584,7 @@ Key Files (C1):
   rather than cited so the core set stays a set an agent can verify.
 - The rift tree (inside the aether tree) carries 3 `test_*.py` modules over the
   same three benches; they are counted here rather than cited.
-- No harness or support module of its own; the 36 test_*.py modules in
+- No harness or support module of its own; the 37 test_*.py modules in
   tests/integration/melder/conduit/ depend only on the shared surfaces at tests/ and the scoped
   conftests named in `tests_architecture.md`. Paths in this bullet are written
   WITHOUT backticks because they are directories - descriptive, never citations.
@@ -1010,7 +1010,8 @@ Protects:
   and honouring cancellation; the phase 2-5 codegen IR shape and deterministic
   signature hashing; the validation-strategy registry and Phase-6 validity gating
 - key-set plan lowering (`test_site_plan_lowering.py`): demand, placement, guard
-  order, call shape and unresolved inputs
+  order, call shape, unresolved inputs, and the store a miss's `many` children register in (the holder's,
+  0.2.8235)
 - copied pool reads (`test_compiler_pool_snapshot_reads.py`): Phases 3, 5 and 6 and
   the Phase-8 walk survive a pool that grows while iterated, and Phase 5 skips an
   entry with no registered state (see `### Flow: Concurrent-Writer Stand-In`)
@@ -1170,6 +1171,10 @@ Protects:
 - elastic kernel pools (0.2.8234): a repeat burst of 30 lessers or 30 nested managed spellspaces reuses every
   shell, a burst past 256 keeps 256, the root pool decays to 20 after the settle time with catch-up (fake clock
   through `_time_func`) and stretches again, and prewarming keeps 40 of each
+- holder-owned many children (0.2.8235): a slotted holder's disposal-bearing `many` child is recorded in the store
+  that owns the holder and disposed exactly once, when that owner ends - not when the lesser or spellspace that
+  first melded the holder ends (`unique`, `unique_per_conduit`, lineage; nested and override routes); controls
+  for holders built where they live; the opt-in singleton specializer builds one child, not one per warm meld
 Key Files (C1):
 - `tests/component/melder/aether/test_frame_descriptor_manager_component.py`
 - `tests/component/melder/aether/test_frame_acl_component.py`
@@ -1181,6 +1186,7 @@ Key Files (C1):
 - `tests/component/melder/aether/test_aether_spell_id_regime_property_component.py` (regime in force, 2026-09-30)
 - `tests/component/melder/aether/conduit/test_conduit_component_injected_provider_direct_meld.py` (2026-09-30)
 - `tests/component/melder/aether/conduit/test_kernel_pool_elastic_retention.py` (elastic pools, 2026-10-12)
+- `tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py` (2026-10-14)
 
 ### Subcomponent: Crystallizer Component Cluster
 Parent Component: Component Test Suite
@@ -1396,6 +1402,17 @@ Protects:
   ExceptionGroup (0.2.8203)
 - door-held first builds (0.2.73): concurrent first melds of one root, on one
   conduit or in one shared SpellSpace, construct it and its dependency once
+- holder-owned many children (0.2.8235): a borrowed `unique` holder first melded by its borrower and a cluster
+  holder first melded by a member keep their disposal-bearing `many` child open until the holder's owner ends
+- cluster lifetimes (0.2.8236-0.2.8237): a torn-down member or leader leaves its cluster (unelect and elect work,
+  the cluster stays deletable, a failed transactional leave still drops it), an explicit leave unshares the leaver's
+  roots from every member, the cluster's object survives a leader change and is disposed once by deletion or frame
+  teardown, a failing disposal is raised after the deletion, and only the elected leader purges it
+- holder records (0.2.8238): purging a holder disposes its `many` child after it (also for a holder without disposal
+  methods, in a spellspace and by the owner of a `unique`), nothing accumulates over purge-and-meld cycles, a `many`
+  purge of the child's spell leaves a live holder's child open, and an ownership move carries the child
+- transfer default (0.2.8239): a default transfer keeps a `unique` as one object and moves a tracked `many` object;
+  `move_creations=False` builds a new instance on the target
 Key Files (C1):
 - `tests/integration/melder/conduit/test_conduit_integration_concurrency.py`
 - `tests/integration/melder/conduit/test_conduit_integration_lifecycle.py`
@@ -1408,6 +1425,9 @@ Key Files (C1):
 - `tests/integration/melder/conduit/test_conduit_integration_transfer_ownership.py`
 - `tests/integration/melder/conduit/test_ordered_disposal_runtime.py`
 - `tests/integration/melder/conduit/test_conduit_integration_door_held_first_build.py`
+- `tests/integration/melder/conduit/test_conduit_integration_many_child_disposed_with_its_holder.py` (2026-10-14)
+- `tests/integration/melder/conduit/test_conduit_integration_cluster_member_lifetime.py` (2026-10-14)
+- `tests/integration/melder/conduit/test_conduit_integration_holder_children_lifetime.py` (2026-10-14)
 
 ### Subcomponent: Multithreading Integration Cluster
 Parent Component: Integration Runtime Suite
@@ -1563,12 +1583,12 @@ Key Files (C1):
   note: frame-isolated automatic/dynamic qualified-name regressions and real collision controls.
 
 Core is the DEDUPLICATED UNION OF EVERY `Key Files (C1)` LIST in the catalogs
-above - 214 paths - and nothing else. Change a component's key files and this set
+above - 217 paths (recounted 2026-10-14) - and nothing else. Change a component's key files and this set
 follows; if the two ever disagree, this section is wrong, not the catalog.
 
 WHAT COUNTS AS A KEY FILE ON THIS SIDE. A test component's key files are its
 HARNESS AND SUPPORT SURFACES - conftests, benches, mock packages, shared
-builders - not every `test_*.py` module beneath it. The 789 test modules of the
+builders - not every `test_*.py` module beneath it. The 802 test modules of the
 three CI tiers (and the 33 experimentation modules) are the component's CONTENT;
 they are counted in each entry rather than cited, because a
 core set that lists the entire tree is not a set anyone can verify, which is the
@@ -2104,9 +2124,14 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-09-30T20:10:45Z
 - path: `tests/component/melder/aether/conduit/test_kernel_pool_elastic_retention.py`
   start_line: 1
-  end_line: 169
-  loc: 169
-  verified_at: 2026-10-12T20:34:01Z
+  end_line: 183
+  loc: 183
+  verified_at: 2026-10-14T18:24:30Z
+- path: `tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py`
+  start_line: 1
+  end_line: 513
+  loc: 513
+  verified_at: 2026-10-14T16:20:47Z
 - path: `tests/component/melder/crystallizer/test_spell_crystal_component.py`
   start_line: 1
   end_line: 135
@@ -2298,9 +2323,9 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
 
 - path: `tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering.py`
   start_line: 1
-  end_line: 1179
-  loc: 1179
-  verified_at: 2026-09-26T22:11:36Z
+  end_line: 1390
+  loc: 1390
+  verified_at: 2026-10-14T16:20:47Z
 - path: `tests/component/melder/spellbook/test_spellbook_component_override_key_set_plans.py`
   start_line: 1
   end_line: 476
@@ -2590,9 +2615,9 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-09-27T23:41:28Z
 - path: `tests/integration/melder/conduit/test_conduit_integration_transfer_ownership.py`
   start_line: 1
-  end_line: 154
-  loc: 154
-  verified_at: 2026-09-26T22:11:36Z
+  end_line: 288
+  loc: 288
+  verified_at: 2026-10-14T23:59:35Z
 - path: `tests/integration/melder/conduit/test_ordered_disposal_runtime.py`
   start_line: 1
   end_line: 129
@@ -2651,6 +2676,21 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   end_line: 324
   loc: 324
   verified_at: 2026-09-26T22:15:16Z
+- path: `tests/integration/melder/conduit/test_conduit_integration_many_child_disposed_with_its_holder.py`
+  start_line: 1
+  end_line: 186
+  loc: 186
+  verified_at: 2026-10-14T16:20:47Z
+- path: `tests/integration/melder/conduit/test_conduit_integration_cluster_member_lifetime.py`
+  start_line: 1
+  end_line: 352
+  loc: 352
+  verified_at: 2026-10-14T23:59:35Z
+- path: `tests/integration/melder/conduit/test_conduit_integration_holder_children_lifetime.py`
+  start_line: 1
+  end_line: 415
+  loc: 415
+  verified_at: 2026-10-14T23:59:35Z
 - path: `tests/integration/melder/spellbook/test_spellbook_integration_validation_system.py`
   start_line: 1
   end_line: 1797
@@ -2783,6 +2823,29 @@ graph TD
   scan/bind coverage grows.
 
 ## Context / Handoff Summary
+
+2026-10-14 slotted lifetimes (0.2.8236-0.2.8240): the Conduit Integration Cluster gains
+`test_conduit_integration_cluster_member_lifetime.py` (eleven cluster-lifetime cases) and
+`test_conduit_integration_holder_children_lifetime.py` (ten holder-record cases), and
+`test_conduit_integration_transfer_ownership.py` pins the transfer default; the unit tier gains
+`test_creations_holder_children.py` (thirteen record cases), and the cluster, cloud, facade, creations and site-plan
+modules gained cases. Only the three integration code-map entries were measured.
+
+2026-10-14 quiet-pool decay clock (no notch; tests only): `test_kernel_pool_elastic_retention.py`'s fake clock
+starts on a whole second at or after the real monotonic time, so every whole-second advance and every deadline
+the pool derives from it is exact; from a real-valued origin the advance to the settle time fell one ulp short (or
+read the burst's miss one ulp inside the pressure window) for about 0.2-1% of origins and the quiet-pool test saw
+no decay step. Only that file's code-map range was measured.
+
+2026-10-14 holder-owned many children (0.2.8235): the Aether Component Cluster gains
+`test_conduit_component_many_child_disposed_with_its_holder.py` (each slotted holder's `many` child recorded in and
+disposed with the holder's owner; the specializer building one child) and the Conduit Integration Cluster
+`test_conduit_integration_many_child_disposed_with_its_holder.py` (borrower and cluster member); the Spellbook
+Compiler Unit Cluster's site-plan test pins a miss's children to the holder's store. The core set is 217 paths and
+the tier counts are recounted from disk (802 test modules in the three tiers; the unit tier's 4 and 7 of the
+component tier's 8 new modules came from earlier lanes). Only the two new code-map entries and the touched
+`test_site_plan_lowering.py` were measured; 15 other stale ranges here and 2 in tests_architecture are left as
+found.
 
 2026-10-12 elastic pool retention (0.2.8234): the Aether Component Cluster gains
 `test_kernel_pool_elastic_retention.py` (repeat bursts, the 256 cap, decay and catch-up on the root pool, prewarm

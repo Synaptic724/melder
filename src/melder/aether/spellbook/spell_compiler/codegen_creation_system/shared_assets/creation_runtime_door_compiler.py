@@ -660,7 +660,9 @@ def _build_no_overrides_lines(
         ]
     if resolve_route_key == "cluster":
         # unique_per_conduit_cluster: one instance per cluster, stored in the
-        # elected leader's creations, resolved off the meld's cluster facade.
+        # cluster's team store (served while a leader is elected), resolved off
+        # the meld's cluster facade. The emitted local keeps its historical name
+        # `leader_creations`, so emitted door bodies are unchanged (0.2.8237).
         return [
             "leader_creations = meld._cluster_creations.resolved_store()",
             "creation = leader_creations._creations.get(_spell_id)",

@@ -40,7 +40,9 @@ class ConduitCloud(Cleanable):
     - Thread-safe access is serialized with the instance `RLock`.
 
     Owned State:
-        The cluster registry, named directory and temporary promotion-name claims.
+        The cluster registry (by name, plus each cluster's name by its id for the
+        O(1) membership lookup), named directory and temporary promotion-name
+        claims.
         Directory values are borrowed live conduits, not owned lifecycle objects.
 
     Threading:
@@ -103,6 +105,7 @@ class ConduitCloud(Cleanable):
         "_conduit_names_by_id",
         "_reserved_conduit_names",
         "_conduit_clusters",
+        "_cluster_names_by_id",
         "_id",
         "_devops_identity",
         "_devops_information_registry",
@@ -151,6 +154,7 @@ class ConduitCloud(Cleanable):
         self._conduit_names_by_id: Dict[str, str] = {}
         self._reserved_conduit_names: Dict[str, str] = {}
         self._conduit_clusters: Dict[str, ConduitCluster] = {}
+        self._cluster_names_by_id: Dict[str, str] = {}
         self._id: str = new_ulid()
         self._devops_information_registry: DevopsInformationRegistry = (
             devops_information_registry
@@ -179,15 +183,25 @@ class ConduitCloud(Cleanable):
 
         Contract:
             - Idempotent and lock-guarded.
-            - Cleans cloud-owned cluster state before dropping owned refs.
+            - Cleans cloud-owned cluster state before dropping owned refs. Each
+              cluster disposes its team store as it is cleaned (0.2.8237); a
+              cluster's disposal failures are collected and raised as one
+              ExceptionGroup after the whole cloud is cleaned. Any other cluster
+              cleanup error stays best-effort, as before.
             - Does not clean the conduit objects or clear the borrowed
               frame-owned root-conduit stores.
+
+        Raises:
+            ExceptionGroup: One or more clusters' team-store instances failed a
+                disposal method ("Conduit clusters cleaned with disposal
+                failures."), raised after the cloud finished its cleanup.
 
         Returns:
             None.
         """
         if self._cleaned:
             return
+        disposal_failures: List[Exception] = []
         with self._lock:
             if self._cleaned:
                 return
@@ -195,11 +209,16 @@ class ConduitCloud(Cleanable):
                 # Best-effort: the clusters are cloud-owned and are dropped right
                 # after this loop, so one cluster's cleanup failure must not abort
                 # cleanup of the remaining clusters or the cloud teardown below.
+                # Its team-store disposal failures are raised once the cloud is
+                # cleaned (0.2.8237).
                 try:
                     cluster.cleanup()
+                except ExceptionGroup as cluster_failures:
+                    disposal_failures.append(cluster_failures)
                 except Exception:
                     continue
             self._conduit_clusters.clear()
+            self._cluster_names_by_id.clear()
             self._named_conduits.clear()
             self._conduit_names_by_id.clear()
             self._reserved_conduit_names.clear()
@@ -212,12 +231,17 @@ class ConduitCloud(Cleanable):
             del self._conduit_names_by_id
             del self._reserved_conduit_names
             del self._conduit_clusters
+            del self._cluster_names_by_id
             del self._devops_information_registry
             del self._devops_identity
             del self._aetheric_frame
             del self._name
             del self._id
         del self._lock
+        if disposal_failures:
+            raise ExceptionGroup(
+                "Conduit clusters cleaned with disposal failures.", disposal_failures
+            )
 
     @staticmethod
     def _validate_conduit_name(name: Optional[str]) -> str:
@@ -790,22 +814,35 @@ class ConduitCloud(Cleanable):
                 raise ValueError(
                     "Cluster with name {0} already exists.".format(cluster_name)
                 )
-            self._conduit_clusters[cluster_name] = ConduitCluster(
+            cluster = ConduitCluster(
                 cluster_name,
                 self._conduits,
                 self._name,
                 self._devops_information_registry,
             )
+            self._conduit_clusters[cluster_name] = cluster
+            self._cluster_names_by_id[cluster.id] = cluster_name
 
     def delete_cluster(self, cluster_name: str) -> None:
         """
         Delete one frame-local conduit cluster.
+
+        Contract:
+            - Removes the cluster from this cloud, unelects it when a leader is
+              elected (draining every member lineage), then cleans it: the
+              cluster's `unique_per_conduit_cluster` instances are disposed with
+              it (0.2.8237; before, deleting a cluster disposed nothing and the
+              instances died later with the leader conduit).
+            - The deletion finishes before any disposal failure is raised.
 
         Args:
             cluster_name (str): Cluster name to remove.
 
         Raises:
             ValueError: If the cluster does not exist.
+            ExceptionGroup: One or more of the cluster's instances failed a
+                disposal method ("Conduit cluster cleaned with disposal
+                failures."); the cluster is already deleted.
 
         Returns:
             None.
@@ -814,14 +851,17 @@ class ConduitCloud(Cleanable):
         self._assert_cluster_operations_allowed()
         with self._lock:
             cluster = self._conduit_clusters.pop(cluster_name, None)
+            if cluster is not None:
+                del self._cluster_names_by_id[cluster.id]
         if cluster is None:
             raise ValueError(
                 "Cluster with name {0} does not exist.".format(cluster_name)
             )
-        # Dissolve the team store first if a leader is still elected: deleting an
-        # active cluster must not leave member facades bound to a leader store the
-        # cluster no longer coordinates. Members are still live here (delete is not
-        # frame teardown), so the drained unelect is safe.
+        # Unelect first if a leader is still elected: deleting an active cluster
+        # must not leave member facades bound to a team store the cleanup below
+        # disposes. Members are still live here (delete is not frame teardown), so
+        # the drained unelect is safe, and it quiesces cluster melds before the
+        # cleanup disposes the cluster's instances.
         if cluster.master_conduit_id is not None:
             cluster.unelect_leader()
         cluster.cleanup()
@@ -886,9 +926,14 @@ class ConduitCloud(Cleanable):
             cluster_name (str): Target cluster.
 
         Contract:
-            - Removes membership and then runs the cluster's leave handling, so shares
-              held for the member are released as part of this call rather than
-              lazily.
+            - Runs the cluster's ordered exit (`ConduitCluster.release_member`): the
+              leave first - unelecting first when the conduit leads, then unsharing
+              the leaver's roots from every peer and every peer's roots from the
+              leaver while the leaver's share record is still present - and the
+              membership record after. Shares held for the member are released as
+              part of this call rather than lazily. Until 0.2.8236 the membership
+              went first, which popped the share record the unshare reads, so the
+              leaver's roots stayed contracted to every remaining member.
             - Refused by frame posture when cluster operations are disabled, and
               refused for non-NORMAL conduits. Note this is the DIRECT-API path: the
               transaction layer does not posture-gate cluster LEAVE, so the two
@@ -911,8 +956,7 @@ class ConduitCloud(Cleanable):
         self._assert_cluster_operations_allowed()
         cluster = self._get_cluster(cluster_name)
         self._assert_normal_conduit(conduit)
-        cluster.remove_member(conduit.id)
-        cluster.handle_leave(conduit)
+        cluster.release_member(conduit)
 
     def get_clusters_for_conduit(self, conduit_id: str) -> List[str]:
         """
@@ -926,8 +970,11 @@ class ConduitCloud(Cleanable):
               name. A length above one means a corrupted invariant, not a supported
               case.
             - An empty list means the conduit is in no cluster - not an error.
-            - Snapshots the cluster map under the lock and then inspects members
-              OUTSIDE it, so a concurrent join or leave can be missed.
+            - O(1) by key (0.2.8236): reads the frame's DevOps conduit->cluster
+              index, which every join and leave maintains, and names the clusters
+              this cloud still maps by id; it never walks clusters or member sets
+              (until 0.2.8236 it scanned every cluster's member set). A join or
+              leave racing the call may or may not be seen.
 
         Threading:
             Reads and writes under `self._lock`, so the result is a coherent
@@ -943,12 +990,17 @@ class ConduitCloud(Cleanable):
             List[str]: Cluster names containing the conduit.
         """
         self.check_cleaned()
+        cluster_ids = self._devops_information_registry.get_clusters_for_conduit(
+            conduit_id
+        )
+        if not cluster_ids:
+            return []
         with self._lock:
-            clusters = list(self._conduit_clusters.items())
-        return [
-            name for name, cluster in clusters
-            if conduit_id in cluster.get_members()
-        ]
+            return [
+                self._cluster_names_by_id[cluster_id]
+                for cluster_id in cluster_ids
+                if cluster_id in self._cluster_names_by_id
+            ]
 
     def refresh_cluster_shares_for_conduit(self, conduit: Conduit) -> None:
         """

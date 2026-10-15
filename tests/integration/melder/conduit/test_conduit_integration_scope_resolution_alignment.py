@@ -562,8 +562,11 @@ def test_cluster_meld_without_elected_leader_raises() -> None:
         owner.permanent_cleanup()
 
 
-def test_cluster_meld_with_elected_leader_is_stable_in_leader_store() -> None:
-    """A cluster spell resolves into the elected leader's store and is stable there."""
+def test_cluster_meld_with_elected_leader_is_stable_in_the_team_store() -> None:
+    """A cluster spell resolves into the cluster's team store and is stable there.
+
+    Updated with 0.2.8237: the store was the elected leader conduit's own `_creations`; it is now the cluster's.
+    """
     owner_book = Spellbook(configuration=_cluster_config())
     spell_id = owner_book.bind(spell=_Leaf, existence=_CLUSTER, permissions="create")
     owner = owner_book.conjure(dynamic=True, name="owner")
@@ -576,19 +579,24 @@ def test_cluster_meld_with_elected_leader_is_stable_in_leader_store() -> None:
 
         first = owner.meld(spell_id=spell_id)
         second = owner.meld(spell_id=spell_id)
-        assert first is second, "cluster spell is a singleton in the leader store"
-        assert owner._cluster_creations.resolved_store() is owner._creations, (
-            "the elected leader's cluster store is the leader conduit's own store"
+        assert first is second, "cluster spell is a singleton in the team store"
+        team_store = cloud.get_cluster("cluster-a")._team_store
+        assert owner._cluster_creations.resolved_store() is team_store, (
+            "the cluster store is the cluster's own team store"
+        )
+        assert owner._cluster_creations.resolved_store() is not owner._creations, (
+            "the cluster store is not the leader conduit's own store"
         )
     finally:
         owner.permanent_cleanup()
 
 
-def test_cluster_member_facade_resolves_to_leader_store() -> None:
-    """A joining member's cluster facade resolves to the elected leader's store.
+def test_cluster_member_facade_resolves_to_the_team_store() -> None:
+    """A joining member's cluster facade resolves to the cluster's team store.
 
     Mirrors the proven component pattern: a borrower linked into a LIVE
-    (already-elected) cluster gets its facade bound to the leader's store.
+    (already-elected) cluster gets its facade bound to the team store, under the
+    elected leader. Updated with 0.2.8237 (it was the leader conduit's store).
     """
     owner_book = Spellbook(configuration=_cluster_config())
     owner_book.bind(spell=_Leaf, existence=_CLUSTER, permissions="create")
@@ -604,9 +612,10 @@ def test_cluster_member_facade_resolves_to_leader_store() -> None:
         cloud.add_conduit_to_cluster(borrower, "cluster-a")
 
         assert borrower._cluster_creations.is_active() is True
-        assert borrower._cluster_creations.resolved_store() is owner._creations, (
-            "a member resolves the cluster instance from the leader's store"
+        assert borrower._cluster_creations.resolved_store() is cloud.get_cluster("cluster-a")._team_store, (
+            "a member resolves the cluster instance from the cluster's team store"
         )
+        assert borrower._cluster_creations.leader_conduit_id == owner.id
     finally:
         borrower.cleanup()
         owner.cleanup()

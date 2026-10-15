@@ -7,7 +7,7 @@
 - Agent Name: melder_1
 - Priority: p1
 - Created: 2026-10-05T15:35:41Z
-- Updated: 2026-10-12T21:15:14Z
+- Updated: 2026-10-14T00:28:29Z
 - Target Window: 2026-Q4
 - Related Program/Initiative: MelderOps Iris logger churn (priv_commandops TASK-2026-10-05-channel_logger_pooling)
 
@@ -151,7 +151,7 @@ not a special case.
 ## Stories (Required to Complete)
 - [ ] Story: STORY-TBD-meld_contract_scan_memo - memoize the per-meld SpellContract default scan
 - [ ] Story: STORY-TBD-service_method_bindings - provider methods on owned objects with injection context and release
-- [ ] Story: STORY-TBD-pooled_existence - a Melder-hosted elastic pool per pooled binding, with lease flags
+- [ ] Story: STORY-TBD-pooled_existence - moved to EPIC-2026-10-14-managed_spell_quantity
 - [ ] Story: STORY-TBD-service_scope - what ends a lease and the return order before pools retire
 - [ ] Story: priv_commandops (TBD) - Iris as the logger service; Spectrum's own logger
 
@@ -208,6 +208,62 @@ not a special case.
   before Iris retires its conduit?
 
 ## Decision Log
+- 2026-10-14: the managed_spell_quantity design continues in its own epic, EPIC-2026-10-14-managed_spell_quantity
+  (tickets/epics/2026-10-14_managed_spell_quantity_epic.md), opened at the owner's request to document the plan
+  and keep iterating. This epic keeps the signature-scan memo and service methods, unscheduled.
+- 2026-10-13: the class defines the target: the `ReleaseManagedSpell` singleton (the owner's name now) maps a managed
+  class to the root pool it goes back to, each conduit registers its path in it, and a release runs the reset method
+  registered at bind before the object rejoins the pool; disposal (cleanup) methods stay optional. The owner: "we'd
+  want the class object to define the target so the ReleaseManagedSpell object can release it back into the conduit,
+  each conduit has a registered path inside the managedspellobject". Whether a reset is required is open ("its
+  advised they have a reset ... but it might not be necessary for all objects lets talk about that").
+- 2026-10-13: all three ways back are allowed - a protocol, a mixin, and a generalized singleton populated with the
+  managed types that finds an object's pool by its type. The owner: "why don't we allow all 3 options? Protocol, Mixin
+  or singleton thats generalized we populate the singleton with all the ref types available". melder_1 agreed on one
+  condition: one release core in the pool, so the three differ only in how a release finds the pool.
+- 2026-10-13: no release through Aether; a managed object gives itself back through a required protocol member or a
+  Melder mixin. The owner: "we either do a protocol with a required item or a mixin, otherwise we have a difficult
+  issue, because we do need to return the pool item, I'm against using the aether to do it I object on that one".
+- 2026-10-13: a holder must not need a conduit to give back a managed object it received by injection. The owner, on
+  the gap: "we don't want everything to require the conduit what options do we have".
+- 2026-10-13: an injected holder releases through a conduit, not a separate handle; melder_1's `ManagedSpells` proposal
+  is dropped. The owner: "I'm thinking we just use the conduit directly instead of a managed spells thing".
+- 2026-10-13: injection is in: a meld of a spell whose constructor takes a managed spell dispenses a pooled object into
+  that constructor, and the holder gives it back with `release_managed_spell` ("lets say we want to meld something,
+  and channel logger is injected during the meld, thats what I mean by resolving it into other inits, so the pool
+  object gets dispensed"). This supersedes melder_1's proposal of a first version without injection. The owner
+  considers the design "mostly aligned ... overall".
+- 2026-10-13: release is the common path and a trusted, symbolic hand-back: `release_managed_spell` says the object is
+  no longer referenced and goes back to the root; Melder tracks no references to it ("its very symbolic we don't
+  check we just trust, so its up to the user to do it"). The with statement is the convenience, because an object
+  resolved into other objects cannot always live inside a with block ("most times it'll be release managed spell").
+- 2026-10-13: the purpose of each mode, in the owner's framing: elastic manages space - it is "kinda like many but
+  with a pooled reusable object count so you save time", every caller gets its own object and released ones are
+  reused; limited is "for pooled connections and things like that". Normal use is meld then `release_managed_spell`
+  (or the with statement); purge is not the normal path - it destroys one object and frees its place in the count.
+- 2026-10-13: the user owns every lease of a managed spell; Melder never returns one for them - no automatic return
+  when a scope cleans up (a holder's disposal method calls `release_managed_spell` itself), no yield, and an object
+  never released keeps its place in the supply until root teardown. Purge deletes. The owner: "we cannot baby sit the
+  user, meld makes the object they need to release it ... the user must manage it explicitly its not an easy free
+  lunch" and "we just need to respect the code". On the third mode he asked whether queued means a limited supply and
+  said that is fine; melder_1 explained it as limited plus a bounded wait (confirmation pending).
+- 2026-10-12: leases of a `managed_spell_quantity` spell are explicit - the `managed_spell` with statement and a
+  direct lease ended by `release_managed_spell`. The owner: "so the with statement and the direct release managed spell
+  those are the best way to do this I think". Read by melder_1 as the first version without injection (a managed spell
+  is never another spell's dependency); confirmation asked.
+- 2026-10-12: composition of `managed_spell_quantity`, owner direction in chat (discussion continues). Pools live
+  on the root conduit, in a new Creations location, and a managed object may depend on anything a singleton may
+  depend on. Modes are chosen per spell at bind (the Spell registers it): limited quantity and elastic, plus one
+  more for melder_1 to propose. A meld creates from the pool; a reset method named at bind (not a required
+  protocol) runs when an object returns to the pool. Leases are managed through new methods, `managed_spell`
+  (usable as a with statement) and `release_managed_spell`, not through purge. An object whose scope or manual
+  management fails stays in a used state: it is cleaned up when the root is, and never goes back to the pool.
+  The owner: "we can extend the code deeply for this and ensure we maintain other features".
+- 2026-10-12: the new Existence member is named `managed_spell_quantity`, with a few pool modes; the
+  SpellSpace-like manager object is not the direction (harder to meld through). The owner: "I like the idea of
+  an existence type with a few different pool modes" ... "exitence names are important I think
+  managed_spell_quantity (I like this name)". The ownership model and how it composes are to be worked out in
+  discussion before anything is drafted.
 - 2026-10-12: fix the elastic retention of the kernel pools first, proven by gauntlet runs before and after
   (1-3 threads, then a 20-thread maximum on the owner's machine). The owner: "shells are not cheap a conduit is
   very expensive to build" ... "experiment prove its good then lets do it, then prepare a big test before you
@@ -684,6 +740,563 @@ not a special case.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-10-12T21:19:42Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: The owner resumed this epic (chat 2026-10-12: "lets focus on the next one the pool one"). Since 0.2.8234 the
+    elastic system the owner wants reused works as designed: a pooled-spell pool can follow the ConduitPool shape -
+    `create_object` hands out an idle object or None (the compiled plan builds on None) and records `_note_miss`, a
+    return appends and runs `_rebalance_after_return` - so a burst is kept up to `max_idle` and decays on a clock
+    when quiet (settle, decay percent and interval are constructor knobs). Still open in the base: `release()` never
+    reads `_cleaned`, so a return into a retired pool is kept instead of destroyed; the pooled backend must handle
+    that itself. Limits (raise on exhaustion) remain new, exact accounting. The five asks stand: name, pool scope,
+    lease end, Phase 6 rules, configuration frozen or live.
+  EVIDENCE:
+  - src/melder/utilities/general_base/abstract_elastic_pool.py:147-227
+  - src/melder/utilities/general_base/abstract_elastic_pool.py:351-379
+  - src/melder/utilities/general_base/abstract_elastic_pool.py:449-599
+  - src/melder/aether/conduit/conduit_pool.py:108-161
+  IMPACT: The pooled backend reuses the 0.2.8234 retention policy unchanged; its new code is the lease accounting,
+    the limit, the retired-pool return and the Creations registry entry.
+  NEXT: Put the five asks to the owner with recommendations and record the answers in the Decision Log.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-12T21:40:28Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: STRATEGY_DISCUSSION
+  CLAIM: Deeper design walk-through sent at the owner's request (chat 2026-10-12); the owner reacted positively, but
+    nothing below is decided yet. Model: pooled means one holder at a time, reused over time, which is why the
+    owner's rank between unique_per_spell_space and many fits. Life: built on a miss by the compiled plan (the pool
+    never constructs, the ConduitPool shape) -> lease -> return -> reset -> idle with the 0.2.8234 retention ->
+    destroyed by policy, decay or a torn-down pool. Lease end: explicit return (purge) is the normal path, the end of
+    the lease scope is the safety net, holder disposal only where the graph proves the holder (a plain many holder is
+    never tracked); GC finalizers ruled out. Two dials: pool home (the owning conduit, so every request draws from one
+    set; per-space homes only for objects that cannot be reset) and lease scope (the innermost scope at meld: the
+    request's lesser conduit or spellspace). Phase 6: refuse longer-lived holders, walk through many (the measured
+    unique_per_conduit -> many gap), require a pooled object's dependencies to outlive the pool (no scoped,
+    disposal-bearing many or pooled dependencies at first), refuse overrides on pooled sites. Policy: data rules
+    frozen at bind (limit; on_exhausted raise, overflow, or wait only at a top-level meld with a timeout; reset
+    method; max_uses; sizes) plus optional callables (keep_if) recorded as presence flags; prior art Commons Pool,
+    HikariCP, .NET ObjectPool, EF Core context pooling. Name open: pooled recommended over pooled_spell, leased and
+    summoned.
+  EVIDENCE:
+  - context_compass/artifacts/melder_object_pools_20261011/runs/probe_disposal_many_under_slotted_holder.txt:1-17
+  - src/melder/aether/spellbook/spell_compiler/system/validation/scope_ordering_strategy.py:80-121
+  - src/melder/aether/conduit/conduit_pool.py:108-161
+  - src/melder/utilities/general_base/abstract_elastic_pool.py:351-379
+  IMPACT: Once the owner confirms or corrects it, this is the shape of the patch docs and the first story; the open
+    asks narrow to the name, other pooled types, the explicit-return expectation and the conditional-policy meaning.
+  NEXT: Owner confirms the direction; then patch docs (architecture, Existence and Creations, site-plan lowering,
+    Phase 6, the pool) and the first story.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-12T22:44:48Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: Owner, chat 2026-10-12: the member is `managed_spell_quantity` (supersedes pooled_spell and the recommended
+    `pooled`), an Existence type with a few pool modes; the SpellSpace-like manager object that callers would meld
+    through is rejected; "root only" stays on the table as a mode. The owner does not yet see how to compose or
+    implement it and asked for a deep discussion of composition and the ownership model before any drafting.
+  EVIDENCE: context_compass/tickets/epics/2026-10-05_melder_services_and_pools_epic.md:210-215
+  IMPACT: The name is fixed (it is hashed into spell ids and written into records); the next exchange is the
+    composition and ownership model, then the patch docs.
+  NEXT: Walk the owner through ownership, the meld and return paths, the modes and a slice plan.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-12T23:11:20Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: Owner direction for composing `managed_spell_quantity` (chat 2026-10-12; still under discussion, not yet a
+    design freeze): (1) the pool lives on the root conduit in a new Creations location; (2) a managed object may
+    depend on anything a singleton may depend on; (3) modes are chosen per spell at bind - limited quantity, elastic,
+    and one more melder_1 proposes; (4) a meld creates from the pool; (5) a reset method named at bind runs when an
+    object goes back, no protocol required; (6) new methods `managed_spell` (with-statement capable) and
+    `release_managed_spell` manage leases instead of purge; (7) an object not released stays used, is cleaned up at
+    root teardown and never returns to the pool. Deep code changes are acceptable if other features are preserved.
+  EVIDENCE: context_compass/tickets/epics/2026-10-05_melder_services_and_pools_epic.md:210-225
+  IMPACT: Replaces the lease-scope auto-return and per-space pool homes of the earlier sketch; ownership becomes one
+    owner (the root) for the pool, idle objects and every outstanding lease.
+  NEXT: Answer with an assessment: what is clean, the third mode, and the open points (meld as a lease, injection,
+    the many-child registration prerequisite, double release, reset failure, overrides).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-12T23:14:53Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: Purge destroys. `Conduit.purge` delegates to its Meld door and `Creations.purge` detaches the target's live
+    and disposal entries under the slot's build lock and the store lock, then runs the recorded disposal methods
+    outside the locks (every method runs, failures raise as one ExceptionGroup). `purge_all=True`, the default,
+    retires every retained entry of that spell in the store; `purge_all=False` with an instance retires that one.
+    Application references are not revoked, and a spell with no disposal methods is only dropped from the store.
+    For managed spells: purge of one object = dispose it and free its slot; a default whole-target purge would also
+    dispose objects other callers still hold, so it needs its own rule (drain idle objects only, or refuse).
+  EVIDENCE:
+  - src/melder/aether/conduit/creations/creations.py:858-950
+  - src/melder/aether/conduit/conduit.py:4906-4989
+  IMPACT: Purge is the natural discard for a broken managed object; release stays the only way back to the pool.
+  NEXT: Owner decides the whole-target purge rule and whether injection is in the first version.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-12T23:23:24Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: STRATEGY_DISCUSSION
+  CLAIM: Assessment of the owner's composition direction, sent in chat on 2026-10-12 before the purge question and
+    recorded here after a context compaction (the 23:11:20Z note planned it; it was missing from this ticket).
+    Modes: `elastic` (the 0.2.8234 retention, no cap), `limited` (keeps what it built up to N; the N+1 meld raises
+    before building) and a proposed third, `queued` (limit N; a caller waits for a release up to a timeout, then
+    raises - a waiter holding a build lock can deadlock, so waits happen only outside a build). API sketch at bind:
+    `quantity=ManagedQuantity.limited(200)` and `reset_method_names=["reset"]`. Points to settle: a meld of a managed
+    spell is a lease; release is checked (a double or foreign release raises); a failing reset disposes the object
+    and frees its slot; purge means discard; overrides on managed sites are refused; injection is open, because a
+    disposal-bearing `many` child registers in the meld's innermost scope, not with its holder (measured on
+    0.2.8233; a live defect to fix first as its own task, if the owner agrees). Leak visibility: inspection lists
+    outstanding leases, with an optional held-too-long warning. None of it is decided.
+  EVIDENCE:
+  - context_compass/artifacts/melder_object_pools_20261011/runs/probe_disposal_many_under_slotted_holder.txt:1-17
+  - context_compass/tickets/tasks/completed/2026-10-12_make_kernel_pools_elastic_task.md:13-17
+  - src/melder/aether/conduit/creations/creations.py:858-1019
+  IMPACT: Keeps the ticket in step with what the owner was told; the patch docs start from this once decided.
+  NEXT: Owner rules on the third mode and the settling points; record each answer in the Decision Log.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-12T23:23:24Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: STRATEGY_DISCUSSION
+  CLAIM: Answer to the owner's purge question (chat 2026-10-12, "purge destroys the object doesn't it?"): yes - it
+    detaches the target's entries under the slot's build lock and the store lock, then runs their disposal methods
+    outside the locks; it does not revoke references callers still hold, and a spell with no disposal methods is
+    only dropped from the store. Recommended for managed spells: purge of one object is a discard (dispose it, free
+    its slot; a later release of it raises); release_managed_spell and the with-block stay the only way back to the
+    pool. A whole-target purge (purge_all=True, the default) would dispose objects other callers hold, so soft
+    eviction is recommended (destroy the idle objects now, mark outstanding leases to be destroyed when released;
+    prior art HikariCP softEvictConnections, and Commons Pool clear() for the idle half) over refusing purge_all on
+    managed spells or a hard purge (a holder keeps a disposed object, the failure measured for many). Injection: v1
+    without it is recommended - the MelderOps loggers are melded explicitly at construction and purged at cleanup,
+    so explicit leases cover them; Phase 6 refuses a managed spell as another spell's dependency until the
+    many-child registration gap is fixed and holder-bound leases can follow.
+  EVIDENCE:
+  - src/melder/aether/conduit/creations/creations.py:858-1019
+  - src/melder/aether/conduit/conduit.py:4906-4989
+  - context_compass/tickets/epics/2026-10-05_melder_services_and_pools_epic.md:15-23
+  IMPACT: Narrows the open points to two owner decisions; nothing is drafted or built.
+  NEXT: Owner decides (1) whole-target purge on managed spells: soft evict, refuse or hard; (2) v1 without injection.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-13T01:48:41Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: Owner, chat 2026-10-12, after the purge answer: "so the with statement and the direct release managed spell
+    those are the best way to do this I think". Explicit leases are the model: `with conduit.managed_spell(X) as x:`
+    releases at block exit, and a direct lease (a meld, per the 23:11:20Z direction) is ended by
+    `release_managed_spell(x)` - the form the MelderOps loggers need, since they lease in a constructor and give the
+    logger back in cleanup. melder_1 reads this as answering the injection ask: the first version has no injection,
+    and Phase 6 refuses a managed spell as another spell's dependency, so the many-child registration gap no longer
+    blocks the first version. Still open: the whole-target purge rule (soft eviction recommended), the third mode
+    `queued`, and the settling points (checked release, a failing reset discards, overrides refused, leases listed
+    by inspection); proposed in reply: a with-lease carries a token, so an early release makes its exit a no-op.
+  EVIDENCE: context_compass/tickets/epics/2026-10-05_melder_services_and_pools_epic.md:211-214
+  IMPACT: Fixes the lease API for the patch docs: two forms, one release path, no holder-bound leases in v1.
+  NEXT: Owner confirms the no-injection reading and rules on the open points; then patch docs and the first story.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-13T01:55:23Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: Owner, chat 2026-10-13: the user owns every lease ("meld makes the object they need to release it", "we cannot
+    baby sit the user", "the user must manage it explicitly its not an easy free lunch"). Melder never returns an
+    object on the user's behalf: no automatic return when a scope cleans up - a holder's disposal method must call
+    release_managed_spell itself - and no yield; an object never released keeps its place in the supply until root
+    teardown, and that is the user's problem. Purge deletes ("we just need to respect the code"). The owner asked
+    whether a purge loses supply without a reset, and whether queued means a limited supply ("thats fine").
+  EVIDENCE: context_compass/tickets/epics/2026-10-05_melder_services_and_pools_epic.md:211-216
+  IMPACT: Confirms the explicit-lease model end to end: every lease comes from a call the user wrote and every
+    release is one the user writes; the first version adds no automatic lease end anywhere.
+  NEXT: Explain the supply accounting (a purge frees its unit; queued is limited plus a wait), then the bind
+    declaration.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-13T01:55:23Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: STRATEGY_DISCUSSION
+  CLAIM: Supply model explained to the owner. A limited pool counts every object it built that still exists - out
+    with users plus idle - and the limit caps that count; it is not a fixed stock. A release keeps the count (reset,
+    idle, reused); a destroy (purge, or a reset that raises) lowers it by one, so the next meld that finds nothing
+    idle builds a fresh object - a purge costs one build and does not shrink the supply; only an object never
+    released holds its unit, until root teardown. At the limit with nothing idle: limited raises before building;
+    queued waits for a release and takes that object, or raises after a required timeout (a waiter inside another
+    object's construction holds that object's build lock, and the thread that would release can be waiting on it);
+    elastic has no limit. Purge with no instance: idle objects are destroyed now and every object out at that moment
+    is destroyed at its release instead of reset (a pool generation number), so each destroy frees its unit, no
+    pre-purge object is handed out again, and nothing is destroyed in a holder's hands. Next topic proposed: the bind
+    declaration, which is hashed into the spell id - `quantity=ManagedQuantity.queued(200, timeout_seconds=5.0)` (or
+    `.limited(200)` / `.elastic()`) and `reset_method_names=["reset"]` beside the existing bind keywords.
+  EVIDENCE:
+  - context_compass/tickets/epics/2026-10-05_melder_services_and_pools_epic.md:211-216
+  - src/melder/aether/conduit/creations/creations.py:858-1019
+  - src/melder/aether/spellbook/spellbook.py:5392-5404
+  IMPACT: Gives the patch docs the count a limit is enforced on and the purge rule per mode.
+  NEXT: Owner confirms the supply model; then settle the bind declaration and record it in the Decision Log.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-13T12:41:05Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: ALIGNMENT_CHECK
+  CLAIM: The owner restated the model and asked for the mechanics in plain terms: elastic manages space and is like
+    many with reusable objects (saves build time, a good trade-off); limited is for pooled connections and similar;
+    purge destroys an object and frees its count while release_managed_spell stays the normal path. Confirmed in
+    reply, with the mechanics: meld hands out an idle object, else builds one (elastic always; limited and queued only
+    under the limit), else limited raises and queued waits up to its timeout; release runs the reset and returns the
+    object to idle (elastic trims idle objects by the 0.2.8234 retention, limited keeps what it built) or destroys it
+    when the reset raises; purge destroys; root teardown destroys everything without a reset. The time saved is the
+    build: the MelderOps measurement reused a pooled logger in about 9 us against 74-82 us to create one.
+  EVIDENCE:
+  - context_compass/tickets/epics/2026-10-05_melder_services_and_pools_epic.md:211-214
+  - context_compass/tickets/epics/2026-10-05_melder_services_and_pools_epic.md:304-316
+  IMPACT: The supply model and the mode purposes are aligned; what remains before drafting is the bind declaration
+    and the owner's word on queued as the third mode.
+  NEXT: Owner confirms queued as the third mode; then settle the bind declaration and record it in the Decision Log.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-13T12:44:14Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: Owner, chat 2026-10-13: `release_managed_spell` manages the object's lifecycle - a release says the reference
+    is no longer used and the object goes back to the root; "its very symbolic we don't check we just trust, so its
+    up to the user to do it". Release is the common path and the with statement a convenience, because an object
+    resolved into other objects cannot always live inside a with block. Melder keeps no reference tracking on a
+    leased object: no proxies, no weak-reference or usage checks.
+  EVIDENCE: context_compass/tickets/epics/2026-10-05_melder_services_and_pools_epic.md:211-214
+  IMPACT: Release is designed and documented as the main lease end; the with block is sugar over meld and release.
+  NEXT: Reply with the one pool-integrity check to keep and the injection question below.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-13T12:44:14Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: STRATEGY_DISCUSSION
+  CLAIM: Reply sent. Agreed: release is trusted and no references are tracked. Kept one check, argued as protecting
+    the pool, not the user: the root must hold every object that is out anyway (that is how it destroys unreleased
+    objects at teardown, per the 2026-10-12 rule), so a release removes the object from that set; a release of an
+    object not in it - a second release, or an object this pool never handed out - raises, because accepting it
+    would put one object in the idle list twice and two later callers would silently share it. Asked what
+    "resolving this object into other objects" means: (1) the holder melds it itself and releases it in cleanup
+    (the MelderOps pattern; first version), or (2) Melder injects it into a constructor and the holder releases it
+    in cleanup - nothing automatic, but Melder then needs sites that take from the pool, must give the object back
+    itself when the holder's construction fails after the hand-over, and the holder needs a way to reach the root to
+    release. Recommended: ship (1) first and design (2) now as the next step.
+  EVIDENCE:
+  - context_compass/tickets/epics/2026-10-05_melder_services_and_pools_epic.md:211-214
+  - context_compass/tickets/epics/2026-10-05_melder_services_and_pools_epic.md:15-23
+  IMPACT: Decides whether the first version carries injection sites and the failed-build return.
+  NEXT: Owner says (1) or (2) and whether the double-release check stays; then queued and the bind declaration.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-13T13:44:04Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: Owner, chat 2026-10-13: "resolving it into other inits" means injection - a meld of a holder whose constructor
+    takes a managed spell dispenses a pooled object into that constructor, and the holder releases it with
+    release_managed_spell. Supersedes the proposed first version without injection (and with it the Phase 6
+    refusal of a managed spell as a dependency). The owner considers the design mostly aligned overall.
+  EVIDENCE: context_compass/tickets/epics/2026-10-05_melder_services_and_pools_epic.md:211-215
+  IMPACT: The first version carries managed injection sites in the build plans and the failed-construction return.
+  NEXT: Confirm the whole design back in one summary and ask to write the patch docs and the first story.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-13T13:44:04Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: STRATEGY_DISCUSSION
+  CLAIM: Reply sent: the whole design summarized back for alignment (the member, one pool per managed spell on the
+    root, the three modes, dispensing by meld or injection, trusted release with one check, user-owned releases,
+    the destroy paths), plus the two jobs injection gives Melder: (1) when a constructor raises after an object was
+    dispensed into it, Melder releases that object itself, since no user code held it; (2) an injected holder has no
+    conduit to release through - recommended an injected release handle, a Melder-provided parameter type bound to
+    that root's pools (`managed: ManagedSpells`, then `managed.release(logger)` in cleanup), over a process-wide
+    lookup by object, which would route every release through one shared map, a contention point under free
+    threading. Asked whether to write the patch docs and the first story with the handle as the open question.
+  EVIDENCE:
+  - context_compass/tickets/epics/2026-10-05_melder_services_and_pools_epic.md:211-215
+  - src/melder/aether/spellbook/spellbook.py:5392-5404
+  IMPACT: Fixes what the patch docs must cover for injection; the release handle is the one open API question.
+  NEXT: Owner approves writing the patch docs (architecture, Existence and Creations, site-plan lowering, Phase 6,
+    the pool) and the first story, and rules on the release handle.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-13T13:47:14Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: Owner, chat 2026-10-13: no `ManagedSpells` stand-in; a holder releases through a conduit directly ("we just use
+    the conduit directly instead of a managed spells thing"). One API surface: meld, managed_spell and
+    release_managed_spell, all on Conduit.
+  EVIDENCE: context_compass/tickets/epics/2026-10-05_melder_services_and_pools_epic.md:211-212
+  IMPACT: An injected holder needs a conduit in hand; the next question is how it gets one and which one.
+  NEXT: Check how Melder treats a Conduit-typed constructor parameter today, then answer.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-13T13:47:14Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: Today Melder never supplies a Conduit to a constructor. Phase 1 classifies a `Conduit`-typed parameter
+    without a default as SINGLE_BY_ANNOTATION (a non-builtin class); Phase 3 finds no provider - Conduit is on the
+    bind guard's internal manifest, so it can never be bound as a spell - and records an UNRESOLVED_INPUT socket,
+    which the constructing meld must supply by override or it raises UnresolvedInputError before building that
+    object. Also, a lesser a holder keeps can be gone when it releases: a returned lesser above the pool's elastic
+    target is destroyed (`permanent_cleanup`) by the return-path trim. Using the conduit directly therefore needs
+    one new rule - Melder fills a `Conduit` parameter itself - and a choice of which conduit. Recommended: the root,
+    the pool's owner, which outlives every lease; the alternative is the conduit that ran the meld, with the rule
+    that the holder releases before that scope ends.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/spell_requirements_finder.py:1100-1226
+  - src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/spell_requirements_finder.py:1287-1333
+  - src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:628-704
+  - src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:927-1021
+  - src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py:121-121
+  - src/melder/aether/conduit/conduit_pool.py:108-161
+  IMPACT: Adds a Conduit injection rule (a new socket kind filled by Melder) to the first version's scope.
+  NEXT: Owner picks which conduit a Conduit parameter receives: the root (recommended) or the meld's conduit.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-13T15:28:07Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: STRATEGY_DISCUSSION
+  CLAIM: Options sent for how a holder that received a managed object by injection gives it back without a conduit
+    (owner: "we don't want everything to require the conduit"). (1) Recommended - release by object from anywhere:
+    `Aether().release_managed_spell(obj)` (the process singleton, reachable everywhere), with
+    `conduit.release_managed_spell` the same call; when a root creates the pool of a managed spell it registers the
+    pool under the spell's class on Aether, and a release looks up `type(obj)` and takes the object off that pool's
+    out-set (several roots managing one class: each set is checked). No conduit, no process-wide write per lease (the
+    class map changes only when a pool is created or retired), and the double-release check is unchanged (an object
+    out nowhere raises). (2) Melder releases what it injected when it disposes the holder, after the holder's own
+    disposal runs - no user code (Autofac's pooled instances), but it is the automatic return the owner ruled out,
+    and Melder disposes only holders it tracks: an untracked `many` holder (no disposal methods) is never stored,
+    so its object would stay out anyway. (3) Melder fills a `Conduit` parameter where a constructor declares one -
+    every holder of a managed object would then need it.
+  EVIDENCE:
+  - context_compass/tickets/epics/2026-10-05_melder_services_and_pools_epic.md:211-212
+  - src/melder/aether/aether.py:108-134
+  - src/melder/aether/conduit/creations/creations.py:858-1019
+  - src/melder/aether/conduit/conduit.py:4906-4989
+  IMPACT: Decides whether the first version needs any rule beyond dispensing managed objects into constructors.
+  NEXT: Owner picks the release path (1 recommended); then write the patch docs and the first story.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-13T18:23:18Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: STRATEGY_DISCUSSION
+  CLAIM: The owner asked whether a GC hook could return an injected managed object to the pool. Answered: Python
+    reports that nothing holds an object only as it destroys it, so a hook cannot mean "unused but alive". A hook on
+    the managed object never fires while the pool holds it (which root teardown needs, per the 2026-10-12 rule); held
+    weakly, it fires as the object dies - too late to reset and reuse it, at most freeing its place in the count. A
+    hook on the holder works mechanically, but a dead holder does not prove the object is unused: MelderOps hands
+    loggers to children that can outlive the parent, so the pool would reissue a logger still in use. Generic costs:
+    objects in reference cycles wait for the cycle collector, so limited and queued pools would depend on collection
+    timing; a weakref callback runs on whichever thread frees the object, at an arbitrary point, so taking a lock or
+    running the reset there can deadlock (the safe form only queues the lease for the pool's next call); classes with
+    __slots__ and no __weakref__ cannot be watched; a direct meld has no holder to watch. Recommended: explicit
+    release by object through Aether; if injected objects should come back automatically later, Melder returns them
+    when it disposes the holder (deterministic, normal code, with the rule that an injected object never outlives its
+    holder), and a GC backstop only in the queued form.
+  EVIDENCE:
+  - context_compass/tickets/epics/2026-10-05_melder_services_and_pools_epic.md:35-35
+  - context_compass/tickets/epics/2026-10-05_melder_services_and_pools_epic.md:805-806
+  - https://docs.python.org/3/reference/datamodel.html#object.__del__ (finalizers run at arbitrary points, any thread)
+  - https://docs.python.org/3/library/weakref.html (callbacks run after the referent is gone)
+  IMPACT: Keeps GC out of the first version unless the owner wants the holder rule; the release path stays open.
+  NEXT: Owner picks the release path (explicit release by object through Aether recommended).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-13T18:42:35Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: Owner, chat 2026-10-13: the Aether release path is rejected ("I'm against using the aether to do it I object on
+    that one"); the managed object itself must carry the way back - a protocol with a required member, or a mixin -
+    because "we do need to return the pool item". Supersedes the 2026-10-13 recommendation of release by object
+    through Aether, and with it the class-to-pool map on Aether.
+  EVIDENCE: context_compass/tickets/epics/2026-10-05_melder_services_and_pools_epic.md:211-213
+  IMPACT: Every managed spell's class takes part in the return; bind must check that it does.
+  NEXT: Compare the protocol and the mixin in Melder's terms and recommend one.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-13T18:42:35Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: STRATEGY_DISCUSSION
+  CLAIM: Mixin recommended over a protocol. Mixin (working name ManagedSpellMixin): one private field naming the pool
+    the object belongs to, filled by Melder when it hands the object out and cleared on release, and Melder's own
+    `release_managed_spell()` - read the field, clear it, give the object to its pool (reset, then idle); an empty
+    field raises, so the double-release check moves onto the object at no cost. Bind refuses a managed_spell_quantity
+    class that does not inherit it, naming the mixin; a third-party class is subclassed with it. The bind guard
+    matches exact (module, qualname) pairs and never walks the MRO, so a user class inheriting a Melder mixin binds
+    normally. The pool still holds every object that is out, for root teardown; the with block's exit calls the
+    same method; a holder writes `self._logger.release_managed_spell()` with no conduit and no Aether. Protocol
+    instead: the class must declare a member Melder fills (the pool) and write its own release that calls into it -
+    the pool becomes public API, every class repeats the same lines and can get them wrong, and bind's existing
+    structural check skips annotation-only attributes, so a new check would be needed. Also offered: with a mixin,
+    the reset can be a method the class overrides on it, replacing reset_method_names at bind. Unchanged limit: a
+    holder that keeps an object after releasing it can still release it again once it was handed to someone else.
+  EVIDENCE:
+  - context_compass/tickets/epics/2026-10-05_melder_services_and_pools_epic.md:211-213
+  - src/melder/aether/spellbook/bind/bind.py:35-100
+  - src/melder/aether/spellbook/bind/bind.py:1320-1368
+  IMPACT: Settles how a holder releases without a conduit; the mixin and its bind check join the first story.
+  NEXT: Owner picks mixin or protocol, and whether the reset moves onto the mixin.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-13T18:45:02Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: The owner, mid-turn, is also open to a system-wide singleton (`ReturnManagedSpell`) that maps objects to
+    their pools and runs the return, but expects "way more overhead" finding the object's pool, with inspect on the
+    path. Measured the routing step alone (free-threaded 3.14.7, device VM, 2 vCPUs, best of 5, 2M leases per
+    thread, extra ns per lease over a bare loop): a mixin field (the pool written into the object once when the
+    pool builds it, an immortal True/False flag flipped per lease) +31 ns at 1 thread and +52 ns at 2; a class-keyed
+    singleton map (`type(obj)` -> pools, written only when a pool is created) +29 and +62 ns; a singleton keyed by
+    each object (insert at hand-out, pop at release) +76 and +220 ns. No inspect is needed: `type(obj)` is one
+    pointer read. A first run that stored the pool into the object on every lease measured +144 ns at 2 threads -
+    the shared pool's reference count bouncing between cores - so the field must be set once at build. Caveats:
+    2 vCPUs cannot show 20-thread contention; the pool's own release work, common to all three, is excluded;
+    against a 74-82 us logger meld or a ~9 us reuse, all three are noise except the per-object map under load.
+  EVIDENCE:
+  - context_compass/artifacts/melder_object_pools_20261011/probe_release_routing_cost.py:28-39
+  - context_compass/artifacts/melder_object_pools_20261011/probe_release_routing_cost.py:42-49
+  - context_compass/artifacts/melder_object_pools_20261011/probe_release_routing_cost.py:52-57
+  - context_compass/artifacts/melder_object_pools_20261011/runs/probe_release_routing_cost.txt:1-3
+  IMPACT: Overhead does not decide between the mixin and a class-keyed singleton; coupling and global state do. A
+    singleton keyed by each object is ruled out on cost.
+  NEXT: Owner picks the mixin (recommended) or a class-keyed ReturnManagedSpell singleton.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-13T18:58:55Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: STRATEGY_DISCUSSION
+  CLAIM: Owner proposal: allow the protocol, the mixin and a generalized singleton; asked whether `type()` can key a
+    set. Checked on 3.14.7t: `type(obj)` returns the class object itself, hashed by identity, so it works as a set
+    member and as a dict key with no code or number; the singleton needs a dict (class -> pool), since a set only
+    answers "managed or not". Agreed design: one pool object per managed spell in the root's Creations location
+    (idle deque, the out records, the count, the lock, the mode), owning the single release - out check, count,
+    reset outside the lock, idle; the three ways only find that pool. Mixin: the pool is written into the object
+    once when the pool builds it; `obj.release_managed_spell()`. Protocol: the class declares the field Melder fills,
+    for classes that cannot inherit (metaclass or slot-layout conflicts); release goes through Melder, so no user
+    code touches the pool. Singleton (`ReturnManagedSpell`): `release(obj)` uses the object's field when it has one,
+    else the class map, which pools write when created and remove when retired (republished whole under a lock,
+    read lock-free); one class managed by two roots maps to both pools and the release checks each pool's out
+    records. All three measured within noise of each other (the routing probe). Caution: three entry points mean
+    more to document and test; the protocol buys no speed over the class map.
+  EVIDENCE:
+  - context_compass/tickets/epics/2026-10-05_melder_services_and_pools_epic.md:211-214
+  - context_compass/artifacts/melder_object_pools_20261011/runs/probe_release_routing_cost.txt:1-3
+  - https://docs.python.org/3/reference/datamodel.html#object.__hash__ (classes hash by identity)
+  IMPACT: The release path is settled in shape; names and the patch docs remain.
+  NEXT: Owner confirms the shape and names (mixin, protocol member, singleton); then write the patch docs and story.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-13T19:02:15Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: STRATEGY_DISCUSSION
+  CLAIM: Reset required or optional, discussed. Two hooks with different moments: the reset runs on every release,
+    before the object rejoins the idle set; disposal methods run only when the object is destroyed (purge, a failing
+    reset, an elastic trim, root teardown), never on release. Options: (1) reset required - bind refuses a managed
+    spell without one; a stateless class writes an empty method. (2) Optional and advised - an object without one
+    goes back as the last holder left it; forgetting it is silent (a logger keeps the previous owner's identity).
+    (3) Recommended: optional but chosen explicitly at bind - name the reset methods, or pass an empty list to say
+    the object needs none; leaving the keyword out raises at bind with both choices in the message, so no state
+    leak comes from forgetting and a stateless class pays one argument. Offered as well, from other pools (.NET's
+    ObjectPool lets the reset report failure; Commons Pool's return hook is an optional no-op by default): a reset
+    may return False to mean "do not reuse me", and Melder destroys the object quietly instead of raising.
+  EVIDENCE:
+  - context_compass/tickets/epics/2026-10-05_melder_services_and_pools_epic.md:211-216
+  - src/melder/aether/spellbook/spellbook.py:5392-5404
+  IMPACT: Decides a bind-time rule and the release path's last step; the spell id hashes whatever bind records.
+  NEXT: Owner picks required, optional, or optional-but-explicit (recommended), and whether a False reset discards.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-13T21:14:35Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: STRATEGY_DISCUSSION
+  CLAIM: The owner worried that frames and their conduits could block the class-keyed singleton ("frames and
+    conduits in those frames could become a blocker") and floated roots registering their Creations so pools live in
+    the root's Creations. Analysis sent: frames do not break routing - one class managed by several roots, in one
+    frame or many, maps to several pools and a release takes the pool whose out records hold that exact object
+    (one dict lookup per pool, almost always one); frame names never enter the index. The real cost is lifecycle:
+    roots register pools when created and remove them at teardown (also on upgrade and crystallizer restore), and
+    the index stays a leaf - its own lock held only to publish a new copy, lock-free reads - so it never joins the
+    frame -> conduit -> Book teardown order. The pool home: the root's `ConduitCreations` (built in every
+    `Conduit.__init__`, cleaned at conduit teardown; `__slots__` empty today), so pools die with their root; the
+    index should hold pools, not whole Creations, so a release never asks every root. The weak spot: a release after
+    root teardown finds no pool and can only say "not out from any pool"; an object carrying its pool (mixin or
+    protocol) can say it was destroyed with its root. Alternative raised: keep the index on the class object itself
+    (no singleton; Melder writes onto user classes, and stale pools survive a world reset unless cleared). Asked: a
+    late release after root teardown - quiet no-op or error.
+  EVIDENCE:
+  - src/melder/aether/conduit/creations/conduit_creations.py:8-104
+  - context_compass/artifacts/melder_object_pools_20261011/runs/probe_release_routing_cost.txt:1-3
+  - context_compass/system_docs/src_architecture.md:922-1000
+  IMPACT: Fixes where pools live and how routing survives frames; one owner rule remains for late releases.
+  NEXT: Owner rules on a release after root teardown (no-op or error) and confirms the layering.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-14T00:28:29Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: PLAN
+  CLAIM: The owner asked for a dedicated epic (chat 2026-10-14: "can you create an epic on this and lets document our
+    current plan and keep iterating"). Opened EPIC-2026-10-14-managed_spell_quantity with the decided plan, the
+    requirements and eleven open questions; the board's melder_object_pools route now points there. This epic keeps
+    the signature-scan memo (Milestone 1) and service methods, unscheduled, and the history of the pool discussion.
+  EVIDENCE: context_compass/tickets/epics/2026-10-14_managed_spell_quantity_epic.md:1-20
+  IMPACT: Pool design work continues in the new epic; nothing in this epic is active.
+  NEXT: None here until the owner schedules the memo or service methods.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Acceptance criteria confirmed by user
@@ -696,17 +1309,11 @@ not a special case.
 - Keep notes append-only and preserve UNKNOWN-first promotion discipline.
 
 ## Context / Handoff Summary
-In progress under melder_1. Owner direction (2026-10-11): pools are Existence lifetimes that Creations services,
-configured on the Spell (limits, exhaustion, elasticity); service methods and the signature-scan memo stay in the
-epic, unordered. Findings (Notes, 2026-10-11): Existence is routing; Creations retires a store newest-first and
-dispatches on the registry entry type; AbstractElasticPool gives elastic idle retention only (no limit, and its
-documented release-into-a-retired-pool destroy is not implemented); a disposal-bearing many under a slotted holder
-follows the innermost scope and is disposed under a live holder (measured, artifacts/melder_object_pools_20261011/).
-The owner then chose a first-class member (working name `pooled_spell`, a Melder-style name under discussion),
-pools maintained by Creations in conduits and spellspaces, the ConduitPool/SpellSpacePool elastic system reused,
-per-spell configuration with a raising limit, and a rank between unique_per_spell_space and many. Trade-offs and
-five asks went back (latest STRATEGY_DISCUSSION note). Next: record the answers, then patch docs and the story.
-No source changed in this epic.
+In progress under melder_1 with no active route since 2026-10-14: the pooled-lifetime design
+(`managed_spell_quantity`) moved to its own epic, tickets/epics/2026-10-14_managed_spell_quantity_epic.md,
+which carries the decided plan and the open questions. This epic keeps the per-meld signature-scan memo (Milestone 1)
+and service methods, both unscheduled, and the history of the pool discussion (Decision Log and Notes, 2026-10-05 to
+2026-10-13). The kernel-pool elastic retention landed from here (0.2.8234); no other source changed in this epic.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

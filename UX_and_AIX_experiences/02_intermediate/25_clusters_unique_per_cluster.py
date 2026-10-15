@@ -41,15 +41,16 @@ def main() -> None:
     cloud.add_conduit_to_cluster(owner, "workers")
 
     # ELECT THE LEADER before more members join: the cluster's shared
-    # store belongs to the elected leader, and joins auto-share against
-    # the armed cluster - then the rest falls into place.
+    # store belongs to the cluster and is served while a leader is elected,
+    # and joins auto-share against the armed cluster - then the rest falls
+    # into place.
     cloud.get_cluster("workers").elect_leader(owner.id)
 
     cloud.add_conduit_to_cluster(member, "workers")
 
     bus_a = owner.meld("ClusterBus")
     bus_b = member.meld("ClusterBus")
-    assert bus_a is bus_b, "cluster members must share the elected leader's bus"
+    assert bus_a is bus_b, "cluster members must share the cluster's bus"
     print("one bus per cluster, shared by members:", bus_a is bus_b)
 
 

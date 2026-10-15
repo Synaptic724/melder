@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: src
-SOURCE FINGERPRINT: e495a74b9d7aa8880071a86627f53b2fbd46ed5d04e33159b31571471d4cad5c
+SOURCE FINGERPRINT: bea00df24d70aa4229aba9436991e21edfbdf57c40ac265735f7f42214308e9b
 FILE COUNT: 579
 
 ================================================================================
@@ -599,7 +599,7 @@ END FILE: src/melder/__melder_cache__/__melder_cache__.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/__version__.py
-CONTENT SHA256: b535e079b25fd44970c98ef458554f908a3d4286bed6d4364bb5a7925f1e46fa
+CONTENT SHA256: 409f94d7dfdbeebb392dfe51dbb05b31777fc65f5e440f0e6224fcef218f1040
 SOURCE ENCODING: utf-8
 ================================================================================
 
@@ -613,7 +613,7 @@ Contract:
   negotiation or runtime compatibility checks by itself.
 """
 
-__version__ = "0.2.8234"
+__version__ = "0.2.8240"
 ================================================================================
 END FILE: src/melder/__version__.py
 ================================================================================
@@ -8417,7 +8417,7 @@ END FILE: src/melder/aether/aether_utility_system.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/aetheric_frame/aetheric_frame.py
-CONTENT SHA256: a2588db3424a1c5aa66ebf66bd1086e30a4fa7c073099f06cc7e525365f84464
+CONTENT SHA256: a95a544f62d8bf0d07629d9199ea4e774d822a211c0c42398479ce5e8873d22b
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -8714,7 +8714,9 @@ class AethericFrame(Cleanable):
           after `DevOpsManager` drops its borrowed reference.
         - Clears spell and version registries owned by the frame.
         - Cleans conduit cloud, spell-system-state, and DevOps services when
-          present.
+          present. The cloud raises its clusters' team-store disposal failures
+          after it finished (0.2.8237); frame teardown logs them through the
+          Aether logger, as it does a failing conduit, and keeps going.
 
         Returns:
             None.
@@ -8748,9 +8750,18 @@ class AethericFrame(Cleanable):
         if self._selected_spell_registry is not None:
             self._selected_spell_registry.clear()
 
-        # Dynamic conduit cloud
+        # Dynamic conduit cloud (cleaned after every root, so each root has left
+        # its cluster and only the clusters' team stores remain to dispose).
         if self._conduit_cloud is not None:
-            self._conduit_cloud.cleanup()
+            try:
+                self._conduit_cloud.cleanup()
+            except Exception:
+                if self._aether._logger is not None:
+                    self._aether._logger.error(
+                        "Error cleaning the conduit cloud during frame teardown",
+                        "_cleanup_data_structures",
+                        exc_info=True,
+                    )
 
         # Spell system states registry
         if self._spell_system_states is not None:
@@ -11803,7 +11814,7 @@ END FILE: src/melder/aether/aetheric_frame/aetheric_frame_configuration.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/aetheric_frame/conduit_cloud.py
-CONTENT SHA256: f9d98240916e1a421e12baf347d317d98c14791116526afc56d5793c4c0f7985
+CONTENT SHA256: 26bd4fda5fa9b3675e27eaefb043acd8dc7fd2d78791691c6d8701a1a984b8e6
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -11848,7 +11859,9 @@ class ConduitCloud(Cleanable):
     - Thread-safe access is serialized with the instance `RLock`.
 
     Owned State:
-        The cluster registry, named directory and temporary promotion-name claims.
+        The cluster registry (by name, plus each cluster's name by its id for the
+        O(1) membership lookup), named directory and temporary promotion-name
+        claims.
         Directory values are borrowed live conduits, not owned lifecycle objects.
 
     Threading:
@@ -11911,6 +11924,7 @@ class ConduitCloud(Cleanable):
         "_conduit_names_by_id",
         "_reserved_conduit_names",
         "_conduit_clusters",
+        "_cluster_names_by_id",
         "_id",
         "_devops_identity",
         "_devops_information_registry",
@@ -11959,6 +11973,7 @@ class ConduitCloud(Cleanable):
         self._conduit_names_by_id: Dict[str, str] = {}
         self._reserved_conduit_names: Dict[str, str] = {}
         self._conduit_clusters: Dict[str, ConduitCluster] = {}
+        self._cluster_names_by_id: Dict[str, str] = {}
         self._id: str = new_ulid()
         self._devops_information_registry: DevopsInformationRegistry = (
             devops_information_registry
@@ -11987,15 +12002,25 @@ class ConduitCloud(Cleanable):
 
         Contract:
             - Idempotent and lock-guarded.
-            - Cleans cloud-owned cluster state before dropping owned refs.
+            - Cleans cloud-owned cluster state before dropping owned refs. Each
+              cluster disposes its team store as it is cleaned (0.2.8237); a
+              cluster's disposal failures are collected and raised as one
+              ExceptionGroup after the whole cloud is cleaned. Any other cluster
+              cleanup error stays best-effort, as before.
             - Does not clean the conduit objects or clear the borrowed
               frame-owned root-conduit stores.
+
+        Raises:
+            ExceptionGroup: One or more clusters' team-store instances failed a
+                disposal method ("Conduit clusters cleaned with disposal
+                failures."), raised after the cloud finished its cleanup.
 
         Returns:
             None.
         """
         if self._cleaned:
             return
+        disposal_failures: List[Exception] = []
         with self._lock:
             if self._cleaned:
                 return
@@ -12003,11 +12028,16 @@ class ConduitCloud(Cleanable):
                 # Best-effort: the clusters are cloud-owned and are dropped right
                 # after this loop, so one cluster's cleanup failure must not abort
                 # cleanup of the remaining clusters or the cloud teardown below.
+                # Its team-store disposal failures are raised once the cloud is
+                # cleaned (0.2.8237).
                 try:
                     cluster.cleanup()
+                except ExceptionGroup as cluster_failures:
+                    disposal_failures.append(cluster_failures)
                 except Exception:
                     continue
             self._conduit_clusters.clear()
+            self._cluster_names_by_id.clear()
             self._named_conduits.clear()
             self._conduit_names_by_id.clear()
             self._reserved_conduit_names.clear()
@@ -12020,12 +12050,17 @@ class ConduitCloud(Cleanable):
             del self._conduit_names_by_id
             del self._reserved_conduit_names
             del self._conduit_clusters
+            del self._cluster_names_by_id
             del self._devops_information_registry
             del self._devops_identity
             del self._aetheric_frame
             del self._name
             del self._id
         del self._lock
+        if disposal_failures:
+            raise ExceptionGroup(
+                "Conduit clusters cleaned with disposal failures.", disposal_failures
+            )
 
     @staticmethod
     def _validate_conduit_name(name: Optional[str]) -> str:
@@ -12598,22 +12633,35 @@ class ConduitCloud(Cleanable):
                 raise ValueError(
                     "Cluster with name {0} already exists.".format(cluster_name)
                 )
-            self._conduit_clusters[cluster_name] = ConduitCluster(
+            cluster = ConduitCluster(
                 cluster_name,
                 self._conduits,
                 self._name,
                 self._devops_information_registry,
             )
+            self._conduit_clusters[cluster_name] = cluster
+            self._cluster_names_by_id[cluster.id] = cluster_name
 
     def delete_cluster(self, cluster_name: str) -> None:
         """
         Delete one frame-local conduit cluster.
+
+        Contract:
+            - Removes the cluster from this cloud, unelects it when a leader is
+              elected (draining every member lineage), then cleans it: the
+              cluster's `unique_per_conduit_cluster` instances are disposed with
+              it (0.2.8237; before, deleting a cluster disposed nothing and the
+              instances died later with the leader conduit).
+            - The deletion finishes before any disposal failure is raised.
 
         Args:
             cluster_name (str): Cluster name to remove.
 
         Raises:
             ValueError: If the cluster does not exist.
+            ExceptionGroup: One or more of the cluster's instances failed a
+                disposal method ("Conduit cluster cleaned with disposal
+                failures."); the cluster is already deleted.
 
         Returns:
             None.
@@ -12622,14 +12670,17 @@ class ConduitCloud(Cleanable):
         self._assert_cluster_operations_allowed()
         with self._lock:
             cluster = self._conduit_clusters.pop(cluster_name, None)
+            if cluster is not None:
+                del self._cluster_names_by_id[cluster.id]
         if cluster is None:
             raise ValueError(
                 "Cluster with name {0} does not exist.".format(cluster_name)
             )
-        # Dissolve the team store first if a leader is still elected: deleting an
-        # active cluster must not leave member facades bound to a leader store the
-        # cluster no longer coordinates. Members are still live here (delete is not
-        # frame teardown), so the drained unelect is safe.
+        # Unelect first if a leader is still elected: deleting an active cluster
+        # must not leave member facades bound to a team store the cleanup below
+        # disposes. Members are still live here (delete is not frame teardown), so
+        # the drained unelect is safe, and it quiesces cluster melds before the
+        # cleanup disposes the cluster's instances.
         if cluster.master_conduit_id is not None:
             cluster.unelect_leader()
         cluster.cleanup()
@@ -12694,9 +12745,14 @@ class ConduitCloud(Cleanable):
             cluster_name (str): Target cluster.
 
         Contract:
-            - Removes membership and then runs the cluster's leave handling, so shares
-              held for the member are released as part of this call rather than
-              lazily.
+            - Runs the cluster's ordered exit (`ConduitCluster.release_member`): the
+              leave first - unelecting first when the conduit leads, then unsharing
+              the leaver's roots from every peer and every peer's roots from the
+              leaver while the leaver's share record is still present - and the
+              membership record after. Shares held for the member are released as
+              part of this call rather than lazily. Until 0.2.8236 the membership
+              went first, which popped the share record the unshare reads, so the
+              leaver's roots stayed contracted to every remaining member.
             - Refused by frame posture when cluster operations are disabled, and
               refused for non-NORMAL conduits. Note this is the DIRECT-API path: the
               transaction layer does not posture-gate cluster LEAVE, so the two
@@ -12719,8 +12775,7 @@ class ConduitCloud(Cleanable):
         self._assert_cluster_operations_allowed()
         cluster = self._get_cluster(cluster_name)
         self._assert_normal_conduit(conduit)
-        cluster.remove_member(conduit.id)
-        cluster.handle_leave(conduit)
+        cluster.release_member(conduit)
 
     def get_clusters_for_conduit(self, conduit_id: str) -> List[str]:
         """
@@ -12734,8 +12789,11 @@ class ConduitCloud(Cleanable):
               name. A length above one means a corrupted invariant, not a supported
               case.
             - An empty list means the conduit is in no cluster - not an error.
-            - Snapshots the cluster map under the lock and then inspects members
-              OUTSIDE it, so a concurrent join or leave can be missed.
+            - O(1) by key (0.2.8236): reads the frame's DevOps conduit->cluster
+              index, which every join and leave maintains, and names the clusters
+              this cloud still maps by id; it never walks clusters or member sets
+              (until 0.2.8236 it scanned every cluster's member set). A join or
+              leave racing the call may or may not be seen.
 
         Threading:
             Reads and writes under `self._lock`, so the result is a coherent
@@ -12751,12 +12809,17 @@ class ConduitCloud(Cleanable):
             List[str]: Cluster names containing the conduit.
         """
         self.check_cleaned()
+        cluster_ids = self._devops_information_registry.get_clusters_for_conduit(
+            conduit_id
+        )
+        if not cluster_ids:
+            return []
         with self._lock:
-            clusters = list(self._conduit_clusters.items())
-        return [
-            name for name, cluster in clusters
-            if conduit_id in cluster.get_members()
-        ]
+            return [
+                self._cluster_names_by_id[cluster_id]
+                for cluster_id in cluster_ids
+                if cluster_id in self._cluster_names_by_id
+            ]
 
     def refresh_cluster_shares_for_conduit(self, conduit: Conduit) -> None:
         """
@@ -43262,7 +43325,7 @@ END FILE: src/melder/aether/aetheric_mediator/unwind_conflict_error.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/conduit/conduit.py
-CONTENT SHA256: 7e84f1d224a4dba9008b2b8e2b2c3169d323864adfb96005981b22478d74864e
+CONTENT SHA256: 21952a0deb54e1c1cb188787ce1a0334e2afec95cac52231862ae9546dbdf58e
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -44231,6 +44294,71 @@ class Conduit(Cleanable):
         return failures
 
 
+    def _leave_cluster_for_teardown(self) -> None:
+        """
+        Internal
+
+        Take this root out of its cluster as the first step of its teardown.
+
+        Purpose:
+            A torn-down root must leave no trace in a cluster: not in `members`,
+            not as `master_conduit_id`, not in the share records, not in the
+            DevOps membership index. Until 0.2.8236 root teardown never touched
+            cluster membership, so the cluster kept the dead id and every later
+            member walk (unelect, elect, join, delete) failed on it.
+
+        Contract:
+            - Finds the root's clusters through the frame's DevOps conduit->cluster
+              index: one keyed read, and membership is exclusive, so at most one
+              cluster. A root in no cluster pays only that read.
+            - While the frame is live, runs the cluster's ordered exit
+              (`ConduitCluster.release_member`: unelect first when this root leads,
+              unshare both directions, then drop the membership) inside its
+              transactions. It runs before any other teardown step, while this
+              root is registered, its creation gate is live (the unelect drains
+              member lineages through it) and its cluster facade is not cleaned.
+            - During frame teardown the frame is marked cleaned before its roots
+              are torn down, so no transaction can start; the root then runs
+              `ConduitCluster.drop_member`, the same effects without transactions.
+              That is the designed path, not a failure, and logs nothing.
+            - A transactional exit that raises is logged and replaced by
+              `drop_member`: the root is going away and cannot retry. A failing
+              drop is logged too. Nothing is re-raised, so the teardown keeps
+              going, as its other steps do.
+
+        Threading:
+            Reads the frame's registry slot directly, because the frame's public
+            accessor refuses once the frame is marked cleaned. Takes no lock of
+            its own: the cluster's transactions and its leaf lock serialize the
+            exit.
+
+        Returns:
+            None.
+        """
+        frame = self._aetheric_frame
+        clusters = frame._devops_information_registry.get_cluster_objects_for_conduit(
+            self._id
+        )
+        for cluster in clusters:
+            if not frame._cleaned:
+                try:
+                    cluster.release_member(self)
+                    continue
+                except Exception:
+                    self._logger.error(
+                        "Error leaving the cluster during root teardown; dropping the membership",
+                        "_leave_cluster_for_teardown",
+                        exc_info=True,
+                    )
+            try:
+                cluster.drop_member(self)
+            except Exception:
+                self._logger.error(
+                    "Error dropping the cluster membership during root teardown",
+                    "_leave_cluster_for_teardown",
+                    exc_info=True,
+                )
+
     def _cleanup_normal_conduit(self) -> List[Exception]:
         """
         Internal
@@ -44238,15 +44366,20 @@ class Conduit(Cleanable):
         Cleans up a normal Conduit.
 
         Contract:
-            The cluster facade, the ward (lesser lineage), the SpellSpaces and the
-            own store raise their disposal failures only after finishing; those
-            groups are collected and returned, other step errors stay logged, and
-            every later step still runs.
+            - First leaves its cluster (`_leave_cluster_for_teardown`), while this
+              root is registered, its creation gate is live and its cluster facade
+              is not cleaned, so no cluster keeps a torn-down root (0.2.8236).
+            - The cluster facade, the ward (lesser lineage), the SpellSpaces and the
+              own store raise their disposal failures only after finishing; those
+              groups are collected and returned, other step errors stay logged, and
+              every later step still runs.
 
         Returns:
             List[Exception]: Collected disposal failure groups; empty when none failed.
         """
         failures: List[Exception] = []
+        # 0) Leave the cluster first; failures are logged and teardown keeps going.
+        self._leave_cluster_for_teardown()
         self._remove_conduit_record_from_nexus()
         # 1) Meld runtime (stop new object creation paths)
         if self._creation_gate_controller is not None:
@@ -45693,6 +45826,13 @@ class Conduit(Cleanable):
             - The new root has no parent or inherited definitions/contracts.
               Old spell IDs are no longer resolvable; retained objects remain
               in their existing stores for eventual disposal.
+            - A retained object may hold references to instances the former
+              lineage owns (a `unique` instance of a former root's spell, a
+              lineage instance): those are disposed by their own owner, on that
+              owner's schedule, not with this conduit, so a retained holder can
+              outlive what it references. Melder does not serve a retained
+              holder again (its spell ID no longer resolves) and never revokes
+              references application code keeps.
             - Uses ordinary Spellbook configuration selection: omitted local
               configuration means fresh defaults; frame-wide sharing adopts its
               canonical configuration and refuses a conflicting supplied object.
@@ -47409,7 +47549,7 @@ class Conduit(Cleanable):
             *,
             spell: Spell | str | SpellIndex,
             target_conduit: "Conduit",
-            move_creations: bool = False,
+            move_creations: bool = True,
             include_dependencies: bool = False,
             force_unshare: bool = True,
             invalidate_after_transfer: bool = True,
@@ -47421,6 +47561,27 @@ class Conduit(Cleanable):
         Transfer stewardship of a spell to another conduit.
 
         Contract:
+            - The whole lineage moves: the spell's index, with its active and
+              parked members, leaves this conduit's Spellbook and frame registry
+              entry and joins the target's. The target becomes the spell's
+              owner, so a `unique` instance lives in the target's store from
+              then on, and this conduit can no longer meld the spell.
+            - Existing instances follow `move_creations` (below). A transfer
+              never disposes anything.
+            - A transfer hands over stewardship, not a working setup. The
+              spells the transferred spell depends on stay with this conduit
+              unless `include_dependencies` moves the direct ones, so the
+              target can start out broken: a moved instance keeps the
+              dependencies it was built with, and this conduit's teardown
+              disposes the ones it owns while the moved instance still holds
+              them. That is expected in a runtime agents iterate in. The
+              target purges what it does not want, binds the dependencies it
+              needs (a meld that must build the spell without them raises
+              `UnresolvedInputError` naming each missing input) and melds its
+              own version, while this conduit cleans up its own scope.
+            - Borrowers are unshared (`force_unshare`) or repointed at the
+              target; with `include_dependencies`, each direct dependency this
+              conduit owns is transferred with the same options.
             - Uses the normal `TRANSFER_OWNERSHIP` transaction path before the
               existing `TransferOfOwnership` execution helper runs.
             - Keeps request planning and admission in the mediator/strategy
@@ -47431,12 +47592,28 @@ class Conduit(Cleanable):
             spell: Spell object, spell_id, or SpellIndex to transfer.
             target_conduit: The conduit that will become the new steward.
             move_creations:
-                If True, move conduit-owned creation state; otherwise tear that
-                source-side conduit-owned state down.
-                Spellspace-local request objects are intentionally excluded from
-                ownership transfer and are not preserved onto the target
-                conduit.
-            include_dependencies: If True, transfer owned dependencies as well.
+                True (the default since 0.2.8239): the instances this conduit's
+                store holds for every member of the spell's index move into the
+                target's store with the spell. A `unique` stays one object:
+                whatever already holds it keeps the instance the target now
+                serves, and the `many` children recorded with a moved holder
+                move with it. A moved entry replaces whatever the target's store
+                already holds under that spell id; the replaced instances are
+                not disposed.
+                False: nothing moves. The active member's instances are taken
+                out of this conduit's store and kept only until the transfer
+                has finished (for its rollback); they are neither moved nor
+                disposed, Melder stops tracking them, and the target builds its
+                own on its next meld - for a `unique`, a second instance beside
+                any that the application or other objects still hold.
+                Either way, `unique_per_conduit_lineage` instances stay where
+                they were resolved, and spellspace-local and cluster instances
+                are not in this conduit's store, so a transfer never touches
+                them.
+            include_dependencies: If True, also transfer each direct dependency
+                this conduit owns, with the same options, so the target
+                receives those spells (and, with `move_creations`, their
+                instances) instead of depending on this conduit for them.
             force_unshare: If True, strip all contracts/shares for this spell during transfer.
             invalidate_after_transfer: If True, mark lineage dirty after transfer.
             mark_dependencies_dirty: If True, mark dependency lineages dirty (even if not moved).
@@ -50458,7 +50635,7 @@ END FILE: src/melder/aether/conduit/conduit.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/conduit/conduit_cluster.py
-CONTENT SHA256: ffd236f7d36e155ff50130fab84cbd39803b13065789726ef3491698e10b0c26
+CONTENT SHA256: 133f40a2dbe6de46b59a575dab3947b5371215694b4db66ad285d769a23cce09
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -50477,6 +50654,7 @@ from melder.crystallizer.crystals.cluster_crystal import (
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
+from melder.aether.conduit.creations.creations import Creations
 from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import (
     ChangeTransactionType,
@@ -50511,6 +50689,13 @@ class ConduitCluster(Cleanable):
         - `handle_leave(conduit)`: remove the conduit from `members`, tear down
           the shared roots in both directions, and drop its `shared_spells`
           entry.
+        - `release_member(conduit)`: the ordered exit every leave takes -
+          `handle_leave` first (it unelects first when the leaver leads), then
+          `remove_member` (the DevOps membership edge and the record). The
+          cloud's explicit leave and a root's teardown both run it (0.2.8236).
+        - `drop_member(conduit)`: the same exit without transactions, for a
+          root torn down while its frame is torn down (no transaction can
+          start then) or whose transactional exit failed in its teardown.
         - Each individual share/unshare is its own per-pair `cluster_link`
           change-control transaction (opened via `peer.transaction(...)` inside
           `share_to_borrower` / `remove_shared_from_borrower`).
@@ -50527,12 +50712,19 @@ class ConduitCluster(Cleanable):
     whole conduit entry/exit is planned.
 
     ==================================================================
-    LAYER 2 - Elected-leader team store (OPTIONAL; only for
-              `unique_per_conduit_cluster` spells)
+    LAYER 2 - The cluster's team store, served through an elected leader
+              (OPTIONAL; only for `unique_per_conduit_cluster` spells)
     ==================================================================
     A separate overlay. A `unique_per_conduit_cluster` spell must resolve into
-    ONE shared creation store across the whole cluster: the elected leader
-    conduit's `Creations`.
+    ONE shared creation store across the whole cluster: the cluster's own team
+    store (`_team_store`, a `Creations` the cluster owns; owner and scope id =
+    the cluster id). Since 0.2.8237 the store belongs to the cluster, not to the
+    elected leader conduit: a leader change, a leader's leave and a leader's
+    teardown keep its instances, the next election serves the same instances,
+    and the cluster's cleanup (deletion, frame teardown) disposes them, once.
+    Until 0.2.8236 the store was the elected leader conduit's own `Creations`,
+    so a leader change stranded the instance (disposed later with that conduit,
+    under the holders still using it) and the next election built a second one.
 
         - The LIVE team-store facade is PER MEMBER ROOT CONDUIT. Each root
           conduit owns a `_cluster_creations: ClusterCreations`, and the conduits
@@ -50541,15 +50733,16 @@ class ConduitCluster(Cleanable):
           `conduit._cluster_creations.resolved_store()`.
         - `elect_leader(leader_conduit_id)` (transactional): opens an
           `ELECT_CONDUIT_CLUSTER_LEADER` transaction, then `bind_elected_leader`
-          walks `members` and binds every member root's facade to the elected
-          leader's `_creations`, recording `master_conduit_id`. Election is
-          inert -> active, so no lineage drain is required.
+          walks `members` and binds every member root's facade to the team
+          store with the elected leader's id (the facade's purge authority),
+          recording `master_conduit_id`. Election is inert -> active, so no
+          lineage drain is required.
         - `unelect_leader()` (transactional): opens an
           `UNELECT_CONDUIT_CLUSTER_LEADER` transaction whose strategy drains
           every member root lineage to zero (so no meld is mid-create against the
-          leader store), `unbind_elected_leader` unbinds every member facade and
+          team store), `unbind_elected_leader` unbinds every member facade and
           clears `master_conduit_id`, then the lineages reopen on every exit path
-          (fail-closed).
+          (fail-closed). The team store and its instances stay with the cluster.
         - `bind_elected_leader` REFUSES re-election: it raises if
           `master_conduit_id` is already set. Unelect back to inert before
           electing a different leader.
@@ -50566,10 +50759,18 @@ class ConduitCluster(Cleanable):
         - `master_conduit_id` is the single source of truth for "is a leader
           elected": set by `bind_elected_leader`, cleared by
           `unbind_elected_leader`, `None` when inert.
-        - One cluster per conduit (INTENDED): a conduit owns a single
+        - One cluster per conduit: a conduit owns a single
           `_cluster_creations` facade, so it can only ever front ONE cluster's
-          team store. Rejecting a join when the conduit is already clustered is
-          planned; it is not enforced yet.
+          team store; `ConduitCloud.add_conduit_to_cluster` refuses a join when
+          the conduit is already clustered.
+        - A torn-down root is never a member: a normal root's teardown leaves
+          its cluster first (`Conduit._leave_cluster_for_teardown`), so
+          `members` and `master_conduit_id` only ever hold live roots and every
+          member walk (elect, unelect, join, delete) finds each member
+          (0.2.8236; before, the dead id stayed and those walks failed on it).
+        - The team store lives exactly as long as the cluster: built with it,
+          never disposed by an election, an unelection or a member's exit, and
+          disposed by `cleanup()` (0.2.8237).
 
     Threading:
         One internal `_lock` (RLock) guards membership and shared-root state.
@@ -50578,7 +50779,8 @@ class ConduitCluster(Cleanable):
 
     Lifecycle:
         Becomes unusable after `cleanup()` completes; cleanup clears membership
-        and shared-root state and drops references.
+        and shared-root state, disposes the team store's instances (raising their
+        disposal failures after it finished) and drops references.
 
     Attributes:
         members:
@@ -50648,6 +50850,7 @@ class ConduitCluster(Cleanable):
         "_devops_identity",
         "_devops_information_registry",
         "master_conduit_id",
+        "_team_store",
     ]
 
     def __init__(
@@ -50669,6 +50872,11 @@ class ConduitCluster(Cleanable):
                 Frame-owned dev-ops registry used for cluster identity and
                 membership tracking.
             auto_link_dependencies: If True, sharing pulls dependency closure.
+
+        Contract:
+            - Builds the cluster's team store (owner and scope id = the cluster
+              id), which holds the cluster's `unique_per_conduit_cluster`
+              instances until `cleanup()`.
 
         Returns:
             None.
@@ -50706,6 +50914,13 @@ class ConduitCluster(Cleanable):
             object_ref=self,
         )
         self.master_conduit_id: Optional[str] = None
+        # The cluster's team store (0.2.8237): `unique_per_conduit_cluster`
+        # instances live here for the cluster's whole life; an election only
+        # binds the member facades to it.
+        self._team_store: Creations = Creations(
+            owner_conduit_id=self._id,
+            id=self._id,
+        )
         # Record: an empty created cluster IS configured state (its name
         # exists in the frame cloud); emit the birth snapshot so restore
         # rebuilds empty clusters too (config-less-unit-at-init precedent).
@@ -50714,13 +50929,29 @@ class ConduitCluster(Cleanable):
 
     def cleanup(self) -> None:
         """
-        Idempotently clear cluster membership state and release references.
+        Idempotently clear cluster membership state, dispose the team store and release references.
 
         Contract:
             - Safe to call multiple times.
             - Clears member and shared-root registries before dropping owned
               references.
+            - Disposes the team store - the cluster's `unique_per_conduit_cluster`
+              instances - once, outside the cluster lock, after everything else
+              is released (0.2.8237; until then the instances belonged to the
+              elected leader conduit and deleting the cluster disposed nothing).
+            - Every step runs when a disposal method fails; the failures are
+              raised last, as one ExceptionGroup.
             - Leaves the instance permanently cleaned.
+
+        Raises:
+            ExceptionGroup: One or more team-store instances failed a disposal
+                method ("Conduit cluster cleaned with disposal failures.").
+
+        Threading:
+            Membership state is cleared under the cluster lock; user disposal
+            methods run after the lock is released. Callers quiesce cluster melds
+            first: `delete_cluster` unelects (which drains every member lineage)
+            and frame teardown has torn every member down.
 
         Returns:
             None.
@@ -50762,7 +50993,18 @@ class ConduitCluster(Cleanable):
             del self._registry
             del self._aetheric_frame_name
             del self._name
+            team_store = self._team_store
+            del self._team_store
         del self._lock
+        failures: List[Exception] = []
+        try:
+            team_store.cleanup()
+        except ExceptionGroup as disposal_failures:
+            failures.append(disposal_failures)
+        if failures:
+            raise ExceptionGroup(
+                "Conduit cluster cleaned with disposal failures.", failures
+            )
 
     def _emit_cluster_record(self) -> None:
         """
@@ -51012,6 +51254,13 @@ class ConduitCluster(Cleanable):
             - Removes roots owned by the leaver from all remaining peers.
             - Removes roots owned by remaining peers from the leaving conduit.
             - Drops the leaver's shared-root registry entry after teardown.
+            - Reads the leaver's share record, so it must run while that record
+              is present: callers take the ordered exit `release_member`, which
+              calls this first and `remove_member` (which pops the record)
+              after. Until 0.2.8236 the cloud's leave called `remove_member`
+              first, and the leaver's roots stayed contracted to every remaining
+              member.
+            - Leaves the DevOps membership edge to `remove_member`.
 
         Args:
             conduit: The conduit leaving the cluster.
@@ -51022,11 +51271,12 @@ class ConduitCluster(Cleanable):
         self.check_cleaned()
         self._assert_normal_conduit(conduit)
 
-        # If the conduit leaving IS the elected leader, dissolve the team store
-        # first through the drained UNELECT transaction (v1: owner-leave dissolves
-        # the cluster to inert -- no re-home). This runs BEFORE the membership
-        # transaction so the leader is still a member for the unbind walk and
-        # every member lineage is drained before the leader store is released.
+        # If the conduit leaving IS the elected leader, unelect first through the
+        # drained UNELECT transaction: the cluster becomes inert until the next
+        # election, and its instances stay in the team store, which the cluster
+        # owns (0.2.8237), so the next leader serves them. This runs BEFORE the
+        # membership transaction so the leader is still a member for the unbind
+        # walk and every member lineage is drained before the facades are unbound.
         if (
             self.master_conduit_id is not None
             and conduit._id == self.master_conduit_id
@@ -51083,9 +51333,9 @@ class ConduitCluster(Cleanable):
                 self.shared_spells.pop(leaver_id, None)
 
             # Drop the leaver's own team-store facade (idempotent). For a
-            # non-leader leave this releases its handle to the leader store; for a
-            # leader-leave the cluster was already dissolved above and this drops
-            # the departed leader's own facade. No-op while inert.
+            # non-leader leave this releases its handle to the team store; for a
+            # leader-leave the cluster was already unelected above and its walk
+            # unbound this facade too. No-op while inert.
             self.unbind_member(conduit)
             succeeded = True
         finally:
@@ -51094,29 +51344,123 @@ class ConduitCluster(Cleanable):
                 success=succeeded,
             )
 
+    def release_member(self, conduit: Conduit) -> None:
+        """
+        Run one member's ordered exit: leave first, then drop the membership record.
+
+        Purpose:
+            The single exit every leave takes - the cloud's explicit leave
+            (`ConduitCloud.remove_conduit_from_cluster`) and a root's teardown
+            (`Conduit._leave_cluster_for_teardown`). Until 0.2.8236 the cloud
+            removed the membership first (`remove_member` pops the leaver's share
+            record) and `handle_leave` then found no record to unshare, so the
+            leaver's shared roots stayed contracted to every remaining member.
+
+        Contract:
+            - `handle_leave(conduit)` first: when the conduit leads, the cluster
+              is unelected (the drained UNELECT transaction); then, inside one
+              CLUSTER_LEAVE transaction, the conduit leaves `members`, its shared
+              roots are unshared from every peer and every peer's roots from it
+              while its share record is still present, the record is popped and
+              its facade is unbound.
+            - `remove_member(conduit._id)` second: the DevOps membership edge goes
+              and the record is emitted (its discard and pop are no-ops by then).
+            - Safe for a conduit that is no longer a member: every effect is a
+              discard, a pop or an idempotent unbind.
+
+        Args:
+            conduit: The normal root conduit leaving the cluster.
+
+        Raises:
+            RuntimeError: If the cluster has been cleaned, the conduit is not
+                normal, or the frame refuses the transaction (a frame being torn
+                down does; root teardown then uses `drop_member`).
+            Exception: An error of the unelect or leave transaction propagates
+                after that transaction is aborted.
+
+        Threading:
+            The membership change runs inside the transactions' held windows, as
+            `handle_leave` documents; `remove_member` takes the cluster lock.
+
+        Returns:
+            None.
+        """
+        self.handle_leave(conduit)
+        self.remove_member(conduit._id)
+
+    def drop_member(self, conduit: Conduit) -> None:
+        """
+        Remove one member without transactions, for a root that is being torn down.
+
+        Purpose:
+            The exit's effects when no transaction can run: a root torn down while
+            its frame is torn down (the frame is marked cleaned first, so the
+            mediator refuses), or a root whose transactional exit
+            (`release_member`) failed during its teardown.
+
+        Contract:
+            - When the conduit leads, `unbind_elected_leader()` unbinds every
+              member's facade and clears `master_conduit_id`, so the cluster is
+              inert. The walk meets only live members: every member torn down
+              earlier left the cluster in its own teardown.
+            - `remove_member(conduit._id)` drops the membership, the share record
+              and the DevOps edge and emits the record; then the conduit's own
+              facade is unbound.
+            - Shares are not unshared here: the root's ward cleanup, later in the
+              same teardown, severs every contract the root takes part in.
+            - Idempotent for a conduit that is no longer a member.
+
+        Args:
+            conduit: The departing normal root conduit.
+
+        Raises:
+            RuntimeError: If the cluster has been cleaned.
+
+        Threading:
+            Opens no transaction and drains no lineage. It is for teardown, when
+            no meld runs against the departing root; a live leave takes
+            `release_member`.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        if (
+            self.master_conduit_id is not None
+            and conduit._id == self.master_conduit_id
+        ):
+            self.unbind_elected_leader()
+        self.remove_member(conduit._id)
+        conduit._cluster_creations.unbind()
+
     # ------------------------------------------------------------------
     # Cluster leader election (bind / unbind the shared team store)
     # ------------------------------------------------------------------
     def bind_elected_leader(self, leader_conduit_id: str) -> None:
         """
-        Bind the elected leader's creation store into every member root's facade.
+        Bind the cluster's team store into every member root's facade under the elected leader.
 
         Purpose:
-            Activate the cluster team store: make the elected leader conduit's
-            creation store the single store every member resolves
-            `unique_per_conduit_cluster` instances into.
+            Activate the cluster team store: every member resolves
+            `unique_per_conduit_cluster` instances into the store the cluster
+            owns, and the facade records the elected leader as the conduit with
+            purge authority over it.
 
         Contract:
             - Resolves the elected leader, then walks the current member set and
-              binds the leader conduit's creation store into each member root's
+              binds the team store, with the leader's id, into each member root's
               `_cluster_creations` facade. The leader is itself a member, so its
-              own facade binds to its own store.
+              own facade is bound too.
+            - The store is the cluster's (0.2.8237): a later election after an
+              unelection binds the same store, so the instances built under an
+              earlier leader are served again, never built twice. Until 0.2.8236
+              each election bound the elected leader conduit's own store.
             - After this runs, a `unique_per_conduit_cluster` meld on any member
-              lineage resolves into the leader store instead of hard-erroring.
+              lineage resolves into the team store instead of hard-erroring.
             - Refuses re-election: raises if a leader is already elected
-              (`master_conduit_id` is set), so an active cluster's leader store
-              is never silently overwritten. The cluster must be unelected back
-              to inert before a different leader can be elected.
+              (`master_conduit_id` is set), so an active cluster's leader is
+              never silently replaced. The cluster must be unelected back to
+              inert before a different leader can be elected.
             - Records the elected leader id in `master_conduit_id`.
             - Binds only: it does not begin, commit, or abort the election
               transaction. The caller runs it as the in-window effect.
@@ -51124,7 +51468,8 @@ class ConduitCluster(Cleanable):
         Args:
             leader_conduit_id (str):
                 Conduit id of the elected leader. Must resolve to a live, normal
-                cluster member root whose creation store becomes the shared store.
+                cluster member root; it holds purge authority over the team
+                store while elected.
 
         Threading:
             Runs inside the election transaction's held window, after the member
@@ -51137,8 +51482,9 @@ class ConduitCluster(Cleanable):
             None.
 
         Raises:
-            RuntimeError: If the cluster has been cleaned, or a leader is already
-                elected (re-election without an intervening unelect).
+            RuntimeError: If the cluster has been cleaned, a leader is already
+                elected (re-election without an intervening unelect), or the
+                leader conduit cannot be resolved.
         """
         self.check_cleaned()
         if self.master_conduit_id is not None:
@@ -51146,17 +51492,20 @@ class ConduitCluster(Cleanable):
                 "Cannot elect a cluster leader: a leader is already elected "
                 f"('{self.master_conduit_id}'). Unelect the current leader first."
             )
-        leader = self._resolve_conduit_by_id(leader_conduit_id)
+        if self._resolve_conduit_by_id(leader_conduit_id) is None:
+            raise RuntimeError(
+                "Cannot elect a cluster leader: leader conduit could not be resolved."
+            )
         for member_id in self.members:
             member = self._resolve_conduit_by_id(member_id)
-            member._cluster_creations.bind(leader._creations)
+            member._cluster_creations.bind(self._team_store, leader_conduit_id)
         self.master_conduit_id = leader_conduit_id
         with self._lock:
             self._emit_cluster_record()
 
     def unbind_elected_leader(self) -> None:
         """
-        Unbind the leader's creation store from every member root's facade.
+        Unbind the team store from every member root's facade (the cluster turns inert).
 
         Purpose:
             Deactivate the cluster team store and return the cluster to inert, so a
@@ -51165,9 +51514,10 @@ class ConduitCluster(Cleanable):
 
         Contract:
             - Walks the current member set and unbinds each member root's
-              `_cluster_creations` facade, dropping its reference to the leader
-              store. The leader conduit still owns and cleans that store; the
-              facade only releases the reference, never cleans the store.
+              `_cluster_creations` facade, dropping its reference to the team
+              store and the leader's id. The cluster still owns the store and its
+              instances (0.2.8237): nothing is disposed here, and the next
+              election serves them again.
             - Idempotent per facade: unbinding an inert facade is a no-op.
             - Clears `master_conduit_id`.
             - Unbinds only: it does not begin, commit, or abort the unelection
@@ -51176,7 +51526,7 @@ class ConduitCluster(Cleanable):
         Threading:
             Runs inside the unelection transaction's held window, after every
             member root lineage has been drained to zero, so no meld is mid-create
-            against the leader store when it is released. Members are live root
+            against the team store when the facades release it. Members are live root
             conduits and the member set is a thread-safe collection, so the walk
             needs no snapshot and no extra lock.
 
@@ -51193,7 +51543,7 @@ class ConduitCluster(Cleanable):
 
     def bind_member(self, conduit: "Conduit") -> None:
         """
-        Bind one joining member's facade to the elected leader's store.
+        Bind one joining member's facade to the team store under the current leader.
 
         Purpose:
             Activate the team store for a single conduit that joins a cluster
@@ -51206,8 +51556,8 @@ class ConduitCluster(Cleanable):
               joiner's facade stays disabled until a leader is elected, which
               picks it up via `bind_elected_leader`.
             - When a leader is elected, binds the joining conduit's
-              `_cluster_creations` to the elected leader's `_creations`. Does NOT
-              change `master_conduit_id` (the leader is unchanged).
+              `_cluster_creations` to the team store with the current leader's
+              id. Does NOT change `master_conduit_id` (the leader is unchanged).
 
         Args:
             conduit:
@@ -51226,12 +51576,11 @@ class ConduitCluster(Cleanable):
         self.check_cleaned()
         if self.master_conduit_id is None:
             return
-        leader = self._resolve_conduit_by_id(self.master_conduit_id)
-        conduit._cluster_creations.bind(leader._creations)
+        conduit._cluster_creations.bind(self._team_store, self.master_conduit_id)
 
     def unbind_member(self, conduit: "Conduit") -> None:
         """
-        Unbind one leaving member's facade from the elected leader's store.
+        Unbind one leaving member's facade from the team store.
 
         Purpose:
             Deactivate the team store for one conduit leaving the cluster, by
@@ -51241,14 +51590,13 @@ class ConduitCluster(Cleanable):
         Contract:
             - Always drops the leaving conduit's `_cluster_creations` reference
               (idempotent: a no-op when its facade is already inert). Never cleans
-              the leader's store. Does NOT change `master_conduit_id`.
+              the team store. Does NOT change `master_conduit_id`.
             - Drops the leaver's OWN facade only. When the leaving conduit is the
               elected leader, `handle_leave` first dissolves the cluster through
               `unelect_leader` (drained: clears `master_conduit_id` and unbinds
-              the remaining members); this call then drops the departed leader's
-              own facade. The cloud removes the leaver from `members` before
-              `handle_leave`, so that drained walk cannot reach the leaver's
-              facade -- which is why this unbind is unconditional.
+              every member, the leader included, which is still a member then);
+              this call is unconditional so a non-leader's facade is dropped too
+              and a repeated exit stays a no-op.
 
         Args:
             conduit:
@@ -51257,8 +51605,8 @@ class ConduitCluster(Cleanable):
         Threading:
             Runs inside the `CLUSTER_LEAVE` transaction's held window, whose seal
             holds the leaver. No lineage drain is required: `unbind` only drops
-            the facade pointer, the leader's store stays alive (owned by the
-            leader conduit), and any in-flight meld holds its own store reference.
+            the facade pointer, the team store stays alive (owned by the
+            cluster), and any in-flight meld holds its own store reference.
 
         Returns:
             None.
@@ -51293,7 +51641,8 @@ class ConduitCluster(Cleanable):
         Args:
             leader_conduit_id (str):
                 Conduit id of the elected leader. Must resolve to a live, normal
-                cluster member root whose creation store becomes the shared store.
+                cluster member root; it holds purge authority over the team
+                store while elected.
 
         Returns:
             None.
@@ -51352,7 +51701,7 @@ class ConduitCluster(Cleanable):
             - The strategy claims the member conduits EXCLUSIVE and, in its
               `on_start`, drains every member root lineage to zero through the
               DevOps-owned `ConduitLineageGateOps`, so no meld is mid-create
-              against the leader store. Its `on_end` reopens every member root
+              against the team store. Its `on_end` reopens every member root
               lineage on every exit path (fail-closed).
             - Runs `unbind_elected_leader` as the in-window effect, then commits.
             - An empty cluster has no bound leader, so this is a no-op and opens no
@@ -51373,8 +51722,8 @@ class ConduitCluster(Cleanable):
 
         Threading:
             Every member root lineage is drained to zero before the in-window
-            unbind, so no meld is mid-create against the leader store when its
-            reference is released.
+            unbind, so no meld is mid-create against the team store when the
+            facades release it.
         """
         self.check_cleaned()
         member_ids = tuple(sorted(self.members))
@@ -52085,7 +52434,7 @@ END FILE: src/melder/aether/conduit/conduit_state/conduit_state.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/conduit/conduit_ward/conduit_ward.py
-CONTENT SHA256: 424f886ed9ad45e06be55a004e6b16163d8ee5061e02755d3b169b7ecb9fb798
+CONTENT SHA256: f8f1644dd588a0001f1a9a69ec145647a2c221a68d17e47949fa269159e9a1cd
 SOURCE ENCODING: utf-8
 ================================================================================
 import inspect
@@ -55852,7 +56201,7 @@ class ConduitWard(Cleanable):
             *,
             spell: Spell | str | SpellIndex,
             target_conduit: Conduit,
-            move_creations: bool = False,
+            move_creations: bool = True,
             include_dependencies: bool = False,
             force_unshare: bool = True,
             invalidate_after_transfer: bool = True,
@@ -55869,7 +56218,12 @@ class ConduitWard(Cleanable):
         Args:
             spell: Spell object, spell_id, or SpellIndex to transfer.
             target_conduit: The conduit that will become the new steward.
-            move_creations: If True, move creations; else tear them down at source.
+            move_creations: True (the default since 0.2.8239, as on
+                `Conduit.transfer_spell_ownership`) moves this conduit's stored
+                instances of every index member into the target's store with
+                the spell; False takes the active member's instances out of this
+                conduit's store without moving or disposing them. A transfer
+                never disposes anything.
             include_dependencies: If True, transfer owned dependencies as well.
             force_unshare: If True, strip all contracts/shares for this spell during transfer.
             invalidate_after_transfer: If True, mark lineage dirty after transfer.
@@ -57333,7 +57687,7 @@ END FILE: src/melder/aether/conduit/conduit_ward/policies/policies.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py
-CONTENT SHA256: a7e63aa1ee56d046e40c3f002fa4660b76ba8943ec8336f4568797b40d588897
+CONTENT SHA256: 8202df86db2c30de5d15dfe9e5cfee13f044f1f66bed46ffa39df1e7e3e0884b
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -57500,7 +57854,8 @@ class TransferOfOwnership(Cleanable):
 
         The constructor captures both the source/target endpoints and the
         policy choices that define how aggressive the move should be. Those
-        options decide whether creations are carried forward or torn down,
+        options decide whether existing instances are carried to the target or
+        left out of the transfer (taken out of the source store, not disposed),
         whether owned dependencies move with the root lineage, whether existing
         shares are force-unshared or repointed, and whether impacted lineages
         should remain gated after the move so validation reruns before normal
@@ -57511,8 +57866,13 @@ class TransferOfOwnership(Cleanable):
             target_conduit: Conduit that should become the new owner.
             spell: Spell object, spell id, or `SpellIndex` identifying the
                 lineage to move.
-            move_creations: When true, transfer creation-side state to the
-                target instead of tearing it down.
+            move_creations: When true, move the lineage's instances from the
+                source conduit's store into the target's (`_move_creations`);
+                when false, take the active member's instances out of the
+                source store without moving or disposing them
+                (`_teardown_creations`). The public verbs default to True
+                (0.2.8239) and always pass the value; this constructor keeps
+                False as its own default for direct construction.
             include_dependencies: When true, transfer owned dependency lineages
                 with the root instead of requiring the target side to resolve
                 them independently.
@@ -58846,14 +59206,19 @@ class TransferOfOwnership(Cleanable):
         Rehome existing creation state onto the target conduit.
 
         This branch preserves runtime object continuity across ownership
-        transfer. Instead of destroying existing creations and forcing the new
-        owner to rebuild them later, it extracts the lineage's creation payload
+        transfer, and it is the public verbs' default (`move_creations=True`,
+        0.2.8239). Instead of leaving the existing instances behind and having
+        the new owner build its own, it extracts the lineage's creation payload
         from the source and restores that payload into the target conduit's
-        `Creations` store. This applies only to conduit-owned creation state;
-        spellspace-local request objects are intentionally excluded because
-        their lifetime is owned by the source spellspace request surface, not
-        by conduit ownership transfer. A rollback handler is then registered so
-        the payload can be put back if a later transfer step fails.
+        `Creations` store, so a `unique` stays one object and a holder's row
+        carries the `many` children recorded with it (0.2.8238). The restore
+        replaces whatever the target store already holds under a member id;
+        the replaced instances are not disposed. This applies only to
+        conduit-owned creation state; spellspace-local request objects are
+        intentionally excluded because their lifetime is owned by the source
+        spellspace request surface, not by conduit ownership transfer. A
+        rollback handler is then registered so the payload can be put back if
+        a later transfer step fails.
 
         Args:
             spell_obj: Spell whose existing creations should follow the new
@@ -58883,17 +59248,22 @@ class TransferOfOwnership(Cleanable):
 
     def _teardown_creations(self, spell_obj: Any) -> None:
         """
-        Remove source-side creation state instead of preserving it on the
-        target.
+        Take the active member's instances out of the source store without
+        moving them.
 
-        This is the destructive transfer posture. It is used when the caller
-        wants ownership to move but does not want live creation objects to be
-        carried across with it. The extracted payload is still kept for rollback
-        so a failed transfer can restore the pre-transfer runtime state.
+        This is the `move_creations=False` posture, which a caller chooses
+        explicitly: ownership moves, the existing instances do not (the public
+        verbs default to moving them, 0.2.8239). The extracted payload is kept
+        only for this transfer's rollback, so a failed transfer restores the
+        pre-transfer runtime state; on success it is dropped, so the instances
+        are neither moved nor disposed and Melder stops tracking them. The
+        target builds its own on its next meld - for a `unique`, a second
+        instance beside any that the application or other objects still hold.
+        Parked members' instances stay in the source store.
 
         Args:
-            spell_obj: Spell whose current creations should be torn down rather
-                than migrated.
+            spell_obj: Spell whose active member's instances leave the source
+                store.
         """
         self.check_cleaned()
         try:
@@ -59342,7 +59712,7 @@ END FILE: src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/conduit/creations/cluster_creations.py
-CONTENT SHA256: b31d27a21e7d6b251c0a97e8a5284e3edfaf9500dfcaa7635421654ffeae5544
+CONTENT SHA256: b93a52524aa43e14adff1f45e8da316978080ced5dcfb0f6f58e485c1b4cd5cc
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import Any, ClassVar, List, Optional, TYPE_CHECKING
@@ -59355,21 +59725,25 @@ if TYPE_CHECKING:
 
 class ClusterCreations(Cleanable):
     """
-    Facade over a cluster's elected-leader live creation store.
+    Facade over a cluster's team store, active while the cluster has an elected leader.
 
     Purpose:
-        Front the `Creations` store owned by a cluster's elected leader conduit
-        so every member of the cluster resolves `unique_per_conduit_cluster`
-        instances into one shared team-store, regardless of which member owns
-        the spell. The facade depends on `Creations`; `Creations` knows nothing
-        about clusters.
+        Front the `Creations` team store that a `ConduitCluster` owns, so every
+        member of the cluster resolves `unique_per_conduit_cluster` instances
+        into one shared store, regardless of which member owns the spell. The
+        facade depends on `Creations`; `Creations` knows nothing about clusters.
 
     Contract:
-        - References, never owns, the leader's `Creations`. `unbind()` drops the
-          target only; it never cleans the underlying store, because the leader
-          conduit owns and cleans that store itself.
-        - Has exactly one piece of state callers must respect: `active`. Active
-          when an elected leader's store is bound; disabled otherwise.
+        - References, never owns, the cluster's team store. `unbind()` drops the
+          target only; it never cleans the underlying store, because the cluster
+          owns and cleans that store itself (0.2.8237; until then the target was
+          the elected leader conduit's own `Creations`, which that conduit
+          cleaned with itself).
+        - Has two pieces of state callers must respect: `active` and
+          `leader_conduit_id`. Active when the cluster has an elected leader and
+          the team store is bound; disabled otherwise. `leader_conduit_id` is the
+          elected leader's conduit id while active (the conduit with purge
+          authority over the store) and None while disabled.
         - When disabled, the facade cannot be used: `get_creation` and
           `add_creation` raise. A `unique_per_conduit_cluster` meld does not work
           until a leader is elected.
@@ -59382,47 +59756,50 @@ class ClusterCreations(Cleanable):
 
     Lifecycle:
         - `cleanup()` is idempotent: it disables the facade and drops the target
-          reference (without cleaning the referenced store), then retires it.
+          reference and the leader id (without cleaning the referenced store),
+          then retires it.
 
     Registration:
-        MELDER KERNEL - guarded. A per-cluster facade bound/unbound by the
+        MELDER KERNEL - guarded. A per-root facade bound/unbound by the
         elect/unelect leader transactions; never user-constructed or bound.
 
     Subsystem Context:
         The cluster-sharing seam of the conduit `creations` subsystem. It fronts
-        the `Creations` store owned by a cluster's ELECTED LEADER conduit so that
-        every member resolving a `unique_per_conduit_cluster` spell lands in one
-        shared team-store regardless of which member owns the spell. The
+        the `Creations` team store owned by a `ConduitCluster` so that every
+        member resolving a `unique_per_conduit_cluster` spell lands in one
+        shared store regardless of which member owns the spell. The
         elect/unelect-cluster-leader transactions bind and unbind its target;
         `Creations` itself knows nothing about clusters (the dependency points
         one way).
 
     System Context:
-        Cluster-shared uniqueness needs a single home for the instance, but which
-        conduit hosts it is a runtime election that can change. This facade is the
-        indirection that lets members keep resolving through a stable handle while
-        the actual store moves with the leader. It carries NO lock: the
-        leader-election transactions freeze all in-flight melds before they
-        re-target it, so safety comes from that transaction-level quiesce rather
-        than facade-local synchronization - and disabled-until-a-leader-exists is
-        an explicit refusal, not a silent empty store.
+        Cluster-shared uniqueness needs a single home for the instance, and the
+        home is the cluster: a leader is a runtime election that can change, so
+        the store belongs to the cluster and outlives every election, and the
+        facade only says whether it is being served (a leader is elected) and by
+        whose authority. It carries NO lock: the leader-election transactions
+        freeze all in-flight melds before they re-target it, so safety comes
+        from that transaction-level quiesce rather than facade-local
+        synchronization - and disabled-until-a-leader-exists is an explicit
+        refusal, not a silent empty store.
 
     AGENT_ACCESS: internal
 
     AGENT_PURPOSE:
-        access: internal. Facade over a cluster's elected-leader live creation store. Melder
-        kernel machinery: read it to understand the runtime, do not drive it directly.
+        access: internal. Facade over a cluster's team store, active while the cluster has an
+        elected leader. Melder kernel machinery: read it to understand the runtime, do not drive
+        it directly.
     """
 
-    __slots__ = Cleanable.__slots__ + ["_store", "_active"]
+    __slots__ = Cleanable.__slots__ + ["_store", "_active", "_leader_conduit_id"]
 
     def __init__(self) -> None:
         """
         Initialize a disabled (unbound) cluster-creations facade.
 
         Contract:
-            - Starts disabled with no target store: the cluster has no elected
-              leader yet.
+            - Starts disabled with no target store and no leader id: the root is
+              in no cluster with an elected leader yet.
 
         Returns:
             None.
@@ -59430,14 +59807,16 @@ class ClusterCreations(Cleanable):
         super().__init__()
         self._store: Optional[Creations] = None
         self._active: bool = False
+        self._leader_conduit_id: Optional[str] = None
 
     def cleanup(self) -> None:
         """
-        Idempotently disable the facade and drop the leader store reference.
+        Idempotently disable the facade and drop the team store reference.
 
         Contract:
-            - Disables the facade and drops the target reference without
-              cleaning it; the leader conduit owns that store's lifecycle.
+            - Disables the facade and drops the target reference and the leader
+              id without cleaning the store; the cluster owns that store's
+              lifecycle.
             - Idempotent.
 
         Returns:
@@ -59449,25 +59828,32 @@ class ClusterCreations(Cleanable):
         self._active = False
         del self._store
         del self._active
+        del self._leader_conduit_id
 
-    def bind(self, store: Creations) -> None:
+    def bind(self, store: Creations, leader_conduit_id: str) -> None:
         """
-        Bind the facade to an elected leader's creation store (activate).
+        Bind the facade to the cluster's team store under an elected leader (activate).
 
         Contract:
-            - Sets the target store and marks the facade active.
-            - Called only inside the elect-leader transaction, after melds are
-              frozen, so it never races a reader.
+            - Sets the target store and the elected leader's conduit id and marks
+              the facade active.
+            - Called only inside the elect-leader transaction (or the join
+              transaction of a member joining a cluster with a leader), after
+              melds are frozen, so it never races a reader.
 
         Args:
             store:
-                The leader conduit's `Creations` to front.
+                The cluster's team store (`ConduitCluster._team_store`) to front.
+            leader_conduit_id:
+                Conduit id of the elected leader: the conduit with purge
+                authority over the store while it stays elected.
 
         Returns:
             None.
         """
         self.check_cleaned()
         self._store = store
+        self._leader_conduit_id = leader_conduit_id
         self._active = True
 
     def unbind(self) -> None:
@@ -59475,10 +59861,10 @@ class ClusterCreations(Cleanable):
         Disable the facade and remove its target (deactivate).
 
         Contract:
-            - Marks the facade disabled and drops the target reference. Never
-              cleans the referenced store.
+            - Marks the facade disabled and drops the target reference and the
+              leader id. Never cleans the referenced store.
             - Called only inside the unelect-leader transaction, after melds are
-              frozen.
+              frozen, or by a member's exit.
             - Idempotent.
 
         Returns:
@@ -59487,24 +59873,46 @@ class ClusterCreations(Cleanable):
         self.check_cleaned()
         self._active = False
         self._store = None
+        self._leader_conduit_id = None
 
     def is_active(self) -> bool:
         """
-        Return whether the facade is bound to a leader store.
+        Return whether the facade is bound to the team store under an elected leader.
 
         Returns:
             bool:
-                True when an elected leader's store is bound; False when disabled.
+                True when the cluster has an elected leader and the team store is
+                bound; False when disabled.
         """
         self.check_cleaned()
         return self._active
 
-    def resolved_store(self) -> "Creations":
+    @property
+    def leader_conduit_id(self) -> Optional[str]:
         """
-        Return the bound elected-leader `Creations`, or raise when inert.
+        Return the elected leader's conduit id while the facade is active, else None.
 
         Purpose:
-            Hand the meld front door the concrete leader store so the door can
+            Name the conduit with purge authority over the cluster's team store.
+            The store's own `owner_conduit_id` is the cluster id (the cluster owns
+            the store), so the meld's purge authority reads the leader from here
+            (0.2.8237).
+
+        Returns:
+            Optional[str]: The elected leader's conduit id, or None while disabled.
+
+        Raises:
+            RuntimeError: If the facade has been cleaned.
+        """
+        self.check_cleaned()
+        return self._leader_conduit_id
+
+    def resolved_store(self) -> "Creations":
+        """
+        Return the bound team store, or raise when inert.
+
+        Purpose:
+            Hand the meld front door the concrete team store so the door can
             run the same get-or-create-once block the lineage route uses,
             holding the real store's `slot_guard(spell_id)` across the build
             (the store's `_lock` is only a leaf around publish). The facade
@@ -59514,8 +59922,7 @@ class ClusterCreations(Cleanable):
             this facade.
 
         Contract:
-            - Returns the bound leader `Creations` when an elected leader is
-              active.
+            - Returns the cluster's team store when a leader is elected (active).
             - Raises `RuntimeError` when disabled (no elected cluster leader),
               matching `get_creation` / `add_creation`, so a
               `unique_per_conduit_cluster` meld with no leader hard-errors at the
@@ -59523,7 +59930,7 @@ class ClusterCreations(Cleanable):
 
         Returns:
             Creations:
-                The elected leader's live creation store.
+                The cluster's live team store.
 
         Raises:
             RuntimeError:
@@ -59573,7 +59980,7 @@ class ClusterCreations(Cleanable):
             disposal_methods: Optional[List[str]] = None,
     ) -> None:
         """
-        Register the shared cluster instance for a spell id into the leader store.
+        Register the shared cluster instance for a spell id into the team store.
 
         Contract:
             - Delegates to the bound store, keyed by `spell_id`.
@@ -59756,7 +60163,7 @@ END FILE: src/melder/aether/conduit/creations/conduit_creations.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/conduit/creations/creations.py
-CONTENT SHA256: 0b94427c1cec8484b197d895b586638cefd83956ee495766e4a3ab3b6e24964d
+CONTENT SHA256: 777a213c3296920363227cdd64ea770ae5873dc49276ad72f6f706c5b8559246
 SOURCE ENCODING: utf-8
 ================================================================================
 from threading import RLock
@@ -59811,8 +60218,69 @@ class ManyDisposalBucket:
         self.methods = methods
 
 
+class HolderDisposalEntry:
+    """
+    Cleanup-only record of one slotted holder and the `many` children built for it.
+
+    Purpose:
+        Keep a holder's disposal-bearing `many` children with the holder
+        (slotted_lifetime_ownership, 0.2.8238). Since 0.2.8235 an emitted miss
+        registers each child in the holder's store before it builds the
+        holder; once the holder is published, the miss moves those children
+        out of their spells' `many` buckets into this record
+        (`Creations.adopt_children`). Every store verb keyed by the holder -
+        purge, extract/restore for an ownership transfer, whole-store disposal
+        - then reaches the children with the holder, through one dict read.
+
+    Contract:
+        - `item` is the holder: the object `_creations` holds under the
+          holder's spell id.
+        - `methods` is the holder Spell's established ordered disposal list,
+          retained by reference. It is empty when the holder declares no
+          disposal method; the record then exists for the holder's children.
+        - `children` lists `(child, child_methods)` pairs in build order;
+          `child_methods` is the child Spell's own list, the object its
+          `ManyDisposalBucket` carried, retained by reference.
+        - A child is in exactly one place: its spell's `many` bucket or one
+          holder record, never both.
+        - Disposal runs the holder's methods, then each child's, newest child
+          first, so a holder whose own disposal uses a child still finds it
+          open (`Creations._dispose_holder_entry`).
+        - Every field is borrowed. The owning `Creations` store detaches the
+          record (cleanup, clear, purge, extract) and disposes from it; the
+          record owns nothing and needs no cleanup.
+
+    AGENT_ACCESS: internal
+    """
+
+    __slots__ = ("item", "methods", "children")
+
+    def __init__(
+            self,
+            item: object,
+            methods: List[str],
+            children: List[Tuple[object, List[str]]],
+    ) -> None:
+        """
+        Bind the holder, its disposal list and its adopted children.
+
+        Args:
+            item: The holder object (borrowed).
+            methods: The holder Spell's ordered disposal method names (borrowed;
+                an empty list when the holder declares none).
+            children: `(child, child_methods)` pairs in build order. The list
+                object itself is kept.
+
+        Returns:
+            None.
+        """
+        self.item = item
+        self.methods = methods
+        self.children = children
+
+
 StoredDisposalEntry = Tuple[object, List[str]]
-StoredDisposalValue = Union[StoredDisposalEntry, ManyDisposalBucket]
+StoredDisposalValue = Union[StoredDisposalEntry, ManyDisposalBucket, HolderDisposalEntry]
 
 
 class Creations(Cleanable):
@@ -59841,6 +60309,11 @@ class Creations(Cleanable):
             bucket, a tuple and a second append per creation). A many key
             therefore carries one disposal declaration: every entry of the
             key is disposal-bearing or none is.
+          - a slotted holder that adopted `many` children (0.2.8238):
+            `spell_id -> HolderDisposalEntry` (the holder, its methods -
+            possibly none - and its children with theirs) in place of the
+            tuple. Adopted children leave their spell's bucket, so a `many`
+            key holds only objects that no holder owns.
         - Cleanup and reusable clearing are explicit, idempotent, and aggregate
           disposal failures.
         - Disposal names are the established Spell-owned list, retained directly
@@ -59858,10 +60331,11 @@ class Creations(Cleanable):
 
         - `_lock` (the store lock) is a LEAF lock over the two registries. It
           is held only for dict reads and writes: publish of disposal-bearing
-          entries, many append, purge detach, extract/restore and whole-store
-          swap. It is never held while acquiring another lock and never
-          around user code. (A publish without disposal methods is one atomic
-          dict store under the caller's build lock; see `add_creation`.)
+          entries, many append, child adoption, purge detach, extract/restore
+          and whole-store swap. It is never held while acquiring another lock
+          and never around user code. (A publish without disposal methods is
+          one atomic dict store under the caller's build lock; see
+          `add_creation`.)
         - `slot_guard(spell_id)` returns one `RLock` per slot - a spell id
           whose Existence promises at most one object in this store. Generated
           doors and plan steps hold it across recheck -> construct -> publish,
@@ -59891,6 +60365,8 @@ class Creations(Cleanable):
         within a `many` bucket. Resolution registers a dependency before the
         dependent that holds it, so forward teardown would dispose the
         dependency while a dependent's own disposal method may still need it.
+        For the same reason a holder's record disposes the holder before the
+        children it adopted, newest child first (0.2.8238).
         This covers ordering within ONE scope; ordering between scopes is the
         conduit cleanup cascade's job.
 
@@ -59898,7 +60374,8 @@ class Creations(Cleanable):
         MELDER KERNEL. The one subclass, `ConduitCreations`, is melder-internal and
         constructed only inside `Conduit.__init__`; there is no injection seam.
         `ClusterCreations` does NOT extend this class - it extends `Cleanable`
-        directly.
+        directly. A cluster's team store is a plain `Creations` that its
+        `ConduitCluster` builds and owns (0.2.8237).
 
     Subsystem Context:
         The storage layer beneath `Meld`. Meld decides WHICH store an
@@ -59987,7 +60464,7 @@ class Creations(Cleanable):
         self._slot_guards: Dict[str, RLock] = {}
         # Note: resolution-store selection for broad-lived existences
         # (`unique_per_conduit_lineage` lineage root, `unique_per_conduit_cluster`
-        # elected-leader store) lives on the meld front doors
+        # cluster team store) lives on the meld front doors
         # (`ConduitMeld` / `SpellSpaceMeld`), not on this store. `Creations` is a
         # pure scoped live-object bucket and intentionally holds no pointer to
         # any other `Creations`; the resolving door is handed the target store
@@ -60191,6 +60668,10 @@ class Creations(Cleanable):
         Contract:
             - Singleton metadata delegates to `_attempt_cleanup`.
             - Many buckets delegate to `_dispose_many_creations`.
+            - Holder records delegate to `_dispose_holder_entry`: the holder,
+              then its adopted children newest-first (0.2.8238). The three-way
+              dispatch is inline, as `_dispose_entry` spells it out, so a scope
+              exit pays no extra call per record.
             - Collected failures never prevent trying the next selected object;
               every failing method of every object contributes one error.
             - The caller owns registry detachment and final reference release.
@@ -60222,10 +60703,74 @@ class Creations(Cleanable):
         for value in reversed(disposable_registry.values()):
             if isinstance(value, tuple):
                 errors.extend(self._attempt_cleanup(value))
-                continue
-            if isinstance(value, ManyDisposalBucket):
+            elif isinstance(value, ManyDisposalBucket):
                 errors.extend(self._dispose_many_creations(value))
+            else:
+                errors.extend(self._dispose_holder_entry(value))
         return errors
+
+    def _dispose_holder_entry(self, entry: HolderDisposalEntry) -> List[Exception]:
+        """
+        Dispose one detached holder record: the holder, then its adopted children.
+
+        Purpose:
+            Give every retirement keyed by a holder - whole-store disposal and
+            purge - one way to take the holder's `many` children with it
+            (0.2.8238).
+
+        Contract:
+            - Runs the holder's declared methods first (none when its list is
+              empty), then each child's methods, newest child first, so a holder
+              whose own disposal uses a child still finds it open.
+            - Every method of every object runs even after one fails; each
+              failure is one chained `RuntimeError` from `_attempt_cleanup`.
+            - Does not mutate the record or its borrowed lists and takes no
+              lock: the caller detached the record and released its locks.
+
+        Args:
+            entry:
+                The detached `HolderDisposalEntry`.
+
+        Returns:
+            List[Exception]:
+                Disposal failures in attempt order; empty when every method
+                succeeded.
+        """
+        errors = self._attempt_cleanup((entry.item, entry.methods))
+        for child, methods in reversed(entry.children):
+            errors.extend(self._attempt_cleanup((child, methods)))
+        return errors
+
+    def _dispose_entry(self, value: StoredDisposalValue) -> List[Exception]:
+        """
+        Dispose one detached disposal-registry value, whatever its shape.
+
+        Purpose:
+            One dispatch over the three record shapes `_disposable_creations`
+            holds, for retirements of one record such as purge (0.2.8238).
+            Whole-store disposal runs the same dispatch inline in its loop.
+
+        Contract:
+            - An `(object, methods)` tuple goes to `_attempt_cleanup`.
+            - A `ManyDisposalBucket` goes to `_dispose_many_creations` (newest
+              object first).
+            - A `HolderDisposalEntry` goes to `_dispose_holder_entry` (the
+              holder, then its children newest-first).
+            - Takes no lock; the caller detached the value first.
+
+        Args:
+            value:
+                The detached record.
+
+        Returns:
+            List[Exception]:
+                Disposal failures in attempt order.
+        """
+        if isinstance(value, tuple):
+            return self._attempt_cleanup(value)
+        if isinstance(value, ManyDisposalBucket):
+            return self._dispose_many_creations(value)
+        return self._dispose_holder_entry(value)
 
     def slot_guard(self, spell_id: str) -> RLock:
         """
@@ -60605,6 +61150,92 @@ class Creations(Cleanable):
             )
         bucket.append(item)
 
+    def adopt_children(
+            self,
+            holder_key: str,
+            holder: object,
+            children: Tuple[Tuple[str, object], ...],
+    ) -> None:
+        """
+        Record a just-published holder's `many` children with the holder.
+
+        Purpose:
+            Make a slotted holder own the disposal-bearing `many` children built
+            for it (slotted_lifetime_ownership, 0.2.8238). An emitted miss builds
+            and registers each child in this store (`register_many`, before the
+            holder's build lock), then builds and publishes the holder; right
+            after publication, under the holder's build lock, it calls this verb,
+            which moves the children out of their spells' `many` buckets into
+            the holder's disposal record. Purge, extract/restore and whole-store
+            disposal of the holder then take the children with it.
+
+        Contract:
+            - Cold path only: one call per holder publication.
+            - Does nothing when this store was cleaned, or when the slot no
+              longer holds `holder` (a whole-store clear swapped the registries
+              after publication, and the children went with that generation).
+            - Each `(child_key, child)` is removed by identity from the key's
+              live bucket, scanning from the end - the child was appended
+              moments ago, so the scan normally stops at once. The key's method
+              list is taken from its `ManyDisposalBucket`. A bucket left empty
+              is dropped with its record, so a later registration of that key
+              starts again at the end of the registry. A child no longer in its
+              bucket (a concurrent `many` purge retired it) is skipped.
+            - The holder's disposal value becomes a `HolderDisposalEntry`: a
+              `(holder, methods)` tuple is replaced in place, keeping its
+              registry position; a holder published without disposal methods
+              gets a new record with `methods=[]`. With no child found, nothing
+              changes.
+            - Children registered without disposal methods are never passed in:
+              no store tracks them.
+
+        Args:
+            holder_key:
+                The holder's spell id (its slot in this store).
+            holder:
+                The holder object just published under `holder_key`.
+            children:
+                `(child_spell_id, child)` pairs in build order - exactly the
+                disposal-bearing `many` children the miss registered here.
+
+        Returns:
+            None.
+
+        Threading:
+            The caller holds the holder's build lock (its slot guard, or
+            `Spell._lock` for `unique`); this verb takes the store lock as a
+            leaf, as every registration does, so no lock-order edge is added.
+            No user code runs under it.
+        """
+        with self._lock:
+            if self._cleaned or self._creations.get(holder_key) is not holder:
+                return
+            adopted: List[Tuple[object, List[str]]] = []
+            for child_key, child in children:
+                record = self._disposable_creations.get(child_key)
+                if record is None:
+                    continue
+                bucket = record.entries
+                for index in range(len(bucket) - 1, -1, -1):
+                    if bucket[index] is child:
+                        del bucket[index]
+                        break
+                else:
+                    continue
+                adopted.append((child, record.methods))
+                if not bucket:
+                    del self._creations[child_key]
+                    del self._disposable_creations[child_key]
+            if not adopted:
+                return
+            current = self._disposable_creations.get(holder_key)
+            if current is None:
+                self._disposable_creations[holder_key] = HolderDisposalEntry(holder, [], adopted)
+            elif isinstance(current, HolderDisposalEntry):
+                current.children.extend(adopted)
+            else:
+                self._disposable_creations[holder_key] = HolderDisposalEntry(holder, current[1], adopted)
+
     def get_creation(self, spell_id: str) -> Optional[Any]:
         """
         Return one scoped live object by spell id.
@@ -60642,6 +61273,11 @@ class Creations(Cleanable):
             - Disposal uses the recorded methods without rematching or copying
               the Spell-owned method-name list. Many entries run newest-first;
               each object's methods run in their established order.
+            - A holder's record is detached with the holder, so the `many`
+              children it adopted are disposed after it, newest first (0.2.8238);
+              the count stays the target's own entries. A `many` target's bucket
+              holds only children that no holder adopted, so purging a child
+              spell never disposes a child its live holder still uses.
             - Every declared method runs even after one fails; each failure is
               collected and other selected objects are still attempted, matching
               cleanup.
@@ -60709,10 +61345,8 @@ class Creations(Cleanable):
                     spell, purge_all=purge_all, creation=creation,
                 )
         errors: List[Exception] = []
-        if isinstance(disposal, tuple):
-            errors = self._attempt_cleanup(disposal)
-        elif isinstance(disposal, ManyDisposalBucket):
-            errors = self._dispose_many_creations(disposal)
+        if disposal is not None:
+            errors = self._dispose_entry(disposal)
         # Keep non-disposable objects alive until the removal locks are released.
         del retired
         if errors:
@@ -60849,6 +61483,12 @@ class Creations(Cleanable):
               wrapper object.
             - Retains each established method-list reference in the returned
               rows; this in-memory handoff is not a serialization boundary.
+            - A holder's row carries the children it adopted (0.2.8238):
+              `children` lists `{"stored", "disposal_methods"}` rows in build
+              order, and a holder without disposal methods of its own is
+              `disposable` with an empty `disposal_methods` list, so a restore
+              (an ownership transfer's move or its rollback) takes the children
+              wherever the holder goes.
 
         Threading:
             - Performs extraction under `_lock` so the local slot shape stays
@@ -60882,7 +61522,7 @@ class Creations(Cleanable):
                 stored_value = self._creations.pop(spell_id)
                 disposable_entry = (
                     self._disposable_creations.pop(spell_id)
-                    if isinstance(disposable_value, tuple)
+                    if isinstance(disposable_value, (tuple, HolderDisposalEntry))
                     else None
                 )
                 entry = {
@@ -60890,7 +61530,13 @@ class Creations(Cleanable):
                     "disposable": disposable_entry is not None,
                     "stored": stored_value,
                 }
-                if disposable_entry is not None:
+                if isinstance(disposable_entry, HolderDisposalEntry):
+                    entry["disposal_methods"] = disposable_entry.methods
+                    entry["children"] = [
+                        {"stored": child, "disposal_methods": methods}
+                        for child, methods in disposable_entry.children
+                    ]
+                elif disposable_entry is not None:
                     entry["disposal_methods"] = disposable_entry[1]
                 extracted.append(entry)
 
@@ -60915,6 +61561,9 @@ class Creations(Cleanable):
               does not clone or rehydrate them.
             - Retains the extracted disposal lists directly, without copying
               their contents or reapplying binding policy.
+            - A unique row with `children` rebuilds the holder's
+              `HolderDisposalEntry` (0.2.8238); rows without it restore exactly
+              as before.
 
         Returns:
             None.
@@ -60941,7 +61590,14 @@ class Creations(Cleanable):
                             f"Cannot restore unique creation for spell '{spell_id}' into non-singleton slot."
                         )
                     self._creations[spell_id] = stored_value
-                    if is_disposable:
+                    children = entry.get("children")
+                    if children is not None:
+                        self._disposable_creations[spell_id] = HolderDisposalEntry(
+                            stored_value,
+                            disposal_methods if disposal_methods is not None else [],
+                            [(child["stored"], child["disposal_methods"]) for child in children],
+                        )
+                    elif is_disposable:
                         self._disposable_creations[spell_id] = (
                             stored_value,
                             disposal_methods if disposal_methods is not None else [],
@@ -61107,7 +61763,7 @@ END FILE: src/melder/aether/conduit/creations/creations.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/conduit/meld/conduit_meld.py
-CONTENT SHA256: b3e31ee8fdc75c7fbbd55e229bfe585e7177d4523901b1d0386598c926d62ae2
+CONTENT SHA256: 9baa043e2882f1272430b6e5345ac0ecbfbeca9d41246898c9f400fb902180ce
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import TYPE_CHECKING, Optional, Dict, Any, Callable, ClassVar, Union
@@ -61117,6 +61773,7 @@ from melder.aether.spellbook.existence.existence import Existence
 
 if TYPE_CHECKING:
     from melder.aether.conduit.creations.conduit_creations import ConduitCreations
+    from melder.aether.conduit.creations.creations import Creations
     from melder.aether.conduit.creations.cluster_creations import ClusterCreations
     from melder.aether.spellbook.spellbook import Spellbook
     from melder.aether.spellbook.spell import Spell
@@ -61135,8 +61792,9 @@ class ConduitMeld(Meld):
           `unique_per_conduit` and `many` storage.
         - Uses the shared store each broad-lived existence names: the Spell
           owner's `owner_creations` for `unique`, the lineage-root store
-          (`_root_creations`) for `unique_per_conduit_lineage`, and the elected
-          leader's store (`_cluster_creations.resolved_store()`) for
+          (`_root_creations`) for `unique_per_conduit_lineage`, and the
+          cluster's team store (`_cluster_creations.resolved_store()`, served
+          while the cluster has an elected leader) for
           `unique_per_conduit_cluster`.
         - Rejects `requires_spellspace_request` spells because the conduit door
           is not allowed to fabricate request-local spellspace scope.
@@ -61181,7 +61839,7 @@ class ConduitMeld(Meld):
         existences (`unique_per_conduit`, `many`) use the conduit's own store,
         while broader-lived ones resolve against shared storage - the Spell
         owner's store for `unique`, the lineage root's for
-        `unique_per_conduit_lineage`, the elected leader's for
+        `unique_per_conduit_lineage`, the cluster's team store for
         `unique_per_conduit_cluster` - so peers in a cluster or lineage
         genuinely observe the same instance.
 
@@ -61318,16 +61976,20 @@ class ConduitMeld(Meld):
             creation=spell if not purge_all else None,
         )
 
-    def _get_purge_creations(self, spell: Spell) -> ConduitCreations:
+    def _get_purge_creations(self, spell: Spell) -> Creations:
         """
         Select and authorize the conduit store for one discovered definition.
 
         Contract:
             - Many and per-conduit lifetimes use this caller's local store.
             - Unique uses the Spell owner, lineage uses this lineage's root,
-              and cluster uses the currently elected leader's concrete store.
-            - Shared-store purge requires the actual `_conduit_id` to own that
-              store. A lesser's `_resolution_conduit_id` grants no authority.
+              and cluster uses the cluster's team store.
+            - Shared-store purge requires the actual `_conduit_id` to hold the
+              authority: to own the store for unique and lineage, and to be the
+              elected leader recorded on the cluster facade for cluster (the
+              team store belongs to the cluster, so its owner id is the
+              cluster's, 0.2.8237). A lesser's `_resolution_conduit_id` grants no
+              authority.
             - SpellSpace lifetime is refused even when a space is active.
             - Does not remove entries, take creation locks, or invoke callbacks.
 
@@ -61335,7 +61997,8 @@ class ConduitMeld(Meld):
             spell: Existing definition obtained through this door's discovery.
 
         Returns:
-            ConduitCreations: Existing store that this conduit may purge.
+            Creations: Existing store that this conduit may purge (a
+                `ConduitCreations` except for the cluster's team store).
 
         Raises:
             RuntimeError: If the lifetime is unsupported here, the cluster is
@@ -61354,22 +62017,29 @@ class ConduitMeld(Meld):
                 f"Cannot purge spell '{spell.spell_name}' from a conduit; "
                 "call purge on the specific SpellSpace."
             )
+        creations: Creations
         if existence is Existence.unique:
             creations = spell._owner_creations
             authority = "spell-owning conduit"
+            authority_conduit_id = creations.owner_conduit_id
         elif existence is Existence.unique_per_conduit_lineage:
             creations = self._root_creations
             authority = "lineage root conduit"
+            authority_conduit_id = creations.owner_conduit_id
         elif existence is Existence.unique_per_conduit_cluster:
+            # The team store belongs to the cluster (0.2.8237), so its owner id is
+            # the cluster's; the elected leader recorded on the facade holds the
+            # purge authority.
             creations = self._cluster_creations.resolved_store()
             authority = "elected cluster leader"
+            authority_conduit_id = self._cluster_creations.leader_conduit_id
         else:
             raise RuntimeError(f"Unsupported purge existence: {existence!r}.")
-        if self._conduit_id != creations.owner_conduit_id:
+        if self._conduit_id != authority_conduit_id:
             raise RuntimeError(
                 f"Cannot purge spell '{spell.spell_name}' ({spell.spell_id}) "
                 f"from conduit '{self._conduit_id}'; the {authority} "
-                f"'{creations.owner_conduit_id}' must call purge."
+                f"'{authority_conduit_id}' must call purge."
             )
         return creations
 
@@ -61435,8 +62105,8 @@ class ConduitMeld(Meld):
               conduit's `ConduitCreations`.
             - Routes broader-lived existences through their shared stores:
               the Spell owner's `owner_creations` for `unique`, the lineage
-              root for `unique_per_conduit_lineage`, the elected leader for
-              `unique_per_conduit_cluster`.
+              root for `unique_per_conduit_lineage`, the cluster's team store
+              for `unique_per_conduit_cluster`.
             - Reuses the shared validation, resolution, and hook machinery
               provided by `Meld`.
             - Warm id-string melds may take the guarded fast meld door: after
@@ -61849,8 +62519,8 @@ class ConduitMeld(Meld):
             - Rejects spellspace-request lineages on the conduit-facing door.
             - Reads caller-local conduit storage for `unique_per_conduit`, the
               Spell owner's `owner_creations` for `unique`, the lineage root for
-              `unique_per_conduit_lineage` and the elected leader for
-              `unique_per_conduit_cluster` (not live while none is elected).
+              `unique_per_conduit_lineage` and the cluster's team store for
+              `unique_per_conduit_cluster` (not live while no leader is elected).
 
         Args:
             spell_name:
@@ -61951,8 +62621,8 @@ class ConduitMeld(Meld):
             Existence.unique_per_conduit_lineage,
         }:
             # Only `unique` resolves into the binding owner's _owner_creations.
-            # cluster/lineage live in the meld-supplied store (elected leader /
-            # lineage-root), mirroring the front-door store selection above.
+            # cluster/lineage live in the meld-supplied store (cluster team store
+            # / lineage root), mirroring the front-door store selection above.
             if existence is Existence.unique:
                 store = target_spell._owner_creations
             elif existence is Existence.unique_per_conduit_lineage:
@@ -62094,7 +62764,7 @@ class ConduitMeld(Meld):
               reports 0.
             - `unique` reads the Spell owner's `owner_creations`;
               `unique_per_conduit_lineage` the lineage-root store;
-              `unique_per_conduit_cluster` the elected leader's store, and is
+              `unique_per_conduit_cluster` the cluster's team store, and is
               not live while no leader is elected.
             - spellspace-request spells never reach this helper because the
               conduit-facing door rejects them earlier.
@@ -62156,8 +62826,8 @@ class ConduitMeld(Meld):
             Existence.unique_per_conduit_lineage,
         }:
             # Only `unique` lives in the binding owner's _owner_creations.
-            # cluster/lineage live in the meld-supplied store (elected leader /
-            # lineage-root); a cluster with no elected leader is simply not live.
+            # cluster/lineage live in the meld-supplied store (cluster team store
+            # / lineage root); a cluster with no elected leader is simply not live.
             if existence is Existence.unique:
                 store = spell._owner_creations
                 storage_scope_kind = "owner_creations"
@@ -62175,6 +62845,9 @@ class ConduitMeld(Meld):
                     )
                     else None
                 )
+                # The label predates the team store (0.2.8237: the store is the
+                # cluster's, served while a leader is elected); it is kept because
+                # it is a published diagnostics value.
                 storage_scope_kind = "cluster_leader"
                 storage_owner_conduit_id = None
             creation = (
@@ -66236,7 +66909,7 @@ END FILE: src/melder/aether/conduit/meld/meld.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/conduit/meld/spellspace_meld.py
-CONTENT SHA256: c758d29b0d3e264ccea2c837ac837fe9b6612ff79dc666adc08e610a82ef718a
+CONTENT SHA256: ac5c89993f1250a173b215c59b347484b2ad9c2b1d02d6f1742f46bc8a59cbd7
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import TYPE_CHECKING, Optional, Dict, Any, Callable, ClassVar, Union
@@ -66365,9 +67038,9 @@ class SpellSpaceMeld(Meld):
             - References the owner conduit's cluster facade (owned by the
               conduit meld, not by this spellspace) so
               `unique_per_conduit_cluster` melds resolved from inside the
-              spellspace resolve into the same elected-leader store the owner
-              conduit's cluster elected; a spellspace created after election
-              still sees the filled facade through this shared reference.
+              spellspace resolve into the same team store the owner conduit's
+              cluster serves; a spellspace created after election still sees
+              the filled facade through this shared reference.
             - Caches the owning spellspace id and owner conduit id for later
               live-creation diagnostics.
             - Reuses the shared spellbook/lookup surfaces owned by `Meld`.
@@ -66432,7 +67105,7 @@ class SpellSpaceMeld(Meld):
             - Uses shared discovery to find the registered definition.
             - Accepts only many and unique_per_spell_space lifetimes.
             - Always delegates to `_spellspace_creations`; never to the owner
-              conduit, Spell owner, lineage root, or cluster leader store.
+              conduit, Spell owner, lineage root, or cluster team store.
             - Creations owns locking, paired-map removal and recorded disposal.
             - Does not pop the managed stack, recycle this scope or recompile.
 
@@ -67042,8 +67715,8 @@ class SpellSpaceMeld(Meld):
             Existence.unique_per_conduit_lineage,
         }:
             # Only `unique` resolves into the binding owner's _owner_creations.
-            # cluster/lineage live in the meld-supplied store (elected leader /
-            # lineage-root), mirroring the front-door store selection.
+            # cluster/lineage live in the meld-supplied store (cluster team store
+            # / lineage root), mirroring the front-door store selection.
             if existence is Existence.unique:
                 store = target_spell._owner_creations
             elif existence is Existence.unique_per_conduit_lineage:
@@ -67152,7 +67825,7 @@ class SpellSpaceMeld(Meld):
             - `unique_per_conduit` reads from owner-conduit storage.
             - `unique` reads the Spell owner's `owner_creations`;
               `unique_per_conduit_lineage` the owner conduit's lineage-root
-              store; `unique_per_conduit_cluster` the elected leader's store,
+              store; `unique_per_conduit_cluster` the cluster's team store,
               and is not live while no leader is elected.
             - Reports both `query_conduit_id` and `active_spellspace_id` so the
               caller can distinguish request-local versus broader scope state.
@@ -67243,8 +67916,8 @@ class SpellSpaceMeld(Meld):
             Existence.unique_per_conduit_lineage,
         }:
             # Only `unique` lives in the binding owner's _owner_creations.
-            # cluster/lineage live in the meld-supplied store (elected leader /
-            # lineage-root); a cluster with no elected leader is simply not live.
+            # cluster/lineage live in the meld-supplied store (cluster team store
+            # / lineage root); a cluster with no elected leader is simply not live.
             if existence is Existence.unique:
                 store = spell._owner_creations
                 storage_scope_kind = "owner_creations"
@@ -67289,7 +67962,7 @@ END FILE: src/melder/aether/conduit/meld/spellspace_meld.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/conduit/spell_space/spell_space.py
-CONTENT SHA256: c714a69b659613d6e8158f0caea7b2b39ab289f8f6eea6c1d13e279e621753c8
+CONTENT SHA256: e58cfa4eff2fc7427a0083b8a9c936d3bd37d98d7fd4f54f8431c00de8cddb64
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -67487,11 +68160,11 @@ class SpellSpace(Cleanable):
         # store (`conduit_meld._root_creations`) and uses it for those melds.
         # Likewise a spellspace is not a cluster member: a
         # `unique_per_conduit_cluster` spell resolved from within it stores in
-        # the owner conduit's elected-leader store, so the spellspace meld
+        # the owner conduit's cluster team store, so the spellspace meld
         # references the owner conduit's cluster facade
         # (`conduit_meld._cluster_creations`) rather than owning its own. The
         # facade is filled on election by ConduitCluster, so a spellspace built
-        # after election still resolves into the same leader store.
+        # after election still resolves into the same team store.
         self._meld: SpellSpaceMeld = SpellSpaceMeld(
             spellspace=self,
             spellspace_creations=self._creations,
@@ -68019,7 +68692,7 @@ class SpellSpace(Cleanable):
         Contract:
             - SpellSpaceMeld authorizes only many and unique_per_spell_space.
             - The target store is always this space's own Creations. No conduit,
-              Spell owner, lineage-root or cluster-leader store can be selected.
+              Spell owner, lineage-root or cluster team store can be selected.
             - Identity normalization follows meld's name/type/frame/id rules.
             - Purge does not exit the scope, pop its stack or return it to a pool.
 
@@ -81251,7 +81924,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/sha
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/creation_runtime_door_compiler.py
-CONTENT SHA256: 9ead6979e1de6178ccfa85dae7d9f77cf631875dcb73d47e07309736fcf7cea8
+CONTENT SHA256: 7466b43ae20bd3c989d7bdc4d76fb8fd31a617919e4d345a87b35fa40b9d421d
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import Optional, Any, Callable, Sequence
@@ -81916,7 +82589,9 @@ def _build_no_overrides_lines(
         ]
     if resolve_route_key == "cluster":
         # unique_per_conduit_cluster: one instance per cluster, stored in the
-        # elected leader's creations, resolved off the meld's cluster facade.
+        # cluster's team store (served while a leader is elected), resolved off
+        # the meld's cluster facade. The emitted local keeps its historical name
+        # `leader_creations`, so emitted door bodies are unchanged (0.2.8237).
         return [
             "leader_creations = meld._cluster_creations.resolved_store()",
             "creation = leader_creations._creations.get(_spell_id)",
@@ -82969,7 +83644,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/sha
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py
-CONTENT SHA256: dab38481fac0376b58883910f31525299fb2be82291bfd8a760916dbed45d554
+CONTENT SHA256: eb86c98a4ba4830733bb62c91c5b9bcf5ecaa659614444401b4dd1d505035efe
 SOURCE ENCODING: utf-8
 ================================================================================
 from types import FunctionType, MethodType
@@ -83742,6 +84417,30 @@ class SitePlanEmission(Cleanable):
           common to all its consumers; a shared site with a winning override is
           pinned to top level so its P2 refusal and build are exactly today's.
           Within a context steps keep the family's providers-first order.
+        - Child registration (many_child_follows_holder, 2026-10-14): a
+          disposal-bearing many step registers in the store that owns its
+          context. At the top level that is the meld's innermost scope
+          (`many_store`: the spellspace store, else the conduit store), where a
+          many root registers too. Inside `_miss{i}` it is `c{i}`, the store
+          shared site i publishes to - the spell owner's for `unique`, the
+          conduit's for `unique_per_conduit`, the spellspace's for
+          `unique_per_spell_space`, the lineage root's, the cluster's team
+          store (0.2.8237) - so a holder's `many` children belong to whatever
+          owns the holder and are disposed with that store, never by a narrower
+          scope that happened to meld the holder first. Until 0.2.8235 a miss
+          registered them in the innermost scope, whose end disposed a child
+          its holder still used.
+        - Child adoption (slotted_lifetime_ownership, 0.2.8238): right after a
+          miss publishes its site, still under the site's build lock, it calls
+          `c{i}.adopt_children(sid{i}, v{i}, ((sidN, vN), ...))` for exactly
+          the children it registered, which moves them from their spells'
+          `many` buckets into the holder's disposal record. Purge, an ownership
+          transfer's move and disposal of the holder then take them with it. A
+          lost cold race, a pinned-override refusal or a raising holder
+          constructor never reaches the call: those children stay in their
+          bucket and are disposed with the store. Only misses with
+          disposal-bearing children gain the line; every `_site_plan_executor`
+          body is unchanged.
         - Normal mode (S2b-2, 2026-09-26) drops `ov` from the plan and from
           every miss signature and call; nothing else changes.
         - Unresolved inputs (S4a, 2026-09-26): a context (the plan top, or a
@@ -84282,24 +84981,55 @@ class SitePlanEmission(Cleanable):
         """
         Emit the steps placed in one context (top level or one miss body) into `lines`.
 
+        Contract:
+            A disposal-bearing many step registers in the store that owns the
+            context (see "Child registration" in the class contract): the
+            top level (`context` None) registers through `many_store`, which the
+            plan prologue points at the meld's innermost scope; shared site i's
+            miss registers through `c{i}`, the store that site publishes to.
+
+        Args:
+            context: None for the plan's top level, else the shared site whose
+                miss body is being emitted.
+            indent: Indentation of the emitted lines.
+            lines: Target line list, appended in place.
+
         Returns:
-            bool: True when a disposal-bearing many step here reads `many_store`.
+            bool: True when a disposal-bearing many step at the top level reads
+            `many_store` (the caller then emits the prologue); always False
+            for a miss, whose children use its `c{i}` parameter.
         """
+        store = "many_store" if context is None else f"c{context}"
         uses_many_store = False
         for index in self._children.get(context, []):
             step = self._steps[index]
             if self._shared[index]:
                 self._emit_shared_hit(index, step, indent, lines)
-            elif self._emit_many(index, step, indent, lines):
+            elif self._emit_many(index, step, indent, lines, store) and context is None:
                 uses_many_store = True
         return uses_many_store
 
-    def _emit_many(self, index: int, step: SitePlanStep, indent: str, lines: List[str]) -> bool:
+    def _emit_many(self, index: int, step: SitePlanStep, indent: str, lines: List[str], store: str) -> bool:
         """
-        Emit one many step: construction, then disposal registration in the innermost scope.
+        Emit one many step: construction, then its disposal registration in `store`.
+
+        Contract:
+            A step without disposal methods is constructed and not recorded
+            anywhere. A disposal-bearing step is recorded through
+            `<store>.register_many(sidN, vN, dmN)` right after construction,
+            before any build lock of the context is taken.
+
+        Args:
+            index: Kept step index.
+            step: The step.
+            indent: Indentation of the emitted lines.
+            lines: Target line list, appended in place.
+            store: The store expression the registration targets - `many_store`
+                (the meld's innermost scope) at the top level, `c{i}` inside
+                shared site i's miss (the store the holder belongs to).
 
         Returns:
-            bool: True when the step registers through `many_store`.
+            bool: True when the step registers (it declares disposal methods).
         """
         self._emit_construct(index, step, self._direct[index], self._supplied_names(step), indent, lines)
         if not step.spell.has_disposal_methods:
@@ -84308,7 +85038,7 @@ class SitePlanEmission(Cleanable):
         disposal_name = self._bind(f"dm{index}", step.spell.disposal_method_names)
         # `register_many` (2026-10-01): the positional hot verb; the key's
         # disposal list is recorded once by the store, not carried per entry.
-        lines.append(f"{indent}many_store.register_many({sid_name}, v{index}, {disposal_name})")
+        lines.append(f"{indent}{store}.register_many({sid_name}, v{index}, {disposal_name})")
         return True
 
     @staticmethod
@@ -84377,12 +85107,22 @@ class SitePlanEmission(Cleanable):
             The calling door holds this same slot guard for the whole call (see
             the class contract), so nothing else changes: the recheck still
             follows the children, and publication is the same statement.
+            Children (many_child_follows_holder, 2026-10-14): the disposal-bearing
+            many steps placed in the miss register in `c{index}`, the store this
+            site publishes to, so they live and die with the holder's owner; the
+            miss therefore needs no innermost-scope prologue. A losing thread in
+            a cold race has registered its children there too, and they stay
+            until that store is disposed.
+            Adoption (0.2.8238): after publication, inside the guard and the
+            miss branch, `c{index}.adopt_children(...)` hands exactly those
+            registered children to the holder's disposal record (see the class
+            contract); a miss without disposal-bearing children emits no call.
         """
         spell_name = f"spells[{index}]"
         store = f"c{index}"
         supplied = self._supplied_names(step)
         children: List[str] = []
-        uses_many_store = self._emit_context(index, "    ", children)
+        self._emit_context(index, "    ", children)
         guarded = not (index == self._root_index and self._root_guard_held_by_door)
         body_indent = "        " if guarded else "    "
         inner_indent = body_indent + "    "
@@ -84396,12 +85136,20 @@ class SitePlanEmission(Cleanable):
             )
         else:
             inner.append(f"{inner_indent}{store}._creations[{sid_name}] = v{index}")
+        adopted = [
+            child for child in self._children.get(index, [])
+            if not self._shared[child] and self._steps[child].spell.has_disposal_methods
+        ]
+        if adopted:
+            # The children `_emit_many` registered in this store move into the
+            # holder's disposal record once it is published (0.2.8238).
+            pairs = ", ".join(f"(sid{child}, v{child})" for child in adopted)
+            trailing = "," if len(adopted) == 1 else ""
+            inner.append(f"{inner_indent}{store}.adopt_children({sid_name}, v{index}, ({pairs}{trailing}))")
         parameters = ", ".join(list(self._context_params) + [store] + self._miss_arguments(index))
         lines = self._miss_lines
         lines.append(f"def _miss{index}({parameters}):")
         lines.extend(self._unresolved_check_lines(index, "    "))
-        if uses_many_store:
-            lines.extend(self._many_store_prologue("    "))
         lines.extend(children)
         if guarded:
             lines.append(f"    with {self._guard(step, store, sid_name, spell_name)}:")
@@ -84416,7 +85164,12 @@ class SitePlanEmission(Cleanable):
     @staticmethod
     def _many_store_prologue(indent: str) -> List[str]:
         """
-        Return the innermost-scope store selection for disposal-bearing many steps.
+        Return the innermost-scope store selection for the plan's top-level disposal-bearing many steps.
+
+        Contract:
+            Emitted once at the top of the plan body when a top-level many step
+            registers. A miss never emits it: its children register in its own
+            `c{i}` (see `_emit_context`).
         """
         return [
             f"{indent}many_store = meld._spellspace_creations",
@@ -85200,7 +85953,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/str
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_no_overrides_compiler.py
-CONTENT SHA256: 78aca5c4d7aa0d3fbe4274671fc56a9d913e57062f486b64906e8a6bc5824699
+CONTENT SHA256: 5ad0084dc1ee9dd1ba8741942232b8ffea7ec55010cbb38e06bf8a89bfb648a9
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -86358,6 +87111,58 @@ def select_specializable_step_indexes(
         for step_index, row in enumerate(rows)
         if row["existence"] == unique_name
     )
+
+
+def rows_feed_many_into_non_many_step(
+        rows: Sequence[Dict[str, Any]],
+) -> bool:
+    """
+    Return True when a `many` row is a direct dependency of a non-`many` row.
+
+    Purpose:
+        Decide whether the singleton warm-tail specializer can express a graph.
+        Its body is straight-line: it emits every non-captured step, in order,
+        on every warm call. A `many` step whose consumer is a shared (slotted)
+        step would therefore be built on every call even when that consumer is
+        captured or already stored, and recorded in the meld's innermost scope
+        rather than with the holder's owner. The site plan builds such a child
+        only inside its holder's first build and records it with the holder's
+        owner (many_child_follows_holder, 2026-10-14), so these graphs keep the
+        plain door.
+
+    Contract:
+        - Pure function of manifest row data; no live spells consulted.
+        - Only direct edges count: a `many` step that feeds only `many` steps
+          (a transient root's own children) does not make the graph ineligible,
+          and a chain `many -> many -> holder` is caught at its last edge.
+        - Instance keys compare as `(spell_id, occurrence)` pairs, so list- and
+          tuple-shaped keys from a decoded package compare equal.
+
+    Args:
+        rows:
+            Manifest step rows for the no-overrides lane.
+
+    Returns:
+        bool: True when some non-`many` row lists a `many` row's instance key
+        among its dependency keys; False otherwise, including for a graph with
+        no `many` rows.
+    """
+    many_name = Existence.many.name
+    many_keys = {
+        (row["instance_key"][0], row["instance_key"][1])
+        for row in rows
+        if row["existence"] == many_name
+    }
+    if not many_keys:
+        return False
+    for row in rows:
+        if row["existence"] == many_name:
+            continue
+        for _param_name, dependency_keys in row["dependency_resolution_order"]:
+            for dependency_key in dependency_keys:
+                if (dependency_key[0], dependency_key[1]) in many_keys:
+                    return True
+    return False
 
 
 def emit_specialized_step_plan_source(
@@ -88126,7 +88931,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/str
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_hydrator.py
-CONTENT SHA256: 00841206ffaef26e831ecb9496bdd2b3baf879fadc98eb8b5caf3da5dba89d0c
+CONTENT SHA256: d39e58ab64b2ddf43c32e7def34187bf5ee1213694a17892716e643a42fb4c71
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -88164,6 +88969,7 @@ from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_asset
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_manifest_no_overrides_compiler import (
     build_specialized_no_overrides_executor,
     resolve_root_instance_key_from_rows,
+    rows_feed_many_into_non_many_step,
     select_specializable_step_indexes,
 )
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.hydration.generalized_binding_resolver import (
@@ -88717,6 +89523,12 @@ def _install_specializing_door(
         - Zero-capture graphs never install the wrapper: this function
           returns `plain_instance_door` unchanged when no `unique` step
           exists.
+        - Graphs in which a `many` step feeds a non-`many` step never install
+          the wrapper either (many_child_follows_holder, 2026-10-14): the
+          straight-line specialized body would build a holder's `many`
+          children on every warm call and record them in the meld's innermost
+          scope, while the plain door's site plan builds them only in the
+          holder's first build and records them with the holder's owner.
         - The wrapper's steady state is self-erasing: once a final door is
           resolved (specialized or declined-to-plain), every wrapper call
           re-publishes the final door(s) into the CURRENT published context
@@ -88742,10 +89554,17 @@ def _install_specializing_door(
 
     Returns:
         Callable[..., Any]: The specializing wrapper door, or
-        `plain_instance_door` when the graph has no capturable steps.
+        `plain_instance_door` when the graph has no capturable steps, captures
+        only its root on a short-circuiting route, or feeds a `many` step into
+        a non-`many` step.
     """
     captured_step_indexes = select_specializable_step_indexes(rows)
     if not captured_step_indexes:
+        return plain_instance_door
+    if rows_feed_many_into_non_many_step(rows):
+        # A holder's `many` children must be built only in the holder's first
+        # build and recorded with the holder's owner; a straight-line body
+        # cannot do that, so the plain door (site plan) keeps serving.
         return plain_instance_door
     if route_key != "many" and len(captured_step_indexes) == 1:
         captured_row = rows[captured_step_indexes[0]]

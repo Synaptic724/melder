@@ -13,8 +13,8 @@ Regenerate with:
     python src/melder/_build_assets/_build_asset_runner.py
 """
 
-BUILT_FOR_VERSION = "0.2.8234"
-NODE_COUNT = 1217
+BUILT_FOR_VERSION = "0.2.8240"
+NODE_COUNT = 1218
 EDGE_COUNT = 1395
 WHY_COUNT = 939
 RELATIONS = ('binds_into', 'borrows', 'creates', 'delegates_to', 'holds', 'implements', 'owns', 'owns_lifecycle_of', 'specializes', 'used_by', 'uses', 'validates')
@@ -237,7 +237,7 @@ NODES = {
     'melder.aether.conduit.conduit': ('src/melder/aether/conduit/conduit.py', 'conduit', 'module', 1, False),
     'melder.aether.conduit.conduit.Conduit': ('src/melder/aether/conduit/conduit.py', 'Conduit', 'class', 81, False),
     'melder.aether.conduit.conduit_cluster': ('src/melder/aether/conduit/conduit_cluster.py', 'conduit_cluster', 'module', 1, False),
-    'melder.aether.conduit.conduit_cluster.ConduitCluster': ('src/melder/aether/conduit/conduit_cluster.py', 'ConduitCluster', 'class', 26, False),
+    'melder.aether.conduit.conduit_cluster.ConduitCluster': ('src/melder/aether/conduit/conduit_cluster.py', 'ConduitCluster', 'class', 27, False),
     'melder.aether.conduit.conduit_pool': ('src/melder/aether/conduit/conduit_pool.py', 'conduit_pool', 'module', 1, False),
     'melder.aether.conduit.conduit_pool.ConduitPool': ('src/melder/aether/conduit/conduit_pool.py', 'ConduitPool', 'class', 9, False),
     'melder.aether.conduit.conduit_state.conduit_state': ('src/melder/aether/conduit/conduit_state/conduit_state.py', 'conduit_state', 'module', 1, False),
@@ -264,10 +264,11 @@ NODES = {
     'melder.aether.conduit.creations.conduit_creations': ('src/melder/aether/conduit/creations/conduit_creations.py', 'conduit_creations', 'module', 1, False),
     'melder.aether.conduit.creations.conduit_creations.ConduitCreations': ('src/melder/aether/conduit/creations/conduit_creations.py', 'ConduitCreations', 'class', 8, False),
     'melder.aether.conduit.creations.creations': ('src/melder/aether/conduit/creations/creations.py', 'creations', 'module', 1, False),
-    'melder.aether.conduit.creations.creations.Creations': ('src/melder/aether/conduit/creations/creations.py', 'Creations', 'class', 57, False),
+    'melder.aether.conduit.creations.creations.Creations': ('src/melder/aether/conduit/creations/creations.py', 'Creations', 'class', 118, False),
+    'melder.aether.conduit.creations.creations.HolderDisposalEntry': ('src/melder/aether/conduit/creations/creations.py', 'HolderDisposalEntry', 'class', 53, False),
     'melder.aether.conduit.creations.creations.ManyDisposalBucket': ('src/melder/aether/conduit/creations/creations.py', 'ManyDisposalBucket', 'class', 10, False),
     'melder.aether.conduit.meld.conduit_meld': ('src/melder/aether/conduit/meld/conduit_meld.py', 'conduit_meld', 'module', 1, False),
-    'melder.aether.conduit.meld.conduit_meld.ConduitMeld': ('src/melder/aether/conduit/meld/conduit_meld.py', 'ConduitMeld', 'class', 13, False),
+    'melder.aether.conduit.meld.conduit_meld.ConduitMeld': ('src/melder/aether/conduit/meld/conduit_meld.py', 'ConduitMeld', 'class', 14, False),
     'melder.aether.conduit.meld.contracts.spell_contract': ('src/melder/aether/conduit/meld/contracts/spell_contract.py', 'spell_contract', 'module', 1, False),
     'melder.aether.conduit.meld.contracts.spell_contract.SpellContract': ('src/melder/aether/conduit/meld/contracts/spell_contract.py', 'SpellContract', 'class', 10, False),
     'melder.aether.conduit.meld.contracts.spell_map': ('src/melder/aether/conduit/meld/contracts/spell_map.py', 'spell_map', 'module', 1, False),
@@ -404,7 +405,7 @@ NODES = {
     'melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.hydration.generalized_binding_resolver.PlanBindingResolver': ('src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_binding_resolver.py', 'PlanBindingResolver', 'class', 25, False),
     'melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.hydration.generalized_binding_resolver.SpellbookBindingResolver': ('src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_binding_resolver.py', 'SpellbookBindingResolver', 'class', 131, False),
     'melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.hydration.generalized_hydrator': ('src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_hydrator.py', 'generalized_hydrator', 'module', 1, False),
-    'melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.hydration.generalized_hydrator.GeneralizedHydratedExecutors': ('src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_hydrator.py', 'GeneralizedHydratedExecutors', 'class', 62, False),
+    'melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.hydration.generalized_hydrator.GeneralizedHydratedExecutors': ('src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_hydrator.py', 'GeneralizedHydratedExecutors', 'class', 63, False),
     'melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.manifest.generalized_manifest': ('src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/manifest/generalized_manifest.py', 'generalized_manifest', 'module', 1, False),
     'melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_lazy_door_step': ('src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/steps/generalized_lazy_door_step.py', 'generalized_lazy_door_step', 'module', 1, False),
     'melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_lazy_door_step.GeneralizedLazyDoorStep': ('src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/steps/generalized_lazy_door_step.py', 'GeneralizedLazyDoorStep', 'class', 15, False),

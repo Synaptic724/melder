@@ -19,9 +19,9 @@ Regenerate with:
 """
 
 MANIFEST_VERSION = "2.0.0"
-BUILT_FOR_VERSION = "0.2.8234"
-SOURCE_SHA256 = "d02558e7da336fbdc78c6f2769181465e0a79117dd64e383d494fbeb7a635c65"
-MARKED_COUNT = 462
+BUILT_FOR_VERSION = "0.2.8240"
+SOURCE_SHA256 = "195e4b4575e3382c1b962bb9280de757127f4a953a091ae3649ff24abc88ba98"
+MARKED_COUNT = 463
 EXEMPT_COUNT = 142
 PENDING_COUNT = 18
 
@@ -138,9 +138,10 @@ AGENT_METADATA = {
     ('melder.aether.conduit.conduit_ward.permissions.permissions', 'Permissions'): ('public', "access: public. Capability ceiling for a lineage: read (resolve/inspect only), create (creation-capable, implies read), block (hard stop). Pass to Spellbook.bind(...). A contract never grants more than the spell's own permission."),
     ('melder.aether.conduit.conduit_ward.policies.policies', 'Policies'): ('public', 'access: public. Ward contracting mode: default, whitelist_all, block_all, inbound_only, outbound_only. Pass to conjure(...). Only default is legal when dynamic=False. whitelist_all is the one mode that can override a per-spell block.'),
     ('melder.aether.conduit.conduit_ward.transfer.transfer_of_ownership', 'TransferOfOwnership'): ('internal', 'access: internal. Control-plane helper that migrates a spell lineage between conduit owners. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
-    ('melder.aether.conduit.creations.cluster_creations', 'ClusterCreations'): ('internal', "access: internal. Facade over a cluster's elected-leader live creation store. Melder kernel machinery: read it to understand the runtime, do not drive it directly."),
+    ('melder.aether.conduit.creations.cluster_creations', 'ClusterCreations'): ('internal', "access: internal. Facade over a cluster's team store, active while the cluster has an elected leader. Melder kernel machinery: read it to understand the runtime, do not drive it directly."),
     ('melder.aether.conduit.creations.conduit_creations', 'ConduitCreations'): ('internal', 'access: internal. Conduit-owned live creation registry. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
     ('melder.aether.conduit.creations.creations', 'Creations'): ('internal', 'access: internal. Scoped live creation registry. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
+    ('melder.aether.conduit.creations.creations', 'HolderDisposalEntry'): ('internal', ''),
     ('melder.aether.conduit.creations.creations', 'ManyDisposalBucket'): ('internal', ''),
     ('melder.aether.conduit.meld.conduit_meld', 'ConduitMeld'): ('internal', 'access: internal. Concrete conduit-facing meld front door. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
     ('melder.aether.conduit.meld.contracts.spell_contract', 'SpellContract'): ('public', 'access: public. Declares a LATE-BOUND dependency hole for dynamic conduit linking. Write it as a constructor default when the provider will arrive from another conduit. Requires at least spell or spellframe. Unsatisfied is an ERROR in automatic mode, a warning in dynamic.'),
