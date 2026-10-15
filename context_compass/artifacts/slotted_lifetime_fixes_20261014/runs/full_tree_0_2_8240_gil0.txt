@@ -26,4 +26,8 @@ tree | int_live | rc=0 | secs=1 | 1 passed, 1 xfailed in 0.17s
 tree | exper | rc=2 | secs=1 | 1 error in 0.54s
 # exper needs benchmarks/: copied from the repository into the scratch tree (rsync), then rerun.
 tree | exper | rc=0 | secs=9 | 250 passed, 4 skipped in 8.70s
+# asset-dependent chunks on the repository after the 0.2.8240 rebuild (2026-10-15, assets and bundles checked OK)
 melder_private | unit_llm | rc=0 | secs=0 | 28 passed in 0.23s
+melder_private | unit_build | rc=0 | secs=55 | 116 passed in 54.56s
+melder_private | unit_top | rc=0 | secs=56 | 145 passed in 56.29s
+melder_private | comp_util | rc=0 | secs=8 | 41 passed, 23 skipped in 7.76s

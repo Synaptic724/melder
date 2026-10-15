@@ -2,17 +2,25 @@
 
 ## Metadata
 - Epic ID: EPIC-2026-10-14-slotted_lifetime_ownership_fixes
-- Status: in_progress
+- Status: done
 - Owner: user
 - Agent Name: melder_1
 - Agent Role: synaptic_python_developer
 - Priority: p1
 - Created: 2026-10-14T18:52:55Z
-- Updated: 2026-10-14T23:39:45Z
+- Updated: 2026-10-15T01:32:52Z
 - Target Window: 2026-Q4
 - Related Program/Initiative: EPIC-2026-10-14-many_child_follows_holder (0.2.8235, in review);
   TASK-2026-10-14-audit_slotted_lifetime_ownership (the audit that proved D1-D6); EPIC-2026-10-14-managed_spell_quantity
   (waits behind this epic)
+
+- Completed: 2026-10-15T01:32:52Z
+- Summary: Six lifetime defect groups resolved as structure fixes, notched 0.2.8236-0.2.8240: a root's teardown leaves
+  its cluster, the cluster owns its team store, a holder's `many` children are recorded with it (purge, move,
+  disposal), a transfer moves by default and disposes nothing, and the transfer docs say it hands over stewardship,
+  not a working setup; D6 no defect; contract invalidation unchanged by ruling. Release-note sections on the cluster
+  exit, the cluster store, the many dependency and the transfer default; the owner's runtime model is in
+  src_architecture. Turned in by owner directive.
 
 ## Problem / Opportunity
 The lifetime audit (TASK-2026-10-14-audit_slotted_lifetime_ownership, probe `probe_lifetime_owners.py`, GIL off and
@@ -79,6 +87,16 @@ src_architecture as "Runtime Model: Structure Is the Contract"). The meld paths 
 - to_state: in_progress
 - transition_reason: the owner turned the audit's tasks into this epic and directed the fixes first (chat
   2026-10-14, Decision Log).
+- from_state: in_progress
+- to_state: review
+- transition_reason: every exit-gate item is met but the owner's acceptance: D1-D5 landed (0.2.8236-0.2.8239), the
+  transfer handover documented (0.2.8240), the full tree green GIL off and on, the audit probe and the emission diff
+  clean, benchmarks within noise, system docs, graph, release note, notches and the rebuild current (Notes
+  2026-10-14T23:39:45Z, 2026-10-15T00:00:12Z and the closing MEASURE).
+- from_state: review
+- to_state: done
+- transition_reason: the owner accepted the lane and directed the turn-in (owner, chat 2026-10-15: "ok cool turn it
+  all in if your done").
 
 ## Success Metrics
 - The audit probe's eleven cases report no defect (D6 per its re-investigation; b7 accepted as intended by the
@@ -113,18 +131,19 @@ src_architecture as "Runtime Model: Structure Is the Contract"). The meld paths 
 - [x] Milestone 2: D1 and D2 landed (cluster): 0.2.8236 and 0.2.8237.
 - [x] Milestone 3: D3, D4 and D5 landed. D4/D5 landed as 0.2.8238 and the D3 transfer default as 0.2.8239, its
       handover docstring as 0.2.8240; the D3 invalidation half was ruled out by the owner (no change).
-- [ ] Milestone 4: D6 per its verdict; full tree, docs, graph, release note, notches, rebuild; owner acceptance.
+- [x] Milestone 4: D6 per its verdict; full tree, docs, graph, release note, notches, rebuild; owner acceptance.
+      Everything but the owner's acceptance is done (2026-10-15).
 
 ## Stories (Required to Complete)
-- [ ] None - six tasks directly under the epic.
+- [x] None - six tasks directly under the epic.
 
 ## Tasks (Cross-Cutting or Epic-Level)
-- [ ] D1 TASK-2026-10-14-investigate_cluster_member_teardown_without_leave
-- [ ] D2 TASK-2026-10-14-investigate_cluster_instance_not_rehomed_on_leader_change
-- [ ] D3 TASK-2026-10-14-investigate_stored_instances_dropped_without_disposal
-- [ ] D4 TASK-2026-10-14-investigate_transfer_leaves_holder_children_behind
-- [ ] D5 TASK-2026-10-14-investigate_purge_leaves_holder_children_registered
-- [ ] D6 TASK-2026-10-14-investigate_upgrade_retained_holders_keep_old_dependencies
+- [x] D1 TASK-2026-10-14-investigate_cluster_member_teardown_without_leave
+- [x] D2 TASK-2026-10-14-investigate_cluster_instance_not_rehomed_on_leader_change
+- [x] D3 TASK-2026-10-14-investigate_stored_instances_dropped_without_disposal
+- [x] D4 TASK-2026-10-14-investigate_transfer_leaves_holder_children_behind
+- [x] D5 TASK-2026-10-14-investigate_purge_leaves_holder_children_registered
+- [x] D6 TASK-2026-10-14-investigate_upgrade_retained_holders_keep_old_dependencies
 
 ## Acceptance Criteria (Epic Done)
 - Every task done with recorded evidence; the owner accepts.
@@ -138,9 +157,9 @@ src_architecture as "Runtime Model: Structure Is the Contract"). The meld paths 
 - Cluster store ownership moves -> facades, purge authority and probes reviewed together.
 
 ## Applicable Anti-Patterns
-- [ ] No epic-state transition without story-level evidence.
-- [ ] No closure while required stories are incomplete or unaccepted.
-- [ ] No program claims without source evidence from story/task notes.
+- [x] No epic-state transition without story-level evidence.
+- [x] No closure while required stories are incomplete or unaccepted.
+- [x] No program claims without source evidence from story/task notes.
 
 ## Validation / Test Approach
 - Red tests from the probe cases first, then the fixes; the audit probe rerun; the full tree GIL off and on; an
@@ -228,9 +247,9 @@ src_architecture as "Runtime Model: Structure Is the Contract"). The meld paths 
   SCORE_0_TO_10: 9
 
 ## Closure Confirmation
-- [ ] Work walkthrough shared with user
-- [ ] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
-- [ ] Applicable anti-pattern checks are clear or escalated with evidence.
+- [x] Work walkthrough shared with user
+- [x] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
+- [x] Applicable anti-pattern checks are clear or escalated with evidence.
 
 ## Noting Behavior
 - Note focus: program-level direction, cross-story tradeoffs, and tranche order.
@@ -449,14 +468,72 @@ src_architecture as "Runtime Model: Structure Is the Contract"). The meld paths 
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-10-15T00:20:11Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: The pass is complete; the epic moves to review. Before the rebuild: the patch docs aligned to the rulings and
+    archived to patches/completed, the release note's packaging lines (ownership guide, runtime model, lane docs, the
+    bind-guard count 623 at 0.2.8238 with `HolderDisposalEntry`), the 0.2.8240 notch notice, the artifact board, and
+    D1-D5 and D3 to review with their notes (D6 aligned, still in review). The graph is current for every changed
+    source file (descriptor source hashes match, assemble --check OK). Rebuild last: assets 0.2.8240 (three OK) and
+    the LLM bundles with --include-untracked (three OK). Then the asset-dependent chunks on the repository, GIL off
+    and on: unit_llm 28, unit_build 116, unit_top 145 passed, comp_util 41 passed and 23 skipped (the retired JSON
+    graph files, as at 0.2.8235); both checks re-run OK after them, and no .pyc appeared under src/ or tests/.
+  EVIDENCE:
+  - context_compass/artifacts/slotted_lifetime_fixes_20261014/runs/rebuild_0_2_8240.txt:1-40
+  - context_compass/artifacts/slotted_lifetime_fixes_20261014/runs/full_tree_0_2_8240_gil0.txt:29-33
+  - context_compass/artifacts/slotted_lifetime_fixes_20261014/runs/full_tree_0_2_8240_gil1.txt:21-25
+  - context_compass/artifacts/slotted_lifetime_fixes_20261014/landing/align_patch_docs_0_2_8240.py:1-89
+  - context_compass/artifacts/slotted_lifetime_fixes_20261014/landing/review_tasks_0_2_8240.py:1-246
+  - release_docs/next_version_release.md:308-343
+  IMPACT: The exit gate is met except the owner's acceptance; nothing in src, docs, release_docs or system_docs is
+    written after the rebuild. Owner-owed: acceptance (and whether D5's purge stays as landed), git add, commit and
+    push, and the 13 stray .pyc files from 0.2.8239 (delete only on his word).
+  NEXT: Report to the owner; on acceptance, turn in the six tasks and this epic with the closure sync.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-15T01:32:52Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: Turned in. The owner accepted the lane and directed the turn-in (owner, chat 2026-10-15: "ok cool turn it all
+    in if your done"); D5 stays as landed. At his word the 13 stray .pyc files of 0.2.8239 (src/**/__pycache__, my
+    unprefixed import) and the stale landing/__pycache__ were deleted; the other __pycache__ folders belong to the
+    owner's own runs and were left. Status done, completion summary, six tasks and this epic moved to completed;
+    attention and artifact boards synced (turn_in_boards_0_2_8240.py).
+  EVIDENCE:
+  - context_compass/artifacts/slotted_lifetime_fixes_20261014/runs/pyc_written_by_import_0_2_8239.txt:1-13
+  - context_compass/artifacts/slotted_lifetime_fixes_20261014/runs/full_tree_0_2_8240_gil0.txt:1-33
+  - context_compass/artifacts/slotted_lifetime_fixes_20261014/runs/full_tree_0_2_8240_gil1.txt:1-25
+  - context_compass/artifacts/slotted_lifetime_fixes_20261014/runs/rebuild_0_2_8240.txt:1-40
+  - release_docs/next_version_release.md:202-307
+  IMPACT: The lane is closed; commit and push are the owner's.
+  NEXT: None in this lane; EPIC-2026-10-14-managed_spell_quantity waits on the owner's answers.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-15T01:38:28Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: Correction to the turn-in note: at the owner's second word (chat 2026-10-15: "well delete them if we don't
+    need em bro wtf") every `__pycache__` folder in the repository outside the three virtual environments
+    (`.venv_new`, `docs/.venv`, `docs/_build/runtime-env`) was deleted too - 294 folders holding 4,927 .pyc files,
+    gitignored bytecode that Python rebuilds on import; none was left outside the venvs. The asset and bundle checks
+    re-ran OK afterwards.
+  EVIDENCE: context_compass/artifacts/slotted_lifetime_fixes_20261014/runs/rebuild_0_2_8240.txt:41-49
+  IMPACT: The repository holds no stray bytecode; the venvs' own caches (344 folders) were left for the owner to say.
+  NEXT: None.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
 ## Context / Handoff Summary
-Opened 2026-10-14 when the owner turned the lifetime audit's six tasks into one fix lane and put it first. D6 was
-re-investigated (no defect; docstring landed with D1). Patch docs are written and linked. In the working tree, red
-tests green GIL off and on: D1 0.2.8236 (teardown leaves the cluster), D2 0.2.8237 (the cluster's team store), D4/D5
-0.2.8238 (holder-owned `many` children) and the D3 transfer default 0.2.8239 (`move_creations=True`; a transfer
-disposes nothing, by the owner's ruling). Open: the D3 invalidation half (b7, l1, l2) and its interim RISK, waiting
-for the owner. Then: the audit probe, full tree GIL off and on, benchmarks, system docs and graph, patch archive,
-release-note packaging lines and the rebuild; owner acceptance, commit and push are the owner's.
+Done (2026-10-15T01:32:52Z). D1-D5 landed as structure fixes (0.2.8236-0.2.8240), D6 no defect, contract invalidation
+unchanged by the owner's ruling, and the owner's runtime model recorded in src_architecture. Full tree green GIL off
+and on, docs, graph, release note and the rebuild current. Turned in by owner directive; commit and push are the
+owner's.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

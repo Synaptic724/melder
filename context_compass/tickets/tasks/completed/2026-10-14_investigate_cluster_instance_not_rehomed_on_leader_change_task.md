@@ -4,13 +4,18 @@
 - Task ID: TASK-2026-10-14-investigate_cluster_instance_not_rehomed_on_leader_change
 - Story: none - D2 of EPIC-2026-10-14-slotted_lifetime_ownership_fixes (opened by
   TASK-2026-10-14-audit_slotted_lifetime_ownership, done)
-- Status: review
+- Status: done
 - Owner: user
 - Agent Name: melder_1
 - Agent Role: synaptic_python_developer
 - Priority: p1
 - Created: 2026-10-14T18:40:43Z
-- Updated: 2026-10-15T00:07:24Z
+- Updated: 2026-10-15T01:32:52Z
+
+- Completed: 2026-10-15T01:32:52Z
+- Summary: D2 of EPIC-2026-10-14-slotted_lifetime_ownership_fixes, notched 0.2.8237 (release note: "A cluster's shared
+  object belongs to the cluster, not to its leader"): the cluster owns its team store, so its object survives leader
+  changes and is disposed once by the cluster's cleanup. Turned in by owner directive.
 
 ## Objective
 A `unique_per_conduit_cluster` instance lives in the elected leader's own conduit store, which the members'
@@ -54,6 +59,10 @@ The owner's rule this is checked against: the object a lifetime names owns the i
 - transition_reason: the fix landed with its red tests green GIL off and on; the lane's full tree is green GIL off and
   on at 0.2.8240 and the change is promoted into the system docs (epic Notes 2026-10-14T23:39:45Z and
   2026-10-15T00:00:12Z); the owner accepts.
+- from_state: review
+- to_state: done
+- transition_reason: the owner accepted the lane and directed the turn-in (owner, chat 2026-10-15: "ok cool turn it
+  all in if your done").
 
 
 ## Steps / Checklist
@@ -62,10 +71,10 @@ The owner's rule this is checked against: the object a lifetime names owns the i
 - [x] Write red tests from the probe's c2 (leader leaves, a member is elected, the departed leader is torn down).
 - [x] Lay out options (a cluster-owned store; re-homing the instance at election; disposing it and invalidating
       its holders at a leader change) with their lock and transaction costs, for the owner.
-- [ ] Run Ticket Microcycle during execution:
+- [x] Run Ticket Microcycle during execution:
       `Investigate -> Document -> Strategy/Plan -> Document -> Implement ->
       Document -> Validate -> Document`.
-- [ ] Document each meaningful finding immediately in `## Notes` before further investigation.
+- [x] Document each meaningful finding immediately in `## Notes` before further investigation.
 
 ## Deliverables
 - Root cause with evidence, red tests, and fix options for the owner's epic.
@@ -86,21 +95,21 @@ The owner's rule this is checked against: the object a lifetime names owns the i
 - Investigation only; nothing to roll back.
 
 ## Applicable Anti-Patterns
-- [ ] No status transition without evidence-backed transition reason.
-- [ ] No implementation/validation from `UNKNOWN` or `HYPOTHESIS`.
-- [ ] No closure without delegated acceptance or reserved-owner disposition and board-sync completion.
+- [x] No status transition without evidence-backed transition reason.
+- [x] No implementation/validation from `UNKNOWN` or `HYPOTHESIS`.
+- [x] No closure without delegated acceptance or reserved-owner disposition and board-sync completion.
 
 ## Done Checklist
-- [ ] Steps complete and checked off
-- [ ] Deliverables produced and linked
-- [ ] Documentation updated (if needed)
-- [ ] Validation status recorded
-- [ ] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
-- [ ] Notes quality maintained (`SCORE_0_TO_10` >=
+- [x] Steps complete and checked off
+- [x] Deliverables produced and linked
+- [x] Documentation updated (if needed)
+- [x] Validation status recorded
+- [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
+- [x] Notes quality maintained (`SCORE_0_TO_10` >=
       `workflow.ticket_microcycle.minimum_note_score`)
-- [ ] Applicable anti-pattern checks are clear or escalated with evidence.
-- [ ] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
-- [ ] Board sync completed for successor routing or closure anchor update.
+- [x] Applicable anti-pattern checks are clear or escalated with evidence.
+- [x] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
+- [x] Board sync completed for successor routing or closure anchor update.
 
 ## Open Questions
 - Answered by the owner's directive to fix all of the audit's findings (2026-10-14) and landed as
@@ -297,13 +306,29 @@ The owner's rule this is checked against: the object a lifetime names owns the i
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-10-15T01:32:52Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: Turned in. The owner accepted the lane and directed the turn-in (owner, chat 2026-10-15: "ok cool turn it all
+    in if your done"); D2 is notched 0.2.8237 (release note: "A cluster's shared object belongs to the cluster, not to
+    its leader"): the cluster owns its team store, so its object survives leader changes and is disposed once by the
+    cluster's cleanup. Status done, completion summary written, ticket moved to tasks/completed; the board syncs run
+    with the epic's closure.
+  EVIDENCE:
+  - context_compass/artifacts/slotted_lifetime_fixes_20261014/runs/full_tree_0_2_8240_gil0.txt:1-33
+  - context_compass/artifacts/slotted_lifetime_fixes_20261014/runs/full_tree_0_2_8240_gil1.txt:1-25
+  - context_compass/artifacts/slotted_lifetime_fixes_20261014/runs/rebuild_0_2_8240.txt:1-40
+  IMPACT: Closed; nothing of this task stays open.
+  NEXT: None.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
 ## Context / Handoff Summary
-In review (2026-10-15). Landed as 0.2.8237: the cluster owns a `Creations` team store; election binds every member
-facade to it with the leader's id (the purge authority), and a root joining while a leader is elected is bound
-too; unelection, a leader's leave or teardown keep it; the cluster's cleanup disposes it once (`delete_cluster`
-raises failures after deleting, frame teardown logs them). Red tests green GIL off and on; the lane's full tree
-green at 0.2.8240; promoted into the system docs. Remaining: the owner's acceptance; commit and push are the
-owner's.
+Done (2026-10-15T01:32:52Z). D2: notched 0.2.8237 (release note: "A cluster's shared object belongs to the cluster,
+not to its leader"): the cluster owns its team store, so its object survives leader changes and is disposed once by
+the cluster's cleanup. Turned in by owner directive with EPIC-2026-10-14-slotted_lifetime_ownership_fixes; commit and
+push are the owner's.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

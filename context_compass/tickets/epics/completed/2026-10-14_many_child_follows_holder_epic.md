@@ -2,15 +2,21 @@
 
 ## Metadata
 - Epic ID: EPIC-2026-10-14-many_child_follows_holder
-- Status: in_progress
+- Status: done
 - Owner: user
 - Agent Name: melder_1
 - Agent Role: synaptic_python_developer
 - Priority: p1
 - Created: 2026-10-14T15:29:53Z
-- Updated: 2026-10-14T18:42:13Z
+- Updated: 2026-10-15T01:32:52Z
 - Target Window: 2026-Q4
 - Related Program/Initiative: EPIC-2026-10-14-managed_spell_quantity (requirement F10 depends on this epic)
+
+- Completed: 2026-10-15T01:32:52Z
+- Summary: A slotted holder's `many` children belong to its owner: notched 0.2.8235 (registration with the holder's
+  owner, the specializer guard); purge and transfer of the children landed in 0.2.8238 under
+  EPIC-2026-10-14-slotted_lifetime_ownership_fixes. Left open, unticketed: the experimentation harness's S4 prologue
+  rewrite. Turned in by owner directive.
 
 ## Problem / Opportunity
 A disposal-bearing `many` child built for a slotted holder is registered in the store of the scope that melded the
@@ -61,6 +67,11 @@ declines the graphs its straight-line form cannot express correctly instead of g
 - from_state: draft
 - to_state: in_progress
 - transition_reason: opened at the owner's request (chat 2026-10-14) to fix the proven defect while the owner is away.
+- from_state: in_progress
+- to_state: done
+- transition_reason: its fix task landed as 0.2.8235 and its open questions were resolved by
+  EPIC-2026-10-14-slotted_lifetime_ownership_fixes (0.2.8238); the owner directed the turn-in (owner, chat 2026-10-15:
+  "ok cool turn it all in if your done").
 
 ## Success Metrics
 - The 11 red regression tests pass and the 5 controls still pass, GIL off and on.
@@ -89,15 +100,15 @@ declines the graphs its straight-line form cannot express correctly instead of g
 ## Milestones (Track Progress)
 - [x] Milestone 1: Defect proven route by route (prove task).
 - [x] Milestone 2: Fix landed with green tests, docs, graph, release note and notch (0.2.8235, 2026-10-14).
-- [ ] Milestone 3: Owner acceptance.
+- [x] Milestone 3: Owner acceptance.
 
 ## Stories (Required to Complete)
-- [ ] None - two tasks directly under the epic.
+- [x] None - two tasks directly under the epic.
 
 ## Tasks (Cross-Cutting or Epic-Level)
 - [x] Task: TASK-2026-10-14-prove_many_child_registration_bug - map and prove the defect (done 2026-10-14).
-- [ ] Task: TASK-2026-10-14-fix_many_child_follows_holder - implement the owner's rule and land it (landed
-      0.2.8235; in review).
+- [x] Task: TASK-2026-10-14-fix_many_child_follows_holder - implement the owner's rule and land it (landed
+      0.2.8235; done 2026-10-15).
 
 ## Acceptance Criteria (Epic Done)
 - Both tasks done with recorded evidence; the owner accepts the fix.
@@ -109,9 +120,9 @@ declines the graphs its straight-line form cannot express correctly instead of g
 - The specializer loses some graphs -> it declined them for correctness; measured graphs without many children keep it.
 
 ## Applicable Anti-Patterns
-- [ ] No epic-state transition without story-level evidence.
-- [ ] No closure while required stories are incomplete or unaccepted.
-- [ ] No program claims without source evidence from story/task notes.
+- [x] No epic-state transition without story-level evidence.
+- [x] No closure while required stories are incomplete or unaccepted.
+- [x] No program claims without source evidence from story/task notes.
 
 ## Validation / Test Approach
 - Component and integration regression tests (prove task), ownership tests, specializer tests, the full tree with the
@@ -190,9 +201,9 @@ declines the graphs its straight-line form cannot express correctly instead of g
   SCORE_0_TO_10: 8
 
 ## Closure Confirmation
-- [ ] Work walkthrough shared with user
-- [ ] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
-- [ ] Applicable anti-pattern checks are clear or escalated with evidence.
+- [x] Work walkthrough shared with user
+- [x] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
+- [x] Applicable anti-pattern checks are clear or escalated with evidence.
 
 ## Noting Behavior
 - Note focus: program-level direction, cross-story tradeoffs, and tranche order.
@@ -219,12 +230,26 @@ declines the graphs its straight-line form cannot express correctly instead of g
   REREAD: HELPFUL
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-10-15T01:32:52Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: Turned in. The owner directed the turn-in (owner, chat 2026-10-15: "ok cool turn it all in if your done").
+    Questions 1 and 2 (purge, transfer) were answered by D5 and D4 of the slotted lane (0.2.8238); the flaky 0.2.8234
+    clock test was fixed by TASK-2026-10-14-fix_pool_decay_fake_clock_rounding; the experimentation harness's S4
+    prologue rewrite stays the owner's call, unticketed. EPIC-2026-10-14-managed_spell_quantity's F10 prerequisite is
+    met.
+  EVIDENCE:
+  - context_compass/artifacts/many_child_registration_20261014/runs/full_tree_summary_gil0.txt:1-32
+  - context_compass/artifacts/slotted_lifetime_fixes_20261014/runs/probe_lifetime_owners_all_0_2_8240_gil0.txt:30-51
+  IMPACT: Closed.
+  NEXT: None.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
 ## Context / Handoff Summary
-Opened 2026-10-14 to land the owner's rule: a slotted holder's `many` children belong to whatever owns the holder.
-The defect is proven (prove task, done) and the fix landed as 0.2.8235 (fix task, in review): children register
-in the holder's store, the opt-in specializer declines graphs that feed a `many` step into a non-`many` step, the
-full tree is green GIL off and on. Waiting on the owner's acceptance; open questions 1-2 (purge, transfer) stay
-open and out of scope.
+Done (2026-10-15T01:32:52Z). Landed as 0.2.8235 with its purge and transfer follow-ups in 0.2.8238 (slotted lane).
+Turned in by owner directive; commit and push are the owner's.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

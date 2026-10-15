@@ -18,3 +18,8 @@ tree | int_cryst | rc=0 | secs=69 | 273 passed, 3 xfailed in 68.61s (0:01:08)
 tree | int_mt | rc=0 | secs=4 | 54 passed in 3.90s
 tree | int_live | rc=0 | secs=0 | 1 passed, 1 xfailed in 0.16s
 tree | exper | rc=0 | secs=10 | 250 passed, 4 skipped in 9.32s
+# asset-dependent chunks on the repository after the 0.2.8240 rebuild (2026-10-15, assets and bundles checked OK)
+melder_private | unit_llm | rc=0 | secs=0 | 28 passed in 0.24s
+melder_private | unit_build | rc=0 | secs=62 | 116 passed in 61.75s (0:01:01)
+melder_private | unit_top | rc=0 | secs=53 | 145 passed in 52.96s
+melder_private | comp_util | rc=0 | secs=7 | 41 passed, 23 skipped in 7.14s

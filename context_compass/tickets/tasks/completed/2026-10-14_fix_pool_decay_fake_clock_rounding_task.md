@@ -3,13 +3,17 @@
 ## Metadata
 - Task ID: TASK-2026-10-14-fix_pool_decay_fake_clock_rounding
 - Story: none - standalone; follows TASK-2026-10-12-make_kernel_pools_elastic (done, 0.2.8234), which added the test
-- Status: review
+- Status: done
 - Owner: user
 - Agent Name: melder_1
 - Agent Role: synaptic_python_developer
 - Priority: p2
 - Created: 2026-10-14T18:13:22Z
-- Updated: 2026-10-14T18:26:12Z
+- Updated: 2026-10-15T01:32:52Z
+
+- Completed: 2026-10-15T01:32:52Z
+- Summary: Test-only fix (no notch, no release note): the quiet-pool decay test's fake clock starts on a whole second,
+  so its advances and deadlines are exact (0 failing origins of 100,000). Turned in by owner directive.
 
 ## Objective
 `test_quiet_root_pool_decays_to_baseline_and_burst_restretches` (0.2.8234) fails in about 1% of runs: its fake clock
@@ -50,6 +54,10 @@ arithmetic, fix it there, and prove the test deterministic for every clock origi
 - to_state: review
 - transition_reason: the test's clock starts on a whole second (test-only), the reproducer finds no failing
   origin, the pool suites pass GIL off and on (2026-10-14T18:24:15Z); acceptance and the commit are the owner's.
+- from_state: review
+- to_state: done
+- transition_reason: the owner accepted the lane and directed the turn-in (owner, chat 2026-10-15: "ok cool turn it
+  all in if your done").
 
 ## Steps / Checklist
 - [x] Read the test module and `AbstractElasticPool` (pressure, settle, decay, catch-up) in full; record where the
@@ -84,21 +92,21 @@ arithmetic, fix it there, and prove the test deterministic for every clock origi
 - A test-only change cannot affect the runtime; rollback is the test file.
 
 ## Applicable Anti-Patterns
-- [ ] No status transition without evidence-backed transition reason.
-- [ ] No implementation/validation from `UNKNOWN` or `HYPOTHESIS`.
-- [ ] No closure without delegated acceptance or reserved-owner disposition and board-sync completion.
+- [x] No status transition without evidence-backed transition reason.
+- [x] No implementation/validation from `UNKNOWN` or `HYPOTHESIS`.
+- [x] No closure without delegated acceptance or reserved-owner disposition and board-sync completion.
 
 ## Done Checklist
-- [ ] Steps complete and checked off
-- [ ] Deliverables produced and linked
-- [ ] Documentation updated (if needed)
-- [ ] Validation status recorded
-- [ ] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
-- [ ] Notes quality maintained (`SCORE_0_TO_10` >=
+- [x] Steps complete and checked off
+- [x] Deliverables produced and linked
+- [x] Documentation updated (if needed)
+- [x] Validation status recorded
+- [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
+- [x] Notes quality maintained (`SCORE_0_TO_10` >=
       `workflow.ticket_microcycle.minimum_note_score`)
-- [ ] Applicable anti-pattern checks are clear or escalated with evidence.
-- [ ] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
-- [ ] Board sync completed for successor routing or closure anchor update.
+- [x] Applicable anti-pattern checks are clear or escalated with evidence.
+- [x] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
+- [x] Board sync completed for successor routing or closure anchor update.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
@@ -231,14 +239,23 @@ arithmetic, fix it there, and prove the test deterministic for every clock origi
   REREAD: HELPFUL
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-10-15T01:32:52Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: Turned in. The owner directed the turn-in of the finished work (owner, chat 2026-10-15: "ok cool turn it all
+    in if your done"); the fix is test-only and the pool suites pass GIL off and on.
+  EVIDENCE:
+  - context_compass/artifacts/pool_decay_clock_rounding_20261014/runs/probe_decay_boundary_gil0.txt:1-4
+  - context_compass/artifacts/pool_decay_clock_rounding_20261014/runs/pool_suites_after_fix.txt:1-8
+  IMPACT: Closed.
+  NEXT: None.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
 ## Context / Handoff Summary
-In review (2026-10-14). The quiet-pool decay test failed for about 0.2-1% of fake-clock origins because its clock
-started at a real-valued monotonic reading, so the advance to the settle time could fall one ulp short or read the
-burst's miss one ulp inside the pressure window. The pool's arithmetic is fine with a live clock and is unchanged;
-the test's `_Clock` now starts on a whole second at or after the real reading, which makes every advance and every
-deadline exact (reproducer: 0 failing origins of 100,000). Test-only: no notch, no release note. Owed by the owner:
-acceptance and the commit of the test module, tests_components.md and its index, the rebuilt bundles and the
-evidence folder.
+Done (2026-10-15T01:32:52Z). The quiet-pool decay test's clock starts on a whole second (test-only, no notch). Turned
+in by owner directive; the commit is the owner's.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

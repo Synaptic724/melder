@@ -3,13 +3,19 @@
 ## Metadata
 - Task ID: TASK-2026-10-14-fix_many_child_follows_holder
 - Story: none - directly under EPIC-2026-10-14-many_child_follows_holder
-- Status: review
+- Status: done
 - Owner: user
 - Agent Name: melder_1
 - Agent Role: synaptic_python_developer
 - Priority: p1
 - Created: 2026-10-14T15:29:53Z
-- Updated: 2026-10-14T18:27:59Z
+- Updated: 2026-10-15T01:32:52Z
+
+- Completed: 2026-10-15T01:32:52Z
+- Summary: Notched 0.2.8235 (release note: "A `many` dependency is disposed with the object that holds it"): a slotted
+  holder's disposal-bearing `many` children register in the holder's store, and the opt-in singleton specializer
+  declines graphs that feed a `many` step into a non-`many` step. Purge and transfer of the children followed in
+  0.2.8238. Turned in by owner directive.
 
 ## Objective
 Implement the owner's rule: a slotted holder's `many` children are recorded in, and disposed with, the store that
@@ -44,6 +50,10 @@ them green; the opt-in singleton specializer stops building children its holders
 - to_state: review
 - transition_reason: 0.2.8235 landed (src, tests, docs, graph, release note, notch, assets and bundles; full tree
   green GIL off and on on the VM, 2026-10-14T17:18:57Z); acceptance, commit and push are the owner's.
+- from_state: review
+- to_state: done
+- transition_reason: the owner accepted the lane and directed the turn-in (owner, chat 2026-10-15: "ok cool turn it
+  all in if your done").
 
 ## Steps / Checklist
 - [x] Strengthen the regression tests to prove ownership (recorded in the holder's owning store; disposed exactly
@@ -85,21 +95,21 @@ them green; the opt-in singleton specializer stops building children its holders
 - A lost cold race's children now live until the holder's store ends (bounded; documented).
 
 ## Applicable Anti-Patterns
-- [ ] No status transition without evidence-backed transition reason.
-- [ ] No implementation/validation from `UNKNOWN` or `HYPOTHESIS`.
-- [ ] No closure without delegated acceptance or reserved-owner disposition and board-sync completion.
+- [x] No status transition without evidence-backed transition reason.
+- [x] No implementation/validation from `UNKNOWN` or `HYPOTHESIS`.
+- [x] No closure without delegated acceptance or reserved-owner disposition and board-sync completion.
 
 ## Done Checklist
-- [ ] Steps complete and checked off
-- [ ] Deliverables produced and linked
-- [ ] Documentation updated (if needed)
-- [ ] Validation status recorded
-- [ ] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
-- [ ] Notes quality maintained (`SCORE_0_TO_10` >=
+- [x] Steps complete and checked off
+- [x] Deliverables produced and linked
+- [x] Documentation updated (if needed)
+- [x] Validation status recorded
+- [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
+- [x] Notes quality maintained (`SCORE_0_TO_10` >=
       `workflow.ticket_microcycle.minimum_note_score`)
-- [ ] Applicable anti-pattern checks are clear or escalated with evidence.
-- [ ] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
-- [ ] Board sync completed for successor routing or closure anchor update.
+- [x] Applicable anti-pattern checks are clear or escalated with evidence.
+- [x] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
+- [x] Board sync completed for successor routing or closure anchor update.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
@@ -364,16 +374,26 @@ them green; the opt-in singleton specializer stops building children its holders
   REREAD: HELPFUL
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-10-15T01:32:52Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: Turned in. The owner directed the turn-in of the finished work (owner, chat 2026-10-15: "ok cool turn it all
+    in if your done"); 0.2.8235 stands and the epic's open questions (purge, transfer) were resolved by
+    EPIC-2026-10-14-slotted_lifetime_ownership_fixes (0.2.8238). Left open, unticketed, for the owner: the
+    experimentation harness's S4 prologue rewrite no longer matches a miss
+    (tests/experimentation/codegen_strategy_certification.py).
+  EVIDENCE:
+  - context_compass/artifacts/many_child_registration_20261014/runs/full_tree_summary_gil0.txt:1-32
+  - context_compass/artifacts/many_child_registration_20261014/runs/full_tree_summary_gil1.txt:1-23
+  IMPACT: Closed; the follow-ups are recorded in the epic's closure.
+  NEXT: None.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
 ## Context / Handoff Summary
-In review (2026-10-14), landed as 0.2.8235. A slotted holder's disposal-bearing `many` children now register in the
-holder's store (`c{i}` inside the site's miss) instead of the meld's innermost scope, so they live and die with the
-holder's owner; the opt-in singleton specializer declines graphs that feed a `many` step into a non-`many` step.
-Tests first (19 red on 0.2.8234), then green with the full tree, GIL off and on; warm `_site_plan_executor` bodies
-byte-identical. Docs, indexes, graph, release note, notch, assets and bundles are current; the patch folder is in
-patches/completed. Owed by the owner: acceptance, `git add` of the two new test modules, the archived patch folder
-and the evidence folder, commit, push, the Windows tiers and hosted CI. Open beyond this task: purge and ownership
-transfer semantics for children (epic questions 1-2), the flaky 0.2.8234 clock test (RISK note) and the
-experimentation harness's old prologue regex (tests/experimentation/codegen_strategy_certification.py).
+Done (2026-10-15T01:32:52Z). Landed as 0.2.8235; children of a slotted holder register with its owner. Turned in by
+owner directive with EPIC-2026-10-14-many_child_follows_holder; commit and push are the owner's.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

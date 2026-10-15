@@ -4,13 +4,19 @@
 - Task ID: TASK-2026-10-14-investigate_stored_instances_dropped_without_disposal
 - Story: none - D3 of EPIC-2026-10-14-slotted_lifetime_ownership_fixes (opened by
   TASK-2026-10-14-audit_slotted_lifetime_ownership, done)
-- Status: review
+- Status: done
 - Owner: user
 - Agent Name: melder_1
 - Agent Role: synaptic_python_developer
 - Priority: p1
 - Created: 2026-10-14T18:40:43Z
-- Updated: 2026-10-15T00:07:24Z
+- Updated: 2026-10-15T01:32:52Z
+
+- Completed: 2026-10-15T01:32:52Z
+- Summary: D3 of EPIC-2026-10-14-slotted_lifetime_ownership_fixes, notched 0.2.8239 and 0.2.8240 (release note: "An
+  ownership transfer brings the spell's objects with it by default"): `transfer_spell_ownership` defaults to
+  `move_creations=True` and says a transfer hands over stewardship, not a working setup; contract invalidation
+  unchanged by the owner's ruling. Turned in by owner directive.
 
 ## Objective
 Two call sites retire stored instances with `Creations.extract_spell_creations`, which only extracts:
@@ -58,6 +64,10 @@ invalidation (b7, l1, l2) keep their behaviour.
 - transition_reason: the transfer half landed as 0.2.8239 (default) and 0.2.8240 (handover docstring) with regression
   tests green GIL off and on; the invalidation half was ruled out by the owner (no change); the lane's full tree is
   green at 0.2.8240 and the change is promoted into the system docs; the owner accepts.
+- from_state: review
+- to_state: done
+- transition_reason: the owner accepted the lane and directed the turn-in (owner, chat 2026-10-15: "ok cool turn it
+  all in if your done").
 
 
 ## Steps / Checklist
@@ -70,10 +80,10 @@ invalidation (b7, l1, l2) keep their behaviour.
       behaviour; no red tests, no fix.
 - [x] Lay out options (Notes 19:23:31Z, 21:26:20Z, 21:31:40Z); the transfer options were ruled on, the
       dispose-on-transfer option withdrawn.
-- [ ] Run Ticket Microcycle during execution:
+- [x] Run Ticket Microcycle during execution:
       `Investigate -> Document -> Strategy/Plan -> Document -> Implement ->
       Document -> Validate -> Document`.
-- [ ] Document each meaningful finding immediately in `## Notes` before further investigation.
+- [x] Document each meaningful finding immediately in `## Notes` before further investigation.
 
 ## Deliverables
 - Root cause with evidence, red tests, and fix options for the owner's epic.
@@ -100,21 +110,21 @@ invalidation (b7, l1, l2) keep their behaviour.
 - Investigation only; nothing to roll back.
 
 ## Applicable Anti-Patterns
-- [ ] No status transition without evidence-backed transition reason.
-- [ ] No implementation/validation from `UNKNOWN` or `HYPOTHESIS`.
-- [ ] No closure without delegated acceptance or reserved-owner disposition and board-sync completion.
+- [x] No status transition without evidence-backed transition reason.
+- [x] No implementation/validation from `UNKNOWN` or `HYPOTHESIS`.
+- [x] No closure without delegated acceptance or reserved-owner disposition and board-sync completion.
 
 ## Done Checklist
-- [ ] Steps complete and checked off
-- [ ] Deliverables produced and linked
-- [ ] Documentation updated (if needed)
-- [ ] Validation status recorded
-- [ ] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
-- [ ] Notes quality maintained (`SCORE_0_TO_10` >=
+- [x] Steps complete and checked off
+- [x] Deliverables produced and linked
+- [x] Documentation updated (if needed)
+- [x] Validation status recorded
+- [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
+- [x] Notes quality maintained (`SCORE_0_TO_10` >=
       `workflow.ticket_microcycle.minimum_note_score`)
-- [ ] Applicable anti-pattern checks are clear or escalated with evidence.
-- [ ] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
-- [ ] Board sync completed for successor routing or closure anchor update.
+- [x] Applicable anti-pattern checks are clear or escalated with evidence.
+- [x] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
+- [x] Board sync completed for successor routing or closure anchor update.
 
 ## Open Questions
 - Answered (owner, 2026-10-14): the default transfer moves the source's instances
@@ -618,14 +628,29 @@ invalidation (b7, l1, l2) keep their behaviour.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-10-15T01:32:52Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: Turned in. The owner accepted the lane and directed the turn-in (owner, chat 2026-10-15: "ok cool turn it all
+    in if your done"); D3 is notched 0.2.8239 and 0.2.8240 (release note: "An ownership transfer brings the spell's
+    objects with it by default"): `transfer_spell_ownership` defaults to `move_creations=True` and says a transfer
+    hands over stewardship, not a working setup; contract invalidation unchanged by the owner's ruling. Status done,
+    completion summary written, ticket moved to tasks/completed; the board syncs run with the epic's closure.
+  EVIDENCE:
+  - context_compass/artifacts/slotted_lifetime_fixes_20261014/runs/full_tree_0_2_8240_gil0.txt:1-33
+  - context_compass/artifacts/slotted_lifetime_fixes_20261014/runs/full_tree_0_2_8240_gil1.txt:1-25
+  - context_compass/artifacts/slotted_lifetime_fixes_20261014/runs/rebuild_0_2_8240.txt:1-40
+  IMPACT: Closed; nothing of this task stays open.
+  NEXT: None.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
 ## Context / Handoff Summary
-In review (2026-10-15). D3 is the transfer default: `transfer_spell_ownership` defaults to `move_creations=True`
-(0.2.8239), so a transferred `unique` stays one object and the source's objects follow the spell; a transfer
-disposes nothing; `move_creations=False` and a move into a filled slot (m1) are documented, not changed; the
-docstring, the ownership guide and the release note say a transfer hands over stewardship, not a working setup
-(0.2.8240; probe h1 and h2). Contract invalidation stays as it is by the owner's ruling (b7, l1, l2 intended).
-Validated with the epic's pass; promoted into the system docs. Remaining: the owner's acceptance; commit and push
-are the owner's.
+Done (2026-10-15T01:32:52Z). D3: notched 0.2.8239 and 0.2.8240 (release note: "An ownership transfer brings the
+spell's objects with it by default"): `transfer_spell_ownership` defaults to `move_creations=True` and says a transfer
+hands over stewardship, not a working setup; contract invalidation unchanged by the owner's ruling. Turned in by owner
+directive with EPIC-2026-10-14-slotted_lifetime_ownership_fixes; commit and push are the owner's.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

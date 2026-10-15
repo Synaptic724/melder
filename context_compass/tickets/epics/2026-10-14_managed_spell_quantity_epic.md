@@ -4,11 +4,11 @@
 - Epic ID: EPIC-2026-10-14-managed_spell_quantity
 - Status: in_progress
 - Owner: user
-- Agent Name: melder_1
+- Agent Name: melder_0
 - Agent Role: synaptic_python_developer
 - Priority: p1
 - Created: 2026-10-14T00:28:29Z
-- Updated: 2026-10-14T17:19:37Z
+- Updated: 2026-10-15T01:39:31Z
 - Target Window: 2026-Q4
 - Related Program/Initiative: EPIC-2026-10-05-melder_services_and_pools (the pooled-lifetime goal moved here);
   MelderOps Iris logger churn (priv_commandops TASK-2026-10-05-channel_logger_pooling)
@@ -165,7 +165,7 @@ MelderOps logger win is the proof, not the design driver. Nothing about the six 
 - Prior art: Autofac pooled instances; .NET ObjectPool (a reset may refuse reuse); Apache Commons Pool; HikariCP
 
 ## Milestones (Track Progress)
-- [ ] Milestone 1: Design settled - the open questions answered and recorded in the Decision Log.
+- [x] Milestone 1: Design settled - the open questions answered and recorded in the Decision Log.
 - [ ] Milestone 2: Patch docs written and linked - architecture, Existence and Creations, site-plan lowering, Phase 6,
       the pool, bind and the release paths.
 - [ ] Milestone 3: Stories drafted and accepted by the owner.
@@ -257,6 +257,19 @@ MelderOps logger win is the proof, not the design driver. Nothing about the six 
 - 11) The reset as a method overridden on the mixin, beside the name at bind (two ways to declare it)?
 
 ## Decision Log
+- 2026-10-15 (owner, chat with melder_0): object hygiene is the agent's, done with its own tools - "if you have
+  tools to work around this stuff and you have codegen what the hell is the problem, you can easily see oh yeah
+  look my conduit has extra stuff, and flag it for recycling". Read as: Melder keeps the structure right and
+  visible (`ReleaseManagedSpell.describe(cls)`: mode, count, idle per pool); recycling stays with the agent.
+- 2026-10-15 (owner, chat with melder_0): purge is not part of this design, and the build is fable_0's
+  composition as it stands. The owner: "why are you bringing up purge, when we never talked about purge, thats
+  not even needed our new design with fable_0 makes the most sense, ReleaseManagedSpell and how we composed it".
+- 2026-10-15 (owner, chat with melder_0): the five follow-up points are not design questions - Melder polices its
+  structure, not the objects it hands out. The owner: "overrides can still override the target if this pooled
+  object is its resolved graph node for it", "purge can destroy the class if people want", "why are you trying to
+  enforce a model that doesn't make sense" and "you've made the same tool 6 times and the newest version is the
+  one you like, you then destroy the whole scope, you go ahead and save your blueprint and put it into another
+  container". The readings are in the ASSUMPTION_CHALLENGE note of 2026-10-15T01:34:21Z; the settled shape stands.
 - 2026-10-14 (final shape, fable_0 for the owner): the Spell keeps the managed options; `ManagedSpellQuantity(deque)`
   of idle objects in the root's Creations under the spell id, an int `count`, no references to out objects;
   `ReleaseManagedSpell` maps the class to `(holder, spell_id)` pairs, registered at conjure, removed at teardown;
@@ -353,6 +366,8 @@ MelderOps logger win is the proof, not the design driver. Nothing about the six 
 ## Contribution Attribution
 - Ticket/Work Author(s): melder_1 (synaptic_python_developer); prose and design; the whole ticket; initial revision
   2026-10-14T00:28:29Z; evidence in Notes. Design decisions: the owner, in chat, as recorded in the Decision Log.
+- Assigned implementer: melder_0 (synaptic_python_developer), by owner directive on 2026-10-15; its Notes from
+  2026-10-15T00:16:35Z on.
 - Published By: UNKNOWN (a local ticket file; not published)
 - Independent Review: fable_0 (synaptic_python_developer); the design as of 2026-10-14T17:19:37Z; verdict in the
   DECISION note of 2026-10-14T22:15:12Z; independent of the author's lane
@@ -770,6 +785,126 @@ MelderOps logger win is the proof, not the design driver. Nothing about the six 
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-10-15T00:16:35Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: The owner reassigned this epic to melder_0 (chat 2026-10-15: "go ahead and take on the new epic for creating
+    the new existence type fable should have done a good job explaining it go read all that please"), the next
+    agent fable_0's handoff names. melder_1 keeps EPIC-2026-10-14-slotted_lifetime_ownership_fixes, whose rebuild
+    and acceptance are still open on files this epic also changes (creations.py, site_plan_lowering.py,
+    transfer_of_ownership.py, conduit.py): this lane writes no `src/` file until that lane has rebuilt and released
+    them. The seam check, the patch docs and the stories touch no shared file. The codex_bridge listing failed
+    ("Codex app tool request failed") and melder_1 and fable_0 are Claude sessions the bridge does not reach, so
+    this ticket and its board row are the coordination record.
+  EVIDENCE:
+  - context_compass/tickets/epics/2026-10-14_managed_spell_quantity_epic.md:547-552
+  - context_compass/tickets/epics/2026-10-14_slotted_lifetime_ownership_fixes_epic.md:393-450
+  - context_compass/artifact_board.md:105-105
+  - context_compass/mailbox_board.md:96-98
+  IMPACT: One writer for this ticket and its board row; no `src/` overlap with melder_1's open lane.
+  NEXT: The owner rules on the DECISION_REQUEST below; meanwhile check the seam map against the 0.2.8240 tree.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-15T00:16:35Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION_REQUEST
+  CLAIM: Read whole, the settled shape (2026-10-14T23:45:47Z) leaves five points the patch docs cannot decide alone.
+    (1) Two versions of one class in one root: a parked version gets a holder when bind_inactive stamps it, and the
+    shape says neither whether its pair is registered nor how a release picks a version - the meld-style target
+    names the index, not the version. Recommended: register every holder; with several pairs of one class a bare
+    release raises the ambiguity, and `release(obj, spell_id)` or the lease class picks exactly. (2) Q2's "a
+    release after its root was torn down raises plainly" holds only while no other root manages that class: with
+    one other pair left, the object (and the disposed uniques it holds) is appended to that root's holder
+    silently. Recommended: the caller's contract (release before the leasing root ends; afterwards the object is
+    yours); protection needs per-object identity, which the shape rules out. (3) The `many`-children side map
+    keyed by `id(object)`: recommended that root teardown dispose the children recorded for out objects too (the
+    store's own record; those objects' uniques die with the root anyway) and that a build finding an entry under
+    its id dispose those stale children first (left by a dead out object). (4) An override reaching below a
+    managed site, into the managed object's own constructor inputs, is unruled (ruling 8 covers supplying the
+    managed object itself): recommended a refusal like unique's "already exists". (5) `purge(instance)` of an
+    idle object must also take it out of the deque (a cold `deque.remove`), or the disposed object is dispensed
+    again; purging an object the holder did not build miscounts (the caller's contract, as a double release is).
+  EVIDENCE:
+  - context_compass/tickets/epics/2026-10-14_managed_spell_quantity_epic.md:551-591
+  - context_compass/tickets/epics/2026-10-14_managed_spell_quantity_epic.md:606-622
+  - context_compass/tickets/epics/2026-10-14_managed_spell_quantity_epic.md:657-662
+  - context_compass/tickets/tasks/completed/2026-10-14_investigate_managed_shell_design_task.md:472-481
+  - context_compass/system_docs/src_architecture.md:522-547
+  IMPACT: Milestone 1 closes on these five answers; the patch docs carry them and the rest of the shape as written.
+  NEXT: Record the owner's answers in the Decision Log, then the seam check and the patch docs.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-15T00:18:39Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: fable_0's seam map (read at 0.2.8238) still locates every seam on the 0.2.8240 tree. Definition spans from
+    the syntax tree: site_plan_lowering.py `_emit_context` 1331-1361, `_emit_many` 1363-1393,
+    `_owner_store_constant` 1396-1419, `_emit_shared_hit` 1421-1443, `_emit_miss` 1445-1513; creations.py record
+    shapes 10-111, purge 1082-1186, extract/restore 1302-1474; spell.py `_add_owned_conduit` 1558-1607; Phase 6
+    `scope_rank` 80-87; bind.py `_bind_logic` 571-820 and `sha256_profile` 911-1022; the cache generation history
+    190-211; RecordVersion CURRENT 84. One drift: 0.2.8239 moved transfer_of_ownership.py's flip to 1383-1510 and
+    `_move_creations` to 1512-1555 (cited 1470-1505 and 1506-1545). These are locations, not behaviour: each body
+    is read whole before its patch doc. src/, release_docs/, llm_support/ and system_docs/ are clean against HEAD
+    7fc8dd48e (committed 2026-10-15T00:14:03Z) at 0.2.8240; whether melder_1's rebuild ran before it is UNKNOWN.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1331-1513
+  - src/melder/aether/conduit/creations/creations.py:10-111
+  - src/melder/aether/conduit/creations/creations.py:1082-1474
+  - src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py:1383-1555
+  - src/melder/__version__.py:12-12
+  IMPACT: The seam map needs no rework before the patch docs; the two transfer citations take their new ranges.
+  NEXT: On the owner's answers, read each seam body whole and write the patch docs, architecture first.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-15T01:34:21Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: ASSUMPTION_CHALLENGE
+  CLAIM: The owner rejected the DECISION_REQUEST of 2026-10-15T00:16:35Z (chat 2026-10-15): points 2-5 policed
+    objects Melder hands out, which the runtime model rules out - agents iterate, keep the newest version and destroy
+    the whole scope. Read under it, nothing is left open. (1) Two different classes are two types, so each routes to
+    its own pool. One class object bound twice is one key with two spell ids (the fingerprint hashes the class shape
+    plus the bind options, and bind refuses only an equal id), and the active version's pool takes its releases (a
+    notch re-points it): same class, same code. (2) A release after its root ended is the agent's business. (3) Root
+    teardown disposes everything the root recorded, the pooled objects' recorded `many` children included. (4) An
+    override replaces the pooled node when the pooled object is the resolved node, no lease; one aimed at the pooled
+    object's own inputs builds that object fresh for that construction, no lease (melder_0's reading of "overrides
+    allowed"). (5) Purge disposes what it targets; a purged idle object leaves the queue. From the fingerprint:
+    method bodies are not hashed, so a body-only rewrite keeps its spell id and, rebound after cleanup_spell, meets
+    the old pool, as a slotted replacement meets its old slot today (0.2.8219).
+  EVIDENCE:
+  - context_compass/system_docs/src_architecture.md:522-547
+  - src/melder/aether/spellbook/bind/bind.py:961-1022
+  - src/melder/aether/spellbook/spellbook.py:5226-5241
+  - src/melder/aether/spellbook/spellbook.py:5270-5285
+  IMPACT: Milestone 1 is met: the settled shape of 2026-10-14T23:45:47Z stands with these readings.
+  NEXT: On the owner's go-ahead, read each seam body whole and write the patch docs, architecture first.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-15T01:37:31Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: Scope narrowed by the owner (chat 2026-10-15): purge is not part of this design ("we never talked about
+    purge, thats not even needed"), and the build is fable_0's composition as recorded: the Existence member, the
+    bind options on the Spell, `ManagedSpellQuantity(deque)` in the root's Creations, the inline pop and the
+    reserve-first miss, `ReleaseManagedSpell` keyed by class to `(holder, spell_id)` with the optional reset then
+    `append`, `Conduit.managed_spell_meld`, and scope teardown disposing what the root holds. Withdrawn: the
+    settled shape's `purge(instance)` / `purge_all` lines and point (5) of the 2026-10-15T01:34:21Z note. The store's
+    purge reader only has to leave a managed record untouched; the patch docs state how.
+  EVIDENCE: context_compass/tickets/epics/2026-10-14_managed_spell_quantity_epic.md:558-611
+  IMPACT: No managed purge verb is built; the rest of the settled shape is unchanged.
+  NEXT: On the owner's go-ahead, write the patch docs from the settled shape, architecture first.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
@@ -782,10 +917,17 @@ MelderOps logger win is the proof, not the design driver. Nothing about the six 
 - Keep notes append-only and preserve UNKNOWN-first promotion discipline.
 
 ## Context / Handoff Summary
-Opened 2026-10-14 at the owner's request to hold the managed_spell_quantity plan; design iteration, nothing drafted
-beyond this epic and nothing built. The decided plan is in Goals, Requirements and the Decision Log; the open
-questions are numbered above. Next: settle the open questions with the owner, then write the patch docs and draft the
-first story. The history of the discussion stays in EPIC-2026-10-05 (Notes 2026-10-11 to 2026-10-13).
+Opened 2026-10-14 (melder_1) to hold the managed_spell_quantity plan. The owner settled the shape with fable_0 the
+same day (Decision Log; Notes of 2026-10-14T23:45:47Z: the settled shape, the requirement overlay, the seam map,
+the numbers and the implementation plan) and on 2026-10-15 reassigned the epic to melder_0, whose five follow-up
+points the owner resolved under the runtime model - Melder polices its structure, not the objects it hands out
+(ASSUMPTION_CHALLENGE note of 2026-10-15T01:34:21Z). Milestone 1 is met, and the seam map still locates every seam on
+0.2.8240 (FACT note of 2026-10-15T00:18:39Z). Nothing is drafted beyond this epic and nothing is built. Next, on the
+owner's go-ahead: read each seam body whole, write the patch docs (architecture first), then the stories along the
+plan's steps. No `src/` edit until EPIC-2026-10-14-slotted_lifetime_ownership_fixes (melder_1) is accepted and its
+files are free; each landed `src/` slice takes its notch from `__version__` at landing (0.2.8240 now) and its
+release-note entry; the rebuild is last. The earlier discussion stays in EPIC-2026-10-05 (Notes 2026-10-11 to
+2026-10-13).
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

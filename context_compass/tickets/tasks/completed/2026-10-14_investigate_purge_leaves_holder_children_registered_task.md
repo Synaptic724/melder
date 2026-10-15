@@ -4,13 +4,18 @@
 - Task ID: TASK-2026-10-14-investigate_purge_leaves_holder_children_registered
 - Story: none - D5 of EPIC-2026-10-14-slotted_lifetime_ownership_fixes (opened by
   TASK-2026-10-14-audit_slotted_lifetime_ownership, done)
-- Status: review
+- Status: done
 - Owner: user
 - Agent Name: melder_1
 - Agent Role: synaptic_python_developer
 - Priority: p2
 - Created: 2026-10-14T18:40:43Z
-- Updated: 2026-10-15T00:07:24Z
+- Updated: 2026-10-15T01:32:52Z
+
+- Completed: 2026-10-15T01:32:52Z
+- Summary: D5 of EPIC-2026-10-14-slotted_lifetime_ownership_fixes, notched 0.2.8238 (release note: "A `many`
+  dependency is disposed with the object that holds it"): purging a holder disposes the `many` children recorded with
+  it; kept as landed with the owner's acceptance. Turned in by owner directive.
 
 ## Objective
 `Creations.purge` detaches and disposes only the purged spell id's entries. Proven on 0.2.8235 (p5): five
@@ -52,6 +57,10 @@ disposed, so are they.
 - transition_reason: the fix landed with its red tests green GIL off and on; the lane's full tree is green GIL off and
   on at 0.2.8240 and the change is promoted into the system docs (epic Notes 2026-10-14T23:39:45Z and
   2026-10-15T00:00:12Z); the owner accepts.
+- from_state: review
+- to_state: done
+- transition_reason: the owner accepted the lane and directed the turn-in (owner, chat 2026-10-15: "ok cool turn it
+  all in if your done").
 
 
 ## Steps / Checklist
@@ -59,10 +68,10 @@ disposed, so are they.
 - [x] Write a red test from the probe's p5 (children disposed with their purged holder; nothing accumulates).
 - [x] Lay out options (shared with TASK-2026-10-14-investigate_transfer_leaves_holder_children_behind: children
       recorded per holder) and the purge-with-instance case, for the owner.
-- [ ] Run Ticket Microcycle during execution:
+- [x] Run Ticket Microcycle during execution:
       `Investigate -> Document -> Strategy/Plan -> Document -> Implement ->
       Document -> Validate -> Document`.
-- [ ] Document each meaningful finding immediately in `## Notes` before further investigation.
+- [x] Document each meaningful finding immediately in `## Notes` before further investigation.
 
 ## Deliverables
 - Root cause with evidence, red tests, and fix options for the owner's epic.
@@ -82,21 +91,21 @@ disposed, so are they.
 - Investigation only; nothing to roll back.
 
 ## Applicable Anti-Patterns
-- [ ] No status transition without evidence-backed transition reason.
-- [ ] No implementation/validation from `UNKNOWN` or `HYPOTHESIS`.
-- [ ] No closure without delegated acceptance or reserved-owner disposition and board-sync completion.
+- [x] No status transition without evidence-backed transition reason.
+- [x] No implementation/validation from `UNKNOWN` or `HYPOTHESIS`.
+- [x] No closure without delegated acceptance or reserved-owner disposition and board-sync completion.
 
 ## Done Checklist
-- [ ] Steps complete and checked off
-- [ ] Deliverables produced and linked
-- [ ] Documentation updated (if needed)
-- [ ] Validation status recorded
-- [ ] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
-- [ ] Notes quality maintained (`SCORE_0_TO_10` >=
+- [x] Steps complete and checked off
+- [x] Deliverables produced and linked
+- [x] Documentation updated (if needed)
+- [x] Validation status recorded
+- [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
+- [x] Notes quality maintained (`SCORE_0_TO_10` >=
       `workflow.ticket_microcycle.minimum_note_score`)
-- [ ] Applicable anti-pattern checks are clear or escalated with evidence.
-- [ ] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
-- [ ] Board sync completed for successor routing or closure anchor update.
+- [x] Applicable anti-pattern checks are clear or escalated with evidence.
+- [x] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
+- [x] Board sync completed for successor routing or closure anchor update.
 
 ## Open Questions
 - Landed as yes (0.2.8238): purging a holder disposes the `many` children recorded with it, after it.
@@ -242,13 +251,29 @@ disposed, so are they.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-10-15T01:32:52Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: Turned in. The owner accepted the lane and directed the turn-in (owner, chat 2026-10-15: "ok cool turn it all
+    in if your done"); D5 is notched 0.2.8238 (release note: "A `many` dependency is disposed with the object that
+    holds it"): purging a holder disposes the `many` children recorded with it; kept as landed with the owner's
+    acceptance. Status done, completion summary written, ticket moved to tasks/completed; the board syncs run with the
+    epic's closure.
+  EVIDENCE:
+  - context_compass/artifacts/slotted_lifetime_fixes_20261014/runs/full_tree_0_2_8240_gil0.txt:1-33
+  - context_compass/artifacts/slotted_lifetime_fixes_20261014/runs/full_tree_0_2_8240_gil1.txt:1-25
+  - context_compass/artifacts/slotted_lifetime_fixes_20261014/runs/rebuild_0_2_8240.txt:1-40
+  IMPACT: Closed; nothing of this task stays open.
+  NEXT: None.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
 ## Context / Handoff Summary
-In review (2026-10-15). Fixed as 0.2.8238: a holder's disposal-bearing `many` children are recorded in its
-`HolderDisposalEntry`, so purging the holder disposes it and then its children (failures raised with its own) and
-nothing accumulates; a `many` purge or probe of the child spell counts only children no holder adopted (in the
-release note). Red tests green GIL off and on; the lane's full tree green at 0.2.8240; promoted into the system
-docs. Open: the owner may still ask for purge to leave the children registered (offered 2026-10-14). Commit and
-push are the owner's.
+Done (2026-10-15T01:32:52Z). D5: notched 0.2.8238 (release note: "A `many` dependency is disposed with the object that
+holds it"): purging a holder disposes the `many` children recorded with it; kept as landed with the owner's
+acceptance. Turned in by owner directive with EPIC-2026-10-14-slotted_lifetime_ownership_fixes; commit and push are
+the owner's.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

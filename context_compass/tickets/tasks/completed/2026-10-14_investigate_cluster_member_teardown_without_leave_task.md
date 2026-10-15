@@ -4,13 +4,19 @@
 - Task ID: TASK-2026-10-14-investigate_cluster_member_teardown_without_leave
 - Story: none - D1 of EPIC-2026-10-14-slotted_lifetime_ownership_fixes (opened by
   TASK-2026-10-14-audit_slotted_lifetime_ownership, done)
-- Status: review
+- Status: done
 - Owner: user
 - Agent Name: melder_1
 - Agent Role: synaptic_python_developer
 - Priority: p1
 - Created: 2026-10-14T18:40:43Z
-- Updated: 2026-10-15T00:07:24Z
+- Updated: 2026-10-15T01:32:52Z
+
+- Completed: 2026-10-15T01:32:52Z
+- Summary: D1 of EPIC-2026-10-14-slotted_lifetime_ownership_fixes, notched 0.2.8236 (release note: "A root that is
+  torn down leaves its cluster, and leaving a cluster unshares its roots"): a root's teardown leaves its cluster
+  through the ordered exit, the cloud's leave unshares the leaver's roots and the cluster lookup reads the DevOps
+  index. Turned in by owner directive.
 
 ## Objective
 Melder never reconciles cluster membership with root teardown: `Conduit._cleanup_normal_conduit` cleans the
@@ -55,6 +61,10 @@ must not wedge the cluster or dispose what the other members still hold.
 - transition_reason: the fix landed with its red tests green GIL off and on; the lane's full tree is green GIL off and
   on at 0.2.8240 and the change is promoted into the system docs (epic Notes 2026-10-14T23:39:45Z and
   2026-10-15T00:00:12Z); the owner accepts.
+- from_state: review
+- to_state: done
+- transition_reason: the owner accepted the lane and directed the turn-in (owner, chat 2026-10-15: "ok cool turn it
+  all in if your done").
 
 
 ## Steps / Checklist
@@ -64,10 +74,10 @@ must not wedge the cluster or dispose what the other members still hold.
       leader teardown then a member meld and a new election).
 - [x] Lay out fix options with their tradeoffs (leave-on-teardown, dissolve-on-leader-teardown, a walk that
       tolerates dead members, transactional membership) and record them for the owner.
-- [ ] Run Ticket Microcycle during execution:
+- [x] Run Ticket Microcycle during execution:
       `Investigate -> Document -> Strategy/Plan -> Document -> Implement ->
       Document -> Validate -> Document`.
-- [ ] Document each meaningful finding immediately in `## Notes` before further investigation.
+- [x] Document each meaningful finding immediately in `## Notes` before further investigation.
 
 ## Deliverables
 - Root cause with evidence, red tests, and fix options for the owner's epic.
@@ -88,21 +98,21 @@ must not wedge the cluster or dispose what the other members still hold.
 - Investigation only; nothing to roll back.
 
 ## Applicable Anti-Patterns
-- [ ] No status transition without evidence-backed transition reason.
-- [ ] No implementation/validation from `UNKNOWN` or `HYPOTHESIS`.
-- [ ] No closure without delegated acceptance or reserved-owner disposition and board-sync completion.
+- [x] No status transition without evidence-backed transition reason.
+- [x] No implementation/validation from `UNKNOWN` or `HYPOTHESIS`.
+- [x] No closure without delegated acceptance or reserved-owner disposition and board-sync completion.
 
 ## Done Checklist
-- [ ] Steps complete and checked off
-- [ ] Deliverables produced and linked
-- [ ] Documentation updated (if needed)
-- [ ] Validation status recorded
-- [ ] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
-- [ ] Notes quality maintained (`SCORE_0_TO_10` >=
+- [x] Steps complete and checked off
+- [x] Deliverables produced and linked
+- [x] Documentation updated (if needed)
+- [x] Validation status recorded
+- [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
+- [x] Notes quality maintained (`SCORE_0_TO_10` >=
       `workflow.ticket_microcycle.minimum_note_score`)
-- [ ] Applicable anti-pattern checks are clear or escalated with evidence.
-- [ ] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
-- [ ] Board sync completed for successor routing or closure anchor update.
+- [x] Applicable anti-pattern checks are clear or escalated with evidence.
+- [x] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
+- [x] Board sync completed for successor routing or closure anchor update.
 
 ## Open Questions
 - Answered (owner, 2026-10-14: "a torn down root shouldn't live in a cluster"): a root's teardown
@@ -297,13 +307,29 @@ must not wedge the cluster or dispose what the other members still hold.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-10-15T01:32:52Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: Turned in. The owner accepted the lane and directed the turn-in (owner, chat 2026-10-15: "ok cool turn it all
+    in if your done"); D1 is notched 0.2.8236 (release note: "A root that is torn down leaves its cluster, and leaving
+    a cluster unshares its roots"): a root's teardown leaves its cluster through the ordered exit, the cloud's leave
+    unshares the leaver's roots and the cluster lookup reads the DevOps index. Status done, completion summary
+    written, ticket moved to tasks/completed; the board syncs run with the epic's closure.
+  EVIDENCE:
+  - context_compass/artifacts/slotted_lifetime_fixes_20261014/runs/full_tree_0_2_8240_gil0.txt:1-33
+  - context_compass/artifacts/slotted_lifetime_fixes_20261014/runs/full_tree_0_2_8240_gil1.txt:1-25
+  - context_compass/artifacts/slotted_lifetime_fixes_20261014/runs/rebuild_0_2_8240.txt:1-40
+  IMPACT: Closed; nothing of this task stays open.
+  NEXT: None.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
 ## Context / Handoff Summary
-In review (2026-10-15). Landed as 0.2.8236: root teardown leaves its cluster first
-(`Conduit._leave_cluster_for_teardown`: `ConduitCluster.release_member` while the frame lives, `drop_member` in
-frame teardown or after a failed exit), the cloud's leave runs the ordered exit and unshares the leaver's roots,
-and the cloud's cluster lookup reads the DevOps index and names clusters through `_cluster_names_by_id`. Red tests
-green GIL off and on; the lane's full tree green at 0.2.8240 GIL off and on; promoted into src_architecture,
-src_components and tests_components. Remaining: the owner's acceptance; commit and push are the owner's.
+Done (2026-10-15T01:32:52Z). D1: notched 0.2.8236 (release note: "A root that is torn down leaves its cluster, and
+leaving a cluster unshares its roots"): a root's teardown leaves its cluster through the ordered exit, the cloud's
+leave unshares the leaver's roots and the cluster lookup reads the DevOps index. Turned in by owner directive with
+EPIC-2026-10-14-slotted_lifetime_ownership_fixes; commit and push are the owner's.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

@@ -4,13 +4,19 @@
 - Task ID: TASK-2026-10-14-investigate_upgrade_retained_holders_keep_old_dependencies
 - Story: none - D6 of EPIC-2026-10-14-slotted_lifetime_ownership_fixes (opened by
   TASK-2026-10-14-audit_slotted_lifetime_ownership, done)
-- Status: review
+- Status: done
 - Owner: user
 - Agent Name: melder_1
 - Agent Role: synaptic_python_developer
 - Priority: p2
 - Created: 2026-10-14T18:40:43Z
-- Updated: 2026-10-15T00:07:24Z
+- Updated: 2026-10-15T01:32:52Z
+
+- Completed: 2026-10-15T01:32:52Z
+- Summary: D6 of EPIC-2026-10-14-slotted_lifetime_ownership_fixes: no defect. Graduation keeps retained objects for
+  eventual disposal; the `upgrade_to_normal` docstring paragraph landed with 0.2.8236; a retained object referencing a
+  disposed dependency is pending agent work under the owner's runtime model. No notch of its own. Turned in by owner
+  directive.
 
 ## Objective
 `upgrade_to_normal` keeps the lesser's store (its retained creations) and repoints its lineage and cluster
@@ -51,18 +57,24 @@ a dependency is not disposed under a live holder.
 - to_state: review
 - transition_reason: re-investigated: not a defect (graduation contract and tests); a docstring clarification
   is proposed; the owner confirms the verdict (2026-10-14T18:56:30Z).
+- from_state: review
+- to_state: done
+- transition_reason: the owner accepted the lane and directed the turn-in (owner, chat 2026-10-15: "ok cool turn it
+  all in if your done").
 
 
 ## Steps / Checklist
-- [ ] Read `upgrade_to_normal`, `_conjure_existing_conduit` and the lineage repointing; record which retained
+- [x] Read `upgrade_to_normal`, `_conjure_existing_conduit` and the lineage repointing; record which retained
       instances can hold dependencies owned elsewhere.
-- [ ] Write a red test from the probe's u6, and one for a `unique` dependency of the old root.
-- [ ] Lay out options (dispose retained holders at upgrade; carry their dependencies; refuse an upgrade that
+- [x] Superseded by the verdict (no defect): no red test; existing tests pin both halves of the graduation
+      contract.
+- [x] Superseded by the verdict (no defect): options not needed. Lay out options (dispose retained holders at
+      upgrade; carry their dependencies; refuse an upgrade that
       would strand them) for the owner.
-- [ ] Run Ticket Microcycle during execution:
+- [x] Run Ticket Microcycle during execution:
       `Investigate -> Document -> Strategy/Plan -> Document -> Implement ->
       Document -> Validate -> Document`.
-- [ ] Document each meaningful finding immediately in `## Notes` before further investigation.
+- [x] Document each meaningful finding immediately in `## Notes` before further investigation.
 
 ## Deliverables
 - Root cause with evidence, red tests, and fix options for the owner's epic.
@@ -82,21 +94,21 @@ a dependency is not disposed under a live holder.
 - Investigation only; nothing to roll back.
 
 ## Applicable Anti-Patterns
-- [ ] No status transition without evidence-backed transition reason.
-- [ ] No implementation/validation from `UNKNOWN` or `HYPOTHESIS`.
-- [ ] No closure without delegated acceptance or reserved-owner disposition and board-sync completion.
+- [x] No status transition without evidence-backed transition reason.
+- [x] No implementation/validation from `UNKNOWN` or `HYPOTHESIS`.
+- [x] No closure without delegated acceptance or reserved-owner disposition and board-sync completion.
 
 ## Done Checklist
-- [ ] Steps complete and checked off
-- [ ] Deliverables produced and linked
-- [ ] Documentation updated (if needed)
-- [ ] Validation status recorded
-- [ ] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
-- [ ] Notes quality maintained (`SCORE_0_TO_10` >=
+- [x] Steps complete and checked off
+- [x] Deliverables produced and linked
+- [x] Documentation updated (if needed)
+- [x] Validation status recorded
+- [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
+- [x] Notes quality maintained (`SCORE_0_TO_10` >=
       `workflow.ticket_microcycle.minimum_note_score`)
-- [ ] Applicable anti-pattern checks are clear or escalated with evidence.
-- [ ] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
-- [ ] Board sync completed for successor routing or closure anchor update.
+- [x] Applicable anti-pattern checks are clear or escalated with evidence.
+- [x] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
+- [x] Board sync completed for successor routing or closure anchor update.
 
 ## Open Questions
 - Answered by the re-investigation and the owner's runtime model (2026-10-14): an upgrade keeps the
@@ -213,12 +225,26 @@ a dependency is not disposed under a live holder.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-10-15T01:32:52Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: Turned in as no defect. The owner accepted the lane and directed the turn-in (owner, chat 2026-10-15: "ok
+    cool turn it all in if your done"). The red-test and options steps were superseded by the verdict (no defect); the
+    docstring paragraph landed with 0.2.8236.
+  EVIDENCE:
+  - src/melder/aether/conduit/conduit.py:2476-2510
+  - context_compass/artifacts/slotted_lifetime_fixes_20261014/runs/full_tree_0_2_8240_gil0.txt:1-33
+  - context_compass/artifacts/slotted_lifetime_fixes_20261014/runs/full_tree_0_2_8240_gil1.txt:1-25
+  - context_compass/artifacts/slotted_lifetime_fixes_20261014/runs/rebuild_0_2_8240.txt:1-40
+  IMPACT: Closed; nothing of this task stays open.
+  NEXT: None.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
 ## Context / Handoff Summary
-In review. Re-investigated at the owner's request: not a defect. Graduation keeps retained objects in their stores
-only for eventual disposal; old spell ids no longer resolve, so no meld serves a retained holder again. The
-`upgrade_to_normal` docstring paragraph landed with 0.2.8236 (a retained object may hold references to instances
-the former lineage owns, disposed on that owner's schedule). By the owner's runtime model such an object is
-pending agent work. Next: the owner confirms; D6 closes as no defect with the epic.
+Done (2026-10-15T01:32:52Z). Re-investigated at the owner's request: not a defect; the `upgrade_to_normal` docstring
+paragraph landed with 0.2.8236. Turned in by owner directive with the epic.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->
