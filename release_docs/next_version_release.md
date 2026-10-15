@@ -330,11 +330,16 @@ or repointed, and owned dependencies move only with `include_dependencies=True`.
   the holder's owner), the store selection and live-creation probe that follow, and the specializer's eligibility.
 - The ownership guide (`docs/intermediate/ownership.md`) says a transfer moves the spell's objects by default and
   hands over stewardship, not a working setup, and how the new owner rebuilds.
-- The packaged system documents (`melder.__architecture__`) open with Melder's runtime model: correctness lives in
-  the structure - bindings, indexes and versions, ownership, contracts and links, lineage and clusters, verdicts and
-  the Crystallizer's record; the objects Melder builds are working material that agents iterate on, leave pending
-  and clean up; Melder disposes what its own creations record when they end and does not police the objects it
-  hands out.
+- The packaged system documents (`melder.__architecture__`) open with what Melder is: not a DI container but a
+  runtime agents live and build in, where many agents iterate on the same objects through versions, borrowers
+  follow a notch, versions coexist (MutationResearch, compositions, one `unique` object per version) and agents
+  build the subsystem they are in. Correctness lives in the structure - bindings, indexes and versions, ownership,
+  contracts and links, lineage and clusters, verdicts and the Crystallizer's record; the objects Melder builds are
+  working material that agents iterate on, leave pending and clean up; Melder disposes what its own creations
+  record when they end and does not police the objects it hands out.
+- The packaged system documents no longer call a notch's borrower update a known limitation: each linked borrower
+  parks its copy of the old version, index-link borrowers move to the new version and build it at their next
+  meld, and older versions stay alive.
 - The packaged system documents describe a root leaving its cluster at teardown, the team store a cluster owns,
   the record that carries a slotted object's `many` children through purge, transfer and disposal, and the
   transfer default and handover; the code-map extents of the files these changes touched are remeasured.

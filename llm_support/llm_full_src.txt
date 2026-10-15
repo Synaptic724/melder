@@ -1,8 +1,8 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: src
-SOURCE FINGERPRINT: bea00df24d70aa4229aba9436991e21edfbdf57c40ac265735f7f42214308e9b
-FILE COUNT: 579
+SOURCE FINGERPRINT: 682d0e78bf5df94b437cf63210378fe99bb856a7d2006f0ed0855fcf1a977627
+FILE COUNT: 578
 
 ================================================================================
 BEGIN FILE: src/melder/__architecture__.py
@@ -139492,14 +139492,6 @@ class SpellbookCreationSystem(Cleanable):
         ]
 ================================================================================
 END FILE: src/melder/aether/spellbook/spellbook_creation_system.py
-================================================================================
-================================================================================
-BEGIN FILE: src/melder/aether/spellbook/spellframe_kind/__init__.py
-CONTENT SHA256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
-SOURCE ENCODING: utf-8
-================================================================================
-================================================================================
-END FILE: src/melder/aether/spellbook/spellframe_kind/__init__.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spellframe_kind/spellframe_kind.py

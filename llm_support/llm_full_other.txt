@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: other
-SOURCE FINGERPRINT: 7e08e83dbb15e13b8a6ffdb407bd346de8273d7bb9b7be15d858ec7ea439bf36
+SOURCE FINGERPRINT: 3a2b278e93135c186ecdd19738d72d6afd2f4b36847cd4188abf12b3f5d68ddc
 FILE COUNT: 404
 
 ================================================================================
@@ -75656,7 +75656,7 @@ END FILE: release_docs/0.2.8227.md
 ================================================================================
 ================================================================================
 BEGIN FILE: release_docs/next_version_release.md
-CONTENT SHA256: 05a4062f7e91da8dcf29feb093a9563b337be0f6d6046bcc390555c891c53814
+CONTENT SHA256: c5f25dae596a15d037948b2b0d583c1d16db9f4b1506353b0a2ec02b921658f4
 SOURCE ENCODING: utf-8
 ================================================================================
 # Melder 0.2.8240
@@ -75991,11 +75991,16 @@ or repointed, and owned dependencies move only with `include_dependencies=True`.
   the holder's owner), the store selection and live-creation probe that follow, and the specializer's eligibility.
 - The ownership guide (`docs/intermediate/ownership.md`) says a transfer moves the spell's objects by default and
   hands over stewardship, not a working setup, and how the new owner rebuilds.
-- The packaged system documents (`melder.__architecture__`) open with Melder's runtime model: correctness lives in
-  the structure - bindings, indexes and versions, ownership, contracts and links, lineage and clusters, verdicts and
-  the Crystallizer's record; the objects Melder builds are working material that agents iterate on, leave pending
-  and clean up; Melder disposes what its own creations record when they end and does not police the objects it
-  hands out.
+- The packaged system documents (`melder.__architecture__`) open with what Melder is: not a DI container but a
+  runtime agents live and build in, where many agents iterate on the same objects through versions, borrowers
+  follow a notch, versions coexist (MutationResearch, compositions, one `unique` object per version) and agents
+  build the subsystem they are in. Correctness lives in the structure - bindings, indexes and versions, ownership,
+  contracts and links, lineage and clusters, verdicts and the Crystallizer's record; the objects Melder builds are
+  working material that agents iterate on, leave pending and clean up; Melder disposes what its own creations
+  record when they end and does not police the objects it hands out.
+- The packaged system documents no longer call a notch's borrower update a known limitation: each linked borrower
+  parks its copy of the old version, index-link borrowers move to the new version and build it at their next
+  meld, and older versions stay alive.
 - The packaged system documents describe a root leaving its cluster at teardown, the team store a cluster owns,
   the record that carries a slotted object's `many` children through purge, transfer and disposal, and the
   transfer default and handover; the code-map extents of the files these changes touched are remeasured.

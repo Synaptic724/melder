@@ -5,7 +5,7 @@
 - Status: in_progress
 - Owner:
 - Created: 2026-01-17
-- Updated: 2026-10-14
+- Updated: 2026-10-15
 
 ## Scope
 This document defines C3 components, C2 subcomponents, and C1 code references
@@ -5820,10 +5820,14 @@ Behavior:
   Creations) travels untouched. Add destroys the source index when it empties;
   remove never destroys - it mints a fresh inactive index for the separated
   spell and leaves the source with its remaining members.
-- KNOWN LIMITATION (current slice boundary, not a defect): notch is OWNER-SIDE
-  ONLY. Contracted borrowers are not fanned out, so a notch on a SHARED index
-  does not yet update borrowers' contracted maps. Cross-conduit fan-out under
-  the same seal is the next slice.
+- Borrowers follow a notch, by design (corrected 2026-10-15; this line called it a
+  missing fan-out). After the notch transaction ends, `Conduit.notch_spell` has every
+  linked peer park its contracted copy of the outgoing version
+  (`_deactivate_borrowed_spell`), and `ConduitWard._emit_index_notch` moves each
+  index-link contract to the new version (the receiver parks the old copy and activates
+  the new one). Borrowers build the new version at their next meld. Older versions and
+  their objects stay alive: versions coexist (MutationResearch records them, compositions
+  pin them), which is how several agents iterate on one object and converge on a version.
 Concurrency/Threading:
 - Public entrypoints use the Spellbook lock and the transaction mediator; the
   seams then run INSIDE the held transaction window (owning spellbook INTENT +
@@ -10683,6 +10687,10 @@ Companion documents:
   component and code-description patches are inputs to this document while a lane is open.
 
 ## Context / Handoff Summary
+
+2026-10-15 notch borrowers (documentation only, owner ruling): the SpellIndex Mutation Surface says borrowers
+follow a notch - every linked peer parks its copy of the outgoing version, index-link borrowers move to the new
+one - and that older versions stay alive by design, instead of calling it a missing fan-out.
 
 2026-10-14 slotted lifetimes (0.2.8236-0.2.8240): ConduitCluster Auto-Sharing carries the ordered exit and the team
 store, ConduitCloud Registry the membership-index lookup and `delete_cluster`'s raise, Ownership Transfer with its

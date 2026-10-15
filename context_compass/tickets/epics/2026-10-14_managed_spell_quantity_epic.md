@@ -8,7 +8,7 @@
 - Agent Role: synaptic_python_developer
 - Priority: p1
 - Created: 2026-10-14T00:28:29Z
-- Updated: 2026-10-15T01:39:31Z
+- Updated: 2026-10-15T08:55:25Z
 - Target Window: 2026-Q4
 - Related Program/Initiative: EPIC-2026-10-05-melder_services_and_pools (the pooled-lifetime goal moved here);
   MelderOps Iris logger churn (priv_commandops TASK-2026-10-05-channel_logger_pooling)
@@ -257,6 +257,13 @@ MelderOps logger win is the proof, not the design driver. Nothing about the six 
 - 11) The reset as a method overridden on the mixin, beside the name at bind (two ways to declare it)?
 
 ## Decision Log
+- 2026-10-15 (owner, chat with melder_0): implement it. The owner: "you can use the way my spellspace pool and
+  conduit pool work as elastic and focus on that and understand it, you gotta add transfer of ownership for it
+  too thats important and it'll be available for pool objects too you'd follow the same mechanics, you'd need to
+  implement all the phases so make a story for each implementation mechanic and investigate everything as you go
+  please go ahead and implement this"; `ReleaseManagedSpell` goes in `src/melder/aether/conduit/creations/` as
+  its own module; "add more details to the epic take out shit you don't need then implement it please, make the
+  epic as detailed as you can because will compact multiple times building this".
 - 2026-10-15 (owner, chat with melder_0): object hygiene is the agent's, done with its own tools - "if you have
   tools to work around this stuff and you have codegen what the hell is the problem, you can easily see oh yeah
   look my conduit has extra stuff, and flag it for recycling". Read as: Melder keeps the structure right and
@@ -904,6 +911,91 @@ MelderOps logger win is the proof, not the design driver. Nothing about the six 
   NEXT: On the owner's go-ahead, write the patch docs from the settled shape, architecture first.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-15T08:51:04Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: PLAN
+  CLAIM: The owner authorized implementation (Decision Log, 2026-10-15 "implement it"). Tranche order: (1) read the
+    kernel elastic pools whole (AbstractElasticPool, SpellSpacePool, ConduitPool) - the elastic mode reuses their
+    retention mechanics; (2) read the transfer path's creation moves whole (TransferOfOwnership, Creations
+    extract/restore) - a transfer carries a managed pool and its idle objects the same way; (3) archive the
+    superseded epic text verbatim under artifacts/managed_spell_quantity_20261015/ and rewrite the epic as the full
+    build spec; (4) one story per implementation mechanic; (5) patch docs, then each story red tests -> src -> green ->
+    notch -> release note, rebuild last. `ReleaseManagedSpell` lives in src/melder/aether/conduit/creations/.
+  EVIDENCE: context_compass/tickets/epics/2026-10-14_managed_spell_quantity_epic.md:1-60
+  IMPACT: The lane moves from design to build; every finding lands here before the next tranche.
+  NEXT: Read abstract_elastic_pool.py, spell_space_pool.py and conduit_pool.py whole.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-15T08:52:31Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: The kernel elastic pools, read whole on 0.2.8240. `AbstractElasticPool` keeps idle objects in `_idle`
+    (a deque set once at init; `cleanup()` destroys them and clears it, never replaces it); a hit is
+    `_idle.pop()` (newest, warmest); a miss builds and calls `_note_miss()`, which only stamps the pressure clock
+    (settle 1800 s, lock-free). A return appends and stops when at most `baseline_idle` are idle (no clock, no
+    lock); above that `_rebalance_after_return()` reads the clock and, under `_lock` (a leaf RLock held for counter
+    and deque work only), stretches `target_idle` to the observed idle count while a miss is recent (capped at
+    `max_idle`), else decays it 10% per 600 s toward the baseline, detaches the surplus oldest first and destroys
+    it outside the lock through `destroy_object` (a raising destroy re-pools the rest). `max_idle == baseline_idle`
+    is a fixed-capacity pool: a return above the baseline evicts the oldest, no clock, no lock. Objects out are
+    not reclaimed by `cleanup()`. ConduitPool and SpellSpacePool are the model subclasses: their own fast paths
+    pop or `_note_miss()` and let the caller build (ConduitPool returns None on a miss), release appends and
+    rebalances above the baseline; Conduit builds both at baseline 20 / max 256.
+  EVIDENCE:
+  - src/melder/utilities/general_base/abstract_elastic_pool.py:123-264
+  - src/melder/utilities/general_base/abstract_elastic_pool.py:328-378
+  - src/melder/utilities/general_base/abstract_elastic_pool.py:449-599
+  - src/melder/aether/conduit/conduit_pool.py:108-165
+  - src/melder/aether/conduit/spell_space/spell_space_pool.py:188-307
+  IMPACT: `ManagedSpellQuantity` subclasses `AbstractElasticPool` (owner: elastic works like these pools): elastic
+    is baseline 20 / max 256 with the same stretch and decay; limited_quantity and queue are fixed-capacity at N
+    (nothing to trim; the count gate refuses or waits). The plan's warm path pops the holder's `_idle` deque, and
+    `destroy_object` runs the Spell's disposal methods plus the object's recorded `many` children.
+  NEXT: Read Creations (record shapes, cleanup, extract/restore) and the transfer creation moves whole.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-15T08:55:25Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: Creations and the transfer path, read whole on 0.2.8240. `Creations` keeps `_creations` (the live object or
+    `many` list per spell id, the only map resolution reads), `_disposable_creations` (cleanup-only: an
+    `(object, methods)` tuple, a `ManyDisposalBucket` or a `HolderDisposalEntry`), `_slot_guards` and a leaf
+    `_lock`. `cleanup()` detaches both maps under the lock, disposes the disposable registry newest-first (a
+    dependency registers before its dependent, so insertion order is creation order), then deletes its fields and
+    keeps `_lock` as a tombstone. `extract_spell_creations` / `restore_spell_creations` move one spell id's rows
+    (`scope` unique or many, `stored`, `disposal_methods`, `children`); restore replaces what the id held. Transfer
+    `execute()`: under both conduit locks `_flip_registry_and_spellbooks` stamps the ACTIVE member on the target
+    (`_add_owned_conduit` with the target's store) and `_migrate_inactive_members` moves parked members without
+    re-stamping them; then `_move_creations` extracts and restores every member id (its rollback re-extracts the
+    target and restores the source) or, with `move_creations=False`, `_teardown_creations` extracts the active
+    member's rows and keeps them only for rollback. Lineage spells skip both.
+  EVIDENCE:
+  - src/melder/aether/conduit/creations/creations.py:118-296
+  - src/melder/aether/conduit/creations/creations.py:306-363
+  - src/melder/aether/conduit/creations/creations.py:489-542
+  - src/melder/aether/conduit/creations/creations.py:1302-1474
+  - src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py:367-507
+  - src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py:1079-1104
+  - src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py:1470-1590
+  - src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py:1592-1636
+  IMPACT: Design decisions for the build: (1) pools get their own map in Creations, `_managed_quantities[spell_id]`,
+    so no reader of `_creations` (lookups, live probes, purge) can mistake a pool for an object; (2) Creations
+    disposes its pools before the disposable registry, because a pool is created at conjure, before the uniques its
+    objects hold, and reverse insertion order would close those uniques first; (3) extract/restore carry a
+    `managed` row holding the same pool object, so a transfer moves the pool with its idle objects, and the
+    ReleaseManagedSpell registry follows the store (a store registers a pool it takes, unregisters one it gives
+    up); (4) the Spell keeps a borrowed reference to its pool, so dispensing does not depend on `_owner_creations`,
+    which the flip re-stamps for the active member only. UNKNOWN: whether a notch re-stamps a parked member's owner
+    store after a transfer (check `_apply_notch` in the transfer story).
+  NEXT: Archive the epic verbatim, rewrite it as the build spec and open one story per mechanic.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
 
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user

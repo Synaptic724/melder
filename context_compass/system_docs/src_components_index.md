@@ -12,10 +12,10 @@ Line numbers are 1-based and inclusive on both ends.
 | --- | --- |
 | document | `src_components.md` |
 | index_version | 1.1.0 |
-| generated_at | 2026-10-14T23:59:35Z |
-| line_count | 11159 |
+| generated_at | 2026-10-15T08:57:07Z |
+| line_count | 11167 |
 | line_ending | lf |
-| content_sha256 | `f0750ef865aff7b4d0de94b9c6fb4a626a403b2889925d9732a6ba45e4247671` |
+| content_sha256 | `8c64857244699a46cebe99ad530e3d2a815ea299dd7a21810b557a615da76cff` |
 | sections | 149 |
 
 Recompute all three of `line_count`, `line_ending`, and `content_sha256`
@@ -59,7 +59,7 @@ which you did.
 | 5176-5285 | 3 | C3 Components Catalog > Component: Logging and Initialization Helpers |
 | 5286-5411 | 3 | C3 Components Catalog > Component: Spell Examination Profiles |
 | 5412-5485 | 3 | C3 Components Catalog > Component: PhaseScheduler and UnitOfWork Orchestration |
-| 5486-7176 | 2 | C2 Subcomponents Catalog |
+| 5486-7180 | 2 | C2 Subcomponents Catalog |
 | 5507-5519 | 3 | C2 Subcomponents Catalog > Subcomponent: Runtime Warning Guardrails |
 | 5520-5580 | 3 | C2 Subcomponents Catalog > Subcomponent: Registration Refusal (Internal-Bind Manifest) |
 | 5581-5599 | 3 | C2 Subcomponents Catalog > Subcomponent: Packaged Hardcopy Document Modules |
@@ -70,109 +70,109 @@ which you did.
 | 5727-5745 | 3 | C2 Subcomponents Catalog > Subcomponent: Spellbook Conjure Pipeline |
 | 5746-5762 | 3 | C2 Subcomponents Catalog > Subcomponent: Spellbook Binding Pipeline |
 | 5763-5776 | 3 | C2 Subcomponents Catalog > Subcomponent: SpellIndex (Spell Index / Categorization) |
-| 5777-5837 | 3 | C2 Subcomponents Catalog > Subcomponent: SpellIndex Mutation Surface |
-| 5838-5853 | 3 | C2 Subcomponents Catalog > Subcomponent: Parameter DI Shape Classification |
-| 5854-5869 | 3 | C2 Subcomponents Catalog > Subcomponent: SpellMap Descriptor |
-| 5870-5888 | 3 | C2 Subcomponents Catalog > Subcomponent: SpellContract Descriptor |
-| 5889-5901 | 3 | C2 Subcomponents Catalog > Subcomponent: SpellbookConfiguration Freeze and Validation |
-| 5902-5914 | 3 | C2 Subcomponents Catalog > Subcomponent: PhaseScheduler Pipeline |
-| 5915-5935 | 3 | C2 Subcomponents Catalog > Subcomponent: SpellCompiler Phase Artifacts |
-| 5936-5966 | 3 | C2 Subcomponents Catalog > Subcomponent: Spell Validation Strategies |
-| 5967-5979 | 3 | C2 Subcomponents Catalog > Subcomponent: System Validation (Phase 6) |
-| 5980-5997 | 3 | C2 Subcomponents Catalog > Subcomponent: Change-Control Revalidation Wiring |
-| 5998-6019 | 3 | C2 Subcomponents Catalog > Subcomponent: Aether Frame Registry |
-| 6020-6044 | 3 | C2 Subcomponents Catalog > Subcomponent: Aether Conduit Lookups |
-| 6045-6057 | 3 | C2 Subcomponents Catalog > Subcomponent: Conduit Normal Initialization |
-| 6058-6073 | 3 | C2 Subcomponents Catalog > Subcomponent: Lesser Conduit Creation |
-| 6074-6095 | 3 | C2 Subcomponents Catalog > Subcomponent: Conduit Upgrade to Normal |
-| 6096-6111 | 3 | C2 Subcomponents Catalog > Subcomponent: Conduit Link and Sever |
-| 6112-6134 | 3 | C2 Subcomponents Catalog > Subcomponent: Conduit Hook Wiring |
-| 6135-6147 | 3 | C2 Subcomponents Catalog > Subcomponent: ConduitWard Contract Graph |
-| 6148-6162 | 3 | C2 Subcomponents Catalog > Subcomponent: ConduitWard Conversion |
-| 6163-6190 | 3 | C2 Subcomponents Catalog > Subcomponent: Ownership Transfer |
-| 6191-6220 | 3 | C2 Subcomponents Catalog > Subcomponent: ConduitCluster Auto-Sharing |
-| 6221-6243 | 3 | C2 Subcomponents Catalog > Subcomponent: ConduitCloud Registry |
-| 6244-6263 | 3 | C2 Subcomponents Catalog > Subcomponent: Crystallizer Root |
-| 6264-6288 | 3 | C2 Subcomponents Catalog > Subcomponent: SpellCrystal Manifest |
-| 6289-6308 | 3 | C2 Subcomponents Catalog > Subcomponent: SyntheticModule Runtime |
-| 6309-6397 | 3 | C2 Subcomponents Catalog > Subcomponent: MutationResearch Root (ResearchSet Registry) |
-| 6398-6570 | 3 | C2 Subcomponents Catalog > Subcomponent: MutationResearch ResearchSet Package |
-| 6571-6585 | 3 | C2 Subcomponents Catalog > Subcomponent: MutationResearch Configuration |
-| 6586-6600 | 3 | C2 Subcomponents Catalog > Subcomponent: MutationResearch Configuration Builder |
-| 6601-6617 | 3 | C2 Subcomponents Catalog > Subcomponent: Meld Execution Flow |
-| 6618-6633 | 3 | C2 Subcomponents Catalog > Subcomponent: Meld Runtime Gating |
-| 6634-6657 | 3 | C2 Subcomponents Catalog > Subcomponent: Creations Disposal Pipeline |
-| 6658-6673 | 3 | C2 Subcomponents Catalog > Subcomponent: LesserCreations Transfer |
-| 6674-6694 | 3 | C2 Subcomponents Catalog > Subcomponent: SpellSpace Scope Gate |
-| 6695-6741 | 3 | C2 Subcomponents Catalog > Subcomponent: SpellSpace Thread State |
-| 6742-6782 | 3 | C2 Subcomponents Catalog > Subcomponent: SpellSystemStates Registry |
-| 6783-6803 | 3 | C2 Subcomponents Catalog > Subcomponent: Conduit Resolution State |
-| 6804-6818 | 3 | C2 Subcomponents Catalog > Subcomponent: ChangeControl Dirty Roots |
-| 6819-6837 | 3 | C2 Subcomponents Catalog > Subcomponent: Change-Control Revalidation |
-| 6838-6855 | 3 | C2 Subcomponents Catalog > Subcomponent: Transaction Strategy Registry |
-| 6856-6885 | 3 | C2 Subcomponents Catalog > Subcomponent: Transaction Strategy Families |
-| 6886-6898 | 3 | C2 Subcomponents Catalog > Subcomponent: SafeLogger Adapter |
-| 6899-6915 | 3 | C2 Subcomponents Catalog > Subcomponent: AetherUtilitySystem Provider Host |
-| 6916-6951 | 3 | C2 Subcomponents Catalog > Subcomponent: Nexus Frame Registry and Access Policy |
-| 6952-6975 | 3 | C2 Subcomponents Catalog > Subcomponent: NexusFrameBuilder Authored Frame Surface |
-| 6976-6991 | 3 | C2 Subcomponents Catalog > Subcomponent: Frame Descriptor Publication Manager |
-| 6992-7006 | 3 | C2 Subcomponents Catalog > Subcomponent: Frame ACL Manager |
-| 7007-7033 | 3 | C2 Subcomponents Catalog > Subcomponent: Frame ACL Builder Surface |
-| 7034-7060 | 3 | C2 Subcomponents Catalog > Subcomponent: Rift Single Space And Event Seam |
-| 7061-7074 | 3 | C2 Subcomponents Catalog > Subcomponent: RiftSpace Workstation |
-| 7075-7107 | 3 | C2 Subcomponents Catalog > Subcomponent: Rift-Backed Frame Viewer Surface |
-| 7108-7135 | 3 | C2 Subcomponents Catalog > Subcomponent: RiftSpace Command System |
-| 7136-7159 | 3 | C2 Subcomponents Catalog > Subcomponent: CodegenSystem Internal Engine |
-| 7160-7176 | 3 | C2 Subcomponents Catalog > Subcomponent: SpellExaminer Profile Registry |
-| 7177-7600 | 2 | Method-Level Call Flows (C1) |
-| 7178-7186 | 3 | Method-Level Call Flows (C1) > Flow: Release Change to Cold Creation Cache |
-| 7187-7198 | 3 | Method-Level Call Flows (C1) > Flow: Named Lesser Discovery and Structural Replay |
-| 7199-7212 | 3 | Method-Level Call Flows (C1) > Flow: Aether Conduit Lookup by Name or Id |
-| 7213-7223 | 3 | Method-Level Call Flows (C1) > Flow: Aether Frame Lookup |
-| 7224-7235 | 3 | Method-Level Call Flows (C1) > Flow: Purge a Target's Retained Creations |
-| 7236-7243 | 3 | Method-Level Call Flows (C1) > Flow: Import -> Runtime Guardrails |
-| 7244-7251 | 3 | Method-Level Call Flows (C1) > Flow: Spellbook Init -> SpellbookConfiguration and Logging |
-| 7252-7262 | 3 | Method-Level Call Flows (C1) > Flow: Aether Boot -> Utility Host, Crystallizer, and Nexus |
-| 7263-7275 | 3 | Method-Level Call Flows (C1) > Flow: Nexus.create_rift -> Frame Policy -> Rift Registration |
-| 7276-7282 | 3 | Method-Level Call Flows (C1) > Flow: Codegen Room Init -> Attach Internal Engine |
-| 7283-7312 | 3 | Method-Level Call Flows (C1) > Flow: Frame ACL Family Revision -> Viewer Refresh |
-| 7313-7332 | 3 | Method-Level Call Flows (C1) > Flow: FrameDescriptorManager Passive Publication |
-| 7333-7341 | 3 | Method-Level Call Flows (C1) > Flow: RiftSpace Workstation Bind -> Target -> Call |
-| 7342-7352 | 3 | Method-Level Call Flows (C1) > Flow: RiftSpace Command Surface -> Runtime Operation |
-| 7353-7364 | 3 | Method-Level Call Flows (C1) > Flow: Codegen Command -> Engine Delegation -> Memory Emission |
-| 7365-7379 | 3 | Method-Level Call Flows (C1) > Flow: Bind Spell -> SpellIndex and SpellSystemStates |
-| 7380-7398 | 3 | Method-Level Call Flows (C1) > Flow: Scan Module -> Bind Each Declared Object Once |
-| 7399-7429 | 3 | Method-Level Call Flows (C1) > Flow: Conjure -> Phases -> Conduit |
-| 7430-7443 | 3 | Method-Level Call Flows (C1) > Flow: Conduit.meld -> Meld -> CreationContext -> Creations |
-| 7444-7456 | 3 | Method-Level Call Flows (C1) > Flow: Override Meld -> Key-Set Plan |
-| 7457-7470 | 3 | Method-Level Call Flows (C1) > Flow: Conduit.has_live_creation -> Meld Probe |
-| 7471-7481 | 3 | Method-Level Call Flows (C1) > Flow: SpellMap Default Resolution (Phase 3) |
-| 7482-7488 | 3 | Method-Level Call Flows (C1) > Flow: Collection DI (list[FrameType]) |
-| 7489-7503 | 3 | Method-Level Call Flows (C1) > Flow: Unresolved Input (Phase 3 -> Meld) |
-| 7504-7517 | 3 | Method-Level Call Flows (C1) > Flow: Meld-Time Validation Gate |
-| 7518-7529 | 3 | Method-Level Call Flows (C1) > Flow: Create Lesser Conduit |
-| 7530-7542 | 3 | Method-Level Call Flows (C1) > Flow: Upgrade Lesser Conduit -> Normal |
-| 7543-7549 | 3 | Method-Level Call Flows (C1) > Flow: Link Conduits (Dynamic) |
-| 7550-7555 | 3 | Method-Level Call Flows (C1) > Flow: Sever Conduit Link (Dynamic) |
-| 7556-7566 | 3 | Method-Level Call Flows (C1) > Flow: Change-Control Revalidation |
-| 7567-7579 | 3 | Method-Level Call Flows (C1) > Flow: Transfer Spell Ownership (Dynamic) |
-| 7580-7590 | 3 | Method-Level Call Flows (C1) > Flow: SpellSpace Scoped Meld |
-| 7591-7600 | 3 | Method-Level Call Flows (C1) > Flow: SpellExaminer.create_profile -> General/Detailed Profile |
-| 7601-9862 | 2 | C1 Code Map (Core) |
-| 8801-9862 | 3 | C1 Code Map (Core) > Full Package Inventory (exhaustive, retained) |
-| 9863-10318 | 2 | Promoted Patch Detail (re-absorbed 2026-08-02) |
-| 9876-9989 | 3 | Promoted Patch Detail (re-absorbed 2026-08-02) > Crystallizer Persistence & Restore (promoted from patch restore_engine_2026_07_07 + successor lanes, 2026-07-07) |
-| 9990-10071 | 3 | Promoted Patch Detail (re-absorbed 2026-08-02) > Subsystem Decomposition (promoted from patch crystallizer_decomposition_2026_07_09, 2026-07-10) |
-| 10072-10248 | 3 | Promoted Patch Detail (re-absorbed 2026-08-02) > V3 Horizon Iteration (promoted 2026-07-12 from six patch dirs: aether_lazy_frames_and_load_gate_2026_07_11, crystallizer_v3_horizon_2026_07_11, crystallizer_s2_user_source_ retention_2026_07_11, crystallizer_s3_impact_engine_2026_07_11, crystallizer_external_mesh_2026_07_12, mr_restore_build_stage_2026_07_11) |
-| 10249-10318 | 3 | Promoted Patch Detail (re-absorbed 2026-08-02) > Three-Lane Tail (promoted 2026-07-11 from patch dirs public_cloud_seams_2026_07_12, source_drift_preflight_2026_07_12, spell_index_graft_2026_07_12; owner-directed finish) |
-| 10319-10475 | 2 | Diagrams |
-| 10320-10338 | 3 | Diagrams > Direct Resolution Admission |
-| 10339-10361 | 3 | Diagrams > Required-Input Compiler Flow |
-| 10362-10384 | 3 | Diagrams > Unresolved Input Flow |
-| 10385-10405 | 3 | Diagrams > Override Key-Set Plan Flow |
-| 10406-10424 | 3 | Diagrams > Mermaid: Conduit Upgrade |
-| 10425-10440 | 3 | Diagrams > Mermaid: Conjure Pipeline |
-| 10441-10458 | 3 | Diagrams > Mermaid: Meld Runtime |
-| 10459-10475 | 3 | Diagrams > Mermaid: Ownership Transfer |
-| 10476-10684 | 2 | Information Sources |
-| 10685-11159 | 2 | Context / Handoff Summary |
+| 5777-5841 | 3 | C2 Subcomponents Catalog > Subcomponent: SpellIndex Mutation Surface |
+| 5842-5857 | 3 | C2 Subcomponents Catalog > Subcomponent: Parameter DI Shape Classification |
+| 5858-5873 | 3 | C2 Subcomponents Catalog > Subcomponent: SpellMap Descriptor |
+| 5874-5892 | 3 | C2 Subcomponents Catalog > Subcomponent: SpellContract Descriptor |
+| 5893-5905 | 3 | C2 Subcomponents Catalog > Subcomponent: SpellbookConfiguration Freeze and Validation |
+| 5906-5918 | 3 | C2 Subcomponents Catalog > Subcomponent: PhaseScheduler Pipeline |
+| 5919-5939 | 3 | C2 Subcomponents Catalog > Subcomponent: SpellCompiler Phase Artifacts |
+| 5940-5970 | 3 | C2 Subcomponents Catalog > Subcomponent: Spell Validation Strategies |
+| 5971-5983 | 3 | C2 Subcomponents Catalog > Subcomponent: System Validation (Phase 6) |
+| 5984-6001 | 3 | C2 Subcomponents Catalog > Subcomponent: Change-Control Revalidation Wiring |
+| 6002-6023 | 3 | C2 Subcomponents Catalog > Subcomponent: Aether Frame Registry |
+| 6024-6048 | 3 | C2 Subcomponents Catalog > Subcomponent: Aether Conduit Lookups |
+| 6049-6061 | 3 | C2 Subcomponents Catalog > Subcomponent: Conduit Normal Initialization |
+| 6062-6077 | 3 | C2 Subcomponents Catalog > Subcomponent: Lesser Conduit Creation |
+| 6078-6099 | 3 | C2 Subcomponents Catalog > Subcomponent: Conduit Upgrade to Normal |
+| 6100-6115 | 3 | C2 Subcomponents Catalog > Subcomponent: Conduit Link and Sever |
+| 6116-6138 | 3 | C2 Subcomponents Catalog > Subcomponent: Conduit Hook Wiring |
+| 6139-6151 | 3 | C2 Subcomponents Catalog > Subcomponent: ConduitWard Contract Graph |
+| 6152-6166 | 3 | C2 Subcomponents Catalog > Subcomponent: ConduitWard Conversion |
+| 6167-6194 | 3 | C2 Subcomponents Catalog > Subcomponent: Ownership Transfer |
+| 6195-6224 | 3 | C2 Subcomponents Catalog > Subcomponent: ConduitCluster Auto-Sharing |
+| 6225-6247 | 3 | C2 Subcomponents Catalog > Subcomponent: ConduitCloud Registry |
+| 6248-6267 | 3 | C2 Subcomponents Catalog > Subcomponent: Crystallizer Root |
+| 6268-6292 | 3 | C2 Subcomponents Catalog > Subcomponent: SpellCrystal Manifest |
+| 6293-6312 | 3 | C2 Subcomponents Catalog > Subcomponent: SyntheticModule Runtime |
+| 6313-6401 | 3 | C2 Subcomponents Catalog > Subcomponent: MutationResearch Root (ResearchSet Registry) |
+| 6402-6574 | 3 | C2 Subcomponents Catalog > Subcomponent: MutationResearch ResearchSet Package |
+| 6575-6589 | 3 | C2 Subcomponents Catalog > Subcomponent: MutationResearch Configuration |
+| 6590-6604 | 3 | C2 Subcomponents Catalog > Subcomponent: MutationResearch Configuration Builder |
+| 6605-6621 | 3 | C2 Subcomponents Catalog > Subcomponent: Meld Execution Flow |
+| 6622-6637 | 3 | C2 Subcomponents Catalog > Subcomponent: Meld Runtime Gating |
+| 6638-6661 | 3 | C2 Subcomponents Catalog > Subcomponent: Creations Disposal Pipeline |
+| 6662-6677 | 3 | C2 Subcomponents Catalog > Subcomponent: LesserCreations Transfer |
+| 6678-6698 | 3 | C2 Subcomponents Catalog > Subcomponent: SpellSpace Scope Gate |
+| 6699-6745 | 3 | C2 Subcomponents Catalog > Subcomponent: SpellSpace Thread State |
+| 6746-6786 | 3 | C2 Subcomponents Catalog > Subcomponent: SpellSystemStates Registry |
+| 6787-6807 | 3 | C2 Subcomponents Catalog > Subcomponent: Conduit Resolution State |
+| 6808-6822 | 3 | C2 Subcomponents Catalog > Subcomponent: ChangeControl Dirty Roots |
+| 6823-6841 | 3 | C2 Subcomponents Catalog > Subcomponent: Change-Control Revalidation |
+| 6842-6859 | 3 | C2 Subcomponents Catalog > Subcomponent: Transaction Strategy Registry |
+| 6860-6889 | 3 | C2 Subcomponents Catalog > Subcomponent: Transaction Strategy Families |
+| 6890-6902 | 3 | C2 Subcomponents Catalog > Subcomponent: SafeLogger Adapter |
+| 6903-6919 | 3 | C2 Subcomponents Catalog > Subcomponent: AetherUtilitySystem Provider Host |
+| 6920-6955 | 3 | C2 Subcomponents Catalog > Subcomponent: Nexus Frame Registry and Access Policy |
+| 6956-6979 | 3 | C2 Subcomponents Catalog > Subcomponent: NexusFrameBuilder Authored Frame Surface |
+| 6980-6995 | 3 | C2 Subcomponents Catalog > Subcomponent: Frame Descriptor Publication Manager |
+| 6996-7010 | 3 | C2 Subcomponents Catalog > Subcomponent: Frame ACL Manager |
+| 7011-7037 | 3 | C2 Subcomponents Catalog > Subcomponent: Frame ACL Builder Surface |
+| 7038-7064 | 3 | C2 Subcomponents Catalog > Subcomponent: Rift Single Space And Event Seam |
+| 7065-7078 | 3 | C2 Subcomponents Catalog > Subcomponent: RiftSpace Workstation |
+| 7079-7111 | 3 | C2 Subcomponents Catalog > Subcomponent: Rift-Backed Frame Viewer Surface |
+| 7112-7139 | 3 | C2 Subcomponents Catalog > Subcomponent: RiftSpace Command System |
+| 7140-7163 | 3 | C2 Subcomponents Catalog > Subcomponent: CodegenSystem Internal Engine |
+| 7164-7180 | 3 | C2 Subcomponents Catalog > Subcomponent: SpellExaminer Profile Registry |
+| 7181-7604 | 2 | Method-Level Call Flows (C1) |
+| 7182-7190 | 3 | Method-Level Call Flows (C1) > Flow: Release Change to Cold Creation Cache |
+| 7191-7202 | 3 | Method-Level Call Flows (C1) > Flow: Named Lesser Discovery and Structural Replay |
+| 7203-7216 | 3 | Method-Level Call Flows (C1) > Flow: Aether Conduit Lookup by Name or Id |
+| 7217-7227 | 3 | Method-Level Call Flows (C1) > Flow: Aether Frame Lookup |
+| 7228-7239 | 3 | Method-Level Call Flows (C1) > Flow: Purge a Target's Retained Creations |
+| 7240-7247 | 3 | Method-Level Call Flows (C1) > Flow: Import -> Runtime Guardrails |
+| 7248-7255 | 3 | Method-Level Call Flows (C1) > Flow: Spellbook Init -> SpellbookConfiguration and Logging |
+| 7256-7266 | 3 | Method-Level Call Flows (C1) > Flow: Aether Boot -> Utility Host, Crystallizer, and Nexus |
+| 7267-7279 | 3 | Method-Level Call Flows (C1) > Flow: Nexus.create_rift -> Frame Policy -> Rift Registration |
+| 7280-7286 | 3 | Method-Level Call Flows (C1) > Flow: Codegen Room Init -> Attach Internal Engine |
+| 7287-7316 | 3 | Method-Level Call Flows (C1) > Flow: Frame ACL Family Revision -> Viewer Refresh |
+| 7317-7336 | 3 | Method-Level Call Flows (C1) > Flow: FrameDescriptorManager Passive Publication |
+| 7337-7345 | 3 | Method-Level Call Flows (C1) > Flow: RiftSpace Workstation Bind -> Target -> Call |
+| 7346-7356 | 3 | Method-Level Call Flows (C1) > Flow: RiftSpace Command Surface -> Runtime Operation |
+| 7357-7368 | 3 | Method-Level Call Flows (C1) > Flow: Codegen Command -> Engine Delegation -> Memory Emission |
+| 7369-7383 | 3 | Method-Level Call Flows (C1) > Flow: Bind Spell -> SpellIndex and SpellSystemStates |
+| 7384-7402 | 3 | Method-Level Call Flows (C1) > Flow: Scan Module -> Bind Each Declared Object Once |
+| 7403-7433 | 3 | Method-Level Call Flows (C1) > Flow: Conjure -> Phases -> Conduit |
+| 7434-7447 | 3 | Method-Level Call Flows (C1) > Flow: Conduit.meld -> Meld -> CreationContext -> Creations |
+| 7448-7460 | 3 | Method-Level Call Flows (C1) > Flow: Override Meld -> Key-Set Plan |
+| 7461-7474 | 3 | Method-Level Call Flows (C1) > Flow: Conduit.has_live_creation -> Meld Probe |
+| 7475-7485 | 3 | Method-Level Call Flows (C1) > Flow: SpellMap Default Resolution (Phase 3) |
+| 7486-7492 | 3 | Method-Level Call Flows (C1) > Flow: Collection DI (list[FrameType]) |
+| 7493-7507 | 3 | Method-Level Call Flows (C1) > Flow: Unresolved Input (Phase 3 -> Meld) |
+| 7508-7521 | 3 | Method-Level Call Flows (C1) > Flow: Meld-Time Validation Gate |
+| 7522-7533 | 3 | Method-Level Call Flows (C1) > Flow: Create Lesser Conduit |
+| 7534-7546 | 3 | Method-Level Call Flows (C1) > Flow: Upgrade Lesser Conduit -> Normal |
+| 7547-7553 | 3 | Method-Level Call Flows (C1) > Flow: Link Conduits (Dynamic) |
+| 7554-7559 | 3 | Method-Level Call Flows (C1) > Flow: Sever Conduit Link (Dynamic) |
+| 7560-7570 | 3 | Method-Level Call Flows (C1) > Flow: Change-Control Revalidation |
+| 7571-7583 | 3 | Method-Level Call Flows (C1) > Flow: Transfer Spell Ownership (Dynamic) |
+| 7584-7594 | 3 | Method-Level Call Flows (C1) > Flow: SpellSpace Scoped Meld |
+| 7595-7604 | 3 | Method-Level Call Flows (C1) > Flow: SpellExaminer.create_profile -> General/Detailed Profile |
+| 7605-9866 | 2 | C1 Code Map (Core) |
+| 8805-9866 | 3 | C1 Code Map (Core) > Full Package Inventory (exhaustive, retained) |
+| 9867-10322 | 2 | Promoted Patch Detail (re-absorbed 2026-08-02) |
+| 9880-9993 | 3 | Promoted Patch Detail (re-absorbed 2026-08-02) > Crystallizer Persistence & Restore (promoted from patch restore_engine_2026_07_07 + successor lanes, 2026-07-07) |
+| 9994-10075 | 3 | Promoted Patch Detail (re-absorbed 2026-08-02) > Subsystem Decomposition (promoted from patch crystallizer_decomposition_2026_07_09, 2026-07-10) |
+| 10076-10252 | 3 | Promoted Patch Detail (re-absorbed 2026-08-02) > V3 Horizon Iteration (promoted 2026-07-12 from six patch dirs: aether_lazy_frames_and_load_gate_2026_07_11, crystallizer_v3_horizon_2026_07_11, crystallizer_s2_user_source_ retention_2026_07_11, crystallizer_s3_impact_engine_2026_07_11, crystallizer_external_mesh_2026_07_12, mr_restore_build_stage_2026_07_11) |
+| 10253-10322 | 3 | Promoted Patch Detail (re-absorbed 2026-08-02) > Three-Lane Tail (promoted 2026-07-11 from patch dirs public_cloud_seams_2026_07_12, source_drift_preflight_2026_07_12, spell_index_graft_2026_07_12; owner-directed finish) |
+| 10323-10479 | 2 | Diagrams |
+| 10324-10342 | 3 | Diagrams > Direct Resolution Admission |
+| 10343-10365 | 3 | Diagrams > Required-Input Compiler Flow |
+| 10366-10388 | 3 | Diagrams > Unresolved Input Flow |
+| 10389-10409 | 3 | Diagrams > Override Key-Set Plan Flow |
+| 10410-10428 | 3 | Diagrams > Mermaid: Conduit Upgrade |
+| 10429-10444 | 3 | Diagrams > Mermaid: Conjure Pipeline |
+| 10445-10462 | 3 | Diagrams > Mermaid: Meld Runtime |
+| 10463-10479 | 3 | Diagrams > Mermaid: Ownership Transfer |
+| 10480-10688 | 2 | Information Sources |
+| 10689-11167 | 2 | Context / Handoff Summary |

@@ -14,17 +14,69 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_architecture.md'
-LINE_COUNT = 4200
-CONTENT_SHA256 = 'dc5d4472f61fa23f2799ce772548d0501d782f7be9442fc8cf003448746aed0b'
+LINE_COUNT = 4250
+CONTENT_SHA256 = 'f3e74f2a8e08140dcd462063d20cc44bf095d7c263d014c9ee7a3790962e247e'
 
 TEXT = """# Src Architecture (C4)
+
+## What Melder Is (Read This First)
+
+Melder is not a DI container. The beginner docs start with `bind`, `conjure` and `meld`, so it looks like one:
+dependency injection is the first thing a new user touches, and it is one capability of Melder, not what Melder is.
+Melder is a runtime that agents live in and build in (owner, 2026-10-15). Read every other section of this document,
+and judge every behaviour of the code, through this picture.
+
+### How Melder Is Used
+
+- Agents load their world into the Python runtime and work inside it. They bind objects as spells, meld them in
+  conduits, try them, change them, bind new versions and notch to the one they want, tear scopes down, record the
+  blueprint and build the next thing. The iteration happens in the runtime, not outside it.
+- Many agents work at once, each in its own conduits, sharing through links, contracts and clusters and handing
+  work to each other by ownership transfer. Several agents can iterate on the same object: each notch moves the
+  active version, the borrowers linked to the index follow it and rebuild, and nobody's existing objects are taken
+  away. After five or ten versions the subsystem converges on the object the agents want.
+- Versions are first-class. A spell index holds a lineage of versions and a notch only moves which one is active.
+  MutationResearch records the versions (lanes, nodes, history), compositions pin specific member versions
+  together, and the creation stores key objects by version id, so a `unique` spell can have one live object per
+  version - several singletons at once, by design.
+- Agents can build the subsystem they are sitting in: codegen rooms (Nexus, Rift, RiftSpace) run agent-written code
+  against the live world under ACL profiles, and MutationResearch keeps the history of what changed.
+
+### Runtime Model: Structure Is the Contract
+
+Owner ruling (2026-10-14). Melder is a runtime that agents work inside, not a container that owns every object it
+hands out.
+
+What must be correct is the structure: bindings, spell indexes and their versions, which conduit owns which spell,
+contracts and links, lineage and clusters, verdicts, and the record the Crystallizer keeps of them. That is what
+Melder validates, gates, records and restores; a restore rebuilds structure with fresh identities and no saved
+application objects.
+
+Generated objects are working material. An object may be superseded by a newer version, left pending after a
+transfer or a contract change, or kept by application code after Melder lets go of it, and agents clean such objects
+up when they choose. Melder's infrastructure cleans up its own state: a store disposes what it records when it ends,
+a scope teardown ends its stores, and a purge disposes what it retires. It does not police userland objects: it does
+not dispose an object because something else changed (a transfer, a contract change, a removed definition), and an
+object it lets go of is not a leak. A transfer hands over stewardship, not a working setup (Sequence: Transfer Spell
+Ownership).
+
+So a defect is structure that is wrong or stuck: a record that names the wrong owner, so the wrong teardown disposes
+an object (a cluster's shared object recorded in its leader's store, a moved holder's `many` children left in the old
+root's store), or state an agent cannot get past (a torn-down root still recorded in its cluster). An object that
+still references something its owner has since disposed - after a transfer, a contract change or a teardown - is
+pending work for the agent, not a defect.
+
+Do not judge Melder by DI-container rules - one live instance per type, every object torn down with its scope, the
+newest version replacing the old. Old versions staying alive, objects left pending after a transfer or a contract
+change, and a borrower rebuilding after a notch are features. Read the code path before calling anything a bug,
+and ask the owner when the intent is unclear.
 
 ## Metadata
 - Doc ID: ARCH-SRC-2026-01-17
 - Status: in_progress
 - Owner:
 - Created: 2026-01-17
-- Updated: 2026-10-14
+- Updated: 2026-10-15
 
 ## Scope and Intent
 This document describes the Melder core architecture at the C4 level for
@@ -533,37 +585,17 @@ SpellIndex member mutation is transaction-backed at the public CONDUIT surface
 (not the Spellbook surface - the Conduit opens and closes the transaction) and
 the member-store work is IMPLEMENTED behind the `_apply_notch`,
 `_apply_add_to_index`, and `_apply_remove_from_index` seams, which execute
-inside the held transaction window. Notch is currently OWNER-SIDE ONLY:
-contracted borrowers are not fanned out, so a notch on a shared index does not
-yet update borrowers' contracted maps.
-EVIDENCE: src/melder/aether/spellbook/spellbook.py:3757-4192 (the three seams, remeasured 2026-09-30).
-
-## Runtime Model: Structure Is the Contract
-
-Owner ruling (2026-10-14). Melder is a runtime that agents work inside, not a container that owns every object it
-hands out. An agent loads its world into the Python runtime and iterates there: it binds a tool, melds it in a
-conduit, tries it, binds a new version and notches to the one it wants, tears scopes down, records the blueprint and
-builds the next thing - sometimes the subsystem it is working in. Codegen is iterative, so the iteration happens in
-the runtime, not outside it.
-
-What must be correct is the structure: bindings, spell indexes and their versions, which conduit owns which spell,
-contracts and links, lineage and clusters, verdicts, and the record the Crystallizer keeps of them. That is what
-Melder validates, gates, records and restores; a restore rebuilds structure with fresh identities and no saved
-application objects.
-
-Generated objects are working material. An object may be superseded by a newer version, left pending after a
-transfer or a contract change, or kept by application code after Melder lets go of it, and agents clean such objects
-up when they choose. Melder's infrastructure cleans up its own state: a store disposes what it records when it ends,
-a scope teardown ends its stores, and a purge disposes what it retires. It does not police userland objects: it does
-not dispose an object because something else changed (a transfer, a contract change, a removed definition), and an
-object it lets go of is not a leak. A transfer hands over stewardship, not a working setup (Sequence: Transfer Spell
-Ownership).
-
-So a defect is structure that is wrong or stuck: a record that names the wrong owner, so the wrong teardown disposes
-an object (a cluster's shared object recorded in its leader's store, a moved holder's `many` children left in the old
-root's store), or state an agent cannot get past (a torn-down root still recorded in its cluster). An object that
-still references something its owner has since disposed - after a transfer, a contract change or a teardown - is
-pending work for the agent, not a defect.
+inside the held transaction window. Versions coexist by design (owner ruling 2026-10-15): a notch
+moves which version is active, the borrowers follow it, and older versions stay alive. After the
+window the conduit has every linked borrower park its copy of the outgoing version and moves
+index-link borrowers to the new one, which they build at their next meld. MutationResearch records
+the versions, compositions pin specific ones, and the creation stores key objects by version id,
+so a `unique` can have one live object per version while agents iterate on one object and converge
+on the version they want (corrected 2026-10-15: this paragraph called the borrower update a missing
+fan-out).
+EVIDENCE: src/melder/aether/spellbook/spellbook.py:3757-4192 (the three seams, remeasured 2026-09-30);
+`src/melder/aether/conduit/conduit.py:Conduit.notch_spell`, `Conduit._deactivate_borrowed_spell` and
+`src/melder/aether/conduit/conduit_ward/conduit_ward.py:ConduitWard._emit_index_notch` (the borrowers).
 
 ## Entrypoints and Runtime Guardrails
 - `melder/__init__.py` warns on Python < 3.14 and on GIL-enabled builds
@@ -881,13 +913,19 @@ pending work for the agent, not a defect.
    - add/remove are membership-only moves that leave the spell owned and
      inactive with its id-keyed state untouched; add destroys an emptied source
      index, remove mints a fresh inactive index instead of destroying anything.
-6. KNOWN LIMITATION: notch fan-out to contracted borrowers is not implemented,
-   so borrowers of a SHARED index keep stale contracted maps until the
-   cross-conduit slice lands.
+6. After the window the conduit updates its borrowers, by design (corrected 2026-10-15; this step
+   called it a missing fan-out): `Conduit._deactivate_borrowed_spell` has every linked peer park its
+   contracted copy of the outgoing version, and `ConduitWard._emit_index_notch` moves each index-link
+   contract's subscription to the new version, parking the old copy and activating the new one on
+   the receiver. Borrowers build the new version at their next meld; objects built from older
+   versions stay alive, so agents iterating on one object keep their work while it converges.
    EVIDENCE:
    - src/melder/aether/spellbook/spellbook.py:3757-3897
    - src/melder/aether/spellbook/spellbook.py:3932-4026
    - src/melder/aether/spellbook/spellbook.py:4107-4192
+   - src/melder/aether/conduit/conduit.py:5461-5549
+   - src/melder/aether/conduit/conduit.py:5746-5775
+   - src/melder/aether/conduit/conduit_ward/conduit_ward.py:2316-2380
 
 ### Sequence: Change-Control Revalidation
 1. `ChangeControlManager.revalidate_dirty_roots(conduit_id, ...)`:
@@ -3765,6 +3803,18 @@ without rewriting the original record or existing live IDs.
 - `src/melder/utilities/ai_native_support_tools/protocol_crafter.py`
 
 ## Context / Handoff Summary
+
+2026-10-15 what Melder is (documentation only, owner-directed): the document opens with "What Melder Is (Read
+This First)" - Melder is not a DI container but a runtime agents live and build in: many agents iterate on the
+same objects through versions, borrowers follow a notch, versions coexist (MutationResearch, compositions, one
+`unique` object per version), and agents build the subsystem they are in. The Runtime Model moved under it, with
+the rule not to judge the code by DI-container rules.
+
+2026-10-15 notch borrowers (documentation only, owner ruling): the Architecture Summary and the SpellIndex
+Mutation Entry sequence no longer call the borrower update a missing fan-out. A notch moves which version is
+active; the conduit has every linked borrower park its copy of the outgoing version and moves index-link
+borrowers to the new one; older versions and their objects stay alive, because versions coexist by design
+(MutationResearch, compositions, one `unique` object per version).
 
 2026-10-14 slotted lifetimes and the runtime model (0.2.8236-0.2.8240): the new section "Runtime Model: Structure
 Is the Contract" records the owner's ruling - correctness lives in the structure; generated objects are working

@@ -193,15 +193,20 @@ Message alert rules
 | gauntlet_runtime_speed | in_progress | discovery | claude | melder_2 | none | Owner decides whether an open lever (thread-affine pools, one-lock anonymous link, single-check fast door) is worth a task. | Per-scope-cycle cost map vs dishka and dependency-injector, with ranked and prototyped candidates. | Next lever validated and its task opened, or the owner redirects. | tickets/tasks/2026-09-26_measure_gauntlet_scope_cycle_costs_task.md | 2026-09-26T23:01:16Z | REQUIRED |
 | defect_hunting_spellbook | in_progress | discovery | opencode | muse_0 | none | Slice spellbook component sections then read the surface behind each claim. | Contradiction list with evidence; meaty issues flagged apart from polish. | Sweep list triaged or owner redirects to conduit/meld or arch diffs. | tickets/tasks/2026-09-27_spellbook_sweep_task.md | 2026-09-27T15:56:49Z | REQUIRED |
 | defect_hunting_fixes_1 | in_progress | implementation | opencode | muse_0 | none | Re-slice each target fresh then repair findings 1-8 in order. | Corrected blocks with verified ranges; index check clean. | Batch repaired with gates passing or owner redirects scope. | tickets/tasks/2026-09-27_sweep_fixes_batch_1_task.md | 2026-09-27T16:07:16Z | REQUIRED |
-| melder_object_pools | in_progress | discovery | claude | melder_0 | none | On the owner's go-ahead, read each seam body whole and write the patch docs, architecture first. | `managed_spell_quantity`: the settled deque shape (fable_0, 2026-10-14T23:45:47Z) in patch docs and stories, then built; no src edit before the slotted lane's rebuild. | Patch docs and stories drafted for the owner's review, or the owner redirects. | tickets/epics/2026-10-14_managed_spell_quantity_epic.md | 2026-10-15T01:34:21Z | REQUIRED |
+| melder_object_pools | in_progress | discovery | claude | melder_0 | none | Read the kernel elastic pools and the transfer creation moves whole, then rewrite the epic and open the stories. | `managed_spell_quantity` built: the settled deque design, elastic on the kernel pools' retention, carried by ownership transfer; one story per mechanic. | Every story landed with green tests and the owner accepts, or the owner redirects. | tickets/epics/2026-10-14_managed_spell_quantity_epic.md | 2026-10-15T08:51:04Z | REQUIRED |
+| notch_borrower_docs | in_progress | implementation | claude | melder_1 | none | Rewrite the three 'known limitation' passages as the feature, re-index, rebuild and close. | src_architecture and src_components describe how borrowers follow a notch while old versions stay alive. | The passages are corrected with checks OK and the task closed, or the owner redirects. | tickets/tasks/2026-10-15_describe_notch_borrower_follow_as_feature_task.md | 2026-10-15T02:07:39Z | REQUIRED |
 <!-- END USER-DEFINED: active_items -->
 
 ## Active Attention Details
 <!-- BEGIN USER-DEFINED: active_attention_details -->
 - WORK_ITEM: melder_object_pools
-  SWITCH_TRIGGER: Patch docs and stories drafted for the owner's review, or the owner redirects.
+  SWITCH_TRIGGER: Every story landed with green tests and the owner accepts, or the owner redirects.
   RESUME_HIERARCHY:
     - tickets/epics/2026-10-14_managed_spell_quantity_epic.md
+- WORK_ITEM: notch_borrower_docs
+  SWITCH_TRIGGER: The passages are corrected with checks OK and the task closed, or the owner redirects.
+  RESUME_HIERARCHY:
+    - tickets/tasks/2026-10-15_describe_notch_borrower_follow_as_feature_task.md
 <!-- END USER-DEFINED: active_attention_details -->
 
 ## Recently Closed Anchors
