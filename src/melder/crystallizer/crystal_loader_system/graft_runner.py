@@ -25,6 +25,7 @@ if TYPE_CHECKING:
     from melder.aether.spellbook.bind.spell_index import SpellIndex
 
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.crystallizer.crystals.spell_crystal import SpellCrystal
 from melder.crystallizer.persistence.record_version import RecordVersion
 
 
@@ -380,7 +381,8 @@ class GraftRunner(Cleanable):
         """
         Bind the selected member ACTIVE - the fresh index's anchor.
 
-        Recorded resolution capability is preserved; legacy absence defaults to True.
+        Recorded resolution capability is preserved; legacy absence defaults to True. A managed
+        member's recorded options (record 4.2.0) are replayed with it.
 
         Args:
             selected_id:
@@ -419,6 +421,7 @@ class GraftRunner(Cleanable):
             ) or None,
             profile=str(crystal.get("profile_family", "general")),
             resolvable=crystal.get("resolvable", True),
+            **SpellCrystal.managed_bind_options(crystal),
         )
         live_spell = self._host_book.find_spell_by_id(new_spell_id)
         live_index = (
@@ -437,7 +440,8 @@ class GraftRunner(Cleanable):
         """
         Park every non-selected member onto the fresh live index.
 
-        Every member retains its own recorded resolution capability.
+        Every member retains its own recorded resolution capability and, when managed, its own
+        recorded options (record 4.2.0).
 
         Args:
             selected_id:
@@ -479,6 +483,7 @@ class GraftRunner(Cleanable):
                 disposal_method_names=list(crystal.get("disposal_method_names", [])) or None,
                 profile=str(crystal.get("profile_family", "general")),
                 resolvable=crystal.get("resolvable", True),
+                **SpellCrystal.managed_bind_options(crystal),
             )
             parked += 1
         return parked
@@ -506,7 +511,8 @@ class GraftRunner(Cleanable):
               which may differ from its recorded SHA.
             - Adoption is honest: requested-but-ungrafted selection
               lands a shortfall instead of a silent no-op.
-            - Each parked member retains its recorded resolution capability.
+            - Each parked member retains its recorded resolution capability and, when
+              managed, its recorded options (record 4.2.0).
 
         Args:
             selected_id:
@@ -538,6 +544,7 @@ class GraftRunner(Cleanable):
                 disposal_method_names=list(crystal.get("disposal_method_names", [])) or None,
                 profile=str(crystal.get("profile_family", "general")),
                 resolvable=crystal.get("resolvable", True),
+                **SpellCrystal.managed_bind_options(crystal),
             )
             if spell_id == str(selected_id):
                 live_selected_id = new_spell_id

@@ -2,13 +2,13 @@
 
 ## Metadata
 - Epic ID: EPIC-2026-10-14-managed_spell_quantity
-- Status: in_progress
+- Status: blocked
 - Owner: user
 - Agent Name: melder_0
 - Agent Role: synaptic_python_developer
 - Priority: p1
 - Created: 2026-10-14T00:28:29Z
-- Updated: 2026-10-15T08:55:25Z
+- Updated: 2026-10-16T11:49:54Z
 - Target Window: 2026-Q4
 - Related Program/Initiative: EPIC-2026-10-05-melder_services_and_pools (the pooled-lifetime goal moved here);
   MelderOps Iris logger churn (priv_commandops TASK-2026-10-05-channel_logger_pooling)
@@ -20,243 +20,617 @@ to create and 6.4-6.7 us to clean up, while a measurement-only pool reused one i
 and the six existing Existence members cache by scope, never by lease. Melder already pools its own kernel objects
 (SpellSpacePool, ConduitPool), elastic since 0.2.8234, but offers nothing like it for user bindings.
 
-The owner chose a seventh Existence member, `managed_spell_quantity`: its objects are built once, handed out by a meld
-or by injection into a constructor, given back explicitly, reset and reused, and owned by the root conduit until the
-root is torn down.
+The owner chose a seventh Existence member, `managed_spell_quantity`: its objects are built on demand, leased by a
+meld or by injection into a constructor, given back explicitly through `ReleaseManagedSpell` (optionally reset) and
+reused. The pool lives in the owning root's Creations until that root is torn down, and an ownership transfer
+carries it like any other record.
 
 ## MRP Alignment (Most Reasonable Product)
-One pool object per managed spell, owned by the root's Creations; one release core shared by every way back; explicit
-leases with no automatic return; dependency rules like `unique`, enforced in Phase 6; the 0.2.8234 elastic retention
-reused rather than rewritten. Ownership, teardown and thread safety are the core and must be right first; the
-MelderOps logger win is the proof, not the design driver. Nothing about the six existing members changes.
+One pool per managed spell version in the owning root's store; one way back (`ReleaseManagedSpell`, plus the lease's
+`with`); the warm lease is an inline `deque.pop()` and the release an optional reset plus `append`; the elastic mode
+reuses the kernel pools' stretch and decay (`AbstractElasticPool`, 0.2.8234) instead of a new retention scheme. The
+structure - pools, the release registry, records, transfer - must be right; the objects handed out are the agents'
+(src_architecture, "Runtime Model: Structure Is the Contract"). The six existing members do not change: their spell
+ids, emitted executors and records stay byte-identical.
 
 ## Ticket Contract
-- ENTRY_GATE: the open questions below are answered and recorded in the Decision Log, patch docs are written and
-  linked (architecture, Existence and Creations, site-plan lowering, Phase 6, the pool, bind and the release paths),
-  and the first story is drafted. Not met: the owner set this epic to design iteration ("we're not yet ready to
-  implement this").
-- EXECUTION_BOUNDARY: the Melder kernel - the Existence enum and the resolution matrix, Bind (new keywords, class and
-  reset checks, fingerprint), Creations (a root pool location), the ConduitMeld and SpellSpaceMeld doors, site-plan
-  lowering and the many_only / generalized compilers (dispense sites, failed-construction return), Phase 6
-  ScopeOrderingStrategy, AbstractElasticPool reuse, the release paths (mixin, protocol, ReleaseManagedSpell), the
-  crystallizer record and cache generation, plus docs, graph and release note. Excluded: MelderOps adoption; service
-  methods and the signature-scan memo (EPIC-2026-10-05); any behaviour change to the six existing members; async;
-  automatic or GC-driven return.
-- DEPENDENCIES: AbstractElasticPool (0.2.8234); the Creations disposal machinery; Phase 6 ScopeOrderingStrategy;
-  the bind fingerprint and crystallizer custody; the fix of the many-child registration bug (a separate task and a
-  prerequisite: a disposal-bearing `many` child must be disposed with the object it was built for).
-- EXIT_GATE: required stories accepted; success metrics measured; a MelderOps prototype (Iris loggers as a managed
-  spell) measured against the 74-82 us path; docs and AGENT_PURPOSE text updated; board and closure sync done.
-- FAILURE_ESCALATION: DECISION_REQUEST when a design would change an existing Existence member, the spell id of an
-  existing binding, crystallizer custody of existing records, or the frame -> conduit -> Book lock order; CONFLICT if
-  two ways back would behave differently; BLOCKER if a release path cannot stay off the existing lock chains.
+- ENTRY_GATE: met 2026-10-15. The design is settled (Decision Log), the owner authorized the build ("implement it"),
+  the seven stories are open and the architecture patch doc is written and linked. Each story's own gate is its
+  component patch doc plus a patch-section -> implementation -> validation mapping note before its first `src/` edit.
+- EXECUTION_BOUNDARY: the Existence enum, the resolution matrix and Phase 6 ScopeOrderingStrategy; Bind (four
+  keywords, checks, fingerprint), Spell fields, SpellBinder and scan_bind; the new modules in
+  `src/melder/aether/conduit/creations/` (`managed_spell_quantity.py`, `managed_spell_lease.py`,
+  `release_managed_spell.py`), the exhaustion error and `ManagedSpellMode`; Creations (pool map, cleanup order,
+  extract/restore) and the ConduitMeld / SpellSpaceMeld store readers; phase 9/10 instance classification, phase 10
+  family discovery, the generalized manifest, site-plan lowering and the door compiler; `Conduit.managed_spell_meld`;
+  TransferOfOwnership; the crystal record, restore/graft replay, RecordVersion and cache generation; package-root
+  exports; docs, graph descriptors, README and release note. Excluded: everything under Non-Goals.
+- DEPENDENCIES: AbstractElasticPool (0.2.8234); Creations holder records and holder-owned `many` children (0.2.8235,
+  0.2.8238); the site-plan lowering and door compiler; transfer moves by default (0.2.8239).
+- EXIT_GATE: all eight stories closed with green tests under `-X gil=0` and `-X gil=1`; an emission diff showing every
+  non-managed executor byte-identical; benchmarks recorded with no regression on the existing meld shapes; system
+  docs, graph, README and release note current; both rebuild `--check` runs print only OK; the owner accepts.
+- FAILURE_ESCALATION: DECISION_REQUEST when a change would alter an existing member's behaviour, an existing spell
+  id, existing record custody or the frame -> conduit -> Book lock order; BLOCKER when a seam cannot take the managed
+  branch without one of those; CONFLICT when a story's finding contradicts this spec (fix the spec first).
 
 ## Goals (Outcomes)
-- `Existence.managed_spell_quantity`: objects built once and reused across leases, owned by the root conduit.
-- Three modes chosen per spell at bind: elastic, limited and queued.
-- Dispensing by a direct meld and by injection into a constructor during a meld.
-- Explicit release through one core, reachable three ways (mixin, protocol member, ReleaseManagedSpell) plus the
-  `managed_spell` with statement; no conduit and no Aether needed to release.
-- Reset on release, disposal on destroy, and dependency rules like `unique` checked in Phase 6.
-- A measured reuse win on the MelderOps logger with no regression on existing meld paths.
+- `Existence.managed_spell_quantity`, bound with four keyword options that the Spell keeps.
+- Leases by direct meld, by injection into any constructor during a meld, and by `Conduit.managed_spell_meld`.
+- One way back: `ReleaseManagedSpell` (`release`, `managed`, `release_all`, `describe`) and the lease's `with`.
+- Three modes: `elastic` (reuse, never refuse), `limited_quantity` (refuse at N), `queue` (wait for a release, then
+  refuse).
+- An ownership transfer carries pools; root teardown disposes what the root's pools hold.
+- Measured: a warm lease cycle well under a microsecond and no regression on existing meld paths.
 
 ## Non-Goals (Explicit Exclusions)
-- No automatic lease end: no return when a scope cleans up, no GC hooks or finalizers, no generator (yield) leases.
-- No behaviour change to unique, unique_per_conduit, many, unique_per_conduit_cluster, unique_per_conduit_lineage or
-  unique_per_spell_space, and no new spell id for an existing binding.
-- No release through Aether and no separate ManagedSpells handle.
-- No async or thread-bound conduit behaviour, no service methods, no signature-scan memo (EPIC-2026-10-05).
-- No MelderOps code.
+- No automatic return: nothing returns an object at scope cleanup, no GC hooks or finalizers, no generator leases.
+- No record of objects that are out (no identity tracking): a lease that is never released is the agent's.
+- No managed purge verb (owner, 2026-10-15); purge leaves managed records untouched.
+- No behaviour change to unique, unique_per_conduit, many, unique_per_conduit_cluster, unique_per_conduit_lineage
+  or unique_per_spell_space, and no new spell id for an existing binding.
+- No release through Aether, no separate ManagedSpells handle, no mixin and no protocol member.
+- No async conduits, service methods or signature-scan memo (EPIC-2026-10-05), and no MelderOps code.
 
 ## Scope Boundaries
-- In scope: the member, its bind configuration, the root pool, dispensing, the release core and its three entry
-  points, the with statement, destroy paths, Phase 6 rules, recording and cache, docs, tests and benchmarks.
-- Out of scope: MelderOps adoption, service methods, the signature-scan memo, async conduits, automatic return.
+- In scope: everything in the Build Specification below, its tests and benchmarks, and the documentation.
+- Out of scope: MelderOps adoption (after a release that contains the member) and the Non-Goals.
 
 ## State Transition Event
-- from_state: draft
-- to_state: in_progress
-- transition_reason: opened by the owner (chat 2026-10-14) to document the plan agreed in EPIC-2026-10-05 and keep
-  iterating on the design; implementation is not authorized ("we're not yet ready to implement this").
+- from_state: in_progress
+- to_state: blocked
+- transition_reason: S8 is done and notched 0.2.8248 (conjure wires the versions staged before it, cache generation
+  21, `ManagedSpellLease` checked as built; the rebuild runs last, after these records), so every story's work has
+  landed (S1-S6 and S8 notched, S7 documentation). The EXIT_GATE's remaining item is the owner's acceptance, a
+  reserved decision. Unblock: the owner accepts S1-S8 or redirects. The board row reads `review`.
+- prior: blocked -> in_progress (2026-10-16T09:30:00Z): the owner ruled on every open item (S8 builds the conjure
+  wiring and cache generation 21; `ManagedSpellLease` stays as built and S8 checks that it works) and melder_1 landed
+  0.2.8247 and handed back this lane's files, so S8 ran (DECISION note of that timestamp).
+- prior: in_progress (build) -> blocked (2026-10-15T23:43:36Z): every story's work had landed (S1-S6 as
+  0.2.8241-0.2.8246; S7 documentation, no notch); the owner's acceptance and the parked-stamp question remained.
+- prior: in_progress (design iteration) -> in_progress (build) (2026-10-15): the owner authorized implementation
+  ("implement it") and asked for one story per mechanic and an epic detailed enough to survive several
+  compactions (Decision Log, 2026-10-15).
 
 ## Success Metrics
-- Reusing an idle managed object (meld plus release) costs about 5 us or less to acquire and about 1 us to return for
-  a ChannelLogger-like binding (the parent epic's lease targets), against 74-82 us for a fresh logger meld.
-- Release routing adds about 100 ns or less per lease under free-threaded load (probe: 30-60 ns on 2 vCPUs).
-- A limited pool never has more than N objects alive under a free-threaded stress test; queued waiters raise at
-  their timeout and never hang.
-- No leaks: weak-reference tests show every idle and every out object destroyed at root teardown and every index
-  entry removed.
-- Existing behaviour unchanged: spell ids of non-managed bindings identical, the full suite green, existing meld
-  benchmarks within noise.
+- A warm lease cycle (meld dispense plus release, resetless elastic binding) costs well under 1 us inside an emitted
+  plan; the standalone probe measured 90-140 ns (Notes, MEASURE 2026-10-14T23:45:47Z). The parent epic's targets -
+  about 5 us to acquire and about 1 us to return a ChannelLogger-like object, against 74-82 us for a fresh meld - hold.
+- Release routing through `ReleaseManagedSpell` adds about 100 ns or less over calling the pool directly.
+- A `limited_quantity` pool never has more than N objects alive under a free-threaded stress test; `queue` waiters are
+  served by a release or raise at their timeout, never hang.
+- Root teardown disposes every idle object and every recorded `many` child (weak-reference tests) and removes the
+  root's pools from `ReleaseManagedSpell`.
+- Existing behaviour unchanged: non-managed spell ids identical, non-managed emitted executors byte-identical, the
+  full suite green in both GIL modes, existing meld benchmarks within noise.
+
+## Build Specification
+This section is the contract the stories implement. An UNKNOWN here is read in source by the named story and its
+answer recorded (Decision Log or a Note) before anything is built on it. Ranges are 0.2.8240 locations.
+
+### B1 Public surface
+```text
+Existence.managed_spell_quantity      seventh member, auto(); class spells only
+ManagedSpellMode                      Enum: elastic | limited_quantity | queue (the member or its name)
+Spellbook.bind / bind_inactive        new keyword-only options (also SpellBinder and scan_bind):
+    managed_spell_mode=None             None -> elastic for a managed binding
+    managed_spell_limit=None            see the mode table
+    managed_spell_timeout_seconds=None  queue only, required there
+    managed_spell_reset_methods=None    names of zero-argument methods run on every release, in order
+ReleaseManagedSpell()                 the process singleton Aether creates and owns (like Aether's hosted roots)
+ReleaseManagedSpell().release(obj, *, spell_id=None, conduit=None) -> None
+ReleaseManagedSpell().managed(obj, *, spell_id=None, conduit=None) -> ManagedSpellLease
+ReleaseManagedSpell().release_all(objects, *, spell_id=None, conduit=None) -> None
+ReleaseManagedSpell().describe(cls) -> Tuple[Dict[str, Any], ...]
+Conduit.managed_spell_meld(spell=None, *, spell_id=None, spellframe=None, binding_name=None, override=None)
+    -> ManagedSpellLease                meld plus a lease; `with` releases on exit
+ManagedSpellLease                     .object, .release() (idempotent), __enter__ -> object, __exit__ -> release
+ManagedSpellExhaustedError            a MeldExecutionError: limited at its limit, queue at its timeout
+```
+
+| mode | `managed_spell_limit` | `managed_spell_timeout_seconds` | a miss (no idle object) |
+| --- | --- | --- | --- |
+| elastic (default) | most idle objects kept, int >= 1, default 256; min(20, limit) kept with no clock read | must be None | always builds; stretch and decay like the kernel pools |
+| limited_quantity | required int >= 1: most objects alive at once | must be None | builds below the limit, else raises before building anything |
+| queue | required int >= 1 | required, > 0 | builds below the limit, else waits for a release (which serves the waiter) up to the timeout, then raises |
+
+- Disposal: the Spell's `disposal_method_names` run only when the pool destroys an object - an elastic trim, a raising
+  reset, root teardown of idle objects - never on release.
+- Bind refuses (in `Bind._bind_logic`): a `managed_spell_*` option on a non-managed binding (ValueError); a managed
+  binding of a function, method, lambda or existing object (TypeError: class spells only); an unknown mode
+  (ValueError); a limit that is a bool, not an int or < 1, or missing for limited_quantity / queue (TypeError /
+  ValueError); a timeout on elastic or limited_quantity, missing on queue, or not a positive number (ValueError /
+  TypeError); reset names that are not a list or tuple of str, or that do not name a callable on the class
+  (TypeError / ValueError). Final texts live in the S2 component patch.
+- Package root: `ManagedSpellMode`, `ReleaseManagedSpell`, `ManagedSpellLease` and `ManagedSpellExhaustedError` join
+  the flat root next to `Existence` (the owner's root ruling of 2026-07-19: user-held surfaces, front-facing enums and
+  user-catchable errors reach the flat facade). The lease joined in S4 (its DECISION note); recorded as build
+  decisions for the owner's review (Decision Log, 2026-10-15).
+
+### B2 ManagedSpellQuantity - the pool (S3)
+- `src/melder/aether/conduit/creations/managed_spell_quantity.py`:
+  `class ManagedSpellQuantity(AbstractElasticPool[Any])`, built only by `Creations.ensure_managed_quantity(spell)`.
+- Sizes: elastic -> `baseline_idle=min(20, limit)`, `max_idle=limit` and the kernel pools' stretch, settle and decay
+  (settled by S3, U5: Conduit builds both kernel pools with `baseline_idle=20, max_idle=256` and every other argument
+  defaulted - stretch 0, settle 1800 s, decay 10% per 600 s - and the pool takes the same defaults); limited_quantity
+  and queue -> `baseline_idle = max_idle = limit` (fixed capacity: nothing to trim while `count <= limit`).
+- State: the base `_idle` deque (idle objects, newest last and warmest); `count` (int: objects built and alive, idle
+  plus out); `_condition` (a Condition over the base `_lock`, for queue waits and notifies); `_children_by_object`
+  (`id(obj)` -> the disposal-bearing `many` children recorded for that object) and `_orphaned_children` (records
+  left by objects dropped while out, kept for teardown); descriptive fields (spell id, spell name, binding name,
+  frame, owner conduit id, mode, limit, timeout, reset names, disposal names); a borrowed Spell behind the `spell`
+  property, which raises once the pool is torn down (the registry's cold resolver reads it there, and ensuring the
+  pool again re-points it at a Spell rebound under the same id).
+- Warm paths: a lease is `_idle.pop()` emitted inline in the plan (no method call, no lock); `put_back(obj)` runs the
+  reset names in order (outside every lock; `getattr` on a dynamic name), appends, calls the base
+  `_rebalance_after_return()` when more than `baseline_idle` are idle, and in queue mode notifies under the condition.
+- Cold paths (as built in S3): `reserve()` - elastic: `count += 1` under the lock and `_note_miss()`, returns None;
+  limited_quantity: below the limit `count += 1`, returns None; at the limit returns an idle object released since the
+  plan's empty pop, else raises ManagedSpellExhaustedError (so the refusal always means every object is out); queue:
+  one deadline, then under the condition a free place -> `count += 1`, return None / an idle object -> return it /
+  else wait the remaining time, raising at the deadline; a torn-down pool raises its torn-down RuntimeError (woken
+  waiters included). `abandon(children, error)` - a failed build: `count -= 1`, notify, dispose the given children,
+  their disposal failures added as notes on `error`. `adopt(obj, children)` - record children under `id(obj)`; a
+  record already under that id (an object dropped while out) is kept as an orphan for teardown; adopting into a
+  torn-down pool disposes the object and its children and raises the torn-down error. `destroy_object(obj)` (the base
+  hook used by trims, raising resets and cleanup) - the disposal methods outside the lock, then the object's recorded
+  children newest first; `count -= 1` (clamped at 0); notify. `create_object` and `acquire` raise RuntimeError (the
+  plan builds, never the pool). `cleanup()` - under the condition drain the idle objects, swap the children maps for
+  empty ones and wake every waiter; outside the lock dispose the idle objects newest first with their children, then
+  the children recorded for objects still out, then the orphans; failures joined into one ExceptionGroup shaped like
+  Creations' (one RuntimeError per failing method, chained); idempotent; the scalar fields stay as documented
+  tombstones and the Spell is deleted. `describe()` - the base keys without `in_use_count`, plus identity, mode,
+  limit, timeout, count, out count and children recorded.
+- After cleanup `put_back` raises RuntimeError naming the spell (its root was torn down; the object is the caller's).
+- No reference to an object that is out is kept (owner: "we don't care about identity").
+- Settled by S3 (U6): `AbstractElasticPool.cleanup` marks cleaned, destroys the idle objects one by one under `_lock`
+  and stops at the first raising destroy, keeping every field; the pool overrides `cleanup` (above) instead of
+  reusing it. A trim destroys outside the lock and re-pools the rest when one destroy raises.
+
+### B3 Creations integration (S3)
+- `_managed_quantities: Dict[str, ManagedSpellQuantity]` beside `_creations`. Resolution reads `_creations` only, so
+  lookups and purge never meet a pool; the live-creation probes read it through `get_managed_quantity(spell_id)`, a
+  lock-free get.
+- `ensure_managed_quantity(spell) -> ManagedSpellQuantity`: the pool under the spell id, or a new one from the Spell's
+  options (map write under the store lock); registered with ReleaseManagedSpell outside the store lock (a store lock
+  stays a leaf). Called by `Spell._add_owned_conduit` (spell.py:1558-1607) for managed spells: conjure stamping,
+  post-conjure `bind` / `bind_inactive`, the transfer flip.
+- `cleanup()` (creations.py:306-363): pools detach with the other maps and are disposed BEFORE the disposable registry
+  (pooled objects hold the store's uniques, which registered first), each unregistered; their failures join the
+  store's ExceptionGroup.
+- `extract_spell_creations` adds a `{"scope": "managed", "disposable": False, "stored": pool}` row and gives the pool
+  up (S4: unregister); `restore_spell_creations` takes it (S4: register), replacing a pool already under the id and
+  cleaning the replaced one after the store lock, its failures raised as one ExceptionGroup once the restore
+  completes (S4: unregister it) - the flip composes an empty pool for the active member before the move restores the
+  moved one.
+- Settled by S3 (U3): `reset_for_pool` (and `clear_all` through it) runs only on a lesser's store at pool return and a
+  spellspace's store at exit, never on a root store, so neither meets a pool. (U4): `ConduitMeld._get_purge_creations`
+  selects the caller's own store for a managed spell, where `Creations.purge` returns 0 before any lock;
+  `SpellSpaceMeld.purge` keeps refusing it ("purge it from its authorized conduit"); both live-creation probes answer
+  from the owner store's pool (`Meld._describe_managed_pool_status`: `is_live` when `count > 0`, `creation_count` the
+  count, `storage_scope_kind` "managed_pool", `storage_owner_conduit_id` the owner root; no store or no pool -> 0).
+  The Nexus static rooms treat managed like `many` (no stored object to hand out).
+- Settled by S3 (U10), changed by S8 (0.2.8248): conjure stamps the Book's active spells and then every version
+  parked in `_inactive_spells` with the owner stamp alone (`define_conduit_into_spells`); a post-conjure `bind` /
+  `bind_inactive` stamps the new spell and a transfer the members it moves; `_apply_notch` stamps nothing. Until
+  0.2.8248 a version parked before conjure had no owner store, and so no pool, until a later stamp; the S5 miss still
+  assumes no pool exists (a stamp that raised at conjure is logged and leaves its version unstamped).
+
+### B4 ReleaseManagedSpell and the lease (S4)
+- `src/melder/aether/conduit/creations/release_managed_spell.py` (as built in S4; U11 settled): a process singleton
+  with the hosted roots' shape (owner, 2026-10-15) - `_instance`, a class `_singleton_lock`, `_initialized`, a
+  double-checked `__new__`, a once-only `__init__(*, aether=None)` under the lock that refuses a first construction
+  without its host (ValueError, bookkeeping reset), a `cleanup()` that publishes empty maps as tombstones, keeps
+  `_lock` and resets the bookkeeping, `_reset_singleton_for_tests()` (a half-built husk's AttributeError ignored, the
+  bookkeeping cleared in a `finally`) and `_live_instance()` (the stores' teardown lookup; never constructs).
+  `Aether.__init__` builds it last, after Nexus (`ReleaseManagedSpell(aether=self)`); `Aether.cleanup` cleans it
+  right after the frames, whose stores unregister their pools first; `ReleaseManagedSpell()` returns the instance,
+  and after a reset the next Aether builds a fresh one (a bare `ReleaseManagedSpell()` before it refuses). Like every
+  hosted root it stays published when the frames' teardown raises (Aether resets only its own bookkeeping).
+  Releasing is a call on this singleton, never an Aether verb (the 2026-10-13 ruling stands). The registry is
+  instance state: `_pools_by_class: Dict[type, Tuple[ManagedSpellQuantity, ...]]` (the hot read) and
+  `_registrations: Dict[int, Tuple[type, str]]` (`id(pool)` -> class, holding root id), republished whole
+  (copy-on-write) under a leaf `_lock` held only to publish; every read is lock-free.
+- `register(pool, *, root_conduit_id)` / `unregister(pool)` are called by Creations only, when a store takes or gives
+  up a pool: ensure registers after its store lock; extract and cleanup unregister; restore unregisters a pool it
+  replaces, registers the one it installs, then cleans the replaced one. `register` is idempotent, records the
+  holding root (a pool's own `owner_conduit_id` is fixed at construction and keeps naming its first root after a
+  move) and re-keys a rebind that brought another class object; `unregister` does nothing on a cleaned registry.
+- `release(obj, *, spell_id=None, conduit=None)`: one dict get by `type(obj)` (the class object, identity-hashed); one
+  pool and no filter -> `pool.put_back(obj)`. Otherwise the cold resolver: keep pools whose spell id equals `spell_id`
+  and whose holding root is `conduit`'s root (a lesser names its root); when several remain, keep those whose version
+  its index selects (cleanup-safe reads: `ManagedSpellQuantity._spell_unless_cleaned`,
+  `Spell._spell_index_unless_cleaned`, `SpellIndex._is_selected_unless_cleaned`); exactly one must remain, else
+  ValueError listing every candidate (spell id, binding, frame, root, active) and the keywords that pick one. A class
+  with no pool -> ValueError (not a managed class in any live root). Release never needs a conduit. Measured (S4): a
+  bound `release` adds about 50 ns over `put_back`; the `ReleaseManagedSpell()` call itself costs about 70 ns, as
+  `Aether()` does, so hot loops bind it once.
+- `managed(obj, ...)` -> `ManagedSpellLease(obj, pool)` resolved the same way; `release_all(objects, ...)` releases
+  every object and then raises one ExceptionGroup of the failures; `describe(cls)` -> one dict per pool.
+- `src/melder/aether/conduit/creations/managed_spell_lease.py`: `ManagedSpellLease` holds the object and its pool
+  (borrowed), releases once (a second release does nothing), `__enter__` returns the object, `__exit__` releases even
+  when the block raised and never suppresses. A class, never a generator (+600 ns measured for the generator form).
+- Same class, several pools: two binding names, two roots or two frames -> ambiguity unless filtered; one index with
+  several versions of the same class object (bind options changed) -> the active version's pool (a notch re-points
+  it); a redefined class is a new class object and a separate key.
+
+### B5 Bind options, Spell fields and the record (S2)
+- `src/melder/aether/spellbook/existence/managed_spell_mode.py`: `ManagedSpellMode` (auto members `elastic`,
+  `limited_quantity`, `queue`; `__str__` the bare name, as Existence).
+- Spell keeps normalized values behind read-only properties: `managed_spell_mode`, `managed_spell_limit`,
+  `managed_spell_timeout_seconds`, `managed_spell_reset_methods` (None / None / None / () on non-managed spells).
+- Flow: `Spellbook.bind` (5392-5694) / `bind_inactive` (5093-5321) -> `Bind._bind_logic` (bind.py:571-820): validate
+  and normalize -> `Bind.sha256_profile` (911-1022) -> the Spell constructor (spell.py:302-551).
+- Fingerprint: one extra part, only for managed bindings, `managed:<mode>:<limit>:<timeout>:<reset names>`; every
+  other spell id stays byte-identical (the `resolvable` precedent). Method bodies are not hashed, so a body-only
+  rewrite keeps its id.
+- `scan_bind` (scan.py:405) takes the four options as target options and refuses them as metadata keys; SpellBinder
+  (spellbinder.py:14) takes the same keywords.
+- The crystal records the four values; the restore engine and graft runner replay them through bind; RecordVersion
+  4.1.0 -> 4.2.0 (record_version.py:84; "MINOR adds" fields).
+- Settled by S2 (landed 0.2.8242; the S2 story's Notes): U1 - `Conduit.bind` / `bind_inactive` are facades and forward
+  the four options. U2 - SpellCrystal captures them only for `managed_spell_quantity` (mode by name, limit, timeout,
+  reset names as a list) and `describe()` adds the four keys only then; the static
+  `SpellCrystal.managed_bind_options(payload)` gives the replay keywords ({} without a mode); RestoreEngine
+  `_bind_one_active` / `_bind_one_staged` and GraftRunner `_bind_selected` / `_park_members` / `_merge_members` pass
+  them. Normalization is `Bind._normalize_managed_options` (after the disposal names, before the fingerprint; also
+  in `spell_id_inspector`); elastic's limit defaults to 256 and is hashed as 256. `ManagedSpellMode` is a
+  TYPE_CHECKING import wherever it is only an annotation (owner, 2026-10-15); bind.py imports it at runtime because
+  the normalizer uses it. `SpellBinder.as_managed_spell_quantity` is the fluent form; scan's reserved metadata keys
+  are 28.
+
+### B6 Classification (S1, S5)
+- S1: `Existence.managed_spell_quantity = auto()` (existence.py:3-138); ResolutionStyleMatrix (44-491) - expected
+  count 7, the member in the all-names and non-unique tuples, so the callable and existing-object families list it
+  unsupported; SpellArtifactProcessor `_build_model_shell` (107-182) maps it to route family `"managed"`; Phase 6
+  `scope_rank` (scope_ordering_strategy.py:31-145) gives it 0 with unique - a managed spell may depend on unique,
+  managed and many; every holder may depend on it.
+- S5: a managed site is per path like `many` (one lease per injection): the `_is_shared_existence` predicates of
+  SpellOccurrenceInstanceProcessorStrategy (spell_occurrence_instance_processor_strategy.py:112-118) and
+  SpellOccurrenceGraphAnalyzerStrategy (spell_occurrence_graph_analyzer_strategy.py:733-737) return False for it.
+- S5: phase 10 discovery - the solo family (solo_codegen_plan_discovery_strategy.py:52-81) declines a model holding a
+  managed spell, so the generalized family's site plan is the only lowering that dispenses; many_only already
+  declines (not all-many).
+
+### B7 Codegen (S5; as built in 0.2.8245, U7 and U8 settled)
+- Four site kinds in SitePlanEmission (site_plan_lowering.py): shared (a slotted existence), `many`, and two managed
+  kinds. A LEASING managed site has no winning override key on its own parameters: it is placed like a shared site
+  (its own `_miss{i}` context, so its children build only on a miss) and feeds exactly one consumer, its own path's
+  (the emission refuses another count with RuntimeError); the root may be one. A FRESH managed site has winning keys
+  on its own parameters: it is built like a `many` step with the supplied values and never pooled, counted,
+  registered or adopted - the caller's object.
+- The lease is emitted right before its consumer's construction region (for a consumer with a miss, at the end of
+  that miss's children, before its guard):
+  ```text
+      try:                                  # automatic owner, owner store set, pool present at emission:
+          v{i} = pp{i}()                    #   pp{i} = pool._idle.pop and h{i} = pool, bound as plan constants
+      except IndexError:
+          v{i} = _miss{i}(meld, h{i}, <outer values>)
+  ```
+  Otherwise (a dynamic world, an unowned provider) the plan reads the pool per creation,
+  `h{i} = spells[i]._owner_creations._managed_quantities[sid{i}]`, and an AttributeError or KeyError becomes
+  `_raise_missing_managed_pool(spells[i])`: MeldExecutionError "Managed spell '<name>' has no pool to lease from: its
+  owner root was torn down, or its owner store holds no pool for this version. Meld it through a live root that owns
+  it." (S8, 0.2.8248; until then the message also named a version staged with bind_inactive before conjure and the
+  remedy "stage the version after conjure").
+- The miss: the unresolved-input check, `v{i} = h{i}.reserve()` (an idle object served to a queue waiter returns at
+  once), `kids{i} = []` when disposal-bearing `many` children live inside, then `try:` the children, the site's own
+  leases and its construction, `except BaseException as exc: h{i}.abandon(kids{i} or [], exc); raise`, then
+  `h{i}.adopt(v{i}, kids{i})` when there are such children, `return v{i}`. A `many` child inside appends `(vK, dmK)`
+  to `kids{i}` instead of `register_many`; shared children publish to their own stores as before.
+- Lease return (F9, widened): from a consumer's first lease through its construction - for a shared consumer also
+  its guard, recheck and publication - is one `try`; an exception returns every lease taken for that consumer
+  (`_return_leases`: `put_back` each, a failing put-back added as a note on the exception) and re-raises. A shared
+  consumer that loses its cold race returns its unused leases after its guard (`_return_unused_leases`: all tried,
+  the failures raised as one ExceptionGroup). The three helpers are SitePlanRuntimeHelpers static methods, bound into
+  a plan's namespace only when it leases.
+- Overrides: a winning key on a consumer parameter fed by a managed site removes the site (no lease); winning keys on
+  the managed site's own parameters make it fresh (above); deeper keys apply only when the site misses.
+- Door (U7): route `"managed"` maps onto the existing `many` template objects in the four route tables (both fast
+  bits), so `created` is True on every lease and a direct meld runs the activation hooks (the spell's and
+  `on_meld_activation`) for a reused object too. No template is added or recompiled.
+- Classification seams (U8): both `_is_shared_existence` predicates answer False for managed (B6); solo discovery
+  declines a model holding one (B6); the generalized manifest's route-key whitelist takes "managed";
+  `rows_contain_managed_step(rows)` makes `_install_specializing_door` keep the plain door. The lane plan's other
+  existence branches are metadata the site plan never reads, and managed rows hydrate in the existing row shape.
+- Cache generation 21, "managed_spell_lease_codegen" (S8, 0.2.8248; the owner reversed S5's decision on
+  2026-10-16: a codegen change bumps the cache): rows and manifests of existing spells do not change and plans are
+  emitted at hydration, so nothing required it, but bundles written before the managed codegen are now retired
+  explicitly (each is cold once and rewritten at 21).
+- `Conduit.managed_spell_meld` (conduit.py, after `meld`): resolves the target as `meld` does, refuses `spell` with
+  `spell_id` and a spell of another existence (ValueError, nothing melded), reads the pool from the version's owner
+  store (none -> the missing-pool error), melds the version by id and returns `ManagedSpellLease(obj, pool)`. With
+  own-parameter overrides the object is fresh and the lease's release still gives it to the pool (Decision Log).
+- Gate met: the emission capture over 4461 non-managed shapes, door bodies and harness worlds is identical before and
+  after (the S5 story's MEASURE note); a warm cycle (meld plus release) measured 320 ns on an automatic root and
+  742 ns on a dynamic one.
+
+### B8 Ownership transfer (S6; as built in 0.2.8246, U9 settled)
+- Rows, unchanged by S6 (S3 and S4 built them): `move_creations=True` (the default) - `_move_creations`
+  (transfer_of_ownership.py:1508-1551) extracts every member's rows from the source store and restores them into
+  the target, so the same pool object moves with its idle objects, recorded children and count, and the registry
+  follows it (unregister at extract; register at restore, which replaces and cleans an empty pool a stamp composed).
+  `move_creations=False` - `_teardown_creations` (1553-1586) takes the active member's rows (its pool among them)
+  out of the source store and keeps them only for rollback; the old pool's idle objects stay undisposed and parked
+  members' rows stay in the source store. Rollback (`_rollback_creations_move`, 1079-1104) puts the rows back.
+- U9, settled by S6 (the story's FACT note of 2026-10-15T18:43:16Z): `_apply_notch` and `_reactivate_owned_spell`
+  never re-stamp; a promoted version keeps the owner stamp it had. Until 0.2.8246 a transfer stamped only the active
+  member and no rollback restored a stamp, so a parked version kept the source's store (after a notch on the target
+  a managed meld raised the missing-pool error and a `unique` stored its object in the source's store) and a failed
+  transfer left the active member on the target's store (a managed meld raised missing-pool, or leased from an
+  empty pool left in the target; a `unique` built a second object there).
+- The stamp follows the lineage both ways (S6). `_stamp_owner(spell, conduit, spellbook)` (1680-1725) stamps as
+  conjure does: root id, name and store, dynamic flag, gate controller, the Book's caching posture. `_restamp(spell)`
+  (1727-1776) registers the stamp-back to the source first, stamps onto the target and, for a managed version whose
+  pool the target store did not hold, registers `_discard_composed_pool` (1778-1802) in a `finally`. The flip calls
+  `_restamp` for the active member; `_migrate_inactive_members` (1588-1648) calls it, after its map rollback, for
+  every moved parked member whose `_owner_creations` is set. A version never stamped moves as before (since 0.2.8248
+  only one whose stamp raised at conjure).
+- `Creations.discard_managed_quantity(spell_id, pool)` (creations.py:1200-1249) removes the pool only while it is
+  the one under the id (identity check under the store lock), unregisters it after the lock, never cleans it (the
+  caller does) and answers whether it removed it; a cleaned store raises its RuntimeError.
+- Rollback order (registration reversed): the row rollbacks; each parked member (discard, stamp-back); the map
+  rollback (`_rollback_inactive_members`); the active member (discard, stamp-back); `_rollback_spellbook_move`; the
+  registry, contracts and validity. Rows go back before the stamps. A composed pool is empty when it is discarded
+  (the lineage is disabled for the whole transfer), so nothing is disposed.
+- Locks: the stamps run under both conduit locks and outside the Book locks, as the flip's stamp always did
+  (conduit -> spell -> store leaf -> registry leaf); rollbacks hold no conduit lock; no new edge.
+- After a no-move transfer a parked managed version has a pool in each root (the source keeps its old one with the
+  parked rows); once that version is notched in on the target, a release by class finds two pools of the selected
+  version and needs `conduit=` (a lease's own `release()` is unaffected).
+- Built in S8 (0.2.8248; the owner ruled on 2026-10-16 on the S6 DECISION note's point 6): a version staged with
+  `bind_inactive` before conjure was never stamped - conjure stamped `_spells` only and `_apply_notch` stamps nothing
+  - so after a notch to it, its first meld raised "Spell has no configured CreationContextFactory." for every
+  existence, and a managed consumer's per-creation read raised the missing-pool error. Conjure now stamps every
+  parked version with the owner stamp alone, as a post-conjure `bind_inactive` does.
+- Transfers are dynamic-only and dynamic plans read the pool per creation (B7), so a plan finds a moved pool through
+  the target's store; no plan binds a pool that a transfer can move. A release racing a transfer can meet the gap
+  between extract and restore and raises the not-managed ValueError for that call.
+
+### B9 Lifecycle
+| event | pools | idle objects | objects out | registry |
+| --- | --- | --- | --- | --- |
+| conjure, post-conjure bind | one per managed version in the owner root's store | none | none | registered |
+| meld or injection | pop, else reserve and build | -1 or none | +1 | - |
+| release | optional reset, append, trim above baseline, queue notify | +1 | -1 | - |
+| notch, cleanup_spell | untouched (the old version's pool stays) | untouched | untouched | resolver prefers the active version |
+| transfer, move (default) | every version's pool moves to the target store | move | the agents' | stays valid; names the target root |
+| transfer, no move | active pool kept for rollback only; parked pools stay; the target's are fresh | stay undisposed | the agents' | old out, new in |
+| transfer that fails | back where they were; a pool a stamp composed is discarded | untouched | the agents' | as before |
+| root teardown | cleaned | disposed with their children | their recorded children disposed; the objects are the agents' | unregistered |
+| lesser or spellspace end | never hold pools | - | - | - |
+| crystallizer restore | rebuilt empty at conjure | none | none | registered |
+
+### B10 Concurrency rules
+- The hit and a resetless release below the baseline take no lock (`deque.pop` / `append` are atomic per object on
+  3.14t). The pool lock (the base `_lock`) is a leaf held for `count`, the children map and condition waits only;
+  resets, constructors and disposal never run under it.
+- A queue wait can happen while the plan holds an enclosing door's root guard (children are built before a slotted
+  site takes its own guard); the required timeout bounds it.
+- The registry lock is a leaf held only to publish; Creations registers and unregisters outside its store lock.
+- Pool disposal runs in `Creations.cleanup` outside the store lock; no new edge joins frame -> conduit -> Book.
+
+### B11 Errors (drafts; final texts in the component patches)
+- Limited: "Managed spell '<name>' (limited_quantity, limit <N>) has all <N> objects out. Release one with
+  ReleaseManagedSpell.release(obj) before melding another, or bind it with a higher managed_spell_limit."
+- Queue: "Managed spell '<name>' (queue, limit <N>) had no object free within <T> s. ..."
+- Not managed: "<Type> is not a managed spell class in any live root: bind it with
+  existence=Existence.managed_spell_quantity, or its root was torn down."
+- Ambiguous: "<Type> is managed by <k> pools: <spell id / binding / frame / root per pool>. Pass spell_id=... or
+  conduit=... to pick one."
+- Torn down: "The pool of managed spell '<name>' was torn down with its root; the object is yours to dispose."
+
+### B12 Tests and validation
+- Environment (device VM): `. ~/.melder_env` (CPython 3.14.7 free-threaded); `export TMPDIR=/tmp/m0_mq/tmp`; run
+  every suite twice, `python -X gil=0 -m pytest ...` and `python -X gil=1 -m pytest ...`. A device_bash call lasts
+  at most 180 s (pass `timeout_ms=180000`; the default is 120 s) and kills its background jobs when it returns
+  (nohup and setsid do not survive), so suites run in shards under 170 s each, logged under the lane's runs/.
+  Measured: the spellbook unit tree is about 25 s, the top-level unit tests about 60 s, the asset rebuild about
+  75 s. The rebuild unlinks generated payloads, so it needs delete permission on melder_private (granted for
+  this session on 2026-10-15; a new session asks again).
+- S1: tests/unit/melder/spellbook/test_resolution_style_matrix.py,
+  tests/unit/melder/spellbook/spell_crafter/system/validation/test_scope_ordering_strategy.py, a route-family test.
+- S2: bind option tests beside the existing bind tests, fingerprint byte-identity for every existing member, record
+  round trip (restore and graft).
+- S3: tests/unit/melder/aether/conduit/creations/test_managed_spell_quantity.py (per mode: accounting, refusal, waits,
+  timeouts, served-by-release, trims, resets, raising resets, adopt/abandon, cleanup aggregation),
+  test_managed_spell_quantity_multithreaded.py (limit never exceeded, no hang), test_creations_managed_quantities.py.
+- S4: tests/unit/melder/aether/conduit/creations/test_release_managed_spell.py and test_managed_spell_lease.py.
+- S5 (as built): tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py (51:
+  emitted shapes and runtime on real pools), tests/unit/melder/spellbook/spell_compiler/test_managed_dispense_seams.py
+  and the discovery and specializer additions;
+  tests/component/melder/aether/conduit/test_conduit_component_managed_spell_quantity.py (23);
+  tests/integration/melder/conduit/test_conduit_integration_managed_spell_quantity.py (7: two frames, two binding
+  names, a dynamic late bind, a notch, a borrower, a lesser, a crystallizer restore).
+- S6 (as built): tests/unit/melder/aether/conduit/conduit_ward/transfer/test_transfer_of_ownership_owner_stamps.py
+  (19: the flip's stamp and stamp-back, the discard of a composed pool, parked members of every existence, a raising
+  stamp, the rollback order), tests/unit/melder/aether/conduit/creations/test_creations_discard_managed_quantity.py
+  (11) and tests/integration/melder/conduit/test_conduit_integration_managed_transfer.py (12: move, releases after
+  it, no move, parked versions notched in, failed transfers with and without a move, `unique` stamps).
+- S8 (as built): tests/unit/melder/spellbook/test_spellbook_creation_system_parked_versions.py (9: the parked stamp's
+  arguments in three postures, under the Book lock, no registration of a parked existing object, the resolution flag
+  untouched, a raising stamp logged, a Book with nothing parked),
+  tests/integration/melder/spellbook/test_spellbook_integration_parked_before_conjure.py (27: six families staged
+  before or after conjure, meld after a notch, not meldable by id before it, a staged existing object unregistered,
+  a managed version's pool from conjure on), the cache-schema test at generation 21 and the lowering's two message
+  assertions; `ManagedSpellLease` checked as built (probes/probe_s8_managed_spell_lease.py, 8 cases per GIL mode,
+  and its five test files, 94 tests).
+- Density: at least 20 tests per 100 LOC on the pool, the registry and the lowering (concurrency and lifecycle code),
+  10 elsewhere; never claim coverage numbers.
+- Rebuild, last: `python src/melder/_build_assets/_build_asset_runner.py` then `--check`;
+  `python llm_support/_builder.py` then `--check` (`--include-untracked` while new files are untracked).
+
+### B13 Resume after a compaction
+1. REONBOARD, then read this epic's Build Specification and the newest Notes, then `attention_board.md`.
+2. Open the active story (Stories, below; the board row routes to it) and its Context / Handoff Summary.
+3. `GIT_OPTIONAL_LOCKS=0 git --no-optional-locks status --porcelain` and `cat src/melder/__version__.py` - another
+  lane may have landed; a notch is taken from `__version__` at landing, never reserved.
+4. Continue from the story's NEXT; record every finding in the story before the next tranche; keep this epic's
+  Build Specification true (edit it when a story settles an UNKNOWN).
 
 ## Requirements (Functional + Non-Functional)
-- F1 Member: `Existence.managed_spell_quantity` (name fixed by the owner; it is hashed into spell ids and written
-  into records). Class spells only: method, lambda and existing-object bindings stay forced to unique.
-- F2 Bind: `quantity=ManagedQuantity.elastic(...)` / `.limited(N)` / `.queued(N, timeout_seconds=...)` (working
-  names) and a reset declaration (`reset_method_names`, optional); `disposal_method_names` stays optional. The
-  configuration is frozen at bind and fingerprinted only for managed bindings, so no existing id moves.
-- F3 Pool: one pool object per managed spell on the root conduit, stored in the root's ConduitCreations (a new
-  location; ConduitCreations has empty `__slots__` today). It holds the idle objects, a record of every object that
-  is out, the count, a leaf lock and the mode; elastic pools reuse the 0.2.8234 retention. The pool never
-  constructs: on a miss the compiled plan builds the object and its dependencies (the ConduitPool shape).
-- F4 Dispense: a direct meld, or an injection into a constructor during a meld, takes an idle object, else builds one
-  the mode allows. Elastic always builds; limited raises before building anything at N; queued waits for a release
-  up to its timeout, then raises.
-- F5 Release core: trusted and explicit - Melder tracks no references to a leased object. The pool checks that the
-  object is out from it (a second release or a foreign object raises), updates the count, runs the reset outside the
-  lock and puts the object back with the idle ones. A reset that raises destroys the object, frees its place and
-  raises the error.
-- F6 Ways back, all ending in F5: a mixin (`obj.release_managed_spell()`; the pool is recorded on the object once,
-  when it is built, never per lease); a protocol member Melder fills, for classes that cannot inherit (release still
-  goes through Melder); the `ReleaseManagedSpell` singleton, which uses the object's own pool when it carries one,
-  else maps `type(obj)` to the pools of that class and picks the pool that has the object out; and the
-  `managed_spell` with statement, whose exit releases.
-- F7 Index lifecycle: roots add their pools to the ReleaseManagedSpell index when they create them and remove them
-  at teardown (also through lesser upgrade and crystallizer restore). The index is a leaf: its own lock, held only to
-  publish a new copy; releases read it lock-free.
-- F8 Destroy paths: purge of one object destroys it and frees its place; a failing reset destroys; an elastic trim
-  destroys idle objects; root teardown destroys idle and out objects without a reset and removes the index entries.
-  Disposal methods run only on destroy, never on release. Purge with no instance: open question 3.
-- F9 Ownership: the user owns every release. An object never released stays out, holding its place in the count,
-  until root teardown. Melder returns an object itself only when it was dispensed into a construction that failed.
-- F10 Lifetimes (Phase 6): a managed spell's own dependencies follow the `unique` rule - it may depend on `unique`
-  and not on unique_per_conduit_cluster, unique_per_conduit_lineage, unique_per_conduit or unique_per_spell_space.
-  A `many` dependency belongs to the object it was built for and is disposed with it - for a managed object when
-  that object is destroyed, never on release; Phase 6 does not refuse it. Today's runtime records a disposal-bearing
-  `many` child's disposal in the meld's innermost scope instead (measured), so that fix is a prerequisite. Other
-  managed spells as dependencies: open question 5.
-- F11 Overrides on managed sites: open question 6 (refusal recommended - a built object is reused by other holders).
-- F12 Inspection: per pool, the mode, the count and the outstanding objects; an optional held-too-long warning (open
-  question 10).
-- F13 Recording: the crystallizer records the managed configuration (a RecordVersion bump); a cache generation bump
-  retires executors emitted before managed sites existed.
-- N1 Thread safety (free-threaded 3.14): pool and index locks are leaves; reset and disposal run outside every
-  lock; no lock is held across user code; nothing adds an edge to the frame -> conduit -> Book teardown order.
-- N2 Performance: no regression on existing meld paths; routing and reuse costs measured and recorded.
-- N3 Documentation: AGENT_PURPOSE on every new public surface; system docs, graph and release note updated.
-- N4 Code rules: the synaptic_python_developer profile (no PEP 604 unions, no `__future__` annotations, value-only
-  dataclasses, cleanup deletes owned fields, logger last).
+The Build Specification above is the requirement set; these lines index it. The earlier F1-F13 and their rulings
+overlay are archived verbatim (Artifact Links).
+- F1 Member and classification: B6. F2 Bind options and the record: B1, B5. F3 Pool: B2. F4 Store: B3.
+- F5 Release and leases: B4. F6 Dispense, injection, overrides, failed-construction return: B7. F7 Transfer: B8.
+- F8 Lifecycle: B9. F9 Ownership: the agent owns every lease; an object never released stays out and holds its place
+  until root teardown; Melder returns an object itself only when it was dispensed into a construction that failed.
+- N1 Thread safety: B10. N2 Performance: Success Metrics. N3 Documentation: AGENT_PURPOSE on every new public
+  surface, system docs, graph, README, release note (S7). N4 Code rules: the synaptic_python_developer profile (no
+  PEP 604 unions, no `__future__` annotations, no module-level constants, `__slots__`, cleanup deletes owned fields
+  and tears the logger down last, value-only dataclasses, no `type: ignore` or `noqa`).
 
 ## Constraints / Assumptions
-- Melder never supplies a Conduit to a constructor today: a Conduit-typed parameter is an unresolved input, and
-  Conduit cannot be bound as a spell - which is why release must not depend on a conduit.
-- The bind guard matches exact (module, qualname) pairs and never walks the MRO, so a user class inheriting a Melder
-  mixin binds normally.
-- `type(obj)` returns the class object, hashed by identity: usable as a dict key with no inspect call.
-- Python reports that nothing holds an object only as it destroys it, so no GC hook can return an object that is
-  unused but alive.
-- Phase 6 today ranks unique 0, cluster 1, lineage 2, unique_per_conduit 3, unique_per_spell_space 4, many 5, refuses
-  a holder depending on a higher rank, and skips `many` on both sides.
+- Melder never supplies a Conduit to a constructor, and Conduit cannot be bound as a spell: release must not need one.
+- The bind guard matches exact (module, qualname) pairs: the new internal classes join its manifest at the rebuild.
+- `type(obj)` is the class object, hashed by identity: one dict get with no inspection.
+- Free-threaded 3.14: `deque.pop` / `deque.append` are atomic per object; `x += 1` on an attribute is not, so every
+  `count` update takes the pool lock.
+- Every notch changes `__version__`, and the creation cache admits only its own release (generation 9): a cache
+  generation bump costs one cold compile after an upgrade and never breaks a world.
 
 ## Dependencies / External References
-- src/melder/aether/spellbook/existence/existence.py:60-117 (the six members)
-- src/melder/aether/spellbook/spell_compiler/system/validation/scope_ordering_strategy.py:80-121 (ranks, rule)
-- src/melder/aether/conduit/creations/conduit_creations.py:8-104 (the pool home)
-- src/melder/aether/conduit/creations/creations.py:858-1019 (purge)
-- src/melder/aether/conduit/conduit_pool.py:108-161 (pool shape: hand out or None, build on miss)
-- src/melder/utilities/general_base/abstract_elastic_pool.py (the 0.2.8234 retention)
-- src/melder/aether/spellbook/spellbook.py:5392-5404 (bind keywords)
-- src/melder/aether/spellbook/bind/bind.py:35-100 (bind guard) and 1320-1368 (structural protocol check)
-- src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/spell_requirements_finder.py:1100-1226
-- src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:628-704 (unresolved inputs)
-- tickets/epics/2026-10-05_melder_services_and_pools_epic.md (Decision Log and Notes, 2026-10-11 to 2026-10-13)
-- artifacts/melder_object_pools_20261011/ (probes and runs)
+- Seam ranges: Build Specification B2-B8 (0.2.8240; recheck with an AST span before editing).
+- tickets/epics/2026-10-05_melder_services_and_pools_epic.md (the earlier discussion, 2026-10-11 to 2026-10-13)
+- artifacts/managed_shell_spike_20261014/ (fable_0's probes; `probe_deque_holder.py` is the settled shape)
+- artifacts/melder_object_pools_20261011/ (routing-cost and many-under-holder probes)
+- system_docs/patches/completed/managed_spell_quantity_2026_10_15/ (this lane's patch docs, archived at S7)
 - Prior art: Autofac pooled instances; .NET ObjectPool (a reset may refuse reuse); Apache Commons Pool; HikariCP
 
 ## Milestones (Track Progress)
 - [x] Milestone 1: Design settled - the open questions answered and recorded in the Decision Log.
-- [ ] Milestone 2: Patch docs written and linked - architecture, Existence and Creations, site-plan lowering, Phase 6,
-      the pool, bind and the release paths.
-- [ ] Milestone 3: Stories drafted and accepted by the owner.
-- [ ] Milestone 4: Implemented with unit, component, integration, stress and leak tests and benchmarks.
-- [ ] Milestone 5: MelderOps prototype measured against the 74-82 us logger meld.
+- [x] Milestone 2: Architecture patch doc written and linked; each story's component patch before its build.
+- [x] Milestone 3: S1-S6 landed (one notch each) with green tests in both GIL modes.
+- [x] Milestone 4: S7 - docs, graph, README, release note, benchmarks; rebuild checks OK.
+- [ ] Milestone 5: MelderOps prototype (Iris loggers as a managed spell) measured against the 74-82 us meld - after a
+      release, coordinated with the owner.
+- [x] Milestone 6: S8 - the owner's 2026-10-16 follow-ups (parked versions wired at conjure, cache generation 21),
+      landed as 0.2.8248 after melder_1's 0.2.8247.
 
 ## Stories (Required to Complete)
-- [ ] Story: STORY-TBD-managed_pool_core - the pool object in the root's ConduitCreations, modes, accounting, the
-      release core, destroy paths and teardown
-- [ ] Story: STORY-TBD-managed_bind_and_phase6 - the member, bind keywords and checks, fingerprint, Phase 6 rules
-- [ ] Story: STORY-TBD-managed_dispense - meld doors and site plans (direct meld and injection) and the
-      failed-construction return
-- [ ] Story: STORY-TBD-managed_release_paths - the mixin, the protocol member, ReleaseManagedSpell and the with
-      statement
-- [ ] Story: STORY-TBD-managed_recording - crystallizer record, cache generation, docs and release note
+Implementation order; each story lands its own notch (S7 lands documentation only).
+- [x] S1 STORY-2026-10-15-managed_existence_member - the member, the matrix, the route family, Phase 6 rank.
+      Landed 0.2.8241. tickets/stories/completed/2026-10-15_managed_existence_member_story.md
+- [x] S2 STORY-2026-10-15-managed_bind_options - ManagedSpellMode, the four keywords on every bind path, checks,
+      Spell fields, fingerprint, crystal record and replay, RecordVersion 4.2.0.
+      Landed 0.2.8242. tickets/stories/completed/2026-10-15_managed_bind_options_story.md
+- [x] S3 STORY-2026-10-15-managed_quantity_pool - ManagedSpellQuantity, the exhaustion error, Creations integration,
+      the store readers.
+      Landed 0.2.8243. tickets/stories/completed/2026-10-15_managed_quantity_pool_story.md
+- [x] S4 STORY-2026-10-15-release_managed_spell - the registry, release / managed / release_all / describe, the lease,
+      package-root exports.
+      Landed 0.2.8244. tickets/stories/completed/2026-10-15_release_managed_spell_story.md
+- [x] S5 STORY-2026-10-15-managed_dispense_codegen - per-path classification, discovery, manifest, lowering, door,
+      overrides, failed-construction return, specializer, `Conduit.managed_spell_meld`.
+      Landed 0.2.8245. tickets/stories/completed/2026-10-15_managed_dispense_codegen_story.md
+- [x] S6 STORY-2026-10-15-managed_ownership_transfer - pools through move, no move, rollback and notch; the owner
+      stamp follows the lineage.
+      Landed 0.2.8246. tickets/stories/completed/2026-10-15_managed_ownership_transfer_story.md
+- [ ] S7 STORY-2026-10-15-managed_docs_release - system docs, graph, tests docs, README, release note, benchmarks.
+      Work done 2026-10-15, no notch; waits on the owner's acceptance of the epic.
+      tickets/stories/2026-10-15_managed_docs_release_story.md
+- [ ] S8 STORY-2026-10-16-parked_versions_wired_at_conjure - conjure wires versions parked before it; cache generation
+      21 (the owner's follow-ups of 2026-10-16); also checks `ManagedSpellLease` works. Landed 0.2.8248; waits on the
+      owner's acceptance of the epic.
+      tickets/stories/2026-10-16_parked_versions_wired_at_conjure_story.md
 
 ## Tasks (Cross-Cutting or Epic-Level)
-- [ ] Task: Complete story STORY-TBD-managed_pool_core
-- [ ] Task: Complete story STORY-TBD-managed_bind_and_phase6
-- [ ] Task: Complete story STORY-TBD-managed_dispense
-- [ ] Task: Complete story STORY-TBD-managed_release_paths
-- [ ] Task: Complete story STORY-TBD-managed_recording
-- [ ] Prerequisite: EPIC-2026-10-14-many_child_follows_holder - a disposal-bearing `many` child is recorded
-      with its holder's owner (the proof, TASK-2026-10-14-prove_many_child_registration_bug, is done; the fix
-      task TASK-2026-10-14-fix_many_child_follows_holder landed as 0.2.8235 and is in review).
-- [x] Task: TASK-2026-10-14-investigate_managed_shell_design (fable_0) - the owner's shell shape investigated
-      with a VM spike; done 2026-10-14: the settled shape, seam map, numbers and plan are in this epic's Notes.
+- [x] Task: TASK-2026-10-14-investigate_managed_shell_design (fable_0) - done 2026-10-14; the settled shape, seam map,
+      numbers and plan are in this epic's Notes.
       tickets/tasks/completed/2026-10-14_investigate_managed_shell_design_task.md
-- [ ] Task: Benchmark meld, lease and release costs on the reference VM before and after each milestone.
-- [ ] Task: Verify Ticket Microcycle enforcement across active tickets/stories/tasks.
+- [x] Prerequisite: EPIC-2026-10-14-many_child_follows_holder (0.2.8235) and the slotted lane (0.2.8236-0.2.8240),
+      turned in by owner directive on 2026-10-15.
+- [x] Task: benchmark lease, release and the existing meld shapes before S5 and after S7 (probes in the spike folder).
+      Done: S5's and S7's MEASURE notes (existing shapes within noise; the managed cycle 306-385 ns).
+- [x] Task: keep the running release note's managed section current at every landing (one section, extended).
+      Done: release_docs/next_version_release.md, the managed section and the packaging lines.
 
 ## Acceptance Criteria (Epic Done)
-- Every required story accepted with recorded evidence and the success metrics above measured.
-- The MelderOps prototype shows the per-object logger cost cut against 74-82 us create plus 6.4-6.7 us cleanup.
-- The owner accepts the design and the walkthrough.
+- Every story closed with its evidence, the success metrics measured, and the EXIT_GATE checks recorded.
+- The owner accepts the build and the walkthrough.
 
 ## Risks / Mitigations
-- A holder keeps using an object after releasing it, or releases it again after it went to someone else (identity
-  cannot tell) -> documented caller contract; the with statement cannot do either.
-- State leaks between holders when no reset is declared -> the reset choice is explicit at bind (open question 1).
-- Leaked objects hold their place until root teardown, so limited and queued pools can run dry -> inspection lists
-  the outstanding objects per pool.
-- A queued wait inside a build holds that build's lock while the releaser may wait on it -> the timeout is required.
-- The index or pool locks join an existing lock chain -> both are leaves, reset and disposal run outside them,
-  covered by stress tests with frame and root teardown racing releases.
-- A disposal-bearing `many` dependency is disposed under a live managed object (the measured many-child bug) ->
-  fix the registration so the child is disposed with the object it was built for, before this epic lands.
-- Spell-id or record compatibility -> new fingerprint parts only for managed bindings; RecordVersion and cache
-  generation bumps.
-- Index drift across frames, lesser upgrades and crystallizer restores -> register at pool creation, remove at
-  teardown, with integration tests for each route.
-- A release that arrives after its root was torn down -> open question 2.
+- A holder keeps using an object after releasing it, or releases it twice -> the caller's contract (identity is not
+  tracked by ruling); the lease releases once and the `with` form cannot release twice.
+- State leaks between holders without a reset -> the reset is an explicit bind choice, documented with the member.
+- Leases never released exhaust limited and queue pools -> `describe(cls)` shows count and idle per pool; recycling is
+  the agent's (owner, 2026-10-15).
+- A queue wait under an enclosing build guard -> the timeout is required; stress tests race waits, releases and
+  teardown.
+- The pool or registry lock joins an existing chain -> both are leaves; resets, constructors and disposal run outside.
+- A non-managed spell id, executor or record moves -> the fingerprint part is managed-only; the emission diff and the
+  id byte-identity tests gate S2 and S5.
+- A release racing a transfer of its spell meets the gap between extract and restore -> ValueError (not managed) for
+  that call; recorded in the S6 component patch.
 
 ## Applicable Anti-Patterns
 - [ ] No epic-state transition without story-level evidence.
 - [ ] No closure while required stories are incomplete or unaccepted.
-- [ ] No program claims without source evidence from story/task notes.
+- [ ] No program claims without source evidence from story notes.
+- [ ] No `src/` edit before the story's component patch and mapping note exist.
 
 ## Validation / Test Approach
-- Unit: pool accounting per mode, the release core (double and foreign release, failing reset), destroy paths.
-- Component: dispensing by meld and by injection, the failed-construction return, the three ways back.
-- Integration: several roots and frames managing one class, root and frame teardown, lesser upgrade, crystallizer
-  restore.
-- Free-threaded stress: concurrent dispense and release, the limit never exceeded, queued timeouts, releases racing
-  root teardown.
-- Leaks: weak-reference tests at root and frame teardown. Benchmarks: routing, reuse against build, no regression.
+- Build Specification B12; each story's Validation section names its files and commands.
 
 ## Rollout / Adoption Plan
-- Opt-in new Existence member and bind keywords; existing bindings are untouched. MelderOps adopts it after a Melder
-  release that contains it.
+- Opt-in: a new Existence member and new keyword options; existing bindings, executors and records are untouched.
+  MelderOps adopts after an owner-cut release that contains the member.
 
 ## Open Questions
-- 1) Reset: optional (decided 2026-10-14). Still open: is a reset's return value ignored (recommended), or may False
-  mean "do not reuse me", destroying the object quietly?
-- 2) A release that arrives after its root was torn down (the object was already destroyed): quiet no-op or error?
-- 3) Purge with no instance: soft eviction (destroy idle objects now, destroy out objects at their release;
-  recommended), refuse, or a hard purge?
-- 4) Queued as the third mode, with a required timeout: confirmed?
-- 5) Dependencies beyond the unique rule: allow other managed spells as dependencies? Contracted (borrowed)
-  uniques from another root? Does a managed spell rank with unique as a dependency, so any holder may take one?
-  (`many` dependencies are settled: they belong to the object they were built for.)
-- 6) Overrides on managed sites: refuse (recommended)?
-- 7) Names: ManagedSpellMixin, the protocol member, ReleaseManagedSpell, ManagedQuantity; keep or drop
-  `conduit.release_managed_spell(obj)` beside the three ways back?
-- 8) Answered 2026-10-14: the binding owner's root; pools stay with root scopes, no narrower pool scope for now.
-- 9) Elastic defaults (the kernel pools use 20 idle kept, 256 at most) and whether limited and queued pools trim
-  idle objects or keep everything they built.
-- 10) Inspection: the outstanding-objects listing and an optional held-too-long warning.
-- 11) The reset as a method overridden on the mixin, beside the name at bind (two ways to declare it)?
+- None open. Settled 2026-10-16 by the owner: conjure wires versions parked before it (S8); the review items
+  stand as built, except the cache generation, which S8 bumps to 21; `ManagedSpellLease` stays as built (the package
+  root, the `with` form) and S8 checks that it works (Decision Log). Settled earlier: U1-U11 (S2-S6).
 
 ## Decision Log
+- 2026-10-16 (owner, chat with melder_0, answering the `ManagedSpellLease` question): "no these are all fine, fix
+  bind_inactive, 1. is fine leave it as is but just do make sure it works fine" - `ManagedSpellLease` stays as built
+  (at the package root, with its `with` form; melder_0's "hide it" pick is dropped) and S8 checks that it works; S8
+  builds the conjure wiring now.
+- 2026-10-16 (owner, chat with melder_0, after the walkthrough and the probe's answers): (1) "so really
+  bind_inactive should behave the same before and after conjure like it should work right?" - conjure wires parked
+  versions (S8); (2) activation hooks on every meld from the pool stand ("each iteration on it create the hook calls
+  thats fine"); (3) "you can bump the cache because codegen also requires that you properly modify it" - cache
+  generation 21 in S8, reversing S5's decision (2); (4) F9 as widened stands ("ok sure"); (5) override objects
+  outside the count stand ("if someone wants to break their own spells its their choice, its not my problem to
+  police behaviours"); (6) the no-move release ambiguity stands ("right now we're not in a spot where we care about
+  this its fine"); (7) pools through a transfer stand; found bugs become tickets ("if you found more bugs just add
+  tickets"). Open: the owner read `ManagedSpellLease` as a rename of `ReleaseManagedSpell` ("I believe I told you to
+  use ReleaseManagedSpell its cleaner language"); it is the `with` helper - keep, hide from the root, or drop the
+  `with` form.
+- 2026-10-15 (melder_0, S6 build decisions inside the owner's go-ahead, open to the owner's review): (1) the owner
+  stamp follows the lineage both ways - a transfer re-stamps every parked version that carries a stamp, and a failed
+  transfer stamps every member back and discards the empty pools its stamps composed - because a stamp that names the
+  wrong store is a record naming the wrong owner, for every existence (the probe's cases B, D, E, F and G); (2) rows
+  are unchanged: a pool moves as the row S3 and S4 built; (3) `Creations.discard_managed_quantity(spell_id, pool)`
+  joins the store verbs (identity-checked, unregisters, never cleans); (4) after a no-move transfer a parked managed
+  version keeps its old pool in the source with its other rows, so once it is notched in on the target a release by
+  class needs `conduit=`; (5) stamping versions staged before conjure is left to the owner (Open Questions).
+- 2026-10-15 (melder_0, S5 build decisions inside the owner's go-ahead, open to the owner's review): (1) the
+  `managed` door route reuses the `many` template objects, so `created` is True on every lease and a direct meld runs
+  the activation hooks for reused objects too; (2) no cache generation 21 (plans are emitted at hydration and a notch
+  makes the cache cold); (3) F9 widened: any failure between a consumer's first lease and its construction, its
+  publication included, and a lost cold race give the leases back; (4) a leasing site feeds exactly one consumer
+  (per path; the emission refuses another count); (5) `managed_spell_meld` with overrides on the managed spell's own
+  parameters returns a lease on that fresh, uncounted object, and its release adds the object to the pool - under the
+  trusted-release ruling (2026-10-13) a `limited_quantity` or `queue` pool can then hold more than its limit.
+- 2026-10-15 (owner, chat with melder_0): `ReleaseManagedSpell` is a singleton like Aether - "ReleaseManagedSpell
+  should be a singleton like Aether follow that same design, its owned and created by Aether it must be made there on
+  init"; "it should also be cleaned up by Aether"; "it must also have a reset singleton feature too" (B4 rewritten).
+  The `ManagedSpellMode` import stays TYPE_CHECKING-only ("use TYPECHECKING"): S2's runtime
+  import and its extra signature test are withdrawn, and the scan_bind parity test reads the signature with
+  FORWARDREF, as the typing policy says (src_architecture, Failure Modes).
+- 2026-10-15 (melder_0, build decisions inside the owner's go-ahead, open to the owner's review): (1) four bind
+  keywords - `managed_spell_mode`, `managed_spell_limit` (elastic: the idle cap; limited_quantity and queue: N),
+  `managed_spell_timeout_seconds`, `managed_spell_reset_methods` - carry the settled shape's options, the elastic
+  baseline fixed at min(20, limit); (2) pools sit in their own Creations map, are disposed before the disposable
+  registry and travel as extract/restore rows, and the registry follows the store; (3) a managed site is per path (one
+  lease per injection) and placed like a shared site (its own miss); (4) F9's failed-construction return stays (the
+  2026-10-14 overlay left F9 standing); (5) winning override keys on a managed site's own parameters build a fresh
+  object that is not pooled, counted or registered; (6) `ManagedSpellMode`, `ReleaseManagedSpell` and
+  `ManagedSpellExhaustedError` join the package root beside `Existence`; (7) RecordVersion 4.2.0, a minor bump
+  (additive fields); (8) the epic is rewritten as the build spec, its prior text archived verbatim
+  (artifacts/managed_spell_quantity_20261015/epic_before_rewrite_20261015.md), where the design-iteration entries
+  that later rulings replaced remain.
 - 2026-10-15 (owner, chat with melder_0): implement it. The owner: "you can use the way my spellspace pool and
   conduit pool work as elastic and focus on that and understand it, you gotta add transfer of ownership for it
   too thats important and it'll be available for pool objects too you'd follow the same mechanics, you'd need to
@@ -298,17 +672,6 @@ MelderOps logger win is the proof, not the design driver. Nothing about the six 
   shell). The owner's model: "sometimes you don't care about old objects ... you've made the same tool 6 times and the
   newest version is the one you like, you then destroy the whole scope"; objects that are out "maybe are still being
   used".
-- 2026-10-14 (fable_0, TASK-2026-10-14-investigate_managed_shell_design): the shell shape measured on the 0.2.8238
-  working copy - the three modes and the one way back pass a 15-check stress probe under 3.14t; inside a real emitted
-  plan a managed site costs 400-550 ns per creation over a warm `unique` read (acquire ~272 ns, release ~628 ns,
-  routing through `ReleaseManagedSpell` +93-100 ns), against 74-82 us for a fresh logger meld; the warm meld lane,
-  the other sites and the many registration are untouched. Recommended for the patch docs: one Existence member,
-  one shell module (`ManagedShell`, `ManagedQuantity`, `ReleaseManagedSpell`), one door template, one lowering site
-  shape, the fourth record shape in the five store readers, one Phase 6 rank entry, two bind keywords, a cache
-  generation and RecordVersion bump; one leaf lock per shell (the lock-free variant rejected); a weak out-record
-  with one persistent weakref per object; `with` as a small class released through the dispensing shell. Owner
-  rulings requested (the task's DECISION_REQUEST): the weak out-record against F9's letter, retiring the shell on
-  notch and cleanup_spell, injection into slotted holders as a lifetime lease, overrides refused.
 - 2026-10-14 (chat with fable_0): the simplest path - `ReleaseManagedSpell` is the one way back and hosts a
   `with`; a new `Conduit.managed_spell_meld("target")` is the meld-plus-release form; protocol and mixins
   dropped; the object is "managed in creations as a special interface": a shell in the Creations store, looked
@@ -326,21 +689,12 @@ MelderOps logger win is the proof, not the design driver. Nothing about the six 
 - 2026-10-14: a managed spell's own dependencies follow the lifetime rule of `unique`: it may depend on unique, not on
   narrower lifetimes. The owner: "it cannot depend on specific kinds of lifetimes make it similar to unique but it
   can depend on unique".
-- 2026-10-14: this epic opened to document the plan and keep iterating; implementation is not authorized. The owner:
-  "lets document our current plan and keep iterating we're not yet ready to implement this".
-- 2026-10-13: the class defines the target: `ReleaseManagedSpell` maps a managed class to the root pools it goes back
-  to, each root registers its pools in it, and pools live in the root's Creations ("store the pool objects in the
-  creation object for root_types"); a release runs the reset registered at bind; cleanup methods stay optional.
-- 2026-10-13: three ways back over one release core - a mixin, a protocol member and the generalized singleton keyed by
-  type. The owner: "why don't we allow all 3 options?"
 - 2026-10-13: no release through Aether ("I'm against using the aether to do it I object on that one"), no separate
   ManagedSpells handle, and no conduit required to release ("we don't want everything to require the conduit").
 - 2026-10-13: injection is in: a meld of a holder whose constructor takes a managed spell dispenses a pooled object
   into it ("channel logger is injected during the meld ... the pool object gets dispensed").
 - 2026-10-13: release is the common, trusted hand-back and Melder tracks no references ("its very symbolic we don't
   check we just trust"); the with statement is the shortcut.
-- 2026-10-13: mode purposes: elastic manages space, like many with reuse; limited is for connection-like resources.
-  Purge is not the normal path: it destroys one object and frees its place in the count.
 - 2026-10-13: the user owns every lease: no automatic return when a scope cleans up, no yield, and an object never
   released holds its place until root teardown ("we cannot baby sit the user"). Purge deletes.
 - 2026-10-12: leases are explicit - the `managed_spell` with statement and `release_managed_spell`, not purge.
@@ -356,216 +710,34 @@ MelderOps logger win is the proof, not the design driver. Nothing about the six 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
 - ARTIFACT_PATHS:
+  - artifacts/managed_spell_quantity_20261015/ (this lane: the epic's text before the 2026-10-15 rewrite, verbatim;
+    probes, runs, emission diffs, benchmarks and apply scripts)
+  - artifacts/managed_shell_spike_20261014/ (fable_0's spike: `probe_deque_holder.py` is the settled shape; the
+    captured-plan and door probes, logs)
   - artifacts/melder_object_pools_20261011/ (probes and runs, shared with EPIC-2026-10-05)
-  - artifacts/managed_shell_spike_20261014/ (the spike: the deque-holder probe, the earlier shell prototype,
-    the captured plan and door probes, logs; retained from the closed investigation task)
-- DISPOSITION: retain_as_reference
+  - system_docs/patches/completed/managed_spell_quantity_2026_10_15/ (patch docs, promoted and archived at S7)
+- DISPOSITION: retain_as_reference (artifacts); promote_to_documentation (patch docs)
 - CLEANUP_TRIGGER: none
 
 ## Context Management
 - CONTEXT_MANAGEMENT_REQUIRED: false
 - CONTEXT_IDS:
-  - UNKNOWN
+  - none
 - CONTEXT_TOPICS:
-  - the managed_spell_quantity Existence member and its release paths
-- IF_UNKNOWN: ask user before implementation
+  - the managed_spell_quantity Existence member, its pools and its release paths
+- IF_UNKNOWN: none
 
 ## Contribution Attribution
-- Ticket/Work Author(s): melder_1 (synaptic_python_developer); prose and design; the whole ticket; initial revision
-  2026-10-14T00:28:29Z; evidence in Notes. Design decisions: the owner, in chat, as recorded in the Decision Log.
-- Assigned implementer: melder_0 (synaptic_python_developer), by owner directive on 2026-10-15; its Notes from
-  2026-10-15T00:16:35Z on.
+- Ticket/Work Author(s): melder_1 (synaptic_python_developer) wrote the first revision (2026-10-14T00:28:29Z) and the
+  early design notes (archived); fable_0 (synaptic_python_developer) settled the shape with the owner (Notes of
+  2026-10-14T23:45:47Z); melder_0 (synaptic_python_developer) rewrote the ticket as the build spec on 2026-10-15 and
+  implements it. Design decisions: the owner, in chat, as recorded in the Decision Log.
+- Assigned implementer: melder_0 (synaptic_python_developer), by owner directive on 2026-10-15.
 - Published By: UNKNOWN (a local ticket file; not published)
-- Independent Review: fable_0 (synaptic_python_developer); the design as of 2026-10-14T17:19:37Z; verdict in the
-  DECISION note of 2026-10-14T22:15:12Z; independent of the author's lane
+- Independent Review: fable_0 reviewed the design as of 2026-10-14T17:19:37Z (archived note 2026-10-14T22:15:12Z);
+  the build has no independent reviewer yet.
 
 ## Notes
-- DATETIME: 2026-10-14T00:28:29Z
-  AUTHOR: melder_1
-  AUTHOR_ROLE: synaptic_python_developer
-  TYPE: PLAN
-  CLAIM: Opened at the owner's request (chat 2026-10-14: "create an epic on this and lets document our current plan and
-    keep iterating we're not yet ready to implement this") to hold the managed_spell_quantity plan agreed in
-    EPIC-2026-10-05 between 2026-10-11 and 2026-10-13. The decided design is in Goals, Requirements F1-F13 and N1-N4
-    and the Decision Log; eleven open questions remain. Iteration continues in chat; no patch docs, stories or code
-    until the owner calls the design settled.
-  EVIDENCE: context_compass/tickets/epics/2026-10-05_melder_services_and_pools_epic.md:211-299
-  IMPACT: This epic is the active route for the pool design; EPIC-2026-10-05 keeps the memo and service methods.
-  NEXT: Settle open questions 1-3 with the owner (the reset rule, a late release, purge with no instance).
-  REREAD: REQUIRED
-  SCORE_0_TO_10: 9
-
-- DATETIME: 2026-10-14T00:28:29Z
-  AUTHOR: melder_1
-  AUTHOR_ROLE: synaptic_python_developer
-  TYPE: FACT
-  CLAIM: What "like unique" means in today's Phase 6. ScopeOrderingStrategy ranks unique 0, cluster 1, lineage 2,
-    unique_per_conduit 3, unique_per_spell_space 4, many 5 and refuses a holder whose rank is lower than its
-    dependency's (a broader holder of a narrower dependency); a `many` holder is skipped, and so is every `many`
-    dependency. Giving managed_spell_quantity the rank of unique therefore lets it depend only on unique among the
-    slotted members, and lets any holder depend on it. It does not catch a disposal-bearing `many` dependency, which
-    follows the meld's innermost scope rather than its holder (measured on 0.2.8233); under a pooled object reused
-    across leases, that child would be disposed under a live managed object. F10 needs a managed-specific rule for
-    `many` dependencies or the gap fixed first (open question 5).
-  EVIDENCE:
-  - src/melder/aether/spellbook/spell_compiler/system/validation/scope_ordering_strategy.py:80-121
-  - src/melder/aether/spellbook/existence/existence.py:60-117
-  - context_compass/artifacts/melder_object_pools_20261011/runs/probe_disposal_many_under_slotted_holder.txt:1-17
-  IMPACT: F10 is one rank entry plus one managed-specific rule for `many` dependencies.
-  NEXT: Owner answers open question 5; then the Phase 6 patch doc.
-  REREAD: REQUIRED
-  SCORE_0_TO_10: 9
-
-- DATETIME: 2026-10-14T02:27:52Z
-  AUTHOR: melder_1
-  AUTHOR_ROLE: synaptic_python_developer
-  TYPE: ASSUMPTION_CHALLENGE
-  CLAIM: The owner challenged the earlier FACT note's call for a Phase 6 rule on `many` dependencies ("if unique
-    depends on a many with disposal it doesnt matter because it was built for that unique"). He is right about the
-    rule: the dependency is legitimate and Phase 6 should not refuse it - that note's "managed-specific rule" is
-    withdrawn. The defect is in the runtime, measured on 0.2.8233: a `unique` holder first melded through a lesser
-    keeps its `many` child, but the child's disposal is recorded in the lesser's store, so the lesser's pool return
-    runs `close()` on the child while the root keeps returning the same holder (case B; case A the same for a
-    `unique_per_conduit` holder built in a spellspace; case C, built at the root, stays open until root teardown).
-    For a managed object reused across leases the same recording would dispose its child after the first lease's
-    scope ends. Requirement F10 now reads: a `many` child is disposed with the object it was built for; the
-    registration fix is a prerequisite task.
-  EVIDENCE:
-  - context_compass/tickets/epics/2026-10-14_managed_spell_quantity_epic.md:258-260
-  - context_compass/artifacts/melder_object_pools_20261011/probe_disposal_many_under_slotted_holder.py:68-96
-  - context_compass/artifacts/melder_object_pools_20261011/runs/probe_disposal_many_under_slotted_holder.txt:1-17
-  IMPACT: No Phase 6 change for `many`; the fix belongs to Melder's `many` registration and helps today's holders too.
-  NEXT: Owner agrees to open the many-child registration fix as its own task; then open questions 1-3.
-  REREAD: REQUIRED
-  SCORE_0_TO_10: 9
-
-- DATETIME: 2026-10-14T02:39:19Z
-  AUTHOR: melder_1
-  AUTHOR_ROLE: synaptic_python_developer
-  TYPE: PLAN
-  CLAIM: The owner widened the many-child defect beyond `unique` ("not just for uniques but for almost all uniques
-    that depend on root") and asked for red regression tests before any fix. The prerequisite task is opened:
-    TASK-2026-10-14-prove_many_child_registration_bug maps every holder lifetime and first-meld route and proves the
-    affected ones with tests; the fix waits for the owner's review. Design questions 1-3 resume after that review.
-  EVIDENCE:
-  - context_compass/tickets/tasks/2026-10-14_prove_many_child_registration_bug_task.md:1-40
-  - context_compass/tickets/epics/2026-10-14_managed_spell_quantity_epic.md:191-194
-  IMPACT: F10's prerequisite has a routed owner-facing task; the epic's tranche order is the task, then questions 1-3.
-  NEXT: Complete the task's investigation and show the owner the red tests.
-  REREAD: HELPFUL
-  SCORE_0_TO_10: 7
-
-- DATETIME: 2026-10-14T13:02:18Z
-  AUTHOR: melder_1
-  AUTHOR_ROLE: synaptic_python_developer
-  TYPE: STRATEGY_DISCUSSION
-  CLAIM: The owner asked why a root must own the pool if ReleaseManagedSpell routes releases ("why can't any scope
-    own it?"). Answer given: the singleton answers how an object finds its pool, not how long the pool lives, who
-    shares it or what N counts. (1) Floor: leases are user-owned and can outlive any lesser or spellspace, whose stores
-    are disposed on every pool return, so a narrower owner would destroy objects still in use or orphan their
-    releases - the defect class TASK-2026-10-14-prove_many_child_registration_bug is proving for `many` children.
-    (2) Ceiling: managed objects depend only on `unique` (F10), which lives in the binding owner's store and dies with
-    that root; an owner above it (the singleton) would keep idle objects holding disposed uniques. (3) Reuse: pools in
-    pooled shells rebuild every cycle. (4) N would be per scope, and one pool per binding keeps the singleton's
-    type -> pool read at one dict get (+29/+62 ns measured); per-scope pools turn it into a scan and republish the
-    index every scope cycle. Locating (only named conduits are found by name) is not the constraint: the mixin and the
-    index hold the pool directly. A narrower opt-in pool scope stays possible later. The owner accepted ("nvm").
-  EVIDENCE:
-  - context_compass/tickets/epics/2026-10-14_managed_spell_quantity_epic.md:99-128
-  - context_compass/artifacts/melder_object_pools_20261011/runs/probe_release_routing_cost.txt:1-3
-  - context_compass/artifacts/melder_object_pools_20261011/runs/probe_disposal_many_under_slotted_holder.txt:1-17
-  IMPACT: F3 stands (root of the binding owns the pool); open question 8 keeps the owner-root wording.
-  NEXT: No change; resume open questions 1-3 after the many-child task review.
-  REREAD: HELPFUL
-  SCORE_0_TO_10: 7
-
-- DATETIME: 2026-10-14T15:18:51Z
-  AUTHOR: melder_1
-  AUTHOR_ROLE: synaptic_python_developer
-  TYPE: ALIGNMENT_CHECK
-  CLAIM: Two decisions recorded (root scopes own the pools; the reset is optional). The owner asked what else is
-    needed to move on. Before the patch docs, these still change the code's shape; each has a recommended default:
-    (a) ways back - read "a Spell requires ReleaseManagedSpell to release it" as the singleton being the only way back
-    plus the `managed_spell` with statement over it, dropping the mixin and the protocol member (the routing probe
-    shows no win for the mixin: +31 vs +29 ns at 1 thread, +52 vs +62 ns at 2) - to confirm, it changes F6, Q7, Q11;
-    (b) a reset's return value is ignored and a raising reset destroys the object, frees its place and raises (Q1);
-    (c) root teardown disposes the stores first so holders' disposal methods can still release, destroys the pools
-    last, and a release after that raises a clear error (Q2); (d) purge with no instance is a soft eviction (Q3);
-    (e) queued stays, with a required timeout (Q4); (f) a managed spell depends only on uniques of its own root - no
-    contracted uniques, no other managed spells - and ranks with unique as a dependency (Q5); (g) overrides on a
-    managed site are refused (Q6); (h) elastic sizes are set at bind, defaulting to 20/256, and limited and queued
-    pools keep what they built (Q9); (i) inspection lists mode, count and outstanding objects, no held-too-long
-    warning yet (Q10). New from the many-child task: (j) a managed object is destroyed alone (trim, purge, failing
-    reset) long before its root's store is, so its own `many` children must be recorded with the object in its pool
-    entry and disposed when that object is destroyed - the general fix (children follow the holder's store) does not
-    cover it. Also pending: the owner's three answers on the many-child task (how its red tests land, purge
-    semantics, opening the fix task), a prerequisite of implementation, not of the patch docs.
-  EVIDENCE:
-  - context_compass/tickets/epics/2026-10-14_managed_spell_quantity_epic.md:238-255
-  - context_compass/artifacts/melder_object_pools_20261011/runs/probe_release_routing_cost.txt:1-3
-  - context_compass/tickets/tasks/2026-10-14_prove_many_child_registration_bug_task.md:232-249
-  IMPACT: One reply settles the design; then the patch docs and the first story can be written.
-  NEXT: Owner confirms (a)-(j) or changes any; record the answers in the Decision Log, then draft the patch docs.
-  REREAD: REQUIRED
-  SCORE_0_TO_10: 9
-
-- DATETIME: 2026-10-14T17:19:37Z
-  AUTHOR: melder_1
-  AUTHOR_ROLE: synaptic_python_developer
-  TYPE: FACT
-  CLAIM: F10's prerequisite landed as 0.2.8235 (EPIC-2026-10-14-many_child_follows_holder, fix task in review): a
-    slotted holder's disposal-bearing `many` children are now recorded in, and disposed with, the holder's owner's
-    store. That covers today's lifetimes; a managed object destroyed alone (trim, purge, failing reset) still needs
-    its own children kept with it in its pool entry - default (j) stands unchanged. The design still waits on the
-    owner's answers on defaults (a)-(j).
-  EVIDENCE:
-  - context_compass/tickets/epics/2026-10-14_many_child_follows_holder_epic.md:173-191
-  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1319-1381
-  IMPACT: The prerequisite no longer blocks the patch docs once the owner accepts the fix.
-  NEXT: Owner confirms (a)-(j) or changes any; then the patch docs and the first story.
-  REREAD: HELPFUL
-  SCORE_0_TO_10: 7
-
-- DATETIME: 2026-10-14T22:15:12Z
-  AUTHOR: fable_0
-  AUTHOR_ROLE: synaptic_python_developer
-  TYPE: DECISION
-  CLAIM: Owner direction recorded (Decision Log, 2026-10-14, chat with fable_0): the shell-in-creations shape with
-    one way back and the three modes; investigation opened as TASK-2026-10-14-investigate_managed_shell_design
-    (fable_0), a read-and-spike lane that does not touch the tree. fable_0's review of this epic (chat,
-    2026-10-14) stands as its independent review: the decided core holds against 0.2.8238; four points to settle
-    before the patch docs - what the out-record holds (recommended: a weak index whose callback frees the
-    place), reserve-before-children in a managed miss, binding mutation paths (notch, cleanup_spell, transfer),
-    and injection into slotted holders (a lease for the holder's life; limited pools exhaust).
-  EVIDENCE:
-  - tickets/tasks/completed/2026-10-14_investigate_managed_shell_design_task.md:1-60
-  - tickets/epics/2026-10-14_managed_spell_quantity_epic.md:238-275
-  IMPACT: melder_1 keeps the lane (patch docs and stories); the task's findings feed Milestone 1.
-  NEXT: the investigation task's seam reads and spike; the owner answers (a)-(j) and the four points.
-  REREAD: REQUIRED
-  SCORE_0_TO_10: 8
-
-- DATETIME: 2026-10-14T23:07:01Z
-  AUTHOR: fable_0
-  AUTHOR_ROLE: synaptic_python_developer
-  TYPE: DECISION
-  CLAIM: The investigation task's result (its MEASURE and DECISION notes): the owner's shell shape holds against
-    0.2.8238 with the minimal change set named in the Decision Log entry of this date, and the measured costs sit
-    inside the success metrics (acquire 272 ns and release 628 ns against about 5 us and 1 us; routing +93-100 ns
-    against about 100 ns; a reuse cycle 400-550 ns over a warm unique read; the logger case wins by two orders).
-    Four rulings are the owner's: the weak out-record (F9), shell retirement on notch and cleanup_spell (and purge
-    with no instance as the same soft eviction, Q3), lifetime leases into slotted holders, overrides refused (Q6).
-    The patch docs stay in this lane (melder_1); the task moves to review for the owner.
-  EVIDENCE:
-  - tickets/tasks/completed/2026-10-14_investigate_managed_shell_design_task.md:187-355
-  - context_compass/artifacts/managed_shell_spike_20261014/logs/probe_modes_run2.txt:1-19
-  - context_compass/artifacts/managed_shell_spike_20261014/logs/probe_plan_shape_run1.txt:1-11
-  IMPACT: Milestone 1 can close on the owner's rulings plus defaults (a)-(j); Milestone 2's patch docs have a
-    measured shape to describe.
-  NEXT: Owner rules on the four points and (a)-(j); then the patch docs and the first story.
-  REREAD: REQUIRED
-  SCORE_0_TO_10: 9
-
 - DATETIME: 2026-10-14T23:45:47Z
   AUTHOR: fable_0
   AUTHOR_ROLE: synaptic_python_developer
@@ -814,37 +986,6 @@ MelderOps logger win is the proof, not the design driver. Nothing about the six 
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
-- DATETIME: 2026-10-15T00:16:35Z
-  AUTHOR: melder_0
-  AUTHOR_ROLE: synaptic_python_developer
-  TYPE: DECISION_REQUEST
-  CLAIM: Read whole, the settled shape (2026-10-14T23:45:47Z) leaves five points the patch docs cannot decide alone.
-    (1) Two versions of one class in one root: a parked version gets a holder when bind_inactive stamps it, and the
-    shape says neither whether its pair is registered nor how a release picks a version - the meld-style target
-    names the index, not the version. Recommended: register every holder; with several pairs of one class a bare
-    release raises the ambiguity, and `release(obj, spell_id)` or the lease class picks exactly. (2) Q2's "a
-    release after its root was torn down raises plainly" holds only while no other root manages that class: with
-    one other pair left, the object (and the disposed uniques it holds) is appended to that root's holder
-    silently. Recommended: the caller's contract (release before the leasing root ends; afterwards the object is
-    yours); protection needs per-object identity, which the shape rules out. (3) The `many`-children side map
-    keyed by `id(object)`: recommended that root teardown dispose the children recorded for out objects too (the
-    store's own record; those objects' uniques die with the root anyway) and that a build finding an entry under
-    its id dispose those stale children first (left by a dead out object). (4) An override reaching below a
-    managed site, into the managed object's own constructor inputs, is unruled (ruling 8 covers supplying the
-    managed object itself): recommended a refusal like unique's "already exists". (5) `purge(instance)` of an
-    idle object must also take it out of the deque (a cold `deque.remove`), or the disposed object is dispensed
-    again; purging an object the holder did not build miscounts (the caller's contract, as a double release is).
-  EVIDENCE:
-  - context_compass/tickets/epics/2026-10-14_managed_spell_quantity_epic.md:551-591
-  - context_compass/tickets/epics/2026-10-14_managed_spell_quantity_epic.md:606-622
-  - context_compass/tickets/epics/2026-10-14_managed_spell_quantity_epic.md:657-662
-  - context_compass/tickets/tasks/completed/2026-10-14_investigate_managed_shell_design_task.md:472-481
-  - context_compass/system_docs/src_architecture.md:522-547
-  IMPACT: Milestone 1 closes on these five answers; the patch docs carry them and the rest of the shape as written.
-  NEXT: Record the owner's answers in the Decision Log, then the seam check and the patch docs.
-  REREAD: REQUIRED
-  SCORE_0_TO_10: 9
-
 - DATETIME: 2026-10-15T00:18:39Z
   AUTHOR: melder_0
   AUTHOR_ROLE: synaptic_python_developer
@@ -997,8 +1138,385 @@ MelderOps logger win is the proof, not the design driver. Nothing about the six 
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-10-15T09:25:34Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: The epic is rewritten as the build spec at the owner's request ("add more details to the epic take out shit
+    oyu don't need then implement it please, make the epic as detailed as you can because will compact multiple times
+    building this"). The full prior text is archived verbatim: 1036 lines, sha256
+    e4eae89827ea1f67fed7d18228278eea0f57db3d412e1a58e0d03c3050493a75, equal to the live file when copied.
+    Taken out of the live ticket: requirements F1-F13 and their overlay (now Build
+    Specification B1-B11), the eleven answered open questions, the STORY-TBD list, the design-iteration Decision Log
+    entries later rulings replaced, melder_1's design notes of 2026-10-14 (00:28:29Z to 17:19:37Z), fable_0's review
+    and spike notes of 22:15:12Z and 23:07:01Z, and melder_0's rejected DECISION_REQUEST of 2026-10-15T00:16:35Z.
+    Line citations into this epic made before this note resolve against the archive (same text, same line numbers).
+  EVIDENCE: context_compass/artifacts/managed_spell_quantity_20261015/epic_before_rewrite_20261015.md:1-1036
+  IMPACT: One live spec to build from after every compaction; the history stays retrievable.
+  NEXT: Write the architecture patch doc and open the seven stories.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-15T09:25:34Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: The codegen seams, read whole on 0.2.8240. (1) SitePlanEmission places every kept step at the plan's top
+    level or inside one shared site's `_miss{i}`; "shared" is every existence but `many` (`_shared`). A shared site
+    emits its store read (or the S9 bound store) and a miss that builds the children placed inside it, takes the
+    slot guard (unique: the Spell lock), rechecks, constructs, publishes and adopts its disposal-bearing children; a
+    `many` step constructs and registers its disposal in the store of the context it lives in. (2) Per-path instance
+    keys come from `_is_shared_existence` in the occurrence instance processor and the occurrence graph analyzer, both
+    `existence is not Existence.many`. (3) The family is chosen by phase 10 discovery: solo for exactly one visible
+    spell without a collection socket, many_only for two or more visible spells that are all `many`, generalized
+    otherwise; the generalized family runs the site plan. (4) Doors are one template per (route, lane), compiled at
+    import from `_build_no_overrides_lines` / `_build_with_overrides_lines`; the `many` door only calls the plan (or
+    `_execute_with_overrides`); the route key comes from `_build_model_shell`, which raises for an unknown member.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:731-1666
+  - src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_occurrence_instance_processor_strategy.py:112-118
+  - src/melder/aether/spellbook/spell_compiler/spell_analyzer/strategies/spell_occurrence_graph_analyzer_strategy.py:733-737
+  - src/melder/aether/spellbook/spell_compiler/codegen_planner/codegen_plan_discovery_system/strategies/solo_codegen_plan_discovery_strategy.py:52-81
+  - src/melder/aether/spellbook/spell_compiler/codegen_planner/codegen_plan_discovery_system/strategies/many_only_codegen_plan_discovery_strategy.py:52-95
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/creation_runtime_door_compiler.py:1-1229
+  - src/melder/aether/spellbook/spell_compiler/artifact_processor/spell_artifact_processor.py:107-182
+  IMPACT: Build Specification B6/B7: a managed site is a third site kind (placed like a shared site, keyed per path,
+    dispensed instead of read), the solo family declines managed models, and the managed door has the `many` shape.
+  NEXT: The architecture patch doc, then the stories.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-15T10:11:46Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: S1 landed as 0.2.8241: the member (appended last; values 1-6 unchanged), the matrix (count 7, class spells
+    only), route family "managed", Phase 6 rank 0. Tests red then green in both GIL modes; the spellbook unit tree,
+    the top-level unit tests and the existence and scope-ordering integration suites pass. Two operating facts for
+    every later story: a device_bash call kills its background jobs when it returns (run suites in shards under 170
+    s), and the asset rebuild unlinks payloads, so it needs the delete permission the owner granted this session.
+  EVIDENCE:
+  - context_compass/tickets/stories/completed/2026-10-15_managed_existence_member_story.md:1-260
+  - context_compass/artifacts/managed_spell_quantity_20261015/runs/s1_rebuild_assets_check.txt:1-4
+  IMPACT: S2 can bind the member; B12 records the shard rule and the rebuild permission.
+  NEXT: S2 - read the bind chain and the crystal sites whole.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-15T12:31:28Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: S2 landed as 0.2.8242: `ManagedSpellMode`, the four bind options on every bind path with their refusals,
+    the Spell fields, the managed-only fingerprint part, the crystal capture and the five replays, RecordVersion
+    4.2.0. Green in both GIL modes on the new files and on the unit, component and integration trees (the
+    crystallizer integration tree in shards). Validation caught a hidden public-surface regression of the first cut -
+    the TYPE_CHECKING-only enum import made `inspect.signature` raise NameError on Spellbook.bind and four other
+    bind methods - fixed with a runtime import and pinned by a guard test (B5).
+  EVIDENCE:
+  - context_compass/tickets/stories/completed/2026-10-15_managed_bind_options_story.md:1-385
+  - release_docs/next_version_release.md:308-366
+  IMPACT: S3 composes the pool from the Spell's fields; the record already carries them for restore.
+  NEXT: S3 - read the pool base, Creations and the Meld store readers whole; the component patch; red tests.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-15T12:37:16Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION_REQUEST
+  CLAIM: The owner stopped the lane ("stop and explain") over S2's runtime import of ManagedSpellMode. That import
+    and the new test file tests/unit/melder/spellbook/test_bind_verbs_value_format_signatures.py contradict the
+    documented typing policy: src_architecture's Failure Modes accepts a VALUE-format NameError on TYPE_CHECKING-only
+    names as "not a defect to patch per call site". The policy-consistent fix of the parity-test failure is to read
+    `scan_bind` with FORWARDREF in that test, as the same test already reads Spellbook.bind. Options put to the
+    owner: revert (TYPE_CHECKING import back in the five modules, delete the new test file, FORWARDREF in the parity
+    test, drop the release-note sentence, fold into 0.2.8242 and rebuild again) - recommended; keep the import and
+    drop the test; keep both. Nothing is committed; the 0.2.8242 rebuild checks printed OK before the stop.
+  EVIDENCE:
+  - context_compass/system_docs/src_architecture.md:1981-1985
+  - tests/unit/melder/spellbook/test_scan_bind_option_parity.py:294-312
+  - context_compass/tickets/stories/completed/2026-10-15_managed_bind_options_story.md:277-303
+  IMPACT: S3 waits for the owner's answer; no file changes until then.
+  NEXT: Apply the owner's choice, then start S3.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-15T12:41:10Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: The owner answered the DECISION_REQUEST of 2026-10-15T12:37:16Z: use TYPE_CHECKING for `ManagedSpellMode`
+    (revert the runtime import, delete the extra signature test, FORWARDREF in the parity test, inside 0.2.8242,
+    rebuild again), and `ReleaseManagedSpell` becomes a singleton like Aether, created and owned by Aether at init
+    (B1 and B4 rewritten; U11 opened for S4).
+  EVIDENCE: context_compass/tickets/epics/2026-10-14_managed_spell_quantity_epic.md:186-210
+  IMPACT: The lane is unblocked; S4's registry is instance state on an Aether-owned singleton.
+  NEXT: Apply the revert, validate, rebuild; then S3.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-15T14:05:52Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: S3 landed as 0.2.8243: `ManagedSpellQuantity(AbstractElasticPool)` (sizes per mode, reserve, put_back with
+    resets outside every lock, abandon / adopt / destroy_object with id-keyed children records, a cleanup that drains
+    under the lock and disposes outside it), `ManagedSpellExhaustedError`, the Creations pool map (ensure and get,
+    pools cleaned before the disposable registry, the `managed` extract/restore row, purge 0), owner stamping in
+    `Spell._add_owned_conduit`, the probes' "managed_pool" answer and the static rooms. Green in both GIL modes on the
+    new tests and on the unit, component and integration trees; the crystallizer integration tree ran a smoke shard
+    only (S3 changes no crystallizer code). U3-U6 and U10 are settled in B2 and B3 with the as-built behaviour.
+  EVIDENCE:
+  - context_compass/tickets/stories/completed/2026-10-15_managed_quantity_pool_story.md:1-348
+  - release_docs/next_version_release.md:365-387
+  IMPACT: S4 registers pools at the four points where a store takes or gives one up (ensure, extract, restore,
+    cleanup) and reads a pool's Spell only through `spell`; S5's miss relies on `reserve` serving an idle object
+    before it refuses, and must not assume a pool exists for an unstamped version.
+  NEXT: Rebuild and check for 0.2.8243, then S4 (U11 first).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-15T15:39:09Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: S4 landed as 0.2.8244: `ReleaseManagedSpell`, a hosted-root singleton Aether builds last and cleans after
+    the frames, keyed by class with copy-on-write maps and a lock-free release (one dict get, then `put_back`); the
+    cold resolver (spell id, holding root, the selected version, precise ValueErrors); `managed`, `release_all`,
+    `describe`; `ManagedSpellLease`; the Creations register/unregister calls; four package-root exports. Green in
+    both GIL modes on the new tests and on the whole tree (unit, component, integration including all 279
+    crystallizer integration ids, the experimentation trees). Routing: a bound release +50 ns over `put_back`; the
+    `ReleaseManagedSpell()` call +70 ns, as `Aether()`. U11 is settled in B4; B1 lists the lease.
+  EVIDENCE:
+  - context_compass/tickets/stories/completed/2026-10-15_release_managed_spell_story.md:1-349
+  - context_compass/artifacts/managed_spell_quantity_20261015/runs/s4_validation_index.md:1-54
+  - release_docs/next_version_release.md:308-420
+  IMPACT: S5's `Conduit.managed_spell_meld` returns the lease and its emitted plans lease from the pools the registry
+    routes back to; S6's moves keep the holding root right through extract and restore.
+  NEXT: Rebuild and check for 0.2.8244, then S5 - read the codegen seams of B7 whole (U7, U8), the component patch.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-15T18:15:07Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: S5 landed as 0.2.8245: meld and injection lease from the pools through the emitted plans - leasing and fresh
+    managed sites, the inline pop (a plan constant on automatic roots, a per-creation read elsewhere), the
+    reserve-first miss with children recorded with the object, the widened F9 return, the door rows on the many
+    templates, the seams (per-path predicates, solo decline, manifest key, specializer decline) and
+    `Conduit.managed_spell_meld`. Green in both GIL modes on the 51 lowering tests, the seam, discovery and
+    specializer tests, 23 component and 7 integration tests and the whole tree; every non-managed emitted plan
+    byte-identical (4461 entries); a warm cycle (meld plus release) 320 ns automatic, 742 ns dynamic. U7 and U8 are
+    settled in B7; the pre-conjure staging gap is in B8.
+  EVIDENCE:
+  - context_compass/tickets/stories/completed/2026-10-15_managed_dispense_codegen_story.md:1-572
+  - context_compass/artifacts/managed_spell_quantity_20261015/runs/s5_validation_index.md:1-51
+  - release_docs/next_version_release.md:308-458
+  IMPACT: S6 moves pools the plans now lease from; transfers are dynamic-only and dynamic plans read the pool per
+    creation, so a moved pool is found through the target's store.
+  NEXT: Rebuild and check for 0.2.8245, then S6 - read TransferOfOwnership's creation moves and `_apply_notch` (U9).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-15T21:00:54Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: S6 landed as 0.2.8246: the owner stamp follows an ownership transfer's lineage both ways. The flip and
+    `_migrate_inactive_members` stamp through `_restamp` (the stamp-back registered first, a composed pool's discard
+    in a `finally`); `Creations.discard_managed_quantity` takes back an empty pool a stamp composed; rows are
+    unchanged (S3, S4). U9 is settled: a notch never re-stamps, so the stamp has to follow the transfer - for every
+    existence, `unique` included. Red then green in both GIL modes (42 tests: 19 stamp, 11 discard, 12 integration),
+    the probe's B, D, E, F and G fixed and A, C unchanged, the whole tree green in both modes. Stamping versions
+    staged before conjure stays with the owner (Open Questions).
+  EVIDENCE:
+  - context_compass/tickets/stories/completed/2026-10-15_managed_ownership_transfer_story.md:1-346
+  - context_compass/artifacts/managed_spell_quantity_20261015/runs/s6_validation_index.md:1-81
+  - release_docs/next_version_release.md:299-310
+  - release_docs/next_version_release.md:469-482
+  IMPACT: Every mechanic of the build has landed (S1-S6, Milestone 3); S7 documents it, promotes the patches and
+    records the benchmarks.
+  NEXT: Rebuild and check for 0.2.8246, then S7 - read its story and the patch lane, then the system docs.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-15T23:43:36Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: ALIGNMENT_CHECK
+  CLAIM: The build is ready for the owner's acceptance. S1-S6 landed as 0.2.8241-0.2.8246, one notch each, red then
+    green in both GIL modes, rebuilt and checked at each landing; S7 documented the member without a notch: the
+    existing meld shapes and scope cycles stay within noise against 0.2.8240 (ratios 0.960-1.033, both modes) and a
+    managed warm cycle costs 306-385 ns; src_architecture, src_components and the two tests docs carry the lane and
+    score B (83, 83, 83, 77); the graph authors the five new modules and re-accepts the 22 nodes the lane moved; the
+    README, the docs site (curriculum, scopes guide, glossary, API selection) and the release note describe it; the
+    patch lane is archived. EXIT_GATE: tests green per story, every non-managed emitted plan byte-identical (4461
+    shapes, S5), benchmarks recorded, docs and graph current, rebuild checks next (S7, last); the owner's acceptance
+    is the one item left. For the owner: (1) DECISION_REQUEST - should conjure stamp versions staged with
+    `bind_inactive` before it, so such a version can be notched in? Today its first meld fails for every existence
+    (Open Questions); (2) the build decisions open to review (Decision Log, S4-S6): the lease exported at the root, the
+    `managed` door rows on the `many` templates (`created` is True and activation hooks run on every lease), no cache
+    generation 21, F9 widened to any failure before a consumer's construction ends, `managed_spell_meld` with
+    own-parameter overrides pooling an uncounted object (a limited or queue pool can then exceed its limit), a release
+    by class after a no-move transfer needing `conduit=`, a restore cleaning the pool it replaced; (3) found in S7 and
+    fixed: the README's disposal sentence (stale since 0.2.80), docs/api.toml missing S4's four root exports (the site
+    build refused them since 0.2.8244), two stale src_architecture claims; (4) found, not changed: the
+    architecture_and_design set (stamped as verified against 0.1.2) still lists six members; the graph backlog from
+    before the lane (144 stale, 9 unsemantic, 5 retired; 8 of the stale in this lane's classes); the extractor's census
+    treats an empty stamp as unverified and writes indent=1 while the walker's accept writes indent=2;
+    `generalized_cache_runtime_rows_SCRATCH.py`, a 35-byte marker tracked in src since 6d0568f2e, ships in the wheel;
+    the build-asset payload modules' graph descriptors lag the final rebuild by one pass (mechanical tier only);
+    melder_1's meld_contract_scan waits on the owner to hand over four `register_index` call sites in this lane's files
+    (spellbook.py twice, transfer_of_ownership.py twice) and five test doubles - S7 touched none of them; codex_bridge
+    has failed on every try, so tickets and the board are the coordination record.
+  EVIDENCE:
+  - context_compass/tickets/stories/2026-10-15_managed_docs_release_story.md:152-176
+  - context_compass/tickets/stories/2026-10-15_managed_docs_release_story.md:383-420
+  - context_compass/tickets/stories/2026-10-15_managed_docs_release_story.md:421-472
+  - context_compass/tickets/stories/2026-10-15_managed_docs_release_story.md:497-546
+  - context_compass/tickets/epics/2026-10-14_managed_spell_quantity_epic.md:554-558
+  - context_compass/tickets/epics/2026-10-14_managed_spell_quantity_epic.md:560-576
+  - release_docs/next_version_release.md:321-486
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_cache_runtime_rows_SCRATCH.py:1-1
+  IMPACT: Nothing in the build is open on the implementer's side once the rebuild checks pass; the epic and S7 close
+    on the owner's acceptance, and the parked-stamp question is the owner's to rule on (it changes every existence).
+  NEXT: The owner accepts S1-S7 and the build decisions, rules on stamping parked versions, or redirects.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-16T00:21:04Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: The owner asked what the open questions mean (chat, 2026-10-16); a probe on 0.2.8246 (dynamic world for
+    the notch, gil=0) shows each one. (1) A version bound with `bind_inactive` before conjure is never stamped -
+    conjure stamps the active versions only (`define_conduit_into_spells` walks `_spells`) and a notch stamps
+    nothing - so after a notch its first meld raises RuntimeError "Spell has no configured CreationContextFactory."
+    for unique, unique_per_conduit, many and managed alike; the same version bound after conjure melds in all four,
+    and so does the pre-conjure one when conjure also stamps parked versions (a probe-only patch: one loop over
+    `_inactive_spells`). New: `bind_inactive`'s own comment says pre-conjure parked spells "are wired at conjure
+    like pre-conjure active spells", which conjure does not do, so the gap contradicts the code's stated intent.
+    (2) An activation hook on a managed spell runs on every lease: one object leased twice, built once, the hook
+    called twice (the `managed` door rows are the `many` templates, which report every object as created).
+    (4) A consumer whose own constructor raises after its managed dependency was leased gives the lease back
+    (count 1, idle 1); a sibling dependency that raises before the lease leaves nothing leased. (5) limited_quantity
+    with limit 2: `managed_spell_meld` with an override on the managed class's own parameter builds an uncounted
+    third object while two are out; releasing it trims a counted one (`count` 2 -> 1 with 2 alive), repeated cycles
+    drive `count` to 0, and then 4 objects were out at once - up to twice the limit.
+  EVIDENCE:
+  - context_compass/artifacts/managed_spell_quantity_20261015/probes/probe_owner_questions.py:1-249
+  - context_compass/artifacts/managed_spell_quantity_20261015/runs/owner_questions_gil0.txt:1-30
+  - src/melder/aether/spellbook/spellbook_creation_system.py:1332-1382
+  - src/melder/aether/spellbook/spellbook.py:5292-5306
+  - src/melder/aether/spellbook/spell.py:1661-1717
+  - src/melder/aether/spellbook/spell.py:1044-1086
+  - src/melder/aether/conduit/meld/conduit_meld.py:714-717
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/creation_runtime_door_compiler.py:1175-1238
+  - src/melder/aether/conduit/creations/managed_spell_quantity.py:548-606
+  - src/melder/aether/conduit/conduit.py:5067-5179
+  IMPACT: Question 1 reads as a defect against the code's own comment, fixed by one loop at conjure; question 5's
+    drift breaks the limit a limited or queue pool promises and the `count` that `describe()` reports, so the owner
+    may want it fixed rather than accepted. Questions 2 and 4 behave as the build decisions describe.
+  NEXT: The owner rules on the stamping fix and the review items, or accepts the build as it stands.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-16T00:21:04Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: melder_1's three questions (relayed by the owner in chat, 2026-10-16; its task
+    TASK-2026-10-15-make_meld_state_checks_follow_spell_state) are answered yes. (1) melder_1 makes its own edits
+    in this lane's files for its landing - the `resolvable=` keyword on the four `register_index` calls (spellbook.py
+    bind and notch, transfer_of_ownership.py transfer and rollback) and the five test doubles - so its fix is one
+    change set with one notch; melder_0 leaves those files untouched until melder_1 reports its landing. (2) melder_1
+    adds its own `##` section to the running release note, takes the next notch (read `__version__` at landing) and
+    runs the rebuild last; nothing in this lane needs another rebuild. (3) src_architecture, src_components, the tests
+    docs, their indexes and the graph are free now: S7's edits are finished. Any change the owner approves for this
+    lane (the parked-version stamp, the review items) lands after melder_1's and notches above it.
+  EVIDENCE:
+  - context_compass/attention_board.md:198-198
+  - context_compass/artifact_board.md:100-100
+  - context_compass/tickets/stories/2026-10-15_managed_docs_release_story.md:588-603
+  IMPACT: melder_1's fix lands without a custody conflict, and the two lanes notch in order.
+  NEXT: The owner relays this answer to melder_1 (its chat, or the mailbox as M0-175 if the owner asks melder_0 to).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-16T00:53:23Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: The owner ruled on every open item (chat, 2026-10-16; Decision Log). Conjure must wire versions parked before
+    it, and the cache generation moves to 21 - both in S8 (STORY-2026-10-16-parked_versions_wired_at_conjure, blocked
+    until melder_1 reports its landing). Activation hooks on every meld from the pool, F9 as widened, override objects
+    outside the count, the no-move release ambiguity and the pools' handling through a transfer stand as built. The
+    found bugs became four backlog tasks: the scratch marker in `src/`, the architecture_and_design lifetimes, the
+    graph's stale prose, the graph tools' census and indent. Still open: the owner read `ManagedSpellLease` as a rename
+    of `ReleaseManagedSpell`; it is the `with` helper, and the owner picks keep, hide it from the package root
+    (melder_0's pick) or drop the `with` form.
+  EVIDENCE:
+  - context_compass/tickets/stories/2026-10-16_parked_versions_wired_at_conjure_story.md:1-190
+  - context_compass/tickets/tasks/backlog/2026-10-16_remove_scratch_marker_from_src_task.md:1-147
+  - context_compass/tickets/tasks/backlog/2026-10-16_refresh_architecture_and_design_lifetimes_task.md:1-145
+  - context_compass/tickets/tasks/backlog/2026-10-16_verify_graph_semantics_backlog_task.md:1-140
+  - context_compass/tickets/tasks/backlog/2026-10-16_align_graph_tool_stamp_census_and_indent_task.md:1-146
+  IMPACT: The epic's remaining work is S8 and the owner's acceptance; S7 closes with the epic.
+  NEXT: On melder_1's landing report, start S8 with its first task.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-16T09:30:00Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: The owner closed the last open item (chat, 2026-10-16: "no these are all fine, fix bind_inactive, 1. is fine
+    leave it as is but just do make sure it works fine"): `ManagedSpellLease` stays as built - at the package root,
+    with its `with` form - and S8 checks that it works. S8's entry gate holds: melder_1 landed meld_contract_scan as
+    0.2.8247 (the four `register_index` calls in this lane's files, five test doubles, its release-note section, the
+    notch, the system docs and a rebuild with both checks OK) and handed those files back, so S8 notches above it
+    (0.2.8248 unless another lane lands first). The epic moves blocked -> in_progress until S8 lands.
+  EVIDENCE:
+  - src/melder/__version__.py:12-12
+  - context_compass/tickets/tasks/2026-10-15_make_meld_state_checks_follow_spell_state_task.md:1039-1057
+  - context_compass/tickets/stories/2026-10-16_parked_versions_wired_at_conjure_story.md:51-61
+  IMPACT: Nothing is open for the owner but accepting the epic after S8; no change to the lease is planned.
+  NEXT: S8's first task - read the post-conjure `bind_inactive` branch, `_apply_notch`, `define_conduit_into_spells`
+    and the restore engine's staged replay whole; settle U12.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-16T11:45:48Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: ALIGNMENT_CHECK
+  CLAIM: The build is ready for the owner's acceptance again: S8 is done and notched 0.2.8248. Conjure stamps every
+    version parked with `bind_inactive` before it with the owner stamp alone, so such a version melds after a notch
+    for every existence (the owner's "bind_inactive should behave the same before and after conjure"); cache
+    generation 21 retires bundles written before the managed codegen; the missing-pool message drops the pre-conjure
+    cause; `ManagedSpellLease` works as built (the owner kept it). Red then green, the whole tree green in both GIL
+    modes, the system docs, graph and release note carry it - the note's example was run in both modes and its first
+    draft corrected: a fresh world refuses `bind_inactive` before its first `conjure(dynamic=True)`, so staging before
+    conjure happens in a Book joining a world already settled dynamic - and the patch lane is archived. Found in S8
+    and parked as a draft: no public call returns a staged version's Spell for `notch_spell`, so the README's
+    stage-notch-meld sketch cannot run as written; the owner picks its shape. Custody: once the 0.2.8248 rebuild
+    passes, this lane's files are free for melder_1's rule-2 landing. For the owner: accept S1-S8 (with the review
+    items as ruled on 2026-10-16) or redirect.
+  EVIDENCE:
+  - context_compass/tickets/stories/2026-10-16_parked_versions_wired_at_conjure_story.md:158-464
+  - context_compass/tickets/tasks/backlog/2026-10-16_public_notch_target_for_staged_versions_task.md:1-189
+  - release_docs/next_version_release.md:533-579
+  - src/melder/__version__.py:12-12
+  IMPACT: Nothing is open on the implementer's side once the rebuild checks pass; S7, S8 and the epic close on the
+    owner's acceptance.
+  NEXT: Rebuild and check for 0.2.8248, then report to the owner.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 ## Closure Confirmation
-- [ ] Work walkthrough shared with user
+- [x] Work walkthrough shared with user (2026-10-16T00:03:22Z, the owner report)
 - [ ] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
 - [ ] Applicable anti-pattern checks are clear or escalated with evidence.
 
@@ -1009,17 +1527,32 @@ MelderOps logger win is the proof, not the design driver. Nothing about the six 
 - Keep notes append-only and preserve UNKNOWN-first promotion discipline.
 
 ## Context / Handoff Summary
-Opened 2026-10-14 (melder_1) to hold the managed_spell_quantity plan. The owner settled the shape with fable_0 the
-same day (Decision Log; Notes of 2026-10-14T23:45:47Z: the settled shape, the requirement overlay, the seam map,
-the numbers and the implementation plan) and on 2026-10-15 reassigned the epic to melder_0, whose five follow-up
-points the owner resolved under the runtime model - Melder polices its structure, not the objects it hands out
-(ASSUMPTION_CHALLENGE note of 2026-10-15T01:34:21Z). Milestone 1 is met, and the seam map still locates every seam on
-0.2.8240 (FACT note of 2026-10-15T00:18:39Z). Nothing is drafted beyond this epic and nothing is built. Next, on the
-owner's go-ahead: read each seam body whole, write the patch docs (architecture first), then the stories along the
-plan's steps. No `src/` edit until EPIC-2026-10-14-slotted_lifetime_ownership_fixes (melder_1) is accepted and its
-files are free; each landed `src/` slice takes its notch from `__version__` at landing (0.2.8240 now) and its
-release-note entry; the rebuild is last. The earlier discussion stays in EPIC-2026-10-05 (Notes 2026-10-11 to
-2026-10-13).
+- Scope: build `Existence.managed_spell_quantity` end to end (Build Specification B1-B12) in eight stories, one notch
+  per landed story, rebuild last; S8 carried the owner's follow-ups of 2026-10-16.
+- Controlling decisions: the Decision Log (owner rulings 2026-10-12 to 2026-10-16; melder_0's build decisions of
+  2026-10-15 - the S4 story's DECISION note: the lease on the root, the holding root; the S5 and S6 build decisions -
+  which the owner kept on 2026-10-16, except the cache generation, which S8 moved to 21). The objects handed out are
+  the agents'; Melder keeps the structure right.
+- Source revision: 0.2.8248 (S8). S1 0.2.8241 (the member, the matrix, route family "managed", Phase 6 rank 0); S2
+  0.2.8242 (the four bind options, Spell fields, the managed-only id part, record 4.2.0 and replay); S3 0.2.8243 (the
+  pool, the exhaustion error, the Creations pool map, owner stamping, the probes, purge 0); S4 0.2.8244
+  (`ReleaseManagedSpell`, the lease, the Creations register/unregister calls, the root exports); S5 0.2.8245 (leases
+  through the emitted plans and doors, `Conduit.managed_spell_meld`); S6 0.2.8246 (the owner stamp follows a
+  transfer's lineage both ways); melder_1's 0.2.8247 between them; S8 0.2.8248 (conjure wires the versions staged
+  before it; cache generation 21).
+- Done: Milestones 1-4 and 6; S1-S6 landed and closed (tickets/stories/completed/); S7's work (no notch) and S8's
+  (0.2.8248), both in review; U1-U12 settled (B2-B8; U12 in the S8 story).
+- Remaining: the owner's acceptance of the epic, which closes S7, S8 and the epic (the 0.2.8248 rebuild ran last and
+  both checks print only OK); Milestone 5 (the MelderOps prototype) after a release, with the owner.
+- Found and parked: five backlog tasks - the scratch marker in `src/`, the architecture_and_design lifetimes, the
+  graph's stale prose, the graph tools' census and indent (2026-10-16T00:53:23Z), and a public notch target for
+  staged versions (S8, a draft waiting on the owner's choice of shape).
+- Limits: codex_bridge cannot reach Codex desktop (every try; last at 2026-10-16T11:33Z), so the tickets and the board
+  row are the coordination record; hosted CI runs and coverage are the owner's (Not run).
+- Owners: melder_0 builds; the owner accepts. melder_1's rule-2 task waits on the owner's approval of D1-D5; this
+  lane's files (spellbook.py among them) are free for it: the 0.2.8248 rebuild passed.
+- Next 1-3 actions: the owner accepts or redirects; on acceptance close S7, S8 and the epic (completion summaries,
+  completed/, board anchors, artifact dispositions).
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

@@ -1,0 +1,12 @@
+[
+  {
+    "path": "release_docs/next_version_release.md",
+    "old": "`conjure()` was the only way that worked. From 0.2.8248 `conjure()` wires every version staged before it, exactly as\n`bind_inactive` wires one staged after it:\n",
+    "new": "`conjure()` was the only way that worked. From 0.2.8248 `conjure()` wires every version staged before it, exactly as\n`bind_inactive` wires one staged after it. Staging before `conjure()` needs a world that is already dynamic - a\nSpellbook joining a frame an earlier `conjure(dynamic=True)` settled:\n"
+  },
+  {
+    "path": "release_docs/next_version_release.md",
+    "old": "book = md.Spellbook()\nv1 = book.bind(spell=ReportService, existence=\"unique\", binding_name=\"v1\")\nindex = book.find_spell_by_id(v1).spell_index\nv2 = book.bind_inactive(spell=ReportServiceV2, spell_index=index, existence=\"unique\", binding_name=\"v2\")\nroot = book.conjure(dynamic=True)           # wires v2 as well as v1\n\n# after root.notch_spell(spell_index=index, spell=<v2's Spell>):\nservice = root.meld(spell_id=v2)            # a ReportServiceV2; RuntimeError before 0.2.8248\n",
+    "new": "owner = md.Spellbook().conjure(dynamic=True, name=\"owner\")   # settles the world dynamic\n\nbook = md.Spellbook()                       # joins the dynamic world\nv1 = book.bind(spell=ReportService, existence=\"unique\", binding_name=\"v1\")\nindex = book.find_spell_by_id(v1).spell_index\nv2 = book.bind_inactive(spell=ReportServiceV2, spell_index=index, existence=\"unique\", binding_name=\"v2\")\nreports = book.conjure(name=\"reports\")      # inherits dynamic; wires v2 as well as v1\n\n# after reports.notch_spell(spell_index=index, spell=<v2's Spell>):\nservice = reports.meld(spell_id=v2)         # a ReportServiceV2; RuntimeError before 0.2.8248\n"
+  }
+]

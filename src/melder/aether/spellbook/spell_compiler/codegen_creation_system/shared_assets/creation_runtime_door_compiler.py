@@ -1172,6 +1172,9 @@ _OVERRIDES_ONLY_INSTANCE_TEMPLATE_BY_ROUTE: dict[
     # Cluster has its own templates (distinct existence). They compile to the
     # same shape as lineage because both read their store off the meld.
     "cluster": _TEMPLATE_CLUSTER_INSTANCE_OVERRIDES_ONLY,
+    # A managed root's doors are the `many` doors (managed_spell_quantity S5):
+    # the plan leases, and the hooks lane reports `created=True` on every lease.
+    "managed": _TEMPLATE_MANY_INSTANCE_OVERRIDES_ONLY,
 }
 
 _OVERRIDES_ONLY_HOOKS_TEMPLATE_BY_ROUTE: dict[
@@ -1185,6 +1188,7 @@ _OVERRIDES_ONLY_HOOKS_TEMPLATE_BY_ROUTE: dict[
     "unique": _TEMPLATE_UNIQUE_OVERRIDES_ONLY,
     "lineage": _TEMPLATE_LINEAGE_OVERRIDES_ONLY,
     "cluster": _TEMPLATE_CLUSTER_OVERRIDES_ONLY,
+    "managed": _TEMPLATE_MANY_OVERRIDES_ONLY,
 }
 
 _NO_OVERRIDES_ONLY_INSTANCE_TEMPLATE_BY_ROUTE_AND_FAST: dict[
@@ -1206,6 +1210,10 @@ _NO_OVERRIDES_ONLY_INSTANCE_TEMPLATE_BY_ROUTE_AND_FAST: dict[
     # Cluster has its own no-overrides templates (never fast-transient).
     ("cluster", False): _TEMPLATE_CLUSTER_INSTANCE_NO_OVERRIDES_ONLY,
     ("cluster", True): _TEMPLATE_CLUSTER_INSTANCE_NO_OVERRIDES_ONLY,
+    # Managed roots never take the fast-transient door: both bits select the
+    # plain `many` template (managed_spell_quantity S5).
+    ("managed", False): _TEMPLATE_MANY_INSTANCE_NO_OVERRIDES_ONLY,
+    ("managed", True): _TEMPLATE_MANY_INSTANCE_NO_OVERRIDES_ONLY,
 }
 
 _NO_OVERRIDES_ONLY_HOOKS_TEMPLATE_BY_ROUTE_AND_FAST: dict[
@@ -1226,4 +1234,6 @@ _NO_OVERRIDES_ONLY_HOOKS_TEMPLATE_BY_ROUTE_AND_FAST: dict[
     ("lineage", True): _TEMPLATE_LINEAGE_NO_OVERRIDES_ONLY,
     ("cluster", False): _TEMPLATE_CLUSTER_NO_OVERRIDES_ONLY,
     ("cluster", True): _TEMPLATE_CLUSTER_NO_OVERRIDES_ONLY,
+    ("managed", False): _TEMPLATE_MANY_NO_OVERRIDES_ONLY,
+    ("managed", True): _TEMPLATE_MANY_NO_OVERRIDES_ONLY,
 }

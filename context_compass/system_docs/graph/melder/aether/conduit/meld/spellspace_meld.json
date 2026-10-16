@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/meld/spellspace_meld.py",
- "source_sha256": "47fcd3edf4f8a4353fd6ab7cc7cddfa57d203c060822b95b81df5d56a2d4cdb9",
+ "source_sha256": "888f9acb93b78f103a025568844b3cb42ba70a198710564be1b09d6c78229e88",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.meld.spellspace_meld": {
@@ -43,7 +43,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "de9e3c768d8d964b1e1957cd700b90eff12e8efdf3ce50a01bd75590eec84f2c",
+   "span_sha256": "b580455ac1acbf9d95eca2718bc80a8b878518093ef66c827073188ab3ff6dea",
    "role": "Spellspace-facing meld front door.",
    "responsibilities": [
     "routes unique_per_spell_space storage through spellspace-local Creations, which also hold the disposal-bearing many objects melded through this door (the innermost scope)",
@@ -52,7 +52,8 @@
     "restricts purge to this space's many and unique_per_spell_space entries before delegating single or all retirement to Creations",
     "refuses immutable non-resolvable registrations before normal resolution and reuse-only access",
     "admits a dynamic spell through its spell-index gate before reading the context (both lanes, via Meld._execute_admitted); automatic spells keep the unticketed lane and fast-door memo",
-    "serves warm automatic id melds from the fast-door entry with ConduitMeld's guard ladder and both arms (plain and dict override payloads), and mints the name/class entries (_fast_input_doors) its space reads"
+    "serves warm automatic id melds from the fast-door entry with ConduitMeld's guard ladder and both arms (plain and dict override payloads), and mints the name/class entries (_fast_input_doors) its space reads",
+    "answers a managed spell's live-creation probe from the owner root's pool, as the conduit door does - a managed object is never space-local (0.2.8243)"
    ],
    "owns_state": [
     "_spellspace",

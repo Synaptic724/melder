@@ -1,0 +1,98 @@
+--- pair 0 before_0_2_8240 rc=0
+python 3.14.7 gil=disabled melder=0.2.8240 cycles=100000 rounds=7
+ARM unique min 165.8 median 170.7
+ARM many min 206.8 median 210.5
+ARM per_conduit min 169.0 median 173.0
+ARM many_of_many min 267.2 median 270.6
+ARM many_of_unique min 237.4 median 241.4
+ARM override min 328.3 median 337.3
+ARM by_name min 200.7 median 202.6
+ARM dyn_many min 622.4 median 636.3
+ARM dyn_unique min 558.1 median 563.8
+ARM lesser_cycle min 2145.6 median 2314.2
+ARM space_cycle min 768.8 median 787.3
+
+--- pair 0 after_working_copy rc=0
+python 3.14.7 gil=disabled melder=0.2.8246 cycles=100000 rounds=7
+ARM unique min 164.4 median 168.6
+ARM many min 206.4 median 208.1
+ARM per_conduit min 166.3 median 172.9
+ARM many_of_many min 258.8 median 265.1
+ARM many_of_unique min 231.7 median 235.5
+ARM override min 321.1 median 329.3
+ARM by_name min 197.1 median 203.4
+ARM dyn_many min 612.0 median 617.4
+ARM dyn_unique min 554.6 median 563.8
+ARM lesser_cycle min 2150.7 median 2195.1
+ARM space_cycle min 754.9 median 773.0
+
+--- pair 1 before_0_2_8240 rc=0
+python 3.14.7 gil=disabled melder=0.2.8240 cycles=100000 rounds=7
+ARM unique min 166.2 median 169.7
+ARM many min 203.3 median 207.9
+ARM per_conduit min 167.4 median 172.2
+ARM many_of_many min 259.1 median 264.0
+ARM many_of_unique min 231.3 median 236.3
+ARM override min 322.8 median 324.8
+ARM by_name min 193.2 median 198.6
+ARM dyn_many min 600.4 median 611.9
+ARM dyn_unique min 558.8 median 568.2
+ARM lesser_cycle min 2155.2 median 2205.8
+ARM space_cycle min 759.2 median 779.0
+
+--- pair 1 after_working_copy rc=0
+python 3.14.7 gil=disabled melder=0.2.8246 cycles=100000 rounds=7
+ARM unique min 162.0 median 167.9
+ARM many min 207.2 median 219.7
+ARM per_conduit min 174.6 median 176.4
+ARM many_of_many min 264.7 median 269.1
+ARM many_of_unique min 232.3 median 239.2
+ARM override min 318.0 median 342.8
+ARM by_name min 201.7 median 208.5
+ARM dyn_many min 622.1 median 634.1
+ARM dyn_unique min 566.6 median 577.6
+ARM lesser_cycle min 2173.1 median 2288.2
+ARM space_cycle min 768.3 median 808.6
+
+--- pair 2 before_0_2_8240 rc=0
+python 3.14.7 gil=disabled melder=0.2.8240 cycles=100000 rounds=7
+ARM unique min 172.9 median 175.6
+ARM many min 209.3 median 211.0
+ARM per_conduit min 178.2 median 183.1
+ARM many_of_many min 267.6 median 273.1
+ARM many_of_unique min 238.4 median 243.0
+ARM override min 322.5 median 327.5
+ARM by_name min 200.1 median 204.6
+ARM dyn_many min 607.8 median 617.7
+ARM dyn_unique min 570.1 median 579.8
+ARM lesser_cycle min 2201.7 median 2284.4
+ARM space_cycle min 754.3 median 796.3
+
+--- pair 2 after_working_copy rc=0
+python 3.14.7 gil=disabled melder=0.2.8246 cycles=100000 rounds=7
+ARM unique min 161.9 median 165.1
+ARM many min 205.7 median 208.3
+ARM per_conduit min 163.4 median 169.5
+ARM many_of_many min 258.3 median 263.6
+ARM many_of_unique min 238.0 median 243.8
+ARM override min 321.3 median 327.3
+ARM by_name min 195.3 median 205.3
+ARM dyn_many min 594.8 median 615.0
+ARM dyn_unique min 557.1 median 578.8
+ARM lesser_cycle min 2150.3 median 2214.1
+ARM space_cycle min 742.6 median 819.7
+
+=== SUMMARY
+gil=0 pairs=3 cycles=100000 rounds=7
+arm               before ns   after ns after/before   per-process medians (before | after)
+unique                170.7      167.9        0.984   171 170 176 | 169 168 165
+many                  210.5      208.3        0.990   210 208 211 | 208 220 208
+per_conduit           173.0      172.9        0.999   173 172 183 | 173 176 170
+many_of_many          270.6      265.1        0.980   271 264 273 | 265 269 264
+many_of_unique        241.4      239.2        0.991   241 236 243 | 236 239 244
+override              327.5      329.3        1.005   337 325 328 | 329 343 327
+by_name               202.6      205.3        1.013   203 199 205 | 203 208 205
+dyn_many              617.7      617.4        1.000   636 612 618 | 617 634 615
+dyn_unique            568.2      577.6        1.017   564 568 580 | 564 578 579
+lesser_cycle         2284.4     2214.1        0.969   2314 2206 2284 | 2195 2288 2214
+space_cycle           787.3      808.6        1.027   787 779 796 | 773 809 820

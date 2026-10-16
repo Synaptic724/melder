@@ -16,6 +16,12 @@ class SpellState(Enum):
     - Flag lifecycle is owned by the subsystem that set the flag. Validation
       clears only topology-driven dirt flags; contract, mutation, and ops flags
       must be flipped by their own control-plane logic.
+    - `non_resolvable` is the capability flag. `SpellSystemStates.register_index`
+      sets it when the lineage's selected version was bound resolvable=False and
+      clears it when a resolvable version (or, with no stated capability, another
+      version) is selected. Validation never clears it and it changes no
+      validity; its one reader is RiskManager, which leaves a flagged lineage's
+      risk out of the Book's validation flag.
 
     Threading:
         Immutable enum members; safe to read from any thread. Flags are held as
@@ -48,6 +54,15 @@ class SpellState(Enum):
         that deliberately defers select/staged/promoted acts until the
         notch/bind_inactive seams are real. They are vocabulary awaiting a
         producer, not dead values.
+        `non_resolvable` exists because `unknown` means "work still owed", and a
+        resolvable=False definition - an abstract base, a Protocol, a helper
+        kept so agents can discover, inspect and version it, whose consumers
+        receive the value by override - owes no resolution verdict at all.
+        Every meld door refuses such a version before the validation gate, so
+        its never-filled verdict says nothing about whether a meld may skip the
+        gate; counted as risk, it kept its Book's validation flag up for the
+        Book's life. The flag records the declaration on this explanation axis
+        and leaves the validity axis truthful.
 
     AGENT_ACCESS: internal
 
@@ -73,3 +88,6 @@ class SpellState(Enum):
     anchored_component = auto()      # infra / non-mutable component
     config_missing = auto()          # required config not present
     transfer_in_progress = auto()    # ownership transfer is actively blocking resolution
+
+    # Capability (registration)
+    non_resolvable = auto()          # selected version bound resolvable=False; owes no resolution verdict

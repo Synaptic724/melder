@@ -1,0 +1,2075 @@
+====================================================================================================
+NODE melder.aether.aether.Aether
+  descriptor: context_compass/system_docs/graph/melder/aether/aether.json
+  file: src/melder/aether/aether.py  lineno: 49  kind: class
+  role: "Global Melder substrate root."
+  responsibilities: ["owns frames and frame registries", "hosts hidden support roots", "binds frame configuration", "registers conduits and spell lineage state", "answers frame-scoped conduit lookups: root maps (*_root_*), the frame Cloud's named scopes (get_conduit_by_name) and every live conduit via root-ward lineage snapshots (get_conduit_by_id)", "answers non-creating frame lookups (find_frame, get_frame, list_frame_names)", "seals the spell-id regime at the first frame and refuses configure/activate of a configuration with a different process_wide_unique_spell_ids while frames exist", "reports the spell-id regime in force (process_wide_unique_spell_ids, lock-free): the sealed value once a frame exists, else the installed configuration's, else True", "republishes an immutable (name, frame) view of its frame registry under its lock on every frame birth, detach and teardown; bind's cross-frame duplicate sweep reads it without copying (0.2.8231)"]
+  owns_state: ["_aetheric_frames", "_default_frame", "_logger", "_aetheric_frame_view"]
+  phases: ["init", "runtime", "cleanup"]
+  edge: owns_lifecycle_of -> melder.aether.aether_configuration.AetherConfiguration [one_to_one; ['runtime', 'cleanup']] why: Aether installs and retains one root AetherConfiguration as its process-wide policy surface.
+  edge: creates -> melder.aether.aether_configuration_builder.AetherConfigurationBuilder [one_to_many; ['runtime']] why: Aether creates AetherConfigurationBuilder instances as the fluent assembly path for root configuration.
+  edge: owns_lifecycle_of -> melder.aether.aether_utility_system.AetherUtilitySystem [one_to_one; ['init', 'runtime', 'cleanup']] why: Aether hosts the utility system as one hidden support root inside the global runtime lifecycle.
+  edge: owns_lifecycle_of -> melder.aether.aetheric_frame.aetheric_frame.AethericFrame [one_to_many; ['init', 'runtime', 'cleanup']] why: Aether owns the frame registry and creates frame containers for the runtime substrate.
+  edge: owns_lifecycle_of -> melder.crystallizer.crystallizer.Crystallizer [one_to_one; ['init', 'runtime', 'cleanup']] why: Aether hosts the crystallizer singleton root as one private runtime subsystem.
+  edge: owns_lifecycle_of -> melder.mutation_research.mutation_research.MutationResearch [one_to_one; ['init', 'runtime', 'cleanup']] why: Aether lazily hosts the process-wide MutationResearch singleton root.
+  edge: owns_lifecycle_of -> melder.nexus.nexus.Nexus [one_to_one; ['init', 'runtime', 'cleanup']] why: Aether hosts Nexus as a hidden support root inside the global substrate lifecycle.
+  edge: uses -> melder.utilities.helpers.ulid_factory [many_to_one; ['init', 'runtime']] why: Aether uses the internal ulid_factory module when minting its runtime identifier.
+  edge: creates -> melder.utilities.synchronization.load_gate.LoadGate [None; None] why: Aether constructs and owns the LoadGate BEFORE any frame can exist and drives acquire/release_load_authority (drain over live mediators).
+  span lines: HEAD 2941 -> now 2957; diff lines 77
+  | --- HEAD
+  | +++ now
+  | @@ -15,6 +15,8 @@
+  |            utility system.
+  |          - Hosts the singleton MutationResearch root above frame-local runtime
+  |            state.
+  | +        - Hosts `ReleaseManagedSpell`, the registry managed objects are given
+  | +          back through: built last at boot, cleaned right after the frames.
+  |          - Owns one optional Aether root configuration that applies policy into
+  |            the hosted utility system.
+  |          - Becomes reinitializable only after `cleanup()` fully resets singleton state.
+  | @@ -35,10 +37,11 @@
+  |      Subsystem Context:
+  |          Layer 1 - the substrate everything else hangs from. It owns the named
+  |          frame registry and hosts the singleton subsystems: `AetherUtilitySystem`,
+  | -        `Crystallizer`, `Nexus`, the `MutationResearch` root, and the
+  | -        `LoadGate`. All three subsystem roots are constructed EAGERLY in
+  | -        `__init__`, in that order - Crystallizer leads because the other two
+  | -        read it out of this host as they build.
+  | +        `Crystallizer`, `Nexus`, the `MutationResearch` root, the
+  | +        `LoadGate` and `ReleaseManagedSpell`. All three subsystem roots are
+  | +        constructed EAGERLY in `__init__`, in that order - Crystallizer leads
+  | +        because the other two read it out of this host as they build - and the
+  | +        release registry is built last, because nothing reads it at boot.
+  |  
+  |      System Context:
+  |          Under V3 Horizon LAZY FRAMES, `import melder` and the first `Aether()`
+  | @@ -93,7 +96,8 @@
+  |          Purpose:
+  |              Create the root `Aether` host and construct the hosted
+  |              singleton-level subsystems (Crystallizer, utility system, LoadGate,
+  | -            and the private `Nexus` root). Frames are lazy by design: no
+  | +            the private `Nexus` root, and last `ReleaseManagedSpell`, the
+  | +            registry of managed pools). Frames are lazy by design: no
+  |              `AethericFrame` is constructed at boot - the first Spellbook births
+  |              the frame it names.
+  |  
+  | @@ -196,6 +200,11 @@
+  |                      aether=self,
+  |                  )
+  |                  self._nexus: Nexus = Nexus(aether=self)
+  | +                # ReleaseManagedSpell is built LAST (owner ruling 2026-10-15: a singleton like Aether, created and
+  | +                # owned here at boot, cleaned by this host, with the same reset hook). It is the class-keyed registry
+  | +                # of managed pools that `ReleaseManagedSpell()` hands back; it reads no other hosted root, and root
+  | +                # stores register their pools in it only once frames exist.
+  | +                self._release_managed_spell: ReleaseManagedSpell = ReleaseManagedSpell(aether=self)
+  |                  # BUG-002 (2026-07-17 audit): the once-only latch flips while
+  |                  # the class lock is still held so the unlocked fast path above
+  |                  # can only observe a fully constructed singleton.
+  | @@ -221,6 +230,9 @@
+  |              - Idempotent.
+  |              - Cleans owned frames before dropping singleton-level references.
+  |              - Cleans the hosted Nexus singleton and utility system when they exist.
+  | +            - Cleans `ReleaseManagedSpell` right after the frames: their root
+  | +              stores unregister their pools as they are torn down, so the
+  | +              registry is empty when it is retired.
+  |              - Resets singleton bootstrap state in a `finally`, so `Aether()`
+  |                can construct a fresh root even when a child cleanup fails: the
+  |                child error is logged and re-raised, but this cleaned instance
+  | @@ -255,6 +267,9 @@
+  |                      self.cleanup_aetheric_frames() # This will clean each individual frame
+  |                      self._aetheric_frames.clear() # This cleans the ConcurrentDictionary
+  |                      self._aetheric_frame_view = ()
+  | +                # The frames' root stores unregistered their pools while they were torn down; nothing can register
+  | +                # one any more, so the release registry is retired here, before the other hosted roots.
+  | +                self._release_managed_spell.cleanup()
+  |                  if self._crystallizer is not None:
+  |                      self._crystallizer.cleanup()
+  |                  self._mutation_research.cleanup()
+  | @@ -277,6 +292,7 @@
+  |                  del self._default_frame
+  |                  del self._load_gate
+  |                  del self._aetheric_mediator
+  | +                del self._release_managed_spell
+  |              except Exception as e:
+  |                  self._logger.error(f"Error cleaning up Aether: {e}", "cleanup", exc_info=True)
+  |                  raise
+====================================================================================================
+NODE melder.aether.spellbook.bind.bind.Bind
+  descriptor: context_compass/system_docs/graph/melder/aether/spellbook/bind/bind.json
+  file: src/melder/aether/spellbook/bind/bind.py  lineno: 130  kind: class
+  role: "Spell registration gateway for one Spellbook."
+  responsibilities: ["examines binding targets into canonical binding profiles", "fingerprints binding metadata into structural spell ids with no memory address in any input (address-free repr, default, signature and init_signature text), so the same object content gets one id in every process", "validates native resolvable bool before reflection; False uses its own hash domain while True preserves legacy ids", "admits Protocol definitions only with resolvable=False without relaxing other binding rules", "resolves ordered disposal once at bind; book names own overlaps and priority selects front or back placement", "matches requested inherited disposal through first-definition MRO namespaces without invoking descriptors or expanding fingerprinted profile members", "checks direct public Protocol members on classes and actual supplied objects before Spell creation", "creates canonical Spell records for Spellbook registration", "captures immutable configuration seeds once and owns subsequent Book-local registration hook changes", "retains one callback tuple per bind and dispatches original-reference pre checks, actual-Spell activation and captured post notifications", "runs application callbacks outside the construction lock and preserves phase, callback identity and cause on failure", "retires unpublished failed Spell and index allocations locally without disposing supplied application objects", "classifies the spellframe before the structural check (_classify_spellframe): None -> SpellframeKind.none, str -> category, a typing.Protocol -> contract with the Protocol recorded; any other class or object is refused with a TypeError naming the two valid forms (0.2.8222, Breaking)", "validates binding policy and spellframe semantics, running the direct-public-member Protocol check only for a contract frame", "hands the Spell its spellframe_kind and implemented_protocols; the fingerprint does not hash the kind"]
+  owns_state: ["_spellbook", "_spell_examiner", "_lifecycle_hooks"]
+  phases: ["init", "runtime", "cleanup"]
+  edge: uses -> melder._build_assets._bind_guard.bind_guard [many_to_one; ['init', 'runtime']] why: Bind.bind calls the module-level assert_allowed() before constructing a Spell, and that check refuses registration when the candidate's exact (module, qualname) pair is present in INTERNAL_MANIFEST - the frozenset this hand-written loader publishes. Membership is an exact match and does NOT walk the MRO, so a user subclass of an internal class carries its own qualname, misses the manifest, and binds normally.
+  edge: uses -> melder.aether.conduit.conduit_ward.permissions.permissions.Permissions [many_to_one; ['init', 'runtime']] why: Bind accepts and carries Permissions as the access policy for newly registered spells.
+  edge: creates -> melder.aether.spellbook.bind.spell_index.SpellIndex [one_to_many; ['init', 'runtime']] why: Bind creates a SpellIndex lineage key from the structural fingerprint before constructing the Spell record.
+  edge: uses -> melder.aether.spellbook.existence.existence.Existence [many_to_one; ['init', 'runtime']] why: Bind accepts Existence as the lifecycle policy for newly registered spells.
+  edge: creates -> melder.aether.spellbook.spell.Spell [one_to_many; ['init', 'runtime']] why: Bind turns one examined binding target into the canonical Spell runtime record for Spellbook registration.
+  edge: owns_lifecycle_of -> melder.aether.spellbook.spell_compiler.spell_examiner.spell_examiner.SpellExaminer [one_to_one; ['init', 'runtime', 'cleanup']] why: Bind owns the SpellExaminer used to build registration profiles.
+  edge: uses -> melder.aether.spellbook.spell_types.spell_types.SpellType [many_to_one; ['init', 'runtime']] why: Bind resolves and stores SpellType to classify each registered spell family.
+  span lines: HEAD 1241 -> now 1671; diff lines 594
+  | --- HEAD
+  | +++ now
+  | @@ -73,6 +73,15 @@
+  |      ]
+  |      _EMPTY_HOOKS: ClassVar[BindLifecycleHooks] = ((), (), ())
+  |      _HOOK_NAMES: ClassVar[tuple[str, ...]] = ("bind:pre", "bind:activation", "bind:post")
+  | +    # Managed options (Existence.managed_spell_quantity): the idle cap an elastic binding gets when it names
+  | +    # none, and the four option names in signature order (a refusal names the ones the binding supplied).
+  | +    _MANAGED_ELASTIC_DEFAULT_LIMIT: ClassVar[int] = 256
+  | +    _MANAGED_OPTION_NAMES: ClassVar[tuple[str, ...]] = (
+  | +        "managed_spell_mode",
+  | +        "managed_spell_limit",
+  | +        "managed_spell_timeout_seconds",
+  | +        "managed_spell_reset_methods",
+  | +    )
+  |  
+  |      def __init__(
+  |              self,
+  | @@ -339,6 +348,10 @@
+  |              disposal_method_names: Optional[Sequence[str]] = None,
+  |              enforce_priority_disposal_methods: bool = False,
+  |              resolvable: bool = True,
+  | +            managed_spell_mode: Optional[Union[ManagedSpellMode, str]] = None,
+  | +            managed_spell_limit: Optional[int] = None,
+  | +            managed_spell_timeout_seconds: Optional[float] = None,
+  | +            managed_spell_reset_methods: Optional[Sequence[str]] = None,
+  |              _lifecycle_hooks: Optional[BindLifecycleHooks] = None,
+  |              **kwargs: Any,
+  |      ) -> Union[Spell, Any]:
+  | @@ -369,6 +382,15 @@
+  |                  True, last when False (default). Book order owns shared names in both modes.
+  |              resolvable (bool): Native resolution capability for this Spell version.
+  |                  False permits descriptive Protocol targets; it does not relax other binding rules.
+  | +            managed_spell_mode (Optional[Union[ManagedSpellMode, str]]): Pool policy of an
+  | +                `Existence.managed_spell_quantity` binding - a member or its name; None means elastic.
+  | +            managed_spell_limit (Optional[int]): Elastic: the most idle objects kept (default 256).
+  | +                limited_quantity and queue: the most objects alive at once (required).
+  | +            managed_spell_timeout_seconds (Optional[float]): How long a queue lease waits for a
+  | +                release (queue only, required there).
+  | +            managed_spell_reset_methods (Optional[Sequence[str]]): Names of zero-argument methods of
+  | +                the class run, in order, on every release. All four options must stay None on any
+  | +                other existence; `_normalize_managed_options` states every rule.
+  |              _lifecycle_hooks: Internal Book-captured callback set, retained through
+  |                  its later post stage. None captures the current registry when the
+  |                  actual target is supplied, including deferred decorator calls.
+  | @@ -396,7 +418,9 @@
+  |              TypeError: If a class or supplied existing object lacks a required
+  |                  directly declared Protocol member or exposes a non-callable
+  |                  value where that Protocol requires a callable, or resolvable is not a bool,
+  | -                or `spellframe` is neither None, a string nor a Protocol class.
+  | +                or `spellframe` is neither None, a string nor a Protocol class, or a managed
+  | +                option has the wrong type or targets a non-class.
+  | +            ValueError: If a managed option is malformed or set on another existence.
+  |          """
+  |          self.check_cleaned()
+  |          if spell is None:
+  | @@ -418,6 +442,10 @@
+  |                      disposal_method_names=disposal_method_names,
+  |                      enforce_priority_disposal_methods=enforce_priority_disposal_methods,
+  |                      resolvable=resolvable,
+  | +                    managed_spell_mode=managed_spell_mode,
+  | +                    managed_spell_limit=managed_spell_limit,
+  | +                    managed_spell_timeout_seconds=managed_spell_timeout_seconds,
+  | +                    managed_spell_reset_methods=managed_spell_reset_methods,
+  |                      _lifecycle_hooks=_lifecycle_hooks,
+  |                      **kwargs,
+  |                  )
+  | @@ -437,6 +465,10 @@
+  |                  disposal_method_names=disposal_method_names,
+  |                  enforce_priority_disposal_methods=enforce_priority_disposal_methods,
+  |                  resolvable=resolvable,
+  | +                managed_spell_mode=managed_spell_mode,
+  | +                managed_spell_limit=managed_spell_limit,
+  | +                managed_spell_timeout_seconds=managed_spell_timeout_seconds,
+  | +                managed_spell_reset_methods=managed_spell_reset_methods,
+  |                  _lifecycle_hooks=_lifecycle_hooks,
+  |                  **kwargs,
+  |              )
+  | @@ -454,6 +486,10 @@
+  |              disposal_method_names: Optional[Sequence[str]] = None,
+  |              enforce_priority_disposal_methods: bool = False,
+  |              resolvable: bool = True,
+  | +            managed_spell_mode: Optional[Union[ManagedSpellMode, str]] = None,
+  | +            managed_spell_limit: Optional[int] = None,
+  | +            managed_spell_timeout_seconds: Optional[float] = None,
+  | +            managed_spell_reset_methods: Optional[Sequence[str]] = None,
+  |              _lifecycle_hooks: Optional[BindLifecycleHooks] = None,
+  |              **kwargs: Any,
+  |      ) -> Spell:
+  | @@ -475,6 +511,9 @@
+  |          * Computes a deterministic fingerprint and SpellIndex from a `SpellBindingProfile`.
+  |          * Resolves disposal names once in group priority order, hashes the resolved
+  |            list, and passes that same list to Spell without another conversion.
+  | +        * Validates and normalizes the four managed options once
+  | +          (`_normalize_managed_options`), after the profile and before the fingerprint;
+  | +          a managed binding hashes them as one extra part and the Spell keeps them.
+  |          * Determines the canonical SpellType.
+  |          * Constructs the final `Spell` instance.
+  |          * Replaces the initial raw binding artifact with the combined
+  | @@ -493,6 +532,10 @@
+  |              disposal_method_names (Optional[Sequence[str]]): Ordered per-spell candidates.
+  |              enforce_priority_disposal_methods (bool): Book block first when True, last otherwise.
+  |              resolvable (bool): Immutable resolution capability, validated before target reflection.
+  | +            managed_spell_mode (Optional[Union[ManagedSpellMode, str]]): Managed pool policy, or None.
+  | +            managed_spell_limit (Optional[int]): Managed idle cap (elastic) or alive limit, or None.
+  | +            managed_spell_timeout_seconds (Optional[float]): Queue wait in seconds, or None.
+  | +            managed_spell_reset_methods (Optional[Sequence[str]]): Reset method names, or None.
+  |              _lifecycle_hooks: Optional callback set captured by Book for this operation.
+  |  
+  |          Hook contract:
+  | @@ -523,9 +566,12 @@
+  |                  - If `spellframe` is neither None, a string nor a Protocol class.
+  |                  - If a class or existing object under a Protocol spellframe
+  |                    fails its directly declared public-member check.
+  | +                - If a managed binding targets a non-class, or a managed option
+  | +                  has the wrong type.
+  |              ValueError:
+  |                  - If the binding is otherwise invalid (existence errors, lambda
+  |                    without name, etc.).
+  | +                - If a managed option is malformed, or set on another existence.
+  |              HookExecutionError: A pre-bind or bind-activation callback failed.
+  |          """
+  |          hooks = self.capture_hooks() if _lifecycle_hooks is None else _lifecycle_hooks
+  | @@ -596,6 +642,24 @@
+  |                          ):
+  |                              resolved_disposal_method_names.insert(spell_position, method_name)
+  |                              spell_position += 1
+  | +            # Managed options (Existence.managed_spell_quantity): validated and normalized here, once,
+  | +            # because they are hashed into a managed spell's id and kept by its Spell; any other
+  | +            # existence must leave all four unset. Refusals happen before a Spell or index exists.
+  | +            (
+  | +                normalized_managed_mode,
+  | +                normalized_managed_limit,
+  | +                normalized_managed_timeout,
+  | +                normalized_managed_reset_methods,
+  | +            ) = Bind._normalize_managed_options(
+  | +                spell,
+  | +                binding_profile,
+  | +                str(spell_name),
+  | +                existence,
+  | +                managed_spell_mode,
+  | +                managed_spell_limit,
+  | +                managed_spell_timeout_seconds,
+  | +                managed_spell_reset_methods,
+  | +            )
+  |              fingerprint: str = Bind.sha256_profile(
+  |                  binding_profile,
+  |                  spellframe=spellframe,
+  | @@ -604,6 +668,10 @@
+  |                  existence=existence,
+  |                  disposal_method_names=resolved_disposal_method_names,
+  |                  resolvable=resolvable,
+  | +                managed_spell_mode=normalized_managed_mode,
+  | +                managed_spell_limit=normalized_managed_limit,
+  | +                managed_spell_timeout_seconds=normalized_managed_timeout,
+  | +                managed_spell_reset_methods=normalized_managed_reset_methods,
+  |              )
+  |              spell_index = SpellIndex(initial_id=fingerprint)
+  |  
+  | @@ -672,6 +740,10 @@
+  |                  resolvable=resolvable,
+  |                  spellframe_kind=spellframe_kind,
+  |                  implemented_protocols=implemented_protocols,
+  | +                managed_spell_mode=normalized_managed_mode,
+  | +                managed_spell_limit=normalized_managed_limit,
+  | +                managed_spell_timeout_seconds=normalized_managed_timeout,
+  | +                managed_spell_reset_methods=normalized_managed_reset_methods,
+  |                  # Owner ruling 2026-07-19: leftover bind kwargs flow into
+  |                  # Spell's OWN kwargs channel (Spell.__init__ stores them as
+  |                  # spell.metadata). Native params stay sovereign: a colliding
+  | @@ -737,6 +809,10 @@
+  |              existence: Existence = Existence.unique,
+  |              disposal_method_names: Sequence[str] = (),
+  |              resolvable: bool = True,
+  | +            managed_spell_mode: Optional[Union[ManagedSpellMode, str]] = None,
+  | +            managed_spell_limit: Optional[int] = None,
+  | +            managed_spell_timeout_seconds: Optional[float] = None,
+  | +            managed_spell_reset_methods: Optional[Sequence[str]] = None,
+  |      ) -> str:
+  |          """
+  |          Compute the canonical spell fingerprint without registering the spell.
+  | @@ -753,6 +829,10 @@
+  |              existence (Existence): The lifecycle scope for this spell.
+  |              disposal_method_names (Sequence[str]): Already-resolved disposal names in execution order.
+  |              resolvable (bool): Per-version capability; omission preserves the legacy fingerprint.
+  | +            managed_spell_mode (Optional[Union[ManagedSpellMode, str]]): Managed pool policy, or None.
+  | +            managed_spell_limit (Optional[int]): Managed idle cap (elastic) or alive limit, or None.
+  | +            managed_spell_timeout_seconds (Optional[float]): Queue wait in seconds, or None.
+  | +            managed_spell_reset_methods (Optional[Sequence[str]]): Reset method names, or None.
+  |          Contract:
+  |              - Builds the same `SpellGeneralProfile` / `SpellBindingProfile`
+  |                chain used by the real binding path.
+  | @@ -761,15 +841,37 @@
+  |                disposal list. This helper does not apply book priority or match names.
+  |              - Does not register anything into a spellbook or mutate runtime
+  |                binding state.
+  | +            - Normalizes and checks the managed options with bind's own
+  | +              `_normalize_managed_options`, so a managed fingerprint matches bind's.
+  |  
+  |          Returns:
+  |              str: A unique identifier string (SHA256 hash) for the spell.
+  |  
+  |          Raises:
+  | -            TypeError: If resolvable is not a bool; checked before target reflection.
+  | +            TypeError: If resolvable is not a bool (checked before target reflection), or a
+  | +                managed option has the wrong type or targets a non-class.
+  | +            ValueError: If a managed option is malformed or set on another existence.
+  |          """
+  |          Bind._validate_resolvable(resolvable)
+  |          profile = SpellGeneralProfile.create_from_target(spell)
+  | +        # Error messages name the target; the inspector hashes `spell_name` only when given, as bind would.
+  | +        # The target is caller-supplied, so `getattr` with a default is the external-object exception.
+  | +        display_name = spell_name if spell_name is not None else getattr(spell, "__name__", type(spell).__name__)
+  | +        (
+  | +            normalized_managed_mode,
+  | +            normalized_managed_limit,
+  | +            normalized_managed_timeout,
+  | +            normalized_managed_reset_methods,
+  | +        ) = Bind._normalize_managed_options(
+  | +            spell,
+  | +            profile.binding_profile,
+  | +            str(display_name),
+  | +            existence,
+  | +            managed_spell_mode,
+  | +            managed_spell_limit,
+  | +            managed_spell_timeout_seconds,
+  | +            managed_spell_reset_methods,
+  | +        )
+  |          return Bind.sha256_profile(
+  |              profile.binding_profile,
+  |              spellframe=spellframe,
+  | @@ -778,6 +880,10 @@
+  |              existence=existence,
+  |              disposal_method_names=tuple(disposal_method_names),
+  |              resolvable=resolvable,
+  | +            managed_spell_mode=normalized_managed_mode,
+  | +            managed_spell_limit=normalized_managed_limit,
+  | +            managed_spell_timeout_seconds=normalized_managed_timeout,
+  | +            managed_spell_reset_methods=normalized_managed_reset_methods,
+  |          )
+  |  
+  |      @staticmethod
+  | @@ -790,6 +896,10 @@
+  |              existence: Optional[Existence] = None,
+  |              disposal_method_names: Sequence[str] = (),
+  |              resolvable: bool = True,
+  | +            managed_spell_mode: Optional[ManagedSpellMode] = None,
+  | +            managed_spell_limit: Optional[int] = None,
+  | +            managed_spell_timeout_seconds: Optional[float] = None,
+  | +            managed_spell_reset_methods: Sequence[str] = (),
+  |      ) -> str:
+  |          """
+  |          Computes the SHA256 hash of a spell's binding profile metadata.
+  | @@ -822,6 +932,11 @@
+  |              - Includes the direct bind-time parameters that shape later
+  |                compiler/runtime behavior: spell_name, spellframe, binding_name,
+  |                existence, resolvable, and resolved disposal metadata in execution order.
+  | +            - A managed binding (a `managed_spell_mode` is given) appends one last part,
+  | +              `managed:<mode>:<limit>:<timeout>:<reset names>` (`_managed_fingerprint_part`).
+  | +              Callers pass normalized values (`_normalize_managed_options`). Without a mode
+  | +              nothing is appended, so every other binding hashes exactly as before (S2,
+  | +              2026-10-15).
+  |              - Equal bind signatures produce equal hashes; materially different
+  |                signatures should produce different hashes.
+  |          Returns:
+  | @@ -891,6 +1006,17 @@
+  |  
+  |          parts.extend(tuple(disposal_method_names))
+  |  
+  | +        # Managed bindings only: one part carrying the normalized options closes the key.
+  | +        if managed_spell_mode is not None:
+  | +            parts.append(
+  | +                Bind._managed_fingerprint_part(
+  | +                    managed_spell_mode,
+  | +                    managed_spell_limit,
+  | +                    managed_spell_timeout_seconds,
+  | +                    managed_spell_reset_methods,
+  | +                )
+  | +            )
+  | +
+  |          key = "::".join(parts)
+  |          return hashlib.sha256(key.encode("utf-8")).hexdigest()
+  |  
+  | @@ -957,6 +1083,310 @@
+  |                  f"resolvable must be a bool (True or False), got {type(resolvable).__name__}. "
+  |                  "Pass resolvable=False to register a non-resolvable definition."
+  |              )
+  | +
+  | +    @staticmethod
+  | +    def _managed_fingerprint_part(
+  | +            managed_spell_mode: ManagedSpellMode,
+  | +            managed_spell_limit: Optional[int],
+  | +            managed_spell_timeout_seconds: Optional[float],
+  | +            managed_spell_reset_methods: Sequence[str],
+  | +    ) -> str:
+  | +        """
+  | +        Render the fingerprint part of a managed binding's normalized options.
+  | +
+  | +        Contract:
+  | +            - `managed:<mode>:<limit>:<timeout>:<reset names>`: the mode's name, the limit as an int, the
+  | +              timeout as the repr of its float, the reset names joined by "," in their order; an absent limit
+  | +              or timeout renders as empty text.
+  | +            - Pure: equal normalized options always render equal text, so `2` and `2.0` seconds hash alike
+  | +              (bind stores both as `2.0`).
+  | +
+  | +        Args:
+  | +            managed_spell_mode: The normalized mode.
+  | +            managed_spell_limit: The normalized limit, or None.
+  | +            managed_spell_timeout_seconds: The normalized timeout in seconds, or None.
+  | +            managed_spell_reset_methods: The normalized reset names, in order.
+  | +
+  | +        Returns:
+  | +            str: The part `sha256_profile` appends to a managed binding's key.
+  | +        """
+  | +        limit_text = "" if managed_spell_limit is None else str(managed_spell_limit)
+  | +        timeout_text = "" if managed_spell_timeout_seconds is None else repr(float(managed_spell_timeout_seconds))
+  | +        return "managed:{0}:{1}:{2}:{3}".format(
+  | +            managed_spell_mode.name,
+  | +            limit_text,
+  | +            timeout_text,
+  | +            ",".join(managed_spell_reset_methods),
+  | +        )
+  | +
+  | +    @staticmethod
+  | +    def _normalize_managed_options(
+  | +            spell: Any,
+  | +            binding_profile: SpellBindingProfile,
+  | +            spell_name: str,
+  | +            existence: Existence,
+  | +            managed_spell_mode: Optional[Union[ManagedSpellMode, str]],
+  | +            managed_spell_limit: Optional[int],
+  | +            managed_spell_timeout_seconds: Optional[float],
+  | +            managed_spell_reset_methods: Optional[Sequence[str]],
+  | +    ) -> Tuple[Optional[ManagedSpellMode], Optional[int], Optional[float], Tuple[str, ...]]:
+  | +        """
+  | +        Validate and normalize the four managed options of one binding.
+  | +
+  | +        Purpose:
+  | +            The one place the options of `Existence.managed_spell_quantity` are checked, so a malformed binding
+  | +            fails at bind, next to the mistake, and the fingerprint, the Spell and the crystal all read the same
+  | +            normalized values.
+  | +
+  | +        Contract:
+  | +            - Any other existence: every option must be None (an empty reset list counts as set); the result is
+  | +              (None, None, None, ()).
+  | +            - Managed: the target must be a class - its pool builds and reuses instances of it. The mode defaults
+  | +              to elastic; the limit, timeout and reset names follow `_normalize_managed_limit`,
+  | +              `_normalize_managed_timeout` and `_normalize_managed_reset_methods`, checked in that order.
+  | +            - Reads the target class to check reset names and changes nothing.
+  | +
+  | +        Args:
+  | +            spell: The binding target (the class for a managed binding).
+  | +            binding_profile: Its binding profile; a `ClassBindingProfile` for a class.
+  | +            spell_name: The target's name, used in error messages only.
+  | +            existence: The binding's existence.
+  | +            managed_spell_mode: A `ManagedSpellMode`, its name, or None.
+  | +            managed_spell_limit: An int, or None.
+  | +            managed_spell_timeout_seconds: A number of seconds, or None.
+  | +            managed_spell_reset_methods: A list or tuple of method names, or None.
+  | +
+  | +        Returns:
+  | +            Tuple[Optional[ManagedSpellMode], Optional[int], Optional[float], Tuple[str, ...]]:
+  | +                The normalized mode, limit, timeout and reset names.
+  | +
+  | +        Raises:
+  | +            ValueError: An option on another existence, or a malformed option (see the three helpers).
+  | +            TypeError: A managed binding of a function, method, lambda or existing object, or an option of the
+  | +                wrong type.
+  | +        """
+  | +        if existence is not Existence.managed_spell_quantity:
+  | +            supplied = [
+  | +                option_name
+  | +                for option_name, option_value in zip(
+  | +                    Bind._MANAGED_OPTION_NAMES,
+  | +                    (
+  | +                        managed_spell_mode,
+  | +                        managed_spell_limit,
+  | +                        managed_spell_timeout_seconds,
+  | +                        managed_spell_reset_methods,
+  | +                    ),
+  | +                )
+  | +                if option_value is not None
+  | +            ]
+  | +            if supplied:
+  | +                existence_text = (
+  | +                    f"Existence.{existence.name}" if isinstance(existence, Existence) else repr(existence)
+  | +                )
+  | +                raise ValueError(
+  | +                    f"{', '.join(supplied)} only apply to Existence.managed_spell_quantity, but '{spell_name}' is "
+  | +                    f"bound as {existence_text}. Remove {'it' if len(supplied) == 1 else 'them'}, or bind "
+  | +                    f"'{spell_name}' with existence=Existence.managed_spell_quantity."
+  | +                )
+  | +            return None, None, None, ()
+  | +        if not isinstance(binding_profile, ClassBindingProfile):
+  | +            target_kind = (
+  | +                "an existing object"
+  | +                if isinstance(binding_profile, (InstanceBindingProfile, OtherBindingProfile))
+  | +                else "a function or method"
+  | +            )
+  | +            raise TypeError(
+  | +                "Existence.managed_spell_quantity binds classes only: its pool builds and reuses instances of a "
+  | +                f"class, and '{spell_name}' is {target_kind}. Bind the class itself as managed, or bind "
+  | +                f"'{spell_name}' with Existence.unique."
+  | +            )
+  | +        mode = Bind._normalize_managed_mode(managed_spell_mode)
+  | +        limit = Bind._normalize_managed_limit(mode, managed_spell_limit, spell_name)
+  | +        timeout = Bind._normalize_managed_timeout(mode, managed_spell_timeout_seconds, spell_name)
+  | +        reset_methods = Bind._normalize_managed_reset_methods(spell, managed_spell_reset_methods, spell_name)
+  | +        return mode, limit, timeout, reset_methods
+  | +
+  | +    @staticmethod
+  | +    def _normalize_managed_mode(
+  | +            managed_spell_mode: Optional[Union[ManagedSpellMode, str]],
+  | +    ) -> ManagedSpellMode:
+  | +        """
+  | +        Resolve a managed binding's mode.
+  | +
+  | +        Contract:
+  | +            - None -> `ManagedSpellMode.elastic`; a member -> itself; a string -> the member of that name,
+  | +              matched lowercased (as Existence and Permissions names are).
+  | +
+  | +        Args:
+  | +            managed_spell_mode: A `ManagedSpellMode`, its name, or None.
+  | +
+  | +        Returns:
+  | +            ManagedSpellMode: The mode.
+  | +
+  | +        Raises:
+  | +            ValueError: A string that names no mode (the message lists the three).
+  | +            TypeError: Any other type, an Existence member included.
+  | +        """
+  | +        if managed_spell_mode is None:
+  | +            return ManagedSpellMode.elastic
+  | +        if isinstance(managed_spell_mode, ManagedSpellMode):
+  | +            return managed_spell_mode
+  | +        if isinstance(managed_spell_mode, str):
+  | +            mode = ManagedSpellMode.__members__.get(managed_spell_mode.lower())
+  | +            if mode is None:
+  | +                raise ValueError(
+  | +                    f"Unknown managed_spell_mode {managed_spell_mode!r}. Use 'elastic', 'limited_quantity' or "
+  | +                    "'queue' (or a ManagedSpellMode member)."
+  | +                )
+  | +            return mode
+  | +        raise TypeError(
+  | +            "managed_spell_mode must be a ManagedSpellMode member or its name ('elastic', 'limited_quantity', "
+  | +            f"'queue'), got {type(managed_spell_mode).__name__}."
+  | +        )
+  | +
+  | +    @staticmethod
+  | +    def _normalize_managed_limit(
+  | +            mode: ManagedSpellMode,
+  | +            managed_spell_limit: Optional[int],
+  | +            spell_name: str,
+  | +    ) -> int:
+  | +        """
+  | +        Resolve a managed binding's limit.
+  | +
+  | +        Contract:
+  | +            - elastic: the most idle objects the pool keeps; None -> 256 (`_MANAGED_ELASTIC_DEFAULT_LIMIT`).
+  | +            - limited_quantity and queue: the most objects alive at once (idle plus out); required.
+  | +            - An int >= 1 (int subclasses are stored as plain ints); a bool is refused.
+  | +
+  | +        Args:
+  | +            mode: The resolved mode.
+  | +            managed_spell_limit: The supplied limit, or None.
+  | +            spell_name: The target's name, for messages.
+  | +
+  | +        Returns:
+  | +            int: The limit.
+  | +
+  | +        Raises:
+  | +            ValueError: Missing for limited_quantity or queue, or below 1.
+  | +            TypeError: Not an int, or a bool.
+  | +        """
+  | +        if managed_spell_limit is None:
+  | +            if mode is ManagedSpellMode.elastic:
+  | +                return Bind._MANAGED_ELASTIC_DEFAULT_LIMIT
+  | +            raise ValueError(
+  | +                f"managed_spell_mode '{mode}' needs managed_spell_limit: the most objects of '{spell_name}' alive "
+  | +                "at once (an int >= 1)."
+  | +            )
+  | +        if isinstance(managed_spell_limit, bool) or not isinstance(managed_spell_limit, int):
+  | +            raise TypeError(f"managed_spell_limit must be an int, got {type(managed_spell_limit).__name__}.")
+  | +        if managed_spell_limit < 1:
+  | +            raise ValueError(f"managed_spell_limit must be at least 1, got {managed_spell_limit}.")
+  | +        return int(managed_spell_limit)
+  | +
+  | +    @staticmethod
+  | +    def _normalize_managed_timeout(
+  | +            mode: ManagedSpellMode,
+  | +            managed_spell_timeout_seconds: Optional[float],
+  | +            spell_name: str,
+  | +    ) -> Optional[float]:
+  | +        """
+  | +        Resolve a managed binding's queue timeout.
+  | +
+  | +        Contract:
+  | +            - queue: required; an int or float (not a bool), finite and > 0; stored as a float.
+  | +            - elastic and limited_quantity never wait: the timeout must be None, and None is returned.
+  | +
+  | +        Args:
+  | +            mode: The resolved mode.
+  | +            managed_spell_timeout_seconds: The supplied timeout in seconds, or None.
+  | +            spell_name: The target's name, for messages.
+  | +
+  | +        Returns:
+  | +            Optional[float]: The timeout in seconds for a queue, else None.
+  | +
+  | +        Raises:
+  | +            ValueError: Given outside the queue mode, missing for a queue, or not finite and > 0.
+  | +            TypeError: Not an int or float, or a bool.
+  | +        """
+  | +        if mode is not ManagedSpellMode.queue:
+  | +            if managed_spell_timeout_seconds is not None:
+  | +                raise ValueError(
+  | +                    f"managed_spell_timeout_seconds applies only to managed_spell_mode 'queue'; '{mode}' never "
+  | +                    f"waits for a release. Remove it, or bind '{spell_name}' with managed_spell_mode='queue'."
+  | +                )
+  | +            return None
+  | +        if managed_spell_timeout_seconds is None:
+  | +            raise ValueError(
+  | +                "managed_spell_mode 'queue' needs managed_spell_timeout_seconds: how long a lease of "
+  | +                f"'{spell_name}' waits for a release before it raises (a number of seconds > 0)."
+  | +            )
+  | +        if isinstance(managed_spell_timeout_seconds, bool) or not isinstance(
+  | +                managed_spell_timeout_seconds, (int, float)
+  | +        ):
+  | +            raise TypeError(
+  | +                "managed_spell_timeout_seconds must be a number of seconds (int or float), got "
+  | +                f"{type(managed_spell_timeout_seconds).__name__}."
+  | +            )
+  | +        seconds = float(managed_spell_timeout_seconds)
+  | +        if not math.isfinite(seconds) or seconds <= 0.0:
+  | +            raise ValueError(
+  | +                "managed_spell_timeout_seconds must be a finite number of seconds > 0, got "
+  | +                f"{managed_spell_timeout_seconds!r}."
+  | +            )
+  | +        return seconds
+  | +
+  | +    @staticmethod
+  | +    def _normalize_managed_reset_methods(
+  | +            spell: Any,
+  | +            managed_spell_reset_methods: Optional[Sequence[str]],
+  | +            spell_name: str,
+  | +    ) -> Tuple[str, ...]:
+  | +        """
+  | +        Resolve a managed binding's reset method names.
+  | +
+  | +        Contract:
+  | +            - None -> (). Otherwise a list or tuple (a bare string is refused: it would be read per character)
+  | +              of non-empty strings, each naming a callable attribute of the class; kept in the order given,
+  | +              duplicates included, as a tuple. The pool calls them, in that order, on every release.
+  | +            - The names are caller-supplied, so the lookup is dynamic: `getattr` on the class with a default is
+  | +              the documented exception. A property or a plain attribute is not callable and is refused.
+  | +
+  | +        Args:
+  | +            spell: The managed class.
+  | +            managed_spell_reset_methods: The supplied names, or None.
+  | +            spell_name: The class's name, for messages.
+  | +
+  | +        Returns:
+  | +            Tuple[str, ...]: The reset names.
+  | +
+  | +        Raises:
+  | +            TypeError: Not a list or tuple, or an element that is not a string.
+  | +            ValueError: An empty name, or a name that is not a callable attribute of the class.
+  | +        """
+  | +        if managed_spell_reset_methods is None:
+  | +            return ()
+  | +        if not isinstance(managed_spell_reset_methods, (list, tuple)):
+  | +            raise TypeError(
+  | +                "managed_spell_reset_methods must be a list or tuple of method names, got "
+  | +                f"{type(managed_spell_reset_methods).__name__}. Wrap a single name in a list: ['reset']."
+  | +            )
+  | +        for method_name in managed_spell_reset_methods:
+  | +            if not isinstance(method_name, str):
+  | +                raise TypeError(
+  | +                    "managed_spell_reset_methods must hold method-name strings; found an element of type "
+  | +                    f"{type(method_name).__name__}."
+  | +                )
+  | +            if not method_name:
+  | +                raise ValueError(
+  | +                    f"managed_spell_reset_methods holds an empty name; give the name of a method of '{spell_name}'."
+  | +                )
+  | +            if not callable(getattr(spell, method_name, None)):
+  | +                raise ValueError(
+  | +                    f"managed_spell_reset_methods names '{method_name}', which is not a method of '{spell_name}'. "
+  | +                    "A reset method is a zero-argument method the pool calls on every release, before the object "
+  | +                    "is leased again."
+  | +                )
+  | +        return tuple(managed_spell_reset_methods)
+  |  
+  |      @staticmethod
+  |      def _validate_binding(
+====================================================================================================
+NODE melder.aether.spellbook.bind.scan.Scan
+  descriptor: context_compass/system_docs/graph/melder/aether/spellbook/bind/scan.json
+  file: src/melder/aether/spellbook/bind/scan.py  lineno: 639  kind: class
+  role: "Module-only scanner for scan_bind metadata."
+  responsibilities: ["reads scan_bind metadata from one module, and only from each object's own __dict__ (no inherited, instance, metaclass or __getattr__ answers)", "binds each declared object at most once per scan, by identity, and rejects re-exports by __module__", "delegates actual registration to Spellbook.bind during scan time"]
+  owns_state: ["_spellbook"]
+  phases: ["runtime"]
+  edge: borrows -> melder.aether.spellbook.spellbook.Spellbook [many_to_one; ['runtime']] why: Scan borrows its owning Spellbook and delegates actual registration through Spellbook.bind.
+  span lines: HEAD 209 -> now 214; diff lines 27
+  | --- HEAD
+  | +++ now
+  | @@ -144,9 +144,10 @@
+  |                call holds a strong reference to every object it bound until it
+  |                returns, so an id cannot be reused by a new object mid-scan.
+  |              - Every target reaches `Spellbook.bind` with its declared existence,
+  | -              permissions, spellframe, binding_name, resolvable and
+  | -              disposal_method_names, plus `ScanBindMetadata.to_bind_kwargs()`
+  | -              (hook lists, profile and application metadata).
+  | +              permissions, spellframe, binding_name, resolvable,
+  | +              disposal_method_names and the four managed options, plus
+  | +              `ScanBindMetadata.to_bind_kwargs()` (hook lists, profile and
+  | +              application metadata).
+  |              - Not atomic: when a bind raises, the targets bound before it stay
+  |                registered and the error propagates.
+  |  
+  | @@ -201,6 +202,10 @@
+  |                  binding_name=metadata.binding_name,
+  |                  resolvable=metadata.resolvable,
+  |                  disposal_method_names=metadata.disposal_method_names,
+  | +                managed_spell_mode=metadata.managed_spell_mode,
+  | +                managed_spell_limit=metadata.managed_spell_limit,
+  | +                managed_spell_timeout_seconds=metadata.managed_spell_timeout_seconds,
+  | +                managed_spell_reset_methods=metadata.managed_spell_reset_methods,
+  |                  **bind_kwargs,
+  |              )
+  |              bound_objects[id(obj)] = obj
+====================================================================================================
+NODE melder.aether.spellbook.bind.scan.ScanBindMetadata
+  descriptor: context_compass/system_docs/graph/melder/aether/spellbook/bind/scan.json
+  file: src/melder/aether/spellbook/bind/scan.py  lineno: 179  kind: class
+  include: true
+  role: "The frozen payload a scan_bind decoration leaves behind - bind-time policy captured now, registration replayed later."
+  responsibilities: ["carry every input Spellbook.bind takes for a target during a later module scan: native policy, resolvable, the per-target disposal group, hooks, profile and application metadata", "preserve Existence|str and Permissions|str AS PROVIDED, so the later replay takes the same normalization path as direct binding", "store hook collections as tuples at rest and materialize fresh lists on use", "hold application metadata as a read-only shallow copy and hand every bind a fresh dict of it, so a Spell's cleanup never empties the declaration a later scan replays", "stay immutable once created - a slotted class that refuses attribute writes, not a dataclass, because it holds callables, Protocol classes and application objects; safe to share across threads"]
+  phases: ["bind"]
+  span lines: HEAD 266 -> now 300; diff lines 103
+  | --- HEAD
+  | +++ now
+  | @@ -18,6 +18,10 @@
+  |            fresh lists only when handed to `Spellbook.bind`.
+  |          - Per-target disposal names are stored as a tuple (or None) and replayed
+  |            unchanged; Bind resolves them against the Book's candidates.
+  | +        - The four managed options (`managed_spell_mode`, `managed_spell_limit`,
+  | +          `managed_spell_timeout_seconds`, `managed_spell_reset_methods`) are stored
+  | +          as given - the reset group as a tuple (or None) - and replayed unchanged;
+  | +          Bind validates and normalizes them when the module is scanned.
+  |          - Application metadata is stored as a read-only mapping over a private
+  |            shallow copy. Its keys are fixed; its values are borrowed by identity and
+  |            are NOT copied or frozen. Every bind receives a fresh dict of the
+  | @@ -88,6 +92,10 @@
+  |          "resolvable",
+  |          "disposal_method_names",
+  |          "spell_metadata",
+  | +        "managed_spell_mode",
+  | +        "managed_spell_limit",
+  | +        "managed_spell_timeout_seconds",
+  | +        "managed_spell_reset_methods",
+  |      )
+  |  
+  |      # Every name the bind chain takes natively. Metadata under one of these keys
+  | @@ -105,6 +113,9 @@
+  |          # Spell.__init__.
+  |          "spell_index", "spell_name", "spell_type", "spell_id", "existing_object",
+  |          "spellbook", "spellframe_kind", "implemented_protocols",
+  | +        # The managed options (Spellbook.bind, Bind, Spell.__init__; scan_bind names them too).
+  | +        "managed_spell_mode", "managed_spell_limit", "managed_spell_timeout_seconds",
+  | +        "managed_spell_reset_methods",
+  |      })
+  |  
+  |      existence: Union[Existence, str]
+  | @@ -118,6 +129,10 @@
+  |      resolvable: bool
+  |      disposal_method_names: Optional[tuple[str, ...]]
+  |      spell_metadata: Mapping[str, Any]
+  | +    managed_spell_mode: Optional[Union[ManagedSpellMode, str]]
+  | +    managed_spell_limit: Optional[int]
+  | +    managed_spell_timeout_seconds: Optional[float]
+  | +    managed_spell_reset_methods: Optional[tuple[str, ...]]
+  |  
+  |      def __init__(
+  |              self,
+  | @@ -133,6 +148,10 @@
+  |              resolvable: bool = True,
+  |              disposal_method_names: Optional[tuple[str, ...]] = None,
+  |              spell_metadata: Optional[Mapping[str, Any]] = None,
+  | +            managed_spell_mode: Optional[Union[ManagedSpellMode, str]] = None,
+  | +            managed_spell_limit: Optional[int] = None,
+  | +            managed_spell_timeout_seconds: Optional[float] = None,
+  | +            managed_spell_reset_methods: Optional[tuple[str, ...]] = None,
+  |      ) -> None:
+  |          """
+  |          Store one declaration; `scan_bind`'s decorator calls this with normalized inputs.
+  | @@ -161,6 +180,12 @@
+  |                  disposal group, or None when none was declared.
+  |              spell_metadata (Optional[Mapping[str, Any]]): Validated application
+  |                  metadata, or None for none.
+  | +            managed_spell_mode (Optional[Union[ManagedSpellMode, str]]): Managed pool
+  | +                policy as declared, or None.
+  | +            managed_spell_limit (Optional[int]): Managed limit as declared, or None.
+  | +            managed_spell_timeout_seconds (Optional[float]): Queue wait as declared, or None.
+  | +            managed_spell_reset_methods (Optional[tuple[str, ...]]): Normalized reset group,
+  | +                or None.
+  |  
+  |          Returns:
+  |              None.
+  | @@ -180,6 +205,10 @@
+  |              "spell_metadata",
+  |              MappingProxyType(dict(spell_metadata) if spell_metadata is not None else {}),
+  |          )
+  | +        object.__setattr__(self, "managed_spell_mode", managed_spell_mode)
+  | +        object.__setattr__(self, "managed_spell_limit", managed_spell_limit)
+  | +        object.__setattr__(self, "managed_spell_timeout_seconds", managed_spell_timeout_seconds)
+  | +        object.__setattr__(self, "managed_spell_reset_methods", managed_spell_reset_methods)
+  |  
+  |      def __setattr__(self, name: str, value: Any) -> None:
+  |          """
+  | @@ -227,6 +256,10 @@
+  |              f"binding_name={self.binding_name!r}, profile={self.profile!r}, "
+  |              f"resolvable={self.resolvable!r}, "
+  |              f"disposal_method_names={self.disposal_method_names!r}, "
+  | +            f"managed_spell_mode={self.managed_spell_mode!r}, "
+  | +            f"managed_spell_limit={self.managed_spell_limit!r}, "
+  | +            f"managed_spell_timeout_seconds={self.managed_spell_timeout_seconds!r}, "
+  | +            f"managed_spell_reset_methods={self.managed_spell_reset_methods!r}, "
+  |              f"spell_metadata_keys={sorted(self.spell_metadata)!r})"
+  |          )
+  |  
+  | @@ -249,8 +282,9 @@
+  |                keys never collide with the hook or profile keys (they are
+  |                reserved).
+  |              - Leaves out the native policy arguments (existence, permissions,
+  | -              spellframe, binding_name, resolvable, disposal_method_names);
+  | -              `Scan.scan_module` passes those to `Spellbook.bind` explicitly.
+  | +              spellframe, binding_name, resolvable, disposal_method_names and the
+  | +              four managed options); `Scan.scan_module` passes those to
+  | +              `Spellbook.bind` explicitly.
+  |          Returns:
+  |              dict[str, Any]: Keyword arguments for Spellbook.bind hooks, profile and
+  |              application metadata.
+====================================================================================================
+NODE melder.aether.spellbook.bind.spell_index.SpellIndex
+  descriptor: context_compass/system_docs/graph/melder/aether/spellbook/bind/spell_index.json
+  file: src/melder/aether/spellbook/bind/spell_index.py  lineno: 12  kind: class
+  role: "Stable lineage identity (an immutable ULID) with a mutable selected-spell pointer and the lineage's member set."
+  responsibilities: ["provides hash- and equality-stable index identity (the ULID) for spell registries", "holds the selected spell id and the lineage's member set; selecting an id adds it as a member and never retires the previous one", "answers lineage membership: has_spell re-checks cleaned under its lock and raises RuntimeError for a cleaned index; _has_spell_unless_cleaned answers False for one, for walks over indexes the caller neither owns nor locks", "leaves lookup-map propagation on a notch to the Spellbook (the notch seam), not the index"]
+  owns_state: ["_id", "_selected_spell_id", "_spells_in_index", "_lock"]
+  phases: ["init", "runtime", "cleanup"]
+  edge: holds -> melder.aether.spellbook.spell.Spell [one_to_one; ['runtime']] why: SpellIndex keeps attachment metadata for the currently owned Spell while preserving a stable lineage identity.
+  edge: borrows -> melder.aether.spellbook.spellbook.Spellbook [many_to_one; ['runtime']] why: SpellIndex stores owner and contract Spellbook attachments so version-pointer changes can update those lookup maps.
+  edge: uses -> melder.utilities.helpers.ulid_factory [many_to_one; ['init', 'runtime']] why: SpellIndex uses the internal ulid_factory module for stable lineage ids.
+  span lines: HEAD 537 -> now 569; diff lines 41
+  | --- HEAD
+  | +++ now
+  | @@ -344,6 +344,38 @@
+  |                  return False
+  |              return spell_id in self._spells_in_index
+  |  
+  | +    def _is_selected_unless_cleaned(self, spell_id: str) -> bool:
+  | +        """
+  | +        Internal
+  | +
+  | +        Return whether this index currently selects `spell_id`, answering False once the index is cleaned.
+  | +
+  | +        Purpose:
+  | +            Selected-version probe for readers that neither own nor lock the index - `ReleaseManagedSpell`'s cold
+  | +            resolver prefers the pool of the version its index selects (STORY-2026-10-15-release_managed_spell).
+  | +            `selected_spell_id` is a lock-free read of a field `cleanup()` deletes, so such a reader racing a
+  | +            cleanup would meet an AttributeError there.
+  | +
+  | +        Contract:
+  | +            - Tests SELECTION, not membership: a parked member of the lineage answers False.
+  | +            - Never raises for a cleaned index; returns False.
+  | +            - Pure read: changes nothing.
+  | +
+  | +        Threading:
+  | +            Reads the cleaned flag and the selected id under `self._lock`, the lock `cleanup()` marks the index
+  | +            cleaned and deletes the selected id under, and `update()` repoints it under.
+  | +
+  | +        Args:
+  | +            spell_id (str): The version id to test.
+  | +
+  | +        Returns:
+  | +            bool: True if this live index selects `spell_id`; False otherwise, and False once the index is cleaned.
+  | +        """
+  | +        with self._lock:
+  | +            if self._cleaned:
+  | +                return False
+  | +            return self._selected_spell_id == spell_id
+  | +
+  |      def is_empty(self) -> bool:
+  |          """
+  |          Return whether this index has no members.
+====================================================================================================
+NODE melder.aether.spellbook.existence.existence.Existence
+  descriptor: context_compass/system_docs/graph/melder/aether/spellbook/existence/existence.json
+  file: src/melder/aether/spellbook/existence/existence.py  lineno: 3  kind: enum
+  role: "Lifecycle mode enum for a spell binding."
+  responsibilities: ["labels the reuse boundary for bound spell instances across frame, conduit, lineage, cluster, and spellspace scopes"]
+  owns_state: ["unique", "unique_per_conduit", "many", "unique_per_conduit_cluster", "unique_per_conduit_lineage", "unique_per_spell_space"]
+  phases: ["runtime"]
+  span lines: HEAD 136 -> now 163; diff lines 71
+  | --- HEAD
+  | +++ now
+  | @@ -30,14 +30,17 @@
+  |          WHAT was bound; `Existence` declares HOW LONG its instances live.
+  |  
+  |      System Context:
+  | -        The six modes are storage ROUTING, not just labels, and the routing is
+  | +        The seven modes are storage ROUTING, not just labels, and the routing is
+  |          what makes them real. `unique` is per-frame; `unique_per_conduit` and
+  |          `many` land in the caller's own `ConduitCreations`;
+  |          `unique_per_conduit_cluster` resolves against a cluster-owned store;
+  | -        `unique_per_conduit_lineage` spans the lineage tree; and
+  | +        `unique_per_conduit_lineage` spans the lineage tree;
+  |          `unique_per_spell_space` is reachable ONLY through `SpellSpaceMeld`,
+  |          which is exactly why `ConduitMeld` refuses those spells instead of
+  | -        fabricating a scope.
+  | +        fabricating a scope; and `managed_spell_quantity` leases objects from a
+  | +        pool kept in the owning root's `ConduitCreations`, which is the only
+  | +        mode whose objects come back to Melder, and only when the holder
+  | +        releases them.
+  |          The declarative framing in the contract matters: the enum caches
+  |          nothing itself. A wrong `Existence` therefore produces no error - it
+  |          produces an instance with the wrong lifetime, shared more or less widely
+  | @@ -45,14 +48,15 @@
+  |          BOUNDARIES rather than implementation.
+  |          Constraints exist where a mode would be incoherent: method, lambda, and
+  |          existing-object bindings must use `unique`, because there is nothing
+  | -        meaningful to construct per scope.
+  | +        meaningful to construct per scope (and nothing to pool and reuse).
+  |  
+  |      AGENT_ACCESS: public
+  |  
+  |      AGENT_PURPOSE:
+  |          access: public. Declares instance lifetime at bind: unique (per frame),
+  |          unique_per_conduit, many, unique_per_conduit_cluster, unique_per_conduit_lineage,
+  | -        unique_per_spell_space. Pass it to Spellbook.bind(...). Method/lambda/existing-object
+  | +        unique_per_spell_space, managed_spell_quantity (objects leased from a root-owned pool and
+  | +        released back explicitly). Pass it to Spellbook.bind(...). Method/lambda/existing-object
+  |          bindings must use unique.
+  |      """
+  |      unique = auto()
+  | @@ -113,6 +117,29 @@
+  |      - Spell spaces are versioned and resettable.
+  |      """
+  |  
+  | +    managed_spell_quantity = auto()
+  | +    """
+  | +    Objects **leased** from a pool owned by the binding's **root conduit**.
+  | +
+  | +    - A meld, or an injection into a constructor during a meld, takes an idle
+  | +      object from the spell's pool, or builds a new one when the pool's mode
+  | +      allows; the holder keeps it until it gives it back.
+  | +    - Objects come back only explicitly: `ReleaseManagedSpell.release(obj)` (or
+  | +      the `with` block of a lease) runs the reset methods named at bind, if
+  | +      any, and makes the object available to the next lease. Nothing returns
+  | +      an object automatically, and an object never released stays out.
+  | +    - The mode is chosen at bind: `elastic` always builds on a miss and keeps
+  | +      idle objects the way Melder's own pools do; `limited_quantity` refuses a
+  | +      lease once N objects are alive; `queue` waits for a release up to a
+  | +      timeout, then refuses.
+  | +    - Class spells only. A managed spell may depend on `unique`, other managed
+  | +      spells and `many` (the `many` objects belong to the object they were
+  | +      built for); any spell may depend on a managed spell.
+  | +    - The pool lives with the owning root: an ownership transfer carries it,
+  | +      and the root's teardown disposes the idle objects. Objects that are out
+  | +      belong to whoever holds them.
+  | +    """
+  | +
+  |      def __str__(self) -> str:
+  |          """
+  |          Return the enum member name.
+====================================================================================================
+NODE melder.aether.spellbook.resolution_style_matrix.ResolutionStyleMatrix
+  descriptor: context_compass/system_docs/graph/melder/aether/spellbook/resolution_style_matrix.json
+  file: src/melder/aether/spellbook/resolution_style_matrix.py  lineno: 44  kind: class
+  role: "Canonical support matrix for resolution styles."
+  responsibilities: ["maps binding families and spell types to supported existence modes", "tracks resolution contract item support status"]
+  owns_state: ["BINDING_FAMILY_POLICY", "SPELL_TYPE_TO_BINDING_FAMILY", "MATRIX_BY_SPELL_TYPE", "CONTRACT_ITEM_STATUS"]
+  phases: ["validation", "runtime"]
+  edge: uses -> melder.aether.spellbook.existence.existence.Existence [many_to_one; ['validation', 'runtime']] why: ResolutionStyleMatrix defines which Existence modes each binding family supports.
+  edge: uses -> melder.aether.spellbook.spell_types.spell_types.SpellType [many_to_one; ['validation', 'runtime']] why: ResolutionStyleMatrix projects support policy across SpellType families.
+  span lines: HEAD 448 -> now 450; diff lines 30
+  | --- HEAD
+  | +++ now
+  | @@ -62,9 +62,9 @@
+  |  
+  |  
+  |      OWNER: ClassVar[str] = "melder-runtime-maintainers"
+  | -    LAST_UPDATED_ISO: ClassVar[str] = "2026-02-13"
+  | +    LAST_UPDATED_ISO: ClassVar[str] = "2026-10-15"
+  |      EXPECTED_SPELL_TYPE_COUNT: ClassVar[int] = 14
+  | -    EXPECTED_EXISTENCE_COUNT: ClassVar[int] = 6
+  | +    EXPECTED_EXISTENCE_COUNT: ClassVar[int] = 7
+  |      EXPECTED_CONTRACT_ITEM_COUNT: ClassVar[int] = 21
+  |  
+  |      ALL_EXISTENCE_NAMES: ClassVar[Tuple[str, ...]] = (
+  | @@ -74,6 +74,7 @@
+  |          "unique_per_conduit_cluster",
+  |          "unique_per_conduit_lineage",
+  |          "unique_per_spell_space",
+  | +        "managed_spell_quantity",
+  |      )
+  |      NON_UNIQUE_EXISTENCE_NAMES: ClassVar[Tuple[str, ...]] = (
+  |          "unique_per_conduit",
+  | @@ -81,6 +82,7 @@
+  |          "unique_per_conduit_cluster",
+  |          "unique_per_conduit_lineage",
+  |          "unique_per_spell_space",
+  | +        "managed_spell_quantity",
+  |      )
+  |  
+  |      BINDING_FAMILY_POLICY: ClassVar[Dict[str, Dict[str, Tuple[str, ...]]]] = {
+====================================================================================================
+NODE melder.aether.spellbook.spell.Spell
+  descriptor: context_compass/system_docs/graph/melder/aether/spellbook/spell.json
+  file: src/melder/aether/spellbook/spell.py  lineno: 63  kind: class
+  role: "Canonical bound spell runtime record."
+  responsibilities: ["wraps one bound target with lineage, lifecycle, and permission policy", "retains read-only per-version resolution capability independently of activity and compilation validity", "retains the bind-resolved ordered disposal list without copying or clearing borrowed contents at cleanup", "owns spell-local hooks, build artifacts, and execution-plan metadata", "lazily owns the SpellCompiler and spell-owned creation-context machinery", "records conduit ownership changes and publishes structural changes into SpellSystemStates", "keeps a borrowed spell-index CreationGate under dynamic ownership and the cause of its last failed context build", "carries the binding's spellframe_kind and implemented_protocols (the Protocol it was checked against, else ()) as identity data that survives cleanup (0.2.8222)", "on a direct cleanup removes itself through its Spellbook outside its own lock, serialized per spell by a removal lock nothing else takes, so Book teardown and conjure, which take its lock under the Book lock, never wait on it (_direct_removal_route, 0.2.8233)"]
+  owns_state: ["_resolvable", "_compiler_artifact", "_creation_context", "_creation_context_factory", "_creation_context_switch", "_spellbook", "_spell_system_states", "dependency_graph", "dependencies", "disposal_method_names", "_creation_context_failure", "spellframe_kind", "implemented_protocols", "_removal_lock"]
+  phases: ["init", "validation", "runtime", "cleanup"]
+  edge: borrows -> melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates [many_to_one; ['validation', 'runtime']] why: Spell holds the frame-level SpellSystemStates service to mark structural changes and inspect lineage state.
+  edge: holds -> melder.aether.conduit.conduit.Conduit [many_to_one; ['runtime']] why: Spell records owner-conduit identity and scoped creations when the spell is stamped into a live runtime conduit.
+  edge: uses -> melder.aether.conduit.conduit_ward.permissions.permissions.Permissions [many_to_one; ['runtime']] why: Spell stores Permissions as the local capability policy later enforced during conduit contracting.
+  edge: owns_lifecycle_of -> melder.aether.conduit.meld.creation_context.creation_context.CreationContext [one_to_one; ['runtime', 'cleanup']] why: Spell invalidates and rebuilds its spell-owned CreationContext when build details or conduit ownership change.
+  edge: owns_lifecycle_of -> melder.aether.conduit.meld.creation_context.creation_context_factory.CreationContextFactory [one_to_one; ['runtime', 'cleanup']] why: Spell owns the CreationContextFactory used to build and bind its spell-owned runtime context.
+  edge: holds -> melder.aether.spellbook.bind.spell_index.SpellIndex [one_to_one; ['init', 'runtime']] why: Each Spell carries one SpellIndex lineage object as its stable identity and mutable current-version pointer.
+  edge: uses -> melder.aether.spellbook.existence.existence.Existence [many_to_one; ['runtime']] why: Spell stores Existence as the lifecycle policy for runtime creation and sharing.
+  edge: owns_lifecycle_of -> melder.aether.spellbook.spell_compiler.spell_compiler.SpellCompiler [one_to_one; ['validation', 'runtime', 'cleanup']] why: Spell lazily creates and owns one SpellCompiler to hold its phase artifacts and later plan caches.
+  edge: owns_lifecycle_of -> melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact [one_to_one; ['init', 'validation', 'runtime', 'cleanup']] why: Spell owns SpellCompilerArtifact as its spell-scoped mutable compiler artifact container.
+  edge: uses -> melder.aether.spellbook.spell_types.spell_types.SpellType [many_to_one; ['runtime']] why: Spell stores SpellType as its canonical runtime binding-family classification.
+  edge: borrows -> melder.aether.spellbook.spellbook.Spellbook [many_to_one; ['init', 'validation', 'runtime']] why: Spell stores a back-reference to its owning Spellbook for coordination and publication but does not own the Spellbook lifecycle.
+  edge: uses -> melder.utilities.helpers.ulid_factory [many_to_one; ['init', 'runtime']] why: Spell uses the internal ulid_factory module when minting its internal runtime identifier.
+  edge: owns_lifecycle_of -> melder.utilities.synchronization.counter_switch.CounterSwitch [one_to_one; ['runtime', 'cleanup']] why: Spell owns the CounterSwitch used to coordinate one-leader publication of its creation context.
+  edge: borrows -> melder.utilities.synchronization.creation_gate_controller.CreationGateController [many_to_one; ['runtime']] why: Spell borrows the frame-owned CreationGateController when configuring its creation-context factory for a conduit owner.
+  edge: borrows -> melder.utilities.synchronization.creation_gate.CreationGate [many_to_one; ['runtime']] why: Spell keeps the frame controller's gate for its index (dynamic only) so meld doors admit before reading the context; it drops the reference with its factory and never cleans the gate.
+  span lines: HEAD 1786 -> now 1895; diff lines 174
+  | --- HEAD
+  | +++ now
+  | @@ -29,6 +29,9 @@
+  |        is unsupported; this class adds no copying or mutation guards.
+  |      - Resolution capability is fixed per bound version and exposed by the
+  |        read-only resolvable property, independently of activity and compilation state.
+  | +    - The managed options of an `Existence.managed_spell_quantity` binding (mode, limit,
+  | +      queue timeout, reset method names) are fixed per bound version the same way, as
+  | +      Bind normalized and hashed them, and exposed by read-only properties.
+  |  
+  |      Core Responsibilities:
+  |      - Holds an immutable reference to the object (function/class/instance) it represents.
+  | @@ -237,6 +240,10 @@
+  |          "spellframe_kind",
+  |          "implemented_protocols",
+  |          "_removal_lock",
+  | +        "_managed_spell_mode",
+  | +        "_managed_spell_limit",
+  | +        "_managed_spell_timeout_seconds",
+  | +        "_managed_spell_reset_methods",
+  |      ]
+  |      def __init__(
+  |              self,
+  | @@ -258,6 +265,10 @@
+  |              resolvable: bool = True,
+  |              spellframe_kind: SpellframeKind = SpellframeKind.none,
+  |              implemented_protocols: tuple[type, ...] = (),
+  | +            managed_spell_mode: Optional[ManagedSpellMode] = None,
+  | +            managed_spell_limit: Optional[int] = None,
+  | +            managed_spell_timeout_seconds: Optional[float] = None,
+  | +            managed_spell_reset_methods: tuple[str, ...] = (),
+  |              **kwargs: Any,
+  |      ) -> None:
+  |          """
+  | @@ -288,6 +299,13 @@
+  |                  (a string) or `contract` (a Protocol) - as Bind classified it. Phase 3 reads it.
+  |              implemented_protocols (tuple[type, ...]): The Protocol(s) Bind structurally checked
+  |                  this spell against: `(spellframe,)` for a contract frame, else empty.
+  | +            managed_spell_mode (Optional[ManagedSpellMode]): The pool policy of a managed binding,
+  | +                as Bind normalized it; None on any other existence.
+  | +            managed_spell_limit (Optional[int]): Elastic idle cap, or the most objects alive for
+  | +                limited_quantity and queue; None on any other existence.
+  | +            managed_spell_timeout_seconds (Optional[float]): Queue wait in seconds; None otherwise.
+  | +            managed_spell_reset_methods (tuple[str, ...]): Reset method names, run in order on every
+  | +                release; empty when none were named or the spell is not managed.
+  |              **kwargs: Optional keyword metadata map, collected into `metadata`.
+  |  
+  |          Contract:
+  | @@ -346,6 +364,13 @@
+  |          self._removal_lock: Optional[RLock] = None
+  |          self._active = True  # active in its index; flipped by notch/disable
+  |          self._resolvable: bool = resolvable
+  | +        # Managed options (Existence.managed_spell_quantity): normalized by Bind and hashed into spell_id,
+  | +        # read-only per-version policy like `_resolvable`; None / None / None / () on any other existence.
+  | +        # The spell's pool is composed from them when its owner store is stamped (S3).
+  | +        self._managed_spell_mode: Optional[ManagedSpellMode] = managed_spell_mode
+  | +        self._managed_spell_limit: Optional[int] = managed_spell_limit
+  | +        self._managed_spell_timeout_seconds: Optional[float] = managed_spell_timeout_seconds
+  | +        self._managed_spell_reset_methods: tuple[str, ...] = managed_spell_reset_methods
+  |          self._id: str = new_ulid()  # Unique internal ID for tracking
+  |  
+  |          # Spell Data
+  | @@ -616,6 +641,10 @@
+  |              del self.tags
+  |              del self.metadata
+  |              del self._resolvable
+  | +            del self._managed_spell_mode
+  | +            del self._managed_spell_limit
+  | +            del self._managed_spell_timeout_seconds
+  | +            del self._managed_spell_reset_methods
+  |              del self._mutation_override
+  |              del self.dependencies
+  |              del self.disposal_method_names
+  | @@ -692,6 +721,79 @@
+  |          self.check_cleaned()
+  |          return self._resolvable
+  |  
+  | +    @property
+  | +    def managed_spell_mode(self) -> Optional[ManagedSpellMode]:
+  | +        """
+  | +        Return the pool policy of this managed version.
+  | +
+  | +        Contract:
+  | +            Set once at bind (default elastic for a managed binding) and part of the spell id. No live
+  | +            setter; changing it takes another binding.
+  | +
+  | +        Returns:
+  | +            Optional[ManagedSpellMode]: The mode, or None when the spell is not
+  | +            `Existence.managed_spell_quantity`.
+  | +
+  | +        Raises:
+  | +            RuntimeError: If this Spell has been cleaned.
+  | +        """
+  | +        self.check_cleaned()
+  | +        return self._managed_spell_mode
+  | +
+  | +    @property
+  | +    def managed_spell_limit(self) -> Optional[int]:
+  | +        """
+  | +        Return the limit of this managed version.
+  | +
+  | +        Contract:
+  | +            elastic: the most idle objects its pool keeps (default 256). limited_quantity and queue: the
+  | +            most objects alive at once, idle plus out. Set once at bind and part of the spell id.
+  | +
+  | +        Returns:
+  | +            Optional[int]: The limit, or None when the spell is not managed.
+  | +
+  | +        Raises:
+  | +            RuntimeError: If this Spell has been cleaned.
+  | +        """
+  | +        self.check_cleaned()
+  | +        return self._managed_spell_limit
+  | +
+  | +    @property
+  | +    def managed_spell_timeout_seconds(self) -> Optional[float]:
+  | +        """
+  | +        Return how long a queue lease of this version waits for a release.
+  | +
+  | +        Contract:
+  | +            Set once at bind for the queue mode and part of the spell id; always None for elastic and
+  | +            limited_quantity, which never wait.
+  | +
+  | +        Returns:
+  | +            Optional[float]: Seconds, or None.
+  | +
+  | +        Raises:
+  | +            RuntimeError: If this Spell has been cleaned.
+  | +        """
+  | +        self.check_cleaned()
+  | +        return self._managed_spell_timeout_seconds
+  | +
+  | +    @property
+  | +    def managed_spell_reset_methods(self) -> tuple[str, ...]:
+  | +        """
+  | +        Return the reset method names of this managed version.
+  | +
+  | +        Contract:
+  | +            Zero-argument methods of the class, run in this order on every release before the object
+  | +            is leased again. Set once at bind and part of the spell id.
+  | +
+  | +        Returns:
+  | +            tuple[str, ...]: The names; empty when none were named or the spell is not managed.
+  | +
+  | +        Raises:
+  | +            RuntimeError: If this Spell has been cleaned.
+  | +        """
+  | +        self.check_cleaned()
+  | +        return self._managed_spell_reset_methods
+  | +
+  |      def _set_hooks(
+  |              self,
+  |              *,
+  | @@ -1514,6 +1616,10 @@
+  |          - Provide a handle to the Conduit's creation scope (e.g., for singletons tied to that conduit).
+  |          - Reconfigure CreationContextFactory dependencies for the new owner.
+  |          - Invalidate the spell-owned CreationContext because ownership/scoping changed.
+  | +        - Give an `Existence.managed_spell_quantity` version its pool in the owner's store
+  | +          (`creations.ensure_managed_quantity(self)`, idempotent; 2026-10-15): every stamp - conjure, a
+  | +          post-conjure bind or bind_inactive, the transfer flip - ends with the version's pool in the store it
+  | +          was stamped with. No pool is composed when the stamp carries no store.
+  |  
+  |          Args:
+  |              conduit_id (str):
+  | @@ -1544,6 +1650,9 @@
+  |              self._owner_conduit_name = conduit_name
+  |              self._owner_creations = creations
+  |              self._caching_enabled = caching_enabled
+  | +            # Spell lock, then the store's leaf lock: the established build-lock-first order.
+  | +            if self.existence is Existence.managed_spell_quantity and creations is not None:
+  | +                creations.ensure_managed_quantity(self)
+  |  
+  |      def _add_build_details(
+  |              self,
+====================================================================================================
+NODE melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor.SpellArtifactProcessor
+  descriptor: context_compass/system_docs/graph/melder/aether/spellbook/spell_compiler/artifact_processor/spell_artifact_processor.json
+  file: src/melder/aether/spellbook/spell_compiler/artifact_processor/spell_artifact_processor.py  lineno: 19  kind: class
+  role: "Processor facade over compiler artifact truth for Phase 9 model fitting."
+  responsibilities: ["builds the shell SpellCodegenModel from spell-static and analyzer-owned truth", "runs registered processor strategies in deterministic order against that model", "publishes the fitted codegen model back onto SpellCompilerArtifact"]
+  owns_state: ["_strategy_builder"]
+  phases: ["runtime", "cleanup"]
+  edge: owns_lifecycle_of -> melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_strategy_builder.SpellArtifactProcessorStrategyBuilder [one_to_one; ['runtime', 'cleanup']] why: SpellArtifactProcessor owns the strategy builder that resolves its processor strategy chain.
+  edge: creates -> melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel [one_to_one; ['runtime']] why: SpellArtifactProcessor builds the shell SpellCodegenModel and fits it through the registered strategy chain.
+  edge: borrows -> melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact [one_to_one; ['runtime']] why: SpellArtifactProcessor borrows the spell-owned compiler artifact as the source of analyzer and compiler truth and as the publication target for the fitted model.
+  edge: specializes -> melder.utilities.general_base.cleanable.Cleanable [one_to_one; ['runtime', 'cleanup']] why: SpellArtifactProcessor inherits the explicit cleanup lifecycle from Cleanable.
+  span lines: HEAD 164 -> now 168; diff lines 13
+  | --- HEAD
+  | +++ now
+  | @@ -125,6 +125,10 @@
+  |                  route_family = "cluster"
+  |              elif existence is Existence.unique:
+  |                  route_family = "unique"
+  | +            elif existence is Existence.managed_spell_quantity:
+  | +                # Leased from the owning root's pool; the "managed" doors call the
+  | +                # site plan, which dispenses the object (pop, or reserve and build).
+  | +                route_family = "managed"
+  |              else:
+  |                  raise RuntimeError(
+  |                      f"Unsupported existence for route family: {existence!r}."
+====================================================================================================
+NODE melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_occurrence_instance_processor_strategy.SpellOccurrenceInstanceProcessorStrategy
+  descriptor: context_compass/system_docs/graph/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_occurrence_instance_processor_strategy.json
+  file: src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_occurrence_instance_processor_strategy.py  lineno: 26  kind: class
+  role: "Processor strategy fitting occurrence instance/sharedness facts into the codegen model."
+  responsibilities: ["maps occurrence graph truth onto per-spell instance keys and canonical occurrences", "publishes SpellOccurrenceInstanceAnalysis onto SpellCodegenModel", "derives shared-node and unique-node counts for later planning"]
+  phases: ["runtime"]
+  edge: creates -> melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_occurrence_instance_analysis.SpellOccurrenceInstanceAnalysis [one_to_one; ['runtime']] why: SpellOccurrenceInstanceProcessorStrategy builds and publishes SpellOccurrenceInstanceAnalysis.
+  edge: specializes -> melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_strategy.SpellArtifactProcessorStrategy [one_to_one; ['runtime']] why: SpellOccurrenceInstanceProcessorStrategy specializes the abstract processor-strategy contract.
+  edge: uses -> melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel [one_to_one; ['runtime']] why: SpellOccurrenceInstanceProcessorStrategy fits the instance/sharedness section directly onto SpellCodegenModel.
+  span lines: HEAD 190 -> now 196; diff lines 18
+  | --- HEAD
+  | +++ now
+  | @@ -89,8 +89,14 @@
+  |      ) -> bool:
+  |          """
+  |          Determine whether an existence policy yields a shared instance.
+  | +
+  | +        Contract:
+  | +            - `many` and `managed_spell_quantity` are per path: each occurrence
+  | +              keeps its own instance key, so every injection of a managed spell
+  | +              is its own lease (managed_spell_quantity S5, 2026-10-15).
+  | +            - Every slotted existence shares one instance per spell.
+  |          """
+  | -        return existence is not Existence.many
+  | +        return existence is not Existence.many and existence is not Existence.managed_spell_quantity
+  |  
+  |      @staticmethod
+  |      def _occurrence_sort_key(
+====================================================================================================
+NODE melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanLowering
+  descriptor: context_compass/system_docs/graph/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.json
+  file: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py  lineno: 572  kind: class
+  include: true
+  role: "Builds the site graph from steps, computes a key set's demand and emits one plan's source."
+  responsibilities: ["builds the site graph from steps and live topologies through the processor strategy's builder", "walks demand from the root, skipping parameters with a winning key", "emits the normal (meld) plan for the empty key set and (meld, ov) plans otherwise", "decides where operands may go positionally (positional_run)", "passes a door route key to normal-mode emission only and refuses one for key-set plans"]
+  phases: ["runtime"]
+  edge: uses -> melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_site_graph_processor_strategy.SpellSiteGraphProcessorStrategy [one_to_one; ['runtime']] why: build_site_graph turns steps into temporary injection specs and calls the processor's builder, so fresh and cache-hit plans read one structure.
+  edge: owns_lifecycle_of -> melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanEmission [one_to_one; ['runtime', 'cleanup']] why: emit creates one emission per plan and cleans it after render; the namespace and masked steps go to the caller.
+  span lines: HEAD 280 -> now 285; diff lines 23
+  | --- HEAD
+  | +++ now
+  | @@ -30,6 +30,9 @@
+  |            constructor's own error.
+  |          - Emission is a pure function of its inputs; the returned source names
+  |            no identities, so equal shapes share one code object.
+  | +        - A `managed_spell_quantity` step is leased from its pool, one site per
+  | +          path (managed_spell_quantity S5, 2026-10-15): see "Managed sites" in
+  | +          `SitePlanEmission`.
+  |  
+  |      Threading:
+  |          Compile-time only; emitted plans take the same locks as the normal lane,
+  | @@ -37,7 +40,9 @@
+  |          `door_route_key` of "unique_per_conduit" or "spellspace" whose root has
+  |          that route's existence builds its root without taking the root's slot
+  |          guard, because the route door that calls it already holds that same
+  | -        guard across the call. See `SitePlanEmission`.
+  | +        guard across the call. See `SitePlanEmission`. A managed site's warm
+  | +        lease takes no lock; its miss takes only its pool's leaf lock (in
+  | +        `reserve`, `abandon` and `adopt`), never across user code.
+  |  
+  |      Registration:
+  |          MELDER KERNEL - internal; never bound as a spell.
+====================================================================================================
+NODE melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanRuntimeHelpers
+  descriptor: context_compass/system_docs/graph/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.json
+  file: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py  lineno: 266  kind: class
+  include: true
+  role: "Cold-path helpers emitted plans call: generic construction with supplied values and the plans' refusals."
+  responsibilities: ["constructs a masked step with supplied values applied last", "raises the P2 error for a supplied value on a stored shared instance", "raises UnresolvedInputError before a site with unsupplied unresolved inputs is built", "refuses equal-rank keys that supply different values (E1)"]
+  phases: ["runtime"]
+  span lines: HEAD 182 -> now 304; diff lines 148
+  | --- HEAD
+  | +++ now
+  | @@ -6,7 +6,10 @@
+  |          Hold the cold-path helpers a plan reads from its namespace: the
+  |          generic construct with supplied values, the P2 refusal, the
+  |          unresolved-input refusal and the equal-rank conflict guard. None of
+  | -        them runs on a direct-call step.
+  | +        them runs on a direct-call step. Plans with a leasing managed site
+  | +        also read the lease returns and the missing-pool refusal
+  | +        (managed_spell_quantity S5, 2026-10-15); every other plan binds none
+  | +        of the three.
+  |  
+  |      Contract:
+  |          - Stateless static methods; the class is never instantiated.
+  | @@ -25,8 +28,9 @@
+  |      AGENT_ACCESS: internal
+  |  
+  |      AGENT_PURPOSE:
+  | -        access: internal. Generic construct with supplied values, P2 refusal and the E1
+  | -        conflict guard for emitted key-set plans.
+  | +        access: internal. Generic construct with supplied values, P2 refusal, the E1
+  | +        conflict guard, and the managed lease returns and missing-pool refusal for emitted
+  | +        key-set plans.
+  |      """
+  |  
+  |      __slots__ = ()
+  | @@ -180,3 +184,121 @@
+  |              message="Failed to apply overrides.",
+  |              inner=conflict,
+  |          ) from conflict
+  | +
+  | +    @staticmethod
+  | +    def return_leases(
+  | +            error: BaseException,
+  | +            leases: Tuple[Tuple[ManagedSpellQuantity, Any], ...],
+  | +    ) -> None:
+  | +        """
+  | +        Put back the objects a plan leased for a holder that was never built (F9).
+  | +
+  | +        Purpose:
+  | +            Called from the `except BaseException` of a lease group: the holder's
+  | +            construction region (a later lease's build, the construction, a
+  | +            pinned refusal, the publication) raised after some of its leases
+  | +            were taken. Melder gives back what it leased for an object that does
+  | +            not exist; leases already passed to a built object are the holder's.
+  | +
+  | +        Contract:
+  | +            - Every `(pool, object)` pair whose object is not None goes back
+  | +              through `pool.put_back` (the pool's resets run). None marks a lease
+  | +              the group never took (a class spell's construction never yields
+  | +              None) and is skipped.
+  | +            - A put-back that raises (a pool torn down meanwhile, a raising
+  | +              reset) becomes one note on `error` - "Returning an object leased
+  | +              from managed spell '<name>' failed: <failure>" - and the remaining
+  | +              pairs still go back. Nothing new is raised; the caller re-raises
+  | +              `error`.
+  | +
+  | +        Args:
+  | +            error: The exception propagating from the holder's region.
+  | +            leases: The group's `(pool, object)` pairs in lease order.
+  | +
+  | +        Returns:
+  | +            None.
+  | +        """
+  | +        for pool, obj in leases:
+  | +            if obj is None:
+  | +                continue
+  | +            try:
+  | +                pool.put_back(obj)
+  | +            except Exception as failure:
+  | +                # Best effort on an exception path: report on the propagating
+  | +                # error instead of replacing it.
+  | +                error.add_note(
+  | +                    f"Returning an object leased from managed spell '{pool.spell_name}' failed: {failure}"
+  | +                )
+  | +
+  | +    @staticmethod
+  | +    def return_unused_leases(leases: Tuple[Tuple[ManagedSpellQuantity, Any], ...]) -> None:
+  | +        """
+  | +        Put back the leases of a shared holder whose cold race another meld won.
+  | +
+  | +        Purpose:
+  | +            A shared consumer's miss leases its managed dependencies before its
+  | +            build guard. When the recheck under the guard finds the holder
+  | +            already published, the plan returns that holder and gives these
+  | +            leases back.
+  | +
+  | +        Contract:
+  | +            - Every pair goes back through `pool.put_back`, even after one fails.
+  | +            - Failures are raised once all were tried, as one ExceptionGroup
+  | +              "Returning objects leased for a construction another meld finished
+  | +              first failed" of RuntimeErrors ("Returning an object leased from
+  | +              managed spell '<name>' failed: <failure>"), each chained from its
+  | +              failure.
+  | +
+  | +        Args:
+  | +            leases: The `(pool, object)` pairs taken for the holder; every object is set.
+  | +
+  | +        Raises:
+  | +            ExceptionGroup: When any put-back raised.
+  | +
+  | +        Returns:
+  | +            None.
+  | +        """
+  | +        failures: List[Exception] = []
+  | +        for pool, obj in leases:
+  | +            try:
+  | +                pool.put_back(obj)
+  | +            except Exception as failure:
+  | +                error = RuntimeError(
+  | +                    f"Returning an object leased from managed spell '{pool.spell_name}' failed: {failure}"
+  | +                )
+  | +                error.__cause__ = failure
+  | +                failures.append(error)
+  | +        if failures:
+  | +            raise ExceptionGroup(
+  | +                "Returning objects leased for a construction another meld finished first failed",
+  | +                failures,
+  | +            )
+  | +
+  | +    @staticmethod
+  | +    def raise_missing_managed_pool(spell: Spell) -> None:
+  | +        """
+  | +        Raise the named error for a managed site whose pool cannot be read.
+  | +
+  | +        Contract:
+  | +            Called by a per-creation pool read
+  | +            (`spells[i]._owner_creations._managed_quantities[sid]`) that raised
+  | +            AttributeError or KeyError: the version has no owner store (never
+  | +            stamped, or its owner root's store was torn down) or its store holds
+  | +            no pool under the id. Nothing was leased or built for the site.
+  | +
+  | +        Args:
+  | +            spell: The managed spell.
+  | +
+  | +        Raises:
+  | +            MeldExecutionError: Always.
+  | +        """
+  | +        raise MeldExecutionError(
+  | +            spell_id=spell.spell_id,
+  | +            spell_name=spell.spell_name,
+  | +            node_id=spell.spell_id,
+  | +            message=(
+  | +                f"Managed spell '{spell.spell_name}' has no pool to lease from: its owner root was torn down, "
+  | +                "or this version was never given one (a version staged with bind_inactive before conjure and "
+  | +                "notched in after it). Meld it through a live root, or stage the version after conjure."
+  | +            ),
+  | +        )
+====================================================================================================
+NODE melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.solo_codegen_plan_discovery_strategy.SoloCodegenPlanDiscoveryStrategy
+  descriptor: context_compass/system_docs/graph/melder/aether/spellbook/spell_compiler/codegen_planner/codegen_plan_discovery_system/strategies/solo_codegen_plan_discovery_strategy.json
+  file: src/melder/aether/spellbook/spell_compiler/codegen_planner/codegen_plan_discovery_system/strategies/solo_codegen_plan_discovery_strategy.py  lineno: 15  kind: class
+  role: "Phase-10 discovery strategy for the solo spell category."
+  responsibilities: ["claims models whose visible spell count is exactly one", "emits the solo planner strategy id and solo planning family", "bounds phase-11 candidate codegen styles for the solo family"]
+  phases: ["runtime"]
+  edge: specializes -> melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.codegen_plan_discovery_strategy.CodegenPlanDiscoveryStrategy [one_to_one; ['runtime']] why: SoloCodegenPlanDiscoveryStrategy specializes the abstract phase-10 discovery-strategy contract.
+  span lines: HEAD 68 -> now 75; diff lines 33
+  | --- HEAD
+  | +++ now
+  | @@ -4,8 +4,8 @@
+  |  
+  |      Purpose:
+  |          Claim any model whose visible spell set contains exactly one spell,
+  | -        regardless of existence policy, so phase 10 can emit the dedicated
+  | -        solo planning family.
+  | +        of any existence policy but `managed_spell_quantity`, so phase 10 can
+  | +        emit the dedicated solo planning family.
+  |  
+  |      Registration:
+  |          MELDER KERNEL. A built-in
+  | @@ -49,12 +49,19 @@
+  |                spell whose required collection wired zero providers still
+  |                counts one visible spell yet must inject an empty list. Such
+  |                models route to the collection-aware families instead.
+  | +            - Declines a model holding a `managed_spell_quantity` spell: its
+  | +              objects are leased through the generalized family's site plan
+  | +              (managed_spell_quantity S5, 2026-10-15), which the solo lowering
+  | +              does not dispense.
+  |          """
+  |          existence_occurrence_shape = spell_codegen_model.existence_occurrence_shape
+  |          if existence_occurrence_shape is None:
+  |              return None
+  |          if existence_occurrence_shape.total_spell_count != 1:
+  |              return None
+  | +        for existence, _count in existence_occurrence_shape.existence_counts:
+  | +            if existence is Existence.managed_spell_quantity:
+  | +                return None
+  |          injection_shape = spell_codegen_model.injection_shape
+  |          if injection_shape is not None:
+  |              for instance_spec in injection_shape.instance_specs_by_instance_key.values():
+====================================================================================================
+NODE melder.aether.spellbook.spell_compiler.spell_analyzer.strategies.spell_occurrence_graph_analyzer_strategy.SpellOccurrenceGraphAnalyzerStrategy
+  descriptor: context_compass/system_docs/graph/melder/aether/spellbook/spell_compiler/spell_analyzer/strategies/spell_occurrence_graph_analyzer_strategy.json
+  file: src/melder/aether/spellbook/spell_compiler/spell_analyzer/strategies/spell_occurrence_graph_analyzer_strategy.py  lineno: 46  kind: class
+  role: "Occurrence-graph analyzer strategy for phase-8 analysis."
+  responsibilities: ["expands rooted blueprint truth plus topology and contract context into an occurrence graph", "publishes occurrence graph analysis, fast key, and input signature onto SpellCompilerArtifact", "owns shared-occurrence collapse decisions, topology fallback expansion, and SpellContract edge insertion", "retains existing providers as consumer dependency leaves without inspecting constructor contracts", "signs complete required-input topology and refuses non-resolvable providers during late contract expansion", "walks a copy of the spell pool once per pass, so a concurrent bind cannot drop the existence-occurrence analysis"]
+  phases: ["runtime"]
+  edge: uses -> melder.aether.conduit.meld.contracts.spell_contract.SpellContract [one_to_one; ['runtime']] why: SpellOccurrenceGraphAnalyzerStrategy inspects SpellContract defaults when adding contracted dependency edges to the occurrence graph.
+  edge: uses -> melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions.SharedCompilerExecutions [one_to_one; ['runtime']] why: SpellOccurrenceGraphAnalyzerStrategy uses SharedCompilerExecutions for deterministic schema freezing and signature hashing.
+  edge: creates -> melder.aether.spellbook.spell_compiler.spell_analyzer.data.spell_existence_occurrence_analysis.SpellExistenceOccurrenceAnalysis [one_to_one; ['runtime']] why: SpellOccurrenceGraphAnalyzerStrategy creates SpellExistenceOccurrenceAnalysis while walking the visible spell set for phase-8 occurrence work.
+  edge: creates -> melder.aether.spellbook.spell_compiler.spell_analyzer.data.spell_occurrence_graph_analysis.SpellOccurrenceGraphAnalysis [one_to_one; ['runtime']] why: SpellOccurrenceGraphAnalyzerStrategy creates SpellOccurrenceGraphAnalysis as its primary phase-8 output artifact.
+  edge: specializes -> melder.aether.spellbook.spell_compiler.spell_analyzer.spell_analyzer_strategy.SpellAnalyzerStrategy [one_to_one; ['runtime']] why: SpellOccurrenceGraphAnalyzerStrategy specializes the abstract analyzer strategy contract.
+  span lines: HEAD 1236 -> now 1242; diff lines 19
+  | --- HEAD
+  | +++ now
+  | @@ -688,8 +688,14 @@
+  |      def _is_shared_existence(existence: Existence) -> bool:
+  |          """
+  |          Determine whether an existence policy yields a shared instance.
+  | -        """
+  | -        return existence is not Existence.many
+  | +
+  | +        Contract:
+  | +            - `many` and `managed_spell_quantity` are per path: each occurrence
+  | +              keeps its own instance key, so every injection of a managed spell
+  | +              is its own lease (managed_spell_quantity S5, 2026-10-15).
+  | +            - Every slotted existence shares one instance per spell.
+  | +        """
+  | +        return existence is not Existence.many and existence is not Existence.managed_spell_quantity
+  |  
+  |      @staticmethod
+  |      def _occurrence_sort_key(
+====================================================================================================
+NODE melder.aether.spellbook.spell_compiler.system.validation.scope_ordering_strategy.ScopeOrderingStrategy
+  descriptor: context_compass/system_docs/graph/melder/aether/spellbook/spell_compiler/system/validation/scope_ordering_strategy.json
+  file: src/melder/aether/spellbook/spell_compiler/system/validation/scope_ordering_strategy.py  lineno: 31  kind: class
+  include: true
+  role: "Guard lifecycle-scope ordering across dependency edges - the leak check."
+  responsibilities: ["report broader-lived nodes depending on narrower-lived ones", "prevent per-conduit, per-spellspace or per-call instances from leaking upward into shared scopes", "names holder and dependency with their existences and says which existence to change"]
+  phases: ["compile"]
+  span lines: HEAD 115 -> now 119; diff lines 15
+  | --- HEAD
+  | +++ now
+  | @@ -47,8 +47,12 @@
+  |              OperationCancelledError:
+  |                  If cancel_event is set while iterating.
+  |          """
+  | +        # A managed spell ranks with unique: its pool lives in the owning root's
+  | +        # store for the root's life, so it may depend on unique, managed and many
+  | +        # spells, and every holder may depend on it.
+  |          scope_rank = {
+  |              Existence.unique: 0,
+  | +            Existence.managed_spell_quantity: 0,
+  |              Existence.unique_per_conduit_cluster: 1,
+  |              Existence.unique_per_conduit_lineage: 2,
+  |              Existence.unique_per_conduit: 3,
+====================================================================================================
+NODE melder.aether.spellbook.spellbook.Spellbook
+  descriptor: context_compass/system_docs/graph/melder/aether/spellbook/spellbook.json
+  file: src/melder/aether/spellbook/spellbook.py  lineno: 71  kind: class
+  role: "Public binding, validation, and conjure surface."
+  responsibilities: ["binds and scans spells into local and contracted lookup surfaces", "forwards native resolvable policy through active and inactive binding and exposes it in spell descriptions", "coordinates configuration freeze and frame publication into Aether and Nexus", "conjures and retains exactly one root conduit", "conjures against a prepared existing normal conduit through a separate private route preserving its ID and creation stores", "seeds independent Bind callbacks from ordinary local or frame-owned configuration selection", "coordinates spell lineage state and transaction-sensitive binding changes", "exposes Book-local bind hook add and clear operations through its owned Bind", "dispatches captured post hooks after active or parked publication and before outer transaction completion", "refreshes complete recorded Book twins with value-only bind-stage markers and explicitly cleans Bind during teardown", "preserves same-identity name admission during existing-conduit conjure", "records owning Book and frame twins when public frame setup already locked configuration before conjure", "offers beginners an opt-in conjure report of Phase-4 validation warnings (validation_warnings=True); the default and internal conjure routes are silent", "caches a creation only when it carries a manifest package (_emit_spell_cache)", "refuses the recorded-world configuration discipline on the predicted conjure mode before settling the frame posture, and re-checks it on the settled mode inside the transaction window", "disposes a spell under the Book lock and reports the index the disposal destroyed (_dispose_spell); a spell already disposed raises RuntimeError (0.2.8231), and a second disposal of a spell while one runs is refused through an id mark kept under the Book lock (0.2.8232)", "answers contracted-spell lookups by key - the active copy by version id, a parked copy through its index - before walking (0.2.8231)", "inspects objects holding its lock only for its own spells and asks the frames with no lock held, over a one-call copy of the frame's conduits (inspect_spell, 0.2.8232)", "re-checks under its lock a Book torn down while a removal waited for it (cleanup_and_remove_spell): a spell the teardown cleaned returns, anything else raises the cleaned-Book RuntimeError (0.2.8233)"]
+  owns_state: ["_bind", "_spells", "_spells_by_id", "_lookup_spells", "_contracted_spells", "_configuration", "_conduit"]
+  phases: ["init", "validation", "runtime", "cleanup"]
+  edge: uses -> melder.aether.aether.Aether [many_to_one; ['init', 'runtime']] why: Spellbook uses Aether to ensure frames exist, bind configuration, and register runtime state.
+  edge: creates -> melder.aether.aetheric_frame.aetheric_frame_configuration.AethericFrameConfiguration [one_to_one; ['init', 'runtime']] why: Spellbook derives and binds an AethericFrameConfiguration from its Spellbook configuration during conjure.
+  edge: borrows -> melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates [many_to_one; ['init', 'runtime']] why: Spellbook borrows the frame-level SpellSystemStates service from Aether for lineage and validation coordination.
+  edge: creates -> melder.aether.conduit.conduit.Conduit [one_to_one; ['runtime']] why: Ordinary conjure constructs this Book's single root in the frame. The separate private route adopts an existing prepared normal conduit without allocating a second one.
+  edge: holds -> melder.aether.conduit.conduit.Conduit [one_to_one; ['runtime', 'cleanup']] why: Spellbook retains its sole conjured or adopted normal Conduit. Normal Conduit teardown owns Book cleanup; this back-reference does not create a second conduit cleanup owner.
+  edge: owns_lifecycle_of -> melder.aether.spellbook.bind.bind.Bind [one_to_one; ['init', 'runtime', 'cleanup']] why: Spellbook constructs and owns one Bind gateway, seeding immutable callbacks once from selected configuration. Runtime hook add/clear remains local to this Book.
+  edge: creates -> melder.aether.spellbook.bind.scan.Scan [one_to_many; ['runtime']] why: Spellbook creates a Scan helper to bind scan-decorated objects from one module.
+  edge: holds -> melder.aether.spellbook.bind.spell_index.SpellIndex [one_to_many; ['runtime']] why: Spellbook local and contracted registries are keyed by SpellIndex rather than by mutable current spell id strings.
+  edge: owns_lifecycle_of -> melder.aether.spellbook.configuration.spellbook_configuration.SpellbookConfiguration [one_to_one; ['init', 'runtime', 'cleanup']] why: In local mode Spellbook owns its rich configuration. In frame-wide mode it adopts the canonical frozen frame-owned configuration and skips cleanup of that borrowed object; sharing configuration never shares Book registries.
+  edge: uses -> melder.aether.spellbook.configuration.system_state.SystemState [many_to_one; ['init', 'runtime']] why: Spellbook reads SystemState from its borrowed AethericFrameConfiguration when enforcing runtime posture decisions; rich SpellbookConfiguration remains a separate policy object.
+  edge: owns_lifecycle_of -> melder.aether.spellbook.spell.Spell [one_to_many; ['init', 'runtime', 'cleanup']] why: Spellbook owns the lifecycle of locally registered Spell records and cleans them during Spellbook teardown.
+  edge: owns_lifecycle_of -> melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem [one_to_one; ['init', 'validation', 'cleanup']] why: Spellbook owns the spell-level validation system used by SpellCompiler validation passes.
+  edge: creates -> melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem [one_to_many; ['runtime']] why: Spellbook creates a conjure-only SpellbookCreationSystem helper to orchestrate one root-conduit build.
+  edge: borrows -> melder.nexus.nexus.Nexus [one_to_one; ['init', 'runtime']] why: Spellbook keeps a Nexus handle for frame and spell publication when the frame posture is Rift-enabled.
+  edge: owns_lifecycle_of -> melder.utilities.caching_system.caching_system.CachingSystem [one_to_one; ['runtime', 'cleanup']] why: Spellbook owns the optional CachingSystem used for rooted-conduit spell payload persistence.
+  edge: borrows -> melder.mutation_research.mutation_research.MutationResearch [many_to_one; ['runtime']] why: The bind, bind_inactive, and notch confirmation seams auto-record world-entry/staged/promoted research events through a non-constructing peek at the Aether-hosted root (quiet no-op while research is inactive).
+  span lines: HEAD 7493 -> now 7540; diff lines 109
+  | --- HEAD
+  | +++ now
+  | @@ -5034,6 +5034,10 @@
+  |              disposal_method_names: Sequence[str] | None = None,
+  |              profile: str = "general",
+  |              resolvable: bool = True,
+  | +            managed_spell_mode: Optional[Union[ManagedSpellMode, str]] = None,
+  | +            managed_spell_limit: Optional[int] = None,
+  | +            managed_spell_timeout_seconds: Optional[float] = None,
+  | +            managed_spell_reset_methods: Optional[Sequence[str]] = None,
+  |              **kwargs: Any,
+  |      ) -> str:
+  |          """
+  | @@ -5090,6 +5094,19 @@
+  |              resolvable (bool):
+  |                  Native capability of this parked version, independent of index selection.
+  |                  Defaults to True; False retains existing naming and lifecycle restrictions.
+  | +            managed_spell_mode (Optional[Union[ManagedSpellMode, str]]):
+  | +                Pool policy of an `Existence.managed_spell_quantity` binding: elastic (default),
+  | +                limited_quantity or queue - a ManagedSpellMode member or its name.
+  | +            managed_spell_limit (Optional[int]):
+  | +                elastic: the most idle objects kept (default 256); limited_quantity and queue: the
+  | +                most objects alive at once (required). An int >= 1.
+  | +            managed_spell_timeout_seconds (Optional[float]):
+  | +                queue only, required there: how long a lease waits for a release before it raises.
+  | +            managed_spell_reset_methods (Optional[Sequence[str]]):
+  | +                Names of zero-argument methods of the class run, in order, on every release.
+  | +                The four managed options must stay None on any other existence; all four are part
+  | +                of a managed spell's id.
+  | +                A parked managed version keeps its own options.
+  |              **kwargs:
+  |                  Optional lifecycle hooks (pre/activation/post).
+  |  
+  | @@ -5102,7 +5119,10 @@
+  |                  If the spell_id collides, the Spellbook is not in a dynamic
+  |                  posture, or `spell_index` is not owned here.
+  |              TypeError:
+  | -                If resolvable is not a bool or the target violates Bind admission rules.
+  | +                If resolvable is not a bool or the target violates Bind admission rules,
+  | +                including a managed option of the wrong type or a managed non-class.
+  | +            ValueError:
+  | +                If a managed option is malformed or set on another existence.
+  |              HookExecutionError:
+  |                  A Book bind callback failed. Activation failure cleans its
+  |                  unpublished allocation; post failure does not undo registration.
+  | @@ -5136,6 +5156,10 @@
+  |                      binding_name=binding_name,
+  |                      profile=profile,
+  |                      resolvable=resolvable,
+  | +                    managed_spell_mode=managed_spell_mode,
+  | +                    managed_spell_limit=managed_spell_limit,
+  | +                    managed_spell_timeout_seconds=managed_spell_timeout_seconds,
+  | +                    managed_spell_reset_methods=managed_spell_reset_methods,
+  |                      _lifecycle_hooks=bind_hooks,
+  |                      existence=existence_enum,
+  |                      aetheric_frame=self._aetheric_frame_name,
+  | @@ -5332,6 +5356,10 @@
+  |              disposal_method_names: Sequence[str] | None = None,
+  |              profile: str = "general",
+  |              resolvable: bool = True,
+  | +            managed_spell_mode: Optional[Union[ManagedSpellMode, str]] = None,
+  | +            managed_spell_limit: Optional[int] = None,
+  | +            managed_spell_timeout_seconds: Optional[float] = None,
+  | +            managed_spell_reset_methods: Optional[Sequence[str]] = None,
+  |              **kwargs: Any,
+  |      ) -> str:
+  |          """
+  | @@ -5385,6 +5413,18 @@
+  |                  enforce_priority_disposal_methods=True. Shared names belong to that block
+  |                  in both modes; spell-only names keep their supplied order. Missing names
+  |                  are skipped and duplicates run once. Empty input still permits book methods.
+  | +            managed_spell_mode (Optional[Union[ManagedSpellMode, str]]):
+  | +                Pool policy of an `Existence.managed_spell_quantity` binding: elastic (default),
+  | +                limited_quantity or queue - a ManagedSpellMode member or its name.
+  | +            managed_spell_limit (Optional[int]):
+  | +                elastic: the most idle objects kept (default 256); limited_quantity and queue: the
+  | +                most objects alive at once (required). An int >= 1.
+  | +            managed_spell_timeout_seconds (Optional[float]):
+  | +                queue only, required there: how long a lease waits for a release before it raises.
+  | +            managed_spell_reset_methods (Optional[Sequence[str]]):
+  | +                Names of zero-argument methods of the class run, in order, on every release.
+  | +                The four managed options must stay None on any other existence; all four are part
+  | +                of a managed spell's id.
+  |              **kwargs:
+  |                  Optional application-object lifecycle hooks, executed during Meld
+  |                  and separate from add_bind_hooks registration callbacks:
+  | @@ -5403,7 +5443,10 @@
+  |                  If ``spell`` is a primitive value (int, float, bool, complex,
+  |                  str, bytes, bytearray); a spell must be a class, function,
+  |                  lambda, or an existing object instance.
+  | -                Also raised when resolvable is not a bool.
+  | +                Also raised when resolvable is not a bool, when a managed option has the
+  | +                wrong type, or when a managed binding targets a non-class.
+  | +            ValueError:
+  | +                If a managed option is malformed or set on another existence.
+  |              HookExecutionError:
+  |                  A registration callback failed; the original error is chained.
+  |                  Activation failure retires its unpublished Spell/index. Post
+  | @@ -5459,6 +5502,10 @@
+  |                      binding_name=binding_name,
+  |                      profile=profile,
+  |                      resolvable=resolvable,
+  | +                    managed_spell_mode=managed_spell_mode,
+  | +                    managed_spell_limit=managed_spell_limit,
+  | +                    managed_spell_timeout_seconds=managed_spell_timeout_seconds,
+  | +                    managed_spell_reset_methods=managed_spell_reset_methods,
+  |                      _lifecycle_hooks=bind_hooks,
+  |                      existence=existence_enum,
+  |                      aetheric_frame=self._aetheric_frame_name,
+====================================================================================================
+NODE melder.crystallizer.crystal_loader_system.graft_runner.GraftRunner
+  descriptor: context_compass/system_docs/graph/melder/crystallizer/crystal_loader_system/graft_runner.json
+  file: src/melder/crystallizer/crystal_loader_system/graft_runner.py  lineno: 32  kind: class
+  role: "Single-use spell-index graft executor: re-integrates one captured index (members, custody, selection) into a live conjured host book through normal verbs only."
+  responsibilities: ["gates the versioned graft record (RecordVersion MAJOR + graft_kind)", "refuses unconjured hosts via the public Spellbook.conduit accessor", "applies the resident-member rule via frame.find_index_for_spell; explicit merge grows the requested index through public verbs", "hydrates members via the import lane with a rebuild-then-retry arc through user_world_rebuild", "binds the selected member ACTIVE (fresh index) and parks the rest via bind_inactive", "forwards ordered disposal names for every member and carries the new index directly to fresh-graft parking", "adopts only a successfully grafted selected member using its returned live binding ID", "emits a detached membership and index-identity report with explicit shortfalls", "preserves each member resolution capability through selected, parked and merged graft bindings", "hydrates each member's spellframe through the same rule as the restore engine (_hydrate_spellframe) at the selected, parked and merged bind sites, appending a shortfall when the recorded Protocol cannot be imported (0.2.8222)"]
+  owns_state: ["_record", "_host_book (borrowed)", "_skip_resident", "_merge_into_index (borrowed)", "_adopt_recorded_selection", "_consumed"]
+  phases: ["runtime", "cleanup"]
+  edge: borrows -> melder.aether.spellbook.spellbook.Spellbook [None; None] why: the runner drives the host book's public verbs only: conduit accessor, bind (selected member, fresh index), bind_inactive (parked members).
+  edge: delegates_to -> melder.crystallizer.crystal_loader_system.user_world_rebuild [None; None] why: member hydration failures retry once after rebuilding absent user modules through the shared retained-text lane.
+  span lines: HEAD 681 -> now 687; diff lines 56
+  | --- HEAD
+  | +++ now
+  | @@ -350,7 +350,8 @@
+  |          """
+  |          Bind the selected member ACTIVE - the fresh index's anchor.
+  |  
+  | -        Recorded resolution capability is preserved; legacy absence defaults to True.
+  | +        Recorded resolution capability is preserved; legacy absence defaults to True. A managed
+  | +        member's recorded options (record 4.2.0) are replayed with it.
+  |  
+  |          Args:
+  |              selected_id:
+  | @@ -389,6 +390,7 @@
+  |              ) or None,
+  |              profile=str(crystal.get("profile_family", "general")),
+  |              resolvable=crystal.get("resolvable", True),
+  | +            **SpellCrystal.managed_bind_options(crystal),
+  |          )
+  |          live_spell = self._host_book.find_spell_by_id(new_spell_id)
+  |          live_index = (
+  | @@ -407,7 +409,8 @@
+  |          """
+  |          Park every non-selected member onto the fresh live index.
+  |  
+  | -        Every member retains its own recorded resolution capability.
+  | +        Every member retains its own recorded resolution capability and, when managed, its own
+  | +        recorded options (record 4.2.0).
+  |  
+  |          Args:
+  |              selected_id:
+  | @@ -449,6 +452,7 @@
+  |                  disposal_method_names=list(crystal.get("disposal_method_names", [])) or None,
+  |                  profile=str(crystal.get("profile_family", "general")),
+  |                  resolvable=crystal.get("resolvable", True),
+  | +                **SpellCrystal.managed_bind_options(crystal),
+  |              )
+  |              parked += 1
+  |          return parked
+  | @@ -476,7 +480,8 @@
+  |                which may differ from its recorded SHA.
+  |              - Adoption is honest: requested-but-ungrafted selection
+  |                lands a shortfall instead of a silent no-op.
+  | -            - Each parked member retains its recorded resolution capability.
+  | +            - Each parked member retains its recorded resolution capability and, when
+  | +              managed, its recorded options (record 4.2.0).
+  |  
+  |          Args:
+  |              selected_id:
+  | @@ -508,6 +513,7 @@
+  |                  disposal_method_names=list(crystal.get("disposal_method_names", [])) or None,
+  |                  profile=str(crystal.get("profile_family", "general")),
+  |                  resolvable=crystal.get("resolvable", True),
+  | +                **SpellCrystal.managed_bind_options(crystal),
+  |              )
+  |              if spell_id == str(selected_id):
+  |                  live_selected_id = new_spell_id
+====================================================================================================
+NODE melder.crystallizer.crystal_loader_system.restore_engine.RestoreEngine
+  descriptor: context_compass/system_docs/graph/melder/crystallizer/crystal_loader_system/restore_engine.json
+  file: src/melder/crystallizer/crystal_loader_system/restore_engine.py  lineno: 383  kind: class
+  role: "Single-use all-or-nothing world restorer: folds a checkpoint chain and replays it through PUBLIC runtime verbs."
+  responsibilities: ["fold: oldest-first later-wins with tombstones and custody routing; journal-without-payload is an honesty shortfall", "canonical stage order: aether -> crystallizer policy (report) -> MR reload -> nexus -> frames -> books/binds/conjure/staged/selections -> links -> clusters -> contracts", "configuration rebuilds ride the reload verbs (recorded truth, never defaults)", "M3: rebuilds recorded synthetic modules (register->publish->execute) before hydration", "forwards ordered disposal for active/staged binds; translated actual IDs drive anchors, exact selections, and contract grants", "fresh structural identities and changed Spell IDs are reported; failure tears down in reverse order", "forwards recorded resolution capability through active and staged binding with legacy True defaults", "folds surviving named carriers before expanding and validating supporting ancestry", "selects each Book root explicitly and replays parent-ordered lessers in the shared per-Book unit", "deactivates an already-active live Nexus (as it does MutationResearch) before activating the reloaded Nexus configuration", "stage 1 installs the recorded spell-id regime, files a shortfall when a fixed live regime differs, and refuses a record binding one spell id in two frames under process-wide ids", "stage 6 keys bind order, member-index lookup and recorded-to-live spell translation per Book", "hydrates each crystal's spellframe before the active and staged binds (_hydrate_spellframe): imports the recorded Protocol for a contract, passes the recorded name for a category, and on an import failure binds the name as a category and files a spell_crystal shortfall naming the Protocol and the spell (0.2.8222)"]
+  owns_state: ["folded stores", "built_stack", "report"]
+  phases: ["runtime"]
+  edge: creates -> melder.crystallizer.synthetic_module.SyntheticModule [one_to_many; ['runtime']] why: Loader chain M3: recorded synthetic sources rebuild as live modules before target hydration.
+  edge: uses -> melder.crystallizer.crystal_analysis.preflight [1; runtime] why: The folded-bundle preflight runs inside restore() before any replay (authoritative admission truth).
+  edge: delegates_to -> melder.crystallizer.crystal_loader_system.user_world_rebuild [None; None] why: _rebuild_user_world delegates the S2 rebuild mechanics via callbacks so the rebuild laws live in exactly one place.
+  edge: uses -> melder.crystallizer.crystal_analysis.conduit_hierarchy.ConduitHierarchy [many_to_one; ['validation', 'restore']] why: Shares the stateless interpretation of recorded parent/Book structure; owns no live scopes.
+  span lines: HEAD 2687 -> now 2692; diff lines 37
+  | --- HEAD
+  | +++ now
+  | @@ -1771,6 +1771,8 @@
+  |              Forward ordered disposal names through normal book composition.
+  |              Record a changed SHA before resolving dependent staged members.
+  |              Preserve recorded capability; only legacy absence defaults to True.
+  | +            Replay a managed spell's recorded options (record 4.2.0), so it
+  | +            rebinds with its own options and spell id.
+  |              The spell id comes from the payload, the custody key names
+  |              shortfalls, and identities map per Book (0.2.8214).
+  |  
+  | @@ -1803,6 +1805,7 @@
+  |              ) or None,
+  |              profile=str(crystal.get("profile_family", "general")),
+  |              resolvable=crystal.get("resolvable", True),
+  | +            **SpellCrystal.managed_bind_options(crystal),
+  |          )
+  |          self._report.record_built("spell_active")
+  |          self._map_spell_identity(spellbook_id, spell_id, new_spell_id)
+  | @@ -1827,7 +1830,8 @@
+  |          Contract:
+  |              Retain the ordered recorded names and map any changed bind identity
+  |              before the selection stage resolves this exact parked member.
+  | -            Preserve the parked version's own resolution capability.
+  | +            Preserve the parked version's own resolution capability and, for a
+  | +            managed version, its own recorded options (record 4.2.0).
+  |              The anchor index is found within this Book, the custody key names
+  |              shortfalls, and identities map per Book (0.2.8214).
+  |  
+  | @@ -1877,6 +1881,7 @@
+  |              disposal_method_names=list(crystal.get("disposal_method_names", [])) or None,
+  |              profile=str(crystal.get("profile_family", "general")),
+  |              resolvable=crystal.get("resolvable", True),
+  | +            **SpellCrystal.managed_bind_options(crystal),
+  |          )
+  |          self._map_spell_identity(spellbook_id, spell_id, new_spell_id)
+  |          self._report.record_built("spell_staged")
+====================================================================================================
+NODE melder.crystallizer.crystals.spell_crystal.SpellCrystal
+  descriptor: context_compass/system_docs/graph/melder/crystallizer/crystals/spell_crystal.json
+  file: src/melder/crystallizer/crystals/spell_crystal.py  lineno: 17  kind: class
+  role: "Spell custody twin + module-dependency manifest; carries the full bind signature and, for synthetic roots, the rebuildable module SOURCES (M3); opt-in user-source TEXT rides beside them (S2)."
+  responsibilities: ["captures identity and the full bind signature for one live spell target", "captures detached disposal names in resolved execution order without sorting or reapplying book policy", "delegates the module-world walk to a single-use CrystalAnalyzer (V3 carrier law)", "carries the returned CrystalAnalysisResult and exposes it via delegating properties", "captures native per-version resolution capability as a detached replay value", "keys its record entry: custody_key is the spell id, or \"<spell_id>@<frame>\" when built with per_frame_custody (the frame read from spell.aetheric_frame)", "records the frame kind (spellframe_kind) and, for a contract, the Protocol's module and qualname (spellframe_module, spellframe_qualname) so restore and graft rebind the Protocol rather than a same-named category (0.2.8222, record 4.1.0)"]
+  owns_state: ["_analysis (one carried CrystalAnalysisResult)", "_disposal_method_names (ordered recorded values)", "_frame_name, _custody_key (the record key)", "_spellframe_kind, _spellframe_module, _spellframe_qualname (recorded frame kind)"]
+  phases: ["init", "runtime", "cleanup"]
+  edge: uses -> melder.crystallizer.synthetic_module.SyntheticModule [one_to_many; ['runtime']] why: SpellCrystal classifies and reasons about crystallized SyntheticModule targets while building module-world manifests.
+  edge: creates -> melder.crystallizer.crystal_analysis.crystal_analyzer [N; runtime] why: Bind-time custody delegates analysis to a single-use analyzer (V3 carrier law).
+  edge: owns_lifecycle_of -> melder.crystallizer.crystal_analysis.crystal_analysis_result [1; runtime] why: The crystal CARRIES exactly one analysis result (cleaned children-first).
+  span lines: HEAD 1327 -> now 1425; diff lines 155
+  | --- HEAD
+  | +++ now
+  | @@ -23,6 +23,9 @@
+  |      Contract:
+  |          - constructed from one live `Spell`
+  |          - anchored to the spell's concrete SHA256 identity
+  | +        - records a managed spell's options (record 4.2.0) - mode by name, limit,
+  | +          queue timeout and reset method names - and nothing new for any other
+  | +          existence, so every other payload is unchanged
+  |          - records the spell's frame and its record key (`custody_key`): the
+  |            spell id under process-wide ids, "<spell_id>@<frame>" under
+  |            per-frame ids, where one spell id may be bound in several frames
+  | @@ -132,6 +135,10 @@
+  |          "_created_from_user_source_root",
+  |          "_user_root_paths",
+  |          "_site_package_root_paths",
+  | +        "_managed_spell_mode_name",
+  | +        "_managed_spell_limit",
+  | +        "_managed_spell_timeout_seconds",
+  | +        "_managed_spell_reset_methods",
+  |      ]
+  |  
+  |      def __init__(
+  | @@ -164,6 +171,9 @@
+  |              - Captures resolved disposal names in execution order. This detached
+  |                persistence value does not sort or reapply book policy.
+  |              - Captures native resolution capability so replay cannot enable a definition.
+  | +            - Captures a managed spell's options (record 4.2.0) as plain values - the
+  | +              mode's name, the limit, the queue timeout and the reset names - only when
+  | +              the existence is `managed_spell_quantity`; other spells capture nothing new.
+  |              - Captures the spell's frame (`spell.aetheric_frame`) and keys the
+  |                record by the spell id, or by "<spell_id>@<frame>" when
+  |                `per_frame_custody` is set (0.2.8214).
+  | @@ -299,6 +309,18 @@
+  |          self._existence_name: str = spell.existence.name
+  |          self._permissions_name: str = spell.permissions.name
+  |          self._resolvable: bool = spell.resolvable
+  | +        # Managed options (record 4.2.0): read only for a managed spell, so every other crystal - and its
+  | +        # describe() payload - is unchanged. Plain values: the mode is recorded by NAME, never the enum.
+  | +        if self._existence_name == "managed_spell_quantity":
+  | +            self._managed_spell_mode_name: Optional[str] = spell.managed_spell_mode.name
+  | +            self._managed_spell_limit: Optional[int] = spell.managed_spell_limit
+  | +            self._managed_spell_timeout_seconds: Optional[float] = spell.managed_spell_timeout_seconds
+  | +            self._managed_spell_reset_methods: List[str] = list(spell.managed_spell_reset_methods)
+  | +        else:
+  | +            self._managed_spell_mode_name = None
+  | +            self._managed_spell_limit = None
+  | +            self._managed_spell_timeout_seconds = None
+  | +            self._managed_spell_reset_methods = []
+  |          # Capture-gap fields (restore_engine_2026_07_07 patch lane): the two
+  |          # bind inputs the record previously dropped. Disposal names preserve
+  |          # the spell's cleanup contract across a restore; the profile family
+  | @@ -422,6 +444,10 @@
+  |              del self._existence_name
+  |              del self._permissions_name
+  |              del self._resolvable
+  | +            del self._managed_spell_mode_name
+  | +            del self._managed_spell_limit
+  | +            del self._managed_spell_timeout_seconds
+  | +            del self._managed_spell_reset_methods
+  |              del self._disposal_method_names
+  |              del self._profile_family
+  |              del self._rebindability
+  | @@ -819,6 +845,70 @@
+  |          self.check_cleaned()
+  |          with self._lock:
+  |              return list(self._disposal_method_names)
+  | +
+  | +    @property
+  | +    def managed_spell_options(self) -> Optional[Dict[str, Any]]:
+  | +        """
+  | +        Return the managed options recorded at bind (record 4.2.0).
+  | +
+  | +        Contract:
+  | +            - A detached dictionary under the bind option names: `managed_spell_mode` (the
+  | +              mode's name), `managed_spell_limit`, `managed_spell_timeout_seconds` and
+  | +              `managed_spell_reset_methods` (a new list).
+  | +            - None for a spell of any other existence.
+  | +
+  | +        Returns:
+  | +            Optional[Dict[str, Any]]: The recorded options, or None.
+  | +
+  | +        Raises:
+  | +            RuntimeError: If the crystal has been cleaned.
+  | +        """
+  | +        self.check_cleaned()
+  | +        with self._lock:
+  | +            if self._managed_spell_mode_name is None:
+  | +                return None
+  | +            return {
+  | +                "managed_spell_mode": self._managed_spell_mode_name,
+  | +                "managed_spell_limit": self._managed_spell_limit,
+  | +                "managed_spell_timeout_seconds": self._managed_spell_timeout_seconds,
+  | +                "managed_spell_reset_methods": list(self._managed_spell_reset_methods),
+  | +            }
+  | +
+  | +    @staticmethod
+  | +    def managed_bind_options(payload: Mapping[str, object]) -> Dict[str, object]:
+  | +        """
+  | +        Return the bind keywords that replay a recorded spell's managed options.
+  | +
+  | +        Purpose:
+  | +            The one reader of the four managed keys for the restore and graft lanes, so each
+  | +            replayed bind passes a managed version's own options and gets its own spell id back.
+  | +
+  | +        Contract:
+  | +            - Without a recorded `managed_spell_mode` (another existence, or a record older than
+  | +              4.2.0) returns {} - the replay passes nothing new.
+  | +            - Otherwise returns the four bind keywords: the mode as its recorded name (bind
+  | +              converts it), the limit and the timeout as recorded, and the reset names as a new
+  | +              list, or None when none were recorded. Values are not validated here; bind does.
+  | +
+  | +        Args:
+  | +            payload: One spell's custody payload (a `describe()` snapshot, as recorded).
+  | +
+  | +        Returns:
+  | +            Dict[str, object]: Keyword arguments for `Spellbook.bind` / `bind_inactive`.
+  | +        """
+  | +        mode_name = payload.get("managed_spell_mode")
+  | +        if mode_name is None:
+  | +            return {}
+  | +        reset_methods = payload.get("managed_spell_reset_methods")
+  | +        return {
+  | +            "managed_spell_mode": str(mode_name),
+  | +            "managed_spell_limit": payload.get("managed_spell_limit"),
+  | +            "managed_spell_timeout_seconds": payload.get("managed_spell_timeout_seconds"),
+  | +            "managed_spell_reset_methods": (
+  | +                [str(name) for name in reset_methods] if isinstance(reset_methods, (list, tuple))
+  | +                and reset_methods else None
+  | +            ),
+  | +        }
+  |  
+  |      @property
+  |      def profile_family(self) -> str:
+  | @@ -1251,7 +1341,7 @@
+  |              # the S1 analysis capabilities (fingerprints, export surfaces,
+  |              # load order, persisted AST maps).
+  |              analysis_payload = self._analysis.describe()
+  | -            return {
+  | +            payload: Dict[str, Any] = {
+  |                  "id": self._id,
+  |                  "frame_name": self._frame_name,
+  |                  "custody_key": self._custody_key,
+  | @@ -1325,3 +1415,11 @@
+  |                      "ast_from_import_targets_by_module"
+  |                  ],
+  |              }
+  | +            # Managed options (record 4.2.0): only a managed spell's payload gains the four keys, so
+  | +            # every other payload is the one 4.1.0 wrote.
+  | +            if self._managed_spell_mode_name is not None:
+  | +                payload["managed_spell_mode"] = self._managed_spell_mode_name
+  | +                payload["managed_spell_limit"] = self._managed_spell_limit
+  | +                payload["managed_spell_timeout_seconds"] = self._managed_spell_timeout_seconds
+  | +                payload["managed_spell_reset_methods"] = list(self._managed_spell_reset_methods)
+  | +            return payload
+====================================================================================================
+NODE melder.crystallizer.persistence.record_version.RecordVersion
+  descriptor: context_compass/system_docs/graph/melder/crystallizer/persistence/record_version.json
+  file: src/melder/crystallizer/persistence/record_version.py  lineno: 17  kind: class
+  role: "Static record-schema version authority (stamp 4.1.0; readers gate on MAJOR; absent stamps read 0.0.0)."
+  responsibilities: ["stamps cached items, formation records, and emission-tap envelopes", "refuses newer-major payloads at the read gates", "uses record major 2 so older readers cannot silently ignore non-resolvable policy", "uses major 3 to fence older readers from named lesser child topology", "uses major 4 to fence older readers from frame-scoped custody keys (per-frame spell ids)", "uses minor 4.1.0 for the additive spellframe-kind keys on spell crystals (0.2.8222); 4.0.0 records stay readable and hydrate frames by name"]
+  phases: ["runtime"]
+  span lines: HEAD 172 -> now 175; diff lines 14
+  | --- HEAD
+  | +++ now
+  | @@ -65,7 +65,10 @@
+  |      # of a contract frame (`spellframe_kind`, `spellframe_module`,
+  |      # `spellframe_qualname`); 4.0 readers ignore them, and a 4.0 record read by
+  |      # a 4.1 loader rebinds frames by name as before.
+  | -    CURRENT: ClassVar[str] = "4.1.0"
+  | +    # Minor 4.2 adds a managed spell's options to its spell crystal (`managed_spell_mode`,
+  | +    # `managed_spell_limit`, `managed_spell_timeout_seconds`, `managed_spell_reset_methods`), written only
+  | +    # for `Existence.managed_spell_quantity`; 4.1 readers ignore them, and a 4.1 record holds no such keys.
+  | +    CURRENT: ClassVar[str] = "4.2.0"
+  |      KEY: ClassVar[str] = "record_version"
+  |  
+  |      @staticmethod
+====================================================================================================
+NODE melder.nexus.rift.command_system.static_command_system.StaticCommandSystem
+  descriptor: context_compass/system_docs/graph/melder/nexus/rift/command_system/static_command_system.json
+  file: src/melder/nexus/rift/command_system/static_command_system.py  lineno: 12  kind: class
+  role: "Static-room command specialization."
+  responsibilities: ["preserves the shared command API while denying topology mutation and direct create-path spell activation", "restricts spell retrieval to already-live static-compatible spell lifecycles", "resolves spell owners through Aether's root lookup (owners are roots)"]
+  phases: ["runtime", "cleanup"]
+  edge: specializes -> melder.nexus.rift.command_system.command_system.CommandSystem [many_to_one; ['runtime']] why: StaticCommandSystem is the static-room specialization of the shared command surface.
+  span lines: HEAD 671 -> now 676; diff lines 31
+  | --- HEAD
+  | +++ now
+  | @@ -193,9 +193,12 @@
+  |                  )
+  |              )
+  |          for spell_record in matching_spell_records:
+  | +            # No single stored object to hand out: `many` builds anew, a spellspace object is request-local, and a
+  | +            # managed spell's objects are leased from a pool (2026-10-15).
+  |              if spell_record.existence in {
+  |                      Existence.many,
+  |                      Existence.unique_per_spell_space,
+  | +                    Existence.managed_spell_quantity,
+  |              }:
+  |                  continue
+  |              owner_conduit_id = spell_record.owner_conduit_id
+  | @@ -219,6 +222,7 @@
+  |                  if spell_record.existence in {
+  |                      Existence.many,
+  |                      Existence.unique_per_spell_space,
+  | +                    Existence.managed_spell_quantity,
+  |                  }
+  |              ),
+  |              None,
+  | @@ -614,6 +618,7 @@
+  |          is_static_supported = spell_record.existence not in {
+  |              Existence.many,
+  |              Existence.unique_per_spell_space,
+  | +            Existence.managed_spell_quantity,
+  |          }
+  |          is_live = False
+  |          owner_conduit_id = spell_record.owner_conduit_id
+====================================================================================================
+NODE melder.nexus.rift.frame_viewer.static_frame_viewer.StaticFrameViewer
+  descriptor: context_compass/system_docs/graph/melder/nexus/rift/frame_viewer/static_frame_viewer.json
+  file: src/melder/nexus/rift/frame_viewer/static_frame_viewer.py  lineno: 14  kind: class
+  role: "Static-room viewer specialization."
+  responsibilities: ["filters spell-facing visibility down to already-live spells", "rebuilds filtered compiled access surfaces from the base view surface", "resolves spell owners through Aether's live-conduit lookup, None on a miss"]
+  owns_state: ["_base_compiled_access_surfaces_by_frame_name", "_filtered_compiled_access_surfaces_by_frame_name"]
+  phases: ["refresh", "runtime", "cleanup"]
+  edge: specializes -> melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer [many_to_one; ['refresh', 'runtime']] why: StaticFrameViewer is the static-room specialization of the base viewer asset.
+  span lines: HEAD 320 -> now 323; diff lines 15
+  | --- HEAD
+  | +++ now
+  | @@ -274,9 +274,12 @@
+  |          Returns:
+  |              bool: True when the spell is currently live.
+  |          """
+  | +        # Only a spell with one stored object can be live statically; a managed spell's objects are leased from
+  | +        # a pool (2026-10-15), like `many`'s fresh builds and a spellspace's request-local objects.
+  |          if spell_record.existence in {
+  |                  Existence.many,
+  |                  Existence.unique_per_spell_space,
+  | +                Existence.managed_spell_quantity,
+  |          }:
+  |              return False
+  |          owner_conduit_id = spell_record.owner_conduit_id

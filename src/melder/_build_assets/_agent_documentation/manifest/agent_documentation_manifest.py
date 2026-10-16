@@ -19,9 +19,9 @@ Regenerate with:
 """
 
 MANIFEST_VERSION = "2.0.0"
-BUILT_FOR_VERSION = "0.2.8240"
-SOURCE_SHA256 = "e879d1cac8a14f177e4953cf3aa5b1ea9b6e518ff9755c9ac5fccaddfacc068a"
-MARKED_COUNT = 463
+BUILT_FOR_VERSION = "0.2.8248"
+SOURCE_SHA256 = "37ba456d90adebc81d9b5ec3d589e93bae3b863141661b5dd184968120fe16ec"
+MARKED_COUNT = 468
 EXEMPT_COUNT = 142
 PENDING_COUNT = 18
 
@@ -143,6 +143,9 @@ AGENT_METADATA = {
     ('melder.aether.conduit.creations.creations', 'Creations'): ('internal', 'access: internal. Scoped live creation registry. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
     ('melder.aether.conduit.creations.creations', 'HolderDisposalEntry'): ('internal', ''),
     ('melder.aether.conduit.creations.creations', 'ManyDisposalBucket'): ('internal', ''),
+    ('melder.aether.conduit.creations.managed_spell_lease', 'ManagedSpellLease'): ('public', 'access: public. One leased managed object and its way back: `with ReleaseManagedSpell().managed(obj) as o:` releases `o` on exit (resets run, the object is pooled for the next lease); `lease.release()` does it by hand, once. Get one from ReleaseManagedSpell().managed(obj).'),
+    ('melder.aether.conduit.creations.managed_spell_quantity', 'ManagedSpellQuantity'): ('internal', "access: internal. The pool of one managed spell version in its root's store: idle objects, the count, the mode's refusal or wait, resets on release, disposal on destroy. Melder kernel machinery: read it to understand the runtime; give objects back through ReleaseManagedSpell, not this class."),
+    ('melder.aether.conduit.creations.release_managed_spell', 'ReleaseManagedSpell'): ('public', "access: public. Give managed objects back: `ReleaseManagedSpell().release(obj)` returns an object leased from a managed_spell_quantity pool (its resets run, it is reused by the next lease); `managed(obj)` gives a lease for a `with` block; `release_all(objects)`; `describe(cls)` shows each pool's mode, count and idle objects. Pass spell_id= or conduit= only when one class is managed by several pools. In a hot loop bind it once: `release = ReleaseManagedSpell().release`."),
     ('melder.aether.conduit.meld.conduit_meld', 'ConduitMeld'): ('internal', 'access: internal. Concrete conduit-facing meld front door. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
     ('melder.aether.conduit.meld.contracts.spell_contract', 'SpellContract'): ('public', 'access: public. Declares a LATE-BOUND dependency hole for dynamic conduit linking. Write it as a constructor default when the provider will arrive from another conduit. Requires at least spell or spellframe. Unsatisfied is an ERROR in automatic mode, a warning in dynamic.'),
     ('melder.aether.conduit.meld.contracts.spell_map', 'SpellMap'): ('public', "access: public. Declarative DI descriptor for normal in-graph resolution. Write it as a constructor default: SpellMap(MyRepo), SpellMap(ILogic, binding_name='primary'), or frame-only with spell=None. Zero or multiple matches raise at build time."),
@@ -161,7 +164,8 @@ AGENT_METADATA = {
     ('melder.aether.spellbook.bind.spell_index', 'SpellIndex'): ('public', 'access: public. The stable lineage identity (immutable ULID) pointing at a mutable selected spell. Hash/equality use only the ULID, so a notch can repoint the active member without breaking any map. Version history belongs to MutationResearch.'),
     ('melder.aether.spellbook.configuration.spellbook_configuration', 'SpellbookConfiguration'): ('public', 'access: public. Rich per-book configuration: typed properties, idempotent keys, and the Meld/Conduit/Link/Contract hook registry. Must be frozen before conjure. Idempotent keys lock after first set, even before freeze.'),
     ('melder.aether.spellbook.configuration.system_state', 'SystemState'): ('public', 'access: public. Runtime posture: automatic (fixed graph, safer) or dynamic (rewiring allowed). Dynamic is REQUIRED for linking, severing, ownership transfer, and lesser-to-normal upgrade. Set it on SpellbookConfiguration.'),
-    ('melder.aether.spellbook.existence.existence', 'Existence'): ('public', 'access: public. Declares instance lifetime at bind: unique (per frame), unique_per_conduit, many, unique_per_conduit_cluster, unique_per_conduit_lineage, unique_per_spell_space. Pass it to Spellbook.bind(...). Method/lambda/existing-object bindings must use unique.'),
+    ('melder.aether.spellbook.existence.existence', 'Existence'): ('public', 'access: public. Declares instance lifetime at bind: unique (per frame), unique_per_conduit, many, unique_per_conduit_cluster, unique_per_conduit_lineage, unique_per_spell_space, managed_spell_quantity (objects leased from a root-owned pool and released back explicitly). Pass it to Spellbook.bind(...). Method/lambda/existing-object bindings must use unique.'),
+    ('melder.aether.spellbook.existence.managed_spell_mode', 'ManagedSpellMode'): ('public', 'access: public. Pool policy of a managed spell, chosen at bind: elastic (always builds, keeps idle objects up to the limit, default 256), limited_quantity (at most N alive, refuses at N), queue (at most N alive, waits up to a timeout for a release, then refuses). Pass it or its name as managed_spell_mode.'),
     ('melder.aether.spellbook.resolution_style_matrix', 'ResolutionStyleMatrix'): ('internal', 'access: internal. Canonical resolution-style support matrix for Melder. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
     ('melder.aether.spellbook.spell', 'Spell'): ('public', 'access: public. One registered binding: identity, existence, permissions, spellframe, hooks. You receive spells from bind and from viewer surfaces; you do not construct them.'),
     ('melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_site_graph_analysis', 'SpellSite'): ('internal', 'access: internal. One construction site: index, instance key, selected spell id, shared flag and its parameter rows.'),
@@ -172,7 +176,7 @@ AGENT_METADATA = {
     ('melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.override_key_resolver', 'OverrideKeyResolver'): ('internal', "access: internal. Maps an override key tuple to winning (site, parameter) operands with P1 cuts and equal-rank conflicts, using today's grammar and errors."),
     ('melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering', 'SitePlanEmission'): ('internal', 'access: internal. Per-plan emission buffer: operands, direct calls, shared-site routing and generic construct fallbacks.'),
     ('melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering', 'SitePlanLowering'): ('internal', 'access: internal. Site graph from steps, demand walk and key-set plan source emission for normal and override melds.'),
-    ('melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering', 'SitePlanRuntimeHelpers'): ('internal', 'access: internal. Generic construct with supplied values, P2 refusal and the E1 conflict guard for emitted key-set plans.'),
+    ('melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering', 'SitePlanRuntimeHelpers'): ('internal', 'access: internal. Generic construct with supplied values, P2 refusal, the E1 conflict guard, and the managed lease returns and missing-pool refusal for emitted key-set plans.'),
     ('melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering', 'SitePlanStep'): ('internal', 'access: internal. Family-neutral step view (instance key, spell, existence, dependency order, collection params, contract payload, lock hint) for key-set plans.'),
     ('melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_override_runtime', 'SitePlanOverrideRuntime'): ('internal', "access: internal. Owns a root's normal plan (the family's inner executor) and its lazily compiled per-key-set override plans over the lane's steps."),
     ('melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.codegen_plan_discovery', 'CodegenPlanDiscovery'): ('internal', 'access: internal. Phase-10 discovery result: selected_strategy_id, plan_family_id, candidate_codegen_style_ids (a bounded allow-list for Phase 11), and discovery_reason. Chooses a family, not the final emitter.'),
@@ -454,6 +458,7 @@ AGENT_METADATA = {
     ('melder.utilities.custom_exceptions.empty_error', 'Empty'): ('public', 'access: public. The contextless empty-container signal; catch it when an operation required at least one item. Not queue.Empty - import this one explicitly.'),
     ('melder.utilities.custom_exceptions.hook_execution_error', 'HookExecutionError'): ('public', 'access: public. Raised when a user lifecycle hook raises during bind or meld; read original_exception, phase, hook_name. It means YOUR callback failed, not Melder.'),
     ('melder.utilities.custom_exceptions.internal_registration_error', 'InternalRegistrationError'): ('public', 'access: public. Raised by the registration guard when bind() is handed a Melder internal; catch it to detect a kernel-object-bound-as-spell mistake. The guard constructs it - you do not.'),
+    ('melder.utilities.custom_exceptions.managed_spell_exhausted_error', 'ManagedSpellExhaustedError'): ('public', "access: public. Raised at meld when a managed spell's pool has no place: limited_quantity with every object out, or queue after its timeout. Release an object (ReleaseManagedSpell().release(obj)) or bind a higher managed_spell_limit / managed_spell_timeout_seconds."),
     ('melder.utilities.custom_exceptions.meld_execution_error', 'MeldExecutionError'): ('public', "access: public. The single 'resolution failed' signal from the Meld runtime; start at inner for the real cause, node_id/param_name narrow it. A dirty-root gate means revalidate, not a defect."),
     ('melder.utilities.custom_exceptions.operation_cancelled_error', 'OperationCancelledError'): ('public', 'access: public. Raised when a unit of work observes cooperative cancellation; catch it distinctly from real failures - it means aborted, not broken.'),
     ('melder.utilities.custom_exceptions.phase_execution_error', 'PhaseExecutionError'): ('public', 'access: public. Raised when units of work in a conjure phase raise; read the full errors list (the message truncates to three). phase_name locates the break.'),
@@ -757,6 +762,7 @@ CLASS_BASES = {
     ('melder.aether.conduit.creations.cluster_creations', 'ClusterCreations'): ('Cleanable',),
     ('melder.aether.conduit.creations.conduit_creations', 'ConduitCreations'): ('Creations',),
     ('melder.aether.conduit.creations.creations', 'Creations'): ('Cleanable',),
+    ('melder.aether.conduit.creations.release_managed_spell', 'ReleaseManagedSpell'): ('Cleanable',),
     ('melder.aether.conduit.meld.conduit_meld', 'ConduitMeld'): ('Meld',),
     ('melder.aether.conduit.meld.contracts.spell_contract', 'SpellContract'): ('Cleanable',),
     ('melder.aether.conduit.meld.contracts.spell_map', 'SpellMap'): ('Cleanable',),
@@ -774,6 +780,7 @@ CLASS_BASES = {
     ('melder.aether.spellbook.configuration.spellbook_configuration', 'SpellbookConfiguration'): ('Cleanable',),
     ('melder.aether.spellbook.configuration.system_state', 'SystemState'): ('Enum',),
     ('melder.aether.spellbook.existence.existence', 'Existence'): ('Enum',),
+    ('melder.aether.spellbook.existence.managed_spell_mode', 'ManagedSpellMode'): ('Enum',),
     ('melder.aether.spellbook.spell', 'Spell'): ('Cleanable',),
     ('melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_injection_analysis', 'SpellInjectionAnalysis'): ('Cleanable',),
     ('melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_occurrence_contract_analysis', 'SpellOccurrenceContractAnalysis'): ('Cleanable',),
@@ -1139,6 +1146,7 @@ CLASS_BASES = {
     ('melder.utilities.custom_exceptions.empty_error', 'Empty'): ('Exception',),
     ('melder.utilities.custom_exceptions.hook_execution_error', 'HookExecutionError'): ('Exception',),
     ('melder.utilities.custom_exceptions.internal_registration_error', 'InternalRegistrationError'): ('RuntimeError',),
+    ('melder.utilities.custom_exceptions.managed_spell_exhausted_error', 'ManagedSpellExhaustedError'): ('MeldExecutionError',),
     ('melder.utilities.custom_exceptions.meld_execution_error', 'MeldExecutionError'): ('RuntimeError',),
     ('melder.utilities.custom_exceptions.operation_cancelled_error', 'OperationCancelledError'): ('RuntimeError',),
     ('melder.utilities.custom_exceptions.phase_execution_error', 'PhaseExecutionError'): ('PhaseSchedulerError',),

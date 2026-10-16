@@ -1,6 +1,7 @@
 import inspect
 import threading
 import hashlib
+import math
 from typing import TYPE_CHECKING, Any, Callable, Optional, Sequence, Tuple, Union, ClassVar, TypeVar
 
 if TYPE_CHECKING:
@@ -14,6 +15,7 @@ if TYPE_CHECKING:
 # Melder Imports
 from melder.aether.spellbook.spell_types.spell_types import SpellType
 from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.existence.managed_spell_mode import ManagedSpellMode
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.aether.spellbook.spell import Spell
@@ -200,6 +202,15 @@ class Bind(Cleanable):
     ]
     _EMPTY_HOOKS: ClassVar[BindLifecycleHooks] = ((), (), ())
     _HOOK_NAMES: ClassVar[tuple[str, ...]] = ("bind:pre", "bind:activation", "bind:post")
+    # Managed options (Existence.managed_spell_quantity): the idle cap an elastic binding gets when it names
+    # none, and the four option names in signature order (a refusal names the ones the binding supplied).
+    _MANAGED_ELASTIC_DEFAULT_LIMIT: ClassVar[int] = 256
+    _MANAGED_OPTION_NAMES: ClassVar[tuple[str, ...]] = (
+        "managed_spell_mode",
+        "managed_spell_limit",
+        "managed_spell_timeout_seconds",
+        "managed_spell_reset_methods",
+    )
 
     def __init__(
             self,
@@ -466,6 +477,10 @@ class Bind(Cleanable):
             disposal_method_names: Optional[Sequence[str]] = None,
             enforce_priority_disposal_methods: bool = False,
             resolvable: bool = True,
+            managed_spell_mode: Optional[Union[ManagedSpellMode, str]] = None,
+            managed_spell_limit: Optional[int] = None,
+            managed_spell_timeout_seconds: Optional[float] = None,
+            managed_spell_reset_methods: Optional[Sequence[str]] = None,
             _lifecycle_hooks: Optional[BindLifecycleHooks] = None,
             **kwargs: Any,
     ) -> Union[Spell, Any]:
@@ -496,6 +511,15 @@ class Bind(Cleanable):
                 True, last when False (default). Book order owns shared names in both modes.
             resolvable (bool): Native resolution capability for this Spell version.
                 False permits descriptive Protocol targets; it does not relax other binding rules.
+            managed_spell_mode (Optional[Union[ManagedSpellMode, str]]): Pool policy of an
+                `Existence.managed_spell_quantity` binding - a member or its name; None means elastic.
+            managed_spell_limit (Optional[int]): Elastic: the most idle objects kept (default 256).
+                limited_quantity and queue: the most objects alive at once (required).
+            managed_spell_timeout_seconds (Optional[float]): How long a queue lease waits for a
+                release (queue only, required there).
+            managed_spell_reset_methods (Optional[Sequence[str]]): Names of zero-argument methods of
+                the class run, in order, on every release. All four options must stay None on any
+                other existence; `_normalize_managed_options` states every rule.
             _lifecycle_hooks: Internal Book-captured callback set, retained through
                 its later post stage. None captures the current registry when the
                 actual target is supplied, including deferred decorator calls.
@@ -523,7 +547,9 @@ class Bind(Cleanable):
             TypeError: If a class or supplied existing object lacks a required
                 directly declared Protocol member or exposes a non-callable
                 value where that Protocol requires a callable, or resolvable is not a bool,
-                or `spellframe` is neither None, a string nor a Protocol class.
+                or `spellframe` is neither None, a string nor a Protocol class, or a managed
+                option has the wrong type or targets a non-class.
+            ValueError: If a managed option is malformed or set on another existence.
         """
         self.check_cleaned()
         if spell is None:
@@ -545,6 +571,10 @@ class Bind(Cleanable):
                     disposal_method_names=disposal_method_names,
                     enforce_priority_disposal_methods=enforce_priority_disposal_methods,
                     resolvable=resolvable,
+                    managed_spell_mode=managed_spell_mode,
+                    managed_spell_limit=managed_spell_limit,
+                    managed_spell_timeout_seconds=managed_spell_timeout_seconds,
+                    managed_spell_reset_methods=managed_spell_reset_methods,
                     _lifecycle_hooks=_lifecycle_hooks,
                     **kwargs,
                 )
@@ -564,6 +594,10 @@ class Bind(Cleanable):
                 disposal_method_names=disposal_method_names,
                 enforce_priority_disposal_methods=enforce_priority_disposal_methods,
                 resolvable=resolvable,
+                managed_spell_mode=managed_spell_mode,
+                managed_spell_limit=managed_spell_limit,
+                managed_spell_timeout_seconds=managed_spell_timeout_seconds,
+                managed_spell_reset_methods=managed_spell_reset_methods,
                 _lifecycle_hooks=_lifecycle_hooks,
                 **kwargs,
             )
@@ -581,6 +615,10 @@ class Bind(Cleanable):
             disposal_method_names: Optional[Sequence[str]] = None,
             enforce_priority_disposal_methods: bool = False,
             resolvable: bool = True,
+            managed_spell_mode: Optional[Union[ManagedSpellMode, str]] = None,
+            managed_spell_limit: Optional[int] = None,
+            managed_spell_timeout_seconds: Optional[float] = None,
+            managed_spell_reset_methods: Optional[Sequence[str]] = None,
             _lifecycle_hooks: Optional[BindLifecycleHooks] = None,
             **kwargs: Any,
     ) -> Spell:
@@ -602,6 +640,9 @@ class Bind(Cleanable):
         * Computes a deterministic fingerprint and SpellIndex from a `SpellBindingProfile`.
         * Resolves disposal names once in group priority order, hashes the resolved
           list, and passes that same list to Spell without another conversion.
+        * Validates and normalizes the four managed options once
+          (`_normalize_managed_options`), after the profile and before the fingerprint;
+          a managed binding hashes them as one extra part and the Spell keeps them.
         * Determines the canonical SpellType.
         * Constructs the final `Spell` instance.
         * Replaces the initial raw binding artifact with the combined
@@ -620,6 +661,10 @@ class Bind(Cleanable):
             disposal_method_names (Optional[Sequence[str]]): Ordered per-spell candidates.
             enforce_priority_disposal_methods (bool): Book block first when True, last otherwise.
             resolvable (bool): Immutable resolution capability, validated before target reflection.
+            managed_spell_mode (Optional[Union[ManagedSpellMode, str]]): Managed pool policy, or None.
+            managed_spell_limit (Optional[int]): Managed idle cap (elastic) or alive limit, or None.
+            managed_spell_timeout_seconds (Optional[float]): Queue wait in seconds, or None.
+            managed_spell_reset_methods (Optional[Sequence[str]]): Reset method names, or None.
             _lifecycle_hooks: Optional callback set captured by Book for this operation.
 
         Hook contract:
@@ -650,9 +695,12 @@ class Bind(Cleanable):
                 - If `spellframe` is neither None, a string nor a Protocol class.
                 - If a class or existing object under a Protocol spellframe
                   fails its directly declared public-member check.
+                - If a managed binding targets a non-class, or a managed option
+                  has the wrong type.
             ValueError:
                 - If the binding is otherwise invalid (existence errors, lambda
                   without name, etc.).
+                - If a managed option is malformed, or set on another existence.
             HookExecutionError: A pre-bind or bind-activation callback failed.
         """
         hooks = self.capture_hooks() if _lifecycle_hooks is None else _lifecycle_hooks
@@ -723,6 +771,24 @@ class Bind(Cleanable):
                         ):
                             resolved_disposal_method_names.insert(spell_position, method_name)
                             spell_position += 1
+            # Managed options (Existence.managed_spell_quantity): validated and normalized here, once,
+            # because they are hashed into a managed spell's id and kept by its Spell; any other
+            # existence must leave all four unset. Refusals happen before a Spell or index exists.
+            (
+                normalized_managed_mode,
+                normalized_managed_limit,
+                normalized_managed_timeout,
+                normalized_managed_reset_methods,
+            ) = Bind._normalize_managed_options(
+                spell,
+                binding_profile,
+                str(spell_name),
+                existence,
+                managed_spell_mode,
+                managed_spell_limit,
+                managed_spell_timeout_seconds,
+                managed_spell_reset_methods,
+            )
             fingerprint: str = Bind.sha256_profile(
                 binding_profile,
                 spellframe=spellframe,
@@ -731,6 +797,10 @@ class Bind(Cleanable):
                 existence=existence,
                 disposal_method_names=resolved_disposal_method_names,
                 resolvable=resolvable,
+                managed_spell_mode=normalized_managed_mode,
+                managed_spell_limit=normalized_managed_limit,
+                managed_spell_timeout_seconds=normalized_managed_timeout,
+                managed_spell_reset_methods=normalized_managed_reset_methods,
             )
             spell_index = SpellIndex(initial_id=fingerprint)
 
@@ -799,6 +869,10 @@ class Bind(Cleanable):
                 resolvable=resolvable,
                 spellframe_kind=spellframe_kind,
                 implemented_protocols=implemented_protocols,
+                managed_spell_mode=normalized_managed_mode,
+                managed_spell_limit=normalized_managed_limit,
+                managed_spell_timeout_seconds=normalized_managed_timeout,
+                managed_spell_reset_methods=normalized_managed_reset_methods,
                 # Owner ruling 2026-07-19: leftover bind kwargs flow into
                 # Spell's OWN kwargs channel (Spell.__init__ stores them as
                 # spell.metadata). Native params stay sovereign: a colliding
@@ -864,6 +938,10 @@ class Bind(Cleanable):
             existence: Existence = Existence.unique,
             disposal_method_names: Sequence[str] = (),
             resolvable: bool = True,
+            managed_spell_mode: Optional[Union[ManagedSpellMode, str]] = None,
+            managed_spell_limit: Optional[int] = None,
+            managed_spell_timeout_seconds: Optional[float] = None,
+            managed_spell_reset_methods: Optional[Sequence[str]] = None,
     ) -> str:
         """
         Compute the canonical spell fingerprint without registering the spell.
@@ -880,6 +958,10 @@ class Bind(Cleanable):
             existence (Existence): The lifecycle scope for this spell.
             disposal_method_names (Sequence[str]): Already-resolved disposal names in execution order.
             resolvable (bool): Per-version capability; omission preserves the legacy fingerprint.
+            managed_spell_mode (Optional[Union[ManagedSpellMode, str]]): Managed pool policy, or None.
+            managed_spell_limit (Optional[int]): Managed idle cap (elastic) or alive limit, or None.
+            managed_spell_timeout_seconds (Optional[float]): Queue wait in seconds, or None.
+            managed_spell_reset_methods (Optional[Sequence[str]]): Reset method names, or None.
         Contract:
             - Builds the same `SpellGeneralProfile` / `SpellBindingProfile`
               chain used by the real binding path.
@@ -888,15 +970,37 @@ class Bind(Cleanable):
               disposal list. This helper does not apply book priority or match names.
             - Does not register anything into a spellbook or mutate runtime
               binding state.
+            - Normalizes and checks the managed options with bind's own
+              `_normalize_managed_options`, so a managed fingerprint matches bind's.
 
         Returns:
             str: A unique identifier string (SHA256 hash) for the spell.
 
         Raises:
-            TypeError: If resolvable is not a bool; checked before target reflection.
+            TypeError: If resolvable is not a bool (checked before target reflection), or a
+                managed option has the wrong type or targets a non-class.
+            ValueError: If a managed option is malformed or set on another existence.
         """
         Bind._validate_resolvable(resolvable)
         profile = SpellGeneralProfile.create_from_target(spell)
+        # Error messages name the target; the inspector hashes `spell_name` only when given, as bind would.
+        # The target is caller-supplied, so `getattr` with a default is the external-object exception.
+        display_name = spell_name if spell_name is not None else getattr(spell, "__name__", type(spell).__name__)
+        (
+            normalized_managed_mode,
+            normalized_managed_limit,
+            normalized_managed_timeout,
+            normalized_managed_reset_methods,
+        ) = Bind._normalize_managed_options(
+            spell,
+            profile.binding_profile,
+            str(display_name),
+            existence,
+            managed_spell_mode,
+            managed_spell_limit,
+            managed_spell_timeout_seconds,
+            managed_spell_reset_methods,
+        )
         return Bind.sha256_profile(
             profile.binding_profile,
             spellframe=spellframe,
@@ -905,6 +1009,10 @@ class Bind(Cleanable):
             existence=existence,
             disposal_method_names=tuple(disposal_method_names),
             resolvable=resolvable,
+            managed_spell_mode=normalized_managed_mode,
+            managed_spell_limit=normalized_managed_limit,
+            managed_spell_timeout_seconds=normalized_managed_timeout,
+            managed_spell_reset_methods=normalized_managed_reset_methods,
         )
 
     @staticmethod
@@ -917,6 +1025,10 @@ class Bind(Cleanable):
             existence: Optional[Existence] = None,
             disposal_method_names: Sequence[str] = (),
             resolvable: bool = True,
+            managed_spell_mode: Optional[ManagedSpellMode] = None,
+            managed_spell_limit: Optional[int] = None,
+            managed_spell_timeout_seconds: Optional[float] = None,
+            managed_spell_reset_methods: Sequence[str] = (),
     ) -> str:
         """
         Computes the SHA256 hash of a spell's binding profile metadata.
@@ -949,6 +1061,11 @@ class Bind(Cleanable):
             - Includes the direct bind-time parameters that shape later
               compiler/runtime behavior: spell_name, spellframe, binding_name,
               existence, resolvable, and resolved disposal metadata in execution order.
+            - A managed binding (a `managed_spell_mode` is given) appends one last part,
+              `managed:<mode>:<limit>:<timeout>:<reset names>` (`_managed_fingerprint_part`).
+              Callers pass normalized values (`_normalize_managed_options`). Without a mode
+              nothing is appended, so every other binding hashes exactly as before (S2,
+              2026-10-15).
             - Equal bind signatures produce equal hashes; materially different
               signatures should produce different hashes.
         Returns:
@@ -1018,6 +1135,17 @@ class Bind(Cleanable):
 
         parts.extend(tuple(disposal_method_names))
 
+        # Managed bindings only: one part carrying the normalized options closes the key.
+        if managed_spell_mode is not None:
+            parts.append(
+                Bind._managed_fingerprint_part(
+                    managed_spell_mode,
+                    managed_spell_limit,
+                    managed_spell_timeout_seconds,
+                    managed_spell_reset_methods,
+                )
+            )
+
         key = "::".join(parts)
         return hashlib.sha256(key.encode("utf-8")).hexdigest()
 
@@ -1084,6 +1212,310 @@ class Bind(Cleanable):
                 f"resolvable must be a bool (True or False), got {type(resolvable).__name__}. "
                 "Pass resolvable=False to register a non-resolvable definition."
             )
+
+    @staticmethod
+    def _managed_fingerprint_part(
+            managed_spell_mode: ManagedSpellMode,
+            managed_spell_limit: Optional[int],
+            managed_spell_timeout_seconds: Optional[float],
+            managed_spell_reset_methods: Sequence[str],
+    ) -> str:
+        """
+        Render the fingerprint part of a managed binding's normalized options.
+
+        Contract:
+            - `managed:<mode>:<limit>:<timeout>:<reset names>`: the mode's name, the limit as an int, the
+              timeout as the repr of its float, the reset names joined by "," in their order; an absent limit
+              or timeout renders as empty text.
+            - Pure: equal normalized options always render equal text, so `2` and `2.0` seconds hash alike
+              (bind stores both as `2.0`).
+
+        Args:
+            managed_spell_mode: The normalized mode.
+            managed_spell_limit: The normalized limit, or None.
+            managed_spell_timeout_seconds: The normalized timeout in seconds, or None.
+            managed_spell_reset_methods: The normalized reset names, in order.
+
+        Returns:
+            str: The part `sha256_profile` appends to a managed binding's key.
+        """
+        limit_text = "" if managed_spell_limit is None else str(managed_spell_limit)
+        timeout_text = "" if managed_spell_timeout_seconds is None else repr(float(managed_spell_timeout_seconds))
+        return "managed:{0}:{1}:{2}:{3}".format(
+            managed_spell_mode.name,
+            limit_text,
+            timeout_text,
+            ",".join(managed_spell_reset_methods),
+        )
+
+    @staticmethod
+    def _normalize_managed_options(
+            spell: Any,
+            binding_profile: SpellBindingProfile,
+            spell_name: str,
+            existence: Existence,
+            managed_spell_mode: Optional[Union[ManagedSpellMode, str]],
+            managed_spell_limit: Optional[int],
+            managed_spell_timeout_seconds: Optional[float],
+            managed_spell_reset_methods: Optional[Sequence[str]],
+    ) -> Tuple[Optional[ManagedSpellMode], Optional[int], Optional[float], Tuple[str, ...]]:
+        """
+        Validate and normalize the four managed options of one binding.
+
+        Purpose:
+            The one place the options of `Existence.managed_spell_quantity` are checked, so a malformed binding
+            fails at bind, next to the mistake, and the fingerprint, the Spell and the crystal all read the same
+            normalized values.
+
+        Contract:
+            - Any other existence: every option must be None (an empty reset list counts as set); the result is
+              (None, None, None, ()).
+            - Managed: the target must be a class - its pool builds and reuses instances of it. The mode defaults
+              to elastic; the limit, timeout and reset names follow `_normalize_managed_limit`,
+              `_normalize_managed_timeout` and `_normalize_managed_reset_methods`, checked in that order.
+            - Reads the target class to check reset names and changes nothing.
+
+        Args:
+            spell: The binding target (the class for a managed binding).
+            binding_profile: Its binding profile; a `ClassBindingProfile` for a class.
+            spell_name: The target's name, used in error messages only.
+            existence: The binding's existence.
+            managed_spell_mode: A `ManagedSpellMode`, its name, or None.
+            managed_spell_limit: An int, or None.
+            managed_spell_timeout_seconds: A number of seconds, or None.
+            managed_spell_reset_methods: A list or tuple of method names, or None.
+
+        Returns:
+            Tuple[Optional[ManagedSpellMode], Optional[int], Optional[float], Tuple[str, ...]]:
+                The normalized mode, limit, timeout and reset names.
+
+        Raises:
+            ValueError: An option on another existence, or a malformed option (see the three helpers).
+            TypeError: A managed binding of a function, method, lambda or existing object, or an option of the
+                wrong type.
+        """
+        if existence is not Existence.managed_spell_quantity:
+            supplied = [
+                option_name
+                for option_name, option_value in zip(
+                    Bind._MANAGED_OPTION_NAMES,
+                    (
+                        managed_spell_mode,
+                        managed_spell_limit,
+                        managed_spell_timeout_seconds,
+                        managed_spell_reset_methods,
+                    ),
+                )
+                if option_value is not None
+            ]
+            if supplied:
+                existence_text = (
+                    f"Existence.{existence.name}" if isinstance(existence, Existence) else repr(existence)
+                )
+                raise ValueError(
+                    f"{', '.join(supplied)} only apply to Existence.managed_spell_quantity, but '{spell_name}' is "
+                    f"bound as {existence_text}. Remove {'it' if len(supplied) == 1 else 'them'}, or bind "
+                    f"'{spell_name}' with existence=Existence.managed_spell_quantity."
+                )
+            return None, None, None, ()
+        if not isinstance(binding_profile, ClassBindingProfile):
+            target_kind = (
+                "an existing object"
+                if isinstance(binding_profile, (InstanceBindingProfile, OtherBindingProfile))
+                else "a function or method"
+            )
+            raise TypeError(
+                "Existence.managed_spell_quantity binds classes only: its pool builds and reuses instances of a "
+                f"class, and '{spell_name}' is {target_kind}. Bind the class itself as managed, or bind "
+                f"'{spell_name}' with Existence.unique."
+            )
+        mode = Bind._normalize_managed_mode(managed_spell_mode)
+        limit = Bind._normalize_managed_limit(mode, managed_spell_limit, spell_name)
+        timeout = Bind._normalize_managed_timeout(mode, managed_spell_timeout_seconds, spell_name)
+        reset_methods = Bind._normalize_managed_reset_methods(spell, managed_spell_reset_methods, spell_name)
+        return mode, limit, timeout, reset_methods
+
+    @staticmethod
+    def _normalize_managed_mode(
+            managed_spell_mode: Optional[Union[ManagedSpellMode, str]],
+    ) -> ManagedSpellMode:
+        """
+        Resolve a managed binding's mode.
+
+        Contract:
+            - None -> `ManagedSpellMode.elastic`; a member -> itself; a string -> the member of that name,
+              matched lowercased (as Existence and Permissions names are).
+
+        Args:
+            managed_spell_mode: A `ManagedSpellMode`, its name, or None.
+
+        Returns:
+            ManagedSpellMode: The mode.
+
+        Raises:
+            ValueError: A string that names no mode (the message lists the three).
+            TypeError: Any other type, an Existence member included.
+        """
+        if managed_spell_mode is None:
+            return ManagedSpellMode.elastic
+        if isinstance(managed_spell_mode, ManagedSpellMode):
+            return managed_spell_mode
+        if isinstance(managed_spell_mode, str):
+            mode = ManagedSpellMode.__members__.get(managed_spell_mode.lower())
+            if mode is None:
+                raise ValueError(
+                    f"Unknown managed_spell_mode {managed_spell_mode!r}. Use 'elastic', 'limited_quantity' or "
+                    "'queue' (or a ManagedSpellMode member)."
+                )
+            return mode
+        raise TypeError(
+            "managed_spell_mode must be a ManagedSpellMode member or its name ('elastic', 'limited_quantity', "
+            f"'queue'), got {type(managed_spell_mode).__name__}."
+        )
+
+    @staticmethod
+    def _normalize_managed_limit(
+            mode: ManagedSpellMode,
+            managed_spell_limit: Optional[int],
+            spell_name: str,
+    ) -> int:
+        """
+        Resolve a managed binding's limit.
+
+        Contract:
+            - elastic: the most idle objects the pool keeps; None -> 256 (`_MANAGED_ELASTIC_DEFAULT_LIMIT`).
+            - limited_quantity and queue: the most objects alive at once (idle plus out); required.
+            - An int >= 1 (int subclasses are stored as plain ints); a bool is refused.
+
+        Args:
+            mode: The resolved mode.
+            managed_spell_limit: The supplied limit, or None.
+            spell_name: The target's name, for messages.
+
+        Returns:
+            int: The limit.
+
+        Raises:
+            ValueError: Missing for limited_quantity or queue, or below 1.
+            TypeError: Not an int, or a bool.
+        """
+        if managed_spell_limit is None:
+            if mode is ManagedSpellMode.elastic:
+                return Bind._MANAGED_ELASTIC_DEFAULT_LIMIT
+            raise ValueError(
+                f"managed_spell_mode '{mode}' needs managed_spell_limit: the most objects of '{spell_name}' alive "
+                "at once (an int >= 1)."
+            )
+        if isinstance(managed_spell_limit, bool) or not isinstance(managed_spell_limit, int):
+            raise TypeError(f"managed_spell_limit must be an int, got {type(managed_spell_limit).__name__}.")
+        if managed_spell_limit < 1:
+            raise ValueError(f"managed_spell_limit must be at least 1, got {managed_spell_limit}.")
+        return int(managed_spell_limit)
+
+    @staticmethod
+    def _normalize_managed_timeout(
+            mode: ManagedSpellMode,
+            managed_spell_timeout_seconds: Optional[float],
+            spell_name: str,
+    ) -> Optional[float]:
+        """
+        Resolve a managed binding's queue timeout.
+
+        Contract:
+            - queue: required; an int or float (not a bool), finite and > 0; stored as a float.
+            - elastic and limited_quantity never wait: the timeout must be None, and None is returned.
+
+        Args:
+            mode: The resolved mode.
+            managed_spell_timeout_seconds: The supplied timeout in seconds, or None.
+            spell_name: The target's name, for messages.
+
+        Returns:
+            Optional[float]: The timeout in seconds for a queue, else None.
+
+        Raises:
+            ValueError: Given outside the queue mode, missing for a queue, or not finite and > 0.
+            TypeError: Not an int or float, or a bool.
+        """
+        if mode is not ManagedSpellMode.queue:
+            if managed_spell_timeout_seconds is not None:
+                raise ValueError(
+                    f"managed_spell_timeout_seconds applies only to managed_spell_mode 'queue'; '{mode}' never "
+                    f"waits for a release. Remove it, or bind '{spell_name}' with managed_spell_mode='queue'."
+                )
+            return None
+        if managed_spell_timeout_seconds is None:
+            raise ValueError(
+                "managed_spell_mode 'queue' needs managed_spell_timeout_seconds: how long a lease of "
+                f"'{spell_name}' waits for a release before it raises (a number of seconds > 0)."
+            )
+        if isinstance(managed_spell_timeout_seconds, bool) or not isinstance(
+                managed_spell_timeout_seconds, (int, float)
+        ):
+            raise TypeError(
+                "managed_spell_timeout_seconds must be a number of seconds (int or float), got "
+                f"{type(managed_spell_timeout_seconds).__name__}."
+            )
+        seconds = float(managed_spell_timeout_seconds)
+        if not math.isfinite(seconds) or seconds <= 0.0:
+            raise ValueError(
+                "managed_spell_timeout_seconds must be a finite number of seconds > 0, got "
+                f"{managed_spell_timeout_seconds!r}."
+            )
+        return seconds
+
+    @staticmethod
+    def _normalize_managed_reset_methods(
+            spell: Any,
+            managed_spell_reset_methods: Optional[Sequence[str]],
+            spell_name: str,
+    ) -> Tuple[str, ...]:
+        """
+        Resolve a managed binding's reset method names.
+
+        Contract:
+            - None -> (). Otherwise a list or tuple (a bare string is refused: it would be read per character)
+              of non-empty strings, each naming a callable attribute of the class; kept in the order given,
+              duplicates included, as a tuple. The pool calls them, in that order, on every release.
+            - The names are caller-supplied, so the lookup is dynamic: `getattr` on the class with a default is
+              the documented exception. A property or a plain attribute is not callable and is refused.
+
+        Args:
+            spell: The managed class.
+            managed_spell_reset_methods: The supplied names, or None.
+            spell_name: The class's name, for messages.
+
+        Returns:
+            Tuple[str, ...]: The reset names.
+
+        Raises:
+            TypeError: Not a list or tuple, or an element that is not a string.
+            ValueError: An empty name, or a name that is not a callable attribute of the class.
+        """
+        if managed_spell_reset_methods is None:
+            return ()
+        if not isinstance(managed_spell_reset_methods, (list, tuple)):
+            raise TypeError(
+                "managed_spell_reset_methods must be a list or tuple of method names, got "
+                f"{type(managed_spell_reset_methods).__name__}. Wrap a single name in a list: ['reset']."
+            )
+        for method_name in managed_spell_reset_methods:
+            if not isinstance(method_name, str):
+                raise TypeError(
+                    "managed_spell_reset_methods must hold method-name strings; found an element of type "
+                    f"{type(method_name).__name__}."
+                )
+            if not method_name:
+                raise ValueError(
+                    f"managed_spell_reset_methods holds an empty name; give the name of a method of '{spell_name}'."
+                )
+            if not callable(getattr(spell, method_name, None)):
+                raise ValueError(
+                    f"managed_spell_reset_methods names '{method_name}', which is not a method of '{spell_name}'. "
+                    "A reset method is a zero-argument method the pool calls on every release, before the object "
+                    "is leased again."
+                )
+        return tuple(managed_spell_reset_methods)
 
     @staticmethod
     def _validate_binding(

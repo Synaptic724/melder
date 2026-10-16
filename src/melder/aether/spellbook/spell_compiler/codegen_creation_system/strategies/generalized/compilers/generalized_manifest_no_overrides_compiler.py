@@ -1207,6 +1207,34 @@ def rows_feed_many_into_non_many_step(
     return False
 
 
+def rows_contain_managed_step(
+        rows: Sequence[Dict[str, Any]],
+) -> bool:
+    """
+    Return True when any manifest row is an `Existence.managed_spell_quantity` step.
+
+    Purpose:
+        Decide whether the singleton warm-tail specializer can express a graph.
+        A managed step is leased from its pool through the site plan (an inline
+        pop, a reserve-first miss, children recorded with the object, leases
+        returned when their holder is never built); the straight-line body has
+        no such lowering, so a graph with a managed row keeps the plain door
+        (managed_spell_quantity S5, 2026-10-15).
+
+    Contract:
+        - Pure function of manifest row data; no live spells consulted.
+
+    Args:
+        rows:
+            Manifest step rows for the no-overrides lane.
+
+    Returns:
+        bool: True when some row's `existence` is `managed_spell_quantity`.
+    """
+    managed_name = Existence.managed_spell_quantity.name
+    return any(row["existence"] == managed_name for row in rows)
+
+
 def emit_specialized_step_plan_source(
         *,
         rows: Sequence[Dict[str, Any]],

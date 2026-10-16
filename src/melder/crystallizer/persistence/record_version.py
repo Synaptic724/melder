@@ -81,7 +81,10 @@ class RecordVersion:
     # of a contract frame (`spellframe_kind`, `spellframe_module`,
     # `spellframe_qualname`); 4.0 readers ignore them, and a 4.0 record read by
     # a 4.1 loader rebinds frames by name as before.
-    CURRENT: ClassVar[str] = "4.1.0"
+    # Minor 4.2 adds a managed spell's options to its spell crystal (`managed_spell_mode`,
+    # `managed_spell_limit`, `managed_spell_timeout_seconds`, `managed_spell_reset_methods`), written only
+    # for `Existence.managed_spell_quantity`; 4.1 readers ignore them, and a 4.1 record holds no such keys.
+    CURRENT: ClassVar[str] = "4.2.0"
     KEY: ClassVar[str] = "record_version"
 
     @staticmethod

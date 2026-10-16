@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/resolution_style_matrix.py",
- "source_sha256": "8836b4f4eeb47a7e655229cd6f189e26924e5bb999b17042e044fba83c565afc",
+ "source_sha256": "1f44aadb25bd855b2581b379379f1b5a4914f25aea92bdf25c55884d08094467",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.resolution_style_matrix": {
@@ -35,11 +35,12 @@
     "has_bases": false,
     "trivial": false
    },
-   "span_sha256": "c59ce1c030918c2854fff6a02ac9321b4908c0faf4ce5ce786e0b20593ffa1e7",
+   "span_sha256": "80816556f9acd4f1a95f261f5b736c404049e37fe109ef59505784f8c23002c0",
    "role": "Canonical support matrix for resolution styles.",
    "responsibilities": [
     "maps binding families and spell types to supported existence modes",
-    "tracks resolution contract item support status"
+    "tracks resolution contract item support status",
+    "counts seven existences; managed_spell_quantity is supported by the class-based family only - the callable and existing-object families list it unsupported (0.2.8241)"
    ],
    "owns_state": [
     "BINDING_FAMILY_POLICY",
@@ -51,7 +52,7 @@
     "validation",
     "runtime"
    ],
-   "semantics_authored_against": "c59ce1c030918c2854fff6a02ac9321b4908c0faf4ce5ce786e0b20593ffa1e7"
+   "semantics_authored_against": "80816556f9acd4f1a95f261f5b736c404049e37fe109ef59505784f8c23002c0"
   }
  },
  "edges_out": [],

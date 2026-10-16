@@ -1,0 +1,1442 @@
+FFFFF..F.F.F.F.F.F.F.............F.FFFFFFFFFFFFFFFFFFFFFF...F........... [ 66%]
+...................................F                                     [100%]
+=================================== FAILURES ===================================
+_ test_every_parked_version_gets_the_stamp_the_active_versions_get[True-True] __
+
+caching_enabled = True, dynamic = True
+
+    @pytest.mark.parametrize(("caching_enabled", "dynamic"), [(True, True), (False, True), (True, False)])
+    def test_every_parked_version_gets_the_stamp_the_active_versions_get(caching_enabled: bool, dynamic: bool) -> None:
+        """
+        Every parked version is stamped once, with the arguments of the active loop: the root's id, name and store, its
+        dynamic flag and gate controller, and the Book's caching posture.
+        """
+        book = _BookStub(caching_enabled=caching_enabled)
+        active = _SpellStub("active", book)
+        parked = [_SpellStub("parked-1", book), _SpellStub("parked-2", book)]
+        book.add_active(active)
+        for spell in parked:
+            book.add_parked(spell)
+        conduit = _ConduitStub(dynamic=dynamic)
+    
+        SpellbookCreationSystem.define_conduit_into_spells(book, conduit)
+    
+        expected = (
+            conduit._id,
+            conduit._name,
+            conduit._creations,
+            dynamic,
+            conduit._creation_gate_controller,
+            caching_enabled,
+        )
+        assert [call.arguments() for call in active.stamps] == [expected]
+        for spell in parked:
+>           assert [call.arguments() for call in spell.stamps] == [expected]
+E           AssertionError: assert [] == [('root-id', ...60360>, True)]
+E             
+E             Right contains one more item: ('root-id', 'root', <object object at 0x36afa560340>, True, <object object at 0x36afa560360>, True)
+E             Use -v to get more diff
+
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/unit/melder/spellbook/test_spellbook_creation_system_parked_versions.py:270: AssertionError
+_ test_every_parked_version_gets_the_stamp_the_active_versions_get[False-True] _
+
+caching_enabled = False, dynamic = True
+
+    @pytest.mark.parametrize(("caching_enabled", "dynamic"), [(True, True), (False, True), (True, False)])
+    def test_every_parked_version_gets_the_stamp_the_active_versions_get(caching_enabled: bool, dynamic: bool) -> None:
+        """
+        Every parked version is stamped once, with the arguments of the active loop: the root's id, name and store, its
+        dynamic flag and gate controller, and the Book's caching posture.
+        """
+        book = _BookStub(caching_enabled=caching_enabled)
+        active = _SpellStub("active", book)
+        parked = [_SpellStub("parked-1", book), _SpellStub("parked-2", book)]
+        book.add_active(active)
+        for spell in parked:
+            book.add_parked(spell)
+        conduit = _ConduitStub(dynamic=dynamic)
+    
+        SpellbookCreationSystem.define_conduit_into_spells(book, conduit)
+    
+        expected = (
+            conduit._id,
+            conduit._name,
+            conduit._creations,
+            dynamic,
+            conduit._creation_gate_controller,
+            caching_enabled,
+        )
+        assert [call.arguments() for call in active.stamps] == [expected]
+        for spell in parked:
+>           assert [call.arguments() for call in spell.stamps] == [expected]
+E           AssertionError: assert [] == [('root-id', ...03c0>, False)]
+E             
+E             Right contains one more item: ('root-id', 'root', <object object at 0x36afa5603a0>, True, <object object at 0x36afa5603c0>, False)
+E             Use -v to get more diff
+
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/unit/melder/spellbook/test_spellbook_creation_system_parked_versions.py:270: AssertionError
+_ test_every_parked_version_gets_the_stamp_the_active_versions_get[True-False] _
+
+caching_enabled = True, dynamic = False
+
+    @pytest.mark.parametrize(("caching_enabled", "dynamic"), [(True, True), (False, True), (True, False)])
+    def test_every_parked_version_gets_the_stamp_the_active_versions_get(caching_enabled: bool, dynamic: bool) -> None:
+        """
+        Every parked version is stamped once, with the arguments of the active loop: the root's id, name and store, its
+        dynamic flag and gate controller, and the Book's caching posture.
+        """
+        book = _BookStub(caching_enabled=caching_enabled)
+        active = _SpellStub("active", book)
+        parked = [_SpellStub("parked-1", book), _SpellStub("parked-2", book)]
+        book.add_active(active)
+        for spell in parked:
+            book.add_parked(spell)
+        conduit = _ConduitStub(dynamic=dynamic)
+    
+        SpellbookCreationSystem.define_conduit_into_spells(book, conduit)
+    
+        expected = (
+            conduit._id,
+            conduit._name,
+            conduit._creations,
+            dynamic,
+            conduit._creation_gate_controller,
+            caching_enabled,
+        )
+        assert [call.arguments() for call in active.stamps] == [expected]
+        for spell in parked:
+>           assert [call.arguments() for call in spell.stamps] == [expected]
+E           AssertionError: assert [] == [('root-id', ...60420>, True)]
+E             
+E             Right contains one more item: ('root-id', 'root', <object object at 0x36afa560400>, False, <object object at 0x36afa560420>, True)
+E             Use -v to get more diff
+
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/unit/melder/spellbook/test_spellbook_creation_system_parked_versions.py:270: AssertionError
+________________ test_the_parked_stamps_run_under_the_book_lock ________________
+
+    def test_the_parked_stamps_run_under_the_book_lock() -> None:
+        """Parked versions are stamped while the Book lock is held, as active versions are."""
+        book = _BookStub(caching_enabled=True)
+        active = _SpellStub("active", book)
+        parked = _SpellStub("parked", book)
+        book.add_active(active)
+        book.add_parked(parked)
+    
+        SpellbookCreationSystem.define_conduit_into_spells(book, _ConduitStub(dynamic=True))
+    
+        assert [call.book_lock_held for call in active.stamps] == [True]
+>       assert [call.book_lock_held for call in parked.stamps] == [True]
+E       assert [] == [True]
+E         
+E         Right contains one more item: True
+E         Use -v to get more diff
+
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/unit/melder/spellbook/test_spellbook_creation_system_parked_versions.py:286: AssertionError
+_________ test_a_parked_existing_object_is_stamped_but_not_registered __________
+
+    def test_a_parked_existing_object_is_stamped_but_not_registered() -> None:
+        """
+        An active existing object is registered in the root's store; a parked one is stamped only - it is not live until
+        a notch promotes it, exactly as when it is staged after conjure.
+        """
+        book = _BookStub(caching_enabled=True)
+        active_object, parked_object = object(), object()
+        active = _SpellStub("active", book, existing_object=active_object)
+        parked = _SpellStub("parked", book, existing_object=parked_object)
+        book.add_active(active)
+        book.add_parked(parked)
+        conduit = _ConduitStub(dynamic=True)
+    
+        SpellbookCreationSystem.define_conduit_into_spells(book, conduit)
+    
+        assert conduit.registered == [("active", active_object)]
+>       assert len(parked.stamps) == 1
+E       assert 0 == 1
+E        +  where 0 = len([])
+E        +    where [] = <test_spellbook_creation_system_parked_versions._SpellStub object at 0x36afa7a3d50>.stamps
+
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/unit/melder/spellbook/test_spellbook_creation_system_parked_versions.py:305: AssertionError
+_ test_a_raising_parked_stamp_is_logged_and_every_other_version_is_still_wired _
+
+    def test_a_raising_parked_stamp_is_logged_and_every_other_version_is_still_wired() -> None:
+        """
+        One parked version whose stamp raises is logged with its id and the method tag, and the loop goes on: the other
+        parked version and the active one are wired.
+        """
+        book = _BookStub(caching_enabled=True)
+        active = _SpellStub("active", book)
+        failing = _SpellStub("parked-failing", book, raise_on_stamp=True)
+        other = _SpellStub("parked-other", book)
+        book.add_active(active)
+        book.add_parked(failing)
+        book.add_parked(other)
+    
+        SpellbookCreationSystem.define_conduit_into_spells(book, _ConduitStub(dynamic=True))
+    
+>       assert len(active.stamps) == 1 and len(other.stamps) == 1
+E       assert (1 == 1 and 0 == 1)
+E        +  where 1 = len([<test_spellbook_creation_system_parked_versions._StampCall object at 0x36afd578210>])
+E        +    where [<test_spellbook_creation_system_parked_versions._StampCall object at 0x36afd578210>] = <test_spellbook_creation_system_parked_versions._SpellStub object at 0x36afa8557d0>.stamps
+E        +  and   0 = len([])
+E        +    where [] = <test_spellbook_creation_system_parked_versions._SpellStub object at 0x36afb021050>.stamps
+
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/unit/melder/spellbook/test_spellbook_creation_system_parked_versions.py:341: AssertionError
+___ test_a_staged_version_melds_after_a_notch[unique-staged_before_conjure] ____
+
+family = <test_spellbook_integration_parked_before_conjure._Family object at 0x36afb01ab10>
+staged_before_conjure = True
+
+    @pytest.mark.parametrize("staged_before_conjure", [True, False], ids=["staged_before_conjure", "staged_after"])
+    @pytest.mark.parametrize("family", _families(), ids=[family.name for family in _families()])
+    def test_a_staged_version_melds_after_a_notch(family: _Family, staged_before_conjure: bool) -> None:
+        """
+        After a notch, the staged version melds whether it was staged before or after conjure: a new ServiceB from a class
+        or a function, the staged object itself for an existing object.
+        """
+        world = _World(family, staged_before_conjure=staged_before_conjure)
+        try:
+            world.notch_to_staged()
+>           melded = world.root.meld(spell_id=world.staged_id)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/integration/melder/spellbook/test_spellbook_integration_parked_before_conjure.py:188: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/src/melder/aether/conduit/conduit.py:5044: in meld
+    return meld_component.meld(
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/src/melder/aether/conduit/meld/conduit_meld.py:600: in meld
+    creation_context = target_spell._get_or_build_creation_context()
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <[AttributeError("'melder.aether.spellbook.spell.Spell' object has no attribute 'spell'") raised in repr()] Spell object at 0x36afccf9100>
+
+    def _get_or_build_creation_context(self) -> Any:
+        """
+        Internal
+    
+        Resolve or build the spell-owned CreationContext through its factory.
+    
+        Purpose:
+            Provide one spell-local runtime entrypoint for creation-context
+            retrieval so callers do not directly own factory references.
+    
+        Contract:
+            - Requires the spell to have an initialized factory.
+            - Returns a ready state-2 context without locking.
+            - Delegates build/get policy to CreationContextFactory, whose cold
+              path elects one builder through `_creation_context_switch`.
+            - Returns a live CreationContext instance bound to this spell.
+    
+        Threading:
+            The ready path is one lock-free state read and one context read.
+            It takes no lock: in dynamic mode the caller already holds a
+            spell-index ticket on `_creation_gate`, and every conduit-local
+            rebuild (structural, resolution and deferred phases) runs inside
+            a CreationContextRebuild window that freezes that gate and drains
+            its tickets before phases replace the plan or reset this context,
+            so an admitted caller never sees the rebuild gap and never holds a
+            context that is cleaned under it (2026-09-26). Resets outside
+            those windows (ownership restamps, notch, teardown, transfer) are
+            not drained.
+    
+        Returns:
+            Any:
+                Spell-owned CreationContext instance.
+    
+        Raises:
+            RuntimeError:
+                If the spell has no configured CreationContextFactory.
+        """
+        creation_context_switch = self._creation_context_switch
+        if creation_context_switch.state >= 2:
+            return self._creation_context
+        creation_context_factory = self._creation_context_factory
+        if creation_context_factory is None:
+>           raise RuntimeError("Spell has no configured CreationContextFactory.")
+E           RuntimeError: Spell has no configured CreationContextFactory.
+
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/src/melder/aether/spellbook/spell.py:1086: RuntimeError
+_ test_a_staged_version_melds_after_a_notch[unique_per_conduit-staged_before_conjure] _
+
+family = <test_spellbook_integration_parked_before_conjure._Family object at 0x36afd570c90>
+staged_before_conjure = True
+
+    @pytest.mark.parametrize("staged_before_conjure", [True, False], ids=["staged_before_conjure", "staged_after"])
+    @pytest.mark.parametrize("family", _families(), ids=[family.name for family in _families()])
+    def test_a_staged_version_melds_after_a_notch(family: _Family, staged_before_conjure: bool) -> None:
+        """
+        After a notch, the staged version melds whether it was staged before or after conjure: a new ServiceB from a class
+        or a function, the staged object itself for an existing object.
+        """
+        world = _World(family, staged_before_conjure=staged_before_conjure)
+        try:
+            world.notch_to_staged()
+>           melded = world.root.meld(spell_id=world.staged_id)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/integration/melder/spellbook/test_spellbook_integration_parked_before_conjure.py:188: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/src/melder/aether/conduit/conduit.py:5044: in meld
+    return meld_component.meld(
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/src/melder/aether/conduit/meld/conduit_meld.py:600: in meld
+    creation_context = target_spell._get_or_build_creation_context()
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <[AttributeError("'melder.aether.spellbook.spell.Spell' object has no attribute 'spell'") raised in repr()] Spell object at 0x36afccf8480>
+
+    def _get_or_build_creation_context(self) -> Any:
+        """
+        Internal
+    
+        Resolve or build the spell-owned CreationContext through its factory.
+    
+        Purpose:
+            Provide one spell-local runtime entrypoint for creation-context
+            retrieval so callers do not directly own factory references.
+    
+        Contract:
+            - Requires the spell to have an initialized factory.
+            - Returns a ready state-2 context without locking.
+            - Delegates build/get policy to CreationContextFactory, whose cold
+              path elects one builder through `_creation_context_switch`.
+            - Returns a live CreationContext instance bound to this spell.
+    
+        Threading:
+            The ready path is one lock-free state read and one context read.
+            It takes no lock: in dynamic mode the caller already holds a
+            spell-index ticket on `_creation_gate`, and every conduit-local
+            rebuild (structural, resolution and deferred phases) runs inside
+            a CreationContextRebuild window that freezes that gate and drains
+            its tickets before phases replace the plan or reset this context,
+            so an admitted caller never sees the rebuild gap and never holds a
+            context that is cleaned under it (2026-09-26). Resets outside
+            those windows (ownership restamps, notch, teardown, transfer) are
+            not drained.
+    
+        Returns:
+            Any:
+                Spell-owned CreationContext instance.
+    
+        Raises:
+            RuntimeError:
+                If the spell has no configured CreationContextFactory.
+        """
+        creation_context_switch = self._creation_context_switch
+        if creation_context_switch.state >= 2:
+            return self._creation_context
+        creation_context_factory = self._creation_context_factory
+        if creation_context_factory is None:
+>           raise RuntimeError("Spell has no configured CreationContextFactory.")
+E           RuntimeError: Spell has no configured CreationContextFactory.
+
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/src/melder/aether/spellbook/spell.py:1086: RuntimeError
+____ test_a_staged_version_melds_after_a_notch[many-staged_before_conjure] _____
+
+family = <test_spellbook_integration_parked_before_conjure._Family object at 0x36afd571190>
+staged_before_conjure = True
+
+    @pytest.mark.parametrize("staged_before_conjure", [True, False], ids=["staged_before_conjure", "staged_after"])
+    @pytest.mark.parametrize("family", _families(), ids=[family.name for family in _families()])
+    def test_a_staged_version_melds_after_a_notch(family: _Family, staged_before_conjure: bool) -> None:
+        """
+        After a notch, the staged version melds whether it was staged before or after conjure: a new ServiceB from a class
+        or a function, the staged object itself for an existing object.
+        """
+        world = _World(family, staged_before_conjure=staged_before_conjure)
+        try:
+            world.notch_to_staged()
+>           melded = world.root.meld(spell_id=world.staged_id)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/integration/melder/spellbook/test_spellbook_integration_parked_before_conjure.py:188: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/src/melder/aether/conduit/conduit.py:5044: in meld
+    return meld_component.meld(
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/src/melder/aether/conduit/meld/conduit_meld.py:600: in meld
+    creation_context = target_spell._get_or_build_creation_context()
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <[AttributeError("'melder.aether.spellbook.spell.Spell' object has no attribute 'spell'") raised in repr()] Spell object at 0x36afccf9380>
+
+    def _get_or_build_creation_context(self) -> Any:
+        """
+        Internal
+    
+        Resolve or build the spell-owned CreationContext through its factory.
+    
+        Purpose:
+            Provide one spell-local runtime entrypoint for creation-context
+            retrieval so callers do not directly own factory references.
+    
+        Contract:
+            - Requires the spell to have an initialized factory.
+            - Returns a ready state-2 context without locking.
+            - Delegates build/get policy to CreationContextFactory, whose cold
+              path elects one builder through `_creation_context_switch`.
+            - Returns a live CreationContext instance bound to this spell.
+    
+        Threading:
+            The ready path is one lock-free state read and one context read.
+            It takes no lock: in dynamic mode the caller already holds a
+            spell-index ticket on `_creation_gate`, and every conduit-local
+            rebuild (structural, resolution and deferred phases) runs inside
+            a CreationContextRebuild window that freezes that gate and drains
+            its tickets before phases replace the plan or reset this context,
+            so an admitted caller never sees the rebuild gap and never holds a
+            context that is cleaned under it (2026-09-26). Resets outside
+            those windows (ownership restamps, notch, teardown, transfer) are
+            not drained.
+    
+        Returns:
+            Any:
+                Spell-owned CreationContext instance.
+    
+        Raises:
+            RuntimeError:
+                If the spell has no configured CreationContextFactory.
+        """
+        creation_context_switch = self._creation_context_switch
+        if creation_context_switch.state >= 2:
+            return self._creation_context
+        creation_context_factory = self._creation_context_factory
+        if creation_context_factory is None:
+>           raise RuntimeError("Spell has no configured CreationContextFactory.")
+E           RuntimeError: Spell has no configured CreationContextFactory.
+
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/src/melder/aether/spellbook/spell.py:1086: RuntimeError
+_ test_a_staged_version_melds_after_a_notch[managed_spell_quantity-staged_before_conjure] _
+
+family = <test_spellbook_integration_parked_before_conjure._Family object at 0x36afd571a50>
+staged_before_conjure = True
+
+    @pytest.mark.parametrize("staged_before_conjure", [True, False], ids=["staged_before_conjure", "staged_after"])
+    @pytest.mark.parametrize("family", _families(), ids=[family.name for family in _families()])
+    def test_a_staged_version_melds_after_a_notch(family: _Family, staged_before_conjure: bool) -> None:
+        """
+        After a notch, the staged version melds whether it was staged before or after conjure: a new ServiceB from a class
+        or a function, the staged object itself for an existing object.
+        """
+        world = _World(family, staged_before_conjure=staged_before_conjure)
+        try:
+            world.notch_to_staged()
+>           melded = world.root.meld(spell_id=world.staged_id)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/integration/melder/spellbook/test_spellbook_integration_parked_before_conjure.py:188: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/src/melder/aether/conduit/conduit.py:5044: in meld
+    return meld_component.meld(
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/src/melder/aether/conduit/meld/conduit_meld.py:600: in meld
+    creation_context = target_spell._get_or_build_creation_context()
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <[AttributeError("'melder.aether.spellbook.spell.Spell' object has no attribute 'spell'") raised in repr()] Spell object at 0x36afccf9d80>
+
+    def _get_or_build_creation_context(self) -> Any:
+        """
+        Internal
+    
+        Resolve or build the spell-owned CreationContext through its factory.
+    
+        Purpose:
+            Provide one spell-local runtime entrypoint for creation-context
+            retrieval so callers do not directly own factory references.
+    
+        Contract:
+            - Requires the spell to have an initialized factory.
+            - Returns a ready state-2 context without locking.
+            - Delegates build/get policy to CreationContextFactory, whose cold
+              path elects one builder through `_creation_context_switch`.
+            - Returns a live CreationContext instance bound to this spell.
+    
+        Threading:
+            The ready path is one lock-free state read and one context read.
+            It takes no lock: in dynamic mode the caller already holds a
+            spell-index ticket on `_creation_gate`, and every conduit-local
+            rebuild (structural, resolution and deferred phases) runs inside
+            a CreationContextRebuild window that freezes that gate and drains
+            its tickets before phases replace the plan or reset this context,
+            so an admitted caller never sees the rebuild gap and never holds a
+            context that is cleaned under it (2026-09-26). Resets outside
+            those windows (ownership restamps, notch, teardown, transfer) are
+            not drained.
+    
+        Returns:
+            Any:
+                Spell-owned CreationContext instance.
+    
+        Raises:
+            RuntimeError:
+                If the spell has no configured CreationContextFactory.
+        """
+        creation_context_switch = self._creation_context_switch
+        if creation_context_switch.state >= 2:
+            return self._creation_context
+        creation_context_factory = self._creation_context_factory
+        if creation_context_factory is None:
+>           raise RuntimeError("Spell has no configured CreationContextFactory.")
+E           RuntimeError: Spell has no configured CreationContextFactory.
+
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/src/melder/aether/spellbook/spell.py:1086: RuntimeError
+_ test_a_staged_version_melds_after_a_notch[existing_object-staged_before_conjure] _
+
+family = <test_spellbook_integration_parked_before_conjure._Family object at 0x36afd571e10>
+staged_before_conjure = True
+
+    @pytest.mark.parametrize("staged_before_conjure", [True, False], ids=["staged_before_conjure", "staged_after"])
+    @pytest.mark.parametrize("family", _families(), ids=[family.name for family in _families()])
+    def test_a_staged_version_melds_after_a_notch(family: _Family, staged_before_conjure: bool) -> None:
+        """
+        After a notch, the staged version melds whether it was staged before or after conjure: a new ServiceB from a class
+        or a function, the staged object itself for an existing object.
+        """
+        world = _World(family, staged_before_conjure=staged_before_conjure)
+        try:
+            world.notch_to_staged()
+>           melded = world.root.meld(spell_id=world.staged_id)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/integration/melder/spellbook/test_spellbook_integration_parked_before_conjure.py:188: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/src/melder/aether/conduit/conduit.py:5044: in meld
+    return meld_component.meld(
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/src/melder/aether/conduit/meld/conduit_meld.py:600: in meld
+    creation_context = target_spell._get_or_build_creation_context()
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <[AttributeError("'melder.aether.spellbook.spell.Spell' object has no attribute 'spell'") raised in repr()] Spell object at 0x36afccfa500>
+
+    def _get_or_build_creation_context(self) -> Any:
+        """
+        Internal
+    
+        Resolve or build the spell-owned CreationContext through its factory.
+    
+        Purpose:
+            Provide one spell-local runtime entrypoint for creation-context
+            retrieval so callers do not directly own factory references.
+    
+        Contract:
+            - Requires the spell to have an initialized factory.
+            - Returns a ready state-2 context without locking.
+            - Delegates build/get policy to CreationContextFactory, whose cold
+              path elects one builder through `_creation_context_switch`.
+            - Returns a live CreationContext instance bound to this spell.
+    
+        Threading:
+            The ready path is one lock-free state read and one context read.
+            It takes no lock: in dynamic mode the caller already holds a
+            spell-index ticket on `_creation_gate`, and every conduit-local
+            rebuild (structural, resolution and deferred phases) runs inside
+            a CreationContextRebuild window that freezes that gate and drains
+            its tickets before phases replace the plan or reset this context,
+            so an admitted caller never sees the rebuild gap and never holds a
+            context that is cleaned under it (2026-09-26). Resets outside
+            those windows (ownership restamps, notch, teardown, transfer) are
+            not drained.
+    
+        Returns:
+            Any:
+                Spell-owned CreationContext instance.
+    
+        Raises:
+            RuntimeError:
+                If the spell has no configured CreationContextFactory.
+        """
+        creation_context_switch = self._creation_context_switch
+        if creation_context_switch.state >= 2:
+            return self._creation_context
+        creation_context_factory = self._creation_context_factory
+        if creation_context_factory is None:
+>           raise RuntimeError("Spell has no configured CreationContextFactory.")
+E           RuntimeError: Spell has no configured CreationContextFactory.
+
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/src/melder/aether/spellbook/spell.py:1086: RuntimeError
+__ test_a_staged_version_melds_after_a_notch[function-staged_before_conjure] ___
+
+family = <test_spellbook_integration_parked_before_conjure._Family object at 0x36afd571f50>
+staged_before_conjure = True
+
+    @pytest.mark.parametrize("staged_before_conjure", [True, False], ids=["staged_before_conjure", "staged_after"])
+    @pytest.mark.parametrize("family", _families(), ids=[family.name for family in _families()])
+    def test_a_staged_version_melds_after_a_notch(family: _Family, staged_before_conjure: bool) -> None:
+        """
+        After a notch, the staged version melds whether it was staged before or after conjure: a new ServiceB from a class
+        or a function, the staged object itself for an existing object.
+        """
+        world = _World(family, staged_before_conjure=staged_before_conjure)
+        try:
+            world.notch_to_staged()
+>           melded = world.root.meld(spell_id=world.staged_id)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/integration/melder/spellbook/test_spellbook_integration_parked_before_conjure.py:188: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/src/melder/aether/conduit/conduit.py:5044: in meld
+    return meld_component.meld(
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/src/melder/aether/conduit/meld/conduit_meld.py:600: in meld
+    creation_context = target_spell._get_or_build_creation_context()
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <[AttributeError("'melder.aether.spellbook.spell.Spell' object has no attribute 'spell'") raised in repr()] Spell object at 0x36afccfaf00>
+
+    def _get_or_build_creation_context(self) -> Any:
+        """
+        Internal
+    
+        Resolve or build the spell-owned CreationContext through its factory.
+    
+        Purpose:
+            Provide one spell-local runtime entrypoint for creation-context
+            retrieval so callers do not directly own factory references.
+    
+        Contract:
+            - Requires the spell to have an initialized factory.
+            - Returns a ready state-2 context without locking.
+            - Delegates build/get policy to CreationContextFactory, whose cold
+              path elects one builder through `_creation_context_switch`.
+            - Returns a live CreationContext instance bound to this spell.
+    
+        Threading:
+            The ready path is one lock-free state read and one context read.
+            It takes no lock: in dynamic mode the caller already holds a
+            spell-index ticket on `_creation_gate`, and every conduit-local
+            rebuild (structural, resolution and deferred phases) runs inside
+            a CreationContextRebuild window that freezes that gate and drains
+            its tickets before phases replace the plan or reset this context,
+            so an admitted caller never sees the rebuild gap and never holds a
+            context that is cleaned under it (2026-09-26). Resets outside
+            those windows (ownership restamps, notch, teardown, transfer) are
+            not drained.
+    
+        Returns:
+            Any:
+                Spell-owned CreationContext instance.
+    
+        Raises:
+            RuntimeError:
+                If the spell has no configured CreationContextFactory.
+        """
+        creation_context_switch = self._creation_context_switch
+        if creation_context_switch.state >= 2:
+            return self._creation_context
+        creation_context_factory = self._creation_context_factory
+        if creation_context_factory is None:
+>           raise RuntimeError("Spell has no configured CreationContextFactory.")
+E           RuntimeError: Spell has no configured CreationContextFactory.
+
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/src/melder/aether/spellbook/spell.py:1086: RuntimeError
+_ test_a_staged_existing_object_is_not_registered_in_the_store[staged_before_conjure] _
+
+staged_before_conjure = True
+
+    @pytest.mark.parametrize("staged_before_conjure", [True, False], ids=["staged_before_conjure", "staged_after"])
+    def test_a_staged_existing_object_is_not_registered_in_the_store(staged_before_conjure: bool) -> None:
+        """
+        A staged existing object is wired, not registered: the root's store holds the active object only, before and
+        after the notch, whichever moment it was staged at.
+        """
+        family = _family("existing_object")
+        world = _World(family, staged_before_conjure=staged_before_conjure)
+        try:
+            store = world.root._creations._creations
+            assert world.active_id in store and world.staged_id not in store
+            world.notch_to_staged()
+>           assert world.root.meld(spell_id=world.staged_id) is world.staged_target
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/integration/melder/spellbook/test_spellbook_integration_parked_before_conjure.py:225: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/src/melder/aether/conduit/conduit.py:5044: in meld
+    return meld_component.meld(
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/src/melder/aether/conduit/meld/conduit_meld.py:600: in meld
+    creation_context = target_spell._get_or_build_creation_context()
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <[AttributeError("'melder.aether.spellbook.spell.Spell' object has no attribute 'spell'") raised in repr()] Spell object at 0x36afccfc300>
+
+    def _get_or_build_creation_context(self) -> Any:
+        """
+        Internal
+    
+        Resolve or build the spell-owned CreationContext through its factory.
+    
+        Purpose:
+            Provide one spell-local runtime entrypoint for creation-context
+            retrieval so callers do not directly own factory references.
+    
+        Contract:
+            - Requires the spell to have an initialized factory.
+            - Returns a ready state-2 context without locking.
+            - Delegates build/get policy to CreationContextFactory, whose cold
+              path elects one builder through `_creation_context_switch`.
+            - Returns a live CreationContext instance bound to this spell.
+    
+        Threading:
+            The ready path is one lock-free state read and one context read.
+            It takes no lock: in dynamic mode the caller already holds a
+            spell-index ticket on `_creation_gate`, and every conduit-local
+            rebuild (structural, resolution and deferred phases) runs inside
+            a CreationContextRebuild window that freezes that gate and drains
+            its tickets before phases replace the plan or reset this context,
+            so an admitted caller never sees the rebuild gap and never holds a
+            context that is cleaned under it (2026-09-26). Resets outside
+            those windows (ownership restamps, notch, teardown, transfer) are
+            not drained.
+    
+        Returns:
+            Any:
+                Spell-owned CreationContext instance.
+    
+        Raises:
+            RuntimeError:
+                If the spell has no configured CreationContextFactory.
+        """
+        creation_context_switch = self._creation_context_switch
+        if creation_context_switch.state >= 2:
+            return self._creation_context
+        creation_context_factory = self._creation_context_factory
+        if creation_context_factory is None:
+>           raise RuntimeError("Spell has no configured CreationContextFactory.")
+E           RuntimeError: Spell has no configured CreationContextFactory.
+
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/src/melder/aether/spellbook/spell.py:1086: RuntimeError
+____ test_a_managed_version_staged_before_conjure_has_its_pool_from_conjure ____
+
+    def test_a_managed_version_staged_before_conjure_has_its_pool_from_conjure() -> None:
+        """
+        Conjure gives a managed version staged before it its pool in the root's store and a registry entry; after the
+        notch, `managed_spell_meld` leases from that pool and the release puts the object back.
+        """
+        family = _family("managed_spell_quantity")
+        world = _World(family, staged_before_conjure=True)
+        try:
+            pool = world.root._creations.get_managed_quantity(world.staged_id)
+>           assert pool is not None and pool.count == 0
+E           assert (None is not None)
+
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/integration/melder/spellbook/test_spellbook_integration_parked_before_conjure.py:240: AssertionError
+_______ test_cache_schema_version_history_accepts_only_current_bundle[1] _______
+
+tmp_path = PosixPath('/tmp/m0_mq/tmp/pytest-of-rcw-01ea5tnfq1nyfhrsj4wka11q/pytest-0/test_cache_schema_version_hist0')
+bundle_version = 1
+
+    @pytest.mark.parametrize("bundle_version", tuple(EXPECTED_CACHE_VERSION_HISTORY))
+    def test_cache_schema_version_history_accepts_only_current_bundle(
+            tmp_path: Path,
+            bundle_version: int,
+    ) -> None:
+        """
+        Pin every persisted cache schema generation and its invalidation boundary.
+    
+        A newly documented schema generation must be added to
+        ``CachingSystem.CACHE_VERSION_HISTORY``. ``CURRENT_VERSION`` is derived
+        from that mapping, so advancing the history automatically advances the
+        persisted bundle version. This integration test writes every known bundle
+        generation through the real marshal format and proves that only the newest
+        generation survives loading; every predecessor cold-resets.
+        """
+>       assert dict(CachingSystem.CACHE_VERSION_HISTORY) == (
+            EXPECTED_CACHE_VERSION_HISTORY
+        )
+E       AssertionError: assert {1: 'legacy_e...m_names', ...} == {1: 'legacy_e...m_names', ...}
+E         
+E         Omitting 20 identical items, use -vv to show
+E         Right contains 1 more item:
+E         {21: 'managed_spell_lease_codegen'}
+E         Use -v to get more diff
+
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/integration/melder/spellbook/test_cache_schema_version_integration.py:52: AssertionError
+_______ test_cache_schema_version_history_accepts_only_current_bundle[2] _______
+
+tmp_path = PosixPath('/tmp/m0_mq/tmp/pytest-of-rcw-01ea5tnfq1nyfhrsj4wka11q/pytest-0/test_cache_schema_version_hist1')
+bundle_version = 2
+
+    @pytest.mark.parametrize("bundle_version", tuple(EXPECTED_CACHE_VERSION_HISTORY))
+    def test_cache_schema_version_history_accepts_only_current_bundle(
+            tmp_path: Path,
+            bundle_version: int,
+    ) -> None:
+        """
+        Pin every persisted cache schema generation and its invalidation boundary.
+    
+        A newly documented schema generation must be added to
+        ``CachingSystem.CACHE_VERSION_HISTORY``. ``CURRENT_VERSION`` is derived
+        from that mapping, so advancing the history automatically advances the
+        persisted bundle version. This integration test writes every known bundle
+        generation through the real marshal format and proves that only the newest
+        generation survives loading; every predecessor cold-resets.
+        """
+>       assert dict(CachingSystem.CACHE_VERSION_HISTORY) == (
+            EXPECTED_CACHE_VERSION_HISTORY
+        )
+E       AssertionError: assert {1: 'legacy_e...m_names', ...} == {1: 'legacy_e...m_names', ...}
+E         
+E         Omitting 20 identical items, use -vv to show
+E         Right contains 1 more item:
+E         {21: 'managed_spell_lease_codegen'}
+E         Use -v to get more diff
+
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/integration/melder/spellbook/test_cache_schema_version_integration.py:52: AssertionError
+_______ test_cache_schema_version_history_accepts_only_current_bundle[3] _______
+
+tmp_path = PosixPath('/tmp/m0_mq/tmp/pytest-of-rcw-01ea5tnfq1nyfhrsj4wka11q/pytest-0/test_cache_schema_version_hist2')
+bundle_version = 3
+
+    @pytest.mark.parametrize("bundle_version", tuple(EXPECTED_CACHE_VERSION_HISTORY))
+    def test_cache_schema_version_history_accepts_only_current_bundle(
+            tmp_path: Path,
+            bundle_version: int,
+    ) -> None:
+        """
+        Pin every persisted cache schema generation and its invalidation boundary.
+    
+        A newly documented schema generation must be added to
+        ``CachingSystem.CACHE_VERSION_HISTORY``. ``CURRENT_VERSION`` is derived
+        from that mapping, so advancing the history automatically advances the
+        persisted bundle version. This integration test writes every known bundle
+        generation through the real marshal format and proves that only the newest
+        generation survives loading; every predecessor cold-resets.
+        """
+>       assert dict(CachingSystem.CACHE_VERSION_HISTORY) == (
+            EXPECTED_CACHE_VERSION_HISTORY
+        )
+E       AssertionError: assert {1: 'legacy_e...m_names', ...} == {1: 'legacy_e...m_names', ...}
+E         
+E         Omitting 20 identical items, use -vv to show
+E         Right contains 1 more item:
+E         {21: 'managed_spell_lease_codegen'}
+E         Use -v to get more diff
+
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/integration/melder/spellbook/test_cache_schema_version_integration.py:52: AssertionError
+_______ test_cache_schema_version_history_accepts_only_current_bundle[4] _______
+
+tmp_path = PosixPath('/tmp/m0_mq/tmp/pytest-of-rcw-01ea5tnfq1nyfhrsj4wka11q/pytest-0/test_cache_schema_version_hist3')
+bundle_version = 4
+
+    @pytest.mark.parametrize("bundle_version", tuple(EXPECTED_CACHE_VERSION_HISTORY))
+    def test_cache_schema_version_history_accepts_only_current_bundle(
+            tmp_path: Path,
+            bundle_version: int,
+    ) -> None:
+        """
+        Pin every persisted cache schema generation and its invalidation boundary.
+    
+        A newly documented schema generation must be added to
+        ``CachingSystem.CACHE_VERSION_HISTORY``. ``CURRENT_VERSION`` is derived
+        from that mapping, so advancing the history automatically advances the
+        persisted bundle version. This integration test writes every known bundle
+        generation through the real marshal format and proves that only the newest
+        generation survives loading; every predecessor cold-resets.
+        """
+>       assert dict(CachingSystem.CACHE_VERSION_HISTORY) == (
+            EXPECTED_CACHE_VERSION_HISTORY
+        )
+E       AssertionError: assert {1: 'legacy_e...m_names', ...} == {1: 'legacy_e...m_names', ...}
+E         
+E         Omitting 20 identical items, use -vv to show
+E         Right contains 1 more item:
+E         {21: 'managed_spell_lease_codegen'}
+E         Use -v to get more diff
+
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/integration/melder/spellbook/test_cache_schema_version_integration.py:52: AssertionError
+_______ test_cache_schema_version_history_accepts_only_current_bundle[5] _______
+
+tmp_path = PosixPath('/tmp/m0_mq/tmp/pytest-of-rcw-01ea5tnfq1nyfhrsj4wka11q/pytest-0/test_cache_schema_version_hist4')
+bundle_version = 5
+
+    @pytest.mark.parametrize("bundle_version", tuple(EXPECTED_CACHE_VERSION_HISTORY))
+    def test_cache_schema_version_history_accepts_only_current_bundle(
+            tmp_path: Path,
+            bundle_version: int,
+    ) -> None:
+        """
+        Pin every persisted cache schema generation and its invalidation boundary.
+    
+        A newly documented schema generation must be added to
+        ``CachingSystem.CACHE_VERSION_HISTORY``. ``CURRENT_VERSION`` is derived
+        from that mapping, so advancing the history automatically advances the
+        persisted bundle version. This integration test writes every known bundle
+        generation through the real marshal format and proves that only the newest
+        generation survives loading; every predecessor cold-resets.
+        """
+>       assert dict(CachingSystem.CACHE_VERSION_HISTORY) == (
+            EXPECTED_CACHE_VERSION_HISTORY
+        )
+E       AssertionError: assert {1: 'legacy_e...m_names', ...} == {1: 'legacy_e...m_names', ...}
+E         
+E         Omitting 20 identical items, use -vv to show
+E         Right contains 1 more item:
+E         {21: 'managed_spell_lease_codegen'}
+E         Use -v to get more diff
+
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/integration/melder/spellbook/test_cache_schema_version_integration.py:52: AssertionError
+_______ test_cache_schema_version_history_accepts_only_current_bundle[6] _______
+
+tmp_path = PosixPath('/tmp/m0_mq/tmp/pytest-of-rcw-01ea5tnfq1nyfhrsj4wka11q/pytest-0/test_cache_schema_version_hist5')
+bundle_version = 6
+
+    @pytest.mark.parametrize("bundle_version", tuple(EXPECTED_CACHE_VERSION_HISTORY))
+    def test_cache_schema_version_history_accepts_only_current_bundle(
+            tmp_path: Path,
+            bundle_version: int,
+    ) -> None:
+        """
+        Pin every persisted cache schema generation and its invalidation boundary.
+    
+        A newly documented schema generation must be added to
+        ``CachingSystem.CACHE_VERSION_HISTORY``. ``CURRENT_VERSION`` is derived
+        from that mapping, so advancing the history automatically advances the
+        persisted bundle version. This integration test writes every known bundle
+        generation through the real marshal format and proves that only the newest
+        generation survives loading; every predecessor cold-resets.
+        """
+>       assert dict(CachingSystem.CACHE_VERSION_HISTORY) == (
+            EXPECTED_CACHE_VERSION_HISTORY
+        )
+E       AssertionError: assert {1: 'legacy_e...m_names', ...} == {1: 'legacy_e...m_names', ...}
+E         
+E         Omitting 20 identical items, use -vv to show
+E         Right contains 1 more item:
+E         {21: 'managed_spell_lease_codegen'}
+E         Use -v to get more diff
+
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/integration/melder/spellbook/test_cache_schema_version_integration.py:52: AssertionError
+_______ test_cache_schema_version_history_accepts_only_current_bundle[7] _______
+
+tmp_path = PosixPath('/tmp/m0_mq/tmp/pytest-of-rcw-01ea5tnfq1nyfhrsj4wka11q/pytest-0/test_cache_schema_version_hist6')
+bundle_version = 7
+
+    @pytest.mark.parametrize("bundle_version", tuple(EXPECTED_CACHE_VERSION_HISTORY))
+    def test_cache_schema_version_history_accepts_only_current_bundle(
+            tmp_path: Path,
+            bundle_version: int,
+    ) -> None:
+        """
+        Pin every persisted cache schema generation and its invalidation boundary.
+    
+        A newly documented schema generation must be added to
+        ``CachingSystem.CACHE_VERSION_HISTORY``. ``CURRENT_VERSION`` is derived
+        from that mapping, so advancing the history automatically advances the
+        persisted bundle version. This integration test writes every known bundle
+        generation through the real marshal format and proves that only the newest
+        generation survives loading; every predecessor cold-resets.
+        """
+>       assert dict(CachingSystem.CACHE_VERSION_HISTORY) == (
+            EXPECTED_CACHE_VERSION_HISTORY
+        )
+E       AssertionError: assert {1: 'legacy_e...m_names', ...} == {1: 'legacy_e...m_names', ...}
+E         
+E         Omitting 20 identical items, use -vv to show
+E         Right contains 1 more item:
+E         {21: 'managed_spell_lease_codegen'}
+E         Use -v to get more diff
+
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/integration/melder/spellbook/test_cache_schema_version_integration.py:52: AssertionError
+_______ test_cache_schema_version_history_accepts_only_current_bundle[8] _______
+
+tmp_path = PosixPath('/tmp/m0_mq/tmp/pytest-of-rcw-01ea5tnfq1nyfhrsj4wka11q/pytest-0/test_cache_schema_version_hist7')
+bundle_version = 8
+
+    @pytest.mark.parametrize("bundle_version", tuple(EXPECTED_CACHE_VERSION_HISTORY))
+    def test_cache_schema_version_history_accepts_only_current_bundle(
+            tmp_path: Path,
+            bundle_version: int,
+    ) -> None:
+        """
+        Pin every persisted cache schema generation and its invalidation boundary.
+    
+        A newly documented schema generation must be added to
+        ``CachingSystem.CACHE_VERSION_HISTORY``. ``CURRENT_VERSION`` is derived
+        from that mapping, so advancing the history automatically advances the
+        persisted bundle version. This integration test writes every known bundle
+        generation through the real marshal format and proves that only the newest
+        generation survives loading; every predecessor cold-resets.
+        """
+>       assert dict(CachingSystem.CACHE_VERSION_HISTORY) == (
+            EXPECTED_CACHE_VERSION_HISTORY
+        )
+E       AssertionError: assert {1: 'legacy_e...m_names', ...} == {1: 'legacy_e...m_names', ...}
+E         
+E         Omitting 20 identical items, use -vv to show
+E         Right contains 1 more item:
+E         {21: 'managed_spell_lease_codegen'}
+E         Use -v to get more diff
+
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/integration/melder/spellbook/test_cache_schema_version_integration.py:52: AssertionError
+_______ test_cache_schema_version_history_accepts_only_current_bundle[9] _______
+
+tmp_path = PosixPath('/tmp/m0_mq/tmp/pytest-of-rcw-01ea5tnfq1nyfhrsj4wka11q/pytest-0/test_cache_schema_version_hist8')
+bundle_version = 9
+
+    @pytest.mark.parametrize("bundle_version", tuple(EXPECTED_CACHE_VERSION_HISTORY))
+    def test_cache_schema_version_history_accepts_only_current_bundle(
+            tmp_path: Path,
+            bundle_version: int,
+    ) -> None:
+        """
+        Pin every persisted cache schema generation and its invalidation boundary.
+    
+        A newly documented schema generation must be added to
+        ``CachingSystem.CACHE_VERSION_HISTORY``. ``CURRENT_VERSION`` is derived
+        from that mapping, so advancing the history automatically advances the
+        persisted bundle version. This integration test writes every known bundle
+        generation through the real marshal format and proves that only the newest
+        generation survives loading; every predecessor cold-resets.
+        """
+>       assert dict(CachingSystem.CACHE_VERSION_HISTORY) == (
+            EXPECTED_CACHE_VERSION_HISTORY
+        )
+E       AssertionError: assert {1: 'legacy_e...m_names', ...} == {1: 'legacy_e...m_names', ...}
+E         
+E         Omitting 20 identical items, use -vv to show
+E         Right contains 1 more item:
+E         {21: 'managed_spell_lease_codegen'}
+E         Use -v to get more diff
+
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/integration/melder/spellbook/test_cache_schema_version_integration.py:52: AssertionError
+______ test_cache_schema_version_history_accepts_only_current_bundle[10] _______
+
+tmp_path = PosixPath('/tmp/m0_mq/tmp/pytest-of-rcw-01ea5tnfq1nyfhrsj4wka11q/pytest-0/test_cache_schema_version_hist9')
+bundle_version = 10
+
+    @pytest.mark.parametrize("bundle_version", tuple(EXPECTED_CACHE_VERSION_HISTORY))
+    def test_cache_schema_version_history_accepts_only_current_bundle(
+            tmp_path: Path,
+            bundle_version: int,
+    ) -> None:
+        """
+        Pin every persisted cache schema generation and its invalidation boundary.
+    
+        A newly documented schema generation must be added to
+        ``CachingSystem.CACHE_VERSION_HISTORY``. ``CURRENT_VERSION`` is derived
+        from that mapping, so advancing the history automatically advances the
+        persisted bundle version. This integration test writes every known bundle
+        generation through the real marshal format and proves that only the newest
+        generation survives loading; every predecessor cold-resets.
+        """
+>       assert dict(CachingSystem.CACHE_VERSION_HISTORY) == (
+            EXPECTED_CACHE_VERSION_HISTORY
+        )
+E       AssertionError: assert {1: 'legacy_e...m_names', ...} == {1: 'legacy_e...m_names', ...}
+E         
+E         Omitting 20 identical items, use -vv to show
+E         Right contains 1 more item:
+E         {21: 'managed_spell_lease_codegen'}
+E         Use -v to get more diff
+
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/integration/melder/spellbook/test_cache_schema_version_integration.py:52: AssertionError
+______ test_cache_schema_version_history_accepts_only_current_bundle[11] _______
+
+tmp_path = PosixPath('/tmp/m0_mq/tmp/pytest-of-rcw-01ea5tnfq1nyfhrsj4wka11q/pytest-0/test_cache_schema_version_hist10')
+bundle_version = 11
+
+    @pytest.mark.parametrize("bundle_version", tuple(EXPECTED_CACHE_VERSION_HISTORY))
+    def test_cache_schema_version_history_accepts_only_current_bundle(
+            tmp_path: Path,
+            bundle_version: int,
+    ) -> None:
+        """
+        Pin every persisted cache schema generation and its invalidation boundary.
+    
+        A newly documented schema generation must be added to
+        ``CachingSystem.CACHE_VERSION_HISTORY``. ``CURRENT_VERSION`` is derived
+        from that mapping, so advancing the history automatically advances the
+        persisted bundle version. This integration test writes every known bundle
+        generation through the real marshal format and proves that only the newest
+        generation survives loading; every predecessor cold-resets.
+        """
+>       assert dict(CachingSystem.CACHE_VERSION_HISTORY) == (
+            EXPECTED_CACHE_VERSION_HISTORY
+        )
+E       AssertionError: assert {1: 'legacy_e...m_names', ...} == {1: 'legacy_e...m_names', ...}
+E         
+E         Omitting 20 identical items, use -vv to show
+E         Right contains 1 more item:
+E         {21: 'managed_spell_lease_codegen'}
+E         Use -v to get more diff
+
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/integration/melder/spellbook/test_cache_schema_version_integration.py:52: AssertionError
+______ test_cache_schema_version_history_accepts_only_current_bundle[12] _______
+
+tmp_path = PosixPath('/tmp/m0_mq/tmp/pytest-of-rcw-01ea5tnfq1nyfhrsj4wka11q/pytest-0/test_cache_schema_version_hist11')
+bundle_version = 12
+
+    @pytest.mark.parametrize("bundle_version", tuple(EXPECTED_CACHE_VERSION_HISTORY))
+    def test_cache_schema_version_history_accepts_only_current_bundle(
+            tmp_path: Path,
+            bundle_version: int,
+    ) -> None:
+        """
+        Pin every persisted cache schema generation and its invalidation boundary.
+    
+        A newly documented schema generation must be added to
+        ``CachingSystem.CACHE_VERSION_HISTORY``. ``CURRENT_VERSION`` is derived
+        from that mapping, so advancing the history automatically advances the
+        persisted bundle version. This integration test writes every known bundle
+        generation through the real marshal format and proves that only the newest
+        generation survives loading; every predecessor cold-resets.
+        """
+>       assert dict(CachingSystem.CACHE_VERSION_HISTORY) == (
+            EXPECTED_CACHE_VERSION_HISTORY
+        )
+E       AssertionError: assert {1: 'legacy_e...m_names', ...} == {1: 'legacy_e...m_names', ...}
+E         
+E         Omitting 20 identical items, use -vv to show
+E         Right contains 1 more item:
+E         {21: 'managed_spell_lease_codegen'}
+E         Use -v to get more diff
+
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/integration/melder/spellbook/test_cache_schema_version_integration.py:52: AssertionError
+______ test_cache_schema_version_history_accepts_only_current_bundle[13] _______
+
+tmp_path = PosixPath('/tmp/m0_mq/tmp/pytest-of-rcw-01ea5tnfq1nyfhrsj4wka11q/pytest-0/test_cache_schema_version_hist12')
+bundle_version = 13
+
+    @pytest.mark.parametrize("bundle_version", tuple(EXPECTED_CACHE_VERSION_HISTORY))
+    def test_cache_schema_version_history_accepts_only_current_bundle(
+            tmp_path: Path,
+            bundle_version: int,
+    ) -> None:
+        """
+        Pin every persisted cache schema generation and its invalidation boundary.
+    
+        A newly documented schema generation must be added to
+        ``CachingSystem.CACHE_VERSION_HISTORY``. ``CURRENT_VERSION`` is derived
+        from that mapping, so advancing the history automatically advances the
+        persisted bundle version. This integration test writes every known bundle
+        generation through the real marshal format and proves that only the newest
+        generation survives loading; every predecessor cold-resets.
+        """
+>       assert dict(CachingSystem.CACHE_VERSION_HISTORY) == (
+            EXPECTED_CACHE_VERSION_HISTORY
+        )
+E       AssertionError: assert {1: 'legacy_e...m_names', ...} == {1: 'legacy_e...m_names', ...}
+E         
+E         Omitting 20 identical items, use -vv to show
+E         Right contains 1 more item:
+E         {21: 'managed_spell_lease_codegen'}
+E         Use -v to get more diff
+
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/integration/melder/spellbook/test_cache_schema_version_integration.py:52: AssertionError
+______ test_cache_schema_version_history_accepts_only_current_bundle[14] _______
+
+tmp_path = PosixPath('/tmp/m0_mq/tmp/pytest-of-rcw-01ea5tnfq1nyfhrsj4wka11q/pytest-0/test_cache_schema_version_hist13')
+bundle_version = 14
+
+    @pytest.mark.parametrize("bundle_version", tuple(EXPECTED_CACHE_VERSION_HISTORY))
+    def test_cache_schema_version_history_accepts_only_current_bundle(
+            tmp_path: Path,
+            bundle_version: int,
+    ) -> None:
+        """
+        Pin every persisted cache schema generation and its invalidation boundary.
+    
+        A newly documented schema generation must be added to
+        ``CachingSystem.CACHE_VERSION_HISTORY``. ``CURRENT_VERSION`` is derived
+        from that mapping, so advancing the history automatically advances the
+        persisted bundle version. This integration test writes every known bundle
+        generation through the real marshal format and proves that only the newest
+        generation survives loading; every predecessor cold-resets.
+        """
+>       assert dict(CachingSystem.CACHE_VERSION_HISTORY) == (
+            EXPECTED_CACHE_VERSION_HISTORY
+        )
+E       AssertionError: assert {1: 'legacy_e...m_names', ...} == {1: 'legacy_e...m_names', ...}
+E         
+E         Omitting 20 identical items, use -vv to show
+E         Right contains 1 more item:
+E         {21: 'managed_spell_lease_codegen'}
+E         Use -v to get more diff
+
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/integration/melder/spellbook/test_cache_schema_version_integration.py:52: AssertionError
+______ test_cache_schema_version_history_accepts_only_current_bundle[15] _______
+
+tmp_path = PosixPath('/tmp/m0_mq/tmp/pytest-of-rcw-01ea5tnfq1nyfhrsj4wka11q/pytest-0/test_cache_schema_version_hist14')
+bundle_version = 15
+
+    @pytest.mark.parametrize("bundle_version", tuple(EXPECTED_CACHE_VERSION_HISTORY))
+    def test_cache_schema_version_history_accepts_only_current_bundle(
+            tmp_path: Path,
+            bundle_version: int,
+    ) -> None:
+        """
+        Pin every persisted cache schema generation and its invalidation boundary.
+    
+        A newly documented schema generation must be added to
+        ``CachingSystem.CACHE_VERSION_HISTORY``. ``CURRENT_VERSION`` is derived
+        from that mapping, so advancing the history automatically advances the
+        persisted bundle version. This integration test writes every known bundle
+        generation through the real marshal format and proves that only the newest
+        generation survives loading; every predecessor cold-resets.
+        """
+>       assert dict(CachingSystem.CACHE_VERSION_HISTORY) == (
+            EXPECTED_CACHE_VERSION_HISTORY
+        )
+E       AssertionError: assert {1: 'legacy_e...m_names', ...} == {1: 'legacy_e...m_names', ...}
+E         
+E         Omitting 20 identical items, use -vv to show
+E         Right contains 1 more item:
+E         {21: 'managed_spell_lease_codegen'}
+E         Use -v to get more diff
+
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/integration/melder/spellbook/test_cache_schema_version_integration.py:52: AssertionError
+______ test_cache_schema_version_history_accepts_only_current_bundle[16] _______
+
+tmp_path = PosixPath('/tmp/m0_mq/tmp/pytest-of-rcw-01ea5tnfq1nyfhrsj4wka11q/pytest-0/test_cache_schema_version_hist15')
+bundle_version = 16
+
+    @pytest.mark.parametrize("bundle_version", tuple(EXPECTED_CACHE_VERSION_HISTORY))
+    def test_cache_schema_version_history_accepts_only_current_bundle(
+            tmp_path: Path,
+            bundle_version: int,
+    ) -> None:
+        """
+        Pin every persisted cache schema generation and its invalidation boundary.
+    
+        A newly documented schema generation must be added to
+        ``CachingSystem.CACHE_VERSION_HISTORY``. ``CURRENT_VERSION`` is derived
+        from that mapping, so advancing the history automatically advances the
+        persisted bundle version. This integration test writes every known bundle
+        generation through the real marshal format and proves that only the newest
+        generation survives loading; every predecessor cold-resets.
+        """
+>       assert dict(CachingSystem.CACHE_VERSION_HISTORY) == (
+            EXPECTED_CACHE_VERSION_HISTORY
+        )
+E       AssertionError: assert {1: 'legacy_e...m_names', ...} == {1: 'legacy_e...m_names', ...}
+E         
+E         Omitting 20 identical items, use -vv to show
+E         Right contains 1 more item:
+E         {21: 'managed_spell_lease_codegen'}
+E         Use -v to get more diff
+
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/integration/melder/spellbook/test_cache_schema_version_integration.py:52: AssertionError
+______ test_cache_schema_version_history_accepts_only_current_bundle[17] _______
+
+tmp_path = PosixPath('/tmp/m0_mq/tmp/pytest-of-rcw-01ea5tnfq1nyfhrsj4wka11q/pytest-0/test_cache_schema_version_hist16')
+bundle_version = 17
+
+    @pytest.mark.parametrize("bundle_version", tuple(EXPECTED_CACHE_VERSION_HISTORY))
+    def test_cache_schema_version_history_accepts_only_current_bundle(
+            tmp_path: Path,
+            bundle_version: int,
+    ) -> None:
+        """
+        Pin every persisted cache schema generation and its invalidation boundary.
+    
+        A newly documented schema generation must be added to
+        ``CachingSystem.CACHE_VERSION_HISTORY``. ``CURRENT_VERSION`` is derived
+        from that mapping, so advancing the history automatically advances the
+        persisted bundle version. This integration test writes every known bundle
+        generation through the real marshal format and proves that only the newest
+        generation survives loading; every predecessor cold-resets.
+        """
+>       assert dict(CachingSystem.CACHE_VERSION_HISTORY) == (
+            EXPECTED_CACHE_VERSION_HISTORY
+        )
+E       AssertionError: assert {1: 'legacy_e...m_names', ...} == {1: 'legacy_e...m_names', ...}
+E         
+E         Omitting 20 identical items, use -vv to show
+E         Right contains 1 more item:
+E         {21: 'managed_spell_lease_codegen'}
+E         Use -v to get more diff
+
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/integration/melder/spellbook/test_cache_schema_version_integration.py:52: AssertionError
+______ test_cache_schema_version_history_accepts_only_current_bundle[18] _______
+
+tmp_path = PosixPath('/tmp/m0_mq/tmp/pytest-of-rcw-01ea5tnfq1nyfhrsj4wka11q/pytest-0/test_cache_schema_version_hist17')
+bundle_version = 18
+
+    @pytest.mark.parametrize("bundle_version", tuple(EXPECTED_CACHE_VERSION_HISTORY))
+    def test_cache_schema_version_history_accepts_only_current_bundle(
+            tmp_path: Path,
+            bundle_version: int,
+    ) -> None:
+        """
+        Pin every persisted cache schema generation and its invalidation boundary.
+    
+        A newly documented schema generation must be added to
+        ``CachingSystem.CACHE_VERSION_HISTORY``. ``CURRENT_VERSION`` is derived
+        from that mapping, so advancing the history automatically advances the
+        persisted bundle version. This integration test writes every known bundle
+        generation through the real marshal format and proves that only the newest
+        generation survives loading; every predecessor cold-resets.
+        """
+>       assert dict(CachingSystem.CACHE_VERSION_HISTORY) == (
+            EXPECTED_CACHE_VERSION_HISTORY
+        )
+E       AssertionError: assert {1: 'legacy_e...m_names', ...} == {1: 'legacy_e...m_names', ...}
+E         
+E         Omitting 20 identical items, use -vv to show
+E         Right contains 1 more item:
+E         {21: 'managed_spell_lease_codegen'}
+E         Use -v to get more diff
+
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/integration/melder/spellbook/test_cache_schema_version_integration.py:52: AssertionError
+______ test_cache_schema_version_history_accepts_only_current_bundle[19] _______
+
+tmp_path = PosixPath('/tmp/m0_mq/tmp/pytest-of-rcw-01ea5tnfq1nyfhrsj4wka11q/pytest-0/test_cache_schema_version_hist18')
+bundle_version = 19
+
+    @pytest.mark.parametrize("bundle_version", tuple(EXPECTED_CACHE_VERSION_HISTORY))
+    def test_cache_schema_version_history_accepts_only_current_bundle(
+            tmp_path: Path,
+            bundle_version: int,
+    ) -> None:
+        """
+        Pin every persisted cache schema generation and its invalidation boundary.
+    
+        A newly documented schema generation must be added to
+        ``CachingSystem.CACHE_VERSION_HISTORY``. ``CURRENT_VERSION`` is derived
+        from that mapping, so advancing the history automatically advances the
+        persisted bundle version. This integration test writes every known bundle
+        generation through the real marshal format and proves that only the newest
+        generation survives loading; every predecessor cold-resets.
+        """
+>       assert dict(CachingSystem.CACHE_VERSION_HISTORY) == (
+            EXPECTED_CACHE_VERSION_HISTORY
+        )
+E       AssertionError: assert {1: 'legacy_e...m_names', ...} == {1: 'legacy_e...m_names', ...}
+E         
+E         Omitting 20 identical items, use -vv to show
+E         Right contains 1 more item:
+E         {21: 'managed_spell_lease_codegen'}
+E         Use -v to get more diff
+
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/integration/melder/spellbook/test_cache_schema_version_integration.py:52: AssertionError
+______ test_cache_schema_version_history_accepts_only_current_bundle[20] _______
+
+tmp_path = PosixPath('/tmp/m0_mq/tmp/pytest-of-rcw-01ea5tnfq1nyfhrsj4wka11q/pytest-0/test_cache_schema_version_hist19')
+bundle_version = 20
+
+    @pytest.mark.parametrize("bundle_version", tuple(EXPECTED_CACHE_VERSION_HISTORY))
+    def test_cache_schema_version_history_accepts_only_current_bundle(
+            tmp_path: Path,
+            bundle_version: int,
+    ) -> None:
+        """
+        Pin every persisted cache schema generation and its invalidation boundary.
+    
+        A newly documented schema generation must be added to
+        ``CachingSystem.CACHE_VERSION_HISTORY``. ``CURRENT_VERSION`` is derived
+        from that mapping, so advancing the history automatically advances the
+        persisted bundle version. This integration test writes every known bundle
+        generation through the real marshal format and proves that only the newest
+        generation survives loading; every predecessor cold-resets.
+        """
+>       assert dict(CachingSystem.CACHE_VERSION_HISTORY) == (
+            EXPECTED_CACHE_VERSION_HISTORY
+        )
+E       AssertionError: assert {1: 'legacy_e...m_names', ...} == {1: 'legacy_e...m_names', ...}
+E         
+E         Omitting 20 identical items, use -vv to show
+E         Right contains 1 more item:
+E         {21: 'managed_spell_lease_codegen'}
+E         Use -v to get more diff
+
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/integration/melder/spellbook/test_cache_schema_version_integration.py:52: AssertionError
+______ test_cache_schema_version_history_accepts_only_current_bundle[21] _______
+
+tmp_path = PosixPath('/tmp/m0_mq/tmp/pytest-of-rcw-01ea5tnfq1nyfhrsj4wka11q/pytest-0/test_cache_schema_version_hist20')
+bundle_version = 21
+
+    @pytest.mark.parametrize("bundle_version", tuple(EXPECTED_CACHE_VERSION_HISTORY))
+    def test_cache_schema_version_history_accepts_only_current_bundle(
+            tmp_path: Path,
+            bundle_version: int,
+    ) -> None:
+        """
+        Pin every persisted cache schema generation and its invalidation boundary.
+    
+        A newly documented schema generation must be added to
+        ``CachingSystem.CACHE_VERSION_HISTORY``. ``CURRENT_VERSION`` is derived
+        from that mapping, so advancing the history automatically advances the
+        persisted bundle version. This integration test writes every known bundle
+        generation through the real marshal format and proves that only the newest
+        generation survives loading; every predecessor cold-resets.
+        """
+>       assert dict(CachingSystem.CACHE_VERSION_HISTORY) == (
+            EXPECTED_CACHE_VERSION_HISTORY
+        )
+E       AssertionError: assert {1: 'legacy_e...m_names', ...} == {1: 'legacy_e...m_names', ...}
+E         
+E         Omitting 20 identical items, use -vv to show
+E         Right contains 1 more item:
+E         {21: 'managed_spell_lease_codegen'}
+E         Use -v to get more diff
+
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/integration/melder/spellbook/test_cache_schema_version_integration.py:52: AssertionError
+_______ test_owner_store_without_the_pool_raises_the_missing_pool_error ________
+
+    def test_owner_store_without_the_pool_raises_the_missing_pool_error() -> None:
+        """An owner store holding no pool under the id reads per creation and raises the named error."""
+        world = _root_world(pooled=False)
+        plan, source, _ = world.plan(("m", None))
+        assert "_managed_quantities[sid0]" in source
+>       with pytest.raises(MeldExecutionError, match="its owner store holds no pool for this version"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'its owner store holds no pool for this version'
+E         Actual message: "[MELD] Execution failed for spell 'm' (m) at node m: Managed spell 'm' has no pool to lease from: its owner root was torn down, or this version was never given one (a version staged with bind_inactive before conjure and notched in after it). Meld it through a live root, or stage the version after conjure."
+
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:326: AssertionError
+________ test_raise_missing_managed_pool_names_the_spell_and_the_remedy ________
+
+    def test_raise_missing_managed_pool_names_the_spell_and_the_remedy() -> None:
+        """The named error says what has no pool, why, and what to do."""
+        spell = SimpleNamespace(spell_id="sid", spell_name="Logger", spell_index=SimpleNamespace(selected_spell_id="sid"))
+        with pytest.raises(MeldExecutionError) as caught:
+            SitePlanRuntimeHelpers.raise_missing_managed_pool(spell)
+        assert "Managed spell 'Logger' has no pool to lease from: its owner root was torn down" in str(caught.value)
+>       assert "Meld it through a live root that owns it." in str(caught.value)
+E       assert 'Meld it through a live root that owns it.' in "[MELD] Execution failed for spell 'Logger' (sid) at node sid: Managed spell 'Logger' has no pool to lease from: its o...ind_inactive before conjure and notched in after it). Meld it through a live root, or stage the version after conjure."
+E        +  where "[MELD] Execution failed for spell 'Logger' (sid) at node sid: Managed spell 'Logger' has no pool to lease from: its o...ind_inactive before conjure and notched in after it). Meld it through a live root, or stage the version after conjure." = str(MeldExecutionError("Managed spell 'Logger' has no pool to lease from: its owner root was torn down, or this version wa...nd_inactive before conjure and notched in after it). Meld it through a live root, or stage the version after conjure."))
+E        +    where MeldExecutionError("Managed spell 'Logger' has no pool to lease from: its owner root was torn down, or this version wa...nd_inactive before conjure and notched in after it). Meld it through a live root, or stage the version after conjure.") = <ExceptionInfo MeldExecutionError("Managed spell 'Logger' has no pool to lease from: its owner root was torn down, or ...ve before conjure and notched in after it). Meld it through a live root, or stage the version after conjure.") tblen=2>.value
+
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:880: AssertionError
+=========================== short test summary info ============================
+FAILED ../../sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/unit/melder/spellbook/test_spellbook_creation_system_parked_versions.py::test_every_parked_version_gets_the_stamp_the_active_versions_get[True-True]
+FAILED ../../sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/unit/melder/spellbook/test_spellbook_creation_system_parked_versions.py::test_every_parked_version_gets_the_stamp_the_active_versions_get[False-True]
+FAILED ../../sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/unit/melder/spellbook/test_spellbook_creation_system_parked_versions.py::test_every_parked_version_gets_the_stamp_the_active_versions_get[True-False]
+FAILED ../../sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/unit/melder/spellbook/test_spellbook_creation_system_parked_versions.py::test_the_parked_stamps_run_under_the_book_lock
+FAILED ../../sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/unit/melder/spellbook/test_spellbook_creation_system_parked_versions.py::test_a_parked_existing_object_is_stamped_but_not_registered
+FAILED ../../sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/unit/melder/spellbook/test_spellbook_creation_system_parked_versions.py::test_a_raising_parked_stamp_is_logged_and_every_other_version_is_still_wired
+FAILED ../../sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/integration/melder/spellbook/test_spellbook_integration_parked_before_conjure.py::test_a_staged_version_melds_after_a_notch[unique-staged_before_conjure]
+FAILED ../../sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/integration/melder/spellbook/test_spellbook_integration_parked_before_conjure.py::test_a_staged_version_melds_after_a_notch[unique_per_conduit-staged_before_conjure]
+FAILED ../../sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/integration/melder/spellbook/test_spellbook_integration_parked_before_conjure.py::test_a_staged_version_melds_after_a_notch[many-staged_before_conjure]
+FAILED ../../sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/integration/melder/spellbook/test_spellbook_integration_parked_before_conjure.py::test_a_staged_version_melds_after_a_notch[managed_spell_quantity-staged_before_conjure]
+FAILED ../../sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/integration/melder/spellbook/test_spellbook_integration_parked_before_conjure.py::test_a_staged_version_melds_after_a_notch[existing_object-staged_before_conjure]
+FAILED ../../sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/integration/melder/spellbook/test_spellbook_integration_parked_before_conjure.py::test_a_staged_version_melds_after_a_notch[function-staged_before_conjure]
+FAILED ../../sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/integration/melder/spellbook/test_spellbook_integration_parked_before_conjure.py::test_a_staged_existing_object_is_not_registered_in_the_store[staged_before_conjure]
+FAILED ../../sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/integration/melder/spellbook/test_spellbook_integration_parked_before_conjure.py::test_a_managed_version_staged_before_conjure_has_its_pool_from_conjure
+FAILED ../../sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/integration/melder/spellbook/test_cache_schema_version_integration.py::test_cache_schema_version_history_accepts_only_current_bundle[1]
+FAILED ../../sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/integration/melder/spellbook/test_cache_schema_version_integration.py::test_cache_schema_version_history_accepts_only_current_bundle[2]
+FAILED ../../sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/integration/melder/spellbook/test_cache_schema_version_integration.py::test_cache_schema_version_history_accepts_only_current_bundle[3]
+FAILED ../../sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/integration/melder/spellbook/test_cache_schema_version_integration.py::test_cache_schema_version_history_accepts_only_current_bundle[4]
+FAILED ../../sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/integration/melder/spellbook/test_cache_schema_version_integration.py::test_cache_schema_version_history_accepts_only_current_bundle[5]
+FAILED ../../sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/integration/melder/spellbook/test_cache_schema_version_integration.py::test_cache_schema_version_history_accepts_only_current_bundle[6]
+FAILED ../../sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/integration/melder/spellbook/test_cache_schema_version_integration.py::test_cache_schema_version_history_accepts_only_current_bundle[7]
+FAILED ../../sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/integration/melder/spellbook/test_cache_schema_version_integration.py::test_cache_schema_version_history_accepts_only_current_bundle[8]
+FAILED ../../sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/integration/melder/spellbook/test_cache_schema_version_integration.py::test_cache_schema_version_history_accepts_only_current_bundle[9]
+FAILED ../../sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/integration/melder/spellbook/test_cache_schema_version_integration.py::test_cache_schema_version_history_accepts_only_current_bundle[10]
+FAILED ../../sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/integration/melder/spellbook/test_cache_schema_version_integration.py::test_cache_schema_version_history_accepts_only_current_bundle[11]
+FAILED ../../sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/integration/melder/spellbook/test_cache_schema_version_integration.py::test_cache_schema_version_history_accepts_only_current_bundle[12]
+FAILED ../../sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/integration/melder/spellbook/test_cache_schema_version_integration.py::test_cache_schema_version_history_accepts_only_current_bundle[13]
+FAILED ../../sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/integration/melder/spellbook/test_cache_schema_version_integration.py::test_cache_schema_version_history_accepts_only_current_bundle[14]
+FAILED ../../sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/integration/melder/spellbook/test_cache_schema_version_integration.py::test_cache_schema_version_history_accepts_only_current_bundle[15]
+FAILED ../../sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/integration/melder/spellbook/test_cache_schema_version_integration.py::test_cache_schema_version_history_accepts_only_current_bundle[16]
+FAILED ../../sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/integration/melder/spellbook/test_cache_schema_version_integration.py::test_cache_schema_version_history_accepts_only_current_bundle[17]
+FAILED ../../sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/integration/melder/spellbook/test_cache_schema_version_integration.py::test_cache_schema_version_history_accepts_only_current_bundle[18]
+FAILED ../../sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/integration/melder/spellbook/test_cache_schema_version_integration.py::test_cache_schema_version_history_accepts_only_current_bundle[19]
+FAILED ../../sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/integration/melder/spellbook/test_cache_schema_version_integration.py::test_cache_schema_version_history_accepts_only_current_bundle[20]
+FAILED ../../sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/integration/melder/spellbook/test_cache_schema_version_integration.py::test_cache_schema_version_history_accepts_only_current_bundle[21]
+FAILED ../../sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py::test_owner_store_without_the_pool_raises_the_missing_pool_error
+FAILED ../../sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py::test_raise_missing_managed_pool_names_the_spell_and_the_remedy
+37 failed, 71 passed in 8.87s

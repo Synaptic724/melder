@@ -7,7 +7,7 @@
 - Agent Name: melder_1
 - Priority: p1
 - Created: 2026-10-05T15:35:41Z
-- Updated: 2026-10-14T00:28:29Z
+- Updated: 2026-10-15T18:46:58Z
 - Target Window: 2026-Q4
 - Related Program/Initiative: MelderOps Iris logger churn (priv_commandops TASK-2026-10-05-channel_logger_pooling)
 
@@ -141,7 +141,8 @@ not a special case.
   https://adriangb.com/di/0.79.2/scopes/
 
 ## Milestones (Track Progress)
-- [ ] Milestone 1: Signature-scan memo - lands alone, no behavior change, meld benchmark before/after recorded.
+- [ ] Milestone 1: Signature-scan memo - superseded 2026-10-15 (the spell's state decides the check instead):
+      TASK-2026-10-15-make_meld_state_checks_follow_spell_state.
 - [ ] Milestone 2: Service-method design accepted - binding API, allowed lifetimes, injection context, release hook.
 - [ ] Milestone 3: Pooled lifetime and service-scope design accepted - pool ownership, hooks, lease flag, teardown
       order.
@@ -149,14 +150,14 @@ not a special case.
 - [ ] Milestone 5: MelderOps prototype measured - Iris supplies pooled loggers; Spectrum's logger decided.
 
 ## Stories (Required to Complete)
-- [ ] Story: STORY-TBD-meld_contract_scan_memo - memoize the per-meld SpellContract default scan
+- [ ] Story: STORY-TBD-meld_contract_scan_memo - superseded 2026-10-15, never drafted; see Milestone 1
 - [ ] Story: STORY-TBD-service_method_bindings - provider methods on owned objects with injection context and release
 - [ ] Story: STORY-TBD-pooled_existence - moved to EPIC-2026-10-14-managed_spell_quantity
 - [ ] Story: STORY-TBD-service_scope - what ends a lease and the return order before pools retire
 - [ ] Story: priv_commandops (TBD) - Iris as the logger service; Spectrum's own logger
 
 ## Tasks (Cross-Cutting or Epic-Level)
-- [ ] Task: Complete story STORY-TBD-meld_contract_scan_memo
+- [ ] Task: Complete story STORY-TBD-meld_contract_scan_memo - superseded 2026-10-15; see Milestone 1
 - [ ] Task: Complete story STORY-TBD-service_method_bindings
 - [ ] Task: Complete story STORY-TBD-pooled_existence
 - [ ] Task: Complete story STORY-TBD-service_scope
@@ -208,6 +209,10 @@ not a special case.
   before Iris retires its conduit?
 
 ## Decision Log
+- 2026-10-15: the signature-scan memo (Milestone 1, STORY-TBD-meld_contract_scan_memo) is superseded. The owner
+  wants resolvable=False spells kept out of the meld state checks and the spell's own state deciding when the
+  SpellContract check runs: "a spells state should properly manage when this check happens and it shoudl skip
+  fast". TASK-2026-10-15-make_meld_state_checks_follow_spell_state carries it.
 - 2026-10-14: the managed_spell_quantity design continues in its own epic, EPIC-2026-10-14-managed_spell_quantity
   (tickets/epics/2026-10-14_managed_spell_quantity_epic.md), opened at the owner's request to document the plan
   and keep iterating. This epic keeps the signature-scan memo and service methods, unscheduled.
@@ -1297,6 +1302,23 @@ not a special case.
   REREAD: HELPFUL
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-10-15T18:46:58Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: The memo plan for the meld's SpellContract scan (Milestone 1, STORY-TBD-meld_contract_scan_memo, never
+    drafted) is superseded by the owner's direction of 2026-10-15: resolvable=False spells are excluded from the meld
+    state checks, and the spell's own state decides when the contract check runs, instead of caching the scan per
+    call target. TASK-2026-10-15-make_meld_state_checks_follow_spell_state carries it; the
+    success metric above (no inspect.signature on a meld of a spell without SpellContract defaults) still applies.
+  EVIDENCE:
+  - context_compass/tickets/tasks/2026-10-15_make_meld_state_checks_follow_spell_state_task.md:1-20
+  - context_compass/tickets/tasks/completed/2026-10-15_trace_meld_contract_scan_gate_task.md:133-304
+  IMPACT: No agent should implement the memo; Milestone 1, its story and its task are marked superseded.
+  NEXT: None in this epic for the scan; service methods stay unscheduled.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Acceptance criteria confirmed by user
@@ -1311,9 +1333,11 @@ not a special case.
 ## Context / Handoff Summary
 In progress under melder_1 with no active route since 2026-10-14: the pooled-lifetime design
 (`managed_spell_quantity`) moved to its own epic, tickets/epics/2026-10-14_managed_spell_quantity_epic.md,
-which carries the decided plan and the open questions. This epic keeps the per-meld signature-scan memo (Milestone 1)
-and service methods, both unscheduled, and the history of the pool discussion (Decision Log and Notes, 2026-10-05 to
-2026-10-13). The kernel-pool elastic retention landed from here (0.2.8234); no other source changed in this epic.
+which carries the decided plan and the open questions. This epic keeps service methods, unscheduled, and the
+history of the pool discussion (Decision Log and Notes, 2026-10-05 to 2026-10-13). The per-meld signature-scan
+memo (Milestone 1) is superseded by the owner's direction of 2026-10-15, carried by
+TASK-2026-10-15-make_meld_state_checks_follow_spell_state (last Note). The kernel-pool elastic retention
+landed from here (0.2.8234); no other source changed in this epic.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

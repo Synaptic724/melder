@@ -17,6 +17,7 @@ from melder.aether.aetheric_frame.aetheric_frame_configuration import (
 from melder.aether.aetheric_mediator.identity import Identity
 from melder.aether.aetheric_mediator.mediator import Mediator as AethericMediator
 from melder.aether.aetheric_mediator.transaction_type import TransactionType
+from melder.aether.conduit.creations.release_managed_spell import ReleaseManagedSpell
 from melder.aether.spellbook.bind.spell_index import SpellIndex
 from melder.crystallizer.crystallizer import Crystallizer
 from melder.mutation_research.mutation_research import MutationResearch
@@ -62,6 +63,8 @@ class Aether(Cleanable):
           utility system.
         - Hosts the singleton MutationResearch root above frame-local runtime
           state.
+        - Hosts `ReleaseManagedSpell`, the registry managed objects are given
+          back through: built last at boot, cleaned right after the frames.
         - Owns one optional Aether root configuration that applies policy into
           the hosted utility system.
         - Becomes reinitializable only after `cleanup()` fully resets singleton state.
@@ -82,10 +85,11 @@ class Aether(Cleanable):
     Subsystem Context:
         Layer 1 - the substrate everything else hangs from. It owns the named
         frame registry and hosts the singleton subsystems: `AetherUtilitySystem`,
-        `Crystallizer`, `Nexus`, the `MutationResearch` root, and the
-        `LoadGate`. All three subsystem roots are constructed EAGERLY in
-        `__init__`, in that order - Crystallizer leads because the other two
-        read it out of this host as they build.
+        `Crystallizer`, `Nexus`, the `MutationResearch` root, the
+        `LoadGate` and `ReleaseManagedSpell`. All three subsystem roots are
+        constructed EAGERLY in `__init__`, in that order - Crystallizer leads
+        because the other two read it out of this host as they build - and the
+        release registry is built last, because nothing reads it at boot.
 
     System Context:
         Under V3 Horizon LAZY FRAMES, `import melder` and the first `Aether()`
@@ -140,7 +144,8 @@ class Aether(Cleanable):
         Purpose:
             Create the root `Aether` host and construct the hosted
             singleton-level subsystems (Crystallizer, utility system, LoadGate,
-            and the private `Nexus` root). Frames are lazy by design: no
+            the private `Nexus` root, and last `ReleaseManagedSpell`, the
+            registry of managed pools). Frames are lazy by design: no
             `AethericFrame` is constructed at boot - the first Spellbook births
             the frame it names.
 
@@ -243,6 +248,11 @@ class Aether(Cleanable):
                     aether=self,
                 )
                 self._nexus: Nexus = Nexus(aether=self)
+                # ReleaseManagedSpell is built LAST (owner ruling 2026-10-15: a singleton like Aether, created and
+                # owned here at boot, cleaned by this host, with the same reset hook). It is the class-keyed registry
+                # of managed pools that `ReleaseManagedSpell()` hands back; it reads no other hosted root, and root
+                # stores register their pools in it only once frames exist.
+                self._release_managed_spell: ReleaseManagedSpell = ReleaseManagedSpell(aether=self)
                 # BUG-002 (2026-07-17 audit): the once-only latch flips while
                 # the class lock is still held so the unlocked fast path above
                 # can only observe a fully constructed singleton.
@@ -268,6 +278,9 @@ class Aether(Cleanable):
             - Idempotent.
             - Cleans owned frames before dropping singleton-level references.
             - Cleans the hosted Nexus singleton and utility system when they exist.
+            - Cleans `ReleaseManagedSpell` right after the frames: their root
+              stores unregister their pools as they are torn down, so the
+              registry is empty when it is retired.
             - Resets singleton bootstrap state in a `finally`, so `Aether()`
               can construct a fresh root even when a child cleanup fails: the
               child error is logged and re-raised, but this cleaned instance
@@ -302,6 +315,9 @@ class Aether(Cleanable):
                     self.cleanup_aetheric_frames() # This will clean each individual frame
                     self._aetheric_frames.clear() # This cleans the ConcurrentDictionary
                     self._aetheric_frame_view = ()
+                # The frames' root stores unregistered their pools while they were torn down; nothing can register
+                # one any more, so the release registry is retired here, before the other hosted roots.
+                self._release_managed_spell.cleanup()
                 if self._crystallizer is not None:
                     self._crystallizer.cleanup()
                 self._mutation_research.cleanup()
@@ -324,6 +340,7 @@ class Aether(Cleanable):
                 del self._default_frame
                 del self._load_gate
                 del self._aetheric_mediator
+                del self._release_managed_spell
             except Exception as e:
                 self._logger.error(f"Error cleaning up Aether: {e}", "cleanup", exc_info=True)
                 raise

@@ -2,6 +2,7 @@ from types import MappingProxyType, ModuleType
 from typing import TYPE_CHECKING, Any, Callable, ClassVar, Mapping, Optional, Sequence, Union
 
 if TYPE_CHECKING:
+    from melder.aether.spellbook.existence.managed_spell_mode import ManagedSpellMode
     from melder.aether.spellbook.spellbook import Spellbook
 
 
@@ -99,6 +100,47 @@ def _normalize_disposal_method_names(
     return tuple(disposal_method_names)
 
 
+def _normalize_managed_reset_methods(
+        managed_spell_reset_methods: Optional[Sequence[str]],
+) -> Optional[tuple[str, ...]]:
+    """
+    Normalize a managed declaration's reset-method group for `scan_bind` metadata storage.
+
+    Purpose:
+        Check the group's shape where it is written and snapshot it, as disposal names are, so the group a
+        later scan replays is exactly the group written at the decoration site.
+
+    Contract:
+        - Accepts None, list, or tuple values; None means "no reset methods".
+        - Every element must be a `str`. A bare string is refused: Bind would read it per character.
+        - Returns an immutable tuple in the supplied order. Whether each name is a method of the class,
+          and every other managed rule, is Bind's check when the module is scanned.
+
+    Args:
+        managed_spell_reset_methods (Optional[Sequence[str]]): Reset method names or None.
+
+    Returns:
+        Optional[tuple[str, ...]]: Tuple of names if provided; otherwise None.
+
+    Raises:
+        TypeError: If the value is not None, a list or a tuple, or holds an element that is not a string.
+    """
+    if managed_spell_reset_methods is None:
+        return None
+    if not isinstance(managed_spell_reset_methods, (list, tuple)):
+        raise TypeError(
+            "managed_spell_reset_methods must be a list or tuple of method-name strings, got "
+            f"{type(managed_spell_reset_methods).__name__}. Wrap a single name in a list: ['reset']."
+        )
+    for method_name in managed_spell_reset_methods:
+        if not isinstance(method_name, str):
+            raise TypeError(
+                "managed_spell_reset_methods must be a list or tuple of method-name strings; "
+                f"found an element of type {type(method_name).__name__}."
+            )
+    return tuple(managed_spell_reset_methods)
+
+
 def _normalize_spell_metadata(spell_metadata: Mapping[str, Any]) -> dict[str, Any]:
     """
     Validate and copy the application metadata a `scan_bind` declaration carries.
@@ -154,6 +196,10 @@ class ScanBindMetadata:
           fresh lists only when handed to `Spellbook.bind`.
         - Per-target disposal names are stored as a tuple (or None) and replayed
           unchanged; Bind resolves them against the Book's candidates.
+        - The four managed options (`managed_spell_mode`, `managed_spell_limit`,
+          `managed_spell_timeout_seconds`, `managed_spell_reset_methods`) are stored
+          as given - the reset group as a tuple (or None) - and replayed unchanged;
+          Bind validates and normalizes them when the module is scanned.
         - Application metadata is stored as a read-only mapping over a private
           shallow copy. Its keys are fixed; its values are borrowed by identity and
           are NOT copied or frozen. Every bind receives a fresh dict of the
@@ -224,6 +270,10 @@ class ScanBindMetadata:
         "resolvable",
         "disposal_method_names",
         "spell_metadata",
+        "managed_spell_mode",
+        "managed_spell_limit",
+        "managed_spell_timeout_seconds",
+        "managed_spell_reset_methods",
     )
 
     # Every name the bind chain takes natively. Metadata under one of these keys
@@ -241,6 +291,9 @@ class ScanBindMetadata:
         # Spell.__init__.
         "spell_index", "spell_name", "spell_type", "spell_id", "existing_object",
         "spellbook", "spellframe_kind", "implemented_protocols",
+        # The managed options (Spellbook.bind, Bind, Spell.__init__; scan_bind names them too).
+        "managed_spell_mode", "managed_spell_limit", "managed_spell_timeout_seconds",
+        "managed_spell_reset_methods",
     })
 
     existence: Union[Existence, str]
@@ -254,6 +307,10 @@ class ScanBindMetadata:
     resolvable: bool
     disposal_method_names: Optional[tuple[str, ...]]
     spell_metadata: Mapping[str, Any]
+    managed_spell_mode: Optional[Union[ManagedSpellMode, str]]
+    managed_spell_limit: Optional[int]
+    managed_spell_timeout_seconds: Optional[float]
+    managed_spell_reset_methods: Optional[tuple[str, ...]]
 
     def __init__(
             self,
@@ -269,6 +326,10 @@ class ScanBindMetadata:
             resolvable: bool = True,
             disposal_method_names: Optional[tuple[str, ...]] = None,
             spell_metadata: Optional[Mapping[str, Any]] = None,
+            managed_spell_mode: Optional[Union[ManagedSpellMode, str]] = None,
+            managed_spell_limit: Optional[int] = None,
+            managed_spell_timeout_seconds: Optional[float] = None,
+            managed_spell_reset_methods: Optional[tuple[str, ...]] = None,
     ) -> None:
         """
         Store one declaration; `scan_bind`'s decorator calls this with normalized inputs.
@@ -297,6 +358,12 @@ class ScanBindMetadata:
                 disposal group, or None when none was declared.
             spell_metadata (Optional[Mapping[str, Any]]): Validated application
                 metadata, or None for none.
+            managed_spell_mode (Optional[Union[ManagedSpellMode, str]]): Managed pool
+                policy as declared, or None.
+            managed_spell_limit (Optional[int]): Managed limit as declared, or None.
+            managed_spell_timeout_seconds (Optional[float]): Queue wait as declared, or None.
+            managed_spell_reset_methods (Optional[tuple[str, ...]]): Normalized reset group,
+                or None.
 
         Returns:
             None.
@@ -316,6 +383,10 @@ class ScanBindMetadata:
             "spell_metadata",
             MappingProxyType(dict(spell_metadata) if spell_metadata is not None else {}),
         )
+        object.__setattr__(self, "managed_spell_mode", managed_spell_mode)
+        object.__setattr__(self, "managed_spell_limit", managed_spell_limit)
+        object.__setattr__(self, "managed_spell_timeout_seconds", managed_spell_timeout_seconds)
+        object.__setattr__(self, "managed_spell_reset_methods", managed_spell_reset_methods)
 
     def __setattr__(self, name: str, value: Any) -> None:
         """
@@ -363,6 +434,10 @@ class ScanBindMetadata:
             f"binding_name={self.binding_name!r}, profile={self.profile!r}, "
             f"resolvable={self.resolvable!r}, "
             f"disposal_method_names={self.disposal_method_names!r}, "
+            f"managed_spell_mode={self.managed_spell_mode!r}, "
+            f"managed_spell_limit={self.managed_spell_limit!r}, "
+            f"managed_spell_timeout_seconds={self.managed_spell_timeout_seconds!r}, "
+            f"managed_spell_reset_methods={self.managed_spell_reset_methods!r}, "
             f"spell_metadata_keys={sorted(self.spell_metadata)!r})"
         )
 
@@ -385,8 +460,9 @@ class ScanBindMetadata:
               keys never collide with the hook or profile keys (they are
               reserved).
             - Leaves out the native policy arguments (existence, permissions,
-              spellframe, binding_name, resolvable, disposal_method_names);
-              `Scan.scan_module` passes those to `Spellbook.bind` explicitly.
+              spellframe, binding_name, resolvable, disposal_method_names and the
+              four managed options); `Scan.scan_module` passes those to
+              `Spellbook.bind` explicitly.
         Returns:
             dict[str, Any]: Keyword arguments for Spellbook.bind hooks, profile and
             application metadata.
@@ -414,6 +490,10 @@ def scan_bind(
         post_hooks: Optional[Sequence[Callable[..., Any]]] = None,
         resolvable: bool = True,
         disposal_method_names: Optional[Sequence[str]] = None,
+        managed_spell_mode: Optional[Union[ManagedSpellMode, str]] = None,
+        managed_spell_limit: Optional[int] = None,
+        managed_spell_timeout_seconds: Optional[float] = None,
+        managed_spell_reset_methods: Optional[Sequence[str]] = None,
         **spell_metadata: Any,
 ) -> Callable[[Any], Any]:
     """
@@ -436,8 +516,8 @@ def scan_bind(
         - Hook values are validated immediately so invalid metadata does not sit
           silently on the object until module scan time.
         - Accepts every option `Spellbook.bind` accepts for a target, with the
-          same defaults: `resolvable`, per-target `disposal_method_names` and
-          keyword application metadata. A scan replays them through
+          same defaults: `resolvable`, per-target `disposal_method_names`, the
+          four managed options and keyword application metadata. A scan replays them through
           `Spellbook.bind`, so a scanned registration matches a direct bind of
           the same target with the same options.
         - Intentional differences from direct binding: `permissions` is required
@@ -480,6 +560,16 @@ def scan_bind(
             names. At scan time they combine with the Book's configured
             candidates exactly as in `Spellbook.bind`; None and an empty group
             both leave the Book's candidates in force.
+        managed_spell_mode (Optional[Union[ManagedSpellMode, str]]):
+            Pool policy of an `Existence.managed_spell_quantity` target (elastic by default).
+        managed_spell_limit (Optional[int]):
+            elastic: the most idle objects kept (default 256); limited_quantity and queue: the
+            most objects alive at once (required).
+        managed_spell_timeout_seconds (Optional[float]):
+            queue only, required there: how long a lease waits for a release.
+        managed_spell_reset_methods (Optional[Sequence[str]]):
+            Zero-argument methods run on every release, as a list or tuple of names (checked
+            here); the other managed rules are Bind's, at scan time.
         **spell_metadata (Any):
             Application metadata for the registered Spell (`Spell.metadata`), as
             direct bind stores its extra keywords. Keys that the bind pipeline
@@ -492,8 +582,8 @@ def scan_bind(
     Raises:
         ValueError: If `existence` or `permissions` is None.
         TypeError: If any hook list is not a list/tuple of callables, if
-            `disposal_method_names` is not a list/tuple of strings, or if a
-            metadata key is reserved.
+            `disposal_method_names` or `managed_spell_reset_methods` is not a
+            list/tuple of strings, or if a metadata key is reserved.
     """
     if existence is None:
         raise ValueError("scan_bind requires an explicit existence value.")
@@ -504,6 +594,7 @@ def scan_bind(
     activation_hooks_tuple = _normalize_hooks("activation_hooks", activation_hooks)
     post_hooks_tuple = _normalize_hooks("post_hooks", post_hooks)
     disposal_method_names_tuple = _normalize_disposal_method_names(disposal_method_names)
+    managed_spell_reset_methods_tuple = _normalize_managed_reset_methods(managed_spell_reset_methods)
     spell_metadata_snapshot = _normalize_spell_metadata(spell_metadata)
 
     def decorator(obj: Any) -> Any:
@@ -534,6 +625,10 @@ def scan_bind(
             resolvable=resolvable,
             disposal_method_names=disposal_method_names_tuple,
             spell_metadata=spell_metadata_snapshot,
+            managed_spell_mode=managed_spell_mode,
+            managed_spell_limit=managed_spell_limit,
+            managed_spell_timeout_seconds=managed_spell_timeout_seconds,
+            managed_spell_reset_methods=managed_spell_reset_methods_tuple,
         )
         setattr(obj, _SCAN_BIND_ATTR, metadata)
         return obj
@@ -687,9 +782,10 @@ class Scan(Cleanable):
               call holds a strong reference to every object it bound until it
               returns, so an id cannot be reused by a new object mid-scan.
             - Every target reaches `Spellbook.bind` with its declared existence,
-              permissions, spellframe, binding_name, resolvable and
-              disposal_method_names, plus `ScanBindMetadata.to_bind_kwargs()`
-              (hook lists, profile and application metadata).
+              permissions, spellframe, binding_name, resolvable,
+              disposal_method_names and the four managed options, plus
+              `ScanBindMetadata.to_bind_kwargs()` (hook lists, profile and
+              application metadata).
             - Not atomic: when a bind raises, the targets bound before it stay
               registered and the error propagates.
 
@@ -744,6 +840,10 @@ class Scan(Cleanable):
                 binding_name=metadata.binding_name,
                 resolvable=metadata.resolvable,
                 disposal_method_names=metadata.disposal_method_names,
+                managed_spell_mode=metadata.managed_spell_mode,
+                managed_spell_limit=metadata.managed_spell_limit,
+                managed_spell_timeout_seconds=metadata.managed_spell_timeout_seconds,
+                managed_spell_reset_methods=metadata.managed_spell_reset_methods,
                 **bind_kwargs,
             )
             bound_objects[id(obj)] = obj

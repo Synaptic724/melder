@@ -1,5 +1,5 @@
 import threading
-from typing import Optional
+from typing import FrozenSet, Optional
 
 from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
     DevopsInformationRegistry,
@@ -51,6 +51,8 @@ class _SpellSystemStatesStub:
     Contract:
         - get_conduit_resolution_state returns the configured stub.
         - get_by_spell_id returns None (lineage lookup not needed here).
+        - non_resolvable_index_ids is empty: no lineage is flagged, so every risky
+          lineage counts toward the Book flag, as before `SpellState.non_resolvable`.
     """
 
     def __init__(self, resolution_state: _ResolutionStateStub) -> None:
@@ -83,6 +85,16 @@ class _SpellSystemStatesStub:
             None.
         """
         return None
+
+    @property
+    def non_resolvable_index_ids(self) -> FrozenSet[str]:
+        """
+        Report that no lineage is flagged `SpellState.non_resolvable`.
+
+        Returns:
+            FrozenSet[str]: Always empty.
+        """
+        return frozenset()
 
 
 class _SpellSystemStateStub:

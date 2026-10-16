@@ -307,7 +307,9 @@ def test_reserved_metadata_keys_are_exactly_the_native_bind_parameters() -> None
             if parameter.kind not in (parameter.VAR_POSITIONAL, parameter.VAR_KEYWORD):
                 native.add(name)
     assert ScanBindMetadata.RESERVED_SPELL_METADATA_KEYS == frozenset(native)
-    scan_bind_parameters = set(inspect.signature(scan_bind).parameters)
+    scan_bind_parameters = set(
+        inspect.signature(scan_bind, annotation_format=annotationlib.Format.FORWARDREF).parameters
+    )
     reachable = sorted(ScanBindMetadata.RESERVED_SPELL_METADATA_KEYS - scan_bind_parameters)
     assert reachable == METADATA_REACHABLE_RESERVED_KEYS
 

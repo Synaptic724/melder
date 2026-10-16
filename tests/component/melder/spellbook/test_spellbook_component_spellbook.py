@@ -107,7 +107,13 @@ class _SpellSystemStatesStub:
         self.dependencies_by_spell: dict[object, list[str]] = {}
         self.topology_by_spell: dict[object, object] = {}
 
-    def register_index(self, spell_index: object, owner_spellbook_id: object = None) -> None:
+    def register_index(
+            self,
+            spell_index: object,
+            owner_spellbook_id: object = None,
+            *,
+            resolvable: object = None,
+    ) -> None:
         """
         Purpose:
             Record a lineage registration from Spellbook.bind.
@@ -115,6 +121,8 @@ class _SpellSystemStatesStub:
             - Appends (spell_index, active_spell) to registered_lineages.
         Args:
             spell_index: SpellIndex registered for the lineage.
+            owner_spellbook_id: Owning Spellbook id (ignored here).
+            resolvable: The registered version's capability, as bind passes it (ignored here).
         Returns:
             None.
         """

@@ -223,6 +223,10 @@ class ConduitMeld(Meld):
               cluster's, 0.2.8237). A lesser's `_resolution_conduit_id` grants no
               authority.
             - SpellSpace lifetime is refused even when a space is active.
+            - A managed spell (`Existence.managed_spell_quantity`) uses this
+              caller's own store, where `Creations.purge` returns 0 for it: its
+              objects live in a pool, and purge is not part of the managed design
+              (2026-10-15), so there is nothing to authorize.
             - Does not remove entries, take creation locks, or invoke callbacks.
 
         Args:
@@ -242,7 +246,7 @@ class ConduitMeld(Meld):
             coordination requirements; this helper does not cache authority.
         """
         existence = spell.existence
-        if existence in (Existence.many, Existence.unique_per_conduit):
+        if existence in (Existence.many, Existence.unique_per_conduit, Existence.managed_spell_quantity):
             return self._conduit_creations
         if existence is Existence.unique_per_spell_space:
             raise RuntimeError(
@@ -998,6 +1002,11 @@ class ConduitMeld(Meld):
               `unique_per_conduit_lineage` the lineage-root store;
               `unique_per_conduit_cluster` the cluster's team store, and is
               not live while no leader is elected.
+            - `managed_spell_quantity` reads the pool in the Spell owner's store
+              (2026-10-15): live while the pool's count (objects alive, idle plus
+              out) is above 0, `creation_count` that count, storage scope
+              `"managed_pool"`; a version with no owner store or no pool yet is
+              not live.
             - spellspace-request spells never reach this helper because the
               conduit-facing door rejects them earlier.
         """
@@ -1096,6 +1105,9 @@ class ConduitMeld(Meld):
                 "active_spellspace_id": None,
                 "creation_count": 1 if creation is not None else 0,
             }
+
+        if existence is Existence.managed_spell_quantity:
+            return self._describe_managed_pool_status(spell, query_conduit_id)
 
         raise RuntimeError(
             "Unsupported existence '{0}' for live creation probe.".format(

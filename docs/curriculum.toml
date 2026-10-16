@@ -55,9 +55,9 @@ lessons = ["intermediate:15", "beginner:16"]
 [[chapter]]
 id = "beginner/lifetimes"
 title = "Choose an instance lifetime"
-description = "Choose among Melder's six object lifetimes and follow examples of shared, scoped, and freshly constructed Python objects."
+description = "Choose among Melder's seven object lifetimes and follow examples of shared, scoped, and freshly constructed Python objects."
 level = "beginner"
-readme = "🟢 Six Lifetimes, Not Three"
+readme = "🟢 Seven Lifetimes, Not Three"
 lessons = ["beginner:02", "beginner:13", "beginner:14", "beginner:15", "beginner:29"]
 
 [[chapter]]

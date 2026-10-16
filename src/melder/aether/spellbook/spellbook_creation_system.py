@@ -1337,8 +1337,20 @@ class SpellbookCreationSystem(Cleanable):
             - Sets owner conduit metadata and SpellIndex owner conduit id.
             - Stamps spell runtime resolution gate defaults from configuration.
             - Eagerly registers existing-object spells into conduit creations.
+            - Stamps every version parked in `_inactive_spells` (staged with
+              `bind_inactive` before conjure) with the same owner stamp and
+              nothing else, exactly as a post-conjure `bind_inactive` does: no
+              existing-object registration (a parked version is not live until a
+              notch promotes it) and no resolution flag (the notch sets it); a
+              managed parked version gets its pool in the root's store (0.2.8248;
+              until then such a version stayed unwired, and its first meld after
+              a notch raised "Spell has no configured CreationContextFactory.").
             - Logs and suppresses per-spell failures so one spell does not block
               ownership wiring for the rest.
+        Threading:
+            Runs under the Spellbook lock; each stamp takes the spell's lock and,
+            for a managed version, the store's leaf lock (Book -> spell -> store,
+            the order every stamp uses).
         Args:
             spellbook: Owning Spellbook instance.
             conduit: Conduit to stamp into local spells.
@@ -1377,6 +1389,31 @@ class SpellbookCreationSystem(Cleanable):
                 except Exception as exc:
                     spellbook._logger.error(
                         f"Failed to define conduit into spell: {exc}",
+                        "_define_conduit_into_spells",
+                        exc_info=True,
+                    )
+            # Versions parked with bind_inactive before conjure (0.2.8248). A post-conjure
+            # bind_inactive gives a parked version exactly this stamp and nothing else, so
+            # conjure does the same: the owner stamp (and a managed version's pool with it),
+            # no existing-object registration - a parked object is not live until a notch
+            # promotes it - and no resolution flag, which the notch sets. Every parked
+            # version is unstamped here: a Book conjures once, and nothing stamps a parked
+            # version before its conduit exists. Until 0.2.8248 only `_spells` was walked,
+            # so such a version had no CreationContextFactory and its first meld after a
+            # notch failed.
+            for parked_spell in spellbook._inactive_spells.values():
+                try:
+                    parked_spell._add_owned_conduit(
+                        conduit._id,
+                        conduit._name,
+                        conduit._creations,
+                        dynamic_environment=conduit.__dynamic_environment__,
+                        creation_gate_controller=conduit._creation_gate_controller,
+                        caching_enabled=caching_enabled,
+                    )
+                except Exception as exc:
+                    spellbook._logger.error(
+                        f"Failed to define conduit into parked spell_id={parked_spell.spell_id}: {exc}",
                         "_define_conduit_into_spells",
                         exc_info=True,
                     )

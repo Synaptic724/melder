@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spellbook.py",
- "source_sha256": "630a6ef213414fee28cbb8261f674f1b4d7aa15bd24300f66989358937557f30",
+ "source_sha256": "fc9c2aa92e8ac518335577546dfad9d79245ba09946f42cf21dbf576884c29d0",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spellbook": {
@@ -19,7 +19,7 @@
    "label": "Spellbook",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spellbook.py",
-   "lineno": 69,
+   "lineno": 71,
    "bases": [
     "Cleanable"
    ],
@@ -60,11 +60,11 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "0da48dc093a4f3170408f5c91fdd9d30dda83765c81a1fe636c5ca45a226e80f",
+   "span_sha256": "87a487f9b7401807b54d865f7211d36635e0471f4276064fa175adf60348d4a4",
    "role": "Public binding, validation, and conjure surface.",
    "responsibilities": [
     "binds and scans spells into local and contracted lookup surfaces",
-    "forwards native resolvable policy through active and inactive binding and exposes it in spell descriptions",
+    "forwards native resolvable policy through active and inactive binding, into the lineage state at bind and notch (register_index(resolvable=...), 0.2.8247), and exposes it in spell descriptions",
     "coordinates configuration freeze and frame publication into Aether and Nexus",
     "conjures and retains exactly one root conduit",
     "conjures against a prepared existing normal conduit through a separate private route preserving its ID and creation stores",
@@ -81,7 +81,9 @@
     "disposes a spell under the Book lock and reports the index the disposal destroyed (_dispose_spell); a spell already disposed raises RuntimeError (0.2.8231), and a second disposal of a spell while one runs is refused through an id mark kept under the Book lock (0.2.8232)",
     "answers contracted-spell lookups by key - the active copy by version id, a parked copy through its index - before walking (0.2.8231)",
     "inspects objects holding its lock only for its own spells and asks the frames with no lock held, over a one-call copy of the frame's conduits (inspect_spell, 0.2.8232)",
-    "re-checks under its lock a Book torn down while a removal waited for it (cleanup_and_remove_spell): a spell the teardown cleaned returns, anything else raises the cleaned-Book RuntimeError (0.2.8233)"
+    "re-checks under its lock a Book torn down while a removal waited for it (cleanup_and_remove_spell): a spell the teardown cleaned returns, anything else raises the cleaned-Book RuntimeError (0.2.8233)",
+    "forwards a managed binding's four options through bind and bind_inactive to Bind, where they are validated and become part of the spell id; a parked managed version keeps its own (0.2.8242)",
+    "parks versions with bind_inactive: one parked after conjure is stamped by bind_inactive itself with the owner stamp an active bind uses, one parked before conjure by SpellbookCreationSystem.define_conduit_into_spells at conjure with the same stamp and nothing else (0.2.8248), so either melds after a notch"
    ],
    "owns_state": [
     "_bind",
@@ -98,7 +100,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "0da48dc093a4f3170408f5c91fdd9d30dda83765c81a1fe636c5ca45a226e80f"
+   "semantics_authored_against": "87a487f9b7401807b54d865f7211d36635e0471f4276064fa175adf60348d4a4"
   }
  },
  "edges_out": [
@@ -219,6 +221,7 @@
   "Callable": "typing.Callable",
   "ClassVar": "typing.ClassVar",
   "Optional": "typing.Optional",
+  "Union": "typing.Union",
   "Aether": "melder.aether.aether.Aether",
   "AethericFrameConfiguration": "melder.aether.aetheric_frame.aetheric_frame_configuration.AethericFrameConfiguration",
   "ChangeTransactionType": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request.ChangeTransactionType",
@@ -247,6 +250,7 @@
   "TransactionMediator": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.transaction_mediator.TransactionMediator",
   "SpellSystemStates": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
   "Conduit": "melder.aether.conduit.conduit.Conduit",
+  "ManagedSpellMode": "melder.aether.spellbook.existence.managed_spell_mode.ManagedSpellMode",
   "Crystallizer": "melder.crystallizer.crystallizer.Crystallizer",
   "MutationResearch": "melder.mutation_research.mutation_research.MutationResearch",
   "SafeLogger": "melder.utilities.logger.safe_logger.SafeLogger",

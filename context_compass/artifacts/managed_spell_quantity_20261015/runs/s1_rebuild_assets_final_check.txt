@@ -1,0 +1,8 @@
+OK     _agent_documentation current (v0.2.8241, schema 2.0.0, key match)
+OK     _bind_guard          current (v0.2.8241, schema 2.0.0, key match)
+OK     _system_documents    current (v0.2.8241, schema 2.0.0, key match)
+
+real	0m41.862s
+user	0m0.526s
+sys	0m0.615s
+EXIT=0

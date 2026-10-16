@@ -1,0 +1,69 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/existence/managed_spell_mode.py",
+ "source_sha256": "2034412f62916afb7816a495aa70ec9696354f279d99796b3792a26b3a6f6f01",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.existence.managed_spell_mode": {
+   "id": "melder.aether.spellbook.existence.managed_spell_mode",
+   "label": "managed_spell_mode",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/existence/managed_spell_mode.py",
+   "lineno": 1,
+   "include": true,
+   "role": "Module holding the ManagedSpellMode enum a managed binding chooses its pool policy from.",
+   "responsibilities": [
+    "exports ManagedSpellMode to Bind, Spell, the pool, SpellBinder, scan_bind and the package root"
+   ],
+   "phases": [
+    "init",
+    "runtime"
+   ],
+   "semantics_authored_against": ""
+  },
+  "melder.aether.spellbook.existence.managed_spell_mode.ManagedSpellMode": {
+   "id": "melder.aether.spellbook.existence.managed_spell_mode.ManagedSpellMode",
+   "label": "ManagedSpellMode",
+   "kind": "enum",
+   "file": "src/melder/aether/spellbook/existence/managed_spell_mode.py",
+   "lineno": 4,
+   "bases": [],
+   "markers": [
+    "Enum"
+   ],
+   "public_methods": [],
+   "shape": {
+    "method_count": 0,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "70b985b8f184e114057eadcdc62152b8c5b68a347121fa53850c3f70653605e1",
+   "include": true,
+   "role": "Pool policy of a managed spell, chosen at bind with managed_spell_mode: what a lease does when no idle object is waiting.",
+   "responsibilities": [
+    "elastic: a miss always builds; managed_spell_limit is the most idle objects kept (default 256), trimmed like the kernel pools' idle objects; never refuses",
+    "limited_quantity: managed_spell_limit (required) is the most objects alive at once, idle plus out; a miss at the limit refuses before building anything",
+    "queue: like limited_quantity, but a miss at the limit waits up to managed_spell_timeout_seconds (required) for a release, which serves the waiter, and refuses at the deadline",
+    "identity data: with the limit, the timeout and the reset names it is hashed into a managed spell's id, recorded by name in its crystal and replayed by restore and graft; __str__ returns the bare name"
+   ],
+   "owns_state": [
+    "elastic",
+    "limited_quantity",
+    "queue"
+   ],
+   "phases": [
+    "init",
+    "runtime"
+   ],
+   "semantics_authored_against": "70b985b8f184e114057eadcdc62152b8c5b68a347121fa53850c3f70653605e1"
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {
+  "Enum": "enum.Enum",
+  "auto": "enum.auto"
+ },
+ "collapse_candidate": null
+}

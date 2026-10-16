@@ -2,7 +2,7 @@ import inspect
 import sys
 import threading
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union
 
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell import Spell
@@ -39,6 +39,9 @@ class SpellCrystal(Cleanable):
     Contract:
         - constructed from one live `Spell`
         - anchored to the spell's concrete SHA256 identity
+        - records a managed spell's options (record 4.2.0) - mode by name, limit,
+          queue timeout and reset method names - and nothing new for any other
+          existence, so every other payload is unchanged
         - records the spell's frame and its record key (`custody_key`): the
           spell id under process-wide ids, "<spell_id>@<frame>" under
           per-frame ids, where one spell id may be bound in several frames
@@ -148,6 +151,10 @@ class SpellCrystal(Cleanable):
         "_created_from_user_source_root",
         "_user_root_paths",
         "_site_package_root_paths",
+        "_managed_spell_mode_name",
+        "_managed_spell_limit",
+        "_managed_spell_timeout_seconds",
+        "_managed_spell_reset_methods",
     ]
 
     def __init__(
@@ -180,6 +187,9 @@ class SpellCrystal(Cleanable):
             - Captures resolved disposal names in execution order. This detached
               persistence value does not sort or reapply book policy.
             - Captures native resolution capability so replay cannot enable a definition.
+            - Captures a managed spell's options (record 4.2.0) as plain values - the
+              mode's name, the limit, the queue timeout and the reset names - only when
+              the existence is `managed_spell_quantity`; other spells capture nothing new.
             - Captures the spell's frame (`spell.aetheric_frame`) and keys the
               record by the spell id, or by "<spell_id>@<frame>" when
               `per_frame_custody` is set (0.2.8214).
@@ -315,6 +325,18 @@ class SpellCrystal(Cleanable):
         self._existence_name: str = spell.existence.name
         self._permissions_name: str = spell.permissions.name
         self._resolvable: bool = spell.resolvable
+        # Managed options (record 4.2.0): read only for a managed spell, so every other crystal - and its
+        # describe() payload - is unchanged. Plain values: the mode is recorded by NAME, never the enum.
+        if self._existence_name == "managed_spell_quantity":
+            self._managed_spell_mode_name: Optional[str] = spell.managed_spell_mode.name
+            self._managed_spell_limit: Optional[int] = spell.managed_spell_limit
+            self._managed_spell_timeout_seconds: Optional[float] = spell.managed_spell_timeout_seconds
+            self._managed_spell_reset_methods: List[str] = list(spell.managed_spell_reset_methods)
+        else:
+            self._managed_spell_mode_name = None
+            self._managed_spell_limit = None
+            self._managed_spell_timeout_seconds = None
+            self._managed_spell_reset_methods = []
         # Capture-gap fields (restore_engine_2026_07_07 patch lane): the two
         # bind inputs the record previously dropped. Disposal names preserve
         # the spell's cleanup contract across a restore; the profile family
@@ -438,6 +460,10 @@ class SpellCrystal(Cleanable):
             del self._existence_name
             del self._permissions_name
             del self._resolvable
+            del self._managed_spell_mode_name
+            del self._managed_spell_limit
+            del self._managed_spell_timeout_seconds
+            del self._managed_spell_reset_methods
             del self._disposal_method_names
             del self._profile_family
             del self._rebindability
@@ -835,6 +861,70 @@ class SpellCrystal(Cleanable):
         self.check_cleaned()
         with self._lock:
             return list(self._disposal_method_names)
+
+    @property
+    def managed_spell_options(self) -> Optional[Dict[str, Any]]:
+        """
+        Return the managed options recorded at bind (record 4.2.0).
+
+        Contract:
+            - A detached dictionary under the bind option names: `managed_spell_mode` (the
+              mode's name), `managed_spell_limit`, `managed_spell_timeout_seconds` and
+              `managed_spell_reset_methods` (a new list).
+            - None for a spell of any other existence.
+
+        Returns:
+            Optional[Dict[str, Any]]: The recorded options, or None.
+
+        Raises:
+            RuntimeError: If the crystal has been cleaned.
+        """
+        self.check_cleaned()
+        with self._lock:
+            if self._managed_spell_mode_name is None:
+                return None
+            return {
+                "managed_spell_mode": self._managed_spell_mode_name,
+                "managed_spell_limit": self._managed_spell_limit,
+                "managed_spell_timeout_seconds": self._managed_spell_timeout_seconds,
+                "managed_spell_reset_methods": list(self._managed_spell_reset_methods),
+            }
+
+    @staticmethod
+    def managed_bind_options(payload: Mapping[str, object]) -> Dict[str, object]:
+        """
+        Return the bind keywords that replay a recorded spell's managed options.
+
+        Purpose:
+            The one reader of the four managed keys for the restore and graft lanes, so each
+            replayed bind passes a managed version's own options and gets its own spell id back.
+
+        Contract:
+            - Without a recorded `managed_spell_mode` (another existence, or a record older than
+              4.2.0) returns {} - the replay passes nothing new.
+            - Otherwise returns the four bind keywords: the mode as its recorded name (bind
+              converts it), the limit and the timeout as recorded, and the reset names as a new
+              list, or None when none were recorded. Values are not validated here; bind does.
+
+        Args:
+            payload: One spell's custody payload (a `describe()` snapshot, as recorded).
+
+        Returns:
+            Dict[str, object]: Keyword arguments for `Spellbook.bind` / `bind_inactive`.
+        """
+        mode_name = payload.get("managed_spell_mode")
+        if mode_name is None:
+            return {}
+        reset_methods = payload.get("managed_spell_reset_methods")
+        return {
+            "managed_spell_mode": str(mode_name),
+            "managed_spell_limit": payload.get("managed_spell_limit"),
+            "managed_spell_timeout_seconds": payload.get("managed_spell_timeout_seconds"),
+            "managed_spell_reset_methods": (
+                [str(name) for name in reset_methods] if isinstance(reset_methods, (list, tuple))
+                and reset_methods else None
+            ),
+        }
 
     @property
     def profile_family(self) -> str:
@@ -1267,7 +1357,7 @@ class SpellCrystal(Cleanable):
             # the S1 analysis capabilities (fingerprints, export surfaces,
             # load order, persisted AST maps).
             analysis_payload = self._analysis.describe()
-            return {
+            payload: Dict[str, Any] = {
                 "id": self._id,
                 "frame_name": self._frame_name,
                 "custody_key": self._custody_key,
@@ -1341,5 +1431,13 @@ class SpellCrystal(Cleanable):
                     "ast_from_import_targets_by_module"
                 ],
             }
+            # Managed options (record 4.2.0): only a managed spell's payload gains the four keys, so
+            # every other payload is the one 4.1.0 wrote.
+            if self._managed_spell_mode_name is not None:
+                payload["managed_spell_mode"] = self._managed_spell_mode_name
+                payload["managed_spell_limit"] = self._managed_spell_limit
+                payload["managed_spell_timeout_seconds"] = self._managed_spell_timeout_seconds
+                payload["managed_spell_reset_methods"] = list(self._managed_spell_reset_methods)
+            return payload
 
 

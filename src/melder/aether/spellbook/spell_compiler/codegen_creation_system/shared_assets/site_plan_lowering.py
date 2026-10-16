@@ -26,6 +26,7 @@ from melder.utilities.custom_exceptions.unresolved_input_error import Unresolved
 from melder.utilities.general_base.cleanable import Cleanable
 
 if TYPE_CHECKING:
+    from melder.aether.conduit.creations.managed_spell_quantity import ManagedSpellQuantity
     from melder.aether.spellbook.spell import Spell
     from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.override_key_resolver import (
         OverrideKeyResolution,
@@ -270,7 +271,10 @@ class SitePlanRuntimeHelpers:
         Hold the cold-path helpers a plan reads from its namespace: the
         generic construct with supplied values, the P2 refusal, the
         unresolved-input refusal and the equal-rank conflict guard. None of
-        them runs on a direct-call step.
+        them runs on a direct-call step. Plans with a leasing managed site
+        also read the lease returns and the missing-pool refusal
+        (managed_spell_quantity S5, 2026-10-15); every other plan binds none
+        of the three.
 
     Contract:
         - Stateless static methods; the class is never instantiated.
@@ -289,8 +293,9 @@ class SitePlanRuntimeHelpers:
     AGENT_ACCESS: internal
 
     AGENT_PURPOSE:
-        access: internal. Generic construct with supplied values, P2 refusal and the E1
-        conflict guard for emitted key-set plans.
+        access: internal. Generic construct with supplied values, P2 refusal, the E1
+        conflict guard, and the managed lease returns and missing-pool refusal for emitted
+        key-set plans.
     """
 
     __slots__ = ()
@@ -445,6 +450,126 @@ class SitePlanRuntimeHelpers:
             inner=conflict,
         ) from conflict
 
+    @staticmethod
+    def return_leases(
+            error: BaseException,
+            leases: Tuple[Tuple[ManagedSpellQuantity, Any], ...],
+    ) -> None:
+        """
+        Put back the objects a plan leased for a holder that was never built (F9).
+
+        Purpose:
+            Called from the `except BaseException` of a lease group: the holder's
+            construction region (a later lease's build, the construction, a
+            pinned refusal, the publication) raised after some of its leases
+            were taken. Melder gives back what it leased for an object that does
+            not exist; leases already passed to a built object are the holder's.
+
+        Contract:
+            - Every `(pool, object)` pair whose object is not None goes back
+              through `pool.put_back` (the pool's resets run). None marks a lease
+              the group never took (a class spell's construction never yields
+              None) and is skipped.
+            - A put-back that raises (a pool torn down meanwhile, a raising
+              reset) becomes one note on `error` - "Returning an object leased
+              from managed spell '<name>' failed: <failure>" - and the remaining
+              pairs still go back. Nothing new is raised; the caller re-raises
+              `error`.
+
+        Args:
+            error: The exception propagating from the holder's region.
+            leases: The group's `(pool, object)` pairs in lease order.
+
+        Returns:
+            None.
+        """
+        for pool, obj in leases:
+            if obj is None:
+                continue
+            try:
+                pool.put_back(obj)
+            except Exception as failure:
+                # Best effort on an exception path: report on the propagating
+                # error instead of replacing it.
+                error.add_note(
+                    f"Returning an object leased from managed spell '{pool.spell_name}' failed: {failure}"
+                )
+
+    @staticmethod
+    def return_unused_leases(leases: Tuple[Tuple[ManagedSpellQuantity, Any], ...]) -> None:
+        """
+        Put back the leases of a shared holder whose cold race another meld won.
+
+        Purpose:
+            A shared consumer's miss leases its managed dependencies before its
+            build guard. When the recheck under the guard finds the holder
+            already published, the plan returns that holder and gives these
+            leases back.
+
+        Contract:
+            - Every pair goes back through `pool.put_back`, even after one fails.
+            - Failures are raised once all were tried, as one ExceptionGroup
+              "Returning objects leased for a construction another meld finished
+              first failed" of RuntimeErrors ("Returning an object leased from
+              managed spell '<name>' failed: <failure>"), each chained from its
+              failure.
+
+        Args:
+            leases: The `(pool, object)` pairs taken for the holder; every object is set.
+
+        Raises:
+            ExceptionGroup: When any put-back raised.
+
+        Returns:
+            None.
+        """
+        failures: List[Exception] = []
+        for pool, obj in leases:
+            try:
+                pool.put_back(obj)
+            except Exception as failure:
+                error = RuntimeError(
+                    f"Returning an object leased from managed spell '{pool.spell_name}' failed: {failure}"
+                )
+                error.__cause__ = failure
+                failures.append(error)
+        if failures:
+            raise ExceptionGroup(
+                "Returning objects leased for a construction another meld finished first failed",
+                failures,
+            )
+
+    @staticmethod
+    def raise_missing_managed_pool(spell: Spell) -> None:
+        """
+        Raise the named error for a managed site whose pool cannot be read.
+
+        Contract:
+            Called by a per-creation pool read
+            (`spells[i]._owner_creations._managed_quantities[sid]`) that raised
+            AttributeError or KeyError, and by `Conduit.managed_spell_meld`: the
+            version has no owner store (its owner root's store was torn down, or
+            it was never stamped - since 0.2.8248, when conjure also stamps the
+            versions staged before it, only after a stamp that raised and was
+            logged) or its store holds no pool under the id. Nothing was leased
+            or built for the site.
+
+        Args:
+            spell: The managed spell.
+
+        Raises:
+            MeldExecutionError: Always.
+        """
+        raise MeldExecutionError(
+            spell_id=spell.spell_id,
+            spell_name=spell.spell_name,
+            node_id=spell.spell_id,
+            message=(
+                f"Managed spell '{spell.spell_name}' has no pool to lease from: its owner root was torn down, "
+                "or its owner store holds no pool for this version. Meld it through a live root that owns it."
+            ),
+        )
+
 
 class SitePlanLowering:
     """
@@ -478,6 +603,9 @@ class SitePlanLowering:
           constructor's own error.
         - Emission is a pure function of its inputs; the returned source names
           no identities, so equal shapes share one code object.
+        - A `managed_spell_quantity` step is leased from its pool, one site per
+          path (managed_spell_quantity S5, 2026-10-15): see "Managed sites" in
+          `SitePlanEmission`.
 
     Threading:
         Compile-time only; emitted plans take the same locks as the normal lane,
@@ -485,7 +613,9 @@ class SitePlanLowering:
         `door_route_key` of "unique_per_conduit" or "spellspace" whose root has
         that route's existence builds its root without taking the root's slot
         guard, because the route door that calls it already holds that same
-        guard across the call. See `SitePlanEmission`.
+        guard across the call. See `SitePlanEmission`. A managed site's warm
+        lease takes no lock; its miss takes only its pool's leaf lock (in
+        `reserve`, `abandon` and `adopt`), never across user code.
 
     Registration:
         MELDER KERNEL - internal; never bound as a spell.
@@ -820,6 +950,35 @@ class SitePlanEmission(Cleanable):
           meanwhile is returned. The children's constructors run under the
           door's root guard, as they did when the plan re-entered it. Every
           other site, root and key-set plan keeps its guard.
+        - Managed sites (managed_spell_quantity S5, 2026-10-15): a
+          `managed_spell_quantity` step is LEASING unless a winning key targets
+          one of its own parameters, which makes it FRESH: constructed where a
+          many step would be, never pooled, counted, registered or adopted (the
+          caller's object). A leasing site has its own `_miss{i}` (like a shared
+          site) and exactly one consumer, per path; it is not emitted where it
+          is placed but in its consumer's lease group, right before the
+          consumer's construction region (inside the consumer's miss, after its
+          children, when the consumer has one). The lease is an inline
+          `pp{i}()` - the pool and its `_idle.pop` bound as plan constants under
+          the owner-store rule (automatic owner, owner store set, pool present
+          at emission) - or, per creation, a read of
+          `spells[i]._owner_creations._managed_quantities[sid{i}]` (a missing
+          store or pool raises the named MeldExecutionError) and
+          `h{i}._idle.pop()`; an empty pool calls `_miss{i}(meld, [ov,] h{i},
+          ...)`. The miss checks unresolved inputs, then `reserve()` (an object
+          served returns at once), then builds its children, its own lease group
+          and its construction inside `try`, whose handler calls
+          `h{i}.abandon(kids{i} or [], exc)` and re-raises. Disposal-bearing many
+          children placed in the miss are appended to `kids{i}` as `(v, dm)` and
+          adopted with the object (`h{i}.adopt`), never registered in a store. A
+          lease group takes its first lease, sets the others to None, then runs
+          the rest and the consumer's construction region inside `try`; on any
+          exception `_return_leases` puts back what was taken and the error is
+          re-raised. For a shared consumer the region is its guard block, which
+          returns from inside; a recheck that finds the holder published (a lost
+          race) falls through to `_return_unused_leases`. A plan with no managed
+          step takes none of these branches and binds none of the three helpers,
+          so its source and namespace are unchanged.
 
     Lifecycle / Cleanup:
         Created and cleaned inside one `emit` call. The namespace and masked
@@ -875,6 +1034,10 @@ class SitePlanEmission(Cleanable):
         "_miss_lines",
         "_context_params",
         "_root_guard_held_by_door",
+        "_leasing",
+        "_fresh",
+        "_has_miss",
+        "_leases_by_consumer",
     ]
 
     def __init__(
@@ -937,7 +1100,29 @@ class SitePlanEmission(Cleanable):
         # Placement state; filled by `render` (`_place`).
         self._direct: List[bool] = []
         self._index_by_key: Dict[SiteInstanceKey, int] = {}
-        self._shared: List[bool] = [step.existence is not Existence.many for step in steps]
+        # Site kinds (managed_spell_quantity S5): shared (slotted existences),
+        # many, leasing managed (its own miss, leased per path) and fresh managed
+        # (a winning key on its own parameters: built like many, never pooled).
+        self._shared: List[bool] = []
+        self._leasing: List[bool] = []
+        self._fresh: List[bool] = []
+        for step in steps:
+            existence = step.existence
+            managed = existence is Existence.managed_spell_quantity
+            fresh = managed and bool(self._supplied_names(step))
+            self._shared.append(existence is not Existence.many and not managed)
+            self._leasing.append(managed and not fresh)
+            self._fresh.append(fresh)
+        # Sites built in an out-of-line `_miss{i}`: shared and leasing managed.
+        self._has_miss: List[bool] = [
+            shared or leasing for shared, leasing in zip(self._shared, self._leasing)
+        ]
+        self._leases_by_consumer: Dict[int, Tuple[int, ...]] = {}
+        if any(self._leasing):
+            # Bound only into plans that lease, so every other namespace is unchanged.
+            self._namespace["_return_leases"] = SitePlanRuntimeHelpers.return_leases
+            self._namespace["_return_unused_leases"] = SitePlanRuntimeHelpers.return_unused_leases
+            self._namespace["_raise_missing_managed_pool"] = SitePlanRuntimeHelpers.raise_missing_managed_pool
         self._home: Dict[int, Optional[int]] = {}
         self._children: Dict[Optional[int], List[int]] = {}
         self._miss_value_params: Dict[int, Tuple[int, ...]] = {}
@@ -983,6 +1168,10 @@ class SitePlanEmission(Cleanable):
         del self._direct
         del self._index_by_key
         del self._shared
+        del self._leasing
+        del self._fresh
+        del self._has_miss
+        del self._leases_by_consumer
         del self._home
         del self._children
         del self._miss_value_params
@@ -1119,7 +1308,7 @@ class SitePlanEmission(Cleanable):
         Emit the plan and return `(source, namespace, masked steps)`.
 
         Contract:
-            The source defines one `_miss{i}` per kept shared site, then the plan
+            The source defines one `_miss{i}` per kept shared or leasing managed site, then the plan
             `def _site_plan_executor(meld, ov)` (`(meld)` in normal mode); all
             of it is exec'd into the returned namespace. Placement is computed
             first (see `_place`).
@@ -1173,11 +1362,18 @@ class SitePlanEmission(Cleanable):
             - Then each shared site's outer values are computed bottom-up: the
               operands - call operands or dict-literal values - of the steps built
               inside its miss (and of its own construction) that live outside it,
-              plus what its nested misses need.
+              plus what its nested misses need. A leasing managed site has a miss
+              too and is placed by the same rule: with its one consumer, its home
+              is that consumer's miss when the consumer has one, else the
+              consumer's home. A fresh managed site is placed like a many step.
+            - Leases by consumer: each consumer's leasing providers in operand
+              order, without repeats (`_leases_by_consumer`).
 
         Raises:
-            RuntimeError: When a dependency key has no kept step, or a provider
-                does not precede its consumer (the family order is providers-first).
+            RuntimeError: When a dependency key has no kept step, a provider
+                does not precede its consumer (the family order is providers-first),
+                or a leasing managed step has other than one consumer (managed
+                sites are per path).
 
         Returns:
             None.
@@ -1202,8 +1398,13 @@ class SitePlanEmission(Cleanable):
             if index == root_index or (self._shared[index] and self._supplied_names(steps[index])):
                 home[index] = None
                 continue
+            if self._leasing[index] and len(set(consumers[index])) != 1:
+                raise RuntimeError(
+                    f"Key-set plan managed step {index} has {len(set(consumers[index]))} consumers; "
+                    "a managed site is per path and feeds exactly one."
+                )
             contexts = [
-                consumer if self._shared[consumer] else home[consumer] for consumer in consumers[index]
+                consumer if self._has_miss[consumer] else home[consumer] for consumer in consumers[index]
             ]
             home[index] = self._common_context(contexts, home)
         children: Dict[Optional[int], List[int]] = {}
@@ -1211,16 +1412,16 @@ class SitePlanEmission(Cleanable):
             children.setdefault(home[index], []).append(index)
         value_params: Dict[int, Tuple[int, ...]] = {}
         for index in range(len(steps)):
-            if not self._shared[index]:
+            if not self._has_miss[index]:
                 continue
             inside = children.get(index, [])
             needed = set()
             for member in inside:
-                # A nested shared site builds inside its own miss: only what that
-                # miss needs from outside passes through here. A generic member
-                # reads its providers through its dict literal, so they pass
+                # A nested shared or leasing site builds inside its own miss: only
+                # what that miss needs from outside passes through here. A generic
+                # member reads its providers through its dict literal, so they pass
                 # through exactly like a direct member's call operands.
-                if self._shared[member]:
+                if self._has_miss[member]:
                     needed.update(value_params[member])
                 else:
                     needed.update(providers_by_consumer[member])
@@ -1228,10 +1429,19 @@ class SitePlanEmission(Cleanable):
             needed.difference_update(inside)
             needed.discard(index)
             value_params[index] = tuple(sorted(needed))
+        leases_by_consumer: Dict[int, Tuple[int, ...]] = {}
+        for consumer, providers in enumerate(providers_by_consumer):
+            leased: List[int] = []
+            for provider in providers:
+                if self._leasing[provider] and provider not in leased:
+                    leased.append(provider)
+            if leased:
+                leases_by_consumer[consumer] = tuple(leased)
         self._home = home
         self._children = children
         self._miss_value_params = value_params
         self._root_index = root_index
+        self._leases_by_consumer = leases_by_consumer
 
     def _direct_providers(self, step: SitePlanStep, index_by_key: Dict[SiteInstanceKey, int]) -> List[int]:
         """
@@ -1284,7 +1494,7 @@ class SitePlanEmission(Cleanable):
 
     def _miss_arguments(self, index: int) -> List[str]:
         """
-        Return the parameter/argument names after `(meld, ov, c{i})` for one miss.
+        Return the parameter/argument names after `(meld, ov, c{i})` (`h{i}` for a leasing site) for one miss.
 
         Contract:
             `args` for the root when `__args__` is supplied, then the outer
@@ -1317,9 +1527,11 @@ class SitePlanEmission(Cleanable):
             (in step order) and, for a miss, the shared site itself (after
             them, as providers precede consumers). The first with unsupplied
             unresolved inputs gets one unconditional raise at the context top,
-            before any construction; shared children check in their own miss.
+            before any construction; shared and leasing managed children check
+            in their own miss. A leasing miss checks before `reserve`, so a
+            refusal takes no place from the pool.
         """
-        candidates = [child for child in self._children.get(context, []) if not self._shared[child]]
+        candidates = [child for child in self._children.get(context, []) if not self._has_miss[child]]
         if context is not None:
             candidates.append(context)
         for index in candidates:
@@ -1338,37 +1550,58 @@ class SitePlanEmission(Cleanable):
             top level (`context` None) registers through `many_store`, which the
             plan prologue points at the meld's innermost scope; shared site i's
             miss registers through `c{i}`, the store that site publishes to.
+            Inside leasing managed site i's miss it is appended to `kids{i}`
+            instead, to be adopted with the object (managed_spell_quantity S5).
+            A leasing site is emitted by its consumer's lease group, not where
+            it is placed; only a leasing root leases here.
 
         Args:
-            context: None for the plan's top level, else the shared site whose
-                miss body is being emitted.
+            context: None for the plan's top level, else the shared or leasing
+                site whose miss body is being emitted.
             indent: Indentation of the emitted lines.
             lines: Target line list, appended in place.
 
         Returns:
             bool: True when a disposal-bearing many step at the top level reads
             `many_store` (the caller then emits the prologue); always False
-            for a miss, whose children use its `c{i}` parameter.
+            for a miss, whose children use its `c{i}` parameter or `kids{i}`.
         """
         store = "many_store" if context is None else f"c{context}"
+        kids_name = self._kids_name(context) if context is not None and self._leasing[context] else None
         uses_many_store = False
         for index in self._children.get(context, []):
             step = self._steps[index]
             if self._shared[index]:
                 self._emit_shared_hit(index, step, indent, lines)
-            elif self._emit_many(index, step, indent, lines, store) and context is None:
+            elif self._leasing[index]:
+                if index == self._root_index:
+                    self._emit_root_lease(index, indent, lines)
+            elif self._emit_many(index, step, indent, lines, store, kids_name) and context is None:
                 uses_many_store = True
         return uses_many_store
 
-    def _emit_many(self, index: int, step: SitePlanStep, indent: str, lines: List[str], store: str) -> bool:
+    def _emit_many(
+            self,
+            index: int,
+            step: SitePlanStep,
+            indent: str,
+            lines: List[str],
+            store: str,
+            kids_name: Optional[str] = None,
+    ) -> bool:
         """
-        Emit one many step: construction, then its disposal registration in `store`.
+        Emit one many (or fresh managed) step: construction, then its disposal registration in `store`.
 
         Contract:
             A step without disposal methods is constructed and not recorded
             anywhere. A disposal-bearing step is recorded through
             `<store>.register_many(sidN, vN, dmN)` right after construction,
-            before any build lock of the context is taken.
+            before any build lock of the context is taken - or, inside a leasing
+            managed miss, appended as `(vN, dmN)` to `kids_name`. A fresh
+            managed step (a winning key on its own parameters) is recorded
+            nowhere: it is the caller's object. The construction runs inside
+            the step's lease group when it reads leasing managed sites
+            (managed_spell_quantity S5).
 
         Args:
             index: Kept step index.
@@ -1378,12 +1611,17 @@ class SitePlanEmission(Cleanable):
             store: The store expression the registration targets - `many_store`
                 (the meld's innermost scope) at the top level, `c{i}` inside
                 shared site i's miss (the store the holder belongs to).
+            kids_name: `kids{i}` inside leasing managed site i's miss, else None.
 
         Returns:
-            bool: True when the step registers (it declares disposal methods).
+            bool: True when the step registers in `store`.
         """
-        self._emit_construct(index, step, self._direct[index], self._supplied_names(step), indent, lines)
-        if not step.spell.has_disposal_methods:
+        self._emit_leased_region(index, indent, lines, self._construct_region(index, step))
+        if self._fresh[index] or not step.spell.has_disposal_methods:
+            return False
+        if kids_name is not None:
+            kids_disposal_name = self._bind(f"dm{index}", step.spell.disposal_method_names)
+            lines.append(f"{indent}{kids_name}.append((v{index}, {kids_disposal_name}))")
             return False
         sid_name = self._bind(f"sid{index}", step.spell.spell_id)
         disposal_name = self._bind(f"dm{index}", step.spell.disposal_method_names)
@@ -1468,6 +1706,13 @@ class SitePlanEmission(Cleanable):
             miss branch, `c{index}.adopt_children(...)` hands exactly those
             registered children to the holder's disposal record (see the class
             contract); a miss without disposal-bearing children emits no call.
+            Leases (managed_spell_quantity S5): when this site reads leasing
+            managed sites they are leased after its children and before the
+            guard, and the guard block runs inside the lease group's `try`. It
+            returns the site from inside once published; any exception puts the
+            leases back; a recheck that finds the site already published falls
+            out of the block to `_return_unused_leases` and returns that site.
+            Without leases the emitted miss is unchanged.
         """
         spell_name = f"spells[{index}]"
         store = f"c{index}"
@@ -1475,42 +1720,252 @@ class SitePlanEmission(Cleanable):
         children: List[str] = []
         self._emit_context(index, "    ", children)
         guarded = not (index == self._root_index and self._root_guard_held_by_door)
-        body_indent = "        " if guarded else "    "
-        inner_indent = body_indent + "    "
-        inner: List[str] = []
-        self._emit_construct(index, step, self._direct[index], supplied, inner_indent, inner)
-        if step.spell.has_disposal_methods:
-            disposal_name = self._bind(f"dm{index}", step.spell.disposal_method_names)
-            inner.append(
-                f"{inner_indent}{store}.add_creation({sid_name}, v{index}, "
-                f"has_disposal_methods=True, disposal_methods={disposal_name})"
-            )
-        else:
-            inner.append(f"{inner_indent}{store}._creations[{sid_name}] = v{index}")
-        adopted = [
-            child for child in self._children.get(index, [])
-            if not self._shared[child] and self._steps[child].spell.has_disposal_methods
-        ]
-        if adopted:
-            # The children `_emit_many` registered in this store move into the
-            # holder's disposal record once it is published (0.2.8238).
-            pairs = ", ".join(f"(sid{child}, v{child})" for child in adopted)
-            trailing = "," if len(adopted) == 1 else ""
-            inner.append(f"{inner_indent}{store}.adopt_children({sid_name}, v{index}, ({pairs}{trailing}))")
+        leases = self._leases_by_consumer.get(index, ())
+
+        def guard_region(region_indent: str, target: List[str]) -> None:
+            # Guard, recheck (P2 when pinned), construction, publication, adoption.
+            body_indent = region_indent + "    " if guarded else region_indent
+            inner_indent = body_indent + "    "
+            inner: List[str] = []
+            self._emit_construct(index, step, self._direct[index], supplied, inner_indent, inner)
+            if step.spell.has_disposal_methods:
+                disposal_name = self._bind(f"dm{index}", step.spell.disposal_method_names)
+                inner.append(
+                    f"{inner_indent}{store}.add_creation({sid_name}, v{index}, "
+                    f"has_disposal_methods=True, disposal_methods={disposal_name})"
+                )
+            else:
+                inner.append(f"{inner_indent}{store}._creations[{sid_name}] = v{index}")
+            adopted = [
+                child for child in self._children.get(index, [])
+                if self._is_plain_many(child) and self._steps[child].spell.has_disposal_methods
+            ]
+            if adopted:
+                # The children `_emit_many` registered in this store move into the
+                # holder's disposal record once it is published (0.2.8238).
+                pairs = ", ".join(f"(sid{child}, v{child})" for child in adopted)
+                trailing = "," if len(adopted) == 1 else ""
+                inner.append(f"{inner_indent}{store}.adopt_children({sid_name}, v{index}, ({pairs}{trailing}))")
+            if leases:
+                # Return from inside: falling out of the block means another meld
+                # published this site first (a lost cold race).
+                inner.append(f"{inner_indent}return v{index}")
+            if guarded:
+                target.append(f"{region_indent}with {self._guard(step, store, sid_name, spell_name)}:")
+            target.append(f"{body_indent}v{index} = {store}._creations.get({sid_name})")
+            if supplied:
+                target.append(f"{body_indent}if v{index} is not None:")
+                target.append(f"{body_indent}    _raise_existing_override({spell_name}, root_spell_id)")
+            target.append(f"{body_indent}if v{index} is None:")
+            target.extend(inner)
+            if not leases:
+                target.append(f"{body_indent}return v{index}")
+
+        body: List[str] = self._unresolved_check_lines(index, "    ")
+        body.extend(children)
+        if self._emit_leased_region(index, "    ", body, guard_region):
+            body.append(f"    _return_unused_leases({self._lease_pairs(leases)})")
+            body.append(f"    return v{index}")
         parameters = ", ".join(list(self._context_params) + [store] + self._miss_arguments(index))
-        lines = self._miss_lines
-        lines.append(f"def _miss{index}({parameters}):")
-        lines.extend(self._unresolved_check_lines(index, "    "))
-        lines.extend(children)
-        if guarded:
-            lines.append(f"    with {self._guard(step, store, sid_name, spell_name)}:")
-        lines.append(f"{body_indent}v{index} = {store}._creations.get({sid_name})")
-        if supplied:
-            lines.append(f"{body_indent}if v{index} is not None:")
-            lines.append(f"{body_indent}    _raise_existing_override({spell_name}, root_spell_id)")
-        lines.append(f"{body_indent}if v{index} is None:")
-        lines.extend(inner)
-        lines.append(f"{body_indent}return v{index}")
+        self._miss_lines.append(f"def _miss{index}({parameters}):")
+        self._miss_lines.extend(body)
+
+    def _is_plain_many(self, index: int) -> bool:
+        """
+        Return True for a kept `many` step (not shared, and not a managed site of either kind).
+        """
+        return not (self._shared[index] or self._leasing[index] or self._fresh[index])
+
+    def _kids_name(self, index: int) -> Optional[str]:
+        """
+        Return `kids{index}` when leasing site `index`'s miss builds a disposal-bearing many child, else None.
+        """
+        for child in self._children.get(index, []):
+            if self._is_plain_many(child) and self._steps[child].spell.has_disposal_methods:
+                return f"kids{index}"
+        return None
+
+    def _construct_region(self, index: int, step: SitePlanStep) -> Callable[[str, List[str]], None]:
+        """
+        Return the emitter of one step's construction (`v{index} = ...`) at the indentation it is given.
+        """
+
+        def region(indent: str, lines: List[str]) -> None:
+            self._emit_construct(index, step, self._direct[index], self._supplied_names(step), indent, lines)
+
+        return region
+
+    def _emit_leased_region(
+            self,
+            consumer: int,
+            indent: str,
+            lines: List[str],
+            region: Callable[[str, List[str]], None],
+    ) -> bool:
+        """
+        Emit a consumer's construction region, inside its lease group when it reads leasing sites.
+
+        Contract:
+            - Without leases the region is emitted as is (every non-managed plan).
+            - With leases m1..mn (operand order): the per-creation pool reads,
+              the lease of m1, `v{m2..mn} = None`, then `try:` the remaining
+              leases and the region, `except BaseException as exc:
+              _return_leases(exc, ((h{m}, v{m}), ...))` and `raise`. Nothing but
+              the consumer's other leases runs between a lease and the region,
+              and a pool read that raises does so before anything is leased.
+
+        Args:
+            consumer: Kept index of the step whose region is emitted.
+            indent: Indentation of the group; the region is one level deeper
+                inside the `try`.
+            lines: Target line list, appended in place.
+            region: Emits the region at the indentation it is given.
+
+        Returns:
+            bool: True when a lease group was emitted.
+        """
+        leases = self._leases_by_consumer.get(consumer)
+        if not leases:
+            region(indent, lines)
+            return False
+        constant = {lease: self._bind_lease_pool(lease) for lease in leases}
+        for lease in leases:
+            if not constant[lease]:
+                self._emit_pool_read(lease, indent, lines)
+        first = leases[0]
+        self._emit_lease(first, constant[first], indent, lines)
+        for lease in leases[1:]:
+            lines.append(f"{indent}v{lease} = None")
+        inner = indent + "    "
+        lines.append(f"{indent}try:")
+        for lease in leases[1:]:
+            self._emit_lease(lease, constant[lease], inner, lines)
+        region(inner, lines)
+        lines.append(f"{indent}except BaseException as exc:")
+        lines.append(f"{indent}    _return_leases(exc, {self._lease_pairs(leases)})")
+        lines.append(f"{indent}    raise")
+        return True
+
+    @staticmethod
+    def _managed_pool_constant(step: SitePlanStep) -> Optional[ManagedSpellQuantity]:
+        """
+        Return the pool bound as a plan constant for one leasing site, or None for the per-creation read.
+
+        Contract:
+            The owner-store rule of `_owner_store_constant` (S9): only a provider
+            owned by an automatic conduit (`_dynamic_environment` False) whose
+            owner store already holds the pool. Such a store cannot move, and a
+            pool is replaced under its id only by an ownership transfer's
+            restore, which needs a dynamic world. The pool's `_idle` deque is
+            assigned once and drained, never swapped, so its bound `pop` stays
+            valid; a pool torn down with its root has a drained deque, so a
+            constant lease misses and `reserve` raises the pool's own error.
+
+        Args:
+            step: The leasing managed step.
+
+        Returns:
+            Optional[ManagedSpellQuantity]: The pool, or None.
+        """
+        spell = step.spell
+        if spell._dynamic_environment:
+            return None
+        owner = spell._owner_creations
+        if owner is None:
+            return None
+        return owner.get_managed_quantity(spell.spell_id)
+
+    def _bind_lease_pool(self, index: int) -> bool:
+        """
+        Bind one leasing site's version id, and its pool and pop when they are plan constants.
+
+        Returns:
+            bool: True when `h{index}` and `pp{index}` are bound (the constant shape).
+        """
+        step = self._steps[index]
+        self._bind(f"sid{index}", step.spell.spell_id)
+        pool = self._managed_pool_constant(step)
+        if pool is None:
+            return False
+        self._bind(f"h{index}", pool)
+        self._bind(f"pp{index}", pool._idle.pop)
+        return True
+
+    @staticmethod
+    def _emit_pool_read(index: int, indent: str, lines: List[str]) -> None:
+        """
+        Emit the per-creation pool read of one leasing site: `h{index}`, or the named missing-pool error.
+        """
+        lines.append(f"{indent}try:")
+        lines.append(f"{indent}    h{index} = spells[{index}]._owner_creations._managed_quantities[sid{index}]")
+        lines.append(f"{indent}except (AttributeError, KeyError):")
+        lines.append(f"{indent}    _raise_missing_managed_pool(spells[{index}])")
+
+    def _emit_lease(self, index: int, constant: bool, indent: str, lines: List[str]) -> None:
+        """
+        Emit one lease - the inline pop, else the miss call - and define the site's miss.
+        """
+        pop = f"pp{index}()" if constant else f"h{index}._idle.pop()"
+        arguments = ", ".join(list(self._context_params) + [f"h{index}"] + self._miss_arguments(index))
+        lines.append(f"{indent}try:")
+        lines.append(f"{indent}    v{index} = {pop}")
+        lines.append(f"{indent}except IndexError:")
+        lines.append(f"{indent}    v{index} = _miss{index}({arguments})")
+        self._emit_leasing_miss(index, self._steps[index])
+
+    def _emit_root_lease(self, index: int, indent: str, lines: List[str]) -> None:
+        """
+        Emit a leasing root's pool read and lease at the plan top; the plan returns the leased object.
+        """
+        constant = self._bind_lease_pool(index)
+        if not constant:
+            self._emit_pool_read(index, indent, lines)
+        self._emit_lease(index, constant, indent, lines)
+
+    def _emit_leasing_miss(self, index: int, step: SitePlanStep) -> None:
+        """
+        Emit `_miss{index}` of one leasing managed site.
+
+        Contract:
+            `def _miss{i}(meld, [ov,] h{i}, <outer values>)`: the unresolved-input
+            check (before anything is reserved); `v = h.reserve()` and an early
+            return of an object it serves; `kids{i} = []` when disposal-bearing
+            many children are built inside; then `try:` the children, the site's
+            own lease group and its construction, `except BaseException as exc:
+            h.abandon(kids or [], exc)` and `raise` (an inner lease group has
+            already put its leases back); then `h.adopt(v, kids)` when kids
+            exist, and `return v`. `adopt` on a pool torn down meanwhile disposes
+            the object and its kids and raises the pool's error.
+        """
+        pool = f"h{index}"
+        kids = self._kids_name(index)
+        body: List[str] = self._unresolved_check_lines(index, "    ")
+        body.append(f"    v{index} = {pool}.reserve()")
+        body.append(f"    if v{index} is not None:")
+        body.append(f"        return v{index}")
+        if kids is not None:
+            body.append(f"    {kids} = []")
+        body.append("    try:")
+        self._emit_context(index, "        ", body)
+        self._emit_leased_region(index, "        ", body, self._construct_region(index, step))
+        body.append("    except BaseException as exc:")
+        body.append(f"        {pool}.abandon({kids if kids is not None else '[]'}, exc)")
+        body.append("        raise")
+        if kids is not None:
+            body.append(f"    {pool}.adopt(v{index}, {kids})")
+        body.append(f"    return v{index}")
+        parameters = ", ".join(list(self._context_params) + [pool] + self._miss_arguments(index))
+        self._miss_lines.append(f"def _miss{index}({parameters}):")
+        self._miss_lines.extend(body)
+
+    @staticmethod
+    def _lease_pairs(leases: Tuple[int, ...]) -> str:
+        """
+        Return the `((h{m}, v{m}), ...)` tuple literal of one lease group.
+        """
+        pairs = ", ".join(f"(h{lease}, v{lease})" for lease in leases)
+        trailing = "," if len(leases) == 1 else ""
+        return f"({pairs}{trailing})"
 
     @staticmethod
     def _many_store_prologue(indent: str) -> List[str]:

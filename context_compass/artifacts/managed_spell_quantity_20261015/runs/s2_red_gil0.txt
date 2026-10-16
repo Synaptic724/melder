@@ -1,0 +1,83 @@
+
+==================================== ERRORS ====================================
+_ ERROR collecting tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py _
+ImportError while importing test module '/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:20: in <module>
+    from melder.aether.spellbook.existence.managed_spell_mode import ManagedSpellMode
+E   ModuleNotFoundError: No module named 'melder.aether.spellbook.existence.managed_spell_mode'
+_ ERROR collecting tests/unit/melder/spellbook/test_spell_managed_spell_options.py _
+ImportError while importing test module '/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/unit/melder/spellbook/test_spell_managed_spell_options.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/unit/melder/spellbook/test_spell_managed_spell_options.py:14: in <module>
+    from melder.aether.spellbook.existence.managed_spell_mode import ManagedSpellMode
+E   ModuleNotFoundError: No module named 'melder.aether.spellbook.existence.managed_spell_mode'
+_ ERROR collecting tests/unit/melder/spellbook/test_scan_bind_managed_options.py _
+ImportError while importing test module '/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/unit/melder/spellbook/test_scan_bind_managed_options.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/unit/melder/spellbook/test_scan_bind_managed_options.py:20: in <module>
+    from melder.aether.spellbook.existence.managed_spell_mode import ManagedSpellMode
+E   ModuleNotFoundError: No module named 'melder.aether.spellbook.existence.managed_spell_mode'
+_ ERROR collecting tests/unit/melder/spellbook/test_spellbinder_managed_options.py _
+ImportError while importing test module '/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/unit/melder/spellbook/test_spellbinder_managed_options.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/unit/melder/spellbook/test_spellbinder_managed_options.py:13: in <module>
+    from melder.aether.spellbook.existence.managed_spell_mode import ManagedSpellMode
+E   ModuleNotFoundError: No module named 'melder.aether.spellbook.existence.managed_spell_mode'
+_ ERROR collecting tests/unit/melder/crystallizer/test_spell_crystal_managed_options.py _
+ImportError while importing test module '/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/unit/melder/crystallizer/test_spell_crystal_managed_options.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/unit/melder/crystallizer/test_spell_crystal_managed_options.py:15: in <module>
+    from melder.aether.spellbook.existence.managed_spell_mode import ManagedSpellMode
+E   ModuleNotFoundError: No module named 'melder.aether.spellbook.existence.managed_spell_mode'
+_ ERROR collecting tests/integration/melder/spellbook/test_managed_bind_options_integration.py _
+ImportError while importing test module '/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/integration/melder/spellbook/test_managed_bind_options_integration.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/integration/melder/spellbook/test_managed_bind_options_integration.py:18: in <module>
+    from melder.aether.spellbook.existence.managed_spell_mode import ManagedSpellMode
+E   ModuleNotFoundError: No module named 'melder.aether.spellbook.existence.managed_spell_mode'
+_ ERROR collecting tests/integration/melder/crystallizer/test_managed_spell_options_record_integration.py _
+ImportError while importing test module '/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/integration/melder/crystallizer/test_managed_spell_options_record_integration.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/integration/melder/crystallizer/test_managed_spell_options_record_integration.py:22: in <module>
+    from melder.aether.spellbook.existence.managed_spell_mode import ManagedSpellMode
+E   ModuleNotFoundError: No module named 'melder.aether.spellbook.existence.managed_spell_mode'
+=========================== short test summary info ============================
+ERROR tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py
+ERROR tests/unit/melder/spellbook/test_spell_managed_spell_options.py
+ERROR tests/unit/melder/spellbook/test_scan_bind_managed_options.py
+ERROR tests/unit/melder/spellbook/test_spellbinder_managed_options.py
+ERROR tests/unit/melder/crystallizer/test_spell_crystal_managed_options.py
+ERROR tests/integration/melder/spellbook/test_managed_bind_options_integration.py
+ERROR tests/integration/melder/crystallizer/test_managed_spell_options_record_integration.py
+!!!!!!!!!!!!!!!!!!! Interrupted: 7 errors during collection !!!!!!!!!!!!!!!!!!!!
+7 errors in 9.61s
+EXIT=2

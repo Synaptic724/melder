@@ -1,0 +1,43 @@
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: ALIGNMENT_CHECK
+  CLAIM: The build is ready for the owner's acceptance. S1-S6 landed as 0.2.8241-0.2.8246, one notch each, red then
+    green in both GIL modes, rebuilt and checked at each landing; S7 documented the member without a notch: the
+    existing meld shapes and scope cycles stay within noise against 0.2.8240 (ratios 0.960-1.033, both modes) and a
+    managed warm cycle costs 306-385 ns; src_architecture, src_components and the two tests docs carry the lane and
+    score B (83, 83, 83, 77); the graph authors the five new modules and re-accepts the 22 nodes the lane moved; the
+    README, the docs site (curriculum, scopes guide, glossary, API selection) and the release note describe it; the
+    patch lane is archived. EXIT_GATE: tests green per story, every non-managed emitted plan byte-identical (4461
+    shapes, S5), benchmarks recorded, docs and graph current, rebuild checks next (S7, last); the owner's acceptance
+    is the one item left. For the owner: (1) DECISION_REQUEST - should conjure stamp versions staged with
+    `bind_inactive` before it, so such a version can be notched in? Today its first meld fails for every existence
+    (Open Questions); (2) the build decisions open to review (Decision Log, S4-S6): the lease exported at the root, the
+    `managed` door rows on the `many` templates (`created` is True and activation hooks run on every lease), no cache
+    generation 21, F9 widened to any failure before a consumer's construction ends, `managed_spell_meld` with
+    own-parameter overrides pooling an uncounted object (a limited or queue pool can then exceed its limit), a release
+    by class after a no-move transfer needing `conduit=`, a restore cleaning the pool it replaced; (3) found in S7 and
+    fixed: the README's disposal sentence (stale since 0.2.80), docs/api.toml missing S4's four root exports (the site
+    build refused them since 0.2.8244), two stale src_architecture claims; (4) found, not changed: the
+    architecture_and_design set (stamped as verified against 0.1.2) still lists six members; the graph backlog from
+    before the lane (144 stale, 9 unsemantic, 5 retired; 8 of the stale in this lane's classes); the extractor's census
+    treats an empty stamp as unverified and writes indent=1 while the walker's accept writes indent=2;
+    `generalized_cache_runtime_rows_SCRATCH.py`, a 35-byte marker tracked in src since 6d0568f2e, ships in the wheel;
+    the build-asset payload modules' graph descriptors lag the final rebuild by one pass (mechanical tier only);
+    melder_1's meld_contract_scan waits on the owner to hand over four `register_index` call sites in this lane's files
+    (spellbook.py twice, transfer_of_ownership.py twice) and five test doubles - S7 touched none of them; codex_bridge
+    has failed on every try, so tickets and the board are the coordination record.
+  EVIDENCE:
+  - context_compass/tickets/stories/2026-10-15_managed_docs_release_story.md:148-172
+  - context_compass/tickets/stories/2026-10-15_managed_docs_release_story.md:379-416
+  - context_compass/tickets/stories/2026-10-15_managed_docs_release_story.md:417-468
+  - context_compass/tickets/stories/2026-10-15_managed_docs_release_story.md:493-542
+  - context_compass/tickets/epics/2026-10-14_managed_spell_quantity_epic.md:547-551
+  - context_compass/tickets/epics/2026-10-14_managed_spell_quantity_epic.md:553-569
+  - release_docs/next_version_release.md:321-486
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_cache_runtime_rows_SCRATCH.py:1-1
+  IMPACT: Nothing in the build is open on the implementer's side once the rebuild checks pass; the epic and S7 close
+    on the owner's acceptance, and the parked-stamp question is the owner's to rule on (it changes every existence).
+  NEXT: The owner accepts S1-S7 and the build decisions, rules on stamping parked versions, or redirects.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9

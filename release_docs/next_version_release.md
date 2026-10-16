@@ -1,4 +1,4 @@
-# Melder 0.2.8240
+# Melder 0.2.8248
 
 **Unreleased**
 
@@ -19,10 +19,10 @@ class Ledger:
 
 The declaration is checked when the decorator runs: `disposal_method_names` must be a list or tuple of method
 names (a bare string is refused - `bind` would read it one character at a time), and a metadata key that names
-an argument the bind pipeline takes itself (`spell`, `existence`, `profile`, `spell_id` and the rest, 24 in all)
-raises `TypeError` naming every such key. Metadata is kept as a shallow snapshot: later changes to your dict do
-not reach the declaration, while the values are the objects you passed. `resolvable` is stored as given, and
-`bind` checks it when the module is scanned.
+an argument the bind pipeline takes itself (`spell`, `existence`, `profile`, `spell_id` and the rest, 28 in all,
+the four `managed_spell_*` options among them) raises `TypeError` naming every such key. Metadata is kept as a
+shallow snapshot: later changes to your dict do not reach the declaration, while the values are the objects you
+passed. `resolvable` is stored as given, and `bind` checks it when the module is scanned.
 
 **Breaking change:** only an object that carries its own declaration is registered. An undecorated subclass of
 a decorated class used to be bound with its parent's declaration; it is now skipped - decorate the subclass to
@@ -296,6 +296,20 @@ is expected in a runtime agents iterate in. The new owner purges what it does no
 needs - a meld that must build the spell without them raises `UnresolvedInputError` naming each missing input -
 and melds its own version, while the old owner cleans up its own scope.
 
+A transfer now moves each version's owner record both ways (0.2.8246). A spell version records the root that
+owns it and the creations it builds into; until 0.2.8246 a transfer moved that record for the active version only,
+and a failed transfer left it pointing at the new owner:
+
+- A version parked before the transfer kept building into the old owner's creations: after `notch_spell` to it on
+  the new owner, its `unique` object was stored in the old owner's creations, and a managed version raised "has no
+  pool to lease from". Every parked version that carries an owner record now names the new owner.
+- A transfer that failed after it moved the record left the active version on the new owner's creations, so the old
+  owner's next meld built a second `unique` object there instead of returning its own; a managed spell raised "has
+  no pool to lease from", or, with `move_creations=False`, leased from an empty pool the failed transfer left in the
+  new owner. A failed transfer now puts every owner record back, and the old owner melds as before.
+- A version staged with `bind_inactive` before `conjure` has carried an owner record since 0.2.8248 (`conjure`
+  gives it one), so a transfer moves that record like any other version's.
+
 What stays the same: a transfer disposes nothing. With `move_creations=False` the old owner's objects for the spell's
 active version are taken out of its creations, neither moved nor disposed, and the new owner builds its own; objects
 of parked versions stay in the old owner's creations. A moved object replaces whatever the new owner's creations
@@ -304,6 +318,264 @@ the replaced object is not disposed. `unique_per_conduit_lineage` objects stay w
 and spellspace and cluster objects are not kept in a conduit's creations, so `move_creations` does not reach them.
 Everything else a transfer does is unchanged: stewardship of every version of the spell moves, borrowers are unshared
 or repointed, and owned dependencies move only with `include_dependencies=True`.
+
+## `Existence.managed_spell_quantity`: objects leased from a root-owned pool and released back
+
+A seventh Existence member for objects that are expensive to build and safe to reuse - a logger, a client, a
+parser. A meld, or an injection into a constructor, leases an idle object from the spell's pool, kept by the root
+conduit that owns the binding, or builds one; the holder gives the object back explicitly and the next lease reuses
+it. 0.2.8241 added the member and its place in Melder's lifetime rules, 0.2.8242 its bind options, 0.2.8243 its pool
+in the owning root, 0.2.8244 the way objects go back (`ReleaseManagedSpell`), 0.2.8245 leasing through a meld
+(`Conduit.managed_spell_meld` included) and 0.2.8246 its pools in an ownership transfer.
+
+- `Existence.managed_spell_quantity` (`str()` gives `"managed_spell_quantity"`) comes after the six existing members.
+- At conjure, a managed spell may depend on `unique` spells, other managed spells and `many` spells; a dependency on
+  a `unique_per_conduit_cluster`, `unique_per_conduit_lineage`, `unique_per_conduit` or `unique_per_spell_space`
+  spell is refused with the existing scope-ordering message, because the pool outlives those scopes. Any spell may
+  depend on a managed one.
+
+A managed binding takes four keyword options on `Spellbook.bind` and `bind_inactive`, `Conduit.bind` and
+`bind_inactive`, `scan_bind` and `SpellBinder` (`as_managed_spell_quantity(mode, limit=..., timeout_seconds=...,
+reset_methods=...)`), and the Spell keeps them (0.2.8242):
+
+```python
+class Parser:
+    def reset(self) -> None: ...
+
+
+book.bind(
+    spell=Parser,
+    existence="managed_spell_quantity",
+    managed_spell_mode="queue",           # a name, or a ManagedSpellMode member
+    managed_spell_limit=8,                 # at most 8 parsers alive at once
+    managed_spell_timeout_seconds=2.5,     # a lease waits up to 2.5 s for one to come back
+    managed_spell_reset_methods=["reset"],  # run on every release, in order
+)
+```
+
+- `managed_spell_mode`: `elastic` (the default) always builds when no idle object is waiting and keeps up to
+  `managed_spell_limit` idle objects (default 256); `limited_quantity` refuses at `managed_spell_limit` objects
+  alive; `queue` waits for a release, up to `managed_spell_timeout_seconds`, then refuses. The enum is
+  `ManagedSpellMode` (`melder.aether.spellbook.existence.managed_spell_mode`).
+- `managed_spell_limit` is required for `limited_quantity` and `queue`; `managed_spell_timeout_seconds` is
+  required for `queue` and refused for the other two modes.
+- `managed_spell_reset_methods` names zero-argument methods of the class.
+- `spell.managed_spell_mode`, `managed_spell_limit`, `managed_spell_timeout_seconds` and
+  `managed_spell_reset_methods` read them back (the default limit filled in); other spells answer None, None,
+  None and `()`.
+- Each option is part of a managed spell's id: the same class bound with other options is a different spell
+  version (park it with `bind_inactive` and `notch_spell` to it, as with any version).
+
+`bind` refuses, before anything is registered and with a message that says what to change: a `managed_spell_*`
+option on another existence (`ValueError`); a managed binding of a function, method, lambda or existing object
+(`TypeError`: the pool builds instances of a class); an unknown mode; a limit that is not an int of at least 1, or
+is missing where required; a timeout where it does not apply, missing in `queue`, or not a positive finite number;
+and reset names that are not a list or tuple of method names of the class.
+
+The Crystallizer records a managed spell's options, and restore and the spell-index graft bind it with them, so
+it comes back with its own id. Records are stamped 4.2.0 (they were 4.1.0): only a managed spell's record gains
+the four keys, a 4.1 reader ignores them, and 4.1 records restore as before.
+
+Every managed spell version now has a pool in the store of the root conduit that owns it (0.2.8243): conjure
+gives each version its pool - the active ones, and since 0.2.8248 the ones staged with `bind_inactive` before
+it - and so does a later `bind` or `bind_inactive` on the root. The root's teardown
+disposes what its pools hold - the idle objects and every `many` child built for a pooled object - and leaves the
+objects that are out to whoever holds them; disposing the spell (`cleanup_spell`) or notching away from it leaves
+its pool in place until the root ends. What you can see now:
+
+- `conduit.has_live_creation(...)` and `describe_live_creation_status(...)` answer for a managed spell from the
+  owning root's pool, asked through the root or one of its lessers: live while any object the pool built is alive,
+  `creation_count` the number alive (idle plus out), `storage_scope_kind` `"managed_pool"`. They raised
+  `RuntimeError` ("Unsupported existence ... for live creation probe.") before 0.2.8243.
+- `conduit.purge(...)` of a managed spell returns 0 and leaves the pool alone (it raised `RuntimeError`
+  "Unsupported purge existence"); a spellspace's `purge` still refuses it. A pool is not purged: you give objects
+  back, and the root's teardown disposes the rest.
+- Static Rift rooms report a managed spell as an unsupported static existence, as they do `many`: there is no single
+  stored object to hand out.
+- `ManagedSpellExhaustedError` (`melder.utilities.custom_exceptions.managed_spell_exhausted_error`), a
+  `MeldExecutionError` with `mode`, `limit` and `timeout_seconds`, is what a lease will raise when a
+  `limited_quantity` pool has every object out ("Managed spell 'Parser' (limited_quantity, limit 8) has all 8
+  objects out. Release one with ReleaseManagedSpell().release(obj) before melding another, or bind it with a higher
+  managed_spell_limit.") or a `queue` pool had none free within its timeout. Nothing is built when it is raised.
+
+Objects go back through `ReleaseManagedSpell` (0.2.8244). It, `ManagedSpellLease`, `ManagedSpellMode` and
+`ManagedSpellExhaustedError` are importable from `melder`:
+
+```python
+from melder import ReleaseManagedSpell
+
+release = ReleaseManagedSpell().release   # bind it once in a hot loop
+release(parser)                           # its resets run in order, then it waits for the next lease
+
+with ReleaseManagedSpell().managed(parser) as p:   # given back when the block ends, raised or not
+    p.parse(text)
+```
+
+- `ReleaseManagedSpell()` is a process singleton like `Aether`: Aether builds it at boot and cleans it with the
+  world. A release needs no conduit: the object's class finds its pool with one dict read, then the pool's
+  put-back - about 50 ns over the pool call with the method bound once; the `ReleaseManagedSpell()` call itself
+  costs about 70 ns more, as `Aether()` does.
+- When one class is managed by several pools - two binding names, two roots, two frames, two versions of one
+  index - the pool of the version its index selects takes the object. Otherwise pass `spell_id=...` or
+  `conduit=...` (a root or one of its lessers); a `ValueError` lists the candidates (spell id, binding, frame,
+  root, active) while the choice is still open. A class with no live pool raises "<Class> is not a managed spell
+  class in any live root: bind it with existence=Existence.managed_spell_quantity, or its root was torn down."
+- `managed(obj)` returns a `ManagedSpellLease`: `release()` gives the object back once and later calls do nothing;
+  `object` raises once it was released. `release_all(objects)` attempts every object, then raises one
+  `ExceptionGroup` of the failures. `describe(cls)` answers one dict per pool: mode, limit, count, idle and out
+  objects, the root holding it (`holding_conduit_id`) and whether it is the active version.
+- A reset that raises destroys the object (its disposal methods run) and the error propagates. Once the root ended,
+  `release` raises the not-managed `ValueError` (its pools left with it), and a lease made before raises
+  `RuntimeError` ("The pool of managed spell 'Parser' was torn down with its root conduit; the object is yours to
+  dispose.").
+- Releasing trusts the caller: nothing records which objects are out, so give back only what a lease handed you,
+  once.
+
+Leasing works from 0.2.8245. A meld of a managed spell, and every injection of one into a constructor, takes an idle
+object from the pool, or builds one when none is waiting; the plan Melder compiles for the meld does it inline:
+
+```python
+parser = conduit.meld(Parser)            # an idle parser, or a new one
+release(parser)                          # the next lease gets this object back
+
+handler = conduit.meld(Handler)          # Handler(parser: Parser) is `many`: each meld leases one parser into it
+release(handler.parser)
+
+with conduit.managed_spell_meld(Parser) as p:   # meld and lease in one call; given back when the block ends
+    p.parse(text)
+```
+
+- Each injection is its own lease: two constructors in one meld get two objects, and a holder keeps what it was
+  given for its life. A meld through a lesser conduit or a spellspace leases from the owning root's pool.
+- A warm cycle - a meld that takes an idle object, plus its release - measured about 0.32 us on an automatic root
+  and 0.74 us on a dynamic one (CPython 3.14t, either GIL mode): about one release more than a `many` meld.
+- A `limited_quantity` meld raises `ManagedSpellExhaustedError` when every object is out, and a `queue` meld waits
+  for a release up to its timeout; nothing is built while it waits or when it raises.
+- When a construction fails after it was handed leased objects - its constructor raises, a sibling dependency
+  fails, or another meld finished the same shared object first - Melder gives those objects back to their pools
+  before the error propagates, and a failure to give one back is added to the error as a note. It is the one case
+  Melder returns an object itself.
+- Overrides: a value supplied for the holder's parameter takes no lease; values supplied for the managed spell's
+  own parameters build a fresh object with them, which the pool neither hands out nor counts.
+- The `many` dependencies with disposal methods that a pooled object was built with stay with it, and are disposed
+  with it when an elastic pool trims it or the root ends.
+- A direct meld of a managed spell runs its activation hooks (the spell's and `on_meld_activation`) on every lease,
+  a reused object included.
+- `Conduit.managed_spell_meld(spell=None, *, spell_id=None, spellframe=None, binding_name=None, override=None)`
+  resolves its target as `meld` does and returns a `ManagedSpellLease`. It refuses a spell of another existence
+  before melding anything ("managed_spell_meld leases a managed spell; 'Config' is unique. Meld it with meld(), or
+  bind it with existence=Existence.managed_spell_quantity."), and raises `MeldExecutionError` ("Managed spell
+  'Parser' has no pool to lease from: its owner root was torn down, ...") when the version has no pool. A lease on
+  an object built fresh by own-parameter overrides gives that object to the pool when it is released.
+- Compiled plans cached before managed spells existed are retired: the creation cache moves to generation 21
+  (0.2.8248). Every release change already makes the first `conjure()` after an upgrade compile cold, so nothing
+  else changes.
+
+Pools follow an ownership transfer (0.2.8246). A pool is one more record of its spell version, so
+`transfer_spell_ownership` treats it as it treats the others:
+
+- With `move_creations=True` (the default) every version's pool moves to the new owner with its idle objects, its
+  count and the `many` children recorded with its objects: the new owner leases the same objects, releases reach
+  the moved pool, and `ReleaseManagedSpell().describe(cls)` names the new owner as `holding_conduit_id`.
+- With `move_creations=False` the new owner leases from a new, empty pool, and the old pool's idle objects are
+  neither moved nor disposed. A version parked at the time also gets a new pool in the new owner, while its old pool
+  stays with the old owner until that root ends, as a parked version's other objects do; once that version is
+  notched in on the new owner, a release by class finds two pools of the selected version and asks for `conduit=`
+  (a lease's own `release()` is unaffected).
+- A transfer that fails leaves every pool where it was, and the old owner keeps leasing from it.
+- A release that runs while its spell is being transferred can find no pool for that moment and raises the
+  not-managed `ValueError`; release again once the transfer has returned.
+
+What stays the same: the six existing members keep their values, order and rules, and no other binding's spell
+id, Spell values, record or compiled plan changes; a root store without managed spells disposes exactly as before.
+
+## A non-resolvable definition no longer sends every meld of its Book through validation
+
+A Spellbook that registers a definition with `resolvable=False` - a `Protocol` (which must be bound that way), an
+abstract base, or a class kept so agents can discover, inspect and version it while its consumers receive the value
+by override - paid for validation checks on every meld. Such a definition never receives a resolution verdict, so
+Melder counted it as validation still owed for the life of the Spellbook: every meld in that Spellbook, of any
+spell, went through the meld-time validation gate, and none took the warm fast path. From 0.2.8247 Melder records
+the definition as one that owes no verdict and leaves it out of that decision, so melds in such a Spellbook cost
+what they cost without it.
+
+```python
+class Clock(Protocol):
+    def now(self) -> float: ...
+
+
+class Report:
+    def __init__(self, clock: Clock) -> None:
+        self.clock = clock
+
+
+book = md.Spellbook()
+book.bind(spell=Clock, existence="unique", resolvable=False)   # discoverable, never resolved
+book.bind(spell=Report, existence="many")
+root = book.conjure()
+
+report = root.meld(spell=Report, override={"clock": time_source})   # 0.4 us warm; 13 us before 0.2.8247
+```
+
+Measured on CPython 3.14t with the GIL off: a warm meld in a Spellbook holding one `Protocol` definition went from
+15.1 to 0.26 us after `conjure()` and from 16.4 to 0.73 us after `conjure(dynamic=True)`; the example above went
+from 12.9 to 0.39 us, and from 13.2 to 0.40 us with the GIL on.
+
+Notching between versions of one spell index follows the version selected each time: while a `resolvable=False`
+version is selected the index is left out, and once a resolvable version is selected again it is validated before
+its first meld - in the conduit that owns it and in every conduit that borrows it through an index link.
+
+What stays the same: the definition stays in the graph as before - `bind` and `bind_inactive` accept it, Nexus and
+the Rift viewers show it, the Crystallizer records its capability - and a meld of the definition itself is still
+refused with the same `MeldExecutionError`. A Spellbook without such a definition, `conjure()` and `bind` cost what
+they did, and no public signature changes.
+
+## A version staged before `conjure` melds after a notch
+
+`bind_inactive` now behaves the same before and after `conjure()`. A version staged with `bind_inactive` on a
+Spellbook before its `conjure()` was never wired to the root conduit, so once `notch_spell` made it the active
+version, its first meld raised `RuntimeError` ("Spell has no configured CreationContextFactory.") whatever its
+existence, and a managed version raised `MeldExecutionError` ("... has no pool to lease from ..."). Staging after
+`conjure()` was the only way that worked. From 0.2.8248 `conjure()` wires every version staged before it, exactly as
+`bind_inactive` wires one staged after it. Staging before `conjure()` needs a world that is already dynamic - a
+Spellbook joining a frame an earlier `conjure(dynamic=True)` settled:
+
+```python
+class ReportService:
+    def render(self) -> str:
+        return "v1"
+
+
+class ReportServiceV2:
+    def render(self) -> str:
+        return "v2"
+
+
+owner = md.Spellbook().conjure(dynamic=True, name="owner")   # settles the world dynamic
+
+book = md.Spellbook()                       # joins the dynamic world
+v1 = book.bind(spell=ReportService, existence="unique", binding_name="v1")
+index = book.find_spell_by_id(v1).spell_index
+v2 = book.bind_inactive(spell=ReportServiceV2, spell_index=index, existence="unique", binding_name="v2")
+reports = book.conjure(name="reports")      # inherits dynamic; wires v2 as well as v1
+
+# after reports.notch_spell(spell_index=index, spell=<v2's Spell>):
+service = reports.meld(spell_id=v2)         # a ReportServiceV2; RuntimeError before 0.2.8248
+assert service.render() == "v2"
+```
+
+- Every existence: `unique`, `unique_per_conduit`, `many`, `managed_spell_quantity`, existing objects and
+  functions. A managed version staged before `conjure()` has its pool from `conjure()` on, and
+  `ReleaseManagedSpell().describe(cls)` lists it.
+- Until its notch a staged version stays off resolution, as before: a meld of its id raises `KeyError` ("[MELD] No
+  spell found with spell_id: ..."), and a staged existing object is not stored in the root's creations.
+- The missing-pool message no longer names that cause or tells you to stage after `conjure()`: "Managed spell
+  'Parser' has no pool to lease from: its owner root was torn down, or its owner store holds no pool for this
+  version. Meld it through a live root that owns it."
+
+What stays the same: active versions, a `bind_inactive` after `conjure()`, `notch_spell`, ownership transfers,
+spell ids and records. Restore and the spell-index graft stage versions after `conjure()`, so they worked before and
+behave as before.
 
 ## Packaging and documentation
 
@@ -343,6 +615,31 @@ or repointed, and owned dependencies move only with `include_dependencies=True`.
 - The packaged system documents describe a root leaving its cluster at teardown, the team store a cluster owns,
   the record that carries a slotted object's `many` children through purge, transfer and disposal, and the
   transfer default and handover; the code-map extents of the files these changes touched are remeasured.
-- The internal-bind guard manifest holds 623 entries at 0.2.8238 (622 at 0.2.8227): `HolderDisposalEntry`, the
-  record that keeps a slotted object's `many` children with it, joined.
-- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8240.
+- The README's lifetimes section is "Seven Lifetimes, Not Three": it adds `managed_spell_quantity` with an example
+  of a lease and its release, and the docs chapter built from that section follows the new heading. The teardown
+  section no longer says that a failing disposal method stops that object's remaining methods: every declared
+  method runs, and the failures are raised together once the scope has ended (the behaviour since 0.2.80 and
+  0.2.8203).
+- The scopes guide (`docs/intermediate/scopes.md`) lists `managed_spell_quantity` in its purge table (a conduit's
+  purge returns 0, a spell space refuses it), and the glossary defines a managed spell. The documentation site's
+  API reference lists the four new root exports - `ManagedSpellMode`, `ReleaseManagedSpell` and `ManagedSpellLease`
+  with the lifetime types, `ManagedSpellExhaustedError` with the public errors; since 0.2.8244 the site build had
+  refused the root's export list without them.
+- The packaged system documents (`melder.__architecture__`, `melder.__components__`) describe managed spells: the
+  member and its Phase 6 rank, the bind options and their record, the pool in the owning root's creations,
+  `ReleaseManagedSpell` and the lease, leasing through compiled melds and `managed_spell_meld`, and pools in an
+  ownership transfer. The packaged graph describes the five new modules; the code-map extents of the changed files
+  are remeasured, and line citations that had drifted since 0.2.8235 point at their code again.
+- The internal-bind guard manifest holds 628 entries at 0.2.8244 (622 at 0.2.8227): `HolderDisposalEntry`, the
+  record that keeps a slotted object's `many` children with it, joined at 0.2.8238, `ManagedSpellMode` at
+  0.2.8242, the managed pool (`ManagedSpellQuantity`) and `ManagedSpellExhaustedError` at 0.2.8243, and
+  `ReleaseManagedSpell` and `ManagedSpellLease` at 0.2.8244.
+- The packaged system documents (`melder.__architecture__`, `melder.__components__`) and the packaged graph
+  describe the lineage flag `SpellState.non_resolvable`, the registry's published set of flagged lineages and the
+  validation flag's exclusion of them; the code-map extents of the six changed files are remeasured, and line
+  citations into `spellbook.py` and `conduit.py` that had drifted point at their code again.
+- The packaged system documents (`melder.__architecture__`, `melder.__components__`) and the packaged graph
+  describe `conjure()` wiring the versions staged before it and the creation cache's generation 21; the code-map
+  extents of the five changed files are remeasured, and line citations into `spellbook.py`,
+  `spellbook_creation_system.py` and `transfer_of_ownership.py` that had drifted point at their code again.
+- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8248.

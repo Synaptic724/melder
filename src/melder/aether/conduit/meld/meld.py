@@ -770,6 +770,46 @@ class Meld(Cleanable, ABC):
         )
 
     @staticmethod
+    def _describe_managed_pool_status(spell: Spell, query_conduit_id: str) -> Dict[str, object]:
+        """
+        Return the live-creation status of a managed spell from its owner store's pool.
+
+        Purpose:
+            One answer for both doors (2026-10-15): a managed object is leased
+            from a pool in its owner root's store and is never conduit- or
+            space-local, so `ConduitMeld` and `SpellSpaceMeld` report the same
+            pool.
+
+        Contract:
+            - Reads `spell._owner_creations.get_managed_quantity(spell_id)`; a
+              version with no owner store (not stamped yet) or no pool reports 0.
+            - `is_live` when the pool's count is above 0; `creation_count` is the
+              count (objects built and alive, idle plus out), read without a lock.
+            - Never creates, leases or mutates anything.
+
+        Args:
+            spell: The resolved managed spell.
+            query_conduit_id: The conduit the probe was asked through.
+
+        Returns:
+            Dict[str, object]: The status payload, storage scope `"managed_pool"`.
+        """
+        store = spell._owner_creations
+        pool = store.get_managed_quantity(spell.spell_id) if store is not None else None
+        count = pool.count if pool is not None else 0
+        return {
+            "is_live": count > 0,
+            "spell_id": spell.spell_id,
+            "spell_name": spell.spell_name,
+            "existence": spell.existence.name,
+            "query_conduit_id": query_conduit_id,
+            "storage_scope_kind": "managed_pool",
+            "storage_owner_conduit_id": spell._owner_conduit_id,
+            "active_spellspace_id": None,
+            "creation_count": count,
+        }
+
+    @staticmethod
     def _raise_non_resolvable_registration(spell: Spell) -> NoReturn:
         """
         Refuse direct resolution of one explicitly non-resolvable registration.

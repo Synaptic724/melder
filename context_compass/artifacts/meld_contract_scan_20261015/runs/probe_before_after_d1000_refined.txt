@@ -1,0 +1,8 @@
+gil0 before P4 dynamic D=0: late bind + first meld median 1939 us; warm meld of C0 after it median 0.65 us; flag=False; 4.0 refreshes per late class, mean 1.32 us, max 3.86 us
+gil0 before P4 dynamic D=1000: late bind + first meld median 7437 us; warm meld of C0 after it median 13.35 us; flag=True; 4.0 refreshes per late class, mean 2.02 us, max 5.45 us
+gil0 after_refined P4 dynamic D=0: late bind + first meld median 3277 us; warm meld of C0 after it median 0.72 us; flag=False; 4.0 refreshes per late class, mean 2.51 us, max 19.97 us
+gil0 after_refined P4 dynamic D=1000: late bind + first meld median 7360 us; warm meld of C0 after it median 0.69 us; flag=False; 4.0 refreshes per late class, mean 35.56 us, max 89.93 us
+gil1 before P4 dynamic D=0: late bind + first meld median 2092 us; warm meld of C0 after it median 0.65 us; flag=False; 4.0 refreshes per late class, mean 1.52 us, max 13.11 us
+gil1 before P4 dynamic D=1000: late bind + first meld median 7613 us; warm meld of C0 after it median 13.22 us; flag=True; 4.0 refreshes per late class, mean 2.27 us, max 5.85 us
+gil1 after_refined P4 dynamic D=0: late bind + first meld median 2260 us; warm meld of C0 after it median 0.66 us; flag=False; 4.0 refreshes per late class, mean 2.33 us, max 8.27 us
+gil1 after_refined P4 dynamic D=1000: late bind + first meld median 6951 us; warm meld of C0 after it median 0.69 us; flag=False; 4.0 refreshes per late class, mean 36.20 us, max 71.98 us

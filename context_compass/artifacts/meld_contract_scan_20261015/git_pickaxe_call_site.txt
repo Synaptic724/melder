@@ -1,0 +1,3 @@
+438efc387 2026-01-28 17:49:40 -0700 Mark | Update MeldEngine kwargs unit tests for instance-based wiring after phase migration
+6effac5cc 2026-05-30 04:46:00 -0600 Mark | Add task and epic to investigate mediator policy cleanup and lazy DevOps registry update, outlining replacement config model and mediator-owned registry update seam.
+1102bfab9 2026-05-30 05:28:05 -0600 Mark | Add architecture patch for `Meld` class refactor, introducing shared abstract base and concrete front-door implementations for `ConduitMeld` and `SpellSpaceMeld`, with supporting documentation.

@@ -49,6 +49,7 @@ if TYPE_CHECKING:
     from melder.aether.spellbook.spell_compiler.validation.spell_validation_result import (
         SpellValidationResult,
     )
+    from melder.aether.spellbook.existence.managed_spell_mode import ManagedSpellMode
     from melder.aether.spellbook.spellbook import Spellbook
     from melder.utilities.synchronization.creation_gate import CreationGate
     from melder.utilities.synchronization.creation_gate_controller import (
@@ -90,6 +91,9 @@ class Spell(Cleanable):
       is unsupported; this class adds no copying or mutation guards.
     - Resolution capability is fixed per bound version and exposed by the
       read-only resolvable property, independently of activity and compilation state.
+    - The managed options of an `Existence.managed_spell_quantity` binding (mode, limit,
+      queue timeout, reset method names) are fixed per bound version the same way, as
+      Bind normalized and hashed them, and exposed by read-only properties.
 
     Core Responsibilities:
     - Holds an immutable reference to the object (function/class/instance) it represents.
@@ -298,6 +302,10 @@ class Spell(Cleanable):
         "spellframe_kind",
         "implemented_protocols",
         "_removal_lock",
+        "_managed_spell_mode",
+        "_managed_spell_limit",
+        "_managed_spell_timeout_seconds",
+        "_managed_spell_reset_methods",
     ]
     def __init__(
             self,
@@ -319,6 +327,10 @@ class Spell(Cleanable):
             resolvable: bool = True,
             spellframe_kind: SpellframeKind = SpellframeKind.none,
             implemented_protocols: tuple[type, ...] = (),
+            managed_spell_mode: Optional[ManagedSpellMode] = None,
+            managed_spell_limit: Optional[int] = None,
+            managed_spell_timeout_seconds: Optional[float] = None,
+            managed_spell_reset_methods: tuple[str, ...] = (),
             **kwargs: Any,
     ) -> None:
         """
@@ -349,6 +361,13 @@ class Spell(Cleanable):
                 (a string) or `contract` (a Protocol) - as Bind classified it. Phase 3 reads it.
             implemented_protocols (tuple[type, ...]): The Protocol(s) Bind structurally checked
                 this spell against: `(spellframe,)` for a contract frame, else empty.
+            managed_spell_mode (Optional[ManagedSpellMode]): The pool policy of a managed binding,
+                as Bind normalized it; None on any other existence.
+            managed_spell_limit (Optional[int]): Elastic idle cap, or the most objects alive for
+                limited_quantity and queue; None on any other existence.
+            managed_spell_timeout_seconds (Optional[float]): Queue wait in seconds; None otherwise.
+            managed_spell_reset_methods (tuple[str, ...]): Reset method names, run in order on every
+                release; empty when none were named or the spell is not managed.
             **kwargs: Optional keyword metadata map, collected into `metadata`.
 
         Contract:
@@ -407,6 +426,13 @@ class Spell(Cleanable):
         self._removal_lock: Optional[RLock] = None
         self._active = True  # active in its index; flipped by notch/disable
         self._resolvable: bool = resolvable
+        # Managed options (Existence.managed_spell_quantity): normalized by Bind and hashed into spell_id,
+        # read-only per-version policy like `_resolvable`; None / None / None / () on any other existence.
+        # The spell's pool is composed from them when its owner store is stamped (S3).
+        self._managed_spell_mode: Optional[ManagedSpellMode] = managed_spell_mode
+        self._managed_spell_limit: Optional[int] = managed_spell_limit
+        self._managed_spell_timeout_seconds: Optional[float] = managed_spell_timeout_seconds
+        self._managed_spell_reset_methods: tuple[str, ...] = managed_spell_reset_methods
         self._id: str = new_ulid()  # Unique internal ID for tracking
 
         # Spell Data
@@ -677,6 +703,10 @@ class Spell(Cleanable):
             del self.tags
             del self.metadata
             del self._resolvable
+            del self._managed_spell_mode
+            del self._managed_spell_limit
+            del self._managed_spell_timeout_seconds
+            del self._managed_spell_reset_methods
             del self._mutation_override
             del self.dependencies
             del self.disposal_method_names
@@ -752,6 +782,79 @@ class Spell(Cleanable):
         """
         self.check_cleaned()
         return self._resolvable
+
+    @property
+    def managed_spell_mode(self) -> Optional[ManagedSpellMode]:
+        """
+        Return the pool policy of this managed version.
+
+        Contract:
+            Set once at bind (default elastic for a managed binding) and part of the spell id. No live
+            setter; changing it takes another binding.
+
+        Returns:
+            Optional[ManagedSpellMode]: The mode, or None when the spell is not
+            `Existence.managed_spell_quantity`.
+
+        Raises:
+            RuntimeError: If this Spell has been cleaned.
+        """
+        self.check_cleaned()
+        return self._managed_spell_mode
+
+    @property
+    def managed_spell_limit(self) -> Optional[int]:
+        """
+        Return the limit of this managed version.
+
+        Contract:
+            elastic: the most idle objects its pool keeps (default 256). limited_quantity and queue: the
+            most objects alive at once, idle plus out. Set once at bind and part of the spell id.
+
+        Returns:
+            Optional[int]: The limit, or None when the spell is not managed.
+
+        Raises:
+            RuntimeError: If this Spell has been cleaned.
+        """
+        self.check_cleaned()
+        return self._managed_spell_limit
+
+    @property
+    def managed_spell_timeout_seconds(self) -> Optional[float]:
+        """
+        Return how long a queue lease of this version waits for a release.
+
+        Contract:
+            Set once at bind for the queue mode and part of the spell id; always None for elastic and
+            limited_quantity, which never wait.
+
+        Returns:
+            Optional[float]: Seconds, or None.
+
+        Raises:
+            RuntimeError: If this Spell has been cleaned.
+        """
+        self.check_cleaned()
+        return self._managed_spell_timeout_seconds
+
+    @property
+    def managed_spell_reset_methods(self) -> tuple[str, ...]:
+        """
+        Return the reset method names of this managed version.
+
+        Contract:
+            Zero-argument methods of the class, run in this order on every release before the object
+            is leased again. Set once at bind and part of the spell id.
+
+        Returns:
+            tuple[str, ...]: The names; empty when none were named or the spell is not managed.
+
+        Raises:
+            RuntimeError: If this Spell has been cleaned.
+        """
+        self.check_cleaned()
+        return self._managed_spell_reset_methods
 
     def _set_hooks(
             self,
@@ -1575,6 +1678,10 @@ class Spell(Cleanable):
         - Provide a handle to the Conduit's creation scope (e.g., for singletons tied to that conduit).
         - Reconfigure CreationContextFactory dependencies for the new owner.
         - Invalidate the spell-owned CreationContext because ownership/scoping changed.
+        - Give an `Existence.managed_spell_quantity` version its pool in the owner's store
+          (`creations.ensure_managed_quantity(self)`, idempotent; 2026-10-15): every stamp - conjure, a
+          post-conjure bind or bind_inactive, the transfer flip - ends with the version's pool in the store it
+          was stamped with. No pool is composed when the stamp carries no store.
 
         Args:
             conduit_id (str):
@@ -1605,6 +1712,9 @@ class Spell(Cleanable):
             self._owner_conduit_name = conduit_name
             self._owner_creations = creations
             self._caching_enabled = caching_enabled
+            # Spell lock, then the store's leaf lock: the established build-lock-first order.
+            if self.existence is Existence.managed_spell_quantity and creations is not None:
+                creations.ensure_managed_quantity(self)
 
     def _add_build_details(
             self,

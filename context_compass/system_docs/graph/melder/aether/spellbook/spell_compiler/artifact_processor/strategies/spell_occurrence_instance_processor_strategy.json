@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_occurrence_instance_processor_strategy.py",
- "source_sha256": "4ba5974b05e52bb00fa1ce96239d0ad302e7d8660696ce122f2bb788af592c37",
+ "source_sha256": "1070c9201340f2a1849398b4f7df7568d6b1496d464b3660e258e6051d21fa3e",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_occurrence_instance_processor_strategy": {
@@ -33,17 +33,18 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "34f0827dbbaa8bf5c4872f85d15a1eb1f18eb3ce26203399ea735f10577c3f36",
+   "span_sha256": "c94df28fbfc9f2766efa109855391ec239090b2057a0a41cff9cbffdc5727699",
    "role": "Processor strategy fitting occurrence instance/sharedness facts into the codegen model.",
    "responsibilities": [
     "maps occurrence graph truth onto per-spell instance keys and canonical occurrences",
     "publishes SpellOccurrenceInstanceAnalysis onto SpellCodegenModel",
-    "derives shared-node and unique-node counts for later planning"
+    "derives shared-node and unique-node counts for later planning",
+    "treats many and managed_spell_quantity as per path (_is_shared_existence False): each occurrence keeps its own instance key, so every injection of a managed spell is its own lease (0.2.8245)"
    ],
    "phases": [
     "runtime"
    ],
-   "semantics_authored_against": "34f0827dbbaa8bf5c4872f85d15a1eb1f18eb3ce26203399ea735f10577c3f36"
+   "semantics_authored_against": "c94df28fbfc9f2766efa109855391ec239090b2057a0a41cff9cbffdc5727699"
   }
  },
  "edges_out": [

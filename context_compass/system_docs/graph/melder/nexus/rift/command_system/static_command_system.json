@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/rift/command_system/static_command_system.py",
- "source_sha256": "d2bd5af6ef4f7024abb09a9d6d5fa039c866770c0d006b68188f674a0d4c0e0c",
+ "source_sha256": "a6c528c7110983fb7e29d92667cdd74c6b6860514661b64661a88a3b39c35be5",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.rift.command_system.static_command_system": {
@@ -42,18 +42,19 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "68ef2412ff3c69392debbb1e674a26b543960aece1b192dcd4858f8264041ee5",
+   "span_sha256": "c13d44e6fbbc441dbad261dbf9db9e4a840db32ebee3f7afe4b9bb57584bfa09",
    "role": "Static-room command specialization.",
    "responsibilities": [
     "preserves the shared command API while denying topology mutation and direct create-path spell activation",
     "restricts spell retrieval to already-live static-compatible spell lifecycles",
-    "resolves spell owners through Aether's root lookup (owners are roots)"
+    "resolves spell owners through Aether's root lookup (owners are roots)",
+    "treats many, unique_per_spell_space and managed_spell_quantity spells as having no single stored object to hand out - a managed spell's objects are leased from a pool (0.2.8243)"
    ],
    "phases": [
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "68ef2412ff3c69392debbb1e674a26b543960aece1b192dcd4858f8264041ee5"
+   "semantics_authored_against": "c13d44e6fbbc441dbad261dbf9db9e4a840db32ebee3f7afe4b9bb57584bfa09"
   }
  },
  "edges_out": [

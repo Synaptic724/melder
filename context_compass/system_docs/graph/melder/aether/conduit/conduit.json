@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/conduit.py",
- "source_sha256": "8eac316b4750f30774b4cf9706a57baa39e59cc0018f4800e6a84b507615d686",
+ "source_sha256": "87ee80f96e4a89e6683f6daa6fcf5a344421475a45a927ce5ff0a468f8d082e4",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.conduit": {
@@ -29,7 +29,7 @@
    "label": "Conduit",
    "kind": "class",
    "file": "src/melder/aether/conduit/conduit.py",
-   "lineno": 81,
+   "lineno": 83,
    "bases": [
     "Cleanable"
    ],
@@ -84,6 +84,7 @@
     "id",
     "inspect_spell",
     "link",
+    "managed_spell_meld",
     "meld",
     "meld_existing_spell",
     "mutation_research",
@@ -115,11 +116,11 @@
     "validate_resolution"
    ],
    "shape": {
-    "method_count": 133,
+    "method_count": 134,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "0b9fcbd83491e720f13ca5f5ff8d7d16edbe1f29ba81674fc1fc189c45fbac4f",
+   "span_sha256": "67dc54d31229f38ba31b7e34c733877ff8079f8c7252301a1af88435dbabbd4e",
    "role": "Runtime execution scope for spell resolution.",
    "responsibilities": [
     "hosts meld execution",
@@ -145,7 +146,9 @@
     "emits an index destroy to index-link borrowers exactly when the Book's disposal reports the index it destroyed (cleanup_spell, 0.2.8231)",
     "looks up contracted spells over a one-call copy of the Book's contracted peer ids and inspects objects, both with no conduit lock held (find_contracted_spell, inspect_spell, 0.2.8232)",
     "builds its SpellSpacePool and, as a normal root, its ConduitPool elastic: 20 idle always kept, up to 256 after a burst, decaying when quiet (0.2.8234)",
-    "leaves its cluster as the first step of a root's teardown (_leave_cluster_for_teardown, 0.2.8236): the cluster's ordered exit while the frame is live, drop_member during frame teardown or after a failed exit"
+    "leaves its cluster as the first step of a root's teardown (_leave_cluster_for_teardown, 0.2.8236): the cluster's ordered exit while the frame is live, drop_member during frame teardown or after a failed exit",
+    "forwards a managed binding's four options through both binding facades unchanged (0.2.8242)",
+    "leases a managed spell through managed_spell_meld (0.2.8245): resolves the target as meld does, refuses another existence and a version with no pool before melding, melds the version by id and returns ManagedSpellLease(object, pool)"
    ],
    "owns_state": [
     "_meld",
@@ -219,6 +222,12 @@
   {
    "from": "melder.aether.conduit.conduit.Conduit",
    "to_label": "TransferOfOwnership",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.conduit.conduit.Conduit",
+   "to_label": "ManagedSpellLease",
    "relation": "creates",
    "confidence": "candidate"
   },
@@ -317,6 +326,7 @@
   "ConduitWard": "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard",
   "ConduitCreations": "melder.aether.conduit.creations.conduit_creations.ConduitCreations",
   "ClusterCreations": "melder.aether.conduit.creations.cluster_creations.ClusterCreations",
+  "ManagedSpellLease": "melder.aether.conduit.creations.managed_spell_lease.ManagedSpellLease",
   "ConduitPool": "melder.aether.conduit.conduit_pool.ConduitPool",
   "ConduitCrystal": "melder.crystallizer.crystals.conduit_crystal.ConduitCrystal",
   "SpellSpace": "melder.aether.conduit.spell_space.spell_space.SpellSpace",
@@ -333,6 +343,7 @@
   "TransactionMediator": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.transaction_mediator.TransactionMediator",
   "Spell": "melder.aether.spellbook.spell.Spell",
   "SpellIndex": "melder.aether.spellbook.bind.spell_index.SpellIndex",
+  "ManagedSpellMode": "melder.aether.spellbook.existence.managed_spell_mode.ManagedSpellMode",
   "Spellbook": "melder.aether.spellbook.spellbook.Spellbook",
   "DevopsInformationRegistry": "melder.aether.aetheric_frame.dev_ops.devops_information_registry.DevopsInformationRegistry",
   "ConduitResolutionState": "melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state.ConduitResolutionState",
@@ -341,7 +352,8 @@
   "CreationGateController": "melder.utilities.synchronization.creation_gate_controller.CreationGateController",
   "Crystallizer": "melder.crystallizer.crystallizer.Crystallizer",
   "MutationResearch": "melder.mutation_research.mutation_research.MutationResearch",
-  "TransferOfOwnership": "melder.aether.conduit.conduit_ward.transfer.transfer_of_ownership.TransferOfOwnership"
+  "TransferOfOwnership": "melder.aether.conduit.conduit_ward.transfer.transfer_of_ownership.TransferOfOwnership",
+  "SitePlanRuntimeHelpers": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanRuntimeHelpers"
  },
  "collapse_candidate": {
   "module": "melder.aether.conduit.conduit",
@@ -508,6 +520,17 @@
     "runtime"
    ],
    "strength": "borrowed"
+  },
+  {
+   "from": "melder.aether.conduit.conduit.Conduit",
+   "to": "melder.aether.conduit.creations.managed_spell_lease.ManagedSpellLease",
+   "relation": "creates",
+   "why": "managed_spell_meld melds a managed version and returns its object as a lease over the version's pool.",
+   "cardinality": "one_to_many",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "hard"
   }
  ]
 }

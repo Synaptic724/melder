@@ -2153,6 +2153,8 @@ class RestoreEngine(Cleanable):
             Forward ordered disposal names through normal book composition.
             Record a changed SHA before resolving dependent staged members.
             Preserve recorded capability; only legacy absence defaults to True.
+            Replay a managed spell's recorded options (record 4.2.0), so it
+            rebinds with its own options and spell id.
             The spell id comes from the payload, the custody key names
             shortfalls, and identities map per Book (0.2.8214).
 
@@ -2185,6 +2187,7 @@ class RestoreEngine(Cleanable):
             ) or None,
             profile=str(crystal.get("profile_family", "general")),
             resolvable=crystal.get("resolvable", True),
+            **SpellCrystal.managed_bind_options(crystal),
         )
         self._report.record_built("spell_active")
         self._map_spell_identity(spellbook_id, spell_id, new_spell_id)
@@ -2209,7 +2212,8 @@ class RestoreEngine(Cleanable):
         Contract:
             Retain the ordered recorded names and map any changed bind identity
             before the selection stage resolves this exact parked member.
-            Preserve the parked version's own resolution capability.
+            Preserve the parked version's own resolution capability and, for a
+            managed version, its own recorded options (record 4.2.0).
             The anchor index is found within this Book, the custody key names
             shortfalls, and identities map per Book (0.2.8214).
 
@@ -2259,6 +2263,7 @@ class RestoreEngine(Cleanable):
             disposal_method_names=list(crystal.get("disposal_method_names", [])) or None,
             profile=str(crystal.get("profile_family", "general")),
             resolvable=crystal.get("resolvable", True),
+            **SpellCrystal.managed_bind_options(crystal),
         )
         self._map_spell_identity(spellbook_id, spell_id, new_spell_id)
         self._report.record_built("spell_staged")

@@ -1,0 +1,23 @@
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: Three test files the lane edited had their line endings flipped, so the diff the owner commits showed whole
+    files instead of the lane's lines: test_conduit_facade.py was CRLF at HEAD and all LF on disk (+1015/-1010
+    against +6/-1 ignoring CR); test_codegen_plan_discovery_core.py and test_generalized_specializer_wrapper.py were
+    LF at HEAD and mixed on disk (the HEAD lines CRLF, the lane's 46 and 20 added lines LF). Each is restored to its
+    HEAD convention, content unchanged: the plain diff now equals the CR-insensitive one (+6/-1, +46/-0, +20/-0),
+    and the three files pass in both GIL modes (61 tests each run). No other file in the working tree differs only
+    by line endings. The repository pins no eol for Python on purpose (.gitattributes), so a file keeps the endings
+    it was committed with.
+  EVIDENCE:
+  - tests/unit/melder/aether/conduit/test_conduit_facade.py:1-1015
+  - tests/unit/melder/spellbook/spell_compiler/test_codegen_plan_discovery_core.py:1-328
+  - tests/unit/melder/spellbook/spell_compiler/test_generalized_specializer_wrapper.py:1-394
+  - .gitattributes:25-30
+  - context_compass/artifacts/managed_spell_quantity_20261015/runs/s7_line_endings_restored_gil0.txt:1-2
+  - context_compass/artifacts/managed_spell_quantity_20261015/runs/s7_line_endings_restored_gil1.txt:1-10
+  IMPACT: The owner reviews the lane's real test changes, not three rewritten files.
+  NEXT: Write the tests docs from the lane's 28 new files (their 312 test contracts) and the 9 changed ones.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7

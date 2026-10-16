@@ -1,0 +1,194 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/aether/conduit/creations/managed_spell_quantity.py",
+ "source_sha256": "ce7a1e5a4fec8d711a85c4873a09335536dbf63d949234aaffb70588a2b961c0",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.conduit.creations.managed_spell_quantity": {
+   "id": "melder.aether.conduit.creations.managed_spell_quantity",
+   "label": "managed_spell_quantity",
+   "kind": "module",
+   "file": "src/melder/aether/conduit/creations/managed_spell_quantity.py",
+   "lineno": 1,
+   "include": true,
+   "role": "Module holding ManagedSpellQuantity, the pool of one managed spell version in its owner root's store.",
+   "responsibilities": [
+    "exports ManagedSpellQuantity to Creations (which composes and holds the pools), ReleaseManagedSpell, ManagedSpellLease and the emitted plans' managed sites"
+   ],
+   "phases": [
+    "runtime",
+    "cleanup"
+   ],
+   "semantics_authored_against": ""
+  },
+  "melder.aether.conduit.creations.managed_spell_quantity.ManagedSpellQuantity": {
+   "id": "melder.aether.conduit.creations.managed_spell_quantity.ManagedSpellQuantity",
+   "label": "ManagedSpellQuantity",
+   "kind": "class",
+   "file": "src/melder/aether/conduit/creations/managed_spell_quantity.py",
+   "lineno": 14,
+   "bases": [
+    "AbstractElasticPool"
+   ],
+   "markers": [],
+   "public_methods": [
+    "abandon",
+    "acquire",
+    "adopt",
+    "binding_name",
+    "cleanup",
+    "count",
+    "create_object",
+    "describe",
+    "destroy_object",
+    "disposal_method_names",
+    "frame_name",
+    "limit",
+    "managed_class",
+    "mode",
+    "owner_conduit_id",
+    "put_back",
+    "release",
+    "reserve",
+    "reset_method_names",
+    "spell",
+    "spell_id",
+    "spell_name",
+    "timeout_seconds"
+   ],
+   "shape": {
+    "method_count": 32,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "3e9aa7386f163d65c73337fb7dea128c4d4dcfc6c7344667da837afc359c7d9d",
+   "include": true,
+   "role": "The pool of one Existence.managed_spell_quantity version in its owner root's Creations: idle objects for reuse, a count of the objects alive, and the version's mode applied when a lease misses.",
+   "responsibilities": [
+    "keeps the idle objects in the base pool's _idle deque (newest last); the emitted plan leases with an inline _idle.pop() and only an empty pool calls reserve() - the pool never builds (create_object and acquire refuse)",
+    "reserve(): elastic counts a place and records pressure (_note_miss); limited_quantity counts a place below its limit, else serves an object released since the plan's pop, else raises ManagedSpellExhaustedError; queue waits on its condition for a place or a released object until a deadline taken once at the call, then raises it; a torn-down pool raises RuntimeError",
+    "put_back(obj): runs the reset names in order outside every lock; a raising reset destroys the object and propagates (one ExceptionGroup when its disposal fails too); otherwise appends the object, wakes one queue waiter and, above baseline_idle, runs the base pool's elastic band (stretch, timed decay, trim of the oldest idle objects destroyed outside the lock)",
+    "is sized by mode: elastic keeps baseline min(20, limit) and at most limit idle with the kernel pools' retention defaults; limited_quantity and queue are fixed at their limit, so count never exceeds it and nothing is evicted",
+    "keeps no reference to an object that is out (identity is not tracked): only id(obj) keys the record of the disposal-bearing many children adopt() records for it, and a record whose id was reused moves to the orphaned records",
+    "abandon(children, error): a failed build gives its place back, wakes one waiter and disposes the children it built, each failure added as a note on the build's error",
+    "destroy_object: the Spell's disposal methods, then the object's recorded children newest first, count down by one and one waiter woken; disposal never runs on a plain release",
+    "cleanup(): under the lock drains the idle objects, swaps the children maps for empty ones, deletes the borrowed Spell and wakes every waiter; outside it disposes the idle objects with their children, then the children of objects still out, then the orphans, failures as one ExceptionGroup; other fields stay as tombstones",
+    "describe(): the base retention keys without in_use_count, plus identity, policy, count, out_count and children_recorded"
+   ],
+   "owns_state": [
+    "_count",
+    "_condition",
+    "_children_by_object",
+    "_orphaned_children",
+    "_managed_class",
+    "_mode",
+    "_limit",
+    "_timeout_seconds",
+    "_reset_method_names",
+    "_notify_on_return",
+    "_spell (borrowed)",
+    "_disposal_method_names (borrowed)"
+   ],
+   "phases": [
+    "init",
+    "runtime",
+    "cleanup"
+   ],
+   "semantics_authored_against": "3e9aa7386f163d65c73337fb7dea128c4d4dcfc6c7344667da837afc359c7d9d"
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.aether.conduit.creations.managed_spell_quantity.ManagedSpellQuantity",
+   "to_label": "AbstractElasticPool",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.abstract_elastic_pool.AbstractElasticPool"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.conduit.creations.managed_spell_quantity.ManagedSpellQuantity",
+   "to_label": "Condition",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.conduit.creations.managed_spell_quantity.ManagedSpellQuantity",
+   "to_label": "RuntimeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.conduit.creations.managed_spell_quantity.ManagedSpellQuantity",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.conduit.creations.managed_spell_quantity.ManagedSpellQuantity",
+   "to_label": "ExceptionGroup",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "threading": "threading",
+  "time": "time",
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "Any": "typing.Any",
+  "Callable": "typing.Callable",
+  "ClassVar": "typing.ClassVar",
+  "Dict": "typing.Dict",
+  "List": "typing.List",
+  "Optional": "typing.Optional",
+  "Tuple": "typing.Tuple",
+  "Existence": "melder.aether.spellbook.existence.existence.Existence",
+  "ManagedSpellMode": "melder.aether.spellbook.existence.managed_spell_mode.ManagedSpellMode",
+  "ManagedSpellExhaustedError": "melder.utilities.custom_exceptions.managed_spell_exhausted_error.ManagedSpellExhaustedError",
+  "AbstractElasticPool": "melder.utilities.general_base.abstract_elastic_pool.AbstractElasticPool",
+  "Spell": "melder.aether.spellbook.spell.Spell"
+ },
+ "collapse_candidate": {
+  "module": "melder.aether.conduit.creations.managed_spell_quantity",
+  "class": "melder.aether.conduit.creations.managed_spell_quantity.ManagedSpellQuantity",
+  "label": "ManagedSpellQuantity"
+ },
+ "edges_authored": [
+  {
+   "from": "melder.aether.conduit.creations.managed_spell_quantity.ManagedSpellQuantity",
+   "to": "melder.aether.spellbook.spell.Spell",
+   "relation": "borrows",
+   "why": "The pool reads the managed options and the disposal list from its version's Spell at construction and keeps the Spell borrowed (a rebind under the same id re-points it); it never cleans it.",
+   "cardinality": "many_to_one",
+   "phase": [
+    "init",
+    "runtime"
+   ],
+   "strength": "borrowed"
+  },
+  {
+   "from": "melder.aether.conduit.creations.managed_spell_quantity.ManagedSpellQuantity",
+   "to": "melder.aether.spellbook.existence.managed_spell_mode.ManagedSpellMode",
+   "relation": "uses",
+   "why": "The mode decides what a miss does - build, refuse or wait - and how the pool is sized.",
+   "cardinality": "many_to_one",
+   "phase": [
+    "init",
+    "runtime"
+   ],
+   "strength": "borrowed"
+  },
+  {
+   "from": "melder.aether.conduit.creations.managed_spell_quantity.ManagedSpellQuantity",
+   "to": "melder.utilities.custom_exceptions.managed_spell_exhausted_error.ManagedSpellExhaustedError",
+   "relation": "creates",
+   "why": "reserve() raises ManagedSpellExhaustedError.limited or .queue when its mode refuses a lease; nothing has been built by then.",
+   "cardinality": "one_to_many",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "hard"
+  }
+ ]
+}

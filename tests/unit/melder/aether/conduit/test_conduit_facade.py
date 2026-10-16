@@ -83,7 +83,8 @@ def test_bind_forwards_to_spellbook_for_normal_conduit(
     Verify bind forwards registrations to the Spellbook for normal conduits.
 
     Contract:
-        - The bind call is forwarded with the provided arguments.
+        - The bind call is forwarded with the provided arguments; the four managed options
+          (0.2.8242) are forwarded as None when the caller leaves them out.
         - The Spellbook return value is returned.
 
     Args:
@@ -113,6 +114,10 @@ def test_bind_forwards_to_spellbook_for_normal_conduit(
         binding_name="main",
         profile="general",
         resolvable=True,
+        managed_spell_mode=None,
+        managed_spell_limit=None,
+        managed_spell_timeout_seconds=None,
+        managed_spell_reset_methods=None,
         permissions="read",
         extra=extra,
     )

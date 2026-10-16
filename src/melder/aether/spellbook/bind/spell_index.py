@@ -355,6 +355,38 @@ class SpellIndex(Cleanable):
                 return False
             return spell_id in self._spells_in_index
 
+    def _is_selected_unless_cleaned(self, spell_id: str) -> bool:
+        """
+        Internal
+
+        Return whether this index currently selects `spell_id`, answering False once the index is cleaned.
+
+        Purpose:
+            Selected-version probe for readers that neither own nor lock the index - `ReleaseManagedSpell`'s cold
+            resolver prefers the pool of the version its index selects (STORY-2026-10-15-release_managed_spell).
+            `selected_spell_id` is a lock-free read of a field `cleanup()` deletes, so such a reader racing a
+            cleanup would meet an AttributeError there.
+
+        Contract:
+            - Tests SELECTION, not membership: a parked member of the lineage answers False.
+            - Never raises for a cleaned index; returns False.
+            - Pure read: changes nothing.
+
+        Threading:
+            Reads the cleaned flag and the selected id under `self._lock`, the lock `cleanup()` marks the index
+            cleaned and deletes the selected id under, and `update()` repoints it under.
+
+        Args:
+            spell_id (str): The version id to test.
+
+        Returns:
+            bool: True if this live index selects `spell_id`; False otherwise, and False once the index is cleaned.
+        """
+        with self._lock:
+            if self._cleaned:
+                return False
+            return self._selected_spell_id == spell_id
+
     def is_empty(self) -> bool:
         """
         Return whether this index has no members.

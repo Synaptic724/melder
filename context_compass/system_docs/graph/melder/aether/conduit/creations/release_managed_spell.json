@@ -1,0 +1,189 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/aether/conduit/creations/release_managed_spell.py",
+ "source_sha256": "7da4851b6cc85de496ad95cde567e2a7a402275729a9aef9e77a5f05841249f6",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.conduit.creations.release_managed_spell": {
+   "id": "melder.aether.conduit.creations.release_managed_spell",
+   "label": "release_managed_spell",
+   "kind": "module",
+   "file": "src/melder/aether/conduit/creations/release_managed_spell.py",
+   "lineno": 1,
+   "include": true,
+   "role": "Module holding ReleaseManagedSpell, the Aether-owned registry managed objects are given back through.",
+   "responsibilities": [
+    "exports ReleaseManagedSpell; Aether builds the instance at boot and ReleaseManagedSpell() returns it"
+   ],
+   "phases": [
+    "init",
+    "runtime",
+    "cleanup"
+   ],
+   "semantics_authored_against": ""
+  },
+  "melder.aether.conduit.creations.release_managed_spell.ReleaseManagedSpell": {
+   "id": "melder.aether.conduit.creations.release_managed_spell.ReleaseManagedSpell",
+   "label": "ReleaseManagedSpell",
+   "kind": "class",
+   "file": "src/melder/aether/conduit/creations/release_managed_spell.py",
+   "lineno": 13,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "cleanup",
+    "describe",
+    "managed",
+    "register",
+    "release",
+    "release_all",
+    "unregister"
+   ],
+   "shape": {
+    "method_count": 15,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "2fa6359c58343d28f9fd6566e45aa5710b950bc88747f3e26d06360a2333324f",
+   "include": true,
+   "role": "Process singleton Aether builds last and owns: the class-keyed registry of the managed pools live root stores hold, through which a managed object is given back to its pool.",
+   "responsibilities": [
+    "has the hosted roots' singleton shape: a double-checked __new__ under a class lock, a once-only __init__(*, aether=...) that refuses a first construction without its host and resets the bookkeeping, cleanup(), _reset_singleton_for_tests() and _live_instance() (the stores' teardown lookup; never constructs)",
+    "keeps two copy-on-write maps republished whole under a leaf lock held only to publish: _pools_by_class (class -> tuple of pools, read lock-free by release) and _registrations (id(pool) -> class and holding root id)",
+    "register / unregister are called by Creations only, outside the store lock, as a store takes (ensure, restore) or gives up (extract, discard, cleanup) a pool; register is idempotent, moves a pool's root on a restore and re-keys a rebind's new class object; unregister does nothing once cleaned",
+    "release(obj): one dict get by type(obj) and the pool's put_back when exactly one pool matches and no filter is given; otherwise the cold resolver keeps the pools of spell_id and of the conduit's root (a lesser names its root), prefers the version its index selects and raises a ValueError naming every candidate unless exactly one remains",
+    "managed(obj) resolves the pool the same way and returns a ManagedSpellLease; release_all releases every object and raises the failures as one ExceptionGroup; describe(cls) returns each pool's snapshot plus holding_conduit_id and active_version",
+    "borrows the pools and never cleans or disposes one; trusts every release (identity is not tracked); a release needs neither a conduit nor Aether",
+    "cleanup() publishes empty maps as tombstones, keeps _lock and resets the singleton bookkeeping; release, managed, release_all, describe and register then raise the cleaned RuntimeError"
+   ],
+   "owns_state": [
+    "_pools_by_class",
+    "_registrations",
+    "_lock"
+   ],
+   "phases": [
+    "init",
+    "runtime",
+    "cleanup"
+   ],
+   "semantics_authored_against": "2fa6359c58343d28f9fd6566e45aa5710b950bc88747f3e26d06360a2333324f"
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.aether.conduit.creations.release_managed_spell.ReleaseManagedSpell",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.conduit.creations.release_managed_spell.ReleaseManagedSpell",
+   "to_label": "RLock",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.conduit.creations.release_managed_spell.ReleaseManagedSpell",
+   "to_label": "ManagedSpellLease",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.conduit.creations.release_managed_spell.ReleaseManagedSpell",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.conduit.creations.release_managed_spell.ReleaseManagedSpell",
+   "to_label": "ExceptionGroup",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.conduit.creations.release_managed_spell.ReleaseManagedSpell",
+   "to_label": "TypeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.conduit.creations.release_managed_spell.ReleaseManagedSpell",
+   "to_label": "Lock",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "threading": "threading",
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "Any": "typing.Any",
+  "ClassVar": "typing.ClassVar",
+  "Dict": "typing.Dict",
+  "Iterable": "typing.Iterable",
+  "List": "typing.List",
+  "Optional": "typing.Optional",
+  "Tuple": "typing.Tuple",
+  "ManagedObjectT": "melder.aether.conduit.creations.managed_spell_lease.ManagedObjectT",
+  "ManagedSpellLease": "melder.aether.conduit.creations.managed_spell_lease.ManagedSpellLease",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+  "Aether": "melder.aether.aether.Aether",
+  "Conduit": "melder.aether.conduit.conduit.Conduit",
+  "ManagedSpellQuantity": "melder.aether.conduit.creations.managed_spell_quantity.ManagedSpellQuantity"
+ },
+ "collapse_candidate": {
+  "module": "melder.aether.conduit.creations.release_managed_spell",
+  "class": "melder.aether.conduit.creations.release_managed_spell.ReleaseManagedSpell",
+  "label": "ReleaseManagedSpell"
+ },
+ "edges_authored": [
+  {
+   "from": "melder.aether.conduit.creations.release_managed_spell.ReleaseManagedSpell",
+   "to": "melder.aether.conduit.creations.managed_spell_quantity.ManagedSpellQuantity",
+   "relation": "borrows",
+   "why": "The registry holds every live pool under its managed class and calls its put_back; the pools belong to their root stores, and the registry never cleans one.",
+   "cardinality": "one_to_many",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "borrowed"
+  },
+  {
+   "from": "melder.aether.conduit.creations.release_managed_spell.ReleaseManagedSpell",
+   "to": "melder.aether.conduit.creations.managed_spell_lease.ManagedSpellLease",
+   "relation": "creates",
+   "why": "managed(obj) wraps the object and the pool it resolved in a lease.",
+   "cardinality": "one_to_many",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "hard"
+  },
+  {
+   "from": "melder.aether.conduit.creations.release_managed_spell.ReleaseManagedSpell",
+   "to": "melder.aether.spellbook.bind.spell_index.SpellIndex",
+   "relation": "uses",
+   "why": "The cold resolver prefers the pool whose version its index selects, read through the cleanup-safe _is_selected_unless_cleaned.",
+   "cardinality": "many_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "borrowed"
+  },
+  {
+   "from": "melder.aether.conduit.creations.release_managed_spell.ReleaseManagedSpell",
+   "to": "melder.aether.conduit.conduit.Conduit",
+   "relation": "uses",
+   "why": "A conduit filter names its root (_root_conduit_id); the registry keeps no conduit.",
+   "cardinality": "many_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "borrowed"
+  }
+ ]
+}

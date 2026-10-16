@@ -204,9 +204,12 @@ class StaticCommandSystem(CommandSystem):
                 )
             )
         for spell_record in matching_spell_records:
+            # No single stored object to hand out: `many` builds anew, a spellspace object is request-local, and a
+            # managed spell's objects are leased from a pool (2026-10-15).
             if spell_record.existence in {
                     Existence.many,
                     Existence.unique_per_spell_space,
+                    Existence.managed_spell_quantity,
             }:
                 continue
             owner_conduit_id = spell_record.owner_conduit_id
@@ -230,6 +233,7 @@ class StaticCommandSystem(CommandSystem):
                 if spell_record.existence in {
                     Existence.many,
                     Existence.unique_per_spell_space,
+                    Existence.managed_spell_quantity,
                 }
             ),
             None,
@@ -625,6 +629,7 @@ class StaticCommandSystem(CommandSystem):
         is_static_supported = spell_record.existence not in {
             Existence.many,
             Existence.unique_per_spell_space,
+            Existence.managed_spell_quantity,
         }
         is_live = False
         owner_conduit_id = spell_record.owner_conduit_id

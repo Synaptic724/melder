@@ -77,8 +77,12 @@ class ScopeOrderingStrategy(SpellSystemValidationStrategy):
             OperationCancelledError:
                 If cancel_event is set while iterating.
         """
+        # A managed spell ranks with unique: its pool lives in the owning root's
+        # store for the root's life, so it may depend on unique, managed and many
+        # spells, and every holder may depend on it.
         scope_rank = {
             Existence.unique: 0,
+            Existence.managed_spell_quantity: 0,
             Existence.unique_per_conduit_cluster: 1,
             Existence.unique_per_conduit_lineage: 2,
             Existence.unique_per_conduit: 3,

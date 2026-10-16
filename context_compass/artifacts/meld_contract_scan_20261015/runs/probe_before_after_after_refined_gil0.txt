@@ -1,0 +1,13 @@
+after_refined: python 3.14.7 gil_enabled=False melder 0.2.8246 from /tmp/cc_res/nonres/tree/src/melder; SpellState.non_resolvable present=True
+P1 auto_plain: median 0.42 us min 0.30 us per meld (5 x 2000); P2 flag=False gate=0.00 per meld
+P1 auto_definition: median 0.33 us min 0.29 us per meld (5 x 2000); P2 flag=False gate=0.00 per meld
+P1 dyn_plain: median 0.69 us min 0.68 us per meld (5 x 2000); P2 flag=False gate=0.00 per meld
+P1 dyn_definition: median 0.77 us min 0.68 us per meld (5 x 2000); P2 flag=False gate=0.00 per meld
+P1 auto_override: median 0.44 us min 0.40 us per meld (5 x 2000); P2 flag=False gate=0.00 per meld
+P1 dyn_borrower_contract: median 2061.12 us min 1910.83 us per meld (3 x 100); P2 flag=True gate=1.00 per meld
+P3 conjure S=200 D=0: median 32.5 ms min 30.4 ms (3 runs) flag=False; register_conduit 587 us, 401 refreshes totalling 81 us
+P3 conjure S=200 D=20: median 40.0 ms min 39.0 ms (3 runs) flag=False; register_conduit 366 us, 401 refreshes totalling 88 us
+P3 conjure S=200 D=100: median 41.6 ms min 34.2 ms (3 runs) flag=False; register_conduit 536 us, 401 refreshes totalling 88 us
+P4 dynamic D=0: late bind + first meld median 2046 us; warm meld of C0 after it median 0.69 us; flag=False; 4.0 refreshes per late class, mean 2.27 us, max 9.08 us
+P4 dynamic D=20: late bind + first meld median 2272 us; warm meld of C0 after it median 0.68 us; flag=False; 4.0 refreshes per late class, mean 3.76 us, max 30.57 us
+P4 dynamic D=100: late bind + first meld median 2744 us; warm meld of C0 after it median 0.70 us; flag=False; 4.0 refreshes per late class, mean 6.08 us, max 16.62 us

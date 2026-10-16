@@ -1,0 +1,5 @@
+tree | tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system_states_non_resolvable.py | rc=1 | secs=2 | 28 failed in 0.74s
+tree | tests/unit/melder/aether/dev_ops/risk_manager/test_risk_manager_non_resolvable.py | rc=1 | secs=1 | 11 failed in 0.77s
+tree | tests/unit/melder/aether/dev_ops/risk_manager/test_risk_manager.py | rc=0 | secs=1 | 21 passed in 0.60s
+tree | tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system_states_non_resolvable.py | rc=0 | secs=2 | 28 passed in 0.65s
+tree | tests/unit/melder/aether/dev_ops/risk_manager/test_risk_manager_non_resolvable.py | rc=1 | secs=1 | 8 failed, 3 passed in 0.69s

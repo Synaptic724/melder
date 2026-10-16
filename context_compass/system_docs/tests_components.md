@@ -5,7 +5,7 @@
 - Status: in_progress
 - Owner:
 - Created: 2026-01-22
-- Updated: 2026-10-14
+- Updated: 2026-10-16
 
 ## Scope
 This document defines C3 components, C2 subcomponents, and C1 code references
@@ -363,6 +363,16 @@ Protects:
   `### Subcomponent: Repository Tooling Unit Cluster`)
 - race fixes, as deterministic stand-ins for the concurrent writer (see
   `### Flow: Concurrent-Writer Stand-In`)
+- managed spells (0.2.8241-0.2.8246): the member and its Phase 6 rank, the bind options with their refusals and
+  ids, the pool in each mode, the release registry and the lease, the plans' managed sites and the owner stamp
+  through an ownership transfer (see `### Subcomponent: Managed Spell Pools Unit Cluster` and the spellbook
+  clusters)
+- the control plane's capability flag (0.2.8247): `SpellState.non_resolvable`, the registry's published set of
+  flagged lineages and RiskManager's Book flag that leaves them out (see
+  `### Subcomponent: DevOps Control Plane Unit Cluster`)
+- conjure's wiring of the versions parked before it (0.2.8248): each parked version gets the active loop's owner
+  stamp and nothing else, under the Book lock, a raising stamp logged (see
+  `### Subcomponent: Spellbook Runtime And Binding Unit Cluster`)
 
 Inputs:
 - local runtime classes and helper fixtures; `MagicMock` collaborators where the
@@ -388,12 +398,14 @@ Lifecycle/Cleanup:
 Concurrency/Threading:
 - direct coverage of the synchronization primitives (creation gate and controller,
   load gate, phase scheduler, latches, switches, weak concurrent containers);
-  `test_abstract_elastic_pool_multithreaded.py` runs threads against the pool; a
-  race in larger code is pinned by a stand-in, not by threads
+  `test_abstract_elastic_pool_multithreaded.py` runs threads against the pool, and the managed pool and the
+  release registry each have a multithreaded file of eight barrier-released threads (see
+  `### Flow: Managed Pool Stress Under Eight Threads`); a race in larger code is pinned by a stand-in, not by
+  threads
 
 Invariants/Guarantees:
 - unit tests stay close to class/method behavior
-- the densest tier: 480 `test_*.py` modules among 483 `.py` files (recounted 2026-10-14)
+- the densest tier: 505 `test_*.py` modules among 508 `.py` files (recounted 2026-10-16)
 - CI-script tests never import `melder`; each script is loaded as a standalone module
 
 Failure Modes:
@@ -410,10 +422,10 @@ Extension Points:
 
 Key Files (C1):
 - `tests/unit/melder/aether/conduit/conftest.py`
-- The aether tree carries 189 `test_*.py` modules beneath these; they are the
+- The aether tree carries 204 `test_*.py` modules beneath these; they are the
   CONTENT of this component rather than its key surfaces, and are counted here
   rather than cited so the core set stays a set an agent can verify.
-- No harness or support module of its own; the 47 test_*.py modules in
+- No harness or support module of its own; the 48 test_*.py modules in
   tests/unit/melder/crystallizer/ depend only on the shared surfaces at tests/ and the scoped
   conftests named in `tests_architecture.md`. Paths in this bullet are written
   WITHOUT backticks because they are directories - descriptive, never citations.
@@ -422,10 +434,10 @@ Key Files (C1):
   conftests named in `tests_architecture.md`. Paths in this bullet are written
   WITHOUT backticks because they are directories - descriptive, never citations.
 - `tests/unit/melder/spellbook/spell_compiler/support/compiler_test_support.py`
-- The spellbook tree carries 146 `test_*.py` modules beneath these; they are the
+- The spellbook tree carries 157 `test_*.py` modules beneath these; they are the
   CONTENT of this component rather than its key surfaces, and are counted here
   rather than cited so the core set stays a set an agent can verify.
-- No harness or support module of its own; the 52 test_*.py modules in
+- No harness or support module of its own; the 53 test_*.py modules in
   tests/unit/melder/utilities/ depend only on the shared surfaces at tests/ and the scoped
   conftests named in `tests_architecture.md`. Paths in this bullet are written
   WITHOUT backticks because they are directories - descriptive, never citations.
@@ -454,6 +466,8 @@ Protects:
   and load-gate/scheduler composition
 - the agent text reader against the real packaged documents rather than generated
   fixtures (`test_agent_text_reader_component.py`)
+- managed objects leased and given back through real melds, injections and `Conduit.managed_spell_meld`
+  (0.2.8245; see `### Subcomponent: Aether Component Cluster`)
 
 Inputs:
 - small real runtime slices
@@ -478,7 +492,7 @@ Concurrency/Threading:
 Invariants/Guarantees:
 - tier intent is explicitly documented in `tests/component/INFO.MD`: real core
   objects, stubbed external boundaries, deterministic, contract-level assertions
-- 164 `test_*.py` modules among 166 `.py` files (recounted 2026-10-14)
+- 166 `test_*.py` modules among 168 `.py` files (recounted 2026-10-16)
 
 Failure Modes:
 - component tests drift into unit-style internals or full integration sprawl
@@ -491,7 +505,7 @@ Extension Points:
 
 Key Files (C1):
 - `tests/component/INFO.MD`
-- No harness or support module of its own; the 75 test_*.py modules in
+- No harness or support module of its own; the 77 test_*.py modules in
   tests/component/melder/aether/ depend only on the shared surfaces at tests/ and the scoped
   conftests named in `tests_architecture.md`. Paths in this bullet are written
   WITHOUT backticks because they are directories - descriptive, never citations.
@@ -505,7 +519,7 @@ Key Files (C1):
   WITHOUT backticks because they are directories - descriptive, never citations.
 - `tests/component/melder/spellbook/compiler_test_helpers.py`
 - `tests/component/melder/spellbook/spell_compiler_runtime_test_support.py`
-- The spellbook tree carries 74 `test_*.py` modules beneath these; they are the
+- The spellbook tree carries 77 `test_*.py` modules beneath these; they are the
   CONTENT of this component rather than its key surfaces, and are counted here
   rather than cited so the core set stays a set an agent can verify.
 - No harness or support module of its own; the 4 test_*.py modules in
@@ -536,6 +550,11 @@ Protects:
   (see `### Subcomponent: Multithreading Integration Cluster`)
 - a whole application bootstrapped the way a user would, automatic and dynamic
   (see `### Subcomponent: Live Sim Integration Cluster`)
+- managed pools through real worlds (0.2.8241-0.2.8246): pools in the owning root's store, leases across frames,
+  binding names, notches, borrowers and lessers, the release registry, ownership transfers and a restored world
+  (see `### Subcomponent: Conduit Integration Cluster`)
+- versions staged before conjure (0.2.8248): every family staged with `bind_inactive` before conjure melds after a
+  notch as one staged after it (see `### Subcomponent: Spellbook Integration Cluster`)
 
 Inputs:
 - real runtime objects
@@ -560,7 +579,7 @@ Concurrency/Threading:
 
 Invariants/Guarantees:
 - integration tests use real runtime stacks rather than hand-built shallow mocks
-- 158 `test_*.py` modules among 165 `.py` files (recounted 2026-10-14); the others are benches and the
+- 167 `test_*.py` modules among 174 `.py` files (recounted 2026-10-16); the others are benches and the
   live-sim application
 
 Failure Modes:
@@ -584,11 +603,11 @@ Key Files (C1):
   rather than cited so the core set stays a set an agent can verify.
 - The rift tree (inside the aether tree) carries 3 `test_*.py` modules over the
   same three benches; they are counted here rather than cited.
-- No harness or support module of its own; the 37 test_*.py modules in
+- No harness or support module of its own; the 43 test_*.py modules in
   tests/integration/melder/conduit/ depend only on the shared surfaces at tests/ and the scoped
   conftests named in `tests_architecture.md`. Paths in this bullet are written
   WITHOUT backticks because they are directories - descriptive, never citations.
-- No harness or support module of its own; the 17 test_*.py modules in
+- No harness or support module of its own; the 18 test_*.py modules in
   tests/integration/melder/crystallizer/ depend only on the shared surfaces at tests/ and the scoped
   conftests named in `tests_architecture.md`. Paths in this bullet are written
   WITHOUT backticks because they are directories - descriptive, never citations.
@@ -607,7 +626,7 @@ Key Files (C1):
   tests/integration/melder/mutation_research/ depend only on the shared surfaces at tests/ and the scoped
   conftests named in `tests_architecture.md`. Paths in this bullet are written
   WITHOUT backticks because they are directories - descriptive, never citations.
-- No harness or support module of its own; the 49 test_*.py modules in
+- No harness or support module of its own; the 50 test_*.py modules in
   tests/integration/melder/spellbook/ depend only on the shared surfaces at tests/ and the scoped
   conftests named in `tests_architecture.md`. Paths in this bullet are written
   WITHOUT backticks because they are directories - descriptive, never citations.
@@ -888,6 +907,8 @@ Protects:
 - the configuration read accessors (0.2.8208): `SpellbookConfiguration.aether_frame` ("default" when omitted,
   a named frame round-trips) and `frozen` (False until `freeze()` or `finalize()`), the posture's `frozen`
   (its builders refuse once it reads True), reads that change nothing, and the cleaned refusal
+- the static rooms treating a managed spell like `many` (0.2.8243): static access names the existence instead
+  of probing a store, the status payload says why, and a live pool never makes it a live static spell
 Key Files (C1):
 - `tests/unit/melder/aether/test_nexus.py`
 - `tests/unit/melder/aether/test_root_configuration_value_snapshots.py` (root configuration snapshots, 2026-09-30)
@@ -895,6 +916,7 @@ Key Files (C1):
 - `tests/unit/melder/aether/test_rift_runtime_contracts.py`
 - `tests/unit/melder/aether/test_workstation.py`
 - `tests/unit/melder/aether/test_command_system_direct.py`
+- `tests/unit/melder/aether/test_static_rooms_managed_spell_quantity.py` (static rooms, 2026-10-15)
 
 ### Subcomponent: Aetheric Mediator Lifecycle Unit Cluster
 Parent Component: Unit Test Suite
@@ -910,6 +932,85 @@ Lifecycle boundary (owner clarified 2026-09-28):
   against destruction by another caller. Eight simultaneous cleanup calls are outside this contract.
 Key Files (C1):
 - `tests/unit/melder/aether/aetheric_mediator/test_aetheric_mediator_unit.py`
+
+### Subcomponent: DevOps Control Plane Unit Cluster
+Parent Component: Unit Test Suite
+Purpose:
+- verify the per-frame control plane's capability flag and the Book flag RiskManager distils from its risk sets,
+  on a real `SpellSystemStates` registry rather than a stub
+Protects:
+- `SpellState.non_resolvable` (0.2.8247; `test_spell_system_states_non_resolvable.py`, 34 tests): `update_flags`
+  and `has_flag` leave validity alone and refuse a cleaned state; `clear_dirty` keeps the flag; `register_index`
+  sets it for resolvable=False, clears it for True, keeps it with no capability only for an unchanged selection,
+  refuses a non-bool before registering anything, writes it before the gate's RiskManager callback and
+  re-publishes once when the flag changed on a lineage already gated; the published `non_resolvable_index_ids`
+  follows every registration path, `unregister_index` and cleanup's tombstone, is replaced rather than mutated,
+  and agrees with each lineage's flag
+- RiskManager's distillation (0.2.8247; `test_risk_manager_non_resolvable.py`, 11 tests): a flagged lineage alone
+  leaves the Book flag down while the risk sets keep it, one unflagged risky lineage raises it, `spell:` keys and
+  removed lineages count, a registration that clears the flag raises the Book flag at its event - also in a
+  borrower after a notch back to a lineage already gated - and `register_conduit` and `register_spell` write the
+  flag once; the registry stub of `test_risk_manager.py` answers an empty set, so its 21 tests keep their meaning
+Key Files (C1):
+- `tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system_states_non_resolvable.py` (2026-10-16)
+- `tests/unit/melder/aether/dev_ops/risk_manager/test_risk_manager_non_resolvable.py` (2026-10-16)
+
+### Subcomponent: Managed Spell Pools Unit Cluster
+Parent Component: Unit Test Suite
+Purpose:
+- cover the managed lifetime's runtime pieces under tests/unit/melder/aether/conduit/ (added 2026-10-15,
+  0.2.8243-0.2.8246): the pool of one managed version (`ManagedSpellQuantity`), the Creations pool map, the
+  release registry (`ReleaseManagedSpell`) and its lease (`ManagedSpellLease`), the meld doors' store readers
+  and the owner stamp an ownership transfer moves
+Protects:
+- the pool in each mode (`test_managed_spell_quantity.py`): elastic keeps min(20, limit) idle with the kernel
+  pools' stretch, settle and decay and never refuses; limited_quantity refuses at its limit before anything is
+  built, unless an object came back after the plan's empty pop; a queue waiter is served by a release (the same
+  object, no build) or by the place a destroyed or abandoned build frees, raises at its one deadline, and wakes
+  with the torn-down error when the root is torn down; a release runs the reset names in order and never
+  disposes; a raising reset destroys the object and its recorded children and frees its place; cleanup disposes
+  the idle objects, then the children of objects out, then orphans, in one aggregated group, and leaves objects
+  out to their holders; the pool keeps no reference to an object out
+- the pool under eight threads (`test_managed_spell_quantity_multithreaded.py`): limited_quantity 3 never has
+  more than 3 objects alive or out; queue 2 never hangs and never exceeds 2; elastic ends with its count equal to
+  its idle objects; six waiters on a full queue all wake with the torn-down error; a queue of 1 never hands one
+  object to two leases (see `### Flow: Managed Pool Stress Under Eight Threads`)
+- the store (`test_creations_managed_quantities.py`): one pool per version, composed only for a managed spell
+  in a live store; an idempotent ensure that re-points a kept pool at a rebound Spell; a pool never in
+  `_creations`; purge 0; clears that never touch a pool; pools cleaned before the disposable registry and newest
+  first, their failures in the store's group; the `managed` extract/restore row (a replaced pool cleaned, its
+  failures raised once the moved pool is in place); the registry calls at ensure, extract, restore and cleanup.
+  `test_creations_discard_managed_quantity.py` pins the identity-checked discard: unregistered, never cleaned,
+  removed once under concurrent callers
+- the registry (`test_release_managed_spell.py`): one process singleton that Aether builds and cleans, a bare
+  first construction refused, the reset hook; a release by exact class (a subclass never reaches its base's
+  pool), the `spell_id` and `conduit` filters, the selected version preferred (a notch moves the preference)
+  and every ambiguity named with its pools; `managed`, `release_all` (every object released, the failures raised
+  together) and `describe`. `test_release_managed_spell_multithreaded.py` keeps releases routing while another
+  class registers and unregisters, keeps 32 concurrent registrations and removals exact, and lets 64
+  registrations racing the registry's cleanup land or raise the cleaned error
+- the lease (`test_managed_spell_lease.py`): one release however often it is called; `with` releases on exit
+  and when the block raises and never suppresses; a raising reset or a torn-down pool still ends the lease
+- the meld doors (`test_meld_doors_managed_spell_quantity.py`): conduit purge answers 0 from the caller's
+  store, the SpellSpace purge keeps refusing a managed spell, `meld_existing_spell` refuses it, and both live probes
+  report the owner root's pool - an empty or unstamped pool is not live
+- the owner stamp through a transfer (`test_transfer_of_ownership_owner_stamps.py`): the flip stamps the
+  target's store, gate controller and caching posture; a rollback stamps back and discards and cleans only the
+  pools the stamps composed; stamped parked members of every existence are re-stamped and rolled back; a
+  raising stamp is still rolled back; a failed move puts the rows back before the stamps; a version staged
+  before conjure moves unstamped, as before (stamping such versions is an open owner decision)
+- the Conduit bind facade forwarding the four managed options, None when the caller leaves them out
+  (`test_conduit_facade.py`)
+Key Files (C1):
+- `tests/unit/melder/aether/conduit/creations/test_managed_spell_quantity.py` (the pool, 2026-10-15)
+- `tests/unit/melder/aether/conduit/creations/test_managed_spell_quantity_multithreaded.py` (2026-10-15)
+- `tests/unit/melder/aether/conduit/creations/test_creations_managed_quantities.py` (the store, 2026-10-15)
+- `tests/unit/melder/aether/conduit/creations/test_creations_discard_managed_quantity.py` (2026-10-15)
+- `tests/unit/melder/aether/conduit/creations/test_release_managed_spell.py` (the registry, 2026-10-15)
+- `tests/unit/melder/aether/conduit/creations/test_release_managed_spell_multithreaded.py` (2026-10-15)
+- `tests/unit/melder/aether/conduit/creations/test_managed_spell_lease.py` (the lease, 2026-10-15)
+- `tests/unit/melder/aether/conduit/meld/test_meld_doors_managed_spell_quantity.py` (meld doors, 2026-10-15)
+- `tests/unit/melder/aether/conduit/conduit_ward/transfer/test_transfer_of_ownership_owner_stamps.py` (2026-10-15)
 
 ### Subcomponent: Crystallizer Unit Cluster
 Parent Component: Unit Test Suite
@@ -932,6 +1033,9 @@ Protects:
   and has its text retained, whatever the descent setting; a root that excludes it makes its packages
   site-package leaves, walked only with descent on and never fingerprinted; user roots never make a module
   importable; `with_defaults()` takes the working directory as the user root, with descent off
+- managed options in the record (0.2.8242): a managed crystal records the mode's name, the limit, the timeout
+  and the reset names in order; other crystals carry none of the four keys; a payload's options replay as bind
+  keywords (none from a 4.1 record or another existence); RecordVersion 4.2.0 still reads 4.1 records
 Key Files (C1):
 - `tests/unit/melder/crystallizer/test_crystallizer.py`
 - `tests/unit/melder/crystallizer/test_crystallizer_configuration.py`
@@ -939,6 +1043,7 @@ Key Files (C1):
 - `tests/unit/melder/crystallizer/test_synthetic_module.py`
 - `tests/unit/melder/crystallizer/crystal_loader_system/test_restore_spell_id_regime.py` (2026-09-30)
 - `tests/unit/melder/crystallizer/crystal_analysis/test_custody_boundary_characterization.py` (2026-10-10)
+- `tests/unit/melder/crystallizer/test_spell_crystal_managed_options.py` (record 4.2.0, 2026-10-15)
 
 ### Subcomponent: MutationResearch Unit Cluster
 Parent Component: Unit Test Suite
@@ -985,6 +1090,29 @@ Protects:
   instance of one is refused while staying usable, and the guard compares `(module, qualname)` strings - a
   class under another top-level package passes, a user class claiming a Melder identity is refused - with
   every manifest entry rooted at `melder`
+- managed bind options (0.2.8242; `test_bind_managed_spell_options.py`): the mode vocabulary and the elastic
+  defaults (limit 256, no timeout, no resets); every refusal - an option on another existence, a function,
+  method or existing object, an unknown mode, a bad limit, a timeout outside queue or not finite and positive,
+  reset names that are not a list or tuple naming methods of the class; every existing member's spell id
+  byte-identical to 0.2.8241 while the part `managed:<mode>:<limit>:<timeout>:<names>` moves a managed
+  binding's id; the index minted with that id; the decorator form and `spell_id_inspector` parity. Around it:
+  `scan_bind` storing, reserving and replaying the options (`test_scan_bind_managed_options.py`), the Spell's
+  read-only properties (`test_spell_managed_spell_options.py`) and `SpellBinder.as_managed_spell_quantity`
+  (`test_spellbinder_managed_options.py`)
+- the member and its pool stamp (0.2.8241-0.2.8243): `managed_spell_quantity` appended after the six members,
+  whose values do not move (`test_existence_managed_spell_quantity.py`); the resolution matrix counting seven
+  members, the managed one supported for class spells only (`test_resolution_style_matrix.py`); an owner stamp
+  ensuring the version's pool, and no pool for another existence or a stamp without a store
+  (`test_spell_managed_quantity_stamp.py`); the selected-version probe, which answers instead of raising under a
+  racing cleanup (`test_spell_index_selected_probe.py`); the parity test reading `scan_bind`'s signature in
+  the FORWARDREF format (`test_scan_bind_option_parity.py`)
+- the versions parked before conjure (0.2.8248; `test_spellbook_creation_system_parked_versions.py`):
+  `define_conduit_into_spells` stamps each parked version once with the active loop's arguments (the root's id,
+  name and store, its dynamic flag and gate controller, the caching posture; three postures), under the Book lock
+  (a prober thread is kept out of it during every stamp); a parked existing object is stamped but not registered
+  while an active one is; a parked version's resolution flag is left as it was; one raising parked stamp is
+  logged with its id and the method tag while every other version is wired; a Book with nothing parked is wired
+  as before
 Key Files (C1):
 - `tests/unit/melder/spellbook/test_spellbook.py`
 - `tests/unit/melder/spellbook/test_spell.py`
@@ -998,6 +1126,14 @@ Key Files (C1):
 - `tests/unit/melder/spellbook/bind/test_stable_spell_fingerprint.py` (address-free fingerprints, 2026-09-26)
 - `tests/unit/melder/spellbook/bind/test_internal_registration_identity.py` (guard identity, 2026-10-10)
 - `tests/unit/melder/spellbook/test_spellbook_creation_system_dependency_flags.py` (target-pass flags, 2026-09-30)
+- `tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py` (managed bind options, 2026-10-15)
+- `tests/unit/melder/spellbook/test_scan_bind_managed_options.py` (2026-10-15)
+- `tests/unit/melder/spellbook/test_spell_managed_spell_options.py` (2026-10-15)
+- `tests/unit/melder/spellbook/test_spellbinder_managed_options.py` (2026-10-15)
+- `tests/unit/melder/spellbook/test_existence_managed_spell_quantity.py` (2026-10-15)
+- `tests/unit/melder/spellbook/test_spell_managed_quantity_stamp.py` (2026-10-15)
+- `tests/unit/melder/spellbook/bind/test_spell_index_selected_probe.py` (2026-10-15)
+- `tests/unit/melder/spellbook/test_spellbook_creation_system_parked_versions.py` (parked versions, 2026-10-16)
 
 ### Subcomponent: Spellbook Compiler Unit Cluster
 Parent Component: Unit Test Suite
@@ -1021,6 +1157,21 @@ Protects:
 - canonical address collisions (2026-09-28): same-name entries at distinct addresses remain valid;
   case/default aliases and different display names at one address still collide, with identical
   results through fresh and pass-cached validation (`test_duplicate_spell_name_strategy.py`).
+- the managed site (0.2.8245; `test_site_plan_lowering_managed.py`): an automatic owner's pool bound as a plan
+  constant, a per-creation read elsewhere and the missing-pool error; the lease taken right before its
+  consumer, one leasing site per consumer and one lease per injection path; the reserve-first miss (a refusal
+  at the limit builds nothing, a queue lease is served by a release); every lease given back when a sibling,
+  the consumer or its publication fails or a shared consumer loses its cold race, failed returns kept as notes
+  or one group; disposal-bearing children recorded with the object and disposed when its build fails; overrides
+  that remove the site, build it fresh and unpooled, or apply only on a miss; unresolved inputs refused before
+  a place is reserved
+- the seams a managed spell passes (0.2.8241-0.2.8245): per-path instance keys and occurrences, the manifest's
+  "managed" route key, door rows reusing the `many` templates and `rows_contain_managed_step`
+  (`test_managed_dispense_seams.py`); route family "managed" (`test_spell_artifact_processor_core.py`); the
+  solo family declining a managed spell and many_only a graph holding one (`test_codegen_plan_discovery_core.py`);
+  the singleton specializer keeping the plain door (`test_generalized_specializer_wrapper.py`); Phase 6 ranking
+  a managed spell with `unique` - it may hold unique, managed and many, never a narrower lifetime, and any
+  holder may hold it (`test_scope_ordering_strategy.py`)
 Key Files (C1):
 - `tests/unit/melder/spellbook/spell_compiler/test_spell_compiler_system.py`
 - `tests/unit/melder/spellbook/spell_compiler/test_spell_compiler.py`
@@ -1034,6 +1185,8 @@ Key Files (C1):
 - `tests/unit/melder/spellbook/spell_compiler/phases/test_compiler_pool_snapshot_reads.py`
 - `tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_door_held_root.py`
 - `tests/unit/melder/spellbook/spell_crafter/validation/strategies/test_duplicate_spell_name_strategy.py`
+- `tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py` (2026-10-15)
+- `tests/unit/melder/spellbook/spell_compiler/test_managed_dispense_seams.py` (2026-10-15)
 
 ### Subcomponent: Package Root Unit Cluster
 Parent Component: Unit Test Suite
@@ -1052,6 +1205,9 @@ Protects:
 - the system-document views: construction imports nothing deferred, slices are
   exact, refusal never reads as empty, graph walks terminate on cycles, and search,
   impact and cite stay index-shaped
+- the managed surface (0.2.8244): `ManagedSpellMode`, `ReleaseManagedSpell`, `ManagedSpellLease` and
+  `ManagedSpellExhaustedError` on the root and in `__all__`, each the concrete-path object, while the pool
+  class `ManagedSpellQuantity` stays off the root
 Key Files (C1):
 - `tests/unit/melder/test_package_public_surface.py`
 - `tests/unit/melder/test_package_version_metadata.py`
@@ -1104,6 +1260,8 @@ Protects:
   settle time, steps per interval, catches up and stops at the baseline, a later miss postpones it, a fixed pool
   evicts without the clock, and a failing destroy keeps the rest of its trim pooled; concurrent band returns and a
   concurrent burst stay within bounds
+- `ManagedSpellExhaustedError` (0.2.8243): the limited and queue texts - the limit, the timeout printed without
+  trailing zeros, the two ways out - caught as a `MeldExecutionError`, with no inner cause
 Key Files (C1):
 - `tests/unit/melder/utilities/synchronization/test_creation_gate.py`
 - `tests/unit/melder/utilities/synchronization/test_creation_gate_controller.py`
@@ -1115,6 +1273,7 @@ Key Files (C1):
 - `tests/unit/melder/utilities/ai_native_support_tools/test_agent_text_reader.py`
 - `tests/unit/melder/utilities/data_structures/test_abstract_elastic_pool_multithreaded.py`
 - `tests/unit/melder/utilities/general_base/test_cleanable_cleanup_contexts.py`
+- `tests/unit/melder/utilities/custom_exceptions/test_managed_spell_exhausted_error.py` (2026-10-15)
 
 ### Subcomponent: Repository Tooling Unit Cluster
 Parent Component: Unit Test Suite
@@ -1175,6 +1334,24 @@ Protects:
   that owns the holder and disposed exactly once, when that owner ends - not when the lesser or spellspace that
   first melded the holder ends (`unique`, `unique_per_conduit`, lineage; nested and override routes); controls
   for holders built where they live; the opt-in singleton specializer builds one child, not one per warm meld
+- managed spells through real melds (0.2.8245; `test_conduit_component_managed_spell_quantity.py`): a released
+  object is the next meld's; every door of the spell leases from one pool; a `many` holder takes a lease per
+  meld and a stored `unique` holder keeps its own; limited_quantity refuses until a release, and a queue meld
+  is served by one or raises at its timeout; a failed holder gives its lease back; overrides remove the site or
+  build a fresh object; an elastic trim disposes the object with its recorded child; the activation hooks run on
+  every lease; `managed_spell_meld` releases through its `with` (also when the block raises), once without it,
+  and refuses another existence; lessers and spellspaces lease from the root's pool; root teardown disposes
+  what is idle and leaves objects out; a dynamic root reads its pool per creation.
+  `test_conduit_component_purge.py` pins a managed purge: 0, before any lock, the pool kept
+- non-resolvable definitions and the Book flag (0.2.8247; `test_non_resolvable_validation_flag_component.py`, 9
+  tests): automatic and dynamic worlds holding a Protocol definition keep the Book flag down, so later melds skip
+  the validation gate while a meld of the definition is still refused; an override consumer of a definition melds
+  without the gate; a notch to a definition and back moves the flag; an index-linked borrower revalidates the
+  version it gets back after a repeat notch; a transferred definition keeps the exclusion on its new owner and a
+  rolled-back transfer on its source; a contract consumer beside a definition still follows its lender's notch;
+  and four threads melding while 40 notches flip the lineage never build the definition (a lookup that lands
+  inside a notch's swap may raise the pre-existing KeyError, which the test accepts). Every flag check asserts
+  that the registry's published set agrees with the lineage's flag
 Key Files (C1):
 - `tests/component/melder/aether/test_frame_descriptor_manager_component.py`
 - `tests/component/melder/aether/test_frame_acl_component.py`
@@ -1187,6 +1364,8 @@ Key Files (C1):
 - `tests/component/melder/aether/conduit/test_conduit_component_injected_provider_direct_meld.py` (2026-09-30)
 - `tests/component/melder/aether/conduit/test_kernel_pool_elastic_retention.py` (elastic pools, 2026-10-12)
 - `tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py` (2026-10-14)
+- `tests/component/melder/aether/conduit/test_conduit_component_managed_spell_quantity.py` (2026-10-15)
+- `tests/component/melder/aether/dev_ops/spell_system_states/test_non_resolvable_validation_flag_component.py`
 
 ### Subcomponent: Crystallizer Component Cluster
 Parent Component: Component Test Suite
@@ -1333,6 +1512,9 @@ Protects:
   recorded unwalked, `MutationResearch.source_view` and a safe-profile codegen room's `research_source` read
   its text from the live disk, its unwalked interior answers `unknown_module`, and an edit after recording
   reads back with no drift verdict while the fingerprinted project module reports drift
+- managed options through a record (0.2.8242; `test_managed_spell_options_record_integration.py`): the crystal
+  records the active and the parked versions' options; a restore rebinds both with their options and spell
+  ids, and a spell-index graft into a Book in another frame carries both members' options
 Key Files (C1):
 - `tests/integration/melder/crystallizer/test_spell_crystal_integration.py`
 - `tests/integration/melder/crystallizer/test_synthetic_module_integration.py`
@@ -1341,6 +1523,7 @@ Key Files (C1):
 - `tests/integration/melder/crystallizer/test_crystallizer_aether_twin_integration.py` (2026-09-30)
 - `tests/integration/melder/crystallizer/test_restore_per_frame_spell_worlds_integration.py` (2026-09-30)
 - `tests/integration/melder/crystallizer/test_recorded_leaf_source_read_integration.py` (leaf source reads, 2026-10-10)
+- `tests/integration/melder/crystallizer/test_managed_spell_options_record_integration.py` (2026-10-15)
 
 ### Subcomponent: MutationResearch Integration Cluster
 Parent Component: Integration Runtime Suite
@@ -1374,6 +1557,17 @@ Protects:
   exact registered types in automatic and dynamic frames. Discoverable twins permit conjure but
   retain direct-meld refusal; genuine case-normalized address conflicts still fail at bind.
   Contracted validation tests verify independent owner/borrower bindings and validity after unlink.
+- managed bind options through a real Book (0.2.8242; `test_managed_bind_options_integration.py`): the options
+  on the Spell, not in its metadata; one class bound unique, managed by default and managed with a limit gets
+  three ids; a refused binding (an option on `unique`, a managed function) registers nothing; a root's `bind`
+  and `bind_inactive` forward the options; SpellBinder ends in the same Spell
+- versions staged before conjure (0.2.8248; `test_spellbook_integration_parked_before_conjure.py`): in a dynamic
+  world a version staged with `bind_inactive` before conjure melds after a notch exactly as one staged after it,
+  for unique, unique_per_conduit, many, managed_spell_quantity, an existing object and a function; before its
+  notch neither is meldable by id (KeyError); a staged existing object is not registered in the store; a managed
+  version staged before conjure has its pool (count 0) and its registry entry from conjure on and leases from it
+  after the notch, `with` giving the object back. The creation cache's generation history ends at 21
+  (`test_cache_schema_version_integration.py`: generation 21 is admitted, 1-20 load cold)
 Key Files (C1):
 - `tests/integration/melder/spellbook/test_spellbook_integration_core.py`
 - `tests/integration/melder/spellbook/test_spellbook_integration_scan_bind.py`
@@ -1383,6 +1577,8 @@ Key Files (C1):
 - `tests/integration/melder/spellbook/test_spell_compiler_system_integration.py`
 - `tests/integration/melder/spellbook/test_spellbook_qualified_same_name_regressions.py`
 - `tests/integration/melder/spellbook/test_spellbook_integration_validation_system.py`
+- `tests/integration/melder/spellbook/test_managed_bind_options_integration.py` (2026-10-15)
+- `tests/integration/melder/spellbook/test_spellbook_integration_parked_before_conjure.py` (2026-10-16)
 
 ### Subcomponent: Conduit Integration Cluster
 Parent Component: Integration Runtime Suite
@@ -1413,6 +1609,23 @@ Protects:
   purge of the child's spell leaves a live holder's child open, and an ownership move carries the child
 - transfer default (0.2.8239): a default transfer keeps a `unique` as one object and moves a tracked `many` object;
   `move_creations=False` builds a new instance on the target
+- managed pools (0.2.8243-0.2.8246; `test_conduit_integration_managed_quantity_pool.py`): conjure, a dynamic
+  conjure and post-conjure binds composing each version's pool in the root's store; root teardown disposing
+  what the pool holds and an out object's recorded child, never the object; purge 0 and `cleanup_spell`
+  leaving the pool; the live probes reading the root's pool, from a lesser too
+- leases through real worlds (`test_conduit_integration_managed_spell_quantity.py`): roots in two frames and
+  two binding names in one root leasing from their own pools, a dynamic late bind, a notch leasing from the new
+  version's pool while the old one keeps its objects, a borrower and a lesser leasing from the owner root's
+  pool, and a restored world leasing from an empty pool
+- the release registry (`test_conduit_integration_release_managed_spell.py`): conjure registers and teardown
+  unregisters; a notch moves a same-class release; two binding names need `spell_id`, two roots are told apart
+  by `conduit` (a lesser names its root) and a cleaned conduit filter is refused; Aether's teardown leaves the
+  next boot an empty registry
+- ownership transfers (`test_conduit_integration_managed_transfer.py`): a move carries the pool, its idle
+  objects and the stamp, releases reach the moved pool and a parked version notched in leases from its moved
+  pool; no move gives the target fresh pools and disposes nothing; a failed transfer, with or without a move,
+  leaves the pools, the stamps and a `unique` object with the owner; a parked `unique` version moved and
+  notched in stores its object in the target
 Key Files (C1):
 - `tests/integration/melder/conduit/test_conduit_integration_concurrency.py`
 - `tests/integration/melder/conduit/test_conduit_integration_lifecycle.py`
@@ -1428,6 +1641,10 @@ Key Files (C1):
 - `tests/integration/melder/conduit/test_conduit_integration_many_child_disposed_with_its_holder.py` (2026-10-14)
 - `tests/integration/melder/conduit/test_conduit_integration_cluster_member_lifetime.py` (2026-10-14)
 - `tests/integration/melder/conduit/test_conduit_integration_holder_children_lifetime.py` (2026-10-14)
+- `tests/integration/melder/conduit/test_conduit_integration_managed_quantity_pool.py` (2026-10-15)
+- `tests/integration/melder/conduit/test_conduit_integration_managed_spell_quantity.py` (2026-10-15)
+- `tests/integration/melder/conduit/test_conduit_integration_release_managed_spell.py` (2026-10-15)
+- `tests/integration/melder/conduit/test_conduit_integration_managed_transfer.py` (2026-10-15)
 
 ### Subcomponent: Multithreading Integration Cluster
 Parent Component: Integration Runtime Suite
@@ -1567,6 +1784,24 @@ Key Files (C1):
    - tests/unit/melder/spellbook/spell_compiler/phases/test_compiler_pool_snapshot_reads.py:51-103
    - tests/unit/melder/spellbook/spell_compiler/phases/test_compiler_pool_snapshot_reads.py:148-235
 
+### Flow: Managed Pool Stress Under Eight Threads
+1. each test builds one `ManagedSpellQuantity` over a Spell stub (the mode, the limit, the timeout, a `reset`
+   and a `close`) and hands a body to `_run_threads`, which starts eight threads behind one `threading.Barrier`
+   and joins each with a timeout: a thread still alive fails the test as "a worker hung" instead of hanging the
+   run.
+2. a body leases the way an emitted plan does - `_lease` pops `_idle` and, on `IndexError`, calls `reserve()`
+   and builds unless an idle object was served - and gives the object back with `put_back`; `_OutTracker`
+   counts the objects out under its own lock and keeps the peak.
+3. the assertions are the pool's invariants under contention: no body raised (limited_quantity's refusals are
+   caught and counted), the peak out and `count` stay within the limit, `count == idle_count` once everything
+   is back, six waiters woken by `cleanup()` raise the torn-down error, and no object is held by two leases at
+   once. The release registry's stress file starts its workers the same way, behind one barrier with a join
+   timeout.
+   EVIDENCE:
+   - tests/unit/melder/aether/conduit/creations/test_managed_spell_quantity_multithreaded.py:77-124
+   - tests/unit/melder/aether/conduit/creations/test_managed_spell_quantity_multithreaded.py:127-238
+   - tests/unit/melder/aether/conduit/creations/test_release_managed_spell_multithreaded.py:94-122
+
 ## C1 Code Map (Core)
 - path: `tests/unit/melder/aether/aetheric_mediator/test_aetheric_mediator_unit.py`
   start_line: 1
@@ -1583,12 +1818,12 @@ Key Files (C1):
   note: frame-isolated automatic/dynamic qualified-name regressions and real collision controls.
 
 Core is the DEDUPLICATED UNION OF EVERY `Key Files (C1)` LIST in the catalogs
-above - 217 paths (recounted 2026-10-14) - and nothing else. Change a component's key files and this set
+above - 252 paths (recounted 2026-10-16) - and nothing else. Change a component's key files and this set
 follows; if the two ever disagree, this section is wrong, not the catalog.
 
 WHAT COUNTS AS A KEY FILE ON THIS SIDE. A test component's key files are its
 HARNESS AND SUPPORT SURFACES - conftests, benches, mock packages, shared
-builders - not every `test_*.py` module beneath it. The 802 test modules of the
+builders - not every `test_*.py` module beneath it. The 838 test modules of the
 three CI tiers (and the 33 experimentation modules) are the component's CONTENT;
 they are counted in each entry rather than cited, because a
 core set that lists the entire tree is not a set anyone can verify, which is the
@@ -1842,9 +2077,9 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-09-26T22:11:36Z
 - path: `tests/mocks/crystallizer/spell_crystal_harness.py`
   start_line: 1
-  end_line: 771
-  loc: 771
-  verified_at: 2026-09-30T18:35:14Z
+  end_line: 775
+  loc: 775
+  verified_at: 2026-10-15T22:33:31Z
 - path: `tests/mocks/crystallizer/synthetic_module_harness.py`
   start_line: 1
   end_line: 531
@@ -1927,9 +2162,9 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-09-26T22:11:36Z
 - path: `tests/unit/melder/aether/test_nexus.py`
   start_line: 1
-  end_line: 6377
-  loc: 6377
-  verified_at: 2026-09-30T00:31:41Z
+  end_line: 6374
+  loc: 6374
+  verified_at: 2026-10-15T22:33:31Z
 - path: `tests/unit/melder/aether/test_root_configuration_value_snapshots.py`
   start_line: 1
   end_line: 197
@@ -1952,14 +2187,14 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-09-26T22:11:36Z
 - path: `tests/unit/melder/aether/test_command_system_direct.py`
   start_line: 1
-  end_line: 483
-  loc: 483
-  verified_at: 2026-09-27T11:46:59Z
+  end_line: 477
+  loc: 477
+  verified_at: 2026-10-15T22:33:31Z
 - path: `tests/unit/melder/crystallizer/test_crystallizer.py`
   start_line: 1
-  end_line: 198
-  loc: 198
-  verified_at: 2026-09-30T18:35:14Z
+  end_line: 202
+  loc: 202
+  verified_at: 2026-10-15T22:33:31Z
 - path: `tests/unit/melder/crystallizer/test_crystallizer_configuration.py`
   start_line: 1
   end_line: 124
@@ -1967,9 +2202,9 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-09-26T22:11:36Z
 - path: `tests/unit/melder/crystallizer/test_spell_crystal.py`
   start_line: 1
-  end_line: 438
-  loc: 438
-  verified_at: 2026-09-30T18:35:14Z
+  end_line: 484
+  loc: 484
+  verified_at: 2026-10-15T22:33:31Z
 - path: `tests/unit/melder/crystallizer/test_synthetic_module.py`
   start_line: 1
   end_line: 363
@@ -1998,14 +2233,14 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-09-26T22:11:36Z
 - path: `tests/unit/melder/spellbook/test_spellbook.py`
   start_line: 1
-  end_line: 5249
-  loc: 5249
-  verified_at: 2026-09-26T22:11:36Z
+  end_line: 5288
+  loc: 5288
+  verified_at: 2026-10-16T01:19:21Z
 - path: `tests/unit/melder/spellbook/test_spell.py`
   start_line: 1
-  end_line: 1505
-  loc: 1505
-  verified_at: 2026-09-26T22:11:36Z
+  end_line: 1581
+  loc: 1581
+  verified_at: 2026-10-15T22:33:31Z
 - path: `tests/unit/melder/spellbook/test_scan_bind.py`
   start_line: 1
   end_line: 334
@@ -2013,9 +2248,9 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-09-26T22:11:36Z
 - path: `tests/unit/melder/spellbook/test_scan_bind_option_parity.py`
   start_line: 1
-  end_line: 768
-  loc: 768
-  verified_at: 2026-10-10T09:48:53Z
+  end_line: 770
+  loc: 770
+  verified_at: 2026-10-15T22:33:31Z
   note: scan_bind decoration contract, parity with direct bind and own-declaration discovery (0.2.8228).
 - path: `tests/unit/melder/spellbook/test_spellbinder.py`
   start_line: 1
@@ -2024,9 +2259,9 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-09-26T22:11:36Z
 - path: `tests/unit/melder/spellbook/test_cache_runtime_verification.py`
   start_line: 1
-  end_line: 608
-  loc: 608
-  verified_at: 2026-09-26T22:11:36Z
+  end_line: 696
+  loc: 696
+  verified_at: 2026-10-15T22:33:31Z
 - path: `tests/unit/melder/spellbook/configuration/test_configuration.py`
   start_line: 1
   end_line: 610
@@ -2034,9 +2269,9 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-09-26T22:11:36Z
 - path: `tests/unit/melder/spellbook/bind/test_bind.py`
   start_line: 1
-  end_line: 1879
-  loc: 1879
-  verified_at: 2026-09-26T22:11:36Z
+  end_line: 1939
+  loc: 1939
+  verified_at: 2026-10-15T22:33:31Z
 - path: `tests/unit/melder/spellbook/bind/test_spell_index.py`
   start_line: 1
   end_line: 296
@@ -2129,9 +2364,9 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-10-14T18:24:30Z
 - path: `tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py`
   start_line: 1
-  end_line: 513
-  loc: 513
-  verified_at: 2026-10-14T16:20:47Z
+  end_line: 535
+  loc: 535
+  verified_at: 2026-10-15T22:33:31Z
 - path: `tests/component/melder/crystallizer/test_spell_crystal_component.py`
   start_line: 1
   end_line: 135
@@ -2174,9 +2409,9 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-09-26T22:11:36Z
 - path: `tests/component/melder/spellbook/test_spellbook_component_spellbook.py`
   start_line: 1
-  end_line: 1705
-  loc: 1705
-  verified_at: 2026-09-26T22:11:36Z
+  end_line: 1713
+  loc: 1713
+  verified_at: 2026-10-16T01:19:21Z
 - path: `tests/component/melder/spellbook/test_spellbook_component_caching_system.py`
   start_line: 1
   end_line: 675
@@ -2302,9 +2537,9 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-09-26T22:11:36Z
 - path: `tests/integration/melder/spellbook/test_spellbook_integration_resolution_contract.py`
   start_line: 1
-  end_line: 1968
-  loc: 1968
-  verified_at: 2026-09-26T22:11:36Z
+  end_line: 1970
+  loc: 1970
+  verified_at: 2026-10-15T22:33:31Z
 - path: `tests/integration/melder/spellbook/test_spellbook_integration_public_api.py`
   start_line: 1
   end_line: 259
@@ -2323,9 +2558,9 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
 
 - path: `tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering.py`
   start_line: 1
-  end_line: 1390
-  loc: 1390
-  verified_at: 2026-10-14T16:20:47Z
+  end_line: 1475
+  loc: 1475
+  verified_at: 2026-10-15T22:33:31Z
 - path: `tests/component/melder/spellbook/test_spellbook_component_override_key_set_plans.py`
   start_line: 1
   end_line: 476
@@ -2372,6 +2607,12 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   end_line: 283
   loc: 283
   verified_at: 2026-09-30T20:10:45Z
+- path: `tests/unit/melder/spellbook/test_spellbook_creation_system_parked_versions.py`
+  start_line: 1
+  end_line: 366
+  loc: 366
+  verified_at: 2026-10-16T11:13:43Z
+  note: conjure's owner stamp of the versions parked before it (0.2.8248).
 - path: `tests/unit/melder/spellbook/spell_compiler/phases/test_compiler_pool_snapshot_reads.py`
   start_line: 1
   end_line: 235
@@ -2379,9 +2620,9 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-09-26T22:11:36Z
 - path: `tests/unit/melder/test_package_public_surface.py`
   start_line: 1
-  end_line: 352
-  loc: 352
-  verified_at: 2026-09-26T22:11:36Z
+  end_line: 386
+  loc: 386
+  verified_at: 2026-10-15T22:33:31Z
 - path: `tests/unit/melder/test_package_version_metadata.py`
   start_line: 1
   end_line: 113
@@ -2464,9 +2705,9 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-09-26T22:11:36Z
 - path: `tests/unit/melder/utilities/test_caching_system.py`
   start_line: 1
-  end_line: 662
-  loc: 662
-  verified_at: 2026-09-26T22:11:36Z
+  end_line: 742
+  loc: 742
+  verified_at: 2026-10-15T22:33:31Z
 - path: `tests/unit/melder/utilities/ai_native_support_tools/test_agent_text_reader.py`
   start_line: 1
   end_line: 581
@@ -2534,9 +2775,9 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-09-26T22:11:36Z
 - path: `tests/component/melder/spellbook/test_conjure_cache_restage.py`
   start_line: 1
-  end_line: 204
-  loc: 204
-  verified_at: 2026-09-26T22:11:36Z
+  end_line: 212
+  loc: 212
+  verified_at: 2026-10-15T22:33:31Z
 - path: `tests/component/melder/spellbook/test_spell_id_process_stability.py`
   start_line: 1
   end_line: 111
@@ -2595,9 +2836,9 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-09-26T22:11:36Z
 - path: `tests/integration/melder/conduit/test_conduit_integration_scope_resolution_alignment.py`
   start_line: 1
-  end_line: 709
-  loc: 709
-  verified_at: 2026-09-26T22:11:36Z
+  end_line: 718
+  loc: 718
+  verified_at: 2026-10-15T22:33:31Z
 - path: `tests/integration/melder/conduit/test_conduit_integration_spellspace_scope_safety.py`
   start_line: 1
   end_line: 330
@@ -2620,9 +2861,9 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-10-14T23:59:35Z
 - path: `tests/integration/melder/conduit/test_ordered_disposal_runtime.py`
   start_line: 1
-  end_line: 129
-  loc: 129
-  verified_at: 2026-09-26T22:11:36Z
+  end_line: 132
+  loc: 132
+  verified_at: 2026-10-15T22:33:31Z
 - path: `tests/integration/melder/multithreading/test_multithreading_link_bind_contract_features.py`
   start_line: 1
   end_line: 1069
@@ -2668,9 +2909,9 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
 
 - path: `tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_door_held_root.py`
   start_line: 1
-  end_line: 357
-  loc: 357
-  verified_at: 2026-09-26T22:15:16Z
+  end_line: 403
+  loc: 403
+  verified_at: 2026-10-15T22:33:31Z
 - path: `tests/integration/melder/conduit/test_conduit_integration_door_held_first_build.py`
   start_line: 1
   end_line: 324
@@ -2678,9 +2919,9 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-09-26T22:15:16Z
 - path: `tests/integration/melder/conduit/test_conduit_integration_many_child_disposed_with_its_holder.py`
   start_line: 1
-  end_line: 186
-  loc: 186
-  verified_at: 2026-10-14T16:20:47Z
+  end_line: 218
+  loc: 218
+  verified_at: 2026-10-15T22:33:31Z
 - path: `tests/integration/melder/conduit/test_conduit_integration_cluster_member_lifetime.py`
   start_line: 1
   end_line: 352
@@ -2701,6 +2942,200 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   end_line: 553
   loc: 553
   verified_at: 2026-09-30T18:35:14Z
+
+- path: `tests/unit/melder/aether/conduit/creations/test_managed_spell_quantity.py`
+  start_line: 1
+  end_line: 913
+  loc: 913
+  verified_at: 2026-10-15T22:33:31Z
+  note: the managed pool per mode: reserve, waits, put_back and resets, destroy, adopt, abandon, cleanup (0.2.8243).
+- path: `tests/unit/melder/aether/conduit/creations/test_managed_spell_quantity_multithreaded.py`
+  start_line: 1
+  end_line: 238
+  loc: 238
+  verified_at: 2026-10-15T22:33:31Z
+  note: eight barrier-released threads against the pool's limits, waits and teardown (0.2.8243).
+- path: `tests/unit/melder/aether/conduit/creations/test_creations_managed_quantities.py`
+  start_line: 1
+  end_line: 393
+  loc: 393
+  verified_at: 2026-10-15T22:33:31Z
+  note: the Creations pool map: ensure, cleanup order, the managed row, the registry calls (0.2.8243-0.2.8244).
+- path: `tests/unit/melder/aether/conduit/creations/test_creations_discard_managed_quantity.py`
+  start_line: 1
+  end_line: 152
+  loc: 152
+  verified_at: 2026-10-15T22:33:31Z
+  note: the identity-checked discard of a pool a transfer stamp composed (0.2.8246).
+- path: `tests/unit/melder/aether/conduit/creations/test_release_managed_spell.py`
+  start_line: 1
+  end_line: 544
+  loc: 544
+  verified_at: 2026-10-15T22:33:31Z
+  note: the Aether-owned release registry: singleton, routing, filters, ambiguity, lease, describe (0.2.8244).
+- path: `tests/unit/melder/aether/conduit/creations/test_release_managed_spell_multithreaded.py`
+  start_line: 1
+  end_line: 238
+  loc: 238
+  verified_at: 2026-10-15T22:33:31Z
+  note: releases and registrations against the registry's copy-on-write maps under eight threads (0.2.8244).
+- path: `tests/unit/melder/aether/conduit/creations/test_managed_spell_lease.py`
+  start_line: 1
+  end_line: 197
+  loc: 197
+  verified_at: 2026-10-15T22:33:31Z
+  note: the lease: one release, `with` releasing on exit and on raise, never suppressing (0.2.8244).
+- path: `tests/unit/melder/aether/conduit/meld/test_meld_doors_managed_spell_quantity.py`
+  start_line: 1
+  end_line: 174
+  loc: 174
+  verified_at: 2026-10-16T11:13:43Z
+  note: the meld doors' purge, existing-object and live-probe answers for a managed spell (0.2.8243).
+- path: `tests/unit/melder/aether/conduit/conduit_ward/transfer/test_transfer_of_ownership_owner_stamps.py`
+  start_line: 1
+  end_line: 484
+  loc: 484
+  verified_at: 2026-10-16T11:13:43Z
+  note: the owner stamp through a transfer's flip, migration and rollback (0.2.8246).
+- path: `tests/unit/melder/aether/test_static_rooms_managed_spell_quantity.py`
+  start_line: 1
+  end_line: 100
+  loc: 100
+  verified_at: 2026-10-15T22:33:31Z
+  note: static rooms treat a managed spell like `many` (0.2.8243).
+- path: `tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system_states_non_resolvable.py`
+  start_line: 1
+  end_line: 484
+  loc: 484
+  verified_at: 2026-10-16T01:19:21Z
+  note: the capability flag, `register_index`'s write and re-publication, the published set (0.2.8247).
+- path: `tests/unit/melder/aether/dev_ops/risk_manager/test_risk_manager_non_resolvable.py`
+  start_line: 1
+  end_line: 296
+  loc: 296
+  verified_at: 2026-10-16T01:19:21Z
+  note: RiskManager's Book flag ignores flagged lineages, on a real registry (0.2.8247).
+- path: `tests/unit/melder/crystallizer/test_spell_crystal_managed_options.py`
+  start_line: 1
+  end_line: 150
+  loc: 150
+  verified_at: 2026-10-15T22:33:31Z
+  note: the crystal's managed options and RecordVersion 4.2.0 (0.2.8242).
+- path: `tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py`
+  start_line: 1
+  end_line: 590
+  loc: 590
+  verified_at: 2026-10-15T22:33:31Z
+  note: the four managed bind options at the Bind seam: defaults, refusals, the managed id part (0.2.8242).
+- path: `tests/unit/melder/spellbook/bind/test_spell_index_selected_probe.py`
+  start_line: 1
+  end_line: 64
+  loc: 64
+  verified_at: 2026-10-15T22:33:31Z
+  note: SpellIndex's cleanup-safe selected-version probe (0.2.8244).
+- path: `tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py`
+  start_line: 1
+  end_line: 883
+  loc: 883
+  verified_at: 2026-10-16T11:13:43Z
+  note: the plans' managed site: lease, miss, returns, recorded children, overrides (0.2.8245); the missing-pool
+    text (0.2.8248).
+- path: `tests/unit/melder/spellbook/spell_compiler/test_managed_dispense_seams.py`
+  start_line: 1
+  end_line: 101
+  loc: 101
+  verified_at: 2026-10-15T22:33:31Z
+  note: the phase 9-11 seams a managed spell passes (0.2.8245).
+- path: `tests/unit/melder/spellbook/test_existence_managed_spell_quantity.py`
+  start_line: 1
+  end_line: 50
+  loc: 50
+  verified_at: 2026-10-15T22:33:31Z
+  note: the seventh Existence member (0.2.8241).
+- path: `tests/unit/melder/spellbook/test_scan_bind_managed_options.py`
+  start_line: 1
+  end_line: 205
+  loc: 205
+  verified_at: 2026-10-15T22:33:31Z
+  note: scan_bind declaring and replaying the managed options (0.2.8242).
+- path: `tests/unit/melder/spellbook/test_spell_managed_quantity_stamp.py`
+  start_line: 1
+  end_line: 152
+  loc: 152
+  verified_at: 2026-10-15T22:33:31Z
+  note: an owner stamp ensuring the managed version's pool (0.2.8243).
+- path: `tests/unit/melder/spellbook/test_spell_managed_spell_options.py`
+  start_line: 1
+  end_line: 121
+  loc: 121
+  verified_at: 2026-10-15T22:33:31Z
+  note: the Spell's read-only managed options (0.2.8242).
+- path: `tests/unit/melder/spellbook/test_spellbinder_managed_options.py`
+  start_line: 1
+  end_line: 106
+  loc: 106
+  verified_at: 2026-10-15T22:33:31Z
+  note: SpellBinder staging a managed binding (0.2.8242).
+- path: `tests/unit/melder/utilities/custom_exceptions/test_managed_spell_exhausted_error.py`
+  start_line: 1
+  end_line: 52
+  loc: 52
+  verified_at: 2026-10-15T22:33:31Z
+  note: the exhaustion error's texts and type (0.2.8243).
+- path: `tests/component/melder/aether/conduit/test_conduit_component_managed_spell_quantity.py`
+  start_line: 1
+  end_line: 491
+  loc: 491
+  verified_at: 2026-10-15T22:33:31Z
+  note: leases through real melds, injections and `managed_spell_meld` (0.2.8245).
+- path: `tests/component/melder/aether/dev_ops/spell_system_states/test_non_resolvable_validation_flag_component.py`
+  start_line: 1
+  end_line: 456
+  loc: 456
+  verified_at: 2026-10-16T01:19:21Z
+  note: non-resolvable definitions keep the Book flag down through worlds, notches, transfers and races (0.2.8247).
+- path: `tests/integration/melder/conduit/test_conduit_integration_managed_quantity_pool.py`
+  start_line: 1
+  end_line: 261
+  loc: 261
+  verified_at: 2026-10-15T22:33:31Z
+  note: pools in the owning root's store through conjure, binds, teardown and the probes (0.2.8243).
+- path: `tests/integration/melder/conduit/test_conduit_integration_managed_spell_quantity.py`
+  start_line: 1
+  end_line: 282
+  loc: 282
+  verified_at: 2026-10-15T22:33:31Z
+  note: leases through real worlds: frames, binding names, notches, borrowers, lessers, a restore (0.2.8245).
+- path: `tests/integration/melder/conduit/test_conduit_integration_release_managed_spell.py`
+  start_line: 1
+  end_line: 309
+  loc: 309
+  verified_at: 2026-10-15T22:33:31Z
+  note: the registry routing releases to the pools of live roots (0.2.8244).
+- path: `tests/integration/melder/conduit/test_conduit_integration_managed_transfer.py`
+  start_line: 1
+  end_line: 346
+  loc: 346
+  verified_at: 2026-10-15T22:33:31Z
+  note: pools and owner stamps through moves, no-moves and failed transfers (0.2.8246).
+- path: `tests/integration/melder/crystallizer/test_managed_spell_options_record_integration.py`
+  start_line: 1
+  end_line: 177
+  loc: 177
+  verified_at: 2026-10-15T22:33:31Z
+  note: managed options through record, restore and graft (0.2.8242).
+- path: `tests/integration/melder/spellbook/test_managed_bind_options_integration.py`
+  start_line: 1
+  end_line: 169
+  loc: 169
+  verified_at: 2026-10-15T22:33:31Z
+  note: managed bind options through a real Spellbook and its root (0.2.8242).
+- path: `tests/integration/melder/spellbook/test_spellbook_integration_parked_before_conjure.py`
+  start_line: 1
+  end_line: 250
+  loc: 250
+  verified_at: 2026-10-16T11:13:43Z
+  note: versions staged before or after conjure meld after a notch, every family (0.2.8248).
 
 ## Diagrams
 ### ASCII Component Diagram (C3/C2)
@@ -2810,6 +3245,51 @@ graph TD
 - `tests/integration/melder/aether/test_aether_named_lesser_lookup.py`
 - `tests/integration/melder/aether/test_aether_frame_lookups.py`
 - `tests/unit/melder/aether/test_configuration_read_accessors.py`
+- module docstrings, test names and test docstrings of the 28 managed-spell files below, the bodies of
+  the two multithreaded ones, and the CR-insensitive diffs of the eight changed files after them
+  (read 2026-10-15)
+- `tests/unit/melder/aether/conduit/creations/test_managed_spell_quantity.py`
+- `tests/unit/melder/aether/conduit/creations/test_managed_spell_quantity_multithreaded.py`
+- `tests/unit/melder/aether/conduit/creations/test_creations_managed_quantities.py`
+- `tests/unit/melder/aether/conduit/creations/test_creations_discard_managed_quantity.py`
+- `tests/unit/melder/aether/conduit/creations/test_release_managed_spell.py`
+- `tests/unit/melder/aether/conduit/creations/test_release_managed_spell_multithreaded.py`
+- `tests/unit/melder/aether/conduit/creations/test_managed_spell_lease.py`
+- `tests/unit/melder/aether/conduit/meld/test_meld_doors_managed_spell_quantity.py`
+- `tests/unit/melder/aether/conduit/conduit_ward/transfer/test_transfer_of_ownership_owner_stamps.py`
+- `tests/unit/melder/aether/test_static_rooms_managed_spell_quantity.py`
+- `tests/unit/melder/crystallizer/test_spell_crystal_managed_options.py`
+- `tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py`
+- `tests/unit/melder/spellbook/bind/test_spell_index_selected_probe.py`
+- `tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py`
+- `tests/unit/melder/spellbook/spell_compiler/test_managed_dispense_seams.py`
+- `tests/unit/melder/spellbook/test_existence_managed_spell_quantity.py`
+- `tests/unit/melder/spellbook/test_scan_bind_managed_options.py`
+- `tests/unit/melder/spellbook/test_spell_managed_quantity_stamp.py`
+- `tests/unit/melder/spellbook/test_spell_managed_spell_options.py`
+- `tests/unit/melder/spellbook/test_spellbinder_managed_options.py`
+- `tests/unit/melder/utilities/custom_exceptions/test_managed_spell_exhausted_error.py`
+- `tests/component/melder/aether/conduit/test_conduit_component_managed_spell_quantity.py`
+- `tests/integration/melder/conduit/test_conduit_integration_managed_quantity_pool.py`
+- `tests/integration/melder/conduit/test_conduit_integration_managed_spell_quantity.py`
+- `tests/integration/melder/conduit/test_conduit_integration_release_managed_spell.py`
+- `tests/integration/melder/conduit/test_conduit_integration_managed_transfer.py`
+- `tests/integration/melder/crystallizer/test_managed_spell_options_record_integration.py`
+- `tests/integration/melder/spellbook/test_managed_bind_options_integration.py`
+- `tests/component/melder/aether/conduit/test_conduit_component_purge.py`
+- `tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system_states_non_resolvable.py`
+- `tests/unit/melder/aether/dev_ops/risk_manager/test_risk_manager_non_resolvable.py`
+- `tests/component/melder/aether/dev_ops/spell_system_states/test_non_resolvable_validation_flag_component.py`
+- `tests/unit/melder/aether/conduit/test_conduit_facade.py`
+- `tests/unit/melder/spellbook/spell_compiler/test_codegen_plan_discovery_core.py`
+- `tests/unit/melder/spellbook/spell_compiler/test_generalized_specializer_wrapper.py`
+- `tests/unit/melder/spellbook/spell_compiler/test_spell_artifact_processor_core.py`
+- `tests/unit/melder/spellbook/spell_crafter/system/validation/test_scope_ordering_strategy.py`
+- `tests/unit/melder/spellbook/test_resolution_style_matrix.py`
+- `tests/unit/melder/test_package_public_surface.py`
+- `tests/unit/melder/spellbook/test_spellbook_creation_system_parked_versions.py`
+- `tests/integration/melder/spellbook/test_spellbook_integration_parked_before_conjure.py`
+- `tests/integration/melder/spellbook/test_cache_schema_version_integration.py`
 - direct filesystem inventory of `tests/`
 
 ## Open Questions
@@ -2823,6 +3303,34 @@ graph TD
   scan/bind coverage grows.
 
 ## Context / Handoff Summary
+
+2026-10-16 parked versions wired at conjure (0.2.8248): the Spellbook Runtime And Binding Unit Cluster gains
+`test_spellbook_creation_system_parked_versions.py` (the parked stamp, 9 tests) and the Spellbook Integration
+Cluster `test_spellbook_integration_parked_before_conjure.py` (every family staged before or after conjure, 27
+tests), each a key file with a code-map record; the cache-schema test expects generation 21; the records of the
+managed lowering, meld-door and transfer-stamp files are remeasured (their assertions and docstrings follow the
+new missing-pool text and the conjure stamp). The three suites' module counts, left at 2026-10-15 by the entry
+below, are recounted from disk (unit 505 of 508 `.py`, component 166 of 168, integration 167 of 174; 838 test
+modules), and the core set is 252 paths, equal to the code map.
+
+2026-10-16 non-resolvable definitions (0.2.8247): a new DevOps Control Plane Unit Cluster carries the
+capability-flag and Book-flag unit tests (`test_spell_system_states_non_resolvable.py`,
+`test_risk_manager_non_resolvable.py`), the Aether Component Cluster gains
+`test_non_resolvable_validation_flag_component.py`, and the Unit Test Suite names the cluster. Of the five test
+files whose doubles follow the new `register_index` keyword, the two the map lists (`test_spellbook.py`,
+`test_spellbook_component_spellbook.py`) are remeasured; the registry stub in `test_risk_manager.py` answers the
+published set. The core set is 250 paths, equal to the code map; tier and subtree counts are recounted from disk
+(836 test modules in the three tiers; unit aether 204, component aether 77).
+
+2026-10-15 managed spells (0.2.8241-0.2.8246): the lane's 28 test files join the catalog - a new Managed Spell
+Pools Unit Cluster (the pool and its stress file, the Creations pool map and discard, the release registry and
+its stress file, the lease, the meld doors and the transfer stamps), dated Protects lines in ten existing
+clusters (key files in nine), a line in each suite and a stress flow; the nine test files the lane changed are
+named where their contracts sit. The core set is 247 paths, equal to the code map. Every code-map extent was
+checked against disk: the 28 new records were measured and the 20 stale ones remeasured - 19 were already stale
+at the 0.2.8240 commit, one (`test_scan_bind_option_parity.py`) is this lane's - and every other record matched.
+Tier and subtree counts are recounted from disk: 833 test modules in the three tiers; four subtree counts had
+not followed earlier lanes (unit aether and spellbook, component spellbook, integration conduit).
 
 2026-10-14 slotted lifetimes (0.2.8236-0.2.8240): the Conduit Integration Cluster gains
 `test_conduit_integration_cluster_member_lifetime.py` (eleven cluster-lifetime cases) and

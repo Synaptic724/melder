@@ -913,6 +913,9 @@ class SpellSpaceMeld(Meld):
               `unique_per_conduit_lineage` the owner conduit's lineage-root
               store; `unique_per_conduit_cluster` the cluster's team store,
               and is not live while no leader is elected.
+            - `managed_spell_quantity` reads the pool in the Spell owner's root
+              store, as the conduit door does (2026-10-15): a managed object is
+              never space-local, so `active_spellspace_id` is None.
             - Reports both `query_conduit_id` and `active_spellspace_id` so the
               caller can distinguish request-local versus broader scope state.
 
@@ -1037,6 +1040,9 @@ class SpellSpaceMeld(Meld):
                 "active_spellspace_id": None,
                 "creation_count": 1 if creation is not None else 0,
             }
+
+        if existence is Existence.managed_spell_quantity:
+            return self._describe_managed_pool_status(spell, query_conduit_id)
 
         raise RuntimeError(
             "Unsupported existence '{0}' for live creation probe.".format(

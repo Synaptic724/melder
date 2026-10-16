@@ -1,6 +1,8 @@
 from threading import RLock
 from typing import Any, ClassVar, Dict, List, Optional, Tuple, TYPE_CHECKING, Union
 
+from melder.aether.conduit.creations.managed_spell_quantity import ManagedSpellQuantity
+from melder.aether.conduit.creations.release_managed_spell import ReleaseManagedSpell
 from melder.aether.spellbook.existence.existence import Existence
 from melder.utilities.general_base.cleanable import Cleanable
 
@@ -146,6 +148,18 @@ class Creations(Cleanable):
             possibly none - and its children with theirs) in place of the
             tuple. Adopted children leave their spell's bucket, so a `many`
             key holds only objects that no holder owns.
+        - Managed pools (2026-10-15, managed_spell_quantity): a root store keeps one
+          `ManagedSpellQuantity` per `Existence.managed_spell_quantity` version it
+          owns in `_managed_quantities[spell_id]`, a map of its own: `_creations`
+          never holds a pool, so lookups, live probes and purge never meet one.
+          `ensure_managed_quantity` composes it at owner stamping; cleanup cleans
+          the pools before the disposable registry; extract/restore move a pool
+          as a `managed` row; an ownership transfer's rollback takes back a pool
+          its stamp composed (`discard_managed_quantity`, identity-checked);
+          purge returns 0 for a managed spell. The store registers every pool it
+          takes with `ReleaseManagedSpell` and unregisters every pool it gives up
+          (S4), outside the store lock, so the registry holds exactly the pools
+          live stores hold.
         - Cleanup and reusable clearing are explicit, idempotent, and aggregate
           disposal failures.
         - Disposal names are the established Spell-owned list, retained directly
@@ -154,8 +168,9 @@ class Creations(Cleanable):
 
     Owned State:
         `_owner_conduit_id`, a stable `_id`, one store `RLock`, the two
-        registries (`_creations`, `_disposable_creations`) and the per-slot
-        build-guard table (`_slot_guards`).
+        registries (`_creations`, `_disposable_creations`), the per-slot
+        build-guard table (`_slot_guards`) and the managed pools
+        (`_managed_quantities`, spell id -> `ManagedSpellQuantity`, 2026-10-15).
 
     Threading:
         Two lock roles, and keeping them apart is what makes resolution
@@ -243,6 +258,7 @@ class Creations(Cleanable):
         "_creations",
         "_disposable_creations",
         "_slot_guards",
+        "_managed_quantities",
     ]
 
     def __init__(
@@ -294,6 +310,10 @@ class Creations(Cleanable):
         # One build guard per slot, created on first use and kept for this
         # store's lifetime (bounded by the number of spell ids built here).
         self._slot_guards: Dict[str, RLock] = {}
+        # One pool per managed spell version this (root) store owns, composed at
+        # owner stamping (`ensure_managed_quantity`). Kept apart from `_creations`:
+        # a pool is not an object, and no resolution path may read one as such.
+        self._managed_quantities: Dict[str, ManagedSpellQuantity] = {}
         # Note: resolution-store selection for broad-lived existences
         # (`unique_per_conduit_lineage` lineage root, `unique_per_conduit_cluster`
         # cluster team store) lives on the meld front doors
@@ -309,9 +329,17 @@ class Creations(Cleanable):
 
         Contract:
             - Idempotent.
-            - Detaches live and disposable registries before disposal work.
+            - Detaches live and disposable registries, and the managed pools,
+              before disposal work.
+            - Unregisters the managed pools from `ReleaseManagedSpell`, then
+              cleans them FIRST, newest first (2026-10-15): a pool is
+              composed at conjure, before the uniques its objects hold, so the
+              registry's newest-first walk would close those uniques under live
+              pooled objects. A pool's cleanup disposes its idle objects and every
+              child recorded for its objects; objects out stay their holders'.
             - Uses `_disposable_creations` only for explicit teardown work.
-            - Raises `ExceptionGroup` after best-effort disposal attempts.
+            - Raises `ExceptionGroup` after best-effort disposal attempts; a
+              pool's failures join it as their own chained `RuntimeError`s.
             - Drops the live field surface after cleanup so later use fails
               honestly instead of reading stale state.
             - Keeps `_lock` as a deliberate post-cleanup tombstone: a build
@@ -341,18 +369,26 @@ class Creations(Cleanable):
             self._cleaned = True
             disposable_creations = self._disposable_creations
             creations = self._creations
+            managed_quantities = self._managed_quantities
             self._creations = {}
             self._disposable_creations = {}
+            self._managed_quantities = {}
 
+        pools = list(reversed(managed_quantities.values()))
+        # Outside the store lock (a leaf): no release can be routed to a pool this store is about to retire.
+        self._unregister_managed_quantities(pools)
+        errors = self._cleanup_managed_quantities(pools)
+        managed_quantities.clear()
         try:
-            errors = self._dispose_disposable_registry(disposable_creations)
+            errors.extend(self._dispose_disposable_registry(disposable_creations))
         except Exception as exc:
-            errors = [exc]
+            errors.append(exc)
         disposable_creations.clear()
         creations.clear()
 
         del self._creations
         del self._disposable_creations
+        del self._managed_quantities
         del self._slot_guards
         del self._owner_conduit_id
         del self._id
@@ -1079,6 +1115,192 @@ class Creations(Cleanable):
         """
         return self._creations.get(spell_id)
 
+    def ensure_managed_quantity(self, spell: Spell) -> ManagedSpellQuantity:
+        """
+        Return the pool of one managed spell version in this store, composing it on first use.
+
+        Purpose:
+            Give every `Existence.managed_spell_quantity` version a pool in its
+            owner root's store the moment the owner is stamped
+            (`Spell._add_owned_conduit`: conjure, a post-conjure bind or
+            bind_inactive, the transfer flip), so a lease always finds one.
+
+        Contract:
+            - Idempotent: one pool per (store, spell id); a second call returns
+              the same pool. A rebind under the same content-stable id meets the
+              pool its earlier definition left (as a slotted replacement meets
+              its slot, 0.2.8219), which is re-pointed at the new Spell object.
+            - A new pool is composed from the Spell's options and owned by this
+              store's conduit (`owner_conduit_id`); it holds no object yet.
+            - Registers the pool with `ReleaseManagedSpell` under this store's
+              root (idempotent; a rebind that brought another class object
+              re-keys it), so a release of its class reaches it.
+            - Never touches `_creations` or `_disposable_creations`.
+
+        Args:
+            spell:
+                A Spell bound with `Existence.managed_spell_quantity`.
+
+        Returns:
+            ManagedSpellQuantity: The version's pool in this store.
+
+        Raises:
+            RuntimeError:
+                If this store has been permanently cleaned, or no live
+                `ReleaseManagedSpell` exists to register with.
+            ValueError:
+                If the spell is not `Existence.managed_spell_quantity` (the pool
+                refuses it; nothing is stored), or no Aether built the registry.
+
+        Threading:
+            The map read and write run under the store lock, a leaf; composing a
+            pool runs no user code. Called under the Spell's lock by owner
+            stamping, the established build-lock-then-store-lock order. The pool
+            is registered with `ReleaseManagedSpell` after this lock is released
+            (its own lock is a leaf held only to publish), so the order is Spell
+            lock -> registry lock and the store lock stays a leaf.
+        """
+        with self._lock:
+            self.check_cleaned()
+            spell_id = spell.spell_id
+            pool = self._managed_quantities.get(spell_id)
+            if pool is None:
+                pool = ManagedSpellQuantity(spell=spell, owner_conduit_id=self._owner_conduit_id)
+                self._managed_quantities[spell_id] = pool
+            else:
+                pool._rebind_spell(spell)
+            owner_conduit_id = self._owner_conduit_id
+        ReleaseManagedSpell().register(pool, root_conduit_id=owner_conduit_id)
+        return pool
+
+    def get_managed_quantity(self, spell_id: str) -> Optional[ManagedSpellQuantity]:
+        """
+        Return the pool this store holds for one managed spell version, if any.
+
+        Contract:
+            - One lock-free dict read of `_managed_quantities`; None when the
+              store holds no pool under the id (not managed, not stamped here, or
+              moved away by an ownership transfer).
+            - Never builds a pool.
+
+        Args:
+            spell_id:
+                The managed version id.
+
+        Returns:
+            Optional[ManagedSpellQuantity]: The pool, or None.
+
+        Raises:
+            AttributeError:
+                After `cleanup()`, like every other live-surface read of a
+                retired store.
+        """
+        return self._managed_quantities.get(spell_id)
+
+    def discard_managed_quantity(self, spell_id: str, pool: ManagedSpellQuantity) -> bool:
+        """
+        Give up one pool this store holds, when it is still the pool under the id.
+
+        Purpose:
+            Take back a pool an owner stamp composed in this store. An ownership
+            transfer's rollback uses it to remove the empty pool its stamp of the
+            target root composed (`TransferOfOwnership._discard_composed_pool`,
+            2026-10-15), so a failed transfer leaves the target store as it was.
+
+        Contract:
+            - Removes `pool` only when it is the pool this store holds under
+              `spell_id` (identity). Any other pool under the id, or none, is left
+              as it is and the call answers False, so a pool the store held before
+              the stamp, or one an extract already took, is never touched.
+            - Unregisters the removed pool from `ReleaseManagedSpell` after the
+              store lock, as every store verb that gives a pool up does (S4).
+            - Never cleans the pool and never touches `_creations` or
+              `_disposable_creations`: the removed pool is the caller's, who
+              decides its end (the transfer's rollback cleans it).
+            - Idempotent for one pool: a second call answers False.
+
+        Args:
+            spell_id:
+                The managed version id the pool is held under.
+            pool:
+                The pool to give up.
+
+        Returns:
+            bool: True when the pool was removed; False when this store does not
+            hold it under `spell_id`.
+
+        Raises:
+            RuntimeError:
+                If this store has been permanently cleaned (its cleanup already
+                gave its pools up), as `ensure_managed_quantity` refuses.
+
+        Threading:
+            The identity check and the removal run under the store lock, a leaf,
+            so of two racing calls exactly one removes the pool; the unregister
+            runs after the lock, so the registry's leaf lock is never taken under
+            the store lock.
+        """
+        with self._lock:
+            self.check_cleaned()
+            if self._managed_quantities.get(spell_id) is not pool:
+                return False
+            del self._managed_quantities[spell_id]
+        self._unregister_managed_quantities([pool])
+        return True
+
+    @staticmethod
+    def _unregister_managed_quantities(pools: List[ManagedSpellQuantity]) -> None:
+        """
+        Unregister pools this store gives up from `ReleaseManagedSpell`.
+
+        Contract:
+            - Unregisters each pool from the live registry (idempotent there).
+            - Does nothing when no live registry exists: Aether cleans the registry only after its frames, so a store
+              torn down later (or after a test reset the registry) has nothing to unregister from.
+            - Takes no store lock: the caller detached the pools first.
+
+        Args:
+            pools:
+                The pools to unregister.
+
+        Returns:
+            None.
+        """
+        registry = ReleaseManagedSpell._live_instance()
+        if registry is None:
+            return
+        for pool in pools:
+            registry.unregister(pool)
+
+    @staticmethod
+    def _cleanup_managed_quantities(pools: List[ManagedSpellQuantity]) -> List[Exception]:
+        """
+        Clean detached pools in the given order and collect their failures.
+
+        Contract:
+            - Every pool is cleaned even after one fails.
+            - A pool's `ExceptionGroup` is flattened into its chained
+              `RuntimeError`s, so the store's own group keeps one error per failing
+              disposal method; any other exception is kept as raised.
+            - Takes no lock: the caller detached the pools first.
+
+        Args:
+            pools:
+                The pools to clean, in cleaning order.
+
+        Returns:
+            List[Exception]: The collected failures, in attempt order.
+        """
+        errors: List[Exception] = []
+        for pool in pools:
+            try:
+                pool.cleanup()
+            except ExceptionGroup as group:
+                errors.extend(group.exceptions)
+            except Exception as exc:
+                errors.append(exc)
+        return errors
+
     def purge(
             self,
             spell: Spell,
@@ -1114,6 +1336,9 @@ class Creations(Cleanable):
               collected and other selected objects are still attempted, matching
               cleanup.
             - Unrelated keys, the registration and this reusable store survive.
+            - A managed spell (`Existence.managed_spell_quantity`) returns 0 and
+              touches nothing: purge is not part of the managed design (owner,
+              2026-10-15), and its objects live in a pool, never in `_creations`.
 
         Args:
             spell:
@@ -1162,6 +1387,8 @@ class Creations(Cleanable):
         if not purge_all and creation is None:
             raise ValueError("Single-object purge requires a creation reference.")
         existence = spell.existence
+        if existence is Existence.managed_spell_quantity:
+            return 0
         if existence is Existence.unique:
             with spell._lock:
                 count, retired, disposal = self._detach_purge_entries(
@@ -1321,6 +1548,11 @@ class Creations(Cleanable):
               `disposable` with an empty `disposal_methods` list, so a restore
               (an ownership transfer's move or its rollback) takes the children
               wherever the holder goes.
+            - A managed spell's pool travels as one row (2026-10-15):
+              `{"scope": "managed", "disposable": False, "stored": pool}` - the
+              same `ManagedSpellQuantity` object with its idle objects, count and
+              children records - and this store gives the pool up, unregistering
+              it from `ReleaseManagedSpell` after the store lock (S4).
 
         Threading:
             - Performs extraction under `_lock` so the local slot shape stays
@@ -1328,6 +1560,9 @@ class Creations(Cleanable):
         """
         extracted: List[Dict[str, Any]] = []
         with self._lock:
+            pool = self._managed_quantities.pop(spell_id, None)
+            if pool is not None:
+                extracted.append({"scope": "managed", "disposable": False, "stored": pool})
             live_value = self._creations.get(spell_id)
             disposable_value = self._disposable_creations.get(spell_id)
 
@@ -1372,6 +1607,9 @@ class Creations(Cleanable):
                     entry["disposal_methods"] = disposable_entry[1]
                 extracted.append(entry)
 
+        if pool is not None:
+            # A pool in flight between stores is not routable until a restore registers it again.
+            self._unregister_managed_quantities([pool])
         return extracted
 
     def restore_spell_creations(
@@ -1396,6 +1634,22 @@ class Creations(Cleanable):
             - A unique row with `children` rebuilds the holder's
               `HolderDisposalEntry` (0.2.8238); rows without it restore exactly
               as before.
+            - A `managed` row installs its pool under the spell id (2026-10-15).
+              A different pool already there - the empty one an ownership
+              transfer's flip composed at the target's stamp - is replaced and
+              cleaned after the lock is released; the store's own pool is kept.
+            - After the lock, in this order (S4): the replaced pool is
+              unregistered from `ReleaseManagedSpell`, the installed pool is
+              registered under this store's root, then the replaced pool is
+              cleaned - so the moved pool is routable even when that cleanup
+              fails.
+
+        Raises:
+            RuntimeError:
+                For a row that does not fit the local slot shape.
+            ExceptionGroup:
+                When cleaning a replaced pool failed; raised after the restore
+                completed, with the moved pool in place.
 
         Returns:
             None.
@@ -1403,7 +1657,10 @@ class Creations(Cleanable):
         if not creations:
             return
 
+        replaced_pools: List[ManagedSpellQuantity] = []
+        installed_pools: List[ManagedSpellQuantity] = []
         with self._lock:
+            owner_conduit_id = self._owner_conduit_id
             live_value = self._creations.get(spell_id)
             if live_value is not None:
                 self._creations.pop(spell_id)
@@ -1414,6 +1671,14 @@ class Creations(Cleanable):
                 is_disposable = entry["disposable"]
                 stored_value = entry["stored"]
                 disposal_methods = entry.get("disposal_methods")
+
+                if scope == "managed":
+                    replaced = self._managed_quantities.get(spell_id)
+                    if replaced is not None and replaced is not stored_value:
+                        replaced_pools.append(replaced)
+                    self._managed_quantities[spell_id] = stored_value
+                    installed_pools.append(stored_value)
+                    continue
 
                 if scope == "unique":
                     existing = self._creations.get(spell_id)
@@ -1473,6 +1738,17 @@ class Creations(Cleanable):
                     f"Unknown creation scope '{scope}' while restoring spell '{spell_id}'."
                 )
 
+        self._unregister_managed_quantities(replaced_pools)
+        for installed in installed_pools:
+            ReleaseManagedSpell().register(installed, root_conduit_id=owner_conduit_id)
+        if replaced_pools:
+            errors = self._cleanup_managed_quantities(replaced_pools)
+            if errors:
+                raise ExceptionGroup(
+                    f"Errors occurred cleaning the managed pool replaced while restoring spell '{spell_id}'",
+                    errors,
+                )
+
     def clear_all(self) -> None:
         """
         Dispose and remove all scoped entries without destroying this object.
@@ -1484,6 +1760,9 @@ class Creations(Cleanable):
             - Leaves this `Creations` instance reusable after the clear
               completes. Slot guards are kept (they are per spell id, not per
               generation).
+            - Leaves the managed pools untouched: only root stores hold pools,
+              and the reusable clears run on lesser and spellspace stores only (a
+              lesser's pool return, a spellspace's exit), never on a root's.
 
         Threading:
             The swap runs under the leaf store lock. In-flight builds hold slot

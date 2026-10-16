@@ -1,0 +1,8 @@
+tree | unit_aether | rc=1 | secs=19 | 43 failed, 4417 passed in 18.21s
+tree | unit_sb | rc=1 | secs=5 | 2 failed, 2558 passed in 4.50s
+tree | unit_aether | rc=0 | secs=18 | 4460 passed in 16.58s
+tree | unit_sb | rc=0 | secs=5 | 2560 passed in 4.18s
+tree | comp_sb | rc=0 | secs=19 | 819 passed in 18.68s
+tree | comp_aether | rc=0 | secs=15 | 1377 passed, 1 xfailed in 13.80s
+tree | int_aether | rc=0 | secs=18 | 785 passed, 5 xfailed in 17.30s
+tree | int_conduit | rc=0 | secs=8 | 335 passed in 6.70s

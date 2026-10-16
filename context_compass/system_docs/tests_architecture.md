@@ -5,7 +5,7 @@
 - Status: in_progress
 - Owner:
 - Created: 2026-01-22
-- Updated: 2026-10-06
+- Updated: 2026-10-16
 
 ## Scope and Intent
 This document describes the tests architecture (C4) for `tests/` and how it
@@ -458,12 +458,13 @@ Direct evidence used in this pass:
 - direct filesystem inventory over `tests/`
 
 Current Python test inventory from direct filesystem count:
-- `unit/`: 465 `.py` files (334 on 2026-06-13)
-- `component/`: 143 `.py` files (81)
-- `integration/`: 149 `.py` files (88)
-- `mocks/`: 44 `.py` files (42)
-- `experimentation/`: 196 `.py` files, 33 of them `test_*.py` (not counted before)
-Recounted 2026-09-26 with `find tests/<tier> -name '*.py'` (pycache excluded).
+- `unit/`: 508 `.py` files, 505 of them `test_*.py` (465 on 2026-09-26, 334 on 2026-06-13)
+- `component/`: 168 `.py` files, 166 of them `test_*.py` (143, 81)
+- `integration/`: 174 `.py` files, 167 of them `test_*.py` (149, 88)
+- `mocks/`: 44 `.py` files (44, 42)
+- `experimentation/`: 204 `.py` files, 33 of them `test_*.py` (196 on 2026-09-26)
+Recounted 2026-10-16 with `find tests/<tier> -name '*.py'` (pycache excluded); the three tiers' 838 `test_*.py`
+modules are the count `tests_components` states.
 
 ## Core Responsibilities
 - Unit tests validate class- and method-level runtime contracts.
@@ -583,11 +584,18 @@ Recounted 2026-09-26 with `find tests/<tier> -name '*.py'` (pycache excluded).
   join against. A renamed or deleted test file leaves a citation that still
   parses and points nowhere. Existence must be checked explicitly; see the
   recipe under `## Indexing`.
+- WORKER HANG (unit-tier stress files): the managed pool's and the release registry's stress files start eight
+  threads behind one barrier and join each with a timeout, so a deadlock or a lost wake-up fails the test (the
+  pool's file names it "a worker hung") instead of stalling the CI cell; the queue pools there also give every
+  waiting lease a deadline of its own.
+  EVIDENCE: tests/unit/melder/aether/conduit/creations/test_managed_spell_quantity_multithreaded.py:94-124
 
 ## C1 Code Map (Core Only)
-Core is the deduplicated union of every `Key Files (C1)` list in
-`tests_components.md`, plus the harness surfaces this document names as
-entrypoints. Every range below was MEASURED from disk on 2026-08-02, not carried
+Core here is the harness and entrypoint surfaces this document names - the runner configuration, the
+conftests, the shared support modules, the benches, the mock corpus and the CI driver: 36 paths, every one of
+them in the core set of `tests_components` (the deduplicated union of its `Key Files (C1)` lists, 247 paths on
+2026-10-15; corrected 2026-10-15 - this paragraph called this map that union). Every range below was MEASURED
+from disk on 2026-08-02, not carried
 forward - there is no graph on this side to join against, so nothing else would
 have caught a stale range.
 
@@ -663,9 +671,9 @@ constituent files.
   verified_at: 2026-09-26T21:51:55Z
 - path: `tests/unit/melder/aether/test_nexus.py`
   start_line: 1
-  end_line: 6377
-  loc: 6377
-  verified_at: 2026-09-30T00:32:11Z
+  end_line: 6374
+  loc: 6374
+  verified_at: 2026-10-15T22:33:31Z
 - path: `tests/unit/melder/aether/test_rift_runtime_contracts.py`
   start_line: 1
   end_line: 458
@@ -678,9 +686,9 @@ constituent files.
   verified_at: 2026-09-26T21:51:55Z
 - path: `tests/unit/melder/aether/test_command_system_direct.py`
   start_line: 1
-  end_line: 483
-  loc: 483
-  verified_at: 2026-09-30T00:32:11Z
+  end_line: 477
+  loc: 477
+  verified_at: 2026-10-15T22:33:31Z
 - path: `tests/mocks/spellbook/contract_classes.py`
   start_line: 1
   end_line: 425
@@ -866,10 +874,30 @@ graph TD
 - `tests/unit/melder/test_melder_registration_guard.py`
 - `tests/unit/melder/utilities/test_caching_system.py`
 - `tests/unit/melder/spellbook/spell_compiler/phases/test_compiler_pool_snapshot_reads.py`
+- `tests/unit/melder/aether/conduit/creations/test_managed_spell_quantity_multithreaded.py`
+- `tests/unit/melder/aether/conduit/creations/test_release_managed_spell_multithreaded.py`
 - `.gitignore`
 - direct filesystem inventory of `tests/`
 
 ## Context / Handoff Summary
+
+2026-10-16 parked versions wired at conjure (0.2.8248): the inventory is recounted from disk (unit 508 `.py`,
+component 168, integration 174, mocks 44, experimentation 204; 838 test modules in the three tiers) - the lane
+adds one unit and one integration module, catalogued in `tests_components`. No tier, conftest, marker or shared
+support module changes, and no extent in this map moves.
+
+2026-10-16 non-resolvable definitions (0.2.8247): the inventory is recounted from disk (unit 507 `.py`,
+component 168, integration 173, mocks 44, experimentation 204; 836 test modules in the three tiers) - the lane
+adds two unit modules and one component module, catalogued in `tests_components`. No tier, conftest, marker or
+shared support module changes, and no extent in this map moves.
+
+2026-10-15 managed spells (no notch here; the lane landed 0.2.8241-0.2.8246): the inventory is recounted from
+disk (unit 505 `.py`, component 167, integration 173, mocks 44, experimentation 204; 833 test modules in the
+three tiers); the two stale code-map extents, both stale since earlier lanes (`test_nexus.py` 6374,
+`test_command_system_direct.py` 477), are remeasured and every other extent matched disk; and the code-map header
+no longer calls this map the union of `tests_components`' key files - it is the 36 surfaces this document names.
+Failure Modes gains the worker-hang guard of the unit tier's two managed stress files. The lane adds no tier,
+conftest, marker or shared support module; its 28 test files are catalogued in `tests_components`.
 
 2026-10-06 speed tests beside CI (no notch; CI and documentation only): `### CI/CD Pipeline` names a fourth entry
 workflow, `speed-tests.yml`, which runs the three speed tests on dev-to-preprod pull requests beside `ci.yml`. They

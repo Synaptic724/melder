@@ -52,6 +52,10 @@ Use these terms to choose the right boundary before choosing an API.
    Existence
       The instance reuse and lifetime policy selected for a bound spell.
 
+   Managed spell
+      A spell bound with the ``managed_spell_quantity`` existence. Meld leases its objects from
+      a pool the owning root keeps; ``ReleaseManagedSpell`` gives them back for reuse.
+
    Meld
       Resolve an addressed spell into an object according to its graph and existence policy.
 

@@ -117,13 +117,20 @@ class FakeSpellStatesSystem:
         """
         return self._states.get(index_id)
 
-    def register_index(self, spell_index: SpellIndex, owner_spellbook_id: Optional[str] = None) -> None:
+    def register_index(
+            self,
+            spell_index: SpellIndex,
+            owner_spellbook_id: Optional[str] = None,
+            *,
+            resolvable: Optional[bool] = None,
+    ) -> None:
         """
         Register a lineage state for the given spell index.
 
         Args:
             spell_index: SpellIndex identifying the lineage.
-            spell: Spell object associated with the lineage.
+            owner_spellbook_id: Owning Spellbook id (ignored here).
+            resolvable: The moved version's capability, as the transfer passes it (ignored here).
         """
         if spell_index.id in self._states:
             return
@@ -1056,6 +1063,7 @@ def build_spell(
         dependencies=list(dependencies),
         existence=existence,
         permissions=permissions,
+        resolvable=True,
     )
 
     def _add_owned_conduit(

@@ -10,6 +10,7 @@ from typing import (
     Callable,
     ClassVar,
     Optional,
+    Union,
 )
 
 from melder.aether.aether import Aether
@@ -59,6 +60,7 @@ if TYPE_CHECKING:
         SpellSystemStates,
     )
     from melder.aether.conduit.conduit import Conduit
+    from melder.aether.spellbook.existence.managed_spell_mode import ManagedSpellMode
     from melder.crystallizer.crystallizer import Crystallizer
     from melder.mutation_research.mutation_research import MutationResearch
     from melder.utilities.logger.safe_logger import SafeLogger
@@ -3904,6 +3906,7 @@ class Spellbook(Cleanable):
         self._spell_system_states.register_index(
             spell_index=spell_index,
             owner_spellbook_id=self._id,
+            resolvable=spell.resolvable,
         )
         # Refresh the spellbook validation-required flag for the promoted member:
         # register_spell recomputes its structural/resolution validity and, for a
@@ -5102,6 +5105,10 @@ class Spellbook(Cleanable):
             disposal_method_names: Sequence[str] | None = None,
             profile: str = "general",
             resolvable: bool = True,
+            managed_spell_mode: Optional[Union[ManagedSpellMode, str]] = None,
+            managed_spell_limit: Optional[int] = None,
+            managed_spell_timeout_seconds: Optional[float] = None,
+            managed_spell_reset_methods: Optional[Sequence[str]] = None,
             **kwargs: Any,
     ) -> str:
         """
@@ -5158,6 +5165,19 @@ class Spellbook(Cleanable):
             resolvable (bool):
                 Native capability of this parked version, independent of index selection.
                 Defaults to True; False retains existing naming and lifecycle restrictions.
+            managed_spell_mode (Optional[Union[ManagedSpellMode, str]]):
+                Pool policy of an `Existence.managed_spell_quantity` binding: elastic (default),
+                limited_quantity or queue - a ManagedSpellMode member or its name.
+            managed_spell_limit (Optional[int]):
+                elastic: the most idle objects kept (default 256); limited_quantity and queue: the
+                most objects alive at once (required). An int >= 1.
+            managed_spell_timeout_seconds (Optional[float]):
+                queue only, required there: how long a lease waits for a release before it raises.
+            managed_spell_reset_methods (Optional[Sequence[str]]):
+                Names of zero-argument methods of the class run, in order, on every release.
+                The four managed options must stay None on any other existence; all four are part
+                of a managed spell's id.
+                A parked managed version keeps its own options.
             **kwargs:
                 Optional lifecycle hooks (pre/activation/post).
 
@@ -5170,7 +5190,10 @@ class Spellbook(Cleanable):
                 If the spell_id collides, the Spellbook is not in a dynamic
                 posture, or `spell_index` is not owned here.
             TypeError:
-                If resolvable is not a bool or the target violates Bind admission rules.
+                If resolvable is not a bool or the target violates Bind admission rules,
+                including a managed option of the wrong type or a managed non-class.
+            ValueError:
+                If a managed option is malformed or set on another existence.
             HookExecutionError:
                 A Book bind callback failed. Activation failure cleans its
                 unpublished allocation; post failure does not undo registration.
@@ -5204,6 +5227,10 @@ class Spellbook(Cleanable):
                     binding_name=binding_name,
                     profile=profile,
                     resolvable=resolvable,
+                    managed_spell_mode=managed_spell_mode,
+                    managed_spell_limit=managed_spell_limit,
+                    managed_spell_timeout_seconds=managed_spell_timeout_seconds,
+                    managed_spell_reset_methods=managed_spell_reset_methods,
                     _lifecycle_hooks=bind_hooks,
                     existence=existence_enum,
                     aetheric_frame=self._aetheric_frame_name,
@@ -5266,7 +5293,10 @@ class Spellbook(Cleanable):
                 # If a conduit already exists (post-conjure bind_inactive), follow the
                 # same conduit wiring an active bind does so the parked spell owns a
                 # CreationContextFactory. Pre-conjure inactive spells have no conduit
-                # yet; they are wired at conjure like pre-conjure active spells.
+                # yet; they are wired at conjure like pre-conjure active spells
+                # (SpellbookCreationSystem.define_conduit_into_spells stamps
+                # `_inactive_spells` with this same stamp since 0.2.8248; before it,
+                # conjure walked only the active spells and left them unwired).
                 if self._conjured and self._conduit is not None:
                     conduit = self._get_required_conduit_surface()
                     caching_enabled = self._resolve_system_caching_enabled()
@@ -5400,6 +5430,10 @@ class Spellbook(Cleanable):
             disposal_method_names: Sequence[str] | None = None,
             profile: str = "general",
             resolvable: bool = True,
+            managed_spell_mode: Optional[Union[ManagedSpellMode, str]] = None,
+            managed_spell_limit: Optional[int] = None,
+            managed_spell_timeout_seconds: Optional[float] = None,
+            managed_spell_reset_methods: Optional[Sequence[str]] = None,
             **kwargs: Any,
     ) -> str:
         """
@@ -5453,6 +5487,18 @@ class Spellbook(Cleanable):
                 enforce_priority_disposal_methods=True. Shared names belong to that block
                 in both modes; spell-only names keep their supplied order. Missing names
                 are skipped and duplicates run once. Empty input still permits book methods.
+            managed_spell_mode (Optional[Union[ManagedSpellMode, str]]):
+                Pool policy of an `Existence.managed_spell_quantity` binding: elastic (default),
+                limited_quantity or queue - a ManagedSpellMode member or its name.
+            managed_spell_limit (Optional[int]):
+                elastic: the most idle objects kept (default 256); limited_quantity and queue: the
+                most objects alive at once (required). An int >= 1.
+            managed_spell_timeout_seconds (Optional[float]):
+                queue only, required there: how long a lease waits for a release before it raises.
+            managed_spell_reset_methods (Optional[Sequence[str]]):
+                Names of zero-argument methods of the class run, in order, on every release.
+                The four managed options must stay None on any other existence; all four are part
+                of a managed spell's id.
             **kwargs:
                 Optional application-object lifecycle hooks, executed during Meld
                 and separate from add_bind_hooks registration callbacks:
@@ -5471,7 +5517,10 @@ class Spellbook(Cleanable):
                 If ``spell`` is a primitive value (int, float, bool, complex,
                 str, bytes, bytearray); a spell must be a class, function,
                 lambda, or an existing object instance.
-                Also raised when resolvable is not a bool.
+                Also raised when resolvable is not a bool, when a managed option has the
+                wrong type, or when a managed binding targets a non-class.
+            ValueError:
+                If a managed option is malformed or set on another existence.
             HookExecutionError:
                 A registration callback failed; the original error is chained.
                 Activation failure retires its unpublished Spell/index. Post
@@ -5527,6 +5576,10 @@ class Spellbook(Cleanable):
                     binding_name=binding_name,
                     profile=profile,
                     resolvable=resolvable,
+                    managed_spell_mode=managed_spell_mode,
+                    managed_spell_limit=managed_spell_limit,
+                    managed_spell_timeout_seconds=managed_spell_timeout_seconds,
+                    managed_spell_reset_methods=managed_spell_reset_methods,
                     _lifecycle_hooks=bind_hooks,
                     existence=existence_enum,
                     aetheric_frame=self._aetheric_frame_name,
@@ -5637,6 +5690,7 @@ class Spellbook(Cleanable):
                 self._spell_system_states.register_index(
                     spell_index=new_spell.spell_index,
                     owner_spellbook_id=self._id,
+                    resolvable=new_spell.resolvable,
                 )
                 if self._conjured and self._conduit is not None:
                     self._register_spell_with_risk_manager(

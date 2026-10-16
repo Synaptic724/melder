@@ -2432,7 +2432,9 @@ def test_bind_after_conjure_preserves_ownership_and_registrations(monkeypatch):
     risk_calls = []
     register_single_calls = []
     sb._spell_system_states = types.SimpleNamespace(
-        register_index=lambda spell_index, owner_spellbook_id=None: lineage_calls.append((spell_index, new_spell))
+        register_index=lambda spell_index, owner_spellbook_id=None, resolvable=None: lineage_calls.append(
+            (spell_index, new_spell, resolvable)
+        )
     )
     sb._register_spell_with_risk_manager = (
         lambda conduit_id, spell: risk_calls.append((conduit_id, spell))
@@ -2468,6 +2470,7 @@ def test_bind_after_conjure_preserves_ownership_and_registrations(monkeypatch):
     assert sb._conduit.registered == [(new_spell, "existing")]
     assert len(lineage_calls) == 1
     assert lineage_calls[0][1] is new_spell
+    assert lineage_calls[0][2] is True  # bind passes the bound version's Spell.resolvable
     assert risk_calls == [("jit-cid", new_spell)]
     assert register_single_calls == [("jit-cid", idx, frame_name)]
 
@@ -2500,7 +2503,7 @@ def test_bind_after_conjure_stamps_resolution_required_false(monkeypatch):
     sb._assert_lookup_key_available = lambda **kwargs: None
     sb._add_hooks_to_spell = lambda spell, **kwargs: None
     sb._spell_system_states = types.SimpleNamespace(
-        register_index=lambda spell_index, owner_spellbook_id=None: None
+        register_index=lambda spell_index, owner_spellbook_id=None, resolvable=None: None
     )
     sb._register_spell_with_risk_manager = lambda conduit_id, spell: None
 

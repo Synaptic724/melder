@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_state.py",
- "source_sha256": "76204a4732c331de57ed9d8607fc0b8e5e101766b4dc5b383c0d4a22b3f5c005",
+ "source_sha256": "a81bc1e6697265f9578c1f85bccac0d911a66afa0ee9a98f23e47e0a32f27651",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_state": {
@@ -35,6 +35,7 @@
     "direct_dependents",
     "dirty",
     "flags",
+    "has_flag",
     "last_validated_at",
     "mark_dependency_change",
     "mark_structural_change",
@@ -44,18 +45,20 @@
     "spell_index_id",
     "transitively_dirty",
     "update_current_spell_id",
+    "update_flags",
     "validity"
    ],
    "shape": {
-    "method_count": 21,
+    "method_count": 24,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "17317456e4e5f691e00010186092ec18ce8b05c841247cde6267be62f35ff75f",
+   "span_sha256": "d63f7d027663b74b6c47357bb89a49adbb99fc7916c43da0b7db6e53d220817f",
    "role": "System-level state for a single spell lineage.",
    "responsibilities": [
     "stores direct topology, structural validity, flags, and latest change reason for one lineage",
-    "tracks last successful validation time and transitive dirt state"
+    "tracks last successful validation time and transitive dirt state",
+    "updates flags without touching validity or publishing (update_flags), and on the registry's request publishes its unchanged validity to RiskManager again (_republish_validity, 0.2.8247)"
    ],
    "owns_state": [
     "_spell_index_id",
@@ -71,7 +74,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "17317456e4e5f691e00010186092ec18ce8b05c841247cde6267be62f35ff75f"
+   "semantics_authored_against": "d63f7d027663b74b6c47357bb89a49adbb99fc7916c43da0b7db6e53d220817f"
   }
  },
  "edges_out": [

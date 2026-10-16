@@ -1,0 +1,23 @@
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: The patch lane is archived: `mv -n` moved system_docs/patches/active/managed_spell_quantity_2026_10_15/
+    (its eleven docs - the architecture patch, six component and four code-description patches) to
+    system_docs/patches/completed/, after their content was promoted into src_architecture, src_components, the
+    tests docs and the graph (the MEASURE notes above). scripts/s7_archive_patch_lane.py replaced the lane's 11 active
+    artifact-board rows with one cleared promote_to_documentation row and repointed the live references (the epic's
+    Dependencies and Artifact Links, this story's Artifact Links); historical Notes keep the paths they cited. The
+    three evidence folders (melder_object_pools_20261011, managed_shell_spike_20261014, managed_spell_quantity_20261015)
+    stay active, retained as reference under the epic.
+  EVIDENCE:
+  - context_compass/artifact_board.md:92-108
+  - context_compass/tickets/epics/2026-10-14_managed_spell_quantity_epic.md:474-474
+  - context_compass/tickets/epics/2026-10-14_managed_spell_quantity_epic.md:672-672
+  - context_compass/tickets/stories/2026-10-15_managed_docs_release_story.md:93-93
+  - context_compass/artifacts/managed_spell_quantity_20261015/scripts/s7_archive_patch_lane.py:1-71
+  IMPACT: The patch-framework closure gate holds: no temporary patch doc of the lane is left under patches/active,
+    and both boards agree with the tickets.
+  NEXT: Score the four system documents against the quality rubric, from disk.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7

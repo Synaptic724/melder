@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/crystals/spell_crystal.py",
- "source_sha256": "760c4a1c2a9b5c6a93c783f69ee363ef73cfa49c316d794cc4b013c6d1250334",
+ "source_sha256": "044de292ef544223d57ae73d37f98c21e122edf6d888f2d36eb6b1b23b9fcc3d",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.crystals.spell_crystal": {
@@ -41,6 +41,8 @@
     "existence_name",
     "frame_name",
     "id",
+    "managed_bind_options",
+    "managed_spell_options",
     "module_targets",
     "module_to_direct_dependencies",
     "module_to_extension",
@@ -73,11 +75,11 @@
     "walk_errors"
    ],
    "shape": {
-    "method_count": 41,
+    "method_count": 43,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "93b395f3b620207e0b1601b5a700c95b3774a20088484d9a4cbf464f8c26a203",
+   "span_sha256": "dcc6e332b8d9befb3965e60ef4b467fb25f962c2e9b264263cf2bae0aed072b5",
    "role": "Spell custody twin + module-dependency manifest; carries the full bind signature and, for synthetic roots, the rebuildable module SOURCES (M3); opt-in user-source TEXT rides beside them (S2).",
    "responsibilities": [
     "captures identity and the full bind signature for one live spell target",
@@ -86,20 +88,22 @@
     "carries the returned CrystalAnalysisResult and exposes it via delegating properties",
     "captures native per-version resolution capability as a detached replay value",
     "keys its record entry: custody_key is the spell id, or \"<spell_id>@<frame>\" when built with per_frame_custody (the frame read from spell.aetheric_frame)",
-    "records the frame kind (spellframe_kind) and, for a contract, the Protocol's module and qualname (spellframe_module, spellframe_qualname) so restore and graft rebind the Protocol rather than a same-named category (0.2.8222, record 4.1.0)"
+    "records the frame kind (spellframe_kind) and, for a contract, the Protocol's module and qualname (spellframe_module, spellframe_qualname) so restore and graft rebind the Protocol rather than a same-named category (0.2.8222, record 4.1.0)",
+    "records a managed spell's options as plain values - the mode by name, the limit, the queue timeout and the reset names - only for managed_spell_quantity, so every other payload is unchanged (record 4.2.0, 0.2.8242); managed_spell_options returns them, and the static managed_bind_options(payload) is the one reader the restore and graft lanes replay them through"
    ],
    "owns_state": [
     "_analysis (one carried CrystalAnalysisResult)",
     "_disposal_method_names (ordered recorded values)",
     "_frame_name, _custody_key (the record key)",
-    "_spellframe_kind, _spellframe_module, _spellframe_qualname (recorded frame kind)"
+    "_spellframe_kind, _spellframe_module, _spellframe_qualname (recorded frame kind)",
+    "_managed_spell_mode_name, _managed_spell_limit, _managed_spell_timeout_seconds, _managed_spell_reset_methods (recorded managed options)"
    ],
    "phases": [
     "init",
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "93b395f3b620207e0b1601b5a700c95b3774a20088484d9a4cbf464f8c26a203"
+   "semantics_authored_against": "dcc6e332b8d9befb3965e60ef4b467fb25f962c2e9b264263cf2bae0aed072b5"
   }
  },
  "edges_out": [
@@ -146,6 +150,7 @@
   "Any": "typing.Any",
   "Dict": "typing.Dict",
   "List": "typing.List",
+  "Mapping": "typing.Mapping",
   "Optional": "typing.Optional",
   "Sequence": "typing.Sequence",
   "Tuple": "typing.Tuple",

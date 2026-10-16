@@ -191,6 +191,33 @@ def test_build_model_shell_uses_existing_creation_route_family() -> None:
     assert model.existence_occurrence_shape is None
 
 
+def test_build_model_shell_maps_managed_spell_quantity_to_managed_route_family() -> None:
+    """A managed spell maps to the "managed" route family (STORY-2026-10-15-managed_existence_member)."""
+    artifact = SimpleNamespace(_occurrence_graph_analysis=_OccurrenceGraphProbe())
+    spell = SimpleNamespace(
+        is_existing_creation=False,
+        existence=Existence.managed_spell_quantity,
+    )
+
+    model = SpellArtifactProcessor._build_model_shell(
+        spell=spell,
+        artifact=artifact,
+    )
+
+    assert model.build_kind == "construct"
+    assert model.existence is Existence.managed_spell_quantity
+    assert model.route_family == "managed"
+
+
+def test_build_model_shell_still_refuses_an_unknown_existence() -> None:
+    """A value that is no Existence member still raises naming it."""
+    artifact = SimpleNamespace(_occurrence_graph_analysis=_OccurrenceGraphProbe())
+    spell = SimpleNamespace(is_existing_creation=False, existence="not_a_member")
+
+    with pytest.raises(RuntimeError, match="Unsupported existence for route family"):
+        SpellArtifactProcessor._build_model_shell(spell=spell, artifact=artifact)
+
+
 def test_spell_artifact_processor_process_publishes_model_and_cleans_previous() -> None:
     """The processor facade should publish the new model and cleanup the superseded one."""
     events: List[str] = []

@@ -105,9 +105,9 @@ class ResolutionStyleMatrix:
 
 
     OWNER: ClassVar[str] = "melder-runtime-maintainers"
-    LAST_UPDATED_ISO: ClassVar[str] = "2026-02-13"
+    LAST_UPDATED_ISO: ClassVar[str] = "2026-10-15"
     EXPECTED_SPELL_TYPE_COUNT: ClassVar[int] = 14
-    EXPECTED_EXISTENCE_COUNT: ClassVar[int] = 6
+    EXPECTED_EXISTENCE_COUNT: ClassVar[int] = 7
     EXPECTED_CONTRACT_ITEM_COUNT: ClassVar[int] = 21
 
     ALL_EXISTENCE_NAMES: ClassVar[Tuple[str, ...]] = (
@@ -117,6 +117,7 @@ class ResolutionStyleMatrix:
         "unique_per_conduit_cluster",
         "unique_per_conduit_lineage",
         "unique_per_spell_space",
+        "managed_spell_quantity",
     )
     NON_UNIQUE_EXISTENCE_NAMES: ClassVar[Tuple[str, ...]] = (
         "unique_per_conduit",
@@ -124,6 +125,7 @@ class ResolutionStyleMatrix:
         "unique_per_conduit_cluster",
         "unique_per_conduit_lineage",
         "unique_per_spell_space",
+        "managed_spell_quantity",
     )
 
     BINDING_FAMILY_POLICY: ClassVar[Dict[str, Dict[str, Tuple[str, ...]]]] = {

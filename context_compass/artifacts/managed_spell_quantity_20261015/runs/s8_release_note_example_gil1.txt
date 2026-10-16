@@ -1,0 +1,8 @@
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/src/melder/__init__.py:199: UserWarning: Python 3.14+ detected, but running in GIL-enabled mode.
+melder is optimized for Python built with --disable-gil (PEP 703).
+Performance may be degraded.
+  warnings.warn(
+python 3.14.7, gil enabled: True
+example: meld after notch -> ReportServiceV2, render() == 'v2'
+before notch: KeyError "'[MELD] No spell found with spell_id: a8eca56eee232d05192d18"
+managed: describe before conjure 0 row(s), after conjure 1 (spell id matches: True); leased PoolV2 after the notch; after release count=1 idle=1

@@ -1,0 +1,21 @@
+python 3.14.7 gil_enabled=False rounds=2000
+[p1_auto_asis] after conjure and one meld: flag=True risky_structural=[] risky_resolution=['IThing']
+  root.meld(Task): gate=1.00 check=0.00 22.8 us per meld
+[p1_auto_excl] after conjure and one meld: flag=False risky_structural=[] risky_resolution=[]
+  root.meld(Task): gate=0.00 check=0.00 0.3 us per meld
+[p1_dyn_asis] after conjure and one meld: flag=True risky_structural=[] risky_resolution=['IThing']
+  root.meld(Task): gate=1.00 check=0.00 27.9 us per meld
+[p1_dyn_excl] after conjure and one meld: flag=False risky_structural=[] risky_resolution=[]
+  root.meld(Task): gate=0.00 check=0.00 0.9 us per meld
+[scan live (today)] before notch: consumer got A; flag=True risky_structural=[] risky_resolution=['01M50EW2PAVVVDK70378M8AMSG']
+  borrower.meld(Consumer): gate=1.00 check=1.00 2662.9 us per meld
+  after notch: consumer lineage valid []; flag=True risky_structural=[] risky_resolution=['01M50EW2PAVVVDK70378M8AMSG']
+  first meld after notch: consumer got B; gate=1 check=1; flag=True risky_structural=[] risky_resolution=['01M50EW2PAVVVDK70378M8AMSG']
+  second meld after notch: consumer got B; flag=True risky_structural=[] risky_resolution=['01M50EW2PAVVVDK70378M8AMSG']
+  after notching back to A: consumer got A; gate=1 check=1; flag=True risky_structural=['01M50EW2PAVVVDK70378M8AMSG'] risky_resolution=['01M50EW2PAVVVDK70378M8AMSG']
+[scan removed (state only)] before notch: consumer got A; flag=True risky_structural=[] risky_resolution=['01M50EW3D5A8RDQ72P6K6K10VP']
+  borrower.meld(Consumer): gate=1.00 check=1.00 2.0 us per meld
+  after notch: consumer lineage valid []; flag=True risky_structural=[] risky_resolution=['01M50EW3D5A8RDQ72P6K6K10VP']
+  first meld after notch: consumer got A; gate=1 check=1; flag=True risky_structural=[] risky_resolution=['01M50EW3D5A8RDQ72P6K6K10VP']
+  second meld after notch: consumer got A; flag=True risky_structural=[] risky_resolution=['01M50EW3D5A8RDQ72P6K6K10VP']
+  after notching back to A: consumer got A; gate=1 check=1; flag=True risky_structural=['01M50EW3D5A8RDQ72P6K6K10VP'] risky_resolution=['01M50EW3D5A8RDQ72P6K6K10VP']

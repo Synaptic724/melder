@@ -14,9 +14,9 @@ Regenerate with:
 """
 
 MANIFEST_VERSION = "2.0.0"
-BUILT_FOR_VERSION = "0.2.8240"
-SOURCE_SHA256 = "e879d1cac8a14f177e4953cf3aa5b1ea9b6e518ff9755c9ac5fccaddfacc068a"
-ENTRY_COUNT = 623
+BUILT_FOR_VERSION = "0.2.8248"
+SOURCE_SHA256 = "37ba456d90adebc81d9b5ec3d589e93bae3b863141661b5dd184968120fe16ec"
+ENTRY_COUNT = 628
 
 ENTRIES = (
     ('melder.aether.aether', 'Aether'),
@@ -136,6 +136,9 @@ ENTRIES = (
     ('melder.aether.conduit.creations.creations', 'Creations'),
     ('melder.aether.conduit.creations.creations', 'HolderDisposalEntry'),
     ('melder.aether.conduit.creations.creations', 'ManyDisposalBucket'),
+    ('melder.aether.conduit.creations.managed_spell_lease', 'ManagedSpellLease'),
+    ('melder.aether.conduit.creations.managed_spell_quantity', 'ManagedSpellQuantity'),
+    ('melder.aether.conduit.creations.release_managed_spell', 'ReleaseManagedSpell'),
     ('melder.aether.conduit.meld.conduit_meld', 'ConduitMeld'),
     ('melder.aether.conduit.meld.contracts.spell_contract', 'SpellContract'),
     ('melder.aether.conduit.meld.contracts.spell_map', 'SpellMap'),
@@ -156,6 +159,7 @@ ENTRIES = (
     ('melder.aether.spellbook.configuration.spellbook_configuration', 'SpellbookConfiguration'),
     ('melder.aether.spellbook.configuration.system_state', 'SystemState'),
     ('melder.aether.spellbook.existence.existence', 'Existence'),
+    ('melder.aether.spellbook.existence.managed_spell_mode', 'ManagedSpellMode'),
     ('melder.aether.spellbook.resolution_style_matrix', 'ResolutionStyleMatrix'),
     ('melder.aether.spellbook.spell', 'Spell'),
     ('melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_injection_analysis', 'SpellInjectionAnalysis'),
@@ -595,6 +599,7 @@ ENTRIES = (
     ('melder.utilities.custom_exceptions.empty_error', 'Empty'),
     ('melder.utilities.custom_exceptions.hook_execution_error', 'HookExecutionError'),
     ('melder.utilities.custom_exceptions.internal_registration_error', 'InternalRegistrationError'),
+    ('melder.utilities.custom_exceptions.managed_spell_exhausted_error', 'ManagedSpellExhaustedError'),
     ('melder.utilities.custom_exceptions.meld_execution_error', 'MeldExecutionError'),
     ('melder.utilities.custom_exceptions.operation_cancelled_error', 'OperationCancelledError'),
     ('melder.utilities.custom_exceptions.phase_execution_error', 'PhaseExecutionError'),

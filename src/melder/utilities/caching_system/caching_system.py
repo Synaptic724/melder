@@ -187,6 +187,13 @@ class CachingSystem(Cleanable):
     # (2026-10-04): their structural rows were resolved by the name matcher,
     # which read a string category named like a class as that class's
     # provider set; the kind matcher resolves such sockets differently.
+    # Version 21 retires bundles written before the managed lease codegen
+    # (0.2.8245, `Existence.managed_spell_quantity`): plans gained the leasing
+    # and fresh managed sites, the doors the "managed" route rows and the
+    # generalized manifest its route key. Rows of other spells did not change
+    # and a release change already cold-starts every bundle (version 9); the
+    # bump is the explicit retirement the owner asked for whenever codegen
+    # changes (2026-10-16, landed with 0.2.8248).
     CACHE_VERSION_HISTORY: ClassVar[Mapping[int, str]] = MappingProxyType({
         1: "legacy_executor_payloads",
         2: "decoded_manifest_package_payloads",
@@ -208,6 +215,7 @@ class CachingSystem(Cleanable):
         18: "annotation_address_matching",
         19: "executor_world_stamp",
         20: "annotation_kind_matching",
+        21: "managed_spell_lease_codegen",
     })
     CURRENT_VERSION: ClassVar[int] = max(CACHE_VERSION_HISTORY)
 

@@ -33,6 +33,7 @@ from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_asset
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_manifest_no_overrides_compiler import (
     build_specialized_no_overrides_executor,
     resolve_root_instance_key_from_rows,
+    rows_contain_managed_step,
     rows_feed_many_into_non_many_step,
     select_specializable_step_indexes,
 )
@@ -619,8 +620,8 @@ def _install_specializing_door(
     Returns:
         Callable[..., Any]: The specializing wrapper door, or
         `plain_instance_door` when the graph has no capturable steps, captures
-        only its root on a short-circuiting route, or feeds a `many` step into
-        a non-`many` step.
+        only its root on a short-circuiting route, feeds a `many` step into
+        a non-`many` step, or holds a `managed_spell_quantity` step.
     """
     captured_step_indexes = select_specializable_step_indexes(rows)
     if not captured_step_indexes:
@@ -629,6 +630,10 @@ def _install_specializing_door(
         # A holder's `many` children must be built only in the holder's first
         # build and recorded with the holder's owner; a straight-line body
         # cannot do that, so the plain door (site plan) keeps serving.
+        return plain_instance_door
+    if rows_contain_managed_step(rows):
+        # A managed step is leased through the site plan (pop, reserve-first
+        # miss, returns); the straight-line body has no lease lowering.
         return plain_instance_door
     if route_key != "many" and len(captured_step_indexes) == 1:
         captured_row = rows[captured_step_indexes[0]]

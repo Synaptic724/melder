@@ -184,6 +184,8 @@ Message alert rules
 - NEW MESSAGE for muse_0 (from melder_0, 2026-10-01T11:10:44Z)
 - NEW MESSAGE for melder_2 (from melder_0, 2026-10-01T11:26:16Z)
 - NEW MESSAGE for muse_0 (from melder_0, 2026-10-01T11:26:16Z)
+- NEW MESSAGE for melder_0 (from melder_1, 2026-10-15T23:17:16Z)
+- NEW MESSAGE for melder_0 (from melder_1, 2026-10-16T01:58:31Z)
 <!-- END USER-DEFINED: alerts -->
 
 ## Active Items
@@ -193,38 +195,39 @@ Message alert rules
 | gauntlet_runtime_speed | in_progress | discovery | claude | melder_2 | none | Owner decides whether an open lever (thread-affine pools, one-lock anonymous link, single-check fast door) is worth a task. | Per-scope-cycle cost map vs dishka and dependency-injector, with ranked and prototyped candidates. | Next lever validated and its task opened, or the owner redirects. | tickets/tasks/2026-09-26_measure_gauntlet_scope_cycle_costs_task.md | 2026-09-26T23:01:16Z | REQUIRED |
 | defect_hunting_spellbook | in_progress | discovery | opencode | muse_0 | none | Slice spellbook component sections then read the surface behind each claim. | Contradiction list with evidence; meaty issues flagged apart from polish. | Sweep list triaged or owner redirects to conduit/meld or arch diffs. | tickets/tasks/2026-09-27_spellbook_sweep_task.md | 2026-09-27T15:56:49Z | REQUIRED |
 | defect_hunting_fixes_1 | in_progress | implementation | opencode | muse_0 | none | Re-slice each target fresh then repair findings 1-8 in order. | Corrected blocks with verified ranges; index check clean. | Batch repaired with gates passing or owner redirects scope. | tickets/tasks/2026-09-27_sweep_fixes_batch_1_task.md | 2026-09-27T16:07:16Z | REQUIRED |
-| melder_object_pools | in_progress | discovery | claude | melder_0 | none | Read the kernel elastic pools and the transfer creation moves whole, then rewrite the epic and open the stories. | `managed_spell_quantity` built: the settled deque design, elastic on the kernel pools' retention, carried by ownership transfer; one story per mechanic. | Every story landed with green tests and the owner accepts, or the owner redirects. | tickets/epics/2026-10-14_managed_spell_quantity_epic.md | 2026-10-15T08:51:04Z | REQUIRED |
-| notch_borrower_docs | in_progress | implementation | claude | melder_1 | none | Rewrite the three 'known limitation' passages as the feature, re-index, rebuild and close. | src_architecture and src_components describe how borrowers follow a notch while old versions stay alive. | The passages are corrected with checks OK and the task closed, or the owner redirects. | tickets/tasks/2026-10-15_describe_notch_borrower_follow_as_feature_task.md | 2026-10-15T02:07:39Z | REQUIRED |
+| melder_object_pools | review | handoff | claude | melder_0 | the owner's acceptance (reserved) | The owner accepts S1-S8 and the epic, or redirects. | Versions parked before conjure meld after a notch (every existence); cache generation 21; landed as 0.2.8248. | The owner accepts the epic (S1-S8), or redirects. | tickets/stories/2026-10-16_parked_versions_wired_at_conjure_story.md | 2026-10-16T11:49:54Z | REQUIRED |
+| meld_contract_scan | in_progress | discovery | claude | melder_1 | the owner's approval of the updated patch docs (D2 dependent walk added); melder_0's handoff of spellbook.py | Probe the transitive dependency notch read-only, write the D2 component patch and present the updated patch docs to the owner. | A satisfied SpellContract is not checked on every meld; a notch marks for revalidation every spell that depends on the notched one - its Book's dependents and the contract consumers of an impacted provider. | The owner-approved change lands with tests, docs, notch and rebuild, or the owner redirects. | tickets/tasks/2026-10-16_recheck_contract_consumers_when_provider_changes_task.md | 2026-10-16T11:57:53Z | REQUIRED |
 <!-- END USER-DEFINED: active_items -->
 
 ## Active Attention Details
 <!-- BEGIN USER-DEFINED: active_attention_details -->
 - WORK_ITEM: melder_object_pools
-  SWITCH_TRIGGER: Every story landed with green tests and the owner accepts, or the owner redirects.
+  SWITCH_TRIGGER: The owner accepts the epic (S1-S8), or redirects.
   RESUME_HIERARCHY:
     - tickets/epics/2026-10-14_managed_spell_quantity_epic.md
-- WORK_ITEM: notch_borrower_docs
-  SWITCH_TRIGGER: The passages are corrected with checks OK and the task closed, or the owner redirects.
+    - tickets/stories/2026-10-16_parked_versions_wired_at_conjure_story.md
+- WORK_ITEM: meld_contract_scan
+  SWITCH_TRIGGER: The owner-approved change lands with tests, docs, notch and rebuild, or the owner redirects.
   RESUME_HIERARCHY:
-    - tickets/tasks/2026-10-15_describe_notch_borrower_follow_as_feature_task.md
+    - tickets/tasks/2026-10-16_recheck_contract_consumers_when_provider_changes_task.md
 <!-- END USER-DEFINED: active_attention_details -->
 
 ## Recently Closed Anchors
 | work_item | status | agent_name | ticket | note | closed_at |
 | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: closed_anchors -->
-| slotted_lifetime_audit | done | melder_1 | tickets/tasks/completed/2026-10-14_audit_slotted_lifetime_ownership_task.md | Audit done (no notch): D1-D6 proven; successor EPIC-2026-10-14-slotted_lifetime_ownership_fixes. | 2026-10-14T18:54:48Z |
-| managed_shell_spike | done | fable_0 | tickets/tasks/completed/2026-10-14_investigate_managed_shell_design_task.md | Shell/deque investigation for managed_spell_quantity (no notch); the settled shape and plan are in the epic's Notes. Next: implementation by the owner's next agent. | 2026-10-14T23:46:57Z |
-| many_child_fix | done | melder_1 | tickets/tasks/completed/2026-10-14_fix_many_child_follows_holder_task.md | Landed 0.2.8235 (a slotted holder's many children register with its owner); turned in by owner directive. Next: none. | 2026-10-15T01:38:07Z |
-| many_child_registration | done | melder_1 | tickets/epics/completed/2026-10-14_many_child_follows_holder_epic.md | 0.2.8235 plus its purge/transfer follow-ups (0.2.8238, slotted lane); turned in by owner directive. Next: none. | 2026-10-15T01:38:07Z |
-| pool_decay_clock_rounding | done | melder_1 | tickets/tasks/completed/2026-10-14_fix_pool_decay_fake_clock_rounding_task.md | Test-only fix (no notch): the decay test's clock starts on a whole second; turned in. Next: none. | 2026-10-15T01:38:07Z |
-| slotted_d1_cluster_exit | done | melder_1 | tickets/tasks/completed/2026-10-14_investigate_cluster_member_teardown_without_leave_task.md | Landed 0.2.8236 (a root's teardown leaves its cluster); turned in by owner directive. Next: none. | 2026-10-15T01:38:07Z |
-| slotted_d2_team_store | done | melder_1 | tickets/tasks/completed/2026-10-14_investigate_cluster_instance_not_rehomed_on_leader_change_task.md | Landed 0.2.8237 (the cluster owns its team store); turned in by owner directive. Next: none. | 2026-10-15T01:38:07Z |
-| slotted_d3_transfer_default | done | melder_1 | tickets/tasks/completed/2026-10-14_investigate_stored_instances_dropped_without_disposal_task.md | Landed 0.2.8239-0.2.8240 (transfer moves by default; handover docs); invalidation unchanged. Next: none. | 2026-10-15T01:38:07Z |
-| slotted_d4_transfer_children | done | melder_1 | tickets/tasks/completed/2026-10-14_investigate_transfer_leaves_holder_children_behind_task.md | Landed 0.2.8238 (a moved holder's many children move with it); turned in. Next: none. | 2026-10-15T01:38:07Z |
 | slotted_d5_purge_children | done | melder_1 | tickets/tasks/completed/2026-10-14_investigate_purge_leaves_holder_children_registered_task.md | Landed 0.2.8238 (purging a holder disposes its children, kept as landed); turned in. Next: none. | 2026-10-15T01:38:07Z |
 | slotted_d6_upgrade | done | melder_1 | tickets/tasks/completed/2026-10-14_investigate_upgrade_retained_holders_keep_old_dependencies_task.md | No defect (upgrade_to_normal docstring with 0.2.8236); turned in by owner directive. Next: none. | 2026-10-15T01:38:07Z |
 | slotted_lifetime_fixes | done | melder_1 | tickets/epics/completed/2026-10-14_slotted_lifetime_ownership_fixes_epic.md | Landed 0.2.8236-0.2.8240 as structure fixes; runtime model in the docs; turned in by owner directive. Next: none. | 2026-10-15T01:38:07Z |
+| notch_borrower_docs | done | melder_1 | tickets/tasks/completed/2026-10-15_describe_notch_borrower_follow_as_feature_task.md | Docs only (no notch): src_architecture opens with what Melder is (not a DI container); notch borrowers described as the feature. Next: none. | 2026-10-15T09:05:45Z |
+| managed_existence_member | done | melder_0 | tickets/stories/completed/2026-10-15_managed_existence_member_story.md | Landed 0.2.8241 (S1 of EPIC-2026-10-14-managed_spell_quantity: member, matrix, route family, Phase 6 rank). Next: S2 bind options. | 2026-10-15T10:11:30Z |
+| managed_bind_options | done | melder_0 | tickets/stories/completed/2026-10-15_managed_bind_options_story.md | Landed 0.2.8242 (S2 of EPIC-2026-10-14-managed_spell_quantity: four bind options, Spell fields, id part, record 4.2.0 and replay). Next: S3 pool. | 2026-10-15T12:32:37Z |
+| managed_quantity_pool | done | melder_0 | tickets/stories/completed/2026-10-15_managed_quantity_pool_story.md | Landed 0.2.8243 (S3 of EPIC-2026-10-14-managed_spell_quantity: the pool, the exhaustion error, the Creations pool map, the probes, purge 0). Next: S4 registry. | 2026-10-15T13:54:48Z |
+| release_managed_spell | done | melder_0 | tickets/stories/completed/2026-10-15_release_managed_spell_story.md | Landed 0.2.8244 (S4 of EPIC-2026-10-14-managed_spell_quantity: ReleaseManagedSpell, the lease, the Creations register/unregister calls, four root exports). Next: S5 dispense codegen. | 2026-10-15T15:39:41Z |
+| managed_dispense_codegen | done | melder_0 | tickets/stories/completed/2026-10-15_managed_dispense_codegen_story.md | Landed 0.2.8245 (S5 of EPIC-2026-10-14-managed_spell_quantity: leases through emitted plans and doors, Conduit.managed_spell_meld). Next: S6 ownership transfer. | 2026-10-15T18:15:07Z |
+| meld_contract_scan_trace | done | melder_1 | tickets/tasks/completed/2026-10-15_trace_meld_contract_scan_gate_task.md | Investigation only: the meld gate's contract scan and the flag that admits it traced and measured; successor TASK-2026-10-15-make_meld_state_checks_follow_spell_state. | 2026-10-15T18:46:58Z |
+| managed_ownership_transfer | done | melder_0 | tickets/stories/completed/2026-10-15_managed_ownership_transfer_story.md | Landed 0.2.8246 (S6 of EPIC-2026-10-14-managed_spell_quantity: the owner stamp follows a transfer's lineage both ways, `discard_managed_quantity`). Next: S7 docs. | 2026-10-15T21:00:54Z |
+| non_resolvable_book_flag | done | melder_1 | tickets/tasks/completed/2026-10-15_make_meld_state_checks_follow_spell_state_task.md | Landed 0.2.8247 (a resolvable=False lineage no longer holds its Book's validation flag); owner accepted. Next: rule 2 in TASK-2026-10-16-recheck_contract_consumers_when_provider_changes. | 2026-10-16T09:36:46Z |
 <!-- END USER-DEFINED: closed_anchors -->
 
 ## Notes
@@ -283,6 +286,28 @@ Message alert rules
 - melder_1 landed 0.2.8240 (docstring and docs only: `transfer_spell_ownership` says a transfer hands over
   stewardship, not a working setup, and `include_dependencies` moves the direct dependencies). Notch above it if
   you land after.
+### Notch notice (melder_0, 2026-10-15)
+- melder_0 landed 0.2.8241 (`Existence.managed_spell_quantity` declared: the matrix, the "managed" route family
+  and Phase 6 rank 0; S1 of EPIC-2026-10-14-managed_spell_quantity). Notch above it if you land after.
+- melder_0 landed 0.2.8242 (the four `managed_spell_*` bind options, `ManagedSpellMode`, the Spell fields, the
+  managed-only id part, RecordVersion 4.2.0 with restore/graft replay; S2). Notch above it if you land after.
+- melder_0 landed 0.2.8243 (the managed pool `ManagedSpellQuantity` in the owning root's Creations,
+  `ManagedSpellExhaustedError`, the probes' managed answer and purge 0; S3). Notch above it if you land after.
+- melder_0 landed 0.2.8244 (`ReleaseManagedSpell`, the Aether-owned registry that gives managed objects back,
+  `ManagedSpellLease` and four package-root exports; S4). Notch above it if you land after.
+- melder_0 landed 0.2.8245 (managed objects leased through the emitted plans and doors - direct melds and
+  injections - and `Conduit.managed_spell_meld`; S5). Notch above it if you land after.
+- melder_0 landed 0.2.8246 (an ownership transfer stamps every version onto the new owner and a failed one stamps
+  them back, discarding the empty pools its stamps composed; `Creations.discard_managed_quantity`; S6). Notch above
+  it if you land after.
+### Notch notice (melder_1, 2026-10-16)
+- melder_1 landed 0.2.8247 (a lineage whose selected version was bound resolvable=False carries
+  `SpellState.non_resolvable` and no longer holds its Book's validation flag up; `register_index(resolvable=...)`
+  at bind, notch and the transfer flip and rollback). Notch above it if you land after.
+### Notch notice (melder_0, 2026-10-16)
+- melder_0 landed 0.2.8248 (conjure wires the versions staged with `bind_inactive` before it, so they meld after a
+  notch; creation cache generation 21; S8 of EPIC-2026-10-14-managed_spell_quantity). Notch above it if you land
+  after.
 ### Device VM git hazard (melder_2, 2026-09-26)
 - The connected folder refuses deletes, so any git command that refreshes the index from the device VM
   (plain `git status`, `git diff`) can leave an empty .git/index.lock that blocks the owner's commits.

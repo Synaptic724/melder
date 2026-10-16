@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/bind/spell_index.py",
- "source_sha256": "6eb16bc814fff8b3dcde5ba692f2d4243de3e022e1a64a307bd4043054858904",
+ "source_sha256": "b47ad32b2bc1b1fe524044b81af7952866c81324751bd5ef7d3cedc7fd85405c",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.bind.spell_index": {
@@ -37,17 +37,18 @@
     "update"
    ],
    "shape": {
-    "method_count": 11,
+    "method_count": 12,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "5666eafdf844fdafaac1a8699f69c6356925b9b29dce853cefca06a5b9bd797c",
+   "span_sha256": "c03e0ce1aad455ae6e5f30382be9887b79017052dad7ac8cfde07116943e3a1a",
    "role": "Stable lineage identity (an immutable ULID) with a mutable selected-spell pointer and the lineage's member set.",
    "responsibilities": [
     "provides hash- and equality-stable index identity (the ULID) for spell registries",
     "holds the selected spell id and the lineage's member set; selecting an id adds it as a member and never retires the previous one",
     "answers lineage membership: has_spell re-checks cleaned under its lock and raises RuntimeError for a cleaned index; _has_spell_unless_cleaned answers False for one, for walks over indexes the caller neither owns nor locks",
-    "leaves lookup-map propagation on a notch to the Spellbook (the notch seam), not the index"
+    "leaves lookup-map propagation on a notch to the Spellbook (the notch seam), not the index",
+    "answers whether it selects a version without ever raising (_is_selected_unless_cleaned, under its lock; False once cleaned) for ReleaseManagedSpell's cold resolver (0.2.8244)"
    ],
    "owns_state": [
     "_id",
@@ -60,7 +61,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "5666eafdf844fdafaac1a8699f69c6356925b9b29dce853cefca06a5b9bd797c"
+   "semantics_authored_against": "c03e0ce1aad455ae6e5f30382be9887b79017052dad7ac8cfde07116943e3a1a"
   }
  },
  "edges_out": [

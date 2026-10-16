@@ -1,0 +1,2 @@
+beginner/lifetimes -> '🟢 Seven Lifetimes, Not Three' 50 lines; managed row | description: Choose among Melder's seven object lifetimes and follow examples of shared, scoped, and freshly constructed Python objects.
+README selectors resolved: 14

@@ -552,7 +552,13 @@ class _SpellSystemStatesStub:
         self.registered_lineages: list[tuple[object, object]] = []
         self.unregistered_lineages: list[object] = []
 
-    def register_index(self, spell_index: object, owner_spellbook_id: object = None) -> None:
+    def register_index(
+            self,
+            spell_index: object,
+            owner_spellbook_id: object = None,
+            *,
+            resolvable: object = None,
+    ) -> None:
         """
         Purpose:
             Record a lineage registration call from Spellbook.bind.
@@ -560,6 +566,8 @@ class _SpellSystemStatesStub:
             - Stores (spell_index, owner_spell) in registration order.
         Args:
             spell_index: SpellIndex registered for the lineage.
+            owner_spellbook_id: Owning Spellbook id (ignored here).
+            resolvable: The registered version's capability, as bind passes it (ignored here).
         Returns:
             None.
         """

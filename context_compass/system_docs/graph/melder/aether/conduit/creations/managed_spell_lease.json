@@ -1,0 +1,100 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/aether/conduit/creations/managed_spell_lease.py",
+ "source_sha256": "21bd12bf985b552b5474f927f0edfa881540dcdf6bba0114551632cd17d55e67",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.conduit.creations.managed_spell_lease": {
+   "id": "melder.aether.conduit.creations.managed_spell_lease",
+   "label": "managed_spell_lease",
+   "kind": "module",
+   "file": "src/melder/aether/conduit/creations/managed_spell_lease.py",
+   "lineno": 1,
+   "include": true,
+   "role": "Module holding ManagedSpellLease, one leased managed object and its way back.",
+   "responsibilities": [
+    "exports ManagedSpellLease and the ManagedObjectT type variable that ReleaseManagedSpell.managed and Conduit.managed_spell_meld are typed with"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": ""
+  },
+  "melder.aether.conduit.creations.managed_spell_lease.ManagedSpellLease": {
+   "id": "melder.aether.conduit.creations.managed_spell_lease.ManagedSpellLease",
+   "label": "ManagedSpellLease",
+   "kind": "class",
+   "file": "src/melder/aether/conduit/creations/managed_spell_lease.py",
+   "lineno": 11,
+   "bases": [],
+   "markers": [
+    "Generic"
+   ],
+   "public_methods": [
+    "object",
+    "release",
+    "released"
+   ],
+   "shape": {
+    "method_count": 3,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "45a890fa1d33333db0f9915ecc55fb4b5dea70e85fb84aa785c836bc97761031",
+   "include": true,
+   "role": "One object leased from a managed spell's pool, paired with that pool so it is given back exactly once.",
+   "responsibilities": [
+    "holds the leased object and its pool, both borrowed; created by ReleaseManagedSpell.managed and Conduit.managed_spell_meld",
+    "release() gives the object back once (pool.put_back: the resets, then idle for the next lease) and drops both references; later calls do nothing, and the lease counts as released even when the put-back raised, so nothing goes back twice",
+    "object answers the leased object until the lease is released, then raises RuntimeError; `with lease as obj:` binds it and the exit releases it whether or not the block raised, never suppressing",
+    "a class, not a generator (a generator context manager measured about 600 ns more per use); one lease is not thread-safe, different leases are independent"
+   ],
+   "owns_state": [
+    "_released",
+    "_object (borrowed)",
+    "_pool (borrowed)"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "45a890fa1d33333db0f9915ecc55fb4b5dea70e85fb84aa785c836bc97761031"
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.conduit.creations.managed_spell_lease.ManagedSpellLease",
+   "to_label": "RuntimeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "Generic": "typing.Generic",
+  "Optional": "typing.Optional",
+  "Type": "typing.Type",
+  "TypeVar": "typing.TypeVar",
+  "TracebackType": "types.TracebackType",
+  "ManagedSpellQuantity": "melder.aether.conduit.creations.managed_spell_quantity.ManagedSpellQuantity"
+ },
+ "collapse_candidate": {
+  "module": "melder.aether.conduit.creations.managed_spell_lease",
+  "class": "melder.aether.conduit.creations.managed_spell_lease.ManagedSpellLease",
+  "label": "ManagedSpellLease"
+ },
+ "edges_authored": [
+  {
+   "from": "melder.aether.conduit.creations.managed_spell_lease.ManagedSpellLease",
+   "to": "melder.aether.conduit.creations.managed_spell_quantity.ManagedSpellQuantity",
+   "relation": "borrows",
+   "why": "The lease gives its object back through the pool's put_back exactly once, then drops both references.",
+   "cardinality": "many_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "borrowed"
+  }
+ ]
+}

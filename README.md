@@ -473,7 +473,7 @@ book.bind(spell=SmsHandler, existence="unique",
           spellframe=Handler, binding_name="sms")
 ```
 
-## 🟢 Six Lifetimes, Not Three
+## 🟢 Seven Lifetimes, Not Three
 <sub>**Beginner.** Pick how long things live.</sub>
 
 | | Existence | One instance per | Use it for |
@@ -483,12 +483,44 @@ book.bind(spell=SmsHandler, existence="unique",
 | 🟢 | `many` | Nothing — new every meld | Stateless workers, DTOs |
 | 🟡 | `unique_per_conduit_lineage` | A scope **and its children** | Shared context down a tree |
 | 🟡 | `unique_per_spell_space` | A request-local space | Ephemeral request scoping |
+| 🟡 | `managed_spell_quantity` | Nothing — leased from a pool the root keeps | Costly objects reused across holders |
 | 🟠 | `unique_per_conduit_cluster` | A named group of scopes | Cross-scope coordination |
 
 **The first three are the beginner set** — they cover most systems and need
-nothing but a static conjure. The last three arrive with the features that give
-them meaning: lineage and spell spaces once you have nested scopes, clusters
-once conduits link into groups.
+nothing but a static conjure. The rest arrive with the need that gives them
+meaning: lineage and spell spaces once you have nested scopes, managed pools
+once an object costs more to build than to lend, clusters once conduits link
+into groups.
+
+A managed spell's objects are **leased**. A meld, or an injection into a
+constructor, takes an idle object from the pool the owning root keeps, or
+builds one; the holder gives it back when it is done:
+
+```python
+book = md.Spellbook()
+book.bind(
+    spell=ChannelLogger,
+    existence="managed_spell_quantity",
+    managed_spell_mode="limited_quantity",   # elastic (default) | limited_quantity | queue
+    managed_spell_limit=8,                   # at most 8 alive at once
+    managed_spell_reset_methods=["flush"],   # run on every release, in order
+    disposal_method_names=["close"],         # run only when the pool destroys one
+)
+conduit = book.conjure()
+
+logger = conduit.meld(ChannelLogger)         # an idle logger, or a new one
+md.ReleaseManagedSpell().release(logger)     # flushed, then back in the pool
+
+with conduit.managed_spell_meld(ChannelLogger) as logger:   # the same logger, leased again
+    logger.write("ready")                                   # and given back when the block ends
+```
+
+`elastic` never refuses: it keeps up to `managed_spell_limit` idle objects (256
+by default) and lets a burst's extras go once demand falls, like Melder's own
+pools. `limited_quantity` raises `ManagedSpellExhaustedError` when every object
+is out, and `queue` first waits up to `managed_spell_timeout_seconds` for a
+release. A holder keeps what it leased until it releases it; the root's teardown
+disposes the idle objects, never one that is still out.
 
 > Callables are always `unique`. Want a fresh object every time? Bind a **class**
 > as `many`.
@@ -533,9 +565,12 @@ block in either mode; spell-only names retain their own order. See the
 [configuration guide](https://github.com/Synaptic724/melder/blob/prod/docs/intermediate/configuration.md)
 for both arrangements.
 
-Cleanup retains its existing reverse key/bucket traversal within each store. A failing
-method stops that object's remaining method calls; cleanup continues with other
-objects and aggregates failures into an `ExceptionGroup`.
+Within each store, objects are disposed newest first, so a dependency outlives the
+objects built on it. A failing method does not stop the others: every declared
+method of every object runs, each failure is chained from what the method raised,
+and they are raised together as one `ExceptionGroup` once the scope has ended.
+A `managed_spell_quantity` object is disposed only when its pool destroys it — an
+`elastic` trim, a reset that raises, or the root's teardown — never on release.
 
 ## 🟢 Scopes That Nest
 <sub>**Beginner.** Child scopes, no configuration.</sub>

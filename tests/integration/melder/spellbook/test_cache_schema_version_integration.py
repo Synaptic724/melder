@@ -30,6 +30,7 @@ EXPECTED_CACHE_VERSION_HISTORY = {
     18: "annotation_address_matching",
     19: "executor_world_stamp",
     20: "annotation_kind_matching",
+    21: "managed_spell_lease_codegen",
 }
 
 

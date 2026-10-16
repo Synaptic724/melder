@@ -129,9 +129,14 @@ purge or normal scope cleanup. The same options work on `SpellSpace`.
 | `unique_per_conduit_lineage` | The lineage root conduit |
 | `unique_per_conduit_cluster` | The elected cluster leader |
 | `unique` | The spell's owning conduit |
+| `managed_spell_quantity` | No one: a conduit's purge returns `0`, and a spell space refuses it |
 
 A spell space always stays within its own creations. It cannot purge objects
 belonging to its conduit, lineage root, or cluster.
+
+A managed spell's pool is not purged. Give its objects back with
+`ReleaseManagedSpell().release(obj)`; the pool disposes idle objects when it
+trims them and when the root that owns it is torn down.
 
 Purge follows the configured disposal methods and their ordering. It attempts
 other selected objects after an object's disposal fails, then raises an

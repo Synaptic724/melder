@@ -53,6 +53,10 @@ class SpellSystemState(Cleanable):
           not collapsed into one status value.
         - `transitively_dirty` marks indirect impact via the
           `dependency_changed` closure rather than a direct edit.
+        - `SpellState.non_resolvable` is written only through `update_flags`,
+          by the owning registry's `register_index`, which mirrors it in the
+          registry's published `non_resolvable_index_ids`; it changes no
+          validity and `clear_dirty` keeps it.
 
     Threading:
         Mutated through the owning `SpellSystemStates` registry, which
@@ -293,6 +297,36 @@ class SpellSystemState(Cleanable):
                 return set()
             return set(self._flags)
 
+    def has_flag(self, flag: SpellState) -> bool:
+        """
+        Return whether this index currently carries one SpellState flag.
+
+        Purpose:
+            A membership probe without the copy `flags` makes, for readers that
+            ask about one flag: `SpellSystemStates.index_has_flag` answers
+            through it, and `SpellSystemStates.register_index` reads
+            `SpellState.non_resolvable` through it to keep the registry's
+            published set of flagged lineages (`non_resolvable_index_ids`) in
+            step with this state.
+
+        Args:
+            flag: The SpellState member to look for.
+
+        Returns:
+            bool: True when the flag is present.
+
+        Raises:
+            RuntimeError: If this state has been cleaned (`check_cleaned`).
+
+        Threading:
+            Reads under the state lock, so a concurrent `update_flags` or
+            `set_validity` is seen whole.
+        """
+        self.check_cleaned()
+        with self._lock:
+            self.check_cleaned()
+            return flag in self._flags
+
     @property
     def change_reason(self) -> Optional[SpellStateChangeReason]:
         """
@@ -415,6 +449,102 @@ class SpellSystemState(Cleanable):
                 callback(index_id, validity)
             except Exception:
                 pass
+
+    def update_flags(
+            self,
+            *,
+            flags_to_add: Optional[Iterable[SpellState]] = None,
+            flags_to_remove: Optional[Iterable[SpellState]] = None,
+    ) -> bool:
+        """
+        Add and remove SpellState flags without touching the validity axis.
+
+        Purpose:
+            The flag-only write, for a flag whose owner decides it outside any
+            validity transition: `SpellSystemStates.register_index` records the
+            selected version's capability (`SpellState.non_resolvable`) through
+            it before it gates the index.
+
+        Args:
+            flags_to_add: Flags to add; None entries are ignored.
+            flags_to_remove: Flags to remove; None entries are ignored.
+
+        Contract:
+            - Adds first, then removes - the order `set_validity` uses - so a flag
+              named in both ends absent.
+            - Leaves validity, the change reason, `transitively_dirty` and
+              `last_validated_at` unchanged.
+            - Publishes nothing: flag-only updates stay local, as in
+              `set_validity`. A caller whose flag RiskManager reads publishes
+              through `_republish_validity` when no validity change will.
+            - Idempotent: adding a present flag or removing an absent one changes
+              nothing and returns False.
+
+        Returns:
+            bool: True when the flag set changed.
+
+        Raises:
+            RuntimeError: If this state has been cleaned (`check_cleaned`).
+
+        Threading:
+            Mutates under the state lock. The owning registry calls it under its
+            own lock, so the order is registry -> state, the registry's only one.
+        """
+        self.check_cleaned()
+        with self._lock:
+            self.check_cleaned()
+            before = frozenset(self._flags)
+            if flags_to_add is not None:
+                for flag in flags_to_add:
+                    if flag is not None:
+                        self._flags.add(flag)
+            if flags_to_remove is not None:
+                for flag in flags_to_remove:
+                    if flag is not None:
+                        self._flags.discard(flag)
+            return self._flags != before
+
+    def _republish_validity(self) -> None:
+        """
+        Publish the current structural validity to the attached RiskManager again.
+
+        Purpose:
+            `set_validity` publishes only a changed validity. When the owning
+            registry changes a flag that RiskManager reads
+            (`SpellState.non_resolvable`) while this index is already `gated`,
+            the gate publishes nothing, and the conduits holding the lineage would
+            keep a Book flag distilled from the old flag - a borrower whose copy
+            came back by reactivation is never re-registered with RiskManager.
+            The registry calls this so every conduit holding the lineage
+            refreshes.
+
+        Contract:
+            - Reads the validity and the index id under the state lock and
+              publishes outside it, as `set_validity` does.
+            - Changes nothing on this state; with no RiskManager attached it does
+              nothing.
+            - A failing callback is contained exactly as `set_validity` contains
+              it: this publication stands in for the event `set_validity` would
+              have sent, and the registration that called it has completed.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError: If this state has been cleaned (`check_cleaned`).
+        """
+        self.check_cleaned()
+        with self._lock:
+            self.check_cleaned()
+            risk_manager = self._risk_manager
+            validity = self._validity
+            index_id = self._spell_index_id
+        if risk_manager is None:
+            return
+        try:
+            risk_manager.on_structural_validity_change(index_id, validity)
+        except Exception:
+            pass
 
     # ------------------------------------------------------------------
     # Mutation helpers (used by manager / DevOps layer)

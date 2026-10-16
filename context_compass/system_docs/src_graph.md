@@ -170,7 +170,7 @@ descriptors and reassemble.
 
 ## src/melder/__init__.py
 
-- source_sha256: `7b3a95753a785e242f26ca0b2a61fffcdc44ca85b53ecb78e6cd4f47535d29b0`
+- source_sha256: `cd330fbbdd22e76f3402351efe8e8845f30f1771a3895e9b8af8863585f5e730`
 - nodes: 1
 
 ### Nodes
@@ -228,7 +228,7 @@ descriptors and reassemble.
 
 ## src/melder/__version__.py
 
-- source_sha256: `e3c6e204b24e8163026312d122caeab6422f2639aca14b229ab13518f3ec3a28`
+- source_sha256: `66f7c9c6fd175754571cebaaefacb450146cf7794f4448842f82ca2d234348cb`
 - nodes: 1
 
 ### Nodes
@@ -317,7 +317,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_agent_documentation/manifest/agent_documentation_manifest.py
 
-- source_sha256: `c25dd576d0bcaca0649ceaba9d7362bc22e094b10b30dce331215d14ad7b4383`
+- source_sha256: `2492458b6cad744f771fa9c78fa8dc97fb164ae70db4cf23554780eeaf979fef`
 - nodes: 1
 
 ### Nodes
@@ -396,7 +396,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py
 
-- source_sha256: `67a3a9a4f739effc87e9c250f05faac1d7b6c070deabd8b695a3710fdfe79d39`
+- source_sha256: `1ebff64cdcab6ede30ac0738c8c1ab005afdc1c3bf8e72389d2c00f378cbdba6`
 - nodes: 1
 
 ### Nodes
@@ -474,7 +474,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/graph_adjacency_manifest.py
 
-- source_sha256: `58f6bd6028e1104e3609ad2a897079a8fca72d5ae8db88c66fde5a4588051f5d`
+- source_sha256: `71b37fbef8f186c77732493dc9280c7293f64b3eb817cd285a38fa244e6e7a1e`
 - nodes: 1
 
 ### Nodes
@@ -491,7 +491,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_index.py
 
-- source_sha256: `a7fc0821a15faccdba836aeef50d4a43c85af448d8502d2bddc14a6c37105030`
+- source_sha256: `3f66f8fe889bb5473c2d8a4ae75fa9091c93c7888d454540bed8c94fb38dff5c`
 - nodes: 1
 
 ### Nodes
@@ -508,7 +508,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_manifest.py
 
-- source_sha256: `af82aab902c9b7fb95b98c5d3453fa6db9e763bb802c692151483aa572383ea9`
+- source_sha256: `537d93d721494362ad5a5ebed866ad9d458c25e928fee9c0c41a8e1a5e7ecbbe`
 - nodes: 1
 
 ### Nodes
@@ -528,7 +528,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_architecture_payload.py
 
-- source_sha256: `9875d5675815c2514c924c9ae35487a32c2ddfaac3e4f37442f34e05d9939c9d`
+- source_sha256: `1104efa378cee07c730583fc83c0c7c1d2e397dc61d3029d27390abcebd0f338`
 - nodes: 1
 
 ### Nodes
@@ -545,7 +545,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_components_payload.py
 
-- source_sha256: `0c31d1fd96e674072ca043e50b8f1ceba6bcb074e650983f9cea61c716dd993e`
+- source_sha256: `acb82654098dc8743fa99c80c9a8f90665c14826a0e72c008b893ea73881bb7b`
 - nodes: 1
 
 ### Nodes
@@ -562,7 +562,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_graph_payload.py
 
-- source_sha256: `a52b84a99971c96c2d2183fc8d4bd25b7c919b5fb56ff6926494ce8973762793`
+- source_sha256: `170fa93c840fb3f17cb06ef8a8a8b56ec761842d0af1487e01e8a369984144c0`
 - nodes: 1
 
 ### Nodes
@@ -606,7 +606,7 @@ descriptors and reassemble.
 
 ## src/melder/aether/aether.py
 
-- source_sha256: `642ffc29b6bc04f3fe5d6d67620f08cb5fc0795b5d812f8612b8041fc19d7656`
+- source_sha256: `9bba3a131001c5a4f8ebb119f014f1c4150caf4d00badd90e1e3ce62f00ffc62`
 - nodes: 2
 
 ### Nodes
@@ -625,7 +625,7 @@ descriptors and reassemble.
 #### `Aether` (class)
 
 - id: `melder.aether.aether.Aether`
-- defined at: `src/melder/aether/aether.py:48`
+- defined at: `src/melder/aether/aether.py:49`
 - extends: `Cleanable`
 - role: Global Melder substrate root.
 - responsibilities:
@@ -638,6 +638,7 @@ descriptors and reassemble.
   - seals the spell-id regime at the first frame and refuses configure/activate of a configuration with a different process_wide_unique_spell_ids while frames exist
   - reports the spell-id regime in force (process_wide_unique_spell_ids, lock-free): the sealed value once a frame exists, else the installed configuration's, else True
   - republishes an immutable (name, frame) view of its frame registry under its lock on every frame birth, detach and teardown; bind's cross-frame duplicate sweep reads it without copying (0.2.8231)
+  - hosts ReleaseManagedSpell, the class-keyed registry of managed pools: builds it last at boot (ReleaseManagedSpell(aether=self), after Nexus) and cleans it right after the frames, whose root stores unregister their pools as they are torn down (0.2.8244)
 - owns_state: `_aetheric_frames`, `_default_frame`, `_logger`, `_aetheric_frame_view`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `acquire_load_authority`, `activate`, `activated`, `aetheric_mediator`, `attach_logger`, `cleanup`, `cleanup_aetheric_frames`, `configuration`, `configure`, `configured`, `count_root_conduits`, `create_configuration` (+24 more)
@@ -656,6 +657,7 @@ descriptors and reassemble.
 | `melder.aether.aether.Aether` | owns_lifecycle_of | `melder.nexus.nexus.Nexus` | one_to_one | init,runtime,cleanup | authored |
 | `melder.aether.aether.Aether` | uses | `melder.utilities.helpers.ulid_factory` | many_to_one | init,runtime | authored |
 | `melder.aether.aether.Aether` | creates | `melder.utilities.synchronization.load_gate.LoadGate` | - | - | authored |
+| `melder.aether.aether.Aether` | owns_lifecycle_of | `melder.aether.conduit.creations.release_managed_spell.ReleaseManagedSpell` | one_to_one | init,runtime,cleanup | authored |
 
 - `melder.aether.aether.Aether` -> `melder.aether.aether_configuration.AetherConfiguration`: Aether installs and retains one root AetherConfiguration as its process-wide policy surface.
 - `melder.aether.aether.Aether` -> `melder.aether.aether_configuration_builder.AetherConfigurationBuilder`: Aether creates AetherConfigurationBuilder instances as the fluent assembly path for root configuration.
@@ -666,8 +668,9 @@ descriptors and reassemble.
 - `melder.aether.aether.Aether` -> `melder.nexus.nexus.Nexus`: Aether hosts Nexus as a hidden support root inside the global substrate lifecycle.
 - `melder.aether.aether.Aether` -> `melder.utilities.helpers.ulid_factory`: Aether uses the internal ulid_factory module when minting its runtime identifier.
 - `melder.aether.aether.Aether` -> `melder.utilities.synchronization.load_gate.LoadGate`: Aether constructs and owns the LoadGate BEFORE any frame can exist and drives acquire/release_load_authority (drain over live mediators).
+- `melder.aether.aether.Aether` -> `melder.aether.conduit.creations.release_managed_spell.ReleaseManagedSpell`: Aether builds the release registry last at boot and cleans it right after its frames; ReleaseManagedSpell() returns the instance it hosts.
 
-### Edge candidates (14, unconfirmed)
+### Edge candidates (15, unconfirmed)
 
 Instantiation guesses from the AST. Over-generated roughly 8x against the reference graph; confirm or drop before relying on them.
 
@@ -685,6 +688,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - `melder.aether.aether.Aether` creates `AethericMediator`
 - `melder.aether.aether.Aether` creates `MutationResearch`
 - `melder.aether.aether.Aether` creates `Nexus`
+- `melder.aether.aether.Aether` creates `ReleaseManagedSpell`
 
 <!-- END FILE: src/melder/aether/aether.py -->
 
@@ -2973,7 +2977,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/dev_ops/risk_manager/risk_manager.py
 
-- source_sha256: `a3add707c9fc95e313056e42752efcef41ccac3173ed272f5fe96b7497d692b6`
+- source_sha256: `dbe4cbb061d0381e1e716feacb556eccbcc2b964a51809e25899028d9b8040ca`
 - nodes: 3
 
 ### Nodes
@@ -3006,6 +3010,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - tracks structural and resolution risk per conduit
   - reacts to validity changes from spell-system state
   - pushes validation-required flags back onto spellbooks
+  - leaves a lineage flagged SpellState.non_resolvable out of the Book flag with one subset test against SpellSystemStates.non_resolvable_index_ids, while its risk stays tracked, and register_conduit seeds every visible spell before refreshing the flag once (0.2.8247)
 - owns_state: `_conduit_states`, `_lineage_conduits`, `_spell_system_states`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `cleanup`, `devops_information_registry`, `on_resolution_validity_change`, `on_structural_validity_change`, `register_conduit`, `register_spell`, `unregister_conduit`, `unregister_spell`
@@ -3082,7 +3087,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_state.py
 
-- source_sha256: `00caa7e1b1834ca150a794a999d59b7f17736aab1c0b6e1e4092ce3dc8973336`
+- source_sha256: `b3bb8f74592c05e4dcec7c39f3fa4d78410e2250dd7fc293db59a7f98724b252`
 - nodes: 2
 
 ### Nodes
@@ -3100,8 +3105,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - markers: `Enum`
 - role: Fine-grained state-flag enum for one spell lineage.
 - responsibilities:
-  - labels topology, contract, mutation, and ops state flags for a lineage
-- owns_state: `new_lineage`, `structure_changed`, `dependencies_changed`, `impacted_by_dependency`, `contract_unvalidated`, `contract_violation`, `mutation_candidate`, `mutation_quarantined`, `mutation_failed`, `has_open_incident`, `anchored_component`, `config_missing`, `transfer_in_progress`
+  - labels topology, contract, mutation, ops and capability state flags for a lineage
+  - non_resolvable marks a lineage whose selected version was bound resolvable=False: it owes no resolution verdict, validation never clears it, and RiskManager leaves its risk out of the Book flag (0.2.8247)
+- owns_state: `new_index`, `structure_changed`, `dependencies_changed`, `impacted_by_dependency`, `contract_unvalidated`, `contract_violation`, `mutation_candidate`, `mutation_quarantined`, `mutation_failed`, `has_open_incident`, `anchored_component`, `config_missing`, `transfer_in_progress`, `non_resolvable`
 - phases: `validation`, `runtime`
 
 <!-- END FILE: src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_state.py -->
@@ -3138,7 +3144,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_state.py
 
-- source_sha256: `76204a4732c331de57ed9d8607fc0b8e5e101766b4dc5b383c0d4a22b3f5c005`
+- source_sha256: `a81bc1e6697265f9578c1f85bccac0d911a66afa0ee9a98f23e47e0a32f27651`
 - nodes: 2
 
 ### Nodes
@@ -3158,9 +3164,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - responsibilities:
   - stores direct topology, structural validity, flags, and latest change reason for one lineage
   - tracks last successful validation time and transitive dirt state
+  - updates flags without touching validity or publishing (update_flags), and on the registry's request publishes its unchanged validity to RiskManager again (_republish_validity, 0.2.8247)
 - owns_state: `_spell_index_id`, `_current_spell_id`, `_direct_dependencies`, `_direct_dependents`, `_validity`, `_flags`, `_change_reason`
 - phases: `validation`, `runtime`, `cleanup`
-- public methods: `add_dependent`, `attach_dependencies`, `change_reason`, `cleanup`, `clear_dirty`, `current_spell_id`, `direct_dependencies`, `direct_dependents`, `dirty`, `flags`, `last_validated_at`, `mark_dependency_change` (+8 more)
+- public methods: `add_dependent`, `attach_dependencies`, `change_reason`, `cleanup`, `clear_dirty`, `current_spell_id`, `direct_dependencies`, `direct_dependents`, `dirty`, `flags`, `has_flag`, `last_validated_at` (+10 more)
 
 ### Edges out
 
@@ -3188,7 +3195,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py
 
-- source_sha256: `84e2c93040388a5937e6961abecb0d2a8f51045e1a8113b9664a8e8e284f5425`
+- source_sha256: `31e9e714e3a05da78e4cf48909586b9586b6fe2f1b4b1345c45e97d74cdb2342`
 - nodes: 2
 
 ### Nodes
@@ -3214,9 +3221,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - watches UNRESOLVED_INPUT consumers under their expected-type frame key so a later matching bind re-resolves them
   - retires a spell id's per-conduit resolution verdicts in every live conduit state when its lineage is unregistered and when a version id is registered, so a content-stable id re-entering the frame is resolved again per conduit (0.2.8219)
   - watches AMBIGUOUS_INPUT sockets by frame key like UNRESOLVED_INPUT ones, so a bind or removal of a same-keyed spell re-gates the consumer (0.2.8224)
-- owns_state: `_states_by_index_id`, `_states_by_spell_id`, `_dirty_indexes`, `_local_topologies`, `_resolution_by_conduit_id`, `_index_owner_spellbook_id`, `_collection_frames_by_index`, `_collection_dependents_by_spellbook`, `_contract_keys_by_index`, `_contract_dependents_by_spellbook`
+  - records the selected version's capability as SpellState.non_resolvable in register_index before the gate publishes - re-publishing the validity when the write changed the flag on a lineage already gated - and publishes the flagged lineages as one frozenset (non_resolvable_index_ids) that RiskManager reads without a lock (0.2.8247)
+- owns_state: `_states_by_index_id`, `_states_by_spell_id`, `_dirty_indexes`, `_local_topologies`, `_resolution_by_conduit_id`, `_index_owner_spellbook_id`, `_collection_frames_by_index`, `_collection_dependents_by_spellbook`, `_contract_keys_by_index`, `_contract_dependents_by_spellbook`, `_non_resolvable_index_ids`
 - phases: `init`, `validation`, `runtime`, `cleanup`
-- public methods: `bulk_set_conduit_root_validity`, `bulk_set_conduit_spell_validity`, `cleanup`, `clear_conduit_diagnostics`, `clear_conduit_dirty`, `compute_impact_closure`, `consume_dirty_indexes`, `devops_information_registry`, `drop_conduit_resolution_state`, `forget_spell_resolution_verdicts`, `get_by_index_id`, `get_by_spell_id` (+18 more)
+- public methods: `bulk_set_conduit_root_validity`, `bulk_set_conduit_spell_validity`, `cleanup`, `clear_conduit_diagnostics`, `clear_conduit_dirty`, `compute_impact_closure`, `consume_dirty_indexes`, `devops_information_registry`, `drop_conduit_resolution_state`, `forget_spell_resolution_verdicts`, `get_by_index_id`, `get_by_spell_id` (+20 more)
 
 ### Edges out
 
@@ -3235,12 +3243,13 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - `melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates` -> `melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_state.SpellSystemState`: SpellSystemStates owns one SpellSystemState per registered lineage.
 - `melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates` -> `melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity.SpellValidity`: SpellSystemStates uses SpellValidity to gate both structural and conduit-local resolution participation.
 
-### Edge candidates (5, unconfirmed)
+### Edge candidates (6, unconfirmed)
 
 Instantiation guesses from the AST. Over-generated roughly 8x against the reference graph; confirm or drop before relying on them.
 
 - `melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates` creates `RLock`
 - `melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates` creates `ValueError`
+- `melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates` creates `TypeError`
 - `melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates` creates `RuntimeError`
 - `melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates` creates `SpellSystemState`
 - `melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates` creates `ConduitResolutionState`
@@ -4421,7 +4430,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/conduit.py
 
-- source_sha256: `8eac316b4750f30774b4cf9706a57baa39e59cc0018f4800e6a84b507615d686`
+- source_sha256: `87ee80f96e4a89e6683f6daa6fcf5a344421475a45a927ce5ff0a468f8d082e4`
 - nodes: 2
 
 ### Nodes
@@ -4440,7 +4449,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `Conduit` (class)
 
 - id: `melder.aether.conduit.conduit.Conduit`
-- defined at: `src/melder/aether/conduit/conduit.py:81`
+- defined at: `src/melder/aether/conduit/conduit.py:83`
 - extends: `Cleanable`
 - role: Runtime execution scope for spell resolution.
 - responsibilities:
@@ -4468,9 +4477,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - looks up contracted spells over a one-call copy of the Book's contracted peer ids and inspects objects, both with no conduit lock held (find_contracted_spell, inspect_spell, 0.2.8232)
   - builds its SpellSpacePool and, as a normal root, its ConduitPool elastic: 20 idle always kept, up to 256 after a burst, decaying when quiet (0.2.8234)
   - leaves its cluster as the first step of a root's teardown (_leave_cluster_for_teardown, 0.2.8236): the cluster's ordered exit while the frame is live, drop_member during frame teardown or after a failed exit
+  - forwards a managed binding's four options through both binding facades unchanged (0.2.8242)
+  - leases a managed spell through managed_spell_meld (0.2.8245): resolves the target as meld does, refuses another existence and a version with no pool before melding, melds the version by id and returns ManagedSpellLease(object, pool)
 - owns_state: `_meld`, `_creations`, `_conduit_ward`, `_creation_gate`, `_spellspace_stack`, `_spellspace_pool`, `_conduit_pool`, `_transaction_identity`
 - phases: `init`, `runtime`, `cleanup`
-- public methods: `add_bind_hooks`, `add_index_to_contract`, `add_spell_to_contract`, `add_spell_to_contract_with_dependencies`, `add_spells_to_contract`, `add_to_spell_index`, `begin_transaction`, `bind`, `bind_inactive`, `check_spell_id`, `cleanup`, `cleanup_lesser_conduits` (+66 more)
+- public methods: `add_bind_hooks`, `add_index_to_contract`, `add_spell_to_contract`, `add_spell_to_contract_with_dependencies`, `add_spells_to_contract`, `add_to_spell_index`, `begin_transaction`, `bind`, `bind_inactive`, `check_spell_id`, `cleanup`, `cleanup_lesser_conduits` (+67 more)
 
 ### Edges out
 
@@ -4490,6 +4501,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 | `melder.aether.conduit.conduit.Conduit` | owns_lifecycle_of | `melder.aether.conduit.spell_space.spell_space_pool.SpellSpacePool` | one_to_one | init,runtime,cleanup | authored |
 | `melder.aether.conduit.conduit.Conduit` | owns_lifecycle_of | `melder.aether.conduit.spell_space.spell_space_thread_state.SpellSpaceThreadState` | one_to_one | init,runtime,cleanup | authored |
 | `melder.aether.conduit.conduit.Conduit` | borrows | `melder.utilities.synchronization.creation_gate_controller.CreationGateController` | many_to_one | runtime | authored |
+| `melder.aether.conduit.conduit.Conduit` | creates | `melder.aether.conduit.creations.managed_spell_lease.ManagedSpellLease` | one_to_many | runtime | authored |
 
 - `melder.aether.conduit.conduit.Conduit` -> `melder.aether.spellbook.spellbook.Spellbook`: Normal conduits clean their own Book. Lessers borrow the root Book until graduation installs a new empty Book, resets runtime hook/lookup references and detaches former parent ownership.
 - `melder.aether.conduit.conduit.Conduit` -> `melder.aether.aether.Aether`: Conduit uses the global Aether substrate for frame, registry, and cloud interactions without owning the singleton lifecycle.
@@ -4504,8 +4516,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - `melder.aether.conduit.conduit.Conduit` -> `melder.aether.conduit.spell_space.spell_space_pool.SpellSpacePool`: Conduit owns SpellSpacePool as the reusable spellspace scope pool.
 - `melder.aether.conduit.conduit.Conduit` -> `melder.aether.conduit.spell_space.spell_space_thread_state.SpellSpaceThreadState`: Conduit owns the per-thread spellspace stack holder used by managed spellspace entry and exit.
 - `melder.aether.conduit.conduit.Conduit` -> `melder.utilities.synchronization.creation_gate_controller.CreationGateController`: Conduit resolves and reuses the frame-owned CreationGateController for meld admission and lineage gate management.
+- `melder.aether.conduit.conduit.Conduit` -> `melder.aether.conduit.creations.managed_spell_lease.ManagedSpellLease`: managed_spell_meld melds a managed version and returns its object as a lease over the version's pool.
 
-### Edge candidates (18, unconfirmed)
+### Edge candidates (19, unconfirmed)
 
 Instantiation guesses from the AST. Over-generated roughly 8x against the reference graph; confirm or drop before relying on them.
 
@@ -4517,6 +4530,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - `melder.aether.conduit.conduit.Conduit` creates `ConduitWard`
 - `melder.aether.conduit.conduit.Conduit` creates `RuntimeError`
 - `melder.aether.conduit.conduit.Conduit` creates `TransferOfOwnership`
+- `melder.aether.conduit.conduit.Conduit` creates `ManagedSpellLease`
 - `melder.aether.conduit.conduit.Conduit` creates `TypeError`
 - `melder.aether.conduit.conduit.Conduit` creates `ValueError`
 - `melder.aether.conduit.conduit.Conduit` creates `ConduitPool`
@@ -5004,7 +5018,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py
 
-- source_sha256: `2627ce6757a94ad4ef10392c0e2b6775f7226d4c2494cf5ff01c3e1c40939027`
+- source_sha256: `11aad5b7f51686309534e7bf8f391cffc24ab48047b7be8dcdce954341093a85`
 - nodes: 2
 
 ### Nodes
@@ -5031,6 +5045,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - sweeps ROOT conduits only (Aether root-named lookups) for impacted lineages; lessers own nothing but the lifecycle of what they create
   - reads other Books' owned and contracted spell maps in its impact sweep through one-call snapshots, holding no foreign Book lock
   - moves the source root store's entries of every index member to the target's store when move_creations is True (the public verbs' default since 0.2.8239; a holder's row carries its adopted children) or takes the active member's out when False; disposes nothing, and hands over stewardship, not a working setup
+  - makes the owner stamp follow the lineage both ways (0.2.8246): the flip and _migrate_inactive_members stamp every member that carries a stamp onto the target through _restamp, which registers the stamp-back to the source first and, for a managed version whose pool the target store did not hold, the discard of the pool its stamp composed (_discard_composed_pool); a managed version's pool moves as a store row with its idle objects and count
+  - moves a parked member that carries no owner stamp unstamped; since 0.2.8248 conjure stamps the versions staged before it, so that is only a member whose stamp raised at conjure (logged)
 - owns_state: `source_conduit`, `target_conduit`, `spell`, `_preflight_summary`, `_change_control_manager`, `_incident_manager`, `_rollback_actions`
 - phases: `runtime`
 - public methods: `cleanup`, `execute`, `preflight`
@@ -5045,12 +5061,14 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 | `melder.aether.conduit.conduit_ward.transfer.transfer_of_ownership.TransferOfOwnership` | uses | `melder.aether.aetheric_frame.dev_ops.incident_manager.incident_severity.IncidentSeverity` | many_to_one | runtime | authored |
 | `melder.aether.conduit.conduit_ward.transfer.transfer_of_ownership.TransferOfOwnership` | uses | `melder.aether.conduit.conduit.Conduit` | many_to_one | runtime | authored |
 | `melder.aether.conduit.conduit_ward.transfer.transfer_of_ownership.TransferOfOwnership` | uses | `melder.aether.spellbook.bind.spell_index.SpellIndex` | many_to_one | runtime | authored |
+| `melder.aether.conduit.conduit_ward.transfer.transfer_of_ownership.TransferOfOwnership` | uses | `melder.aether.conduit.creations.creations.Creations` | many_to_one | runtime | authored |
 
 - `melder.aether.conduit.conduit_ward.transfer.transfer_of_ownership.TransferOfOwnership` -> `melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager.ChangeControlManager`: TransferOfOwnership records and clears change intent through the frame change-control manager.
 - `melder.aether.conduit.conduit_ward.transfer.transfer_of_ownership.TransferOfOwnership` -> `melder.aether.aetheric_frame.dev_ops.incident_manager.incident_manager.IncidentManager`: TransferOfOwnership uses the frame incident manager to report failed moves.
 - `melder.aether.conduit.conduit_ward.transfer.transfer_of_ownership.TransferOfOwnership` -> `melder.aether.aetheric_frame.dev_ops.incident_manager.incident_severity.IncidentSeverity`: TransferOfOwnership uses IncidentSeverity when reporting failed transfer incidents.
 - `melder.aether.conduit.conduit_ward.transfer.transfer_of_ownership.TransferOfOwnership` -> `melder.aether.conduit.conduit.Conduit`: TransferOfOwnership coordinates ownership migration between source and target conduits.
 - `melder.aether.conduit.conduit_ward.transfer.transfer_of_ownership.TransferOfOwnership` -> `melder.aether.spellbook.bind.spell_index.SpellIndex`: TransferOfOwnership resolves and migrates one spell lineage identified by SpellIndex.
+- `melder.aether.conduit.conduit_ward.transfer.transfer_of_ownership.TransferOfOwnership` -> `melder.aether.conduit.creations.creations.Creations`: A failed transfer's rollback takes back the empty pool its stamp composed in the target store (discard_managed_quantity) and cleans it.
 
 ### Edge candidates (4, unconfirmed)
 
@@ -5155,7 +5173,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/creations/creations.py
 
-- source_sha256: `086a15ad6a9b8ddf9400c6163dc32e81a51e15d6a6d97015cc29aff03fccbccb`
+- source_sha256: `3dc1a77d4e0fee211408c80560ce2023481f98a8072ba085075352327211d382`
 - nodes: 4
 
 ### Nodes
@@ -5174,7 +5192,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `ManyDisposalBucket` (class)
 
 - id: `melder.aether.conduit.creations.creations.ManyDisposalBucket`
-- defined at: `src/melder/aether/conduit/creations/creations.py:10`
+- defined at: `src/melder/aether/conduit/creations/creations.py:12`
 - role: Cleanup record of one disposal-bearing many key: the key's live bucket, aliased, plus the Spell's disposal list recorded once.
 - responsibilities:
   - entries IS the key's live bucket (the same list object the registry holds), never a copy, so one append serves both views
@@ -5186,7 +5204,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `HolderDisposalEntry` (class)
 
 - id: `melder.aether.conduit.creations.creations.HolderDisposalEntry`
-- defined at: `src/melder/aether/conduit/creations/creations.py:53`
+- defined at: `src/melder/aether/conduit/creations/creations.py:55`
 - role: Cleanup-only record of one slotted holder and the disposal-bearing many children adopted for it (0.2.8238).
 - responsibilities:
   - item is the holder the store holds under the holder's spell id; methods is the holder Spell's ordered disposal list, borrowed (empty when the holder declares none, the record then exists for its children)
@@ -5199,7 +5217,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `Creations` (class)
 
 - id: `melder.aether.conduit.creations.creations.Creations`
-- defined at: `src/melder/aether/conduit/creations/creations.py:118`
+- defined at: `src/melder/aether/conduit/creations/creations.py:120`
 - extends: `Cleanable`
 - role: Generic scoped live-object registry with disposal metadata kept beside it: a (object, methods) tuple per unique key, a ManyDisposalBucket per disposal-bearing many key, a HolderDisposalEntry per slotted holder that adopted many children.
 - responsibilities:
@@ -5212,17 +5230,25 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - keeps the store lock a leaf around dict work; refuses (and disposes) publication into a store cleaned during the build
   - purges a whole selected target or one supplied creation under the slot's build lock then the store lock, with paired registry removal and shared disposal helpers; no scope discovery or authorization
   - records a just-published slotted holder's disposal-bearing many children with the holder (adopt_children, 0.2.8238): moves them out of their spells' buckets into the holder's HolderDisposalEntry, so purge, extract/restore and whole-store disposal reach them through the holder's key with one dict read; a many purge or live-creation probe of a child's spell counts only children no holder adopted
-- owns_state: `_creations`, `_disposable_creations`, `_slot_guards`, `_owner_conduit_id`, `_id`, `_lock`
+  - keeps one ManagedSpellQuantity per managed version a root store owns in _managed_quantities, a map of its own, so lookups, live probes and purge never meet a pool: ensure_managed_quantity composes it at an owner stamp (idempotent; a rebind re-points it), get_managed_quantity is a lock-free read, discard_managed_quantity gives up an identity-checked pool without cleaning it (0.2.8243-0.2.8246)
+  - cleans its pools first at cleanup, newest first, before the disposable registry - a pool is composed at conjure, before the uniques its objects hold - their failures joining the store's group; extract/restore carry a pool as a managed row, a restore cleaning the pool it replaced after the lock; purge returns 0 for a managed spell (0.2.8243)
+  - registers every pool it takes and unregisters every pool it gives up with ReleaseManagedSpell, outside the store lock, so the registry holds exactly the pools live stores hold (0.2.8244)
+- owns_state: `_creations`, `_disposable_creations`, `_slot_guards`, `_owner_conduit_id`, `_id`, `_lock`, `_managed_quantities`
 - phases: `init`, `runtime`, `cleanup`
-- public methods: `add_creation`, `add_many_creations`, `adopt_children`, `cleanup`, `clear_all`, `extract_spell_creations`, `get_creation`, `id`, `owner_conduit_id`, `purge`, `register_many`, `reset_for_pool` (+3 more)
+- public methods: `add_creation`, `add_many_creations`, `adopt_children`, `cleanup`, `clear_all`, `discard_managed_quantity`, `ensure_managed_quantity`, `extract_spell_creations`, `get_creation`, `get_managed_quantity`, `id`, `owner_conduit_id` (+6 more)
 
 ### Edges out
 
 | from | relation | to | cardinality | phase | origin |
 | --- | --- | --- | --- | --- | --- |
 | `melder.aether.conduit.creations.creations.Creations` | specializes | `melder.utilities.general_base.cleanable.Cleanable` | - | - | derived |
+| `melder.aether.conduit.creations.creations.Creations` | owns_lifecycle_of | `melder.aether.conduit.creations.managed_spell_quantity.ManagedSpellQuantity` | one_to_many | init,runtime,cleanup | authored |
+| `melder.aether.conduit.creations.creations.Creations` | uses | `melder.aether.conduit.creations.release_managed_spell.ReleaseManagedSpell` | many_to_one | runtime,cleanup | authored |
 
-### Edge candidates (6, unconfirmed)
+- `melder.aether.conduit.creations.creations.Creations` -> `melder.aether.conduit.creations.managed_spell_quantity.ManagedSpellQuantity`: A root store composes one pool per managed version it owns (ensure_managed_quantity), cleans its pools first at teardown, and gives a pool up only through extract (an ownership move) or discard (a transfer's rollback).
+- `melder.aether.conduit.creations.creations.Creations` -> `melder.aether.conduit.creations.release_managed_spell.ReleaseManagedSpell`: The store registers each pool it takes and unregisters each pool it gives up, outside its lock.
+
+### Edge candidates (8, unconfirmed)
 
 Instantiation guesses from the AST. Over-generated roughly 8x against the reference graph; confirm or drop before relying on them.
 
@@ -5232,14 +5258,191 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - `melder.aether.conduit.creations.creations.Creations` creates `ExceptionGroup`
 - `melder.aether.conduit.creations.creations.Creations` creates `ManyDisposalBucket`
 - `melder.aether.conduit.creations.creations.Creations` creates `HolderDisposalEntry`
+- `melder.aether.conduit.creations.creations.Creations` creates `ManagedSpellQuantity`
+- `melder.aether.conduit.creations.creations.Creations` creates `ReleaseManagedSpell`
 
 <!-- END FILE: src/melder/aether/conduit/creations/creations.py -->
+
+<!-- BEGIN FILE: src/melder/aether/conduit/creations/managed_spell_lease.py -->
+
+## src/melder/aether/conduit/creations/managed_spell_lease.py
+
+- source_sha256: `21bd12bf985b552b5474f927f0edfa881540dcdf6bba0114551632cd17d55e67`
+- nodes: 2
+
+### Nodes
+
+#### `managed_spell_lease` (module)
+
+- id: `melder.aether.conduit.creations.managed_spell_lease`
+- defined at: `src/melder/aether/conduit/creations/managed_spell_lease.py:1`
+- role: Module holding ManagedSpellLease, one leased managed object and its way back.
+- responsibilities:
+  - exports ManagedSpellLease and the ManagedObjectT type variable that ReleaseManagedSpell.managed and Conduit.managed_spell_meld are typed with
+- phases: `runtime`
+
+#### `ManagedSpellLease` (class)
+
+- id: `melder.aether.conduit.creations.managed_spell_lease.ManagedSpellLease`
+- defined at: `src/melder/aether/conduit/creations/managed_spell_lease.py:11`
+- markers: `Generic`
+- role: One object leased from a managed spell's pool, paired with that pool so it is given back exactly once.
+- responsibilities:
+  - holds the leased object and its pool, both borrowed; created by ReleaseManagedSpell.managed and Conduit.managed_spell_meld
+  - release() gives the object back once (pool.put_back: the resets, then idle for the next lease) and drops both references; later calls do nothing, and the lease counts as released even when the put-back raised, so nothing goes back twice
+  - object answers the leased object until the lease is released, then raises RuntimeError; `with lease as obj:` binds it and the exit releases it whether or not the block raised, never suppressing
+  - a class, not a generator (a generator context manager measured about 600 ns more per use); one lease is not thread-safe, different leases are independent
+- owns_state: `_released`, `_object (borrowed)`, `_pool (borrowed)`
+- phases: `runtime`
+- public methods: `object`, `release`, `released`
+
+### Edges out
+
+| from | relation | to | cardinality | phase | origin |
+| --- | --- | --- | --- | --- | --- |
+| `melder.aether.conduit.creations.managed_spell_lease.ManagedSpellLease` | borrows | `melder.aether.conduit.creations.managed_spell_quantity.ManagedSpellQuantity` | many_to_one | runtime | authored |
+
+- `melder.aether.conduit.creations.managed_spell_lease.ManagedSpellLease` -> `melder.aether.conduit.creations.managed_spell_quantity.ManagedSpellQuantity`: The lease gives its object back through the pool's put_back exactly once, then drops both references.
+
+### Edge candidates (1, unconfirmed)
+
+Instantiation guesses from the AST. Over-generated roughly 8x against the reference graph; confirm or drop before relying on them.
+
+- `melder.aether.conduit.creations.managed_spell_lease.ManagedSpellLease` creates `RuntimeError`
+
+<!-- END FILE: src/melder/aether/conduit/creations/managed_spell_lease.py -->
+
+<!-- BEGIN FILE: src/melder/aether/conduit/creations/managed_spell_quantity.py -->
+
+## src/melder/aether/conduit/creations/managed_spell_quantity.py
+
+- source_sha256: `ce7a1e5a4fec8d711a85c4873a09335536dbf63d949234aaffb70588a2b961c0`
+- nodes: 2
+
+### Nodes
+
+#### `managed_spell_quantity` (module)
+
+- id: `melder.aether.conduit.creations.managed_spell_quantity`
+- defined at: `src/melder/aether/conduit/creations/managed_spell_quantity.py:1`
+- role: Module holding ManagedSpellQuantity, the pool of one managed spell version in its owner root's store.
+- responsibilities:
+  - exports ManagedSpellQuantity to Creations (which composes and holds the pools), ReleaseManagedSpell, ManagedSpellLease and the emitted plans' managed sites
+- phases: `runtime`, `cleanup`
+
+#### `ManagedSpellQuantity` (class)
+
+- id: `melder.aether.conduit.creations.managed_spell_quantity.ManagedSpellQuantity`
+- defined at: `src/melder/aether/conduit/creations/managed_spell_quantity.py:14`
+- extends: `AbstractElasticPool`
+- role: The pool of one Existence.managed_spell_quantity version in its owner root's Creations: idle objects for reuse, a count of the objects alive, and the version's mode applied when a lease misses.
+- responsibilities:
+  - keeps the idle objects in the base pool's _idle deque (newest last); the emitted plan leases with an inline _idle.pop() and only an empty pool calls reserve() - the pool never builds (create_object and acquire refuse)
+  - reserve(): elastic counts a place and records pressure (_note_miss); limited_quantity counts a place below its limit, else serves an object released since the plan's pop, else raises ManagedSpellExhaustedError; queue waits on its condition for a place or a released object until a deadline taken once at the call, then raises it; a torn-down pool raises RuntimeError
+  - put_back(obj): runs the reset names in order outside every lock; a raising reset destroys the object and propagates (one ExceptionGroup when its disposal fails too); otherwise appends the object, wakes one queue waiter and, above baseline_idle, runs the base pool's elastic band (stretch, timed decay, trim of the oldest idle objects destroyed outside the lock)
+  - is sized by mode: elastic keeps baseline min(20, limit) and at most limit idle with the kernel pools' retention defaults; limited_quantity and queue are fixed at their limit, so count never exceeds it and nothing is evicted
+  - keeps no reference to an object that is out (identity is not tracked): only id(obj) keys the record of the disposal-bearing many children adopt() records for it, and a record whose id was reused moves to the orphaned records
+  - abandon(children, error): a failed build gives its place back, wakes one waiter and disposes the children it built, each failure added as a note on the build's error
+  - destroy_object: the Spell's disposal methods, then the object's recorded children newest first, count down by one and one waiter woken; disposal never runs on a plain release
+  - cleanup(): under the lock drains the idle objects, swaps the children maps for empty ones, deletes the borrowed Spell and wakes every waiter; outside it disposes the idle objects with their children, then the children of objects still out, then the orphans, failures as one ExceptionGroup; other fields stay as tombstones
+  - describe(): the base retention keys without in_use_count, plus identity, policy, count, out_count and children_recorded
+- owns_state: `_count`, `_condition`, `_children_by_object`, `_orphaned_children`, `_managed_class`, `_mode`, `_limit`, `_timeout_seconds`, `_reset_method_names`, `_notify_on_return`, `_spell (borrowed)`, `_disposal_method_names (borrowed)`
+- phases: `init`, `runtime`, `cleanup`
+- public methods: `abandon`, `acquire`, `adopt`, `binding_name`, `cleanup`, `count`, `create_object`, `describe`, `destroy_object`, `disposal_method_names`, `frame_name`, `limit` (+11 more)
+
+### Edges out
+
+| from | relation | to | cardinality | phase | origin |
+| --- | --- | --- | --- | --- | --- |
+| `melder.aether.conduit.creations.managed_spell_quantity.ManagedSpellQuantity` | specializes | `melder.utilities.general_base.abstract_elastic_pool.AbstractElasticPool` | - | - | derived |
+| `melder.aether.conduit.creations.managed_spell_quantity.ManagedSpellQuantity` | borrows | `melder.aether.spellbook.spell.Spell` | many_to_one | init,runtime | authored |
+| `melder.aether.conduit.creations.managed_spell_quantity.ManagedSpellQuantity` | uses | `melder.aether.spellbook.existence.managed_spell_mode.ManagedSpellMode` | many_to_one | init,runtime | authored |
+| `melder.aether.conduit.creations.managed_spell_quantity.ManagedSpellQuantity` | creates | `melder.utilities.custom_exceptions.managed_spell_exhausted_error.ManagedSpellExhaustedError` | one_to_many | runtime | authored |
+
+- `melder.aether.conduit.creations.managed_spell_quantity.ManagedSpellQuantity` -> `melder.aether.spellbook.spell.Spell`: The pool reads the managed options and the disposal list from its version's Spell at construction and keeps the Spell borrowed (a rebind under the same id re-points it); it never cleans it.
+- `melder.aether.conduit.creations.managed_spell_quantity.ManagedSpellQuantity` -> `melder.aether.spellbook.existence.managed_spell_mode.ManagedSpellMode`: The mode decides what a miss does - build, refuse or wait - and how the pool is sized.
+- `melder.aether.conduit.creations.managed_spell_quantity.ManagedSpellQuantity` -> `melder.utilities.custom_exceptions.managed_spell_exhausted_error.ManagedSpellExhaustedError`: reserve() raises ManagedSpellExhaustedError.limited or .queue when its mode refuses a lease; nothing has been built by then.
+
+### Edge candidates (4, unconfirmed)
+
+Instantiation guesses from the AST. Over-generated roughly 8x against the reference graph; confirm or drop before relying on them.
+
+- `melder.aether.conduit.creations.managed_spell_quantity.ManagedSpellQuantity` creates `Condition`
+- `melder.aether.conduit.creations.managed_spell_quantity.ManagedSpellQuantity` creates `RuntimeError`
+- `melder.aether.conduit.creations.managed_spell_quantity.ManagedSpellQuantity` creates `ValueError`
+- `melder.aether.conduit.creations.managed_spell_quantity.ManagedSpellQuantity` creates `ExceptionGroup`
+
+<!-- END FILE: src/melder/aether/conduit/creations/managed_spell_quantity.py -->
+
+<!-- BEGIN FILE: src/melder/aether/conduit/creations/release_managed_spell.py -->
+
+## src/melder/aether/conduit/creations/release_managed_spell.py
+
+- source_sha256: `7da4851b6cc85de496ad95cde567e2a7a402275729a9aef9e77a5f05841249f6`
+- nodes: 2
+
+### Nodes
+
+#### `release_managed_spell` (module)
+
+- id: `melder.aether.conduit.creations.release_managed_spell`
+- defined at: `src/melder/aether/conduit/creations/release_managed_spell.py:1`
+- role: Module holding ReleaseManagedSpell, the Aether-owned registry managed objects are given back through.
+- responsibilities:
+  - exports ReleaseManagedSpell; Aether builds the instance at boot and ReleaseManagedSpell() returns it
+- phases: `init`, `runtime`, `cleanup`
+
+#### `ReleaseManagedSpell` (class)
+
+- id: `melder.aether.conduit.creations.release_managed_spell.ReleaseManagedSpell`
+- defined at: `src/melder/aether/conduit/creations/release_managed_spell.py:13`
+- extends: `Cleanable`
+- role: Process singleton Aether builds last and owns: the class-keyed registry of the managed pools live root stores hold, through which a managed object is given back to its pool.
+- responsibilities:
+  - has the hosted roots' singleton shape: a double-checked __new__ under a class lock, a once-only __init__(*, aether=...) that refuses a first construction without its host and resets the bookkeeping, cleanup(), _reset_singleton_for_tests() and _live_instance() (the stores' teardown lookup; never constructs)
+  - keeps two copy-on-write maps republished whole under a leaf lock held only to publish: _pools_by_class (class -> tuple of pools, read lock-free by release) and _registrations (id(pool) -> class and holding root id)
+  - register / unregister are called by Creations only, outside the store lock, as a store takes (ensure, restore) or gives up (extract, discard, cleanup) a pool; register is idempotent, moves a pool's root on a restore and re-keys a rebind's new class object; unregister does nothing once cleaned
+  - release(obj): one dict get by type(obj) and the pool's put_back when exactly one pool matches and no filter is given; otherwise the cold resolver keeps the pools of spell_id and of the conduit's root (a lesser names its root), prefers the version its index selects and raises a ValueError naming every candidate unless exactly one remains
+  - managed(obj) resolves the pool the same way and returns a ManagedSpellLease; release_all releases every object and raises the failures as one ExceptionGroup; describe(cls) returns each pool's snapshot plus holding_conduit_id and active_version
+  - borrows the pools and never cleans or disposes one; trusts every release (identity is not tracked); a release needs neither a conduit nor Aether
+  - cleanup() publishes empty maps as tombstones, keeps _lock and resets the singleton bookkeeping; release, managed, release_all, describe and register then raise the cleaned RuntimeError
+- owns_state: `_pools_by_class`, `_registrations`, `_lock`
+- phases: `init`, `runtime`, `cleanup`
+- public methods: `cleanup`, `describe`, `managed`, `register`, `release`, `release_all`, `unregister`
+
+### Edges out
+
+| from | relation | to | cardinality | phase | origin |
+| --- | --- | --- | --- | --- | --- |
+| `melder.aether.conduit.creations.release_managed_spell.ReleaseManagedSpell` | specializes | `melder.utilities.general_base.cleanable.Cleanable` | - | - | derived |
+| `melder.aether.conduit.creations.release_managed_spell.ReleaseManagedSpell` | borrows | `melder.aether.conduit.creations.managed_spell_quantity.ManagedSpellQuantity` | one_to_many | runtime | authored |
+| `melder.aether.conduit.creations.release_managed_spell.ReleaseManagedSpell` | creates | `melder.aether.conduit.creations.managed_spell_lease.ManagedSpellLease` | one_to_many | runtime | authored |
+| `melder.aether.conduit.creations.release_managed_spell.ReleaseManagedSpell` | uses | `melder.aether.spellbook.bind.spell_index.SpellIndex` | many_to_one | runtime | authored |
+| `melder.aether.conduit.creations.release_managed_spell.ReleaseManagedSpell` | uses | `melder.aether.conduit.conduit.Conduit` | many_to_one | runtime | authored |
+
+- `melder.aether.conduit.creations.release_managed_spell.ReleaseManagedSpell` -> `melder.aether.conduit.creations.managed_spell_quantity.ManagedSpellQuantity`: The registry holds every live pool under its managed class and calls its put_back; the pools belong to their root stores, and the registry never cleans one.
+- `melder.aether.conduit.creations.release_managed_spell.ReleaseManagedSpell` -> `melder.aether.conduit.creations.managed_spell_lease.ManagedSpellLease`: managed(obj) wraps the object and the pool it resolved in a lease.
+- `melder.aether.conduit.creations.release_managed_spell.ReleaseManagedSpell` -> `melder.aether.spellbook.bind.spell_index.SpellIndex`: The cold resolver prefers the pool whose version its index selects, read through the cleanup-safe _is_selected_unless_cleaned.
+- `melder.aether.conduit.creations.release_managed_spell.ReleaseManagedSpell` -> `melder.aether.conduit.conduit.Conduit`: A conduit filter names its root (_root_conduit_id); the registry keeps no conduit.
+
+### Edge candidates (6, unconfirmed)
+
+Instantiation guesses from the AST. Over-generated roughly 8x against the reference graph; confirm or drop before relying on them.
+
+- `melder.aether.conduit.creations.release_managed_spell.ReleaseManagedSpell` creates `RLock`
+- `melder.aether.conduit.creations.release_managed_spell.ReleaseManagedSpell` creates `ManagedSpellLease`
+- `melder.aether.conduit.creations.release_managed_spell.ReleaseManagedSpell` creates `ValueError`
+- `melder.aether.conduit.creations.release_managed_spell.ReleaseManagedSpell` creates `ExceptionGroup`
+- `melder.aether.conduit.creations.release_managed_spell.ReleaseManagedSpell` creates `TypeError`
+- `melder.aether.conduit.creations.release_managed_spell.ReleaseManagedSpell` creates `Lock`
+
+<!-- END FILE: src/melder/aether/conduit/creations/release_managed_spell.py -->
 
 <!-- BEGIN FILE: src/melder/aether/conduit/meld/conduit_meld.py -->
 
 ## src/melder/aether/conduit/meld/conduit_meld.py
 
-- source_sha256: `e4f3125944f51a24a0f9f560199ab100d1154b5b4ce297b3a88231c5832a33f3`
+- source_sha256: `3060e7c9ba9969a36e88ae8921d8cb6a9c32e85a17cb8fd667a07a245159fe32`
 - nodes: 2
 
 ### Nodes
@@ -5271,6 +5474,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - serves warm automatic id melds from the fast-door entry: plain melds (an existing object's bound object directly) and non-empty dict override payloads through the live override executor slot
   - mints the name/class warm entries (Meld._fast_input_doors) on the same success arms as the id entry for meld('Name') and meld(Cls) shapes; it never reads them - the public front doors do
   - grants purge of a unique_per_conduit_cluster instance to the elected leader recorded on its cluster facade, since the team store's owner id is the cluster's (0.2.8237)
+  - routes a managed spell's purge to the caller's own store, where Creations.purge returns 0, and answers its live-creation probe from the owner store's pool (0.2.8243)
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `cleanup`, `describe_live_creation_status`, `meld`, `meld_existing_spell`, `purge`
 
@@ -5580,7 +5784,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/meld/meld.py
 
-- source_sha256: `cd91a6e97d687b5ee4aded8c06dffa69aea9e2ad9a9f23f3d44fe7572e87d777`
+- source_sha256: `c4e91112260eab06a6c0ba52689b862f25649a2f717181f48b1bfcc43cfdffa0`
 - nodes: 2
 
 ### Nodes
@@ -5620,6 +5824,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - executes a dynamic meld under one spell-index ticket held from before the context read until the executor returns (_execute_admitted)
   - keeps the fast-door registry of (spell, captured context, door epoch, existing-object flag) entries, filled only after a successful full-lane meld; its four readers share one guard ladder
   - routes a spell flagged resolution_required through the deferred lane: phases 8-11 for an existing creation or its current Phase 5 root, otherwise the full target pass 5-11 followed by a resolution-validity check for the conduit (_requires_own_target_pass, _raise_unless_resolution_valid)
+  - answers the live-creation probe of a managed spell for both doors from its owner store's pool (_describe_managed_pool_status: live while the count is above 0, creation_count the count, storage scope managed_pool; 0 without a store or a pool) (0.2.8243)
 - owns_state: `_input_resolution_cache`, `_change_control_manager_by_frame`, `_spell_compiler_system`, `_fast_meld_doors`, `_meld_hooks`, `_baseline_meld_hooks`, `_meld_hooks_modified`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `describe_live_creation_status`, `has_live_creation`, `hooks_modified`, `meld`, `meld_existing_spell`, `purge`, `register_meld_hooks`, `set_meld_hooks`
@@ -5665,7 +5870,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/meld/spellspace_meld.py
 
-- source_sha256: `47fcd3edf4f8a4353fd6ab7cc7cddfa57d203c060822b95b81df5d56a2d4cdb9`
+- source_sha256: `888f9acb93b78f103a025568844b3cb42ba70a198710564be1b09d6c78229e88`
 - nodes: 2
 
 ### Nodes
@@ -5694,6 +5899,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - refuses immutable non-resolvable registrations before normal resolution and reuse-only access
   - admits a dynamic spell through its spell-index gate before reading the context (both lanes, via Meld._execute_admitted); automatic spells keep the unticketed lane and fast-door memo
   - serves warm automatic id melds from the fast-door entry with ConduitMeld's guard ladder and both arms (plain and dict override payloads), and mints the name/class entries (_fast_input_doors) its space reads
+  - answers a managed spell's live-creation probe from the owner root's pool, as the conduit door does - a managed object is never space-local (0.2.8243)
 - owns_state: `_spellspace`, `_spellspace_id`, `_owner_conduit_id`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `cleanup`, `describe_live_creation_status`, `meld`, `meld_existing_spell`, `purge`
@@ -5908,7 +6114,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/bind/bind.py
 
-- source_sha256: `892cf05579ea869e397009d6784e5037d631c8363c54f320fd5e4ff953278f78`
+- source_sha256: `745bd68927d0bbd712d6507c7fa7f3580f0343d221787c9c2e0d3430605ab388`
 - nodes: 2
 
 ### Nodes
@@ -5922,7 +6128,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `Bind` (class)
 
 - id: `melder.aether.spellbook.bind.bind.Bind`
-- defined at: `src/melder/aether/spellbook/bind/bind.py:128`
+- defined at: `src/melder/aether/spellbook/bind/bind.py:130`
 - extends: `Cleanable`
 - role: Spell registration gateway for one Spellbook.
 - responsibilities:
@@ -5941,6 +6147,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - classifies the spellframe before the structural check (_classify_spellframe): None -> SpellframeKind.none, str -> category, a typing.Protocol -> contract with the Protocol recorded; any other class or object is refused with a TypeError naming the two valid forms (0.2.8222, Breaking)
   - validates binding policy and spellframe semantics, running the direct-public-member Protocol check only for a contract frame
   - hands the Spell its spellframe_kind and implemented_protocols; the fingerprint does not hash the kind
+  - validates and normalizes a managed binding's four options once (_normalize_managed_options: classes only, the mode defaulting to elastic, the limit, the queue-only timeout and callable reset names; every refusal before a Spell or index exists), appends one managed:<mode>:<limit>:<timeout>:<reset names> part to a managed binding's fingerprint only, so no other spell id moves, and hands the normalized values to the Spell (0.2.8242)
 - owns_state: `_spellbook`, `_spell_examiner`, `_lifecycle_hooks`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `add_hooks`, `bind`, `capture_hooks`, `cleanup`, `clear_hooks`, `execute_post_hooks`, `get_hook_names`, `sha256_profile`, `spell_id_inspector`
@@ -5957,6 +6164,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 | `melder.aether.spellbook.bind.bind.Bind` | creates | `melder.aether.spellbook.spell.Spell` | one_to_many | init,runtime | authored |
 | `melder.aether.spellbook.bind.bind.Bind` | owns_lifecycle_of | `melder.aether.spellbook.spell_compiler.spell_examiner.spell_examiner.SpellExaminer` | one_to_one | init,runtime,cleanup | authored |
 | `melder.aether.spellbook.bind.bind.Bind` | uses | `melder.aether.spellbook.spell_types.spell_types.SpellType` | many_to_one | init,runtime | authored |
+| `melder.aether.spellbook.bind.bind.Bind` | uses | `melder.aether.spellbook.existence.managed_spell_mode.ManagedSpellMode` | many_to_one | runtime | authored |
 
 - `melder.aether.spellbook.bind.bind.Bind` -> `melder._build_assets._bind_guard.bind_guard`: Bind.bind calls the module-level assert_allowed() before constructing a Spell, and that check refuses registration when the candidate's exact (module, qualname) pair is present in INTERNAL_MANIFEST - the frozenset this hand-written loader publishes. Membership is an exact match and does NOT walk the MRO, so a user subclass of an internal class carries its own qualname, misses the manifest, and binds normally.
 - `melder.aether.spellbook.bind.bind.Bind` -> `melder.aether.conduit.conduit_ward.permissions.permissions.Permissions`: Bind accepts and carries Permissions as the access policy for newly registered spells.
@@ -5965,6 +6173,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - `melder.aether.spellbook.bind.bind.Bind` -> `melder.aether.spellbook.spell.Spell`: Bind turns one examined binding target into the canonical Spell runtime record for Spellbook registration.
 - `melder.aether.spellbook.bind.bind.Bind` -> `melder.aether.spellbook.spell_compiler.spell_examiner.spell_examiner.SpellExaminer`: Bind owns the SpellExaminer used to build registration profiles.
 - `melder.aether.spellbook.bind.bind.Bind` -> `melder.aether.spellbook.spell_types.spell_types.SpellType`: Bind resolves and stores SpellType to classify each registered spell family.
+- `melder.aether.spellbook.bind.bind.Bind` -> `melder.aether.spellbook.existence.managed_spell_mode.ManagedSpellMode`: Bind normalizes a managed binding's mode to a ManagedSpellMode member before hashing it into the spell id.
 
 ### Edge candidates (7, unconfirmed)
 
@@ -5984,7 +6193,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/bind/scan.py
 
-- source_sha256: `b04d454805ecb35fc17930cef41a7b4a58786168dd284daddb3ff393f486a139`
+- source_sha256: `8ce5415830b35dbb0166274209d346d7e8d91f85bbec59491d1bc005768cdce4`
 - nodes: 3
 
 ### Nodes
@@ -5998,7 +6207,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `ScanBindMetadata` (class)
 
 - id: `melder.aether.spellbook.bind.scan.ScanBindMetadata`
-- defined at: `src/melder/aether/spellbook/bind/scan.py:137`
+- defined at: `src/melder/aether/spellbook/bind/scan.py:179`
 - role: The frozen payload a scan_bind decoration leaves behind - bind-time policy captured now, registration replayed later.
 - responsibilities:
   - carry every input Spellbook.bind takes for a target during a later module scan: native policy, resolvable, the per-target disposal group, hooks, profile and application metadata
@@ -6006,19 +6215,21 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - store hook collections as tuples at rest and materialize fresh lists on use
   - hold application metadata as a read-only shallow copy and hand every bind a fresh dict of it, so a Spell's cleanup never empties the declaration a later scan replays
   - stay immutable once created - a slotted class that refuses attribute writes, not a dataclass, because it holds callables, Protocol classes and application objects; safe to share across threads
+  - carries the four managed options as declared (the reset group as a tuple) and replays them unchanged; Bind validates them when the module is scanned, and their names are reserved metadata keys (0.2.8242)
 - phases: `bind`
 - public methods: `to_bind_kwargs`
 
 #### `Scan` (class)
 
 - id: `melder.aether.spellbook.bind.scan.Scan`
-- defined at: `src/melder/aether/spellbook/bind/scan.py:544`
+- defined at: `src/melder/aether/spellbook/bind/scan.py:639`
 - extends: `Cleanable`
 - role: Module-only scanner for scan_bind metadata.
 - responsibilities:
   - reads scan_bind metadata from one module, and only from each object's own __dict__ (no inherited, instance, metaclass or __getattr__ answers)
   - binds each declared object at most once per scan, by identity, and rejects re-exports by __module__
   - delegates actual registration to Spellbook.bind during scan time
+  - replays each declaration's four managed options into Spellbook.bind with its other target options (0.2.8242)
 - owns_state: `_spellbook`
 - phases: `runtime`
 - public methods: `cleanup`, `scan_module`
@@ -6047,7 +6258,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/bind/spell_index.py
 
-- source_sha256: `6eb16bc814fff8b3dcde5ba692f2d4243de3e022e1a64a307bd4043054858904`
+- source_sha256: `b47ad32b2bc1b1fe524044b81af7952866c81324751bd5ef7d3cedc7fd85405c`
 - nodes: 2
 
 ### Nodes
@@ -6069,6 +6280,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - holds the selected spell id and the lineage's member set; selecting an id adds it as a member and never retires the previous one
   - answers lineage membership: has_spell re-checks cleaned under its lock and raises RuntimeError for a cleaned index; _has_spell_unless_cleaned answers False for one, for walks over indexes the caller neither owns nor locks
   - leaves lookup-map propagation on a notch to the Spellbook (the notch seam), not the index
+  - answers whether it selects a version without ever raising (_is_selected_unless_cleaned, under its lock; False once cleaned) for ReleaseManagedSpell's cold resolver (0.2.8244)
 - owns_state: `_id`, `_selected_spell_id`, `_spells_in_index`, `_lock`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `add_member`, `cleanup`, `has_spell`, `id`, `is_empty`, `is_sole_member`, `remove_member`, `selected_spell_id`, `spells_in_index`, `update`
@@ -6179,7 +6391,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/existence/existence.py
 
-- source_sha256: `52b1a4c5d1881ff9577d6bd4d4b04ebfebd434bdb464dbfee57ea2817bc12b7b`
+- source_sha256: `e7857a53637d5bde2e51d5fba11341163adc12c86768c8b79a5b0eb585b8a14c`
 - nodes: 2
 
 ### Nodes
@@ -6198,16 +6410,51 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - role: Lifecycle mode enum for a spell binding.
 - responsibilities:
   - labels the reuse boundary for bound spell instances across frame, conduit, lineage, cluster, and spellspace scopes
-- owns_state: `unique`, `unique_per_conduit`, `many`, `unique_per_conduit_cluster`, `unique_per_conduit_lineage`, `unique_per_spell_space`
+  - managed_spell_quantity (0.2.8241): objects leased from a pool the owning root keeps per version and released back explicitly - the only member whose objects come back to Melder, and only when their holder releases them
+- owns_state: `unique`, `unique_per_conduit`, `many`, `unique_per_conduit_cluster`, `unique_per_conduit_lineage`, `unique_per_spell_space`, `managed_spell_quantity`
 - phases: `runtime`
 
 <!-- END FILE: src/melder/aether/spellbook/existence/existence.py -->
+
+<!-- BEGIN FILE: src/melder/aether/spellbook/existence/managed_spell_mode.py -->
+
+## src/melder/aether/spellbook/existence/managed_spell_mode.py
+
+- source_sha256: `2034412f62916afb7816a495aa70ec9696354f279d99796b3792a26b3a6f6f01`
+- nodes: 2
+
+### Nodes
+
+#### `managed_spell_mode` (module)
+
+- id: `melder.aether.spellbook.existence.managed_spell_mode`
+- defined at: `src/melder/aether/spellbook/existence/managed_spell_mode.py:1`
+- role: Module holding the ManagedSpellMode enum a managed binding chooses its pool policy from.
+- responsibilities:
+  - exports ManagedSpellMode to Bind, Spell, the pool, SpellBinder, scan_bind and the package root
+- phases: `init`, `runtime`
+
+#### `ManagedSpellMode` (enum)
+
+- id: `melder.aether.spellbook.existence.managed_spell_mode.ManagedSpellMode`
+- defined at: `src/melder/aether/spellbook/existence/managed_spell_mode.py:4`
+- markers: `Enum`
+- role: Pool policy of a managed spell, chosen at bind with managed_spell_mode: what a lease does when no idle object is waiting.
+- responsibilities:
+  - elastic: a miss always builds; managed_spell_limit is the most idle objects kept (default 256), trimmed like the kernel pools' idle objects; never refuses
+  - limited_quantity: managed_spell_limit (required) is the most objects alive at once, idle plus out; a miss at the limit refuses before building anything
+  - queue: like limited_quantity, but a miss at the limit waits up to managed_spell_timeout_seconds (required) for a release, which serves the waiter, and refuses at the deadline
+  - identity data: with the limit, the timeout and the reset names it is hashed into a managed spell's id, recorded by name in its crystal and replayed by restore and graft; __str__ returns the bare name
+- owns_state: `elastic`, `limited_quantity`, `queue`
+- phases: `init`, `runtime`
+
+<!-- END FILE: src/melder/aether/spellbook/existence/managed_spell_mode.py -->
 
 <!-- BEGIN FILE: src/melder/aether/spellbook/resolution_style_matrix.py -->
 
 ## src/melder/aether/spellbook/resolution_style_matrix.py
 
-- source_sha256: `8836b4f4eeb47a7e655229cd6f189e26924e5bb999b17042e044fba83c565afc`
+- source_sha256: `1f44aadb25bd855b2581b379379f1b5a4914f25aea92bdf25c55884d08094467`
 - nodes: 2
 
 ### Nodes
@@ -6226,6 +6473,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - responsibilities:
   - maps binding families and spell types to supported existence modes
   - tracks resolution contract item support status
+  - counts seven existences; managed_spell_quantity is supported by the class-based family only - the callable and existing-object families list it unsupported (0.2.8241)
 - owns_state: `BINDING_FAMILY_POLICY`, `SPELL_TYPE_TO_BINDING_FAMILY`, `MATRIX_BY_SPELL_TYPE`, `CONTRACT_ITEM_STATUS`
 - phases: `validation`, `runtime`
 - public methods: `get_contract_item_status`, `get_entry`, `get_family_for_spell_type`, `get_family_policy`, `get_matrix_by_spell_type`, `validate`
@@ -6246,7 +6494,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell.py
 
-- source_sha256: `8e197eacf330138ce730c5361d5339cbeac7808637d2672d979232ca9bc6b5bd`
+- source_sha256: `10162d70abc7843bcfc8bae2f77bb4cada0842fa40b19eae9664597b7e3f20d8`
 - nodes: 2
 
 ### Nodes
@@ -6260,7 +6508,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `Spell` (class)
 
 - id: `melder.aether.spellbook.spell.Spell`
-- defined at: `src/melder/aether/spellbook/spell.py:62`
+- defined at: `src/melder/aether/spellbook/spell.py:63`
 - extends: `Cleanable`
 - role: Canonical bound spell runtime record.
 - responsibilities:
@@ -6273,9 +6521,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - keeps a borrowed spell-index CreationGate under dynamic ownership and the cause of its last failed context build
   - carries the binding's spellframe_kind and implemented_protocols (the Protocol it was checked against, else ()) as identity data that survives cleanup (0.2.8222)
   - on a direct cleanup removes itself through its Spellbook outside its own lock, serialized per spell by a removal lock nothing else takes, so Book teardown and conjure, which take its lock under the Book lock, never wait on it (_direct_removal_route, 0.2.8233)
-- owns_state: `_resolvable`, `_compiler_artifact`, `_creation_context`, `_creation_context_factory`, `_creation_context_switch`, `_spellbook`, `_spell_system_states`, `dependency_graph`, `dependencies`, `disposal_method_names`, `_creation_context_failure`, `spellframe_kind`, `implemented_protocols`, `_removal_lock`
+  - retains a managed binding's normalized options read-only per version (managed_spell_mode, limit, timeout, reset methods; None, None, None and () on other existences) and, when an owner stamp carries a store, ensures the version's pool there (_add_owned_conduit -> Creations.ensure_managed_quantity, 0.2.8242-0.2.8243)
+- owns_state: `_resolvable`, `_compiler_artifact`, `_creation_context`, `_creation_context_factory`, `_creation_context_switch`, `_spellbook`, `_spell_system_states`, `dependency_graph`, `dependencies`, `disposal_method_names`, `_creation_context_failure`, `spellframe_kind`, `implemented_protocols`, `_removal_lock`, `_managed_spell_mode`, `_managed_spell_limit`, `_managed_spell_timeout_seconds`, `_managed_spell_reset_methods`
 - phases: `init`, `validation`, `runtime`, `cleanup`
-- public methods: `apply_mutation_override`, `cleanup`, `clear_mutation_override`, `emit_cache`, `emit_cache_file`, `has_existing_object`, `has_mutation_override`, `invalidate_spell`, `is_broken`, `is_class_spell`, `is_existing_creation`, `is_lambda_spell` (+12 more)
+- public methods: `apply_mutation_override`, `cleanup`, `clear_mutation_override`, `emit_cache`, `emit_cache_file`, `has_existing_object`, `has_mutation_override`, `invalidate_spell`, `is_broken`, `is_class_spell`, `is_existing_creation`, `is_lambda_spell` (+16 more)
 
 ### Edges out
 
@@ -6297,6 +6546,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 | `melder.aether.spellbook.spell.Spell` | owns_lifecycle_of | `melder.utilities.synchronization.counter_switch.CounterSwitch` | one_to_one | runtime,cleanup | authored |
 | `melder.aether.spellbook.spell.Spell` | borrows | `melder.utilities.synchronization.creation_gate_controller.CreationGateController` | many_to_one | runtime | authored |
 | `melder.aether.spellbook.spell.Spell` | borrows | `melder.utilities.synchronization.creation_gate.CreationGate` | many_to_one | runtime | authored |
+| `melder.aether.spellbook.spell.Spell` | uses | `melder.aether.conduit.creations.creations.Creations` | many_to_one | runtime | authored |
 
 - `melder.aether.spellbook.spell.Spell` -> `melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates`: Spell holds the frame-level SpellSystemStates service to mark structural changes and inspect lineage state.
 - `melder.aether.spellbook.spell.Spell` -> `melder.aether.conduit.conduit.Conduit`: Spell records owner-conduit identity and scoped creations when the spell is stamped into a live runtime conduit.
@@ -6313,6 +6563,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - `melder.aether.spellbook.spell.Spell` -> `melder.utilities.synchronization.counter_switch.CounterSwitch`: Spell owns the CounterSwitch used to coordinate one-leader publication of its creation context.
 - `melder.aether.spellbook.spell.Spell` -> `melder.utilities.synchronization.creation_gate_controller.CreationGateController`: Spell borrows the frame-owned CreationGateController when configuring its creation-context factory for a conduit owner.
 - `melder.aether.spellbook.spell.Spell` -> `melder.utilities.synchronization.creation_gate.CreationGate`: Spell keeps the frame controller's gate for its index (dynamic only) so meld doors admit before reading the context; it drops the reference with its factory and never cleans the gate.
+- `melder.aether.spellbook.spell.Spell` -> `melder.aether.conduit.creations.creations.Creations`: An owner stamp of a managed version ensures the version's pool in the stamped store (ensure_managed_quantity).
 
 ### Edge candidates (7, unconfirmed)
 
@@ -6654,7 +6905,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/artifact_processor/spell_artifact_processor.py
 
-- source_sha256: `b0e2fb287d76d8d796f85ee88cba3a7c13938e5cbeb6b9b2555d9395c3e1611e`
+- source_sha256: `afdaa161f9e358c259855dc1b38d74304aa7d2d37fc6979247f3f09c8f21b306`
 - nodes: 2
 
 ### Nodes
@@ -6675,6 +6926,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - builds the shell SpellCodegenModel from spell-static and analyzer-owned truth
   - runs registered processor strategies in deterministic order against that model
   - publishes the fitted codegen model back onto SpellCompilerArtifact
+  - maps each spell's existence to its door route family and raises for an unknown member; managed_spell_quantity maps to "managed" (0.2.8241)
 - owns_state: `_strategy_builder`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `process`
@@ -7020,7 +7272,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_occurrence_instance_processor_strategy.py
 
-- source_sha256: `4ba5974b05e52bb00fa1ce96239d0ad302e7d8660696ce122f2bb788af592c37`
+- source_sha256: `1070c9201340f2a1849398b4f7df7568d6b1496d464b3660e258e6051d21fa3e`
 - nodes: 2
 
 ### Nodes
@@ -7041,6 +7293,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - maps occurrence graph truth onto per-spell instance keys and canonical occurrences
   - publishes SpellOccurrenceInstanceAnalysis onto SpellCodegenModel
   - derives shared-node and unique-node counts for later planning
+  - treats many and managed_spell_quantity as per path (_is_shared_existence False): each occurrence keeps its own instance key, so every injection of a managed spell is its own lease (0.2.8245)
 - phases: `runtime`
 - public methods: `process`, `strategy_id`
 
@@ -7826,7 +8079,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/creation_runtime_door_compiler.py
 
-- source_sha256: `cfc6ac7f9e183652d60a0da28ebeac1ab06b335dc2c75e53ae3cb0b0bd12d7c0`
+- source_sha256: `4668f3122d76947ade0b6e77e5d3621e4b2f3125114f6c31e7145db457445974`
 - nodes: 1
 
 ### Nodes
@@ -7957,7 +8210,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py
 
-- source_sha256: `0126552765aee7124501ad400b981339177ca18d8bf0ede456f35c14af9e551b`
+- source_sha256: `abac8d545b00bf9ce8498a83e063034eeff8be3ef9586fbc74dfce36d62afe73`
 - nodes: 5
 
 ### Nodes
@@ -7974,7 +8227,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `SitePlanStep` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanStep`
-- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:40`
+- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:41`
 - extends: `Cleanable`
 - role: Family-neutral view of one no-overrides construction step, read by the lowering and the generic construct helpers.
 - responsibilities:
@@ -7988,20 +8241,23 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `SitePlanRuntimeHelpers` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanRuntimeHelpers`
-- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:265`
-- role: Cold-path helpers emitted plans call: generic construction with supplied values and the plans' refusals.
+- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:266`
+- role: Cold-path helpers emitted plans call: generic construction with supplied values, the plans' refusals and the managed lease returns.
 - responsibilities:
   - constructs a masked step with supplied values applied last
   - raises the P2 error for a supplied value on a stored shared instance
   - raises UnresolvedInputError before a site with unsupplied unresolved inputs is built
   - refuses equal-rank keys that supply different values (E1)
+  - return_leases(error, leases): puts back every lease a plan took for a holder that was never built, each failing put-back added as a note on the propagating error (0.2.8245)
+  - return_unused_leases(leases): puts back the leases of a shared holder whose cold race another meld won, every pair attempted, failures raised as one ExceptionGroup (0.2.8245)
+  - raise_missing_managed_pool(spell): the named MeldExecutionError of a managed site whose pool cannot be read - its owner root torn down, or its owner store holding no pool for the version (0.2.8245); since 0.2.8248 conjure stamps the versions staged before it, so the message no longer names that cause or the 'stage the version after conjure' remedy
 - phases: `runtime`
-- public methods: `conflict_guard`, `construct_with_supplied_values`, `raise_existing_override`, `raise_unresolved_input`
+- public methods: `conflict_guard`, `construct_with_supplied_values`, `raise_existing_override`, `raise_missing_managed_pool`, `raise_unresolved_input`, `return_leases`, `return_unused_leases`
 
 #### `SitePlanLowering` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanLowering`
-- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:449`
+- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:574`
 - role: Builds the site graph from steps, computes a key set's demand and emits one plan's source.
 - responsibilities:
   - builds the site graph from steps and live topologies through the processor strategy's builder
@@ -8009,13 +8265,14 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - emits the normal (meld) plan for the empty key set and (meld, ov) plans otherwise
   - decides where operands may go positionally (positional_run)
   - passes a door route key to normal-mode emission only and refuses one for key-set plans
+  - lowers a managed_spell_quantity step as a per-path site leased from its pool, leasing or fresh (see SitePlanEmission); the warm lease takes no lock and the miss only the pool's leaf lock (0.2.8245)
 - phases: `runtime`
 - public methods: `build_site_graph`, `demanded_instance_keys`, `emit`, `positional_run`
 
 #### `SitePlanEmission` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanEmission`
-- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:731`
+- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:861`
 - extends: `Cleanable`
 - role: Per-plan emission state: places steps at top level or inside shared-site misses and renders the plan source.
 - responsibilities:
@@ -8028,7 +8285,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - binds an automatic world's unique-site owner store as a plan constant (owner-store constants, 2026-10-03): _owner_store_constant admits a unique site whose provider spell is owned by an automatic conduit and has an owner store; _emit_shared_hit then binds c{i} in the namespace and emits no alias line, while dynamic, unowned and meld.<store> sites keep the per-creation read and the miss keeps its c{i} parameter
   - registers a disposal-bearing many site in the store that owns its context (holder-owned many children, 0.2.8235): many_store, the meld's innermost scope, at the top level; c{i} inside shared site i's miss, so a slotted holder's many children are recorded and disposed with the holder's owner; a miss emits no innermost-scope prologue
   - emits c{i}.adopt_children(sid{i}, v{i}, ((sidK, vK), ...)) right after holder i's publication in its miss, naming exactly the disposal-bearing many children registered in c{i} for it (holder records, 0.2.8238); warm _site_plan_executor bodies are unchanged
-- owns_state: `_lines`, `_miss_lines`, `_masked`, `_direct`, `_shared`, `_home`, `_children`, `_miss_value_params`, `_root_index`, `_context_params`, `_root_guard_held_by_door`, `_index_by_key`
+  - emits managed sites (0.2.8245): a leasing site (no winning key on its own parameters) has its own miss and exactly one consumer, and its lease - an inline pop of a plan-constant pool on an automatic owner, else a per-creation pool read whose miss raises the named missing-pool error - is emitted in its consumer's lease group; the miss checks unresolved inputs, reserves, builds the children and the object inside a try whose handler abandons, then adopts the disposal-bearing many children; a fresh site (a winning key on its own parameters) is built like a many step and never pooled
+  - puts every lease of a consumer back when its construction region raises (_return_leases) and returns a lost cold race's unused leases (_return_unused_leases); a plan without a managed step is byte-identical and binds none of the three helpers (0.2.8245)
+- owns_state: `_lines`, `_miss_lines`, `_masked`, `_direct`, `_shared`, `_home`, `_children`, `_miss_value_params`, `_root_index`, `_context_params`, `_root_guard_held_by_door`, `_index_by_key`, `_leasing`, `_fresh`, `_has_miss`, `_leases_by_consumer`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `render`
 
@@ -8042,19 +8301,24 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 | `melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanLowering` | owns_lifecycle_of | `melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanEmission` | one_to_one | runtime,cleanup | authored |
 | `melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanEmission` | uses | `melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanRuntimeHelpers` | one_to_one | runtime | authored |
 | `melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanEmission` | borrows | `melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_site_graph_analysis.SpellSiteGraphAnalysis` | many_to_one | runtime | authored |
+| `melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanRuntimeHelpers` | uses | `melder.aether.conduit.creations.managed_spell_quantity.ManagedSpellQuantity` | many_to_one | runtime | authored |
+| `melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanEmission` | uses | `melder.aether.conduit.creations.managed_spell_quantity.ManagedSpellQuantity` | many_to_one | runtime | authored |
 
 - `melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanLowering` -> `melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_site_graph_processor_strategy.SpellSiteGraphProcessorStrategy`: build_site_graph turns steps into temporary injection specs and calls the processor's builder, so fresh and cache-hit plans read one structure.
 - `melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanLowering` -> `melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanEmission`: emit creates one emission per plan and cleans it after render; the namespace and masked steps go to the caller.
 - `melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanEmission` -> `melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanRuntimeHelpers`: Binds the helpers into every plan namespace for generic construction and the plans' refusals.
 - `melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanEmission` -> `melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_site_graph_analysis.SpellSiteGraphAnalysis`: Reads sites, parameter rows and socket kinds for placement, operands and unresolved-input checks.
+- `melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanRuntimeHelpers` -> `melder.aether.conduit.creations.managed_spell_quantity.ManagedSpellQuantity`: The lease returns put leased objects back through the pool's put_back.
+- `melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanEmission` -> `melder.aether.conduit.creations.managed_spell_quantity.ManagedSpellQuantity`: An automatic owner's leasing site binds the pool and its _idle.pop as plan constants.
 
-### Edge candidates (9, unconfirmed)
+### Edge candidates (10, unconfirmed)
 
 Instantiation guesses from the AST. Over-generated roughly 8x against the reference graph; confirm or drop before relying on them.
 
 - `melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanStep` creates `SitePlanStep`
 - `melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanRuntimeHelpers` creates `MeldExecutionError`
 - `melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanRuntimeHelpers` creates `RuntimeError`
+- `melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanRuntimeHelpers` creates `ExceptionGroup`
 - `melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanLowering` creates `SpellInjectionAnalysis`
 - `melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanLowering` creates `SitePlanEmission`
 - `melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanLowering` creates `SpellInjectionInstanceSpec`
@@ -8243,7 +8507,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_no_overrides_compiler.py
 
-- source_sha256: `c27641fce7f68010f5df0ef01cfffa071d799c54c1aed4c33a02aa30cb8e6df5`
+- source_sha256: `d6a4f8ab677559991723791a1899c61bc67df82643ef15d449bcc9ef7d875e13`
 - nodes: 1
 
 ### Nodes
@@ -8574,7 +8838,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_hydrator.py
 
-- source_sha256: `96573430fd6c5a9972558518818a55772b1145e5c01c3f106507ad84fdaa93da`
+- source_sha256: `7729190a4249870ed49edb88e60634a20f49f22500efe77c0743923a6ac0e009`
 - nodes: 2
 
 ### Nodes
@@ -8594,7 +8858,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `GeneralizedHydratedExecutors` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.hydration.generalized_hydrator.GeneralizedHydratedExecutors`
-- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_hydrator.py:63`
+- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_hydrator.py:64`
 - extends: `Cleanable`
 - role: Hydration result container for generalized family runtime doors.
 - responsibilities:
@@ -8638,7 +8902,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/manifest/generalized_manifest.py
 
-- source_sha256: `c8dabf9d81566ca300c4721641f12dda5a96083b66501003c410ddc2f9d3a5fd`
+- source_sha256: `d75496372f0d78e950b8e004c8bf6f1619e557447d4ae0fc74a2f4a3b7a218c3`
 - nodes: 1
 
 ### Nodes
@@ -9922,7 +10186,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/codegen_planner/codegen_plan_discovery_system/strategies/solo_codegen_plan_discovery_strategy.py
 
-- source_sha256: `c8e9c239a7555bbd006fbf9f2363e8eb7d98861a776122b586dcc16758c34e08`
+- source_sha256: `78efbec0ce13d93b9fcf0c0581d00012e6518565c53fb6895e54a1eb79bb927c`
 - nodes: 2
 
 ### Nodes
@@ -9936,11 +10200,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `SoloCodegenPlanDiscoveryStrategy` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.solo_codegen_plan_discovery_strategy.SoloCodegenPlanDiscoveryStrategy`
-- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/codegen_plan_discovery_system/strategies/solo_codegen_plan_discovery_strategy.py:14`
+- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/codegen_plan_discovery_system/strategies/solo_codegen_plan_discovery_strategy.py:15`
 - extends: `CodegenPlanDiscoveryStrategy`
 - role: Phase-10 discovery strategy for the solo spell category.
 - responsibilities:
-  - claims models whose visible spell count is exactly one
+  - claims models whose visible spell count is exactly one and that hold no managed_spell_quantity spell - a managed object is leased through the generalized family's site plan (0.2.8245)
   - emits the solo planner strategy id and solo planning family
   - bounds phase-11 candidate codegen styles for the solo family
 - phases: `runtime`
@@ -11956,7 +12220,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/spell_analyzer/strategies/spell_occurrence_graph_analyzer_strategy.py
 
-- source_sha256: `c78d1d9f42159d1fcbbd643a669149da1e4b008ce8fa163e125f6dfdf8b33b9b`
+- source_sha256: `64f05f72d8a4e8ae46955605846ba10f2a656e913593e13c57ec76598337e30a`
 - nodes: 2
 
 ### Nodes
@@ -11980,6 +12244,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - retains existing providers as consumer dependency leaves without inspecting constructor contracts
   - signs complete required-input topology and refuses non-resolvable providers during late contract expansion
   - walks a copy of the spell pool once per pass, so a concurrent bind cannot drop the existence-occurrence analysis
+  - treats many and managed_spell_quantity as per path when collapsing shared occurrences (_is_shared_existence False), so each injection of a managed spell is its own occurrence (0.2.8245)
 - phases: `runtime`
 - public methods: `analyze`, `strategy_id`
 
@@ -14274,7 +14539,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/system/validation/scope_ordering_strategy.py
 
-- source_sha256: `6d5626e3fec381141c6466747797e35e3aeb21f0305f33d76cb8fba505bcb807`
+- source_sha256: `c13c457ad5923ac10ece8c8601f9bff21c8b70dcff3e2a6e5eb68313ed68dc1d`
 - nodes: 2
 
 ### Nodes
@@ -14298,6 +14563,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - report broader-lived nodes depending on narrower-lived ones
   - prevent per-conduit, per-spellspace or per-call instances from leaking upward into shared scopes
   - names holder and dependency with their existences and says which existence to change
+  - ranks managed_spell_quantity 0 with unique: a managed spell may depend on unique, managed and many spells, and any holder may depend on it (0.2.8241)
 - phases: `compile`
 - public methods: `run`
 
@@ -15415,7 +15681,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spellbinder.py
 
-- source_sha256: `3c3b7938925539c1638f0ee64d871577bb2e6509f270b0e4c12d518f413b902e`
+- source_sha256: `6a7abc5b705d59ddcdbbdab1283f3d796346473a1ce744cdfa919c17b650cc6c`
 - nodes: 2
 
 ### Nodes
@@ -15429,14 +15695,15 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `SpellBinder` (class)
 
 - id: `melder.aether.spellbook.spellbinder.SpellBinder`
-- defined at: `src/melder/aether/spellbook/spellbinder.py:14`
+- defined at: `src/melder/aether/spellbook/spellbinder.py:16`
 - extends: `Cleanable`
 - role: Fluent registration helper for Spellbook bind operations.
 - responsibilities:
   - accumulates bind-time choices for one pending registration and delegates them to Spellbook.bind on finalize
+  - stages a managed binding through as_managed_spell_quantity(mode, limit=, timeout_seconds=, reset_methods=): sets the existence and the four options in the passthrough payload finalize sends to Spellbook.bind (0.2.8242)
 - owns_state: `_weak_spellbook`, `_default_existence`, `_default_permissions`, `_default_profile`, `_spell`, `_existence`, `_permissions`, `_profile`, `_spellframe`, `_binding_name`, `_kwargs`
 - phases: `runtime`, `cleanup`
-- public methods: `as_many`, `as_unique`, `as_unique_per_conduit`, `as_unique_per_conduit_cluster`, `as_unique_per_conduit_lineage`, `as_unique_per_spell_space`, `bind`, `cleanup`, `finalize`, `named`, `under_spellframe`, `with_activation_hook` (+8 more)
+- public methods: `as_managed_spell_quantity`, `as_many`, `as_unique`, `as_unique_per_conduit`, `as_unique_per_conduit_cluster`, `as_unique_per_conduit_lineage`, `as_unique_per_spell_space`, `bind`, `cleanup`, `finalize`, `named`, `under_spellframe` (+9 more)
 
 ### Edges out
 
@@ -15463,7 +15730,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spellbook.py
 
-- source_sha256: `630a6ef213414fee28cbb8261f674f1b4d7aa15bd24300f66989358937557f30`
+- source_sha256: `fc9c2aa92e8ac518335577546dfad9d79245ba09946f42cf21dbf576884c29d0`
 - nodes: 2
 
 ### Nodes
@@ -15477,12 +15744,12 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `Spellbook` (class)
 
 - id: `melder.aether.spellbook.spellbook.Spellbook`
-- defined at: `src/melder/aether/spellbook/spellbook.py:69`
+- defined at: `src/melder/aether/spellbook/spellbook.py:71`
 - extends: `Cleanable`
 - role: Public binding, validation, and conjure surface.
 - responsibilities:
   - binds and scans spells into local and contracted lookup surfaces
-  - forwards native resolvable policy through active and inactive binding and exposes it in spell descriptions
+  - forwards native resolvable policy through active and inactive binding, into the lineage state at bind and notch (register_index(resolvable=...), 0.2.8247), and exposes it in spell descriptions
   - coordinates configuration freeze and frame publication into Aether and Nexus
   - conjures and retains exactly one root conduit
   - conjures against a prepared existing normal conduit through a separate private route preserving its ID and creation stores
@@ -15500,6 +15767,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - answers contracted-spell lookups by key - the active copy by version id, a parked copy through its index - before walking (0.2.8231)
   - inspects objects holding its lock only for its own spells and asks the frames with no lock held, over a one-call copy of the frame's conduits (inspect_spell, 0.2.8232)
   - re-checks under its lock a Book torn down while a removal waited for it (cleanup_and_remove_spell): a spell the teardown cleaned returns, anything else raises the cleaned-Book RuntimeError (0.2.8233)
+  - forwards a managed binding's four options through bind and bind_inactive to Bind, where they are validated and become part of the spell id; a parked managed version keeps its own (0.2.8242)
+  - parks versions with bind_inactive: one parked after conjure is stamped by bind_inactive itself with the owner stamp an active bind uses, one parked before conjure by SpellbookCreationSystem.define_conduit_into_spells at conjure with the same stamp and nothing else (0.2.8248), so either melds after a notch
 - owns_state: `_bind`, `_spells`, `_spells_by_id`, `_lookup_spells`, `_contracted_spells`, `_configuration`, `_conduit`
 - phases: `init`, `validation`, `runtime`, `cleanup`
 - public methods: `add_bind_hooks`, `begin_transaction`, `bind`, `bind_inactive`, `cleanup`, `cleanup_and_remove_spell`, `cleanup_spell`, `clear_bind_hooks`, `conduit`, `configure_aether_frame`, `conjure`, `contracted_spells` (+17 more)
@@ -15569,7 +15838,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spellbook_creation_system.py
 
-- source_sha256: `34aadde5cd10390ce7d41b48d9a0bbc3cbf41072236d97040ce6fc67925b0504`
+- source_sha256: `77667787ab30f0c3409203d0e6a915de3bcb1927c3c32a0a30e25d41cd04abf9`
 - nodes: 2
 
 ### Nodes
@@ -15590,7 +15859,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - prepares spellbook configuration and structural phase execution before conjure
   - runs conduit-scoped resolution phases and policy gating for conjure
   - builds and activates the root conduit for one conjure run
-  - wires conduit ownership into local spells and fires conjure hooks
+  - wires conduit ownership into local spells and fires conjure hooks: every active version gets the owner stamp, its resolution flag cleared and an existing object registered; then, under the same Book lock, every version parked with bind_inactive before conjure gets the owner stamp alone - what a post-conjure bind_inactive gives it - so it melds after a notch (define_conduit_into_spells, 0.2.8248); a raising stamp is logged per version
   - excludes non-resolvable definitions from executable cache payload and plan-phase eligibility
   - binds local phase cancellation arguments when units are created within the current scheduler run
   - when the public conjure passes validation_warnings=True, logs one WARNING grouping every Phase-4 warning by code before phase artifacts are released; otherwise logs nothing
@@ -15638,23 +15907,6 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - `melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem` creates `OperationCancelledError`
 
 <!-- END FILE: src/melder/aether/spellbook/spellbook_creation_system.py -->
-
-<!-- BEGIN FILE: src/melder/aether/spellbook/spellframe_kind/__init__.py -->
-
-## src/melder/aether/spellbook/spellframe_kind/__init__.py
-
-- source_sha256: `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`
-- nodes: 1
-
-### Nodes
-
-#### `spellframe_kind` (module)
-
-- id: `melder.aether.spellbook.spellframe_kind`
-- defined at: `src/melder/aether/spellbook/spellframe_kind/__init__.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
-
-<!-- END FILE: src/melder/aether/spellbook/spellframe_kind/__init__.py -->
 
 <!-- BEGIN FILE: src/melder/aether/spellbook/spellframe_kind/spellframe_kind.py -->
 
@@ -17312,7 +17564,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/crystallizer/crystal_loader_system/graft_runner.py
 
-- source_sha256: `cb13dce21ff2021a974ff378988cfa10d9522d952426f4aa700b5e98e8a41cc7`
+- source_sha256: `a30e13be7e95bde23ec7d03432f4a59541ad6bc763837257abaabbf4fa89a309`
 - nodes: 2
 
 ### Nodes
@@ -17331,7 +17583,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `GraftRunner` (class)
 
 - id: `melder.crystallizer.crystal_loader_system.graft_runner.GraftRunner`
-- defined at: `src/melder/crystallizer/crystal_loader_system/graft_runner.py:31`
+- defined at: `src/melder/crystallizer/crystal_loader_system/graft_runner.py:32`
 - extends: `Cleanable`
 - role: Single-use spell-index graft executor: re-integrates one captured index (members, custody, selection) into a live conjured host book through normal verbs only.
 - responsibilities:
@@ -17345,6 +17597,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - emits a detached membership and index-identity report with explicit shortfalls
   - preserves each member resolution capability through selected, parked and merged graft bindings
   - hydrates each member's spellframe through the same rule as the restore engine (_hydrate_spellframe) at the selected, parked and merged bind sites, appending a shortfall when the recorded Protocol cannot be imported (0.2.8222)
+  - replays a managed member's recorded options (record 4.2.0, SpellCrystal.managed_bind_options) at the selected, parked and merged bind sites (0.2.8242)
 - owns_state: `_record`, `_host_book (borrowed)`, `_skip_resident`, `_merge_into_index (borrowed)`, `_adopt_recorded_selection`, `_consumed`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `run`
@@ -17477,7 +17730,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/crystallizer/crystal_loader_system/restore_engine.py
 
-- source_sha256: `6f5977ba63122bd535500b760d10f8872ce434b9da908d4a8ff90f4ff11125b7`
+- source_sha256: `36829dd899804709efd18079de7ff56816dacdc3e433b716b702e092f11d9352`
 - nodes: 3
 
 ### Nodes
@@ -17528,6 +17781,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - stage 1 installs the recorded spell-id regime, files a shortfall when a fixed live regime differs, and refuses a record binding one spell id in two frames under process-wide ids
   - stage 6 keys bind order, member-index lookup and recorded-to-live spell translation per Book
   - hydrates each crystal's spellframe before the active and staged binds (_hydrate_spellframe): imports the recorded Protocol for a contract, passes the recorded name for a category, and on an import failure binds the name as a category and files a spell_crystal shortfall naming the Protocol and the spell (0.2.8222)
+  - replays a managed spell's recorded options through the active and staged binds (record 4.2.0, SpellCrystal.managed_bind_options), so it rebinds with its own options and spell id (0.2.8242)
 - owns_state: `folded stores`, `built_stack`, `report`
 - phases: `runtime`
 - public methods: `cleanup`, `restore`
@@ -18035,7 +18289,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/crystallizer/crystals/spell_crystal.py
 
-- source_sha256: `760c4a1c2a9b5c6a93c783f69ee363ef73cfa49c316d794cc4b013c6d1250334`
+- source_sha256: `044de292ef544223d57ae73d37f98c21e122edf6d888f2d36eb6b1b23b9fcc3d`
 - nodes: 2
 
 ### Nodes
@@ -18064,9 +18318,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - captures native per-version resolution capability as a detached replay value
   - keys its record entry: custody_key is the spell id, or "<spell_id>@<frame>" when built with per_frame_custody (the frame read from spell.aetheric_frame)
   - records the frame kind (spellframe_kind) and, for a contract, the Protocol's module and qualname (spellframe_module, spellframe_qualname) so restore and graft rebind the Protocol rather than a same-named category (0.2.8222, record 4.1.0)
-- owns_state: `_analysis (one carried CrystalAnalysisResult)`, `_disposal_method_names (ordered recorded values)`, `_frame_name, _custody_key (the record key)`, `_spellframe_kind, _spellframe_module, _spellframe_qualname (recorded frame kind)`
+  - records a managed spell's options as plain values - the mode by name, the limit, the queue timeout and the reset names - only for managed_spell_quantity, so every other payload is unchanged (record 4.2.0, 0.2.8242); managed_spell_options returns them, and the static managed_bind_options(payload) is the one reader the restore and graft lanes replay them through
+- owns_state: `_analysis (one carried CrystalAnalysisResult)`, `_disposal_method_names (ordered recorded values)`, `_frame_name, _custody_key (the record key)`, `_spellframe_kind, _spellframe_module, _spellframe_qualname (recorded frame kind)`, `_managed_spell_mode_name, _managed_spell_limit, _managed_spell_timeout_seconds, _managed_spell_reset_methods (recorded managed options)`
 - phases: `init`, `runtime`, `cleanup`
-- public methods: `binding_name`, `cleanup`, `compose_custody_key`, `custody_key`, `describe`, `disposal_method_names`, `existence_name`, `frame_name`, `id`, `module_targets`, `module_to_direct_dependencies`, `module_to_extension` (+27 more)
+- public methods: `binding_name`, `cleanup`, `compose_custody_key`, `custody_key`, `describe`, `disposal_method_names`, `existence_name`, `frame_name`, `id`, `managed_bind_options`, `managed_spell_options`, `module_targets` (+29 more)
 
 ### Edges out
 
@@ -18349,7 +18604,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/crystallizer/persistence/record_version.py
 
-- source_sha256: `3e7ca95d45463d274e213a276d076f70a80c5485c1932ea9905b0e4958aebc2b`
+- source_sha256: `5ba93f3f16418ef6802ac76d143623a02a55f3693e10cda0a3087b7073a626e1`
 - nodes: 2
 
 ### Nodes
@@ -18369,7 +18624,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.crystallizer.persistence.record_version.RecordVersion`
 - defined at: `src/melder/crystallizer/persistence/record_version.py:17`
-- role: Static record-schema version authority (stamp 4.1.0; readers gate on MAJOR; absent stamps read 0.0.0).
+- role: Static record-schema version authority (stamp 4.2.0; readers gate on MAJOR; absent stamps read 0.0.0).
 - responsibilities:
   - stamps cached items, formation records, and emission-tap envelopes
   - refuses newer-major payloads at the read gates
@@ -18377,6 +18632,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - uses major 3 to fence older readers from named lesser child topology
   - uses major 4 to fence older readers from frame-scoped custody keys (per-frame spell ids)
   - uses minor 4.1.0 for the additive spellframe-kind keys on spell crystals (0.2.8222); 4.0.0 records stay readable and hydrate frames by name
+  - uses minor 4.2.0 for a managed spell's recorded options on its spell crystal (0.2.8242); 4.1 readers ignore them and a 4.1 record holds none
 - phases: `runtime`
 - public methods: `check_readable`, `of`, `parse`, `stamp`
 
@@ -24153,7 +24409,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/command_system/static_command_system.py
 
-- source_sha256: `d2bd5af6ef4f7024abb09a9d6d5fa039c866770c0d006b68188f674a0d4c0e0c`
+- source_sha256: `a6c528c7110983fb7e29d92667cdd74c6b6860514661b64661a88a3b39c35be5`
 - nodes: 2
 
 ### Nodes
@@ -24174,6 +24430,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - preserves the shared command API while denying topology mutation and direct create-path spell activation
   - restricts spell retrieval to already-live static-compatible spell lifecycles
   - resolves spell owners through Aether's root lookup (owners are roots)
+  - treats many, unique_per_spell_space and managed_spell_quantity spells as having no single stored object to hand out - a managed spell's objects are leased from a pool (0.2.8243)
 - phases: `runtime`, `cleanup`
 - public methods: `describe_spell_status_by_id`, `describe_spell_status_by_index_id`, `describe_spell_status_by_source_id`, `get_conduit_by_id`, `get_conduit_by_name`, `get_conduit_cloud`, `get_spell_by_id`, `get_spell_by_index_id`, `get_spell_by_source_id`, `list_supported_command_methods`, `meld_existing_spell`
 
@@ -24353,7 +24610,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/frame_viewer/static_frame_viewer.py
 
-- source_sha256: `2134b59cdb40064850204b874e9bc059b528d2382e1d83afed89c1546c64bc92`
+- source_sha256: `dec73f9ca965776b6a71716f3bf9c7f61b484d5f8be84b3c43eff2312d8c0d3a`
 - nodes: 2
 
 ### Nodes
@@ -24374,6 +24631,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - filters spell-facing visibility down to already-live spells
   - rebuilds filtered compiled access surfaces from the base view surface
   - resolves spell owners through Aether's live-conduit lookup, None on a miss
+  - reports a many, unique_per_spell_space or managed_spell_quantity spell as never live statically - a managed spell's objects are leased from a pool (0.2.8243)
 - owns_state: `_base_compiled_access_surfaces_by_frame_name`, `_filtered_compiled_access_surfaces_by_frame_name`
 - phases: `refresh`, `runtime`, `cleanup`
 - public methods: `clone`, `from_frame_viewer`, `list_spell_source_ids_for_frame`
@@ -25716,7 +25974,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/utilities/caching_system/caching_system.py
 
-- source_sha256: `5e29ab528ee6dccb176f6d6fe6d4af47cc7118647483ce3954407c9bd1223dcf`
+- source_sha256: `471298768f7fd45dc22a68e12d86250105885d7452f5b4e19917af08e78edee7`
 - nodes: 2
 
 ### Nodes
@@ -25747,6 +26005,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - cache generation 13 gives each collection member its own compiler path; 14 retires bundles whose manifests carried override lanes
   - carries the executor-tier world stamp in the envelope (generation 19): set_world_stamp records it after staging and reports a change; a loaded bundle without the field is unstamped and never admits a full hit
   - cache generation 20 retires bundles whose phase 3-4 rows were captured under the name matcher (annotation matching by kind, 0.2.8222)
+  - cache generation 21 retires bundles written before the managed lease codegen (0.2.8245), the explicit retirement the owner asked for whenever codegen changes (0.2.8248)
 - owns_state: `_id`, `_lock`, `_frame_name`, `_conduit_name`, `_cache_root_path`, `_bundle_path`, `_cache_data`, `_logger`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `bundle_path`, `cached_spell_ids`, `cached_structural_spell_ids`, `cleanup`, `conduit_name`, `emit`, `get_spell_payload`, `get_structural_payload`, `has_spell_payload`, `has_structural_payload`, `remove_spell_payload`, `remove_structural_payload` (+7 more)
@@ -25903,6 +26162,46 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - phases: `runtime`
 
 <!-- END FILE: src/melder/utilities/custom_exceptions/internal_registration_error.py -->
+
+<!-- BEGIN FILE: src/melder/utilities/custom_exceptions/managed_spell_exhausted_error.py -->
+
+## src/melder/utilities/custom_exceptions/managed_spell_exhausted_error.py
+
+- source_sha256: `2abb50abb5ef48a4f754b4e4129b9f35382eaca8857eec923568789a4b301e60`
+- nodes: 2
+
+### Nodes
+
+#### `managed_spell_exhausted_error` (module)
+
+- id: `melder.utilities.custom_exceptions.managed_spell_exhausted_error`
+- defined at: `src/melder/utilities/custom_exceptions/managed_spell_exhausted_error.py:1`
+- role: Module holding ManagedSpellExhaustedError, the refusal of a managed pool with no place.
+- responsibilities:
+  - exports the error; it imports only MeldExecutionError, so the pool depends on it and not the reverse
+- phases: `runtime`
+
+#### `ManagedSpellExhaustedError` (class)
+
+- id: `melder.utilities.custom_exceptions.managed_spell_exhausted_error.ManagedSpellExhaustedError`
+- defined at: `src/melder/utilities/custom_exceptions/managed_spell_exhausted_error.py:6`
+- extends: `MeldExecutionError`
+- role: MeldExecutionError raised at meld when a managed pool has no place: limited_quantity with every object out, or queue after its timeout.
+- responsibilities:
+  - built only through limited(...) and queue(...), which own the message texts: the spell, the mode, the limit (and the queue timeout printed with :g) and the remedies - release an object through ReleaseManagedSpell, or bind a higher managed_spell_limit or managed_spell_timeout_seconds
+  - raised by ManagedSpellQuantity.reserve before anything is built, the pool's count unchanged; elastic pools never raise it
+  - keeps every MeldExecutionError field (spell_id and spell_name set; node_id, param_name and inner None), so a handler of MeldExecutionError keeps catching it; exported at the package root
+- owns_state: `mode`, `limit`, `timeout_seconds`
+- phases: `runtime`
+- public methods: `limited`, `queue`
+
+### Edges out
+
+| from | relation | to | cardinality | phase | origin |
+| --- | --- | --- | --- | --- | --- |
+| `melder.utilities.custom_exceptions.managed_spell_exhausted_error.ManagedSpellExhaustedError` | specializes | `melder.utilities.custom_exceptions.meld_execution_error.MeldExecutionError` | - | - | derived |
+
+<!-- END FILE: src/melder/utilities/custom_exceptions/managed_spell_exhausted_error.py -->
 
 <!-- BEGIN FILE: src/melder/utilities/custom_exceptions/meld_execution_error.py -->
 

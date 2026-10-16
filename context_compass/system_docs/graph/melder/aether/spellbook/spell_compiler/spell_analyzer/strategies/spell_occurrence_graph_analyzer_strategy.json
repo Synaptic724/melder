@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/spell_analyzer/strategies/spell_occurrence_graph_analyzer_strategy.py",
- "source_sha256": "c78d1d9f42159d1fcbbd643a669149da1e4b008ce8fa163e125f6dfdf8b33b9b",
+ "source_sha256": "64f05f72d8a4e8ae46955605846ba10f2a656e913593e13c57ec76598337e30a",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.spell_analyzer.strategies.spell_occurrence_graph_analyzer_strategy": {
@@ -33,7 +33,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "b485978f8a9593ba1320495fe2bc23c4f5c1384115d33191ad45cf36ac9dc1e2",
+   "span_sha256": "eb9051eda3b622a90177b7c3e9324362ffc3c3364df773092371edeae85cd409",
    "role": "Occurrence-graph analyzer strategy for phase-8 analysis.",
    "responsibilities": [
     "expands rooted blueprint truth plus topology and contract context into an occurrence graph",
@@ -41,12 +41,13 @@
     "owns shared-occurrence collapse decisions, topology fallback expansion, and SpellContract edge insertion",
     "retains existing providers as consumer dependency leaves without inspecting constructor contracts",
     "signs complete required-input topology and refuses non-resolvable providers during late contract expansion",
-    "walks a copy of the spell pool once per pass, so a concurrent bind cannot drop the existence-occurrence analysis"
+    "walks a copy of the spell pool once per pass, so a concurrent bind cannot drop the existence-occurrence analysis",
+    "treats many and managed_spell_quantity as per path when collapsing shared occurrences (_is_shared_existence False), so each injection of a managed spell is its own occurrence (0.2.8245)"
    ],
    "phases": [
     "runtime"
    ],
-   "semantics_authored_against": "b485978f8a9593ba1320495fe2bc23c4f5c1384115d33191ad45cf36ac9dc1e2"
+   "semantics_authored_against": "eb9051eda3b622a90177b7c3e9324362ffc3c3364df773092371edeae85cd409"
   }
  },
  "edges_out": [
