@@ -81,7 +81,7 @@ class SpellSystemAdjacencySnapshot(Cleanable):
     @property
     def dependencies(self) -> Dict[str, Set[str]]:
         """
-        Outgoing edges for each spell version_id:
+        Outgoing edges for each spell_id:
 
             spell_id -> { dependency_spell_id, ... }
 
@@ -93,7 +93,7 @@ class SpellSystemAdjacencySnapshot(Cleanable):
     @property
     def reverse_dependencies(self) -> Dict[str, Set[str]]:
         """
-        Incoming edges for each spell version_id:
+        Incoming edges for each spell_id:
 
             spell_id -> { parent_spell_id, ... }
 
@@ -105,7 +105,7 @@ class SpellSystemAdjacencySnapshot(Cleanable):
     @property
     def all_spell_ids(self) -> Collection[str]:
         """
-        All known spell version_ids participating in this frame.
+        All known spell_ids participating in this frame.
 
         This may be a live view (e.g., a dict_keys view), so callers should
         treat it as read-only and avoid assuming set mutability.

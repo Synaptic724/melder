@@ -1,0 +1,499 @@
+SUMMARY
+    5  COMMENT held version id
+    2  DOC     free version id
+    2  DOC     free version identities
+   29  DOC     held version id
+    1  DOC     held version identities
+    2  DOC     held version identity
+    6  DOC     held version ids
+  248  NAME    free version id
+   62  NAME    held version id
+    2  STRING  free version id
+    2  STRING  free version identities
+   23  STRING  free version identity
+   83  STRING  held version id
+    2  STRING  held version identifier
+   12  STRING  held version ids
+
+HITS
+STRING  free .github/scripts/verify_distributions.py:1 | """Verify wheel/sdist boundaries and version identity without importing Melder."""
+DOC     free agents/MELDER_AGENT_OPERATIONS.md:517 | - Class-version fingerprints do not cover every method-body edit. Do not assume a source edit creates a new Spell ID; verify IDs, selected membership, recorded source, and behavior. Use deliberate version identities. [C: Binding][C]
+DOC     free agents/MELDER_AGENT_OPERATIONS.md:572 | | Duplicate name/key/ID | Reuse existing registration or choose explicit distinct role/version identities; inspect both local and process-wide collisions. |
+DOC     free benchmarks/competitors/melder_implementation_plan/melder_system_maps/melder_override_codegen_supporting_notes.md:38 | - `plan_version_id` (changes if Phase 11 plan changes)
+DOC     free benchmarks/competitors/melder_implementation_plan/melder_system_maps/melder_speed_improvement_plan_v2.md:99 | - Define override signature: stable hash of override payload keys + mutation signature + plan version id.
+DOC     HELD context_compass/system_docs/graph/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.json:76 | "retires a spell id's per-conduit resolution verdicts in every live conduit state when its lineage is unregistered and when a version id is registered, so a content-stable id re-entering the frame is resolved again per conduit (0.2.8219)",
+DOC     HELD context_compass/system_docs/graph/melder/aether/spellbook/spell_compiler/system/spell_system_index.json:14 | "role": "The frame-level Phase 5+ system index keyed by spell version id.",
+DOC     HELD context_compass/system_docs/graph/melder/aether/spellbook/spell_compiler/system/spell_system_index.json:41 | "role": "Frame-level Phase 5+ system index keyed by spell version id.",
+DOC     HELD context_compass/system_docs/graph/melder/aether/spellbook/spell_compiler/system/spell_system_node.json:14 | "role": "One version-id keyed node of the Phase 5-7 system view.",
+DOC     HELD context_compass/system_docs/graph/melder/aether/spellbook/spell_compiler/system/spell_system_node.json:41 | "role": "Version-id keyed Phase 5-7 system node.",
+DOC     HELD context_compass/system_docs/graph/melder/aether/spellbook/spell_compiler/system/spell_system_node.json:43 | "stores one spell version id plus its lineage id",
+DOC     HELD context_compass/system_docs/graph/melder/aether/spellbook/spell_compiler/system/validation/contracted_version_drift_strategy.json:46 | "compare version ids stored on SpellSystemIndex nodes against the currently visible version for each lineage",
+DOC     HELD context_compass/system_docs/graph/melder/aether/spellbook/spell_compiler/system/validation/identity_mixing_strategy.json:14 | "role": "Phase 6 check: dependency edges use version ids, not lineage ids.",
+DOC     HELD context_compass/system_docs/graph/melder/aether/spellbook/spell_compiler/system/validation/identity_mixing_strategy.json:44 | "role": "Guard the version-id/lineage-id boundary: the system graph routes concrete VERSIONS, lineage ids are DevOps control-plane identity.",
+DOC     HELD context_compass/system_docs/graph/melder/aether/spellbook/spell_compiler/system/validation/identity_mixing_strategy.json:46 | "report dependency edges that point at lineage ids instead of version ids",
+DOC     HELD context_compass/system_docs/graph/melder/aether/spellbook/spell_compiler/system/validation/lineage_alignment_strategy.json:44 | "role": "Guard that the optional root-lineage metadata carried on version-id blueprints agrees with the index.",
+DOC     HELD context_compass/system_docs/graph/melder/aether/spellbook/spell_compiler/validation/strategies/circular_dependency_strategy.json:14 | "role": "Phase 4 check: multi-hop cycles by spell/version id.",
+DOC     HELD context_compass/system_docs/graph/melder/aether/spellbook/spell_compiler/validation/strategies/circular_dependency_strategy.json:44 | "role": "The multi-hop cycle check at spell/version-id level; counterpart to SelfDependencyStrategy and to the binding-key cycle strategy.",
+DOC     HELD context_compass/system_docs/graph/melder/aether/spellbook/spell_compiler/validation/strategies/circular_dependency_strategy.json:46 | "traverse the spellbook-wide dependency graph by spell/version id",
+DOC     HELD context_compass/system_docs/graph/melder/aether/spellbook/spellbook.json:82 | "answers contracted-spell lookups by key - the active copy by version id, a parked copy through its index - before walking (0.2.8231)",
+DOC     HELD context_compass/system_docs/graph/melder/mutation_research/diff/diff_engine.json:49 | "resolves both version identities through the injected material_resolver (custody-backed at the root; fakes in tests)",
+DOC     HELD context_compass/system_docs/graph/melder/utilities/helpers/general_helpers.json:79 | "names spell version ids for user-facing messages (describe_spell_id: the quoted spell name, or a 12-character id when the lookup cannot name it)",
+DOC     HELD context_compass/system_docs/src_architecture.md:21 | together, and the creation stores key objects by version id, so a `unique` spell can have one live object per
+DOC     HELD context_compass/system_docs/src_architecture.md:599 | the versions, compositions pin specific ones, and the creation stores key objects by version id,
+DOC     HELD context_compass/system_docs/src_architecture.md:859 | `register_index` retires any verdict already held for the version id it publishes, so a definition bound
+DOC     HELD context_compass/system_docs/src_architecture.md:886 | instead of a version id the notch parked.
+DOC     HELD context_compass/system_docs/src_architecture.md:1468 | - Lookup by version id (2026-10-11, 0.2.8229): `Spellbook.find_spell_by_id` answers from the Book's id maps and
+DOC     HELD context_compass/system_docs/src_architecture.md:1469 | never iterates a live map. A current version id is one read of `_spells_by_id`; a superseded or parked id is a
+DOC     HELD context_compass/system_docs/src_architecture.md:2128 | never built raised RuntimeError "many_only manifest references unknown spell_id '<the old version id>'" on
+DOC     HELD context_compass/system_docs/src_architecture.md:4357 | remeasured (the file grew 172 lines), and this lane's text says spell_id, as the owner asked, not "version id".
+DOC     HELD context_compass/system_docs/src_architecture.md:4459 | 2026-10-11 lookup by version id (0.2.8229): `Spellbook.find_spell_by_id` answers from the Book's id maps
+DOC     HELD context_compass/system_docs/src_components.md:840 | to v4-binding-non-resolvable. Method bodies remain outside existing class-version identity.
+DOC     HELD context_compass/system_docs/src_components.md:9897 | Internal Version-id keyed system index for a frame (Phase 5+)
+DOC     HELD context_compass/system_docs/src_components.md:9899 | Internal Version-id keyed system view of a single spell for Phases 5–7
+DOC     HELD context_compass/system_docs/src_components.md:9923 | Guard that dependency edges stay on version ids rather than lineage ids
+DOC     HELD context_compass/system_docs/src_components.md:11336 | spell_id, as the owner asked, not "version id".
+DOC     HELD context_compass/system_docs/src_components.md:11419 | 2026-10-11 lookup by version id (0.2.8229): Spellbook Core carries why `find_spell_by_id` reads the id maps
+DOC     HELD context_compass/system_docs/src_components.md:11718 | and version identity remain unchanged; this feature does not redesign supplied-object ownership.
+DOC     HELD context_compass/system_docs/tests_components.md:376 | - the public notch target (0.2.8249): `notch_spell` resolving a version id through the Book, passing an owned
+DOC     HELD context_compass/system_docs/tests_components.md:567 | - the public notch target (0.2.8249): the stage -> notch -> meld loop and its revert by version id in real worlds,
+DOC     HELD release_docs/next_version_release.md:46 | still registered. The lookup now answers from the Book's id maps: one read for a current version id, three for a
+DOC     HELD release_docs/next_version_release.md:759 | meld (for example "many_only manifest references unknown spell_id '<the old version id>'").
+DOC     HELD release_docs/next_version_release.md:786 | - The packaged system documents describe how `find_spell_by_id` resolves version ids from the Book's id maps
+STRING  HELD src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py:50 | (for convenience when you only know the version id).
+COMMENT HELD src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py:192 | # Version-id keyed topologies captured during Phase 3.
+STRING  HELD src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py:353 | by current version id.
+STRING  HELD src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py:360 | so a version id that re-enters the frame - a rebind of the same
+COMMENT HELD src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py:458 | # Keep current version id in sync
+COMMENT HELD src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py:464 | # The version id is (re)entering the frame: no conduit may keep a
+STRING  HELD src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py:580 | Lookup a SpellSystemState by current spell version id.
+STRING  HELD src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py:582 | This is a convenience when the caller only knows the version id
+STRING  HELD src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py:1329 | public form serves callers that retire or re-gate a version id
+STRING  HELD src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py:1875 | Return the local constructor topology using a version-id key.
+STRING  HELD src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py:1878 | spell version id.
+STRING  HELD src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py:1883 | version id.
+STRING  HELD src/melder/aether/conduit/conduit.py:3115 | Aether is responsible for mapping individual version IDs inside each
+STRING  HELD src/melder/aether/conduit/conduit.py:3197 | Retrieves a spell object by its unique version identifier (spell_id) from the
+STRING  HELD src/melder/aether/conduit/conduit.py:3203 | the live spell of the lineage that contains this version ID.
+STRING  HELD src/melder/aether/conduit/conduit.py:3214 | spell_id (str): The unique version identifier of the spell (SHA256).
+STRING  HELD src/melder/aether/conduit/conduit.py:3288 | spell_id (str): The unique version ID (SHA) of the spell to find.
+STRING  HELD src/melder/aether/conduit/conduit.py:3341 | Finds a spell's current version ID (SHA256 spell_id) using its logical identifiers.
+STRING  HELD src/melder/aether/conduit/conduit.py:4190 | - Matches by LINEAGE, so a superseded or parked version id still resolves -
+STRING  HELD src/melder/aether/conduit/conduit.py:5112 | The managed version id; exclusive with `spell`.
+STRING  HELD src/melder/aether/conduit/conduit.py:6251 | spell_id (str): Version id of the spell whose borrowed copies to park.
+STRING  HELD src/melder/aether/conduit/conduit.py:6298 | spell_id (str): Version id of the spell whose parked borrowed copies to make
+STRING  HELD src/melder/aether/conduit/conduit_ward/conduit_ward.py:1877 | spell_id (str, optional): The unique version ID of the spell.
+STRING  HELD src/melder/aether/conduit/conduit_ward/conduit_ward.py:2401 | member_ids: The index's member version ids, captured by the caller BEFORE
+STRING  HELD src/melder/aether/conduit/conduit_ward/conduit_ward.py:2507 | member_id: Version id of the member to uncontract.
+STRING  HELD src/melder/aether/conduit/conduit_ward/conduit_ward.py:2529 | member_id: Version id of the newly added member.
+STRING  HELD src/melder/aether/conduit/conduit_ward/conduit_ward.py:2567 | member_id: Version id of the removed member.
+STRING  HELD src/melder/aether/conduit/conduit_ward/conduit_ward.py:2606 | spell_id: Version id of the spell being added or removed.
+STRING  HELD src/melder/aether/conduit/conduit_ward/conduit_ward.py:3479 | * The version ID returned in the tuple is spell.spell_id (head).
+COMMENT HELD src/melder/aether/conduit/conduit_ward/conduit_ward.py:3539 | # Expose the CURRENT version id, not the historical one.
+STRING  HELD src/melder/aether/conduit/conduit_ward/conduit_ward.py:3585 | spell_id (str): The version ID (SHA) to search for.
+STRING  HELD src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py:1798 | spell_id: The managed version id.
+STRING  HELD src/melder/aether/conduit/meld/meld.py:1562 | Return the active Spell of the lineage a version id belongs to, from the
+STRING  HELD src/melder/aether/conduit/meld/meld.py:1566 | - The registry maps every version id an index has selected to its
+STRING  HELD src/melder/aether/conduit/meld/meld.py:1569 | version id; an id the registry does not know is looked up as is.
+STRING  HELD src/melder/aether/conduit/meld/meld.py:1577 | spell_id: A version id a topology or a contracted map recorded.
+STRING  HELD src/melder/aether/spellbook/spellbook.py:236 | - Initializes spell_id maps for O(1) resolution by current version id.
+STRING  HELD src/melder/aether/spellbook/spellbook.py:867 | version IDs (SHA256) for that conduit’s spells.
+STRING  HELD src/melder/aether/spellbook/spellbook.py:1146 | Provide O(1) lookup by the current version id for owned spells.
+STRING  HELD src/melder/aether/spellbook/spellbook.py:1149 | - Only the current version id is stored in the map.
+STRING  HELD src/melder/aether/spellbook/spellbook.py:1153 | spell_id (str): Current version id for the spell.
+STRING  HELD src/melder/aether/spellbook/spellbook.py:1194 | old_id (str): Previous version id for the spell index.
+STRING  HELD src/melder/aether/spellbook/spellbook.py:1195 | new_id (str): New version id for the spell index.
+STRING  HELD src/melder/aether/spellbook/spellbook.py:1265 | spell_id (str): Current version id for the spell.
+STRING  HELD src/melder/aether/spellbook/spellbook.py:1312 | Provide O(1) lookup by the current version id for contracted spells.
+STRING  HELD src/melder/aether/spellbook/spellbook.py:1320 | spell_id (str): Current version id for the spell.
+STRING  HELD src/melder/aether/spellbook/spellbook.py:1381 | old_id (str): The previous version id for the spell index.
+STRING  HELD src/melder/aether/spellbook/spellbook.py:1382 | new_id (str): New version id for the spell index.
+STRING  HELD src/melder/aether/spellbook/spellbook.py:1461 | spell_id (str): Current version id for the spell.
+STRING  HELD src/melder/aether/spellbook/spellbook.py:1792 | spell_id (str): Version id of the borrowed spell to deactivate.
+STRING  HELD src/melder/aether/spellbook/spellbook.py:1819 | spell_id (str): Version id of the borrowed spell to reactivate.
+STRING  HELD src/melder/aether/spellbook/spellbook.py:2067 | current version id of every owned lineage is a key of
+STRING  HELD src/melder/aether/spellbook/spellbook.py:2279 | (`spell_index_id`) rather than the current version id (`spell_id`).
+STRING  HELD src/melder/aether/spellbook/spellbook.py:2706 | Version id / spell id to resolve.
+STRING  HELD src/melder/aether/spellbook/spellbook.py:2740 | Version id / spell id to check.
+STRING  HELD src/melder/aether/spellbook/spellbook.py:2906 | Version id / spell id to resolve.
+STRING  HELD src/melder/aether/spellbook/spellbook.py:3040 | Resolves a contracted spell by its SHA256 version id using the Spellbook's
+STRING  HELD src/melder/aether/spellbook/spellbook.py:3053 | `_contracted_spells_by_id` under its own version id, and a parked one in
+COMMENT HELD src/melder/aether/spellbook/spellbook.py:3062 | # O(1) first: the active borrowed copy under its own version id.
+STRING  HELD src/melder/aether/spellbook/spellbook.py:3264 | keyed under the wrong (selected) version id.
+STRING  HELD src/melder/aether/spellbook/spellbook.py:3332 | spell_id (str): Version id of the owned spell to resolve.
+STRING  HELD src/melder/aether/spellbook/spellbook.py:6556 | Replace one published SpellRecord after the active version id changes.
+STRING  HELD src/melder/aether/spellbook/spellbook.py:6560 | Previous current spell/version id.
+STRING  HELD src/melder/aether/spellbook/spellbook.py:6562 | Spell whose `spell_id` now reflects the new current version id.
+STRING  free src/melder/crystallizer/crystal_analysis/custody/site_package_custody_strategy.py:53 | name/version identity via importlib.metadata.
+STRING  free src/melder/crystallizer/crystals/spell_crystal.py:478 | Return the concrete spell version identity the manifest was built from.
+STRING  free src/melder/mutation_research/diff/diff_engine.py:275 | Compute one derived diff between two version identities.
+STRING  free src/melder/mutation_research/diff/diff_engine.py:279 | Left version identity (binding-signature SHA256).
+STRING  free src/melder/mutation_research/diff/diff_engine.py:281 | Right version identity.
+STRING  free src/melder/mutation_research/mutation_research.py:1588 | Compute one derived diff between two version identities.
+STRING  free src/melder/mutation_research/mutation_research.py:1604 | Left version identity (binding-signature SHA256).
+STRING  free src/melder/mutation_research/mutation_research.py:1606 | Right version identity.
+STRING  free src/melder/mutation_research/mutation_research.py:1699 | Version identity to resolve.
+STRING  free src/melder/mutation_research/mutation_research.py:2633 | Left version identity.
+STRING  free src/melder/mutation_research/mutation_research.py:2635 | Right version identity.
+STRING  free src/melder/mutation_research/mutation_research.py:2735 | Version identity to search.
+STRING  free src/melder/mutation_research/research_set/research_node.py:22 | - `spell_id` is REQUIRED and is both the version identity and the
+STRING  free src/melder/mutation_research/research_set/research_node.py:195 | Return the version identity (and custody-crystal id).
+STRING  free src/melder/nexus/rift/command_system/capability_command_system.py:1253 | left_spell_id: Left version identity.
+STRING  free src/melder/nexus/rift/command_system/capability_command_system.py:1254 | right_spell_id: Right version identity.
+STRING  free src/melder/nexus/rift/command_system/capability_command_system.py:1460 | left_spell_id: Left version identity.
+STRING  free src/melder/nexus/rift/command_system/capability_command_system.py:1461 | right_spell_id: Right version identity.
+STRING  free src/melder/nexus/rift/command_system/codegen_command_system.py:1005 | left_spell_id: Left version identity.
+STRING  free src/melder/nexus/rift/command_system/codegen_command_system.py:1006 | right_spell_id: Right version identity.
+STRING  free src/melder/nexus/rift/command_system/codegen_command_system.py:1422 | left_spell_id: Left version identity.
+STRING  free src/melder/nexus/rift/command_system/codegen_command_system.py:1423 | right_spell_id: Right version identity.
+STRING  free src/melder/nexus/rift/frame_viewer/frame_viewer.py:5279 | spell_source_id: Published book/version identity to navigate.
+STRING  free src/melder/nexus/rift/frame_viewer/view_spell.py:288 | spell_source_id: Published book/version identity to navigate.
+NAME    free tests/component/melder/aether/conduit/test_conduit_component_cluster.py:283 | def _get_spell_by_version_id(spellbook: Spellbook, spell_id: str) -> object | None:
+NAME    free tests/component/melder/aether/conduit/test_conduit_component_cluster.py:330 | shareable_spell = _get_spell_by_version_id(spellbook, cluster_spell_id)
+NAME    free tests/component/melder/aether/conduit/test_conduit_component_cluster.py:368 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/component/melder/aether/conduit/test_conduit_component_cluster.py:414 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/component/melder/aether/conduit/test_conduit_component_cluster.py:480 | owner_spell = _get_spell_by_version_id(owner_book, owner_spell_id)
+NAME    free tests/component/melder/aether/conduit/test_conduit_component_cluster.py:481 | peer_spell = _get_spell_by_version_id(peer_book, peer_spell_id)
+NAME    free tests/component/melder/aether/conduit/test_conduit_component_cluster.py:629 | spell = _get_spell_by_version_id(owner_book, spell_id)
+NAME    free tests/component/melder/aether/conduit/test_conduit_component_cluster.py:678 | owner_spell = _get_spell_by_version_id(owner_book, owner_spell_id)
+NAME    free tests/component/melder/aether/conduit/test_conduit_component_cluster.py:679 | peer_spell = _get_spell_by_version_id(peer_book, peer_spell_id)
+NAME    free tests/component/melder/aether/conduit/test_conduit_component_cluster.py:731 | spell = _get_spell_by_version_id(owner_book, spell_id)
+NAME    free tests/component/melder/aether/conduit/test_conduit_component_cluster.py:758 | spell = _get_spell_by_version_id(owner_book, spell_id)
+NAME    free tests/component/melder/aether/conduit/test_conduit_component_meld_gating.py:78 | def _get_spell_by_version_id(spellbook: Spellbook, spell_id: str) -> object | None:
+NAME    free tests/component/melder/aether/conduit/test_conduit_component_meld_gating.py:119 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/component/melder/aether/conduit/test_conduit_component_meld_gating.py:164 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/component/melder/aether/conduit/test_conduit_component_meld_gating.py:196 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/component/melder/aether/conduit/test_conduit_component_meld_overrides.py:234 | def _get_spell_by_version_id(spellbook: Spellbook, spell_id: str) -> object | None:
+NAME    free tests/component/melder/aether/conduit/test_conduit_component_meld_overrides.py:496 | root_spell = _get_spell_by_version_id(spellbook, service_id)
+NAME    free tests/component/melder/aether/conduit/test_conduit_component_meld_overrides.py:544 | root_spell = _get_spell_by_version_id(spellbook, root_id)
+NAME    free tests/component/melder/aether/conduit/test_conduit_component_transactions.py:66 | def _get_local_spell_by_version_id(
+NAME    free tests/component/melder/aether/conduit/test_conduit_component_transactions.py:375 | spell = _get_local_spell_by_version_id(owner_book, spell_id)
+NAME    free tests/component/melder/aether/conduit/test_conduit_component_transactions.py:433 | spell = _get_local_spell_by_version_id(owner_book, spell_id)
+NAME    free tests/component/melder/aether/conduit/test_conduit_component_transactions.py:488 | spell = _get_local_spell_by_version_id(owner_book, spell_id)
+NAME    free tests/component/melder/aether/conduit/test_conduit_component_transactions.py:535 | spell = _get_local_spell_by_version_id(owner_book, spell_id)
+NAME    free tests/component/melder/aether/conduit/test_conduit_component_transactions.py:715 | spell = _get_local_spell_by_version_id(owner_book, spell_id)
+NAME    free tests/component/melder/aether/test_conduit_cloud_component.py:72 | def _get_local_spell_by_version_id(
+NAME    free tests/component/melder/spellbook/spell_compiler_runtime_test_support.py:31 | def get_spell_by_version_id(spellbook: Spellbook, spell_id: str):
+NAME    free tests/component/melder/spellbook/spell_crafter/change_control/test_spellbook_component_spell_crafter_change_control.py:61 | def _get_spell_by_version_id(spellbook: Spellbook, spell_id: str) -> Any:
+NAME    free tests/component/melder/spellbook/spell_crafter/change_control/test_spellbook_component_spell_crafter_change_control.py:153 | consumer_spell = _get_spell_by_version_id(spellbook, consumer_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/change_control/test_spellbook_component_spell_crafter_change_control.py:229 | consumer_spell = _get_spell_by_version_id(spellbook, consumer_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/change_control/test_spellbook_component_spell_crafter_change_control.py:315 | consumer_spell = _get_spell_by_version_id(borrower_book, consumer_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/change_control/test_spellbook_component_spell_crafter_change_control.py:427 | consumer_spell = _get_spell_by_version_id(borrower_book, consumer_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/change_control/test_spellbook_component_spell_crafter_change_control.py:527 | consumer_a = _get_spell_by_version_id(spellbook, consumer_a_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/change_control/test_spellbook_component_spell_crafter_change_control.py:528 | consumer_b = _get_spell_by_version_id(spellbook, consumer_b_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/dag/test_spellbook_component_dag_local_frame.py:51 | def _get_spell_by_version_id(spellbook: Spellbook, spell_id: str):
+NAME    free tests/component/melder/spellbook/spell_crafter/dag/test_spellbook_component_dag_local_frame.py:135 | spell = _get_spell_by_version_id(spellbook, consumer_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/dag/test_spellbook_component_dag_local_frame.py:213 | spell = _get_spell_by_version_id(spellbook, consumer_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/phases/test_spellbook_component_spell_crafter_phase5.py:65 | def _get_spell_by_version_id(spellbook: Spellbook, spell_id: str):
+NAME    free tests/component/melder/spellbook/spell_crafter/phases/test_spellbook_component_spell_crafter_phase5.py:114 | logger_spell = _get_spell_by_version_id(spellbook, logger_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/phases/test_spellbook_component_spell_crafter_phase5.py:115 | repo_spell = _get_spell_by_version_id(spellbook, repo_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/phases/test_spellbook_component_spell_crafter_phase5.py:116 | root_spell = _get_spell_by_version_id(spellbook, root_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/phases/test_spellbook_component_spell_crafter_phase5.py:196 | service_spell = _get_spell_by_version_id(spellbook, service_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/phases/test_spellbook_component_spell_crafter_phase5.py:197 | root_spell = _get_spell_by_version_id(spellbook, consumer_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/phases/test_spellbook_component_spell_crafter_phase5.py:248 | service_spell = _get_spell_by_version_id(spellbook, service_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/phases/test_spellbook_component_spell_crafter_phase5.py:249 | config_spell = _get_spell_by_version_id(spellbook, config_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/phases/test_spellbook_component_spell_crafter_phase5.py:285 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/spell_examiner/test_spellbook_component_spell_examiner.py:57 | def _get_spell_by_version_id(spellbook: Spellbook, spell_id: str):
+NAME    free tests/component/melder/spellbook/spell_crafter/spell_examiner/test_spellbook_component_spell_examiner.py:126 | spell = _get_spell_by_version_id(spellbook, consumer_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/spell_examiner/test_spellbook_component_spell_examiner.py:170 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/spell_examiner/test_spellbook_component_spell_examiner.py:234 | spell = _get_spell_by_version_id(spellbook, consumer_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/spell_examiner/test_spellbook_component_spell_examiner_inspection.py:52 | def _get_spell_by_version_id(spellbook: Spellbook, spell_id: str):
+NAME    free tests/component/melder/spellbook/spell_crafter/spell_examiner/test_spellbook_component_spell_examiner_inspection.py:88 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/spell_examiner/test_spellbook_component_spell_examiner_inspection.py:133 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/spell_examiner/test_spellbook_component_spell_examiner_profiles.py:52 | def _get_spell_by_version_id(spellbook: Spellbook, spell_id: str):
+NAME    free tests/component/melder/spellbook/spell_crafter/spell_examiner/test_spellbook_component_spell_examiner_profiles.py:110 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/spell_examiner/test_spellbook_component_spell_examiner_profiles.py:164 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/spell_examiner/test_spellbook_component_spell_examiner_profiles.py:215 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/spell_examiner/test_spellbook_component_spell_examiner_strategies.py:63 | def _get_spell_by_version_id(spellbook: Spellbook, spell_id: str):
+NAME    free tests/component/melder/spellbook/spell_crafter/spell_examiner/test_spellbook_component_spell_examiner_strategies.py:252 | spell = _get_spell_by_version_id(spellbook, consumer_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/spell_examiner/test_spellbook_component_spell_examiner_strategies.py:286 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/spell_examiner/test_spellbook_component_spell_examiner_strategies.py:316 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/spell_examiner/test_spellbook_component_spell_examiner_strategies.py:347 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/spell_examiner/test_spellbook_component_spell_examiner_strategies.py:376 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/spell_examiner/test_spellbook_component_spell_examiner_strategies.py:406 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/spell_examiner/test_spellbook_component_spell_examiner_strategies.py:441 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/spell_examiner/test_spellbook_component_spell_examiner_strategies.py:473 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/spell_examiner/test_spellbook_component_spell_examiner_strategies.py:508 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/spell_examiner/test_spellbook_component_spell_examiner_strategies.py:546 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/spell_requirements_finder/test_spellbook_component_spell_requirements_finder.py:53 | def _get_spell_by_version_id(spellbook: Spellbook, spell_id: str):
+NAME    free tests/component/melder/spellbook/spell_crafter/spell_requirements_finder/test_spellbook_component_spell_requirements_finder.py:87 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/spell_requirements_finder/test_spellbook_component_spell_requirements_finder.py:118 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/spell_requirements_finder/test_spellbook_component_spell_requirements_finder.py:161 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/symbolic_graph/test_spellbook_component_symbolic_graph.py:48 | def _get_spell_by_version_id(spellbook: Spellbook, spell_id: str):
+NAME    free tests/component/melder/spellbook/spell_crafter/symbolic_graph/test_spellbook_component_symbolic_graph.py:113 | spell = _get_spell_by_version_id(spellbook, consumer_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/symbolic_graph/test_spellbook_component_symbolic_graph.py:183 | spell = _get_spell_by_version_id(spellbook, consumer_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/system/test_spellbook_component_spell_system.py:61 | def _get_spell_by_version_id(spellbook: Spellbook, spell_id: str) -> object | None:
+NAME    free tests/component/melder/spellbook/spell_crafter/system/test_spellbook_component_spell_system.py:130 | consumer_spell = _get_spell_by_version_id(spellbook, consumer_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/system/test_spellbook_component_spell_system.py:198 | consumer_spell = _get_spell_by_version_id(spellbook, consumer_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/system/test_spellbook_component_spell_system.py:259 | leaf_spell = _get_spell_by_version_id(spellbook, leaf_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/system/test_spellbook_component_spell_system_phase5.py:51 | def _get_spell_by_version_id(spellbook: Spellbook, spell_id: str) -> object | None:
+NAME    free tests/component/melder/spellbook/spell_crafter/system/test_spellbook_component_spell_system_phase5.py:119 | consumer_spell = _get_spell_by_version_id(spellbook, consumer_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/system/test_spellbook_component_spell_system_phase5.py:198 | consumer_spell = _get_spell_by_version_id(spellbook, consumer_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/system/test_spellbook_component_spell_system_phase5.py:199 | service_spell = _get_spell_by_version_id(spellbook, service_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/system/test_spellbook_component_spell_system_phase5.py:292 | consumer_spell = _get_spell_by_version_id(spellbook, consumer_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/system/test_spellbook_component_spell_system_phase5_contracts.py:95 | def _get_spell_by_version_id(spellbook: Spellbook, spell_id: str) -> Any:
+NAME    free tests/component/melder/spellbook/spell_crafter/system/test_spellbook_component_spell_system_phase5_contracts.py:199 | consumer_spell = _get_spell_by_version_id(borrower_book, consumer_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/system/test_spellbook_component_spell_system_phase5_contracts.py:293 | consumer_spell = _get_spell_by_version_id(borrower_book, consumer_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/system/test_spellbook_component_spell_system_phase5_contracts.py:405 | consumer_spell = _get_spell_by_version_id(borrower_book, consumer_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/topology/test_spellbook_component_spell_local_topology.py:52 | def _get_spell_by_version_id(spellbook: Spellbook, spell_id: str):
+NAME    free tests/component/melder/spellbook/spell_crafter/topology/test_spellbook_component_spell_local_topology.py:130 | spell = _get_spell_by_version_id(spellbook, consumer_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/topology/test_spellbook_component_spell_local_topology.py:211 | spell = _get_spell_by_version_id(spellbook, consumer_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/validation/test_spellbook_component_validation_context.py:53 | def _get_spell_by_version_id(spellbook: Spellbook, spell_id: str) -> Optional[object]:
+NAME    free tests/component/melder/spellbook/spell_crafter/validation/test_spellbook_component_validation_context.py:88 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/validation/test_spellbook_component_validation_strategies.py:87 | def _get_spell_by_version_id(spellbook: Spellbook, spell_id: str) -> Optional[object]:
+NAME    free tests/component/melder/spellbook/spell_crafter/validation/test_spellbook_component_validation_strategies.py:183 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/validation/test_spellbook_component_validation_strategies.py:251 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/validation/test_spellbook_component_validation_strategies.py:317 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/validation/test_spellbook_component_validation_strategies.py:387 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/validation/test_spellbook_component_validation_strategies.py:426 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/validation/test_spellbook_component_validation_strategies.py:487 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/validation/test_spellbook_component_validation_strategies.py:531 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/validation/test_spellbook_component_validation_strategies.py:573 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/validation/test_spellbook_component_validation_strategies.py:610 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/validation/test_spellbook_component_validation_strategies.py:675 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/validation/test_spellbook_component_validation_strategies.py:762 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/validation/test_spellbook_component_validation_strategies.py:813 | spell = _get_spell_by_version_id(spellbook, service_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/validation/test_spellbook_component_validation_strategies.py:848 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/validation/test_spellbook_component_validation_strategies.py:887 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/validation/test_spellbook_component_validation_strategies.py:969 | alpha_spell = _get_spell_by_version_id(spellbook, alpha_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/validation/test_spellbook_component_validation_strategies.py:970 | beta_spell = _get_spell_by_version_id(spellbook, beta_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/validation/test_spellbook_component_validation_strategies.py:1074 | spell = _get_spell_by_version_id(spellbook, first_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/validation/test_spellbook_component_validation_system.py:51 | def _get_spell_by_version_id(spellbook: Spellbook, spell_id: str) -> object | None:
+NAME    free tests/component/melder/spellbook/spell_crafter/validation/test_spellbook_component_validation_system.py:114 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/validation/test_spellbook_component_validation_system.py:179 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/validation/test_spellbook_component_validation_system.py:284 | root_spell = _get_spell_by_version_id(spellbook, root_id)
+NAME    free tests/component/melder/spellbook/spell_crafter/validation/test_spellbook_component_validation_system.py:285 | other_spell = _get_spell_by_version_id(spellbook, other_id)
+NAME    free tests/component/melder/spellbook/test_codegen_signature_determinism.py:60 | get_spell_by_version_id,
+NAME    free tests/component/melder/spellbook/test_codegen_signature_determinism.py:254 | spell = get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/component/melder/spellbook/test_codegen_signature_determinism.py:338 | consumer_spell = get_spell_by_version_id(borrower_book, consumer_id)
+NAME    free tests/component/melder/spellbook/test_codegen_signature_determinism.py:376 | consumer_spell = get_spell_by_version_id(borrower_book, consumer_id)
+NAME    free tests/component/melder/spellbook/test_codegen_signature_determinism.py:627 | consumer_spell = get_spell_by_version_id(borrower_book, consumer_id)
+NAME    free tests/component/melder/spellbook/test_spell_compiler_component_system.py:19 | get_spell_by_version_id,
+NAME    free tests/component/melder/spellbook/test_spell_compiler_component_system.py:162 | spell = get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/component/melder/spellbook/test_spell_compiler_component_system.py:198 | spell = get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/component/melder/spellbook/test_spell_compiler_component_system.py:231 | consumer_spell = get_spell_by_version_id(spellbook, consumer_id)
+NAME    free tests/component/melder/spellbook/test_spell_compiler_component_system.py:261 | consumer_spell = get_spell_by_version_id(spellbook, consumer_id)
+NAME    free tests/component/melder/spellbook/test_spell_compiler_component_system.py:292 | consumer_spell = get_spell_by_version_id(spellbook, consumer_id)
+NAME    free tests/component/melder/spellbook/test_spell_compiler_component_system.py:326 | consumer_spell = get_spell_by_version_id(spellbook, consumer_id)
+NAME    free tests/component/melder/spellbook/test_spell_compiler_component_system.py:355 | spell = get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/component/melder/spellbook/test_spell_compiler_component_system.py:382 | spell = get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/component/melder/spellbook/test_spell_compiler_component_system.py:412 | consumer_spell = get_spell_by_version_id(spellbook, consumer_id)
+NAME    free tests/component/melder/spellbook/test_spell_compiler_component_system.py:445 | consumer_spell = get_spell_by_version_id(spellbook, consumer_id)
+NAME    free tests/component/melder/spellbook/test_spell_compiler_component_system.py:469 | spell = get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/component/melder/spellbook/test_spell_compiler_component_system.py:500 | consumer_spell = get_spell_by_version_id(spellbook, consumer_id)
+NAME    free tests/component/melder/spellbook/test_spell_compiler_component_system.py:501 | service_spell = get_spell_by_version_id(spellbook, service_id)
+NAME    free tests/component/melder/spellbook/test_spell_compiler_component_system.py:525 | spell = get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/component/melder/spellbook/test_spell_compiler_component_system.py:545 | spell = get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/component/melder/spellbook/test_spell_compiler_component_system.py:572 | consumer_spell = get_spell_by_version_id(spellbook, consumer_id)
+NAME    free tests/component/melder/spellbook/test_spell_compiler_component_system.py:598 | consumer_spell = get_spell_by_version_id(spellbook, consumer_id)
+NAME    free tests/component/melder/spellbook/test_spell_compiler_component_system.py:627 | consumer_spell = get_spell_by_version_id(spellbook, consumer_id)
+NAME    free tests/component/melder/spellbook/test_spell_compiler_component_system.py:661 | consumer_spell = get_spell_by_version_id(spellbook, consumer_id)
+NAME    free tests/component/melder/spellbook/test_spell_compiler_component_system.py:691 | consumer_spell = get_spell_by_version_id(spellbook, consumer_id)
+NAME    free tests/component/melder/spellbook/test_spell_compiler_component_system.py:722 | consumer_spell = get_spell_by_version_id(spellbook, consumer_id)
+NAME    free tests/component/melder/spellbook/test_spell_compiler_component_system.py:759 | consumer_spell = get_spell_by_version_id(spellbook, consumer_id)
+NAME    free tests/component/melder/spellbook/test_spell_compiler_component_system.py:786 | consumer_spell = get_spell_by_version_id(spellbook, consumer_id)
+NAME    free tests/component/melder/spellbook/test_spell_compiler_component_system.py:787 | service_spell = get_spell_by_version_id(spellbook, service_id)
+NAME    free tests/component/melder/spellbook/test_spellbook_component_caching_system.py:160 | def _get_spell_by_version_id(spellbook: Spellbook, spell_id: str) -> object | None:
+NAME    free tests/component/melder/spellbook/test_spellbook_component_caching_system.py:214 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/component/melder/spellbook/test_spellbook_component_caching_system.py:264 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/component/melder/spellbook/test_spellbook_component_caching_system.py:293 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/component/melder/spellbook/test_spellbook_component_caching_system.py:521 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/component/melder/spellbook/test_spellbook_component_caching_system.py:602 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/component/melder/spellbook/test_spellbook_component_conduit_definition.py:50 | def _get_spell_by_version_id(spellbook: Spellbook, spell_id: str) -> object | None:
+NAME    free tests/component/melder/spellbook/test_spellbook_component_conduit_definition.py:174 | class_spell = _get_spell_by_version_id(spellbook, class_spell_id)
+NAME    free tests/component/melder/spellbook/test_spellbook_component_conduit_definition.py:175 | existing_spell = _get_spell_by_version_id(spellbook, existing_spell_id)
+NAME    free tests/component/melder/spellbook/test_spellbook_component_conduit_definition.py:219 | existing_spell = _get_spell_by_version_id(spellbook, existing_spell_id)
+NAME    free tests/component/melder/spellbook/test_spellbook_component_conduit_definition.py:254 | def _check_for_spell(version_id: str, frame: str) -> bool:
+STRING  free tests/component/melder/spellbook/test_spellbook_component_conduit_definition.py:261 | version_id: The spell_id being checked.
+NAME    free tests/component/melder/spellbook/test_spellbook_component_conduit_definition.py:266 | return version_id == spell_id and frame == spellbook._aetheric_frame_name
+NAME    free tests/component/melder/spellbook/test_spellbook_component_conduit_definition.py:271 | lambda self, version_id, frame: _check_for_spell(version_id, frame),
+NAME    free tests/component/melder/spellbook/test_spellbook_component_conduit_definition.py:271 | lambda self, version_id, frame: _check_for_spell(version_id, frame),
+NAME    free tests/component/melder/spellbook/test_spellbook_component_conduit_definition.py:303 | def _check_for_spell(_version_id: str, _frame: str) -> bool:
+STRING  free tests/component/melder/spellbook/test_spellbook_component_conduit_definition.py:310 | _version_id: The spell_id being checked.
+NAME    free tests/component/melder/spellbook/test_spellbook_component_conduit_definition.py:320 | lambda self, version_id, frame: _check_for_spell(version_id, frame),
+NAME    free tests/component/melder/spellbook/test_spellbook_component_conduit_definition.py:320 | lambda self, version_id, frame: _check_for_spell(version_id, frame),
+NAME    free tests/component/melder/spellbook/test_spellbook_component_contracts.py:81 | def _get_spell_by_version_id(spellbook: Spellbook, spell_id: str) -> object | None:
+NAME    free tests/component/melder/spellbook/test_spellbook_component_contracts.py:122 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/component/melder/spellbook/test_spellbook_component_contracts.py:230 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/component/melder/spellbook/test_spellbook_component_contracts.py:330 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/component/melder/spellbook/test_spellbook_component_contracts.py:364 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/component/melder/spellbook/test_spellbook_component_contracts.py:403 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/component/melder/spellbook/test_spellbook_component_contracts.py:469 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/component/melder/spellbook/test_spellbook_component_contracts.py:520 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/component/melder/spellbook/test_spellbook_component_contracts.py:553 | owner_spell = _get_spell_by_version_id(owner_book, owner_id)
+NAME    free tests/component/melder/spellbook/test_spellbook_component_contracts.py:609 | owner_spell = _get_spell_by_version_id(owner_book, owner_id)
+NAME    free tests/component/melder/spellbook/test_spellbook_component_contracts.py:642 | keep = _get_spell_by_version_id(spellbook, keep_id)
+NAME    free tests/component/melder/spellbook/test_spellbook_component_contracts.py:643 | park = _get_spell_by_version_id(spellbook, park_id)
+NAME    free tests/component/melder/spellbook/test_spellbook_component_contracts.py:678 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/component/melder/spellbook/test_spellbook_component_contracts.py:713 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/component/melder/spellbook/test_spellbook_component_contracts.py:742 | owner_spell = _get_spell_by_version_id(owner_book, owner_id)
+NAME    free tests/component/melder/spellbook/test_spellbook_component_spell.py:61 | def _get_spell_by_version_id(spellbook: Spellbook, spell_id: str) -> object | None:
+NAME    free tests/component/melder/spellbook/test_spellbook_component_spell.py:144 | spell = _get_spell_by_version_id(spellbook, consumer_id)
+NAME    free tests/component/melder/spellbook/test_spellbook_component_spell.py:230 | spell = _get_spell_by_version_id(spellbook, consumer_id)
+NAME    free tests/component/melder/spellbook/test_spellbook_component_spell.py:270 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/component/melder/spellbook/test_spellbook_component_spell.py:320 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    HELD tests/component/melder/spellbook/test_spellbook_component_spell_crafter.py:65 | def _get_spell_by_version_id(spellbook: Spellbook, spell_id: str) -> Optional[object]:
+STRING  HELD tests/component/melder/spellbook/test_spellbook_component_spell_crafter.py:360 | - Exposes a `current` version id.
+STRING  HELD tests/component/melder/spellbook/test_spellbook_component_spell_crafter.py:366 | Store a version id for the stub index.
+STRING  HELD tests/component/melder/spellbook/test_spellbook_component_spell_crafter.py:370 | current: Version id to expose via the `current` property.
+STRING  HELD tests/component/melder/spellbook/test_spellbook_component_spell_crafter.py:380 | Expose the version id for this stub.
+STRING  HELD tests/component/melder/spellbook/test_spellbook_component_spell_crafter.py:384 | str: The current version id.
+NAME    HELD tests/component/melder/spellbook/test_spellbook_component_spell_crafter.py:682 | spell = _get_spell_by_version_id(spellbook, consumer_id)
+NAME    HELD tests/component/melder/spellbook/test_spellbook_component_spell_crafter.py:758 | spell = _get_spell_by_version_id(spellbook, consumer_id)
+NAME    HELD tests/component/melder/spellbook/test_spellbook_component_spell_crafter.py:829 | spell = _get_spell_by_version_id(spellbook, consumer_id)
+NAME    HELD tests/component/melder/spellbook/test_spellbook_component_spell_crafter.py:905 | spell = _get_spell_by_version_id(spellbook, consumer_id)
+NAME    HELD tests/component/melder/spellbook/test_spellbook_component_spell_crafter.py:978 | spell = _get_spell_by_version_id(spellbook, consumer_id)
+NAME    HELD tests/component/melder/spellbook/test_spellbook_component_spell_crafter.py:1031 | spell = _get_spell_by_version_id(spellbook, consumer_id)
+NAME    HELD tests/component/melder/spellbook/test_spellbook_component_spell_crafter.py:1077 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    HELD tests/component/melder/spellbook/test_spellbook_component_spell_crafter.py:1119 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    HELD tests/component/melder/spellbook/test_spellbook_component_spell_crafter.py:1182 | spell = _get_spell_by_version_id(spellbook, consumer_id)
+NAME    HELD tests/component/melder/spellbook/test_spellbook_component_spell_crafter.py:1256 | consumer_spell = _get_spell_by_version_id(spellbook, consumer_id)
+NAME    HELD tests/component/melder/spellbook/test_spellbook_component_spell_crafter.py:1330 | consumer_spell = _get_spell_by_version_id(spellbook, consumer_id)
+NAME    HELD tests/component/melder/spellbook/test_spellbook_component_spell_crafter.py:1410 | consumer_spell = _get_spell_by_version_id(spellbook, consumer_id)
+NAME    HELD tests/component/melder/spellbook/test_spellbook_component_spell_crafter.py:1484 | consumer_spell = _get_spell_by_version_id(spellbook, consumer_id)
+NAME    HELD tests/component/melder/spellbook/test_spellbook_component_spell_crafter.py:1560 | consumer_spell = _get_spell_by_version_id(spellbook, consumer_id)
+NAME    HELD tests/component/melder/spellbook/test_spellbook_component_spell_crafter.py:1638 | consumer_spell = _get_spell_by_version_id(spellbook, consumer_id)
+NAME    HELD tests/component/melder/spellbook/test_spellbook_component_spell_crafter.py:1639 | service_spell = _get_spell_by_version_id(spellbook, service_id)
+NAME    HELD tests/component/melder/spellbook/test_spellbook_component_spell_crafter.py:1640 | outside_spell = _get_spell_by_version_id(spellbook, outside_id)
+NAME    HELD tests/component/melder/spellbook/test_spellbook_component_spell_crafter.py:1730 | consumer_spell = _get_spell_by_version_id(spellbook, consumer_id)
+NAME    HELD tests/component/melder/spellbook/test_spellbook_component_spell_crafter.py:1731 | service_spell = _get_spell_by_version_id(spellbook, service_id)
+NAME    HELD tests/component/melder/spellbook/test_spellbook_component_spell_crafter.py:1732 | outside_spell = _get_spell_by_version_id(spellbook, outside_id)
+NAME    HELD tests/component/melder/spellbook/test_spellbook_component_spellbook.py:67 | def _get_spell_by_version_id(spellbook: Spellbook, spell_id: str) -> object | None:
+NAME    HELD tests/component/melder/spellbook/test_spellbook_component_spellbook.py:262 | bound_spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    HELD tests/component/melder/spellbook/test_spellbook_component_spellbook.py:357 | bound_spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    HELD tests/component/melder/spellbook/test_spellbook_component_spellbook.py:634 | disposable_spell = _get_spell_by_version_id(spellbook, disposable_id)
+NAME    HELD tests/component/melder/spellbook/test_spellbook_component_spellbook.py:639 | callable_spell = _get_spell_by_version_id(spellbook, callable_id)
+NAME    HELD tests/component/melder/spellbook/test_spellbook_component_spellbook.py:1246 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    HELD tests/component/melder/spellbook/test_spellbook_component_spellbook.py:1283 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    HELD tests/component/melder/spellbook/test_spellbook_component_spellbook.py:1328 | bound_spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    HELD tests/component/melder/spellbook/test_spellbook_component_spellbook.py:1389 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    HELD tests/component/melder/spellbook/test_spellbook_component_spellbook.py:1436 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    HELD tests/component/melder/spellbook/test_spellbook_component_spellbook.py:1487 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    HELD tests/component/melder/spellbook/test_spellbook_component_spellbook.py:1530 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    HELD tests/component/melder/spellbook/test_spellbook_component_spellbook.py:1574 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    HELD tests/component/melder/spellbook/test_spellbook_component_spellbook.py:1613 | spell = _get_spell_by_version_id(spellbook, spell_id)
+STRING  HELD tests/component/melder/spellbook/test_spellbook_component_spellbook.py:1690 | Validate removal raises when the version id is not present.
+STRING  HELD tests/component/melder/spellbook/test_spellbook_component_spellbook.py:1692 | - _remove_contracted_spell raises RuntimeError for unknown version ids.
+STRING  HELD tests/component/melder/spellbook/test_spellbook_component_spellbook.py:1696 | AssertionError: If removal does not raise for missing version ids.
+NAME    HELD tests/component/melder/spellbook/test_spellbook_component_spellbook.py:1708 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/experimentation/test_forced_phase10_phase11_creation_context_comparison_harness.py:23 | get_spell_by_version_id,
+NAME    free tests/experimentation/test_forced_phase10_phase11_creation_context_comparison_harness.py:465 | root_spell = get_spell_by_version_id(spellbook, root_spell_id)
+NAME    free tests/integration/melder/aether/test_aether_integration_change_control_transactions.py:76 | def _get_local_spell_by_version_id(
+NAME    free tests/integration/melder/aether/test_aether_integration_change_control_transactions.py:1126 | spell = _get_local_spell_by_version_id(owner_book, spell_id)
+NAME    free tests/integration/melder/aether/test_aether_integration_change_control_transactions.py:1191 | spell = _get_local_spell_by_version_id(owner_book, spell_id)
+NAME    free tests/integration/melder/aether/test_aether_integration_change_control_transactions.py:1238 | spell = _get_local_spell_by_version_id(owner_book, spell_id)
+NAME    free tests/integration/melder/aether/test_aether_integration_change_control_transactions.py:1528 | spell = _get_local_spell_by_version_id(owner_book, spell_id)
+STRING  HELD tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py:204 | """Stage `impl` in the provider's index and notch to it; return its version id."""
+NAME    HELD tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py:210 | def notch_back(self, version_id: str) -> None:
+NAME    HELD tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py:212 | self.lender.notch_spell(spell_index=self.index, spell_id=version_id)
+NAME    HELD tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py:662 | for version_id in versions[1:]:
+NAME    HELD tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py:663 | world.notch_back(version_id)
+NAME    free tests/integration/melder/spellbook/test_spell_compiler_system_integration.py:16 | get_spell_by_version_id,
+NAME    free tests/integration/melder/spellbook/test_spell_compiler_system_integration.py:113 | spell = get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/integration/melder/spellbook/test_spell_compiler_system_integration.py:175 | spell = get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/integration/melder/spellbook/test_spell_compiler_system_integration.py:201 | consumer_spell = get_spell_by_version_id(spellbook, consumer_id)
+NAME    free tests/integration/melder/spellbook/test_spell_compiler_system_integration.py:231 | consumer_spell = get_spell_by_version_id(spellbook, consumer_id)
+NAME    free tests/integration/melder/spellbook/test_spell_compiler_system_integration.py:261 | consumer_spell = get_spell_by_version_id(spellbook, consumer_id)
+NAME    free tests/integration/melder/spellbook/test_spell_compiler_system_integration.py:297 | consumer_spell = get_spell_by_version_id(spellbook, consumer_id)
+NAME    free tests/integration/melder/spellbook/test_spell_compiler_system_integration.py:331 | consumer_spell = get_spell_by_version_id(spellbook, consumer_id)
+NAME    free tests/integration/melder/spellbook/test_spell_compiler_system_integration.py:369 | consumer_spell = get_spell_by_version_id(spellbook, consumer_id)
+NAME    free tests/integration/melder/spellbook/test_spell_compiler_system_integration.py:404 | consumer_spell = get_spell_by_version_id(spellbook, consumer_id)
+NAME    free tests/integration/melder/spellbook/test_spell_compiler_system_integration.py:431 | consumer_spell = get_spell_by_version_id(spellbook, consumer_id)
+NAME    free tests/integration/melder/spellbook/test_spell_compiler_system_integration.py:458 | consumer_spell = get_spell_by_version_id(spellbook, consumer_id)
+NAME    free tests/integration/melder/spellbook/test_spell_compiler_system_integration.py:476 | spell = get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/integration/melder/spellbook/test_spell_compiler_system_integration.py:502 | consumer_spell = get_spell_by_version_id(spellbook, consumer_id)
+NAME    free tests/integration/melder/spellbook/test_spell_compiler_system_integration.py:503 | service_spell = get_spell_by_version_id(spellbook, service_id)
+NAME    free tests/integration/melder/spellbook/test_spell_compiler_system_integration.py:523 | spell = get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/integration/melder/spellbook/test_spell_compiler_system_integration.py:548 | consumer_spell = get_spell_by_version_id(spellbook, consumer_id)
+NAME    free tests/integration/melder/spellbook/test_spell_compiler_system_integration.py:575 | consumer_spell = get_spell_by_version_id(spellbook, consumer_id)
+NAME    free tests/integration/melder/spellbook/test_spellbook_integration_spell_crafter.py:56 | def _get_spell_by_version_id(spellbook: Spellbook, spell_id: str) -> object | None:
+NAME    free tests/integration/melder/spellbook/test_spellbook_integration_spell_crafter.py:154 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/integration/melder/spellbook/test_spellbook_integration_spell_crafter.py:420 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/integration/melder/spellbook/test_spellbook_integration_spell_crafter.py:458 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/integration/melder/spellbook/test_spellbook_integration_spell_crafter.py:496 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/integration/melder/spellbook/test_spellbook_integration_spell_crafter.py:534 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/integration/melder/spellbook/test_spellbook_integration_validation_system.py:59 | def _get_spell_by_version_id(spellbook: Spellbook, spell_id: str) -> object | None:
+NAME    free tests/integration/melder/spellbook/test_spellbook_integration_validation_system.py:136 | consumer_spell = _get_spell_by_version_id(borrower_book, consumer_id)
+NAME    free tests/integration/melder/spellbook/test_spellbook_integration_validation_system.py:256 | local_spell = _get_spell_by_version_id(borrower_book, borrower_id)
+NAME    free tests/integration/melder/spellbook/test_spellbook_integration_validation_system.py:340 | consumer_spell = _get_spell_by_version_id(borrower_book, consumer_id)
+NAME    free tests/integration/melder/spellbook/test_spellbook_integration_validation_system.py:460 | consumer_spell = _get_spell_by_version_id(borrower_book, consumer_id)
+NAME    free tests/integration/melder/spellbook/test_spellbook_integration_validation_system.py:544 | owner_spell = _get_spell_by_version_id(owner_book, owner_id)
+NAME    free tests/integration/melder/spellbook/test_spellbook_integration_validation_system.py:545 | borrower_spell = _get_spell_by_version_id(borrower_book, borrower_id)
+NAME    free tests/integration/melder/spellbook/test_spellbook_integration_validation_system.py:667 | local_spell = _get_spell_by_version_id(borrower_book, borrower_id)
+NAME    free tests/integration/melder/spellbook/test_spellbook_integration_validation_system.py:744 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/integration/melder/spellbook/test_spellbook_integration_validation_system.py:807 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/integration/melder/spellbook/test_spellbook_integration_validation_system.py:1000 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/integration/melder/spellbook/test_spellbook_integration_validation_system.py:1059 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/integration/melder/spellbook/test_spellbook_integration_validation_system.py:1161 | spell = _get_spell_by_version_id(spellbook, target_id)
+NAME    free tests/integration/melder/spellbook/test_spellbook_integration_validation_system.py:1221 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/integration/melder/spellbook/test_spellbook_integration_validation_system.py:1287 | consumer_spell = _get_spell_by_version_id(spellbook, consumer_id)
+NAME    free tests/integration/melder/spellbook/test_spellbook_integration_validation_system.py:1347 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/integration/melder/spellbook/test_spellbook_integration_validation_system.py:1411 | spell = _get_spell_by_version_id(spellbook, spell_id)
+NAME    free tests/integration/melder/spellbook/test_spellbook_integration_validation_system.py:1488 | consumer_spell = _get_spell_by_version_id(spellbook, consumer_id)
+NAME    free tests/integration/melder/spellbook/test_spellbook_integration_validation_system.py:1605 | root_spell = _get_spell_by_version_id(spellbook, root_id)
+NAME    free tests/integration/melder/spellbook/test_spellbook_integration_validation_system.py:1606 | alpha_spell = _get_spell_by_version_id(spellbook, alpha_id)
+NAME    free tests/integration/melder/spellbook/test_spellbook_integration_validation_system.py:1607 | beta_spell = _get_spell_by_version_id(spellbook, beta_id)
+NAME    free tests/integration/melder/spellbook/test_spellbook_integration_validation_system.py:1680 | service_spell = _get_spell_by_version_id(spellbook, service_id)
+NAME    free tests/integration/melder/spellbook/test_spellbook_integration_validation_system.py:1681 | consumer_spell = _get_spell_by_version_id(spellbook, consumer_id)
+NAME    free tests/integration/melder/spellbook/test_spellbook_integration_validation_system.py:1764 | service_spell = _get_spell_by_version_id(spellbook, service_id)
+NAME    free tests/integration/melder/spellbook/test_spellbook_integration_validation_system.py:1765 | consumer_spell = _get_spell_by_version_id(spellbook, consumer_id)
+NAME    free tests/unit/melder/aether/conduit/conduit_ward/test_conduit_ward_contracts.py:139 | def add_version(self, version_id: str) -> None:
+NAME    free tests/unit/melder/aether/conduit/conduit_ward/test_conduit_ward_contracts.py:141 | self.spell_index.update(version_id)
+NAME    free tests/unit/melder/aether/conduit/conduit_ward/test_conduit_ward_contracts.py:142 | self.spell_id = version_id
+NAME    free tests/unit/melder/aether/conduit/conduit_ward/test_conduit_ward_contracts.py:277 | for version_id in versions:
+NAME    free tests/unit/melder/aether/conduit/conduit_ward/test_conduit_ward_contracts.py:278 | versions_set.add(version_id)
+NAME    free tests/unit/melder/aether/conduit/conduit_ward/test_conduit_ward_contracts.py:331 | for version_id in versions:
+NAME    free tests/unit/melder/aether/conduit/conduit_ward/test_conduit_ward_contracts.py:332 | versions_set.discard(version_id)
+STRING  HELD tests/unit/melder/aether/conduit/meld/test_meld.py:67 | current: The current version id for the spell.
+STRING  HELD tests/unit/melder/aether/conduit/meld/test_meld.py:167 | topologies: Version id -> local topology (`get_local_topology_by_id`); none recorded by default.
+STRING  HELD tests/unit/melder/aether/conduit/meld/test_meld.py:168 | states_by_spell_id: Version id -> lineage state exposing `current_spell_id` (`get_by_spell_id`).
+STRING  HELD tests/unit/melder/aether/conduit/meld/test_meld.py:184 | Return the topology recorded for a version id, or None; record the read and run the read hooks.
+STRING  HELD tests/unit/melder/aether/conduit/meld/test_meld.py:193 | Return the lineage state recorded under a version id (old version ids included), or None.
+STRING  HELD tests/unit/melder/aether/conduit/meld/test_meld.py:193 | Return the lineage state recorded under a version id (old version ids included), or None.
+NAME    HELD tests/unit/melder/aether/conduit/meld/test_meld.py:1829 | def _normal_topology(version_id: str, targets: Sequence[str]) -> SpellLocalTopology:
+NAME    HELD tests/unit/melder/aether/conduit/meld/test_meld.py:1832 | spell_id=version_id,
+NAME    HELD tests/unit/melder/aether/conduit/meld/test_meld.py:1835 | spell_id=version_id,
+NAME    HELD tests/unit/melder/aether/conduit/meld/test_meld.py:1848 | def _contract_socket_topology(version_id: str, key: tuple[str, str]) -> SpellLocalTopology:
+NAME    HELD tests/unit/melder/aether/conduit/meld/test_meld.py:1851 | spell_id=version_id,
+NAME    HELD tests/unit/melder/aether/conduit/meld/test_meld.py:1854 | spell_id=version_id,
+STRING  HELD tests/unit/melder/aether/conduit/meld/test_meld.py:1872 | Each dependency is a stub spell in the consumer Book's pool, registered under its version id with its own
+STRING  HELD tests/unit/melder/aether/conduit/meld/test_meld.py:2089 | - The registry maps the old version id to the lineage; the pool supplies the current version, which is
+NAME    HELD tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system_states_dependent_walk.py:89 | def _contract_topology(version_id: str, keys: Sequence[Tuple[str, str]]) -> SpellLocalTopology:
+NAME    HELD tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system_states_dependent_walk.py:92 | spell_id=version_id,
+NAME    HELD tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system_states_dependent_walk.py:95 | spell_id=version_id,
+NAME    HELD tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system_states_dependent_walk.py:111 | version_id: str,
+STRING  HELD tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system_states_dependent_walk.py:123 | - `update_dependencies` with the dependencies' current version ids (the reverse edges).
+NAME    HELD tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system_states_dependent_walk.py:127 | index = SpellIndex(version_id)
+NAME    HELD tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system_states_dependent_walk.py:133 | states.register_local_topology(index, _contract_topology(version_id, consumes))
+NAME    free tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system_states_verdict_retirement.py:170 | def test_register_index_retires_a_verdict_already_held_for_the_version_id(
+NAME    free tests/unit/melder/spellbook/spell_crafter/symbolic_graph/test_spell_symbolic_dependency.py:29 | def test_init_rejects_invalid_spell_version_id(bad_id):
+NAME    free tests/unit/melder/spellbook/spell_crafter/symbolic_graph/test_spell_symbolic_graph.py:29 | def test_init_rejects_invalid_spell_version_id(bad_id):
+STRING  HELD tests/unit/melder/spellbook/test_spellbook.py:76 | versions: Optional iterable of version ids associated with the spell.
+STRING  HELD tests/unit/melder/spellbook/test_spellbook.py:349 | Stores version ids and identifiers for later checks.
+STRING  HELD tests/unit/melder/spellbook/test_spellbook.py:351 | versions: Optional iterable of version ids.
+STRING  HELD tests/unit/melder/spellbook/test_spellbook.py:353 | current: Current version id for the index.
+NAME    HELD tests/unit/melder/spellbook/test_spellbook.py:377 | def has_spell(self, version_id):
+STRING  HELD tests/unit/melder/spellbook/test_spellbook.py:380 | Report whether the index includes the given version id.
+STRING  HELD tests/unit/melder/spellbook/test_spellbook.py:382 | Returns True when version_id is present in _spells_in_index.
+STRING  HELD tests/unit/melder/spellbook/test_spellbook.py:384 | version_id: Version id to check.
+STRING  HELD tests/unit/melder/spellbook/test_spellbook.py:384 | version_id: Version id to check.
+STRING  HELD tests/unit/melder/spellbook/test_spellbook.py:386 | bool: True when version_id is registered.
+NAME    HELD tests/unit/melder/spellbook/test_spellbook.py:388 | return version_id in self._spells_in_index
+NAME    HELD tests/unit/melder/spellbook/test_spellbook.py:390 | def _has_spell_unless_cleaned(self, version_id):
+STRING  HELD tests/unit/melder/spellbook/test_spellbook.py:397 | version_id: Version id to check.
+STRING  HELD tests/unit/melder/spellbook/test_spellbook.py:397 | version_id: Version id to check.
+STRING  HELD tests/unit/melder/spellbook/test_spellbook.py:399 | bool: True when the live stub registers version_id.
+NAME    HELD tests/unit/melder/spellbook/test_spellbook.py:403 | return self.has_spell(version_id)
+STRING  HELD tests/unit/melder/spellbook/test_spellbook.py:1471 | _refresh_local_spell_ids aggregates version ids across spells.
+STRING  HELD tests/unit/melder/spellbook/test_spellbook.py:4089 | spell_versions: Version ids attached to the contracted index.
+NAME    HELD tests/unit/melder/spellbook/test_spellbook.py:4461 | def fake_check_for_spell(version_id, frame):
+STRING  HELD tests/unit/melder/spellbook/test_spellbook.py:4468 | version_id: Version id to check.
+STRING  HELD tests/unit/melder/spellbook/test_spellbook.py:4468 | version_id: Version id to check.
+NAME    HELD tests/unit/melder/spellbook/test_spellbook.py:4475 | monkeypatch.setattr(type(Spellbook._aether), "_check_for_spell", lambda self, version_id, frame: fake_check_for_spell(version_id, frame))
+NAME    HELD tests/unit/melder/spellbook/test_spellbook.py:4475 | monkeypatch.setattr(type(Spellbook._aether), "_check_for_spell", lambda self, version_id, frame: fake_check_for_spell(version_id, frame))
+NAME    HELD tests/unit/melder/spellbook/test_spellbook.py:4498 | def fake_check_for_spell(version_id, frame):
+STRING  HELD tests/unit/melder/spellbook/test_spellbook.py:4505 | version_id: Version id to check.
+STRING  HELD tests/unit/melder/spellbook/test_spellbook.py:4505 | version_id: Version id to check.
+NAME    HELD tests/unit/melder/spellbook/test_spellbook.py:4512 | monkeypatch.setattr(type(Spellbook._aether), "_check_for_spell", lambda self, version_id, frame: fake_check_for_spell(version_id, frame))
+NAME    HELD tests/unit/melder/spellbook/test_spellbook.py:4512 | monkeypatch.setattr(type(Spellbook._aether), "_check_for_spell", lambda self, version_id, frame: fake_check_for_spell(version_id, frame))
+STRING  HELD tests/unit/melder/spellbook/test_spellbook.py:4519 | Verify contracted spell lookup by version id finds a match.
+STRING  HELD tests/unit/melder/spellbook/test_spellbook.py:4537 | Ensure contracted lookup returns None when version id is missing.

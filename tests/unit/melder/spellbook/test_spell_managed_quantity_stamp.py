@@ -4,9 +4,17 @@ Unit tests: stamping an owner gives a managed spell its pool (STORY-2026-10-15-m
 `Spell._add_owned_conduit` is every owner stamp - conjure, a post-conjure bind or bind_inactive, the transfer flip.
 For a managed version it asks the owner root's store for the version's pool (`ensure_managed_quantity`, idempotent);
 every other existence is stamped exactly as before.
+
+Every test runs in a fresh, booted Aether (`fresh_aether_world`): a real root store registers the pool it composes
+with the hosted `ReleaseManagedSpell`, so the result must not depend on the test module that ran before.
 """
+from collections.abc import Iterator
 from typing import Any, List
 
+import pytest
+
+from melder.aether.aether import Aether
+from melder.aether.conduit.conduit import Conduit
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.aether.conduit.creations.conduit_creations import ConduitCreations
 from melder.aether.spellbook.bind.spell_index import SpellIndex
@@ -14,7 +22,32 @@ from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.existence.managed_spell_mode import ManagedSpellMode
 from melder.aether.spellbook.spell import Spell
 from melder.aether.spellbook.spell_types.spell_types import SpellType
+from melder.aether.spellbook.spellbook import Spellbook
 from melder.utilities.synchronization.creation_gate_controller import CreationGateController
+
+
+def _reset_world() -> None:
+    """
+    Install a fresh Aether, and with it the hosted ReleaseManagedSpell, for this module's stamps.
+
+    A stamp into a real root store registers the version's pool with `ReleaseManagedSpell()`, which exists only
+    while an Aether hosts it. A module that ran before this one can leave none: the frame tests reset the Aether
+    singleton after each test and boot no new one. `Spellbook` and `Conduit` keep a class-level Aether reference,
+    re-pointed here so the modules that run after this one meet the live instance (as `_reset_world` does in the
+    managed store tests).
+    """
+    Aether._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+
+
+@pytest.fixture(autouse=True)
+def fresh_aether_world() -> Iterator[None]:
+    """A fresh, booted Aether around every test, whatever the test module that ran before left behind."""
+    _reset_world()
+    yield
+    _reset_world()
 
 
 class _States:

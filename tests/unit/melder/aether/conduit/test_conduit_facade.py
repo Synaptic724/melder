@@ -21,7 +21,7 @@ def _make_spell(
     Create a minimal spell double with identifier and permissions.
 
     Args:
-        spell_id (str): Version identifier to attach to the spell.
+        spell_id (str): The spell_id to attach to the spell.
         permissions (Permissions): Permissions enum for the spell.
 
     Returns:

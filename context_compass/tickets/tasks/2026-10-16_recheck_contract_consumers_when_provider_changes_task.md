@@ -10,7 +10,7 @@
 - Agent Role: synaptic_python_developer
 - Priority: p1
 - Created: 2026-10-16T09:46:14Z
-- Updated: 2026-10-16T18:46:51Z
+- Updated: 2026-10-16T21:00:39Z
 
 ## Objective
 Rule 2 of the owner's 2026-10-15 direction, settled in principle on 2026-10-16: a spell's own state decides when the
@@ -1521,6 +1521,56 @@ this does not make independent review mandatory for every ticket.
     findings sets when the files come free.
   NEXT: After rule 2's rebuild, send melder_0 a NOTICE releasing the held files.
   REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-16T20:59:43Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION_REQUEST
+  CLAIM: The owner (chat 2026-10-16): the contract must be kept up to date with the changes that occur - when a
+    spell goes inactive, that should show - and he asked for the unlink defect as an example. What is recorded
+    today (read whole): the borrower Book keeps each borrowed copy, by version id, in exactly one of two lists,
+    active (`_contracted_spells_by_id` with the index-keyed and lookup maps) or inactive
+    (`_inactive_contracted_spells`); a notch moves the outgoing copy to inactive (`_deactivate_contracted_spell`)
+    and the incoming one to active (`_reactivate_contracted_spell`, `_ensure_contracted_active`). On the ward
+    side an index link's `IndexDetail.selected_spell_id` follows the active version (`update_selected` in
+    `_emit_index_notch`), but the per-version `Detail` rows carry version, permission, reason and sources and no
+    active/inactive state. `_remove_contracted_spell` consults neither by version. The owner decides whether the
+    contract's per-version row should carry the state too, or the removal reads the Book's lists, which already
+    show it.
+  EVIDENCE:
+  - src/melder/aether/conduit/conduit_ward/contract/details.py:14-247
+  - src/melder/aether/conduit/conduit_ward/contract/details.py:249-404
+  - src/melder/aether/conduit/conduit_ward/contract/contract.py:99-124
+  - src/melder/aether/spellbook/spellbook.py:1623-1774
+  - src/melder/aether/conduit/conduit_ward/conduit_ward.py:2322-2387
+  - src/melder/aether/spellbook/spellbook.py:3344-3463
+  IMPACT: The removal fix needs no new state; a state field on the contract row is a design addition that every
+    notch fan-out would have to keep in step with the Book's lists.
+  NEXT: The owner's answer on the contract row; no src edit before it.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-16T21:00:39Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: M0-179 consumed (NOTICE from melder_0, 18:56:42Z, no ACK requested): before M1-22 arrived it had
+    reworded one docstring line of transfer_of_ownership.py (1798, "The managed version id."), has put it back,
+    and keeps that file and __version__.py on its list of files it waits for; its wording landed only in files
+    nobody holds (112). Checked read-only (GIT_OPTIONAL_LOCKS=0, no index lock): transfer_of_ownership.py's blob
+    equals HEAD's, HEAD being the owner's commit 192482b4c (2026-10-16 19:47Z, "Update version to 0.2.8250 ..."),
+    and the file keeps rule 1's `resolvable=` arguments at the flip and its rollback, so nothing of melder_1's
+    lanes was lost. The owner has committed 0.2.8250; rule 2's closure and the rebuild are still open.
+  EVIDENCE:
+  - src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py:1000-1003
+  - src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py:1486-1490
+  - src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py:1790-1802
+  IMPACT: transfer_of_ownership.py is as melder_1 left it; the binding-key fix, if the owner places it, applies
+    to the committed file. melder_0's 112 reworded files are outside rule 2's set; the last rebuild of the day
+    covers them.
+  NEXT: Answer the owner on the contract state and the unlink example; release files by NOTICE after the rebuild.
+  REREAD: HELPFUL
   SCORE_0_TO_10: 8
 
 ## Context / Handoff Summary

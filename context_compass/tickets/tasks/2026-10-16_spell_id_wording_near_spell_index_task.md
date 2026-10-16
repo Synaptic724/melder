@@ -9,7 +9,7 @@
 - Agent Role: synaptic_python_developer
 - Priority: p2
 - Created: 2026-10-16T18:37:02Z
-- Updated: 2026-10-16T19:11:31Z
+- Updated: 2026-10-16T20:24:14Z
 
 ## Objective
 Where the term "version id" relates to a spell index, replace it with the id it means - `spell_id` (the id `bind`
@@ -42,9 +42,8 @@ is meant. Every occurrence is found and decided by hand; nothing is renamed in b
 ## State Transition Event
 - from_state: in_progress
 - to_state: blocked
-- transition_reason: the decisions for files nobody holds are applied and green (MEASURE, 18:56:42Z); the
-  125 left sit in files melder_1 holds until its rule-2 closure and rebuild (M1-22), so the lane waits for its
-  release NOTICE (BLOCKER, 2026-10-16T19:11:31Z).
+- transition_reason: the audit's free lines are applied and green (MEASURE, 2026-10-16T20:06:44Z); the 127 held
+  decisions wait for melder_1's release NOTICE (BLOCKER, 2026-10-16T19:11:31Z).
 
 ## Steps / Checklist
 - [x] Inventory every live occurrence with its context; the decision for each, by hand.
@@ -293,20 +292,118 @@ this does not make independent review mandatory for every ticket.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-10-16T20:03:17Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: The owner asked (chat 2026-10-16): "double check if we're not using a real version id somewhere else for
+    something else". Audit of every live term of the family - version id / version_id / version-id / versionid
+    and plurals, "version identifier", "version identity" - in src, tests, the system docs, graph descriptors,
+    release note, README, docs/, agents/, architecture_and_design/, benchmarks/ and .github/, each hit classified
+    by the token it sits in (492 hits). Every "version id" names a spell's own id, a spell_id: no src code
+    identifier holds the term; the 310 test identifiers (the three helpers, `version_id` parameters, test names)
+    all carry spell_ids (`spell_id: str` signatures, passed on as `spell_id=`); none of the 330 inventoried lines
+    names another id (the six with the thinnest context re-read against their code - AethericFrame.spells_in_index
+    returns each Book's `_spell_ids`). Real ids for other things exist and none was touched: the distribution
+    version (verify_distributions.py, site_package_custody_strategy.py "name/version identity"), Nexus's published
+    source id `spellbook_id:spell_id` ("book/version identity" in frame_viewer.py and view_spell.py) and a Phase-11
+    `plan_version_id` in old benchmark plan notes (never implemented under that name). The other versions in src
+    are format versions (RecordVersion, payload, nexus and profile versions, the cache generation, the package
+    version), none called a version id; MutationResearch's "version identity" is the spell_id by contract.
+  EVIDENCE:
+  - context_compass/artifacts/spell_id_wording_20261016/runs/version_term_audit.txt:1-512
+  - context_compass/artifacts/spell_id_wording_20261016/inventory/supplement_after_audit/other_version_terms.json:1-142
+  - src/melder/mutation_research/research_set/research_node.py:20-23
+  - src/melder/nexus/rift/command_system/command_system.py:1527-1551
+  - src/melder/aether/aetheric_frame/aetheric_frame.py:906-940
+  - src/melder/crystallizer/crystal_analysis/custody/site_package_custody_strategy.py:46-53
+  - .github/scripts/verify_distributions.py:1-1
+  - benchmarks/competitors/melder_implementation_plan/melder_system_maps/melder_override_codegen_supporting_notes.md:37-38
+  IMPACT: Nothing renamed so far meant another id; the term had no second meaning in the code to protect.
+  NEXT: Apply the lines the first inventory missed (DECISION below).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-16T20:03:17Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: The first inventory missed 17 lines: its prose pattern did not take "version_id" written in docstrings or
+    the spelled-out "version identifier", and it set every `version_id` aside as a code name. 12 are reworded by
+    hand (V331-V340, V343-V344): SpellSystemAdjacencySnapshot's docstrings (3 lines) and
+    SpellSystemRootBlueprintBuilder's (5), MeldExecutionError's `spell_id` argument, a test helper's Args line, and
+    two lines of Conduit.get_spell_by_id (held: conduit.py). 5 stay (V341, V342, V345-V347): they name a stub
+    parameter literally called `version_id` or `_version_id`, a code name the ruling keeps, and must match it.
+    "version identity" is another phrase and is not changed: in MutationResearch, the Nexus diff commands,
+    SpellCrystal.id, two system-doc lines and one graph descriptor it means the spell_id by contract (the owner's
+    call whether to reword those); in the distribution check and the custody strategy it is the package version,
+    and in the frame viewer the `spellbook_id:spell_id` source id - neither may become spell_id.
+  EVIDENCE:
+  - context_compass/artifacts/spell_id_wording_20261016/inventory/supplement_after_audit/occurrences.json:1-121
+  - context_compass/artifacts/spell_id_wording_20261016/inventory/supplement_after_audit/decisions_331_347.json:1-87
+  IMPACT: 10 apply now in four files nobody holds; 2 join the held scope (127 rewrites, 5 kept, in 25 files).
+  NEXT: Apply the 10, compare with HEAD, compile, and run the touched tests with the GIL off and on.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-16T20:06:44Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: The 10 free lines are applied. Compared with HEAD (192482b4c, the owner's commit of 19:47Z, which already
+    carries the first 204), exactly the inventoried lines changed in four files - the adjacency snapshot 84, 96 and
+    108, the root blueprint builder 74, 75, 77, 81 and 334, MeldExecutionError 117 and the facade test 24 - and the
+    fifth file (two kept lines) is byte-identical. The five files compile; their tests (5 files) passed, 55 with the
+    GIL off and 55 with it on. The audit rerun finds no "version id" or "version identifier" left in prose outside
+    the held files, apart from the two kept parameter descriptions and the benchmark notes' plan version id.
+  EVIDENCE:
+  - context_compass/artifacts/spell_id_wording_20261016/runs/apply_supplement_free.txt:1-3
+  - context_compass/artifacts/spell_id_wording_20261016/runs/supplement_tests_gil0.txt:1-2
+  - context_compass/artifacts/spell_id_wording_20261016/runs/supplement_tests_gil1.txt:1-2
+  - context_compass/artifacts/spell_id_wording_20261016/runs/version_term_audit_after_supplement.txt:1-499
+  IMPACT: The free scope is complete; the held scope is 127 rewrites and 5 kept lines in 25 files.
+  NEXT: Hold for melder_1's release NOTICE.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-16T20:24:14Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: This lane carries one system-doc item for TASK-2026-10-16-stamp_test_boots_its_own_aether (closed,
+    tests only): after melder_1 releases tests_components.md, its code-map entry for
+    tests/unit/melder/spellbook/test_spell_managed_quantity_stamp.py moves to end_line and loc 185 (the file gained
+    the 33-line fresh-Aether fixture) and its note names the fixture; the document's index is regenerated with the
+    wording edits, in the same pass.
+  EVIDENCE:
+  - context_compass/system_docs/tests_components.md:3194-3199
+  - context_compass/tickets/tasks/completed/2026-10-16_stamp_test_boots_its_own_aether_task.md:1-8
+  IMPACT: One more held edit, in a document this lane edits anyway; no notch of its own (tests only).
+  NEXT: Hold for melder_1's release NOTICE.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 7
+
 ## Context / Handoff Summary
 - Scope: replace "version id" by hand where it relates to a spell index (owner, 2026-10-16); wording only, no
-  identifier renamed, no blanket rename.
-- State: blocked (melder_0) since 2026-10-16T19:11:31Z. 204 decisions applied in 112 files nobody holds (one more, in
-  transfer_of_ownership.py, undone), checked against HEAD, compiled, tests green with the GIL off and on apart from
-  the pre-existing order dependence filed as TASK-2026-10-16-stamp_test_boots_its_own_aether (backlog).
-- Hold: 125 decisions in 25 files melder_1 holds - its rule-2 src and tests, the four system docs and indexes, the
-  graph descriptors, the release note and __version__.py - until its closure and rebuild (M1-22); that closure waits
-  on the owner's direction on its open findings (BLOCKER note).
-- Evidence: inventory, decisions, scripts and runs in artifacts/spell_id_wording_20261016/; Notes 18:37:02Z on.
-- Next: (1) on melder_1's NOTICE, recheck the held decisions against the files (re-inventory any moved line) and
-  apply them, then py_compile and their tests with the GIL off and on; (2) the system doc indexes, the graph
-  descriptors and reassembly, each with its check; (3) the notch above __version__, the release-note bullet under
-  Packaging and documentation, closure and board sync, the rebuild last with both checks OK.
+  identifier renamed, no blanket rename. The owner's double check (chat, 19:45Z): no "version id" in the code means
+  another id; the real ones elsewhere (distribution version, Nexus `spellbook_id:spell_id` source id, a plan version
+  id in old benchmark notes) are untouched (FACT, 20:03:17Z).
+- State: blocked (melder_0) since 2026-10-16T20:06:44Z. Free scope complete: 214 lines in 113 files (the
+  first 204, committed by the owner at 19:47Z, and 10 the audit found), compiled, tests green with the GIL off
+  and on apart from the pre-existing order dependence filed as TASK-2026-10-16-stamp_test_boots_its_own_aether
+  (backlog).
+- Hold: 127 rewrites and 5 kept lines in 25 files melder_1 holds - its rule-2 src and tests, the four system docs
+  and indexes, the graph descriptors, the release note and __version__.py - until its closure and rebuild (M1-22);
+  that closure waits on the owner's direction on its open findings (BLOCKER note).
+- Open for the owner: whether "version identity" (MutationResearch, the Nexus diff commands, SpellCrystal.id,
+  meaning the spell_id) should be reworded too (DECISION, 20:03:17Z).
+- Evidence: inventory, supplement, audit, decisions, scripts and runs in artifacts/spell_id_wording_20261016/.
+- Next: (1) on melder_1's NOTICE, recheck the held decisions against the files (both inventory folders) and apply
+  them, then py_compile and their tests with the GIL off and on; (2) tests_components' code-map entry for
+  test_spell_managed_quantity_stamp.py (185 lines, the fixture; carried for the closed stamp task), the system
+  doc indexes, the graph descriptors and reassembly, each with its check; (3) the notch above __version__, the
+  release-note bullet under Packaging and documentation, closure and board sync, the rebuild last with both
+  checks OK.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

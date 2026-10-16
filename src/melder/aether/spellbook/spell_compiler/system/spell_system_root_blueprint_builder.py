@@ -71,14 +71,14 @@ class SpellSystemRootBlueprintBuilder:
                 SpellSystemAdjacencySnapshot for the *entire* spell frame.
 
                 - snapshot.dependencies:
-                    Dict[version_id, Set[version_id]]
-                    (spell_id -> direct dependency version_ids; consumer -> providers)
+                    Dict[spell_id, Set[spell_id]]
+                    (spell_id -> direct dependency spell_ids; consumer -> providers)
                 - snapshot.root_spell_ids:
-                    Set[version_id] of structural roots for this frame.
+                    Set[spell_id] of structural roots for this frame.
 
         Returns:
             Dict[str, RootResolutionBlueprint]:
-                Mapping from root version_id -> RootResolutionBlueprint.
+                Mapping from root spell_id -> RootResolutionBlueprint.
         """
         root_ids: Set[str] = snapshot.root_spell_ids
         dependencies: Dict[str, Set[str]] = snapshot.dependencies
@@ -331,7 +331,7 @@ class SpellSystemRootBlueprintBuilder:
 
         Build a deep DirectedAcyclicWorkGraph for a single root spell:
 
-            * Nodes: all version_ids reachable from ``root_spell_id``
+            * Nodes: all spell_ids reachable from ``root_spell_id``
               by recursively following ``dependencies``.
             * Edges: provider -> dependent (same orientation as Phase 3 DAG).
 
