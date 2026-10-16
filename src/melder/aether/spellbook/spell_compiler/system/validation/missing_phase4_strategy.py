@@ -69,7 +69,7 @@ class MissingPhase4Strategy(SpellSystemValidationStrategy):
             phase4_results: Phase-4 validation artifacts keyed by spell id.
             broken_spell_ids: Set of broken spell ids.
             spell_system_states: SpellSystemStates registry for topology and lineage data.
-            spell_lookup: Mapping of visible spell version ids to spell objects.
+            spell_lookup: Mapping of visible spell_ids to spell objects.
             diagnostics: Collection that receives diagnostics.
             cancel_event: Optional cancellation signal.
         Returns:

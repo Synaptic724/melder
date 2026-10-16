@@ -1,0 +1,10 @@
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/src/melder/__init__.py:199: UserWarning: Python 3.14+ detected, but running in GIL-enabled mode.
+melder is optimized for Python built with --disable-gil (PEP 703).
+Performance may be degraded.
+  warnings.warn(
+python 3.14.7, gil enabled: True, melder 0.2.8248
+C1 find_spell_by_id(x2) is x1's Spell: True; notch returned 8c4029c8; X: selected=8c4029c8 active_map=8c4029c8 members=['632f3b8f', '8c4029c8']; meld(x2) -> KeyError: '[MELD] No spell found with spell_id: 632f3b8f16709822699d1b080f53737eb9436c00f39db0adba03
+C2 private: meld(x2) after notch -> c2X2; after notch back meld(x1) -> c2X1
+C3 notch X to Y's parked y2: returned; X: selected=a34f911b active_map=None members=['8cc15a6d', 'a34f911b', 'e717fc12']; Y: selected=c8251623 active_map=a34f911b members=['a34f911b', 'c8251623']; y2.spell_index is Y: True; meld(x1) -> KeyError: '[MELD] No spell found with spell_id: 8cc15a6dea479f981943db18c5c4105c43da2338cb6da0ee1653; meld(y1) -> c3Y1; meld(y2) -> RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -> process
+C4 notch X to Y's active y1: RuntimeError: Owned spell_id not parked for reactivation (spell_id=141c8a3632e712bf7e73d78b5ca; X: selected=d207282b active_map=None members=['4cdcdd0c', 'd207282b']; meld(x1) -> KeyError: '[MELD] No spell found with spell_id: d207282b6ae400d674387d5e90833d6e7dccae57cdffeda80b74; renotch X to x1 -> meld(x1) c4X1
+C5 notch X to another Book's parked version: RuntimeError: Owned spell_id not parked for reactivation (spell_id=ab06c0e0f74abee1ae865986690; X: selected=0a174b04 active_map=None members=['0a174b04', '208eb539']; meld(x1) -> KeyError: '[MELD] No spell found with spell_id: 0a174b047e0ff799363c2f22358f7c6cd1a28c47a5e7ae72286f

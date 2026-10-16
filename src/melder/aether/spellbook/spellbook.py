@@ -1637,6 +1637,11 @@ class Spellbook(Cleanable):
             - Leaves `_contracted_spell_ids[conduit_id]` untouched: borrowed
               existence is kept across the inactive window.
             - Does not touch the SpellIndex or the framewide lookup.
+            - Once the Book has conjured, marks the Book's SpellContract
+              consumers of the copy's key for revalidation after releasing the
+              lock (`_mark_contract_dependents_dirty`; rule 2 of
+              contract_recheck_on_notch_2026_10_16): their next meld rechecks
+              the provider. Mark only.
 
         Args:
             conduit_id (str): Peer conduit id that owns the contract.
@@ -1648,10 +1653,13 @@ class Spellbook(Cleanable):
         Raises:
             RuntimeError: If the spell is not the active contracted spell for
                 its id under `conduit_id`.
+            Exception: Whatever the registry's mark raises, logged; the park
+                stays published.
 
         Threading:
             - Acquires the Spellbook lock; the admitting transaction serializes
-              the wider operation.
+              the wider operation. The consumer mark runs after the lock is
+              released and takes only the registry lock.
         """
         spell_id = spell.spell_id
         spell_index = spell.spell_index
@@ -1686,6 +1694,10 @@ class Spellbook(Cleanable):
                 parked = {}
                 self._inactive_contracted_spells[conduit_id] = parked
             parked[spell_id] = spell
+            conjured = self._conjured
+        # Rule 2: the copy this key's consumers resolved is parked - they recheck at their next meld.
+        if conjured:
+            self._mark_contract_dependents_dirty({binding_key})
 
     def _reactivate_contracted_spell(self, conduit_id: str, spell: Spell) -> None:
         """
@@ -1704,6 +1716,10 @@ class Spellbook(Cleanable):
             - Assumes the conduit's contract maps are live (park never drops the
               conduit sub-dicts); does not touch the SpellIndex or framewide
               lookup.
+            - Once the Book has conjured, marks the Book's SpellContract
+              consumers of the copy's key for revalidation after releasing the
+              lock (`_mark_contract_dependents_dirty`; rule 2): their next meld
+              builds against the copy now active. Mark only.
 
         Args:
             conduit_id (str): Peer conduit id that owns the contract.
@@ -1715,10 +1731,13 @@ class Spellbook(Cleanable):
         Raises:
             RuntimeError: If the spell is not the parked contracted spell for
                 its id under `conduit_id`.
+            Exception: Whatever the registry's mark raises, logged; the
+                reactivation stays published.
 
         Threading:
             - Acquires the Spellbook lock; the admitting transaction serializes
-              the wider operation.
+              the wider operation. The consumer mark runs after the lock is
+              released and takes only the registry lock.
         """
         spell_id = spell.spell_id
         spell_index = spell.spell_index
@@ -1749,6 +1768,10 @@ class Spellbook(Cleanable):
             self._lookup_contracted_spells[conduit_id][binding_key] = spell_index
             self._contracted_spells_by_id[conduit_id][spell_id] = spell
             self._spell_id_pool[spell_id] = spell
+            conjured = self._conjured
+        # Rule 2: this key's consumers resolve the reactivated copy now - they rebuild at their next meld.
+        if conjured:
+            self._mark_contract_dependents_dirty({binding_key})
 
     def _inactivate_contract_spell(self, conduit_id: str, spell_id: str) -> None:
         """
@@ -3166,11 +3189,18 @@ class Spellbook(Cleanable):
         keys for the peer conduit so change-control commit hooks can observe
         the updated contract scope.
 
+        Once the Book has conjured, the Book's SpellContract consumers of the
+        copy's key are marked for revalidation after the Book lock is released
+        (`_mark_contract_dependents_dirty`; rule 2 of
+        contract_recheck_on_notch_2026_10_16), so their next meld builds against
+        the new copy; the mark walks on to what depends on them.
+
         Args:
             spell (Spell): The spell object to add.
             conduit_id (str): The ID of the peer conduit the spell was contracted from.
         Raises:
             RuntimeError: If the contracted spell's binding key collides with existing bindings.
+            Exception: Whatever a registry mark raises, logged; the added copy stays published.
         """
         frame_key = None
         should_mark = False
@@ -3209,6 +3239,9 @@ class Spellbook(Cleanable):
 
         if should_mark and frame_key:
             self._mark_collection_dependents_dirty({frame_key})
+        if should_mark:
+            # Rule 2: a new active copy for this key - its consumers rebuild against it at their next meld.
+            self._mark_contract_dependents_dirty({spell_key})
         self._try_update_staged_contract_keys(conduit_id)
         if self._conjured and self._conduit is not None:
             self._register_spell_with_risk_manager(self._conduit._id, spell)
@@ -3321,12 +3354,24 @@ class Spellbook(Cleanable):
         keys for the peer conduit so change-control commit hooks can observe
         the updated contract scope.
 
+        Removing an ACTIVE copy (an uncontract, an index unlink or destroy, a
+        version leaving its index) marks the Book's SpellContract consumers of
+        its key for revalidation after the Book lock is released, once the Book
+        has conjured (`_mark_contract_dependents_dirty`; rule 2): their next meld
+        fails with the first meld's missing-provider report. A parked copy is
+        dropped without a mark - no consumer resolves it.
+
         Args:
             spell_id (str): The version SHA of the spell to remove.
             conduit_id (str): The ID of the peer conduit the spell was contracted from.
+        Raises:
+            RuntimeError: If the conduit has no contracted maps or holds no copy of `spell_id`.
+            Exception: Whatever the registry's mark raises, logged; the removal stays published.
         """
 
         removed_spell = None
+        removed_key: Optional[tuple[str, str]] = None
+        conjured = False
         with self._lock:
             spell_map = self._contracted_spells.get(conduit_id)
             lookup_map = self._lookup_contracted_spells.get(conduit_id)
@@ -3408,6 +3453,11 @@ class Spellbook(Cleanable):
                 else:
                     conduit_spell_ids.discard(spell_id)
                 removed_spell = spell
+                removed_key = key
+                conjured = self._conjured
+        # Rule 2: the active copy for this key is gone - its consumers recheck (and fail) at their next meld.
+        if removed_key is not None and conjured:
+            self._mark_contract_dependents_dirty({removed_key})
         self._try_update_staged_contract_keys(conduit_id)
         if removed_spell is not None and self._conjured and self._conduit is not None:
             self._unregister_spell_with_risk_manager(self._conduit._id, removed_spell)
@@ -3427,11 +3477,22 @@ class Spellbook(Cleanable):
         keys for the peer conduit so change-control commit hooks can observe
         the updated contract scope.
 
+        Once the Book has conjured, the Book's SpellContract consumers of every
+        active copy's key are marked for revalidation after the Book lock is
+        released (`_mark_contract_dependents_dirty`; rule 2) - the keys the
+        copies were filed under (`_make_spell_key`, as `_add_contracted_spell`
+        files them), so the mark names exactly the keys the clear drops.
+
         Args:
             conduit_id (str): The ID of the peer conduit whose contracted spells are to be cleared
+        Raises:
+            RuntimeError: If the conduit has no contracted maps.
+            Exception: Whatever the registry's mark raises, logged; the clear stays published.
         """
 
         removed_spells: list[Spell] = []
+        cleared_keys: set[tuple[str, str]] = set()
+        conjured = False
         with self._lock:
             if (
                 conduit_id not in self._contracted_spells
@@ -3448,6 +3509,11 @@ class Spellbook(Cleanable):
 
             spell_map = self._contracted_spells[conduit_id]
             removed_spells = list(spell_map.values())
+            cleared_keys = {
+                self._make_spell_key(spell.spellframe, spell.spell_name, spell.binding_name)
+                for spell in removed_spells
+            }
+            conjured = self._conjured
             for spell in spell_map.values():
                 self._unregister_contracted_spell_id(conduit_id, spell.spell_index.selected_spell_id, spell)
 
@@ -3463,6 +3529,9 @@ class Spellbook(Cleanable):
             parked = self._inactive_contracted_spells.get(conduit_id)
             if parked is not None:
                 parked.clear()
+        # Rule 2: every active copy this clear dropped leaves its key's consumers without a provider.
+        if cleared_keys and conjured:
+            self._mark_contract_dependents_dirty(cleared_keys)
         self._try_update_staged_contract_keys(conduit_id)
         if removed_spells and self._conjured and self._conduit is not None:
             for spell in removed_spells:
@@ -3791,9 +3860,13 @@ class Spellbook(Cleanable):
         dependents -- are flagged with that reason.
 
         Contract:
-            - Admits a `notch` transaction (claims the owning spellbook INTENT
-              and the spell binding key EXCLUSIVE), performs the selected-spell
-              switch inside the held window, then commits.
+            - Runs inside the `notch` transaction the owning Conduit admits and
+              ends (`Conduit.notch_spell`): its seal claims this spellbook, the
+              acting conduit, the conduits linked to it and the spell binding key,
+              all EXCLUSIVE, and freezes those conduits' creation gates
+              (`NotchTransactionStrategy`; corrected 2026-10-16: this said the
+              spellbook admits the transaction and claims itself INTENT). It
+              performs the selected-spell switch inside the held window.
             - The actual switch (a SpellIndex repoint via `SpellIndex.update`) is
               the SpellIndex-model seam `_apply_notch`.
 
@@ -3833,8 +3906,10 @@ class Spellbook(Cleanable):
         """
         Internal SEAM -- notch the SpellIndex's ACTIVE member to `spell`.
 
-        Runs inside the held `notch` transaction window (owning spellbook INTENT
-        + binding key EXCLUSIVE). A SpellIndex holds a SET of member spell ids;
+        Runs inside the held `notch` transaction window (the owning spellbook,
+        the acting conduit, the conduits linked to it and the binding key, all
+        EXCLUSIVE; corrected 2026-10-16: this said spellbook INTENT). A
+        SpellIndex holds a SET of member spell ids;
         `selected_spell_id` is the one currently active. Notch swaps which member
         is active using the active/inactive park machinery.
 
@@ -3850,10 +3925,18 @@ class Spellbook(Cleanable):
             4. Repoint the framewide binding signature old -> new active id.
             5. Re-register the index so it is structurally gated + dirty; meld-time
                revalidation recompiles lazily on next resolve.
+            6. Mark every lineage downstream of this one for revalidation
+               (`SpellSystemStates.mark_dependents_for_revalidation`; D2 of
+               contract_recheck_on_notch_2026_10_16): its dependents by registry
+               edge, in any Book, and the SpellContract consumers of its binding
+               key, transitively. Mark only: each rechecks and rebuilds at its next
+               meld; objects already built keep what they were built with.
 
-        Contracted borrowers are NOT yet fanned out here (owner-side only); a notch
-        on a shared index does not yet update borrowers' contracted maps -- that is
-        the next slice (cross-conduit fan-out under the same seal).
+        Borrowers are updated by the owning Conduit after the transaction window, not
+        here: `Conduit._deactivate_borrowed_spell` parks every linked peer's copy of the
+        outgoing version and `ConduitWard._emit_index_notch` moves index-link
+        subscriptions to the incoming one; the borrower Book's contracted-map mutators
+        mark its consumers (rule 2).
 
         Args:
             spell_index: The SpellIndex whose active member is switched.
@@ -3907,7 +3990,11 @@ class Spellbook(Cleanable):
             spell_index=spell_index,
             owner_spellbook_id=self._id,
             resolvable=spell.resolvable,
+            binding_key=spell._key,
         )
+        # D2: everything downstream of the notched lineage - its dependents by registry edge, in any Book, and the
+        # SpellContract consumers of its binding key - revalidates at its next meld (mark only).
+        self._spell_system_states.mark_dependents_for_revalidation((spell_index.id,))
         # Refresh the spellbook validation-required flag for the promoted member:
         # register_spell recomputes its structural/resolution validity and, for a
         # not-yet-validated member, flips `_spellbook_validation_required` True --
@@ -3927,8 +4014,8 @@ class Spellbook(Cleanable):
                 self._replace_spell_record_in_nexus(outgoing.spell_id, spell)
             else:
                 self._publish_spell_record_to_nexus(spell)
-        # Mark the lineage structurally changed so dependents revalidate, and clear
-        # the promoted member's stale CreationContext. invalidate_spell also sets
+        # Mark the promoted lineage structurally changed (the walk above marked its
+        # dependents) and clear its stale CreationContext. invalidate_spell also sets
         # resolution_required=True as a side effect; bind-parity routing below sets
         # it back to False so meld's validation-required lane (the one that runs
         # the full 5-7/8-11 target pass) owns the recompile, exactly as it does for
@@ -4992,6 +5079,59 @@ class Spellbook(Cleanable):
             )
             raise
 
+    def _mark_contract_dependents_dirty(self, contract_keys: set[tuple[str, str]]) -> None:
+        """
+        Internal
+
+        Mark this Book's SpellContract consumers of `contract_keys` for revalidation after a contracted copy changed.
+
+        Purpose:
+            Rule 2 of contract_recheck_on_notch_2026_10_16: a satisfied SpellContract is not checked on every meld.
+            Instead every change of an active contracted (borrowed) copy - a lender's notch and notch back, a parked
+            or reactivated version-anchored copy, an add, a removal, an index unlink or destroy, a contract clear -
+            marks the consumers of the copy's key, so their next meld reruns phases 1-4 (Phase 4 rechecks the
+            provider) and rebuilds against the copy now active, or fails with the first meld's error. Mark only:
+            objects already built keep their provider.
+
+        Contract:
+            - A no-op for no keys. Otherwise one `SpellSystemStates.mark_contract_dependents_dirty` call for this
+              Book, which gates the consumers (`contract_unvalidated`) and walks on to what depends on them.
+            - The five contracted-map mutators call it after releasing the Book lock, and only once the Book has
+              conjured: before conjure, conjure runs phases 1-4 for every spell anyway.
+
+        Args:
+            contract_keys: The normalized `(frame_key, binding_key)` keys of the copies that changed.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError: If the spell system state is unavailable.
+            Exception: Whatever the registry raises, after logging it; the map change the mark follows stays
+                published.
+
+        Threading:
+            Called with the Book lock free. The registry lock it takes is never held while a Book, ward, contract
+            or conduit lock is taken (registry -> state -> RiskManager), so no lock-order cycle can close.
+        """
+        if not contract_keys:
+            return
+        if self._spell_system_states is None:
+            self._logger.error("SpellSystemStates unavailable for revalidation", "_mark_contract_dependents_dirty")
+            raise RuntimeError("SpellSystemStates unavailable for revalidation.")
+        try:
+            self._spell_system_states.mark_contract_dependents_dirty(
+                spellbook_id=self._id,
+                contract_keys=contract_keys,
+            )
+        except Exception as e:
+            self._logger.error(
+                f"Failed to mark contract dependents dirty: {e}",
+                "_mark_contract_dependents_dirty",
+                exc_info=True,
+            )
+            raise
+
     def add_bind_hooks(
             self,
             *,
@@ -5691,6 +5831,7 @@ class Spellbook(Cleanable):
                     spell_index=new_spell.spell_index,
                     owner_spellbook_id=self._id,
                     resolvable=new_spell.resolvable,
+                    binding_key=new_spell._key,
                 )
                 if self._conjured and self._conduit is not None:
                     self._register_spell_with_risk_manager(

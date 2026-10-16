@@ -138,7 +138,7 @@ class SpellSystemValidationSystem(Cleanable):
                 per-conduit resolution validity are recorded in
                 ConduitResolutionState. Global structural validity is not
                 modified here.
-            spell_lookup: Optional mapping of visible spell version ids to spell objects.
+            spell_lookup: Optional mapping of visible spell_ids to spell objects.
             cancel_event: Optional cancellation signal for long-running validation.
         Returns:
             SpellSystemValidationState: Aggregated diagnostics and validity.

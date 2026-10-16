@@ -337,7 +337,7 @@ class RiskManager(Cleanable):
         - Adds the spell lineage to the conduit risk state.
         - Recomputes both structural and resolution risk for the spell based on
           live `SpellSystemStates` data.
-        - Clears any stale resolution key for the spell's current version id
+        - Clears any stale resolution key for the spell's current spell_id
           before recomputing conduit-local risk.
         - Refreshes the spellbook validation-required flag after the update;
           the tracking itself is `_register_spell_risk`, and nothing is
@@ -546,7 +546,7 @@ class RiskManager(Cleanable):
             return spell.spell_index.id
     def _resolve_lineage_id_from_spell_id(self, spell_id: str) -> Optional[str]:
         """
-        Resolve a lineage id from a current spell version id.
+        Resolve a lineage id from a current spell_id.
 
         This is the reverse lookup used when callers only have a current spell
         id but risk tracking needs to fold the event back onto the owning

@@ -1,0 +1,13 @@
+- Scope: replace "version id" by hand where it relates to a spell index (owner, 2026-10-16); wording only, no
+  identifier renamed, no blanket rename.
+- State: blocked (melder_0) since @@NOW@@. 204 decisions applied in 112 files nobody holds (one more, in
+  transfer_of_ownership.py, undone), checked against HEAD, compiled, tests green with the GIL off and on apart from
+  the pre-existing order dependence filed as TASK-2026-10-16-stamp_test_boots_its_own_aether (backlog).
+- Hold: 125 decisions in 25 files melder_1 holds - its rule-2 src and tests, the four system docs and indexes, the
+  graph descriptors, the release note and __version__.py - until its closure and rebuild (M1-22); that closure waits
+  on the owner's direction on its open findings (BLOCKER note).
+- Evidence: inventory, decisions, scripts and runs in artifacts/spell_id_wording_20261016/; Notes 18:37:02Z on.
+- Next: (1) on melder_1's NOTICE, recheck the held decisions against the files (re-inventory any moved line) and
+  apply them, then py_compile and their tests with the GIL off and on; (2) the system doc indexes, the graph
+  descriptors and reassembly, each with its check; (3) the notch above __version__, the release-note bullet under
+  Packaging and documentation, closure and board sync, the rebuild last with both checks OK.

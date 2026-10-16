@@ -126,7 +126,7 @@ class SpellSymbolicDependency(Cleanable):
         self._lock: threading.RLock = threading.RLock()
 
         # Stored as _spell_id for backwards compatibility; semantically, this is
-        # the *version id* (SpellIndex.selected_spell_id).
+        # the selected spell_id (SpellIndex.selected_spell_id).
         self._spell_id: str = spell_id
         self._param_name: str = param_name
         self._position: int = position

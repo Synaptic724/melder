@@ -227,9 +227,10 @@ def main() -> None:
     assert len(audit.walk("turns")) == 1
     print("the SAME id accepted in a second set - residence is per-set")
 
-    # The loop stops where the public surface stops (expert 17): the
-    # promoting verb takes the parked OBJECT, and no public door hands
-    # one out - both id->object doors resolve to the ACTIVE member.
+    # Promotion is expert 17's lesson: notch_spell(spell_index=...,
+    # spell_id=staged) makes the staged version active. This lesson keeps
+    # it parked, and a lookup by its spell_id still answers with the ACTIVE
+    # member - which is why the notch is given the spell_id itself.
     assert conduit.get_spell_by_id(staged).spell_id == v1
     assert hasattr(conduit, "notch_spell")
 

@@ -92,14 +92,14 @@ class CompilerPhase3:
             spell: Spell,
     ) -> str:
         """
-        Return the current bound spell version id or raise.
+        Return the current bound spell_id or raise.
 
         Args:
             spell:
                 Bound spell whose versioned identifier is required.
 
         Returns:
-            str: Current spell version id.
+            str: Current spell_id.
 
         Raises:
             RuntimeError: If the spell has no bound `spell_index.selected_spell_id`.

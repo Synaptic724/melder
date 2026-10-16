@@ -2,7 +2,7 @@
 Component tests - Spellbook.find_spell_by_id answers from the Book's id maps (0.2.8229).
 
 `find_spell_by_id` resolves any id in a spell's version lineage to the live Spell that represents the
-lineage now: a current version id through the active-id map, a superseded or parked id through the parked
+lineage now: a current spell_id through the active-id map, a superseded or parked id through the parked
 map and the parked spell's index. These tests pin that contract across every writer that moves an id
 between the maps - notch, add-to-index, remove-from-index, ownership transfer and parked disposal - and pin
 the two properties the repair exists for: the lookup never iterates the live active-index map (the old walk
@@ -150,7 +150,7 @@ class _Lineage:
 
 
 def test_current_version_id_returns_the_active_spell() -> None:
-    """A current version id answers the active Spell itself."""
+    """A current spell_id answers the active Spell itself."""
     world = _Lineage()
     try:
         assert world.book.find_spell_by_id(world.id_a) is world.spell_a
@@ -159,7 +159,7 @@ def test_current_version_id_returns_the_active_spell() -> None:
 
 
 def test_parked_version_id_returns_the_live_spell_of_its_index() -> None:
-    """A parked version id answers the live spell of the index that holds it, not the parked version."""
+    """A parked spell_id answers the live spell of the index that holds it, not the parked version."""
     world = _Lineage()
     try:
         assert world.book.find_spell_by_id(world.id_b) is world.spell_a

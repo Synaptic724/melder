@@ -54,9 +54,9 @@ def test_identity_mixing_emits_error_for_lineage_dependency() -> None:
 def test_identity_mixing_skips_version_dependencies() -> None:
     """
     Purpose:
-        Verify version id dependencies do not emit diagnostics.
+        Verify spell_id dependencies do not emit diagnostics.
     Contract:
-        Leaves diagnostics empty when dependencies reference version ids.
+        Leaves diagnostics empty when dependencies reference spell_ids.
     Returns:
         None.
     Raises:

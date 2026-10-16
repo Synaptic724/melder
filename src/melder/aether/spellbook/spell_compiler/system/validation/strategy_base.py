@@ -66,7 +66,7 @@ class SpellSystemValidationStrategy(ABC):
             spell_system_states:
                 SpellSystemStates registry for topology and lineage data.
             spell_lookup:
-                Visible spell version ids to spell objects for the current
+                Visible spell_ids to spell objects for the current
                 validation scope.
             diagnostics:
                 Shared list to append new diagnostics into.

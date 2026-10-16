@@ -351,7 +351,7 @@ def test_find_index_for_spell_found(frame):
 
     Contract:
     - Scans all registered SpellIndexes.
-    - Returns the first instance that contains the requested version ID.
+    - Returns the first instance that contains the requested spell_id.
     """
     si = MagicMock(spec=SpellIndex)
     si.spells_in_index.return_value = {"target_v"}

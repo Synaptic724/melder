@@ -1,0 +1,20 @@
+Python 3.14.7, GIL enabled: False
+S8 example: OK ReportServiceV2 v2
+0.2.8249 example: OK True True ReportService
+refusal notch other index: ValueError: notch_spell: spell_id '<id>' belongs to another SpellIndex, not the one passed. Pass its own index -
+refusal notch not owned: ValueError: notch_spell: spell_id '<id>' is not owned by this conduit's Spellbook. Notch it through the conduit 
+refusal notch both: ValueError: notch_spell accepts either `spell` or `spell_id`, not both.
+refusal notch neither: ValueError: notch_spell needs a spell: pass spell_id=<the spell_id bind or bind_inactive returned>, or spell=<it
+refusal notch non-str: TypeError: notch_spell `spell_id` must be a string; got int.
+refusal add not owned: ValueError: add_to_spell_index: spell_id '<id>' is not owned by this conduit's Spellbook. Call add_to_spell_inde
+refusal remove not owned: ValueError: remove_from_spell_index: spell_id '<id>' is not owned by this conduit's Spellbook. Call remove_from_
+refusal remove active: RuntimeError: remove_from_spell_index: spell <id> is active in its index; notch away from it before moving it.
+refusal add active: RuntimeError: add_to_spell_index: spell <id> is active in its index; notch away from it before moving it.
+refusal add both: ValueError: add_to_spell_index accepts either `spell` or `spell_id`, not both.
+refusal remove str spell: TypeError: remove_from_spell_index `spell` takes a Spell object; to name a spell by its spell_id, pass spell_id
+quoted message MATCHES - notch_spell: spell_id '<id>' is not owned by this conduit's Spellbook.
+quoted message MATCHES - notch_spell: spell_id '<id>' belongs to another SpellIndex, not the on
+quoted message MATCHES - add_to_spell_index: spell_id '<id>' is not owned by this conduit's Spe
+quoted messages found: 3
+indexes intact after the refusals: True | melds: ['A', 'Y1']
+moves by spell_id: out True | in True | notch and meld -> B

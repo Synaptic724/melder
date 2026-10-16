@@ -558,6 +558,7 @@ class _SpellSystemStatesStub:
             owner_spellbook_id: object = None,
             *,
             resolvable: object = None,
+            binding_key: object = None,
     ) -> None:
         """
         Purpose:
@@ -568,6 +569,7 @@ class _SpellSystemStatesStub:
             spell_index: SpellIndex registered for the lineage.
             owner_spellbook_id: Owning Spellbook id (ignored here).
             resolvable: The registered version's capability, as bind passes it (ignored here).
+            binding_key: The registered version's binding key, as bind passes it (ignored here).
         Returns:
             None.
         """

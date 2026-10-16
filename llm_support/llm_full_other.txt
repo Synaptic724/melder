@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: other
-SOURCE FINGERPRINT: 5d229b73b71184add81e564d9d8b2d43f98b7ce7d99dea0965e67d13c2db9c6c
+SOURCE FINGERPRINT: 1097a729ab862a66b230b7ba23d3c53482b8ebae6b15e7b49ad1c9d171a60c09
 FILE COUNT: 404
 
 ================================================================================
@@ -6365,7 +6365,7 @@ END FILE: NOTICE
 ================================================================================
 ================================================================================
 BEGIN FILE: README.md
-CONTENT SHA256: 4f21a14f77fd1d72a82f3b83d9c85696d3eca6b0114e2cd863dc923135ae1fd2
+CONTENT SHA256: f209b33b9b6f5ba4f41778cc43776cff955fa701f65664f6104cb83835140342
 SOURCE ENCODING: utf-8
 ================================================================================
 <div align="center">
@@ -7438,6 +7438,7 @@ meld**, on a running system, with the old version still sitting there:
 ```python
 # 1. STAGE — bind a new version as an INACTIVE member of the existing index.
 #    It is parked and unresolvable: nothing melds it, nothing sees it yet.
+id_v1 = index.selected_spell_id     # the version serving now
 id_v2 = conduit.bind_inactive(
     spell=ReportServiceV2,
     spell_index=index,          # the index the current version lives in
@@ -7447,7 +7448,7 @@ id_v2 = conduit.bind_inactive(
 
 # 2. NOTCH — promote v2 to ACTIVE. The outgoing version parks, the index
 #    pointer repoints, and dependents are marked for lazy recompile.
-conduit.notch_spell(spell_index=index, spell=spell_v2)
+conduit.notch_spell(spell_index=index, spell_id=id_v2)
 assert index.selected_spell_id == id_v2
 
 # 3. MELD — the very next resolution builds the NEW version.
@@ -7458,7 +7459,7 @@ And because the old member is **parked, not destroyed**, rollback is the same
 verb pointed the other way:
 
 ```python
-conduit.notch_spell(spell_index=index, spell=spell_v1)   # instant revert
+conduit.notch_spell(spell_index=index, spell_id=id_v1)   # instant revert
 ```
 
 > **The parked version is still in the ecosystem.** Notching does not dispose of
@@ -18830,38 +18831,37 @@ END FILE: UX_and_AIX_experiences/04_expert/16_rewiring_a_running_world.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/04_expert/17_notch_swapping_a_live_object.py
-CONTENT SHA256: 4a71c21302ef2654db158a1483b43eeca77735ae422b0e81d3d86938992006af
+CONTENT SHA256: e59e30c8811c0564afb36e08c9edee93b2b71ccdf07d4a575174cadccac3cf1c
 SOURCE ENCODING: utf-8
 ================================================================================
 """
 TIER: expert (17)
-GOAL: LINEAGES, AND THE STAGING HALF OF A HOT SWAP. An index is a
+GOAL: LINEAGES, AND A HOT SWAP TAKEN END TO END. An index is a
       version LINEAGE with exactly one SELECTED member. This lesson
-      builds one, stages a second version onto it, and shows that
-      staging changes nothing about what resolves - which is the whole
-      reason the swap is a two-step act.
+      builds one, stages a second version onto it, shows that staging
+      changes nothing about what resolves - which is why the swap is a
+      two-step act - then takes the swap by the new version's spell_id,
+      melds it, and notches back. Everything runs on public calls.
 
-      THE THREE VERBS, AND WHERE THE USER SURFACE ENDS
+      THE THREE VERBS
 
         book.bind(...)                v1 active on a fresh index
-        conduit.bind_inactive(...)    v2 PARKED on the same index
-        conduit.notch_spell(...)      v2 becomes the active member
+        conduit.bind_inactive(...)    v2 PARKED on the same index;
+                                      returns v2's spell_id
+        conduit.notch_spell(          v2 becomes the active member
+            spell_index=index, spell_id=v2_id)
 
-      THE FIRST TWO ARE YOURS. THE THIRD IS NOT DRIVEN BY HAND, and
-      that is a design statement rather than a missing door.
-      `notch_spell` takes the PARKED SPELL OBJECT, and there is no
-      public way to get one: every public id->object lookup
-      (`get_spell_by_id`, `find_spell_by_id`) resolves any lineage id to
-      the spell AS IT EXISTS NOW - the currently ACTIVE member - which
-      is documented and correct for what those verbs are for. The parked
-      object lives in the Spellbook's private parking lot, and the
-      Spellbook is not the surface you notch from. Melder's facade rule
-      again: IF A FACADE COVERS IT, THE COLLABORATOR IS NOT USER
-      SURFACE. Reaching past the facade to hand-drive a notch is using
-      the wrong object, not discovering a gap.
-
-      So this lesson stops where the public surface stops. Everything
-      below runs; nothing below reaches into a private map.
+      NAME THE VERSION BY ITS SPELL_ID. Every public spell_id->object
+      lookup (`get_spell_by_id`, `find_spell_by_id`) resolves any
+      lineage spell_id to the spell AS IT EXISTS NOW - the currently
+      ACTIVE member - which is documented and correct for what those
+      verbs are for. So a parked version is never fetched as an
+      object: `notch_spell` takes its spell_id and resolves the exact
+      version inside the call. The Spellbook is still not the surface
+      you notch from - the conduit's verb does the resolving (owner
+      ruling 2026-10-16; until then the verb took only the parked
+      OBJECT, no public door handed one out, and this lesson stopped
+      at staging).
 
       WHAT STAGING ACTUALLY BUYS YOU
       `bind_inactive` puts a real, bound, owned spell into the lineage
@@ -18871,13 +18871,16 @@ GOAL: LINEAGES, AND THE STAGING HALF OF A HOT SWAP. An index is a
       failure-prone half (compiling and registering a new version)
       happens while the old version is still serving.
 
-      AND WHAT A NOTCH DOES WHEN IT HAPPENS (read, do not hand-drive)
+      AND WHAT A NOTCH DOES WHEN IT HAPPENS
+        0. Checks the version: it must belong to the conduit's
+           Spellbook and to the index you passed, or the call raises
+           ValueError before anything moves.
         1. Parks the outgoing active spell off the four active owned
            maps, then TEARS DOWN ITS CREATION CONTEXT so the door epoch
            bumps and the warm fast-door cannot serve the stale spell.
         2. Promotes the parked candidate into the active maps.
         3. Repoints the index pointer and the framewide binding
-           signature, old id -> new id.
+           signature, old spell_id -> new spell_id.
         4. Re-registers the index gated + dirty, so revalidation
            recompiles LAZILY on the next resolve rather than inside the
            window.
@@ -18887,18 +18890,19 @@ GOAL: LINEAGES, AND THE STAGING HALF OF A HOT SWAP. An index is a
       does, the same way `link` does in expert 16.
 
       THE OUTGOING VERSION IS NOT DESTROYED. It stays a member of the
-      lineage and stays resolvable by id, which is why a rollback is
-      structurally the same act as the swap rather than a restore.
+      lineage, parked, which is why a rollback is structurally the same
+      act as the swap - a notch back by its spell_id - rather than a
+      restore.
 
       MIND THE LAYER WHEN YOU READ THE SOURCE. `_apply_notch` says
       contracted borrowers are "NOT yet fanned out HERE (owner-side
       only)". That HERE is load-bearing: the seam is the local switch,
       and `Conduit.notch_spell` one layer up does walk the links. A
       statement read out of its scope becomes a false one.
-SURFACE EXERCISED: Conduit.bind_inactive, SpellIndex.selected_spell_id /
-                   spells_in_index, and the public boundary in front of
-                   notch_spell
-VERIFY: RUN GREEN 2026-08-03 on the owner's 3.14t harness.
+SURFACE EXERCISED: Conduit.bind_inactive, Conduit.notch_spell(spell_id=...),
+                   Conduit.meld, SpellIndex.selected_spell_id /
+                   spells_in_index, Conduit.get_spell_by_id
+VERIFY: RUN GREEN 2026-10-16 on 3.14t, GIL off and on.
 """
 import melder as md
 
@@ -18959,24 +18963,38 @@ def main() -> None:
     print("meld -> rate", still.rate, " (v2 is parked, not resolvable)")
     print("  the costly half of a swap is done while v1 still serves")
 
-    # THE PUBLIC BOUNDARY, DEMONSTRATED RATHER THAN ASSERTED IN PROSE.
-    # A parked id resolves to the CURRENT member, because that is what
-    # these verbs are for: they answer "what is live for this lineage",
-    # not "give me the object behind this exact version".
+    # WHY THE NOTCH IS GIVEN A SPELL_ID. A parked spell_id resolves to
+    # the CURRENT member, because that is what the lookups are for: they
+    # answer "what is live for this lineage", not "give me the object
+    # behind this exact version".
     resolved_from_parked_id = conduit.get_spell_by_id(v2_id)
     assert resolved_from_parked_id is not None
     assert resolved_from_parked_id.spell_id == v1_id
     print()
-    print("looking up the PARKED id returned the ACTIVE spell")
-    print("  not a bug and not a gap - the parked object belongs to the")
-    print("  Spellbook, and the Spellbook is not what you notch from")
+    print("looking up the PARKED spell_id returned the ACTIVE spell")
+    print("  so the notch is told the version by its spell_id instead")
 
-    # SO THE LESSON STOPS HERE, ON PURPOSE.
-    assert hasattr(conduit, "notch_spell")
+    # TAKE THE SWAP. The spell_id bind_inactive returned names the version;
+    # the notch resolves it inside the call and checks that it belongs to
+    # this index before anything moves.
+    promoted = conduit.notch_spell(spell_index=index, spell_id=v2_id)
+    assert promoted.spell_id == v2_id
+    assert index.selected_spell_id == v2_id
+    assert index.spells_in_index() == {v1_id, v2_id}, (
+        "a notch moves the selection; it removes no member"
+    )
+    after = conduit.meld(spell_id=v2_id)
+    assert after.rate == 250
     print()
-    print("conduit.notch_spell(spell_index=, spell=) exists and is the")
-    print("promoting verb; it takes the parked OBJECT, which no public")
-    print("door hands out. Staging is yours; promotion is the runtime's.")
+    print("notch by spell_id: v2 selected, meld -> rate", after.rate)
+
+    # ROLL BACK: the same verb pointed the other way, because v1 was
+    # parked, not destroyed.
+    conduit.notch_spell(spell_index=index, spell_id=v1_id)
+    assert index.selected_spell_id == v1_id
+    back = conduit.meld(spell_id=v1_id)
+    assert back.rate == 100
+    print("notch back by spell_id: v1 selected, meld -> rate", back.rate)
 
     print()
     print("an index is a lineage with one selection")
@@ -20723,7 +20741,7 @@ END FILE: UX_and_AIX_experiences/04_expert/25_many_research_sets_one_world.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/04_expert/26_codegen_create_modify_iterate.py
-CONTENT SHA256: d62eb8e309a37b801c84eb2e67ae1d3b0c6af0733c29c23d60e3a1898a55e310
+CONTENT SHA256: 4c559e9058bcf03c54457c05fa1c32ce9edbb5030f591d9edeb90b50a5fda4d6
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -20955,9 +20973,10 @@ def main() -> None:
     assert len(audit.walk("turns")) == 1
     print("the SAME id accepted in a second set - residence is per-set")
 
-    # The loop stops where the public surface stops (expert 17): the
-    # promoting verb takes the parked OBJECT, and no public door hands
-    # one out - both id->object doors resolve to the ACTIVE member.
+    # Promotion is expert 17's lesson: notch_spell(spell_index=...,
+    # spell_id=staged) makes the staged version active. This lesson keeps
+    # it parked, and a lookup by its spell_id still answers with the ACTIVE
+    # member - which is why the notch is given the spell_id itself.
     assert conduit.get_spell_by_id(staged).spell_id == v1
     assert hasattr(conduit, "notch_spell")
 
@@ -23724,7 +23743,7 @@ END FILE: UX_and_AIX_experiences/04_expert/38_named_scopes_in_nexus_and_restore.
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/04_expert/_concept_map.txt
-CONTENT SHA256: 49f25182aa7369f5297dc710a689ded96a9d3c5588549de57fb0233bbcd58797
+CONTENT SHA256: 4e80580cebb129c0155b95b9cacde787ba7989d3195d6526616836f18e1582b3
 SOURCE ENCODING: utf-8
 ================================================================================
 CONCEPT MAP - 04_expert (README tier: BLUE Expert)
@@ -24074,14 +24093,18 @@ ARC C COMPLETE (lessons 10-15) - AR targeting, the codegen loop, and the
      dynamic-mode refusal: what a world IS is not the same fact as what
      it has been ALLOWED TO DO)
 
-  17 notch_swapping_a_live_object (LINEAGES AND THE STAGING HALF. bind
-     -> bind_inactive (park a candidate on the SAME index, selection
-     unchanged) -> notch_spell (repoint the selection). THE FIRST TWO
-     ARE USER SURFACE AND THE THIRD IS NOT DRIVEN BY HAND - notch_spell
-     takes the parked OBJECT, which lives in the Spellbook's private
-     parking lot, and the Spellbook is not what you notch from. The
-     lesson stops at that boundary and demonstrates it (a parked id
-     resolves to the ACTIVE member) instead of poking through it.
+  17 notch_swapping_a_live_object (LINEAGES AND A HOT SWAP END TO END.
+     bind -> bind_inactive (park a candidate on the SAME index,
+     selection unchanged; it returns the candidate's spell_id) ->
+     notch_spell (repoint the selection) -> meld -> notch back. ALL
+     THREE VERBS ARE USER SURFACE: notch_spell takes the spell_id
+     bind_inactive returned (`spell_id=`) and resolves the exact version
+     inside the call - a lookup by a parked spell_id still resolves to
+     the ACTIVE member, which is why the version is named by its
+     spell_id (owner ruling 2026-10-16; until then the verb took only
+     the parked OBJECT and the lesson stopped at staging). A version of
+     another index, or of another Spellbook, is refused before anything
+     moves.
      WHAT STAGING BUYS: the expensive, failure-prone half of a swap -
      compiling, registering and owning the new version - happens while
      the old version is still serving, because a parked candidate is
@@ -24089,7 +24112,7 @@ ARC C COMPLETE (lessons 10-15) - AR targeting, the codegen loop, and the
      AN INDEX IS A VERSION LINEAGE
      WITH ONE SELECTED MEMBER, so a notch creates, binds and removes
      NOTHING - the outgoing version stays in the lineage and stays
-     resolvable by id. THAT is why ROLLBACK IS JUST A NOTCH THE OTHER
+     resolvable by its spell_id. THAT is why ROLLBACK IS JUST A NOTCH THE OTHER
      WAY: no undo log, no snapshot restore, because nothing was thrown
      away. THE OWNERSHIP SPLIT: the CONDUIT admits the transaction (it
      owns the change-control envelope and the links), the SPELLBOOK
@@ -24112,7 +24135,7 @@ ARC C COMPLETE (lessons 10-15) - AR targeting, the codegen loop, and the
      MISATTRIBUTES a mutation in the state history)
 
 ARC D COMPLETE (lessons 16-17) - changing a running world: rewiring it
-  through link/pull/meld, and staging a version swap onto a lineage.
+  through link/pull/meld, and staging and taking a version swap on a lineage.
   BOTH LESSONS NAME NO MACHINERY. That is the arc's rule, not an
   accident of drafting: everything underneath - admission, claims,
   seals, gates - is base-code business, and a lesson that names it
@@ -24530,6 +24553,12 @@ FINDINGS (for the owner's public-surface program)
     with `bind_inactive`, proves staging does not move the selection, and
     demonstrates rather than laments that a parked id resolves to the
     active member. It touches no private map.
+    SUPERSEDED 2026-10-16 (owner ruling: "just use the private version
+    if its inside the public call thats reasonable"): `notch_spell` takes
+    `spell_id=` and resolves the parked version inside the call, so the
+    loop runs on public calls and lesson 17 takes the swap and the
+    rollback. The facade rule stands - the Spellbook is still not what
+    you notch from; the conduit's verb does the resolving.
   - RETRACTED 2026-08-03, SAME DAY IT WAS WRITTEN: "the canonical doc is
     stale on notch fan-out". IT IS NOT. The note is SEAM-SCOPED and the
     scope word is in the sentence: `_apply_notch`'s own docstring says
@@ -24591,6 +24620,11 @@ DOCSTRINGS THAT LIE (verified individually, not taken on trust)
       Conduit.add_to_spell_index       conduit.py:4550
       Conduit.remove_from_spell_index  conduit.py (same shape)
   Logged as TASK-2026-08-02-stale-source-docstrings.
+  RESOLVED 2026-10-16 (0.2.8249): all three now say the conduit admits
+  the transaction and the Spellbook applies it - `notch_spell` with its
+  `spell_id=` target, `add_to_spell_index` and `remove_from_spell_index`
+  when they took `spell_id=` too. The line numbers above are from
+  2026-08-03 and no longer point at the verbs; the history stays.
   WHY IT MATTERS BEYOND TIDINESS: a reader who believes the docstring
   goes looking for the transaction window on the wrong object, and the
   ownership split is the single most important fact about this surface.
@@ -68701,7 +68735,7 @@ END FILE: docs/expert/external-storage.md
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/expert/governed-change.md
-CONTENT SHA256: 0ef07f48fe73c413cec14e4c9b420230618ff9b1b4d5e1b121399872e97c5d37
+CONTENT SHA256: 8fc27a5a313809d1c1caca388fc24e76f2c0aa942bd55a3f4c9b30848ac5bebb
 SOURCE ENCODING: utf-8
 ================================================================================
 # Preview, stage, and govern structural change
@@ -68722,14 +68756,17 @@ reference, activation annotates the new Spell, and post observes the registered 
 ## Staging is not promotion
 
 `bind_inactive` places a candidate into the existing SpellIndex while the selected
-member remains unchanged. Expert 17 asserts the member set, unchanged selection,
-and unchanged resolved result.
+member remains unchanged, and returns the candidate's spell_id. Expert 17 asserts the
+member set, unchanged selection, and unchanged resolved result.
 
-The runtime's promoting verb is `notch_spell`, which accepts a Spell object. The
-saved public staging lesson deliberately stops before hand-driving that operation:
-its demonstrated lookup by the parked ID returns the currently active member.
-Do not substitute a private-map access or claim that this lesson performs a full swap.
-The README's notch sketch assumes those version objects are already held.
+Promotion is `notch_spell(spell_index=..., spell_id=...)` given that spell_id: the
+candidate becomes the selected member and the next meld builds it, and a notch back by
+the previous spell_id restores the old version, which stayed parked. Expert 17 runs the
+whole loop on public calls, as does the README's sketch. Name a parked version by its
+spell_id: a lookup by a parked spell_id returns the currently active member.
+`notch_spell` refuses a version of another index, or one another Spellbook owns, before
+it changes anything. `add_to_spell_index` and `remove_from_spell_index` take `spell_id=`
+the same way, to move a parked candidate onto another index or out into one of its own.
 
 ## Keep history and code reconciliation distinct
 
@@ -75700,10 +75737,10 @@ END FILE: release_docs/0.2.8227.md
 ================================================================================
 ================================================================================
 BEGIN FILE: release_docs/next_version_release.md
-CONTENT SHA256: dbcd4c0c4826e0540500119630247262b0ca9e0aa85e11f9dde8f6a1148a9944
+CONTENT SHA256: c8509a20dc927e34ce44988184fbb6f107e7b22ce71aeaa982fdad7f47ed5408
 SOURCE ENCODING: utf-8
 ================================================================================
-# Melder 0.2.8248
+# Melder 0.2.8249
 
 **Unreleased**
 
@@ -76264,7 +76301,7 @@ index = book.find_spell_by_id(v1).spell_index
 v2 = book.bind_inactive(spell=ReportServiceV2, spell_index=index, existence="unique", binding_name="v2")
 reports = book.conjure(name="reports")      # inherits dynamic; wires v2 as well as v1
 
-# after reports.notch_spell(spell_index=index, spell=<v2's Spell>):
+reports.notch_spell(spell_index=index, spell_id=v2)   # by spell_id since 0.2.8249 (next section)
 service = reports.meld(spell_id=v2)         # a ReportServiceV2; RuntimeError before 0.2.8248
 assert service.render() == "v2"
 ```
@@ -76278,9 +76315,78 @@ assert service.render() == "v2"
   'Parser' has no pool to lease from: its owner root was torn down, or its owner store holds no pool for this
   version. Meld it through a live root that owns it."
 
-What stays the same: active versions, a `bind_inactive` after `conjure()`, `notch_spell`, ownership transfers,
-spell ids and records. Restore and the spell-index graft stage versions after `conjure()`, so they worked before and
-behave as before.
+What stays the same: active versions, a `bind_inactive` after `conjure()`, ownership transfers, spell ids and
+records. Restore and the spell-index graft stage versions after `conjure()`, so they worked before and behave as
+before.
+
+## `notch_spell`, `add_to_spell_index` and `remove_from_spell_index` take a `spell_id`; a notch checks its target
+
+`Conduit.notch_spell` makes one version of a spell index the active one - the notch in stage -> notch -> meld. Until
+0.2.8249 it took only the version's `Spell`, and no public call returns the `Spell` of a staged version:
+`bind_inactive` returns a spell_id, and `get_spell_by_id` / `find_spell_by_id` answer a staged (parked) spell_id
+with the index's active version, so a notch to what they return changed nothing. `add_to_spell_index` and
+`remove_from_spell_index` had the same gap, since they move only a parked version. From 0.2.8249 all three take the
+spell_id `bind` or `bind_inactive` returned:
+
+```python
+class ReportService:
+    def render(self) -> str:
+        return "v1"
+
+
+class ReportServiceV2:
+    def render(self) -> str:
+        return "v2"
+
+
+book = md.Spellbook()
+v1 = book.bind(spell=ReportService, existence="unique")
+reports = book.conjure(dynamic=True, name="reports")
+index = reports.get_spell_by_id(v1).spell_index
+
+v2 = reports.bind_inactive(spell=ReportServiceV2, spell_index=index, existence="unique")
+reports.notch_spell(spell_index=index, spell_id=v2)    # v2 is the active version now
+assert reports.meld(spell_id=v2).render() == "v2"
+
+reports.notch_spell(spell_index=index, spell_id=v1)    # and back to v1
+assert reports.meld(spell_id=v1).render() == "v1"
+
+reports.remove_from_spell_index(spell_id=v2, source_index=index)   # parked v2 gets an index of its own
+reports.add_to_spell_index(spell_id=v2, target_index=index)        # and comes back; its emptied index goes
+assert index.spells_in_index() == {v1, v2}
+```
+
+- Name the spell by `spell_id=` or by `spell=`, exactly one, on all three: both or neither raise `ValueError`, and a
+  `spell_id` that is not a string, or a string passed as `spell`, raises `TypeError`.
+- A `spell_id` is resolved inside the call to the exact spell the conduit's Spellbook owns, active or parked.
+- A notch checks its target before it starts and again inside its transaction: the spell must be one the conduit's
+  Spellbook owns and a member of `spell_index`. Otherwise a `ValueError` names its spell_id and the remedy -
+  "notch_spell: spell_id '<id>' is not owned by this conduit's Spellbook. Notch it through the conduit of the
+  Spellbook that owns it, or stage the class on this index with bind_inactive(spell_index=...), which returns the
+  spell_id to pass." or "notch_spell: spell_id '<id>' belongs to another SpellIndex, not the one passed. Pass its
+  own index - conduit.get_spell_by_id('<id>').spell_index - or move it onto this index with add_to_spell_index
+  first." A refused notch changes nothing.
+- The index moves refuse a `spell_id` the conduit's Spellbook does not own before anything starts, for example
+  "add_to_spell_index: spell_id '<id>' is not owned by this conduit's Spellbook. Call add_to_spell_index through the
+  conduit of the Spellbook that owns it." Past that, the Spellbook refuses as before (`RuntimeError`): an active
+  spell (notch away from it first), a spell it does not own, a target index it does not own, and a spell that is not
+  a member of the source index or is its only member (`cleanup_spell` disposes that).
+- Until 0.2.8249 nothing checked a notch's target, and three wrong targets damaged the Spellbook. A version staged on
+  another index of the same Spellbook was accepted and corrupted both indexes: a meld of this index's old version
+  raised `KeyError`, and a meld of the moved version `RuntimeError` ("Cannot build CreationContext before
+  spell_codegen_creation exists."). Another index's active version, or another Spellbook's version, raised
+  `RuntimeError` ("Owned spell_id not parked for reactivation") after this index's active version had already been
+  parked, so the index had no active version until a notch back. Each now raises the `ValueError` above and leaves
+  both indexes as they were.
+- A notch to the `Spell` that `get_spell_by_id` or `find_spell_by_id` returns for a parked spell_id is still a
+  no-op: it is the active version. Name a parked version by its spell_id.
+- The docstrings of the three verbs say the conduit admits their transaction (the two index moves said the
+  Spellbook did), and `remove_from_spell_index`'s no longer says that removing the active version leaves the index
+  selecting a non-member: the Spellbook refuses an active version, and always did.
+
+What stays the same: `spell=` on all three (a notch's target is now checked the same way), a notch to the active
+version (it changes nothing), what the three verbs return, the answers of `get_spell_by_id` and `find_spell_by_id`,
+borrowers following a notch, and what the index moves do.
 
 ## Packaging and documentation
 
@@ -76347,7 +76453,16 @@ behave as before.
   describe `conjure()` wiring the versions staged before it and the creation cache's generation 21; the code-map
   extents of the five changed files are remeasured, and line citations into `spellbook.py`,
   `spellbook_creation_system.py` and `transfer_of_ownership.py` that had drifted point at their code again.
-- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8248.
+- The README's swap sketch (stage a version, notch to it, meld it, notch back) names the versions by their spell_id
+  and runs as written; the expert guide on governed change (`docs/expert/governed-change.md`) shows promotion as
+  `notch_spell(spell_index=..., spell_id=...)`, says a wrong target is refused and that the index moves take
+  `spell_id=` too, and the expert walkthrough on notch-swapping a live object (lesson 17) swaps by spell_id.
+- The packaged system documents (`melder.__architecture__`, `melder.__components__`) and the packaged graph
+  describe the notch target - its two forms, the checks before and inside the transaction, the refusals - the
+  index moves' `spell_id=`, and the corrected index-mutation sequence: the conduit starts the transaction, and
+  the notch claims the Spellbook exclusively. The `conduit.py` code-map extent is remeasured, and line citations
+  that had drifted point at their code again.
+- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8249.
 ================================================================================
 END FILE: release_docs/next_version_release.md
 ================================================================================

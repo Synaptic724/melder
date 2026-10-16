@@ -5623,39 +5623,75 @@ class Conduit(Cleanable):
             self,
             *,
             spell_index: Any,
-            spell: Any,
+            spell: Any = None,
+            spell_id: Optional[str] = None,
             change_reason: SpellStateChangeReason = SpellStateChangeReason.selected_different_spell,
     ) -> Any:
         """
         Public API
 
-        Conduit facade for a SpellIndex notch: make `spell` the active
-        (resolvable) spell in its index. Delegates to the owning Spellbook,
-        which admits the `notch` change-control transaction.
+        Conduit facade for a SpellIndex notch: make one version of an index its
+        active (resolvable) member. This conduit admits the `notch` change-control
+        transaction and the owning Spellbook makes the switch inside the held window.
+
+        Purpose:
+            Promote a staged version - the notch in stage -> notch -> meld - or go back
+            to a parked one. Name it by `spell_id`, the spell_id `bind` or
+            `bind_inactive` returned, or by its Spell object.
 
         Contract:
             - DYNAMIC MODE ONLY; refused on an automatic frame.
-            - REPOINTS THE ACTIVE MEMBER of an existing index - it does not create,
-              bind or remove anything. The previous member stays in the lineage and
-              remains resolvable by id.
+            - EXACTLY ONE TARGET: `spell_id` or `spell`. A `spell_id` is resolved inside
+              this call to the exact spell this conduit's Spellbook owns, active or parked.
+              `get_spell_by_id` / `find_spell_by_id` answer a parked spell_id with the
+              index's ACTIVE spell, so a parked spell is named by its spell_id here.
+            - THE TARGET IS CHECKED before the transaction starts and again inside the
+              held window: it must be a version this conduit's Spellbook owns and a member
+              of `spell_index`. The second check runs under the notch seal (the Spellbook
+              and its conduits claimed EXCLUSIVE), so no other index operation can move the
+              target between that check and the switch. A refused call changes nothing.
+            - REPOINTS THE ACTIVE MEMBER of an existing index - it does not create, bind or
+              remove anything. The previous member stays in the lineage, parked, and a
+              notch back by its spell_id restores it.
+            - Notching to the index's active version is a no-op: nothing moves and no
+              borrower is touched.
+            - After the window, every linked peer parks its copy of the outgoing version, a
+              peer holding a parked copy of the incoming version (a grant of that version) has
+              it made active again, and index-link borrowers move to the new one. The consumers
+              of every copy that changed are marked and revalidate at their next meld; objects
+              already built keep what they were built with (rule 2, 2026-10-16).
             - The default `change_reason` is `selected_different_spell`, which records
               an ordinary selection rather than a mutation. Pass a mutation reason
               explicitly when that is what happened, because this default will
               otherwise misattribute the change in the state history.
-            - Admitted as a `notch` change-control transaction by the owning
-              spellbook, so it participates in change control rather than bypassing it.
+            - Admitted as a `notch` change-control transaction by this conduit, so it
+              participates in change control rather than bypassing it.
 
         Args:
-            spell_index: The SpellIndex whose active spell is switched.
-            spell: The already-identified spell to make active.
+            spell_index: The SpellIndex whose active member is switched.
+            spell: The spell to make active, as a Spell object; exclusive with `spell_id`.
+            spell_id: The spell_id of the spell to make active, as `bind` or
+                `bind_inactive` returned it; exclusive with `spell`.
             change_reason: Why the active member was repointed; defaults to
                 `selected_different_spell` (general selection, not a mutation).
 
         Returns:
-            Any: The owning Spellbook notch result.
+            Any: The now-active Spell (the owning Spellbook's notch result).
 
         Raises:
-            RuntimeError: If the Conduit is cleaned or has no owning Spellbook.
+            ValueError: When both or neither of `spell` and `spell_id` are given; when the
+                spell is not owned by this conduit's Spellbook (a spell_id nothing here
+                bound, a disposed spell, another Book's spell); when it belongs to another
+                SpellIndex.
+            TypeError: When `spell_id` is not a string, or a string is given as `spell`.
+            RuntimeError: If the Conduit is cleaned, the frame is not dynamic, or the
+                Conduit has no owning Spellbook; and whatever the transaction or the
+                switch raises.
+
+        Example:
+            id_v2 = conduit.bind_inactive(spell=ReportV2, spell_index=index, existence="unique")
+            conduit.notch_spell(spell_index=index, spell_id=id_v2)
+            conduit.meld(spell_id=id_v2)    # a ReportV2
         """
         self.check_cleaned()
         if not self.__dynamic_environment__:
@@ -5668,6 +5704,10 @@ class Conduit(Cleanable):
             )
         if self._spellbook is None:
             raise RuntimeError("[CONDUIT] No owning Spellbook for notch_spell.")
+        # Resolve the target - by spell_id or by object - and check it before anything starts.
+        # The resolved Spell is rebound to `spell`, so everything below reads one object
+        # whichever form named it.
+        spell = self._resolve_notch_target(spell_index=spell_index, spell=spell, spell_id=spell_id)
         mediator = self._get_required_transaction_mediator()
         metadata: Dict[str, Any] = {
             "origin_surface": "conduit.notch_spell",
@@ -5689,7 +5729,8 @@ class Conduit(Cleanable):
         # admits the notch (it owns the change-control envelope); the owning
         # spellbook performs the local switch inside the held window; then this
         # conduit -- the only thing that knows about links -- walks its peers so
-        # each borrower's spellbook parks its now-stale borrowed copy.
+        # each borrower's spellbook parks its now-stale borrowed copy and makes a
+        # parked copy of the incoming version active again.
         outgoing_id = spell_index.selected_spell_id
         mediator.start_transaction(
             identity=self._transaction_identity,
@@ -5697,6 +5738,10 @@ class Conduit(Cleanable):
             metadata=metadata,
         )
         try:
+            # Check the target again under the notch seal: an index operation that ran
+            # between the check above and admission may have moved it, and none can run
+            # from here to the switch.
+            self._owned_notch_target(spell_index=spell_index, spell_id=spell.spell_id, spell=spell)
             result = self._spellbook._notch_spell(spell_index=spell_index, spell=spell, change_reason=change_reason)
         except Exception:
             mediator.end_transaction(expected_type="notch", success=False)
@@ -5704,34 +5749,288 @@ class Conduit(Cleanable):
         mediator.end_transaction(expected_type="notch", success=True)
         if outgoing_id is not None and outgoing_id != spell.spell_id:
             self._deactivate_borrowed_spell(outgoing_id)
+            # Outgoing first, so no peer holds two active copies under one key. A version
+            # grant parked by an earlier notch away comes back here (D3, 2026-10-16); the
+            # peer Book's reactivation marks the copy's consumers for revalidation.
+            self._activate_borrowed_spell(spell.spell_id)
             # Index-link receivers follow the lineage: move their subscription head
             # to the new active member (park old, activate new) via the ward.
             self._conduit_ward._emit_index_notch(spell_index, outgoing_id, spell.spell_id)
         return result
 
-    def add_to_spell_index(self, *, spell: Any, target_index: Any) -> Any:
+    def _resolve_notch_target(
+            self,
+            *,
+            spell_index: SpellIndex,
+            spell: Optional[Spell],
+            spell_id: Optional[str],
+    ) -> Spell:
+        """
+        Internal
+
+        Resolve the spell `notch_spell` was asked to make active, and check it.
+
+        Contract:
+            - The argument rules of `_check_spell_argument`: exactly one of `spell` and
+              `spell_id`; a `spell_id` is a str, and a str is never taken as `spell`.
+            - The spell is resolved and checked by `_owned_notch_target`: through the
+              owning Spellbook's `_get_owned_spell` - the exact owned spell, active or
+              parked - never through `find_spell_by_id`, which answers a parked spell_id
+              with the index's active spell.
+            - Reads only: nothing is started or changed, so a refusal leaves the world as
+              it was.
+
+        Args:
+            spell_index: The index the caller asked to notch.
+            spell: The spell as a Spell object, or None.
+            spell_id: Its spell_id, or None.
+
+        Returns:
+            Spell: The owned spell to make active.
+
+        Raises:
+            ValueError: Both or neither given; a spell this conduit's Spellbook does not
+                own; a spell of another index.
+            TypeError: A `spell_id` that is not a str; a str given as `spell`.
+        """
+        target_id = self._check_spell_argument(verb="notch_spell", spell=spell, spell_id=spell_id)
+        return self._owned_notch_target(spell_index=spell_index, spell_id=target_id, spell=spell)
+
+    def _owned_notch_target(
+            self,
+            *,
+            spell_index: SpellIndex,
+            spell_id: str,
+            spell: Optional[Spell],
+    ) -> Spell:
+        """
+        Internal
+
+        Return the spell `spell_id` names if this conduit's Spellbook owns it and it
+        belongs to `spell_index`; refuse it otherwise.
+
+        Contract:
+            - Ownership first: the Spellbook's `_get_owned_spell(spell_id)` must return a
+              spell, and, when `spell` was given, that very object (a disposed or rebound
+              spell, or another Book's Spell, is not owned). A cleaned Spell keeps its
+              `spell_id`, so it is refused here before its deleted `spell_index` is read.
+            - Membership second: the spell's `spell_index` must be `spell_index` - the
+              check `remove_from_spell_index`'s seam makes. A spell of another index
+              would otherwise be filed under its own index while this one is repointed.
+            - Called by `notch_spell` before the transaction starts and again inside the
+              held window, where the notch seal keeps every other index operation out.
+
+        Args:
+            spell_index: The index the caller asked to notch.
+            spell_id: The spell_id to check.
+            spell: The Spell object the caller gave, or None when it named its spell_id.
+
+        Returns:
+            Spell: The owned spell.
+
+        Raises:
+            ValueError: The spell is not owned by this conduit's Spellbook, or belongs to
+                another SpellIndex; the message names its spell_id and the remedy.
+
+        Threading:
+            `_get_owned_spell` takes the Spellbook lock alone and releases it; the identity
+            reads take no lock.
+        """
+        owned = self._spellbook._get_owned_spell(spell_id)
+        if owned is None or (spell is not None and owned is not spell):
+            raise ValueError(
+                f"notch_spell: spell_id {spell_id!r} is not owned by this conduit's Spellbook. "
+                "Notch it through the conduit of the Spellbook that owns it, or stage the class "
+                "on this index with bind_inactive(spell_index=...), which returns the spell_id to pass."
+            )
+        if owned.spell_index is not spell_index:
+            raise ValueError(
+                f"notch_spell: spell_id {spell_id!r} belongs to another SpellIndex, not the one "
+                f"passed. Pass its own index - conduit.get_spell_by_id({spell_id!r})"
+                ".spell_index - or move it onto this index with add_to_spell_index first."
+            )
+        return owned
+
+    def _check_spell_argument(
+            self,
+            *,
+            verb: str,
+            spell: Optional[Spell],
+            spell_id: Optional[str],
+    ) -> str:
+        """
+        Internal
+
+        Check how a SpellIndex verb was told which spell to act on - `spell` or
+        `spell_id` - and return the spell_id to resolve.
+
+        Contract:
+            - Exactly one of `spell` and `spell_id`. A `spell_id` must be a str, and a str
+              is never taken as `spell` (a spell_id goes in `spell_id=`).
+            - Reads only: the Spellbook is not asked and nothing is started or changed,
+              so a refusal leaves the world as it was.
+            - Shared by `notch_spell`, `add_to_spell_index` and `remove_from_spell_index`;
+              each message names the verb that was called.
+
+        Args:
+            verb: The public verb being called, named in the messages.
+            spell: The spell as a Spell object, or None.
+            spell_id: Its spell_id, or None.
+
+        Returns:
+            str: `spell_id` when it was given, otherwise `spell.spell_id`.
+
+        Raises:
+            ValueError: Both or neither given.
+            TypeError: A `spell_id` that is not a str; a str given as `spell`.
+        """
+        if spell is not None and spell_id is not None:
+            raise ValueError(f"{verb} accepts either `spell` or `spell_id`, not both.")
+        if spell is None and spell_id is None:
+            raise ValueError(
+                f"{verb} needs a spell: pass spell_id=<the spell_id bind or bind_inactive "
+                "returned>, or spell=<its Spell object>."
+            )
+        if spell_id is not None:
+            if type(spell_id) is not str:
+                raise TypeError(f"{verb} `spell_id` must be a string; got {type(spell_id).__name__}.")
+            return spell_id
+        if isinstance(spell, str):
+            raise TypeError(
+                f"{verb} `spell` takes a Spell object; to name a spell by its spell_id, pass "
+                f"spell_id={spell!r}."
+            )
+        return spell.spell_id
+
+    def _owned_spell_by_id(self, *, verb: str, spell_id: str) -> Spell:
+        """
+        Internal
+
+        Return the spell this conduit's Spellbook owns under `spell_id`, active or parked.
+
+        Contract:
+            - Resolves through the Spellbook's `_get_owned_spell` - the exact owned spell -
+              never through `find_spell_by_id`, which answers a parked spell_id with the
+              index's active spell.
+            - Reads only; a refusal starts nothing.
+
+        Args:
+            verb: The public verb being called, named in the message.
+            spell_id: The spell_id to resolve.
+
+        Returns:
+            Spell: The owned spell.
+
+        Raises:
+            ValueError: This conduit's Spellbook owns no spell under `spell_id` (an unknown
+                or disposed spell_id, or one another Spellbook bound); the message names it
+                and the remedy.
+
+        Threading:
+            `_get_owned_spell` takes the Spellbook lock alone and releases it.
+        """
+        owned = self._spellbook._get_owned_spell(spell_id)
+        if owned is None:
+            raise ValueError(
+                f"{verb}: spell_id {spell_id!r} is not owned by this conduit's Spellbook. "
+                f"Call {verb} through the conduit of the Spellbook that owns it."
+            )
+        return owned
+
+    def _resolve_spell_to_move(
+            self,
+            *,
+            verb: str,
+            spell: Optional[Spell],
+            spell_id: Optional[str],
+    ) -> Spell:
+        """
+        Internal
+
+        Resolve the spell `add_to_spell_index` or `remove_from_spell_index` was asked to
+        move.
+
+        Contract:
+            - The argument rules of `_check_spell_argument`.
+            - A `spell_id` resolves through `_owned_spell_by_id`; a `spell` is returned as
+              given, and the Spellbook checks it as it always has (owned, parked, a member
+              of the source index).
+            - Reads only; a refusal starts nothing.
+
+        Args:
+            verb: The public verb being called, named in the messages.
+            spell: The spell as a Spell object, or None.
+            spell_id: Its spell_id, or None.
+
+        Returns:
+            Spell: The spell to move.
+
+        Raises:
+            ValueError: Both or neither given; a `spell_id` this conduit's Spellbook does
+                not own.
+            TypeError: A `spell_id` that is not a str; a str given as `spell`.
+        """
+        target_id = self._check_spell_argument(verb=verb, spell=spell, spell_id=spell_id)
+        if spell is None:
+            # The argument check refused neither-given, so a spell_id was given.
+            return self._owned_spell_by_id(verb=verb, spell_id=target_id)
+        return spell
+
+    def add_to_spell_index(
+            self,
+            *,
+            spell: Any = None,
+            spell_id: Optional[str] = None,
+            target_index: Any,
+    ) -> Any:
         """
         Public API
 
-        Conduit facade for moving an owned spell onto another SpellIndex.
-        Delegates to the owning Spellbook, which admits the `add_to_index`
-        change-control transaction.
+        Conduit facade for moving a parked spell onto another SpellIndex of this
+        conduit's Spellbook. This conduit admits the `add_to_index` change-control
+        transaction and the owning Spellbook moves the spell inside the held window.
+
+        Purpose:
+            Move a staged (parked) spell into another index's lineage, ahead of a notch to
+            it there. Name it by `spell_id`, the spell_id `bind` or `bind_inactive`
+            returned, or by its Spell object.
 
         Contract:
             - DYNAMIC MODE ONLY; refused on an automatic frame with a logged
               `RuntimeError`.
+            - EXACTLY ONE SPELL: `spell_id` or `spell`. A `spell_id` is resolved inside
+              this call to the exact spell this conduit's Spellbook owns, active or parked;
+              `get_spell_by_id` / `find_spell_by_id` answer a parked spell_id with the
+              index's active spell, so a parked spell is named by its spell_id here.
+            - ONLY A PARKED SPELL MOVES: the Spellbook refuses an active spell (notch away
+              from it first), a spell it does not own, and a `target_index` it does not own.
             - Adds a version to the lineage WITHOUT making it active - selection is a
               separate `notch_spell` step, so adding is safe to do ahead of a switch.
+            - The spell leaves its current index, and an index the move empties is
+              destroyed. After the window, index-link borrowers gain the member on the
+              target and lose it on the source (or drop the destroyed index).
 
         Args:
-            spell: The owned, inactive spell to move.
+            spell: The parked spell to move, as a Spell object; exclusive with `spell_id`.
+            spell_id: The spell_id of the parked spell to move, as `bind` or
+                `bind_inactive` returned it; exclusive with `spell`.
             target_index: The index to move it onto.
 
         Returns:
-            Any: The owning Spellbook's result.
+            Any: The moved Spell (the owning Spellbook's result).
 
         Raises:
-            RuntimeError: If the Conduit is cleaned or has no owning Spellbook.
+            ValueError: When both or neither of `spell` and `spell_id` are given, or when
+                this conduit's Spellbook owns no spell under `spell_id`; nothing is started.
+            TypeError: When `spell_id` is not a string, or a string is given as `spell`.
+            RuntimeError: If the Conduit is cleaned, the frame is not dynamic, or the
+                Conduit has no owning Spellbook; from the Spellbook, if the spell is not
+                owned there, is active, or `target_index` is not an index it owns.
+
+        Example:
+            id_v2 = conduit.bind_inactive(spell=ReportV2, spell_index=index, existence="unique")
+            conduit.add_to_spell_index(spell_id=id_v2, target_index=other_index)
+            conduit.notch_spell(spell_index=other_index, spell_id=id_v2)
         """
         self.check_cleaned()
         if not self.__dynamic_environment__:
@@ -5744,6 +6043,9 @@ class Conduit(Cleanable):
             )
         if self._spellbook is None:
             raise RuntimeError("[CONDUIT] No owning Spellbook for add_to_spell_index.")
+        # Resolve the spell - by spell_id or by object - before anything starts; everything
+        # below reads the resolved Spell.
+        spell = self._resolve_spell_to_move(verb="add_to_spell_index", spell=spell, spell_id=spell_id)
         mediator = self._get_required_transaction_mediator()
         metadata: Dict[str, Any] = {
             "origin_surface": "conduit.add_to_spell_index",
@@ -5787,31 +6089,56 @@ class Conduit(Cleanable):
                 self._conduit_ward._emit_index_member_removed(source_id, moved_spell_id)
         return result
 
-    def remove_from_spell_index(self, *, spell: Any, source_index: Any) -> Any:
+    def remove_from_spell_index(
+            self,
+            *,
+            spell: Any = None,
+            spell_id: Optional[str] = None,
+            source_index: Any,
+    ) -> Any:
         """
         Public API
 
-        Conduit facade for separating an owned spell out of its index into a fresh
-        one. Delegates to the owning Spellbook, which admits the
-        `remove_from_index` change-control transaction.
+        Conduit facade for separating a parked spell out of its index into a fresh
+        one. This conduit admits the `remove_from_index` change-control transaction
+        and the owning Spellbook splits the spell out inside the held window.
+
+        Purpose:
+            Take a staged (parked) spell out of an index's lineage, into an index of its
+            own. Name it by `spell_id`, the spell_id `bind` or `bind_inactive` returned,
+            or by its Spell object.
 
         Contract:
             - DYNAMIC MODE ONLY; refused on an automatic frame with a logged
               `RuntimeError`.
-            - Removes a version from the lineage. Removal does NOT re-point the
-              selection, so retiring the currently active member leaves the index
-              selecting an id that is no longer a member - notch a new active member
-              first.
+            - EXACTLY ONE SPELL: `spell_id` or `spell`, resolved as `add_to_spell_index`
+              resolves it.
+            - ONLY A PARKED MEMBER IS SPLIT OUT: the Spellbook refuses an active spell
+              (notch away from it first, so the selection never names a non-member), a
+              spell it does not own, a spell that is not a member of `source_index`, and
+              the index's only member (`cleanup_spell` disposes that).
+            - The spell becomes the only member of a fresh index and stays parked; the
+              source keeps its other members and its selection, and nothing is destroyed.
+              After the window, index-link borrowers drop the member.
 
         Args:
-            spell: The owned, inactive spell to separate.
-            source_index: The index the spell currently belongs to.
+            spell: The parked spell to split out, as a Spell object; exclusive with
+                `spell_id`.
+            spell_id: The spell_id of the parked spell to split out, as `bind` or
+                `bind_inactive` returned it; exclusive with `spell`.
+            source_index: The index the spell belongs to.
 
         Returns:
-            Any: The owning Spellbook's result.
+            Any: The separated Spell (the owning Spellbook's result).
 
         Raises:
-            RuntimeError: If the Conduit is cleaned or has no owning Spellbook.
+            ValueError: When both or neither of `spell` and `spell_id` are given, or when
+                this conduit's Spellbook owns no spell under `spell_id`; nothing is started.
+            TypeError: When `spell_id` is not a string, or a string is given as `spell`.
+            RuntimeError: If the Conduit is cleaned, the frame is not dynamic, or the
+                Conduit has no owning Spellbook; from the Spellbook, if the spell is not
+                owned there, is active, is not a member of `source_index`, or is its only
+                member.
         """
         self.check_cleaned()
         if not self.__dynamic_environment__:
@@ -5824,6 +6151,8 @@ class Conduit(Cleanable):
             )
         if self._spellbook is None:
             raise RuntimeError("[CONDUIT] No owning Spellbook for remove_from_spell_index.")
+        # Resolve the spell - by spell_id or by object - before anything starts.
+        spell = self._resolve_spell_to_move(verb="remove_from_spell_index", spell=spell, spell_id=spell_id)
         mediator = self._get_required_transaction_mediator()
         metadata: Dict[str, Any] = {
             "origin_surface": "conduit.remove_from_spell_index",
@@ -5934,6 +6263,51 @@ class Conduit(Cleanable):
             if peer_spellbook is None:
                 continue
             peer_spellbook._inactivate_contract_spell(owner_id, spell_id)
+
+    def _activate_borrowed_spell(self, spell_id: str) -> None:
+        """
+        Internal
+
+        Owner-side borrower fan-out, the mirror of `_deactivate_borrowed_spell`: walk
+        this conduit's active links and make every peer's PARKED contracted copy of
+        `spell_id` active again. When this conduit notches an index back to a version a
+        peer was granted (`add_spell_to_contract`, a version grant), the copy the notch
+        away parked becomes that peer's active copy once more (D3, 2026-10-16); a grant
+        of a version that was parked when it was made becomes active the same way.
+
+        Contract:
+            - `notch_spell` calls it after the notch transaction and after the
+              deactivate fan-out, so a peer never holds two active copies under one key.
+            - The per-peer call (`Spellbook._activate_contract_spell`) is idempotent: a
+              no-op for a peer holding no parked copy of `spell_id`, so a peer that never
+              borrowed the version, or already holds it active, is untouched.
+            - The reactivation is the peer Book's `_reactivate_contracted_spell`, which
+              marks the consumers of the copy's key `gated` + `contract_unvalidated`
+              (rule 2): their next meld revalidates and rebuilds against the copy.
+              Objects already built are untouched.
+            - An index-link receiver holding a parked copy of `spell_id` gets it back
+              here; `ConduitWard._emit_index_notch` then finds it active, the end state
+              that emission reached on its own before.
+
+        Threading:
+            Takes no lock of its own. The ward's link listing (`_get_links`) holds the
+            ward lock for the read only; each peer Book takes its own lock inside the call
+            and releases it before the mark, as in the deactivate fan-out.
+
+        Args:
+            spell_id (str): Version id of the spell whose parked borrowed copies to make
+                active again (the notch's incoming version).
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError: If this conduit, or a linked peer's Spellbook, has been cleaned.
+        """
+        self.check_cleaned()
+        owner_id = self._id
+        for peer in self._conduit_ward._get_links():
+            peer._spellbook._activate_contract_spell(owner_id, spell_id)
 
     def sever_link(self, target_conduit: "Conduit") -> bool:
         """

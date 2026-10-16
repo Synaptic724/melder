@@ -264,7 +264,7 @@ class ManagedSpellQuantity(AbstractElasticPool[Any]):
         Return the managed Spell this pool belongs to (borrowed).
 
         Contract:
-            The current Spell object of the version id: a rebind that meets this pool under the same id re-points
+            The current Spell object of the spell_id: a rebind that meets this pool under the same id re-points
             it (`Creations.ensure_managed_quantity`). It may be cleaned by its Book while the pool lives on.
 
         Raises:
@@ -315,10 +315,10 @@ class ManagedSpellQuantity(AbstractElasticPool[Any]):
     @property
     def spell_id(self) -> str:
         """
-        Return the version id the pool is stored under.
+        Return the spell_id the pool is stored under.
 
         Returns:
-            str: The managed spell's version id (readable after cleanup).
+            str: The managed spell's spell_id (readable after cleanup).
         """
         return self._spell_id
 
@@ -834,7 +834,7 @@ class ManagedSpellQuantity(AbstractElasticPool[Any]):
 
     def _rebind_spell(self, spell: Spell) -> None:
         """
-        Point the pool at the current Spell object of its version id.
+        Point the pool at the current Spell object of its spell_id.
 
         Purpose:
             A definition removed and bound again under the same content-stable id meets its old pool (as a slotted
@@ -848,7 +848,7 @@ class ManagedSpellQuantity(AbstractElasticPool[Any]):
             reference stores; no user code.
 
         Args:
-            spell: The current Spell of this version id.
+            spell: The current Spell of this spell_id.
 
         Returns:
             None.

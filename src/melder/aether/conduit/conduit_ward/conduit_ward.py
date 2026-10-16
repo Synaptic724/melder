@@ -1859,9 +1859,15 @@ class ConduitWard(Cleanable):
 
         Adds a single spell to an existing contract with a peer conduit.
 
-        This now contracts the **SpellIndex lineage** and uses the spell's
-        current version ID only as the initial reference. On mutation, the
-        lineage will advance, and lookups will resolve to the new version.
+        It contracts one version of the spell's SpellIndex lineage. The borrower
+        holds a copy of that version: active while the version is the lineage's
+        active member, parked while it is not. A notch away parks it on every
+        linked peer and a notch back makes it active again, and the copy's
+        consumers revalidate at their next meld; a grant of a parked version
+        starts parked and becomes active when the owner notches to it
+        (corrected 2026-10-16: this said lookups resolve to each new version,
+        which only an index link does). An index link (`_add_index_to_contract`)
+        follows the lineage to every new version instead.
         When a new contract entry is added, cached consumer creations that
         declare a matching SpellContract are invalidated so future melds
         re-resolve dependencies.
@@ -2327,7 +2333,8 @@ class ConduitWard(Cleanable):
         `new_spell_id` (`IndexDetail.update_selected`) and tell the receiving
         spellbook to park the old version and activate the new one -- index-link
         receivers follow the lineage. Version-anchored borrowers are handled
-        separately by the conduit's deactivate fan-out.
+        separately by the conduit's deactivate and activate fan-outs
+        (`Conduit._deactivate_borrowed_spell`, `Conduit._activate_borrowed_spell`).
 
         Per-receiver calls are idempotent (the borrower spellbook no-ops when it is
         not holding the id), so a receiver that has not yet been given the new
@@ -2658,7 +2665,8 @@ class ConduitWard(Cleanable):
         try:
             # FORWARDREF: only defaults are read here, and a VALUE-format read
             # raises NameError when an annotation names a TYPE_CHECKING-only type
-            # (Python 3.14 lazy annotations). Mirrors Meld._iter_spell_contract_defaults.
+            # (Python 3.14 lazy annotations). Mirrors the Phase 8 analyzer's
+            # SpellOccurrenceGraphAnalyzerStrategy._iter_spell_contract_defaults.
             signature = inspect.signature(call_target, annotation_format=Format.FORWARDREF)
         except (TypeError, ValueError):
             return set()

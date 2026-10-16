@@ -766,7 +766,7 @@ class FakeSpellbook:
         Remove owned spell_id mappings for the given spell.
 
         Args:
-            spell_id: Current version id for the spell.
+            spell_id: The spell's current spell_id.
             spell_obj: Owned spell instance being removed.
         Raises:
             RuntimeError: If the owned map or pool map references a different spell.

@@ -1,0 +1,3 @@
+Banner: HELLO
+  _add_spell_to_contract raised: RuntimeError Spell 'English' is not owned by this conduit, cannot contract it.
+done

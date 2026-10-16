@@ -26,7 +26,7 @@ class _SpellDouble:
     Spell double carrying what RiskManager reads from a Spell.
 
     Purpose:
-        A real SpellIndex (lineage id and selected version id) and the lineage's state read from the registry, as
+        A real SpellIndex (lineage id and selected spell_id) and the lineage's state read from the registry, as
         `Spell.system_state` reads it, so the manager sees the registry's validity and flags.
     """
 

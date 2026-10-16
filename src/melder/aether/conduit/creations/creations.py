@@ -1185,7 +1185,7 @@ class Creations(Cleanable):
 
         Args:
             spell_id:
-                The managed version id.
+                The managed spell's spell_id.
 
         Returns:
             Optional[ManagedSpellQuantity]: The pool, or None.
@@ -1221,7 +1221,7 @@ class Creations(Cleanable):
 
         Args:
             spell_id:
-                The managed version id the pool is held under.
+                The managed spell's spell_id the pool is held under.
             pool:
                 The pool to give up.
 

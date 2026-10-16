@@ -64,7 +64,7 @@ class _SpellStub:
             resets: The reset method names.
             disposal: The disposal method names.
             existence: The binding's Existence.
-            spell_id: The version id.
+            spell_id: The spell's spell_id.
             spell_name: The display name.
         """
         self.spell_id = spell_id

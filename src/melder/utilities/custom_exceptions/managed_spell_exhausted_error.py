@@ -76,7 +76,7 @@ class ManagedSpellExhaustedError(MeldExecutionError):
 
         Args:
             spell_id:
-                Version id of the managed spell.
+                The managed spell's spell_id.
             spell_name:
                 Human-readable name of that spell.
             message:
@@ -114,7 +114,7 @@ class ManagedSpellExhaustedError(MeldExecutionError):
             - Pure: builds the error, raises nothing.
 
         Args:
-            spell_id: Version id of the managed spell.
+            spell_id: The managed spell's spell_id.
             spell_name: Its display name.
             limit: The pool's limit.
 
@@ -152,7 +152,7 @@ class ManagedSpellExhaustedError(MeldExecutionError):
             - Pure: builds the error, raises nothing.
 
         Args:
-            spell_id: Version id of the managed spell.
+            spell_id: The managed spell's spell_id.
             spell_name: Its display name.
             limit: The pool's limit.
             timeout_seconds: The wait that ran out, in seconds.

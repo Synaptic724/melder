@@ -1,0 +1,141 @@
+FFFFFFFFFF                                                               [100%]
+=================================== FAILURES ===================================
+___________ test_notch_by_id_promotes_a_version_staged_after_conjure ___________
+
+    def test_notch_by_id_promotes_a_version_staged_after_conjure() -> None:
+        """The id `bind_inactive` returned is enough to promote the version; the next meld builds it."""
+        with _staged() as (book, root, id_a, id_b, index):
+>           root.notch_spell(spell_index=index, spell_id=id_b)
+E           TypeError: Conduit.notch_spell() got an unexpected keyword argument 'spell_id'. Did you mean 'spell_index'?
+
+tests/integration/melder/aether/conduit/test_notch_spell_by_id_integration.py:146: TypeError
+__________ test_notch_by_id_promotes_a_version_staged_before_conjure ___________
+
+    def test_notch_by_id_promotes_a_version_staged_before_conjure() -> None:
+        """A version staged on the Book before conjure is promoted by id the same way (0.2.8248 wires it)."""
+        with _staged(before_conjure=True) as (book, root, id_a, id_b, index):
+>           root.notch_spell(spell_index=index, spell_id=id_b)
+E           TypeError: Conduit.notch_spell() got an unexpected keyword argument 'spell_id'. Did you mean 'spell_index'?
+
+tests/integration/melder/aether/conduit/test_notch_spell_by_id_integration.py:155: TypeError
+_______________ test_notch_by_id_returns_the_now_active_version ________________
+
+    def test_notch_by_id_returns_the_now_active_version() -> None:
+        """The call returns the Spell it made active."""
+        with _staged() as (book, root, id_a, id_b, index):
+>           result = root.notch_spell(spell_index=index, spell_id=id_b)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           TypeError: Conduit.notch_spell() got an unexpected keyword argument 'spell_id'. Did you mean 'spell_index'?
+
+tests/integration/melder/aether/conduit/test_notch_spell_by_id_integration.py:163: TypeError
+_______________ test_notch_back_by_id_restores_the_first_version _______________
+
+    def test_notch_back_by_id_restores_the_first_version() -> None:
+        """The outgoing version is parked, not destroyed: notching back by its id restores it."""
+        with _staged() as (book, root, id_a, id_b, index):
+>           root.notch_spell(spell_index=index, spell_id=id_b)
+E           TypeError: Conduit.notch_spell() got an unexpected keyword argument 'spell_id'. Did you mean 'spell_index'?
+
+tests/integration/melder/aether/conduit/test_notch_spell_by_id_integration.py:172: TypeError
+______________ test_notch_by_id_to_the_active_version_is_a_no_op _______________
+
+    def test_notch_by_id_to_the_active_version_is_a_no_op() -> None:
+        """Naming the version already active changes nothing and raises nothing."""
+        with _staged() as (book, root, id_a, id_b, index):
+>           result = root.notch_spell(spell_index=index, spell_id=id_a)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           TypeError: Conduit.notch_spell() got an unexpected keyword argument 'spell_id'. Did you mean 'spell_index'?
+
+tests/integration/melder/aether/conduit/test_notch_spell_by_id_integration.py:183: TypeError
+_ test_notch_refuses_a_parked_version_of_another_index_and_leaves_both_intact __
+
+    def test_notch_refuses_a_parked_version_of_another_index_and_leaves_both_intact() -> None:
+        """
+        Regression: a version parked in another index of the Book used to be accepted and corrupt both indexes.
+    
+        Contract:
+            - By id and by object, the call raises ValueError; both indexes keep selection, members and melds.
+        """
+        with _staged() as (book, root, id_a, id_b, index):
+            id_y1 = book.bind(spell=_ServiceY1, existence=Existence.unique, permissions="create", binding_name="y1")
+            other = book.find_spell_by_id(id_y1).spell_index
+            id_y2 = root.bind_inactive(
+                spell=_ServiceY2, spell_index=other, existence=Existence.unique, permissions="create", binding_name="y2",
+            )
+    
+            with pytest.raises(ValueError, match="belongs to another SpellIndex"):
+>               root.notch_spell(spell_index=index, spell_id=id_y2)
+E               TypeError: Conduit.notch_spell() got an unexpected keyword argument 'spell_id'. Did you mean 'spell_index'?
+
+tests/integration/melder/aether/conduit/test_notch_spell_by_id_integration.py:204: TypeError
+_ test_notch_refuses_the_active_version_of_another_index_and_keeps_the_index_active _
+
+    def test_notch_refuses_the_active_version_of_another_index_and_keeps_the_index_active() -> None:
+        """
+        Regression: another index's active version used to raise RuntimeError after this index's version was parked.
+        """
+        with _staged() as (book, root, id_a, id_b, index):
+            id_y1 = book.bind(spell=_ServiceY1, existence=Existence.unique, permissions="create", binding_name="y1")
+    
+            with pytest.raises(ValueError, match="belongs to another SpellIndex"):
+>               root.notch_spell(spell_index=index, spell_id=id_y1)
+E               TypeError: Conduit.notch_spell() got an unexpected keyword argument 'spell_id'. Did you mean 'spell_index'?
+
+tests/integration/melder/aether/conduit/test_notch_spell_by_id_integration.py:220: TypeError
+__ test_notch_refuses_a_version_another_book_owns_and_keeps_the_index_active ___
+
+    def test_notch_refuses_a_version_another_book_owns_and_keeps_the_index_active() -> None:
+        """
+        Regression: another Book's parked version used to raise RuntimeError after this index's version was parked.
+        """
+        with _staged() as (book, root, id_a, id_b, index):
+            with _staged(tag="other") as (other_book, other_root, other_a, other_b, other_index):
+                with pytest.raises(ValueError, match="is not owned by this conduit's Spellbook"):
+>                   root.notch_spell(spell_index=index, spell_id=other_b)
+E                   TypeError: Conduit.notch_spell() got an unexpected keyword argument 'spell_id'. Did you mean 'spell_index'?
+
+tests/integration/melder/aether/conduit/test_notch_spell_by_id_integration.py:232: TypeError
+_________ test_notch_refuses_an_unknown_id_and_keeps_the_index_active __________
+
+    def test_notch_refuses_an_unknown_id_and_keeps_the_index_active() -> None:
+        """An id nothing bound is refused; the index is untouched."""
+        with _staged() as (book, root, id_a, id_b, index):
+            with pytest.raises(ValueError, match="is not owned by this conduit's Spellbook"):
+>               root.notch_spell(spell_index=index, spell_id="0" * 64)
+E               TypeError: Conduit.notch_spell() got an unexpected keyword argument 'spell_id'. Did you mean 'spell_index'?
+
+tests/integration/melder/aether/conduit/test_notch_spell_by_id_integration.py:244: TypeError
+_____________ test_index_link_borrower_follows_a_notch_made_by_id ______________
+
+    def test_index_link_borrower_follows_a_notch_made_by_id() -> None:
+        """A borrower linked to the index melds the version the owner notched in by id."""
+        owner_book = _make_spellbook()
+        borrower_book = _make_spellbook()
+        id_a = owner_book.bind(spell=_ServiceA, existence=Existence.unique, permissions="create", binding_name="a")
+        owner = owner_book.conjure(dynamic=True, name="owner")
+        borrower = borrower_book.conjure(dynamic=True, name="borrower")
+        try:
+            owner.link(borrower)
+            index = owner_book.find_spell_by_id(id_a).spell_index
+            id_b = owner.bind_inactive(
+                spell=_ServiceB, spell_index=index, existence=Existence.unique, permissions="create", binding_name="b",
+            )
+            with borrower.transaction("link", conduits=[borrower, owner]):
+                borrower.add_index_to_contract(index=index, conduit=owner, permissions="create")
+    
+>           owner.notch_spell(spell_index=index, spell_id=id_b)
+E           TypeError: Conduit.notch_spell() got an unexpected keyword argument 'spell_id'. Did you mean 'spell_index'?
+
+tests/integration/melder/aether/conduit/test_notch_spell_by_id_integration.py:265: TypeError
+=========================== short test summary info ============================
+FAILED tests/integration/melder/aether/conduit/test_notch_spell_by_id_integration.py::test_notch_by_id_promotes_a_version_staged_after_conjure
+FAILED tests/integration/melder/aether/conduit/test_notch_spell_by_id_integration.py::test_notch_by_id_promotes_a_version_staged_before_conjure
+FAILED tests/integration/melder/aether/conduit/test_notch_spell_by_id_integration.py::test_notch_by_id_returns_the_now_active_version
+FAILED tests/integration/melder/aether/conduit/test_notch_spell_by_id_integration.py::test_notch_back_by_id_restores_the_first_version
+FAILED tests/integration/melder/aether/conduit/test_notch_spell_by_id_integration.py::test_notch_by_id_to_the_active_version_is_a_no_op
+FAILED tests/integration/melder/aether/conduit/test_notch_spell_by_id_integration.py::test_notch_refuses_a_parked_version_of_another_index_and_leaves_both_intact
+FAILED tests/integration/melder/aether/conduit/test_notch_spell_by_id_integration.py::test_notch_refuses_the_active_version_of_another_index_and_keeps_the_index_active
+FAILED tests/integration/melder/aether/conduit/test_notch_spell_by_id_integration.py::test_notch_refuses_a_version_another_book_owns_and_keeps_the_index_active
+FAILED tests/integration/melder/aether/conduit/test_notch_spell_by_id_integration.py::test_notch_refuses_an_unknown_id_and_keeps_the_index_active
+FAILED tests/integration/melder/aether/conduit/test_notch_spell_by_id_integration.py::test_index_link_borrower_follows_a_notch_made_by_id
+10 failed in 8.32s

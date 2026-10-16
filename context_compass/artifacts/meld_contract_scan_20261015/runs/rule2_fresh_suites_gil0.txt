@@ -1,0 +1,26 @@
+fresh | unit_aether | rc=0 | secs=23 | 4528 passed in 21.75s
+fresh | unit_sb | rc=0 | secs=7 | 2578 passed in 5.46s
+fresh | unit_util | rc=0 | secs=10 | 831 passed, 2 skipped, 7 xfailed in 8.96s
+fresh | comp_aether | rc=0 | secs=20 | 1386 passed, 1 xfailed in 19.18s
+fresh | comp_sb | rc=0 | secs=24 | 819 passed in 22.67s
+fresh | int_conduit | rc=0 | secs=9 | 350 passed, 1 xfailed in 8.83s
+fresh | int_sb | rc=0 | secs=8 | 647 passed, 2 skipped, 2 xpassed in 7.09s
+fresh | int_mt | rc=0 | secs=17 | 54 passed in 16.62s
+fresh | int_aether | rc=0 | secs=21 | 805 passed, 5 xfailed in 20.03s
+fresh | int_cryst | rc=0 | secs=71 | 276 passed, 3 xfailed in 69.25s (0:01:09)
+fresh | unit_cryst | rc=0 | secs=6 | 607 passed in 5.66s
+fresh | comp_cryst | rc=0 | secs=2 | 110 passed in 1.02s
+fresh | unit_mr | rc=0 | secs=3 | 277 passed in 1.91s
+fresh | comp_mr | rc=0 | secs=2 | 40 passed in 0.94s
+fresh | int_mr | rc=0 | secs=2 | 67 passed in 1.29s
+fresh | unit_top | rc=0 | secs=6 | 146 passed in 5.17s
+fresh | int_live | rc=0 | secs=2 | 1 passed, 1 xfailed in 0.24s
+fresh | exper | rc=0 | secs=12 | 250 passed, 4 skipped in 11.28s
+fresh | (unit_build, unit_arch, unit_gh and unit_llm rerun below: the first run lacked .github, architecture_and_design, llm_support, release_docs and context_compass/system_docs on the fresh tree)
+fresh | unit_build | rc=0 | secs=3 | 116 passed in 2.68s
+fresh | unit_arch | rc=0 | secs=1 | 18 passed in 0.09s
+fresh | unit_llm | rc=0 | secs=1 | 28 passed in 0.10s
+fresh | (unit_gh rerun below: its first rerun lacked .readthedocs.yaml and codecov.yml on the fresh tree)
+fresh | unit_gh | rc=0 | secs=4 | 491 passed in 2.73s
+fresh | (comp_util rerun below: its first run skipped 20 more document tests while context_compass/system_docs was absent from the fresh tree)
+fresh | comp_util | rc=0 | secs=2 | 41 passed, 23 skipped in 1.84s

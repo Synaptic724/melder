@@ -10,7 +10,7 @@ class SpellSystemAdjacencySnapshot(Cleanable):
     """
     Frame-wide structural view of SpellSystemStates.
 
-    This Phase 5 helper exposes the version-id level adjacency:
+    This Phase 5 helper exposes the spell_id-level adjacency:
 
         * dependencies:  spell_id -> {spell_id, ...}
         * reverse_dependencies: spell_id -> {spell_id, ...}
@@ -19,7 +19,7 @@ class SpellSystemAdjacencySnapshot(Cleanable):
 
     Notes
     -----
-    * All spell_ids are **version IDs** (spell.spell_index.selected_spell_id).
+    * All spell_ids are the selected spell_ids of their indexes (spell.spell_index.selected_spell_id).
     * This view holds live references to SpellSystemStates data and does not
       copy or own the underlying collections.
     """

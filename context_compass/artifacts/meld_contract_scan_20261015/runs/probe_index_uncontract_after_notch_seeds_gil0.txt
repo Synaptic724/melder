@@ -1,0 +1,20 @@
+tree=before8249 melder=0.2.8249 PYTHONHASHSEED=0 stage_after_link: after remove_index_from_contract: index members=['English', 'French'] active=[] parked=[] existence=[]
+tree=before8249 melder=0.2.8249 PYTHONHASHSEED=1 stage_after_link: after remove_index_from_contract: index members=['English', 'French'] active=[] parked=[] existence=[]
+tree=before8249 melder=0.2.8249 PYTHONHASHSEED=2 stage_after_link: after remove_index_from_contract: index members=['English', 'French'] active=[] parked=[] existence=[]
+tree=before8249 melder=0.2.8249 PYTHONHASHSEED=3 stage_after_link: remove_index_from_contract: RuntimeError: Spell version French not found for conduit ID <lender>.
+tree=before8249 melder=0.2.8249 PYTHONHASHSEED=4 stage_after_link: remove_index_from_contract: RuntimeError: Spell version French not found for conduit ID <lender>.
+tree=before8249 melder=0.2.8249 PYTHONHASHSEED=5 stage_after_link: after remove_index_from_contract: index members=['English', 'French'] active=[] parked=[] existence=[]
+tree=before8249 melder=0.2.8249 PYTHONHASHSEED=6 stage_after_link: remove_index_from_contract: RuntimeError: Spell version French not found for conduit ID <lender>.
+tree=before8249 melder=0.2.8249 PYTHONHASHSEED=7 stage_after_link: after remove_index_from_contract: index members=['English', 'French'] active=[] parked=[] existence=[]
+tree=before8249 melder=0.2.8249 PYTHONHASHSEED=8 stage_after_link: remove_index_from_contract: RuntimeError: Spell version French not found for conduit ID <lender>.
+tree=before8249 melder=0.2.8249 PYTHONHASHSEED=9 stage_after_link: remove_index_from_contract: RuntimeError: Spell version French not found for conduit ID <lender>.
+tree=landed melder=0.2.8250 PYTHONHASHSEED=0 stage_after_link: after remove_index_from_contract: index members=['English', 'French'] active=[] parked=[] existence=[]
+tree=landed melder=0.2.8250 PYTHONHASHSEED=1 stage_after_link: after remove_index_from_contract: index members=['English', 'French'] active=[] parked=[] existence=[]
+tree=landed melder=0.2.8250 PYTHONHASHSEED=2 stage_after_link: after remove_index_from_contract: index members=['English', 'French'] active=[] parked=[] existence=[]
+tree=landed melder=0.2.8250 PYTHONHASHSEED=3 stage_after_link: remove_index_from_contract: RuntimeError: Spell version French not found for conduit ID <lender>.
+tree=landed melder=0.2.8250 PYTHONHASHSEED=4 stage_after_link: remove_index_from_contract: RuntimeError: Spell version French not found for conduit ID <lender>.
+tree=landed melder=0.2.8250 PYTHONHASHSEED=5 stage_after_link: after remove_index_from_contract: index members=['English', 'French'] active=[] parked=[] existence=[]
+tree=landed melder=0.2.8250 PYTHONHASHSEED=6 stage_after_link: remove_index_from_contract: RuntimeError: Spell version French not found for conduit ID <lender>.
+tree=landed melder=0.2.8250 PYTHONHASHSEED=7 stage_after_link: after remove_index_from_contract: index members=['English', 'French'] active=[] parked=[] existence=[]
+tree=landed melder=0.2.8250 PYTHONHASHSEED=8 stage_after_link: remove_index_from_contract: RuntimeError: Spell version French not found for conduit ID <lender>.
+tree=landed melder=0.2.8250 PYTHONHASHSEED=9 stage_after_link: remove_index_from_contract: RuntimeError: Spell version French not found for conduit ID <lender>.

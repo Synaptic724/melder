@@ -1,0 +1,424 @@
+{
+ "src/melder/aether/spellbook/spell_compiler/system/spell_system_adjacency_snapshot.py": [
+  84,
+  96,
+  108
+ ],
+ "src/melder/aether/spellbook/spell_compiler/system/spell_system_root_blueprint_builder.py": [
+  74,
+  74,
+  75,
+  77,
+  81,
+  334
+ ],
+ "tests/component/melder/aether/conduit/test_conduit_component_cluster.py": [
+  283,
+  330,
+  368,
+  414,
+  480,
+  481,
+  629,
+  678,
+  679,
+  731,
+  758
+ ],
+ "tests/component/melder/aether/conduit/test_conduit_component_meld_gating.py": [
+  78,
+  119,
+  164,
+  196
+ ],
+ "tests/component/melder/aether/conduit/test_conduit_component_meld_overrides.py": [
+  234,
+  496,
+  544
+ ],
+ "tests/component/melder/aether/conduit/test_conduit_component_transactions.py": [
+  66,
+  375,
+  433,
+  488,
+  535,
+  715
+ ],
+ "tests/component/melder/aether/test_conduit_cloud_component.py": [
+  72
+ ],
+ "tests/component/melder/spellbook/spell_compiler_runtime_test_support.py": [
+  31
+ ],
+ "tests/component/melder/spellbook/spell_crafter/change_control/test_spellbook_component_spell_crafter_change_control.py": [
+  61,
+  153,
+  229,
+  315,
+  427,
+  527,
+  528
+ ],
+ "tests/component/melder/spellbook/spell_crafter/dag/test_spellbook_component_dag_local_frame.py": [
+  51,
+  135,
+  213
+ ],
+ "tests/component/melder/spellbook/spell_crafter/phases/test_spellbook_component_spell_crafter_phase5.py": [
+  65,
+  114,
+  115,
+  116,
+  196,
+  197,
+  248,
+  249,
+  285
+ ],
+ "tests/component/melder/spellbook/spell_crafter/spell_examiner/test_spellbook_component_spell_examiner.py": [
+  57,
+  126,
+  170,
+  234
+ ],
+ "tests/component/melder/spellbook/spell_crafter/spell_examiner/test_spellbook_component_spell_examiner_inspection.py": [
+  52,
+  88,
+  133
+ ],
+ "tests/component/melder/spellbook/spell_crafter/spell_examiner/test_spellbook_component_spell_examiner_profiles.py": [
+  52,
+  110,
+  164,
+  215
+ ],
+ "tests/component/melder/spellbook/spell_crafter/spell_examiner/test_spellbook_component_spell_examiner_strategies.py": [
+  63,
+  252,
+  286,
+  316,
+  347,
+  376,
+  406,
+  441,
+  473,
+  508,
+  546
+ ],
+ "tests/component/melder/spellbook/spell_crafter/spell_requirements_finder/test_spellbook_component_spell_requirements_finder.py": [
+  53,
+  87,
+  118,
+  161
+ ],
+ "tests/component/melder/spellbook/spell_crafter/symbolic_graph/test_spellbook_component_symbolic_graph.py": [
+  48,
+  113,
+  183
+ ],
+ "tests/component/melder/spellbook/spell_crafter/system/test_spellbook_component_spell_system.py": [
+  61,
+  130,
+  198,
+  259
+ ],
+ "tests/component/melder/spellbook/spell_crafter/system/test_spellbook_component_spell_system_phase5.py": [
+  51,
+  119,
+  198,
+  199,
+  292
+ ],
+ "tests/component/melder/spellbook/spell_crafter/system/test_spellbook_component_spell_system_phase5_contracts.py": [
+  95,
+  199,
+  293,
+  405
+ ],
+ "tests/component/melder/spellbook/spell_crafter/topology/test_spellbook_component_spell_local_topology.py": [
+  52,
+  130,
+  211
+ ],
+ "tests/component/melder/spellbook/spell_crafter/validation/test_spellbook_component_validation_context.py": [
+  53,
+  88
+ ],
+ "tests/component/melder/spellbook/spell_crafter/validation/test_spellbook_component_validation_strategies.py": [
+  87,
+  183,
+  251,
+  317,
+  387,
+  426,
+  487,
+  531,
+  573,
+  610,
+  675,
+  762,
+  813,
+  848,
+  887,
+  969,
+  970,
+  1074
+ ],
+ "tests/component/melder/spellbook/spell_crafter/validation/test_spellbook_component_validation_system.py": [
+  51,
+  114,
+  179,
+  284,
+  285
+ ],
+ "tests/component/melder/spellbook/test_codegen_signature_determinism.py": [
+  60,
+  254,
+  338,
+  376,
+  627
+ ],
+ "tests/component/melder/spellbook/test_spell_compiler_component_system.py": [
+  19,
+  162,
+  198,
+  231,
+  261,
+  292,
+  326,
+  355,
+  382,
+  412,
+  445,
+  469,
+  500,
+  501,
+  525,
+  545,
+  572,
+  598,
+  627,
+  661,
+  691,
+  722,
+  759,
+  786,
+  787
+ ],
+ "tests/component/melder/spellbook/test_spellbook_component_caching_system.py": [
+  160,
+  214,
+  264,
+  293,
+  521,
+  602
+ ],
+ "tests/component/melder/spellbook/test_spellbook_component_conduit_definition.py": [
+  50,
+  174,
+  175,
+  219,
+  254,
+  261,
+  266,
+  271,
+  271,
+  303,
+  310,
+  320,
+  320
+ ],
+ "tests/component/melder/spellbook/test_spellbook_component_contracts.py": [
+  81,
+  122,
+  230,
+  330,
+  364,
+  403,
+  469,
+  520,
+  553,
+  609,
+  642,
+  643,
+  678,
+  713,
+  742
+ ],
+ "tests/component/melder/spellbook/test_spellbook_component_find_spell_by_id.py": [
+  152,
+  161
+ ],
+ "tests/component/melder/spellbook/test_spellbook_component_spell.py": [
+  61,
+  144,
+  230,
+  270,
+  320
+ ],
+ "tests/component/melder/spellbook/test_spellbook_component_spell_crafter.py": [
+  65,
+  682,
+  758,
+  829,
+  905,
+  978,
+  1031,
+  1077,
+  1119,
+  1182,
+  1256,
+  1330,
+  1410,
+  1484,
+  1560,
+  1638,
+  1639,
+  1640,
+  1730,
+  1731,
+  1732
+ ],
+ "tests/component/melder/spellbook/test_spellbook_component_spellbook.py": [
+  67,
+  262,
+  357,
+  634,
+  639,
+  1246,
+  1283,
+  1328,
+  1389,
+  1436,
+  1487,
+  1530,
+  1574,
+  1613,
+  1708
+ ],
+ "tests/experimentation/test_forced_phase10_phase11_creation_context_comparison_harness.py": [
+  23,
+  465
+ ],
+ "tests/integration/melder/aether/test_aether_integration_change_control_transactions.py": [
+  76,
+  1126,
+  1191,
+  1238,
+  1528
+ ],
+ "tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py": [
+  210,
+  212,
+  662,
+  663
+ ],
+ "tests/integration/melder/spellbook/test_spell_compiler_system_integration.py": [
+  16,
+  113,
+  175,
+  201,
+  231,
+  261,
+  297,
+  331,
+  369,
+  404,
+  431,
+  458,
+  476,
+  502,
+  503,
+  523,
+  548,
+  575
+ ],
+ "tests/integration/melder/spellbook/test_spellbook_integration_spell_crafter.py": [
+  56,
+  154,
+  420,
+  458,
+  496,
+  534
+ ],
+ "tests/integration/melder/spellbook/test_spellbook_integration_validation_system.py": [
+  59,
+  136,
+  256,
+  340,
+  460,
+  544,
+  545,
+  667,
+  744,
+  807,
+  1000,
+  1059,
+  1161,
+  1221,
+  1287,
+  1347,
+  1411,
+  1488,
+  1605,
+  1606,
+  1607,
+  1680,
+  1681,
+  1764,
+  1765
+ ],
+ "tests/unit/melder/aether/conduit/conduit_ward/test_conduit_ward_contracts.py": [
+  139,
+  141,
+  142,
+  277,
+  278,
+  331,
+  332
+ ],
+ "tests/unit/melder/aether/conduit/meld/test_meld.py": [
+  1829,
+  1832,
+  1835,
+  1848,
+  1851,
+  1854
+ ],
+ "tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system_states_dependent_walk.py": [
+  89,
+  92,
+  95,
+  111,
+  127,
+  133
+ ],
+ "tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system_states_verdict_retirement.py": [
+  170
+ ],
+ "tests/unit/melder/spellbook/spell_crafter/symbolic_graph/test_spell_symbolic_dependency.py": [
+  29
+ ],
+ "tests/unit/melder/spellbook/spell_crafter/symbolic_graph/test_spell_symbolic_graph.py": [
+  29
+ ],
+ "tests/unit/melder/spellbook/test_spellbook.py": [
+  377,
+  382,
+  384,
+  386,
+  388,
+  390,
+  397,
+  399,
+  403,
+  4461,
+  4468,
+  4475,
+  4475,
+  4498,
+  4505,
+  4512,
+  4512
+ ]
+}

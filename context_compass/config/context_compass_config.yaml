@@ -120,7 +120,7 @@ work_tracking:
 # Roster, request counters and setup outcomes remain on the existing local board.
 
 agent_communication:
-  backend: codex_mcp # mailbox | codex_mcp; absent means mailbox
+  backend: mailbox # mailbox | codex_mcp; absent means mailbox
 
 # Guidance and templates for NEW tickets. This does not select an agent role
 # or rewrite existing tickets. Optional metadata belongs to the chosen design.

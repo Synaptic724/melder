@@ -1,0 +1,31 @@
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: The user docs run on public calls (Python 3.14.7t, GIL off and on, same output). README's swap sketch names
+    the versions by id (`id_v1 = index.selected_spell_id`, `notch_spell(spell_index=index, spell_id=id_v2)`, the
+    revert by `id_v1`); the acceptance probe builds the sketch's preconditions on a dynamic root and execs its two
+    blocks verbatim - loop and revert OK. docs/expert/governed-change.md says promotion is
+    `notch_spell(spell_index=..., spell_id=...)` and that a wrong target is refused. UX expert 17 takes the swap by
+    id - melds v2 (rate 250), notches back (rate 100); expert 26's comment points at that lesson; both run green.
+    The expert concept map's lesson-17 entry and arc line carry the 2026-10-16 ruling, and its 2026-08-03
+    retraction is marked SUPERSEDED with its history kept. The today-probe rerun on the changed tree: C3, C4 and C5
+    raise ValueError naming the version and leave both indexes selecting, holding and melding as before; C1
+    (notching to what `find_spell_by_id` returns) is still the documented no-op, its answer being the active
+    member; C2 unchanged.
+  EVIDENCE:
+  - context_compass/artifacts/public_notch_target_20261016/probes/probe_readme_loop.py:1-76
+  - context_compass/artifacts/public_notch_target_20261016/runs/probe_readme_loop_gil0.txt:1-4
+  - context_compass/artifacts/public_notch_target_20261016/runs/probe_readme_loop_gil1.txt:1-4
+  - context_compass/artifacts/public_notch_target_20261016/runs/ux17_gil1.txt:1-18
+  - context_compass/artifacts/public_notch_target_20261016/runs/ux26_gil0.txt:1-20
+  - context_compass/artifacts/public_notch_target_20261016/runs/probe_notch_target_after_gil0.txt:1-6
+  - README.md:1063-1093
+  - docs/expert/governed-change.md:16-27
+  - UX_and_AIX_experiences/04_expert/17_notch_swapping_a_live_object.py:1-169
+  - UX_and_AIX_experiences/04_expert/_concept_map.txt:348-389
+  - UX_and_AIX_experiences/04_expert/_concept_map.txt:807-812
+  IMPACT: The exit gate's README-loop probe holds; the system docs, graph, release note, notch and rebuild remain.
+  NEXT: The system docs (src_architecture, src_components, the tests docs, their indexes) and the graph.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9

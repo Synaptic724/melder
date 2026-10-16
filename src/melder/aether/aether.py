@@ -2801,7 +2801,7 @@ class Aether(Cleanable):
 
     def _get_all_spell_ids(self, aetheric_frame_name: str = "default") -> set[str]:
         """
-        Return a flat set of all spell version ids known for one frame.
+        Return a flat set of all spell_ids known for one frame.
 
         Contract:
             - Reads from the frame-owned cached version registry, maintained
@@ -2813,7 +2813,7 @@ class Aether(Cleanable):
 
         Returns:
             set[str]:
-                All cached spell version ids for the frame.
+                All cached spell_ids for the frame.
         Threading:
             The cross-frame sweep holds no Aether lock and copies nothing: it walks
             the immutable frame view the registry's writers republish under the

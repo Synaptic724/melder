@@ -1,0 +1,22 @@
+[
+  {"path": "system_docs/patches/active/public_notch_target_2026_10_16/architecture_patch.md",
+   "old": "- Status: written before any `src/` edit (2026-10-16); awaiting the build\n",
+   "new": "- Status: landed 0.2.8249 (2026-10-16) as patched; promoted to src_architecture, src_components, tests_components,\n  tests_architecture and the graph; archived\n",
+   "count": 1},
+  {"path": "system_docs/patches/active/public_notch_target_2026_10_16/architecture_patch.md",
+   "old": "- Updated: 2026-10-16T12:50:00Z\n",
+   "new": "- Updated: 2026-10-16T14:20:33Z\n",
+   "count": 1},
+  {"path": "system_docs/patches/active/public_notch_target_2026_10_16/architecture_patch.md",
+   "old": "- What changed: nothing yet; this patch precedes the first `src/` edit.\n- What remains: the mapping note, the build, the docs, the notch and the rebuild.\n- Next entrypoint: component_patch_conduit_notch_target.md, then the red tests.\n",
+   "new": "- What changed: built as patched (the second helper is named `_owned_notch_target`): `notch_spell` takes `spell_id=`\n  beside `spell=` and checks its target before admission and inside the window; 16 unit and 10 integration tests\n  green with the GIL off and on, the notch callers' suites unchanged; README, governed-change, UX expert 17 and 26\n  and the concept map run by id; the system docs, their indexes and the graph carry it (the canonical docs also\n  name the linked conduits the notch seals); the release note has its section; notched 0.2.8249.\n- What remains: nothing in this lane. Backlog: the same id keyword for `add_to_spell_index` /\n  `remove_from_spell_index` (the owner's DECISION_REQUEST), and the seam's park-first ordering (Risks).\n- Next entrypoint: the canonical docs - src_architecture (Operational Invariants, \"The notch names its target and\n  checks it\") and src_components (Conduit Runtime; SpellIndex Mutation Surface).\n",
+   "count": 1},
+  {"path": "system_docs/patches/active/public_notch_target_2026_10_16/component_patch_conduit_notch_target.md",
+   "old": "- Status: written before any `src/` edit; awaiting the build\n",
+   "new": "- Status: built as patched and landed 0.2.8249 (2026-10-16); promoted into src_components (Conduit Runtime, SpellIndex\n  Mutation Surface, the notch flow) and src_architecture; archived\n",
+   "count": 1},
+  {"path": "system_docs/patches/active/public_notch_target_2026_10_16/code_description_patch_conduit_notch_target.md",
+   "old": "- Status: written before any `src/` edit; awaiting the build\n",
+   "new": "- Status: built as described and landed 0.2.8249 (2026-10-16); promoted into src_components (the notch flow) and\n  src_architecture (the invariant and failure modes); archived\n",
+   "count": 1}
+]

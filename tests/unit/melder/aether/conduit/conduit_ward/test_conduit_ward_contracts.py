@@ -164,7 +164,7 @@ class FakeSpellbook:
         self._destroy_detached_calls: list[str] = []
 
     def find_spell_by_id(self, spell_id: str) -> Optional[FakeSpell]:
-        """Resolve a locally owned spell by version id, as Spellbook.find_spell_by_id answers from its id maps."""
+        """Resolve a locally owned spell by spell_id, as Spellbook.find_spell_by_id answers from its id maps."""
         for spell in self._spells.values():
             if spell.spell_id == spell_id:
                 return spell
@@ -278,7 +278,7 @@ class FakeSpellbook:
                 versions_set.add(version_id)
 
     def _find_contracted_spell(self, spell_index: SpellIndex | str) -> FakeSpell:
-        """Locate a contracted spell by SpellIndex or version id across all peers."""
+        """Locate a contracted spell by SpellIndex or spell_id across all peers."""
         for spell_map in self._contracted_spells.values():
             if isinstance(spell_index, SpellIndex):
                 if spell_index in spell_map:
@@ -291,7 +291,7 @@ class FakeSpellbook:
         raise RuntimeError("Contracted spell not found.")
 
     def _find_contracted_spell_by_id(self, spell_id: str, conduit_id: str) -> FakeSpell | None:
-        """Locate a contracted spell by version id within a peer conduit."""
+        """Locate a contracted spell by spell_id within a peer conduit."""
         spell_map = self._contracted_spells.get(conduit_id)
         if spell_map is None:
             return None
@@ -302,7 +302,7 @@ class FakeSpellbook:
         return None
 
     def _remove_contracted_spell(self, spell_id: str, conduit_id: str) -> None:
-        """Remove a contracted spell by version id for a peer conduit."""
+        """Remove a contracted spell by spell_id for a peer conduit."""
         self._remove_contracted_calls.append((conduit_id, spell_id))
         spell_map = self._contracted_spells.get(conduit_id)
         lookup_map = self._lookup_contracted_spells.get(conduit_id)
@@ -592,7 +592,7 @@ class FakeConduit:
         return spell.spell_id
 
     def find_contracted_spell(self, spell_id: str) -> FakeSpell | None:
-        """Find a contracted spell by version id across all peers."""
+        """Find a contracted spell by spell_id across all peers."""
         for conduit_id in self._spellbook._contracted_spells.keys():
             spell = self._spellbook._find_contracted_spell_by_id(spell_id, conduit_id)
             if spell is not None:
@@ -1347,7 +1347,7 @@ def test_get_all_spells_in_contracts_returns_current_versions(
 def test_get_spell_in_contracts_matches_lineage_versions(
     linked_pair: tuple[FakeConduit, FakeConduit],
 ) -> None:
-    """Verify spell lookup honors lineage history. A previous version id should resolve to the current spell."""
+    """Verify spell lookup honors lineage history. A previous spell_id should resolve to the current spell."""
     owner, borrower = linked_pair
     spell = _register_spell(owner, "spell-14", permissions=Permissions.create)
 

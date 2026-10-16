@@ -66,7 +66,7 @@ class FakeSpellIndex:
     """
 
     def __init__(self, spell_id: str) -> None:
-        """Record the one selected version id the destroy seam reads."""
+        """Record the one selected spell_id the destroy seam reads."""
         self.selected_spell_id = spell_id
 
 

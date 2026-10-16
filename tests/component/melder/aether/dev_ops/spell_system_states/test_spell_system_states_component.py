@@ -22,7 +22,7 @@ def _register_index(states, spell_id: str) -> SpellIndex:
         - Registers a state entry for the lineage.
     Args:
         states: SpellSystemStates registry.
-        spell_id: Version id to register as current.
+        spell_id: The spell_id to register as current.
     Returns:
         SpellIndex: The created spell index instance.
     """
@@ -473,7 +473,7 @@ def test_component_spell_system_states_rebind_preserves_old_spell_id_mapping() -
     Purpose:
         Validate old spell ids continue resolving after a rebind.
     Contract:
-        - get_by_spell_id resolves both the old and new version ids.
+        - get_by_spell_id resolves both the old and new spell_ids.
     Returns:
         None.
     Raises:

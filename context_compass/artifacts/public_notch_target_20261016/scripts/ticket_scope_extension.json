@@ -1,0 +1,18 @@
+[
+  {"path": "tickets/tasks/2026-10-16_public_notch_target_for_staged_versions_task.md",
+   "old": "  indexes and the graph; the release note; one notch; the rebuild last. spellbook.py is read, not edited.\n",
+   "new": "  indexes and the graph; the release note; one notch; the rebuild last. spellbook.py is read, not edited.\n  Extended by the owner (2026-10-16): `Conduit.add_to_spell_index` and `Conduit.remove_from_spell_index` take\n  `spell_id=` too, resolved the same way, with their docstrings; the lane's text says spell_id, not \"version id\".\n",
+   "count": 1},
+  {"path": "tickets/tasks/2026-10-16_public_notch_target_for_staged_versions_task.md",
+   "old": "  id alone without a new lookup; DECISION_REQUEST before the keyword reaches `add_to_spell_index` or\n  `remove_from_spell_index` (outside the scope the owner ruled on).\n",
+   "new": "  id alone without a new lookup. The keyword reached `add_to_spell_index` and `remove_from_spell_index` on the\n  owner's word (DECISION note 2026-10-16T15:04:47Z), not before it.\n",
+   "count": 1},
+  {"path": "tickets/tasks/2026-10-16_public_notch_target_for_staged_versions_task.md",
+   "old": "- In scope: one public way to name the notch target; the README and docs examples; tests and docs.\n- Out of scope: `find_spell_by_id`'s documented live-spell answer (other callers rely on it); `bind_inactive`'s\n  return value (a spell id); `add_to_spell_index` / `remove_from_spell_index`, unless the owner extends the scope\n  (asked 2026-10-16: the DECISION_REQUEST below).\n",
+   "new": "- In scope: one public way to name the notch target; the README and docs examples; tests and docs; on the owner's\n  extension (2026-10-16), the same `spell_id=` on `add_to_spell_index` / `remove_from_spell_index` and spell_id\n  wording in the lane's text.\n- Out of scope: `find_spell_by_id`'s documented live-spell answer (other callers rely on it); `bind_inactive`'s\n  return value (a spell id); new checks in the index-move seams (spellbook.py is melder_1's); \"version id\" wording\n  outside this lane's text.\n",
+   "count": 1},
+  {"path": "tickets/tasks/2026-10-16_public_notch_target_for_staged_versions_task.md",
+   "old": "- [ ] README sketch and docs/expert/governed-change.md run as written; system docs, graph, release note, notch,\n      rebuild last.\n",
+   "new": "- [ ] README sketch and docs/expert/governed-change.md run as written; system docs, graph, release note, notch,\n      rebuild last.\n- [ ] Extension (owner, 2026-10-16): index-move component patch and mapping; red tests, `spell_id=` on\n      `add_to_spell_index` / `remove_from_spell_index`, green in both GIL modes; spell_id wording; docs, system docs,\n      graph and release note carry it; the lane archived again.\n",
+   "count": 1}
+]

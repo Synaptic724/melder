@@ -27,13 +27,13 @@ class SpellSystemRootBlueprintBuilder:
     """
     Phase-5 structural builder.
 
-    Given a SpellSystemAdjacencySnapshot (version-id graph for the *frame*),
+    Given a SpellSystemAdjacencySnapshot (spell_id graph for the *frame*),
     construct a RootResolutionBlueprint for every root spell in that frame.
 
     Semantics:
 
-        * Each RootResolutionBlueprint is anchored at a **root version-id**,
-          but its DAG contains **all reachable version-ids** for that root.
+        * Each RootResolutionBlueprint is anchored at a **root spell_id**,
+          but its DAG contains **all reachable spell_ids** for that root.
         * Edges are provider -> dependent (same orientation as Phase 3 DAGs).
         * This is *purely structural*:
               - node payloads are None,
@@ -137,7 +137,7 @@ class SpellSystemRootBlueprintBuilder:
 
         Args:
             root_spell_id:
-                Version-id of the spell to treat as the blueprint root.
+                The spell_id of the spell to treat as the blueprint root.
             snapshot:
                 SpellSystemAdjacencySnapshot for the *entire* spell frame.
 
@@ -224,7 +224,7 @@ class SpellSystemRootBlueprintBuilder:
         """
         Compute ``reachable(X)`` for every spell id, sharing subtree work.
 
-        ``reachable(X)`` is ``{X}`` plus every version-id reachable by following
+        ``reachable(X)`` is ``{X}`` plus every spell_id reachable by following
         ``dependencies``, restricted to ``all_spell_ids`` -- identical to the
         per-root DFS in ``_build_single_root_dag``.
 
@@ -337,7 +337,7 @@ class SpellSystemRootBlueprintBuilder:
 
         Args:
             root_spell_id:
-                Version-id of the root spell for this blueprint.
+                The spell_id of the root spell for this blueprint.
             dependencies:
                 Mapping of ``spell_id -> { dependency_spell_id, ... }`` where
                 edges are **consumer -> providers** at the adjacency level.
@@ -385,7 +385,7 @@ class SpellSystemRootBlueprintBuilder:
                         stack.append(dep_id)
 
         # ------------------------------------------------------------------
-        # 2. Build the DAG nodes (one per reachable version-id).
+        # 2. Build the DAG nodes (one per reachable spell_id).
         # ------------------------------------------------------------------
         dag = DirectedAcyclicWorkGraph()
         # Purely structural: payload is None. Payloads at this level

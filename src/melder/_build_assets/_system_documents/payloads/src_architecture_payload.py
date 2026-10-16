@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_architecture.md'
-LINE_COUNT = 4582
-CONTENT_SHA256 = '31323f1d4b4fdb712f1b5e65fe1ed62186b20bf81477ec65c0366265c2aca023'
+LINE_COUNT = 4696
+CONTENT_SHA256 = 'b6a2ae955284827f1d3aeca9ff5bec4fc26d7b2fe27d8794a5e0f6fe1c34387e'
 
 TEXT = """# Src Architecture (C4)
 
@@ -512,11 +512,21 @@ External interfaces are Python APIs:
   the owning Spellbook, WHICH ADMITS the change-control transaction". It does
   not. That wording was inherited from the Conduit docstrings, which say the
   same thing and are also wrong - see `src/melder/aether/spellbook/spellbook.py:3811-3813`, which states the
-  opposite correctly. The code settles it.
+  opposite correctly. The code settles it, and since 0.2.8249 all three Conduit docstrings say so.
+  All three name the spell they act on by `spell_id=` - the spell_id `bind` or `bind_inactive` returned - or by
+  `spell=`, exactly one, and resolve a spell_id inside the call to the exact spell the conduit's Spellbook owns,
+  active or parked (0.2.8249; the two index moves on the owner's extension). Both or neither is a ValueError, a
+  non-str spell_id or a str given as `spell` a TypeError, and a spell_id that Spellbook does not own a ValueError
+  before anything starts. Before the transaction and again inside the held window a notch also refuses a spell of
+  another index (ValueError); the index moves leave the rest to their seams (RuntimeError: an active spell, another
+  Book's spell or target index, a non-member or only member on removal). `get_spell_by_id` and `find_spell_by_id`
+  still answer a parked spell_id with the index's active member, so a parked spell is named by its spell_id.
   EVIDENCE:
-  - src/melder/aether/conduit/conduit.py:5622, 5694 (`notch_spell`; starts the transaction)
-  - src/melder/aether/conduit/conduit.py:5712, 5767 (`add_to_spell_index`; starts it)
-  - src/melder/aether/conduit/conduit.py:5790, 5838 (`remove_from_spell_index`; starts it)
+  - src/melder/aether/conduit/conduit.py:5622, 5731 (`notch_spell`; starts the transaction)
+  - src/melder/aether/conduit/conduit.py:5753-5969 (`_resolve_notch_target`, `_owned_notch_target`,
+    `_check_spell_argument`, `_owned_spell_by_id`, `_resolve_spell_to_move`)
+  - src/melder/aether/conduit/conduit.py:5971, 6061 (`add_to_spell_index`; starts it)
+  - src/melder/aether/conduit/conduit.py:6084, 6159 (`remove_from_spell_index`; starts it)
   - src/melder/aether/spellbook/spellbook.py:3969 (`_add_to_spell_index` entry)
   - src/melder/aether/spellbook/spellbook.py:4002 (`_apply_add_to_index` seam)
 - `Spellbook.conjure(...)` for building a root Conduit.
@@ -605,9 +615,11 @@ index-link borrowers to the new one, which they build at their next meld. Mutati
 the versions, compositions pin specific ones, and the creation stores key objects by version id,
 so a `unique` can have one live object per version while agents iterate on one object and converge
 on the version they want (corrected 2026-10-15: this paragraph called the borrower update a missing
-fan-out).
+fan-out). A notch names its target by spell_id or by Spell and checks that it is the Book's version of that
+index before anything moves; the two index moves take a spell_id the same way (0.2.8249).
 EVIDENCE: src/melder/aether/spellbook/spellbook.py:3826-4262 (the three seams, remeasured 2026-10-16);
-`src/melder/aether/conduit/conduit.py:Conduit.notch_spell`, `Conduit._deactivate_borrowed_spell` and
+`src/melder/aether/conduit/conduit.py:Conduit.notch_spell`, `Conduit._owned_notch_target` (the target check),
+`Conduit._resolve_spell_to_move` (the index moves' spell_id), `Conduit._deactivate_borrowed_spell` and
 `src/melder/aether/conduit/conduit_ward/conduit_ward.py:ConduitWard._emit_index_notch` (the borrowers).
 
 ## Entrypoints and Runtime Guardrails
@@ -929,13 +941,26 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:3826-4262 (the three seams, r
 ### Sequence: SpellIndex Mutation Entry
 1. Caller targets one live SpellIndex member through `Conduit.notch_spell(...)`,
    `Conduit.add_to_spell_index(...)`, or `Conduit.remove_from_spell_index(...)`.
-   The entry point is the Conduit; it delegates to its owning Spellbook.
-2. Spellbook derives the binding key plus source/target SpellIndex metadata
-   and starts the corresponding transaction family:
-   `notch`, `add_to_index`, or `remove_from_index`.
+   The entry point is the Conduit. Each verb names its spell by `spell_id=` (the
+   spell_id `bind` or `bind_inactive` returned) or by `spell=`, exactly one, checked by
+   the shared `_check_spell_argument` (0.2.8249). A notch's `_owned_notch_target`
+   resolves the spell_id through the Spellbook's `_get_owned_spell` - the exact owned
+   spell, active or parked - and refuses a spell the Spellbook does not own or one of
+   another index before anything starts; the index moves' `_resolve_spell_to_move`
+   resolves it the same way (`_owned_spell_by_id`) and refuses only a spell_id the
+   Spellbook does not own, leaving the rest to their seams (step 5).
+2. The Conduit derives the binding key plus source/target SpellIndex metadata
+   and starts the corresponding transaction family through the frame's DevOps
+   mediator: `notch`, `add_to_index`, or `remove_from_index` (corrected
+   2026-10-16: this step said the Spellbook starts it; the Conduit does - see
+   System Boundary and External Interfaces).
 3. The resolved transaction strategy seals the owning spellbook/conduit
-   surfaces and the targeted binding key for the duration of the mutation.
-4. Inside the held transaction window the Conduit calls the Spellbook's
+   surfaces and the targeted binding key for the duration of the mutation. The
+   notch claims the Spellbook, the acting conduit and the conduits linked to it
+   EXCLUSIVE and freezes their creation gates until it ends.
+4. Inside the held transaction window a notch checks its target again
+   (`_owned_notch_target`; a refusal ends the transaction as failed before the
+   Spellbook is called), then the Conduit calls the Spellbook's
    internal entry - `_notch_spell(...)`, `_add_to_spell_index(...)` or
    `_remove_from_spell_index(...)` - which in turn delegates the member-store
    work to `_apply_notch(...)`, `_apply_add_to_index(...)` or
@@ -947,7 +972,10 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:3826-4262 (the three seams, r
      and re-registers the index gated + dirty for lazy meld-time recompile;
    - add/remove are membership-only moves that leave the spell owned and
      inactive with its id-keyed state untouched; add destroys an emptied source
-     index, remove mints a fresh inactive index instead of destroying anything.
+     index, remove mints a fresh inactive index instead of destroying anything;
+   - before moving, the add and remove seams refuse (RuntimeError) a spell the
+     Spellbook does not own and an active one; add also a target index it does not
+     own, remove a spell outside the source index or its only member.
 6. After the window the conduit updates its borrowers, by design (corrected 2026-10-15; this step
    called it a missing fan-out): `Conduit._deactivate_borrowed_spell` has every linked peer park its
    contracted copy of the outgoing version, and `ConduitWard._emit_index_notch` moves each index-link
@@ -958,8 +986,11 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:3826-4262 (the three seams, r
    - src/melder/aether/spellbook/spellbook.py:3826-3967
    - src/melder/aether/spellbook/spellbook.py:4002-4096
    - src/melder/aether/spellbook/spellbook.py:4177-4262
-   - src/melder/aether/conduit/conduit.py:5622-5710
-   - src/melder/aether/conduit/conduit.py:5907-5936
+   - src/melder/aether/conduit/conduit.py:5622-5751
+   - src/melder/aether/conduit/conduit.py:5753-5969
+   - src/melder/aether/conduit/conduit.py:5971-6172
+   - src/melder/aether/conduit/conduit.py:6228-6257
+   - src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/notch_transaction_strategy.py:239-269
    - src/melder/aether/conduit/conduit_ward/conduit_ward.py:2316-2380
 
 ### Sequence: Change-Control Revalidation
@@ -1054,6 +1085,37 @@ each entry in `src_components.md`; this list is the set that crosses components.
 - Validation strategies registered in `SpellValidationSystem`.
 
 ## Operational Invariants
+- The notch names its target and checks it (2026-10-16, 0.2.8249): `Conduit.notch_spell(*, spell_index, spell=None,
+  spell_id=None, change_reason=...)` takes exactly one of `spell_id` and `spell`. `_resolve_notch_target` refuses
+  both or neither (ValueError) and a non-str spell_id or a str given as `spell` (TypeError); `_owned_notch_target`
+  resolves the spell_id through `Spellbook._get_owned_spell` - a read of `_spells_by_id`, then of `_inactive_spells`,
+  under the Book lock alone, released before it returns - and refuses a version that call does not return, a `spell`
+  that is not the object it returns (a disposed, rebound or another Book's version; a cleaned Spell keeps its
+  spell_id, so it is refused before its deleted `spell_index` is read), and a version whose `spell_index` is not the
+  index passed.
+  `notch_spell` runs the checks before `start_transaction`, so a refusal starts nothing (no seal, no gate freeze),
+  and again first inside the held window, where the notch strategy holds the Book, the acting conduit and the
+  conduits linked to it EXCLUSIVE: no bind, transfer or other index operation on the Book is admitted between that
+  check and the switch, and a refusal there ends the transaction as failed (its `on_end` reopens the frozen gates)
+  before `Spellbook._notch_spell` runs. The resolved Spell is rebound to `spell`, so the transaction metadata, the
+  seam and the fan-out read one object and a valid call behaves as before; a notch to the active version stays a
+  no-op. The checks exist because the seam cannot be handed a foreign target: `_apply_notch` parks the outgoing
+  version before `_reactivate_owned_spell` checks the incoming one, and files it under its own `spell_index`.
+  `Conduit.cleanup_spell` is not admitted through a transaction, so a disposal of the target between the in-window
+  check and the seam's Book lock still meets that park-first order (pre-existing; filed for the seam). No lock or
+  lock-order edge is added: `_get_owned_spell` takes the Book lock alone and the identity reads take none.
+  `add_to_spell_index` and `remove_from_spell_index` take the same two forms (0.2.8249, the owner's extension):
+  `_resolve_spell_to_move` runs the shared `_check_spell_argument` - its messages name the verb - and resolves a
+  spell_id through `_owned_spell_by_id` (`_get_owned_spell`), refusing one the Book does not own before the
+  transaction; a resolved or given Spell then meets the seams' checks as before - owned, parked, and for add a
+  target index the Book owns, for remove a member of the source index and not its only member - so nothing new is
+  checked inside the window, and a seam's refusal there ends the transaction as failed before anything moves.
+  EVIDENCE: `src/melder/aether/conduit/conduit.py:Conduit.notch_spell`, `Conduit._resolve_notch_target`,
+  `Conduit._owned_notch_target`, `Conduit._check_spell_argument`, `Conduit._resolve_spell_to_move`,
+  `Conduit._owned_spell_by_id`, `src/melder/aether/spellbook/spellbook.py:Spellbook._get_owned_spell`,
+  `Spellbook._apply_notch`, `Spellbook._reactivate_owned_spell`, `Spellbook._apply_add_to_index`,
+  `Spellbook._apply_remove_from_index` and
+  `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/notch_transaction_strategy.py:NotchTransactionStrategy._seal_scope_keys`.
 - Parked versions are wired at conjure (2026-10-16, 0.2.8248): after conjure every version a Book owns carries the
   owner stamp - `Spell._add_owned_conduit` with the root's id, name and store, its dynamic flag and gate controller
   and the Book's caching posture, which configures the version's CreationContextFactory and, for a managed version,
@@ -1941,7 +2003,7 @@ each entry in `src_components.md`; this list is the set that crosses components.
     (`bind_frame_configuration` unfrozen branch: the fourteen-value copy plus
     `frame_configuration.cleanup()` on the donor, then freeze with
     `origin_frame_name`)
-  - src/melder/aether/spellbook/spellbook_creation_system.py:1253-1292
+  - src/melder/aether/spellbook/spellbook_creation_system.py:1282-1329
     (`SpellbookCreationSystem.check_system_state`: missing-posture refusal and
     the non-dynamic default-policy-only rule)
 - A SpellSpace melds and purges only while leased: a space released to its pool refuses both with
@@ -1965,7 +2027,7 @@ each entry in `src_components.md`; this list is the set that crosses components.
   ask.
   EVIDENCE:
   - src/melder/aether/spellbook/configuration/system_state.py:32-49
-  - src/melder/aether/spellbook/spellbook_creation_system.py:1253-1292
+  - src/melder/aether/spellbook/spellbook_creation_system.py:1282-1329
 - Method/lambda spells must use `Existence.unique`, because a method or lambda
   has no stable identity to share: two resolutions of a non-unique existence
   would have to return the same object, and there is no object to return until
@@ -1983,6 +2045,42 @@ each entry in `src_components.md`; this list is the set that crosses components.
   not the same thing as a Rift-level event orchestrator.
 
 ## Failure Modes and Error Paths
+- `Conduit.notch_spell` refuses its target before anything moves (0.2.8249): ValueError "notch_spell accepts either
+  `spell` or `spell_id`, not both." and "notch_spell needs a spell: pass spell_id=<the spell_id bind or
+  bind_inactive returned>, or spell=<its Spell object>."; TypeError "notch_spell `spell_id` must be a string; got
+  <type>." and, for a str given as `spell`, one that names `spell_id=`; ValueError "notch_spell: spell_id '<id>' is
+  not owned by this conduit's Spellbook. ..." (remedy: notch through the conduit of the Spellbook that owns it, or
+  stage the class on this index with bind_inactive, which returns the spell_id to pass) and "notch_spell: spell_id
+  '<id>' belongs to another SpellIndex, not the one passed. ..." (remedy: pass
+  `conduit.get_spell_by_id('<id>').spell_index`, or move it with add_to_spell_index first). A refusal before the
+  transaction changes nothing; one inside the window (another operation moved the target after the first check)
+  ends the transaction as failed, and the Spellbook is never called.
+  EVIDENCE: `src/melder/aether/conduit/conduit.py:Conduit._check_spell_argument` and `Conduit._owned_notch_target`.
+- `Conduit.add_to_spell_index` and `remove_from_spell_index` refuse before anything starts (0.2.8249): the same
+  argument refusals worded for the verb ("<verb> accepts either `spell` or `spell_id`, not both.", "<verb> needs a
+  spell: ...", the two TypeErrors) and ValueError "<verb>: spell_id '<id>' is not owned by this conduit's
+  Spellbook. Call <verb> through the conduit of the Spellbook that owns it." Past that the Spellbook refuses as it
+  always did, inside the window (RuntimeError; the transaction ends as failed and nothing moves): a spell another
+  Book owns, an active spell ("... is active in its index; notch away from it before moving it."), a target index
+  the Book does not own (add), a spell outside the source index or its only member (remove; "... use cleanup_spell
+  to dispose it instead."). Until 0.2.8249 neither verb could be called from public code, since no public call
+  returns a parked spell's Spell object, and their docstrings said the Spellbook admits the transaction.
+  EVIDENCE: `src/melder/aether/conduit/conduit.py:Conduit._resolve_spell_to_move`, `Conduit._owned_spell_by_id`,
+  `src/melder/aether/spellbook/spellbook.py:Spellbook._apply_add_to_index` and
+  `Spellbook._apply_remove_from_index`.
+- A notch to a version of another index, or to another Spellbook's version, no longer damages the index (fixed in
+  0.2.8249). Through 0.2.8248 nothing checked the target: a version parked in another index of the same Book was
+  accepted and corrupted both indexes - this one selected it with no active entry (a meld of its former version
+  raised KeyError), the other kept selecting its old version while its active entry was the moved one, and a meld
+  of the moved version raised RuntimeError "Cannot build CreationContext before spell_codegen_creation exists.";
+  the active version of another index, or another Book's version, raised RuntimeError "Owned spell_id not parked
+  for reactivation" after this index's active version had been parked, leaving the index with no active version
+  until a notch back. Each now raises the ValueError above with both indexes as they were.
+  EVIDENCE: `src/melder/aether/conduit/conduit.py:Conduit._owned_notch_target`,
+  `src/melder/aether/spellbook/spellbook.py:Spellbook._apply_notch` and `Spellbook._reactivate_owned_spell`.
+- A notch to the Spell `get_spell_by_id` or `find_spell_by_id` returns for a parked spell_id is a silent no-op, by
+  their contract: they answer a parked spell_id with the index's active member. Name a parked version by `spell_id=`.
+  EVIDENCE: `src/melder/aether/spellbook/spellbook.py:Spellbook.find_spell_by_id`.
 - A Book holding a definition bound resolvable=False - a Protocol or abstract base kept for discovery, whose
   consumers receive the value by override - no longer runs the meld-time validation gate on every meld (fixed in
   0.2.8247). The definition never receives a resolution verdict, so RiskManager counted it as risk and kept the
@@ -3359,14 +3457,16 @@ Conduit runtime:
 
 - path: `src/melder/aether/conduit/conduit.py`
   start_line: 1
-  end_line: 7463
-  loc: 7463
-  verified_at: 2026-10-15T21:20:35Z
+  end_line: 7784
+  loc: 7784
+  verified_at: 2026-10-16T15:44:44Z
   note: conduit lifecycle and meld facade; `cleanup_spell` emits the index destroy the Book reports (0.2.8231);
     `find_contracted_spell` and `inspect_spell` take no conduit lock (0.2.8232); builds its SpellSpacePool and a
     root's ConduitPool elastic, baseline 20 / max 256 (0.2.8234); a root's teardown leaves its cluster first
     (0.2.8236); `transfer_spell_ownership` defaults to `move_creations=True` (0.2.8239) and documents the handover
-    (0.2.8240); `managed_spell_meld` (0.2.8245) and the managed options on its bind facades (0.2.8242).
+    (0.2.8240); `managed_spell_meld` (0.2.8245) and the managed options on its bind facades (0.2.8242);
+    `notch_spell` names its target by `spell_id=` or `spell=` and checks it before and inside its transaction,
+    and `add_to_spell_index` / `remove_from_spell_index` take `spell_id=` too (0.2.8249).
 - path: `src/melder/aether/conduit/conduit_pool.py`
   start_line: 1
   end_line: 165
@@ -4102,6 +4202,20 @@ without rewriting the original record or existing live IDs.
 - `src/melder/utilities/ai_native_support_tools/protocol_crafter.py`
 
 ## Context / Handoff Summary
+
+2026-10-16 public notch target (0.2.8249): `Conduit.notch_spell` takes `spell_id=` - the spell_id `bind` or
+`bind_inactive` returned - beside `spell=`, exactly one, and resolves it inside the call to the exact version the
+Book owns, active or parked (owner ruling, option A: "just use the private version if its inside the public call
+thats reasonable"), so the stage -> notch -> meld loop runs on public calls. Both forms are checked - owned by the
+conduit's Book, a member of the index passed - before the transaction and again under its seal, which closes
+three ways a notch used to damage a Book. The boundary list (its conduit.py citations remeasured), the summary,
+the SpellIndex Mutation Entry sequence (whose steps 1-2 said the Spellbook starts the transaction; the Conduit
+does), a new operational invariant, three failure modes and the code map carry it; the component map carries the
+per-component contract. The rubric pass repointed the two citations of `SpellbookCreationSystem.check_system_state`,
+which had drifted 29 lines above the method since earlier lanes. On the owner's extension `add_to_spell_index` and
+`remove_from_spell_index` take `spell_id=` the same way and their docstrings say the conduit admits the
+transaction; the same sections and a fourth failure mode carry it, the conduit.py citations and code-map extent are
+remeasured (the file grew 172 lines), and this lane's text says spell_id, as the owner asked, not "version id".
 
 2026-10-16 parked versions wired at conjure (0.2.8248): conjure stamps every version parked with `bind_inactive`
 before it with the owner stamp alone, as a post-conjure `bind_inactive` does, so such a version melds after a notch

@@ -377,7 +377,7 @@ def test_has_spell_does_not_exist(sample_detail):
     Purpose:
         Verify has_spell returns False for missing versions.
     Contract:
-        has_spell returns False when the version id is absent.
+        has_spell returns False when the spell_id is absent.
     Args:
         sample_detail: Detail fixture under test.
     Returns:

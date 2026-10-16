@@ -377,7 +377,7 @@ class SpellIndex(Cleanable):
             cleaned and deletes the selected id under, and `update()` repoints it under.
 
         Args:
-            spell_id (str): The version id to test.
+            spell_id (str): The spell_id to test.
 
         Returns:
             bool: True if this live index selects `spell_id`; False otherwise, and False once the index is cleaned.

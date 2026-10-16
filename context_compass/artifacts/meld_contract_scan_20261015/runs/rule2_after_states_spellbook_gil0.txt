@@ -1,0 +1,1267 @@
+........................................................................ [ 21%]
+........................................................................ [ 42%]
+...................................................................F.F.. [ 63%]
+F.FF.FFFFFFFF.F......................................................... [ 84%]
+...FF.FF.............F.............FF..F...FFFFFFF.FF                    [100%]
+=================================== FAILURES ===================================
+_ test_ensure_lineage_resolvable_valid_contract_consumer_makes_no_contract_lookup _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x2c8d2ca05c0>
+
+    def test_ensure_lineage_resolvable_valid_contract_consumer_makes_no_contract_lookup(
+            monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """
+        Verify a contract consumer whose state needs no recheck melds with no contract work (rule 2).
+    
+        Contract:
+            - Structurally valid with a valid conduit verdict: no contracted lookup, no verdict write, no 5-11 pass.
+            - A satisfied SpellContract is rechecked only when a provider change marks its consumer.
+        """
+        spellbook = _SpellbookStub()
+        spellbook._run_resolution_phases_for_target_spell = MagicMock()
+        resolution_state = _ResolutionStateStub()
+        spell = _SpellStub(
+            spell_id="spell-1",
+            system_state=_SystemStateStub(validity=SpellValidity.valid),
+            spell_system_states=_SpellSystemStatesStub(resolution_state),
+            spellbook=spellbook,
+        )
+        spell.spell = _ContractConsumer
+        lookup = MagicMock(return_value=None)
+        _patch_meld_method(monkeypatch, "_resolve_contracted_by_lookup_key", lookup)
+        meld = _make_meld(spellbook=spellbook)
+    
+>       meld._ensure_lineage_resolvable(spell)
+
+tests/unit/melder/aether/conduit/meld/test_meld.py:1697: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/melder/aether/conduit/meld/meld.py:984: in _ensure_lineage_resolvable
+    self._check_contracts_and_force_revalidation(spell)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <melder.aether.conduit.meld.conduit_meld.ConduitMeld object at 0x2c8d24ba700>
+spell = <test_meld._SpellStub object at 0x2c8d2868890>
+
+    def _check_contracts_and_force_revalidation(self, spell: Spell) -> None:
+        """
+        Validate SpellContract sockets and force resolution revalidation.
+    
+        Purpose:
+            Ensure that any SpellContract defaults declared on the spell can
+            be resolved via the current Spellbook's contracted spell maps.
+            When contracts are present and resolvable, force the resolution
+            validity to gated so phases 5/8/9/10/6/7 re-run on this conduit.
+    
+        Contract:
+            - If the spell declares no SpellContract defaults, this is a no-op.
+            - If any SpellContract cannot be resolved to a contracted provider,
+              raise MeldExecutionError with a contract-specific diagnostic.
+            - If all contracts resolve, mark resolution validity as gated to
+              force revalidation on this conduit.
+    
+        Args:
+            spell: Spell under resolution.
+    
+        Raises:
+            MeldExecutionError:
+                When a SpellContract has no contracted provider or contracted
+                maps are inconsistent.
+        """
+        contracts = self._iter_spell_contract_defaults(spell)
+        if not contracts:
+            return
+    
+        spell_id = spell.spell_index.selected_spell_id
+        if spell_id is None:
+            raise RuntimeError("SpellIndex.selected_spell_id is required for SpellContract validation.")
+        for param_name, contract in contracts:
+            if contract is None:
+                continue
+            lookup_key = contract.canonical_key
+            try:
+                provider = self._resolve_contracted_by_lookup_key(lookup_key)
+            except Exception as exc:
+                raise MeldExecutionError(
+                    spell_id=spell_id,
+                    spell_name=spell.spell_name,
+                    node_id=spell_id,
+                    param_name=param_name,
+                    message=(
+                        "SpellContract could not be resolved. "
+                        f"Contract lookup failed for key {lookup_key} "
+                        f"on param '{param_name}' for spell '{spell.spell_name}'. "
+                        f"Contract={contract!r}."
+                    ),
+                    inner=exc,
+                ) from exc
+            if provider is None:
+                frame_key, binding_key = lookup_key
+>               raise MeldExecutionError(
+                    spell_id=spell_id,
+                    spell_name=spell.spell_name,
+                    node_id=spell_id,
+                    param_name=param_name,
+                    message=(
+                        "SpellContract could not be resolved. "
+                        "Missing contracted provider for key "
+                        f"(frame_key='{frame_key}', binding_key='{binding_key}') "
+                        f"on param '{param_name}' for spell '{spell.spell_name}'. "
+                        f"Contract={contract!r}."
+                    ),
+                )
+E               melder.utilities.custom_exceptions.meld_execution_error.MeldExecutionError: [MELD] Execution failed for spell 'Spell' (spell-1) at node spell-1 (parameter 'service'): SpellContract could not be resolved. Missing contracted provider for key (frame_key='svc', binding_key='primary') on param 'service' for spell 'Spell'. Contract=<SpellContract spell=None spellframe='svc' binding_name='primary' override=None>.
+
+src/melder/aether/conduit/meld/meld.py:1365: MeldExecutionError
+_ test_ensure_lineage_resolvable_gated_contract_consumer_rebuilds_once_with_structure_changed _
+
+    def test_ensure_lineage_resolvable_gated_contract_consumer_rebuilds_once_with_structure_changed() -> None:
+        """
+        Verify a marked consumer whose provider is present is rechecked and rebuilt once.
+    
+        Contract:
+            - The structural rerun makes it valid, the conduit verdict is gated once with `structure_changed`, and
+              one 5-11 pass rebuilds it; no second, contract-driven gate follows.
+        """
+        contract = SpellContract(spellframe="svc", binding_name="primary")
+        provider = _SpellStub(spell_id="provider-1")
+        spellbook = _SpellbookStub(
+            contracted_spells={"peer-1": {provider.spell_index: provider}},
+            lookup_contracted_spells={"peer-1": {contract.canonical_key: provider.spell_index}},
+        )
+        resolution_state = _ResolutionStateStub()
+        spell = _SpellStub(
+            spell_id="spell-1",
+            system_state=_SystemStateStub(validity=SpellValidity.gated),
+            validity_after_run=SpellValidity.valid,
+            spell_system_states=_SpellSystemStatesStub(resolution_state),
+            spellbook=spellbook,
+        )
+        spell.spell = _ContractConsumer
+    
+        def _rebuild(conduit_id: str, target_spell: _SpellStub) -> None:
+            """Model a successful 5-11 pass."""
+            resolution_state.set_spell_validity(target_spell.spell_id, SpellValidity.valid)
+    
+        spellbook._run_resolution_phases_for_target_spell = MagicMock(side_effect=_rebuild)
+        meld = _make_meld(spellbook=spellbook)
+    
+        meld._ensure_lineage_resolvable(spell)
+    
+        gated_writes = [call for call in resolution_state.spell_set_calls if call[1] is SpellValidity.gated]
+>       assert gated_writes == [("spell-1", SpellValidity.gated, SpellStateChangeReason.structure_changed)]
+E       AssertionError: assert [('spell-1', ...alidated: 7>)] == [('spell-1', ..._changed: 3>)]
+E         
+E         Left contains one more item: ('spell-1', <SpellValidity.gated: 3>, <SpellStateChangeReason.contract_unvalidated: 7>)
+E         Use -v to get more diff
+
+tests/unit/melder/aether/conduit/meld/test_meld.py:1770: AssertionError
+_ test_catch_up_refreshes_a_stale_dependency_with_its_owner_book_and_resets_its_plan _
+
+    def test_catch_up_refreshes_a_stale_dependency_with_its_owner_book_and_resets_its_plan() -> None:
+        """
+        Verify the catch-up reruns a stale dependency's phases 1-4 with its owner Book and resets its own plan.
+    
+        Contract:
+            - A borrowed dependency (owned by another Book) is refreshed with that Book, not the consumer's.
+            - Its context and Phase 5+ state are cleared, it owes its own resolution and its door epoch moves, so no
+              door keeps serving the plan built for its old structure.
+        """
+        world = _CatchUpWorld(consumer_targets=("dep-1",))
+        lender = _SpellbookStub()
+        dep = world.add("dep-1", book=lender)
+        epoch_before = dep._door_epoch
+    
+        world.meld._ensure_lineage_resolvable(world.consumer)
+    
+>       assert [(book, run_id) for book, run_id in world.structural_runs if run_id == "dep-1"] == [(lender, "dep-1")]
+E       AssertionError: assert [] == [(<test_meld....50>, 'dep-1')]
+E         
+E         Right contains one more item: (<test_meld._SpellbookStub object at 0x2c8d2885350>, 'dep-1')
+E         Use -v to get more diff
+
+tests/unit/melder/aether/conduit/meld/test_meld.py:1975: AssertionError
+_____ test_catch_up_raises_naming_a_broken_dependency_and_pins_it_invalid ______
+
+    def test_catch_up_raises_naming_a_broken_dependency_and_pins_it_invalid() -> None:
+        """
+        Verify a dependency that comes out of its rerun broken stops the meld with an error naming it.
+    
+        Contract:
+            - SpellbookValidationError lists the dependency; its lineage is pinned invalid, as the gate pins a broken
+              melded spell; the consumer's own phases never run.
+        """
+        world = _CatchUpWorld(consumer_targets=("dep-1",))
+        dep = world.add("dep-1", broken_after=True)
+    
+>       with pytest.raises(SpellbookValidationError) as raised:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE SpellbookValidationError
+
+tests/unit/melder/aether/conduit/meld/test_meld.py:2008: Failed
+_____________ test_catch_up_raises_naming_a_dependency_left_gated ______________
+
+    def test_catch_up_raises_naming_a_dependency_left_gated() -> None:
+        """Verify a dependency still gated after its rerun stops the meld with an error naming it."""
+        world = _CatchUpWorld(consumer_targets=("dep-1",))
+        dep = world.add("dep-1", after=SpellValidity.gated)
+    
+>       with pytest.raises(SpellbookValidationError) as raised:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE SpellbookValidationError
+
+tests/unit/melder/aether/conduit/meld/test_meld.py:2021: Failed
+____ test_catch_up_follows_a_contract_socket_through_the_books_active_copy _____
+
+    def test_catch_up_follows_a_contract_socket_through_the_books_active_copy() -> None:
+        """
+        Verify a SPELL_CONTRACT socket leads to the provider copy the Book's active contracted maps hold.
+    
+        Contract:
+            - The provider is found as Phase 8 finds it (lookup map -> index -> copy) and refreshed with its own Book.
+        """
+        key = ("svc", "primary")
+        world = _CatchUpWorld()
+        world.topologies["consumer-1"] = _contract_socket_topology("consumer-1", key)
+        lender = _SpellbookStub()
+        provider = world.add("provider-1", book=lender)
+        world.book._lookup_contracted_spells["peer-1"] = {key: provider.spell_index}
+        world.book._contracted_spells["peer-1"] = {provider.spell_index: provider}
+    
+        world.meld._ensure_lineage_resolvable(world.consumer)
+    
+>       assert [(book, run_id) for book, run_id in world.structural_runs if run_id == "provider-1"] == [
+            (lender, "provider-1")
+        ]
+E       AssertionError: assert [] == [(<test_meld....'provider-1')]
+E         
+E         Right contains one more item: (<test_meld._SpellbookStub object at 0x2c8d2886250>, 'provider-1')
+E         Use -v to get more diff
+
+tests/unit/melder/aether/conduit/meld/test_meld.py:2061: AssertionError
+__________ test_catch_up_walks_the_refreshed_topology_of_a_dependency __________
+
+    def test_catch_up_walks_the_refreshed_topology_of_a_dependency() -> None:
+        """
+        Verify the walk goes on through a dependency's topology as its rerun left it.
+    
+        Contract:
+            - Two hops away: P's rerun now names D, so D is refreshed in the same catch-up.
+        """
+        world = _CatchUpWorld(consumer_targets=("p-1",))
+        world.add("p-1")
+        world.add("d-1")
+        world.after_run["p-1"] = lambda: world.topologies.__setitem__("p-1", _normal_topology("p-1", ("d-1",)))
+    
+        world.meld._ensure_lineage_resolvable(world.consumer)
+    
+>       assert world.runs_of("p-1") == 1
+E       AssertionError: assert 0 == 1
+E        +  where 0 = runs_of('p-1')
+E        +    where runs_of = <test_meld._CatchUpWorld object at 0x2c8d2436910>.runs_of
+
+tests/unit/melder/aether/conduit/meld/test_meld.py:2080: AssertionError
+____ test_catch_up_takes_a_recorded_target_to_its_lineages_current_version _____
+
+    def test_catch_up_takes_a_recorded_target_to_its_lineages_current_version() -> None:
+        """
+        Verify a topology naming a superseded version leads to the version its lineage now selects.
+    
+        Contract:
+            - The registry maps the old version id to the lineage; the pool supplies the current version, which is
+              the one refreshed (a notch parked the old one out of the pool).
+        """
+        world = _CatchUpWorld(consumer_targets=("dep-old",))
+        current = world.add("dep-new")
+        world.lineages["dep-old"] = SimpleNamespace(current_spell_id="dep-new")
+    
+        world.meld._ensure_lineage_resolvable(world.consumer)
+    
+>       assert world.runs_of("dep-new") == 1
+E       AssertionError: assert 0 == 1
+E        +  where 0 = runs_of('dep-new')
+E        +    where runs_of = <test_meld._CatchUpWorld object at 0x2c8d2435290>.runs_of
+
+tests/unit/melder/aether/conduit/meld/test_meld.py:2098: AssertionError
+_______________ test_catch_up_refreshes_a_shared_dependency_once _______________
+
+    def test_catch_up_refreshes_a_shared_dependency_once() -> None:
+        """Verify a dependency two plan branches share is refreshed once."""
+        world = _CatchUpWorld(consumer_targets=("p-1", "p-2"))
+        world.add("p-1", validity=SpellValidity.valid, targets=("d-1",))
+        world.add("p-2", validity=SpellValidity.valid, targets=("d-1",))
+        world.add("d-1")
+    
+        world.meld._ensure_lineage_resolvable(world.consumer)
+    
+>       assert world.runs_of("d-1") == 1
+E       AssertionError: assert 0 == 1
+E        +  where 0 = runs_of('d-1')
+E        +    where runs_of = <test_meld._CatchUpWorld object at 0x2c8d2e22f10>.runs_of
+
+tests/unit/melder/aether/conduit/meld/test_meld.py:2111: AssertionError
+_ test_catch_up_holds_no_lock_while_walking_and_only_the_dependencys_while_refreshing _
+
+    def test_catch_up_holds_no_lock_while_walking_and_only_the_dependencys_while_refreshing() -> None:
+        """
+        Verify the lock discipline: no spell lock across the walk, the dependency's own lock across its rerun.
+        """
+        world = _CatchUpWorld(consumer_targets=("dep-1",))
+        dep = world.add("dep-1")
+        world.consumer._lock = _TrackingLock()
+        dep._lock = _TrackingLock()
+        held_at_reads: list[tuple[bool, bool]] = []
+        world.states.topology_read_hooks.append(
+            lambda spell_id: held_at_reads.append((world.consumer._lock.locked, dep._lock.locked))
+        )
+        held_at_run: list[tuple[bool, bool]] = []
+        world.after_run["dep-1"] = lambda: held_at_run.append((world.consumer._lock.locked, dep._lock.locked))
+    
+        world.meld._ensure_lineage_resolvable(world.consumer)
+    
+>       assert held_at_reads and all(held == (False, False) for held in held_at_reads)
+E       assert ([])
+
+tests/unit/melder/aether/conduit/meld/test_meld.py:2131: AssertionError
+_____ test_catch_up_enters_the_dependencys_rebuild_window_before_its_lock ______
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x2c8d2ca4ed0>
+
+    def test_catch_up_enters_the_dependencys_rebuild_window_before_its_lock(monkeypatch: pytest.MonkeyPatch) -> None:
+        """
+        Verify the refresh enters the dependency's rebuild window first, then its lock (the producer order).
+        """
+        world = _CatchUpWorld(consumer_targets=("dep-1",))
+        dep = world.add("dep-1")
+        dep._lock = _TrackingLock()
+        windows: list[tuple[str, bool]] = []
+    
+        @contextmanager
+        def _window(spell: Any) -> Iterator[None]:
+            windows.append((spell.spell_id, spell._lock.locked if spell is dep else False))
+            yield
+    
+        monkeypatch.setattr(Meld, "_rebuild_window", staticmethod(_window))
+    
+        world.meld._ensure_lineage_resolvable(world.consumer)
+    
+>       assert ("dep-1", False) in windows
+E       AssertionError: assert ('dep-1', False) in [('consumer-1', False), ('consumer-1', False)]
+
+tests/unit/melder/aether/conduit/meld/test_meld.py:2153: AssertionError
+____________ test_catch_up_does_not_reset_a_stale_existing_creation ____________
+
+    def test_catch_up_does_not_reset_a_stale_existing_creation() -> None:
+        """
+        Verify an existing creation is refreshed structurally but its plan is left alone (it never plans).
+        """
+        world = _CatchUpWorld(consumer_targets=("dep-1",))
+        dep = world.add("dep-1", existing=True)
+    
+        world.meld._ensure_lineage_resolvable(world.consumer)
+    
+>       assert world.runs_of("dep-1") == 1
+E       AssertionError: assert 0 == 1
+E        +  where 0 = runs_of('dep-1')
+E        +    where runs_of = <test_meld._CatchUpWorld object at 0x2c8d2e23d10>.runs_of
+
+tests/unit/melder/aether/conduit/meld/test_meld.py:2166: AssertionError
+_____________ test_deferred_lane_runs_the_catch_up_before_its_pass _____________
+
+    def test_deferred_lane_runs_the_catch_up_before_its_pass() -> None:
+        """
+        Verify a spell owing its resolution refreshes its stale dependencies before its own pass compiles.
+        """
+        world = _CatchUpWorld(consumer_validity=SpellValidity.valid, consumer_targets=("dep-1",), resolution_required=True)
+        world.add("dep-1")
+    
+        world.meld._ensure_runtime_resolution_ready(world.consumer)
+    
+>       assert world.events == ["structural:dep-1", "pass:consumer-1"]
+E       AssertionError: assert ['pass:consumer-1'] == ['structural:...s:consumer-1']
+E         
+E         At index 0 diff: 'pass:consumer-1' != 'structural:dep-1'
+E         Right contains one more item: 'pass:consumer-1'
+E         Use -v to get more diff
+
+tests/unit/melder/aether/conduit/meld/test_meld.py:2181: AssertionError
+_________ test_catch_up_rechecks_staleness_under_the_dependencys_lock __________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x2c8d2ca1d60>
+
+    def test_catch_up_rechecks_staleness_under_the_dependencys_lock(monkeypatch: pytest.MonkeyPatch) -> None:
+        """
+        Verify a dependency another meld refreshed while this one waited for its window is not refreshed again.
+        """
+        world = _CatchUpWorld(consumer_targets=("dep-1",))
+        dep = world.add("dep-1")
+        windows: list[str] = []
+    
+        @contextmanager
+        def _window(spell: Any) -> Iterator[None]:
+            windows.append(spell.spell_id)
+            if spell is dep:
+                dep.system_state.validity = SpellValidity.valid
+            yield
+    
+        monkeypatch.setattr(Meld, "_rebuild_window", staticmethod(_window))
+    
+        world.meld._ensure_lineage_resolvable(world.consumer)
+    
+>       assert "dep-1" in windows
+E       AssertionError: assert 'dep-1' in ['consumer-1', 'consumer-1']
+
+tests/unit/melder/aether/conduit/meld/test_meld.py:2218: AssertionError
+______________ test_gating_warning_is_listed_as_the_spells_reason ______________
+
+    def test_gating_warning_is_listed_as_the_spells_reason() -> None:
+        """
+        Purpose:
+            A lineage that a Phase-4 warning gates (a lost SpellContract provider) names that warning as its reason,
+            not "No validation error was recorded".
+        Contract:
+            The gating warning renders as an error line; it is not counted among the hidden warnings.
+        """
+        spell = _spell(name="Consumer", issues=[_issue("SPELL_CONTRACT_MISSING_PROVIDER", "No provider.", "warning")])
+    
+        message = str(SpellbookValidationError([spell]))
+    
+>       assert message.splitlines() == [
+            "Spellbook validation failed. Broken spells: Consumer.",
+            "Consumer (frame 'frame-1'):",
+            "  - No provider. [SPELL_CONTRACT_MISSING_PROVIDER]",
+        ]
+E       AssertionError: assert ['Spellbook v...) logs them.'] == ['Spellbook v...NG_PROVIDER]']
+E         
+E         At index 2 diff: '  - No validation error was recorded for this spell; its validity is invalid, gated or disabled.' != '  - No provider. [SPELL_CONTRACT_MISSING_PROVIDER]'
+E         Left contains one more item: '1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.'
+E         Use -v to get more diff
+
+tests/unit/melder/utilities/custom_exceptions/test_spellbook_validation_error.py:257: AssertionError
+___________ test_other_warnings_stay_counted_beside_a_gating_reason ____________
+
+    def test_other_warnings_stay_counted_beside_a_gating_reason() -> None:
+        """Purpose: only gating warnings are listed; every other warning is still only counted."""
+        spell = _spell(name="Consumer", issues=[
+            _issue("REQUIRED_HOLE", "Supply name.", "warning"),
+            _issue("SPELL_CONTRACT_MISSING_PROVIDER", "No provider.", "warning"),
+        ])
+    
+        message = str(SpellbookValidationError([spell]))
+    
+>       assert message.splitlines() == [
+            "Spellbook validation failed. Broken spells: Consumer.",
+            "Consumer (frame 'frame-1'):",
+            "  - No provider. [SPELL_CONTRACT_MISSING_PROVIDER]",
+            "1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.",
+        ]
+E       AssertionError: assert ['Spellbook v...) logs them.'] == ['Spellbook v...) logs them.']
+E         
+E         At index 2 diff: '  - No validation error was recorded for this spell; its validity is invalid, gated or disabled.' != '  - No provider. [SPELL_CONTRACT_MISSING_PROVIDER]'
+E         Use -v to get more diff
+
+tests/unit/melder/utilities/custom_exceptions/test_spellbook_validation_error.py:273: AssertionError
+_________ test_gating_only_block_is_listed_when_diagnostics_are_given __________
+
+    def test_gating_only_block_is_listed_when_diagnostics_are_given() -> None:
+        """
+        Purpose:
+            With conduit diagnostics handed in, a spell whose only reason is a gating warning is still listed; a spell
+            with no reason is not.
+        """
+        gated = _spell(name="Consumer", issues=[_issue("SPELL_CONTRACT_MISSING_PROVIDER", "No provider.", "warning")])
+        quiet = _spell(name="Other", spell_id="spell-2")
+    
+        message = str(SpellbookValidationError([gated, quiet], system_diagnostics=[_diag("cycle_detected", "Cycle.")]))
+    
+>       assert message.splitlines() == [
+            "Spellbook validation failed. Broken spells: Consumer.",
+            "Consumer (frame 'frame-1'):",
+            "  - No provider. [SPELL_CONTRACT_MISSING_PROVIDER]",
+            "Whole-graph errors:",
+            "  - Cycle. [cycle_detected]",
+        ]
+E       AssertionError: assert ['Spellbook v...) logs them.'] == ['Spellbook v...le_detected]']
+E         
+E         At index 0 diff: 'Spellbook validation failed. The dependency graph has errors.' != 'Spellbook validation failed. Broken spells: Consumer.'
+E         Right contains one more item: '  - Cycle. [cycle_detected]'
+E         Use -v to get more diff
+
+tests/unit/melder/utilities/custom_exceptions/test_spellbook_validation_error.py:309: AssertionError
+___________ test_gating_warning_codes_are_the_codes_phase_4_gates_on ___________
+
+    def test_gating_warning_codes_are_the_codes_phase_4_gates_on() -> None:
+        """Purpose: the renderer's gating set is the one code Phase 4 gates a lineage on (pinned there too)."""
+>       assert SpellbookValidationError.GATING_WARNING_CODES == frozenset({"SPELL_CONTRACT_MISSING_PROVIDER"})
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: type object 'SpellbookValidationError' has no attribute 'GATING_WARNING_CODES'
+
+tests/unit/melder/utilities/custom_exceptions/test_spellbook_validation_error.py:320: AttributeError
+_ test_contract_provider_presence_missing_provider_names_the_contract_and_the_remedy _
+
+    def test_contract_provider_presence_missing_provider_names_the_contract_and_the_remedy() -> None:
+        """
+        Purpose:
+            A lost provider is reported with the contract it belongs to and how to restore it (D1-B): this warning
+            is the reason the validation report gives for a consumer the missing provider gates.
+        """
+        contract = SpellContract(spellframe="service", binding_name="primary")
+        context, issues = _make_context(
+            requirements=_RequirementsStub([
+                _ParamStub(name="service", di_shape=ParameterDIShape.SPELL_CONTRACT, default_value=contract),
+            ]),
+            contracted_spells=[],
+            system_state=SystemState.dynamic,
+        )
+        strategy = ContractProviderPresenceStrategy()
+        try:
+            strategy.validate(context)
+    
+            assert [(issue.severity, issue.code) for issue in issues] == [("warning", "SPELL_CONTRACT_MISSING_PROVIDER")]
+>           assert issues[0].message == (
+                "Spell 'spell-name' parameter 'service' has no provider for its SpellContract "
+                "(frame_key='service', binding_key='primary'): no active spell with that frame and binding name is "
+                "contracted to this Spellbook. Contract one from a linked conduit (add_index_to_contract, or "
+                "add_spell_to_contract for one version) and meld again."
+            )
+E           assert "Spell 'spell..., 'primary')." == "Spell 'spell...d meld again."
+E             
+E             Skipping 49 identical leading characters in diff, use -v to show
+E             - vider for its SpellContract (frame_key='service', binding_key='primary'): no active spell with that frame and binding name is contracted to this Spellbook. Contract one from a linked conduit (add_index_to_contract, or add_spell_to_contract for one version) and meld again.
+E             + vider for contract key ('service', 'primary').
+
+tests/unit/melder/spellbook/spell_crafter/validation/strategies/test_contract_provider_presence_strategy.py:459: AssertionError
+____ test_run_gates_the_lineage_on_every_code_the_report_lists_as_a_reason _____
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x2c8d2ca19e0>
+
+    def test_run_gates_the_lineage_on_every_code_the_report_lists_as_a_reason(
+            monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """
+        Phase 4 gates a lineage on exactly the warnings SpellbookValidationError lists as a spell's reason, so a meld
+        refused for a gated lineage always names why.
+        """
+>       assert SpellbookValidationError.GATING_WARNING_CODES
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: type object 'SpellbookValidationError' has no attribute 'GATING_WARNING_CODES'
+
+tests/unit/melder/spellbook/spell_compiler/phases/test_compiler_phase_4.py:237: AttributeError
+__ test_run_marks_the_lineage_valid_on_a_warning_outside_the_reported_reasons __
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x2c8d2ca2ee0>
+
+    def test_run_marks_the_lineage_valid_on_a_warning_outside_the_reported_reasons(
+            monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """A warning the report only counts leaves the lineage valid."""
+>       assert "REQUIRED_HOLE" not in SpellbookValidationError.GATING_WARNING_CODES
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: type object 'SpellbookValidationError' has no attribute 'GATING_WARNING_CODES'
+
+tests/unit/melder/spellbook/spell_compiler/phases/test_compiler_phase_4.py:246: AttributeError
+_ test_contract_consumer_follows_notch_notch_back_and_repeat_notch_with_one_rebuild_each _
+
+resolution_passes = ['Consumer', 'Consumer', 'Consumer', 'Consumer', 'Consumer']
+
+    def test_contract_consumer_follows_notch_notch_back_and_repeat_notch_with_one_rebuild_each(
+            resolution_passes: List[str],
+    ) -> None:
+        """
+        S1: the consumer follows its lender's notch to B, the notch back to A and a repeat notch to B; each change
+        costs one 5-11 pass at the next meld and warm melds none; an object built before a notch keeps its provider.
+        """
+        world = _lend("s1", ImplA)
+        try:
+            before = world.borrower.meld(spell=Consumer)
+            assert before.service.ping() == "A"
+            resolution_passes.clear()
+            assert [world.meld_ping() for _ in range(5)] == ["A"] * 5
+>           assert resolution_passes == []
+E           AssertionError: assert ['Consumer', ...', 'Consumer'] == []
+E             
+E             Left contains 5 more items, first extra item: 'Consumer'
+E             Use -v to get more diff
+
+tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py:298: AssertionError
+_ test_destroying_the_providers_index_fails_the_consumer_naming_the_lost_contract _
+
+    def test_destroying_the_providers_index_fails_the_consumer_naming_the_lost_contract() -> None:
+        """S4: an index destroy fails the consumer with SpellbookValidationError naming the contract and the remedy."""
+        world = _lend("s4", ImplA)
+        try:
+            assert world.meld_ping() == "A"
+            world.lender.cleanup_spell(spell=world.lender_book.find_spell_by_id(world.provider_id))
+    
+            with pytest.raises(SpellbookValidationError) as raised:
+                world.meld_ping()
+    
+            assert not isinstance(raised.value, MeldExecutionError)
+>           _assert_lost_contract_reported(raised.value)
+
+tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py:383: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+error = SpellbookValidationError('Spellbook validation failed. Broken spells: Consumer.\nConsumer:\n  - No validation error wa... gated or disabled.\n1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.')
+
+    def _assert_lost_contract_reported(error: SpellbookValidationError) -> None:
+        """The refusal names the lost contract and its remedy (D1-B), not the generic gated line."""
+        message = str(error)
+>       assert "has no provider for its SpellContract" in message
+E       AssertionError: assert 'has no provider for its SpellContract' in 'Spellbook validation failed. Broken spells: Consumer.\nConsumer:\n  - No validation error was recorded for this spell..., gated or disabled.\n1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.'
+
+tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py:279: AssertionError
+__ test_releasing_the_index_link_fails_the_consumer_naming_the_lost_contract ___
+
+    def test_releasing_the_index_link_fails_the_consumer_naming_the_lost_contract() -> None:
+        """An index uncontract fails the consumer's next meld with the lost contract and its remedy."""
+        world = _lend("uncontract_index", ImplA)
+        try:
+            assert world.meld_ping() == "A"
+            world.borrower.remove_index_from_contract(index_id=world.index.id, conduit=world.lender)
+    
+            with pytest.raises(SpellbookValidationError) as raised:
+                world.meld_ping()
+    
+>           _assert_lost_contract_reported(raised.value)
+
+tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py:398: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+error = SpellbookValidationError('Spellbook validation failed. Broken spells: Consumer.\nConsumer:\n  - No validation error wa... gated or disabled.\n1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.')
+
+    def _assert_lost_contract_reported(error: SpellbookValidationError) -> None:
+        """The refusal names the lost contract and its remedy (D1-B), not the generic gated line."""
+        message = str(error)
+>       assert "has no provider for its SpellContract" in message
+E       AssertionError: assert 'has no provider for its SpellContract' in 'Spellbook validation failed. Broken spells: Consumer.\nConsumer:\n  - No validation error was recorded for this spell..., gated or disabled.\n1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.'
+
+tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py:279: AssertionError
+__ test_releasing_a_version_grant_fails_the_consumer_naming_the_lost_contract __
+
+    def test_releasing_a_version_grant_fails_the_consumer_naming_the_lost_contract() -> None:
+        """A version uncontract fails the consumer's next meld with the lost contract and its remedy."""
+        world = _lend("uncontract_spell", ImplA, index_link=False)
+        try:
+            assert world.meld_ping() == "A"
+            with world.borrower.transaction("link", conduits=[world.borrower, world.lender]):
+                world.borrower.remove_spell_from_contract(spell_id=world.provider_id, conduit=world.lender)
+    
+            with pytest.raises(SpellbookValidationError) as raised:
+                world.meld_ping()
+    
+>           _assert_lost_contract_reported(raised.value)
+
+tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py:414: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+error = SpellbookValidationError('Spellbook validation failed. Broken spells: Consumer.\nConsumer:\n  - No validation error wa... gated or disabled.\n1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.')
+
+    def _assert_lost_contract_reported(error: SpellbookValidationError) -> None:
+        """The refusal names the lost contract and its remedy (D1-B), not the generic gated line."""
+        message = str(error)
+>       assert "has no provider for its SpellContract" in message
+E       AssertionError: assert 'has no provider for its SpellContract' in 'Spellbook validation failed. Broken spells: Consumer.\nConsumer:\n  - No validation error was recorded for this spell..., gated or disabled.\n1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.'
+
+tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py:279: AssertionError
+_________ test_c1_a_dependent_two_hops_away_follows_a_dependency_notch _________
+
+    def test_c1_a_dependent_two_hops_away_follows_a_dependency_notch() -> None:
+        """C1: Q -> P -> Dep in one Book, Q melded before the notch: Q and P build the new Dep version."""
+        book, root, index, p_cls, q_cls = _chain("c1")
+        try:
+            assert root.meld(spell=q_cls).p.dep.tag() == "d1"
+            _notch_dep(book, root, index)
+    
+>           assert root.meld(spell=q_cls).p.dep.tag() == "d2"
+                   ^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py:452: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/melder/aether/conduit/conduit.py:5044: in meld
+    return meld_component.meld(
+src/melder/aether/conduit/meld/conduit_meld.py:578: in meld
+    self._ensure_lineage_resolvable(target_spell)
+src/melder/aether/conduit/meld/meld.py:988: in _ensure_lineage_resolvable
+    self._ensure_resolution_resolvable(spell)
+src/melder/aether/conduit/meld/meld.py:1301: in _ensure_resolution_resolvable
+    spellbook._run_resolution_phases_for_target_spell(conduit_id, spell)
+src/melder/aether/spellbook/spellbook.py:7712: in _run_resolution_phases_for_target_spell
+    return SpellbookCreationSystem.run_resolution_phases_for_target_spell(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+spellbook = <melder.aether.spellbook.spellbook.Spellbook object at 0x2c8d30e2110>
+conduit_id = '01M52HTP11J1HR5PR7AT641SVW'
+target_spell = <[AttributeError("'melder.aether.spellbook.spell.Spell' object has no attribute 'spell'") raised in repr()] Spell object at 0x2c8d186be00>
+phase_scheduler_cls = <class 'melder.utilities.synchronization.phase_scheduler.PhaseScheduler'>
+
+    @staticmethod
+    def run_resolution_phases_for_target_spell(
+            spellbook: Spellbook,
+            conduit_id: str,
+            target_spell: Spell,
+            phase_scheduler_cls: type[PhaseScheduler] = PhaseScheduler,
+    ) -> dict[str, Sequence[UnitOfWork]]:
+        """
+        Purpose:
+            Run target-local resolution phases for one spell within a conduit scope.
+        Contract:
+            - Requires non-empty conduit id and non-null target spell.
+            - Runs local foundational phases before local plan phases.
+            - Converts local KeyError dependency misses into deterministic diagnostics.
+            - Cleans scoped phase artifacts before returning.
+            - On success, flags each dependency in the target's Phase 5 scope
+              that this Book owns and that the pass compiled only inside the
+              target's plan (`flag_dependencies_without_own_plan`), so its
+              first direct meld runs its own full target pass (0.2.8215). The
+              failure paths (a validation error, a visibility failure) flag
+              nothing.
+        Args:
+            spellbook: Owning Spellbook instance.
+            conduit_id: Conduit id used for resolution scope.
+            target_spell: Target spell for local resolution.
+            phase_scheduler_cls: Phase scheduler class to instantiate.
+        Returns:
+            Dict[str, Sequence[UnitOfWork]]: Phase result mapping.
+        Raises:
+            ValueError: If conduit_id is empty or target_spell is None.
+            PhaseExecutionError: When non-visibility phase errors occur.
+        """
+        spellbook.check_cleaned()
+        if not conduit_id:
+            raise ValueError("conduit_id must not be empty.")
+        if target_spell is None:
+            raise ValueError("target_spell must not be None.")
+    
+        results: dict[str, Sequence[UnitOfWork]] = {}
+        target_spell_id = target_spell.spell_id
+    
+        results.update(
+            SpellbookCreationSystem._run_target_foundational_resolution_phases(
+                spellbook=spellbook,
+                conduit_id=conduit_id,
+                target_spell=target_spell,
+                target_spell_id=target_spell_id,
+                phase_scheduler_cls=phase_scheduler_cls,
+            )
+        )
+        if SpellbookCreationSystem._conduit_resolution_has_errors(
+                spellbook=spellbook,
+                conduit_id=conduit_id,
+        ):
+            SpellbookCreationSystem.cleanup_phase_artifacts_after_resolution(
+                spellbook=spellbook,
+                spell_ids={target_spell_id},
+            )
+            # Gated resolution must surface as a validation failure, exactly
+            # like the conduit-wide path. Returning here was a silent success:
+            # callers marked the spell resolution-complete with no phase-11
+            # creation built, and meld then failed deep in the context
+            # builder with an opaque RuntimeError instead of the validation
+            # contract callers rely on. The conduit diagnostics carry the
+            # reasons (the phase artifacts were just cleaned), so hand them over.
+            resolution_state = spellbook._spell_system_states.get_conduit_resolution_state(conduit_id)
+>           raise SpellbookValidationError(
+                [target_spell],
+                system_diagnostics=(
+                    resolution_state.list_diagnostics() if resolution_state is not None else None
+                ),
+            )
+E           melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed. The dependency graph has errors.
+E           Whole-graph errors:
+E             - Spell 'PChain' parameter 'dep' resolves to spell id 1d9fb2abee2f, which is not visible to this Spellbook. Bind it in this Spellbook, or give this conduit access to it. [visibility_gap_dependency_filtered]
+
+src/melder/aether/spellbook/spellbook_creation_system.py:1787: SpellbookValidationError
+_ test_c2_a_chain_never_melded_before_a_dependency_notch_builds_the_new_version _
+
+    def test_c2_a_chain_never_melded_before_a_dependency_notch_builds_the_new_version() -> None:
+        """C2: nothing melded before the notch: Q builds the new Dep version instead of failing on the old plan."""
+        book, root, index, p_cls, q_cls = _chain("c2")
+        try:
+            _notch_dep(book, root, index)
+    
+>           assert root.meld(spell=q_cls).p.dep.tag() == "d2"
+                   ^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py:465: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/melder/aether/conduit/conduit.py:5044: in meld
+    return meld_component.meld(
+src/melder/aether/conduit/meld/conduit_meld.py:578: in meld
+    self._ensure_lineage_resolvable(target_spell)
+src/melder/aether/conduit/meld/meld.py:988: in _ensure_lineage_resolvable
+    self._ensure_resolution_resolvable(spell)
+src/melder/aether/conduit/meld/meld.py:1301: in _ensure_resolution_resolvable
+    spellbook._run_resolution_phases_for_target_spell(conduit_id, spell)
+src/melder/aether/spellbook/spellbook.py:7712: in _run_resolution_phases_for_target_spell
+    return SpellbookCreationSystem.run_resolution_phases_for_target_spell(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+spellbook = <melder.aether.spellbook.spellbook.Spellbook object at 0x2c8d30e2710>
+conduit_id = '01M52HTP4QR1N1MPV56NC0FRJX'
+target_spell = <[AttributeError("'melder.aether.spellbook.spell.Spell' object has no attribute 'spell'") raised in repr()] Spell object at 0x2c8d1860780>
+phase_scheduler_cls = <class 'melder.utilities.synchronization.phase_scheduler.PhaseScheduler'>
+
+    @staticmethod
+    def run_resolution_phases_for_target_spell(
+            spellbook: Spellbook,
+            conduit_id: str,
+            target_spell: Spell,
+            phase_scheduler_cls: type[PhaseScheduler] = PhaseScheduler,
+    ) -> dict[str, Sequence[UnitOfWork]]:
+        """
+        Purpose:
+            Run target-local resolution phases for one spell within a conduit scope.
+        Contract:
+            - Requires non-empty conduit id and non-null target spell.
+            - Runs local foundational phases before local plan phases.
+            - Converts local KeyError dependency misses into deterministic diagnostics.
+            - Cleans scoped phase artifacts before returning.
+            - On success, flags each dependency in the target's Phase 5 scope
+              that this Book owns and that the pass compiled only inside the
+              target's plan (`flag_dependencies_without_own_plan`), so its
+              first direct meld runs its own full target pass (0.2.8215). The
+              failure paths (a validation error, a visibility failure) flag
+              nothing.
+        Args:
+            spellbook: Owning Spellbook instance.
+            conduit_id: Conduit id used for resolution scope.
+            target_spell: Target spell for local resolution.
+            phase_scheduler_cls: Phase scheduler class to instantiate.
+        Returns:
+            Dict[str, Sequence[UnitOfWork]]: Phase result mapping.
+        Raises:
+            ValueError: If conduit_id is empty or target_spell is None.
+            PhaseExecutionError: When non-visibility phase errors occur.
+        """
+        spellbook.check_cleaned()
+        if not conduit_id:
+            raise ValueError("conduit_id must not be empty.")
+        if target_spell is None:
+            raise ValueError("target_spell must not be None.")
+    
+        results: dict[str, Sequence[UnitOfWork]] = {}
+        target_spell_id = target_spell.spell_id
+    
+        results.update(
+            SpellbookCreationSystem._run_target_foundational_resolution_phases(
+                spellbook=spellbook,
+                conduit_id=conduit_id,
+                target_spell=target_spell,
+                target_spell_id=target_spell_id,
+                phase_scheduler_cls=phase_scheduler_cls,
+            )
+        )
+        if SpellbookCreationSystem._conduit_resolution_has_errors(
+                spellbook=spellbook,
+                conduit_id=conduit_id,
+        ):
+            SpellbookCreationSystem.cleanup_phase_artifacts_after_resolution(
+                spellbook=spellbook,
+                spell_ids={target_spell_id},
+            )
+            # Gated resolution must surface as a validation failure, exactly
+            # like the conduit-wide path. Returning here was a silent success:
+            # callers marked the spell resolution-complete with no phase-11
+            # creation built, and meld then failed deep in the context
+            # builder with an opaque RuntimeError instead of the validation
+            # contract callers rely on. The conduit diagnostics carry the
+            # reasons (the phase artifacts were just cleaned), so hand them over.
+            resolution_state = spellbook._spell_system_states.get_conduit_resolution_state(conduit_id)
+>           raise SpellbookValidationError(
+                [target_spell],
+                system_diagnostics=(
+                    resolution_state.list_diagnostics() if resolution_state is not None else None
+                ),
+            )
+E           melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed. The dependency graph has errors.
+E           Whole-graph errors:
+E             - Spell 'PChain' parameter 'dep' resolves to spell id 1d9fb2abee2f, which is not visible to this Spellbook. Bind it in this Spellbook, or give this conduit access to it. [visibility_gap_dependency_filtered]
+
+src/melder/aether/spellbook/spellbook_creation_system.py:1787: SpellbookValidationError
+_ test_c3_a_chain_melded_before_a_dependency_notch_follows_it_from_either_end __
+
+    def test_c3_a_chain_melded_before_a_dependency_notch_follows_it_from_either_end() -> None:
+        """C3: P and Q melded before the notch, Q first after it: both build the new Dep version."""
+        book, root, index, p_cls, q_cls = _chain("c3")
+        try:
+            assert root.meld(spell=p_cls).dep.tag() == "d1"
+            assert root.meld(spell=q_cls).p.dep.tag() == "d1"
+            _notch_dep(book, root, index)
+    
+>           assert root.meld(spell=q_cls).p.dep.tag() == "d2"
+                   ^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py:479: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/melder/aether/conduit/conduit.py:5044: in meld
+    return meld_component.meld(
+src/melder/aether/conduit/meld/conduit_meld.py:578: in meld
+    self._ensure_lineage_resolvable(target_spell)
+src/melder/aether/conduit/meld/meld.py:988: in _ensure_lineage_resolvable
+    self._ensure_resolution_resolvable(spell)
+src/melder/aether/conduit/meld/meld.py:1301: in _ensure_resolution_resolvable
+    spellbook._run_resolution_phases_for_target_spell(conduit_id, spell)
+src/melder/aether/spellbook/spellbook.py:7712: in _run_resolution_phases_for_target_spell
+    return SpellbookCreationSystem.run_resolution_phases_for_target_spell(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+spellbook = <melder.aether.spellbook.spellbook.Spellbook object at 0x2c8d30e0610>
+conduit_id = '01M52HTP7MTM2FW1FCV6R90NKT'
+target_spell = <[AttributeError("'melder.aether.spellbook.spell.Spell' object has no attribute 'spell'") raised in repr()] Spell object at 0x2c8d186b400>
+phase_scheduler_cls = <class 'melder.utilities.synchronization.phase_scheduler.PhaseScheduler'>
+
+    @staticmethod
+    def run_resolution_phases_for_target_spell(
+            spellbook: Spellbook,
+            conduit_id: str,
+            target_spell: Spell,
+            phase_scheduler_cls: type[PhaseScheduler] = PhaseScheduler,
+    ) -> dict[str, Sequence[UnitOfWork]]:
+        """
+        Purpose:
+            Run target-local resolution phases for one spell within a conduit scope.
+        Contract:
+            - Requires non-empty conduit id and non-null target spell.
+            - Runs local foundational phases before local plan phases.
+            - Converts local KeyError dependency misses into deterministic diagnostics.
+            - Cleans scoped phase artifacts before returning.
+            - On success, flags each dependency in the target's Phase 5 scope
+              that this Book owns and that the pass compiled only inside the
+              target's plan (`flag_dependencies_without_own_plan`), so its
+              first direct meld runs its own full target pass (0.2.8215). The
+              failure paths (a validation error, a visibility failure) flag
+              nothing.
+        Args:
+            spellbook: Owning Spellbook instance.
+            conduit_id: Conduit id used for resolution scope.
+            target_spell: Target spell for local resolution.
+            phase_scheduler_cls: Phase scheduler class to instantiate.
+        Returns:
+            Dict[str, Sequence[UnitOfWork]]: Phase result mapping.
+        Raises:
+            ValueError: If conduit_id is empty or target_spell is None.
+            PhaseExecutionError: When non-visibility phase errors occur.
+        """
+        spellbook.check_cleaned()
+        if not conduit_id:
+            raise ValueError("conduit_id must not be empty.")
+        if target_spell is None:
+            raise ValueError("target_spell must not be None.")
+    
+        results: dict[str, Sequence[UnitOfWork]] = {}
+        target_spell_id = target_spell.spell_id
+    
+        results.update(
+            SpellbookCreationSystem._run_target_foundational_resolution_phases(
+                spellbook=spellbook,
+                conduit_id=conduit_id,
+                target_spell=target_spell,
+                target_spell_id=target_spell_id,
+                phase_scheduler_cls=phase_scheduler_cls,
+            )
+        )
+        if SpellbookCreationSystem._conduit_resolution_has_errors(
+                spellbook=spellbook,
+                conduit_id=conduit_id,
+        ):
+            SpellbookCreationSystem.cleanup_phase_artifacts_after_resolution(
+                spellbook=spellbook,
+                spell_ids={target_spell_id},
+            )
+            # Gated resolution must surface as a validation failure, exactly
+            # like the conduit-wide path. Returning here was a silent success:
+            # callers marked the spell resolution-complete with no phase-11
+            # creation built, and meld then failed deep in the context
+            # builder with an opaque RuntimeError instead of the validation
+            # contract callers rely on. The conduit diagnostics carry the
+            # reasons (the phase artifacts were just cleaned), so hand them over.
+            resolution_state = spellbook._spell_system_states.get_conduit_resolution_state(conduit_id)
+>           raise SpellbookValidationError(
+                [target_spell],
+                system_diagnostics=(
+                    resolution_state.list_diagnostics() if resolution_state is not None else None
+                ),
+            )
+E           melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed. The dependency graph has errors.
+E           Whole-graph errors:
+E             - Spell 'PChain' parameter 'dep' resolves to spell id 1d9fb2abee2f, which is not visible to this Spellbook. Bind it in this Spellbook, or give this conduit access to it. [visibility_gap_dependency_filtered]
+
+src/melder/aether/spellbook/spellbook_creation_system.py:1787: SpellbookValidationError
+_ test_c4_a_notch_to_a_version_the_annotation_does_not_select_raises_the_first_melds_error _
+
+    def test_c4_a_notch_to_a_version_the_annotation_does_not_select_raises_the_first_melds_error() -> None:
+        """C4: Dep notched to its subclass, which `dep: Dep` does not select: Q fails as a first meld would."""
+        book, root, index, _, q_cls = _chain("c4", by_class=True)
+        try:
+            assert root.meld(spell=q_cls).p.dep.tag() == "d1"
+            _notch_dep(book, root, index, by_class=True)
+    
+            with pytest.raises(UnresolvedInputError, match="PClass.dep expects Dep"):
+>               root.meld(spell=q_cls)
+
+tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py:493: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/melder/aether/conduit/conduit.py:5044: in meld
+    return meld_component.meld(
+src/melder/aether/conduit/meld/conduit_meld.py:578: in meld
+    self._ensure_lineage_resolvable(target_spell)
+src/melder/aether/conduit/meld/meld.py:988: in _ensure_lineage_resolvable
+    self._ensure_resolution_resolvable(spell)
+src/melder/aether/conduit/meld/meld.py:1301: in _ensure_resolution_resolvable
+    spellbook._run_resolution_phases_for_target_spell(conduit_id, spell)
+src/melder/aether/spellbook/spellbook.py:7712: in _run_resolution_phases_for_target_spell
+    return SpellbookCreationSystem.run_resolution_phases_for_target_spell(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+spellbook = <melder.aether.spellbook.spellbook.Spellbook object at 0x2c8d30e0910>
+conduit_id = '01M52HTPAPXW0B9M2RH4B72NZ6'
+target_spell = <[AttributeError("'melder.aether.spellbook.spell.Spell' object has no attribute 'spell'") raised in repr()] Spell object at 0x2c8d2190500>
+phase_scheduler_cls = <class 'melder.utilities.synchronization.phase_scheduler.PhaseScheduler'>
+
+    @staticmethod
+    def run_resolution_phases_for_target_spell(
+            spellbook: Spellbook,
+            conduit_id: str,
+            target_spell: Spell,
+            phase_scheduler_cls: type[PhaseScheduler] = PhaseScheduler,
+    ) -> dict[str, Sequence[UnitOfWork]]:
+        """
+        Purpose:
+            Run target-local resolution phases for one spell within a conduit scope.
+        Contract:
+            - Requires non-empty conduit id and non-null target spell.
+            - Runs local foundational phases before local plan phases.
+            - Converts local KeyError dependency misses into deterministic diagnostics.
+            - Cleans scoped phase artifacts before returning.
+            - On success, flags each dependency in the target's Phase 5 scope
+              that this Book owns and that the pass compiled only inside the
+              target's plan (`flag_dependencies_without_own_plan`), so its
+              first direct meld runs its own full target pass (0.2.8215). The
+              failure paths (a validation error, a visibility failure) flag
+              nothing.
+        Args:
+            spellbook: Owning Spellbook instance.
+            conduit_id: Conduit id used for resolution scope.
+            target_spell: Target spell for local resolution.
+            phase_scheduler_cls: Phase scheduler class to instantiate.
+        Returns:
+            Dict[str, Sequence[UnitOfWork]]: Phase result mapping.
+        Raises:
+            ValueError: If conduit_id is empty or target_spell is None.
+            PhaseExecutionError: When non-visibility phase errors occur.
+        """
+        spellbook.check_cleaned()
+        if not conduit_id:
+            raise ValueError("conduit_id must not be empty.")
+        if target_spell is None:
+            raise ValueError("target_spell must not be None.")
+    
+        results: dict[str, Sequence[UnitOfWork]] = {}
+        target_spell_id = target_spell.spell_id
+    
+        results.update(
+            SpellbookCreationSystem._run_target_foundational_resolution_phases(
+                spellbook=spellbook,
+                conduit_id=conduit_id,
+                target_spell=target_spell,
+                target_spell_id=target_spell_id,
+                phase_scheduler_cls=phase_scheduler_cls,
+            )
+        )
+        if SpellbookCreationSystem._conduit_resolution_has_errors(
+                spellbook=spellbook,
+                conduit_id=conduit_id,
+        ):
+            SpellbookCreationSystem.cleanup_phase_artifacts_after_resolution(
+                spellbook=spellbook,
+                spell_ids={target_spell_id},
+            )
+            # Gated resolution must surface as a validation failure, exactly
+            # like the conduit-wide path. Returning here was a silent success:
+            # callers marked the spell resolution-complete with no phase-11
+            # creation built, and meld then failed deep in the context
+            # builder with an opaque RuntimeError instead of the validation
+            # contract callers rely on. The conduit diagnostics carry the
+            # reasons (the phase artifacts were just cleaned), so hand them over.
+            resolution_state = spellbook._spell_system_states.get_conduit_resolution_state(conduit_id)
+>           raise SpellbookValidationError(
+                [target_spell],
+                system_diagnostics=(
+                    resolution_state.list_diagnostics() if resolution_state is not None else None
+                ),
+            )
+E           melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed. The dependency graph has errors.
+E           Whole-graph errors:
+E             - Spell 'PClass' parameter 'dep' resolves to spell id 420785206e73, which is not visible to this Spellbook. Bind it in this Spellbook, or give this conduit access to it. [visibility_gap_dependency_filtered]
+
+src/melder/aether/spellbook/spellbook_creation_system.py:1787: SpellbookValidationError
+_ test_x1_a_dependency_notch_in_the_lending_book_reaches_the_borrowers_dependents _
+
+    def test_x1_a_dependency_notch_in_the_lending_book_reaches_the_borrowers_dependents() -> None:
+        """X1: the lender notches the dependency of its lent provider; the borrower's User builds P over DepB."""
+        lender_book, borrower_book, lender, borrower, d_index = _across("x1")
+        try:
+            assert borrower.meld(spell=User).c.service.ping() == "P+d1"
+            new_id = lender.bind_inactive(spell=DepB, spell_index=d_index, spellframe=IDep, binding_name="dep",
+                                          existence=Existence.many, permissions="create")
+            lender.notch_spell(spell_index=d_index, spell_id=new_id)
+    
+>           assert borrower.meld(spell=User).c.service.ping() == "P+d2"
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py:543: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/melder/aether/conduit/conduit.py:5044: in meld
+    return meld_component.meld(
+src/melder/aether/conduit/meld/conduit_meld.py:578: in meld
+    self._ensure_lineage_resolvable(target_spell)
+src/melder/aether/conduit/meld/meld.py:988: in _ensure_lineage_resolvable
+    self._ensure_resolution_resolvable(spell)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <melder.aether.conduit.meld.conduit_meld.ConduitMeld object at 0x2c8d2575800>
+spell = <[AttributeError("'melder.aether.spellbook.spell.Spell' object has no attribute 'spell'") raised in repr()] Spell object at 0x2c8d2194380>
+
+    def _ensure_resolution_resolvable(self, spell: Spell) -> None:
+        """
+        Ensure the spell is resolution-valid for the active conduit.
+    
+        Structural validity alone is not enough for meld. A spell can be
+        structurally sound but still require conduit-local resolution work
+        because phases 5-11 have not yet been completed for this conduit, or
+        for its root conduit in lesser-lineage cases.
+    
+        This helper reads the active `ConduitResolutionState`, reruns
+        conduit-scoped resolution phases when that state is unknown or gated,
+        and hard-blocks invalid, disabled, or cleaned states.
+    
+        Raises:
+            SpellbookValidationError: If conduit-scoped resolution cannot be
+                promoted into a valid state.
+        """
+        spell_system_states = spell._spell_system_states
+        conduit_id = self._resolution_conduit_id
+        if not conduit_id:
+            return
+        resolution_state = spell_system_states.get_conduit_resolution_state(conduit_id)
+        resolution_validity = self._get_resolution_validity(spell, resolution_state)
+    
+        if resolution_validity is SpellValidity.valid:
+            return
+    
+        if (
+            resolution_validity is SpellValidity.invalid
+            or resolution_validity is SpellValidity.disabled
+            or resolution_validity is SpellValidity.cleaned
+        ):
+            raise SpellbookValidationError([spell])
+    
+        if resolution_validity is SpellValidity.unknown or resolution_validity is SpellValidity.gated:
+            # Rebuild window first (dynamic only), then the spell lock: Phase 5
+            # clears the plan and resets the shared context that other
+            # conduits' admitted melds may be using. See `_rebuild_window`.
+            with self._rebuild_window(spell), spell._lock:
+                resolution_state = spell_system_states.get_conduit_resolution_state(conduit_id)
+                resolution_validity = self._get_resolution_validity(spell, resolution_state)
+                if resolution_validity is SpellValidity.valid:
+                    return
+                if (
+                        resolution_validity is SpellValidity.invalid
+                        or resolution_validity is SpellValidity.disabled
+                        or resolution_validity is SpellValidity.cleaned
+                ):
+                    raise SpellbookValidationError([spell])
+    
+                spellbook = spell._spellbook
+                if spellbook is None:
+                    raise RuntimeError("Spell has no owning Spellbook surface.")
+                spellbook._run_resolution_phases_for_target_spell(conduit_id, spell)
+    
+                resolution_state = spell_system_states.get_conduit_resolution_state(conduit_id)
+                resolution_validity = self._get_resolution_validity(spell, resolution_state)
+                if resolution_validity is SpellValidity.valid:
+                    return
+    
+>           raise SpellbookValidationError([spell])
+E           melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed. Broken spells: User.
+E           User:
+E             - No validation error was recorded for this spell; its validity is invalid, gated or disabled.
+
+src/melder/aether/conduit/meld/meld.py:1308: SpellbookValidationError
+_ test_melds_racing_notches_get_a_version_or_the_lost_provider_refusal_and_end_on_the_last_version _
+
+    def test_melds_racing_notches_get_a_version_or_the_lost_provider_refusal_and_end_on_the_last_version() -> None:
+        """
+        Melds of the consumer on four threads race 20 notches between A and B (GIL off on 3.14t): each meld returns
+        a version, or the lost-provider refusal while a notch has the copy parked; nothing else is raised, and the
+        first meld after the race builds the version the last notch selected.
+        """
+        world = _lend("race", ImplA)
+        stop = threading.Event()
+        unexpected: List[BaseException] = []
+    
+        def _meld_until_stopped() -> None:
+            while not stop.is_set():
+                try:
+                    world.meld_ping()
+                except SpellbookValidationError:
+                    continue
+                except BaseException as exc:
+                    unexpected.append(exc)
+                    return
+    
+        threads = [threading.Thread(target=_meld_until_stopped) for _ in range(4)]
+        try:
+            assert world.meld_ping() == "A"
+            for thread in threads:
+                thread.start()
+            b_id = world.notch_to(ImplB)
+            versions = [b_id, world.provider_id] * 10
+            for version_id in versions[1:]:
+                world.notch_back(version_id)
+        finally:
+            stop.set()
+            for thread in threads:
+                thread.join(timeout=60)
+        try:
+>           assert unexpected == []
+E           assert [AttributeErr...bute 'ping'")] == []
+E             
+E             Left contains 3 more items, first extra item: AttributeError("'SpellContract' object has no attribute 'ping'")
+E             Use -v to get more diff
+
+tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py:586: AssertionError
+=========================== short test summary info ============================
+FAILED tests/unit/melder/aether/conduit/meld/test_meld.py::test_ensure_lineage_resolvable_valid_contract_consumer_makes_no_contract_lookup
+FAILED tests/unit/melder/aether/conduit/meld/test_meld.py::test_ensure_lineage_resolvable_gated_contract_consumer_rebuilds_once_with_structure_changed
+FAILED tests/unit/melder/aether/conduit/meld/test_meld.py::test_catch_up_refreshes_a_stale_dependency_with_its_owner_book_and_resets_its_plan
+FAILED tests/unit/melder/aether/conduit/meld/test_meld.py::test_catch_up_raises_naming_a_broken_dependency_and_pins_it_invalid
+FAILED tests/unit/melder/aether/conduit/meld/test_meld.py::test_catch_up_raises_naming_a_dependency_left_gated
+FAILED tests/unit/melder/aether/conduit/meld/test_meld.py::test_catch_up_follows_a_contract_socket_through_the_books_active_copy
+FAILED tests/unit/melder/aether/conduit/meld/test_meld.py::test_catch_up_walks_the_refreshed_topology_of_a_dependency
+FAILED tests/unit/melder/aether/conduit/meld/test_meld.py::test_catch_up_takes_a_recorded_target_to_its_lineages_current_version
+FAILED tests/unit/melder/aether/conduit/meld/test_meld.py::test_catch_up_refreshes_a_shared_dependency_once
+FAILED tests/unit/melder/aether/conduit/meld/test_meld.py::test_catch_up_holds_no_lock_while_walking_and_only_the_dependencys_while_refreshing
+FAILED tests/unit/melder/aether/conduit/meld/test_meld.py::test_catch_up_enters_the_dependencys_rebuild_window_before_its_lock
+FAILED tests/unit/melder/aether/conduit/meld/test_meld.py::test_catch_up_does_not_reset_a_stale_existing_creation
+FAILED tests/unit/melder/aether/conduit/meld/test_meld.py::test_deferred_lane_runs_the_catch_up_before_its_pass
+FAILED tests/unit/melder/aether/conduit/meld/test_meld.py::test_catch_up_rechecks_staleness_under_the_dependencys_lock
+FAILED tests/unit/melder/utilities/custom_exceptions/test_spellbook_validation_error.py::test_gating_warning_is_listed_as_the_spells_reason
+FAILED tests/unit/melder/utilities/custom_exceptions/test_spellbook_validation_error.py::test_other_warnings_stay_counted_beside_a_gating_reason
+FAILED tests/unit/melder/utilities/custom_exceptions/test_spellbook_validation_error.py::test_gating_only_block_is_listed_when_diagnostics_are_given
+FAILED tests/unit/melder/utilities/custom_exceptions/test_spellbook_validation_error.py::test_gating_warning_codes_are_the_codes_phase_4_gates_on
+FAILED tests/unit/melder/spellbook/spell_crafter/validation/strategies/test_contract_provider_presence_strategy.py::test_contract_provider_presence_missing_provider_names_the_contract_and_the_remedy
+FAILED tests/unit/melder/spellbook/spell_compiler/phases/test_compiler_phase_4.py::test_run_gates_the_lineage_on_every_code_the_report_lists_as_a_reason
+FAILED tests/unit/melder/spellbook/spell_compiler/phases/test_compiler_phase_4.py::test_run_marks_the_lineage_valid_on_a_warning_outside_the_reported_reasons
+FAILED tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py::test_contract_consumer_follows_notch_notch_back_and_repeat_notch_with_one_rebuild_each
+FAILED tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py::test_destroying_the_providers_index_fails_the_consumer_naming_the_lost_contract
+FAILED tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py::test_releasing_the_index_link_fails_the_consumer_naming_the_lost_contract
+FAILED tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py::test_releasing_a_version_grant_fails_the_consumer_naming_the_lost_contract
+FAILED tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py::test_c1_a_dependent_two_hops_away_follows_a_dependency_notch
+FAILED tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py::test_c2_a_chain_never_melded_before_a_dependency_notch_builds_the_new_version
+FAILED tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py::test_c3_a_chain_melded_before_a_dependency_notch_follows_it_from_either_end
+FAILED tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py::test_c4_a_notch_to_a_version_the_annotation_does_not_select_raises_the_first_melds_error
+FAILED tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py::test_x1_a_dependency_notch_in_the_lending_book_reaches_the_borrowers_dependents
+FAILED tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py::test_melds_racing_notches_get_a_version_or_the_lost_provider_refusal_and_end_on_the_last_version
+31 failed, 310 passed in 2.32s

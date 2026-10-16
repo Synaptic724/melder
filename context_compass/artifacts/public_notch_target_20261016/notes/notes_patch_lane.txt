@@ -1,0 +1,43 @@
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: Two internal callers notch through the public facade and pass the checks the patch adds:
+    `RestoreEngine._enforce_selections` and the graft runner's selection adoption both resolve their target with
+    `_get_owned_spell` on the Book whose own conduit they notch through (`_conjure_for_book`, `_host_book.conduit`),
+    and the target was staged on the index they pass (`bind_inactive(spell_index=anchor)` / the merge index). A
+    cleaned Spell keeps `spell_id` and `_key` and loses `spell_index`, so the ownership check (first) refuses a stale
+    object before the membership check reads `spell_index`.
+  EVIDENCE:
+  - src/melder/crystallizer/crystal_loader_system/restore_engine.py:2271-2321
+  - src/melder/crystallizer/crystal_loader_system/graft_runner.py:553-578
+  - src/melder/aether/spellbook/spell.py:581-723
+  IMPACT: The checks need no caller change; the crystallizer suites are regression evidence for them.
+  NEXT: Record the mapping note.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: PLAN
+  CLAIM: Mapping, patch section -> implementation -> validation (patch lane public_notch_target_2026_10_16, written
+    before any src/ edit). (1) Invariants 1-2 and the component patch's two helpers -> `_resolve_notch_target` and
+    `_refuse_foreign_notch_target` in conduit.py, called as `spell = self._resolve_notch_target(...)` after the Book
+    check -> unit refusals with nothing started; integration C3-C5 refused with both indexes intact. (2) Invariant 3
+    (the second check under the seal) -> one `_refuse_foreign_notch_target` line inside the window's `try`, before
+    `_notch_spell` (so the custody note's "leaves the window lines as they are" gains that one line) -> a unit test
+    that moves the target after the first check and sees the in-window refusal, the transaction ended failed and the
+    seam not called. (3) Invariant 4 (valid calls unchanged) -> nothing else in `notch_spell` moves; the docstring is
+    rewritten -> integration: the loop by id (staged after and before conjure), the revert, the no-op, an index-link
+    borrower following a notch by id; the existing notch, index-link, S8 and crystallizer suites green in both GIL
+    modes. (4) Invariant 5 (no new lock) -> review and the suites. Then the docs (README, governed-change, UX expert
+    17 and 26, the concept map), the README-loop probe, system docs and graph, release note, notch, closure, rebuild.
+  EVIDENCE:
+  - context_compass/system_docs/patches/active/public_notch_target_2026_10_16/architecture_patch.md:1-109
+  - context_compass/system_docs/patches/active/public_notch_target_2026_10_16/component_patch_conduit_notch_target.md:1-80
+  - context_compass/system_docs/patches/active/public_notch_target_2026_10_16/code_description_patch_conduit_notch_target.md:1-67
+  IMPACT: The entry gate is met: the board row routes the task, the patch lane is linked, the mapping is recorded.
+  NEXT: Write the red tests.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9

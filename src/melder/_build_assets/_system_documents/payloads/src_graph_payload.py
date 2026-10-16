@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_graph.md'
-LINE_COUNT = 28066
-CONTENT_SHA256 = '0505fa3fb7e447adc6588448b9c3de5de36c887a205065bc0686216f6a3748d2'
+LINE_COUNT = 28068
+CONTENT_SHA256 = 'f50a967cc30791579169df974b762d889af164cfd2ae9f921195d4283a64c83b'
 
 TEXT = """# src_graph
 
@@ -247,7 +247,7 @@ descriptors and reassemble.
 
 ## src/melder/__version__.py
 
-- source_sha256: `66f7c9c6fd175754571cebaaefacb450146cf7794f4448842f82ca2d234348cb`
+- source_sha256: `35f8383d5c1876945d8d5d98c75ad39b834389dc046fb26e1ab8a2ba923964e7`
 - nodes: 1
 
 ### Nodes
@@ -336,7 +336,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_agent_documentation/manifest/agent_documentation_manifest.py
 
-- source_sha256: `2492458b6cad744f771fa9c78fa8dc97fb164ae70db4cf23554780eeaf979fef`
+- source_sha256: `727c8c82027e01a5e0449eec151e26c574591ee6f802d99ed2a3ff00f84f8f16`
 - nodes: 1
 
 ### Nodes
@@ -415,7 +415,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py
 
-- source_sha256: `1ebff64cdcab6ede30ac0738c8c1ab005afdc1c3bf8e72389d2c00f378cbdba6`
+- source_sha256: `a159fb7c4d936291be9e5bbc55f7cfc36ac70b6045594a4701daf4ecf90b50f5`
 - nodes: 1
 
 ### Nodes
@@ -493,7 +493,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/graph_adjacency_manifest.py
 
-- source_sha256: `71b37fbef8f186c77732493dc9280c7293f64b3eb817cd285a38fa244e6e7a1e`
+- source_sha256: `6a4b63f69b667cd90a10edff1769131e7062c52ad49e651c0f21be8463e66d44`
 - nodes: 1
 
 ### Nodes
@@ -510,7 +510,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_index.py
 
-- source_sha256: `3f66f8fe889bb5473c2d8a4ae75fa9091c93c7888d454540bed8c94fb38dff5c`
+- source_sha256: `c7ccd128ee030fe7c03c99dc0807e49d46f6ec3b1a0954c159ba7dbb3bc5d219`
 - nodes: 1
 
 ### Nodes
@@ -527,7 +527,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_manifest.py
 
-- source_sha256: `537d93d721494362ad5a5ebed866ad9d458c25e928fee9c0c41a8e1a5e7ecbbe`
+- source_sha256: `96748e43e003e19cc4570ef1644c78ed675d2751151184370c59636203b560ab`
 - nodes: 1
 
 ### Nodes
@@ -547,7 +547,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_architecture_payload.py
 
-- source_sha256: `1104efa378cee07c730583fc83c0c7c1d2e397dc61d3029d27390abcebd0f338`
+- source_sha256: `092ae959c300fbda931359b43649af01278108cc217b8b9b619f8bd6626af64d`
 - nodes: 1
 
 ### Nodes
@@ -564,7 +564,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_components_payload.py
 
-- source_sha256: `acb82654098dc8743fa99c80c9a8f90665c14826a0e72c008b893ea73881bb7b`
+- source_sha256: `eafe502e8ef28bb704e9664b64c7faf883793849a47ceae328bfdb78b6eb9fa6`
 - nodes: 1
 
 ### Nodes
@@ -581,7 +581,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_graph_payload.py
 
-- source_sha256: `170fa93c840fb3f17cb06ef8a8a8b56ec761842d0af1487e01e8a369984144c0`
+- source_sha256: `b3593308661ebafb7dcd6f08c3844b14a8c91d13f2389ecd79f3178000747a7c`
 - nodes: 1
 
 ### Nodes
@@ -4449,7 +4449,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/conduit.py
 
-- source_sha256: `87ee80f96e4a89e6683f6daa6fcf5a344421475a45a927ce5ff0a468f8d082e4`
+- source_sha256: `872cd917eef2e8cb2ead3ee8ec3d68418f6a89fbd659d75a21eebac6dc61a9a0`
 - nodes: 2
 
 ### Nodes
@@ -4498,6 +4498,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - leaves its cluster as the first step of a root's teardown (_leave_cluster_for_teardown, 0.2.8236): the cluster's ordered exit while the frame is live, drop_member during frame teardown or after a failed exit
   - forwards a managed binding's four options through both binding facades unchanged (0.2.8242)
   - leases a managed spell through managed_spell_meld (0.2.8245): resolves the target as meld does, refuses another existence and a version with no pool before melding, melds the version by id and returns ManagedSpellLease(object, pool)
+  - names a notch's target by spell_id - the spell_id bind or bind_inactive returned - or by spell, exactly one; resolves a spell_id through the Book's _get_owned_spell to the exact owned version, active or parked; and refuses a version the Book does not own or one of another index before the notch transaction and again inside its seal, so a refused notch moves nothing (notch_spell, _resolve_notch_target, _owned_notch_target, 0.2.8249)
+  - names the parked spell add_to_spell_index and remove_from_spell_index move by spell_id or by spell, exactly one, under the notch's argument rules; resolves a spell_id through the Book's _get_owned_spell and refuses one the Book does not own before the transaction, leaving the rest to the Spellbook seams (_resolve_spell_to_move, _check_spell_argument, _owned_spell_by_id, 0.2.8249)
 - owns_state: `_meld`, `_creations`, `_conduit_ward`, `_creation_gate`, `_spellspace_stack`, `_spellspace_pool`, `_conduit_pool`, `_transaction_identity`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `add_bind_hooks`, `add_index_to_contract`, `add_spell_to_contract`, `add_spell_to_contract_with_dependencies`, `add_spells_to_contract`, `add_to_spell_index`, `begin_transaction`, `bind`, `bind_inactive`, `check_spell_id`, `cleanup`, `cleanup_lesser_conduits` (+67 more)

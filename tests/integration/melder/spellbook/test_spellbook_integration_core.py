@@ -239,8 +239,8 @@ def test_spellbook_integration_conjure_registers_spell_ids_and_cleanup_clears_re
         Validate conjure registers spell versions into the Aether registry and cleanup clears them.
     Contract:
         - Conduit registration inserts SpellIndex entries into the frame spell registry.
-        - The frame version registry contains the bound spell version id.
-        - Conduit cleanup removes the version id from the frame registry.
+        - The frame version registry contains the bound spell's spell_id.
+        - Conduit cleanup removes the spell_id from the frame registry.
     Returns:
         None.
     Raises:

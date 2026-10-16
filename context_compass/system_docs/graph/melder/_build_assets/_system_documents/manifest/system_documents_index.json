@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/_build_assets/_system_documents/manifest/system_documents_index.py",
- "source_sha256": "3f66f8fe889bb5473c2d8a4ae75fa9091c93c7888d454540bed8c94fb38dff5c",
+ "source_sha256": "2574289e0482aa28847d4d100d7131deba270e35d0ed78f8a6e066d434594e74",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder._build_assets._system_documents.manifest.system_documents_index": {

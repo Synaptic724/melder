@@ -31,7 +31,7 @@ class LineageAlignmentStrategy(SpellSystemValidationStrategy):
     """
     Guard that root-blueprint lineage metadata agrees with the system index.
 
-    Root blueprints are version-id rooted, but they can still carry lineage
+    Root blueprints are spell_id-rooted, but they can still carry lineage
     metadata for DevOps and change-control consumers. This strategy checks that
     the optional root-lineage ids embedded in the blueprints stay aligned with
     the lineage ids tracked on the corresponding `SpellSystemIndex` nodes.
@@ -71,7 +71,7 @@ class LineageAlignmentStrategy(SpellSystemValidationStrategy):
             phase4_results: Phase-4 validation artifacts keyed by spell id.
             broken_spell_ids: Set of broken spell ids.
             spell_system_states: SpellSystemStates registry for topology and lineage data.
-            spell_lookup: Mapping of visible spell version ids to spell objects.
+            spell_lookup: Mapping of visible spell_ids to spell objects.
             diagnostics: Collection that receives diagnostics.
             cancel_event: Optional cancellation signal.
         Returns:

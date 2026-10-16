@@ -1877,7 +1877,7 @@ class SitePlanEmission(Cleanable):
 
     def _bind_lease_pool(self, index: int) -> bool:
         """
-        Bind one leasing site's version id, and its pool and pop when they are plan constants.
+        Bind one leasing site's spell_id, and its pool and pop when they are plan constants.
 
         Returns:
             bool: True when `h{index}` and `pp{index}` are bound (the constant shape).

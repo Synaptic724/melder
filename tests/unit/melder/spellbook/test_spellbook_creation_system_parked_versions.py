@@ -83,7 +83,7 @@ class _SpellStub:
         Build a spell stub.
 
         Args:
-            spell_id: The version id.
+            spell_id: The spell's spell_id.
             book: The Book stub whose lock a stamp is expected to run under.
             existing_object: The bound existing object, or None for a class or function spell.
             resolution_required: The flag's starting value.

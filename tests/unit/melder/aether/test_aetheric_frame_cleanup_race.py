@@ -79,7 +79,7 @@ class _IdSetPausingMidCopy(set):
     def __init__(self, ids: Set[str], paused: threading.Event, resume: threading.Event) -> None:
         """
         Args:
-            ids: The initial version ids.
+            ids: The initial spell_ids.
             paused: Set once an element-by-element read has taken the first element.
             resume: Released by the test after it added an id.
         """

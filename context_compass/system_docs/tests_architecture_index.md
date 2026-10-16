@@ -12,10 +12,10 @@ Line numbers are 1-based and inclusive on both ends.
 | --- | --- |
 | document | `tests_architecture.md` |
 | index_version | 1.1.0 |
-| generated_at | 2026-10-16T11:13:51Z |
-| line_count | 967 |
+| generated_at | 2026-10-16T17:07:46Z |
+| line_count | 988 |
 | line_ending | lf |
-| content_sha256 | `135e67e383be0a96a36468ded573b8eb0ed29b0e0259519eb50d7fce4f4da4f8` |
+| content_sha256 | `ebebacf6ecaf6c82996848bf6c061e085c91c618192e02edf4e3bb0a14e1f7ad` |
 | sections | 32 |
 
 Recompute all three of `line_count`, `line_ending`, and `content_sha256`
@@ -52,10 +52,10 @@ which you did.
 | 489-509 | 2 | C3 Components Overview |
 | 510-545 | 2 | C2 Subcomponents Overview |
 | 546-553 | 2 | Open Questions |
-| 554-592 | 2 | Failure Modes and Error Paths |
-| 593-787 | 2 | C1 Code Map (Core Only) |
-| 788-843 | 2 | Diagrams |
-| 789-815 | 3 | Diagrams > ASCII Diagram (C4) |
-| 816-843 | 3 | Diagrams > Mermaid Diagram (C4) |
-| 844-881 | 2 | Information Sources |
-| 882-967 | 2 | Context / Handoff Summary |
+| 554-599 | 2 | Failure Modes and Error Paths |
+| 600-794 | 2 | C1 Code Map (Core Only) |
+| 795-850 | 2 | Diagrams |
+| 796-822 | 3 | Diagrams > ASCII Diagram (C4) |
+| 823-850 | 3 | Diagrams > Mermaid Diagram (C4) |
+| 851-889 | 2 | Information Sources |
+| 890-988 | 2 | Context / Handoff Summary |

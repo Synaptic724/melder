@@ -905,7 +905,7 @@ class AethericFrame(Cleanable):
 
     def spells_in_index(self) -> set[str]:
         """
-        Return a flat set of all cached SHA256 version ids in this frame.
+        Return a flat set of all cached SHA256 spell_ids in this frame.
 
         Contract:
           - Uses the cached `_selected_spell_registry`.
@@ -913,7 +913,7 @@ class AethericFrame(Cleanable):
 
         Returns:
             set[str]:
-                All cached version ids across every conduit in the frame.
+                All cached spell_ids across every conduit in the frame.
 
         Raises:
             RuntimeError: If the frame is cleaned, including by a cleanup that
@@ -942,14 +942,14 @@ class AethericFrame(Cleanable):
 
     def find_index_for_spell(self, spell_id: str) -> SpellIndex | None:
         """
-        Find and return the `SpellIndex` that contains the given version id.
+        Find and return the `SpellIndex` that contains the given spell_id.
 
         Contract:
           - Scans the frame-owned `_spell_registry`.
           - Returns `None` for empty ids or when no matching lineage is found.
 
         Args:
-            spell_id: SHA256 version id to search for.
+            spell_id: The SHA256 spell_id to search for.
 
         Returns:
             SpellIndex | None:
@@ -1045,7 +1045,7 @@ class AethericFrame(Cleanable):
         set once the frame is cleaned instead of raising.
 
         Returns:
-            set[str]: The frame's cached version ids while it is live; empty when
+            set[str]: The frame's cached spell_ids while it is live; empty when
                 cleaned.
 
         Threading:

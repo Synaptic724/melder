@@ -30,7 +30,7 @@ class ContractedVersionDriftStrategy(SpellSystemValidationStrategy):
     """
     Guard that the visible system index does not drift onto stale lineage versions.
 
-    This strategy compares the version ids stored on `SpellSystemIndex` nodes
+    This strategy compares the spell_ids stored on `SpellSystemIndex` nodes
     against the currently visible spell versions for each lineage. It is aimed
     at contracted/borrowed visibility scenarios where the system graph can lag
     behind the active visible version set and end up validating or planning
@@ -54,8 +54,8 @@ class ContractedVersionDriftStrategy(SpellSystemValidationStrategy):
         Validate that index nodes align with visible lineage versions.
 
         Purpose:
-            Surface cases where SpellSystemIndex references outdated spell
-            version ids for a lineage visible in the spellbook.
+            Surface cases where SpellSystemIndex references outdated
+            spell_ids for a lineage visible in the spellbook.
         Contract:
             - Uses spell_lookup to determine visible current versions.
             - Emits errors when a node's spell_id is not a visible version.
@@ -66,7 +66,7 @@ class ContractedVersionDriftStrategy(SpellSystemValidationStrategy):
             phase4_results: Phase-4 validation artifacts keyed by spell id.
             broken_spell_ids: Set of broken spell ids.
             spell_system_states: SpellSystemStates registry for topology and lineage data.
-            spell_lookup: Mapping of visible spell version ids to spell objects.
+            spell_lookup: Mapping of visible spell_ids to spell objects.
             diagnostics: Collection that receives diagnostics.
             cancel_event: Optional cancellation signal.
         Returns:

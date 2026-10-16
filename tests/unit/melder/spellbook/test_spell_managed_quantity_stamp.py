@@ -115,7 +115,7 @@ def test_stamping_a_managed_spell_ensures_its_pool() -> None:
 
 
 def test_stamping_into_a_real_root_store_creates_the_pool_there() -> None:
-    """The pool lands in the owner root's store under the version id, composed from the Spell."""
+    """The pool lands in the owner root's store under the spell_id, composed from the Spell."""
     spell = _spell(managed_spell_mode=ManagedSpellMode.limited_quantity, managed_spell_limit=5)
     store = ConduitCreations(conduit_id="root-1")
     try:

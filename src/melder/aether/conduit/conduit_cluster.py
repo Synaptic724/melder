@@ -1484,7 +1484,7 @@ class ConduitCluster(Cleanable):
 
         Args:
             owner_id: Conduit id that owns the shared spell.
-            spell_id: Spell version id for the shared root.
+            spell_id: The shared root's spell_id.
 
         Returns:
             str: Deterministic cluster-scoped root identifier.

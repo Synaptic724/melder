@@ -38,7 +38,7 @@ class _SpellStub:
         Keep the identity and the class.
 
         Args:
-            spell_id: The version id.
+            spell_id: The spell's spell_id.
             target: The managed class.
         """
         self.spell_id = spell_id
@@ -80,7 +80,7 @@ def _pool(spell_id: str, target: type) -> ManagedSpellQuantity:
     Build and register one pool.
 
     Args:
-        spell_id: The version id.
+        spell_id: The spell's spell_id.
         target: The managed class.
 
     Returns:

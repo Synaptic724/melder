@@ -374,7 +374,7 @@ class ReleaseManagedSpell(Cleanable):
             obj:
                 An object leased from a managed spell's pool.
             spell_id:
-                Optional version id picking one pool.
+                Optional spell_id picking one pool.
             conduit:
                 Optional root conduit, or a lesser of it, picking the pools that root holds.
 
@@ -417,7 +417,7 @@ class ReleaseManagedSpell(Cleanable):
             obj:
                 An object leased from a managed spell's pool.
             spell_id:
-                Optional version id picking one pool.
+                Optional spell_id picking one pool.
             conduit:
                 Optional root conduit, or a lesser of it, picking the pools that root holds.
 
@@ -451,7 +451,7 @@ class ReleaseManagedSpell(Cleanable):
             objects:
                 The leased objects (any iterable, consumed once).
             spell_id:
-                Optional version id picking one pool for every object.
+                Optional spell_id picking one pool for every object.
             conduit:
                 Optional root conduit, or a lesser of it, picking the pools that root holds.
 

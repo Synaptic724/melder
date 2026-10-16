@@ -20,12 +20,12 @@ class SpellSystemState(Cleanable):
     - `spell_index_id`:
         Index identifier (ULID from SpellIndex.id).
     - `current_spell_id`:
-        Currently promoted version id for this index (e.g., SpellIndex.selected_spell_id; typically a SHA).
+        Currently promoted spell_id for this index (e.g., SpellIndex.selected_spell_id; typically a SHA).
 
     Topology
     --------
     - `direct_dependencies`:
-        Set of dependency ids for this index. Caller decides whether ids are index or version ids.
+        Set of dependency ids for this index. Caller decides whether ids are spell index ids or spell_ids.
     - `direct_dependents`:
         Reverse edges: indexes that depend on this index ("what breaks if this changes?").
 
@@ -117,7 +117,7 @@ class SpellSystemState(Cleanable):
             spell_index_id:
                 Stable index identifier for the SpellIndex this state tracks.
             current_spell_id:
-                Currently promoted spell version id for the index.
+                Currently promoted spell_id for the index.
         Contract:
             - Starts with empty dependency and dependent sets.
             - Starts with `SpellValidity.unknown` plus the `new_index` flag so
@@ -230,7 +230,7 @@ class SpellSystemState(Cleanable):
     @property
     def current_spell_id(self) -> str:
         """
-        Currently promoted version id for this index (e.g., SpellIndex.selected_spell_id).
+        Currently promoted spell_id for this index (e.g., SpellIndex.selected_spell_id).
 
         Threading:
             Acquires the internal lock to avoid torn reads while promotion
@@ -551,12 +551,12 @@ class SpellSystemState(Cleanable):
     # ------------------------------------------------------------------
     def update_current_spell_id(self, spell_id: str) -> None:
         """
-        Update the currently promoted version id for this index.
+        Update the currently promoted spell_id for this index.
 
         Caller is responsible for keeping the manager's spell-id index in sync.
 
         Args:
-            spell_id: New current spell version id (non-empty).
+            spell_id: New current spell_id (non-empty).
         Contract:
             - Updates index identity for the promoted spell version only.
             - Does not change validity, flags, dependency edges, or dirty state.

@@ -138,7 +138,7 @@ def test_register_index_creates_new(states_manager, mock_spell_index, mock_spell
 
     Contract:
     - A new `SpellSystemState` object is created and returned.
-    - The state is indexed by lineage ID and current spell version ID.
+    - The state is indexed by lineage ID and current spell_id.
     - The lineage is marked dirty upon registration.
     """
     state = states_manager.register_index(mock_spell_index)

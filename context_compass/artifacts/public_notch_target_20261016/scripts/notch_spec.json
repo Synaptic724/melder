@@ -1,0 +1,10 @@
+[
+  {"path": "src/melder/__version__.py",
+   "old": "__version__ = \"0.2.8248\"\n",
+   "new": "__version__ = \"0.2.8249\"\n",
+   "count": 1},
+  {"path": "context_compass/attention_board.md",
+   "old": "  notch; creation cache generation 21; S8 of EPIC-2026-10-14-managed_spell_quantity). Notch above it if you land\n  after.\n### Device VM git hazard (melder_2, 2026-09-26)\n",
+   "new": "  notch; creation cache generation 21; S8 of EPIC-2026-10-14-managed_spell_quantity). Notch above it if you land\n  after.\n- melder_0 landed 0.2.8249 (`Conduit.notch_spell` takes `spell_id=` - the id `bind` or `bind_inactive` returned -\n  beside `spell=`, exactly one, and checks its target before and inside its transaction; TASK-2026-10-16-\n  public_notch_target_for_staged_versions). Notch above it if you land after.\n### Device VM git hazard (melder_2, 2026-09-26)\n",
+   "count": 1}
+]

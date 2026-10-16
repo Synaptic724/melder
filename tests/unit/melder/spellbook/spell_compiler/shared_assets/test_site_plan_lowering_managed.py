@@ -66,7 +66,7 @@ class Store:
         self.adoptions.append((holder_key, holder, children))
 
     def get_managed_quantity(self, spell_id: str) -> Optional[ManagedSpellQuantity]:
-        """Return the pool held under one version id, as `Creations.get_managed_quantity` does."""
+        """Return the pool held under one spell_id, as `Creations.get_managed_quantity` does."""
         return self._managed_quantities.get(spell_id)
 
 

@@ -1,0 +1,37 @@
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: Notched and written up. `__version__` read 0.2.8248 just before the change, set to 0.2.8249; the board's notch notice
+    names it ("notch above it if you land after"). The running release note is headed 0.2.8249 and carries the
+    section "`notch_spell` takes the version's id, and refuses a version that is not the index's" (the gap, a
+    self-contained example, the exactly-one rule, the id resolution, both checks with their quoted messages, the
+    C3-C5 history, the no-op, what stays the same); S8's example notches by id instead of a comment and S8's "What
+    stays the same" no longer lists `notch_spell`; two packaging bullets (the README sketch, governed-change and
+    lesson 17 by id; the packaged system docs and graph) and the rebuild line at 0.2.8249. A probe execs both
+    examples from the note as written, each in a fresh interpreter, plus the refusals: both examples OK and every
+    quoted message matches, with the GIL off and on. The patch lane's three docs say landed and promoted and moved
+    to system_docs/patches/completed/; the artifact board's three active patch rows became one cleared row and the
+    ticket's Artifact Links point at the completed folder. The owner asked (chat, 2026-10-16) what the add/remove
+    question means; it was restated - whether `add_to_spell_index` / `remove_from_spell_index` also take
+    `spell_id=` to name the owned, parked version they move (ids stay identities) - and the closure waits for the
+    answer, so it can join this landing.
+  EVIDENCE:
+  - src/melder/__version__.py:12-12
+  - context_compass/attention_board.md:297-299
+  - release_docs/next_version_release.md:1-1
+  - release_docs/next_version_release.md:560-578
+  - release_docs/next_version_release.md:580-636
+  - release_docs/next_version_release.md:637-711
+  - context_compass/artifacts/public_notch_target_20261016/scripts/release_note.py:1-65
+  - context_compass/artifacts/public_notch_target_20261016/probes/probe_release_note_examples.py:1-109
+  - context_compass/artifacts/public_notch_target_20261016/runs/probe_release_note_examples_gil0.txt:1-11
+  - context_compass/artifacts/public_notch_target_20261016/runs/probe_release_note_examples_gil1.txt:1-11
+  - context_compass/system_docs/patches/completed/public_notch_target_2026_10_16/architecture_patch.md:1-117
+  - context_compass/artifact_board.md:110-110
+  IMPACT: The landing is complete but for the owner's add/remove answer, the closure and the rebuild; the assets and
+    LLM bundles are stale until the rebuild.
+  NEXT: On the owner's answer, either build the add/remove keyword in this landing or file it as a backlog task;
+    then close with NOTICE M0-177 and rebuild last.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9

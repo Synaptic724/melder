@@ -43,7 +43,7 @@ class _SpellStub:
         Keep the fields.
 
         Args:
-            spell_id: The version id.
+            spell_id: The spell's spell_id.
             existence: The binding's Existence.
             mode: The managed mode.
             limit: The managed limit.

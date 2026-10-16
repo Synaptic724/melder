@@ -1,0 +1,6 @@
+[
+  {"path": "tests/integration/melder/aether/conduit/test_notch_spell_by_id_integration.py",
+   "old": "spell, so the loop\nneeded private access. The call also checks its target - owned by the conduit's Book, a member of the index passed -\nfor both forms: on 0.2.8248 a version of another index corrupted both indexes, and another index's active version or\nanother Book's version raised half-way with the index's active version already parked.\n",
+   "new": "spell, so the loop needed private access. The call also checks its target - owned by the conduit's Book, a member\nof the index passed - for both forms: on 0.2.8248 a version of another index corrupted both indexes, and another\nindex's active version or another Book's version raised half-way with the index's active version already parked.\n",
+   "count": 1}
+]

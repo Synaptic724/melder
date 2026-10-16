@@ -79,7 +79,7 @@ class _SpellStub:
         Keep the identity, the class, an elastic managed policy and the index.
 
         Args:
-            spell_id: The version id.
+            spell_id: The spell's spell_id.
             target: The managed class.
             binding_name: The binding name.
             frame: The frame name.
@@ -392,7 +392,7 @@ def test_release_with_a_spell_id_no_pool_carries_names_the_pools() -> None:
 
 
 def test_release_refuses_a_spell_id_that_is_not_a_string() -> None:
-    """The filter must be a version id."""
+    """The filter must be a spell_id (a str)."""
     _pool()
     with pytest.raises(TypeError, match="spell_id must be a str or None; got int"):
         ReleaseManagedSpell().release(Pooled(), spell_id=7)

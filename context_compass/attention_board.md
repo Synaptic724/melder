@@ -100,26 +100,15 @@ Message alert rules
 
 ## Message Alerts
 <!-- BEGIN USER-DEFINED: alerts -->
-- NEW MESSAGE for melder_1 (from workflows_0, 2026-09-28T09:43:41Z)
 - NEW MESSAGE for melder_2 (from workflows_0, 2026-09-28T09:43:41Z)
 - NEW MESSAGE for muse_0 (from workflows_0, 2026-09-28T09:43:41Z)
-- NEW MESSAGE for melder_1 (from workflows_0, 2026-09-28T08:24:12Z)
 - NEW MESSAGE for melder_2 (from workflows_0, 2026-09-28T08:24:12Z)
 - NEW MESSAGE for muse_0 (from workflows_0, 2026-09-28T08:24:12Z)
-- NEW MESSAGE for melder_1 (from melder_0, 2026-09-26T19:15:40Z)
-- NEW MESSAGE for melder_1 (from melder_0, 2026-09-26T20:47:28Z)
-- NEW MESSAGE for melder_1 (from melder_0, 2026-09-26T21:36:14Z)
-- NEW MESSAGE for melder_1 (from melder_2, 2026-09-26T22:07:46Z)
-- NEW MESSAGE for melder_1 (from melder_0, 2026-09-26T22:18:01Z)
-- NEW MESSAGE for melder_1 (from melder_2, 2026-09-26T22:41:56Z)
-- NEW MESSAGE for melder_1 (from melder_0, 2026-09-27T11:40:40Z)
 - NEW MESSAGE for melder_2 (from melder_0, 2026-09-27T11:40:40Z)
-- NEW MESSAGE for melder_1 (from melder_0, 2026-09-27T13:25:25Z)
 - NEW MESSAGE for melder_2 (from melder_0, 2026-09-27T13:25:25Z)
 - NEW MESSAGE for muse_0 (from melder_0, 2026-09-27T20:29:26Z)
 - NEW MESSAGE for muse_0 (from melder_0, 2026-09-27T21:49:53Z)
 - NEW MESSAGE for melder_2 (from melder_0, 2026-09-27T21:49:53Z)
-- NEW MESSAGE for melder_1 (from fable_0, 2026-09-27T22:06:50Z)
 - NEW MESSAGE for melder_2 (from fable_0, 2026-09-27T22:06:50Z)
 - NEW MESSAGE for muse_0 (from fable_0, 2026-09-27T22:06:50Z)
 - NEW MESSAGE for muse_0 (from melder_0, 2026-09-27T23:08:51Z)
@@ -184,8 +173,7 @@ Message alert rules
 - NEW MESSAGE for muse_0 (from melder_0, 2026-10-01T11:10:44Z)
 - NEW MESSAGE for melder_2 (from melder_0, 2026-10-01T11:26:16Z)
 - NEW MESSAGE for muse_0 (from melder_0, 2026-10-01T11:26:16Z)
-- NEW MESSAGE for melder_0 (from melder_1, 2026-10-15T23:17:16Z)
-- NEW MESSAGE for melder_0 (from melder_1, 2026-10-16T01:58:31Z)
+- NEW MESSAGE for melder_1 (from melder_0, 2026-10-16T18:56:42Z)
 <!-- END USER-DEFINED: alerts -->
 
 ## Active Items
@@ -195,31 +183,26 @@ Message alert rules
 | gauntlet_runtime_speed | in_progress | discovery | claude | melder_2 | none | Owner decides whether an open lever (thread-affine pools, one-lock anonymous link, single-check fast door) is worth a task. | Per-scope-cycle cost map vs dishka and dependency-injector, with ranked and prototyped candidates. | Next lever validated and its task opened, or the owner redirects. | tickets/tasks/2026-09-26_measure_gauntlet_scope_cycle_costs_task.md | 2026-09-26T23:01:16Z | REQUIRED |
 | defect_hunting_spellbook | in_progress | discovery | opencode | muse_0 | none | Slice spellbook component sections then read the surface behind each claim. | Contradiction list with evidence; meaty issues flagged apart from polish. | Sweep list triaged or owner redirects to conduit/meld or arch diffs. | tickets/tasks/2026-09-27_spellbook_sweep_task.md | 2026-09-27T15:56:49Z | REQUIRED |
 | defect_hunting_fixes_1 | in_progress | implementation | opencode | muse_0 | none | Re-slice each target fresh then repair findings 1-8 in order. | Corrected blocks with verified ranges; index check clean. | Batch repaired with gates passing or owner redirects scope. | tickets/tasks/2026-09-27_sweep_fixes_batch_1_task.md | 2026-09-27T16:07:16Z | REQUIRED |
-| melder_object_pools | review | handoff | claude | melder_0 | the owner's acceptance (reserved) | The owner accepts S1-S8 and the epic, or redirects. | Versions parked before conjure meld after a notch (every existence); cache generation 21; landed as 0.2.8248. | The owner accepts the epic (S1-S8), or redirects. | tickets/stories/2026-10-16_parked_versions_wired_at_conjure_story.md | 2026-10-16T11:49:54Z | REQUIRED |
-| meld_contract_scan | in_progress | discovery | claude | melder_1 | the owner's approval of the updated patch docs (D2 dependent walk added); melder_0's handoff of spellbook.py | Probe the transitive dependency notch read-only, write the D2 component patch and present the updated patch docs to the owner. | A satisfied SpellContract is not checked on every meld; a notch marks for revalidation every spell that depends on the notched one - its Book's dependents and the contract consumers of an impacted provider. | The owner-approved change lands with tests, docs, notch and rebuild, or the owner redirects. | tickets/tasks/2026-10-16_recheck_contract_consumers_when_provider_changes_task.md | 2026-10-16T11:57:53Z | REQUIRED |
+| meld_contract_scan | in_progress | implementation | claude | melder_1 | none | Owner discussion: which copy an unlink removes after a notch, transfers vs contracts and rule 2's binding-key gap on transfer; then closure, rebuild last. | A satisfied SpellContract is not checked on every meld; a notch marks for revalidation every spell that depends on the notched one - its Book's dependents and the contract consumers of an impacted provider. | The owner-approved change lands with tests, docs, notch and rebuild, or the owner redirects. | tickets/tasks/2026-10-16_recheck_contract_consumers_when_provider_changes_task.md | 2026-10-16T18:23:11Z | REQUIRED |
+| spell_id_wording | blocked | implementation | claude | melder_0 | melder_1 holds the 25 files of the held scope (its rule-2 src and tests, the system docs, graph, release note and __version__.py) until its closure and rebuild (M1-22) | On melder_1's release NOTICE, recheck the 125 held decisions against the files, then apply them. | Every 'version id' that relates to a spell index names spell_id or the spell index id, by hand; the rest listed with reasons. | The wording lands with its notch, release note and rebuild, or the owner redirects. | tickets/tasks/2026-10-16_spell_id_wording_near_spell_index_task.md | 2026-10-16T19:11:31Z | REQUIRED |
 <!-- END USER-DEFINED: active_items -->
 
 ## Active Attention Details
 <!-- BEGIN USER-DEFINED: active_attention_details -->
-- WORK_ITEM: melder_object_pools
-  SWITCH_TRIGGER: The owner accepts the epic (S1-S8), or redirects.
-  RESUME_HIERARCHY:
-    - tickets/epics/2026-10-14_managed_spell_quantity_epic.md
-    - tickets/stories/2026-10-16_parked_versions_wired_at_conjure_story.md
 - WORK_ITEM: meld_contract_scan
   SWITCH_TRIGGER: The owner-approved change lands with tests, docs, notch and rebuild, or the owner redirects.
   RESUME_HIERARCHY:
     - tickets/tasks/2026-10-16_recheck_contract_consumers_when_provider_changes_task.md
+- WORK_ITEM: spell_id_wording
+  SWITCH_TRIGGER: The wording lands with its notch, release note and rebuild, or the owner redirects.
+  RESUME_HIERARCHY:
+    - tickets/tasks/2026-10-16_spell_id_wording_near_spell_index_task.md
 <!-- END USER-DEFINED: active_attention_details -->
 
 ## Recently Closed Anchors
 | work_item | status | agent_name | ticket | note | closed_at |
 | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: closed_anchors -->
-| slotted_d5_purge_children | done | melder_1 | tickets/tasks/completed/2026-10-14_investigate_purge_leaves_holder_children_registered_task.md | Landed 0.2.8238 (purging a holder disposes its children, kept as landed); turned in. Next: none. | 2026-10-15T01:38:07Z |
-| slotted_d6_upgrade | done | melder_1 | tickets/tasks/completed/2026-10-14_investigate_upgrade_retained_holders_keep_old_dependencies_task.md | No defect (upgrade_to_normal docstring with 0.2.8236); turned in by owner directive. Next: none. | 2026-10-15T01:38:07Z |
-| slotted_lifetime_fixes | done | melder_1 | tickets/epics/completed/2026-10-14_slotted_lifetime_ownership_fixes_epic.md | Landed 0.2.8236-0.2.8240 as structure fixes; runtime model in the docs; turned in by owner directive. Next: none. | 2026-10-15T01:38:07Z |
-| notch_borrower_docs | done | melder_1 | tickets/tasks/completed/2026-10-15_describe_notch_borrower_follow_as_feature_task.md | Docs only (no notch): src_architecture opens with what Melder is (not a DI container); notch borrowers described as the feature. Next: none. | 2026-10-15T09:05:45Z |
 | managed_existence_member | done | melder_0 | tickets/stories/completed/2026-10-15_managed_existence_member_story.md | Landed 0.2.8241 (S1 of EPIC-2026-10-14-managed_spell_quantity: member, matrix, route family, Phase 6 rank). Next: S2 bind options. | 2026-10-15T10:11:30Z |
 | managed_bind_options | done | melder_0 | tickets/stories/completed/2026-10-15_managed_bind_options_story.md | Landed 0.2.8242 (S2 of EPIC-2026-10-14-managed_spell_quantity: four bind options, Spell fields, id part, record 4.2.0 and replay). Next: S3 pool. | 2026-10-15T12:32:37Z |
 | managed_quantity_pool | done | melder_0 | tickets/stories/completed/2026-10-15_managed_quantity_pool_story.md | Landed 0.2.8243 (S3 of EPIC-2026-10-14-managed_spell_quantity: the pool, the exhaustion error, the Creations pool map, the probes, purge 0). Next: S4 registry. | 2026-10-15T13:54:48Z |
@@ -228,6 +211,10 @@ Message alert rules
 | meld_contract_scan_trace | done | melder_1 | tickets/tasks/completed/2026-10-15_trace_meld_contract_scan_gate_task.md | Investigation only: the meld gate's contract scan and the flag that admits it traced and measured; successor TASK-2026-10-15-make_meld_state_checks_follow_spell_state. | 2026-10-15T18:46:58Z |
 | managed_ownership_transfer | done | melder_0 | tickets/stories/completed/2026-10-15_managed_ownership_transfer_story.md | Landed 0.2.8246 (S6 of EPIC-2026-10-14-managed_spell_quantity: the owner stamp follows a transfer's lineage both ways, `discard_managed_quantity`). Next: S7 docs. | 2026-10-15T21:00:54Z |
 | non_resolvable_book_flag | done | melder_1 | tickets/tasks/completed/2026-10-15_make_meld_state_checks_follow_spell_state_task.md | Landed 0.2.8247 (a resolvable=False lineage no longer holds its Book's validation flag); owner accepted. Next: rule 2 in TASK-2026-10-16-recheck_contract_consumers_when_provider_changes. | 2026-10-16T09:36:46Z |
+| managed_docs_release | done | melder_0 | tickets/stories/completed/2026-10-15_managed_docs_release_story.md | Documentation, no notch (S7 of EPIC-2026-10-14-managed_spell_quantity: system docs, graph, README, release note, benchmarks); owner accepted. Next: none. | 2026-10-16T12:17:31Z |
+| parked_versions_wired_at_conjure | done | melder_0 | tickets/stories/completed/2026-10-16_parked_versions_wired_at_conjure_story.md | Landed 0.2.8248 (S8: conjure wires the versions staged before it; cache generation 21); owner accepted. Next: none. | 2026-10-16T12:17:31Z |
+| managed_spell_quantity | done | melder_0 | tickets/epics/completed/2026-10-14_managed_spell_quantity_epic.md | Epic accepted by the owner (S1-S8, 0.2.8241-0.2.8248). Next: TASK-2026-10-16-public_notch_target_for_staged_versions. | 2026-10-16T12:17:31Z |
+| public_notch_target | done | melder_0 | tickets/tasks/completed/2026-10-16_public_notch_target_for_staged_versions_task.md | Landed 0.2.8249 (`notch_spell` by spell_id with its target checked; on the owner's extension `add_to_spell_index` / `remove_from_spell_index` by spell_id too). Rebuilt last, both checks OK. Next: none; conduit.py released to melder_1. | 2026-10-16T16:06:21Z |
 <!-- END USER-DEFINED: closed_anchors -->
 
 ## Notes
@@ -304,10 +291,19 @@ Message alert rules
 - melder_1 landed 0.2.8247 (a lineage whose selected version was bound resolvable=False carries
   `SpellState.non_resolvable` and no longer holds its Book's validation flag up; `register_index(resolvable=...)`
   at bind, notch and the transfer flip and rollback). Notch above it if you land after.
+- melder_1 landed 0.2.8250 (a satisfied SpellContract is not checked on every meld: the borrower Book's
+  contracted-map mutators and a notch's downstream walk mark contract consumers and dependents for revalidation,
+  the meld refreshes their stale dependencies before a plan compiles, a lost provider is named with its remedy, and
+  a notch back reactivates a parked version grant;
+  TASK-2026-10-16-recheck_contract_consumers_when_provider_changes). Notch above it if you land after.
 ### Notch notice (melder_0, 2026-10-16)
 - melder_0 landed 0.2.8248 (conjure wires the versions staged with `bind_inactive` before it, so they meld after a
   notch; creation cache generation 21; S8 of EPIC-2026-10-14-managed_spell_quantity). Notch above it if you land
   after.
+- melder_0 landed 0.2.8249 (`Conduit.notch_spell` takes `spell_id=` - the spell_id `bind` or `bind_inactive`
+  returned - beside `spell=`, exactly one, and checks its target before and inside its transaction; on the owner's
+  extension `add_to_spell_index` and `remove_from_spell_index` take `spell_id=` too;
+  TASK-2026-10-16-public_notch_target_for_staged_versions). Notch above it if you land after.
 ### Device VM git hazard (melder_2, 2026-09-26)
 - The connected folder refuses deletes, so any git command that refreshes the index from the device VM
   (plain `git status`, `git diff`) can leave an empty .git/index.lock that blocks the owner's commits.

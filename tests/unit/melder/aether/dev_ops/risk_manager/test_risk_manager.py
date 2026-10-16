@@ -134,7 +134,7 @@ class _SpellIndexStub:
 
         Args:
             lineage_id: Lineage identifier for the spell.
-            current_id: Current version id for the spell.
+            current_id: The spell's current spell_id.
         """
         self.id: str = lineage_id
         self._current: str = current_id
@@ -590,7 +590,7 @@ def test_iter_spellbook_spells_swallows_lookup_errors() -> None:
 
 
 def test_resolve_lineage_id_from_spell_id_returns_lineage_when_present() -> None:
-    """Verify version-id lookup returns the stored lineage id when present."""
+    """Verify spell_id lookup returns the stored lineage id when present."""
 
     class _State:
         def __init__(self, spell_index_id: str) -> None:

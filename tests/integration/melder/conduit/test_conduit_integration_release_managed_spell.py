@@ -159,7 +159,7 @@ def _pool_of(root: Conduit, spell_id: str) -> ManagedSpellQuantity:
 
     Args:
         root: The owning root.
-        spell_id: The managed version id.
+        spell_id: The managed spell's spell_id.
 
     Returns:
         ManagedSpellQuantity: The pool.

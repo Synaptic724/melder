@@ -175,7 +175,7 @@ def _environment(
         parked: How many parked members the index holds.
         parked_stamped: Whether the parked members carry the source's stamp (False: never stamped - before 0.2.8248
             a version staged before conjure, since then one whose stamp raised at conjure).
-        target_holds: Version ids the target store already holds a pool for.
+        target_holds: The spell_ids the target store already holds a pool for.
 
     Returns:
         SimpleNamespace: build_environment's fields plus `log`, `parked` and the two stores.

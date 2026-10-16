@@ -292,7 +292,7 @@ class Contract(Cleanable):
 
         Args:
             ward: Ward whose map should be updated.
-            spell_id: Version ID key to remove.
+            spell_id: The spell_id key to remove.
         """
         detail_map = self._get_detail_map(ward)
         if spell_id in detail_map:

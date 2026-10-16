@@ -242,6 +242,84 @@ def test_meld_path_names_spell_with_no_recorded_error() -> None:
     ]
 
 
+def test_gating_warning_is_listed_as_the_spells_reason() -> None:
+    """
+    Purpose:
+        A lineage that a Phase-4 warning gates (a lost SpellContract provider) names that warning as its reason,
+        not "No validation error was recorded".
+    Contract:
+        The gating warning renders as an error line; it is not counted among the hidden warnings.
+    """
+    spell = _spell(name="Consumer", issues=[_issue("SPELL_CONTRACT_MISSING_PROVIDER", "No provider.", "warning")])
+
+    message = str(SpellbookValidationError([spell]))
+
+    assert message.splitlines() == [
+        "Spellbook validation failed. Broken spells: Consumer.",
+        "Consumer (frame 'frame-1'):",
+        "  - No provider. [SPELL_CONTRACT_MISSING_PROVIDER]",
+    ]
+
+
+def test_other_warnings_stay_counted_beside_a_gating_reason() -> None:
+    """Purpose: only gating warnings are listed; every other warning is still only counted."""
+    spell = _spell(name="Consumer", issues=[
+        _issue("REQUIRED_HOLE", "Supply name.", "warning"),
+        _issue("SPELL_CONTRACT_MISSING_PROVIDER", "No provider.", "warning"),
+    ])
+
+    message = str(SpellbookValidationError([spell]))
+
+    assert message.splitlines() == [
+        "Spellbook validation failed. Broken spells: Consumer.",
+        "Consumer (frame 'frame-1'):",
+        "  - No provider. [SPELL_CONTRACT_MISSING_PROVIDER]",
+        "1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.",
+    ]
+
+
+def test_gating_warning_is_counted_when_the_block_shows_errors() -> None:
+    """Purpose: a spell with errors lists its errors; its gating warning joins the hidden count."""
+    spell = _spell(issues=[
+        _issue("E1", "The error."),
+        _issue("SPELL_CONTRACT_MISSING_PROVIDER", "No provider.", "warning"),
+    ])
+
+    message = str(SpellbookValidationError([spell]))
+
+    assert message.splitlines() == [
+        "Spellbook validation failed. Broken spells: RootSpell.",
+        "RootSpell (frame 'frame-1'):",
+        "  - The error. [E1]",
+        "1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.",
+    ]
+
+
+def test_gating_only_block_is_listed_when_diagnostics_are_given() -> None:
+    """
+    Purpose:
+        With conduit diagnostics handed in, a spell whose only reason is a gating warning is still listed; a spell
+        with no reason is not.
+    """
+    gated = _spell(name="Consumer", issues=[_issue("SPELL_CONTRACT_MISSING_PROVIDER", "No provider.", "warning")])
+    quiet = _spell(name="Other", spell_id="spell-2")
+
+    message = str(SpellbookValidationError([gated, quiet], system_diagnostics=[_diag("cycle_detected", "Cycle.")]))
+
+    assert message.splitlines() == [
+        "Spellbook validation failed. Broken spells: Consumer.",
+        "Consumer (frame 'frame-1'):",
+        "  - No provider. [SPELL_CONTRACT_MISSING_PROVIDER]",
+        "Whole-graph errors:",
+        "  - Cycle. [cycle_detected]",
+    ]
+
+
+def test_gating_warning_codes_are_the_codes_phase_4_gates_on() -> None:
+    """Purpose: the renderer's gating set is the one code Phase 4 gates a lineage on (pinned there too)."""
+    assert SpellbookValidationError.GATING_WARNING_CODES == frozenset({"SPELL_CONTRACT_MISSING_PROVIDER"})
+
+
 def test_live_phase4_result_is_read() -> None:
     """Purpose: the renderer reads a real SpellValidationResult, not only stand-ins."""
     result = SpellValidationResult(spell_id="spell-1", spell_name="RootSpell",

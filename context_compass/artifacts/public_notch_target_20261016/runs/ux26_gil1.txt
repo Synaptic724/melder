@@ -1,0 +1,20 @@
+v1 bound - an ACTIVE world entry: de452c9c5836 ...
+
+turn-1: preview(dict) -> validate(dict) -> execute(dict) -> keep(dict)
+turn-2: preview(dict) -> validate(dict) -> execute(dict) -> keep(dict)
+turn-3: preview(dict) -> validate(dict) -> execute(dict) -> keep(dict)
+ungranted import: validate -> dict | execute -> dict
+
+room memory: 18 records - the unit is the COMMAND,
+  not the turn: 3 turns x 4 verbs plus the lane cut
+research_walk('codegen-turns') -> 0 nodes, and correctly so
+v2 STAGED: 2 members, selection unchanged, candidate inert
+research_walk('default') -> 2 nodes - the binds recorded; the codegen calls did not
+
+register_spell(staged, lane='codegen-turns') REFUSED:
+   Rediscovery: spell identity '28fbba16ae139a66e6258136fe39e69c875d2ffa37703c837cda7231eef2a127' already resides
+the SAME id accepted in a second set - residence is per-set
+
+preview, permit, run, keep - four questions, four verbs
+two books: the room keeps CODE, research keeps VERSIONS
+a lane you never register into is empty, and that is not a bug

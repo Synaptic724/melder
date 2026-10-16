@@ -31,9 +31,9 @@ class LineageVersionConflictStrategy(SpellSystemValidationStrategy):
     """
     Guard that one root DAG does not mix multiple versions of the same lineage.
 
-    Root blueprints are version-id graphs, but they still represent one
+    Root blueprints are spell_id graphs, but they still represent one
     coherent runtime slice. If the same lineage appears multiple times under a
-    single root as different version ids, the root is effectively depending on
+    single root as different spell_ids, the root is effectively depending on
     mutually conflicting revisions of the same logical spell family. This
     strategy checks the blueprint DAG against the index lineage map and turns
     that mismatch into a root-scoped error before later planning or execution
@@ -75,7 +75,7 @@ class LineageVersionConflictStrategy(SpellSystemValidationStrategy):
             phase4_results: Phase-4 validation artifacts keyed by spell id.
             broken_spell_ids: Set of broken spell ids.
             spell_system_states: SpellSystemStates registry for topology and lineage data.
-            spell_lookup: Mapping of visible spell version ids to spell objects.
+            spell_lookup: Mapping of visible spell_ids to spell objects.
             diagnostics: Collection that receives diagnostics.
             cancel_event: Optional cancellation signal.
         Returns:

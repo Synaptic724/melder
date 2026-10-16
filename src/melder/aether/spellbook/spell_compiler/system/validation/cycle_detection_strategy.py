@@ -70,7 +70,7 @@ class CycleDetectionStrategy(SpellSystemValidationStrategy):
             phase4_results: Phase-4 results (unused by this strategy).
             broken_spell_ids: Broken spell ids (unused by this strategy).
             spell_system_states: SpellSystemStates registry (unused by this strategy).
-            spell_lookup: Mapping of visible spell version ids, used to name the spells
+            spell_lookup: Mapping of visible spell_ids, used to name the spells
                 left in or behind a cycle.
             diagnostics: Mutable list that receives diagnostics.
             cancel_event: Optional cancellation signal.

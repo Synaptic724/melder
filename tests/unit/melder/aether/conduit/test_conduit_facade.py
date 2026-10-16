@@ -293,7 +293,7 @@ def test_find_spell_id_returns_spell_id(
     spellbook_stub: MagicMock,
 ) -> None:
     """
-    Verify find_spell_id returns the spell's current version id.
+    Verify find_spell_id returns the spell's current spell_id.
 
     Contract:
         - SpellIndex and spell resolution returns spell.spell_id.
@@ -395,7 +395,7 @@ def test_get_spell_permissions_returns_name(
     Verify get_spell_permissions resolves the permission name for a spell.
 
     Contract:
-        - The permissions enum name is returned for a matching version id.
+        - The permissions enum name is returned for a matching spell_id.
 
     Args:
         conduit_lesser (Conduit): Lesser conduit instance.

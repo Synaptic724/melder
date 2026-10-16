@@ -1068,6 +1068,7 @@ meld**, on a running system, with the old version still sitting there:
 ```python
 # 1. STAGE — bind a new version as an INACTIVE member of the existing index.
 #    It is parked and unresolvable: nothing melds it, nothing sees it yet.
+id_v1 = index.selected_spell_id     # the version serving now
 id_v2 = conduit.bind_inactive(
     spell=ReportServiceV2,
     spell_index=index,          # the index the current version lives in
@@ -1077,7 +1078,7 @@ id_v2 = conduit.bind_inactive(
 
 # 2. NOTCH — promote v2 to ACTIVE. The outgoing version parks, the index
 #    pointer repoints, and dependents are marked for lazy recompile.
-conduit.notch_spell(spell_index=index, spell=spell_v2)
+conduit.notch_spell(spell_index=index, spell_id=id_v2)
 assert index.selected_spell_id == id_v2
 
 # 3. MELD — the very next resolution builds the NEW version.
@@ -1088,7 +1089,7 @@ And because the old member is **parked, not destroyed**, rollback is the same
 verb pointed the other way:
 
 ```python
-conduit.notch_spell(spell_index=index, spell=spell_v1)   # instant revert
+conduit.notch_spell(spell_index=index, spell_id=id_v1)   # instant revert
 ```
 
 > **The parked version is still in the ecosystem.** Notching does not dispose of

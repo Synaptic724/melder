@@ -1,4 +1,4 @@
-# Melder 0.2.8248
+# Melder 0.2.8250
 
 **Unreleased**
 
@@ -559,7 +559,7 @@ index = book.find_spell_by_id(v1).spell_index
 v2 = book.bind_inactive(spell=ReportServiceV2, spell_index=index, existence="unique", binding_name="v2")
 reports = book.conjure(name="reports")      # inherits dynamic; wires v2 as well as v1
 
-# after reports.notch_spell(spell_index=index, spell=<v2's Spell>):
+reports.notch_spell(spell_index=index, spell_id=v2)   # by spell_id since 0.2.8249 (next section)
 service = reports.meld(spell_id=v2)         # a ReportServiceV2; RuntimeError before 0.2.8248
 assert service.render() == "v2"
 ```
@@ -573,9 +573,208 @@ assert service.render() == "v2"
   'Parser' has no pool to lease from: its owner root was torn down, or its owner store holds no pool for this
   version. Meld it through a live root that owns it."
 
-What stays the same: active versions, a `bind_inactive` after `conjure()`, `notch_spell`, ownership transfers,
-spell ids and records. Restore and the spell-index graft stage versions after `conjure()`, so they worked before and
-behave as before.
+What stays the same: active versions, a `bind_inactive` after `conjure()`, ownership transfers, spell ids and
+records. Restore and the spell-index graft stage versions after `conjure()`, so they worked before and behave as
+before.
+
+## `notch_spell`, `add_to_spell_index` and `remove_from_spell_index` take a `spell_id`; a notch checks its target
+
+`Conduit.notch_spell` makes one version of a spell index the active one - the notch in stage -> notch -> meld. Until
+0.2.8249 it took only the version's `Spell`, and no public call returns the `Spell` of a staged version:
+`bind_inactive` returns a spell_id, and `get_spell_by_id` / `find_spell_by_id` answer a staged (parked) spell_id
+with the index's active version, so a notch to what they return changed nothing. `add_to_spell_index` and
+`remove_from_spell_index` had the same gap, since they move only a parked version. From 0.2.8249 all three take the
+spell_id `bind` or `bind_inactive` returned:
+
+```python
+class ReportService:
+    def render(self) -> str:
+        return "v1"
+
+
+class ReportServiceV2:
+    def render(self) -> str:
+        return "v2"
+
+
+book = md.Spellbook()
+v1 = book.bind(spell=ReportService, existence="unique")
+reports = book.conjure(dynamic=True, name="reports")
+index = reports.get_spell_by_id(v1).spell_index
+
+v2 = reports.bind_inactive(spell=ReportServiceV2, spell_index=index, existence="unique")
+reports.notch_spell(spell_index=index, spell_id=v2)    # v2 is the active version now
+assert reports.meld(spell_id=v2).render() == "v2"
+
+reports.notch_spell(spell_index=index, spell_id=v1)    # and back to v1
+assert reports.meld(spell_id=v1).render() == "v1"
+
+reports.remove_from_spell_index(spell_id=v2, source_index=index)   # parked v2 gets an index of its own
+reports.add_to_spell_index(spell_id=v2, target_index=index)        # and comes back; its emptied index goes
+assert index.spells_in_index() == {v1, v2}
+```
+
+- Name the spell by `spell_id=` or by `spell=`, exactly one, on all three: both or neither raise `ValueError`, and a
+  `spell_id` that is not a string, or a string passed as `spell`, raises `TypeError`.
+- A `spell_id` is resolved inside the call to the exact spell the conduit's Spellbook owns, active or parked.
+- A notch checks its target before it starts and again inside its transaction: the spell must be one the conduit's
+  Spellbook owns and a member of `spell_index`. Otherwise a `ValueError` names its spell_id and the remedy -
+  "notch_spell: spell_id '<id>' is not owned by this conduit's Spellbook. Notch it through the conduit of the
+  Spellbook that owns it, or stage the class on this index with bind_inactive(spell_index=...), which returns the
+  spell_id to pass." or "notch_spell: spell_id '<id>' belongs to another SpellIndex, not the one passed. Pass its
+  own index - conduit.get_spell_by_id('<id>').spell_index - or move it onto this index with add_to_spell_index
+  first." A refused notch changes nothing.
+- The index moves refuse a `spell_id` the conduit's Spellbook does not own before anything starts, for example
+  "add_to_spell_index: spell_id '<id>' is not owned by this conduit's Spellbook. Call add_to_spell_index through the
+  conduit of the Spellbook that owns it." Past that, the Spellbook refuses as before (`RuntimeError`): an active
+  spell (notch away from it first), a spell it does not own, a target index it does not own, and a spell that is not
+  a member of the source index or is its only member (`cleanup_spell` disposes that).
+- Until 0.2.8249 nothing checked a notch's target, and three wrong targets damaged the Spellbook. A version staged on
+  another index of the same Spellbook was accepted and corrupted both indexes: a meld of this index's old version
+  raised `KeyError`, and a meld of the moved version `RuntimeError` ("Cannot build CreationContext before
+  spell_codegen_creation exists."). Another index's active version, or another Spellbook's version, raised
+  `RuntimeError` ("Owned spell_id not parked for reactivation") after this index's active version had already been
+  parked, so the index had no active version until a notch back. Each now raises the `ValueError` above and leaves
+  both indexes as they were.
+- A notch to the `Spell` that `get_spell_by_id` or `find_spell_by_id` returns for a parked spell_id is still a
+  no-op: it is the active version. Name a parked version by its spell_id.
+- The docstrings of the three verbs say the conduit admits their transaction (the two index moves said the
+  Spellbook did), and `remove_from_spell_index`'s no longer says that removing the active version leaves the index
+  selecting a non-member: the Spellbook refuses an active version, and always did.
+
+What stays the same: `spell=` on all three (a notch's target is now checked the same way), a notch to the active
+version (it changes nothing), what the three verbs return, the answers of `get_spell_by_id` and `find_spell_by_id`,
+borrowers following a notch, and what the index moves do.
+
+## A satisfied `SpellContract` is not checked on every meld; a notch reaches every spell that depends on the notched one
+
+A spell whose constructor takes a `SpellContract` default - its provider lent by another conduit through
+`add_index_to_contract` or `add_spell_to_contract` - had that contract checked again at every meld that went through
+the meld-time validation gate: Melder read the constructor's signature, looked each contract up in the Spellbook's
+contracted spells and rebuilt the spell's plan, about 1.6 ms a meld. From 0.2.8250 a satisfied contract is not
+checked again. Whatever changes what a spell resolves marks the spell for revalidation instead, and its next meld
+checks its contracts once and rebuilds against the versions active now, or fails with the error its first meld
+would give. A notch is the change that matters most, because the notched version's `__init__` may differ: every
+spell that depends on the notched one - by annotation or through a `SpellContract`, directly or through other
+spells, in its own Spellbook or another - is marked, and builds the new version at its next meld.
+
+```python
+class Greeter(Protocol):
+    def greet(self) -> str: ...
+
+
+class English:
+    def greet(self) -> str:
+        return "hello"
+
+
+class French:
+    def greet(self) -> str:
+        return "bonjour"
+
+
+class Banner:
+    def __init__(self, greeter: Greeter = md.SpellContract(spellframe=Greeter, binding_name="greeter")) -> None:
+        self.text = greeter.greet().upper()
+
+
+lender_book = md.Spellbook()
+borrower_book = md.Spellbook()
+english = lender_book.bind(spell=English, spellframe=Greeter, binding_name="greeter", existence="many",
+                           permissions="create")
+borrower_book.bind(spell=Banner, existence="many", permissions="create")
+lender = lender_book.conjure(dynamic=True, name="lender")
+borrower = borrower_book.conjure(dynamic=True, name="borrower")
+lender.link(borrower)
+index = lender.get_spell_by_id(english).spell_index
+borrower.add_index_to_contract(index=index, conduit=lender, permissions="create")
+assert borrower.meld(spell=Banner).text == "HELLO"
+
+french = lender.bind_inactive(spell=French, spell_index=index, spellframe=Greeter, binding_name="greeter",
+                              existence="many", permissions="create")
+lender.notch_spell(spell_index=index, spell_id=french)
+assert borrower.meld(spell=Banner).text == "BONJOUR"   # rebuilt once, at this meld
+```
+
+Measured on CPython 3.14t: a warm meld of `Banner` went from 1558 to 2.8 us with the GIL off and from 1682 to 2.8
+us with the GIL on. A change of provider costs one structural pass more at the next meld (0.8-1.1 ms), and a
+notch's walk 0.2-0.5 ms more with 200 dependent spells.
+
+A spell that depends on the notched one through an annotation follows it too, two hops away included:
+
+```python
+class Clock(Protocol):
+    def now(self) -> str: ...
+
+
+class Utc:
+    def now(self) -> str:
+        return "utc"
+
+
+class Local:
+    def now(self) -> str:
+        return "local"
+
+
+class Stamp:
+    def __init__(self, clock: Clock) -> None:
+        self.clock = clock
+
+
+class Report:
+    def __init__(self, stamp: Stamp) -> None:
+        self.stamp = stamp
+
+
+book = md.Spellbook()
+utc = book.bind(spell=Utc, spellframe=Clock, binding_name="clock", existence="many")
+book.bind(spell=Stamp, existence="many")
+book.bind(spell=Report, existence="many")
+reports = book.conjure(dynamic=True, name="reports")
+assert reports.meld(spell=Report).stamp.clock.now() == "utc"
+
+clock_index = reports.get_spell_by_id(utc).spell_index
+local = reports.bind_inactive(spell=Local, spell_index=clock_index, spellframe=Clock, binding_name="clock",
+                              existence="many")
+reports.notch_spell(spell_index=clock_index, spell_id=local)
+assert reports.meld(spell=Report).stamp.clock.now() == "local"   # "utc" before 0.2.8250
+```
+
+- **Breaking change:** a meld of a contract consumer whose provider's index was destroyed, or whose version grant
+  was parked by a notch away, raises `SpellbookValidationError` - the error a first meld raises for a missing
+  provider - where it raised `MeldExecutionError` ("SpellContract could not be resolved. Missing contracted
+  provider for key (frame_key=..., binding_key=...) on param ..."). Both are `RuntimeError`s; code that caught
+  `MeldExecutionError` there catches `SpellbookValidationError`.
+- Every lost provider is reported by name - those two, an index unlinked, a link severed, a grant released, and a
+  first meld with no provider - where the report said "No validation error was recorded for this spell; its
+  validity is invalid, gated or disabled.": "Spell 'Banner' parameter 'greeter' has no provider for its
+  SpellContract (frame_key='greeter', binding_key='greeter'): no active spell with that frame and binding name is
+  contracted to this Spellbook. Contract one from a linked conduit (add_index_to_contract, or add_spell_to_contract
+  for one version) and meld again. [SPELL_CONTRACT_MISSING_PROVIDER]"
+- **Breaking change:** a spell that depends on a notched one builds the version now active at its next meld, or
+  raises its first meld's error: `UnresolvedInputError` naming the parameter when the new version no longer
+  satisfies it, `SpellbookValidationError` naming a dependency whose structure no longer validates. Before, one
+  built before the notch went on building the old version, and one never built raised `RuntimeError` on every
+  meld (for example "many_only manifest references unknown spell_id '<the old version id>'").
+- A version grant (`add_spell_to_contract`) follows its version: a notch away parks the borrower's copy, as before,
+  and a notch back makes it active again, so its consumers resolve it at their next meld; a grant of a parked
+  version becomes active when that version is notched in. Until 0.2.8250 the copy stayed parked after the notch
+  back, and its consumers had no provider until the version was granted again.
+- Fixed with the same marks: after `remove_index_from_contract` a consumer kept building the released provider; it
+  now fails its next meld as above. After a link or a grant, a spell that depends on a contract consumer kept a plan
+  compiled while the provider was missing and built the consumer with its raw `SpellContract` default
+  (`AttributeError: 'SpellContract' object has no attribute '...'`); it now rebuilds.
+- Not changed yet: a meld of a borrower's contract consumer on another thread while its lender notches the provider
+  can, on the free-threaded build with the GIL off, fail with an internal `RuntimeError` or return the consumer
+  built with its raw `SpellContract` default, as before 0.2.8250; the next meld is correct. A follow-up orders such
+  melds against the notch.
+
+What stays the same: a mark changes state only - nothing is built, disposed or extracted when a provider changes,
+and objects already built keep what they were built with (a `unique` consumer keeps its object after a notch and
+builds the new version once it is purged). A spell whose providers did not change takes the warm path; first
+melds, `conjure()` and `link` check contracts as before, and a dynamic world still accepts a consumer before its
+provider is linked. No public signature changes.
 
 ## Packaging and documentation
 
@@ -642,4 +841,17 @@ behave as before.
   describe `conjure()` wiring the versions staged before it and the creation cache's generation 21; the code-map
   extents of the five changed files are remeasured, and line citations into `spellbook.py`,
   `spellbook_creation_system.py` and `transfer_of_ownership.py` that had drifted point at their code again.
-- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8248.
+- The README's swap sketch (stage a version, notch to it, meld it, notch back) names the versions by their spell_id
+  and runs as written; the expert guide on governed change (`docs/expert/governed-change.md`) shows promotion as
+  `notch_spell(spell_index=..., spell_id=...)`, says a wrong target is refused and that the index moves take
+  `spell_id=` too, and the expert walkthrough on notch-swapping a live object (lesson 17) swaps by spell_id.
+- The packaged system documents (`melder.__architecture__`, `melder.__components__`) and the packaged graph
+  describe the notch target - its two forms, the checks before and inside the transaction, the refusals - the
+  index moves' `spell_id=`, and the corrected index-mutation sequence: the conduit starts the transaction, and
+  the notch claims the Spellbook exclusively. The `conduit.py` code-map extent is remeasured, and line citations
+  that had drifted point at their code again.
+- The packaged system documents (`melder.__architecture__`, `melder.__components__`) and the packaged graph
+  describe the contract recheck: the borrower Spellbook's marks, a notch's downstream walk, the meld's refresh of
+  stale dependencies, the lost-provider report and a version grant's return on a notch back; the code-map
+  extents of the changed files are remeasured, and their line citations remapped.
+- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8250.
