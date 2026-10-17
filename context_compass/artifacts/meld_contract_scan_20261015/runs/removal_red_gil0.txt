@@ -1,0 +1,20 @@
+removal fix red run (melder_1, 2026-10-16T21:35:14Z), tree /tmp/cc_res/removal/tree = real tree + apply_removal_tests_2026_10_16.py, src unchanged (0.2.8250), GIL off
+E       assert {} == {<test_spellb...x57d36453490>}
+E         
+E         Right contains 1 more item:
+E         {<test_spellbook.DummySpellIndex object at 0x57d34458a10>: <test_spellbook.DummySpell object at 0x57d36453490>}
+E         Use -v to get more diff
+E       Failed: DID NOT RAISE RuntimeError
+E                   RuntimeError: Spell version sid-2 not found for conduit ID peer.
+E                   RuntimeError: Spell version 9a7f17dee438a389647b091efd6142d5b329efbf48128ebe3082156167208aa8 not found for conduit ID 01M53A7YP1H7NAAJK68PNVKXPG.
+E           AssertionError: assert set() == {'9a7f17dee43...156167208aa8'}
+E             
+E             Extra items in the right set:
+E             '9a7f17dee438a389647b091efd6142d5b329efbf48128ebe3082156167208aa8'
+E             Use -v to get more diff
+FAILED tests/unit/melder/spellbook/test_spellbook.py::test_removing_a_parked_version_keeps_the_active_copy_of_its_index
+FAILED tests/unit/melder/spellbook/test_spellbook.py::test_removing_a_version_the_book_holds_no_copy_of_raises_and_keeps_the_active_copy
+FAILED tests/unit/melder/spellbook/test_spellbook.py::test_removing_both_versions_of_an_index_in_either_order_leaves_no_copy[parked_first]
+FAILED tests/integration/melder/aether/conduit/test_spell_index_meld_and_contract_lifecycle.py::test_remove_index_contract_after_a_notch_removes_each_members_copy_in_either_order[parked]
+FAILED tests/integration/melder/aether/conduit/test_spell_index_meld_and_contract_lifecycle.py::test_removing_a_parked_version_grant_keeps_the_active_versions_copy
+5 failed, 21 passed in 1.32s

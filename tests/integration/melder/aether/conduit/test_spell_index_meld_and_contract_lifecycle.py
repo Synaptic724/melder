@@ -18,16 +18,18 @@ this file first; it is the harness for the deeper notch/add/remove-index tranche
 """
 
 import contextlib
-from typing import Iterator
+from typing import Callable, Iterator
 
 import pytest
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
+from melder.aether.spellbook.bind.spell_index import SpellIndex
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spellbook import Spellbook
 from tests.mocks.spellbook.contract_classes import ContractServicePrimary
+from tests.mocks.spellbook.contract_classes import ContractServiceSecondary
 from tests.mocks.spellbook.protocols import IService
 
 from tests._frame_posture_test_support import (
@@ -171,3 +173,99 @@ def test_remove_index_contract_drops_borrower_index_and_member():
         assert index.id not in borrower_book._contracted_indexes
         active_by_id = borrower_book._contracted_spells_by_id.get(owner._id, {})
         assert service_id not in active_by_id
+
+
+# --- one version, one copy (contracted_copy_removal_by_version_2026_10_16) -------------------------------------
+
+def _stage_secondary(owner: Conduit, index: SpellIndex) -> str:
+    """
+    Purpose:
+        Stage ContractServiceSecondary as a parked version of the service index, under the same frame and binding
+        name, and return its spell_id.
+    """
+    return owner.bind_inactive(
+        spell=ContractServiceSecondary,
+        spell_index=index,
+        spellframe=IService,
+        binding_name="primary",
+        existence=Existence.unique,
+        permissions="create",
+    )
+
+
+def _members_in_order(order: list[str]) -> Callable[[SpellIndex], list[str]]:
+    """
+    Purpose:
+        Build a stand-in for `SpellIndex.spells_in_index` that returns the members in `order` (members not named
+        come last), so a test fixes the order an index unlink visits them in. The real method runs first, so a
+        cleaned index raises as it does.
+    """
+    real = SpellIndex.spells_in_index
+
+    def ordered(index: SpellIndex) -> list[str]:
+        members = real(index)
+        return sorted(members, key=lambda member_id: order.index(member_id) if member_id in order else len(order))
+
+    return ordered
+
+
+@pytest.mark.parametrize("first", ["parked", "active"])
+def test_remove_index_contract_after_a_notch_removes_each_members_copy_in_either_order(
+        monkeypatch: pytest.MonkeyPatch, first: str,
+) -> None:
+    """
+    Purpose:
+        After the owner notches a linked index to a version staged on it, unlinking the index removes every member's
+        own copy - the old version's parked copy and the new version's active one - whichever member the unlink
+        visits first. The member set's order follows the hash seed, so the test fixes each order. Until 0.2.8251
+        the parked-first order removed the active copy under the parked member's id, then raised RuntimeError
+        "Spell version <id> not found for conduit ID <owner>." and left the parked copy behind.
+    """
+    with _linked_pair() as (owner_book, borrower_book, owner, borrower, service_id, index):
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            borrower.add_index_to_contract(index=index, conduit=owner, permissions="create")
+        staged_id = _stage_secondary(owner, index)
+        owner.notch_spell(spell_index=index, spell_id=staged_id)
+        assert set(borrower_book._contracted_spells_by_id.get(owner._id, {})) == {staged_id}
+        assert set(borrower_book._inactive_contracted_spells.get(owner._id, {})) == {service_id}
+
+        order = [service_id, staged_id] if first == "parked" else [staged_id, service_id]
+        with monkeypatch.context() as patch:
+            patch.setattr(SpellIndex, "spells_in_index", _members_in_order(order), raising=True)
+            with borrower.transaction("link", conduits=[borrower, owner]):
+                borrower.remove_index_from_contract(index_id=index.id, conduit=owner)
+
+        contract = borrower._conduit_ward._find_contract_by_id(owner._id)
+        assert contract._check_index_exists(owner._conduit_ward, index.id) is False
+        assert contract._check_if_exists(owner._conduit_ward, service_id) is False
+        assert contract._check_if_exists(owner._conduit_ward, staged_id) is False
+        assert index.id not in borrower_book._contracted_indexes
+        assert borrower_book._contracted_spells_by_id.get(owner._id, {}) == {}
+        assert borrower_book._inactive_contracted_spells.get(owner._id, {}) == {}
+
+
+def test_removing_a_parked_version_grant_keeps_the_active_versions_copy() -> None:
+    """
+    Purpose:
+        A borrower granted a version that its owner then notched away from, and granted the new version too, removes
+        only the old version's parked copy when that grant goes, and still melds the new version. Until 0.2.8251 the
+        removal took the new version's active copy instead and left the old one parked.
+    """
+    with _linked_pair() as (owner_book, borrower_book, owner, borrower, service_id, index):
+        primary_spell = owner.get_spell_by_id(service_id)
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            assert borrower.add_spell_to_contract(spell_id=service_id, conduit=owner, permissions="create")
+        staged_id = _stage_secondary(owner, index)
+        owner.notch_spell(spell_index=index, spell_id=staged_id)
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            assert borrower.add_spell_to_contract(spell_id=staged_id, conduit=owner, permissions="create")
+        assert set(borrower_book._contracted_spells_by_id.get(owner._id, {})) == {staged_id}
+        assert set(borrower_book._inactive_contracted_spells.get(owner._id, {})) == {service_id}
+
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            borrower.remove_spell_from_contract(spell=primary_spell, conduit=owner)
+
+        assert set(borrower_book._contracted_spells_by_id.get(owner._id, {})) == {staged_id}
+        assert service_id not in borrower_book._inactive_contracted_spells.get(owner._id, {})
+        assert borrower.validate_contracts_and_define()
+        assert isinstance(borrower.meld(spell_id=staged_id), ContractServiceSecondary)

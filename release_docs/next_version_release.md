@@ -1,4 +1,4 @@
-# Melder 0.2.8250
+# Melder 0.2.8251
 
 **Unreleased**
 
@@ -776,6 +776,33 @@ builds the new version once it is purged). A spell whose providers did not chang
 melds, `conjure()` and `link` check contracts as before, and a dynamic world still accepts a consumer before its
 provider is linked. No public signature changes.
 
+## Unlinking an index after a notch removes every version's copy
+
+A borrower that links an index with `add_index_to_contract` holds a copy of every version on it: the active
+version's copy is live and the others are parked. After the owner notched the index - to a version staged with
+`bind_inactive`, as in the first example above - `remove_index_from_contract` could fail with `RuntimeError`
+"Spell version <spell_id> not found for conduit ID <owner id>." and leave the old version's parked copy behind for
+good. The unlink removes the versions one at a time, in an order that follows the process's hash seed, and when it
+reached the parked version first it removed the active version's copy in its place - in about half of all processes
+(for the example below, 6 of the hash seeds 0-9). From 0.2.8251 removing a version's copy removes that version's
+copy - the active one only when it is that version, otherwise the parked one - so the unlink completes in any order:
+
+```python
+# Continuing the first example above: the lender notched the index from English to French.
+borrower.remove_index_from_contract(index_id=index.id, conduit=lender)   # raised in about half of all runs
+
+borrower.add_index_to_contract(index=index, conduit=lender, permissions="create")
+assert borrower.meld(spell=Banner).text == "BONJOUR"
+```
+
+The same fix covers version grants: a borrower granted a version, then the new version after a notch, kept the old
+version's parked copy and lost the new version's active copy when it released the old grant with
+`remove_spell_from_contract`, so its consumers lost their provider. Now only the old version's copy goes.
+
+What stays the same: when a borrower holds one version of an index, an unlink, a grant's release and an index
+destroy remove the same copy as before, and a consumer of a removed active copy still fails its next meld with the
+missing-provider report. No public signature changes.
+
 ## Packaging and documentation
 
 - The README's "Declarative Binding by Module" example passes `permissions="create"`, without which it raised
@@ -854,4 +881,7 @@ provider is linked. No public signature changes.
   describe the contract recheck: the borrower Spellbook's marks, a notch's downstream walk, the meld's refresh of
   stale dependencies, the lost-provider report and a version grant's return on a notch back; the code-map
   extents of the changed files are remeasured, and their line citations remapped.
-- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8250.
+- The packaged system documents (`melder.__architecture__`, `melder.__components__`) and the packaged graph
+  describe the removal of one version's copy by its own spell_id; the `spellbook.py` code-map extent is
+  remeasured, and its line citations remapped.
+- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8251.

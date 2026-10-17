@@ -3354,6 +3354,15 @@ class Spellbook(Cleanable):
         keys for the peer conduit so change-control commit hooks can observe
         the updated contract scope.
 
+        It removes the copy of exactly the version `spell_id` names: the active
+        copy only when that copy's own `spell_id` is `spell_id`, otherwise the
+        version's parked copy; when the Book holds neither it raises and changes
+        nothing. The index's member set is never consulted, so with one version
+        parked and another version of the same index active (an index link after
+        a notch, or two version grants) removing the parked version leaves the
+        active copy alone, and an index unlink completes in any member order
+        (contracted_copy_removal_by_version_2026_10_16, 0.2.8251).
+
         Removing an ACTIVE copy (an uncontract, an index unlink or destroy, a
         version leaving its index) marks the Book's SpellContract consumers of
         its key for revalidation after the Book lock is released, once the Book
@@ -3385,27 +3394,25 @@ class Spellbook(Cleanable):
                 )
                 raise RuntimeError(f"No contracted spell maps found for conduit ID {conduit_id}.")
 
-            # Find the contracted SpellIndex holding this member id. A destroyed
-            # (cleaned) contracted index can no longer report its member set, so
-            # fall back to matching the contracted spell's own id -- the removed
-            # member's live copy -- so its stale entry is still dropped.
+            # Find the ACTIVE copy of exactly this version: the entry whose copy's own
+            # id is `spell_id`, for a live or a destroyed (cleaned) index alike. Never
+            # match by index membership: a live index lists every version, so a
+            # membership match took another version's active copy whenever this
+            # version was parked beside it (the unlink after a notch), and the later
+            # removal of that version then raised
+            # (contracted_copy_removal_by_version_2026_10_16, 0.2.8251). The index comes
+            # from the map key, so neither a cleaned index's member set nor a cleaned
+            # copy's `spell_index` is read.
             spell_index = None
             spell = None
             for idx, s in spell_map.items():
-                if idx._cleaned:
-                    if s.spell_id == spell_id:
-                        spell_index = idx
-                        spell = s
-                        break
-                    continue
-                member_ids = idx._spells_in_index
-                if member_ids and spell_id in member_ids:
+                if s.spell_id == spell_id:
                     spell_index = idx
                     spell = s
                     break
 
             if spell_index is None or spell is None:
-                # Not in the ACTIVE contracted maps. A borrowed member can be
+                # No ACTIVE copy of this version. A borrowed member can be
                 # parked (inactive) instead of active: `_add_inactive_contracted_spell`
                 # populates ONLY `_inactive_contracted_spells` plus the per-conduit
                 # existence set -- never the active maps, the lookup, or the risk

@@ -173,6 +173,7 @@ Message alert rules
 - NEW MESSAGE for muse_0 (from melder_0, 2026-10-01T11:10:44Z)
 - NEW MESSAGE for melder_2 (from melder_0, 2026-10-01T11:26:16Z)
 - NEW MESSAGE for muse_0 (from melder_0, 2026-10-01T11:26:16Z)
+- NEW MESSAGE for melder_0 (from melder_1, 2026-10-16T22:01:54Z)
 <!-- END USER-DEFINED: alerts -->
 
 ## Active Items
@@ -182,7 +183,7 @@ Message alert rules
 | gauntlet_runtime_speed | in_progress | discovery | claude | melder_2 | none | Owner decides whether an open lever (thread-affine pools, one-lock anonymous link, single-check fast door) is worth a task. | Per-scope-cycle cost map vs dishka and dependency-injector, with ranked and prototyped candidates. | Next lever validated and its task opened, or the owner redirects. | tickets/tasks/2026-09-26_measure_gauntlet_scope_cycle_costs_task.md | 2026-09-26T23:01:16Z | REQUIRED |
 | defect_hunting_spellbook | in_progress | discovery | opencode | muse_0 | none | Slice spellbook component sections then read the surface behind each claim. | Contradiction list with evidence; meaty issues flagged apart from polish. | Sweep list triaged or owner redirects to conduit/meld or arch diffs. | tickets/tasks/2026-09-27_spellbook_sweep_task.md | 2026-09-27T15:56:49Z | REQUIRED |
 | defect_hunting_fixes_1 | in_progress | implementation | opencode | muse_0 | none | Re-slice each target fresh then repair findings 1-8 in order. | Corrected blocks with verified ranges; index check clean. | Batch repaired with gates passing or owner redirects scope. | tickets/tasks/2026-09-27_sweep_fixes_batch_1_task.md | 2026-09-27T16:07:16Z | REQUIRED |
-| meld_contract_scan | in_progress | implementation | claude | melder_1 | none | Owner discussion: which copy an unlink removes after a notch, transfers vs contracts and rule 2's binding-key gap on transfer; then closure, rebuild last. | A satisfied SpellContract is not checked on every meld; a notch marks for revalidation every spell that depends on the notched one - its Book's dependents and the contract consumers of an impacted provider. | The owner-approved change lands with tests, docs, notch and rebuild, or the owner redirects. | tickets/tasks/2026-10-16_recheck_contract_consumers_when_provider_changes_task.md | 2026-10-16T18:23:11Z | REQUIRED |
+| meld_contract_scan | in_progress | implementation | claude | melder_1 | none | Owner's choice on the spell_id lookup (A/B/C), then his direction on transfers vs contracts and the notification route; then closure, rebuild last, NOTICE M1-24. | A satisfied SpellContract is not checked on every meld; a notch marks for revalidation every spell that depends on the notched one - its Book's dependents and the contract consumers of an impacted provider. | The owner-approved change lands with tests, docs, notch and rebuild, or the owner redirects. | tickets/tasks/2026-10-16_recheck_contract_consumers_when_provider_changes_task.md | 2026-10-17T18:04:24Z | REQUIRED |
 | spell_id_wording | blocked | implementation | claude | melder_0 | melder_1 holds the 25 files of the held scope (its rule-2 src and tests, the system docs, graph, release note and __version__.py) until its closure and rebuild (M1-22) | On melder_1's release NOTICE, recheck the 127 held decisions against the files, then apply them. | Every 'version id' that relates to a spell index names spell_id or the spell index id, by hand; the rest listed with reasons. | The wording lands with its notch, release note and rebuild, or the owner redirects. | tickets/tasks/2026-10-16_spell_id_wording_near_spell_index_task.md | 2026-10-16T20:06:44Z | REQUIRED |
 <!-- END USER-DEFINED: active_items -->
 
@@ -295,6 +296,10 @@ Message alert rules
   the meld refreshes their stale dependencies before a plan compiles, a lost provider is named with its remedy, and
   a notch back reactivates a parked version grant;
   TASK-2026-10-16-recheck_contract_consumers_when_provider_changes). Notch above it if you land after.
+- melder_1 landed 0.2.8251 (`Spellbook._remove_contracted_spell` removes exactly the copy of the spell_id it is
+  given - the active copy only when it is that version, else the parked copy - so an index unlink after a notch
+  completes in any member order; TASK-2026-10-16-recheck_contract_consumers_when_provider_changes). Notch above it
+  if you land after.
 ### Notch notice (melder_0, 2026-10-16)
 - melder_0 landed 0.2.8248 (conjure wires the versions staged with `bind_inactive` before it, so they meld after a
   notch; creation cache generation 21; S8 of EPIC-2026-10-14-managed_spell_quantity). Notch above it if you land

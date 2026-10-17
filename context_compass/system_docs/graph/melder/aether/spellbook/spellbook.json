@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "source": "src/melder/aether/spellbook/spellbook.py",
-  "source_sha256": "188a4c80170acfc0a9a1dc54a0668d31a74455da98c6c838ee71dc40d001d26c",
+  "source_sha256": "47eac897c84c8ac3066418791e02f1d4ccca366a96c4c7cbc76201df48ce3ea9",
   "generator": "tools/system_documents/python/extract_graph.py",
   "nodes": {
     "melder.aether.spellbook.spellbook": {
@@ -60,7 +60,7 @@
         "has_bases": true,
         "trivial": false
       },
-      "span_sha256": "05250646f1a4c7417ea82b766ec4e093eebb3df6e44386ae23dadfc372c3eb06",
+      "span_sha256": "2fda12a959459e6c997a7e6f15743d84ea92b16864b0adf74aefb523fa1ba6ea",
       "role": "Public binding, validation, and conjure surface.",
       "responsibilities": [
         "binds and scans spells into local and contracted lookup surfaces",
@@ -85,7 +85,8 @@
         "forwards a managed binding's four options through bind and bind_inactive to Bind, where they are validated and become part of the spell id; a parked managed version keeps its own (0.2.8242)",
         "parks versions with bind_inactive: one parked after conjure is stamped by bind_inactive itself with the owner stamp an active bind uses, one parked before conjure by SpellbookCreationSystem.define_conduit_into_spells at conjure with the same stamp and nothing else (0.2.8248), so either melds after a notch",
         "marks the SpellContract consumers of a changed active contracted copy's key once its Book lock is released - an add, park, reactivation, removal or clear of an active copy; never a parked copy or a change before conjure (_mark_contract_dependents_dirty in the five contracted-map mutators, 0.2.8250)",
-        "passes each selected version's binding key to register_index at bind and notch, and after a notch's registration marks everything downstream of the notched lineage (mark_dependents_for_revalidation, 0.2.8250)"
+        "passes each selected version's binding key to register_index at bind and notch, and after a notch's registration marks everything downstream of the notched lineage (mark_dependents_for_revalidation, 0.2.8250)",
+        "removes a borrowed copy by the spell_id it is given: the active copy only when that copy's own spell_id is it, otherwise the parked copy, raising RuntimeError when it holds neither - never by index membership, so an index unlink after a notch completes in any member order (_remove_contracted_spell, 0.2.8251)"
       ],
       "owns_state": [
         "_bind",
@@ -102,7 +103,7 @@
         "runtime",
         "cleanup"
       ],
-      "semantics_authored_against": "05250646f1a4c7417ea82b766ec4e093eebb3df6e44386ae23dadfc372c3eb06"
+      "semantics_authored_against": "2fda12a959459e6c997a7e6f15743d84ea92b16864b0adf74aefb523fa1ba6ea"
     }
   },
   "edges_out": [

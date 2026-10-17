@@ -1175,6 +1175,11 @@ Protects:
   raises SpellbookValidationError naming a broken dependency (pinned `invalid`) or one left gated, and does not
   walk for a spell that will not compile; the deferred lane runs it before its pass and the gate leaves it to
   that lane
+- one version, one copy (0.2.8251; three tests in `test_spellbook.py`, one parametrized): removing a parked
+  version beside the active copy of another version of its index removes only the parked copy and marks nothing,
+  and removing the active version then marks its consumers; a spell_id the Book holds no copy of raises the
+  not-found RuntimeError and leaves the active copy; both versions removed in either order leave no copy, active
+  or parked, and an empty set of borrowed spell_ids
 Key Files (C1):
 - `tests/unit/melder/spellbook/test_spellbook.py`
 - `tests/unit/melder/spellbook/test_spell.py`
@@ -1487,6 +1492,9 @@ Protects:
   cold and hydrated worlds still end alike through a notch, now both recording the first meld's
   UnresolvedInputError after a notch to a class `engine: Engine` does not select, and building with Engine
   after the notch back
+- contracted-copy removal by spell_id (0.2.8251; `test_spellbook_component_contracts.py`): the removal test now
+  names the active copy by its own spell_id and still finds every member id of the live index dropped; it used to
+  name a member with no copy and rely on the membership match the fix removed
 Key Files (C1):
 - `tests/component/melder/spellbook/test_spellbook_component_bind.py`
 - `tests/component/melder/spellbook/test_spellbook_component_configuration.py`
@@ -1659,6 +1667,11 @@ Protects:
   the source keeps its active spell; an unknown spell_id, another Book's spell_id, both and neither are refused
   with ValueError, and an active spell's spell_id with the Book's RuntimeError, each leaving both indexes'
   selection, members and melds intact
+- one version, one copy (0.2.8251; `test_spell_index_meld_and_contract_lifecycle.py`, 3 tests): after the owner
+  notches a linked index to a version staged on it, `remove_index_from_contract` removes both members' copies and
+  untracks the index whichever member it visits first (the order fixed through `SpellIndex.spells_in_index`); a
+  borrower granted a version and then the version notched in keeps the new version's active copy, and melds it,
+  when the old version's grant is removed by its Spell
 Key Files (C1):
 - `tests/integration/melder/spellbook/test_spellbook_integration_core.py`
 - `tests/integration/melder/spellbook/test_spellbook_integration_scan_bind.py`
@@ -1672,6 +1685,7 @@ Key Files (C1):
 - `tests/integration/melder/spellbook/test_spellbook_integration_parked_before_conjure.py` (2026-10-16)
 - `tests/integration/melder/aether/conduit/test_notch_spell_by_id_integration.py` (2026-10-16)
 - `tests/integration/melder/aether/conduit/test_index_moves_by_spell_id_integration.py` (2026-10-16)
+- `tests/integration/melder/aether/conduit/test_spell_index_meld_and_contract_lifecycle.py` (2026-10-16)
 
 ### Subcomponent: Conduit Integration Cluster
 Parent Component: Integration Runtime Suite
@@ -2344,9 +2358,9 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-09-26T22:11:36Z
 - path: `tests/unit/melder/spellbook/test_spellbook.py`
   start_line: 1
-  end_line: 5511
-  loc: 5511
-  verified_at: 2026-10-16T17:07:35Z
+  end_line: 5605
+  loc: 5605
+  verified_at: 2026-10-16T21:54:02Z
 - path: `tests/unit/melder/spellbook/test_spell.py`
   start_line: 1
   end_line: 1581
@@ -2510,9 +2524,9 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-09-26T22:11:36Z
 - path: `tests/component/melder/spellbook/test_spellbook_component_contracts.py`
   start_line: 1
-  end_line: 749
-  loc: 749
-  verified_at: 2026-09-26T22:11:36Z
+  end_line: 752
+  loc: 752
+  verified_at: 2026-10-16T21:54:02Z
 - path: `tests/component/melder/spellbook/test_spellbook_component_spell_index.py`
   start_line: 1
   end_line: 46
@@ -3288,6 +3302,13 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   loc: 226
   verified_at: 2026-10-16T15:48:52Z
   note: add and remove by spell_id in a dynamic world; the refusals leave both indexes intact (0.2.8249).
+- path: `tests/integration/melder/aether/conduit/test_spell_index_meld_and_contract_lifecycle.py`
+  start_line: 1
+  end_line: 271
+  loc: 271
+  verified_at: 2026-10-16T21:54:02Z
+  note: meld and contract lifecycle on real dynamic conduits; one version, one copy - the unlink after a notch in
+    either member order and the removal of a parked version's grant (0.2.8251).
 
 ## Diagrams
 ### ASCII Component Diagram (C3/C2)
@@ -3454,6 +3475,7 @@ graph TD
 - `tests/unit/melder/spellbook/spell_crafter/validation/strategies/test_contract_provider_presence_strategy.py`
 - `tests/unit/melder/spellbook/spell_compiler/phases/test_compiler_phase_4.py`
 - `tests/component/melder/spellbook/test_spellbook_component_structural_snapshot_parity.py`
+- `tests/integration/melder/aether/conduit/test_spell_index_meld_and_contract_lifecycle.py`
 - direct filesystem inventory of `tests/`
 
 ## Open Questions
@@ -3467,6 +3489,12 @@ graph TD
   scan/bind coverage grows.
 
 ## Context / Handoff Summary
+
+2026-10-16 one version, one copy (0.2.8251): the Spellbook Runtime And Binding Unit Cluster names the three
+removal tests in `test_spellbook.py`, the Component Cluster the contracts test that now removes the active copy by
+its own spell_id, and the Spellbook Integration Cluster the unlink after a notch in either member order and the
+grant removal, with `test_spell_index_meld_and_contract_lifecycle.py` as a key file and a new code-map record; the
+records of `test_spellbook.py` and `test_spellbook_component_contracts.py` are remeasured.
 
 2026-10-16 contract recheck on notch (0.2.8250): the DevOps Control Plane Unit Cluster gains
 `test_spell_system_states_dependent_walk.py` (the downstream walk, 17 tests) and the Conduit Integration Cluster

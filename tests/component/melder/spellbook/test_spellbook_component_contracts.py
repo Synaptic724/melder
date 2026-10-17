@@ -379,12 +379,15 @@ def test_component_spellbook_add_contracted_spell_tracks_multiple_versions() -> 
 def test_component_spellbook_remove_contracted_spell_removes_all_versions() -> None:
     """
     Purpose:
-        Validate removing a contracted index member clears every tracked member id.
+        Validate removing the active contracted copy of a live index clears every
+        tracked member id of that index.
     Contract:
         - The contracted copy is the ACTIVE member, so the by-id registration key
           (selected_spell_id at add time) and the copy's own spell_id agree.
-        - _remove_contracted_spell drops the index subscription and every member
-          id tracked for the peer conduit.
+        - _remove_contracted_spell is asked for that copy's own version id: a removal
+          takes exactly the copy of the version it names (0.2.8251; before, a member id
+          with no copy took the index's active copy). It drops the index subscription
+          and every member id tracked for the peer conduit, the staged member's included.
     Returns:
         None.
     Raises:
@@ -411,7 +414,7 @@ def test_component_spellbook_remove_contracted_spell_removes_all_versions() -> N
         spell.spell_index.add_member(next_id)
 
         spellbook._add_contracted_spell(spell, conduit_id)
-        spellbook._remove_contracted_spell(next_id, conduit_id)
+        spellbook._remove_contracted_spell(initial_id, conduit_id)
 
         versions_set = spellbook._contracted_spell_ids[conduit_id]
         assert initial_id not in versions_set

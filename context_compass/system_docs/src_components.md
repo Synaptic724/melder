@@ -345,6 +345,20 @@ Key Files (C1):
 - `src/melder/utilities/ai_native_support_tools/protocol_crafter.py`
 
 ### Component: Spellbook Core (Binding and Conjure)
+One version, one copy (2026-10-16, 0.2.8251; contracted_copy_removal_by_version): `_remove_contracted_spell(spell_id,
+conduit_id)` removes the copy of exactly the spell_id it is given. Under the Book lock it walks the peer's active map
+(index -> copy) for the copy whose own `spell_id` is `spell_id`, for a live or a cleaned index alike, taking the
+index from the map key, so neither a cleaned index's member set nor a cleaned copy's deleted `spell_index` is read;
+found, it unregisters the by-id entry and pops the index entry and the lookup key; otherwise it pops the spell_id's
+parked copy; with neither it raises RuntimeError "Spell version <id> not found for conduit ID <peer>." before
+anything changes. Until 0.2.8251 a live index was matched by membership (`spell_id in idx._spells_in_index`), so
+asked for a parked version beside another version's active copy it removed the active copy, and the later removal of
+that version raised. The existence set `_contracted_spell_ids` keeps its per-index handling (an active removal drops
+every member id of a live index, a parked one its own id; the add paths record every member id) and rule 2's mark
+stays on the active branch.
+EVIDENCE: `src/melder/aether/spellbook/spellbook.py:Spellbook._remove_contracted_spell`,
+`Spellbook._add_contracted_spell` and `Spellbook._add_inactive_contracted_spell`.
+
 Contract consumers marked on a provider change (2026-10-16, 0.2.8250; rule 2 of contract_recheck_on_notch): the five
 mutators of a Book's ACTIVE contracted (borrowed) copies - `_add_contracted_spell`, `_deactivate_contracted_spell`,
 `_reactivate_contracted_spell`, `_remove_contracted_spell` (its active branch) and
@@ -535,10 +549,10 @@ Responsibilities:
   `mediator.start_transaction(...)` itself and calling in here inside the
   held window.
   EVIDENCE:
-  - src/melder/aether/spellbook/spellbook.py:3844, 3899 (`_notch_spell` -> `_apply_notch`)
-  - src/melder/aether/spellbook/spellbook.py:4056, 4089 (`_add_to_spell_index` -> `_apply_add_to_index`)
-  - src/melder/aether/spellbook/spellbook.py:4232, 4264 (`_remove_from_spell_index` -> `_apply_remove_from_index`)
-  - src/melder/aether/spellbook/spellbook.py:3884-3886 (states the Conduit admits it)
+  - src/melder/aether/spellbook/spellbook.py:3851, 3906 (`_notch_spell` -> `_apply_notch`)
+  - src/melder/aether/spellbook/spellbook.py:4063, 4096 (`_add_to_spell_index` -> `_apply_add_to_index`)
+  - src/melder/aether/spellbook/spellbook.py:4239, 4271 (`_remove_from_spell_index` -> `_apply_remove_from_index`)
+  - src/melder/aether/spellbook/spellbook.py:3891-3893 (states the Conduit admits it)
   - src/melder/aether/conduit/conduit.py:5711, 6049, 6156 (notch/add/remove
     acquire `_get_required_transaction_mediator()`)
 - Run phase pipelines before conjure.
@@ -607,7 +621,7 @@ Concurrency/Threading:
     ordering on each other". They do. That wording invited exactly the inversion
     described above.
   EVIDENCE:
-  - src/melder/aether/spellbook/spellbook.py:7553-7574 (`_run_structural_phases`; the caller-held-lock
+  - src/melder/aether/spellbook/spellbook.py:7560-7581 (`_run_structural_phases`; the caller-held-lock
     precondition is stated at :7423; remeasured 2026-10-16 at 0.2.8248)
   - src/melder/aether/spellbook/spellbook_creation_system.py:2151 (the only
     `_phase_run_lock` acquisition, reached from that path)
@@ -712,9 +726,9 @@ Failure Modes:
   separating a spell that is the SOLE member of its source index (use
   `cleanup_spell` to dispose it instead).
   EVIDENCE:
-  - src/melder/aether/spellbook/spellbook.py:3899-4054 (`_apply_notch`)
-  - src/melder/aether/spellbook/spellbook.py:4089-4183 (`_apply_add_to_index`)
-  - src/melder/aether/spellbook/spellbook.py:4264-4349 (`_apply_remove_from_index`)
+  - src/melder/aether/spellbook/spellbook.py:3906-4061 (`_apply_notch`)
+  - src/melder/aether/spellbook/spellbook.py:4096-4190 (`_apply_add_to_index`)
+  - src/melder/aether/spellbook/spellbook.py:4271-4356 (`_apply_remove_from_index`)
 
 Observability:
 - `SafeLogger` on the Spellbook instance, used at `error` level on the failure
@@ -724,7 +738,7 @@ Observability:
   There is no info/debug narration of the happy path; absence of log output is
   the normal state, not a sign that nothing ran.
   EVIDENCE:
-  - src/melder/aether/spellbook/spellbook.py:6034-6039 (`Spellbook._initialize_configuration`, the
+  - src/melder/aether/spellbook/spellbook.py:6041-6046 (`Spellbook._initialize_configuration`, the
     configuration-mismatch branch; remeasured 2026-10-16 at 0.2.8248)
 
 Extension Points:
@@ -901,7 +915,7 @@ Outputs:
   EVIDENCE:
   - src/melder/aether/spellbook/bind/bind.py:453-581 (`bind`, decorator,
     `_bind_logic -> Spell`)
-  - src/melder/aether/spellbook/spellbook.py:5562-5578 (`Spellbook.bind
+  - src/melder/aether/spellbook/spellbook.py:5569-5585 (`Spellbook.bind
     -> str`)
   - src/melder/aether/spellbook/bind/bind.py:62-106 (`assert_allowed`)
 
@@ -3190,6 +3204,13 @@ Concurrency/Threading:
   `Spellbook._find_contracted_spell_by_id`, outbound `Spellbook.find_spell_by_id`). It no longer calls
   `Conduit.find_contracted_spell`, which takes the conduit lock: link and sever take the conduit lock and then the
   ward locks, and the listing held the ward lock while it waited for the conduit lock - the two deadlocked.
+- An index's members leave a borrower one by one (0.2.8251): `_remove_index_from_contract` and `_emit_index_destroy`
+  call `_uncontract_member_spell` for each member in the member set's order - a set, ordered by the process's hash
+  seed - and each asks the borrower Book to remove that member's own copy (`Spellbook._remove_contracted_spell`). An
+  index link holds a copy of every member (`_contract_member_spell`: active for the active member, parked for the
+  rest), so the unlink completes in any order; until 0.2.8251 a parked member visited first took the active
+  member's copy, the active member's removal then raised, and the IndexDetail cleanup and the borrower's untrack
+  after the loop never ran.
 
 Invariants/Guarantees:
 - Ward owns and cleans all lesser conduits it links.
@@ -6208,14 +6229,14 @@ Contract/Interface:
   THE ADD AND REMOVE DOCSTRINGS WERE WRONG UNTIL 0.2.8249. Both said "Delegates to
   the owning Spellbook, WHICH ADMITS the [...] change-control transaction", while
   both methods call `mediator.start_transaction(...)` a few lines further down;
-  `src/melder/aether/spellbook/spellbook.py:3884-3886` states it correctly.
+  `src/melder/aether/spellbook/spellbook.py:3891-3893` states it correctly.
   `notch_spell`'s docstring said the same. Since 0.2.8249 all three say the conduit
   admits the transaction (raised on TASK-2026-08-02-stale-source-docstrings).
   EVIDENCE:
   - src/melder/aether/conduit/conduit.py:5622, 5979, 6092 (public verbs)
   - src/melder/aether/conduit/conduit.py:5761, 5799, 5854, 5905, 5940 (`_resolve_notch_target`,
     `_owned_notch_target`, `_check_spell_argument`, `_owned_spell_by_id`, `_resolve_spell_to_move`)
-  - src/melder/aether/spellbook/spellbook.py:3899, 4089, 4264 (applied seams)
+  - src/melder/aether/spellbook/spellbook.py:3906, 4096, 4271 (applied seams)
 Data Structures:
 - Transaction metadata carrying spellbook/conduit ids, binding key, member id,
   and source/target SpellIndex ids.
@@ -8235,9 +8256,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-09-26T20:10:34Z
 - path: `src/melder/aether/spellbook/spellbook.py`
   start_line: 1
-  end_line: 7759
-  loc: 7759
-  verified_at: 2026-10-16T16:51:53Z
+  end_line: 7766
+  loc: 7766
+  verified_at: 2026-10-16T21:54:02Z
 - path: `src/melder/aether/spellbook/spellbinder.py`
   start_line: 1
   end_line: 928
@@ -10891,7 +10912,7 @@ completed epics/stories of 2026-07-11/12).
 - Restore: crystal_loader_system/graft_runner.py - GraftRunner
   (single-use, Cleanable): RecordVersion gate + graft_kind refusal ->
   unconjured-host refusal (public `Spellbook.conduit` accessor,
-  `src/melder/aether/spellbook/spellbook.py:6866`; the patch-lane copy cited
+  `src/melder/aether/spellbook/spellbook.py:6873`; the patch-lane copy cited
   :5412) -> per-member overlap rule via
   `host_frame.find_index_for_spell`
   (`src/melder/aether/aetheric_frame/aetheric_frame.py:902`; resident member
@@ -11308,6 +11329,11 @@ Companion documents:
   component and code-description patches are inputs to this document while a lane is open.
 
 ## Context / Handoff Summary
+
+2026-10-16 one version, one copy (0.2.8251): Spellbook Core carries `_remove_contracted_spell`'s match by the
+copy's own spell_id, its parked fallback and its raise; ConduitWard and Contracts carries the member-by-member unlink
+that now completes in any order. Every numeric citation into spellbook.py after the method moved seven lines and was
+remapped, and the code map remeasures the file.
 
 2026-10-16 contract recheck on notch (0.2.8250; rule 2 of the owner's 2026-10-15 direction, his decisions D1-D5):
 Spellbook Core carries the five contracted-map mutators' marks, the binding key at bind and notch, the notch's

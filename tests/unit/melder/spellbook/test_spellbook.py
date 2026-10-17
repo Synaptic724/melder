@@ -2241,6 +2241,100 @@ def test_parked_contracted_copy_changes_mark_nothing() -> None:
     assert not state.has_flag(SpellState.contract_unvalidated)
 
 
+def _two_versions_of_one_index() -> tuple[DummySpellIndex, DummySpell, DummySpell]:
+    """
+    Purpose:
+        Build the two borrowed copies a borrower holds after its lender notched one index from "sid-1" to "sid-2":
+        the "sid-1" copy (to be parked) and the "sid-2" copy (active), of one index and under the key
+        ("frame", "binding").
+    Returns:
+        tuple[DummySpellIndex, DummySpell, DummySpell]: The shared index, the sid-1 copy and the sid-2 copy.
+    """
+    index = DummySpellIndex(versions={"sid-1", "sid-2"}, sid="lineage", current="sid-2")
+    copies: list[DummySpell] = []
+    for spell_id in ("sid-1", "sid-2"):
+        spell = DummySpell(
+            spell_id=spell_id,
+            versions={"sid-1", "sid-2"},
+            spell_name="SpellName",
+            binding_name="binding",
+            spellframe="Frame",
+        )
+        spell.spell_index = index
+        spell.key = _COPY_KEY
+        spell._key = _COPY_KEY
+        copies.append(spell)
+    return index, copies[0], copies[1]
+
+
+def test_removing_a_parked_version_keeps_the_active_copy_of_its_index() -> None:
+    """
+    Purpose:
+        Regression for the unlink after a notch (contracted_copy_removal_by_version_2026_10_16): removing a parked
+        version removes that version's parked copy, leaves the active copy of the same index - another version - in
+        place and marks nothing; removing the active version then removes its copy and marks the consumers.
+    Contract:
+        - A removal takes the copy of exactly the version it names: the active copy only when it is that version.
+    """
+    sb = _contracted_book()
+    state = _consumer_of_copy_key(sb)
+    index, parked, active = _two_versions_of_one_index()
+    sb._add_contracted_spell(active, "peer")
+    sb._add_inactive_contracted_spell(parked, "peer")
+    _assert_marked_then_reset(state)
+
+    sb._remove_contracted_spell("sid-1", "peer")
+
+    assert sb._contracted_spells["peer"] == {index: active}
+    assert sb._contracted_spells_by_id["peer"] == {"sid-2": active}
+    assert sb._inactive_contracted_spells["peer"] == {}
+    assert state.validity is SpellValidity.valid
+    assert not state.has_flag(SpellState.contract_unvalidated)
+
+    sb._remove_contracted_spell("sid-2", "peer")
+
+    assert sb._contracted_spells["peer"] == {}
+    _assert_marked_then_reset(state)
+
+
+def test_removing_a_version_the_book_holds_no_copy_of_raises_and_keeps_the_active_copy() -> None:
+    """
+    Purpose:
+        A member id of a borrowed index that the Book holds no copy of is refused with the not-found RuntimeError,
+        and the index's active copy - another version - stays (before 0.2.8251 it was removed under that id).
+    """
+    sb = _contracted_book()
+    index, _, active = _two_versions_of_one_index()
+    sb._add_contracted_spell(active, "peer")
+
+    with pytest.raises(RuntimeError, match="Spell version sid-1 not found for conduit ID peer."):
+        sb._remove_contracted_spell("sid-1", "peer")
+
+    assert sb._contracted_spells["peer"] == {index: active}
+    assert sb._contracted_spells_by_id["peer"] == {"sid-2": active}
+
+
+@pytest.mark.parametrize("order", [("sid-1", "sid-2"), ("sid-2", "sid-1")], ids=["parked_first", "active_first"])
+def test_removing_both_versions_of_an_index_in_either_order_leaves_no_copy(order: tuple[str, str]) -> None:
+    """
+    Purpose:
+        An index unlink removes each member's copy in its member set's order, which follows the hash seed: either
+        order leaves no copy, active or parked, and an empty set of borrowed version ids.
+    """
+    sb = _contracted_book()
+    _, parked, active = _two_versions_of_one_index()
+    sb._add_contracted_spell(active, "peer")
+    sb._add_inactive_contracted_spell(parked, "peer")
+
+    for spell_id in order:
+        sb._remove_contracted_spell(spell_id, "peer")
+
+    assert sb._contracted_spells["peer"] == {}
+    assert sb._contracted_spells_by_id["peer"] == {}
+    assert sb._inactive_contracted_spells["peer"] == {}
+    assert sb._contracted_spell_ids["peer"] == set()
+
+
 class _RecordingContractRegistry:
     """
     Purpose:
