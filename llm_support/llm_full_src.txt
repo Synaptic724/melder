@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: src
-SOURCE FINGERPRINT: 283bbf4a5b1e846f738e17b07a1ddfb9ca3cf9733b899eb5d6a0810def928259
+SOURCE FINGERPRINT: 0376931172738abbcd0502326021c175a43dca78244ad21199ddd10ae36237f1
 FILE COUNT: 583
 
 ================================================================================
@@ -612,7 +612,7 @@ END FILE: src/melder/__melder_cache__/__melder_cache__.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/__version__.py
-CONTENT SHA256: 35f8383d5c1876945d8d5d98c75ad39b834389dc046fb26e1ab8a2ba923964e7
+CONTENT SHA256: 5387d425891edefab095deabe2e0b3d7254e852bdd6c964f2f4494fcc417c89e
 SOURCE ENCODING: utf-8
 ================================================================================
 
@@ -626,7 +626,7 @@ Contract:
   negotiation or runtime compatibility checks by itself.
 """
 
-__version__ = "0.2.8249"
+__version__ = "0.2.8252"
 ================================================================================
 END FILE: src/melder/__version__.py
 ================================================================================
@@ -3690,7 +3690,7 @@ END FILE: src/melder/_build_assets/_system_documents/system_documents.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/aether.py
-CONTENT SHA256: 9bba3a131001c5a4f8ebb119f014f1c4150caf4d00badd90e1e3ce62f00ffc62
+CONTENT SHA256: ee7e7deb8f3cc4da95e77c168d15a20603de1b4e536fb462f6ac89abea8df10e
 SOURCE ENCODING: utf-8
 ================================================================================
 import logging
@@ -6496,7 +6496,7 @@ class Aether(Cleanable):
 
     def _get_all_spell_ids(self, aetheric_frame_name: str = "default") -> set[str]:
         """
-        Return a flat set of all spell version ids known for one frame.
+        Return a flat set of all spell_ids known for one frame.
 
         Contract:
             - Reads from the frame-owned cached version registry, maintained
@@ -6508,7 +6508,7 @@ class Aether(Cleanable):
 
         Returns:
             set[str]:
-                All cached spell version ids for the frame.
+                All cached spell_ids for the frame.
         Threading:
             The cross-frame sweep holds no Aether lock and copies nothing: it walks
             the immutable frame view the registry's writers republish under the
@@ -8447,7 +8447,7 @@ END FILE: src/melder/aether/aether_utility_system.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/aetheric_frame/aetheric_frame.py
-CONTENT SHA256: a95a544f62d8bf0d07629d9199ea4e774d822a211c0c42398479ce5e8873d22b
+CONTENT SHA256: 161ea0da66948311e448cecd6d6c71f61a7e85f722a047794980d365178df1d6
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -9357,7 +9357,7 @@ class AethericFrame(Cleanable):
 
     def spells_in_index(self) -> set[str]:
         """
-        Return a flat set of all cached SHA256 version ids in this frame.
+        Return a flat set of all cached SHA256 spell_ids in this frame.
 
         Contract:
           - Uses the cached `_selected_spell_registry`.
@@ -9365,7 +9365,7 @@ class AethericFrame(Cleanable):
 
         Returns:
             set[str]:
-                All cached version ids across every conduit in the frame.
+                All cached spell_ids across every conduit in the frame.
 
         Raises:
             RuntimeError: If the frame is cleaned, including by a cleanup that
@@ -9394,14 +9394,14 @@ class AethericFrame(Cleanable):
 
     def find_index_for_spell(self, spell_id: str) -> SpellIndex | None:
         """
-        Find and return the `SpellIndex` that contains the given version id.
+        Find and return the `SpellIndex` that contains the given spell_id.
 
         Contract:
           - Scans the frame-owned `_spell_registry`.
           - Returns `None` for empty ids or when no matching lineage is found.
 
         Args:
-            spell_id: SHA256 version id to search for.
+            spell_id: The SHA256 spell_id to search for.
 
         Returns:
             SpellIndex | None:
@@ -9497,7 +9497,7 @@ class AethericFrame(Cleanable):
         set once the frame is cleaned instead of raising.
 
         Returns:
-            set[str]: The frame's cached version ids while it is live; empty when
+            set[str]: The frame's cached spell_ids while it is live; empty when
                 cleaned.
 
         Threading:
@@ -29886,7 +29886,7 @@ END FILE: src/melder/aether/aetheric_frame/dev_ops/information_strategies/transf
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/aetheric_frame/dev_ops/risk_manager/risk_manager.py
-CONTENT SHA256: 387ae87b8e8a4fb43670aac96489a761fe3e828b79760c7c6272ea14cf669147
+CONTENT SHA256: 492fe29c1ca592c86f6a192f483217076e7720a1ceb9fa789379d168eb301a59
 SOURCE ENCODING: utf-8
 ================================================================================
 from threading import RLock
@@ -30228,7 +30228,7 @@ class RiskManager(Cleanable):
         - Adds the spell lineage to the conduit risk state.
         - Recomputes both structural and resolution risk for the spell based on
           live `SpellSystemStates` data.
-        - Clears any stale resolution key for the spell's current version id
+        - Clears any stale resolution key for the spell's current spell_id
           before recomputing conduit-local risk.
         - Refreshes the spellbook validation-required flag after the update;
           the tracking itself is `_register_spell_risk`, and nothing is
@@ -30437,7 +30437,7 @@ class RiskManager(Cleanable):
             return spell.spell_index.id
     def _resolve_lineage_id_from_spell_id(self, spell_id: str) -> Optional[str]:
         """
-        Resolve a lineage id from a current spell version id.
+        Resolve a lineage id from a current spell_id.
 
         This is the reverse lookup used when callers only have a current spell
         id but risk tracking needs to fold the event back onto the owning
@@ -30645,7 +30645,7 @@ END FILE: src/melder/aether/aetheric_frame/dev_ops/risk_manager/risk_manager.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/aetheric_frame/dev_ops/spell_system_states/conduit_resolution_state.py
-CONTENT SHA256: 09c4c65a53fed0bc5420411043f1f93393cd3fd41c477d23049a788185928e2a
+CONTENT SHA256: f4365ffa6fe8590a1b952a9958229def084509a5caed90dde9a0304358cd83c8
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -30707,9 +30707,9 @@ class ConduitResolutionState(Cleanable):
     Validity
     --------
     - spell validity:
-        Per-spell resolution verdicts keyed by spell_id (version id).
+        Per-spell resolution verdicts keyed by spell_id.
     - root validity:
-        Per-root resolution verdicts keyed by root_id (version id).
+        Per-root resolution verdicts keyed by root_id (the root spell's spell_id).
 
     Diagnostics
     -----------
@@ -30729,7 +30729,7 @@ class ConduitResolutionState(Cleanable):
 
     Contract:
         - Scope is exactly ONE conduit; it never speaks for the frame.
-        - Verdicts are keyed by VERSION id (spell_id / root_id), not by index
+        - Verdicts are keyed by spell_id (and root_id), not by spell index
           id - resolution is decided against the concrete version a conduit
           actually resolved.
         - Structural validity is NOT duplicated here; that stays global on
@@ -30757,7 +30757,7 @@ class ConduitResolutionState(Cleanable):
         membership, and change-control dirty roots. A single global verdict
         would have to be the pessimistic intersection, which would gate healthy
         conduits because some unrelated conduit is mid-transfer.
-        The keying follows from that: verdicts are per version id because a
+        The keying follows from that: verdicts are per spell_id because a
         conduit resolves a concrete version, so a notch that repoints an index
         legitimately invalidates the old verdict rather than silently carrying
         it forward to different code.
@@ -31783,7 +31783,7 @@ END FILE: src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_sta
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_state.py
-CONTENT SHA256: 7e6fccf08c4c84c00363b90d7383df1d500bc4ee275bdcd3acc09609196d0041
+CONTENT SHA256: 445c882b8bf43ded3d2a67dc9abe1de5ab54c02321c8f88dcb1c6fb0247fc74a
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -31808,12 +31808,12 @@ class SpellSystemState(Cleanable):
     - `spell_index_id`:
         Index identifier (ULID from SpellIndex.id).
     - `current_spell_id`:
-        Currently promoted version id for this index (e.g., SpellIndex.selected_spell_id; typically a SHA).
+        Currently promoted spell_id for this index (e.g., SpellIndex.selected_spell_id; typically a SHA).
 
     Topology
     --------
     - `direct_dependencies`:
-        Set of dependency ids for this index. Caller decides whether ids are index or version ids.
+        Set of dependency ids for this index. Caller decides whether ids are spell index ids or spell_ids.
     - `direct_dependents`:
         Reverse edges: indexes that depend on this index ("what breaks if this changes?").
 
@@ -31905,7 +31905,7 @@ class SpellSystemState(Cleanable):
             spell_index_id:
                 Stable index identifier for the SpellIndex this state tracks.
             current_spell_id:
-                Currently promoted spell version id for the index.
+                Currently promoted spell_id for the index.
         Contract:
             - Starts with empty dependency and dependent sets.
             - Starts with `SpellValidity.unknown` plus the `new_index` flag so
@@ -32018,7 +32018,7 @@ class SpellSystemState(Cleanable):
     @property
     def current_spell_id(self) -> str:
         """
-        Currently promoted version id for this index (e.g., SpellIndex.selected_spell_id).
+        Currently promoted spell_id for this index (e.g., SpellIndex.selected_spell_id).
 
         Threading:
             Acquires the internal lock to avoid torn reads while promotion
@@ -32339,12 +32339,12 @@ class SpellSystemState(Cleanable):
     # ------------------------------------------------------------------
     def update_current_spell_id(self, spell_id: str) -> None:
         """
-        Update the currently promoted version id for this index.
+        Update the currently promoted spell_id for this index.
 
         Caller is responsible for keeping the manager's spell-id index in sync.
 
         Args:
-            spell_id: New current spell version id (non-empty).
+            spell_id: New current spell_id (non-empty).
         Contract:
             - Updates index identity for the promoted spell version only.
             - Does not change validity, flags, dependency edges, or dirty state.
@@ -32597,7 +32597,7 @@ END FILE: src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_sys
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py
-CONTENT SHA256: 31e9e714e3a05da78e4cf48909586b9586b6fe2f1b4b1345c45e97d74cdb2342
+CONTENT SHA256: 4dc00af5b70c8b034e63d6998621bb55fc36934985cbc1ab06d11198d6bdfb07
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -32662,9 +32662,12 @@ class SpellSystemStates(Cleanable):
     - One instance per AethericFrame (owned by the frame and initialized
       alongside Spellbook / DevOpsManager).
     - Spellbook / SpellCrafter call:
-        * `register_index(..., resolvable=...)` when a new SpellIndex+Spell
-          appears or an index selects another version (bind, notch, an
-          ownership transfer), passing the selected version's `Spell.resolvable`
+        * `register_index(..., resolvable=..., binding_key=...)` when a new
+          SpellIndex+Spell appears or an index selects another version (bind,
+          notch, an ownership transfer), passing the selected version's
+          `Spell.resolvable` and, at bind and notch, its binding key
+        * `mark_dependents_for_revalidation(...)` after a notch, so every
+          lineage downstream of the notched one revalidates at its next meld
         * `update_dependencies(...)` after Phase 3/4 attaches dependency ids
         * `mark_structural_change(...)` when a spell index is rebound/mutated
     - DevOps / validation flows call:
@@ -32675,8 +32678,9 @@ class SpellSystemStates(Cleanable):
         The primary index (spell-index id -> `SpellSystemState`), the auxiliary
         current-spell-id index, the dirty set, per-Spellbook collection
         dependency indices, per-Spellbook SpellContract consumer indices,
-        per-conduit `ConduitResolutionState` keyed by conduit_id, and the
-        published set of lineages flagged `SpellState.non_resolvable`.
+        the binding key each lineage was registered under, per-conduit
+        `ConduitResolutionState` keyed by conduit_id, and the published set of
+        lineages flagged `SpellState.non_resolvable`.
 
     Threading:
         Read on the meld hot path and written from binding, validation, and
@@ -32751,6 +32755,7 @@ class SpellSystemStates(Cleanable):
         "_collection_dependents_by_spellbook",
         "_contract_keys_by_index",
         "_contract_dependents_by_spellbook",
+        "_binding_key_by_index",
         "_risk_manager",
         "_non_resolvable_index_ids",
     ]
@@ -32799,6 +32804,9 @@ class SpellSystemStates(Cleanable):
         self._contract_dependents_by_spellbook: Optional[
             Dict[str, Dict[Tuple[str, str], Set[str]]]
         ] = {}
+        # The binding key of each lineage's selected version (`register_index(binding_key=...)`): the contract key a
+        # SpellContract consumer of that lineage declares, read by the downstream walk (`_mark_dependents_locked`).
+        self._binding_key_by_index: Optional[Dict[str, Tuple[str, str]]] = {}
         self._risk_manager: Optional[RiskManager] = None
         # The lineages whose state carries SpellState.non_resolvable, replaced
         # whole under `_lock` (`_publish_non_resolvable_membership_locked`) and
@@ -32897,6 +32905,9 @@ class SpellSystemStates(Cleanable):
                         pass
                 self._contract_keys_by_index.clear()
 
+            if self._binding_key_by_index is not None:
+                self._binding_key_by_index.clear()
+
             if self._index_owner_spellbook_id is not None:
                 self._index_owner_spellbook_id.clear()
 
@@ -32909,6 +32920,7 @@ class SpellSystemStates(Cleanable):
             del self._collection_frames_by_index
             del self._contract_dependents_by_spellbook
             del self._contract_keys_by_index
+            del self._binding_key_by_index
             del self._index_owner_spellbook_id
             # A tombstone, not a delete: `non_resolvable_index_ids` is read without
             # the lock, so a read racing this cleanup must still find a set.
@@ -32929,6 +32941,7 @@ class SpellSystemStates(Cleanable):
             owner_spellbook_id: Optional[str] = None,
             *,
             resolvable: Optional[bool] = None,
+            binding_key: Optional[Tuple[str, str]] = None,
     ) -> SpellSystemState:
         """
         Ensure a SpellSystemState exists for the given spell index and return it.
@@ -32968,6 +32981,11 @@ class SpellSystemStates(Cleanable):
         - Keep the published set of flagged lineages in step with the flag
           (`_publish_non_resolvable_membership_locked`), also before the gate
           publishes, so the refresh that event runs reads the new set.
+        - Record `binding_key` as the lineage's binding key when one is given;
+          None keeps the key recorded before. The downstream walk
+          (`mark_dependents_for_revalidation`) reaches the SpellContract
+          consumers of a lineage through this key, because a consumer declares
+          the key, not an edge to the lineage.
 
         This is intended to be called from Spellbook.bind(...) or equivalent.
 
@@ -32982,6 +33000,11 @@ class SpellSystemStates(Cleanable):
                 The selected version's `Spell.resolvable`, or None when the
                 caller does not state it (a registration that keeps the
                 selection, such as the ownership transfer's disable step).
+            binding_key:
+                The selected version's normalized `(frame_key, binding_key)` -
+                `Spell._key`, the form `SpellContract.canonical_key` takes - or
+                None to keep the recorded key (bind and notch pass it; the
+                ownership transfer's registrations keep the lineage's key).
 
         Returns:
             SpellSystemState:
@@ -32989,8 +33012,8 @@ class SpellSystemStates(Cleanable):
 
         Raises:
             TypeError:
-                If `resolvable` is neither None nor a bool; nothing is
-                registered.
+                If `resolvable` is neither None nor a bool, or `binding_key` is
+                neither None nor a pair of strings; nothing is registered.
             RuntimeError:
                 If the index selects no version.
 
@@ -33003,6 +33026,16 @@ class SpellSystemStates(Cleanable):
             raise TypeError(
                 "register_index(resolvable=...) takes the selected version's Spell.resolvable (a bool) or None; "
                 f"got {type(resolvable).__name__}. Pass spell.resolvable for the version the index selects."
+            )
+        if binding_key is not None and not (
+                type(binding_key) is tuple
+                and len(binding_key) == 2
+                and type(binding_key[0]) is str
+                and type(binding_key[1]) is str
+        ):
+            raise TypeError(
+                "register_index(binding_key=...) takes the selected version's normalized (frame_key, binding_key) "
+                f"pair of strings or None; got {binding_key!r}. Pass spell._key for the version the index selects."
             )
         index_id = spell_index.id
         current_id = spell_index.selected_spell_id
@@ -33045,6 +33078,9 @@ class SpellSystemStates(Cleanable):
                     if self._collection_frames_by_index is not None:
                         self._collection_frames_by_index.pop(index_id, None)
                 self._index_owner_spellbook_id[index_id] = owner_spellbook_id
+
+            if binding_key is not None:
+                self._binding_key_by_index[index_id] = binding_key
 
             # The selected version's capability, written before the gate below
             # publishes, so the RiskManager callback it runs already sees it.
@@ -33484,6 +33520,123 @@ class SpellSystemStates(Cleanable):
 
         return impacted
 
+    def mark_dependents_for_revalidation(self, index_ids: Iterable[Optional[str]]) -> Set[str]:
+        """
+        Mark for revalidation every lineage downstream of `index_ids`, by registry edge or by contract key.
+
+        Purpose:
+            A notch changes what every dependent of the notched lineage resolves: a dependent's plan names the
+            old version, and the topology it expands may too. `Spellbook._apply_notch` calls this with the
+            notched lineage, so each dependent's next meld rechecks its structure and rebuilds against the
+            versions now active (contract_recheck_on_notch_2026_10_16, D2). Mark only: no plan, context or
+            object is touched here.
+
+        Contract:
+            - The walk starts from the given lineages (the seeds) and follows, from every lineage it reaches,
+              the reverse dependency edges (`direct_dependents`, recorded by Phase 3's `update_dependencies`) and
+              the SpellContract consumers, in every Spellbook of the frame, of the binding key that lineage was
+              registered under (`register_index(binding_key=...)`) - a contract consumer declares a key, not an
+              edge. A lineage with no recorded key is followed by its edges only.
+            - A lineage reached by an edge gets `mark_transitively_dirty()` (gated, `impacted_by_dependency`,
+              transitively dirty); one reached as a contract consumer gets rule 2's contract mark (gated,
+              `contract_unvalidated`, not transitively dirty); one reached both ways gets the contract mark,
+              then the edge mark.
+            - Seeds are never marked (each caller gates its seeds for their own change), and a dependent with
+              no registered state is passed over. Each lineage is visited once, so a cycle of edges or contracts
+              terminates.
+            - Every marked lineage joins the dirty set. `set_validity` publishes a validity only when it
+              changes, so a walk over lineages already gated publishes nothing.
+
+        Args:
+            index_ids:
+                Spell-index ids (lineage ids) whose change starts the walk; empty and None ids are ignored.
+
+        Returns:
+            Set[str]:
+                The lineage ids this call marked, seeds excluded; empty when nothing is downstream.
+
+        Raises:
+            RuntimeError:
+                If the registry has been cleaned (`check_cleaned`), before or while waiting for its lock.
+
+        Threading:
+            Runs under the registry lock; each mark takes the state's lock inside it (registry -> state) and
+            publishes to RiskManager inside the registry lock and outside the state lock, the order every
+            registry mark takes. It takes no Book, conduit, ward or contract lock, so a caller may hold those.
+        """
+        self.check_cleaned()
+        seeds = {index_id for index_id in index_ids if index_id}
+        if not seeds:
+            return set()
+        with self._lock:
+            self.check_cleaned()
+            return self._mark_dependents_locked(seeds)
+
+    def _mark_dependents_locked(self, seeds: Set[str]) -> Set[str]:
+        """
+        Walk downstream of `seeds` and mark every lineage reached; the caller holds `_lock`.
+
+        Purpose:
+            The one body behind `mark_dependents_for_revalidation` (a notch) and the walk-on of
+            `mark_contract_dependents_dirty` (a contract change), so both fan out the same way.
+
+        Contract:
+            - Follows reverse edges and the contract consumers of each reached lineage's binding key, across
+              every Spellbook, visiting each lineage once (see `mark_dependents_for_revalidation`).
+            - Marks after the walk, so a lineage's mark knows every way it was reached: the contract mark
+              first, then the edge mark. Seeds are never marked; lineages with no registered state are
+              skipped; every marked lineage joins `_dirty_indexes`.
+
+        Args:
+            seeds:
+                Non-empty lineage ids the walk starts from.
+
+        Returns:
+            Set[str]:
+                The lineage ids marked.
+        """
+        edge_reached: Set[str] = set()
+        contract_reached: Set[str] = set()
+        visited: Set[str] = set(seeds)
+        worklist: List[str] = list(seeds)
+        while worklist:
+            current = worklist.pop()
+            followers: List[str] = []
+            state = self._states_by_index_id.get(current)
+            if state is not None:
+                dependents = state.direct_dependents
+                edge_reached.update(dependents)
+                followers.extend(dependents)
+            binding_key = self._binding_key_by_index.get(current)
+            if binding_key is not None:
+                for book_index in self._contract_dependents_by_spellbook.values():
+                    consumers = book_index.get(binding_key)
+                    if consumers:
+                        contract_reached.update(consumers)
+                        followers.extend(consumers)
+            for follower in followers:
+                if follower not in visited:
+                    visited.add(follower)
+                    worklist.append(follower)
+
+        marked: Set[str] = set()
+        for index_id in (edge_reached | contract_reached) - seeds:
+            state = self._states_by_index_id.get(index_id)
+            if state is None:
+                continue
+            if index_id in contract_reached:
+                state.set_validity(
+                    SpellValidity.gated,
+                    change_reason=SpellStateChangeReason.contract_unvalidated,
+                    flags_to_add=[SpellState.contract_unvalidated],
+                    transitively_dirty=False,
+                )
+            if index_id in edge_reached:
+                state.mark_transitively_dirty()
+            self._dirty_indexes.add(index_id)
+            marked.add(index_id)
+        return marked
+
     def consume_dirty_indexes(self) -> List[str]:
         """
         Pop and return the current set of dirty spell-index ids.
@@ -33605,7 +33758,8 @@ class SpellSystemStates(Cleanable):
         - Remove the spell index from `_dirty_indexes`.
         - Take the lineage out of the published set of flagged lineages.
         - Remove the local topology entry for the current spell id.
-        - Remove collection/contract indices for the owning spellbook.
+        - Remove collection/contract indices for the owning spellbook, and
+          forget the lineage's binding key.
         - Detach this spell index from reverse-dependency edges.
         - Retire the current spell id's resolution verdicts in every registered
           `ConduitResolutionState` (`_forget_resolution_verdicts_locked`), so no
@@ -33649,6 +33803,7 @@ class SpellSystemStates(Cleanable):
                         change_reason=SpellStateChangeReason.cleaned_up_spell,
                     )
                 dirty_indexes.discard(index_id)
+                self._binding_key_by_index.pop(index_id, None)
                 return None
 
             current_spell_id = removed_state.current_spell_id
@@ -33665,6 +33820,7 @@ class SpellSystemStates(Cleanable):
 
             if self._index_owner_spellbook_id is not None:
                 owner_spellbook_id = self._index_owner_spellbook_id.pop(index_id, None)
+            self._binding_key_by_index.pop(index_id, None)
 
             if owner_spellbook_id is not None:
                 self._remove_index_from_collection_index(owner_spellbook_id, index_id)
@@ -34170,8 +34326,15 @@ class SpellSystemStates(Cleanable):
             - Impacted spell indexes are gated with the `contract_unvalidated` flag
               rather than marked transitively dirty, because the topology did
               not change; only contract truth must be recomputed.
+            - The mark walks on (`_mark_dependents_locked`, D2 of
+              contract_recheck_on_notch_2026_10_16): whatever depends on a
+              consumer it marks - by registry edge, or as a contract consumer of
+              that consumer's binding key in any Spellbook - is marked for
+              revalidation too, so a dependent built against the old provider
+              rebuilds at its next meld.
         Returns:
-            Set[str]: Spell-index ids marked dirty by this call.
+            Set[str]: The consumers this call gated (the lineages the walk-on
+            marked are not included).
         """
         if not spellbook_id:
             return set()
@@ -34219,6 +34382,9 @@ class SpellSystemStates(Cleanable):
                     )
                     self._dirty_indexes.add(index_id)
                     impacted.add(index_id)
+
+            if impacted:
+                self._mark_dependents_locked(impacted)
 
         return impacted
 
@@ -43831,7 +43997,7 @@ END FILE: src/melder/aether/aetheric_mediator/unwind_conflict_error.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/conduit/conduit.py
-CONTENT SHA256: 872cd917eef2e8cb2ead3ee8ec3d68418f6a89fbd659d75a21eebac6dc61a9a0
+CONTENT SHA256: b3c9d9f6ab123dfadbde190813b29c0f9bfa55bb5f07a31a75d83194ac219f0a
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -49491,8 +49657,11 @@ class Conduit(Cleanable):
               notch back by its spell_id restores it.
             - Notching to the index's active version is a no-op: nothing moves and no
               borrower is touched.
-            - After the window, every linked peer parks its copy of the outgoing version and
-              index-link borrowers move to the new one, which they build at their next meld.
+            - After the window, every linked peer parks its copy of the outgoing version, a
+              peer holding a parked copy of the incoming version (a grant of that version) has
+              it made active again, and index-link borrowers move to the new one. The consumers
+              of every copy that changed are marked and revalidate at their next meld; objects
+              already built keep what they were built with (rule 2, 2026-10-16).
             - The default `change_reason` is `selected_different_spell`, which records
               an ordinary selection rather than a mutation. Pass a mutation reason
               explicitly when that is what happened, because this default will
@@ -49562,7 +49731,8 @@ class Conduit(Cleanable):
         # admits the notch (it owns the change-control envelope); the owning
         # spellbook performs the local switch inside the held window; then this
         # conduit -- the only thing that knows about links -- walks its peers so
-        # each borrower's spellbook parks its now-stale borrowed copy.
+        # each borrower's spellbook parks its now-stale borrowed copy and makes a
+        # parked copy of the incoming version active again.
         outgoing_id = spell_index.selected_spell_id
         mediator.start_transaction(
             identity=self._transaction_identity,
@@ -49581,6 +49751,10 @@ class Conduit(Cleanable):
         mediator.end_transaction(expected_type="notch", success=True)
         if outgoing_id is not None and outgoing_id != spell.spell_id:
             self._deactivate_borrowed_spell(outgoing_id)
+            # Outgoing first, so no peer holds two active copies under one key. A version
+            # grant parked by an earlier notch away comes back here (D3, 2026-10-16); the
+            # peer Book's reactivation marks the copy's consumers for revalidation.
+            self._activate_borrowed_spell(spell.spell_id)
             # Index-link receivers follow the lineage: move their subscription head
             # to the new active member (park old, activate new) via the ward.
             self._conduit_ward._emit_index_notch(spell_index, outgoing_id, spell.spell_id)
@@ -50091,6 +50265,51 @@ class Conduit(Cleanable):
             if peer_spellbook is None:
                 continue
             peer_spellbook._inactivate_contract_spell(owner_id, spell_id)
+
+    def _activate_borrowed_spell(self, spell_id: str) -> None:
+        """
+        Internal
+
+        Owner-side borrower fan-out, the mirror of `_deactivate_borrowed_spell`: walk
+        this conduit's active links and make every peer's PARKED contracted copy of
+        `spell_id` active again. When this conduit notches an index back to a version a
+        peer was granted (`add_spell_to_contract`, a version grant), the copy the notch
+        away parked becomes that peer's active copy once more (D3, 2026-10-16); a grant
+        of a version that was parked when it was made becomes active the same way.
+
+        Contract:
+            - `notch_spell` calls it after the notch transaction and after the
+              deactivate fan-out, so a peer never holds two active copies under one key.
+            - The per-peer call (`Spellbook._activate_contract_spell`) is idempotent: a
+              no-op for a peer holding no parked copy of `spell_id`, so a peer that never
+              borrowed the version, or already holds it active, is untouched.
+            - The reactivation is the peer Book's `_reactivate_contracted_spell`, which
+              marks the consumers of the copy's key `gated` + `contract_unvalidated`
+              (rule 2): their next meld revalidates and rebuilds against the copy.
+              Objects already built are untouched.
+            - An index-link receiver holding a parked copy of `spell_id` gets it back
+              here; `ConduitWard._emit_index_notch` then finds it active, the end state
+              that emission reached on its own before.
+
+        Threading:
+            Takes no lock of its own. The ward's link listing (`_get_links`) holds the
+            ward lock for the read only; each peer Book takes its own lock inside the call
+            and releases it before the mark, as in the deactivate fan-out.
+
+        Args:
+            spell_id (str): Version id of the spell whose parked borrowed copies to make
+                active again (the notch's incoming version).
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError: If this conduit, or a linked peer's Spellbook, has been cleaned.
+        """
+        self.check_cleaned()
+        owner_id = self._id
+        for peer in self._conduit_ward._get_links():
+            peer._spellbook._activate_contract_spell(owner_id, spell_id)
 
     def sever_link(self, target_conduit: "Conduit") -> bool:
         """
@@ -51623,7 +51842,7 @@ END FILE: src/melder/aether/conduit/conduit.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/conduit/conduit_cluster.py
-CONTENT SHA256: 133f40a2dbe6de46b59a575dab3947b5371215694b4db66ad285d769a23cce09
+CONTENT SHA256: 8a017174c452a0ec73dce6eed58a47fa3b1135a20c85e68b800eef49ad1164fa
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -53112,7 +53331,7 @@ class ConduitCluster(Cleanable):
 
         Args:
             owner_id: Conduit id that owns the shared spell.
-            spell_id: Spell version id for the shared root.
+            spell_id: The shared root's spell_id.
 
         Returns:
             str: Deterministic cluster-scoped root identifier.
@@ -53422,7 +53641,7 @@ END FILE: src/melder/aether/conduit/conduit_state/conduit_state.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/conduit/conduit_ward/conduit_ward.py
-CONTENT SHA256: f8f1644dd588a0001f1a9a69ec145647a2c221a68d17e47949fa269159e9a1cd
+CONTENT SHA256: 16de3e7d18f7b74871f878ba1f0de65785da1e17e91c6f68a705df4007f14869
 SOURCE ENCODING: utf-8
 ================================================================================
 import inspect
@@ -55286,9 +55505,15 @@ class ConduitWard(Cleanable):
 
         Adds a single spell to an existing contract with a peer conduit.
 
-        This now contracts the **SpellIndex lineage** and uses the spell's
-        current version ID only as the initial reference. On mutation, the
-        lineage will advance, and lookups will resolve to the new version.
+        It contracts one version of the spell's SpellIndex lineage. The borrower
+        holds a copy of that version: active while the version is the lineage's
+        active member, parked while it is not. A notch away parks it on every
+        linked peer and a notch back makes it active again, and the copy's
+        consumers revalidate at their next meld; a grant of a parked version
+        starts parked and becomes active when the owner notches to it
+        (corrected 2026-10-16: this said lookups resolve to each new version,
+        which only an index link does). An index link (`_add_index_to_contract`)
+        follows the lineage to every new version instead.
         When a new contract entry is added, cached consumer creations that
         declare a matching SpellContract are invalidated so future melds
         re-resolve dependencies.
@@ -55754,7 +55979,8 @@ class ConduitWard(Cleanable):
         `new_spell_id` (`IndexDetail.update_selected`) and tell the receiving
         spellbook to park the old version and activate the new one -- index-link
         receivers follow the lineage. Version-anchored borrowers are handled
-        separately by the conduit's deactivate fan-out.
+        separately by the conduit's deactivate and activate fan-outs
+        (`Conduit._deactivate_borrowed_spell`, `Conduit._activate_borrowed_spell`).
 
         Per-receiver calls are idempotent (the borrower spellbook no-ops when it is
         not holding the id), so a receiver that has not yet been given the new
@@ -56085,7 +56311,8 @@ class ConduitWard(Cleanable):
         try:
             # FORWARDREF: only defaults are read here, and a VALUE-format read
             # raises NameError when an annotation names a TYPE_CHECKING-only type
-            # (Python 3.14 lazy annotations). Mirrors Meld._iter_spell_contract_defaults.
+            # (Python 3.14 lazy annotations). Mirrors the Phase 8 analyzer's
+            # SpellOccurrenceGraphAnalyzerStrategy._iter_spell_contract_defaults.
             signature = inspect.signature(call_target, annotation_format=Format.FORWARDREF)
         except (TypeError, ValueError):
             return set()
@@ -57387,7 +57614,7 @@ END FILE: src/melder/aether/conduit/conduit_ward/conduit_ward.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/conduit/conduit_ward/contract/contract.py
-CONTENT SHA256: c6c7ebd5a1b23775076f1464145e828f2b22b8c435c97b9ff4df0601af35cd9b
+CONTENT SHA256: 3f45f7a56e441f22fd0ffef9ba17530b3f99ee6558f546889c8fdc39dfd6164b
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import Optional, Any, Dict, ClassVar
@@ -57684,7 +57911,7 @@ class Contract(Cleanable):
 
         Args:
             ward: Ward whose map should be updated.
-            spell_id: Version ID key to remove.
+            spell_id: The spell_id key to remove.
         """
         detail_map = self._get_detail_map(ward)
         if spell_id in detail_map:
@@ -61292,7 +61519,7 @@ END FILE: src/melder/aether/conduit/creations/conduit_creations.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/conduit/creations/creations.py
-CONTENT SHA256: 3dc1a77d4e0fee211408c80560ce2023481f98a8072ba085075352327211d382
+CONTENT SHA256: 61d04329d294d2699c975843caef812d33382b6d6ae2b06bed80ed44f8cbef43
 SOURCE ENCODING: utf-8
 ================================================================================
 from threading import RLock
@@ -62482,7 +62709,7 @@ class Creations(Cleanable):
 
         Args:
             spell_id:
-                The managed version id.
+                The managed spell's spell_id.
 
         Returns:
             Optional[ManagedSpellQuantity]: The pool, or None.
@@ -62518,7 +62745,7 @@ class Creations(Cleanable):
 
         Args:
             spell_id:
-                The managed version id the pool is held under.
+                The managed spell's spell_id the pool is held under.
             pool:
                 The pool to give up.
 
@@ -63340,7 +63567,7 @@ END FILE: src/melder/aether/conduit/creations/managed_spell_lease.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/conduit/creations/managed_spell_quantity.py
-CONTENT SHA256: ce7a1e5a4fec8d711a85c4873a09335536dbf63d949234aaffb70588a2b961c0
+CONTENT SHA256: 723eee75a0d2f396cf75d1a0822cfa46e6e065d9afb425e691884fb347bbc769
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -63609,7 +63836,7 @@ class ManagedSpellQuantity(AbstractElasticPool[Any]):
         Return the managed Spell this pool belongs to (borrowed).
 
         Contract:
-            The current Spell object of the version id: a rebind that meets this pool under the same id re-points
+            The current Spell object of the spell_id: a rebind that meets this pool under the same id re-points
             it (`Creations.ensure_managed_quantity`). It may be cleaned by its Book while the pool lives on.
 
         Raises:
@@ -63660,10 +63887,10 @@ class ManagedSpellQuantity(AbstractElasticPool[Any]):
     @property
     def spell_id(self) -> str:
         """
-        Return the version id the pool is stored under.
+        Return the spell_id the pool is stored under.
 
         Returns:
-            str: The managed spell's version id (readable after cleanup).
+            str: The managed spell's spell_id (readable after cleanup).
         """
         return self._spell_id
 
@@ -64179,7 +64406,7 @@ class ManagedSpellQuantity(AbstractElasticPool[Any]):
 
     def _rebind_spell(self, spell: Spell) -> None:
         """
-        Point the pool at the current Spell object of its version id.
+        Point the pool at the current Spell object of its spell_id.
 
         Purpose:
             A definition removed and bound again under the same content-stable id meets its old pool (as a slotted
@@ -64193,7 +64420,7 @@ class ManagedSpellQuantity(AbstractElasticPool[Any]):
             reference stores; no user code.
 
         Args:
-            spell: The current Spell of this version id.
+            spell: The current Spell of this spell_id.
 
         Returns:
             None.
@@ -64286,7 +64513,7 @@ END FILE: src/melder/aether/conduit/creations/managed_spell_quantity.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/conduit/creations/release_managed_spell.py
-CONTENT SHA256: 7da4851b6cc85de496ad95cde567e2a7a402275729a9aef9e77a5f05841249f6
+CONTENT SHA256: ba1bc887f06b470ebee7dd4a07d0f02221d0fe0b8c85a0eb9440eb5fee81230a
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -64665,7 +64892,7 @@ class ReleaseManagedSpell(Cleanable):
             obj:
                 An object leased from a managed spell's pool.
             spell_id:
-                Optional version id picking one pool.
+                Optional spell_id picking one pool.
             conduit:
                 Optional root conduit, or a lesser of it, picking the pools that root holds.
 
@@ -64708,7 +64935,7 @@ class ReleaseManagedSpell(Cleanable):
             obj:
                 An object leased from a managed spell's pool.
             spell_id:
-                Optional version id picking one pool.
+                Optional spell_id picking one pool.
             conduit:
                 Optional root conduit, or a lesser of it, picking the pools that root holds.
 
@@ -64742,7 +64969,7 @@ class ReleaseManagedSpell(Cleanable):
             objects:
                 The leased objects (any iterable, consumed once).
             spell_id:
-                Optional version id picking one pool for every object.
+                Optional spell_id picking one pool for every object.
             conduit:
                 Optional root conduit, or a lesser of it, picking the pools that root holds.
 
@@ -68020,11 +68247,10 @@ END FILE: src/melder/aether/conduit/meld/creation_context/creation_context_rebui
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/conduit/meld/meld.py
-CONTENT SHA256: c4e91112260eab06a6c0ba52689b862f25649a2f717181f48b1bfcc43cfdffa0
+CONTENT SHA256: c6f0737b5ba07829ddb19849ecd97ca682a506bf6c159f00c3ea4f9e495124b1
 SOURCE ENCODING: utf-8
 ================================================================================
 from abc import ABC, abstractmethod
-from annotationlib import Format
 from contextlib import AbstractContextManager, nullcontext
 import inspect
 from threading import RLock
@@ -68054,11 +68280,11 @@ from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state import
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import (
     SpellStateChangeReason,
 )
-from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.aether.conduit.meld.creation_context.creation_context_rebuild import (
     CreationContextRebuild,
 )
 from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell_compiler.spell_compiler_system import (
         SpellCompilerSystem,
@@ -68068,6 +68294,7 @@ if TYPE_CHECKING:
     from melder.aether.spellbook.bind.spell_index import SpellIndex
     from melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager import ChangeControlManager
     from melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state import ConduitResolutionState
+    from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
     from melder.aether.conduit.meld.creation_context.creation_context import CreationContext
     from melder.utilities.synchronization.creation_gate import CreationGate
 
@@ -68089,8 +68316,12 @@ class Meld(Cleanable, ABC):
     - provide the shared refusal diagnostic for non-resolvable registrations;
       concrete execution doors enforce capability while observational lookup remains available
     - normalize per-call override payloads
-    - enforce structural validity, contract validity, and per-conduit
-      resolution validity before instance access
+    - enforce structural validity and per-conduit resolution validity before
+      instance access; contract validity rides on structural validity (a
+      provider change marks its SpellContract consumers, and their structural
+      rerun rechecks the contract - no per-meld contract scan, 2026-10-16)
+    - before a plan compiles, refresh the structure of every stale dependency
+      the plan expands (`_refresh_stale_dependencies`, 2026-10-16)
     - reuse existing creations when allowed, or dispatch into creation-context
       runtime lanes when construction is required
     - run pre-cast, activation, post-cast, and meld-level hooks when present
@@ -68152,7 +68383,8 @@ class Meld(Cleanable, ABC):
     High-level activation flow:
     1. Resolve the target spell from the requested identity inputs.
     2. Normalize per-call override payloads.
-    3. Enforce validity/change-control gates and rerun lazy phases when needed.
+    3. Enforce validity/change-control gates, refresh the stale dependencies a
+       compile will expand, and rerun lazy phases when needed.
     4. Reuse an existing creation or build through `CreationContext`.
     5. Fire activation and meld-level hooks when the route requires them.
     6. Return the final resolved instance.
@@ -68191,9 +68423,15 @@ class Meld(Cleanable, ABC):
         produce an instance with the wrong lifetime, which is far worse than a
         refusal.
         Meld is also the gate, not just the resolver: it enforces structural
-        validity, contract validity, per-conduit resolution validity, and
-        change-control dirty-root state BEFORE any instance is handed back, and
-        re-runs the lazy phases when a lineage's validity is UNKNOWN or GATED.
+        validity, per-conduit resolution validity, and change-control
+        dirty-root state BEFORE any instance is handed back, and re-runs the
+        lazy phases when a lineage's validity is UNKNOWN or GATED. Contract
+        validity is part of structural validity: a change of the provider a
+        SpellContract consumer resolves marks the consumer, and its structural
+        rerun (Phase 4) rechecks the contract; a satisfied contract costs no
+        per-meld scan (rule 2, 2026-10-16). Before a plan compiles, the gate
+        refreshes the structure of every stale dependency the plan expands, so
+        no plan is compiled over a dependency's stale topology (D2).
 
     AGENT_ACCESS: internal
 
@@ -68960,30 +69198,54 @@ class Meld(Cleanable, ABC):
         Ensure the spell is structurally valid enough to continue toward
         resolution.
 
-        This is the main pre-resolution validity gate. It combines three
+        This is the main pre-resolution validity gate. It combines four
         responsibilities:
 
-        - rerun structural phases when the lineage is unknown or gated
+        - when the spell will compile at this meld (`_may_compile`), first
+          refresh the structure of every stale dependency its plan expands
+          (`_refresh_stale_dependencies`, D2 of 2026-10-16); a valid spell with
+          a valid verdict reads no topology
+        - rerun structural phases when the lineage is unknown or gated; for a
+          SpellContract consumer that rerun is the contract recheck: a change
+          of its provider marked it `gated`, Phase 4 checks the provider is
+          present, and a consumer whose provider is gone stays `gated`, so the
+          gate raises the first meld's SpellbookValidationError
         - gate the prior conduit-local resolution verdict after a structural
           rerun so changed dependency selection cannot retain an old executor
-        - force contract-driven revalidation when `SpellContract` defaults are
-          present and need to invalidate conduit-local resolution state
         - hand off to per-conduit resolution gating when structural validity is
-          no longer the blocking issue
+          no longer the blocking issue; a `resolution_required` spell is left to
+          the deferred lane, which every door runs right after this gate
+
+        A satisfied SpellContract is not rechecked on every meld (rule 2,
+        2026-10-16): the per-meld contract scan and its forced 5-11 rebuild are
+        retired. The borrower Book's contracted-map mutators and the registry's
+        downstream walk mark a consumer `gated` when the provider it resolves
+        changes, and that state brings the consumer here.
 
         Threading:
-            Structural reruns are serialized under `spell._lock` so concurrent
-            meld calls do not race duplicate validation work. Under dynamic
-            ownership the rerun first enters the spell's rebuild window (see
-            `_rebuild_window`): the index gate is frozen and drained before the
-            spell lock is taken, because Phase 3 resets the shared context.
+            The catch-up runs first and holds no lock while it walks; it takes
+            one stale dependency's rebuild window, then that dependency's lock,
+            only while refreshing it. Structural reruns are serialized under
+            `spell._lock` so concurrent meld calls do not race duplicate
+            validation work. Under dynamic ownership the rerun first enters the
+            spell's rebuild window (see `_rebuild_window`): the index gate is
+            frozen and drained before the spell lock is taken, because Phase 3
+            resets the shared context.
+
+        Args:
+            spell: The spell being melded.
 
         Raises:
             SpellbookValidationError: If structural or conduit-local validity
-                cannot be promoted into a runnable state.
+                cannot be promoted into a runnable state, or if a stale
+                dependency comes out of its refresh broken or still not valid
+                (the error then lists that dependency).
             MeldExecutionError: If change-control reports the root as dirty for
                 the active resolution conduit.
         """
+        if self._may_compile(spell):
+            self._refresh_stale_dependencies(spell)
+
         # Structural gating
         if self._gated_validation_required(spell):
             with self._rebuild_window(spell), spell._lock:
@@ -69005,8 +69267,6 @@ class Meld(Cleanable, ABC):
                     self._force_resolution_revalidation(
                         spell, change_reason=SpellStateChangeReason.structure_changed,
                     )
-
-        self._check_contracts_and_force_revalidation(spell)
 
         # Resolution gating (per-conduit)
         if not spell.resolution_required:
@@ -69034,7 +69294,11 @@ class Meld(Cleanable, ABC):
 
         Contract:
             - Fast-path no-op when `resolution_required` is False.
-            - When required, runs exactly one target-local pass under the
+            - When required, first refreshes the structure of the stale
+              dependencies its pass will expand (`_refresh_stale_dependencies`),
+              before its own window and lock; the gate leaves that catch-up to
+              this lane for a flagged spell (2026-10-16).
+            - Then runs exactly one target-local pass under the
               spell's rebuild window and lock: the deferred plan pass
               (`8-11`) for an existing creation or a spell that is its
               current Phase 5 root; otherwise the full target pass
@@ -69056,9 +69320,14 @@ class Meld(Cleanable, ABC):
         Raises:
             RuntimeError: If no resolution conduit id is available.
             SpellbookValidationError: If a full target pass leaves the spell
-                unresolved for the conduit.
+                unresolved for the conduit, or a stale dependency comes out of
+                its refresh broken or not valid (the error lists it).
             Exception: Re-raises deferred resolution failures.
         """
+        if spell.resolution_required:
+            # The catch-up (D2) runs before this spell's window and lock; it takes
+            # each stale dependency's own window and lock, one at a time.
+            self._refresh_stale_dependencies(spell)
         # Rebuild window first (dynamic only), then the spell lock: see
         # `_rebuild_window`. Phase 11 resets the shared context.
         with self._rebuild_window(spell), spell._lock:
@@ -69333,122 +69602,305 @@ class Meld(Cleanable, ABC):
             raise SpellbookValidationError([spell])
         raise SpellbookValidationError([spell])
 
-    def _check_contracts_and_force_revalidation(self, spell: Spell) -> None:
+    def _may_compile(self, spell: Spell) -> bool:
         """
-        Validate SpellContract sockets and force resolution revalidation.
-
-        Purpose:
-            Ensure that any SpellContract defaults declared on the spell can
-            be resolved via the current Spellbook's contracted spell maps.
-            When contracts are present and resolvable, force the resolution
-            validity to gated so phases 5/8/9/10/6/7 re-run on this conduit.
+        Decide whether the spell will compile at this meld, so the gate must
+        refresh its stale dependencies first.
 
         Contract:
-            - If the spell declares no SpellContract defaults, this is a no-op.
-            - If any SpellContract cannot be resolved to a contracted provider,
-              raise MeldExecutionError with a contract-specific diagnostic.
-            - If all contracts resolve, mark resolution validity as gated to
-              force revalidation on this conduit.
+            - False for a spell flagged `resolution_required`: the deferred
+              lane, which every door runs right after the gate, compiles it and
+              runs its own catch-up first (`_ensure_runtime_resolution_ready`),
+              so the gate does not walk for it twice.
+            - True when the lineage has no registered state, or is `unknown` or
+              `gated`: the structural branch reruns it and gates its verdict,
+              so a 5-11 pass follows.
+            - For a `valid` lineage, True exactly when its effective verdict for
+              the resolution conduit (`_get_resolution_validity`) is `unknown`
+              or `gated`, the verdicts `_ensure_resolution_resolvable` rebuilds.
+            - False otherwise: an `invalid`, `disabled` or `cleaned` lineage or
+              verdict fails without compiling, and a valid spell with a valid
+              verdict compiles nothing, so the gate stays two state reads.
+            - Reads state only and mutates nothing.
 
         Args:
-            spell: Spell under resolution.
-
-        Raises:
-            MeldExecutionError:
-                When a SpellContract has no contracted provider or contracted
-                maps are inconsistent.
-        """
-        contracts = self._iter_spell_contract_defaults(spell)
-        if not contracts:
-            return
-
-        spell_id = spell.spell_index.selected_spell_id
-        if spell_id is None:
-            raise RuntimeError("SpellIndex.selected_spell_id is required for SpellContract validation.")
-        for param_name, contract in contracts:
-            if contract is None:
-                continue
-            lookup_key = contract.canonical_key
-            try:
-                provider = self._resolve_contracted_by_lookup_key(lookup_key)
-            except Exception as exc:
-                raise MeldExecutionError(
-                    spell_id=spell_id,
-                    spell_name=spell.spell_name,
-                    node_id=spell_id,
-                    param_name=param_name,
-                    message=(
-                        "SpellContract could not be resolved. "
-                        f"Contract lookup failed for key {lookup_key} "
-                        f"on param '{param_name}' for spell '{spell.spell_name}'. "
-                        f"Contract={contract!r}."
-                    ),
-                    inner=exc,
-                ) from exc
-            if provider is None:
-                frame_key, binding_key = lookup_key
-                raise MeldExecutionError(
-                    spell_id=spell_id,
-                    spell_name=spell.spell_name,
-                    node_id=spell_id,
-                    param_name=param_name,
-                    message=(
-                        "SpellContract could not be resolved. "
-                        "Missing contracted provider for key "
-                        f"(frame_key='{frame_key}', binding_key='{binding_key}') "
-                        f"on param '{param_name}' for spell '{spell.spell_name}'. "
-                        f"Contract={contract!r}."
-                    ),
-                )
-
-        self._force_resolution_revalidation(spell)
-
-    @staticmethod
-    def _iter_spell_contract_defaults(
-            spell: Spell,
-    ) -> List[Tuple[str, SpellContract]]:
-        """
-        Return SpellContract defaults discovered in the spell's call signature.
-
-        Contract:
-            - Returns an empty list when the signature cannot be inspected.
-            - Skips self/cls and var-arg parameters.
-            - Only parameters with SpellContract defaults are returned.
-            - Preserves unresolved Python 3.14 annotation names as ForwardRefs;
-              checking defaults must not evaluate TYPE_CHECKING-only imports.
-
-        Args:
-            spell: Spell whose callable signature is inspected.
+            spell: The spell being melded.
 
         Returns:
-            List[Tuple[str, SpellContract]]: Parameter names paired with defaults.
+            bool: True when a compile follows at this meld.
         """
-        try:
-            call_target = spell.spell
-        except AttributeError:
+        if spell.resolution_required:
+            return False
+        state = spell.system_state
+        if state is None:
+            return True
+        validity = state.validity
+        if validity is SpellValidity.unknown or validity is SpellValidity.gated:
+            return True
+        if validity is not SpellValidity.valid:
+            return False
+        conduit_id = self._resolution_conduit_id
+        if not conduit_id:
+            return False
+        resolution_state = spell._spell_system_states.get_conduit_resolution_state(conduit_id)
+        verdict = self._get_resolution_validity(spell, resolution_state)
+        return verdict is SpellValidity.unknown or verdict is SpellValidity.gated
+
+    @staticmethod
+    def _is_stale(spell: Spell) -> bool:
+        """
+        Report whether a dependency's structure is stale: its lineage is
+        registered and `gated` or `unknown`.
+
+        Contract:
+            - A registered lineage that is `gated` or `unknown` needs phases 1-4
+              before a plan that expands it compiles: a notch, a provider change
+              or the registry's downstream walk left it so.
+            - A spell with no registered state is not stale: Phase 5 drops an id
+              without a registered state from a plan's scope.
+            - `invalid`, `disabled` and `cleaned` are not stale either; the
+              compiling pass reports them as it always has.
+            - Reads state only.
+
+        Args:
+            spell: A dependency the plan expands.
+
+        Returns:
+            bool: True when the dependency must be refreshed before the plan
+                compiles.
+        """
+        state = spell.system_state
+        if state is None:
+            return False
+        validity = state.validity
+        return validity is SpellValidity.gated or validity is SpellValidity.unknown
+
+    def _refresh_stale_dependencies(self, spell: Spell) -> None:
+        """
+        Refresh the structure of every stale lineage the spell's plan expands,
+        before the plan compiles (D2, 2026-10-16).
+
+        Purpose:
+            A resolution pass never reruns a dependency's structural phases:
+            Phase 8 expands each dependency through the topology that
+            dependency's own last Phase 3 recorded, and Phase 5 drops a version
+            id a notch took out of the pool. A plan compiled over the stale
+            topology of a dependency two hops from a notch misses the parked
+            version and records a visibility failure that keeps the spell
+            refused. The catch-up reruns phases 1-4 of each stale lineage first
+            and resets that lineage's own plan, so it rebuilds at its own next
+            meld too.
+
+        Contract:
+            - Walks depth first from the spell's recorded topology
+              (`_iter_planned_dependencies`) and visits each dependency once;
+              the spell itself is never revisited, so a cycle ends the walk.
+            - Refreshes a dependency (`_refresh_dependency_structure`) only when
+              `_is_stale` says so, and reads its topology after the refresh, so
+              the walk follows what the rerun Phase 3 recorded. A valid
+              dependency is walked through, not refreshed: a stale lineage
+              further down is still reached, once.
+            - Resolves through the spell's Book (`spell._spellbook`, the Book
+              its resolution pass compiles in) and the spell's registry at every
+              depth.
+
+        Threading:
+            Holds no lock while walking; each refresh takes one dependency's
+            rebuild window and lock and releases both before the walk goes on.
+            A topology read takes the registry lock for the read only. The
+            caller holds neither this spell's lock nor an index ticket.
+
+        Args:
+            spell: The spell about to compile.
+
+        Raises:
+            SpellbookValidationError: When a dependency comes out of its refresh
+                broken or still not valid (the error lists that dependency).
+            RuntimeError: When a dependency must be expanded or refreshed but its
+                Book is unavailable.
+        """
+        spellbook = spell._spellbook
+        spell_system_states = spell._spell_system_states
+        visited = {spell.spell_id}
+        pending = [spell]
+        while pending:
+            current = pending.pop()
+            for dependency in self._iter_planned_dependencies(current, spellbook, spell_system_states):
+                if dependency.spell_id in visited:
+                    continue
+                visited.add(dependency.spell_id)
+                if self._is_stale(dependency):
+                    self._refresh_dependency_structure(dependency)
+                pending.append(dependency)
+
+    def _iter_planned_dependencies(
+            self,
+            spell: Spell,
+            spellbook: Optional[Spellbook],
+            spell_system_states: SpellSystemStates,
+    ) -> List[Spell]:
+        """
+        Return the dependencies a plan of `spell` expands, at the versions their
+        lineages select now, as Phase 8 expands them.
+
+        Contract:
+            - Reads the topology Phase 3 last recorded for the spell's version
+              (`get_local_topology_by_id`) before anything else; a spell with no
+              recorded topology contributes no dependency and needs no Book.
+            - Every socket's `target_spell_ids` is a dependency, as Phase 8's
+              topology expansion takes it whatever the socket kind; a
+              SPELL_CONTRACT socket with a `contract_key` adds the provider the
+              Book's active contracted maps hold for that key (lookup map, then
+              index, then copy - the path Phase 8 resolves a contract through).
+            - Each dependency is taken to the version its lineage selects now
+              (`_current_in_pool`): a recorded id a notch superseded leads to
+              the incoming version, and an id the Book's pool does not hold is
+              skipped, as Phase 5 drops it.
+            - May return one lineage twice (two sockets naming it); the caller's
+              visited set keeps one.
+            - Walks the outer contracted lookup map through a one-call snapshot;
+              every other read is one dict get.
+
+        Args:
+            spell: The spell whose recorded topology is expanded.
+            spellbook: The compiling Book (the melded spell's), whose pool and
+                contracted maps the plan resolves through.
+            spell_system_states: The frame's lineage registry.
+
+        Returns:
+            List[Spell]: The planned dependencies, current versions only.
+
+        Raises:
+            RuntimeError: When the spell has a recorded topology but no Book is
+                available to resolve it through.
+        """
+        topology = spell_system_states.get_local_topology_by_id(spell.spell_id)
+        if topology is None:
             return []
-
-        try:
-            signature = inspect.signature(call_target, annotation_format=Format.FORWARDREF)
-        except (TypeError, ValueError):
-            return []
-
-        contracts: List[Tuple[str, SpellContract]] = []
-        for param_name, parameter in signature.parameters.items():
-            if param_name in ("self", "cls"):
+        if spellbook is None:
+            raise RuntimeError("Spell has no owning Spellbook surface.")
+        spell_id_pool = spellbook._spell_id_pool
+        dependencies: List[Spell] = []
+        for socket in topology.sockets:
+            for target_spell_id in socket.target_spell_ids:
+                target = self._current_in_pool(spell_system_states, spell_id_pool, target_spell_id)
+                if target is not None:
+                    dependencies.append(target)
+            contract_key = socket.contract_key
+            if socket.socket_kind is not SocketKind.SPELL_CONTRACT or contract_key is None:
                 continue
-            if parameter.kind in (
-                    inspect.Parameter.VAR_POSITIONAL,
-                    inspect.Parameter.VAR_KEYWORD,
-            ):
-                continue
-            if parameter.default is inspect.Parameter.empty:
-                continue
-            default_value = parameter.default
-            if isinstance(default_value, SpellContract):
-                contracts.append((param_name, default_value))
+            for conduit_id, lookup_map in list(spellbook._lookup_contracted_spells.items()):
+                spell_index = lookup_map.get(contract_key)
+                if spell_index is None:
+                    continue
+                contracted_map = spellbook._contracted_spells.get(conduit_id)
+                if contracted_map is None:
+                    continue
+                provider = contracted_map.get(spell_index)
+                if provider is None:
+                    continue
+                target = self._current_in_pool(spell_system_states, spell_id_pool, provider.spell_id)
+                if target is not None:
+                    dependencies.append(target)
+        return dependencies
 
-        return contracts
+    @staticmethod
+    def _current_in_pool(
+            spell_system_states: SpellSystemStates,
+            spell_id_pool: Dict[str, Spell],
+            spell_id: str,
+    ) -> Optional[Spell]:
+        """
+        Return the active Spell of the lineage a version id belongs to, from the
+        compiling Book's pool, or None.
+
+        Contract:
+            - The registry maps every version id an index has selected to its
+              lineage (`get_by_spell_id`; a notch adds the incoming id and keeps
+              the old one), so a superseded id leads to the lineage's current
+              version id; an id the registry does not know is looked up as is.
+            - Returns the pool's Spell for that id, or None when the Book's pool
+              does not hold it (Phase 5 drops such an id from a scope).
+            - Reads only.
+
+        Args:
+            spell_system_states: The frame's lineage registry.
+            spell_id_pool: The compiling Book's active pool (`_spell_id_pool`).
+            spell_id: A version id a topology or a contracted map recorded.
+
+        Returns:
+            Optional[Spell]: The lineage's active Spell in the Book, or None.
+        """
+        state = spell_system_states.get_by_spell_id(spell_id)
+        current_spell_id = state.current_spell_id if state is not None else spell_id
+        return spell_id_pool.get(current_spell_id)
+
+    def _refresh_dependency_structure(self, dependency: Spell) -> None:
+        """
+        Rerun phases 1-4 of one stale dependency with its owner Book and reset
+        its own plan, so neither the compile that found it nor its own next meld
+        uses a plan built before its lineage went stale.
+
+        Contract:
+            - Enters the dependency's rebuild window, then its lock - the order
+              every producer takes - and re-checks staleness under them: a
+              dependency another meld refreshed meanwhile is left alone.
+            - Runs the structural phases with the dependency's own Book
+              (`dependency._spellbook`): a borrowed provider is refreshed by its
+              lender's Book, which owns its compiler state.
+            - Broken after the rerun: pins the lineage `invalid`, as the gate
+              pins a broken melded spell, and raises SpellbookValidationError
+              listing the dependency. Still not `valid`, or unregistered: raises
+              the same error. Nothing is reset in either case.
+            - Valid: an existing creation or a non-resolvable definition is
+              left as it is (neither ever plans). Any other dependency is left
+              owing its own resolution (`resolution_complete=False`,
+              `resolution_required=True`, the flags every meld door reads); its
+              CreationContext is cleaned, which moves its door epoch so no
+              fast-door entry survives, and its Phase 5+ compiler state is
+              cleared, so its next own meld in any conduit runs its full target
+              pass (5-11) instead of serving a plan built over its old
+              structure. The Phase-5-derived `requires_spellspace_request` is
+              kept: the conduit door refuses a spellspace-scoped spell by that
+              flag before any pass runs, and the dependency's own next pass
+              recomputes it.
+            - Writes no verdict: the compiling pass publishes the new ones.
+
+        Threading:
+            Holds the dependency's window and lock for the rerun and the reset
+            only; the caller holds no other spell lock and no index ticket.
+
+        Args:
+            dependency: A stale lineage's active Spell, found by the walk.
+
+        Raises:
+            SpellbookValidationError: When the dependency is broken or not valid
+                after its rerun.
+            RuntimeError: When the dependency has no owning Book.
+        """
+        spell_compiler_system = self._get_spell_compiler_system()
+        with self._rebuild_window(dependency), dependency._lock:
+            if not self._is_stale(dependency):
+                return
+            dependency_book = dependency._spellbook
+            if dependency_book is None:
+                raise RuntimeError("Spell has no owning Spellbook surface.")
+            spell_compiler_system.run_structural_phases(dependency_book, dependency)
+            state = dependency.system_state
+            if dependency.is_broken:
+                if state is not None:
+                    state.set_validity(SpellValidity.invalid)
+                raise SpellbookValidationError([dependency])
+            if state is None or state.validity is not SpellValidity.valid:
+                raise SpellbookValidationError([dependency])
+            if dependency.is_existing_creation or not dependency._resolvable:
+                return
+            dependency.resolution_complete = False
+            dependency.resolution_required = True
+            requires_spellspace_request = dependency.requires_spellspace_request
+            dependency._cleanup_creation_context()
+            spell_compiler_system.clear_phase5_artifacts(dependency)
+            dependency.requires_spellspace_request = requires_spellspace_request
 
     def _force_resolution_revalidation(
             self,
@@ -69466,8 +69918,11 @@ class Meld(Cleanable, ABC):
 
         Args:
             spell: Spell to mark for resolution revalidation.
-            change_reason: Why the compiled resolution must be rebuilt. Existing
-                contract callers retain contract_unvalidated by default.
+            change_reason: Why the compiled resolution must be rebuilt. The
+                gate's structural branch passes `structure_changed`; the default
+                `contract_unvalidated` stays for a caller that gates a verdict for
+                a contract change (Meld has none since its per-meld contract scan
+                was retired, 2026-10-16).
         """
         spell_system_states = spell._spell_system_states
         conduit_id = self._resolution_conduit_id
@@ -75362,7 +75817,7 @@ END FILE: src/melder/aether/spellbook/bind/scan.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/bind/spell_index.py
-CONTENT SHA256: b47ad32b2bc1b1fe524044b81af7952866c81324751bd5ef7d3cedc7fd85405c
+CONTENT SHA256: e08418cecfbe9b1adae5b0f6747ad92afad0a644a99e873376029776340f77a8
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -75744,7 +76199,7 @@ class SpellIndex(Cleanable):
             cleaned and deletes the selected id under, and `update()` repoints it under.
 
         Args:
-            spell_id (str): The version id to test.
+            spell_id (str): The spell_id to test.
 
         Returns:
             bool: True if this live index selects `spell_id`; False otherwise, and False once the index is cleaned.
@@ -84099,7 +84554,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/artifact_processor/strategi
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/blueprints/root_resolution_blueprint.py
-CONTENT SHA256: e4e343be151f14278842b4bbd5f4b165ccbd36afc3149464f758d7c376c625cf
+CONTENT SHA256: 4e0735aef94b31b162c3396d785628abc6de76d4c2651b0d66cb05ac454ad30d
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import List, Optional, Sequence, ClassVar
@@ -84129,7 +84584,7 @@ class RootResolutionBlueprint(Cleanable):
         - `root_spell_id` is the versioned identity of the root spell at
           blueprint-build time.
         - `root_lineage_id` is optional lineage metadata for DevOps/change-
-          control use; graph semantics remain version-id-based.
+          control use; graph semantics remain spell_id-based.
         - The blueprint owns its DAG and its PathRegistry.
         - Consumers should treat exposed list/index data as read-only, even
           when accessors return copies.
@@ -84262,7 +84717,7 @@ class RootResolutionBlueprint(Cleanable):
         """
         Return the owned deep DAG for this root.
 
-        The DAG nodes are keyed by spell version id and represent the full
+        The DAG nodes are keyed by spell_id and represent the full
         reachable dependency closure rooted at `root_spell_id`.
         """
         self.check_cleaned()
@@ -87739,7 +88194,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/sha
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py
-CONTENT SHA256: abac8d545b00bf9ce8498a83e063034eeff8be3ef9586fbc74dfce36d62afe73
+CONTENT SHA256: 4b775d05bc98464307fef0f5408216175fdec10d9787fcbf94148c7b51a3a372
 SOURCE ENCODING: utf-8
 ================================================================================
 from types import FunctionType, MethodType
@@ -89621,7 +90076,7 @@ class SitePlanEmission(Cleanable):
 
     def _bind_lease_pool(self, index: int) -> bool:
         """
-        Bind one leasing site's version id, and its pool and pop when they are plan constants.
+        Bind one leasing site's spell_id, and its pool and pop when they are plan constants.
 
         Returns:
             bool: True when `h{index}` and `pp{index}` are bound (the constant shape).
@@ -106467,7 +106922,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_2.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py
-CONTENT SHA256: 4ff6c29e9df6bef555cf2354880c32a844b1e7c3e5212dbb57d36e4eefbfb381
+CONTENT SHA256: 895cd1a1f29e3e560482b16c74f2c865edcf510835724c4d055b74f8a6467a1c
 SOURCE ENCODING: utf-8
 ================================================================================
 import inspect
@@ -106564,14 +107019,14 @@ class CompilerPhase3:
             spell: Spell,
     ) -> str:
         """
-        Return the current bound spell version id or raise.
+        Return the current bound spell_id or raise.
 
         Args:
             spell:
                 Bound spell whose versioned identifier is required.
 
         Returns:
-            str: Current spell version id.
+            str: Current spell_id.
 
         Raises:
             RuntimeError: If the spell has no bound `spell_index.selected_spell_id`.
@@ -107979,7 +108434,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_4.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py
-CONTENT SHA256: 61e1af7c85920986da23f2355c1491e6a0e356bde0b99c676cf225f4f0349ff3
+CONTENT SHA256: 27f5043a10c3bef25e774833039857cf56e28b6cc32d25079f04225bfd47925b
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import TYPE_CHECKING, Collection, Dict, List, Mapping, Optional, Set
@@ -108077,18 +108532,18 @@ class CompilerPhase5:
 
     def _get_required_current_spell_id(self, spell: Spell) -> str:
         """
-        Resolve the current spell version id for the bound spell.
+        Resolve the current spell_id for the bound spell.
 
         Args:
             spell:
-                Spell expected to have a current version id.
+                Spell expected to have a current spell_id.
 
         Returns:
             str: Current spell id.
 
         Raises:
             RuntimeError:
-                If the spell has no current version id.
+                If the spell has no current spell_id.
         """
         current_spell_id = spell.spell_index.selected_spell_id
         if current_spell_id is None:
@@ -108387,7 +108842,7 @@ class CompilerPhase5:
                 snapshot:
                     Frame-wide SpellSystemAdjacencySnapshot to filter.
                 visible_spell_ids:
-                    Version ids are visible to this Spellbook. This collection is treated
+                    The spell_ids visible to this Spellbook. This collection is treated
                     as a live view and is not copied.
             Returns:
                 SpellSystemAdjacencySnapshot:
@@ -114190,7 +114645,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/spell_analyzer/strategies/s
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/spell_compiler.py
-CONTENT SHA256: 43b26195124ac9ad6b4cb33516ceb48e94d634e1210c00b04107a5dd6616b92f
+CONTENT SHA256: 505cb4018e6811525e0c600c148a58870ee1f12b37b8b0acb7ff82ba9696a358
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import TYPE_CHECKING, Any, Dict, Optional, ClassVar
@@ -114413,7 +114868,7 @@ class SpellCompiler(Cleanable):
                   bound Spell.
                 * Resolve **normal** DI sockets (single, collection, SpellMap)
                   against the Spellbook and build a **local-frame DAG** where:
-                      - the root node is this Spell's version id, and
+                      - the root node is this Spell's spell_id, and
                       - direct edges represent first-hop constructor dependencies.
                 * Track, per constructor parameter, which dependency spell ids were
                   bound during resolution.
@@ -115297,7 +115752,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/spell_compiler_artifact.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/spell_compiler_system.py
-CONTENT SHA256: 7dc2557bc347b8e6b0459ffc091676d396c301b5ba2518cd8eaf012be90e1b29
+CONTENT SHA256: 2807bf4eac3c10f4b891213aa0f224dd1aadc48effc7d715387922eeb1aff48d
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import TYPE_CHECKING, Any, Dict, Optional, Set, Tuple, ClassVar
@@ -115468,7 +115923,7 @@ class SpellCompilerSystem(Cleanable):
                   bound Spell.
                 * Resolve **normal** DI sockets (single, collection, SpellMap)
                   against the Spellbook and build a **local-frame DAG** where:
-                      - the root node is this Spell's version id, and
+                      - the root node is this Spell's spell_id, and
                       - direct edges represent first-hop constructor dependencies.
                 * Track, per constructor parameter, which dependency spell ids were
                   bound during resolution.
@@ -122573,7 +123028,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/structural_snapshot/structu
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/symbolic_graph/spell_symbolic_dependency.py
-CONTENT SHA256: 6692b3d4d9d02463976feeeffbac44918c8baf433bbc7fc3201d5a1df3a44556
+CONTENT SHA256: 730d4beb4edf3701af6bf05e00818c0caf7412e1282bc4506ab621fb718922ac
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -122704,7 +123159,7 @@ class SpellSymbolicDependency(Cleanable):
         self._lock: threading.RLock = threading.RLock()
 
         # Stored as _spell_id for backwards compatibility; semantically, this is
-        # the *version id* (SpellIndex.selected_spell_id).
+        # the selected spell_id (SpellIndex.selected_spell_id).
         self._spell_id: str = spell_id
         self._param_name: str = param_name
         self._position: int = position
@@ -122837,7 +123292,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/symbolic_graph/spell_symbol
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/symbolic_graph/spell_symbolic_graph.py
-CONTENT SHA256: c49fe47c269b938d0ae0b5aaa63dd29e27dc4461e5bb340dd35a784271466c5f
+CONTENT SHA256: 015693a1e19a97f1d57406750056eb3fcd4a5e5188c7e1b1fbc86d43da8eeadc
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -122861,7 +123316,7 @@ class SpellSymbolicGraph(Cleanable):
 
     Identity
     --------
-    "spell_id" is again the spell's **version ID**:
+    "spell_id" is again the selected spell_id of the spell's index:
 
         "spell.spell_index.selected_spell_id"
 
@@ -122926,7 +123381,7 @@ class SpellSymbolicGraph(Cleanable):
             raise ValueError("spell_id must be a non-empty string.")
 
         self._lock: threading.RLock = threading.RLock()
-        # Same story: stored as _spell_id, semantics = version id.
+        # Same story: stored as _spell_id, semantics = the selected spell_id.
         self._spell_id: str = spell_id
         self._dependencies: List['SpellSymbolicDependency'] = dependencies or []
 
@@ -122998,7 +123453,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/symbolic_graph/spell_symbol
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/system/spell_system_adjacency_builder.py
-CONTENT SHA256: 541d0fbf6d54ef202786fec2b7560ce3919b2d79f8077ad8e712ed3546d5d467
+CONTENT SHA256: bb521104a66192e38e118729f3b09ea4b3213a5bd87601b5b5564eaff399ed05
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import TYPE_CHECKING, Dict, Optional, Set, ClassVar
@@ -123021,7 +123476,7 @@ class SpellSystemAdjacencyBuilder:
     intentionally dumb:
 
         * It trusts that SpellSystemStates contain correct per-spell
-          direct_dependencies at the **version-id** level.
+          direct_dependencies at the **spell_id** level.
         * It does **not** perform validation or cycle detection.
         * It does **not** understand sockets or contracts.
 
@@ -123062,7 +123517,7 @@ class SpellSystemAdjacencyBuilder:
         # All node ids that are used as dependencies anywhere.
         all_dependency_ids: Set[str] = set()
 
-        # Optional per-spell constructor topologies keyed by version-id.
+        # Optional per-spell constructor topologies keyed by spell_id.
         topologies: Dict[str, Optional[SpellLocalTopology]] = {}
 
         with spell_system_states._lock:
@@ -123101,7 +123556,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/system/spell_system_adjacen
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/system/spell_system_adjacency_snapshot.py
-CONTENT SHA256: c0b5e2629a87880995a619233bb38263266f0a3fb94fddb4d9ac4994fa13ebc6
+CONTENT SHA256: 78bdf9dd8481f22b3eccb903a1392f62570f47ebcd7675a6d6be41bc2316b71e
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import Collection, Dict, Optional, Set, TYPE_CHECKING, ClassVar
@@ -123116,7 +123571,7 @@ class SpellSystemAdjacencySnapshot(Cleanable):
     """
     Frame-wide structural view of SpellSystemStates.
 
-    This Phase 5 helper exposes the version-id level adjacency:
+    This Phase 5 helper exposes the spell_id-level adjacency:
 
         * dependencies:  spell_id -> {spell_id, ...}
         * reverse_dependencies: spell_id -> {spell_id, ...}
@@ -123125,7 +123580,7 @@ class SpellSystemAdjacencySnapshot(Cleanable):
 
     Notes
     -----
-    * All spell_ids are **version IDs** (spell.spell_index.selected_spell_id).
+    * All spell_ids are the selected spell_ids of their indexes (spell.spell_index.selected_spell_id).
     * This view holds live references to SpellSystemStates data and does not
       copy or own the underlying collections.
     """
@@ -123187,7 +123642,7 @@ class SpellSystemAdjacencySnapshot(Cleanable):
     @property
     def dependencies(self) -> Dict[str, Set[str]]:
         """
-        Outgoing edges for each spell version_id:
+        Outgoing edges for each spell_id:
 
             spell_id -> { dependency_spell_id, ... }
 
@@ -123199,7 +123654,7 @@ class SpellSystemAdjacencySnapshot(Cleanable):
     @property
     def reverse_dependencies(self) -> Dict[str, Set[str]]:
         """
-        Incoming edges for each spell version_id:
+        Incoming edges for each spell_id:
 
             spell_id -> { parent_spell_id, ... }
 
@@ -123211,7 +123666,7 @@ class SpellSystemAdjacencySnapshot(Cleanable):
     @property
     def all_spell_ids(self) -> Collection[str]:
         """
-        All known spell version_ids participating in this frame.
+        All known spell_ids participating in this frame.
 
         This may be a live view (e.g., a dict_keys view), so callers should
         treat it as read-only and avoid assuming set mutability.
@@ -123275,7 +123730,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/system/spell_system_adjacen
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/system/spell_system_index.py
-CONTENT SHA256: 2f3ec94542b499ba080c202a149efaab5725e9fa3433d69cb277233e5c90076a
+CONTENT SHA256: f92319674ff10af05c9e79a06d34546b1fead1eca911fb99fd75e66f91e0864c
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import Dict, Iterable, Mapping, Optional, ClassVar
@@ -123292,7 +123747,7 @@ class SpellSystemIndex(Cleanable):
     """
     Internal
 
-    Version-id keyed system index for a frame (Phase 5+).
+    spell_id-keyed system index for a frame (Phase 5+).
 
     This is the system-level mirror of the deep DAG structure described by
     RootResolutionBlueprints. It is intentionally small:
@@ -123354,10 +123809,10 @@ class SpellSystemIndex(Cleanable):
 
     def get_node(self, spell_id: str) -> Optional[SpellSystemNode]:
         """
-        Retrieve an existing node by version id, if present.
+        Retrieve an existing node by spell_id, if present.
 
         Args:
-            spell_id: Version id to look up; must not be None.
+            spell_id: The spell_id to look up; must not be None.
 
         Returns:
             Optional[SpellSystemNode]: The node, or None when absent.
@@ -123457,7 +123912,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/system/spell_system_index.p
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/system/spell_system_node.py
-CONTENT SHA256: 10cc584f871fa4a2acc97b0e8adbb7a98ca18a21ace5292e8452e20e5cf15ec9
+CONTENT SHA256: bf5e4931620cece75aa9ad14e58c3e7f015de0f4772162973d2d02f53d1ca191
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import Iterable, Optional, ClassVar
@@ -123473,15 +123928,15 @@ class SpellSystemNode(Cleanable):
     """
     Internal
 
-    Version-id keyed system view of a single spell for Phases 5–7.
+    spell_id-keyed system view of a single spell for Phases 5–7.
 
     This does *not* replace SpellSystemStates (which are lineage/ DevOps-centric).
     Instead, it gives Phase 5+ a small, version-centric node type to hang
     structural metadata on:
 
-        * spell_id – version id (SpellIndex.selected_spell_id).
+        * spell_id – the selected spell_id of its index (SpellIndex.selected_spell_id).
         * lineage_id – lineage ULID (SpellIndex.id).
-        * dependencies – direct dependency spell_ids (version ids).
+        * dependencies – direct dependency spell_ids.
         * existence – lifecycle / policy hint (optional).
         * spell_type – logical spell role (optional).
         * conduit_id – owning conduit (optional).
@@ -123570,7 +124025,7 @@ class SpellSystemNode(Cleanable):
 
     @property
     def spell_id(self) -> str:
-        """Return the version-id identity for this system node."""
+        """Return this system node's spell_id."""
         self.check_cleaned()
         return self._spell_id
 
@@ -123583,7 +124038,7 @@ class SpellSystemNode(Cleanable):
     @property
     def dependencies(self) -> set[str]:
         """
-        Snapshot of direct dependency version ids for this spell.
+        Snapshot of direct dependency spell_ids for this spell.
         """
         self.check_cleaned()
         return set(self._dependencies)
@@ -123638,7 +124093,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/system/spell_system_node.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/system/spell_system_root_blueprint_builder.py
-CONTENT SHA256: b7ebd55526290ae3b6c93c62d06830ef95f93d4c0d25bfe7d71951337c1eca9d
+CONTENT SHA256: c0762e210edeb041ece8584fbc62905d1b63be7780fd7572705d3ee9b2c146ba
 SOURCE ENCODING: utf-8
 ================================================================================
 from collections import deque
@@ -123670,13 +124125,13 @@ class SpellSystemRootBlueprintBuilder:
     """
     Phase-5 structural builder.
 
-    Given a SpellSystemAdjacencySnapshot (version-id graph for the *frame*),
+    Given a SpellSystemAdjacencySnapshot (spell_id graph for the *frame*),
     construct a RootResolutionBlueprint for every root spell in that frame.
 
     Semantics:
 
-        * Each RootResolutionBlueprint is anchored at a **root version-id**,
-          but its DAG contains **all reachable version-ids** for that root.
+        * Each RootResolutionBlueprint is anchored at a **root spell_id**,
+          but its DAG contains **all reachable spell_ids** for that root.
         * Edges are provider -> dependent (same orientation as Phase 3 DAGs).
         * This is *purely structural*:
               - node payloads are None,
@@ -123714,14 +124169,14 @@ class SpellSystemRootBlueprintBuilder:
                 SpellSystemAdjacencySnapshot for the *entire* spell frame.
 
                 - snapshot.dependencies:
-                    Dict[version_id, Set[version_id]]
-                    (spell_id -> direct dependency version_ids; consumer -> providers)
+                    Dict[spell_id, Set[spell_id]]
+                    (spell_id -> direct dependency spell_ids; consumer -> providers)
                 - snapshot.root_spell_ids:
-                    Set[version_id] of structural roots for this frame.
+                    Set[spell_id] of structural roots for this frame.
 
         Returns:
             Dict[str, RootResolutionBlueprint]:
-                Mapping from root version_id -> RootResolutionBlueprint.
+                Mapping from root spell_id -> RootResolutionBlueprint.
         """
         root_ids: Set[str] = snapshot.root_spell_ids
         dependencies: Dict[str, Set[str]] = snapshot.dependencies
@@ -123780,7 +124235,7 @@ class SpellSystemRootBlueprintBuilder:
 
         Args:
             root_spell_id:
-                Version-id of the spell to treat as the blueprint root.
+                The spell_id of the spell to treat as the blueprint root.
             snapshot:
                 SpellSystemAdjacencySnapshot for the *entire* spell frame.
 
@@ -123867,7 +124322,7 @@ class SpellSystemRootBlueprintBuilder:
         """
         Compute ``reachable(X)`` for every spell id, sharing subtree work.
 
-        ``reachable(X)`` is ``{X}`` plus every version-id reachable by following
+        ``reachable(X)`` is ``{X}`` plus every spell_id reachable by following
         ``dependencies``, restricted to ``all_spell_ids`` -- identical to the
         per-root DFS in ``_build_single_root_dag``.
 
@@ -123974,13 +124429,13 @@ class SpellSystemRootBlueprintBuilder:
 
         Build a deep DirectedAcyclicWorkGraph for a single root spell:
 
-            * Nodes: all version_ids reachable from ``root_spell_id``
+            * Nodes: all spell_ids reachable from ``root_spell_id``
               by recursively following ``dependencies``.
             * Edges: provider -> dependent (same orientation as Phase 3 DAG).
 
         Args:
             root_spell_id:
-                Version-id of the root spell for this blueprint.
+                The spell_id of the root spell for this blueprint.
             dependencies:
                 Mapping of ``spell_id -> { dependency_spell_id, ... }`` where
                 edges are **consumer -> providers** at the adjacency level.
@@ -124028,7 +124483,7 @@ class SpellSystemRootBlueprintBuilder:
                         stack.append(dep_id)
 
         # ------------------------------------------------------------------
-        # 2. Build the DAG nodes (one per reachable version-id).
+        # 2. Build the DAG nodes (one per reachable spell_id).
         # ------------------------------------------------------------------
         dag = DirectedAcyclicWorkGraph()
         # Purely structural: payload is None. Payloads at this level
@@ -124162,7 +124617,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/system/spell_system_validat
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/system/spell_system_validation_system.py
-CONTENT SHA256: 5a29b89e3cc618134fbe4cf4f21a35122d0f55fb79ec830ffa93967f7fbf9479
+CONTENT SHA256: 70304d7c8dc37849138588cfeb2a1a502ef86b68cd0ce6bcf06505f7a00daad9
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import (
@@ -124305,7 +124760,7 @@ class SpellSystemValidationSystem(Cleanable):
                 per-conduit resolution validity are recorded in
                 ConduitResolutionState. Global structural validity is not
                 modified here.
-            spell_lookup: Optional mapping of visible spell version ids to spell objects.
+            spell_lookup: Optional mapping of visible spell_ids to spell objects.
             cancel_event: Optional cancellation signal for long-running validation.
         Returns:
             SpellSystemValidationState: Aggregated diagnostics and validity.
@@ -124611,7 +125066,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/system/system_diagnostic.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/system/validation/broken_spell_in_dag_strategy.py
-CONTENT SHA256: fc5f465c0139b037d1b2423d2de1980a1ee4ff84e3c3171ed660f6db77d69331
+CONTENT SHA256: f06d6e79858ad91e4c2d4aae0d1167e0ee6654ffb500f3546aeac8b3f795db6c
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import TYPE_CHECKING, Dict, List, Mapping, Optional, Set
@@ -124683,7 +125138,7 @@ class BrokenSpellInDagStrategy(SpellSystemValidationStrategy):
             phase4_results: Phase-4 validation artifacts keyed by spell id.
             broken_spell_ids: Set of broken spell ids.
             spell_system_states: SpellSystemStates registry for topology and lineage data.
-            spell_lookup: Mapping of visible spell version ids to spell objects.
+            spell_lookup: Mapping of visible spell_ids to spell objects.
             diagnostics: Collection that receives diagnostics.
             cancel_event: Optional cancellation signal.
         Returns:
@@ -124728,7 +125183,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/system/validation/broken_sp
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/system/validation/contract_graph_cycle_strategy.py
-CONTENT SHA256: 9400979bba914ba2ae77bf493c36343b74f3509a0ee3b12a295cf1f68d125bcb
+CONTENT SHA256: 0147f89abdbe86484f8354b21ce2450d27c371584f3f6116c7c0d16f7b6afe8a
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import TYPE_CHECKING, Dict, List, Mapping, Optional, Set, Tuple
@@ -124800,7 +125255,7 @@ class ContractGraphCycleStrategy(SpellSystemValidationStrategy):
             phase4_results: Phase-4 validation artifacts keyed by spell id.
             broken_spell_ids: Set of broken spell ids.
             spell_system_states: SpellSystemStates registry for topology and lineage data.
-            spell_lookup: Mapping of visible spell version ids to spell objects.
+            spell_lookup: Mapping of visible spell_ids to spell objects.
             diagnostics: Collection that receives diagnostics.
             cancel_event: Optional cancellation signal.
         Returns:
@@ -124987,7 +125442,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/system/validation/contract_
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/system/validation/contracted_version_drift_strategy.py
-CONTENT SHA256: df64c3b040eb03b6e9c2cdbe09e62452a1a3affe3cd9e8e9b24cacffecdc7a0b
+CONTENT SHA256: f096e2ac8f92310ba211d80ebb2660069652b5145038fbb658cf394fbdc80e97
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import TYPE_CHECKING, Dict, List, Mapping, Optional, Set
@@ -125022,7 +125477,7 @@ class ContractedVersionDriftStrategy(SpellSystemValidationStrategy):
     """
     Guard that the visible system index does not drift onto stale lineage versions.
 
-    This strategy compares the version ids stored on `SpellSystemIndex` nodes
+    This strategy compares the spell_ids stored on `SpellSystemIndex` nodes
     against the currently visible spell versions for each lineage. It is aimed
     at contracted/borrowed visibility scenarios where the system graph can lag
     behind the active visible version set and end up validating or planning
@@ -125046,8 +125501,8 @@ class ContractedVersionDriftStrategy(SpellSystemValidationStrategy):
         Validate that index nodes align with visible lineage versions.
 
         Purpose:
-            Surface cases where SpellSystemIndex references outdated spell
-            version ids for a lineage visible in the spellbook.
+            Surface cases where SpellSystemIndex references outdated
+            spell_ids for a lineage visible in the spellbook.
         Contract:
             - Uses spell_lookup to determine visible current versions.
             - Emits errors when a node's spell_id is not a visible version.
@@ -125058,7 +125513,7 @@ class ContractedVersionDriftStrategy(SpellSystemValidationStrategy):
             phase4_results: Phase-4 validation artifacts keyed by spell id.
             broken_spell_ids: Set of broken spell ids.
             spell_system_states: SpellSystemStates registry for topology and lineage data.
-            spell_lookup: Mapping of visible spell version ids to spell objects.
+            spell_lookup: Mapping of visible spell_ids to spell objects.
             diagnostics: Collection that receives diagnostics.
             cancel_event: Optional cancellation signal.
         Returns:
@@ -125110,7 +125565,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/system/validation/contracte
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/system/validation/cycle_detection_strategy.py
-CONTENT SHA256: 0b7ffc1a4e726024ae5f5c074b26fac5353107f0867ebcde1c9c0c47afee6e95
+CONTENT SHA256: 7d4924d06525c6adc5eedb3223422e85440e3b65305f92b78a045e75cbdf04c6
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import TYPE_CHECKING, Dict, List, Mapping, Optional, Set
@@ -125185,7 +125640,7 @@ class CycleDetectionStrategy(SpellSystemValidationStrategy):
             phase4_results: Phase-4 results (unused by this strategy).
             broken_spell_ids: Broken spell ids (unused by this strategy).
             spell_system_states: SpellSystemStates registry (unused by this strategy).
-            spell_lookup: Mapping of visible spell version ids, used to name the spells
+            spell_lookup: Mapping of visible spell_ids, used to name the spells
                 left in or behind a cycle.
             diagnostics: Mutable list that receives diagnostics.
             cancel_event: Optional cancellation signal.
@@ -125263,7 +125718,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/system/validation/cycle_det
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/system/validation/dependency_type_sanity_strategy.py
-CONTENT SHA256: 1bfe9561f078aaadfee1f55cc445537137a278adf61a86232f30bbabcc67acaa
+CONTENT SHA256: 21e2b872674c229e31de9fbf122ed320564040398eea08b8a2d7c171b5ed18ed
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import TYPE_CHECKING, Dict, List, Mapping, Optional, Set
@@ -125341,7 +125796,7 @@ class DependencyTypeSanityStrategy(SpellSystemValidationStrategy):
             phase4_results: Phase-4 validation artifacts keyed by spell id.
             broken_spell_ids: Set of broken spell ids.
             spell_system_states: SpellSystemStates registry for topology and lineage data.
-            spell_lookup: Mapping of visible spell version ids to spell objects.
+            spell_lookup: Mapping of visible spell_ids to spell objects.
             diagnostics: Collection that receives diagnostics.
             cancel_event: Optional cancellation signal.
         Returns:
@@ -125395,7 +125850,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/system/validation/dependenc
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/system/validation/empty_collection_strategy.py
-CONTENT SHA256: f0e980782be8d3687c3093cd9948d11d4077ac62021aabb71aa02d485508dcb0
+CONTENT SHA256: c50313abfbdb7f8b7026da693a4a135cd2faf0e398fa777500843721d8052bfd
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import TYPE_CHECKING, Dict, List, Mapping, Optional, Set
@@ -125516,7 +125971,7 @@ class EmptyCollectionStrategy(SpellSystemValidationStrategy):
             spell_system_states:
                 Registry providing each spell's durable local topology.
             spell_lookup:
-                Visible spell version ids to spell objects for this scope.
+                Visible spell_ids to spell objects for this scope.
             diagnostics:
                 Shared list to append new diagnostics into.
             cancel_event:
@@ -125597,7 +126052,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/system/validation/empty_col
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/system/validation/graph_consistency_strategy.py
-CONTENT SHA256: 88b08529eabc4a67d90318fef4767d9aca77b6f8f2a846d28494ae8ea5e5b8b2
+CONTENT SHA256: c71af073185c22914761e1f24aef103059a990b15874bc64f36299f031fb9b4b
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import TYPE_CHECKING, Dict, List, Mapping, Optional, Set, Tuple
@@ -125673,7 +126128,7 @@ class GraphConsistencyStrategy(SpellSystemValidationStrategy):
             phase4_results: Phase-4 validation artifacts keyed by spell id.
             broken_spell_ids: Set of broken spell ids.
             spell_system_states: SpellSystemStates registry for topology and lineage data.
-            spell_lookup: Mapping of visible spell version ids to spell objects.
+            spell_lookup: Mapping of visible spell_ids to spell objects.
             diagnostics: Collection that receives diagnostics.
             cancel_event: Optional cancellation signal.
         Returns:
@@ -125786,7 +126241,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/system/validation/graph_con
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/system/validation/identity_mixing_strategy.py
-CONTENT SHA256: 098d834e47ec1b91c1ed10a403fedc56687c1bb942f8d7729f8d7150a97a56ab
+CONTENT SHA256: e89065b258e4acc54cdf5d2c2a51dcb84842e21ede3f8cf86e91008df45a4e31
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import TYPE_CHECKING, Dict, List, Mapping, Optional, Set
@@ -125819,7 +126274,7 @@ from melder.aether.spellbook.spell_compiler.system.validation.strategy_base impo
 
 class IdentityMixingStrategy(SpellSystemValidationStrategy):
     """
-    Guard that dependency edges stay on version ids rather than lineage ids.
+    Guard that dependency edges stay on spell_ids rather than lineage ids.
 
     The system graph is supposed to route concrete spell versions, while
     lineage ids are DevOps/control-plane identity. If a dependency edge starts
@@ -125842,7 +126297,7 @@ class IdentityMixingStrategy(SpellSystemValidationStrategy):
             cancel_event: Optional[CancellationEvent],
     ) -> None:
         """
-        Validate that dependency ids are version ids, not lineage ids.
+        Validate that dependency ids are spell_ids, not lineage ids.
 
         Purpose:
             Catch dependency edges that reference lineage ids directly, which
@@ -125856,7 +126311,7 @@ class IdentityMixingStrategy(SpellSystemValidationStrategy):
             phase4_results: Phase-4 validation artifacts keyed by spell id.
             broken_spell_ids: Set of broken spell ids.
             spell_system_states: SpellSystemStates registry for topology and lineage data.
-            spell_lookup: Mapping of visible spell version ids to spell objects.
+            spell_lookup: Mapping of visible spell_ids to spell objects.
             diagnostics: Collection that receives diagnostics.
             cancel_event: Optional cancellation signal.
         Returns:
@@ -125885,7 +126340,7 @@ class IdentityMixingStrategy(SpellSystemValidationStrategy):
                         code="identity_mixing_detected",
                         message=(
                             f"Spell '{node.spell_id}' depends on lineage id '{dep_id}' "
-                            "instead of a version id."
+                            "instead of a spell_id."
                         ),
                         severity=SystemDiagnosticSeverity.ERROR,
                         spell_id=node.spell_id,
@@ -125905,7 +126360,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/system/validation/identity_
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/system/validation/index_coverage_strategy.py
-CONTENT SHA256: 82292c84d579d755368f60f58bb28f9f991abf41c73a575b04c913b38c97708d
+CONTENT SHA256: ca1d9f106a310041c7c87b565658b83e7d48a4b2b5a460d4b16c48caa53ae1d1
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import TYPE_CHECKING, Dict, List, Mapping, Optional, Set
@@ -125977,7 +126432,7 @@ class IndexCoverageStrategy(SpellSystemValidationStrategy):
             phase4_results: Phase-4 validation artifacts keyed by spell id.
             broken_spell_ids: Set of broken spell ids.
             spell_system_states: SpellSystemStates registry for topology and lineage data.
-            spell_lookup: Mapping of visible spell version ids to spell objects.
+            spell_lookup: Mapping of visible spell_ids to spell objects.
             diagnostics: Collection that receives diagnostics.
             cancel_event: Optional cancellation signal.
         Returns:
@@ -126014,7 +126469,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/system/validation/index_cov
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/system/validation/index_dependency_sanity_strategy.py
-CONTENT SHA256: f889d28018e8db2a57dd1daf9fa9dc1d4b92cbf219b18c1d4a13914a212c1f99
+CONTENT SHA256: 59192c66c37bc4b6729d47708ae9f25c8dd6120c65b99c6bfe5a144b4a3e81fa
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import TYPE_CHECKING, Dict, List, Mapping, Optional, Set
@@ -126088,7 +126543,7 @@ class IndexDependencySanityStrategy(SpellSystemValidationStrategy):
             phase4_results: Phase-4 validation artifacts keyed by spell id.
             broken_spell_ids: Set of broken spell ids.
             spell_system_states: SpellSystemStates registry for topology and lineage data.
-            spell_lookup: Mapping of visible spell version ids to spell objects.
+            spell_lookup: Mapping of visible spell_ids to spell objects.
             diagnostics: Collection that receives diagnostics.
             cancel_event: Optional cancellation signal.
         Returns:
@@ -126128,7 +126583,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/system/validation/index_dep
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/system/validation/lineage_alignment_strategy.py
-CONTENT SHA256: a654f75bf353d3bf1f391f92d240d0769a23911378ca00e2dda7bd47f6199d38
+CONTENT SHA256: 8dd32d705b8e60655655edccefafc68b8de31e2cad5b0ea42b764a4216b56df4
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import TYPE_CHECKING, Dict, List, Mapping, Optional, Set
@@ -126164,7 +126619,7 @@ class LineageAlignmentStrategy(SpellSystemValidationStrategy):
     """
     Guard that root-blueprint lineage metadata agrees with the system index.
 
-    Root blueprints are version-id rooted, but they can still carry lineage
+    Root blueprints are spell_id-rooted, but they can still carry lineage
     metadata for DevOps and change-control consumers. This strategy checks that
     the optional root-lineage ids embedded in the blueprints stay aligned with
     the lineage ids tracked on the corresponding `SpellSystemIndex` nodes.
@@ -126204,7 +126659,7 @@ class LineageAlignmentStrategy(SpellSystemValidationStrategy):
             phase4_results: Phase-4 validation artifacts keyed by spell id.
             broken_spell_ids: Set of broken spell ids.
             spell_system_states: SpellSystemStates registry for topology and lineage data.
-            spell_lookup: Mapping of visible spell version ids to spell objects.
+            spell_lookup: Mapping of visible spell_ids to spell objects.
             diagnostics: Collection that receives diagnostics.
             cancel_event: Optional cancellation signal.
         Returns:
@@ -126252,7 +126707,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/system/validation/lineage_a
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/system/validation/lineage_version_conflict_strategy.py
-CONTENT SHA256: ef2d8e9e93c7c4a0f36e811fdf5c75cdbba08283c7298d7e6f99f4aa5b99e98b
+CONTENT SHA256: 19a9f09409f39b39e927dba76ad230142ecae88127b772a384ee50a88358e429
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import TYPE_CHECKING, Dict, List, Mapping, Optional, Set
@@ -126288,9 +126743,9 @@ class LineageVersionConflictStrategy(SpellSystemValidationStrategy):
     """
     Guard that one root DAG does not mix multiple versions of the same lineage.
 
-    Root blueprints are version-id graphs, but they still represent one
+    Root blueprints are spell_id graphs, but they still represent one
     coherent runtime slice. If the same lineage appears multiple times under a
-    single root as different version ids, the root is effectively depending on
+    single root as different spell_ids, the root is effectively depending on
     mutually conflicting revisions of the same logical spell family. This
     strategy checks the blueprint DAG against the index lineage map and turns
     that mismatch into a root-scoped error before later planning or execution
@@ -126332,7 +126787,7 @@ class LineageVersionConflictStrategy(SpellSystemValidationStrategy):
             phase4_results: Phase-4 validation artifacts keyed by spell id.
             broken_spell_ids: Set of broken spell ids.
             spell_system_states: SpellSystemStates registry for topology and lineage data.
-            spell_lookup: Mapping of visible spell version ids to spell objects.
+            spell_lookup: Mapping of visible spell_ids to spell objects.
             diagnostics: Collection that receives diagnostics.
             cancel_event: Optional cancellation signal.
         Returns:
@@ -126379,7 +126834,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/system/validation/lineage_v
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/system/validation/missing_phase4_strategy.py
-CONTENT SHA256: 7f1b5652364172bec6b64d9acf414c71fa6a11321c790f3806af311966c367c9
+CONTENT SHA256: a04144f8be46007b0c6c175aa94e5440b0c26672c7a73713d287c2782f786110
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import TYPE_CHECKING, Dict, List, Mapping, Optional, Set
@@ -126453,7 +126908,7 @@ class MissingPhase4Strategy(SpellSystemValidationStrategy):
             phase4_results: Phase-4 validation artifacts keyed by spell id.
             broken_spell_ids: Set of broken spell ids.
             spell_system_states: SpellSystemStates registry for topology and lineage data.
-            spell_lookup: Mapping of visible spell version ids to spell objects.
+            spell_lookup: Mapping of visible spell_ids to spell objects.
             diagnostics: Collection that receives diagnostics.
             cancel_event: Optional cancellation signal.
         Returns:
@@ -126491,7 +126946,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/system/validation/missing_p
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/system/validation/ownership_consistency_strategy.py
-CONTENT SHA256: 5eddd9f328f1bda52729392e305c8dee8475c5273d4263d08da9d068d6b3d9a7
+CONTENT SHA256: cbd4882975d090971d36e4119e0cc709f40fe93054324181e8cf26fb9413d5e6
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import TYPE_CHECKING, Dict, List, Mapping, Optional, Set
@@ -126572,7 +127027,7 @@ class OwnershipConsistencyStrategy(SpellSystemValidationStrategy):
             phase4_results: Phase-4 validation artifacts keyed by spell id.
             broken_spell_ids: Set of broken spell ids.
             spell_system_states: SpellSystemStates registry for topology and lineage data.
-            spell_lookup: Mapping of visible spell version ids to spell objects.
+            spell_lookup: Mapping of visible spell_ids to spell objects.
             diagnostics: Collection that receives diagnostics.
             cancel_event: Optional cancellation signal.
         Returns:
@@ -126625,7 +127080,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/system/validation/ownership
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/system/validation/root_coverage_strategy.py
-CONTENT SHA256: f648eaf721831b652135af85afae68d71b37ea2f7ad57dad9ec2e12b427f47d6
+CONTENT SHA256: 0ce2ed13a77c1aa9b90560a1d669e9b5e0a8c80377e35f3458f72e406750c5c8
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import TYPE_CHECKING, Dict, List, Mapping, Optional, Set
@@ -126700,7 +127155,7 @@ class RootCoverageStrategy(SpellSystemValidationStrategy):
             phase4_results: Phase-4 validation artifacts keyed by spell id.
             broken_spell_ids: Set of broken spell ids.
             spell_system_states: SpellSystemStates registry for topology and lineage data.
-            spell_lookup: Mapping of visible spell version ids to spell objects.
+            spell_lookup: Mapping of visible spell_ids to spell objects.
             diagnostics: Collection that receives diagnostics.
             cancel_event: Optional cancellation signal.
         Returns:
@@ -126796,7 +127251,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/system/validation/root_cove
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/system/validation/root_lineage_conflict_strategy.py
-CONTENT SHA256: 445a532c25966a03ecc04ec58f5df98e7bc6db9608243f713fb4cf14c2952b0d
+CONTENT SHA256: 6ca4d633b11d873df92db2c675aa7b93b08b3b9468a2313045c78c715e8edaba
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import TYPE_CHECKING, Dict, List, Mapping, Optional, Set
@@ -126874,7 +127329,7 @@ class RootLineageConflictStrategy(SpellSystemValidationStrategy):
             phase4_results: Phase-4 validation artifacts keyed by spell id.
             broken_spell_ids: Set of broken spell ids.
             spell_system_states: SpellSystemStates registry for topology and lineage data.
-            spell_lookup: Mapping of visible spell version ids to spell objects.
+            spell_lookup: Mapping of visible spell_ids to spell objects.
             diagnostics: Collection that receives diagnostics.
             cancel_event: Optional cancellation signal.
         Returns:
@@ -126919,7 +127374,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/system/validation/root_line
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/system/validation/root_reachability_strategy.py
-CONTENT SHA256: 832df9bfed73f537c5effc7065b67ead65682b10920275b6d1ad47a0957f139d
+CONTENT SHA256: f7fee8845c92d36c8e963b5275ff9e6f24832be20c2f44cedffeeaaa70762625
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import TYPE_CHECKING, Dict, List, Mapping, Optional, Set
@@ -126990,7 +127445,7 @@ class RootReachabilityStrategy(SpellSystemValidationStrategy):
             phase4_results: Phase-4 validation artifacts keyed by spell id.
             broken_spell_ids: Set of broken spell ids.
             spell_system_states: SpellSystemStates registry for topology and lineage data.
-            spell_lookup: Mapping of visible spell version ids to spell objects.
+            spell_lookup: Mapping of visible spell_ids to spell objects.
             diagnostics: Collection that receives diagnostics.
             cancel_event: Optional cancellation signal.
         Returns:
@@ -127063,7 +127518,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/system/validation/root_reac
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/system/validation/root_scale_limit_strategy.py
-CONTENT SHA256: 1e59d8b7fe998717975234aa0c1941c6c72406bac031fae64140f3e734cba03a
+CONTENT SHA256: 3429728ff4ff479f5dbe0b8ece37358ac3311fa36a294458e9ea9ec08a0d3147
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import TYPE_CHECKING, Dict, List, Mapping, Optional, Set
@@ -127169,7 +127624,7 @@ class RootScaleLimitStrategy(SpellSystemValidationStrategy):
             phase4_results: Phase-4 validation artifacts keyed by spell id.
             broken_spell_ids: Set of broken spell ids.
             spell_system_states: SpellSystemStates registry for topology and lineage data.
-            spell_lookup: Mapping of visible spell version ids to spell objects.
+            spell_lookup: Mapping of visible spell_ids to spell objects.
             diagnostics: Collection that receives diagnostics.
             cancel_event: Optional cancellation signal.
         Returns:
@@ -127303,7 +127758,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/system/validation/root_scal
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/system/validation/root_viability_strategy.py
-CONTENT SHA256: cfeda5a3b0cac74e70d4ed23c9f490d2dd78f26dfc116b3e6e2ad17b5f68a2c3
+CONTENT SHA256: 14d7666c1d94b5e2cc4d6a912391588951f86ec47a41fd3566803179109a7b09
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import TYPE_CHECKING, Dict, List, Mapping, Optional, Set
@@ -127377,7 +127832,7 @@ class RootViabilityStrategy(SpellSystemValidationStrategy):
             phase4_results: Phase-4 validation artifacts keyed by spell id.
             broken_spell_ids: Set of broken spell ids.
             spell_system_states: SpellSystemStates registry for topology and lineage data.
-            spell_lookup: Mapping of visible spell version ids to spell objects.
+            spell_lookup: Mapping of visible spell_ids to spell objects.
             diagnostics: Collection that receives diagnostics.
             cancel_event: Optional cancellation signal.
         Returns:
@@ -127419,7 +127874,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/system/validation/root_viab
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/system/validation/scope_ordering_strategy.py
-CONTENT SHA256: c13c457ad5923ac10ece8c8601f9bff21c8b70dcff3e2a6e5eb68313ed68dc1d
+CONTENT SHA256: 703920092b202c800d604bcaa5fefea91f42e13a020cc84d9af01e7b52327bf9
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import TYPE_CHECKING, Dict, List, Mapping, Optional, Set
@@ -127492,7 +127947,7 @@ class ScopeOrderingStrategy(SpellSystemValidationStrategy):
             phase4_results: Phase-4 validation artifacts keyed by spell id.
             broken_spell_ids: Set of broken spell ids.
             spell_system_states: SpellSystemStates registry for topology and lineage data.
-            spell_lookup: Mapping of visible spell version ids to spell objects.
+            spell_lookup: Mapping of visible spell_ids to spell objects.
             diagnostics: Collection that receives diagnostics.
             cancel_event: Optional cancellation signal.
         Returns:
@@ -127579,7 +128034,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/system/validation/scope_ord
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/system/validation/strategy_base.py
-CONTENT SHA256: 906a4a2e8d3ead8848c6d53d4a2747b98a3bd45bc7a6e05c766cee11d2095d04
+CONTENT SHA256: 7383200689521aedb53dd1cb346406a96e163e11886e5e817f9c9508c49d83cd
 SOURCE ENCODING: utf-8
 ================================================================================
 from abc import ABC, abstractmethod
@@ -127650,7 +128105,7 @@ class SpellSystemValidationStrategy(ABC):
             spell_system_states:
                 SpellSystemStates registry for topology and lineage data.
             spell_lookup:
-                Visible spell version ids to spell objects for the current
+                Visible spell_ids to spell objects for the current
                 validation scope.
             diagnostics:
                 Shared list to append new diagnostics into.
@@ -127665,7 +128120,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/system/validation/strategy_
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/system/validation/topology_dependency_mismatch_strategy.py
-CONTENT SHA256: 3294976b9def26a6457ce4e641515fe53b034c6439cd7f64a9e746545f0ed553
+CONTENT SHA256: 5382daed191f547a1b4c3ecccea9420b23a0b5b135b32acafa046dfc2f7677e5
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import TYPE_CHECKING, Dict, List, Mapping, Optional, Set
@@ -127735,7 +128190,7 @@ class TopologyDependencyMismatchStrategy(SpellSystemValidationStrategy):
             phase4_results: Phase-4 validation artifacts keyed by spell id.
             broken_spell_ids: Set of broken spell ids.
             spell_system_states: SpellSystemStates registry for topology and lineage data.
-            spell_lookup: Mapping of visible spell version ids to spell objects.
+            spell_lookup: Mapping of visible spell_ids to spell objects.
             diagnostics: Collection that receives diagnostics.
             cancel_event: Optional cancellation signal.
         Returns:
@@ -127792,7 +128247,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/system/validation/topology_
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/system/validation/visibility_gap_strategy.py
-CONTENT SHA256: aa84c46c39337cb9ebbcf7ffc9f225ed5e73a4bfe3e5127ede1238d26580dbf9
+CONTENT SHA256: 14c1c2f01895ade0034d9f8f39b670ede76dc25ebf542ead87c59e067b8c3ffd
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import TYPE_CHECKING, Dict, List, Mapping, Optional, Set
@@ -127865,7 +128320,7 @@ class VisibilityGapStrategy(SpellSystemValidationStrategy):
             phase4_results: Phase-4 validation artifacts keyed by spell id.
             broken_spell_ids: Set of broken spell ids.
             spell_system_states: SpellSystemStates registry for topology and lineage data.
-            spell_lookup: Mapping of visible spell version ids to spell objects.
+            spell_lookup: Mapping of visible spell_ids to spell objects.
             diagnostics: Collection that receives diagnostics.
             cancel_event: Optional cancellation signal.
         Returns:
@@ -127920,7 +128375,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/system/validation/visibilit
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/topology/spell_local_topology.py
-CONTENT SHA256: 33f88883963ef887633c4e496605191fc1d568da73be15328a53e2725fad425e
+CONTENT SHA256: f6ff81123b030a7b7a4b5ce3fcb3dc0bd37a823bafee05df26d082371f222f2a
 SOURCE ENCODING: utf-8
 ================================================================================
 from dataclasses import dataclass
@@ -127945,7 +128400,7 @@ class SpellSocketDescriptor:
 
     Attributes:
         spell_id:
-            The version ID of the spell that owns this socket
+            The selected spell_id of the spell that owns this socket
             (spell.spell_index.selected_spell_id``).
 
         param_name:
@@ -127968,14 +128423,14 @@ class SpellSocketDescriptor:
             True if the parameter is optional / has a default.
 
         target_spell_ids:
-            The direct dependency spells version IDs that this socket *actually*
+            The direct dependency spell_ids that this socket *actually*
             resolved to during Phase 3, if any.
 
             Unresolved contract sockets and OVERRIDE_REQUIRED inputs have no
             executable target IDs.
 
         referenced_spell_ids:
-            Selected non-resolvable version IDs retained for graph navigation.
+            Selected non-resolvable spell_ids retained for graph navigation.
             These IDs must never be traversed as construction dependencies.
 
         parameter_kind:
@@ -128069,7 +128524,7 @@ class SpellLocalTopology(Cleanable):
         Initialize one local topology snapshot for a spell.
 
         Args:
-            spell_id: Spell/version id this topology belongs to.
+            spell_id: The spell_id this topology belongs to.
             sockets: Socket descriptors discovered for the spell's constructor.
         Contract:
             - `spell_id` is required.
@@ -128124,7 +128579,7 @@ class SpellLocalTopology(Cleanable):
     @property
     def spell_id(self) -> str:
         """
-        Return the spell/version id this topology belongs to.
+        Return the spell_id this topology belongs to.
 
         Returns:
             str: Owning spell id.
@@ -128481,7 +128936,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/validation/spell_validation
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/validation/spell_validation_result.py
-CONTENT SHA256: d22460a68d3ded6751585702b86c631b4b5166cda2f2edaa119b9de21c6f11d2
+CONTENT SHA256: e1681dbe0399ebe05474a8bcdcfe353132422b4da6470342eccd18c5d46813f5
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import Optional, List, ClassVar
@@ -128556,7 +129011,7 @@ class SpellValidationResult(Cleanable):
         Initialize one aggregate spell validation result.
 
         Args:
-            spell_id: Validated spell/version id.
+            spell_id: The validated spell's spell_id.
             spell_name: Human-readable validated spell name.
             issues: Optional prebuilt list of validation issues.
         Contract:
@@ -129700,7 +130155,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/validation/strategies/calla
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/validation/strategies/circular_dependency_strategy.py
-CONTENT SHA256: 24fbed3a61e7be54850e9c73c52585ab658741a2537639ca09704dea2aa9b1c3
+CONTENT SHA256: 1bbd1d1b230b2edeef5c9c08d8ced24106c4ada514e99dfef24201e3ab527fda
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import Dict, List, Optional
@@ -129728,7 +130183,7 @@ class CircularDependencyStrategy(SpellValidationStrategy):
     and looks for cycles reachable from the spell being validated.
 
     Contract:
-    - Traverses the spellbook-wide dependency graph by spell/version id.
+    - Traverses the spellbook-wide dependency graph by spell_id.
     - Reports only cycles reachable from the spell currently under validation.
     - Emits validation issues into the supplied context; it does not mutate the
       graph or try to break cycles automatically.
@@ -129966,7 +130421,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/validation/strategies/circu
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/validation/strategies/contract_provider_presence_strategy.py
-CONTENT SHA256: fd368e891991567fc51d795a007c2e77484c95ce8d60aac9619e26b7064c84a3
+CONTENT SHA256: 8c387258f21b568e3f2dcbccc7270632770ad7fb86e7909076312f44c916b538
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
@@ -130003,7 +130458,14 @@ class ContractProviderPresenceStrategy(SpellValidationStrategy):
     Contract:
         - Emits errors when contract descriptors are malformed.
         - Emits errors when more than one provider matches a contract key.
-        - Emits warnings for missing SpellContract providers in dynamic mode.
+        - Emits warnings for missing SpellContract providers in dynamic mode. The
+          warning names the contract and the remedy (D1-B, 2026-10-16): it is the
+          one warning Phase 4 gates a lineage on, so SpellbookValidationError
+          lists it as the reason a consumer is refused.
+        - Walks one-call snapshots of the Book's contracted maps, built once per
+          validation pass. Under rule 2 (2026-10-16) this check is the recheck a
+          consumer's next meld runs after its provider changed, so it can meet
+          the rest of that change still writing the maps under the Book lock.
         - Emits errors for contract sockets in automatic system state.
         - A unique non-resolvable provider is incompatible with a live contract.
         - Non-resolvable consumers retain descriptor checks without provider or mode obligations.
@@ -130047,7 +130509,9 @@ class ContractProviderPresenceStrategy(SpellValidationStrategy):
         Purpose:
             Detect contract sockets that cannot be resolved or are ambiguous.
         Contract:
-            - Uses the Spellbook's contracted spell maps when available to enumerate providers.
+            - Uses the Spellbook's contracted spell maps when available to enumerate providers,
+              walking one-call snapshots of them (no Book lock is held here; a provider
+              change writes them under it).
             - Respects system_state to distinguish automatic vs dynamic behavior.
             - Appends one issue per contract socket mismatch.
         Args:
@@ -130091,8 +130555,11 @@ class ContractProviderPresenceStrategy(SpellValidationStrategy):
         if provider_map is None:
             provider_map = {}
             if spellbook is not None:
-                for contracted in spellbook._contracted_spells.values():
-                    for index, provider_spell in contracted.items():
+                # One-call snapshots (exact under concurrent writers on 3.14t): the
+                # mutators write these maps under the Book lock, which this pass does
+                # not hold, and a recheck can run while a notch is still writing them.
+                for contracted in list(spellbook._contracted_spells.values()):
+                    for index, provider_spell in list(contracted.items()):
                         if cancel_event is not None and cancel_event.is_set:
                             cancel_event.throw_if_set()
                         key = SpellInputUtils.make_spell_key_from_parts(
@@ -130183,13 +130650,17 @@ class ContractProviderPresenceStrategy(SpellValidationStrategy):
                     continue
 
                 if not providers:
+                    frame_key, binding_key = contract_key
                     context.issues.append(
                         SpellValidationIssue(
                             severity="warning",
                             code="SPELL_CONTRACT_MISSING_PROVIDER",
                             message=(
-                                f"Spell {spell.spell_name!r} parameter {param.name!r} "
-                                f"has no provider for contract key {contract_key}."
+                                f"Spell {spell.spell_name!r} parameter {param.name!r} has no provider "
+                                f"for its SpellContract (frame_key={frame_key!r}, binding_key={binding_key!r}): "
+                                "no active spell with that frame and binding name is contracted to this "
+                                "Spellbook. Contract one from a linked conduit (add_index_to_contract, or "
+                                "add_spell_to_contract for one version) and meld again."
                             ),
                             details={
                                 "parameter_name": param.name,
@@ -131248,7 +131719,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/validation/strategies/resol
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/validation/strategies/self_validation_strategy.py
-CONTENT SHA256: 008e59a69a59eb2ca89a44580d7f17a1a77878b4e1c94e4f2ae18d55759c62f5
+CONTENT SHA256: 95d1d95f8f0831b663753993dce9b2a6e73143860793781872a7f32ad32dc1ac
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import TYPE_CHECKING, Any, Dict, List
@@ -131375,7 +131846,7 @@ class SelfDependencyStrategy(SpellValidationStrategy):
 
         Args:
             context: Validation context of the spell under validation.
-            root_id: The spell's selected version id.
+            root_id: The spell's selected spell_id.
 
         Returns:
             List[str]: Parameter names that resolve to the spell itself.
@@ -133071,7 +133542,7 @@ END FILE: src/melder/aether/spellbook/spellbinder.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spellbook.py
-CONTENT SHA256: fc9c2aa92e8ac518335577546dfad9d79245ba09946f42cf21dbf576884c29d0
+CONTENT SHA256: 47eac897c84c8ac3066418791e02f1d4ccca366a96c4c7cbc76201df48ce3ea9
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -134713,6 +135184,11 @@ class Spellbook(Cleanable):
             - Leaves `_contracted_spell_ids[conduit_id]` untouched: borrowed
               existence is kept across the inactive window.
             - Does not touch the SpellIndex or the framewide lookup.
+            - Once the Book has conjured, marks the Book's SpellContract
+              consumers of the copy's key for revalidation after releasing the
+              lock (`_mark_contract_dependents_dirty`; rule 2 of
+              contract_recheck_on_notch_2026_10_16): their next meld rechecks
+              the provider. Mark only.
 
         Args:
             conduit_id (str): Peer conduit id that owns the contract.
@@ -134724,10 +135200,13 @@ class Spellbook(Cleanable):
         Raises:
             RuntimeError: If the spell is not the active contracted spell for
                 its id under `conduit_id`.
+            Exception: Whatever the registry's mark raises, logged; the park
+                stays published.
 
         Threading:
             - Acquires the Spellbook lock; the admitting transaction serializes
-              the wider operation.
+              the wider operation. The consumer mark runs after the lock is
+              released and takes only the registry lock.
         """
         spell_id = spell.spell_id
         spell_index = spell.spell_index
@@ -134762,6 +135241,10 @@ class Spellbook(Cleanable):
                 parked = {}
                 self._inactive_contracted_spells[conduit_id] = parked
             parked[spell_id] = spell
+            conjured = self._conjured
+        # Rule 2: the copy this key's consumers resolved is parked - they recheck at their next meld.
+        if conjured:
+            self._mark_contract_dependents_dirty({binding_key})
 
     def _reactivate_contracted_spell(self, conduit_id: str, spell: Spell) -> None:
         """
@@ -134780,6 +135263,10 @@ class Spellbook(Cleanable):
             - Assumes the conduit's contract maps are live (park never drops the
               conduit sub-dicts); does not touch the SpellIndex or framewide
               lookup.
+            - Once the Book has conjured, marks the Book's SpellContract
+              consumers of the copy's key for revalidation after releasing the
+              lock (`_mark_contract_dependents_dirty`; rule 2): their next meld
+              builds against the copy now active. Mark only.
 
         Args:
             conduit_id (str): Peer conduit id that owns the contract.
@@ -134791,10 +135278,13 @@ class Spellbook(Cleanable):
         Raises:
             RuntimeError: If the spell is not the parked contracted spell for
                 its id under `conduit_id`.
+            Exception: Whatever the registry's mark raises, logged; the
+                reactivation stays published.
 
         Threading:
             - Acquires the Spellbook lock; the admitting transaction serializes
-              the wider operation.
+              the wider operation. The consumer mark runs after the lock is
+              released and takes only the registry lock.
         """
         spell_id = spell.spell_id
         spell_index = spell.spell_index
@@ -134825,6 +135315,10 @@ class Spellbook(Cleanable):
             self._lookup_contracted_spells[conduit_id][binding_key] = spell_index
             self._contracted_spells_by_id[conduit_id][spell_id] = spell
             self._spell_id_pool[spell_id] = spell
+            conjured = self._conjured
+        # Rule 2: this key's consumers resolve the reactivated copy now - they rebuild at their next meld.
+        if conjured:
+            self._mark_contract_dependents_dirty({binding_key})
 
     def _inactivate_contract_spell(self, conduit_id: str, spell_id: str) -> None:
         """
@@ -136242,11 +136736,18 @@ class Spellbook(Cleanable):
         keys for the peer conduit so change-control commit hooks can observe
         the updated contract scope.
 
+        Once the Book has conjured, the Book's SpellContract consumers of the
+        copy's key are marked for revalidation after the Book lock is released
+        (`_mark_contract_dependents_dirty`; rule 2 of
+        contract_recheck_on_notch_2026_10_16), so their next meld builds against
+        the new copy; the mark walks on to what depends on them.
+
         Args:
             spell (Spell): The spell object to add.
             conduit_id (str): The ID of the peer conduit the spell was contracted from.
         Raises:
             RuntimeError: If the contracted spell's binding key collides with existing bindings.
+            Exception: Whatever a registry mark raises, logged; the added copy stays published.
         """
         frame_key = None
         should_mark = False
@@ -136285,6 +136786,9 @@ class Spellbook(Cleanable):
 
         if should_mark and frame_key:
             self._mark_collection_dependents_dirty({frame_key})
+        if should_mark:
+            # Rule 2: a new active copy for this key - its consumers rebuild against it at their next meld.
+            self._mark_contract_dependents_dirty({spell_key})
         self._try_update_staged_contract_keys(conduit_id)
         if self._conjured and self._conduit is not None:
             self._register_spell_with_risk_manager(self._conduit._id, spell)
@@ -136397,12 +136901,33 @@ class Spellbook(Cleanable):
         keys for the peer conduit so change-control commit hooks can observe
         the updated contract scope.
 
+        It removes the copy of exactly the version `spell_id` names: the active
+        copy only when that copy's own `spell_id` is `spell_id`, otherwise the
+        version's parked copy; when the Book holds neither it raises and changes
+        nothing. The index's member set is never consulted, so with one version
+        parked and another version of the same index active (an index link after
+        a notch, or two version grants) removing the parked version leaves the
+        active copy alone, and an index unlink completes in any member order
+        (contracted_copy_removal_by_version_2026_10_16, 0.2.8251).
+
+        Removing an ACTIVE copy (an uncontract, an index unlink or destroy, a
+        version leaving its index) marks the Book's SpellContract consumers of
+        its key for revalidation after the Book lock is released, once the Book
+        has conjured (`_mark_contract_dependents_dirty`; rule 2): their next meld
+        fails with the first meld's missing-provider report. A parked copy is
+        dropped without a mark - no consumer resolves it.
+
         Args:
             spell_id (str): The version SHA of the spell to remove.
             conduit_id (str): The ID of the peer conduit the spell was contracted from.
+        Raises:
+            RuntimeError: If the conduit has no contracted maps or holds no copy of `spell_id`.
+            Exception: Whatever the registry's mark raises, logged; the removal stays published.
         """
 
         removed_spell = None
+        removed_key: Optional[tuple[str, str]] = None
+        conjured = False
         with self._lock:
             spell_map = self._contracted_spells.get(conduit_id)
             lookup_map = self._lookup_contracted_spells.get(conduit_id)
@@ -136416,27 +136941,25 @@ class Spellbook(Cleanable):
                 )
                 raise RuntimeError(f"No contracted spell maps found for conduit ID {conduit_id}.")
 
-            # Find the contracted SpellIndex holding this member id. A destroyed
-            # (cleaned) contracted index can no longer report its member set, so
-            # fall back to matching the contracted spell's own id -- the removed
-            # member's live copy -- so its stale entry is still dropped.
+            # Find the ACTIVE copy of exactly this version: the entry whose copy's own
+            # id is `spell_id`, for a live or a destroyed (cleaned) index alike. Never
+            # match by index membership: a live index lists every version, so a
+            # membership match took another version's active copy whenever this
+            # version was parked beside it (the unlink after a notch), and the later
+            # removal of that version then raised
+            # (contracted_copy_removal_by_version_2026_10_16, 0.2.8251). The index comes
+            # from the map key, so neither a cleaned index's member set nor a cleaned
+            # copy's `spell_index` is read.
             spell_index = None
             spell = None
             for idx, s in spell_map.items():
-                if idx._cleaned:
-                    if s.spell_id == spell_id:
-                        spell_index = idx
-                        spell = s
-                        break
-                    continue
-                member_ids = idx._spells_in_index
-                if member_ids and spell_id in member_ids:
+                if s.spell_id == spell_id:
                     spell_index = idx
                     spell = s
                     break
 
             if spell_index is None or spell is None:
-                # Not in the ACTIVE contracted maps. A borrowed member can be
+                # No ACTIVE copy of this version. A borrowed member can be
                 # parked (inactive) instead of active: `_add_inactive_contracted_spell`
                 # populates ONLY `_inactive_contracted_spells` plus the per-conduit
                 # existence set -- never the active maps, the lookup, or the risk
@@ -136484,6 +137007,11 @@ class Spellbook(Cleanable):
                 else:
                     conduit_spell_ids.discard(spell_id)
                 removed_spell = spell
+                removed_key = key
+                conjured = self._conjured
+        # Rule 2: the active copy for this key is gone - its consumers recheck (and fail) at their next meld.
+        if removed_key is not None and conjured:
+            self._mark_contract_dependents_dirty({removed_key})
         self._try_update_staged_contract_keys(conduit_id)
         if removed_spell is not None and self._conjured and self._conduit is not None:
             self._unregister_spell_with_risk_manager(self._conduit._id, removed_spell)
@@ -136503,11 +137031,22 @@ class Spellbook(Cleanable):
         keys for the peer conduit so change-control commit hooks can observe
         the updated contract scope.
 
+        Once the Book has conjured, the Book's SpellContract consumers of every
+        active copy's key are marked for revalidation after the Book lock is
+        released (`_mark_contract_dependents_dirty`; rule 2) - the keys the
+        copies were filed under (`_make_spell_key`, as `_add_contracted_spell`
+        files them), so the mark names exactly the keys the clear drops.
+
         Args:
             conduit_id (str): The ID of the peer conduit whose contracted spells are to be cleared
+        Raises:
+            RuntimeError: If the conduit has no contracted maps.
+            Exception: Whatever the registry's mark raises, logged; the clear stays published.
         """
 
         removed_spells: list[Spell] = []
+        cleared_keys: set[tuple[str, str]] = set()
+        conjured = False
         with self._lock:
             if (
                 conduit_id not in self._contracted_spells
@@ -136524,6 +137063,11 @@ class Spellbook(Cleanable):
 
             spell_map = self._contracted_spells[conduit_id]
             removed_spells = list(spell_map.values())
+            cleared_keys = {
+                self._make_spell_key(spell.spellframe, spell.spell_name, spell.binding_name)
+                for spell in removed_spells
+            }
+            conjured = self._conjured
             for spell in spell_map.values():
                 self._unregister_contracted_spell_id(conduit_id, spell.spell_index.selected_spell_id, spell)
 
@@ -136539,6 +137083,9 @@ class Spellbook(Cleanable):
             parked = self._inactive_contracted_spells.get(conduit_id)
             if parked is not None:
                 parked.clear()
+        # Rule 2: every active copy this clear dropped leaves its key's consumers without a provider.
+        if cleared_keys and conjured:
+            self._mark_contract_dependents_dirty(cleared_keys)
         self._try_update_staged_contract_keys(conduit_id)
         if removed_spells and self._conjured and self._conduit is not None:
             for spell in removed_spells:
@@ -136867,9 +137414,13 @@ class Spellbook(Cleanable):
         dependents -- are flagged with that reason.
 
         Contract:
-            - Admits a `notch` transaction (claims the owning spellbook INTENT
-              and the spell binding key EXCLUSIVE), performs the selected-spell
-              switch inside the held window, then commits.
+            - Runs inside the `notch` transaction the owning Conduit admits and
+              ends (`Conduit.notch_spell`): its seal claims this spellbook, the
+              acting conduit, the conduits linked to it and the spell binding key,
+              all EXCLUSIVE, and freezes those conduits' creation gates
+              (`NotchTransactionStrategy`; corrected 2026-10-16: this said the
+              spellbook admits the transaction and claims itself INTENT). It
+              performs the selected-spell switch inside the held window.
             - The actual switch (a SpellIndex repoint via `SpellIndex.update`) is
               the SpellIndex-model seam `_apply_notch`.
 
@@ -136909,8 +137460,10 @@ class Spellbook(Cleanable):
         """
         Internal SEAM -- notch the SpellIndex's ACTIVE member to `spell`.
 
-        Runs inside the held `notch` transaction window (owning spellbook INTENT
-        + binding key EXCLUSIVE). A SpellIndex holds a SET of member spell ids;
+        Runs inside the held `notch` transaction window (the owning spellbook,
+        the acting conduit, the conduits linked to it and the binding key, all
+        EXCLUSIVE; corrected 2026-10-16: this said spellbook INTENT). A
+        SpellIndex holds a SET of member spell ids;
         `selected_spell_id` is the one currently active. Notch swaps which member
         is active using the active/inactive park machinery.
 
@@ -136926,10 +137479,18 @@ class Spellbook(Cleanable):
             4. Repoint the framewide binding signature old -> new active id.
             5. Re-register the index so it is structurally gated + dirty; meld-time
                revalidation recompiles lazily on next resolve.
+            6. Mark every lineage downstream of this one for revalidation
+               (`SpellSystemStates.mark_dependents_for_revalidation`; D2 of
+               contract_recheck_on_notch_2026_10_16): its dependents by registry
+               edge, in any Book, and the SpellContract consumers of its binding
+               key, transitively. Mark only: each rechecks and rebuilds at its next
+               meld; objects already built keep what they were built with.
 
-        Contracted borrowers are NOT yet fanned out here (owner-side only); a notch
-        on a shared index does not yet update borrowers' contracted maps -- that is
-        the next slice (cross-conduit fan-out under the same seal).
+        Borrowers are updated by the owning Conduit after the transaction window, not
+        here: `Conduit._deactivate_borrowed_spell` parks every linked peer's copy of the
+        outgoing version and `ConduitWard._emit_index_notch` moves index-link
+        subscriptions to the incoming one; the borrower Book's contracted-map mutators
+        mark its consumers (rule 2).
 
         Args:
             spell_index: The SpellIndex whose active member is switched.
@@ -136983,7 +137544,11 @@ class Spellbook(Cleanable):
             spell_index=spell_index,
             owner_spellbook_id=self._id,
             resolvable=spell.resolvable,
+            binding_key=spell._key,
         )
+        # D2: everything downstream of the notched lineage - its dependents by registry edge, in any Book, and the
+        # SpellContract consumers of its binding key - revalidates at its next meld (mark only).
+        self._spell_system_states.mark_dependents_for_revalidation((spell_index.id,))
         # Refresh the spellbook validation-required flag for the promoted member:
         # register_spell recomputes its structural/resolution validity and, for a
         # not-yet-validated member, flips `_spellbook_validation_required` True --
@@ -137003,8 +137568,8 @@ class Spellbook(Cleanable):
                 self._replace_spell_record_in_nexus(outgoing.spell_id, spell)
             else:
                 self._publish_spell_record_to_nexus(spell)
-        # Mark the lineage structurally changed so dependents revalidate, and clear
-        # the promoted member's stale CreationContext. invalidate_spell also sets
+        # Mark the promoted lineage structurally changed (the walk above marked its
+        # dependents) and clear its stale CreationContext. invalidate_spell also sets
         # resolution_required=True as a side effect; bind-parity routing below sets
         # it back to False so meld's validation-required lane (the one that runs
         # the full 5-7/8-11 target pass) owns the recompile, exactly as it does for
@@ -138068,6 +138633,59 @@ class Spellbook(Cleanable):
             )
             raise
 
+    def _mark_contract_dependents_dirty(self, contract_keys: set[tuple[str, str]]) -> None:
+        """
+        Internal
+
+        Mark this Book's SpellContract consumers of `contract_keys` for revalidation after a contracted copy changed.
+
+        Purpose:
+            Rule 2 of contract_recheck_on_notch_2026_10_16: a satisfied SpellContract is not checked on every meld.
+            Instead every change of an active contracted (borrowed) copy - a lender's notch and notch back, a parked
+            or reactivated version-anchored copy, an add, a removal, an index unlink or destroy, a contract clear -
+            marks the consumers of the copy's key, so their next meld reruns phases 1-4 (Phase 4 rechecks the
+            provider) and rebuilds against the copy now active, or fails with the first meld's error. Mark only:
+            objects already built keep their provider.
+
+        Contract:
+            - A no-op for no keys. Otherwise one `SpellSystemStates.mark_contract_dependents_dirty` call for this
+              Book, which gates the consumers (`contract_unvalidated`) and walks on to what depends on them.
+            - The five contracted-map mutators call it after releasing the Book lock, and only once the Book has
+              conjured: before conjure, conjure runs phases 1-4 for every spell anyway.
+
+        Args:
+            contract_keys: The normalized `(frame_key, binding_key)` keys of the copies that changed.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError: If the spell system state is unavailable.
+            Exception: Whatever the registry raises, after logging it; the map change the mark follows stays
+                published.
+
+        Threading:
+            Called with the Book lock free. The registry lock it takes is never held while a Book, ward, contract
+            or conduit lock is taken (registry -> state -> RiskManager), so no lock-order cycle can close.
+        """
+        if not contract_keys:
+            return
+        if self._spell_system_states is None:
+            self._logger.error("SpellSystemStates unavailable for revalidation", "_mark_contract_dependents_dirty")
+            raise RuntimeError("SpellSystemStates unavailable for revalidation.")
+        try:
+            self._spell_system_states.mark_contract_dependents_dirty(
+                spellbook_id=self._id,
+                contract_keys=contract_keys,
+            )
+        except Exception as e:
+            self._logger.error(
+                f"Failed to mark contract dependents dirty: {e}",
+                "_mark_contract_dependents_dirty",
+                exc_info=True,
+            )
+            raise
+
     def add_bind_hooks(
             self,
             *,
@@ -138767,6 +139385,7 @@ class Spellbook(Cleanable):
                     spell_index=new_spell.spell_index,
                     owner_spellbook_id=self._id,
                     resolvable=new_spell.resolvable,
+                    binding_key=new_spell._key,
                 )
                 if self._conjured and self._conduit is not None:
                     self._register_spell_with_risk_manager(
@@ -212770,7 +213389,7 @@ END FILE: src/melder/nexus/frame_descriptor/spell_descriptor_payload.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/nexus/frame_descriptor/spell_record.py
-CONTENT SHA256: 3cb58bbeb3e420b1c6d290d099b06ba6998084f16456dcb2ef28eabe2d4944bf
+CONTENT SHA256: d9623d9bb775c012e40de24e909e6c5e9450fddbe333d8d1ee1e59dbb781dcbe
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -212876,7 +213495,7 @@ class SpellRecord(Cleanable):
             owner_conduit_id:
                 Owning conduit id when known.
             spell_id:
-                Current spell/version id.
+                Current spell_id.
             spell_index_id:
                 Stable SpellIndex id.
             spell_name:
@@ -212943,7 +213562,7 @@ class SpellRecord(Cleanable):
 
         Contract:
             - Keys the record by originating spellbook plus current spell id.
-            - Uses the published spell/version id, not the stable SpellIndex id.
+            - Uses the published spell_id, not the stable SpellIndex id.
         """
         self.check_cleaned()
         return self.origin_spellbook_id, self.spell_id
@@ -212992,7 +213611,7 @@ END FILE: src/melder/nexus/frame_descriptor/spell_record.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/nexus/frame_descriptor_manager.py
-CONTENT SHA256: eb8ef8a4386e349891584c798433a601207e4bfbbfa000567c691583236782dc
+CONTENT SHA256: 8d2620da9b5cc2868b4b3009e1aa5f021d6df51c5f3d5c923600121954e96d3d
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -213643,7 +214262,7 @@ class FrameDescriptorManager(Cleanable):
             origin_spellbook_id:
                 Owning Spellbook id.
             spell_id:
-                Current spell/version id.
+                Current spell_id.
             frame_name:
                 Stable frame name that owns the descriptor.
 
@@ -213871,7 +214490,7 @@ END FILE: src/melder/nexus/frame_descriptor_manager.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/nexus/nexus.py
-CONTENT SHA256: 0b20cd437718754d975c34430bfad0442712d206ecb031819db9eec26ab09e2e
+CONTENT SHA256: 28b56afe2de73faa20b4bae21d553711970a94914551a6edbfbefb778224ac82
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -215308,7 +215927,7 @@ class Nexus(Cleanable):
             origin_spellbook_id:
                 Owning Spellbook id.
             spell_id:
-                Current spell/version id.
+                Current spell_id.
             frame_name:
                 Owning frame name.
 
@@ -262894,7 +263513,7 @@ END FILE: src/melder/utilities/custom_exceptions/internal_registration_error.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/utilities/custom_exceptions/managed_spell_exhausted_error.py
-CONTENT SHA256: 2abb50abb5ef48a4f754b4e4129b9f35382eaca8857eec923568789a4b301e60
+CONTENT SHA256: d0c4dd45d07718f765916383b3189cc5335d5278184b4c4edfad4ac279a07b6a
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import Optional
@@ -262975,7 +263594,7 @@ class ManagedSpellExhaustedError(MeldExecutionError):
 
         Args:
             spell_id:
-                Version id of the managed spell.
+                The managed spell's spell_id.
             spell_name:
                 Human-readable name of that spell.
             message:
@@ -263013,7 +263632,7 @@ class ManagedSpellExhaustedError(MeldExecutionError):
             - Pure: builds the error, raises nothing.
 
         Args:
-            spell_id: Version id of the managed spell.
+            spell_id: The managed spell's spell_id.
             spell_name: Its display name.
             limit: The pool's limit.
 
@@ -263051,7 +263670,7 @@ class ManagedSpellExhaustedError(MeldExecutionError):
             - Pure: builds the error, raises nothing.
 
         Args:
-            spell_id: Version id of the managed spell.
+            spell_id: The managed spell's spell_id.
             spell_name: Its display name.
             limit: The pool's limit.
             timeout_seconds: The wait that ran out, in seconds.
@@ -263076,7 +263695,7 @@ END FILE: src/melder/utilities/custom_exceptions/managed_spell_exhausted_error.p
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/utilities/custom_exceptions/meld_execution_error.py
-CONTENT SHA256: d3ebf416076536ff67b0735720af1480cf7336976673d75d6ae2580eb2451ad5
+CONTENT SHA256: 61b62cef76d7a3c205516d1e1694e08ea4f9016f1aa4148b43548f22fedcd862
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import Optional
@@ -263195,7 +263814,7 @@ class MeldExecutionError(RuntimeError):
 
         Args:
             spell_id:
-                The root spell's version identifier (typically SHA256).
+                The root spell's spell_id (typically SHA256).
             spell_name:
                 Human-readable name of the root spell.
             message:
@@ -263711,7 +264330,7 @@ END FILE: src/melder/utilities/custom_exceptions/spell_space_scope_error.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/utilities/custom_exceptions/spellbook_validation_error.py
-CONTENT SHA256: 476097a4be91f64c07e2d7564e9bcef29676433e28f9c31ae1e1f5ebaa7a8ee8
+CONTENT SHA256: 5c6f97ecfe835982de214b97010bfeb6b779e8ffa5ef433ef9bb9916fc209e89
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, FrozenSet, List, Optional, Sequence, Tuple
@@ -263750,8 +264369,10 @@ class SpellbookValidationError(RuntimeError):
         dependency at fault and says what to change. Errors marked `[internal]`
         come from Melder's own consistency checks and are Melder bugs; report
         them with the message. Warnings never block conjure and are only
-        counted here; `conjure(validation_warnings=True)` logs them. Fix the
-        binding, not the validator.
+        counted here, except one that holds a spell's lineage gated (a lost
+        SpellContract provider at meld): it is listed as that spell's reason,
+        with its remedy. `conjure(validation_warnings=True)` logs the others.
+        Fix the binding, not the validator.
 
     Message shape (2026-09-26):
         - First line: "Spellbook validation failed. Broken spells: A, B." (the
@@ -263763,6 +264384,10 @@ class SpellbookValidationError(RuntimeError):
           CIRCULAR_DEPENDENCY is reported for the same spell, and CIRCULAR_DEPENDENCY
           when SELF_DEPENDENCY is (a spell that depends on itself); root_not_viable and
           broken_spell_in_dag are hidden when any other error is shown.
+        - A spell with no error that a Phase-4 warning holds gated
+          (`GATING_WARNING_CODES`, a lost SpellContract provider) lists that
+          warning as its reason, "  - <message> [CODE]", instead of saying no
+          error was recorded (D1-B, 2026-10-16).
         - Footers count the hidden warnings and explain `[internal]`.
 
     Contract:
@@ -263770,7 +264395,9 @@ class SpellbookValidationError(RuntimeError):
         - Shows every recorded error reason: Phase 4 issues and Phase 6 errors
           on the spells, plus the conduit diagnostics handed in through
           `system_diagnostics`.
-        - Never lists warnings, strategy sources or details payloads.
+        - Never lists warnings, strategy sources or details payloads, except the
+          gating warnings of a spell that shows no error: they are why its
+          lineage is gated, so they are its reason (2026-10-16).
         - Remains resilient when spell artifacts are partially unavailable or
           cleaned while the error is being rendered. Rendering a diagnostic must
           never raise a second error on top of the first.
@@ -263847,6 +264474,11 @@ class SpellbookValidationError(RuntimeError):
         "CIRCULAR_DEPENDENCY": "SELF_DEPENDENCY",
     }
 
+    # Phase-4 warnings that hold a lineage `gated` (`CompilerPhase4.run`): a spell refused only because of one lists
+    # it as its reason instead of "No validation error was recorded" (D1-B, 2026-10-16). A unit test pins this set
+    # to the codes Phase 4 gates on.
+    GATING_WARNING_CODES: ClassVar[FrozenSet[str]] = frozenset({"SPELL_CONTRACT_MISSING_PROVIDER"})
+
     def __init__(
             self,
             broken_spells: list[Spell],
@@ -263885,8 +264517,8 @@ class SpellbookValidationError(RuntimeError):
         Purpose:
             Compose the full message from spell blocks, whole-graph errors and footers.
         Contract:
-            - Lists a spell only when it has an error, except when no diagnostics were
-              handed in (meld paths), where a spell without one is still named.
+            - Lists a spell when it has an error or a gating warning, and, when no
+              diagnostics were handed in (meld paths), a spell with neither too.
             - Applies the dedupe, superseded and restating rules of the class docstring.
         Args:
             broken_spells: Spells supplied to the error.
@@ -263894,14 +264526,14 @@ class SpellbookValidationError(RuntimeError):
         Returns:
             str: The rendered message.
         """
-        blocks: List[Tuple[str, str, List[Tuple[str, str]]]] = []
+        blocks: List[Tuple[str, str, List[Tuple[str, str]], List[Tuple[str, str]]]] = []
         block_by_id: Dict[str, List[Tuple[str, str]]] = {}
         warning_count = 0
         for spell in broken_spells:
-            errors, warnings = cls._spell_errors(spell)
+            errors, gating, warnings = cls._spell_errors(spell)
             warning_count += warnings
             name = cls._read_text(spell, "spell_name") or "<unknown spell>"
-            blocks.append((name, cls._spell_label(spell, name), errors))
+            blocks.append((name, cls._spell_label(spell, name), errors, gating))
             spell_id = cls._read_text(spell, "spell_id")
             if spell_id is not None:
                 block_by_id.setdefault(spell_id, errors)
@@ -263917,42 +264549,66 @@ class SpellbookValidationError(RuntimeError):
     @classmethod
     def _compose(
             cls,
-            blocks: List[Tuple[str, str, List[Tuple[str, str]]]],
+            blocks: List[Tuple[str, str, List[Tuple[str, str]], List[Tuple[str, str]]]],
             graph_errors: List[Tuple[str, str]],
             warning_count: int,
             diagnostics_given: bool,
     ) -> str:
         """
         Purpose:
-            Turn collected (code, message) errors into the final text.
+            Turn collected (code, message) errors and gating warnings into the final text.
         Contract:
-            - Filters each block, then drops restating codes when anything else remains.
+            - Filters each block, then drops restating codes when anything else remains;
+              a gating warning counts as something else (it is shown as a reason).
+            - A block whose filtered errors are empty and whose gating warnings are not
+              lists those warnings as its reasons ("  - <message> [CODE]", never marked
+              internal); a block that shows errors counts its gating warnings with the
+              hidden ones.
+            - A block is shown when it has errors or gating warnings, or when no
+              diagnostics were handed in, where it says no error was recorded.
             - Emits header, spell blocks, whole-graph block and footers in that order.
         Args:
-            blocks: (spell name, block label, errors) per supplied spell, in supply order.
+            blocks: (spell name, block label, errors, gating warnings) per supplied
+                spell, in supply order.
             graph_errors: Errors attributed to no supplied spell.
-            warning_count: Phase-4 warnings seen on the supplied spells.
+            warning_count: Phase-4 warnings seen on the supplied spells, gating
+                warnings not included.
             diagnostics_given: Whether conduit diagnostics were handed in.
         Returns:
             str: The rendered message.
         """
-        filtered = [(name, label, cls._filter(errors)) for name, label, errors in blocks]
+        filtered = [
+            (name, label, cls._filter(errors), cls._filter(gating)) for name, label, errors, gating in blocks
+        ]
         graph = cls._filter(graph_errors)
-        all_codes = [code for _, _, errors in filtered for code, _ in errors] + [code for code, _ in graph]
+        all_codes = [code for _, _, errors, gating in filtered for code, _ in errors + gating]
+        all_codes += [code for code, _ in graph]
         if any(code not in cls.RESTATING_CODES for code in all_codes):
             filtered = [
-                (name, label, [e for e in errors if e[0] not in cls.RESTATING_CODES])
-                for name, label, errors in filtered
+                (name, label, [e for e in errors if e[0] not in cls.RESTATING_CODES], gating)
+                for name, label, errors, gating in filtered
             ]
             graph = [e for e in graph if e[0] not in cls.RESTATING_CODES]
-        shown = [(name, label, errors) for name, label, errors in filtered if errors or not diagnostics_given]
-        names = ", ".join(name for name, _, _ in shown)
+        shown: List[Tuple[str, List[Tuple[str, str]], List[Tuple[str, str]]]] = []
+        names_shown: List[str] = []
+        for name, label, errors, gating in filtered:
+            if errors:
+                # The errors are the reason; a gating warning beside them is only counted.
+                warning_count += len(gating)
+                shown.append((label, errors, []))
+                names_shown.append(name)
+            elif gating or not diagnostics_given:
+                shown.append((label, [], gating))
+                names_shown.append(name)
+        names = ", ".join(names_shown)
         lines = [f"Spellbook validation failed. Broken spells: {names}." if names
                  else "Spellbook validation failed. The dependency graph has errors."]
         has_internal = False
-        for _, label, errors in shown:
+        for label, errors, gating in shown:
             lines.append(f"{label}:")
-            if not errors:
+            for code, message in gating:
+                lines.append(f"  - {message} [{code}]")
+            if not errors and not gating:
                 lines.append("  - No validation error was recorded for this spell; its validity is "
                              "invalid, gated or disabled.")
             for code, message in errors:
@@ -264014,21 +264670,26 @@ class SpellbookValidationError(RuntimeError):
         return f"  - {marker}{message} [{code}]"
 
     @classmethod
-    def _spell_errors(cls, spell: Any) -> Tuple[List[Tuple[str, str]], int]:
+    def _spell_errors(cls, spell: Any) -> Tuple[List[Tuple[str, str]], List[Tuple[str, str]], int]:
         """
         Purpose:
-            Collect a spell's error (code, message) pairs and count its Phase-4 warnings.
+            Collect a spell's error (code, message) pairs and its gating warnings, and
+            count its other Phase-4 warnings.
         Contract:
             - Phase 4: `validation_result_phase4.issues`, falling back to `.errors` plus
-              `.warnings` when `issues` is unreadable or empty.
+              `.warnings` when `issues` is unreadable or empty. An error is collected; a
+              warning whose code is in `GATING_WARNING_CODES` is collected as a gating
+              warning, in issue order; any other warning is only counted.
             - Phase 6: `validation_result_phase6.errors` (warnings ignored).
             - Any unreadable part is skipped; never raises.
         Args:
             spell: A Spell (or a stand-in exposing the same attributes).
         Returns:
-            Tuple[List[Tuple[str, str]], int]: Errors in order, and the warning count.
+            Tuple[List[Tuple[str, str]], List[Tuple[str, str]], int]: Errors in order,
+                gating warnings in order, and the count of the other warnings.
         """
         errors: List[Tuple[str, str]] = []
+        gating: List[Tuple[str, str]] = []
         warnings = 0
         for issue in cls._phase4_issues(spell):
             severity = cls._read_text(issue, "severity")
@@ -264036,12 +264697,15 @@ class SpellbookValidationError(RuntimeError):
             if severity == "error":
                 errors.append((code, cls._read_text(issue, "message") or repr(issue)))
             elif severity == "warning":
-                warnings += 1
+                if code in cls.GATING_WARNING_CODES:
+                    gating.append((code, cls._read_text(issue, "message") or repr(issue)))
+                else:
+                    warnings += 1
         for diagnostic in cls._read_list(cls._read_attr(spell, "validation_result_phase6"), "errors"):
             entry = cls._diagnostic_error(diagnostic)
             if entry is not None:
                 errors.append((entry[0], entry[1]))
-        return errors, warnings
+        return errors, gating, warnings
 
     @classmethod
     def _phase4_issues(cls, spell: Any) -> List[Any]:
@@ -271536,7 +272200,7 @@ END FILE: src/melder/utilities/helpers/class_wraps.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/utilities/helpers/general_helpers.py
-CONTENT SHA256: f3c2b2ff1869c680e4dfabb54b07405c558009177e00aef4061d1e544e87b7c4
+CONTENT SHA256: f4c7a036e2ddfcf046e7fae6f76bdaed2e5b154a38af46f7cd683e18470f7367
 SOURCE ENCODING: utf-8
 ================================================================================
 from enum import Enum
@@ -271998,10 +272662,10 @@ class SpellInputUtils:
     @staticmethod
     def describe_spell_id(spell_id: Optional[str], spells: Mapping[str, Spell]) -> str:
         """
-        Name a spell version id for a user-facing message.
+        Name a spell_id for a user-facing message.
 
         Purpose:
-            Validation and resolution run on spell version ids; users know spells
+            Validation and resolution run on spell_ids; users know spells
             by name. Messages call this so a 64-character id is shown only when
             no name is available.
 
@@ -272012,7 +272676,7 @@ class SpellInputUtils:
             - Pure; reads one mapping entry and the spell's name.
 
         Args:
-            spell_id: Spell version id, or None.
+            spell_id: A spell_id, or None.
             spells: Visible spell id -> Spell lookup (a spellbook's
                 `_spell_id_pool` or a phase's `spell_lookup`).
 

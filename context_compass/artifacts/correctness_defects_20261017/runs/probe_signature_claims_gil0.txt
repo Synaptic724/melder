@@ -1,0 +1,91 @@
+C1 bind_inactive after conjure; the staged version shares the active version's key
+  [before]
+    frame claim ('greeter', 'greeter'): English
+    book address map routes it to the index: True (index active: English)
+    meld(spellframe=Greeter, binding_name='greeter') -> English
+    find_spell_index(Greeter, 'English', 'greeter') is the index: True
+    staged French's key == English's key: True
+  [after bind_inactive(French)]
+    frame claim ('greeter', 'greeter'): none
+    book address map routes it to the index: False (index active: English)
+    meld(spellframe=Greeter, binding_name='greeter') -> English
+    find_spell_index(Greeter, 'English', 'greeter') raised RuntimeError: Spell not found in the spellbook.
+    another bind of (Greeter, 'greeter') ACCEPTED (Spanish); frame claim now: Spanish
+    English still the index's active version: True
+
+C2 bind_inactive before conjure; same key
+  [before (no conduit yet)]
+    frame claim ('greeter', 'greeter'): English
+    book address map routes it to the index: True (index active: English)
+    find_spell_index(Greeter, 'English', 'greeter') is the index: True
+  [after bind_inactive(French), before conjure]
+    frame claim ('greeter', 'greeter'): none
+    book address map routes it to the index: False (index active: English)
+    find_spell_index(Greeter, 'English', 'greeter') raised RuntimeError: Spell not found in the spellbook.
+  [after conjure]
+    frame claim ('greeter', 'greeter'): none
+    book address map routes it to the index: False (index active: English)
+    meld(spellframe=Greeter, binding_name='greeter') raised KeyError: "[MELD] No spell found for frame='greeter', binding='greeter'."
+    find_spell_index(Greeter, 'English', 'greeter') raised RuntimeError: Spell not found in the spellbook.
+
+C3 index moves: remove French into its own index, then add it back
+  [healed (notch to French and back)]
+    frame claim ('greeter', 'greeter'): English
+    book address map routes it to the index: True (index active: English)
+    meld(spellframe=Greeter, binding_name='greeter') -> English
+    find_spell_index(Greeter, 'English', 'greeter') is the index: True
+  [after remove_from_spell_index(French)]
+    frame claim ('greeter', 'greeter'): English
+    book address map routes it to the index: True (index active: English)
+    meld(spellframe=Greeter, binding_name='greeter') -> English
+    find_spell_index(Greeter, 'English', 'greeter') is the index: True
+  [after add_to_spell_index(French) back]
+    frame claim ('greeter', 'greeter'): none
+    book address map routes it to the index: False (index active: English)
+    meld(spellframe=Greeter, binding_name='greeter') -> English
+    find_spell_index(Greeter, 'English', 'greeter') raised RuntimeError: Spell not found in the spellbook.
+    another bind of (Greeter, 'greeter') ACCEPTED (Spanish); frame claim now: Spanish
+
+C4 cleanup_spell of French alone in the index remove_from_spell_index minted
+  [after remove_from_spell_index(French)]
+    frame claim ('greeter', 'greeter'): English
+    book address map routes it to the index: True (index active: English)
+    meld(spellframe=Greeter, binding_name='greeter') -> English
+    find_spell_index(Greeter, 'English', 'greeter') is the index: True
+  [after cleanup_spell(French)]
+    frame claim ('greeter', 'greeter'): none
+    book address map routes it to the index: False (index active: English)
+    meld(spellframe=Greeter, binding_name='greeter') -> English
+    find_spell_index(Greeter, 'English', 'greeter') raised RuntimeError: Spell not found in the spellbook.
+    another bind of (Greeter, 'greeter') ACCEPTED (Spanish); frame claim now: Spanish
+
+C5 notch across keys: English (Greeter, 'greeter') -> Spanish (Greeter, 'spanish') on one index
+    after the notch: English parked: True
+  [old key after notch]
+    frame claim ('greeter', 'greeter'): English
+    book address map routes it to the index: False (index active: Spanish)
+    meld(spellframe=Greeter, binding_name='greeter') raised KeyError: "[MELD] No spell found for frame='greeter', binding='greeter'."
+    find_spell_index(Greeter, 'English', 'greeter') raised RuntimeError: Spell not found in the spellbook.
+  [new key after notch]
+    frame claim ('greeter', 'spanish'): Spanish
+    book address map routes it to the index: True (index active: Spanish)
+    meld(spellframe=Greeter, binding_name='spanish') -> Spanish
+    find_spell_index(Greeter, 'Spanish', 'spanish') is the index: True
+    another bind of (Greeter, 'greeter') refused: Binding signature already active in this frame: frame_key='greeter', binding_name='greeter' is held by spell_id='5b6684046149040cd2f65d73b340ebdaef8b6
+
+C6 staging in Book L a version keyed like Book O's active spell
+    before: frame claim ('greeter', 'spanish'): Spanish (Book O, active)
+    after Book L stages French as (Greeter, 'spanish'): frame claim ('greeter', 'spanish'): none
+    Spanish still active in Book O: True
+    another bind of (Greeter, 'spanish') ACCEPTED (Italian); frame claim now: Italian
+
+C7 notch French active inside its own minted index; English stays active with the same key
+    English active in its index: True; French active in the minted index: True
+  [English's index after the notch]
+    frame claim ('greeter', 'greeter'): French
+    book address map routes it to the index: False (index active: English)
+    meld(spellframe=Greeter, binding_name='greeter') raised SpellbookValidationError: Spellbook validation failed. Broken spells: French.
+French (frame Greeter):
+  - Multiple visible spells share the lookup address frame='greeter', binding='greeter'. Use a distinct spellframe or binding_name so that each registration has a unique normalized address. [DUPLICATE_SPELL_NAME]
+    find_spell_index(Greeter, 'English', 'greeter') is the index: False
+

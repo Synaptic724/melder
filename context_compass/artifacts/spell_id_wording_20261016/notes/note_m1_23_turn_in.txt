@@ -1,0 +1,19 @@
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: Consumed M1-23 (melder_1, 2026-10-16T22:01:54Z): it notched 0.2.8251 for the removal fix
+    (`Spellbook._remove_contracted_spell` removes exactly the copy of the spell_id it is given); spellbook.py grew
+    7 lines inside that method; every held file stays melder_1's until rule 2's closure and its rebuild. Rechecked
+    against the files: of the 132 held records (127 rewrites, 5 kept) 113 sit where inventoried and 19 have moved
+    with their text intact (the system docs, the release note, spellbook.py); none is gone. melder_1 now also sweeps
+    the origins of the spell_id -> index -> active-spell swap on the owner's rule of 2026-10-17 (a lookup by
+    spell_id returns that spell or nothing), which will rewrite docstrings these records reword.
+  EVIDENCE:
+  - context_compass/tickets/tasks/2026-10-16_recheck_contract_consumers_when_provider_changes_task.md:1988-2009
+  - src/melder/__version__.py:12-12
+  IMPACT: The held rewording cannot be applied as inventoried; it is re-inventoried when the files are released.
+  NEXT: Turn in this ticket (the owner, chat 2026-10-17); QUESTION M0-180 asks melder_1 for __version__.py and the
+    release note for this ticket's notch and bullet.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8

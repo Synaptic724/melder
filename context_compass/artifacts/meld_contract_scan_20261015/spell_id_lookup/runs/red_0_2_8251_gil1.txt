@@ -1,0 +1,63 @@
+FFF.FF...FFFFFFFFFF                                                      [100%]
+=================================== FAILURES ===================================
+E   AssertionError: assert <class 'test_spell_id_lookup_returns_that_spell_integration.English'> is French
+     +  where <class 'test_spell_id_lookup_returns_that_spell_integration.English'> = Spell(name=English, binding=greeter, frame=Greeter, SHA256=97229c7bc6f7568e4da5607c57204dc8bf85a793319873733f8b711eb97a188f).spell
+/tmp/cc_res/lookup/base/tests/integration/melder/aether/conduit/test_spell_id_lookup_returns_that_spell_integration.py:122: AssertionError: assert <class 'test_spell_id_lookup_returns_that_spell_integration.English'> is French
+E   AssertionError: assert (Spell(name=French, binding=greeter, frame=Greeter, SHA256=aff0ec1cc350ea0232ba68c80576571a1b31e505280f3c38eabed7664a234111) is not None and <class 'test_spell_id_lookup_returns_that_spell_integration.French'> is English)
+     +  where <class 'test_spell_id_lookup_returns_that_spell_integration.French'> = Spell(name=French, binding=greeter, frame=Greeter, SHA256=aff0ec1cc350ea0232ba68c80576571a1b31e505280f3c38eabed7664a234111).spell
+/tmp/cc_res/lookup/base/tests/integration/melder/aether/conduit/test_spell_id_lookup_returns_that_spell_integration.py:137: AssertionError: assert (Spell(name=French, binding=greeter, frame=Greeter, SHA256=aff0ec1cc350ea0232ba68c80576571a1b31e505280f3c38eabed7664a234111) is not None and <class 'test_spell_id_lookup_returns_that_spell_integration.French'> is English)
+E   AssertionError: assert 'create' == 'read'
+      
+      - read
+      + create
+/tmp/cc_res/lookup/base/tests/integration/melder/aether/conduit/test_spell_id_lookup_returns_that_spell_integration.py:144: AssertionError: assert 'create' == 'read'
+E   RuntimeError: Provided spell_id 'aff0ec1cc350ea0232ba68c80576571a1b31e505280f3c38eabed7664a234111' does not match inspected ID '97229c7bc6f7568e4da5607c57204dc8bf85a793319873733f8b711eb97a188f'.
+/tmp/cc_res/lookup/base/src/melder/aether/conduit/conduit_ward/conduit_ward.py:1567: RuntimeError: Provided spell_id 'aff0ec1cc350ea0232ba68c80576571a1b31e505280f3c38eabed7664a234111' does not match inspected ID '97229c7bc6f7568e4da5607c57204dc8bf85a793319873733f8b711eb97a188f'.
+E   RuntimeError: Provided spell_id 'aff0ec1cc350ea0232ba68c80576571a1b31e505280f3c38eabed7664a234111' does not match inspected ID '97229c7bc6f7568e4da5607c57204dc8bf85a793319873733f8b711eb97a188f'.
+/tmp/cc_res/lookup/base/src/melder/aether/conduit/conduit_ward/conduit_ward.py:1567: RuntimeError: Provided spell_id 'aff0ec1cc350ea0232ba68c80576571a1b31e505280f3c38eabed7664a234111' does not match inspected ID '97229c7bc6f7568e4da5607c57204dc8bf85a793319873733f8b711eb97a188f'.
+E   AttributeError: 'Spellbook' object has no attribute 'find_spell_by_spell_id'. Did you mean: 'find_spell_by_id'?
+/tmp/cc_res/lookup/base/tests/component/melder/spellbook/test_spellbook_component_find_spell_by_spell_id.py:161: AttributeError: 'Spellbook' object has no attribute 'find_spell_by_spell_id'. Did you mean: 'find_spell_by_id'?
+E   AttributeError: 'Spellbook' object has no attribute 'find_spell_by_spell_id'. Did you mean: 'find_spell_by_id'?
+/tmp/cc_res/lookup/base/tests/component/melder/spellbook/test_spellbook_component_find_spell_by_spell_id.py:170: AttributeError: 'Spellbook' object has no attribute 'find_spell_by_spell_id'. Did you mean: 'find_spell_by_id'?
+E   AttributeError: 'Spellbook' object has no attribute 'find_spell_by_spell_id'. Did you mean: 'find_spell_by_id'?
+/tmp/cc_res/lookup/base/tests/component/melder/spellbook/test_spellbook_component_find_spell_by_spell_id.py:182: AttributeError: 'Spellbook' object has no attribute 'find_spell_by_spell_id'. Did you mean: 'find_spell_by_id'?
+E   AttributeError: 'Spellbook' object has no attribute 'find_spell_by_spell_id'. Did you mean: 'find_spell_by_id'?
+/tmp/cc_res/lookup/base/tests/component/melder/spellbook/test_spellbook_component_find_spell_by_spell_id.py:194: AttributeError: 'Spellbook' object has no attribute 'find_spell_by_spell_id'. Did you mean: 'find_spell_by_id'?
+E   AttributeError: 'Spellbook' object has no attribute 'find_spell_by_spell_id'. Did you mean: 'find_spell_by_id'?
+/tmp/cc_res/lookup/base/tests/component/melder/spellbook/test_spellbook_component_find_spell_by_spell_id.py:207: AttributeError: 'Spellbook' object has no attribute 'find_spell_by_spell_id'. Did you mean: 'find_spell_by_id'?
+E   AttributeError: 'Spellbook' object has no attribute 'find_spell_by_spell_id'. Did you mean: 'find_spell_by_id'?
+/tmp/cc_res/lookup/base/tests/component/melder/spellbook/test_spellbook_component_find_spell_by_spell_id.py:219: AttributeError: 'Spellbook' object has no attribute 'find_spell_by_spell_id'. Did you mean: 'find_spell_by_id'?
+E   AttributeError: 'Spellbook' object has no attribute 'find_spell_by_spell_id'. Did you mean: 'find_spell_by_id'?
+/tmp/cc_res/lookup/base/tests/component/melder/spellbook/test_spellbook_component_find_spell_by_spell_id.py:240: AttributeError: 'Spellbook' object has no attribute 'find_spell_by_spell_id'. Did you mean: 'find_spell_by_id'?
+E   AttributeError: 'Spellbook' object has no attribute 'find_spell_by_spell_id'. Did you mean: 'find_spell_by_id'?
+/tmp/cc_res/lookup/base/tests/component/melder/spellbook/test_spellbook_component_find_spell_by_spell_id.py:257: AttributeError: 'Spellbook' object has no attribute 'find_spell_by_spell_id'. Did you mean: 'find_spell_by_id'?
+E   AttributeError: 'Spellbook' object has no attribute 'find_spell_by_spell_id'. Did you mean: 'find_spell_by_id'?
+/tmp/cc_res/lookup/base/tests/component/melder/spellbook/test_spellbook_component_find_spell_by_spell_id.py:271: AttributeError: 'Spellbook' object has no attribute 'find_spell_by_spell_id'. Did you mean: 'find_spell_by_id'?
+E   AssertionError: the lookup never read the parked version
+    assert False
+     +  where False = wait(timeout=10)
+     +    where wait = <threading.Event at 0x5d379ff30d0: unset>.wait
+     +      where <threading.Event at 0x5d379ff30d0: unset> = {'78b7d4a42e3bd402cab9493a6419fa2f96015401f83903add2f27c558dfc1730': Spell(name=_ServiceB, binding=b, frame=type, SHA256=78b7d4a42e3bd402cab9493a6419fa2f96015401f83903add2f27c558dfc1730)}.paused
+/tmp/cc_res/lookup/base/tests/component/melder/spellbook/test_spellbook_component_find_spell_by_spell_id.py:303: AssertionError: the lookup never read the parked version
+==================================== PASSES ====================================
+=========================== short test summary info ============================
+PASSED tests/integration/melder/aether/conduit/test_spell_id_lookup_returns_that_spell_integration.py::test_an_unknown_spell_id_still_raises_value_error
+PASSED tests/integration/melder/aether/conduit/test_spell_id_lookup_returns_that_spell_integration.py::test_guard_a_transfer_by_the_parked_spell_id_moves_the_whole_index_unchanged
+PASSED tests/integration/melder/aether/conduit/test_spell_id_lookup_returns_that_spell_integration.py::test_guard_a_dependency_grant_after_the_notch_contracts_the_version_now_active
+PASSED tests/integration/melder/aether/conduit/test_spell_id_lookup_returns_that_spell_integration.py::test_guard_a_transfer_with_dependencies_after_the_notch_moves_the_dependency_index
+FAILED tests/integration/melder/aether/conduit/test_spell_id_lookup_returns_that_spell_integration.py::test_get_spell_by_id_with_a_parked_spell_id_returns_that_parked_spell
+FAILED tests/integration/melder/aether/conduit/test_spell_id_lookup_returns_that_spell_integration.py::test_after_a_notch_each_spell_id_still_returns_its_own_spell
+FAILED tests/integration/melder/aether/conduit/test_spell_id_lookup_returns_that_spell_integration.py::test_get_spell_permissions_returns_the_permissions_that_spell_was_bound_with
+FAILED tests/integration/melder/aether/conduit/test_spell_id_lookup_returns_that_spell_integration.py::test_add_spell_to_contract_by_the_parked_spell_id_grants_that_spell_parked
+FAILED tests/integration/melder/aether/conduit/test_spell_id_lookup_returns_that_spell_integration.py::test_remove_spell_from_contract_by_the_parked_spell_id_removes_that_grant
+FAILED tests/component/melder/spellbook/test_spellbook_component_find_spell_by_spell_id.py::test_active_spell_id_returns_its_active_spell
+FAILED tests/component/melder/spellbook/test_spellbook_component_find_spell_by_spell_id.py::test_parked_spell_id_returns_the_parked_spell_itself
+FAILED tests/component/melder/spellbook/test_spellbook_component_find_spell_by_spell_id.py::test_after_a_notch_each_spell_id_returns_its_own_spell
+FAILED tests/component/melder/spellbook/test_spellbook_component_find_spell_by_spell_id.py::test_parked_spell_moved_to_another_index_returns_itself
+FAILED tests/component/melder/spellbook/test_spellbook_component_find_spell_by_spell_id.py::test_parked_spell_split_off_to_a_fresh_index_returns_itself
+FAILED tests/component/melder/spellbook/test_spellbook_component_find_spell_by_spell_id.py::test_disposed_parked_spell_returns_none
+FAILED tests/component/melder/spellbook/test_spellbook_component_find_spell_by_spell_id.py::test_transfer_moves_both_spell_ids_to_the_target_book
+FAILED tests/component/melder/spellbook/test_spellbook_component_find_spell_by_spell_id.py::test_unknown_and_foreign_spell_ids_return_none
+FAILED tests/component/melder/spellbook/test_spellbook_component_find_spell_by_spell_id.py::test_lookup_never_iterates_the_live_active_index_map
+FAILED tests/component/melder/spellbook/test_spellbook_component_find_spell_by_spell_id.py::test_parked_spell_disposed_mid_lookup_never_makes_it_raise
+15 failed, 4 passed in 10.86s

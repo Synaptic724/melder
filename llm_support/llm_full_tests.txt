@@ -1,8 +1,8 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: tests
-SOURCE FINGERPRINT: 0eda79e92450018a53c7cad35bc4dd87bfd17a4fcaef7edba0d623de77c16720
-FILE COUNT: 1123
+SOURCE FINGERPRINT: cbcd3ebfd7f3fab275f7553119d64e1ef62f430441226f866b5e78c4f0d871af
+FILE COUNT: 1125
 
 ================================================================================
 BEGIN FILE: tests/_annotation_audit_support.py
@@ -18805,7 +18805,7 @@ END FILE: tests/component/melder/aether/conduit/test_conduit_component_spellspac
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/aether/conduit/test_conduit_component_transactions.py
-CONTENT SHA256: 8f5dac8fb2e4e864bf90f0165572536bb6523503bd0ae8af2e22dbc81e8857fd
+CONTENT SHA256: d63641eaa9913a6c2c537aa2f346cc54ed5b31f0fae747d575bddef022746be1
 SOURCE ENCODING: utf-8
 ================================================================================
 from __future__ import annotations
@@ -18879,14 +18879,14 @@ def _get_local_spell_by_version_id(
 ) -> Optional[object]:
     """
     Purpose:
-        Resolve one locally owned spell by its current version id.
+        Resolve one locally owned spell by its current spell_id.
     Contract:
         - Returns the first local spell whose SpellIndex.selected_spell_id matches the
-          supplied version id.
+          supplied spell_id.
         - Returns None when no local spell matches.
     Args:
         spellbook: Spellbook whose local spell map should be searched.
-        spell_id: Current version id to resolve.
+        spell_id: The current spell_id to resolve.
     Returns:
         Optional[object]: Matching local spell object, or None when absent.
     """
@@ -19670,7 +19670,7 @@ END FILE: tests/component/melder/aether/conduit/test_conduit_component_transacti
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/aether/conduit/test_conduit_component_transfer_footprint.py
-CONTENT SHA256: 54010b7786680db56fce7364d739d1b01fa951fe21ce5926faffd9e573a74427
+CONTENT SHA256: d3c3b65e63ea17bcff3b68e57eb06462ede4ba6928908fdbb274c137f65e3e83
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import Optional
@@ -19721,7 +19721,7 @@ def _make_spellbook() -> Spellbook:
 
 
 def _local_spell(spellbook: Spellbook, spell_id: str) -> Optional[object]:
-    """Resolve a locally owned spell by its current version id."""
+    """Resolve a locally owned spell by its current spell_id."""
     for spell_index, spell in spellbook.spells.items():
         if spell_index.selected_spell_id == spell_id:
             return spell
@@ -24477,7 +24477,7 @@ END FILE: tests/component/melder/aether/conduit/test_spellspace_component_warm_i
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/aether/dev_ops/change_control_manager/test_change_control_manager_component.py
-CONTENT SHA256: 3fd7010c7e6e3099225d98f560f9e0f69c0c278bd642dc4dc5e81d5082bcbdf8
+CONTENT SHA256: a8bbd17e6ebd879719997ad9339f0ca21fb210990194f6cea058ee7d07ea7c80
 SOURCE ENCODING: utf-8
 ================================================================================
 import pytest
@@ -24520,7 +24520,7 @@ def _register_index(states, spell_id: str) -> SpellIndex:
         - Registers a state entry for the lineage.
     Args:
         states: SpellSystemStates registry.
-        spell_id: Version id to register as current.
+        spell_id: The spell_id to register as current.
     Returns:
         SpellIndex: The created spell index instance.
     """
@@ -27587,7 +27587,7 @@ END FILE: tests/component/melder/aether/dev_ops/spell_system_states/test_rebind_
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/aether/dev_ops/spell_system_states/test_spell_system_states_component.py
-CONTENT SHA256: b0bc84e5affbcf995c3d4f7539a29e4a8f3583fe1ff6a5ad4ce416b2fa31d7ba
+CONTENT SHA256: 43b37e4c2d25d9ea64e501639ff1198e6e090999fb07413da46ee73c28a4df02
 SOURCE ENCODING: utf-8
 ================================================================================
 from melder.aether.aether import Aether
@@ -27614,7 +27614,7 @@ def _register_index(states, spell_id: str) -> SpellIndex:
         - Registers a state entry for the lineage.
     Args:
         states: SpellSystemStates registry.
-        spell_id: Version id to register as current.
+        spell_id: The spell_id to register as current.
     Returns:
         SpellIndex: The created spell index instance.
     """
@@ -28065,7 +28065,7 @@ def test_component_spell_system_states_rebind_preserves_old_spell_id_mapping() -
     Purpose:
         Validate old spell ids continue resolving after a rebind.
     Contract:
-        - get_by_spell_id resolves both the old and new version ids.
+        - get_by_spell_id resolves both the old and new spell_ids.
     Returns:
         None.
     Raises:
@@ -28378,7 +28378,7 @@ END FILE: tests/component/melder/aether/dev_ops/spell_system_states/test_spell_s
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/aether/dev_ops/test_dev_ops_manager_component.py
-CONTENT SHA256: cb3bb150604361c49fc40335224a99cc6624ad0b6fdc2192bb8063aca488bfb8
+CONTENT SHA256: 018f8c53e05340f0a48729eaca075c6c8f2487005455237b8b2c9fbfbf87ecbf
 SOURCE ENCODING: utf-8
 ================================================================================
 from melder.aether.aether import Aether
@@ -28403,7 +28403,7 @@ def _register_index(states, spell_id: str) -> SpellIndex:
         - Registers a state entry for the lineage.
     Args:
         states: SpellSystemStates registry.
-        spell_id: Version id to register as current.
+        spell_id: The spell_id to register as current.
     Returns:
         SpellIndex: The created spell index instance.
     """
@@ -30276,7 +30276,7 @@ END FILE: tests/component/melder/aether/test_codegen_system_component_matrix.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/aether/test_conduit_cloud_component.py
-CONTENT SHA256: 2837565eca3a4b737bc6fde49c847fba8e25c051c44781589c374e5069411cb5
+CONTENT SHA256: 1c8147682975c64953ce00a6e49936e47b448a3929e70e9b6786e4a0af75c580
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import Optional
@@ -30356,14 +30356,14 @@ def _get_local_spell_by_version_id(
 ) -> Optional[object]:
     """
     Purpose:
-        Resolve one locally owned spell by its current version id.
+        Resolve one locally owned spell by its current spell_id.
     Contract:
         - Returns the first local spell whose SpellIndex.selected_spell_id matches the
-          supplied version id.
+          supplied spell_id.
         - Returns None when no local spell matches.
     Args:
         spellbook: Spellbook whose local spell map should be searched.
-        spell_id: Current version id to resolve.
+        spell_id: The current spell_id to resolve.
     Returns:
         Optional[object]: Matching local spell object, or None when absent.
     """
@@ -35893,7 +35893,7 @@ END FILE: tests/component/melder/spellbook/spell_compiler/test_spell_codegen_pip
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/spellbook/spell_compiler_runtime_test_support.py
-CONTENT SHA256: 0ab738e3d5f4a6fbf1e3d80961930d14efbf61a2c72b41db814730ab355387b9
+CONTENT SHA256: 4f7b5cf7b76c6669d4d6524bc18e7a48e56dcea6bbd9d15922d6092e755463fe
 SOURCE ENCODING: utf-8
 ================================================================================
 """Shared runtime helpers for compiler component and integration tests."""
@@ -35927,7 +35927,7 @@ def make_spellbook() -> Spellbook:
 
 
 def get_spell_by_version_id(spellbook: Spellbook, spell_id: str):
-    """Resolve a live local spell by its current version id."""
+    """Resolve a live local spell by its current spell_id."""
     return spellbook._spell_id_pool.get(spell_id)
 
 
@@ -37369,7 +37369,7 @@ END FILE: tests/component/melder/spellbook/spell_crafter/dag/test_spellbook_comp
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/spellbook/spell_crafter/dag/test_spellbook_component_dag_local_frame.py
-CONTENT SHA256: c60649987668f91921218bbef5e79e5247d976320b3a8514621992525ab7c6b1
+CONTENT SHA256: a65acdecbd6e48e2f7849c335812667312853cabe5951003aa166029d6dfb471
 SOURCE ENCODING: utf-8
 ================================================================================
 import pytest
@@ -37425,12 +37425,12 @@ def _make_spellbook() -> Spellbook:
 def _get_spell_by_version_id(spellbook: Spellbook, spell_id: str):
     """
     Purpose:
-        Retrieve a local Spell by its version id.
+        Retrieve a local Spell by its spell_id.
     Contract:
         - Returns the first spell whose SpellIndex.selected_spell_id matches spell_id.
     Args:
         spellbook: Spellbook to search.
-        spell_id: Version id to match.
+        spell_id: The spell_id to match.
     Returns:
         Spell or None: Matching spell instance or None if not found.
     """
@@ -37783,7 +37783,7 @@ END FILE: tests/component/melder/spellbook/spell_crafter/dag/test_spellbook_comp
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/spellbook/spell_crafter/phases/test_spellbook_component_spell_crafter_phase5.py
-CONTENT SHA256: e1a66dd27138176f2525e15e45f2664da6b523dc5fd98ddc7a1e557b4c948362
+CONTENT SHA256: 238f187580585f6641c39f9b60b6977ab0e0f369e71f75a0c862c8ee100b391a
 SOURCE ENCODING: utf-8
 ================================================================================
 import pytest
@@ -37853,12 +37853,12 @@ def _make_spellbook() -> Spellbook:
 def _get_spell_by_version_id(spellbook: Spellbook, spell_id: str):
     """
     Purpose:
-        Retrieve a local Spell by its version id.
+        Retrieve a local Spell by its spell_id.
     Contract:
         - Returns the first spell whose SpellIndex.selected_spell_id matches spell_id.
     Args:
         spellbook: Spellbook to search.
-        spell_id: Version id to match.
+        spell_id: The spell_id to match.
     Returns:
         Spell or None: Matching spell instance or None if not found.
     """
@@ -38135,7 +38135,7 @@ END FILE: tests/component/melder/spellbook/spell_crafter/phases/test_spellbook_c
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/spellbook/spell_crafter/spell_examiner/test_spellbook_component_spell_examiner.py
-CONTENT SHA256: 5324b0fa8f7e55a0e1969ee9f85eeabdfc7e8ab010fafe5f2a6cfd45fc35d840
+CONTENT SHA256: 4b9515c89476f50b2cbc55963b0bb0e58255f1117865c14036f2ba9de3ff894e
 SOURCE ENCODING: utf-8
 ================================================================================
 import pytest
@@ -38197,12 +38197,12 @@ def _make_spellbook() -> Spellbook:
 def _get_spell_by_version_id(spellbook: Spellbook, spell_id: str):
     """
     Purpose:
-        Retrieve a local Spell by its version id.
+        Retrieve a local Spell by its spell_id.
     Contract:
         - Returns the first spell whose SpellIndex.selected_spell_id matches spell_id.
     Args:
         spellbook: Spellbook to search.
-        spell_id: Version id to match.
+        spell_id: The spell_id to match.
     Returns:
         Spell or None: Matching spell instance or None if not found.
     """
@@ -38394,7 +38394,7 @@ END FILE: tests/component/melder/spellbook/spell_crafter/spell_examiner/test_spe
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/spellbook/spell_crafter/spell_examiner/test_spellbook_component_spell_examiner_inspection.py
-CONTENT SHA256: dea02dabc02bfe8b159c2193b34606c9a6ee88ad38751405e50422367797d408
+CONTENT SHA256: fd31902dd6f931b58998bda9f8711854e345f3990c7c5b0209dc93f7a27e0060
 SOURCE ENCODING: utf-8-bom
 ================================================================================
 from tests._frame_posture_test_support import (
@@ -38451,12 +38451,12 @@ def _make_spellbook() -> Spellbook:
 def _get_spell_by_version_id(spellbook: Spellbook, spell_id: str):
     """
     Purpose:
-        Retrieve a local Spell by its version id.
+        Retrieve a local Spell by its spell_id.
     Contract:
         - Returns the first spell whose SpellIndex.selected_spell_id matches spell_id.
     Args:
         spellbook: Spellbook to search.
-        spell_id: Version id to match.
+        spell_id: The spell_id to match.
     Returns:
         Spell or None: Matching spell instance or None if not found.
     """
@@ -39014,7 +39014,7 @@ END FILE: tests/component/melder/spellbook/spell_crafter/spell_examiner/test_spe
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/spellbook/spell_crafter/spell_examiner/test_spellbook_component_spell_examiner_profiles.py
-CONTENT SHA256: e95585952570b84e8b31b9e8877f46a3a7d29d7a1ebd3ad6afcb99b8878009bb
+CONTENT SHA256: 5b6969031c43141485b0b5dd449dd50cb65370af9da90b0f0bba42f5b047ab3a
 SOURCE ENCODING: utf-8-bom
 ================================================================================
 from tests._frame_posture_test_support import (
@@ -39071,12 +39071,12 @@ def _make_spellbook() -> Spellbook:
 def _get_spell_by_version_id(spellbook: Spellbook, spell_id: str):
     """
     Purpose:
-        Retrieve a local Spell by its version id.
+        Retrieve a local Spell by its spell_id.
     Contract:
         - Returns the first spell whose SpellIndex.selected_spell_id matches spell_id.
     Args:
         spellbook: Spellbook to search.
-        spell_id: Version id to match.
+        spell_id: The spell_id to match.
     Returns:
         Spell or None: Matching spell instance or None if not found.
     """
@@ -39256,7 +39256,7 @@ END FILE: tests/component/melder/spellbook/spell_crafter/spell_examiner/test_spe
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/spellbook/spell_crafter/spell_examiner/test_spellbook_component_spell_examiner_strategies.py
-CONTENT SHA256: a8f1dd20b56662dff183ec81dfa9ee463789195a6d96853536710f4a005b0017
+CONTENT SHA256: 0a472354f5cf0fbc9e1f44b7e3bc4cac099307544341328a93cb271a6c1a1ffc
 SOURCE ENCODING: utf-8-bom
 ================================================================================
 import pytest
@@ -39324,12 +39324,12 @@ def _make_spellbook() -> Spellbook:
 def _get_spell_by_version_id(spellbook: Spellbook, spell_id: str):
     """
     Purpose:
-        Retrieve a local Spell by its version id.
+        Retrieve a local Spell by its spell_id.
     Contract:
         - Returns the first spell whose SpellIndex.selected_spell_id matches spell_id.
     Args:
         spellbook: Spellbook to search.
-        spell_id: Version id to match.
+        spell_id: The spell_id to match.
     Returns:
         Spell or None: Matching spell instance or None if not found.
     """
@@ -39967,7 +39967,7 @@ END FILE: tests/component/melder/spellbook/spell_crafter/spell_requirements_find
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/spellbook/spell_crafter/spell_requirements_finder/test_spellbook_component_spell_requirements_finder.py
-CONTENT SHA256: a5a903d375393e40fe8873d791bbc995320b6192b2dd4277c0a0b8ae4969cf67
+CONTENT SHA256: 03cd859f64f5c11bca7d5a3e5ecd13afe2e6a59efbf7c2b1c86e2e5088a87c13
 SOURCE ENCODING: utf-8
 ================================================================================
 import pytest
@@ -40025,12 +40025,12 @@ def _make_spellbook() -> Spellbook:
 def _get_spell_by_version_id(spellbook: Spellbook, spell_id: str):
     """
     Purpose:
-        Retrieve a local Spell by its version id.
+        Retrieve a local Spell by its spell_id.
     Contract:
         - Returns the first spell whose SpellIndex.selected_spell_id matches spell_id.
     Args:
         spellbook: Spellbook to search.
-        spell_id: Version id to match.
+        spell_id: The spell_id to match.
     Returns:
         Spell or None: Matching spell instance or None if not found.
     """
@@ -40045,7 +40045,7 @@ def test_component_requirements_finder_uses_current_spell_index() -> None:
     Purpose:
         Validate requirements spell_id follows SpellIndex.selected_spell_id updates.
     Contract:
-        - SpellRequirements uses the current version id, not the original id.
+        - SpellRequirements uses the current spell_id, not the original id.
     Returns:
         None.
     """
@@ -40059,7 +40059,7 @@ def test_component_requirements_finder_uses_current_spell_index() -> None:
         spell = _get_spell_by_version_id(spellbook, spell_id)
         assert spell is not None
 
-        new_version = "updated-version-id"
+        new_version = "updated-spell-id"
         spell.spell_index.update(new_version)
 
         requirements = SpellRequirementsFinder(spell).build_requirements()
@@ -40148,7 +40148,7 @@ END FILE: tests/component/melder/spellbook/spell_crafter/spell_requirements_find
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/spellbook/spell_crafter/symbolic_graph/test_spellbook_component_symbolic_graph.py
-CONTENT SHA256: ed9ec60a5777c7219f2f19837dc35353bd68e457c43b7aed75e012062a539eb8
+CONTENT SHA256: df43e3194cbe4662fa756f6e480cc9973aa846658c214ec12c262c96e301c6b9
 SOURCE ENCODING: utf-8
 ================================================================================
 import pytest
@@ -40201,12 +40201,12 @@ def _make_spellbook() -> Spellbook:
 def _get_spell_by_version_id(spellbook: Spellbook, spell_id: str):
     """
     Purpose:
-        Retrieve a local Spell by its version id.
+        Retrieve a local Spell by its spell_id.
     Contract:
         - Returns the first spell whose SpellIndex.selected_spell_id matches spell_id.
     Args:
         spellbook: Spellbook to search.
-        spell_id: Version id to match.
+        spell_id: The spell_id to match.
     Returns:
         Spell or None: Matching spell instance or None if not found.
     """
@@ -40655,7 +40655,7 @@ END FILE: tests/component/melder/spellbook/spell_crafter/system/test_spellbook_c
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/spellbook/spell_crafter/system/test_spellbook_component_spell_system_adjacency_builder.py
-CONTENT SHA256: 92ceab08f9cdc6ab0db808c397d35880909f9816d9ae6100464eb3597ed6f74f
+CONTENT SHA256: d44b17aee3be7e0ec57f12b66ff09357a4924d88779b7985bc3bffeb38812ade
 SOURCE ENCODING: utf-8
 ================================================================================
 from __future__ import annotations
@@ -40682,7 +40682,7 @@ def _register_index(states, spell_id: str) -> SpellIndex:
         - Registers the lineage in the states registry.
     Args:
         states: SpellSystemStates registry.
-        spell_id: Version id to register.
+        spell_id: The spell_id to register.
     Returns:
         SpellIndex: The created spell index.
     """
@@ -40935,7 +40935,7 @@ END FILE: tests/component/melder/spellbook/spell_crafter/system/test_spellbook_c
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/spellbook/spell_crafter/system/test_spellbook_component_spell_system_adjacency_snapshot.py
-CONTENT SHA256: d7cc56e162a984de94f9e4f7296f2889fb0ad0b6c8b2f6a3f27e8c70bf0c8a73
+CONTENT SHA256: 7608fdf1d76ffc99dec0f1883122120973d37162033c098e03588160fe4fdb32
 SOURCE ENCODING: utf-8
 ================================================================================
 from __future__ import annotations
@@ -40965,7 +40965,7 @@ def _register_index(states, spell_id: str) -> SpellIndex:
         - Registers the lineage in the states registry.
     Args:
         states: SpellSystemStates registry.
-        spell_id: Version id to register.
+        spell_id: The spell_id to register.
     Returns:
         SpellIndex: The created spell index.
     """
@@ -41227,7 +41227,7 @@ END FILE: tests/component/melder/spellbook/spell_crafter/system/test_spellbook_c
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/spellbook/spell_crafter/system/test_spellbook_component_spell_system_index.py
-CONTENT SHA256: 3672b65efe80e5e552dafd31c9a678e07d66628657c5e663daddcd16ecf1b97e
+CONTENT SHA256: d6eb4c89e51ccb582a8e753a67996b8aa1adb641d27cdd910366fa541067fb68
 SOURCE ENCODING: utf-8
 ================================================================================
 from __future__ import annotations
@@ -41263,7 +41263,7 @@ def _register_index(states, spell_id: str) -> SpellIndex:
         - Registers the lineage in the states registry.
     Args:
         states: SpellSystemStates registry.
-        spell_id: Version id to register.
+        spell_id: The spell_id to register.
     Returns:
         SpellIndex: The created spell index.
     """
@@ -41621,7 +41621,7 @@ END FILE: tests/component/melder/spellbook/spell_crafter/system/test_spellbook_c
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/spellbook/spell_crafter/system/test_spellbook_component_spell_system_node.py
-CONTENT SHA256: 49b8df0ad7cfccf39dfe92d7d89ba5e5790933e39d712f91920072e3748cd466
+CONTENT SHA256: 839b7a419c72f0bdd50a52d426bd60b6f1f28b2a67f43837b4f954bce503665c
 SOURCE ENCODING: utf-8
 ================================================================================
 from __future__ import annotations
@@ -41660,7 +41660,7 @@ def _register_index(states, spell_id: str) -> SpellIndex:
         - Registers the lineage in the states registry.
     Args:
         states: SpellSystemStates registry.
-        spell_id: Version id to register.
+        spell_id: The spell_id to register.
     Returns:
         SpellIndex: The created spell index.
     """
@@ -42592,7 +42592,7 @@ END FILE: tests/component/melder/spellbook/spell_crafter/system/test_spellbook_c
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/spellbook/spell_crafter/system/test_spellbook_component_spell_system_root_blueprint_builder.py
-CONTENT SHA256: 9928646cfb73ab9f3e9dd98a2277d11392d9889a85496e9629b4b7d990ab939a
+CONTENT SHA256: dcfe60b9d784a8217b620d5f70a85f01e5ef2873bf03b49c6d838ecbaeeaae6c
 SOURCE ENCODING: utf-8
 ================================================================================
 from __future__ import annotations
@@ -42622,7 +42622,7 @@ def _register_index(states, spell_id: str) -> SpellIndex:
         - Registers the lineage in the states registry.
     Args:
         states: SpellSystemStates registry.
-        spell_id: Version id to register.
+        spell_id: The spell_id to register.
     Returns:
         SpellIndex: The created spell index.
     """
@@ -42875,7 +42875,7 @@ END FILE: tests/component/melder/spellbook/spell_crafter/system/test_spellbook_c
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/spellbook/spell_crafter/system/test_spellbook_component_spell_system_validation_state.py
-CONTENT SHA256: c41230bbb3643273a2349004ef047c89a58c6c69dca7e4b479c356b0b857443e
+CONTENT SHA256: 91c239c6d4ef706e7129bebe17283ae46d343475cb136c3f99b5ca6f617ca1e6
 SOURCE ENCODING: utf-8
 ================================================================================
 from __future__ import annotations
@@ -42911,7 +42911,7 @@ def _register_index(states, spell_id: str) -> SpellIndex:
         - Registers the lineage in the states registry.
     Args:
         states: SpellSystemStates registry.
-        spell_id: Version id to register.
+        spell_id: The spell_id to register.
     Returns:
         SpellIndex: The created spell index.
     """
@@ -43088,7 +43088,7 @@ END FILE: tests/component/melder/spellbook/spell_crafter/system/test_spellbook_c
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/spellbook/spell_crafter/system/test_spellbook_component_system_diagnostic.py
-CONTENT SHA256: e1cc769ad78999b3dc59300dd01962958021eb2982e866fab50f19e7292dc1b7
+CONTENT SHA256: 702e92388dd22def9dfd969a69e385a53c093316f0315458322891c43583c5fd
 SOURCE ENCODING: utf-8
 ================================================================================
 from __future__ import annotations
@@ -43120,7 +43120,7 @@ def _register_index(states, spell_id: str) -> SpellIndex:
         - Registers the lineage in the states registry.
     Args:
         states: SpellSystemStates registry.
-        spell_id: Version id to register.
+        spell_id: The spell_id to register.
     Returns:
         SpellIndex: The created spell index.
     """
@@ -43304,7 +43304,7 @@ END FILE: tests/component/melder/spellbook/spell_crafter/system/test_spellbook_c
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/spellbook/spell_crafter/system/validation/test_spellbook_component_system_validation_graph_consistency.py
-CONTENT SHA256: d8de66a9682e89d00f087fa859c87ac1e38c113d9404f5ab01b1d55756d1226a
+CONTENT SHA256: 12fbd19def6cbf86ef9ebcfabee2e05ec1c76649db9ff122d9a07ce40460091d
 SOURCE ENCODING: utf-8
 ================================================================================
 from __future__ import annotations
@@ -43341,7 +43341,7 @@ def _register_index(states, spell_id: str) -> SpellIndex:
         - Registers the lineage in the states registry.
     Args:
         states: SpellSystemStates registry.
-        spell_id: Version id to register.
+        spell_id: The spell_id to register.
     Returns:
         SpellIndex: The created spell index.
     """
@@ -45137,7 +45137,7 @@ END FILE: tests/component/melder/spellbook/spell_crafter/system/validation/test_
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/spellbook/spell_crafter/system/validation/test_spellbook_component_system_validation_system.py
-CONTENT SHA256: 0962c9742b42a1c206a914abdef347d91dbc084bed2bab079b2cd43e8d15f73f
+CONTENT SHA256: b4d90d1a2781d35d1e47ddd3305b1fa2d2c1e43547364c57318d39ec7ad4cf7d
 SOURCE ENCODING: utf-8
 ================================================================================
 from __future__ import annotations
@@ -45215,7 +45215,7 @@ def _register_index(states, spell_id: str) -> SpellIndex:
         - Registers the lineage in the states registry.
     Args:
         states: SpellSystemStates registry.
-        spell_id: Version id to register.
+        spell_id: The spell_id to register.
     Returns:
         SpellIndex: The created spell index.
     """
@@ -45942,7 +45942,7 @@ END FILE: tests/component/melder/spellbook/spell_crafter/system/validation/test_
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/spellbook/spell_crafter/topology/test_spellbook_component_spell_local_topology.py
-CONTENT SHA256: 9b50d5b8c5762a808bcf63c56cf57e0f32b2f664737f9afb8d81239eb3c31768
+CONTENT SHA256: 3a38107973973af84a6572ed89775be1714eb5063751e69d071f96213c7ab2ae
 SOURCE ENCODING: utf-8
 ================================================================================
 import pytest
@@ -45999,12 +45999,12 @@ def _make_spellbook() -> Spellbook:
 def _get_spell_by_version_id(spellbook: Spellbook, spell_id: str):
     """
     Purpose:
-        Retrieve a local Spell by its version id.
+        Retrieve a local Spell by its spell_id.
     Contract:
         - Returns the first spell whose SpellIndex.selected_spell_id matches spell_id.
     Args:
         spellbook: Spellbook to search.
-        spell_id: Version id to match.
+        spell_id: The spell_id to match.
     Returns:
         Spell or None: Matching spell instance or None if not found.
     """
@@ -48533,7 +48533,7 @@ END FILE: tests/component/melder/spellbook/test_bind_lifecycle_hooks.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/spellbook/test_codegen_signature_determinism.py
-CONTENT SHA256: 46f26bc0a35a073810d785127b82909850ed34232dd7d64d771dba0e68976b8d
+CONTENT SHA256: 3b18b941a8441c16ee35ae4e085712470b6b05d5d32703aa4d49ec2f466bfed0
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -48726,7 +48726,7 @@ def _read_signatures(spell: Any, spell_id: str) -> Dict[str, Any]:
         spell:
             Live `Spell` whose compiler artifact holds a `SpellCodegenCreation`.
         spell_id:
-            The spell's version id, echoed so id drift is visible in a mismatch.
+            The spell's spell_id, echoed so id drift is visible in a mismatch.
 
     Returns:
         Dict[str, Any]:
@@ -50471,7 +50471,7 @@ END FILE: tests/component/melder/spellbook/test_ordered_disposal_binding.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/spellbook/test_phase_component_cprofile_harness.py
-CONTENT SHA256: e041a81ba30a7bac771311861a6b31f332e814260693832137255aed4055ce67
+CONTENT SHA256: e0d4e3e3f39defd2f62c1adb9ab22047e3029ad9dbc7ca999e63329b2f24f732
 SOURCE ENCODING: utf-8
 ================================================================================
 import cProfile
@@ -50572,7 +50572,7 @@ def _make_spellbook(frame_name: str) -> Tuple[Spellbook, str]:
     Contract:
         - Binds all depth-9 classes with `Existence.unique`.
         - Sets `phase_scheduler_workers_per_spellbook` to 1 for deterministic setup.
-        - Returns the version id of `Depth9Root` as the default local target spell.
+        - Returns the spell_id of `Depth9Root` as the default local target spell.
     Args:
         frame_name: Aetheric frame name for this fixture.
     Returns:
@@ -53856,7 +53856,7 @@ END FILE: tests/component/melder/spellbook/test_spellbook_component_collection_m
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/spellbook/test_spellbook_component_conduit_definition.py
-CONTENT SHA256: 581d4812e92a163dc190ec612ec52cf77d101ea8488f22a798e7045c4b04ed95
+CONTENT SHA256: 0c51858f1819ffdb58dcdafd661fa783ef2a068bd6e0fd93c15ae3605a5b0e1b
 SOURCE ENCODING: utf-8
 ================================================================================
 import pytest
@@ -54119,7 +54119,7 @@ def test_component_spellbook_check_all_spells_raises_on_aether_collision(
             Contract:
                 Returns True for the bound spell id within the spellbook frame.
             Args:
-                version_id: Spell version id being checked.
+                version_id: The spell_id being checked.
                 frame: Aether frame name provided by the caller.
             Returns:
                 bool: True for the bound spell id, False otherwise.
@@ -54168,7 +54168,7 @@ def test_component_spellbook_check_all_spells_passes_when_aether_reports_unique(
             Contract:
                 Always returns False for uniqueness.
             Args:
-                _version_id: Spell version id being checked.
+                _version_id: The spell_id being checked.
                 _frame: Aether frame name provided by the caller.
             Returns:
                 bool: False to indicate no duplicates.
@@ -55171,7 +55171,7 @@ END FILE: tests/component/melder/spellbook/test_spellbook_component_contract_ove
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/spellbook/test_spellbook_component_contracts.py
-CONTENT SHA256: 2f213755a7fe3d1dd136faa38bd1c4cc3a8b1ed2f9a7eac986b166b1d6ad9936
+CONTENT SHA256: a5449cd6b186de615da078a6e5ed4479fc9c5926e044db8dd3682fa8b1b8eadd
 SOURCE ENCODING: utf-8
 ================================================================================
 import pytest
@@ -55555,12 +55555,15 @@ def test_component_spellbook_add_contracted_spell_tracks_multiple_versions() -> 
 def test_component_spellbook_remove_contracted_spell_removes_all_versions() -> None:
     """
     Purpose:
-        Validate removing a contracted index member clears every tracked member id.
+        Validate removing the active contracted copy of a live index clears every
+        tracked member id of that index.
     Contract:
         - The contracted copy is the ACTIVE member, so the by-id registration key
           (selected_spell_id at add time) and the copy's own spell_id agree.
-        - _remove_contracted_spell drops the index subscription and every member
-          id tracked for the peer conduit.
+        - _remove_contracted_spell is asked for that copy's own version id: a removal
+          takes exactly the copy of the version it names (0.2.8251; before, a member id
+          with no copy took the index's active copy). It drops the index subscription
+          and every member id tracked for the peer conduit, the staged member's included.
     Returns:
         None.
     Raises:
@@ -55587,7 +55590,7 @@ def test_component_spellbook_remove_contracted_spell_removes_all_versions() -> N
         spell.spell_index.add_member(next_id)
 
         spellbook._add_contracted_spell(spell, conduit_id)
-        spellbook._remove_contracted_spell(next_id, conduit_id)
+        spellbook._remove_contracted_spell(initial_id, conduit_id)
 
         versions_set = spellbook._contracted_spell_ids[conduit_id]
         assert initial_id not in versions_set
@@ -56465,14 +56468,14 @@ END FILE: tests/component/melder/spellbook/test_spellbook_component_executor_cac
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/spellbook/test_spellbook_component_find_spell_by_id.py
-CONTENT SHA256: a8c77494536a093d5b128c6f2ee263a854d57f4e5ef9da765d1924aeb03541b7
+CONTENT SHA256: 19246d9ffe55b791030b16f6a168ed574ed405fdcfb269d6319bf62df64f690e
 SOURCE ENCODING: utf-8
 ================================================================================
 """
 Component tests - Spellbook.find_spell_by_id answers from the Book's id maps (0.2.8229).
 
 `find_spell_by_id` resolves any id in a spell's version lineage to the live Spell that represents the
-lineage now: a current version id through the active-id map, a superseded or parked id through the parked
+lineage now: a current spell_id through the active-id map, a superseded or parked id through the parked
 map and the parked spell's index. These tests pin that contract across every writer that moves an id
 between the maps - notch, add-to-index, remove-from-index, ownership transfer and parked disposal - and pin
 the two properties the repair exists for: the lookup never iterates the live active-index map (the old walk
@@ -56620,7 +56623,7 @@ class _Lineage:
 
 
 def test_current_version_id_returns_the_active_spell() -> None:
-    """A current version id answers the active Spell itself."""
+    """A current spell_id answers the active Spell itself."""
     world = _Lineage()
     try:
         assert world.book.find_spell_by_id(world.id_a) is world.spell_a
@@ -56629,7 +56632,7 @@ def test_current_version_id_returns_the_active_spell() -> None:
 
 
 def test_parked_version_id_returns_the_live_spell_of_its_index() -> None:
-    """A parked version id answers the live spell of the index that holds it, not the parked version."""
+    """A parked spell_id answers the live spell of the index that holds it, not the parked version."""
     world = _Lineage()
     try:
         assert world.book.find_spell_by_id(world.id_b) is world.spell_a
@@ -59019,7 +59022,7 @@ END FILE: tests/component/melder/spellbook/test_spellbook_component_spell.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/spellbook/test_spellbook_component_spell_crafter.py
-CONTENT SHA256: bab1eb4cda2f9057999a02d63a5e1eacf18af1ea074f81b80b377bfbe30016d5
+CONTENT SHA256: 735a46dbf0461303f1c4851c18d3960bf6e6ba53427a0f6bfe00e5ca23d68571
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import Optional
@@ -59582,6 +59585,7 @@ class _SpellSystemStatesStub:
             owner_spellbook_id: object = None,
             *,
             resolvable: object = None,
+            binding_key: object = None,
     ) -> None:
         """
         Purpose:
@@ -59592,6 +59596,7 @@ class _SpellSystemStatesStub:
             spell_index: SpellIndex registered for the lineage.
             owner_spellbook_id: Owning Spellbook id (ignored here).
             resolvable: The registered version's capability, as bind passes it (ignored here).
+            binding_key: The registered version's binding key, as bind passes it (ignored here).
         Returns:
             None.
         """
@@ -61438,7 +61443,7 @@ END FILE: tests/component/melder/spellbook/test_spellbook_component_spell_map_ra
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/spellbook/test_spellbook_component_spellbook.py
-CONTENT SHA256: decdb2736f46e5bf05e8c6306e90897b91022dd1a18916087fefc19dcb80c9a2
+CONTENT SHA256: 59b667e2fcac6bb7ba635f363a432827cc07912cd5c177c049b61fc89429ed9c
 SOURCE ENCODING: utf-8
 ================================================================================
 import contextlib
@@ -61556,6 +61561,7 @@ class _SpellSystemStatesStub:
             owner_spellbook_id: object = None,
             *,
             resolvable: object = None,
+            binding_key: object = None,
     ) -> None:
         """
         Purpose:
@@ -61566,6 +61572,7 @@ class _SpellSystemStatesStub:
             spell_index: SpellIndex registered for the lineage.
             owner_spellbook_id: Owning Spellbook id (ignored here).
             resolvable: The registered version's capability, as bind passes it (ignored here).
+            binding_key: The registered version's binding key, as bind passes it (ignored here).
         Returns:
             None.
         """
@@ -63617,7 +63624,7 @@ END FILE: tests/component/melder/spellbook/test_spellbook_component_structural_s
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/spellbook/test_spellbook_component_structural_snapshot_parity.py
-CONTENT SHA256: 3d48738b129ff5a900673fb161a141a07459f865f9db057e25317e1ea6222f13
+CONTENT SHA256: 51c846f57bff71a8ee708f171edfdff4e93daf117282af16b34c2dec5993fefb
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -63650,6 +63657,7 @@ from melder.aether.spellbook.spellbook_creation_system import SpellbookCreationS
 from melder.crystallizer.configuration.crystallizer_configuration import CrystallizerConfiguration
 from melder.crystallizer.crystallizer import Crystallizer
 from melder.nexus.nexus import Nexus
+from melder.utilities.custom_exceptions.unresolved_input_error import UnresolvedInputError
 from tests._frame_posture_test_support import apply_dynamic_defaults_for_spellbook_configuration
 from tests.mocks.spellbook.contract_classes import ContractConsumerPrimary, ContractServicePrimary
 from tests.mocks.spellbook.protocols import IService
@@ -63794,21 +63802,30 @@ def _event_post_conjure_bind(book: Spellbook, conduit: Conduit, ids: Dict[str, s
 
 def _event_notch(book: Spellbook, conduit: Conduit, ids: Dict[str, str]) -> Any:
     """
-    Meld Car, stage an alternative Engine into Engine's index, notch it, then meld the new member and Car again.
+    Meld Car, stage an alternative Engine into Engine's index, notch it, meld the new member and Car, then notch back
+    to Engine and meld Car again.
 
-    The pre-notch meld matches the notch contract's supported order (a dependent melded for the first time after
-    a provider notch fails with "generalized manifest references unknown spell_id" on cold and hydrated worlds
-    alike - recorded for the owner, outside this lane).
+    Rule 2 (D2, 2026-10-16): a notch marks every spell that depends on the notched one, so Car's next meld rechecks
+    its structure against the version now active. A class annotation selects its own type (the kind rule), so
+    `engine: Engine` does not select EngineAlternative: that meld raises the UnresolvedInputError a first meld would
+    raise, and after the notch back Car builds with Engine again. Before rule 2 the after-notch meld silently built
+    the old Engine, and a dependent melded first after a provider notch failed with "generalized manifest references
+    unknown spell_id". Cold and hydrated worlds must end alike either way.
     """
     before = conduit.meld(spell=Car)
     engine_index = book.find_spell_by_id(ids["Engine"]).spell_index
     staged_id = conduit.bind_inactive(spell=EngineAlternative, spell_index=engine_index, existence="unique")
-    conduit.notch_spell(spell_index=engine_index, spell=book._inactive_spells[staged_id])
+    conduit.notch_spell(spell_index=engine_index, spell_id=staged_id)
     member = conduit.meld(spell_id=staged_id)
-    after = conduit.meld(spell=Car)
+    staged_is_active = book.find_spell_by_id(staged_id).spell_id == staged_id
+    try:
+        after: Any = type(conduit.meld(spell=Car).engine).__name__
+    except UnresolvedInputError as error:
+        after = (type(error).__name__, "engine" in str(error))
+    conduit.notch_spell(spell_index=engine_index, spell_id=ids["Engine"])
+    back = conduit.meld(spell=Car)
     return (
-        type(before.engine).__name__, type(member).__name__, type(after.engine).__name__,
-        book.find_spell_by_id(staged_id).spell_id == staged_id,
+        type(before.engine).__name__, type(member).__name__, staged_is_active, after, type(back.engine).__name__,
     )
 
 
@@ -93847,7 +93864,7 @@ END FILE: tests/integration/melder/aether/conduit/test_rebind_after_first_meld_i
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/aether/conduit/test_spell_index_meld_and_contract_lifecycle.py
-CONTENT SHA256: 08fe32097c0d965d48b304fa23381229ce161156c600197404ca58a289983983
+CONTENT SHA256: 01c0c85e074d88f80e56e3f09649c4f9f14bb707c4ca42d660651796c1e5a945
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -93870,16 +93887,18 @@ this file first; it is the harness for the deeper notch/add/remove-index tranche
 """
 
 import contextlib
-from typing import Iterator
+from typing import Callable, Iterator
 
 import pytest
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
+from melder.aether.spellbook.bind.spell_index import SpellIndex
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spellbook import Spellbook
 from tests.mocks.spellbook.contract_classes import ContractServicePrimary
+from tests.mocks.spellbook.contract_classes import ContractServiceSecondary
 from tests.mocks.spellbook.protocols import IService
 
 from tests._frame_posture_test_support import (
@@ -94023,6 +94042,102 @@ def test_remove_index_contract_drops_borrower_index_and_member():
         assert index.id not in borrower_book._contracted_indexes
         active_by_id = borrower_book._contracted_spells_by_id.get(owner._id, {})
         assert service_id not in active_by_id
+
+
+# --- one version, one copy (contracted_copy_removal_by_version_2026_10_16) -------------------------------------
+
+def _stage_secondary(owner: Conduit, index: SpellIndex) -> str:
+    """
+    Purpose:
+        Stage ContractServiceSecondary as a parked version of the service index, under the same frame and binding
+        name, and return its spell_id.
+    """
+    return owner.bind_inactive(
+        spell=ContractServiceSecondary,
+        spell_index=index,
+        spellframe=IService,
+        binding_name="primary",
+        existence=Existence.unique,
+        permissions="create",
+    )
+
+
+def _members_in_order(order: list[str]) -> Callable[[SpellIndex], list[str]]:
+    """
+    Purpose:
+        Build a stand-in for `SpellIndex.spells_in_index` that returns the members in `order` (members not named
+        come last), so a test fixes the order an index unlink visits them in. The real method runs first, so a
+        cleaned index raises as it does.
+    """
+    real = SpellIndex.spells_in_index
+
+    def ordered(index: SpellIndex) -> list[str]:
+        members = real(index)
+        return sorted(members, key=lambda member_id: order.index(member_id) if member_id in order else len(order))
+
+    return ordered
+
+
+@pytest.mark.parametrize("first", ["parked", "active"])
+def test_remove_index_contract_after_a_notch_removes_each_members_copy_in_either_order(
+        monkeypatch: pytest.MonkeyPatch, first: str,
+) -> None:
+    """
+    Purpose:
+        After the owner notches a linked index to a version staged on it, unlinking the index removes every member's
+        own copy - the old version's parked copy and the new version's active one - whichever member the unlink
+        visits first. The member set's order follows the hash seed, so the test fixes each order. Until 0.2.8251
+        the parked-first order removed the active copy under the parked member's id, then raised RuntimeError
+        "Spell version <id> not found for conduit ID <owner>." and left the parked copy behind.
+    """
+    with _linked_pair() as (owner_book, borrower_book, owner, borrower, service_id, index):
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            borrower.add_index_to_contract(index=index, conduit=owner, permissions="create")
+        staged_id = _stage_secondary(owner, index)
+        owner.notch_spell(spell_index=index, spell_id=staged_id)
+        assert set(borrower_book._contracted_spells_by_id.get(owner._id, {})) == {staged_id}
+        assert set(borrower_book._inactive_contracted_spells.get(owner._id, {})) == {service_id}
+
+        order = [service_id, staged_id] if first == "parked" else [staged_id, service_id]
+        with monkeypatch.context() as patch:
+            patch.setattr(SpellIndex, "spells_in_index", _members_in_order(order), raising=True)
+            with borrower.transaction("link", conduits=[borrower, owner]):
+                borrower.remove_index_from_contract(index_id=index.id, conduit=owner)
+
+        contract = borrower._conduit_ward._find_contract_by_id(owner._id)
+        assert contract._check_index_exists(owner._conduit_ward, index.id) is False
+        assert contract._check_if_exists(owner._conduit_ward, service_id) is False
+        assert contract._check_if_exists(owner._conduit_ward, staged_id) is False
+        assert index.id not in borrower_book._contracted_indexes
+        assert borrower_book._contracted_spells_by_id.get(owner._id, {}) == {}
+        assert borrower_book._inactive_contracted_spells.get(owner._id, {}) == {}
+
+
+def test_removing_a_parked_version_grant_keeps_the_active_versions_copy() -> None:
+    """
+    Purpose:
+        A borrower granted a version that its owner then notched away from, and granted the new version too, removes
+        only the old version's parked copy when that grant goes, and still melds the new version. Until 0.2.8251 the
+        removal took the new version's active copy instead and left the old one parked.
+    """
+    with _linked_pair() as (owner_book, borrower_book, owner, borrower, service_id, index):
+        primary_spell = owner.get_spell_by_id(service_id)
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            assert borrower.add_spell_to_contract(spell_id=service_id, conduit=owner, permissions="create")
+        staged_id = _stage_secondary(owner, index)
+        owner.notch_spell(spell_index=index, spell_id=staged_id)
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            assert borrower.add_spell_to_contract(spell_id=staged_id, conduit=owner, permissions="create")
+        assert set(borrower_book._contracted_spells_by_id.get(owner._id, {})) == {staged_id}
+        assert set(borrower_book._inactive_contracted_spells.get(owner._id, {})) == {service_id}
+
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            borrower.remove_spell_from_contract(spell=primary_spell, conduit=owner)
+
+        assert set(borrower_book._contracted_spells_by_id.get(owner._id, {})) == {staged_id}
+        assert service_id not in borrower_book._inactive_contracted_spells.get(owner._id, {})
+        assert borrower.validate_contracts_and_define()
+        assert isinstance(borrower.meld(spell_id=staged_id), ContractServiceSecondary)
 ================================================================================
 END FILE: tests/integration/melder/aether/conduit/test_spell_index_meld_and_contract_lifecycle.py
 ================================================================================
@@ -99343,7 +99458,7 @@ END FILE: tests/integration/melder/aether/test_aether_frame_lookups.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/aether/test_aether_integration_change_control_transactions.py
-CONTENT SHA256: 8518b0211b90b14504ec4dcbe934af1f2461f4f5f302244da8258f4610f01e14
+CONTENT SHA256: fb3fc05fb089375e8f05f1dbcadaaf6c639c8df3679508e1a02c4875d57ae22b
 SOURCE ENCODING: utf-8
 ================================================================================
 from __future__ import annotations
@@ -99427,14 +99542,14 @@ def _get_local_spell_by_version_id(
 ) -> Optional[object]:
     """
     Purpose:
-        Resolve one locally owned spell by its current version id.
+        Resolve one locally owned spell by its current spell_id.
     Contract:
         - Returns the first local spell whose SpellIndex.selected_spell_id matches the
-          supplied version id.
+          supplied spell_id.
         - Returns None when no local spell matches.
     Args:
         spellbook: Spellbook whose local spell map should be searched.
-        spell_id: Current version id to resolve.
+        spell_id: The current spell_id to resolve.
     Returns:
         Optional[object]: Matching local spell object, or None when absent.
     """
@@ -119447,6 +119562,686 @@ def test_member_teardown_disposes_the_many_child_of_a_cluster_holder_it_first_me
 END FILE: tests/integration/melder/conduit/test_conduit_integration_many_child_disposed_with_its_holder.py
 ================================================================================
 ================================================================================
+BEGIN FILE: tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py
+CONTENT SHA256: 90e9213eccabc4d832eb76d711908166f8ddc78a82734f60de7261bd3d019caf
+SOURCE ENCODING: utf-8
+================================================================================
+"""Integration regressions for contract_recheck_on_notch_2026_10_16: rule 2 and D2 (melder_1, 2026-10-16).
+
+A satisfied SpellContract is not checked on every meld. A change of what a spell resolves - a notch, park,
+reactivation or removal of its provider's active copy, or (D2) a notch of anything it depends on, in its Book or
+another - marks it for revalidation, and its next meld rechecks it and rebuilds against the versions now active, or
+fails with the error a first meld of them gives. Objects already built keep what they were built with.
+
+Each test builds its own dynamic frame with caching off: a lender Book lends a provider under (IService, "svc") and
+a borrower Book's consumer holds a SpellContract on that key, or one Book holds a dependency chain.
+"""
+import threading
+from typing import Any, Iterator, List, Protocol, Tuple, runtime_checkable
+
+import pytest
+
+from melder.aether.aether import Aether
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state import SpellState
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import SpellValidity
+from melder.aether.conduit.conduit import Conduit
+from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
+from melder.aether.spellbook.bind.spell_index import SpellIndex
+from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spellbook import Spellbook
+from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
+from melder.utilities.custom_exceptions.spellbook_validation_error import SpellbookValidationError
+from melder.utilities.custom_exceptions.unresolved_input_error import UnresolvedInputError
+
+
+@runtime_checkable
+class IService(Protocol):
+    """The contract a lender provides."""
+
+    def ping(self) -> str:
+        """Name the version that answered."""
+        ...
+
+
+@runtime_checkable
+class IDep(Protocol):
+    """The contract of a dependency."""
+
+    def tag(self) -> str:
+        """Name the version that answered."""
+        ...
+
+
+class Missing:
+    """A type nobody binds."""
+
+
+class ImplA:
+    """First version of the lent service."""
+
+    def ping(self) -> str:
+        """Answer "A"."""
+        return "A"
+
+
+class ImplB:
+    """Second version of the lent service."""
+
+    def ping(self) -> str:
+        """Answer "B"."""
+        return "B"
+
+
+class ImplBroken:
+    """A version whose __init__ needs a type nobody binds."""
+
+    def __init__(self, missing: Missing) -> None:
+        """Keep the input nobody can provide."""
+        self.missing = missing
+
+    def ping(self) -> str:
+        """Never reached: the version cannot be built."""
+        return "broken"
+
+
+class DepA:
+    """First implementer of IDep."""
+
+    def tag(self) -> str:
+        """Answer "d1"."""
+        return "d1"
+
+
+class DepB:
+    """Second implementer of IDep, the notch target."""
+
+    def tag(self) -> str:
+        """Answer "d2"."""
+        return "d2"
+
+
+class Dep:
+    """A dependency bound by its class."""
+
+    def tag(self) -> str:
+        """Answer "d1"."""
+        return "d1"
+
+
+class Dep2(Dep):
+    """A subclass of Dep, which the kind rule does not select for an annotation naming Dep."""
+
+    def tag(self) -> str:
+        """Answer "d2"."""
+        return "d2"
+
+
+class PChain:
+    """Depends on IDep."""
+
+    def __init__(self, dep: IDep) -> None:
+        """Keep the dependency."""
+        self.dep = dep
+
+
+class QChain:
+    """Depends on PChain, two hops from IDep."""
+
+    def __init__(self, p: PChain) -> None:
+        """Keep the dependency."""
+        self.p = p
+
+
+class PClass:
+    """Depends on Dep's class."""
+
+    def __init__(self, dep: Dep) -> None:
+        """Keep the dependency."""
+        self.dep = dep
+
+
+class QClass:
+    """Depends on PClass."""
+
+    def __init__(self, p: PClass) -> None:
+        """Keep the dependency."""
+        self.p = p
+
+
+class ImplWithIDep:
+    """A lent service with a dependency of its own."""
+
+    def __init__(self, dep: IDep) -> None:
+        """Keep the dependency."""
+        self.dep = dep
+
+    def ping(self) -> str:
+        """Answer "P+" and the dependency's tag."""
+        return "P+" + self.dep.tag()
+
+
+class Consumer:
+    """The borrower's consumer of the (IService, "svc") contract."""
+
+    def __init__(self, service: IService = SpellContract(spellframe=IService, binding_name="svc")) -> None:
+        """Keep the contracted provider."""
+        self.service = service
+
+
+class User:
+    """Depends on the borrower's contract consumer."""
+
+    def __init__(self, c: Consumer) -> None:
+        """Keep the consumer."""
+        self.c = c
+
+
+class _Lent:
+    """
+    A lender and a borrower conduit, the lent provider's index, and the consumer's spell id.
+
+    Purpose:
+        The lent-provider world of the rule-2 scenarios, built by `_lend`.
+    """
+
+    def __init__(
+            self,
+            lender_book: Spellbook,
+            borrower_book: Spellbook,
+            lender: Conduit,
+            borrower: Conduit,
+            index: SpellIndex,
+            provider_id: str,
+            consumer_id: str,
+    ) -> None:
+        """Keep the world's parts; the tests clean the conduits."""
+        self.lender_book = lender_book
+        self.borrower_book = borrower_book
+        self.lender = lender
+        self.borrower = borrower
+        self.index = index
+        self.provider_id = provider_id
+        self.consumer_id = consumer_id
+
+    def meld_ping(self) -> str:
+        """Meld the consumer through the borrower and ask its provider."""
+        return self.borrower.meld(spell=Consumer).service.ping()
+
+    def notch_to(self, impl: type) -> str:
+        """Stage `impl` in the provider's index and notch to it; return its version id."""
+        new_id = self.lender.bind_inactive(spell=impl, spell_index=self.index, spellframe=IService,
+                                           binding_name="svc", existence=Existence.many, permissions="create")
+        self.notch_back(new_id)
+        return new_id
+
+    def notch_back(self, version_id: str) -> None:
+        """Notch the provider's index to a version it holds, named by its id (active or parked)."""
+        self.lender.notch_spell(spell_index=self.index, spell_id=version_id)
+
+    def cleanup(self) -> None:
+        """Tear the borrower down, then the lender."""
+        self.borrower.cleanup()
+        self.lender.cleanup()
+
+
+@pytest.fixture(autouse=True)
+def fresh_aether() -> Iterator[None]:
+    """Give every test a fresh Aether, rebound on Spellbook and Conduit, and reset it after."""
+    Aether._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+    yield
+    Aether._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+
+
+@pytest.fixture
+def resolution_passes(monkeypatch: pytest.MonkeyPatch) -> List[str]:
+    """Record the spell name of every target-local 5-11 pass a meld runs."""
+    passes: List[str] = []
+    original = Spellbook._run_resolution_phases_for_target_spell
+
+    def _counting(self: Spellbook, conduit_id: str, spell: Any) -> Any:
+        passes.append(spell.spell_name)
+        return original(self, conduit_id, spell)
+
+    monkeypatch.setattr(Spellbook, "_run_resolution_phases_for_target_spell", _counting)
+    return passes
+
+
+def _books(frame: str) -> Tuple[Spellbook, Spellbook]:
+    """Two Books on a fresh dynamic frame with caching off."""
+    first = Spellbook(aetheric_frame=frame, configuration=SpellbookConfiguration(frame).with_defaults())
+    first.configure_aether_frame(system_state="dynamic", disposal=None, disposal_method_names=None,
+                                 system_caching_enabled=False)
+    second = Spellbook(aetheric_frame=frame, configuration=SpellbookConfiguration(frame).with_defaults())
+    return first, second
+
+
+def _lend(frame: str, impl: type, *, consumer_existence: Existence = Existence.many,
+          index_link: bool = True) -> _Lent:
+    """The lender lends `impl` under (IService, "svc") by an index link (or a version grant) to the consumer."""
+    lender_book, borrower_book = _books(frame)
+    provider_id = lender_book.bind(spell=impl, spellframe=IService, binding_name="svc", existence=Existence.many,
+                                   permissions="create")
+    consumer_id = borrower_book.bind(spell=Consumer, existence=consumer_existence, permissions="create")
+    lender = lender_book.conjure(dynamic=True, name="lender")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
+    lender.link(borrower)
+    index = lender_book.find_spell_by_id(provider_id).spell_index
+    with borrower.transaction("link", conduits=[borrower, lender]):
+        if index_link:
+            assert borrower.add_index_to_contract(index=index, conduit=lender, permissions="create")
+        else:
+            assert borrower.add_spell_to_contract(spell_id=provider_id, conduit=lender, permissions="create")
+    return _Lent(lender_book, borrower_book, lender, borrower, index, provider_id, consumer_id)
+
+
+def _assert_lost_contract_reported(error: SpellbookValidationError) -> None:
+    """The refusal names the lost contract and its remedy (D1-B), not the generic gated line."""
+    message = str(error)
+    assert "has no provider for its SpellContract" in message
+    assert "add_index_to_contract" in message
+    assert "[SPELL_CONTRACT_MISSING_PROVIDER]" in message
+    assert "No validation error was recorded" not in message
+
+
+def test_contract_consumer_follows_notch_notch_back_and_repeat_notch_with_one_rebuild_each(
+        resolution_passes: List[str],
+) -> None:
+    """
+    S1: the consumer follows its lender's notch to B, the notch back to A and a repeat notch to B; each change
+    costs one 5-11 pass at the next meld and warm melds none; an object built before a notch keeps its provider.
+    """
+    world = _lend("s1", ImplA)
+    try:
+        before = world.borrower.meld(spell=Consumer)
+        assert before.service.ping() == "A"
+        resolution_passes.clear()
+        assert [world.meld_ping() for _ in range(5)] == ["A"] * 5
+        assert resolution_passes == []
+
+        b_id = world.notch_to(ImplB)
+        assert world.meld_ping() == "B"
+        assert resolution_passes == ["Consumer"]
+        assert world.meld_ping() == "B"
+        assert resolution_passes == ["Consumer"]
+        assert before.service.ping() == "A"
+
+        resolution_passes.clear()
+        world.notch_back(world.provider_id)
+        assert world.meld_ping() == "A"
+        assert world.meld_ping() == "A"
+        assert resolution_passes == ["Consumer"]
+
+        resolution_passes.clear()
+        world.notch_back(b_id)
+        assert world.meld_ping() == "B"
+        assert world.meld_ping() == "B"
+        assert resolution_passes == ["Consumer"]
+    finally:
+        world.cleanup()
+
+
+def test_a_notch_marks_the_contract_consumer_and_builds_nothing(resolution_passes: List[str]) -> None:
+    """A notch leaves the consumer gated with `contract_unvalidated` and runs no pass until the consumer melds."""
+    world = _lend("marked", ImplA)
+    try:
+        assert world.meld_ping() == "A"
+        resolution_passes.clear()
+
+        world.notch_to(ImplB)
+
+        state = world.borrower_book.find_spell_by_id(world.consumer_id).system_state
+        assert state.validity is SpellValidity.gated
+        assert state.has_flag(SpellState.contract_unvalidated)
+        assert resolution_passes == []
+    finally:
+        world.cleanup()
+
+
+def test_a_unique_consumer_keeps_its_object_after_a_notch_and_builds_the_new_version_after_a_purge() -> None:
+    """S6: mark only - the stored unique object keeps its provider; a purge lets the next meld build version B."""
+    world = _lend("s6", ImplA, consumer_existence=Existence.unique)
+    try:
+        first = world.borrower.meld(spell=Consumer)
+        world.notch_to(ImplB)
+
+        again = world.borrower.meld(spell=Consumer)
+        assert again is first
+        assert again.service.ping() == "A"
+
+        world.borrower.purge(spell=Consumer)
+        assert world.meld_ping() == "B"
+    finally:
+        world.cleanup()
+
+
+def test_a_notch_to_an_unresolvable_version_raises_the_first_melds_error_and_a_notch_back_recovers() -> None:
+    """S3: the consumer meets the error a first meld of ImplBroken gives, and follows the notch back to A."""
+    world = _lend("s3", ImplA)
+    try:
+        assert world.meld_ping() == "A"
+        world.notch_to(ImplBroken)
+
+        with pytest.raises(UnresolvedInputError, match="ImplBroken.missing expects Missing"):
+            world.meld_ping()
+
+        world.notch_back(world.provider_id)
+        assert world.meld_ping() == "A"
+    finally:
+        world.cleanup()
+
+
+def test_destroying_the_providers_index_fails_the_consumer_naming_the_lost_contract() -> None:
+    """S4: an index destroy fails the consumer with SpellbookValidationError naming the contract and the remedy."""
+    world = _lend("s4", ImplA)
+    try:
+        assert world.meld_ping() == "A"
+        world.lender.cleanup_spell(spell=world.lender_book.find_spell_by_id(world.provider_id))
+
+        with pytest.raises(SpellbookValidationError) as raised:
+            world.meld_ping()
+
+        assert not isinstance(raised.value, MeldExecutionError)
+        _assert_lost_contract_reported(raised.value)
+    finally:
+        world.cleanup()
+
+
+def test_releasing_the_index_link_fails_the_consumer_naming_the_lost_contract() -> None:
+    """An index uncontract fails the consumer's next meld with the lost contract and its remedy."""
+    world = _lend("uncontract_index", ImplA)
+    try:
+        assert world.meld_ping() == "A"
+        world.borrower.remove_index_from_contract(index_id=world.index.id, conduit=world.lender)
+
+        with pytest.raises(SpellbookValidationError) as raised:
+            world.meld_ping()
+
+        _assert_lost_contract_reported(raised.value)
+    finally:
+        world.cleanup()
+
+
+def test_releasing_a_version_grant_fails_the_consumer_naming_the_lost_contract() -> None:
+    """A version uncontract fails the consumer's next meld with the lost contract and its remedy."""
+    world = _lend("uncontract_spell", ImplA, index_link=False)
+    try:
+        assert world.meld_ping() == "A"
+        with world.borrower.transaction("link", conduits=[world.borrower, world.lender]):
+            world.borrower.remove_spell_from_contract(spell_id=world.provider_id, conduit=world.lender)
+
+        with pytest.raises(SpellbookValidationError) as raised:
+            world.meld_ping()
+
+        _assert_lost_contract_reported(raised.value)
+    finally:
+        world.cleanup()
+
+
+def test_a_notch_back_reactivates_a_version_grant_and_its_consumer_rebuilds_with_one_pass(
+        resolution_passes: List[str],
+) -> None:
+    """
+    D3: the notch to B parks the borrower's version grant of A, so the consumer fails naming the lost contract; the
+    notch back to A makes that copy active again, the consumer builds A with one 5-11 pass, an object built before
+    keeps its provider, and a linked peer that never borrowed A gains no provider.
+    """
+    world = _lend("anchored_back", ImplA, index_link=False)
+    bystander_book = Spellbook(aetheric_frame="anchored_back",
+                               configuration=SpellbookConfiguration("anchored_back").with_defaults())
+    bystander_id = bystander_book.bind(spell=Consumer, binding_name="bystander", existence=Existence.many,
+                                       permissions="create")
+    bystander = bystander_book.conjure(dynamic=True, name="bystander")
+    try:
+        world.lender.link(bystander)
+        before = world.borrower.meld(spell=Consumer)
+        assert before.service.ping() == "A"
+
+        world.notch_to(ImplB)
+        with pytest.raises(SpellbookValidationError) as lost:
+            world.meld_ping()
+        _assert_lost_contract_reported(lost.value)
+
+        resolution_passes.clear()
+        world.notch_back(world.provider_id)
+        assert resolution_passes == []
+        assert world.meld_ping() == "A"
+        assert world.meld_ping() == "A"
+        assert resolution_passes == ["Consumer"]
+        assert before.service.ping() == "A"
+
+        with pytest.raises(SpellbookValidationError) as untouched:
+            bystander.meld(spell_id=bystander_id)
+        _assert_lost_contract_reported(untouched.value)
+    finally:
+        bystander.cleanup()
+        world.cleanup()
+
+
+def test_a_grant_of_a_parked_version_becomes_active_when_the_lender_notches_to_it() -> None:
+    """
+    D3: a version granted while parked stays off resolution - the consumer fails naming the lost contract - until
+    the lender notches to it; the notch makes the borrower's copy active and the consumer builds that version. The
+    grant takes the parked Spell object, because `get_spell_by_id` answers a parked id with the active member.
+    """
+    lender_book, borrower_book = _books("grant_parked")
+    a_id = lender_book.bind(spell=ImplA, spellframe=IService, binding_name="svc", existence=Existence.many,
+                            permissions="create")
+    borrower_book.bind(spell=Consumer, existence=Existence.many, permissions="create")
+    lender = lender_book.conjure(dynamic=True, name="lender")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
+    try:
+        lender.link(borrower)
+        index = lender_book.find_spell_by_id(a_id).spell_index
+        b_id = lender.bind_inactive(spell=ImplB, spell_index=index, spellframe=IService, binding_name="svc",
+                                    existence=Existence.many, permissions="create")
+        parked_b = lender_book._get_owned_spell(b_id)
+        with borrower.transaction("link", conduits=[borrower, lender]):
+            assert borrower.add_spell_to_contract(spell=parked_b, conduit=lender, permissions="create")
+        with pytest.raises(SpellbookValidationError) as lost:
+            borrower.meld(spell=Consumer)
+        _assert_lost_contract_reported(lost.value)
+
+        lender.notch_spell(spell_index=index, spell_id=b_id)
+        assert borrower.meld(spell=Consumer).service.ping() == "B"
+    finally:
+        borrower.cleanup()
+        lender.cleanup()
+
+
+def _chain(frame: str, *, by_class: bool = False) -> Tuple[Spellbook, Conduit, SpellIndex, type, type]:
+    """One Book: Dep, P(dep) and Q(p), all `many`; by class (PClass, QClass over Dep) or by IDep (PChain, QChain)."""
+    book, _ = _books(frame)
+    if by_class:
+        dep_id = book.bind(spell=Dep, existence=Existence.many, permissions="create")
+        p_cls, q_cls = PClass, QClass
+    else:
+        dep_id = book.bind(spell=DepA, spellframe=IDep, binding_name="dep", existence=Existence.many,
+                           permissions="create")
+        p_cls, q_cls = PChain, QChain
+    book.bind(spell=p_cls, existence=Existence.many, permissions="create")
+    book.bind(spell=q_cls, existence=Existence.many, permissions="create")
+    root = book.conjure(dynamic=True, name="root")
+    return book, root, book.find_spell_by_id(dep_id).spell_index, p_cls, q_cls
+
+
+def _notch_dep(book: Spellbook, root: Conduit, index: SpellIndex, *, by_class: bool = False) -> None:
+    """Stage the dependency's next version (DepB under IDep, or Dep2 by class) and notch to it."""
+    if by_class:
+        new_id = root.bind_inactive(spell=Dep2, spell_index=index, existence=Existence.many, permissions="create")
+    else:
+        new_id = root.bind_inactive(spell=DepB, spell_index=index, spellframe=IDep, binding_name="dep",
+                                    existence=Existence.many, permissions="create")
+    root.notch_spell(spell_index=index, spell_id=new_id)
+
+
+def test_c1_a_dependent_two_hops_away_follows_a_dependency_notch() -> None:
+    """C1: Q -> P -> Dep in one Book, Q melded before the notch: Q and P build the new Dep version."""
+    book, root, index, p_cls, q_cls = _chain("c1")
+    try:
+        assert root.meld(spell=q_cls).p.dep.tag() == "d1"
+        _notch_dep(book, root, index)
+
+        assert root.meld(spell=q_cls).p.dep.tag() == "d2"
+        assert root.meld(spell=q_cls).p.dep.tag() == "d2"
+        assert root.meld(spell=p_cls).dep.tag() == "d2"
+    finally:
+        root.cleanup()
+
+
+def test_c2_a_chain_never_melded_before_a_dependency_notch_builds_the_new_version() -> None:
+    """C2: nothing melded before the notch: Q builds the new Dep version instead of failing on the old plan."""
+    book, root, index, p_cls, q_cls = _chain("c2")
+    try:
+        _notch_dep(book, root, index)
+
+        assert root.meld(spell=q_cls).p.dep.tag() == "d2"
+        assert root.meld(spell=p_cls).dep.tag() == "d2"
+    finally:
+        root.cleanup()
+
+
+def test_c3_a_chain_melded_before_a_dependency_notch_follows_it_from_either_end() -> None:
+    """C3: P and Q melded before the notch, Q first after it: both build the new Dep version."""
+    book, root, index, p_cls, q_cls = _chain("c3")
+    try:
+        assert root.meld(spell=p_cls).dep.tag() == "d1"
+        assert root.meld(spell=q_cls).p.dep.tag() == "d1"
+        _notch_dep(book, root, index)
+
+        assert root.meld(spell=q_cls).p.dep.tag() == "d2"
+        assert root.meld(spell=p_cls).dep.tag() == "d2"
+    finally:
+        root.cleanup()
+
+
+def test_c4_a_notch_to_a_version_the_annotation_does_not_select_raises_the_first_melds_error() -> None:
+    """C4: Dep notched to its subclass, which `dep: Dep` does not select: Q fails as a first meld would."""
+    book, root, index, _, q_cls = _chain("c4", by_class=True)
+    try:
+        assert root.meld(spell=q_cls).p.dep.tag() == "d1"
+        _notch_dep(book, root, index, by_class=True)
+
+        with pytest.raises(UnresolvedInputError, match="PClass.dep expects Dep"):
+            root.meld(spell=q_cls)
+    finally:
+        root.cleanup()
+
+
+def _across(frame: str) -> Tuple[Spellbook, Spellbook, Conduit, Conduit, SpellIndex]:
+    """
+    X1's world: the lender's ImplWithIDep (dep: IDep) and DepA index-linked into a borrower whose Consumer holds the
+    (IService, "svc") contract and whose User depends on Consumer; links made after both conjures.
+    """
+    lender_book, borrower_book = _books(frame)
+    dep_id = lender_book.bind(spell=DepA, spellframe=IDep, binding_name="dep", existence=Existence.many,
+                              permissions="create")
+    p_id = lender_book.bind(spell=ImplWithIDep, spellframe=IService, binding_name="svc", existence=Existence.many,
+                            permissions="create")
+    borrower_book.bind(spell=Consumer, existence=Existence.many, permissions="create")
+    borrower_book.bind(spell=User, existence=Existence.many, permissions="create")
+    lender = lender_book.conjure(dynamic=True, name="lender")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
+    lender.link(borrower)
+    p_index = lender_book.find_spell_by_id(p_id).spell_index
+    d_index = lender_book.find_spell_by_id(dep_id).spell_index
+    with borrower.transaction("link", conduits=[borrower, lender]):
+        assert borrower.add_index_to_contract(index=p_index, conduit=lender, permissions="create")
+        assert borrower.add_index_to_contract(index=d_index, conduit=lender, permissions="create")
+    return lender_book, borrower_book, lender, borrower, d_index
+
+
+def test_a_contract_consumers_dependent_resolves_the_provider_linked_after_conjure() -> None:
+    """
+    The link regression: User, compiled at conjure with Consumer's SpellContract default unresolved, builds Consumer
+    with the provider the link supplied (the link marks Consumer, and its mark walks on to User).
+    """
+    lender_book, borrower_book, lender, borrower, _ = _across("x1link")
+    try:
+        assert borrower.meld(spell=User).c.service.ping() == "P+d1"
+    finally:
+        borrower.cleanup()
+        lender.cleanup()
+
+
+def test_x1_a_dependency_notch_in_the_lending_book_reaches_the_borrowers_dependents() -> None:
+    """X1: the lender notches the dependency of its lent provider; the borrower's User builds P over DepB."""
+    lender_book, borrower_book, lender, borrower, d_index = _across("x1")
+    try:
+        assert borrower.meld(spell=User).c.service.ping() == "P+d1"
+        new_id = lender.bind_inactive(spell=DepB, spell_index=d_index, spellframe=IDep, binding_name="dep",
+                                      existence=Existence.many, permissions="create")
+        lender.notch_spell(spell_index=d_index, spell_id=new_id)
+
+        assert borrower.meld(spell=User).c.service.ping() == "P+d2"
+        assert borrower.meld(spell=User).c.service.ping() == "P+d2"
+        assert borrower.meld(spell=Consumer).service.ping() == "P+d2"
+        assert lender.meld(spellframe=IService, binding_name="svc").ping() == "P+d2"
+    finally:
+        borrower.cleanup()
+        lender.cleanup()
+
+
+@pytest.mark.xfail(
+    strict=False,
+    raises=AssertionError,
+    reason=(
+        "OPEN, intermittent with the GIL off: a meld in flight while the lender's notch parks or reactivates the "
+        "borrower's contracted copy can be built with the raw SpellContract default (AttributeError when it is "
+        "used) or raise an internal RuntimeError ('many_only manifest references unknown spell_id', 'Cannot build "
+        "CreationContext ...'), because the notch's fan-out runs after its transaction ends. It predates rule 2 at "
+        "the same rate. TASK-2026-10-16-order_inflight_borrower_melds_against_notch_fanout. NOT STRICT: the race "
+        "passes in most runs; whoever closes that task deletes this marker."
+    ),
+)
+def test_melds_racing_notches_get_a_version_or_the_lost_provider_refusal_and_end_on_the_last_version() -> None:
+    """
+    Melds of the consumer on four threads race 20 notches between A and B (GIL off on 3.14t): each meld returns
+    a version, or the lost-provider refusal while a notch has the copy parked; nothing else is raised, and the
+    first meld after the race builds the version the last notch selected.
+    """
+    world = _lend("race", ImplA)
+    stop = threading.Event()
+    unexpected: List[BaseException] = []
+
+    def _meld_until_stopped() -> None:
+        while not stop.is_set():
+            try:
+                world.meld_ping()
+            except SpellbookValidationError:
+                continue
+            except BaseException as exc:
+                unexpected.append(exc)
+                return
+
+    threads = [threading.Thread(target=_meld_until_stopped) for _ in range(4)]
+    try:
+        assert world.meld_ping() == "A"
+        for thread in threads:
+            thread.start()
+        b_id = world.notch_to(ImplB)
+        versions = [b_id, world.provider_id] * 10
+        for version_id in versions[1:]:
+            world.notch_back(version_id)
+    finally:
+        stop.set()
+        for thread in threads:
+            thread.join(timeout=60)
+    try:
+        assert unexpected == []
+        assert world.meld_ping() == "A"
+    finally:
+        world.cleanup()
+================================================================================
+END FILE: tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py
+================================================================================
+================================================================================
 BEGIN FILE: tests/integration/melder/conduit/test_conduit_integration_public_api.py
 CONTENT SHA256: 80b8dc54a628c0611d3d39df431e8ab88d95b9c4577f7e0317947e6bac29fef2
 SOURCE ENCODING: utf-8
@@ -119953,7 +120748,7 @@ END FILE: tests/integration/melder/conduit/test_conduit_integration_public_api.p
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/conduit/test_conduit_integration_release_managed_spell.py
-CONTENT SHA256: 0bc4aac5f4a7515590f75f232fd1136cb372a98a82a37f0fdf1ba4f83d714ac2
+CONTENT SHA256: 266738a1fc11a367271217f666a95a9803bdc111f4489d89b27423feee8962ae
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -120117,7 +120912,7 @@ def _pool_of(root: Conduit, spell_id: str) -> ManagedSpellQuantity:
 
     Args:
         root: The owning root.
-        spell_id: The managed version id.
+        spell_id: The managed spell's spell_id.
 
     Returns:
         ManagedSpellQuantity: The pool.
@@ -133605,7 +134400,7 @@ END FILE: tests/integration/melder/live_sim/test_live_sim_dynamic.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/multithreading/test_contract_mutation_during_meld_resolution_integration.py
-CONTENT SHA256: a433bea8eef7ccc00dc7976f555505ce01a1ce293ff8c016a094d43dc0bb45f1
+CONTENT SHA256: 49bcc00d17ea50b377f56de7e4b9c0f4fb3628df305eafaa60b873c33a7a0623
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -133619,8 +134414,13 @@ processor looked it up. These tests force that interleaving instead of racing fo
 mutation runs to completion on its own thread just before one of the two Phase 9 processors
 that read the live pool, and the meld must end in the SpellbookValidationError a meld starting a
 moment later gets. After the contract is restored the consumer melds again.
+
+Since rule 2 (2026-10-16) a warm meld of a consumer whose contract is satisfied runs no resolution pass; only a
+consumer a provider change has marked does. Each test therefore marks the consumer the way a provider change marks it
+before the meld it forces into the race.
 """
 
+import inspect
 from threading import Thread
 from typing import Any, Callable, Iterator, Optional
 
@@ -133718,6 +134518,26 @@ class _ContractWorld:
                 permissions="create",
             )
         self.borrower.validate_contracts_and_define()
+
+    def mark_consumer_for_recheck(self) -> None:
+        """
+        Purpose:
+            Mark the consumer the way a change of its provider marks it, so its next meld runs a resolution pass.
+        Contract:
+            - Makes the registry call the borrower Book's contracted-map mutators make
+              (`SpellSystemStates.mark_contract_dependents_dirty`) for the consumer's contract key: the consumer
+              goes `gated` + `contract_unvalidated` and its Book's validation flag goes up.
+            - Changes no contract: the provider stays contracted, so the marked meld's own recheck passes and its
+              5-11 pass runs - the pass the race needs.
+        Returns:
+            None.
+        """
+        spellbook = self.borrower.spellbook
+        contract = inspect.signature(_RaceConsumer).parameters["service"].default
+        spellbook._spell_system_states.mark_contract_dependents_dirty(
+            spellbook_id=spellbook._id,
+            contract_keys={contract.canonical_key},
+        )
 
     def meld_consumer(self) -> Any:
         """
@@ -133916,6 +134736,8 @@ def test_meld_that_loses_its_contract_provider_mid_resolution_raises_validation_
     Contract:
         - Before 0.2.8227 both processors reported the miss as RuntimeError, which the target
           pass could not classify, so the meld raised PhaseExecutionError.
+        - The forced meld is marked first, as a provider change marks it: since rule 2 a warm meld
+          of a satisfied consumer runs no pass.
         - After the contract is restored, the next meld resolves the provider again.
     """
     world = _ContractWorld()
@@ -133924,6 +134746,7 @@ def test_meld_that_loses_its_contract_provider_mid_resolution_raises_validation_
 
         probe = _MutationProbe(world, mutation)
         monkeypatch.setattr(processor_cls, "process", probe.wrap(processor_cls.process))
+        world.mark_consumer_for_recheck()
         with pytest.raises(SpellbookValidationError):
             world.meld_consumer()
         monkeypatch.undo()
@@ -141178,7 +142001,7 @@ END FILE: tests/integration/melder/spellbook/test_spellbook_integration_conjure_
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/spellbook/test_spellbook_integration_core.py
-CONTENT SHA256: 6c22cc1105511f39784c7744d1501d2ba810d7aad8d041454edd67d042512ca3
+CONTENT SHA256: 7595ce6ba58b0e1afcb4205ec681a44630e735303d659c4bd1be29f3b88f79d9
 SOURCE ENCODING: utf-8
 ================================================================================
 from __future__ import annotations
@@ -141422,8 +142245,8 @@ def test_spellbook_integration_conjure_registers_spell_ids_and_cleanup_clears_re
         Validate conjure registers spell versions into the Aether registry and cleanup clears them.
     Contract:
         - Conduit registration inserts SpellIndex entries into the frame spell registry.
-        - The frame version registry contains the bound spell version id.
-        - Conduit cleanup removes the version id from the frame registry.
+        - The frame version registry contains the bound spell's spell_id.
+        - Conduit cleanup removes the spell_id from the frame registry.
     Returns:
         None.
     Raises:
@@ -175483,7 +176306,7 @@ END FILE: tests/unit/melder/aether/conduit/conduit_ward/contract/test_detail_rea
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/conduit/conduit_ward/contract/test_details.py
-CONTENT SHA256: 1d5f04848bd8ecbfb14e7091681009bff19da47d1645d3cf3e4735095ed1194f
+CONTENT SHA256: 9415621dab803c8c55047788b8d08f4ca705c1bfa34a433acff7963e3dc0fe9e
 SOURCE ENCODING: utf-8
 ================================================================================
 import pytest
@@ -175865,7 +176688,7 @@ def test_has_spell_does_not_exist(sample_detail):
     Purpose:
         Verify has_spell returns False for missing versions.
     Contract:
-        has_spell returns False when the version id is absent.
+        has_spell returns False when the spell_id is absent.
     Args:
         sample_detail: Detail fixture under test.
     Returns:
@@ -179419,7 +180242,7 @@ END FILE: tests/unit/melder/aether/conduit/conduit_ward/test_conduit_ward.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/conduit/conduit_ward/test_conduit_ward_contracts.py
-CONTENT SHA256: b469b23f451502f5ab1243735ef18c1c827829161443083e71b0ddc3e80e9f96
+CONTENT SHA256: 5450f87ce8e4a134b8c852e0a91a8b869e3282c7811084af1e2fb943ae761191
 SOURCE ENCODING: utf-8-bom
 ================================================================================
 from __future__ import annotations
@@ -179588,7 +180411,7 @@ class FakeSpellbook:
         self._destroy_detached_calls: list[str] = []
 
     def find_spell_by_id(self, spell_id: str) -> Optional[FakeSpell]:
-        """Resolve a locally owned spell by version id, as Spellbook.find_spell_by_id answers from its id maps."""
+        """Resolve a locally owned spell by spell_id, as Spellbook.find_spell_by_id answers from its id maps."""
         for spell in self._spells.values():
             if spell.spell_id == spell_id:
                 return spell
@@ -179702,7 +180525,7 @@ class FakeSpellbook:
                 versions_set.add(version_id)
 
     def _find_contracted_spell(self, spell_index: SpellIndex | str) -> FakeSpell:
-        """Locate a contracted spell by SpellIndex or version id across all peers."""
+        """Locate a contracted spell by SpellIndex or spell_id across all peers."""
         for spell_map in self._contracted_spells.values():
             if isinstance(spell_index, SpellIndex):
                 if spell_index in spell_map:
@@ -179715,7 +180538,7 @@ class FakeSpellbook:
         raise RuntimeError("Contracted spell not found.")
 
     def _find_contracted_spell_by_id(self, spell_id: str, conduit_id: str) -> FakeSpell | None:
-        """Locate a contracted spell by version id within a peer conduit."""
+        """Locate a contracted spell by spell_id within a peer conduit."""
         spell_map = self._contracted_spells.get(conduit_id)
         if spell_map is None:
             return None
@@ -179726,7 +180549,7 @@ class FakeSpellbook:
         return None
 
     def _remove_contracted_spell(self, spell_id: str, conduit_id: str) -> None:
-        """Remove a contracted spell by version id for a peer conduit."""
+        """Remove a contracted spell by spell_id for a peer conduit."""
         self._remove_contracted_calls.append((conduit_id, spell_id))
         spell_map = self._contracted_spells.get(conduit_id)
         lookup_map = self._lookup_contracted_spells.get(conduit_id)
@@ -180016,7 +180839,7 @@ class FakeConduit:
         return spell.spell_id
 
     def find_contracted_spell(self, spell_id: str) -> FakeSpell | None:
-        """Find a contracted spell by version id across all peers."""
+        """Find a contracted spell by spell_id across all peers."""
         for conduit_id in self._spellbook._contracted_spells.keys():
             spell = self._spellbook._find_contracted_spell_by_id(spell_id, conduit_id)
             if spell is not None:
@@ -180771,7 +181594,7 @@ def test_get_all_spells_in_contracts_returns_current_versions(
 def test_get_spell_in_contracts_matches_lineage_versions(
     linked_pair: tuple[FakeConduit, FakeConduit],
 ) -> None:
-    """Verify spell lookup honors lineage history. A previous version id should resolve to the current spell."""
+    """Verify spell lookup honors lineage history. A previous spell_id should resolve to the current spell."""
     owner, borrower = linked_pair
     spell = _register_spell(owner, "spell-14", permissions=Permissions.create)
 
@@ -183093,7 +183916,7 @@ END FILE: tests/unit/melder/aether/conduit/conduit_ward/test_conduit_ward_link_f
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/conduit/conduit_ward/test_conduit_ward_sever_failure_atomicity_regression.py
-CONTENT SHA256: 0bfc72a24ce6c0c6a63e918b01471c6e76b5927f62f7d3be47998c47dfadd0d8
+CONTENT SHA256: 3da0470d22bdcb5a5ca60b0d655ebca31eca271de4432238ee7288a1e3a5034f
 SOURCE ENCODING: utf-8
 ================================================================================
 """Regression: BUG-005 (2026-07-17 audit) - failed sever leaves no asymmetric state.
@@ -183164,7 +183987,7 @@ class FakeSpellIndex:
     """
 
     def __init__(self, spell_id: str) -> None:
-        """Record the one selected version id the destroy seam reads."""
+        """Record the one selected spell_id the destroy seam reads."""
         self.selected_spell_id = spell_id
 
 
@@ -183495,7 +184318,7 @@ END FILE: tests/unit/melder/aether/conduit/conduit_ward/test_conduit_ward_sever_
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/conduit/conduit_ward/transfer/test_transfer_of_ownership.py
-CONTENT SHA256: 0fcf3051231f6e1be45a44012d72423c072d7a26c491d08876acded25173be31
+CONTENT SHA256: 6645d387f578cff991560038ba46aac743805594384fd703fc3f447536ba8acd
 SOURCE ENCODING: utf-8
 ================================================================================
 from __future__ import annotations
@@ -184291,7 +185114,7 @@ class FakeSpellbook:
         Remove owned spell_id mappings for the given spell.
 
         Args:
-            spell_id: Current version id for the spell.
+            spell_id: The spell's current spell_id.
             spell_obj: Owned spell instance being removed.
         Raises:
             RuntimeError: If the owned map or pool map references a different spell.
@@ -187997,7 +188820,7 @@ END FILE: tests/unit/melder/aether/conduit/conduit_ward/transfer/test_transfer_o
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/conduit/conduit_ward/transfer/test_transfer_of_ownership_contracts.py
-CONTENT SHA256: 2d77262c05299a247665cb12238010c26abad00390746061fb1271140d0c3e8e
+CONTENT SHA256: 66de1e9fbb45328693d4949edca5573059abccdfd5120d4b6998ec9bc582d4cd
 SOURCE ENCODING: utf-8
 ================================================================================
 from __future__ import annotations
@@ -188768,7 +189591,7 @@ class FakeSpellbook:
         Remove owned spell_id mappings for the given spell.
 
         Args:
-            spell_id: Current version id for the spell.
+            spell_id: The spell's current spell_id.
             spell_obj: Owned spell instance being removed.
         Raises:
             RuntimeError: If the owned map or pool map references a different spell.
@@ -189611,7 +190434,7 @@ END FILE: tests/unit/melder/aether/conduit/conduit_ward/transfer/test_transfer_o
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/conduit/conduit_ward/transfer/test_transfer_of_ownership_owner_stamps.py
-CONTENT SHA256: 055df6e59f0c3b966416d29b1824b48306815f39f97d51ef253558c28ddb32b1
+CONTENT SHA256: 905b85f9c15db36590e74773869d687b49a80a120324d74457aa5332b7048d36
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -189791,7 +190614,7 @@ def _environment(
         parked: How many parked members the index holds.
         parked_stamped: Whether the parked members carry the source's stamp (False: never stamped - before 0.2.8248
             a version staged before conjure, since then one whose stamp raised at conjure).
-        target_holds: Version ids the target store already holds a pool for.
+        target_holds: The spell_ids the target store already holds a pool for.
 
     Returns:
         SimpleNamespace: build_environment's fields plus `log`, `parked` and the two stores.
@@ -192488,7 +193311,7 @@ END FILE: tests/unit/melder/aether/conduit/creations/test_creations_holder_child
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/conduit/creations/test_creations_managed_quantities.py
-CONTENT SHA256: 58e69e3edf6e7ffed184d065dd9a9b28c8b74c371716e7fd65e5365262349745
+CONTENT SHA256: 659a79f6ecf8bf6a589bd00f6c77d0e012584998f6f1569ff6f9da4be4b2d449
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -192536,7 +193359,7 @@ class _SpellStub:
         Keep the fields.
 
         Args:
-            spell_id: The version id.
+            spell_id: The spell's spell_id.
             existence: The binding's Existence.
             mode: The managed mode.
             limit: The managed limit.
@@ -193939,7 +194762,7 @@ END FILE: tests/unit/melder/aether/conduit/creations/test_managed_spell_lease.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/conduit/creations/test_managed_spell_quantity.py
-CONTENT SHA256: c5ab5c86a96854ff0f86e599d088088717602f45c073cf136b4219528ed8ab95
+CONTENT SHA256: 589fecf1fd15bf2d01005cdd353afc578a952d79b4016c3fda87e657344f9c33
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -194008,7 +194831,7 @@ class _SpellStub:
             resets: The reset method names.
             disposal: The disposal method names.
             existence: The binding's Existence.
-            spell_id: The version id.
+            spell_id: The spell's spell_id.
             spell_name: The display name.
         """
         self.spell_id = spell_id
@@ -195106,7 +195929,7 @@ END FILE: tests/unit/melder/aether/conduit/creations/test_managed_spell_quantity
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/conduit/creations/test_release_managed_spell.py
-CONTENT SHA256: 56284b0f22299a2c9cbbbca9604605390caa24289e6f2f89e677b26ff53c765c
+CONTENT SHA256: 59220672e91138ba0756401ca365770881488685376577cee37772380f1a69f5
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -195190,7 +196013,7 @@ class _SpellStub:
         Keep the identity, the class, an elastic managed policy and the index.
 
         Args:
-            spell_id: The version id.
+            spell_id: The spell's spell_id.
             target: The managed class.
             binding_name: The binding name.
             frame: The frame name.
@@ -195503,7 +196326,7 @@ def test_release_with_a_spell_id_no_pool_carries_names_the_pools() -> None:
 
 
 def test_release_refuses_a_spell_id_that_is_not_a_string() -> None:
-    """The filter must be a version id."""
+    """The filter must be a spell_id (a str)."""
     _pool()
     with pytest.raises(TypeError, match="spell_id must be a str or None; got int"):
         ReleaseManagedSpell().release(Pooled(), spell_id=7)
@@ -195658,7 +196481,7 @@ END FILE: tests/unit/melder/aether/conduit/creations/test_release_managed_spell.
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/conduit/creations/test_release_managed_spell_multithreaded.py
-CONTENT SHA256: 83a54f66003cf67058416c06571d3e9dd8bce3fb182fa8de79835c2e99a1bcfb
+CONTENT SHA256: 2a25214a4d15ff2935ebdd1bd0d2116b66d18b829cf248634d5d6ec6c3a2926d
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -195701,7 +196524,7 @@ class _SpellStub:
         Keep the identity and the class.
 
         Args:
-            spell_id: The version id.
+            spell_id: The spell's spell_id.
             target: The managed class.
         """
         self.spell_id = spell_id
@@ -195743,7 +196566,7 @@ def _pool(spell_id: str, target: type) -> ManagedSpellQuantity:
     Build and register one pool.
 
     Args:
-        spell_id: The version id.
+        spell_id: The spell's spell_id.
         target: The managed class.
 
     Returns:
@@ -198843,13 +199666,14 @@ END FILE: tests/unit/melder/aether/conduit/meld/test_concrete_meld_subclasses.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/conduit/meld/test_meld.py
-CONTENT SHA256: b2e33631b79773a359c6fd342d815381687835eadfda01cd4c071bd38afaa6a3
+CONTENT SHA256: db6c8b60c3fd3e5ce7656c06b444ce3c5de05070e7317b309497a39a4d51c0f0
 SOURCE ENCODING: utf-8
 ================================================================================
 """Contract tests for Meld resolution, gating, and activation flow."""
+from contextlib import contextmanager
 from threading import RLock
 from types import SimpleNamespace
-from typing import Any, Callable, Iterable, Dict, TYPE_CHECKING
+from typing import Any, Callable, Iterable, Iterator, Dict, Sequence, TYPE_CHECKING
 from unittest.mock import MagicMock
 
 import pytest
@@ -198867,8 +199691,13 @@ from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change
     SpellStateChangeReason,
 )
 from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
 from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
     SpellCompilerArtifact,
+)
+from melder.aether.spellbook.spell_compiler.topology.spell_local_topology import (
+    SpellLocalTopology,
+    SpellSocketDescriptor,
 )
 from melder.utilities.custom_exceptions.hook_execution_error import HookExecutionError
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
@@ -198994,17 +199823,47 @@ class _SpellSystemStatesStub:
     Minimal SpellSystemStates stub exposing resolution state.
     """
 
-    def __init__(self, resolution_state: _ResolutionStateStub) -> None:
+    def __init__(
+            self,
+            resolution_state: _ResolutionStateStub,
+            *,
+            topologies: Dict[str, Any] | None = None,
+            states_by_spell_id: Dict[str, Any] | None = None,
+    ) -> None:
         """
-        Initialize the stub with a resolution state.
+        Initialize the stub with a resolution state and, for the structural catch-up, the registry's two reads.
+
+        Args:
+            resolution_state: The conduit resolution state every conduit id answers with.
+            topologies: Version id -> local topology (`get_local_topology_by_id`); none recorded by default.
+            states_by_spell_id: Version id -> lineage state exposing `current_spell_id` (`get_by_spell_id`).
         """
         self._resolution_state = resolution_state
+        self._topologies: Dict[str, Any] = topologies if topologies is not None else {}
+        self._states_by_spell_id: Dict[str, Any] = states_by_spell_id if states_by_spell_id is not None else {}
+        self.topology_reads: list[str] = []
+        self.topology_read_hooks: list[Callable[[str], None]] = []
 
     def get_conduit_resolution_state(self, conduit_id: str) -> _ResolutionStateStub:
         """
         Return the stored resolution state.
         """
         return self._resolution_state
+
+    def get_local_topology_by_id(self, spell_id: str) -> Any:
+        """
+        Return the topology recorded for a version id, or None; record the read and run the read hooks.
+        """
+        self.topology_reads.append(spell_id)
+        for hook in self.topology_read_hooks:
+            hook(spell_id)
+        return self._topologies.get(spell_id)
+
+    def get_by_spell_id(self, spell_id: str) -> Any:
+        """
+        Return the lineage state recorded under a version id (old version ids included), or None.
+        """
+        return self._states_by_spell_id.get(spell_id)
 
     def unregister_index(self, spell_index: object) -> None:
         """
@@ -199204,6 +200063,8 @@ class _SpellStub:
         self.resolution_complete = bool(resolution_complete)
         self.run_all_phases_calls = 0
         self.run_structural_phases_calls = 0
+        self.cleanup_creation_context_calls = 0
+        self.clear_phase5_calls = 0
         self._validity_after_run = validity_after_run
         self._broken_after_run = broken_after_run
         self._cleaned = False
@@ -199227,6 +200088,16 @@ class _SpellStub:
             self.system_state.validity = self._validity_after_run
         if self._broken_after_run is not None:
             self.is_broken = self._broken_after_run
+
+    def _cleanup_creation_context(self) -> None:
+        """
+        Record a context clear and bump the door epoch first, as Spell._cleanup_creation_context does.
+        """
+        self.cleanup_creation_context_calls += 1
+        self._door_epoch += 1
+        self._creation_context = None
+        self._creation_context_switch.state = 0
+        self._creation_context_switch.fast_state = 0
 
     def check_cleaned(self) -> None:
         """
@@ -199632,9 +200503,17 @@ def _make_meld(
             getattr(spell._compiler_artifact, "_root_blueprint_phase5", None)
             and spell._compiler_artifact._root_blueprint_phase5.root_spell_id == spell.spell_index.selected_spell_id
         ),
+        clear_phase5_artifacts=_record_phase5_clear,
         cleanup=lambda: None,
     )
     return meld
+
+
+def _record_phase5_clear(spell: _SpellStub) -> None:
+    """
+    Compiler-double `clear_phase5_artifacts`: count the call on the stub spell.
+    """
+    spell.clear_phase5_calls += 1
 
 
 def _make_creations(
@@ -200453,117 +201332,114 @@ def test_ensure_lineage_resolvable_raises_when_not_valid_after_phases() -> None:
     assert spell.run_structural_phases_calls == 1
 
 
-def test_ensure_lineage_resolvable_missing_contract_raises() -> None:
+class _ContractConsumer:
     """
-    Verify missing SpellContract providers raise MeldExecutionError.
+    A consumer whose constructor declares a SpellContract default, as a contract consumer's class does.
+    """
+
+    def __init__(self, service: Any = SpellContract(spellframe="svc", binding_name="primary")) -> None:
+        self.service = service
+
+
+def test_ensure_lineage_resolvable_valid_contract_consumer_makes_no_contract_lookup(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Verify a contract consumer whose state needs no recheck melds with no contract work (rule 2).
 
     Contract:
-        - SpellContract defaults without contracted providers raise.
+        - Structurally valid with a valid conduit verdict: no contracted lookup, no verdict write, no 5-11 pass.
+        - A satisfied SpellContract is rechecked only when a provider change marks its consumer.
     """
     spellbook = _SpellbookStub()
-    meld = _make_meld(spellbook=spellbook)
-    state = _SystemStateStub(validity=SpellValidity.valid)
-    spell = _SpellStub(
-        spell_id="spell-1",
-        system_state=state,
-        spellbook=spellbook,
-    )
-
-    class ContractConsumer:
-        """
-        Minimal consumer with a SpellContract dependency.
-        """
-
-        def __init__(self, service: Any = SpellContract(spellframe="svc", binding_name="primary")) -> None:
-            self.service = service
-
-    spell.spell = ContractConsumer
-
-    with pytest.raises(MeldExecutionError, match="SpellContract could not be resolved"):
-        meld._ensure_lineage_resolvable(spell)
-
-
-def test_ensure_lineage_resolvable_wraps_contracted_lookup_failures(monkeypatch: pytest.MonkeyPatch) -> None:
-    """
-    Verify contract lookup failures are wrapped with spell/parameter context.
-
-    Contract:
-        - Unexpected contracted lookup failures raise MeldExecutionError.
-        - Error payload includes the failing parameter name.
-    """
-    spellbook = _SpellbookStub()
-    meld = _make_meld(spellbook=spellbook)
-    state = _SystemStateStub(validity=SpellValidity.valid)
-    spell = _SpellStub(
-        spell_id="spell-1",
-        system_state=state,
-        spellbook=spellbook,
-    )
-
-    class ContractConsumer:
-        def __init__(self, service: Any = SpellContract(spellframe="svc", binding_name="primary")) -> None:
-            self.service = service
-
-    spell.spell = ContractConsumer
-    resolve_contracted_by_lookup_key = MagicMock(side_effect=RuntimeError("lookup failed"))
-    _patch_meld_method(
-        monkeypatch,
-        "_resolve_contracted_by_lookup_key",
-        resolve_contracted_by_lookup_key,
-    )
-
-    with pytest.raises(MeldExecutionError, match="param 'service'"):
-        meld._ensure_lineage_resolvable(spell)
-
-
-def test_ensure_lineage_resolvable_contract_forces_revalidation() -> None:
-    """
-    Verify resolved SpellContracts force resolution revalidation.
-
-    Contract:
-        - Contract presence gates resolution and triggers conduit revalidation.
-    """
-    contract = SpellContract(spellframe="svc", binding_name="primary")
-    contract_key = contract.canonical_key
-    provider = _SpellStub(spell_id="provider-1")
-    spellbook = _SpellbookStub(
-        contracted_spells={"peer-1": {provider.spell_index: provider}},
-        lookup_contracted_spells={"peer-1": {contract_key: provider.spell_index}},
-    )
-
+    spellbook._run_resolution_phases_for_target_spell = MagicMock()
     resolution_state = _ResolutionStateStub()
-    spell_system_states = _SpellSystemStatesStub(resolution_state)
-    state = _SystemStateStub(validity=SpellValidity.valid)
     spell = _SpellStub(
         spell_id="spell-1",
-        system_state=state,
-        spell_system_states=spell_system_states,
+        system_state=_SystemStateStub(validity=SpellValidity.valid),
+        spell_system_states=_SpellSystemStatesStub(resolution_state),
         spellbook=spellbook,
     )
-
-    class ContractConsumer:
-        """
-        Consumer that requires a contracted provider.
-        """
-
-        def __init__(self, service: Any = contract) -> None:
-            self.service = service
-
-    spell.spell = ContractConsumer
-
-    creations, _ = _make_creations(conduit_id="conduit-1")
-    meld = _make_meld(creations=creations, spellbook=spellbook)
-
-    def _run_resolution(conduit_id: str, target_spell: _SpellStub) -> None:
-        assert target_spell is spell
-        resolution_state.set_spell_validity(spell.spell_index.selected_spell_id, SpellValidity.valid)
-
-    spellbook._run_resolution_phases_for_target_spell = MagicMock(side_effect=_run_resolution)
+    spell.spell = _ContractConsumer
+    lookup = MagicMock(return_value=None)
+    _patch_meld_method(monkeypatch, "_resolve_contracted_by_lookup_key", lookup)
+    meld = _make_meld(spellbook=spellbook)
 
     meld._ensure_lineage_resolvable(spell)
 
+    lookup.assert_not_called()
+    spellbook._run_resolution_phases_for_target_spell.assert_not_called()
+    assert resolution_state.spell_set_calls == []
+    assert resolution_state.root_set_calls == []
+
+
+def test_ensure_lineage_resolvable_contract_consumer_still_gated_raises_validation_error(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Verify a marked consumer whose provider is gone fails with the first meld's error.
+
+    Contract:
+        - Phase 4 leaves the lineage gated (its SPELL_CONTRACT_MISSING_PROVIDER warning gates it), so the gate
+          raises SpellbookValidationError, never the retired scan's MeldExecutionError.
+        - No contracted lookup is made.
+    """
+    spellbook = _SpellbookStub()
+    spell = _SpellStub(
+        spell_id="spell-1",
+        system_state=_SystemStateStub(validity=SpellValidity.gated),
+        validity_after_run=SpellValidity.gated,
+        spellbook=spellbook,
+    )
+    spell.spell = _ContractConsumer
+    lookup = MagicMock(return_value=None)
+    _patch_meld_method(monkeypatch, "_resolve_contracted_by_lookup_key", lookup)
+    meld = _make_meld(spellbook=spellbook)
+
+    with pytest.raises(SpellbookValidationError) as raised:
+        meld._ensure_lineage_resolvable(spell)
+
+    assert raised.value.broken_spells == [spell]
+    assert spell.run_structural_phases_calls == 1
+    lookup.assert_not_called()
+
+
+def test_ensure_lineage_resolvable_gated_contract_consumer_rebuilds_once_with_structure_changed() -> None:
+    """
+    Verify a marked consumer whose provider is present is rechecked and rebuilt once.
+
+    Contract:
+        - The structural rerun makes it valid, the conduit verdict is gated once with `structure_changed`, and
+          one 5-11 pass rebuilds it; no second, contract-driven gate follows.
+    """
+    contract = SpellContract(spellframe="svc", binding_name="primary")
+    provider = _SpellStub(spell_id="provider-1")
+    spellbook = _SpellbookStub(
+        contracted_spells={"peer-1": {provider.spell_index: provider}},
+        lookup_contracted_spells={"peer-1": {contract.canonical_key: provider.spell_index}},
+    )
+    resolution_state = _ResolutionStateStub()
+    spell = _SpellStub(
+        spell_id="spell-1",
+        system_state=_SystemStateStub(validity=SpellValidity.gated),
+        validity_after_run=SpellValidity.valid,
+        spell_system_states=_SpellSystemStatesStub(resolution_state),
+        spellbook=spellbook,
+    )
+    spell.spell = _ContractConsumer
+
+    def _rebuild(conduit_id: str, target_spell: _SpellStub) -> None:
+        """Model a successful 5-11 pass."""
+        resolution_state.set_spell_validity(target_spell.spell_id, SpellValidity.valid)
+
+    spellbook._run_resolution_phases_for_target_spell = MagicMock(side_effect=_rebuild)
+    meld = _make_meld(spellbook=spellbook)
+
+    meld._ensure_lineage_resolvable(spell)
+
+    gated_writes = [call for call in resolution_state.spell_set_calls if call[1] is SpellValidity.gated]
+    assert gated_writes == [("spell-1", SpellValidity.gated, SpellStateChangeReason.structure_changed)]
     spellbook._run_resolution_phases_for_target_spell.assert_called_once_with("conduit-1", spell)
-    assert any(call[1] is SpellValidity.gated for call in resolution_state.spell_set_calls)
 
 
 def test_force_resolution_revalidation_uses_root_validity_for_root_blueprints() -> None:
@@ -200621,39 +201497,398 @@ def test_get_resolution_validity_uses_root_validity_for_root_blueprints() -> Non
     assert meld._get_resolution_validity(spell, resolution_state) is SpellValidity.gated
 
 
-def test_iter_spell_contract_defaults_skips_non_contract_and_special_params() -> None:
+def _normal_topology(version_id: str, targets: Sequence[str]) -> SpellLocalTopology:
+    """A local topology with one NORMAL socket per target, as Phase 3 records resolved constructor dependencies."""
+    return SpellLocalTopology(
+        spell_id=version_id,
+        sockets=tuple(
+            SpellSocketDescriptor(
+                spell_id=version_id,
+                param_name=f"dep_{position}",
+                position=position,
+                socket_kind=SocketKind.NORMAL,
+                is_collection=False,
+                is_optional=False,
+                target_spell_ids=(target,),
+            )
+            for position, target in enumerate(targets)
+        ),
+    )
+
+
+def _contract_socket_topology(version_id: str, key: tuple[str, str]) -> SpellLocalTopology:
+    """A local topology with one SPELL_CONTRACT socket and no target, as Phase 3 records a contract consumer."""
+    return SpellLocalTopology(
+        spell_id=version_id,
+        sockets=(
+            SpellSocketDescriptor(
+                spell_id=version_id,
+                param_name="service",
+                position=0,
+                socket_kind=SocketKind.SPELL_CONTRACT,
+                is_collection=False,
+                is_optional=False,
+                target_spell_ids=(),
+                contract_key=key,
+            ),
+        ),
+    )
+
+
+class _CatchUpWorld:
     """
-    Verify SpellContract default scanning skips self/cls/varargs and plain defaults.
+    A consumer in a Book with stub registry reads, for the meld's structural catch-up (D2).
+
+    Purpose:
+        Each dependency is a stub spell in the consumer Book's pool, registered under its version id with its own
+        lineage state; `structural_runs` records (Book, spell id) per structural rerun, `passes` each 5-11 pass,
+        and `events` both in order.
     """
-    contract = SpellContract(spellframe="svc", binding_name="primary")
 
-    class ContractConsumer:
-        def __init__(
-                self,
-                service: Any = contract,
-                plain: int = 1,
-                *args: Any,
-                **kwargs: Any,
-        ) -> None:
-            self.service = service
-            self.plain = plain
+    def __init__(
+            self,
+            *,
+            consumer_validity: SpellValidity = SpellValidity.gated,
+            consumer_targets: Sequence[str] = (),
+            resolution_required: bool = False,
+    ) -> None:
+        """Build the consumer (valid after its own rerun) and its Book, registry and meld."""
+        self.resolution_state = _ResolutionStateStub()
+        self.topologies: Dict[str, Any] = {}
+        self.lineages: Dict[str, Any] = {}
+        self.states = _SpellSystemStatesStub(
+            self.resolution_state,
+            topologies=self.topologies,
+            states_by_spell_id=self.lineages,
+        )
+        self.book = _SpellbookStub()
+        self.structural_runs: list[tuple[Any, str]] = []
+        self.passes: list[str] = []
+        self.events: list[str] = []
+        self.after_run: Dict[str, Callable[[], None]] = {}
+        self.book._run_resolution_phases_for_target_spell = self._pass
+        self.meld = _make_meld(spellbook=self.book)
+        self.meld._spell_compiler_system.run_structural_phases = self._run_structural
+        self.consumer = self.add(
+            "consumer-1",
+            validity=consumer_validity,
+            targets=consumer_targets,
+            in_pool=False,
+        )
+        self.consumer.resolution_required = resolution_required
+        self.consumer.resolution_complete = not resolution_required
 
-    spell = _SpellStub(spell_id="spell-1")
-    spell.spell = ContractConsumer
-    meld = _make_meld()
+    def add(
+            self,
+            spell_id: str,
+            *,
+            validity: SpellValidity = SpellValidity.gated,
+            after: SpellValidity = SpellValidity.valid,
+            targets: Sequence[str] = (),
+            book: Any | None = None,
+            existing: bool = False,
+            broken_after: bool | None = None,
+            in_pool: bool = True,
+    ) -> _SpellStub:
+        """Register one spell: in the pool, its lineage under its id, its topology naming `targets`."""
+        spell = _SpellStub(
+            spell_id=spell_id,
+            system_state=_SystemStateStub(validity=validity),
+            validity_after_run=after,
+            broken_after_run=broken_after,
+            spell_system_states=self.states,
+            spellbook=book if book is not None else self.book,
+            is_existing_creation=existing,
+        )
+        if in_pool:
+            self.book._spell_id_pool[spell_id] = spell
+        self.lineages[spell_id] = SimpleNamespace(current_spell_id=spell_id)
+        if targets:
+            self.topologies[spell_id] = _normal_topology(spell_id, targets)
+        return spell
 
-    assert meld._iter_spell_contract_defaults(spell) == [("service", contract)]
+    def _run_structural(self, spellbook: Any, spell: _SpellStub, cancel_event: Any = None) -> None:
+        """Compiler-double structural rerun: record the Book, rerun the stub, run its after-hook."""
+        self.structural_runs.append((spellbook, spell.spell_id))
+        self.events.append(f"structural:{spell.spell_id}")
+        spell.run_structural_phases()
+        hook = self.after_run.get(spell.spell_id)
+        if hook is not None:
+            hook()
+
+    def _pass(self, conduit_id: str, target_spell: _SpellStub) -> None:
+        """Stub 5-11 pass: record it and leave the target valid for the conduit."""
+        self.passes.append(target_spell.spell_id)
+        self.events.append(f"pass:{target_spell.spell_id}")
+        self.resolution_state.set_spell_validity(target_spell.spell_id, SpellValidity.valid)
+
+    def runs_of(self, spell_id: str) -> int:
+        """How many structural reruns the spell had."""
+        return sum(1 for _, run_id in self.structural_runs if run_id == spell_id)
 
 
-def test_iter_spell_contract_defaults_returns_empty_when_signature_unavailable() -> None:
+def test_catch_up_refreshes_a_stale_dependency_with_its_owner_book_and_resets_its_plan() -> None:
     """
-    Verify SpellContract default scanning returns empty when inspect.signature fails.
-    """
-    spell = _SpellStub(spell_id="spell-1")
-    spell.spell = object()
-    meld = _make_meld()
+    Verify the catch-up reruns a stale dependency's phases 1-4 with its owner Book and resets its own plan.
 
-    assert meld._iter_spell_contract_defaults(spell) == []
+    Contract:
+        - A borrowed dependency (owned by another Book) is refreshed with that Book, not the consumer's.
+        - Its context and Phase 5+ state are cleared, it owes its own resolution and its door epoch moves, so no
+          door keeps serving the plan built for its old structure.
+    """
+    world = _CatchUpWorld(consumer_targets=("dep-1",))
+    lender = _SpellbookStub()
+    dep = world.add("dep-1", book=lender)
+    epoch_before = dep._door_epoch
+
+    world.meld._ensure_lineage_resolvable(world.consumer)
+
+    assert [(book, run_id) for book, run_id in world.structural_runs if run_id == "dep-1"] == [(lender, "dep-1")]
+    assert dep.system_state.validity is SpellValidity.valid
+    assert dep.cleanup_creation_context_calls == 1
+    assert dep.clear_phase5_calls == 1
+    assert dep.resolution_required is True
+    assert dep.resolution_complete is False
+    assert dep._door_epoch > epoch_before
+    assert world.passes == ["consumer-1"]
+
+
+def test_catch_up_leaves_a_valid_dependency_alone() -> None:
+    """Verify a dependency whose lineage is valid is neither rerun nor reset."""
+    world = _CatchUpWorld(consumer_targets=("dep-1",))
+    dep = world.add("dep-1", validity=SpellValidity.valid)
+
+    world.meld._ensure_lineage_resolvable(world.consumer)
+
+    assert world.runs_of("dep-1") == 0
+    assert dep.cleanup_creation_context_calls == 0
+    assert dep.resolution_required is False
+
+
+def test_catch_up_raises_naming_a_broken_dependency_and_pins_it_invalid() -> None:
+    """
+    Verify a dependency that comes out of its rerun broken stops the meld with an error naming it.
+
+    Contract:
+        - SpellbookValidationError lists the dependency; its lineage is pinned invalid, as the gate pins a broken
+          melded spell; the consumer's own phases never run.
+    """
+    world = _CatchUpWorld(consumer_targets=("dep-1",))
+    dep = world.add("dep-1", broken_after=True)
+
+    with pytest.raises(SpellbookValidationError) as raised:
+        world.meld._ensure_lineage_resolvable(world.consumer)
+
+    assert raised.value.broken_spells == [dep]
+    assert dep.system_state.validity is SpellValidity.invalid
+    assert world.runs_of("consumer-1") == 0
+
+
+def test_catch_up_raises_naming_a_dependency_left_gated() -> None:
+    """Verify a dependency still gated after its rerun stops the meld with an error naming it."""
+    world = _CatchUpWorld(consumer_targets=("dep-1",))
+    dep = world.add("dep-1", after=SpellValidity.gated)
+
+    with pytest.raises(SpellbookValidationError) as raised:
+        world.meld._ensure_lineage_resolvable(world.consumer)
+
+    assert raised.value.broken_spells == [dep]
+    assert dep.cleanup_creation_context_calls == 0
+
+
+def test_catch_up_does_not_walk_for_a_spell_that_will_not_compile() -> None:
+    """
+    Verify a spell that is valid with a valid verdict reads no topology, even with a stale dependency.
+
+    Contract:
+        - The catch-up runs only when the melded spell compiles at this meld; the warm gate stays a state read.
+    """
+    world = _CatchUpWorld(consumer_validity=SpellValidity.valid, consumer_targets=("dep-1",))
+    world.add("dep-1")
+
+    world.meld._ensure_lineage_resolvable(world.consumer)
+
+    assert world.states.topology_reads == []
+    assert world.structural_runs == []
+
+
+def test_catch_up_follows_a_contract_socket_through_the_books_active_copy() -> None:
+    """
+    Verify a SPELL_CONTRACT socket leads to the provider copy the Book's active contracted maps hold.
+
+    Contract:
+        - The provider is found as Phase 8 finds it (lookup map -> index -> copy) and refreshed with its own Book.
+    """
+    key = ("svc", "primary")
+    world = _CatchUpWorld()
+    world.topologies["consumer-1"] = _contract_socket_topology("consumer-1", key)
+    lender = _SpellbookStub()
+    provider = world.add("provider-1", book=lender)
+    world.book._lookup_contracted_spells["peer-1"] = {key: provider.spell_index}
+    world.book._contracted_spells["peer-1"] = {provider.spell_index: provider}
+
+    world.meld._ensure_lineage_resolvable(world.consumer)
+
+    assert [(book, run_id) for book, run_id in world.structural_runs if run_id == "provider-1"] == [
+        (lender, "provider-1")
+    ]
+
+
+def test_catch_up_walks_the_refreshed_topology_of_a_dependency() -> None:
+    """
+    Verify the walk goes on through a dependency's topology as its rerun left it.
+
+    Contract:
+        - Two hops away: P's rerun now names D, so D is refreshed in the same catch-up.
+    """
+    world = _CatchUpWorld(consumer_targets=("p-1",))
+    world.add("p-1")
+    world.add("d-1")
+    world.after_run["p-1"] = lambda: world.topologies.__setitem__("p-1", _normal_topology("p-1", ("d-1",)))
+
+    world.meld._ensure_lineage_resolvable(world.consumer)
+
+    assert world.runs_of("p-1") == 1
+    assert world.runs_of("d-1") == 1
+
+
+def test_catch_up_takes_a_recorded_target_to_its_lineages_current_version() -> None:
+    """
+    Verify a topology naming a superseded version leads to the version its lineage now selects.
+
+    Contract:
+        - The registry maps the old version id to the lineage; the pool supplies the current version, which is
+          the one refreshed (a notch parked the old one out of the pool).
+    """
+    world = _CatchUpWorld(consumer_targets=("dep-old",))
+    current = world.add("dep-new")
+    world.lineages["dep-old"] = SimpleNamespace(current_spell_id="dep-new")
+
+    world.meld._ensure_lineage_resolvable(world.consumer)
+
+    assert world.runs_of("dep-new") == 1
+    assert current.resolution_required is True
+
+
+def test_catch_up_refreshes_a_shared_dependency_once() -> None:
+    """Verify a dependency two plan branches share is refreshed once."""
+    world = _CatchUpWorld(consumer_targets=("p-1", "p-2"))
+    world.add("p-1", validity=SpellValidity.valid, targets=("d-1",))
+    world.add("p-2", validity=SpellValidity.valid, targets=("d-1",))
+    world.add("d-1")
+
+    world.meld._ensure_lineage_resolvable(world.consumer)
+
+    assert world.runs_of("d-1") == 1
+
+
+def test_catch_up_holds_no_lock_while_walking_and_only_the_dependencys_while_refreshing() -> None:
+    """
+    Verify the lock discipline: no spell lock across the walk, the dependency's own lock across its rerun.
+    """
+    world = _CatchUpWorld(consumer_targets=("dep-1",))
+    dep = world.add("dep-1")
+    world.consumer._lock = _TrackingLock()
+    dep._lock = _TrackingLock()
+    held_at_reads: list[tuple[bool, bool]] = []
+    world.states.topology_read_hooks.append(
+        lambda spell_id: held_at_reads.append((world.consumer._lock.locked, dep._lock.locked))
+    )
+    held_at_run: list[tuple[bool, bool]] = []
+    world.after_run["dep-1"] = lambda: held_at_run.append((world.consumer._lock.locked, dep._lock.locked))
+
+    world.meld._ensure_lineage_resolvable(world.consumer)
+
+    assert held_at_reads and all(held == (False, False) for held in held_at_reads)
+    assert held_at_run == [(False, True)]
+
+
+def test_catch_up_enters_the_dependencys_rebuild_window_before_its_lock(monkeypatch: pytest.MonkeyPatch) -> None:
+    """
+    Verify the refresh enters the dependency's rebuild window first, then its lock (the producer order).
+    """
+    world = _CatchUpWorld(consumer_targets=("dep-1",))
+    dep = world.add("dep-1")
+    dep._lock = _TrackingLock()
+    windows: list[tuple[str, bool]] = []
+
+    @contextmanager
+    def _window(spell: Any) -> Iterator[None]:
+        windows.append((spell.spell_id, spell._lock.locked if spell is dep else False))
+        yield
+
+    monkeypatch.setattr(Meld, "_rebuild_window", staticmethod(_window))
+
+    world.meld._ensure_lineage_resolvable(world.consumer)
+
+    assert ("dep-1", False) in windows
+    assert world.runs_of("dep-1") == 1
+
+
+def test_catch_up_does_not_reset_a_stale_existing_creation() -> None:
+    """
+    Verify an existing creation is refreshed structurally but its plan is left alone (it never plans).
+    """
+    world = _CatchUpWorld(consumer_targets=("dep-1",))
+    dep = world.add("dep-1", existing=True)
+
+    world.meld._ensure_lineage_resolvable(world.consumer)
+
+    assert world.runs_of("dep-1") == 1
+    assert dep.cleanup_creation_context_calls == 0
+    assert dep.clear_phase5_calls == 0
+    assert dep.resolution_required is False
+
+
+def test_deferred_lane_runs_the_catch_up_before_its_pass() -> None:
+    """
+    Verify a spell owing its resolution refreshes its stale dependencies before its own pass compiles.
+    """
+    world = _CatchUpWorld(consumer_validity=SpellValidity.valid, consumer_targets=("dep-1",), resolution_required=True)
+    world.add("dep-1")
+
+    world.meld._ensure_runtime_resolution_ready(world.consumer)
+
+    assert world.events == ["structural:dep-1", "pass:consumer-1"]
+    assert world.consumer.resolution_required is False
+
+
+def test_gate_leaves_the_catch_up_to_the_deferred_lane() -> None:
+    """
+    Verify the gate does not walk for a spell owing its resolution: the deferred lane, which every door runs right
+    after the gate, walks once before it compiles.
+    """
+    world = _CatchUpWorld(consumer_validity=SpellValidity.valid, consumer_targets=("dep-1",), resolution_required=True)
+    world.add("dep-1")
+
+    world.meld._ensure_lineage_resolvable(world.consumer)
+
+    assert world.states.topology_reads == []
+    assert world.structural_runs == []
+
+
+def test_catch_up_rechecks_staleness_under_the_dependencys_lock(monkeypatch: pytest.MonkeyPatch) -> None:
+    """
+    Verify a dependency another meld refreshed while this one waited for its window is not refreshed again.
+    """
+    world = _CatchUpWorld(consumer_targets=("dep-1",))
+    dep = world.add("dep-1")
+    windows: list[str] = []
+
+    @contextmanager
+    def _window(spell: Any) -> Iterator[None]:
+        windows.append(spell.spell_id)
+        if spell is dep:
+            dep.system_state.validity = SpellValidity.valid
+        yield
+
+    monkeypatch.setattr(Meld, "_rebuild_window", staticmethod(_window))
+
+    world.meld._ensure_lineage_resolvable(world.consumer)
+
+    assert "dep-1" in windows
+    assert world.runs_of("dep-1") == 0
+    assert dep.cleanup_creation_context_calls == 0
 
 
 def test_gated_validation_required_returns_false_without_state() -> None:
@@ -201705,7 +202940,7 @@ END FILE: tests/unit/melder/aether/conduit/meld/test_meld.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/conduit/meld/test_meld_2.py
-CONTENT SHA256: 3cba144987131f37b7364db28a7e7a7e272c816705a62d1545e30b9e518bb9b9
+CONTENT SHA256: b9c6f26bcddd79cf5b5f578bd62da87117be8faa325254e2c832397764c7a3ed
 SOURCE ENCODING: utf-8
 ================================================================================
 """Additional contract tests for Meld resolution and registration helpers."""
@@ -201741,7 +202976,7 @@ class _SpellIndexStub:
         Initialize the stub with a current spell id.
 
         Args:
-            current: Spell version id used by error messages.
+            current: The spell_id used by error messages.
         """
         self.selected_spell_id = current
         self.id = f"lineage-{current}"
@@ -208975,7 +210210,7 @@ END FILE: tests/unit/melder/aether/conduit/test_conduit_dynamic.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/conduit/test_conduit_facade.py
-CONTENT SHA256: 67ded7dec4e6c8202807eee7bdb7ce31ce4f9e852253d6eb8a1c6cb565b6e8dc
+CONTENT SHA256: d9679346fc79c4738ecc81e2a72ef4fa7b1d0f1b6ac60608753c628b64af2835
 SOURCE ENCODING: utf-8
 ================================================================================
 from types import ModuleType
@@ -209001,7 +210236,7 @@ def _make_spell(
     Create a minimal spell double with identifier and permissions.
 
     Args:
-        spell_id (str): Version identifier to attach to the spell.
+        spell_id (str): The spell_id to attach to the spell.
         permissions (Permissions): Permissions enum for the spell.
 
     Returns:
@@ -209273,7 +210508,7 @@ def test_find_spell_id_returns_spell_id(
     spellbook_stub: MagicMock,
 ) -> None:
     """
-    Verify find_spell_id returns the spell's current version id.
+    Verify find_spell_id returns the spell's current spell_id.
 
     Contract:
         - SpellIndex and spell resolution returns spell.spell_id.
@@ -209375,7 +210610,7 @@ def test_get_spell_permissions_returns_name(
     Verify get_spell_permissions resolves the permission name for a spell.
 
     Contract:
-        - The permissions enum name is returned for a matching version id.
+        - The permissions enum name is returned for a matching spell_id.
 
     Args:
         conduit_lesser (Conduit): Lesser conduit instance.
@@ -223951,7 +225186,7 @@ END FILE: tests/unit/melder/aether/dev_ops/incident_manager/test_incident_manage
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/dev_ops/risk_manager/test_risk_manager.py
-CONTENT SHA256: 693a9453bd730c4b1c30d1055f7b4f394fa2e5be194b6fc1823884d4a254fb17
+CONTENT SHA256: c060bd2f41243157c5e8d844a6b857c6a96c73b60e834a56101ef201ce1786f7
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -224090,7 +225325,7 @@ class _SpellIndexStub:
 
         Args:
             lineage_id: Lineage identifier for the spell.
-            current_id: Current version id for the spell.
+            current_id: The spell's current spell_id.
         """
         self.id: str = lineage_id
         self._current: str = current_id
@@ -224546,7 +225781,7 @@ def test_iter_spellbook_spells_swallows_lookup_errors() -> None:
 
 
 def test_resolve_lineage_id_from_spell_id_returns_lineage_when_present() -> None:
-    """Verify version-id lookup returns the stored lineage id when present."""
+    """Verify spell_id lookup returns the stored lineage id when present."""
 
     class _State:
         def __init__(self, spell_index_id: str) -> None:
@@ -224616,7 +225851,7 @@ END FILE: tests/unit/melder/aether/dev_ops/risk_manager/test_risk_manager.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/dev_ops/risk_manager/test_risk_manager_non_resolvable.py
-CONTENT SHA256: 62c7661bc225f42b6b3a23b8c7bb2c167275e6ab20b9c287522158a254c929a8
+CONTENT SHA256: 82d6eff59ec4ba6cc4e9987b93c0c08dd5a540ddfdcf633d57032ca28d322c73
 SOURCE ENCODING: utf-8
 ================================================================================
 """Unit coverage for RiskManager's handling of `SpellState.non_resolvable` (meld_state_gate_2026_10_15).
@@ -224647,7 +225882,7 @@ class _SpellDouble:
     Spell double carrying what RiskManager reads from a Spell.
 
     Purpose:
-        A real SpellIndex (lineage id and selected version id) and the lineage's state read from the registry, as
+        A real SpellIndex (lineage id and selected spell_id) and the lineage's state read from the registry, as
         `Spell.system_state` reads it, so the manager sees the registry's validity and flags.
     """
 
@@ -226075,7 +227310,7 @@ END FILE: tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system_states.py
-CONTENT SHA256: cbcf4d7d5f9a37be0addc5e96b0a36b1a84e63abe9f5ff27e89c0258f07e212f
+CONTENT SHA256: 53394e5f0b52b3c688922fbc5a0622d490c2e9449be571e1886db1ada0c6a26f
 SOURCE ENCODING: utf-8
 ================================================================================
 import pytest
@@ -226218,7 +227453,7 @@ def test_register_index_creates_new(states_manager, mock_spell_index, mock_spell
 
     Contract:
     - A new `SpellSystemState` object is created and returned.
-    - The state is indexed by lineage ID and current spell version ID.
+    - The state is indexed by lineage ID and current spell_id.
     - The lineage is marked dirty upon registration.
     """
     state = states_manager.register_index(mock_spell_index)
@@ -227121,6 +228356,391 @@ def test_unregister_index_missing_state_clears_stale_spell_id_mapping(
 END FILE: tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system_states.py
 ================================================================================
 ================================================================================
+BEGIN FILE: tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system_states_dependent_walk.py
+CONTENT SHA256: 0abb327cf43ae5a6db49276ff6e8afa3b080085b623381abe838885f175e8013
+SOURCE ENCODING: utf-8
+================================================================================
+"""Unit coverage for the registry's downstream walk (contract_recheck_on_notch_2026_10_16, D2).
+
+A notch flags for revalidation every lineage that depends on the notched one: the registry records each lineage's
+binding key (`register_index(binding_key=...)`) and `mark_dependents_for_revalidation` walks from the given lineages
+over the reverse dependency edges (`direct_dependents`) and over the contract keys (a SpellContract consumer, in any
+Book, of the binding key of a lineage already reached). An edge-reached lineage is marked
+`impacted_by_dependency` and transitively dirty; a contract-reached one gets rule 2's contract mark (`gated` +
+`contract_unvalidated`, not transitively dirty); both, when reached both ways. Every contract-consumer mark
+(`mark_contract_dependents_dirty`) walks on from the consumers it marks. Mark only: states change, nothing else.
+"""
+
+import time
+from collections.abc import Iterator
+from typing import Iterable, List, Optional, Sequence, Tuple
+from unittest.mock import MagicMock
+
+import pytest
+
+from melder.aether.aetheric_frame.dev_ops.devops_information_registry import DevopsInformationRegistry
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state import SpellState
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import (
+    SpellStateChangeReason,
+)
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_state import SpellSystemState
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import SpellValidity
+from melder.aether.spellbook.bind.spell_index import SpellIndex
+from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
+from melder.aether.spellbook.spell_compiler.topology.spell_local_topology import (
+    SpellLocalTopology,
+    SpellSocketDescriptor,
+)
+
+
+class _PublicationSpy:
+    """
+    Risk-manager double that records every structural publication.
+
+    Purpose:
+        Prove that a mark publishes once per changed validity and that a repeated mark publishes nothing, the
+        contract `SpellSystemState.set_validity` gives every registry mark.
+    """
+
+    def __init__(self, states: SpellSystemStates) -> None:
+        """Bind the registry whose lock the callbacks check, with no recorded events."""
+        self.states: SpellSystemStates = states
+        self.published: List[Tuple[str, Optional[SpellValidity], bool]] = []
+
+    def on_structural_validity_change(self, lineage_id: str, validity: Optional[SpellValidity]) -> None:
+        """Record the event and whether the registry lock is held while it runs."""
+        self.published.append((lineage_id, validity, self.states._lock._is_owned()))
+
+    def on_resolution_validity_change(
+            self,
+            conduit_id: str,
+            spell_id: str,
+            validity: Optional[SpellValidity],
+    ) -> None:
+        """Resolution events are not part of these cases."""
+
+
+@pytest.fixture
+def information_registry() -> Iterator[DevopsInformationRegistry]:
+    """A live DevOps information registry, cleaned after the test."""
+    registry = DevopsInformationRegistry("dependent-walk-frame")
+    yield registry
+    registry.cleanup()
+
+
+@pytest.fixture
+def states(information_registry: DevopsInformationRegistry) -> Iterator[SpellSystemStates]:
+    """A SpellSystemStates registry over a mocked frame, cleaned after the test."""
+    frame = MagicMock()
+    frame.name = "dependent-walk-frame"
+    registry = SpellSystemStates(frame, information_registry)
+    yield registry
+    if not registry._cleaned:
+        registry.cleanup()
+
+
+@pytest.fixture
+def spy(states: SpellSystemStates) -> _PublicationSpy:
+    """A publication spy wired into the registry."""
+    manager = _PublicationSpy(states)
+    states.set_risk_manager(manager)
+    return manager
+
+
+def _contract_topology(version_id: str, keys: Sequence[Tuple[str, str]]) -> SpellLocalTopology:
+    """A local topology with one SPELL_CONTRACT socket per key, as Phase 3 records a consumer's contracts."""
+    return SpellLocalTopology(
+        spell_id=version_id,
+        sockets=tuple(
+            SpellSocketDescriptor(
+                spell_id=version_id,
+                param_name=f"contract_{position}",
+                position=position,
+                socket_kind=SocketKind.SPELL_CONTRACT,
+                is_collection=False,
+                is_optional=False,
+                target_spell_ids=(),
+                contract_key=key,
+            )
+            for position, key in enumerate(keys)
+        ),
+    )
+
+
+def _lineage(
+        states: SpellSystemStates,
+        version_id: str,
+        book_id: str,
+        *,
+        key: Optional[Tuple[str, str]] = None,
+        depends_on: Iterable[SpellIndex] = (),
+        consumes: Sequence[Tuple[str, str]] = (),
+) -> SpellIndex:
+    """
+    Register one lineage as bind and Phase 3 would, and leave it `valid`.
+
+    Contract:
+        - `register_index` with the owner Book and the binding key.
+        - `update_dependencies` with the dependencies' current version ids (the reverse edges).
+        - `register_local_topology` with one SPELL_CONTRACT socket per consumed key (the contract index).
+        - `clear_dirty`, so a later mark is observable as a change.
+    """
+    index = SpellIndex(version_id)
+    states.register_index(index, owner_spellbook_id=book_id, binding_key=key)
+    dependencies = [dependency.selected_spell_id for dependency in depends_on]
+    if dependencies:
+        states.update_dependencies(index, dependencies)
+    if consumes:
+        states.register_local_topology(index, _contract_topology(version_id, consumes))
+    _state(states, index).clear_dirty(time.time())
+    return index
+
+
+def _state(states: SpellSystemStates, index: SpellIndex) -> SpellSystemState:
+    """The lineage's registered state."""
+    state = states.get_by_index_id(index.id)
+    assert state is not None
+    return state
+
+
+def _assert_valid(states: SpellSystemStates, *indexes: SpellIndex) -> None:
+    """Every given lineage is still `valid`, untouched by a walk."""
+    for index in indexes:
+        assert _state(states, index).validity is SpellValidity.valid
+
+
+def _assert_edge_marked(states: SpellSystemStates, index: SpellIndex) -> None:
+    """The lineage carries the edge mark: gated, impacted_by_dependency, transitively dirty."""
+    state = _state(states, index)
+    assert state.validity is SpellValidity.gated
+    assert state.has_flag(SpellState.impacted_by_dependency)
+    assert state.transitively_dirty is True
+
+
+def _assert_contract_marked(states: SpellSystemStates, index: SpellIndex) -> None:
+    """The lineage carries rule 2's contract mark: gated, contract_unvalidated, not transitively dirty."""
+    state = _state(states, index)
+    assert state.validity is SpellValidity.gated
+    assert state.has_flag(SpellState.contract_unvalidated)
+    assert state.change_reason is SpellStateChangeReason.contract_unvalidated
+    assert state.transitively_dirty is False
+
+
+KEY_D = ("idep", "dep")
+KEY_P = ("iservice", "svc")
+
+
+def test_walk_marks_a_chain_downstream_of_the_seed_and_leaves_the_seed(states: SpellSystemStates) -> None:
+    """Q -> P -> D: a walk from D marks P and Q by edge, returns them, and leaves D as it was."""
+    d = _lineage(states, "d-v1", "book-1", key=KEY_D)
+    p = _lineage(states, "p-v1", "book-1", key=KEY_P, depends_on=[d])
+    q = _lineage(states, "q-v1", "book-1", key=("q", "q"), depends_on=[p])
+
+    marked = states.mark_dependents_for_revalidation([d.id])
+
+    assert marked == {p.id, q.id}
+    _assert_edge_marked(states, p)
+    _assert_edge_marked(states, q)
+    _assert_valid(states, d)
+
+
+def test_walk_marks_contract_consumers_in_every_book_by_the_binding_key(states: SpellSystemStates) -> None:
+    """A consumer of the notched lineage's key in another Book gets the contract mark; its dependent the edge mark."""
+    d = _lineage(states, "d-v1", "lender", key=KEY_D)
+    consumer = _lineage(states, "c-v1", "borrower", key=("consumer", "c"), consumes=[KEY_D])
+    user = _lineage(states, "u-v1", "borrower", key=("user", "u"), depends_on=[consumer])
+
+    marked = states.mark_dependents_for_revalidation([d.id])
+
+    assert marked == {consumer.id, user.id}
+    _assert_contract_marked(states, consumer)
+    _assert_edge_marked(states, user)
+    _assert_valid(states, d)
+
+
+def test_walk_marks_consumers_of_a_lineage_reached_by_edge(states: SpellSystemStates) -> None:
+    """D -> P by edge, and a consumer of P's key in another Book: the walk goes edge, then key (probe X1's shape)."""
+    d = _lineage(states, "d-v1", "lender", key=KEY_D)
+    p = _lineage(states, "p-v1", "lender", key=KEY_P, depends_on=[d])
+    consumer = _lineage(states, "c-v1", "borrower", key=("consumer", "c"), consumes=[KEY_P])
+
+    marked = states.mark_dependents_for_revalidation([d.id])
+
+    assert marked == {p.id, consumer.id}
+    _assert_edge_marked(states, p)
+    _assert_contract_marked(states, consumer)
+
+
+def test_walk_gives_a_lineage_reached_both_ways_both_marks(states: SpellSystemStates) -> None:
+    """A lineage that depends on D by edge and consumes D's key carries both flags and is transitively dirty."""
+    d = _lineage(states, "d-v1", "book-1", key=KEY_D)
+    both = _lineage(states, "x-v1", "book-2", key=("x", "x"), depends_on=[d], consumes=[KEY_D])
+
+    marked = states.mark_dependents_for_revalidation([d.id])
+
+    assert marked == {both.id}
+    state = _state(states, both)
+    assert state.validity is SpellValidity.gated
+    assert state.has_flag(SpellState.contract_unvalidated)
+    assert state.has_flag(SpellState.impacted_by_dependency)
+    assert state.transitively_dirty is True
+
+
+def test_walk_follows_edges_only_for_a_lineage_without_a_recorded_key(states: SpellSystemStates) -> None:
+    """With no binding key recorded for D, a consumer of D's would-be key is not reached; D's edge dependent is."""
+    d = _lineage(states, "d-v1", "book-1", key=None)
+    p = _lineage(states, "p-v1", "book-1", key=KEY_P, depends_on=[d])
+    consumer = _lineage(states, "c-v1", "book-2", key=("consumer", "c"), consumes=[KEY_D])
+
+    marked = states.mark_dependents_for_revalidation([d.id])
+
+    assert marked == {p.id}
+    _assert_edge_marked(states, p)
+    _assert_valid(states, consumer)
+
+
+def test_walk_terminates_on_a_contract_cycle_across_books_and_never_marks_a_seed(states: SpellSystemStates) -> None:
+    """A consumes B's key and B consumes A's key, in two Books: the walk from A marks B once and leaves A."""
+    key_a, key_b = ("a", "a"), ("b", "b")
+    a = _lineage(states, "a-v1", "book-1", key=key_a, consumes=[key_b])
+    b = _lineage(states, "b-v1", "book-2", key=key_b, consumes=[key_a])
+
+    marked = states.mark_dependents_for_revalidation([a.id])
+
+    assert marked == {b.id}
+    _assert_contract_marked(states, b)
+    _assert_valid(states, a)
+
+
+def test_walk_skips_a_dependent_with_no_registered_state(states: SpellSystemStates) -> None:
+    """A reverse edge naming no registered lineage is passed over, neither marked nor returned."""
+    d = _lineage(states, "d-v1", "book-1", key=KEY_D)
+    p = _lineage(states, "p-v1", "book-1", key=KEY_P, depends_on=[d])
+    _state(states, d).add_dependent("ghost-lineage")
+
+    marked = states.mark_dependents_for_revalidation([d.id])
+
+    assert marked == {p.id}
+
+
+def test_walk_with_no_seed_marks_nothing(states: SpellSystemStates, spy: _PublicationSpy) -> None:
+    """Empty and blank seeds mark and publish nothing."""
+    d = _lineage(states, "d-v1", "book-1", key=KEY_D)
+    _lineage(states, "p-v1", "book-1", key=KEY_P, depends_on=[d])
+    spy.published.clear()
+
+    assert states.mark_dependents_for_revalidation([]) == set()
+    assert states.mark_dependents_for_revalidation(["", None]) == set()
+    assert spy.published == []
+
+
+def test_walk_publishes_once_per_changed_validity_under_the_registry_lock(
+        states: SpellSystemStates,
+        spy: _PublicationSpy,
+) -> None:
+    """The first walk publishes `gated` once per marked lineage; a second walk publishes nothing (idempotent)."""
+    d = _lineage(states, "d-v1", "book-1", key=KEY_D)
+    p = _lineage(states, "p-v1", "book-1", key=KEY_P, depends_on=[d])
+    consumer = _lineage(states, "c-v1", "book-2", key=("consumer", "c"), consumes=[KEY_P])
+    spy.published.clear()
+
+    first = states.mark_dependents_for_revalidation([d.id])
+    published_first = list(spy.published)
+    second = states.mark_dependents_for_revalidation([d.id])
+
+    assert first == second == {p.id, consumer.id}
+    expected = [(p.id, SpellValidity.gated, True), (consumer.id, SpellValidity.gated, True)]
+    assert sorted(published_first) == sorted(expected)
+    assert spy.published == published_first
+
+
+def test_walk_adds_every_marked_lineage_to_the_dirty_set(states: SpellSystemStates) -> None:
+    """The marked lineages join the dirty worklist; the seed is not added by the walk."""
+    d = _lineage(states, "d-v1", "book-1", key=KEY_D)
+    p = _lineage(states, "p-v1", "book-1", key=KEY_P, depends_on=[d])
+    states.consume_dirty_indexes()
+
+    states.mark_dependents_for_revalidation([d.id])
+
+    assert states.consume_dirty_indexes() == [p.id]
+
+
+def test_register_index_with_no_key_keeps_the_recorded_key(states: SpellSystemStates) -> None:
+    """A registration that states no key (the transfer's calls) keeps the key bind recorded."""
+    d = _lineage(states, "d-v1", "lender", key=KEY_D)
+    consumer = _lineage(states, "c-v1", "borrower", key=("consumer", "c"), consumes=[KEY_D])
+    states.register_index(d, owner_spellbook_id="lender")
+
+    assert states.mark_dependents_for_revalidation([d.id]) == {consumer.id}
+
+
+def test_register_index_with_a_key_replaces_the_recorded_key(states: SpellSystemStates) -> None:
+    """A notch to a version with another binding key moves the walk to the new key's consumers."""
+    d = _lineage(states, "d-v1", "lender", key=KEY_D)
+    old_consumer = _lineage(states, "c-v1", "borrower", key=("consumer", "c"), consumes=[KEY_D])
+    new_key = ("idep", "renamed")
+    new_consumer = _lineage(states, "n-v1", "borrower", key=("new", "n"), consumes=[new_key])
+    states.register_index(d, owner_spellbook_id="lender", binding_key=new_key)
+
+    assert states.mark_dependents_for_revalidation([d.id]) == {new_consumer.id}
+    _assert_valid(states, old_consumer)
+
+
+def test_unregister_index_forgets_the_binding_key(states: SpellSystemStates) -> None:
+    """Once a lineage is unregistered, registering the same index again without a key follows no contract key."""
+    d = _lineage(states, "d-v1", "lender", key=KEY_D)
+    consumer = _lineage(states, "c-v1", "borrower", key=("consumer", "c"), consumes=[KEY_D])
+    states.unregister_index(d)
+    _state(states, consumer).clear_dirty(time.time())
+    states.register_index(d, owner_spellbook_id="lender")
+
+    assert states.mark_dependents_for_revalidation([d.id]) == set()
+    _assert_valid(states, consumer)
+
+
+def test_mark_contract_dependents_dirty_walks_on_and_returns_its_consumers_only(states: SpellSystemStates) -> None:
+    """A contract mark gates the Book's consumers, marks their dependents too, and returns only the consumers."""
+    consumer = _lineage(states, "c-v1", "borrower", key=("consumer", "c"), consumes=[KEY_P])
+    user = _lineage(states, "u-v1", "borrower", key=("user", "u"), depends_on=[consumer])
+    elsewhere = _lineage(states, "e-v1", "other-book", key=("e", "e"), consumes=[("consumer", "c")])
+
+    impacted = states.mark_contract_dependents_dirty(spellbook_id="borrower", contract_keys=[KEY_P])
+
+    assert impacted == {consumer.id}
+    _assert_contract_marked(states, consumer)
+    _assert_edge_marked(states, user)
+    _assert_contract_marked(states, elsewhere)
+
+
+def test_mark_contract_dependents_dirty_with_no_consumer_walks_nowhere(states: SpellSystemStates) -> None:
+    """No consumer of the key in the Book: nothing is marked, and no walk starts."""
+    d = _lineage(states, "d-v1", "lender", key=KEY_D)
+    p = _lineage(states, "p-v1", "lender", key=KEY_P, depends_on=[d])
+
+    assert states.mark_contract_dependents_dirty(spellbook_id="borrower", contract_keys=[KEY_P]) == set()
+    _assert_valid(states, d, p)
+
+
+def test_walk_on_a_cleaned_registry_raises(states: SpellSystemStates) -> None:
+    """A walk on a cleaned registry raises the standard use-after-clean error."""
+    states.cleanup()
+
+    with pytest.raises(RuntimeError, match="has already been cleaned"):
+        states.mark_dependents_for_revalidation(["lineage"])
+
+
+def test_cleanup_drops_the_binding_key_map(states: SpellSystemStates) -> None:
+    """Registry cleanup removes the binding-key map with the other indices."""
+    _lineage(states, "d-v1", "lender", key=KEY_D)
+
+    states.cleanup()
+
+    assert not hasattr(states, "_binding_key_by_index")
+================================================================================
+END FILE: tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system_states_dependent_walk.py
+================================================================================
+================================================================================
 BEGIN FILE: tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system_states_non_resolvable.py
 CONTENT SHA256: 899763b7fb81a11b6d576ff36e6af4e7229d3380505e96be4382f3452c0d22b4
 SOURCE ENCODING: utf-8
@@ -227614,13 +229234,13 @@ END FILE: tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system_states_verdict_retirement.py
-CONTENT SHA256: 2d032ca313e86546a0b7957f8c4b0ba2b418a6919bba26a9c3a96632f741e6ee
+CONTENT SHA256: 6342c8579896dd2572281c0e5e4928264fcd47e8ca57fe3c8d17eaadfc63b969
 SOURCE ENCODING: utf-8
 ================================================================================
 """Unit coverage for per-conduit verdict retirement in `SpellSystemStates` (rebind-after-first-meld repair).
 
 `unregister_index` retires the removed spell id's resolution verdicts in every registered conduit state and
-`register_index` retires any verdict already held for the version id it publishes, so a definition bound
+`register_index` retires any verdict already held for the spell_id it publishes, so a definition bound
 again under the same content-stable id is resolved again by each conduit before it is built there.
 """
 
@@ -227789,7 +229409,7 @@ def test_unregister_index_missing_lineage_still_retires_the_selected_ids_verdict
 def test_register_index_retires_a_verdict_already_held_for_the_version_id(
         states: SpellSystemStates,
 ) -> None:
-    """A version id that re-enters the frame starts with no verdict in any conduit (the rebind case)."""
+    """A spell_id that re-enters the frame starts with no verdict in any conduit (the rebind case)."""
     _seed_verdicts(states, "spell-a", ("root", "peer"))
     _seed_verdicts(states, "spell-b", ("root",))
 
@@ -234557,7 +236177,7 @@ END FILE: tests/unit/melder/aether/test_aether_utility_system_record.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/test_aetheric_frame.py
-CONTENT SHA256: f79a75b869b5b5a9ecd6e6803f594166493695e780f3686985a45a14df07d167
+CONTENT SHA256: bb8e701f26b6b0463b7c514b5f5db2d7331869ea0774b0cf70700b67372757b5
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -234913,7 +236533,7 @@ def test_find_index_for_spell_found(frame):
 
     Contract:
     - Scans all registered SpellIndexes.
-    - Returns the first instance that contains the requested version ID.
+    - Returns the first instance that contains the requested spell_id.
     """
     si = MagicMock(spec=SpellIndex)
     si.spells_in_index.return_value = {"target_v"}
@@ -235060,7 +236680,7 @@ END FILE: tests/unit/melder/aether/test_aetheric_frame.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/test_aetheric_frame_cleanup_race.py
-CONTENT SHA256: 7e3cd39dd00c0afea4ba28cb3d5c089c59a4879a7328c2394f23e9f8880731f7
+CONTENT SHA256: bffa7b916904b7452b5534cfc1e0562a96ce194bf5de6b1a9ba4b303789e0c5f
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -235144,7 +236764,7 @@ class _IdSetPausingMidCopy(set):
     def __init__(self, ids: Set[str], paused: threading.Event, resume: threading.Event) -> None:
         """
         Args:
-            ids: The initial version ids.
+            ids: The initial spell_ids.
             paused: Set once an element-by-element read has taken the first element.
             resume: Released by the test after it added an id.
         """
@@ -295243,7 +296863,7 @@ END FILE: tests/unit/melder/spellbook/spell_compiler/phases/test_compiler_phase_
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/spellbook/spell_compiler/phases/test_compiler_phase_4.py
-CONTENT SHA256: d28048d889b3505c0535d9623325ecc071a78c370eda39a4b241eee092f3cac2
+CONTENT SHA256: 8b0f9f02366e81572feb1fd94af009248c3da623451017e47a74f56c2166425d
 SOURCE ENCODING: utf-8
 ================================================================================
 """Unit tests for current-surface compiler phase 4 validation behavior."""
@@ -295257,6 +296877,7 @@ import melder.aether.spellbook.spell_compiler.phases.compiler_phase_4 as compile
 from melder.aether.spellbook.spell_compiler.phases.compiler_phase_4 import (
     CompilerPhase4,
 )
+from melder.utilities.custom_exceptions.spellbook_validation_error import SpellbookValidationError
 from tests.unit.melder.spellbook.spell_compiler.support.compiler_test_support import (
     make_spell,
 )
@@ -295456,6 +297077,42 @@ def test_run_marks_lineage_gated_when_contract_provider_is_missing() -> None:
     assert state.set_validity_calls[-1]["flags_to_add"] == [
         compiler_phase_4_module.SpellState.contract_unvalidated
     ]
+
+
+def _phase4_validity_for_warning(monkeypatch: pytest.MonkeyPatch, code: str) -> Any:
+    """Run Phase 4 over a result carrying one warning with `code`; return the last validity it published."""
+    spell = make_spell("spell-1")
+    artifact = spell._compiler_artifact
+    _prime_structural_artifacts(artifact)
+    state = _StateStub(compiler_phase_4_module.SpellValidity.unknown)
+    result = SimpleNamespace(has_errors=False, issues=[SimpleNamespace(code=code, severity="warning")])
+    monkeypatch.setattr(
+        compiler_phase_4_module.SharedCompilerExecutions,
+        "capture_phase2_5_codegen_ir",
+        lambda _spell, _artifact: None,
+    )
+    CompilerPhase4().run(spell, artifact, _make_validator(result, []), _make_states(state))
+    return state.set_validity_calls[-1]["validity"]
+
+
+def test_run_gates_the_lineage_on_every_code_the_report_lists_as_a_reason(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Phase 4 gates a lineage on exactly the warnings SpellbookValidationError lists as a spell's reason, so a meld
+    refused for a gated lineage always names why.
+    """
+    assert SpellbookValidationError.GATING_WARNING_CODES
+    for code in sorted(SpellbookValidationError.GATING_WARNING_CODES):
+        assert _phase4_validity_for_warning(monkeypatch, code) is compiler_phase_4_module.SpellValidity.gated
+
+
+def test_run_marks_the_lineage_valid_on_a_warning_outside_the_reported_reasons(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A warning the report only counts leaves the lineage valid."""
+    assert "REQUIRED_HOLE" not in SpellbookValidationError.GATING_WARNING_CODES
+    assert _phase4_validity_for_warning(monkeypatch, "REQUIRED_HOLE") is compiler_phase_4_module.SpellValidity.valid
 
 
 def test_run_skips_revalidation_when_cached_and_still_valid() -> None:
@@ -300820,7 +302477,7 @@ END FILE: tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_pla
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py
-CONTENT SHA256: 4caa80ce61d7f5d9effe59a98b81672cbe9a22f99495e2735af316696630bfc2
+CONTENT SHA256: 5256cca8ef39c99d0a9a0881995fb44aef44f4c316730eafe2b6d8ea03ec277d
 SOURCE ENCODING: utf-8
 ================================================================================
 """Unit contracts for the managed site of key-set plans (managed_spell_quantity S5, 2026-10-15).
@@ -300891,7 +302548,7 @@ class Store:
         self.adoptions.append((holder_key, holder, children))
 
     def get_managed_quantity(self, spell_id: str) -> Optional[ManagedSpellQuantity]:
-        """Return the pool held under one version id, as `Creations.get_managed_quantity` does."""
+        """Return the pool held under one spell_id, as `Creations.get_managed_quantity` does."""
         return self._managed_quantities.get(spell_id)
 
 
@@ -316230,7 +317887,7 @@ END FILE: tests/unit/melder/spellbook/spell_crafter/spell_examiner/spell_require
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/spellbook/spell_crafter/spell_examiner/spell_requirements_finder/test_spell_requirements_finder_future_strings.py
-CONTENT SHA256: c64cbc6dadbb3526acd961d88c797b00e24299013a16459edb4ab462037c6d1e
+CONTENT SHA256: 8342f675bb6a815b05e82dcdf8ce677bf6cf789c7f78a12194d8828f0fe9165e
 SOURCE ENCODING: utf-8
 ================================================================================
 """String-expression annotation tests for SpellRequirementsFinder."""
@@ -316296,7 +317953,7 @@ def _make_spell(
         spell_type: SpellType for the target.
         spellframe: Optional frame for the spell.
         binding_name: Optional binding name for the spell.
-        version: Version id to store in the SpellIndex.
+        version: The spell_id to store in the SpellIndex.
     Returns:
         Spell: A Spell configured for requirements inspection.
     """
@@ -322623,7 +324280,7 @@ END FILE: tests/unit/melder/spellbook/spell_crafter/system/validation/test_graph
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/spellbook/spell_crafter/system/validation/test_identity_mixing_strategy.py
-CONTENT SHA256: 069c3d6bac4589e0349e85fee2f418d66999e5645b4dfc4877c3de1c12d357a4
+CONTENT SHA256: 4df99fb8a814dca7a35df635e5114dab782bf57896ae52e3f10f2c0d4fd4b794
 SOURCE ENCODING: utf-8
 ================================================================================
 import pytest
@@ -322682,9 +324339,9 @@ def test_identity_mixing_emits_error_for_lineage_dependency() -> None:
 def test_identity_mixing_skips_version_dependencies() -> None:
     """
     Purpose:
-        Verify version id dependencies do not emit diagnostics.
+        Verify spell_id dependencies do not emit diagnostics.
     Contract:
-        Leaves diagnostics empty when dependencies reference version ids.
+        Leaves diagnostics empty when dependencies reference spell_ids.
     Returns:
         None.
     Raises:
@@ -328395,7 +330052,7 @@ END FILE: tests/unit/melder/spellbook/spell_crafter/validation/strategies/test_c
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/spellbook/spell_crafter/validation/strategies/test_contract_provider_presence_strategy.py
-CONTENT SHA256: 8b1dff7a147ddfed2ff1dca25c3876640499044f842e94d3027d76dc32019ee0
+CONTENT SHA256: edda99407c8208ab9cb2bbcca632dd938e1b521d4cd6e095f6d5e5026ad19ce0
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import Dict, List, Optional, Tuple
@@ -328835,6 +330492,38 @@ def test_contract_provider_presence_missing_spell_contract_warns() -> None:
     assert len(issues) == 1
     assert issues[0].severity == "warning"
     assert issues[0].code == "SPELL_CONTRACT_MISSING_PROVIDER"
+
+
+def test_contract_provider_presence_missing_provider_names_the_contract_and_the_remedy() -> None:
+    """
+    Purpose:
+        A lost provider is reported with the contract it belongs to and how to restore it (D1-B): this warning
+        is the reason the validation report gives for a consumer the missing provider gates.
+    """
+    contract = SpellContract(spellframe="service", binding_name="primary")
+    context, issues = _make_context(
+        requirements=_RequirementsStub([
+            _ParamStub(name="service", di_shape=ParameterDIShape.SPELL_CONTRACT, default_value=contract),
+        ]),
+        contracted_spells=[],
+        system_state=SystemState.dynamic,
+    )
+    strategy = ContractProviderPresenceStrategy()
+    try:
+        strategy.validate(context)
+
+        assert [(issue.severity, issue.code) for issue in issues] == [("warning", "SPELL_CONTRACT_MISSING_PROVIDER")]
+        assert issues[0].message == (
+            "Spell 'spell-name' parameter 'service' has no provider for its SpellContract "
+            "(frame_key='service', binding_key='primary'): no active spell with that frame and binding name is "
+            "contracted to this Spellbook. Contract one from a linked conduit (add_index_to_contract, or "
+            "add_spell_to_contract for one version) and meld again."
+        )
+        assert issues[0].details == {"parameter_name": "service", "contract_key": ("service", "primary")}
+    finally:
+        strategy.cleanup()
+        context.cleanup()
+        contract.cleanup()
 
 
 def test_contract_provider_presence_automatic_mode_errors() -> None:
@@ -339656,7 +341345,7 @@ END FILE: tests/unit/melder/spellbook/test_spell_compiler_foundation.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/spellbook/test_spell_managed_quantity_stamp.py
-CONTENT SHA256: afe44890dfe4a3ae906d04354baafeeeeaa70c37d468873d788aa6932fd9e190
+CONTENT SHA256: 70c631067098c807b073ab3421f238e3a0cdb5b254c8cab4a6cd24111d30d8b8
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -339665,9 +341354,17 @@ Unit tests: stamping an owner gives a managed spell its pool (STORY-2026-10-15-m
 `Spell._add_owned_conduit` is every owner stamp - conjure, a post-conjure bind or bind_inactive, the transfer flip.
 For a managed version it asks the owner root's store for the version's pool (`ensure_managed_quantity`, idempotent);
 every other existence is stamped exactly as before.
+
+Every test runs in a fresh, booted Aether (`fresh_aether_world`): a real root store registers the pool it composes
+with the hosted `ReleaseManagedSpell`, so the result must not depend on the test module that ran before.
 """
+from collections.abc import Iterator
 from typing import Any, List
 
+import pytest
+
+from melder.aether.aether import Aether
+from melder.aether.conduit.conduit import Conduit
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.aether.conduit.creations.conduit_creations import ConduitCreations
 from melder.aether.spellbook.bind.spell_index import SpellIndex
@@ -339675,7 +341372,32 @@ from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.existence.managed_spell_mode import ManagedSpellMode
 from melder.aether.spellbook.spell import Spell
 from melder.aether.spellbook.spell_types.spell_types import SpellType
+from melder.aether.spellbook.spellbook import Spellbook
 from melder.utilities.synchronization.creation_gate_controller import CreationGateController
+
+
+def _reset_world() -> None:
+    """
+    Install a fresh Aether, and with it the hosted ReleaseManagedSpell, for this module's stamps.
+
+    A stamp into a real root store registers the version's pool with `ReleaseManagedSpell()`, which exists only
+    while an Aether hosts it. A module that ran before this one can leave none: the frame tests reset the Aether
+    singleton after each test and boot no new one. `Spellbook` and `Conduit` keep a class-level Aether reference,
+    re-pointed here so the modules that run after this one meet the live instance (as `_reset_world` does in the
+    managed store tests).
+    """
+    Aether._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+
+
+@pytest.fixture(autouse=True)
+def fresh_aether_world() -> Iterator[None]:
+    """A fresh, booted Aether around every test, whatever the test module that ran before left behind."""
+    _reset_world()
+    yield
+    _reset_world()
 
 
 class _States:
@@ -339776,7 +341498,7 @@ def test_stamping_a_managed_spell_ensures_its_pool() -> None:
 
 
 def test_stamping_into_a_real_root_store_creates_the_pool_there() -> None:
-    """The pool lands in the owner root's store under the version id, composed from the Spell."""
+    """The pool lands in the owner root's store under the spell_id, composed from the Spell."""
     spell = _spell(managed_spell_mode=ManagedSpellMode.limited_quantity, managed_spell_limit=5)
     store = ConduitCreations(conduit_id="root-1")
     try:
@@ -340499,10 +342221,11 @@ END FILE: tests/unit/melder/spellbook/test_spellbinder_managed_options.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/spellbook/test_spellbook.py
-CONTENT SHA256: 24647f0b48e9b69a4bc889f36bfe8fc34925b5461e4db39d7f25dc92972a2384
+CONTENT SHA256: aa537859ed96104832be1a0f635345ba51d1c0adb14a017c30525fd2b6e54171
 SOURCE ENCODING: utf-8
 ================================================================================
 import contextlib
+import time
 import types
 import threading
 from types import MappingProxyType
@@ -340517,13 +342240,21 @@ import melder.aether.spellbook.spellbook as spellbook_module
 from melder.aether.aether import Aether
 from melder.aether.aether_utility_system import AetherUtilitySystem
 from melder.aether.aetheric_frame.aetheric_frame_configuration import AethericFrameConfiguration
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state import SpellState
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_state import SpellSystemState
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.aether.spellbook.bind.spell_index import SpellIndex
 from melder.aether.spellbook.configuration.system_state import SystemState
 from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
 from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
     SpellCompilerArtifact,
+)
+from melder.aether.spellbook.spell_compiler.topology.spell_local_topology import (
+    SpellLocalTopology,
+    SpellSocketDescriptor,
 )
 from melder.aether.spellbook.spell_compiler.spell_compiler_system import (
     SpellCompilerSystem,
@@ -342578,6 +344309,314 @@ def test_remove_contracted_spell_missing_maps_and_missing_version_raise() -> Non
         sb._remove_contracted_spell("sid-1", "peer")
 
 
+_COPY_KEY = ("frame", "binding")
+
+
+def _contracted_book(*, conjured: bool = True) -> Spellbook:
+    """
+    Purpose:
+        Build a Spellbook whose contracted maps start empty, with its collaborators beside the maps stubbed.
+    Contract:
+        - The Book keeps its real SpellSystemStates (the frame's registry), so a contract mark is observable on a
+          consumer lineage registered there.
+        - Collection marks, staged-key refreshes and RiskManager calls are recorded no-ops.
+    Args:
+        conjured: The Book's `_conjured` flag.
+    Returns:
+        Spellbook: The Book under test.
+    """
+    sb = Spellbook()
+    sb._logger = DummySafeLogger()
+    sb._contracted_spells = {}
+    sb._lookup_contracted_spells = {}
+    sb._contracted_spell_ids = {}
+    sb._contracted_spells_by_id = {}
+    sb._inactive_contracted_spells = {}
+    sb._conjured = conjured
+    sb._conduit = DummyConduit("borrower", "borrower")
+    sb._mark_collection_dependents_dirty = lambda frame_keys: None
+    sb._try_update_staged_contract_keys = lambda conduit_id: None
+    sb._register_spell_with_risk_manager = lambda conduit_id, spell: None
+    sb._unregister_spell_with_risk_manager = lambda conduit_id, spell: None
+    return sb
+
+
+def _contracted_copy(spell_id: str = "sid-1") -> DummySpell:
+    """
+    Purpose:
+        Build a borrowed copy under the frame "Frame" and the binding "binding" (key ("frame", "binding")).
+    Returns:
+        DummySpell: The copy, with its index, its `key` and its `_key` set as a live Spell carries them.
+    """
+    index = DummySpellIndex(versions={spell_id}, sid=f"lineage-{spell_id}", current=spell_id)
+    spell = DummySpell(
+        spell_id=spell_id,
+        versions={spell_id},
+        spell_name="SpellName",
+        binding_name="binding",
+        spellframe="Frame",
+    )
+    spell.spell_index = index
+    spell.key = _COPY_KEY
+    spell._key = _COPY_KEY
+    return spell
+
+
+def _consumer_of_copy_key(sb: Spellbook) -> SpellSystemState:
+    """
+    Purpose:
+        Register, in the Book's registry, a lineage the Book owns whose topology consumes the copy's key, and leave
+        it `valid`.
+    Returns:
+        SpellSystemState: The consumer lineage's state.
+    """
+    states = sb._spell_system_states
+    index = SpellIndex("consumer-v1")
+    states.register_index(index, owner_spellbook_id=sb._id)
+    states.register_local_topology(
+        index,
+        SpellLocalTopology(
+            spell_id="consumer-v1",
+            sockets=(
+                SpellSocketDescriptor(
+                    spell_id="consumer-v1",
+                    param_name="service",
+                    position=0,
+                    socket_kind=SocketKind.SPELL_CONTRACT,
+                    is_collection=False,
+                    is_optional=False,
+                    target_spell_ids=(),
+                    contract_key=_COPY_KEY,
+                ),
+            ),
+        ),
+    )
+    state = states.get_by_index_id(index.id)
+    assert state is not None
+    state.clear_dirty(time.time())
+    return state
+
+
+def _assert_marked_then_reset(state: SpellSystemState) -> None:
+    """Assert rule 2's contract mark on the consumer, then make it `valid` again for the next step."""
+    assert state.validity is SpellValidity.gated
+    assert state.has_flag(SpellState.contract_unvalidated)
+    state.set_validity(SpellValidity.valid, flags_to_remove=[SpellState.contract_unvalidated])
+
+
+def test_every_change_of_an_active_contracted_copy_marks_the_consumers_of_its_key() -> None:
+    """
+    Purpose:
+        Prove rule 2's marking: an add, a park, a reactivation and a removal of an active contracted copy each gate
+        the Book's consumers of the copy's key with `contract_unvalidated` (mark only).
+    """
+    sb = _contracted_book()
+    state = _consumer_of_copy_key(sb)
+    spell = _contracted_copy()
+
+    sb._add_contracted_spell(spell, "peer")
+    _assert_marked_then_reset(state)
+
+    sb._deactivate_contracted_spell("peer", spell)
+    _assert_marked_then_reset(state)
+
+    sb._reactivate_contracted_spell("peer", spell)
+    _assert_marked_then_reset(state)
+
+    sb._remove_contracted_spell("sid-1", "peer")
+    _assert_marked_then_reset(state)
+    assert sb._contracted_spells["peer"] == {}
+
+
+def test_clearing_a_peers_copies_marks_the_keys_of_the_active_copies() -> None:
+    """A clear of one peer's copies gates the consumers of every active copy's key it removed."""
+    sb = _contracted_book()
+    state = _consumer_of_copy_key(sb)
+    sb._add_contracted_spell(_contracted_copy(), "peer")
+    state.set_validity(SpellValidity.valid, flags_to_remove=[SpellState.contract_unvalidated])
+
+    sb._clear_contracted_spells_for_conduit("peer")
+
+    _assert_marked_then_reset(state)
+
+
+def test_contracted_copy_changes_mark_nothing_before_conjure() -> None:
+    """Before conjure nothing is marked: conjure runs phases 1-4 for every spell."""
+    sb = _contracted_book(conjured=False)
+    state = _consumer_of_copy_key(sb)
+    spell = _contracted_copy()
+
+    sb._add_contracted_spell(spell, "peer")
+    sb._deactivate_contracted_spell("peer", spell)
+    sb._reactivate_contracted_spell("peer", spell)
+    sb._remove_contracted_spell("sid-1", "peer")
+
+    assert state.validity is SpellValidity.valid
+    assert not state.has_flag(SpellState.contract_unvalidated)
+
+
+def test_parked_contracted_copy_changes_mark_nothing() -> None:
+    """Adding or removing a parked copy marks nothing: no consumer resolves a parked copy."""
+    sb = _contracted_book()
+    state = _consumer_of_copy_key(sb)
+
+    sb._add_inactive_contracted_spell(_contracted_copy("sid-parked"), "peer")
+    sb._remove_contracted_spell("sid-parked", "peer")
+
+    assert state.validity is SpellValidity.valid
+    assert not state.has_flag(SpellState.contract_unvalidated)
+
+
+def _two_versions_of_one_index() -> tuple[DummySpellIndex, DummySpell, DummySpell]:
+    """
+    Purpose:
+        Build the two borrowed copies a borrower holds after its lender notched one index from "sid-1" to "sid-2":
+        the "sid-1" copy (to be parked) and the "sid-2" copy (active), of one index and under the key
+        ("frame", "binding").
+    Returns:
+        tuple[DummySpellIndex, DummySpell, DummySpell]: The shared index, the sid-1 copy and the sid-2 copy.
+    """
+    index = DummySpellIndex(versions={"sid-1", "sid-2"}, sid="lineage", current="sid-2")
+    copies: list[DummySpell] = []
+    for spell_id in ("sid-1", "sid-2"):
+        spell = DummySpell(
+            spell_id=spell_id,
+            versions={"sid-1", "sid-2"},
+            spell_name="SpellName",
+            binding_name="binding",
+            spellframe="Frame",
+        )
+        spell.spell_index = index
+        spell.key = _COPY_KEY
+        spell._key = _COPY_KEY
+        copies.append(spell)
+    return index, copies[0], copies[1]
+
+
+def test_removing_a_parked_version_keeps_the_active_copy_of_its_index() -> None:
+    """
+    Purpose:
+        Regression for the unlink after a notch (contracted_copy_removal_by_version_2026_10_16): removing a parked
+        version removes that version's parked copy, leaves the active copy of the same index - another version - in
+        place and marks nothing; removing the active version then removes its copy and marks the consumers.
+    Contract:
+        - A removal takes the copy of exactly the version it names: the active copy only when it is that version.
+    """
+    sb = _contracted_book()
+    state = _consumer_of_copy_key(sb)
+    index, parked, active = _two_versions_of_one_index()
+    sb._add_contracted_spell(active, "peer")
+    sb._add_inactive_contracted_spell(parked, "peer")
+    _assert_marked_then_reset(state)
+
+    sb._remove_contracted_spell("sid-1", "peer")
+
+    assert sb._contracted_spells["peer"] == {index: active}
+    assert sb._contracted_spells_by_id["peer"] == {"sid-2": active}
+    assert sb._inactive_contracted_spells["peer"] == {}
+    assert state.validity is SpellValidity.valid
+    assert not state.has_flag(SpellState.contract_unvalidated)
+
+    sb._remove_contracted_spell("sid-2", "peer")
+
+    assert sb._contracted_spells["peer"] == {}
+    _assert_marked_then_reset(state)
+
+
+def test_removing_a_version_the_book_holds_no_copy_of_raises_and_keeps_the_active_copy() -> None:
+    """
+    Purpose:
+        A member id of a borrowed index that the Book holds no copy of is refused with the not-found RuntimeError,
+        and the index's active copy - another version - stays (before 0.2.8251 it was removed under that id).
+    """
+    sb = _contracted_book()
+    index, _, active = _two_versions_of_one_index()
+    sb._add_contracted_spell(active, "peer")
+
+    with pytest.raises(RuntimeError, match="Spell version sid-1 not found for conduit ID peer."):
+        sb._remove_contracted_spell("sid-1", "peer")
+
+    assert sb._contracted_spells["peer"] == {index: active}
+    assert sb._contracted_spells_by_id["peer"] == {"sid-2": active}
+
+
+@pytest.mark.parametrize("order", [("sid-1", "sid-2"), ("sid-2", "sid-1")], ids=["parked_first", "active_first"])
+def test_removing_both_versions_of_an_index_in_either_order_leaves_no_copy(order: tuple[str, str]) -> None:
+    """
+    Purpose:
+        An index unlink removes each member's copy in its member set's order, which follows the hash seed: either
+        order leaves no copy, active or parked, and an empty set of borrowed version ids.
+    """
+    sb = _contracted_book()
+    _, parked, active = _two_versions_of_one_index()
+    sb._add_contracted_spell(active, "peer")
+    sb._add_inactive_contracted_spell(parked, "peer")
+
+    for spell_id in order:
+        sb._remove_contracted_spell(spell_id, "peer")
+
+    assert sb._contracted_spells["peer"] == {}
+    assert sb._contracted_spells_by_id["peer"] == {}
+    assert sb._inactive_contracted_spells["peer"] == {}
+    assert sb._contracted_spell_ids["peer"] == set()
+
+
+class _RecordingContractRegistry:
+    """
+    Purpose:
+        Registry double for the Book's contract mark: records each call's Book id, keys and whether the Book lock
+        is held at the call, and optionally raises.
+    """
+
+    def __init__(self, book: Spellbook, *, error: Optional[Exception] = None) -> None:
+        """Bind the Book whose lock is checked; `error` is raised from every mark when given."""
+        self.book = book
+        self.error = error
+        self.calls: list[tuple[str, frozenset[tuple[str, str]], bool]] = []
+
+    def mark_contract_dependents_dirty(
+            self,
+            *,
+            spellbook_id: str,
+            contract_keys: Any = None,
+    ) -> set[str]:
+        """Record the call; raise the configured error when there is one."""
+        self.calls.append((spellbook_id, frozenset(contract_keys), self.book._lock._is_owned()))
+        if self.error is not None:
+            raise self.error
+        return set()
+
+
+def test_contract_marks_run_with_the_book_lock_free() -> None:
+    """Each mutator marks once, with the copy's key, after it releases the Book lock."""
+    sb = _contracted_book()
+    registry = _RecordingContractRegistry(sb)
+    sb._spell_system_states = cast(Any, registry)
+    spell = _contracted_copy()
+
+    sb._add_contracted_spell(spell, "peer")
+    sb._deactivate_contracted_spell("peer", spell)
+    sb._reactivate_contracted_spell("peer", spell)
+    sb._remove_contracted_spell("sid-1", "peer")
+    sb._add_contracted_spell(_contracted_copy("sid-2"), "peer")
+    sb._clear_contracted_spells_for_conduit("peer")
+
+    assert registry.calls == [(sb._id, frozenset({_COPY_KEY}), False)] * 6
+
+
+def test_contract_mark_failure_is_logged_and_propagates_after_the_map_change() -> None:
+    """A registry failure is logged and raised; the map change it followed stays published."""
+    sb = _contracted_book()
+    sb._spell_system_states = cast(Any, _RecordingContractRegistry(sb, error=RuntimeError("registry gone")))
+    spell = _contracted_copy()
+
+    with pytest.raises(RuntimeError, match="registry gone"):
+        sb._add_contracted_spell(spell, "peer")
+
+    assert sb._contracted_spells["peer"][spell.spell_index] is spell
+    assert any("Failed to mark contract dependents dirty" in str(message) for message, _ in sb._logger.error_calls)
+
+
 def test_cleanup_components_swallows_clear_and_cleanup_failures() -> None:
     class _BadMap(dict):
         def clear(self):
@@ -342936,8 +344975,8 @@ def test_bind_after_conjure_preserves_ownership_and_registrations(monkeypatch):
     risk_calls = []
     register_single_calls = []
     sb._spell_system_states = types.SimpleNamespace(
-        register_index=lambda spell_index, owner_spellbook_id=None, resolvable=None: lineage_calls.append(
-            (spell_index, new_spell, resolvable)
+        register_index=lambda spell_index, owner_spellbook_id=None, resolvable=None, binding_key=None: (
+            lineage_calls.append((spell_index, new_spell, resolvable))
         )
     )
     sb._register_spell_with_risk_manager = (
@@ -343007,7 +345046,7 @@ def test_bind_after_conjure_stamps_resolution_required_false(monkeypatch):
     sb._assert_lookup_key_available = lambda **kwargs: None
     sb._add_hooks_to_spell = lambda spell, **kwargs: None
     sb._spell_system_states = types.SimpleNamespace(
-        register_index=lambda spell_index, owner_spellbook_id=None, resolvable=None: None
+        register_index=lambda spell_index, owner_spellbook_id=None, resolvable=None, binding_key=None: None
     )
     sb._register_spell_with_risk_manager = lambda conduit_id, spell: None
 
@@ -346323,7 +348362,7 @@ END FILE: tests/unit/melder/spellbook/test_spellbook_creation_system_dependency_
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/spellbook/test_spellbook_creation_system_parked_versions.py
-CONTENT SHA256: 5b3caa899a9b12fd6dc3d3f6b72af84a5f8c1fc1ad14d5dc079df4ce5b1f9b11
+CONTENT SHA256: aebc6bb6226d2993fa0896f72e7318b04df9c14e2cd21df3950d426ca1a7fe15
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -346411,7 +348450,7 @@ class _SpellStub:
         Build a spell stub.
 
         Args:
-            spell_id: The version id.
+            spell_id: The spell's spell_id.
             book: The Book stub whose lock a stamp is expected to run under.
             existing_object: The bound existing object, or None for a class or function spell.
             resolution_required: The flag's starting value.
@@ -351821,7 +353860,7 @@ END FILE: tests/unit/melder/utilities/custom_exceptions/test_spell_space_scope_e
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/utilities/custom_exceptions/test_spellbook_validation_error.py
-CONTENT SHA256: 43a6b13176871dccbb658ed39c0554eab83c34489e35b864ed5f6ad5b6afcd49
+CONTENT SHA256: 9d1703993534ed4833eddc39f5febe5b4dea07b5016f4ab7b53cad719b529be0
 SOURCE ENCODING: utf-8
 ================================================================================
 from types import SimpleNamespace
@@ -352066,6 +354105,84 @@ def test_meld_path_names_spell_with_no_recorded_error() -> None:
         "RootSpell:",
         "  - No validation error was recorded for this spell; its validity is invalid, gated or disabled.",
     ]
+
+
+def test_gating_warning_is_listed_as_the_spells_reason() -> None:
+    """
+    Purpose:
+        A lineage that a Phase-4 warning gates (a lost SpellContract provider) names that warning as its reason,
+        not "No validation error was recorded".
+    Contract:
+        The gating warning renders as an error line; it is not counted among the hidden warnings.
+    """
+    spell = _spell(name="Consumer", issues=[_issue("SPELL_CONTRACT_MISSING_PROVIDER", "No provider.", "warning")])
+
+    message = str(SpellbookValidationError([spell]))
+
+    assert message.splitlines() == [
+        "Spellbook validation failed. Broken spells: Consumer.",
+        "Consumer (frame 'frame-1'):",
+        "  - No provider. [SPELL_CONTRACT_MISSING_PROVIDER]",
+    ]
+
+
+def test_other_warnings_stay_counted_beside_a_gating_reason() -> None:
+    """Purpose: only gating warnings are listed; every other warning is still only counted."""
+    spell = _spell(name="Consumer", issues=[
+        _issue("REQUIRED_HOLE", "Supply name.", "warning"),
+        _issue("SPELL_CONTRACT_MISSING_PROVIDER", "No provider.", "warning"),
+    ])
+
+    message = str(SpellbookValidationError([spell]))
+
+    assert message.splitlines() == [
+        "Spellbook validation failed. Broken spells: Consumer.",
+        "Consumer (frame 'frame-1'):",
+        "  - No provider. [SPELL_CONTRACT_MISSING_PROVIDER]",
+        "1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.",
+    ]
+
+
+def test_gating_warning_is_counted_when_the_block_shows_errors() -> None:
+    """Purpose: a spell with errors lists its errors; its gating warning joins the hidden count."""
+    spell = _spell(issues=[
+        _issue("E1", "The error."),
+        _issue("SPELL_CONTRACT_MISSING_PROVIDER", "No provider.", "warning"),
+    ])
+
+    message = str(SpellbookValidationError([spell]))
+
+    assert message.splitlines() == [
+        "Spellbook validation failed. Broken spells: RootSpell.",
+        "RootSpell (frame 'frame-1'):",
+        "  - The error. [E1]",
+        "1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.",
+    ]
+
+
+def test_gating_only_block_is_listed_when_diagnostics_are_given() -> None:
+    """
+    Purpose:
+        With conduit diagnostics handed in, a spell whose only reason is a gating warning is still listed; a spell
+        with no reason is not.
+    """
+    gated = _spell(name="Consumer", issues=[_issue("SPELL_CONTRACT_MISSING_PROVIDER", "No provider.", "warning")])
+    quiet = _spell(name="Other", spell_id="spell-2")
+
+    message = str(SpellbookValidationError([gated, quiet], system_diagnostics=[_diag("cycle_detected", "Cycle.")]))
+
+    assert message.splitlines() == [
+        "Spellbook validation failed. Broken spells: Consumer.",
+        "Consumer (frame 'frame-1'):",
+        "  - No provider. [SPELL_CONTRACT_MISSING_PROVIDER]",
+        "Whole-graph errors:",
+        "  - Cycle. [cycle_detected]",
+    ]
+
+
+def test_gating_warning_codes_are_the_codes_phase_4_gates_on() -> None:
+    """Purpose: the renderer's gating set is the one code Phase 4 gates a lineage on (pinned there too)."""
+    assert SpellbookValidationError.GATING_WARNING_CODES == frozenset({"SPELL_CONTRACT_MISSING_PROVIDER"})
 
 
 def test_live_phase4_result_is_read() -> None:

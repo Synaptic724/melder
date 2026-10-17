@@ -10,7 +10,7 @@
 - Agent Role: synaptic_python_developer
 - Priority: p1
 - Created: 2026-10-16T09:46:14Z
-- Updated: 2026-10-17T18:04:14Z
+- Updated: 2026-10-17T20:53:48Z
 
 ## Objective
 Rule 2 of the owner's 2026-10-15 direction, settled in principle on 2026-10-16: a spell's own state decides when the
@@ -120,6 +120,7 @@ this does not make independent review mandatory for every ticket.
   - artifacts/meld_contract_scan_20261015/
   - system_docs/patches/completed/contract_recheck_on_notch_2026_10_16/ (the seven patch docs, archived at promotion)
   - system_docs/patches/active/contracted_copy_removal_by_version_2026_10_16/ (the removal fix's three patch docs)
+  - system_docs/patches/active/find_spell_by_spell_id_2026_10_17/ (the exact spell_id lookup's six patch docs)
 - DISPOSITION: retain_as_reference (the folder); promote_to_documentation (the patch docs)
 - CLEANUP_TRIGGER: at closure the patch docs are promoted into the system docs and archived under
   system_docs/patches/completed/; the folder stays as the lane's evidence
@@ -1985,8 +1986,206 @@ this does not make independent review mandatory for every ticket.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-10-17T19:41:06Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: The owner's direction (chat 2026-10-17, after the proof test), superseding the A/B/C request of 18:04:14Z:
+    a lookup by spell_id returns the spell that owns that spell_id - active or parked - or nothing / not found
+    (find_* returns None, get_* raises, the 2026-10-11 rule). It never answers with the spell_index's active spell:
+    the index's active spell and a spell_id's own spell are separate things, and a lookup that swaps one for the
+    other is no longer looking up a spell_id - it returns made-up data. The swap is a broken contract, not an
+    intended lineage answer. Fix it where it is written, and find every other place the same swap is written:
+    report the origins (code that itself turns a spell_id into its index and hands back that index's active
+    spell or copy), not methods that only call a broken lookup.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spellbook.py:2052-2131
+  - context_compass/artifacts/meld_contract_scan_20261015/proof_tests/test_parked_spell_id_lookup_proof.py:1-141
+  IMPACT: Option A of 18:04:14Z, applied to every origin. `Spellbook.find_spell_by_id` and
+    `Conduit.get_spell_by_id` change for a parked spell_id (Breaking, public); every caller that relied on the swap
+    is read before the fix; the patch gate applies before any src edit. The 19:15:03Z note's IMPACT line ("the fix
+    belongs in the check (C)") is overruled.
+  NEXT: Read-only sweep for the origins of the swap, each method read whole; report them to the owner.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-17T19:49:27Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: The origins of the spell_id -> index -> active-spell swap, each read whole on 0.2.8251 (the code that
+    itself turns a spell_id into its index and answers with that index's active spell or copy):
+    (1) `Spellbook.find_spell_by_id` finds the parked Spell under the id (`_inactive_spells`), then returns
+    `_spells[its index]`; (2) `Spellbook._find_contracted_spell_by_id` finds the parked borrowed copy, then returns
+    `spell_map[its index]`, and for an id the Book holds no copy of walks the contracted map and returns the active
+    copy of any index listing the id; (3) the contract row `Detail` (one granted version) states "where they
+    disagree, the index resolves the current head", and `Detail.has_spell` answers by index membership, so the row
+    for one version says yes for every member; (4) `ConduitWard._get_spell_in_contracts` takes the row granted for
+    the id and returns `_find_contracted_spell(row.spell_index)`, and walks rows by index membership; (5)
+    `ConduitWard._get_all_spells_in_contracts` resolves each granted row by its index and reports the active copy
+    under that copy's own id; (6) `ConduitWard._validate_contracts_and_define` checks each row by its index's active
+    copy and falls back to (2). On purpose and named for it: `Meld._current_in_pool` (0.2.8250) returns the active
+    Spell of the lineage a recorded version id belongs to - the catch-up's lineage question, asked with a spell_id
+    as the handle. Same mix-up in the other direction, not lookups: `_add_contracted_spell`,
+    `_clear_contracted_spells_for_conduit` and `_destroy_detached_link_contract` file or drop a borrowed copy under
+    `spell.spell_index.selected_spell_id` instead of `spell.spell_id`; they only see active copies, so the ids
+    match, except possibly between a lender's notch and its fan-out (UNKNOWN, untested). Every other method named
+    earlier only calls one of the six (the `get_spell_by_id` chain, `get_spell_permissions`,
+    `find_contracted_spell`, `_get_spells_in_contract_by_conduit`, `_check_spell_id_and_spell`, the transfer and
+    dependency-walk resolutions, `CommandSystem.get_spell_by_id`, the Rift `get_spell_in_contracts` commands, the
+    public Conduit contract listings). Exact lookups of the right shape exist: `_get_owned_spell` (active, then
+    parked) and `Meld._resolve_spell_by_id`. The graft runner already hit the swap (TRIAGE 2026-07-12: adoption
+    self-notched) and was routed around it through `_get_owned_spell`. History (git -S): the contract-side swaps
+    come from b5d4ce835 (2025-11-18); the find_spell_by_id swap predates 0.2.8229, where melder_1 kept it and
+    documented it as the contract; melder_1 added the parked-copy swap to (2) in 0.2.8231.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spellbook.py:2052-2131
+  - src/melder/aether/spellbook/spellbook.py:3036-3088
+  - src/melder/aether/conduit/conduit_ward/contract/details.py:1-211
+  - src/melder/aether/conduit/conduit_ward/conduit_ward.py:3571-3644
+  - src/melder/aether/conduit/conduit_ward/conduit_ward.py:3463-3567
+  - src/melder/aether/conduit/conduit_ward/conduit_ward.py:3881-3939
+  - src/melder/aether/conduit/meld/meld.py:1555-1584
+  - src/melder/aether/spellbook/spellbook.py:3178-3247
+  - src/melder/aether/spellbook/spellbook.py:3473-3545
+  - src/melder/aether/spellbook/spellbook.py:3693-3744
+  - src/melder/aether/spellbook/spellbook.py:3323-3342
+  - src/melder/aether/conduit/meld/meld.py:2151-2186
+  - src/melder/crystallizer/crystal_loader_system/graft_runner.py:491-579
+  - src/melder/aether/conduit/conduit_ward/conduit_ward.py:3648-3703
+  - src/melder/aether/conduit/conduit.py:3280-3333
+  - src/melder/aether/conduit/conduit.py:4177-4219
+  IMPACT: The fix is these six; the callers that rely on the swap today (a transfer or a dependency grant given a
+    parked spell_id, the contract listing's contents) need the owner's word before the code changes.
+  NEXT: Report the origins to the owner, then the patch docs.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-17T20:00:43Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: The owner's rule (chat 2026-10-17): two separate things, never blended. Sharing a SpellIndex
+    (`add_index_to_contract`, the `IndexDetail` row keyed by the index) follows whichever spell the index has
+    active; sharing a spell by id (`add_spell_to_contract(spell_id=...)`, the `Detail` row keyed by that spell_id)
+    is exactly that spell. Likewise a lookup by spell id (the SHA bind / bind_inactive return;
+    `find_spell_by_id`, `get_spell_by_id`) returns that spell or nothing, and only a lookup by index id (the
+    index's ULID; `get_spell_by_index_id`) returns the index's active spell.
+  EVIDENCE:
+  - src/melder/aether/conduit/conduit.py:3193-3277
+  - src/melder/aether/conduit/conduit.py:6806-6921
+  - src/melder/aether/spellbook/bind/spell_index.py:104-113
+  - src/melder/aether/conduit/conduit_ward/contract/details.py:1-211
+  IMPACT: Origins 3-6 (19:49:27Z) are this blend on the contract side: the spell-by-id row (`Detail`) is resolved
+    through its index as if it were an index share. The fix resolves a `Detail` by its spell_id and keeps index
+    resolution for `IndexDetail` only.
+  NEXT: The owner's go-ahead on the plan.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-17T20:22:39Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: PLAN
+  CLAIM: The owner's direction (chat 2026-10-17): fix origin 1 only - rename `Spellbook.find_spell_by_id` to
+    `find_spell_by_spell_id`, make it return the spell that owns the spell_id (active, else parked, else None), say
+    so in the docstrings, update what depends on it; origins 2-6 wait. Patch docs written and linked (patch id
+    find_spell_by_spell_id_2026_10_17; read order architecture, then the five component patches). Mapping, patch
+    section -> implementation -> validation: I1 (spellbook lookup) -> the method's body and docstring,
+    `_get_spell_by_id_via_aether` -> the method's component tests, reworked for the exact answer and renamed with
+    it; I2 (Conduit lookups) -> `get_spell_by_id` and `get_spell_permissions` docstrings -> integration: lender and
+    borrower lookups of the parked spell_id, permissions per version, unknown id ValueError; I3 (explicit index
+    step) -> `Conduit._resolve_transfer_spell`, `ConduitWard._transfer_spell_ownership`, the two ward dependency
+    walks, `TransferOfOwnership._resolve_spell`, `_deps_resolvable_on_target`, `_transfer_owned_dependencies` ->
+    guards green on 0.2.8251 and after: a transfer by the parked spell_id, a dependency grant and a transfer with
+    include_dependencies after the dependency's notch; ward grant check (no code change) -> grant and ungrant by the
+    parked spell_id; renamed call sites -> the restore, graft, Rift command and ambiguity suites; I4 locks -> each
+    explicit step takes one Book lock with no other lock held (read at each call site), suites GIL off and on;
+    I5 -> no emitted code or cache reads the name (search of src). Tests' renamed calls by a recorded script.
+  EVIDENCE:
+  - context_compass/system_docs/patches/active/find_spell_by_spell_id_2026_10_17/architecture_patch.md:1-73
+  - src/melder/aether/spellbook/spellbook.py:2052-2131
+  - src/melder/aether/conduit/conduit_ward/conduit_ward.py:2902-2988
+  - src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py:528-554
+  IMPACT: The order keeps the tree from handing a parked Spell to a transfer or a dependency grant at any point.
+  NEXT: Red tests on a scratch copy of 0.2.8251.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-17T20:37:49Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: Mailbox, consumed at re-onboarding. M0-180 (melder_0, QUESTION, 19:50:33Z): the owner told melder_0 to turn
+    in his wording ticket now; its free part is in the owner's commits 192482b4c and 5ac69ab51 with no notch of its
+    own. melder_1 grants melder_0 one write of `src/melder/__version__.py` (one notch above what it reads), one bullet
+    in the release note's "Packaging and documentation" section and the rebuild, ahead of this lane; melder_1 writes
+    neither file until melder_0's NOTICE says it is done, and fix #1 takes the number next at its landing (the
+    contribution guide: a notch is read at landing, never reserved). The rest of the M1-22 hold stands. M0-181
+    (NOTICE, FYI, 20:29:21Z): melder_0's read-only correctness sweep filed three stories whose fixes sit in files
+    this lane holds - STORY-2026-10-17-staged_version_releases_active_signature and
+    STORY-2026-10-17-notch_moves_signature_by_incoming_key_only (spellbook.py), and
+    STORY-2026-10-17-parked_cleanup_leaves_borrower_copies (conduit.py, contract side; melder_0 suggests folding it
+    into this lane's rework). Noted there, not filed: after conjure a direct `Spellbook.bind_inactive` or
+    `cleanup_spell` skips the borrower emissions the Conduit facades send.
+  EVIDENCE:
+  - context_compass/tickets/tasks/2026-10-16_spell_id_wording_near_spell_index_task.md:1-440
+  - context_compass/tickets/epics/2026-10-17_correctness_defects_epic.md:1-462
+  - context_compass/tickets/stories/2026-10-17_staged_version_releases_active_signature_story.md:1-211
+  - context_compass/tickets/stories/2026-10-17_notch_moves_signature_by_incoming_key_only_story.md:1-193
+  - context_compass/tickets/stories/2026-10-17_parked_cleanup_leaves_borrower_copies_story.md:1-184
+  IMPACT: `__version__.py` and the release note may change under this lane before fix #1 lands: both are re-read
+    right before fix #1's notch and release-note edits. The three stories are outside fix #1 (owner: fix #1 only);
+    the conduit.py one goes to the owner with the other mismatches after fix #1.
+  NEXT: ACK to melder_0 (M1-24), then the board row, then fix #1's apply script on the scratch work tree.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-17T20:38:54Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: Mailbox M0-182 (melder_0, NOTICE, 20:37:09Z), copied before consumption: the index
+    `remove_from_spell_index` mints is never registered in the frame's spell registry (`_apply_remove_from_index`
+    makes no `_register_single_spell_index` call), so `find_conduit_id_for_spell` misses a version there, parked or
+    notched active, and `Conduit.get_spell_by_id` / `get_conduit_by_spell_id` raise "not found in any conduit"
+    before the Book is asked. Filed by melder_0 as STORY-2026-10-17-minted_index_missing_from_frame_registry
+    (probe M1-M3 in artifacts/correctness_defects_20261017/); its scope leaves what the Book answers to this
+    lane's fix #1. Fix #1 changes the Book step only, so that lookup still raises for such a version after fix #1:
+    a frame-registry defect, outside fix #1 (owner: fix #1 only), told to the owner with fix #1's report.
+  EVIDENCE: context_compass/tickets/stories/2026-10-17_minted_index_missing_from_frame_registry_story.md:1-185
+  IMPACT: Fix #1's tests stay on the bound index (no index move), where the frame step finds the version; the
+    patch docs' non-goals name the minted-index case as pre-existing.
+  NEXT: Delete M0-180..M0-182, clear their alerts, ACK M0-180 (M1-24), then the board row.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-17T20:53:48Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: The owner's answer to the open rename question (chat 2026-10-17: "yeah use get_spell_by_spell_id"):
+    `Conduit.get_spell_by_id` becomes `Conduit.get_spell_by_spell_id`, folded into fix #1, with no alias for the
+    old name (the no-fallback rule, as for `find_spell_by_spell_id`). Scope it adds: the src callers
+    (`ConduitWard._check_spell_id_and_spell`, the two dependency walks, `_transfer_spell_ownership`;
+    `TransferOfOwnership._resolve_spell`, `_deps_resolvable_on_target`, `_transfer_owned_dependencies`,
+    `_dirty_dependencies`; `Conduit._resolve_transfer_spell` and the notch target's error message), the docstrings
+    that name it, 29 test files, agents/MELDER_AGENT_OPERATIONS.md:454, the system docs and the release note
+    (Breaking). Asked, not decided: whether the Rift room command of the same name (`CommandSystem.get_spell_by_id`,
+    `StaticCommandSystem.get_spell_by_id`, its ACL action name) is renamed too; it is left as it is until he says.
+    The internal `Spellbook._get_spell_by_id_via_aether` keeps its name (not asked).
+  EVIDENCE:
+  - src/melder/aether/conduit/conduit.py:3193-3233
+  - src/melder/nexus/rift/command_system/command_system.py:835-891
+  - src/melder/nexus/rift/command_system/static_command_system.py:511-547
+  IMPACT: Breaking for every caller of `Conduit.get_spell_by_id`; the patch docs' non-goal "no rename of
+    `Conduit.get_spell_by_id`" is replaced by the rename before the apply script runs.
+  NEXT: Update the patch docs, then the apply script with both renames.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 ## Context / Handoff Summary
-Current state (2026-10-16T22:18:36Z): this ticket has landed two source changes; its closure waits on the owner.
+Current state (2026-10-17T20:39:13Z): this ticket has landed two source changes; fix #1 of the spell_id lookups is in progress.
 - 0.2.8250, rule 2 with D1-D5 (owner-accepted, Notes 18:23Z; in the owner's commit 192482b4c): a satisfied
   SpellContract is not checked on every meld; a change of what a spell resolves marks it for revalidation (the
   borrower Book's five contracted-map mutators; a notch's downstream walk, D2); the meld refreshes stale
@@ -2002,13 +2201,21 @@ system_docs/patches/active/contracted_copy_removal_by_version_2026_10_16/ (promo
 Open, the owner's: whether a contract's per-version row carries active/inactive state (Notes 20:59Z); what
 borrowers get after an ownership transfer - index links and the repoint option are refused silently (18:23Z);
 rule 2's binding-key gap on the transfer flip (18:23Z; fix: pass binding_key=spell_obj._key in its
-register_index and rollback); add_spell_to_contract and remove_spell_from_contract by a parked version's
-spell_id refuse (21:36Z), because `get_spell_by_id` returns the active spell of the spell_id's index - the
-owner chooses A, B or C (2026-10-17T18:04:14Z). Decided: contract rows carry no active/inactive state (2026-10-17). Filed: TASK-2026-10-16-order_inflight_borrower_melds_against_notch_fanout (its race
+register_index and rollback); the spell_id lookups - the owner's rule (2026-10-17, Notes 19:41Z, 20:00Z): a
+spell_id lookup returns that spell or nothing, never the index's active spell; the six origins are found (Notes
+19:49Z). IN PROGRESS, fix #1 only (owner's go-ahead, PLAN 20:22Z): `find_spell_by_id` renamed
+`find_spell_by_spell_id` and exact, its transfer and dependency callers given an explicit index step; patch docs
+system_docs/patches/active/find_spell_by_spell_id_2026_10_17/; red tests in place. Origins 2-6 and the three
+decisions (a transfer given a parked spell_id, the dependency grant walk, parked grants in the contract listing)
+wait for the owner after fix #1; it ends the parked spell_id grant refusal (21:36Z). Mailbox (Notes 20:37Z,
+20:38Z): melder_0 notches first (M1-24 grants it); his three stories in held files and the minted-index registry
+go to the owner with fix #1's report. Decided: contract rows carry no active/inactive state (2026-10-17). Filed: TASK-2026-10-16-order_inflight_borrower_melds_against_notch_fanout (its race
 test is xfail) and TASK-2026-10-16-investigate_lent_consumer_provider_loss.
-Next: (1) the owner's direction on the open items; (2) the closure - summary naming 0.2.8250 and 0.2.8251 and
-their release-note sections, the patch docs archived, board and artifact sync; (3) the rebuild last, both checks
-OK; (4) NOTICE M1-24 releasing the files melder_0 waits for (Notes 18:46Z).
+Next: (1) fix #1 - the apply script on the scratch work tree, red -> green with the GIL off and on, the suites,
+then the repo, docs, release note and its notch (after melder_0's, M1-24); (2) the owner's direction on the open
+items; (3) the closure - summary naming 0.2.8250, 0.2.8251 and fix #1's notch and their release-note sections, the
+patch docs archived, board and artifact sync; (4) the rebuild last, both checks OK; (5) a NOTICE releasing the files
+melder_0 waits for (Notes 18:46Z).
 Evidence: the Notes from 09:57:21Z on; artifacts/meld_contract_scan_20261015/.
 
 ## Project-Specific Additions

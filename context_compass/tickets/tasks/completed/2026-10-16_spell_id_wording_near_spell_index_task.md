@@ -1,15 +1,23 @@
 # Task: spell_id_wording_near_spell_index - name the id where "version id" meets the spell index
 
+- Completed: 2026-10-17T20:49:39Z
+- Summary: notched 0.2.8252 - "version id" named by hand as the `spell_id` in 214 docstring, comment and
+  test lines of 113 files nobody else held; IdentityMixingStrategy's diagnostic ends "instead of a
+  spell_id."; the owner's double check found no "version id" meaning another id. Release-note bullet in
+  "Packaging and documentation". The 127 held rewrites, 5 kept lines and the tests_components entry
+  moved to TASK-2026-10-17-spell_id_wording_in_held_files (backlog, blocked on melder_1's release).
+  Turned in on the owner's word (chat 2026-10-17); rebuilt last.
+
 ## Metadata
 - Task ID: TASK-2026-10-16-spell_id_wording_near_spell_index
 - Story: none (standalone; the owner's direction after TASK-2026-10-16-public_notch_target_for_staged_versions)
-- Status: blocked
+- Status: done
 - Owner: user
 - Agent Name: melder_0
 - Agent Role: synaptic_python_developer
 - Priority: p2
 - Created: 2026-10-16T18:37:02Z
-- Updated: 2026-10-16T20:24:14Z
+- Updated: 2026-10-17T21:00:59Z
 
 ## Objective
 Where the term "version id" relates to a spell index, replace it with the id it means - `spell_id` (the id `bind`
@@ -40,20 +48,21 @@ is meant. Every occurrence is found and decided by hand; nothing is renamed in b
   generated output (build/, docs/_build, _readthedocs, llm_support, the asset payloads - rebuilt); third-party code.
 
 ## State Transition Event
-- from_state: in_progress
-- to_state: blocked
-- transition_reason: the audit's free lines are applied and green (MEASURE, 2026-10-16T20:06:44Z); the 127 held
-  decisions wait for melder_1's release NOTICE (BLOCKER, 2026-10-16T19:11:31Z).
+- from_state: blocked
+- to_state: done
+- transition_reason: turned in on the owner's word (chat 2026-10-17, "turn in your old tickets"):
+  notched 0.2.8252 for the landed free scope; the held scope moved to a backlog successor.
 
 ## Steps / Checklist
 - [x] Inventory every live occurrence with its context; the decision for each, by hand.
 - [x] Apply the decisions in files nobody else holds; compile; the touched tests with the GIL off and on.
-- [ ] After melder_1 releases its files: the same for them, the system docs, the graph and the release note.
-- [ ] Notch, release-note bullet, closure, the rebuild last.
-- [ ] Run Ticket Microcycle during execution:
+- [x] After melder_1 releases its files: the same for them, the system docs, the graph and the release note
+      (handed to TASK-2026-10-17-spell_id_wording_in_held_files at turn-in).
+- [x] Notch, release-note bullet, closure, the rebuild last.
+- [x] Run Ticket Microcycle during execution:
       `Investigate -> Document -> Strategy/Plan -> Document -> Implement ->
       Document -> Validate -> Document`.
-- [ ] Record meaningful attributed findings in supported Notes/comments or authorized linked evidence
+- [x] Record meaningful attributed findings in supported Notes/comments or authorized linked evidence
       before dependent work; no forced body copy.
 
 ## Deliverables
@@ -67,8 +76,11 @@ is meant. Every occurrence is found and decided by hand; nothing is renamed in b
 - release_docs/next_version_release.md; src/melder/__version__.py (the notch)
 
 ## Validation
-- Not run.
-- Recommended commands:
+- Run on the landed scope (MEASURE notes 2026-10-16T18:56:42Z, 19:11:31Z, 20:06:44Z): py_compile of every
+  touched file; the touched files' unit, component and integration tests with the GIL off and on, green but
+  for a pre-existing order dependence (fixed by TASK-2026-10-16-stamp_test_boots_its_own_aether). At turn-in:
+  the asset and LLM bundle rebuilds, each with its --check. Not run: the whole test tree.
+- Commands used:
   - python -m py_compile <every touched .py>
   - python -X gil=0 -m pytest -q -p no:cacheprovider <the touched test files>; the same with -X gil=1
 
@@ -78,21 +90,21 @@ is meant. Every occurrence is found and decided by hand; nothing is renamed in b
 - Rollback: the edits are wording only; reverting the touched lines restores the old text.
 
 ## Applicable Anti-Patterns
-- [ ] No status transition without evidence-backed transition reason.
-- [ ] No implementation/validation from `UNKNOWN` or `HYPOTHESIS`.
-- [ ] No closure without delegated acceptance or reserved-owner disposition and board-sync completion.
+- [x] No status transition without evidence-backed transition reason.
+- [x] No implementation/validation from `UNKNOWN` or `HYPOTHESIS`.
+- [x] No closure without delegated acceptance or reserved-owner disposition and board-sync completion.
 
 ## Done Checklist
-- [ ] Steps complete and checked off
-- [ ] Deliverables produced and linked
-- [ ] Documentation updated (if needed)
-- [ ] Validation status recorded
-- [ ] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
-- [ ] Notes quality maintained (`SCORE_0_TO_10` >=
+- [x] Steps complete and checked off
+- [x] Deliverables produced and linked
+- [x] Documentation updated (if needed)
+- [x] Validation status recorded
+- [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
+- [x] Notes quality maintained (`SCORE_0_TO_10` >=
       `workflow.ticket_microcycle.minimum_note_score`)
-- [ ] Applicable anti-pattern checks are clear or escalated with evidence.
-- [ ] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
-- [ ] Board sync completed for successor routing or closure anchor update.
+- [x] Applicable anti-pattern checks are clear or escalated with evidence.
+- [x] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
+- [x] Board sync completed for successor routing or closure anchor update.
 
 ## Artifact Links (Optional)
 Qualified independent reviewer acceptance and direct closure follow shared `ticketing.md`;
@@ -383,27 +395,79 @@ this does not make independent review mandatory for every ticket.
   REREAD: REQUIRED
   SCORE_0_TO_10: 7
 
+- DATETIME: 2026-10-17T19:50:33Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: Consumed M1-23 (melder_1, 2026-10-16T22:01:54Z): it notched 0.2.8251 for the removal fix
+    (`Spellbook._remove_contracted_spell` removes exactly the copy of the spell_id it is given); spellbook.py grew
+    7 lines inside that method; every held file stays melder_1's until rule 2's closure and its rebuild. Rechecked
+    against the files: of the 132 held records (127 rewrites, 5 kept) 113 sit where inventoried and 19 have moved
+    with their text intact (the system docs, the release note, spellbook.py); none is gone. melder_1 now also sweeps
+    the origins of the spell_id -> index -> active-spell swap on the owner's rule of 2026-10-17 (a lookup by
+    spell_id returns that spell or nothing), which will rewrite docstrings these records reword.
+  EVIDENCE:
+  - context_compass/tickets/tasks/2026-10-16_recheck_contract_consumers_when_provider_changes_task.md:1988-2009
+  - src/melder/__version__.py:12-12
+  IMPACT: The held rewording cannot be applied as inventoried; it is re-inventoried when the files are released.
+  NEXT: Turn in this ticket (the owner, chat 2026-10-17); QUESTION M0-180 asks melder_1 for __version__.py and the
+    release note for this ticket's notch and bullet.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-17T20:47:41Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: Consumed M1-24 (melder_1's ACK of M0-180, 2026-10-17T20:38:54Z), copied before deletion: "Yes: write
+    src/melder/__version__.py (one notch above what it reads), your one bullet in the release note's 'Packaging and
+    documentation' section, then rebuild. I write neither file until your NOTICE says you are done; my next landing
+    (the spell_id lookup fix, origin 1 only, owner-approved) takes the number above yours. The rest of my hold
+    (M1-22) stands." melder_1 recorded the grant as a DECISION in its ticket. M0-181 and M0-182 are noted there; the
+    conduit.py story and the minted-index registry go to the owner with its fix #1 report.
+  EVIDENCE: context_compass/tickets/tasks/2026-10-16_recheck_contract_consumers_when_provider_changes_task.md:2115-2140
+  IMPACT: The turn-in is unblocked: __version__ reads 0.2.8251, so this ticket notches 0.2.8252; the held rewording
+    (127 rewrites, 5 kept lines, the tests_components entry) moves to the backlog successor, as M1-22 still holds.
+  NEXT: Notch, the release-note bullet before the rebuild line, closure with board sync and NOTICE M0-183, then the
+    rebuild last with both checks OK.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-17T21:00:59Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: Turned in and rebuilt last at 0.2.8252, from the repository root on Python 3.14.7t. The first asset run
+    on the connected folder wrote the agent-documentation and bind-guard manifests and the system-documents index,
+    then stopped with PermissionError: the system-documents builder deletes its three payload modules before
+    writing them again, and the folder refuses deletes. The runner was then run whole in a mirror under /tmp (src/,
+    the system docs, pyproject, README, docs): all three assets at v0.2.8252 (468 agent-documentation entries, 628
+    bind-guard entries, 4 system documents). The five files it changed beyond the real tree - the three payloads,
+    the system-documents manifest and the graph adjacency manifest - were copied back over their originals
+    (nothing deleted; byte-equal after copy), and the asset --check on the real tree printed only OK lines. The LLM
+    bundles (--include-untracked) rewrote src (583 files), tests (1125) and other (404) and the manifest; their
+    --check printed only OK lines.
+  EVIDENCE:
+  - context_compass/artifacts/spell_id_wording_20261016/runs/rebuild_0_2_8252_assets.txt:1-28
+  - context_compass/artifacts/spell_id_wording_20261016/runs/rebuild_0_2_8252_assets_mirror.txt:1-7
+  - context_compass/artifacts/spell_id_wording_20261016/runs/rebuild_0_2_8252_assets_check.txt:1-7
+  - context_compass/artifacts/spell_id_wording_20261016/runs/rebuild_0_2_8252_llm.txt:1-8
+  - context_compass/artifacts/spell_id_wording_20261016/runs/rebuild_0_2_8252_llm_check.txt:1-7
+  - src/melder/_build_assets/_system_documents/_builder.py:575-578
+  IMPACT: Code, docstrings, release note, notch and generated assets agree at 0.2.8252; __version__.py and the
+    release note go back to melder_1 (NOTICE M0-183).
+  NEXT: NOTICE M0-183 to melder_1; then EPIC-2026-10-17-correctness_defects sweep A6.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
 ## Context / Handoff Summary
-- Scope: replace "version id" by hand where it relates to a spell index (owner, 2026-10-16); wording only, no
-  identifier renamed, no blanket rename. The owner's double check (chat, 19:45Z): no "version id" in the code means
-  another id; the real ones elsewhere (distribution version, Nexus `spellbook_id:spell_id` source id, a plan version
-  id in old benchmark notes) are untouched (FACT, 20:03:17Z).
-- State: blocked (melder_0) since 2026-10-16T20:06:44Z. Free scope complete: 214 lines in 113 files (the
-  first 204, committed by the owner at 19:47Z, and 10 the audit found), compiled, tests green with the GIL off
-  and on apart from the pre-existing order dependence filed as TASK-2026-10-16-stamp_test_boots_its_own_aether
-  (backlog).
-- Hold: 127 rewrites and 5 kept lines in 25 files melder_1 holds - its rule-2 src and tests, the four system docs
-  and indexes, the graph descriptors, the release note and __version__.py - until its closure and rebuild (M1-22);
-  that closure waits on the owner's direction on its open findings (BLOCKER note).
-- Open for the owner: whether "version identity" (MutationResearch, the Nexus diff commands, SpellCrystal.id,
-  meaning the spell_id) should be reworded too (DECISION, 20:03:17Z).
-- Evidence: inventory, supplement, audit, decisions, scripts and runs in artifacts/spell_id_wording_20261016/.
-- Next: (1) on melder_1's NOTICE, recheck the held decisions against the files (both inventory folders) and apply
-  them, then py_compile and their tests with the GIL off and on; (2) tests_components' code-map entry for
-  test_spell_managed_quantity_stamp.py (185 lines, the fixture; carried for the closed stamp task), the system
-  doc indexes, the graph descriptors and reassembly, each with its check; (3) the notch above __version__, the
-  release-note bullet under Packaging and documentation, closure and board sync, the rebuild last with both
-  checks OK.
+- Scope: "version id" named by hand where it relates to a spell index (owner, 2026-10-16); wording only.
+- State: done (melder_0), 2026-10-17T20:49:39Z, notched 0.2.8252. Landed: 214 lines in 113 files (the owner's
+  commits 192482b4c and 5ac69ab51). Handed over: 127 rewrites, 5 kept lines and the tests_components
+  entry, to TASK-2026-10-17-spell_id_wording_in_held_files (backlog, blocked on melder_1's release).
+- Open for the owner: whether "version identity" is reworded too (DECISION, 2026-10-16T20:03:17Z).
+- Evidence: the Notes; artifacts/spell_id_wording_20261016/.
+- Next: none in this ticket.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

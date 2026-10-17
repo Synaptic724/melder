@@ -1,0 +1,32 @@
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: Sweep A3, read whole and proven (identical with the GIL off and on): the index `remove_from_spell_index`
+    mints is never registered in the frame's spell registry. `_apply_remove_from_index` builds
+    `SpellIndex(initial_id=spell_id)` and repoints the spell, with no `_register_single_spell_index` call - the call
+    a post-conjure `bind` makes for its new index - while `_destroy_spell_index` does unregister an index it
+    destroys. The frame resolves a spell_id to its conduit by walking that registry (`find_conduit_id_for_spell`),
+    so a version in a minted index is unknown to every frame-level lookup. Probe: M1 (control, French parked in
+    English's index) - the frame finds French's index and conduit; M2 (French alone, parked, in the minted index) -
+    `find_index_for_spell` answers None, `get_spell_by_id` and `get_conduit_by_spell_id` raise "Spell version <id>
+    not found in any conduit."; M3 (French notched active inside the minted index) - the same, though
+    `meld(spell_id=French)` builds French, and a borrower's `add_spell_to_contract(spell_id=French)` raises the
+    same ValueError: an active spell its own frame cannot find or share. The rest of A3 holds: the moves keep the
+    spell's id-keyed state, the record gets both index snapshots, and borrowers get the member added or removed
+    (`Conduit.add_to_spell_index` / `remove_from_spell_index`).
+  EVIDENCE:
+  - src/melder/aether/spellbook/spellbook.py:4271-4356
+  - src/melder/aether/spellbook/spellbook.py:5883-5888
+  - src/melder/aether/spellbook/spellbook.py:4192-4237
+  - src/melder/aether/aetheric_frame/aetheric_frame.py:1288-1307
+  - src/melder/aether/aetheric_frame/aetheric_frame.py:943-970
+  - src/melder/aether/conduit/conduit.py:5979-6180
+  - context_compass/artifacts/correctness_defects_20261017/probes/probe_minted_index_registry.py:1-149
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_minted_index_registry_gil0.txt:1-26
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_minted_index_registry_gil1.txt:1-26
+  IMPACT: Structure wrong: the frame's record of which conduit holds which index misses an index a Book owns. It
+    stays wrong after melder_1's spell_id lookup fix, because the frame step comes before the Book's.
+  NEXT: File the story; tell melder_1 (its lookup fix meets this).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9

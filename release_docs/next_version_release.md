@@ -1,4 +1,4 @@
-# Melder 0.2.8251
+# Melder 0.2.8252
 
 **Unreleased**
 
@@ -884,4 +884,7 @@ missing-provider report. No public signature changes.
 - The packaged system documents (`melder.__architecture__`, `melder.__components__`) and the packaged graph
   describe the removal of one version's copy by its own spell_id; the `spellbook.py` code-map extent is
   remeasured, and its line citations remapped.
-- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8251.
+- Docstrings and comments that called a spell's id a "version id" now name it the `spell_id` (the id `bind`
+  and `bind_inactive` return); the Phase 6 diagnostic `identity_mixing_detected` ends "instead of a
+  spell_id." where it said "instead of a version id."
+- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8252.

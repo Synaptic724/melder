@@ -173,7 +173,7 @@ Message alert rules
 - NEW MESSAGE for muse_0 (from melder_0, 2026-10-01T11:10:44Z)
 - NEW MESSAGE for melder_2 (from melder_0, 2026-10-01T11:26:16Z)
 - NEW MESSAGE for muse_0 (from melder_0, 2026-10-01T11:26:16Z)
-- NEW MESSAGE for melder_0 (from melder_1, 2026-10-16T22:01:54Z)
+- NEW MESSAGE for melder_1 (from melder_0, 2026-10-17T21:00:59Z)
 <!-- END USER-DEFINED: alerts -->
 
 ## Active Items
@@ -183,8 +183,8 @@ Message alert rules
 | gauntlet_runtime_speed | in_progress | discovery | claude | melder_2 | none | Owner decides whether an open lever (thread-affine pools, one-lock anonymous link, single-check fast door) is worth a task. | Per-scope-cycle cost map vs dishka and dependency-injector, with ranked and prototyped candidates. | Next lever validated and its task opened, or the owner redirects. | tickets/tasks/2026-09-26_measure_gauntlet_scope_cycle_costs_task.md | 2026-09-26T23:01:16Z | REQUIRED |
 | defect_hunting_spellbook | in_progress | discovery | opencode | muse_0 | none | Slice spellbook component sections then read the surface behind each claim. | Contradiction list with evidence; meaty issues flagged apart from polish. | Sweep list triaged or owner redirects to conduit/meld or arch diffs. | tickets/tasks/2026-09-27_spellbook_sweep_task.md | 2026-09-27T15:56:49Z | REQUIRED |
 | defect_hunting_fixes_1 | in_progress | implementation | opencode | muse_0 | none | Re-slice each target fresh then repair findings 1-8 in order. | Corrected blocks with verified ranges; index check clean. | Batch repaired with gates passing or owner redirects scope. | tickets/tasks/2026-09-27_sweep_fixes_batch_1_task.md | 2026-09-27T16:07:16Z | REQUIRED |
-| meld_contract_scan | in_progress | implementation | claude | melder_1 | none | Owner's choice on the spell_id lookup (A/B/C), then his direction on transfers vs contracts and the notification route; then closure, rebuild last, NOTICE M1-24. | A satisfied SpellContract is not checked on every meld; a notch marks for revalidation every spell that depends on the notched one - its Book's dependents and the contract consumers of an impacted provider. | The owner-approved change lands with tests, docs, notch and rebuild, or the owner redirects. | tickets/tasks/2026-10-16_recheck_contract_consumers_when_provider_changes_task.md | 2026-10-17T18:04:24Z | REQUIRED |
-| spell_id_wording | blocked | implementation | claude | melder_0 | melder_1 holds the 25 files of the held scope (its rule-2 src and tests, the system docs, graph, release note and __version__.py) until its closure and rebuild (M1-22) | On melder_1's release NOTICE, recheck the 127 held decisions against the files, then apply them. | Every 'version id' that relates to a spell index names spell_id or the spell index id, by hand; the rest listed with reasons. | The wording lands with its notch, release note and rebuild, or the owner redirects. | tickets/tasks/2026-10-16_spell_id_wording_near_spell_index_task.md | 2026-10-16T20:06:44Z | REQUIRED |
+| meld_contract_scan | in_progress | implementation | claude | melder_1 | none | Fix #1 (owner's go-ahead): apply find_spell_by_spell_id, the exact spell_id lookup, on the scratch work tree; red tests green with the GIL off and on, then the suites. | `Spellbook.find_spell_by_spell_id` returns the spell that owns a spell_id (active, else parked, else None) and `Conduit.get_spell_by_id` / `get_spell_permissions` follow it; rule 2 and the removal fix (0.2.8250-0.2.8251) are landed. | The owner-approved change lands with tests, docs, notch and rebuild, or the owner redirects. | tickets/tasks/2026-10-16_recheck_contract_consumers_when_provider_changes_task.md | 2026-10-17T20:38:54Z | REQUIRED |
+| correctness_defects | in_progress | discovery | claude | melder_0 | none | Sweep A6: read ReleaseManagedSpell, the managed pool and the Creations pool paths whole, then probe a managed version across notch, disposal and release. | Defects where Melder's structure is wrong or stuck, a story each with a reproducer; the rest recorded as checked. | Every planned area swept and its defects filed as stories, or the owner redirects. | tickets/epics/2026-10-17_correctness_defects_epic.md | 2026-10-17T21:01:21Z | REQUIRED |
 <!-- END USER-DEFINED: active_items -->
 
 ## Active Attention Details
@@ -193,17 +193,16 @@ Message alert rules
   SWITCH_TRIGGER: The owner-approved change lands with tests, docs, notch and rebuild, or the owner redirects.
   RESUME_HIERARCHY:
     - tickets/tasks/2026-10-16_recheck_contract_consumers_when_provider_changes_task.md
-- WORK_ITEM: spell_id_wording
-  SWITCH_TRIGGER: The wording lands with its notch, release note and rebuild, or the owner redirects.
+- WORK_ITEM: correctness_defects
+  SWITCH_TRIGGER: Every planned area swept and its defects filed as stories, or the owner redirects.
   RESUME_HIERARCHY:
-    - tickets/tasks/2026-10-16_spell_id_wording_near_spell_index_task.md
+    - tickets/epics/2026-10-17_correctness_defects_epic.md
 <!-- END USER-DEFINED: active_attention_details -->
 
 ## Recently Closed Anchors
 | work_item | status | agent_name | ticket | note | closed_at |
 | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: closed_anchors -->
-| managed_bind_options | done | melder_0 | tickets/stories/completed/2026-10-15_managed_bind_options_story.md | Landed 0.2.8242 (S2 of EPIC-2026-10-14-managed_spell_quantity: four bind options, Spell fields, id part, record 4.2.0 and replay). Next: S3 pool. | 2026-10-15T12:32:37Z |
 | managed_quantity_pool | done | melder_0 | tickets/stories/completed/2026-10-15_managed_quantity_pool_story.md | Landed 0.2.8243 (S3 of EPIC-2026-10-14-managed_spell_quantity: the pool, the exhaustion error, the Creations pool map, the probes, purge 0). Next: S4 registry. | 2026-10-15T13:54:48Z |
 | release_managed_spell | done | melder_0 | tickets/stories/completed/2026-10-15_release_managed_spell_story.md | Landed 0.2.8244 (S4 of EPIC-2026-10-14-managed_spell_quantity: ReleaseManagedSpell, the lease, the Creations register/unregister calls, four root exports). Next: S5 dispense codegen. | 2026-10-15T15:39:41Z |
 | managed_dispense_codegen | done | melder_0 | tickets/stories/completed/2026-10-15_managed_dispense_codegen_story.md | Landed 0.2.8245 (S5 of EPIC-2026-10-14-managed_spell_quantity: leases through emitted plans and doors, Conduit.managed_spell_meld). Next: S6 ownership transfer. | 2026-10-15T18:15:07Z |
@@ -215,6 +214,7 @@ Message alert rules
 | managed_spell_quantity | done | melder_0 | tickets/epics/completed/2026-10-14_managed_spell_quantity_epic.md | Epic accepted by the owner (S1-S8, 0.2.8241-0.2.8248). Next: TASK-2026-10-16-public_notch_target_for_staged_versions. | 2026-10-16T12:17:31Z |
 | public_notch_target | done | melder_0 | tickets/tasks/completed/2026-10-16_public_notch_target_for_staged_versions_task.md | Landed 0.2.8249 (`notch_spell` by spell_id with its target checked; on the owner's extension `add_to_spell_index` / `remove_from_spell_index` by spell_id too). Rebuilt last, both checks OK. Next: none; conduit.py released to melder_1. | 2026-10-16T16:06:21Z |
 | stamp_test_aether | done | melder_0 | tickets/tasks/completed/2026-10-16_stamp_test_boots_its_own_aether_task.md | Tests only, no notch: the managed stamp test installs a fresh Aether per test and passes after the frame tests (GIL off and on). Next: its tests_components entry rides the wording lane. | 2026-10-16T20:23:39Z |
+| spell_id_wording | done | melder_0 | tickets/tasks/completed/2026-10-16_spell_id_wording_near_spell_index_task.md | Landed 0.2.8252 ("version id" named as the spell_id in 214 lines of 113 files). Turned in on the owner's word. Next: TASK-2026-10-17-spell_id_wording_in_held_files (backlog) after melder_1's release. | 2026-10-17T20:49:39Z |
 <!-- END USER-DEFINED: closed_anchors -->
 
 ## Notes

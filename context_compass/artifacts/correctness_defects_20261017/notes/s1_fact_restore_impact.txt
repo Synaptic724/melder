@@ -1,0 +1,17 @@
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: The defect hits restores too. The restore engine replays every staged member through
+    `Conduit.bind_inactive` onto its live anchor, so a recorded world with a staged version under its active
+    sibling's signature comes back "complete" with the active version's frame claim released (probe R1, sweep A5 of
+    the epic; identical with the GIL off and on).
+  EVIDENCE:
+  - src/melder/crystallizer/crystal_loader_system/restore_engine.py:2201-2269
+  - context_compass/artifacts/correctness_defects_20261017/probes/probe_restore_staged_structure.py:1-160
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_restore_staged_structure_gil0.txt:1-4
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_restore_staged_structure_gil1.txt:1-4
+  IMPACT: The acceptance criteria hold for a restored world too; the fix's tests should include one restore.
+  NEXT: The owner schedules the story.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8

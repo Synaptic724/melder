@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_architecture.md'
-LINE_COUNT = 4696
-CONTENT_SHA256 = 'b6a2ae955284827f1d3aeca9ff5bec4fc26d7b2fe27d8794a5e0f6fe1c34387e'
+LINE_COUNT = 4891
+CONTENT_SHA256 = '8fa820760e38c4fb6451bac5047920ee3877d4b829f5f2ab02385709256fdd2f'
 
 TEXT = """# Src Architecture (C4)
 
@@ -511,7 +511,7 @@ External interfaces are Python APIs:
   CORRECTED 2026-08-02: this document previously said the Conduit "delegates to
   the owning Spellbook, WHICH ADMITS the change-control transaction". It does
   not. That wording was inherited from the Conduit docstrings, which say the
-  same thing and are also wrong - see `src/melder/aether/spellbook/spellbook.py:3811-3813`, which states the
+  same thing and are also wrong - see `src/melder/aether/spellbook/spellbook.py:3891-3893`, which states the
   opposite correctly. The code settles it, and since 0.2.8249 all three Conduit docstrings say so.
   All three name the spell they act on by `spell_id=` - the spell_id `bind` or `bind_inactive` returned - or by
   `spell=`, exactly one, and resolve a spell_id inside the call to the exact spell the conduit's Spellbook owns,
@@ -522,13 +522,13 @@ External interfaces are Python APIs:
   Book's spell or target index, a non-member or only member on removal). `get_spell_by_id` and `find_spell_by_id`
   still answer a parked spell_id with the index's active member, so a parked spell is named by its spell_id.
   EVIDENCE:
-  - src/melder/aether/conduit/conduit.py:5622, 5731 (`notch_spell`; starts the transaction)
-  - src/melder/aether/conduit/conduit.py:5753-5969 (`_resolve_notch_target`, `_owned_notch_target`,
+  - src/melder/aether/conduit/conduit.py:5622, 5735 (`notch_spell`; starts the transaction)
+  - src/melder/aether/conduit/conduit.py:5761-5977 (`_resolve_notch_target`, `_owned_notch_target`,
     `_check_spell_argument`, `_owned_spell_by_id`, `_resolve_spell_to_move`)
-  - src/melder/aether/conduit/conduit.py:5971, 6061 (`add_to_spell_index`; starts it)
-  - src/melder/aether/conduit/conduit.py:6084, 6159 (`remove_from_spell_index`; starts it)
-  - src/melder/aether/spellbook/spellbook.py:3969 (`_add_to_spell_index` entry)
-  - src/melder/aether/spellbook/spellbook.py:4002 (`_apply_add_to_index` seam)
+  - src/melder/aether/conduit/conduit.py:5979, 6069 (`add_to_spell_index`; starts it)
+  - src/melder/aether/conduit/conduit.py:6092, 6167 (`remove_from_spell_index`; starts it)
+  - src/melder/aether/spellbook/spellbook.py:4063 (`_add_to_spell_index` entry)
+  - src/melder/aether/spellbook/spellbook.py:4096 (`_apply_add_to_index` seam)
 - `Spellbook.conjure(...)` for building a root Conduit.
 - `Conduit.meld(...)` for resolving instances.
 - `Conduit.managed_spell_meld(spell=None, *, spell_id=None, spellframe=None, binding_name=None, override=None)`
@@ -610,17 +610,23 @@ the member-store work is IMPLEMENTED behind the `_apply_notch`,
 `_apply_add_to_index`, and `_apply_remove_from_index` seams, which execute
 inside the held transaction window. Versions coexist by design (owner ruling 2026-10-15): a notch
 moves which version is active, the borrowers follow it, and older versions stay alive. After the
-window the conduit has every linked borrower park its copy of the outgoing version and moves
-index-link borrowers to the new one, which they build at their next meld. MutationResearch records
+window the conduit has every linked borrower park its copy of the outgoing version, makes a parked copy of
+the incoming version active again (a version grant, 0.2.8250) and moves index-link borrowers to the new
+one, which they build at their next meld: each change of a borrower's active copy marks that copy's
+SpellContract consumers, and the notch marks everything downstream of the notched lineage, for
+revalidation at their next meld (0.2.8250). MutationResearch records
 the versions, compositions pin specific ones, and the creation stores key objects by version id,
 so a `unique` can have one live object per version while agents iterate on one object and converge
 on the version they want (corrected 2026-10-15: this paragraph called the borrower update a missing
 fan-out). A notch names its target by spell_id or by Spell and checks that it is the Book's version of that
 index before anything moves; the two index moves take a spell_id the same way (0.2.8249).
-EVIDENCE: src/melder/aether/spellbook/spellbook.py:3826-4262 (the three seams, remeasured 2026-10-16);
+EVIDENCE: src/melder/aether/spellbook/spellbook.py:3906-4356 (the three seams, remeasured 2026-10-16 at 0.2.8251);
 `src/melder/aether/conduit/conduit.py:Conduit.notch_spell`, `Conduit._owned_notch_target` (the target check),
-`Conduit._resolve_spell_to_move` (the index moves' spell_id), `Conduit._deactivate_borrowed_spell` and
-`src/melder/aether/conduit/conduit_ward/conduit_ward.py:ConduitWard._emit_index_notch` (the borrowers).
+`Conduit._resolve_spell_to_move` (the index moves' spell_id), `Conduit._deactivate_borrowed_spell`,
+`Conduit._activate_borrowed_spell` and
+`src/melder/aether/conduit/conduit_ward/conduit_ward.py:ConduitWard._emit_index_notch` (the borrowers); the marks:
+`src/melder/aether/spellbook/spellbook.py:Spellbook._mark_contract_dependents_dirty` and
+`src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py:SpellSystemStates.mark_dependents_for_revalidation`.
 
 ## Entrypoints and Runtime Guardrails
 - `melder/__init__.py` warns on Python < 3.14 and on GIL-enabled builds
@@ -877,6 +883,26 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:3826-4262 (the three seams, r
    resolvable=False, which every meld door refuses before this gate (0.2.8247). Such a definition never receives
    a resolution verdict, so until 0.2.8247 one of them kept the flag up for the Book's life and sent every meld
    of the Book through steps 1-3.
+8. A satisfied SpellContract is not checked on every meld (0.2.8250, rule 2). A change of the provider a contract
+   consumer resolves marks the consumer `gated` + `contract_unvalidated` - the borrower Book's contracted-map
+   mutators (`Spellbook._mark_contract_dependents_dirty`) and a notch's downstream walk do - so step 2 is its
+   recheck: Phase 4's presence check finds the provider, the lineage becomes `valid` and step 2 gates the conduit
+   verdict (`structure_changed`), so step 3 rebuilds against the provider now active; a missing provider leaves the
+   lineage `gated` and step 2 raises SpellbookValidationError naming the contract and its remedy. Until 0.2.8250
+   every gated meld of a consumer read its signature, looked each contract up in the Book's contracted maps
+   (MeldExecutionError on a miss) and forced step 3 (`Meld._check_contracts_and_force_revalidation`, retired):
+   1668 us a warm meld of a borrower's consumer on 3.14t with the GIL off, 2.6 us now.
+9. The catch-up (0.2.8250): before step 2 when the spell will compile at this meld (`Meld._may_compile`: its
+   lineage unregistered, `unknown` or `gated`, or its verdict for the resolution conduit `unknown` or `gated`;
+   never for a `resolution_required` spell), and first in step 5's deferred lane,
+   `Meld._refresh_stale_dependencies` walks the dependencies its plan will expand - every socket target of its
+   recorded topology and, for a SpellContract socket, the provider the Book's active contracted maps hold, each at
+   the version its lineage selects now - and refreshes each stale one (`gated` or `unknown`) under that
+   dependency's rebuild window and lock: phases 1-4 with its owner Book; broken -> `invalid` and
+   SpellbookValidationError naming it; not `valid` -> the same error; `valid` -> its own plan is reset
+   (CreationContext cleaned, Phase 5+ artifacts cleared, `resolution_required`), so its own next meld runs its
+   full target pass. A dependent two hops from a notch thus compiles over its dependency's current structure
+   instead of a version id the notch parked.
 
 ### Sequence: Create Lesser Conduit
 1. Parent Conduit fires pre-create hook.
@@ -969,7 +995,11 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:3826-4262 (the three seams, r
 5. The seams execute the member-store work inside that held window:
    - notch parks the outgoing active member, promotes the incoming parked
      member, repoints the index pointer and the framewide binding signature,
-     and re-registers the index gated + dirty for lazy meld-time recompile;
+     re-registers the index gated + dirty for lazy meld-time recompile (with
+     the version's binding key), then marks everything downstream of the
+     lineage for revalidation - its dependents by registry edge in any Book
+     and the SpellContract consumers of its binding key, transitively
+     (`SpellSystemStates.mark_dependents_for_revalidation`, 0.2.8250);
    - add/remove are membership-only moves that leave the spell owned and
      inactive with its id-keyed state untouched; add destroys an emptied source
      index, remove mints a fresh inactive index instead of destroying anything;
@@ -978,20 +1008,25 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:3826-4262 (the three seams, r
      own, remove a spell outside the source index or its only member.
 6. After the window the conduit updates its borrowers, by design (corrected 2026-10-15; this step
    called it a missing fan-out): `Conduit._deactivate_borrowed_spell` has every linked peer park its
-   contracted copy of the outgoing version, and `ConduitWard._emit_index_notch` moves each index-link
-   contract's subscription to the new version, parking the old copy and activating the new one on
-   the receiver. Borrowers build the new version at their next meld; objects built from older
-   versions stay alive, so agents iterating on one object keep their work while it converges.
+   contracted copy of the outgoing version, `Conduit._activate_borrowed_spell` has every linked peer make
+   a parked copy of the incoming version active again - a version grant parked by an earlier notch away
+   comes back (0.2.8250) - and `ConduitWard._emit_index_notch` moves each index-link contract's
+   subscription to the new version, parking the old copy and activating the new one on the receiver.
+   Every change of a borrower's active copy marks that copy's SpellContract consumers (0.2.8250), so
+   borrowers build the new version at their next meld; objects built from older versions stay alive, so
+   agents iterating on one object keep their work while it converges.
    EVIDENCE:
-   - src/melder/aether/spellbook/spellbook.py:3826-3967
-   - src/melder/aether/spellbook/spellbook.py:4002-4096
-   - src/melder/aether/spellbook/spellbook.py:4177-4262
-   - src/melder/aether/conduit/conduit.py:5622-5751
-   - src/melder/aether/conduit/conduit.py:5753-5969
-   - src/melder/aether/conduit/conduit.py:5971-6172
-   - src/melder/aether/conduit/conduit.py:6228-6257
+   - src/melder/aether/spellbook/spellbook.py:3906-4061
+   - src/melder/aether/spellbook/spellbook.py:4096-4190
+   - src/melder/aether/spellbook/spellbook.py:4271-4356
+   - src/melder/aether/conduit/conduit.py:5622-5759
+   - src/melder/aether/conduit/conduit.py:5761-5977
+   - src/melder/aether/conduit/conduit.py:5979-6180
+   - src/melder/aether/conduit/conduit.py:6236-6265
+   - src/melder/aether/conduit/conduit.py:6267-6310
    - src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/notch_transaction_strategy.py:239-269
-   - src/melder/aether/conduit/conduit_ward/conduit_ward.py:2316-2380
+   - src/melder/aether/conduit/conduit_ward/conduit_ward.py:2322-2387
+   - src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py:921-1036
 
 ### Sequence: Change-Control Revalidation
 1. `ChangeControlManager.revalidate_dirty_roots(conduit_id, ...)`:
@@ -1085,6 +1120,66 @@ each entry in `src_components.md`; this list is the set that crosses components.
 - Validation strategies registered in `SpellValidationSystem`.
 
 ## Operational Invariants
+- One version, one copy (2026-10-16, 0.2.8251; the owner's rule: "you remove that spell if its not active, you look
+  in inactive"): a borrower Book holds each borrowed copy, by spell_id, either among its active contracted copies or
+  among its parked ones, and `Spellbook._remove_contracted_spell` removes exactly the copy of the spell_id it is
+  given - the active copy only when that copy's own spell_id is it, otherwise the parked copy - and raises
+  RuntimeError "Spell version <id> not found for conduit ID <peer>." with nothing changed when it holds neither. It
+  never reads the index's member set, so every caller gets the copy it names: an index unlink, destroy or member
+  removal (`ConduitWard._uncontract_member_spell`, once per member, in the member set's order), a root's dependency
+  fallout (`_remove_root_from_contracts`) and a version uncontract (`_remove_spell_from_contract`). Rule 2's mark
+  stays on an active removal; the set of borrowed spell_ids keeps its per-index handling (an active removal drops
+  every member id of a live index, a parked one its own id). No lock changes: the walk and the pops stay under the
+  Book lock, the mark and the RiskManager call after it.
+  EVIDENCE: `src/melder/aether/spellbook/spellbook.py:Spellbook._remove_contracted_spell` and
+  `src/melder/aether/conduit/conduit_ward/conduit_ward.py:ConduitWard._uncontract_member_spell`,
+  `ConduitWard._remove_index_from_contract`, `ConduitWard._remove_root_from_contracts` and
+  `ConduitWard._remove_spell_from_contract`.
+- Contract consumers and dependents follow a provider change (2026-10-16, 0.2.8250; rule 2 of the owner's
+  2026-10-15 direction): a satisfied SpellContract is not checked on every meld, and a change of what a spell
+  resolves marks it for revalidation instead. Every change of a conjured Book's ACTIVE contracted copy - added,
+  parked, reactivated, removed, cleared, by `_add_contracted_spell`, `_deactivate_contracted_spell`,
+  `_reactivate_contracted_spell`, `_remove_contracted_spell` (its active branch) and
+  `_clear_contracted_spells_for_conduit` - marks the Book's consumers of the copy's key `gated` +
+  `contract_unvalidated` through `Spellbook._mark_contract_dependents_dirty`, after the map change is published and
+  the Book lock released; a parked copy's change, and any change before conjure, marks nothing. Every path that
+  changes an active copy ends in those five: a grant and its dependency copies, an index link and its members, a
+  lender's notch on its linked peers and on its index-link receivers, a member's removal, an index destroy, an
+  uncontract, a remove-all, a root's dependency fallout and an ownership transfer; a sever marks both sides
+  through `ConduitWard._invalidate_contract_consumers`. A version grant's copy is active exactly while its version
+  is the lineage's active member: a notch away parks it on every linked peer, and a notch to it - back, or to a
+  version granted while parked - makes it active again (`Conduit._activate_borrowed_spell`, after the deactivate
+  fan-out and before the index emission; D3). A notch also marks everything downstream of the notched lineage
+  (`SpellSystemStates.mark_dependents_for_revalidation`, D2): a lineage reached by a registry edge (frame-wide, so
+  through borrowed spells too) goes `gated` + `impacted_by_dependency`, transitively dirty; a consumer, in any Book,
+  of the binding key of a lineage reached gets the contract mark - `register_index(binding_key=...)` records one
+  key per lineage, `Spell._key`, the normalization `SpellContract.canonical_key` uses; the walk goes on from each,
+  visits each lineage once and marks no seed, and every contract mark walks on the same way. Mark only: nothing
+  is built, disposed or extracted, and objects already built keep what they were built with. A marked lineage's
+  next meld enters the gate (its mark raises the Book flag): the catch-up first refreshes every stale lineage the
+  plan will expand (phases 1-4 with its owner Book under its window and lock, then its own plan reset), then the
+  structural branch reruns the spell - Phase 4's presence check is the contract recheck - and a `valid` result
+  gates the verdict, so phases 5-11 rebuild once; the CreationContext is per spell, so one rebuild serves every
+  conduit. A warm meld whose lineage and verdict are `valid` reads no signature and walks nothing: on 3.14t a
+  borrower's contract consumer went from 1668 to 2.6 us a warm meld with the GIL off and from 1705 to 2.7 us with
+  it on; a provider change costs one more structural rerun (0.8-1.1 ms) and a notch's walk 0.2-0.5 ms more at 200
+  dependents. Locks: every mark runs with the Book lock free (registry -> state, then RiskManager under the
+  registry lock); callers may hold a ward lock (the index emissions), a contract lock
+  (`_remove_root_from_contracts`) or the notch window, and nothing under the registry, state or RiskManager lock
+  takes a ward, contract, conduit or Book lock, so no cycle closes; the catch-up holds no lock while it walks and
+  one dependency's window and lock at a time, before the melded spell's own. Not covered, pre-existing: a lent
+  consumer's Book-local provider loss, `Conduit.validate_resolution`'s conduit-wide pass (it runs no catch-up),
+  and melds already in flight when a notch fans out (see Failure Modes and Error Paths).
+  EVIDENCE: `src/melder/aether/spellbook/spellbook.py:Spellbook._mark_contract_dependents_dirty`,
+  `Spellbook._deactivate_contracted_spell`, `Spellbook._reactivate_contracted_spell`,
+  `Spellbook._add_contracted_spell`, `Spellbook._remove_contracted_spell`,
+  `Spellbook._clear_contracted_spells_for_conduit`, `Spellbook._apply_notch`,
+  `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py:SpellSystemStates.mark_dependents_for_revalidation`,
+  `SpellSystemStates._mark_dependents_locked`, `SpellSystemStates.mark_contract_dependents_dirty`,
+  `SpellSystemStates.register_index`, `src/melder/aether/conduit/meld/meld.py:Meld._ensure_lineage_resolvable`,
+  `Meld._may_compile`, `Meld._refresh_stale_dependencies`, `Meld._iter_planned_dependencies`,
+  `Meld._refresh_dependency_structure`, `Meld._ensure_runtime_resolution_ready` and
+  `src/melder/aether/conduit/conduit.py:Conduit._activate_borrowed_spell`.
 - The notch names its target and checks it (2026-10-16, 0.2.8249): `Conduit.notch_spell(*, spell_index, spell=None,
   spell_id=None, change_reason=...)` takes exactly one of `spell_id` and `spell`. `_resolve_notch_target` refuses
   both or neither (ValueError) and a non-str spell_id or a str given as `spell` (TypeError); `_owned_notch_target`
@@ -1993,10 +2088,10 @@ each entry in `src_components.md`; this list is the set that crosses components.
     gone, because the `dynamic` argument reaching it is now the EFFECTIVE mode
     resolved from the posture, which makes a mismatch structurally impossible.
   EVIDENCE:
-  - src/melder/aether/spellbook/spellbook.py:6793-6836
-    (`Spellbook._settle_or_inherit_conjure_mode`; in-place settle :6823-6835,
-    effective-mode return :6836; remeasured 2026-10-16 at 0.2.8248)
-  - src/melder/aether/spellbook/spellbook.py:7049
+  - src/melder/aether/spellbook/spellbook.py:6941-6984
+    (`Spellbook._settle_or_inherit_conjure_mode`; in-place settle :6971-6983,
+    effective-mode return :6984; remeasured 2026-10-16 at 0.2.8251)
+  - src/melder/aether/spellbook/spellbook.py:7197
     (`conjure` resolves the effective mode as it enters the transaction window,
     passing `dynamic=self._settle_or_inherit_conjure_mode(dynamic)`)
   - src/melder/aether/aetheric_frame/aetheric_frame.py:726-787
@@ -2045,6 +2140,61 @@ each entry in `src_components.md`; this list is the set that crosses components.
   not the same thing as a Rift-level event orchestrator.
 
 ## Failure Modes and Error Paths
+- Fixed in 0.2.8251: a borrower that held a parked copy of one version of an index beside the active copy of
+  another - an index link after the owner notched it, or two version grants across a notch - lost the wrong copy
+  when the parked version was removed: `_remove_contracted_spell` matched an active copy by index membership, so it
+  removed the index's active copy under the parked version's spell_id. `remove_index_from_contract` uncontracts the
+  members in the member set's order, which follows the hash seed, so in about half of all processes (for one
+  reproducer, the seeds 3, 4, 6, 8 and 9 of 0-9) an unlink after a notch raised RuntimeError "Spell version <id>
+  not found for conduit ID <owner>." for the active member and left the parked copy behind for good (a retry
+  returned normally and kept it); removing an old version's grant took the new version's active copy, so its
+  consumers lost their provider.
+  Each version's own copy goes now, in any order.
+  EVIDENCE: `src/melder/aether/spellbook/spellbook.py:Spellbook._remove_contracted_spell` and
+  `src/melder/aether/conduit/conduit_ward/conduit_ward.py:ConduitWard._remove_index_from_contract`.
+- Breaking (0.2.8250): a meld of a SpellContract consumer whose provider is gone - an index destroy or unlink, a
+  version grant parked by a notch away, an uncontract, a remove-all - raises SpellbookValidationError from the
+  gate's structural branch, the first meld's error, where the per-meld scan raised MeldExecutionError
+  "SpellContract could not be resolved. Missing contracted provider for key (frame_key=..., binding_key=...) on
+  param ..." (both are RuntimeError). The consumer's block names the contract and the remedy: "  - Spell
+  'Consumer' parameter 'service' has no provider for its SpellContract (frame_key='iservice', binding_key='svc'):
+  no active spell with that frame and binding name is contracted to this Spellbook. Contract one from a linked
+  conduit (add_index_to_contract, or add_spell_to_contract for one version) and meld again.
+  [SPELL_CONTRACT_MISSING_PROVIDER]" - the one Phase-4 warning that holds a lineage gated is shown as the spell's
+  reason (`SpellbookValidationError.GATING_WARNING_CODES`); before, such a consumer read "No validation error was
+  recorded for this spell; ...".
+  EVIDENCE: `src/melder/aether/conduit/meld/meld.py:Meld._ensure_lineage_resolvable`,
+  `src/melder/aether/spellbook/spell_compiler/validation/strategies/contract_provider_presence_strategy.py:ContractProviderPresenceStrategy.validate`
+  and `src/melder/utilities/custom_exceptions/spellbook_validation_error.py:SpellbookValidationError._compose`.
+- Breaking (0.2.8250): a spell that depends on a notched one - by annotation or through a SpellContract, directly
+  or through others, in its Book or another - builds the version now active at its next meld, or raises the first
+  meld's error: UnresolvedInputError naming the parameter when the new version no longer resolves it (a class
+  annotation the kind rule does not select it for), SpellbookValidationError naming a dependency whose refreshed
+  structure is broken or not valid. Before, one built before the notch went on building the old version, and one
+  never built raised RuntimeError "many_only manifest references unknown spell_id '<the old version id>'" on
+  every meld; a dependent two hops away that did compile recorded a visibility failure and stayed refused.
+  EVIDENCE: `src/melder/aether/spellbook/spellbook.py:Spellbook._apply_notch` and
+  `src/melder/aether/conduit/meld/meld.py:Meld._refresh_stale_dependencies`.
+- Fixed in 0.2.8250: a contract consumer whose borrowed provider changed without a notch of the owner's index kept
+  its plan - after `remove_index_from_contract` it stayed `valid` and built the released provider; after a link or
+  a grant its dependents kept a plan compiled while the provider was missing, built with the raw `SpellContract`
+  default (AttributeError "'SpellContract' object has no attribute '<method>'"); and a version grant parked by a
+  notch away stayed parked after the notch back, so its consumer had no provider until the version was granted
+  again.
+  EVIDENCE: `src/melder/aether/spellbook/spellbook.py:Spellbook._remove_contracted_spell`,
+  `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py:SpellSystemStates.mark_contract_dependents_dirty`
+  and `src/melder/aether/conduit/conduit.py:Conduit._activate_borrowed_spell`.
+- Known, not fixed (pre-existing; filed as TASK-2026-10-16-order_inflight_borrower_melds_against_notch_fanout): a
+  meld of a borrower's contract consumer on another thread while its lender notches the provider, on a
+  free-threaded build, can return the consumer built with its raw `SpellContract` default (a target pass compiled
+  while the copy was parked; calling it raises AttributeError) or raise RuntimeError "many_only manifest
+  references unknown spell_id" (the plan named the parked version), "Cannot build CreationContext before
+  spell_codegen_creation exists." or "Spell creation context was not published: ..." (a meld admitted after
+  another meld's pass failed). `notch_spell` fans out after its transaction ends, so a meld already past the gate
+  is not ordered against the park and the activation; the marks make the next meld correct, not one in flight.
+  Measured: 7 of 20 runs of four meld threads against 20 notches end a thread with one of these before and after
+  0.2.8250 (the scan's MeldExecutionError is no longer among them); 0 of 20 with the GIL on.
+  EVIDENCE: `src/melder/aether/conduit/conduit.py:Conduit.notch_spell`.
 - `Conduit.notch_spell` refuses its target before anything moves (0.2.8249): ValueError "notch_spell accepts either
   `spell` or `spell_id`, not both." and "notch_spell needs a spell: pass spell_id=<the spell_id bind or
   bind_inactive returned>, or spell=<its Spell object>."; TypeError "notch_spell `spell_id` must be a string; got
@@ -2732,16 +2882,20 @@ Spellbook and binding:
 
 - path: `src/melder/aether/spellbook/spellbook.py`
   start_line: 1
-  end_line: 7618
-  loc: 7618
-  verified_at: 2026-10-16T11:03:50Z
+  end_line: 7766
+  loc: 7766
+  verified_at: 2026-10-16T21:54:02Z
   note: Spellbook core and conjure pipeline; `find_spell_by_id` answers from the id maps (0.2.8229); bind publishes
     its spell maps under the Book lock (0.2.8230); `cleanup_spell` decides through `_dispose_spell` and contracted
     lookups answer by key (0.2.8231); overlapping disposals refuse and `inspect_spell` asks the frames with no lock
     held (0.2.8232); `cleanup_and_remove_spell` re-checks a Book torn down while it waits (0.2.8233); bind and
     bind_inactive take the four `managed_spell_*` options (0.2.8242); bind and `_apply_notch` pass the selected
     version's `resolvable` to `register_index` (0.2.8247); `bind_inactive`'s comment on versions parked before
-    conjure holds since conjure stamps them (0.2.8248).
+    conjure holds since conjure stamps them (0.2.8248); the five contracted-map mutators mark their key's
+    SpellContract consumers (`_mark_contract_dependents_dirty`), bind and `_apply_notch` record the binding key,
+    and `_apply_notch` marks everything downstream of the notched lineage (0.2.8250);
+    `_remove_contracted_spell` removes the copy of the spell_id it is given, matched by the copy's own
+    spell_id (0.2.8251).
 - path: `src/melder/aether/spellbook/spellbook_creation_system.py`
   start_line: 1
   end_line: 3545
@@ -2897,6 +3051,13 @@ SpellCompiler and validation:
   loc: 196
   verified_at: 2026-10-04T17:15:00Z
   note: Phase-4 refusal of a single typed parameter with several providers; names every candidate's address (0.2.8224).
+- path: `src/melder/aether/spellbook/spell_compiler/validation/strategies/contract_provider_presence_strategy.py`
+  start_line: 1
+  end_line: 264
+  loc: 264
+  verified_at: 2026-10-16T16:48:16Z
+  note: Phase-4 SpellContract presence check, the recheck a marked consumer's next meld runs; walks snapshots of
+    the contracted maps and names a lost provider's contract and remedy (0.2.8250).
 - path: `src/melder/aether/spellbook/spell_compiler/system/spell_system_validation_system.py`
   start_line: 1
   end_line: 268
@@ -3457,16 +3618,18 @@ Conduit runtime:
 
 - path: `src/melder/aether/conduit/conduit.py`
   start_line: 1
-  end_line: 7784
-  loc: 7784
-  verified_at: 2026-10-16T15:44:44Z
+  end_line: 7837
+  loc: 7837
+  verified_at: 2026-10-16T16:48:16Z
   note: conduit lifecycle and meld facade; `cleanup_spell` emits the index destroy the Book reports (0.2.8231);
     `find_contracted_spell` and `inspect_spell` take no conduit lock (0.2.8232); builds its SpellSpacePool and a
     root's ConduitPool elastic, baseline 20 / max 256 (0.2.8234); a root's teardown leaves its cluster first
     (0.2.8236); `transfer_spell_ownership` defaults to `move_creations=True` (0.2.8239) and documents the handover
     (0.2.8240); `managed_spell_meld` (0.2.8245) and the managed options on its bind facades (0.2.8242);
     `notch_spell` names its target by `spell_id=` or `spell=` and checks it before and inside its transaction,
-    and `add_to_spell_index` / `remove_from_spell_index` take `spell_id=` too (0.2.8249).
+    and `add_to_spell_index` / `remove_from_spell_index` take `spell_id=` too (0.2.8249); after a notch every
+    linked peer's parked copy of the incoming version is made active again (`_activate_borrowed_spell`,
+    0.2.8250).
 - path: `src/melder/aether/conduit/conduit_pool.py`
   start_line: 1
   end_line: 165
@@ -3481,11 +3644,12 @@ Conduit runtime:
   note: conduit state enum.
 - path: `src/melder/aether/conduit/conduit_ward/conduit_ward.py`
   start_line: 1
-  end_line: 3957
-  loc: 3957
-  verified_at: 2026-10-14T23:59:35Z
+  end_line: 3965
+  loc: 3965
+  verified_at: 2026-10-16T16:48:16Z
   note: contracts and lineage; owner-side emissions under the ward lock, contract reads under the contract
-    lock, the listing resolved through the Book (0.2.8231).
+    lock, the listing resolved through the Book (0.2.8231); the version grant's docstring says what a notch does
+    to its copy (0.2.8250).
 - path: `src/melder/aether/conduit/conduit_ward/policies/policies.py`
   start_line: 1
   end_line: 75
@@ -3532,10 +3696,11 @@ Resolution and creations:
   note: one leased managed object and its pool; releases once, `with` releases on exit (0.2.8244).
 - path: `src/melder/aether/conduit/meld/meld.py`
   start_line: 1
-  end_line: 2150
-  loc: 2150
-  verified_at: 2026-10-15T21:20:35Z
-  note: meld orchestration; the live probes' managed-pool answer (0.2.8243).
+  end_line: 2378
+  loc: 2378
+  verified_at: 2026-10-16T16:48:16Z
+  note: meld orchestration; the live probes' managed-pool answer (0.2.8243); the per-meld contract scan retired
+    and the catch-up of stale dependencies before a plan compiles (0.2.8250).
 - path: `src/melder/aether/conduit/meld/creation_context/creation_context.py`
   start_line: 1
   end_line: 310
@@ -3604,12 +3769,13 @@ Control plane:
   note: frame-local topology and transaction mirror.
 - path: `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py`
   start_line: 1
-  end_line: 1886
-  loc: 1886
-  verified_at: 2026-10-16T01:12:19Z
+  end_line: 2052
+  loc: 2052
+  verified_at: 2026-10-16T16:48:16Z
   note: lineage registry; retires a spell id's per-conduit verdicts on unregister and on register (0.2.8219);
     writes `SpellState.non_resolvable` from the registration's capability and publishes the flagged lineages
-    (`non_resolvable_index_ids`, 0.2.8247).
+    (`non_resolvable_index_ids`, 0.2.8247); records a binding key per lineage, marks everything downstream of a
+    notch (`mark_dependents_for_revalidation`) and walks on from every contract mark (0.2.8250).
 - path: `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_state.py`
   start_line: 1
   end_line: 806
@@ -3702,6 +3868,13 @@ Utilities:
   verified_at: 2026-10-15T21:20:35Z
   note: `ManagedSpellExhaustedError`, a MeldExecutionError raised before a refused managed meld builds
     anything (0.2.8243).
+- path: `src/melder/utilities/custom_exceptions/spellbook_validation_error.py`
+  start_line: 1
+  end_line: 493
+  loc: 493
+  verified_at: 2026-10-16T16:48:16Z
+  note: `SpellbookValidationError`; a gating Phase-4 warning (`GATING_WARNING_CODES`) is shown as a spell's
+    reason (0.2.8250).
 
 
 Non-path notes carried forward from the previous revision:
@@ -4177,6 +4350,7 @@ without rewriting the original record or existing live IDs.
 - `src/melder/utilities/general_base/cleanable.py`
 - `src/melder/utilities/custom_exceptions/spell_space_scope_error.py`
 - `src/melder/utilities/custom_exceptions/managed_spell_exhausted_error.py`
+- `src/melder/utilities/custom_exceptions/spellbook_validation_error.py`
 - `src/melder/aether/conduit/meld/meld.py`
 - `src/melder/aether/conduit/meld/conduit_meld.py`
 - `src/melder/aether/spellbook/spellbook_creation_system.py`
@@ -4202,6 +4376,27 @@ without rewriting the original record or existing live IDs.
 - `src/melder/utilities/ai_native_support_tools/protocol_crafter.py`
 
 ## Context / Handoff Summary
+
+2026-10-16 one version, one copy (0.2.8251; the owner's rule for removing a borrowed copy):
+`_remove_contracted_spell` matches an active copy by its own spell_id, never by index membership, so an unlink after
+a notch completes in any member order and a removal never takes another version's copy. A new operational
+invariant, a failure mode (fixed) and the code map carry it; the component map carries the per-component contract.
+Every numeric citation into spellbook.py after the method moved seven lines and was remapped; the two inner
+citations of the settle-then-inherit evidence (`:6823-6835`, `:6836`), stale since an earlier lane, now point at
+the settlement block and its return.
+
+2026-10-16 contract recheck on notch (0.2.8250; rule 2 of the owner's 2026-10-15 direction, his decisions D1-D5):
+a satisfied SpellContract is no longer checked on every meld. A change of what a spell resolves marks it instead -
+the borrower Book's five contracted-map mutators mark their key's consumers, a notch marks everything downstream
+of the notched lineage (registry edges and contract keys, transitively; D2) and every contract mark walks on -
+and before a plan compiles the meld refreshes each stale lineage the plan expands (D2); a lost provider is named
+with its remedy (D1-B); a notch back makes a parked version grant active again (D3). The boundary summary, the
+meld-time gate and SpellIndex mutation sequences, a new operational invariant, four failure modes (two Breaking,
+one known race), the code map (five files remeasured, two added) and the sources carry it; the component map
+carries the per-component contracts. Every numeric citation into the seven changed files was remapped line by
+line across the edit. Open: in-flight borrower melds racing a notch's fan-out
+(TASK-2026-10-16-order_inflight_borrower_melds_against_notch_fanout) and a lent consumer's Book-local provider
+loss (TASK-2026-10-16-investigate_lent_consumer_provider_loss).
 
 2026-10-16 public notch target (0.2.8249): `Conduit.notch_spell` takes `spell_id=` - the spell_id `bind` or
 `bind_inactive` returned - beside `spell=`, exactly one, and resolves it inside the call to the exact version the
@@ -4399,7 +4594,7 @@ emitted line.
 manifest holds 619 entries at 0.2.8215 (cited as 582) and is 641 lines; the conjure sequence's
 evidence now covers the whole verdict gate (242-263) and the two cache-classifying methods (616-721).
 The other suspect citations here read true when opened: the Spellbook comment at
-`src/melder/aether/spellbook/spellbook.py:3742` and `check_system_state` at 1253-1292. Citations
+`src/melder/aether/spellbook/spellbook.py:3811` and `check_system_state` at 1253-1292. Citations
 the audit heuristic could not tie to a symbol were not opened.
 
 2026-10-01 frame lookups and read accessors (0.2.8208, documented now): the boundary list, the operational
