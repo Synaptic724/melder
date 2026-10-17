@@ -9,7 +9,7 @@
 - Agent Role: UNKNOWN
 - Priority: p2
 - Created: 2026-10-17T20:36:54Z
-- Updated: 2026-10-17T20:36:54Z
+- Updated: 2026-10-17T21:47:06Z
 
 ## User Narrative
 As an agent who separated a version into its own index with `remove_from_spell_index` and checkpointed the world, I
@@ -105,6 +105,9 @@ this does not make independent review mandatory for every ticket.
   - artifacts/correctness_defects_20261017/probes/restore_targets.py
   - artifacts/correctness_defects_20261017/runs/probe_restore_staged_structure_gil0.txt
   - artifacts/correctness_defects_20261017/runs/probe_restore_staged_structure_gil1.txt
+  - artifacts/correctness_defects_20261017/probes/probe_graft_parked_members.py (case G2: the graft activates the separated version; FACT note)
+  - artifacts/correctness_defects_20261017/runs/probe_graft_parked_members_gil0.txt
+  - artifacts/correctness_defects_20261017/runs/probe_graft_parked_members_gil1.txt
 - DISPOSITION: retain_as_reference
 - CLEANUP_TRIGGER: the probe is re-run at the fix and kept as the defect's reproducer
 
@@ -146,6 +149,27 @@ this does not make independent review mandatory for every ticket.
   NEXT: The owner's answer on the open question, then patch docs for the staged lane.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-17T21:47:06Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: The graft side of this gap (sweep A12, probe G2). A graft of the index `remove_from_spell_index` minted does
+    not drop French - it binds French ACTIVE in the host, because the minted index records French as its selection
+    (STORY-2026-10-17-minted_index_selects_its_parked_version) and a fresh-index graft binds the selected member
+    active and parks only the others. So neither restore nor graft rebuilds a parked-only index as parked today:
+    restore drops it, graft activates it. Identical with the GIL off and on.
+  EVIDENCE:
+  - src/melder/crystallizer/crystal_loader_system/graft_runner.py:230-330
+  - src/melder/crystallizer/crystal_loader_system/graft_runner.py:375-489
+  - context_compass/artifacts/correctness_defects_20261017/probes/probe_graft_parked_members.py:1-152
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_graft_parked_members_gil0.txt:7-12
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_graft_parked_members_gil1.txt:7-12
+  IMPACT: The open question covers both lanes: a fix for "survives a restore" should give the graft runner the same
+    parked-only lane, and the selection fix decides what the graft's anchor rule meets.
+  NEXT: The owner's answer on the open question.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
 
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user

@@ -57,6 +57,8 @@ class EditEngine:
             path = self.root / rel
             raw = path.read_bytes()
             crlf = b"\r\n" in raw
+            if crlf and raw.count(b"\n") != raw.count(b"\r\n"):
+                raise SystemExit(f"FAIL mixed line endings: {rel}")
             text = raw.decode("utf-8")
             if crlf:
                 text = text.replace("\r\n", "\n")

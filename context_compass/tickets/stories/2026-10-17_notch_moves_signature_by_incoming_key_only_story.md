@@ -9,7 +9,7 @@
 - Agent Role: UNKNOWN
 - Priority: p2
 - Created: 2026-10-17T20:23:51Z
-- Updated: 2026-10-17T20:23:51Z
+- Updated: 2026-10-17T21:13:35Z
 
 ## User Narrative
 As an agent notching between versions, I want the frame's signature claims to follow the active version - the
@@ -112,6 +112,9 @@ this does not make independent review mandatory for every ticket.
   - artifacts/correctness_defects_20261017/probes/probe_signature_claims.py (cases C5, C7)
   - artifacts/correctness_defects_20261017/runs/probe_signature_claims_gil0.txt
   - artifacts/correctness_defects_20261017/runs/probe_signature_claims_gil1.txt
+  - artifacts/correctness_defects_20261017/probes/probe_book_teardown_parked.py (case T4: the claim outlives the Book; FACT note)
+  - artifacts/correctness_defects_20261017/runs/probe_book_teardown_parked_gil0.txt
+  - artifacts/correctness_defects_20261017/runs/probe_book_teardown_parked_gil1.txt
 - DISPOSITION: retain_as_reference
 - CLEANUP_TRIGGER: the probe is re-run at the fix and kept as the defect's reproducer
 
@@ -156,6 +159,28 @@ this does not make independent review mandatory for every ticket.
   NEXT: The owner's answer on one signature per index, then patch docs for the notch's step 4.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-17T21:12:09Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: The leaked claim outlives the Book (sweep A7, probe T4). After a notch from English ('greeter') to Spanish
+    ('spanish') the parked English still holds ('greeter', 'greeter') frame-wide; the park popped English's key from
+    the Book's `_lookup_spells` (`_deactivate_owned_spell`), and Book teardown releases only the keys left in that
+    map, so tearing the Book down through its root leaves the claim held by a spell of a dead Book: every later bind
+    of the signature in that frame is refused ("Binding signature already active in this frame ... held by
+    spell_id=<English>") until the frame itself ends. Identical with the GIL off and on.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spellbook.py:1500-1561
+  - src/melder/aether/spellbook/spellbook.py:405-556
+  - context_compass/artifacts/correctness_defects_20261017/probes/probe_book_teardown_parked.py:1-231
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_book_teardown_parked_gil0.txt:20-24
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_book_teardown_parked_gil1.txt:20-24
+  IMPACT: The stuck claim is not bounded by the Book's life; the regression tests should also tear the Book down and
+    bind the old signature again.
+  NEXT: The owner's answer on this story's open question.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
 
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user

@@ -9,7 +9,7 @@
 - Agent Role: UNKNOWN
 - Priority: p1
 - Created: 2026-10-17T20:23:51Z
-- Updated: 2026-10-17T20:35:54Z
+- Updated: 2026-10-17T21:47:06Z
 
 ## User Narrative
 As an agent iterating on a spell in a live world, I want staging a new version with `bind_inactive`, moving a parked
@@ -110,6 +110,12 @@ this does not make independent review mandatory for every ticket.
   - artifacts/correctness_defects_20261017/probes/probe_signature_claims.py (cases C1-C4, C6)
   - artifacts/correctness_defects_20261017/runs/probe_signature_claims_gil0.txt
   - artifacts/correctness_defects_20261017/runs/probe_signature_claims_gil1.txt
+  - artifacts/correctness_defects_20261017/probes/probe_restore_staged_structure.py (case R1: every restore of a staged world; FACT note)
+  - artifacts/correctness_defects_20261017/runs/probe_restore_staged_structure_gil0.txt
+  - artifacts/correctness_defects_20261017/runs/probe_restore_staged_structure_gil1.txt
+  - artifacts/correctness_defects_20261017/probes/probe_graft_parked_members.py (case G4: every graft of such an index; FACT note)
+  - artifacts/correctness_defects_20261017/runs/probe_graft_parked_members_gil0.txt
+  - artifacts/correctness_defects_20261017/runs/probe_graft_parked_members_gil1.txt
 - DISPOSITION: retain_as_reference
 - CLEANUP_TRIGGER: the probe is re-run at the fix and kept as the defect's reproducer
 
@@ -171,6 +177,24 @@ this does not make independent review mandatory for every ticket.
   - context_compass/artifacts/correctness_defects_20261017/runs/probe_restore_staged_structure_gil0.txt:1-4
   - context_compass/artifacts/correctness_defects_20261017/runs/probe_restore_staged_structure_gil1.txt:1-4
   IMPACT: The acceptance criteria hold for a restored world too; the fix's tests should include one restore.
+  NEXT: The owner schedules the story.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-17T21:47:06Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: The defect hits grafts too (sweep A12, probe G4). A graft parks every non-selected member through
+    `Conduit.bind_inactive` onto the index its anchor bind created, so grafting an index whose parked member shares
+    the active member's signature leaves the host frame with no claim for it: after the graft the host holds English
+    active, French parked, and the claim for ('greeter', 'english') is gone. Identical with the GIL off and on.
+  EVIDENCE:
+  - src/melder/crystallizer/crystal_loader_system/graft_runner.py:432-489
+  - context_compass/artifacts/correctness_defects_20261017/probes/probe_graft_parked_members.py:1-152
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_graft_parked_members_gil0.txt:20-25
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_graft_parked_members_gil1.txt:20-25
+  IMPACT: The fix's tests should include one graft beside the restore.
   NEXT: The owner schedules the story.
   REREAD: HELPFUL
   SCORE_0_TO_10: 8

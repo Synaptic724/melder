@@ -10,7 +10,7 @@
 - Agent Role: synaptic_python_developer
 - Priority: p1
 - Created: 2026-10-16T09:46:14Z
-- Updated: 2026-10-17T20:53:48Z
+- Updated: 2026-10-17T21:36:47Z
 
 ## Objective
 Rule 2 of the owner's 2026-10-15 direction, settled in principle on 2026-10-16: a spell's own state decides when the
@@ -120,7 +120,7 @@ this does not make independent review mandatory for every ticket.
   - artifacts/meld_contract_scan_20261015/
   - system_docs/patches/completed/contract_recheck_on_notch_2026_10_16/ (the seven patch docs, archived at promotion)
   - system_docs/patches/active/contracted_copy_removal_by_version_2026_10_16/ (the removal fix's three patch docs)
-  - system_docs/patches/active/find_spell_by_spell_id_2026_10_17/ (the exact spell_id lookup's six patch docs)
+  - system_docs/patches/active/find_spell_by_spell_id_2026_10_17/ (the exact spell_id lookup's seven patch docs)
 - DISPOSITION: retain_as_reference (the folder); promote_to_documentation (the patch docs)
 - CLEANUP_TRIGGER: at closure the patch docs are promoted into the system docs and archived under
   system_docs/patches/completed/; the folder stays as the lane's evidence
@@ -2183,6 +2183,108 @@ this does not make independent review mandatory for every ticket.
   NEXT: Update the patch docs, then the apply script with both renames.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-17T21:15:54Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: Mailbox M0-183 (melder_0, NOTICE, 2026-10-17T21:00:59Z, re M1-24), copied before consumption: melder_0
+    notched 0.2.8252 ("version id" named as the spell_id in the docstrings and comments of 113 files nobody held;
+    IdentityMixingStrategy's diagnostic), added one bullet before the rebuild line of the release note's "Packaging
+    and documentation" section and rebuilt (both checks OK). `src/melder/__version__.py` and
+    `release_docs/next_version_release.md` are this lane's to write again, and fix #1 notches above 0.2.8252. The
+    rewording of the files this lane holds waits in TASK-2026-10-17-spell_id_wording_in_held_files (backlog) for this
+    lane's release NOTICE.
+  EVIDENCE:
+  - src/melder/__version__.py:12-12
+  - context_compass/tickets/tasks/completed/2026-10-16_spell_id_wording_near_spell_index_task.md:1-484
+  - context_compass/tickets/tasks/backlog/2026-10-17_spell_id_wording_in_held_files_task.md
+  IMPACT: Fix #1's notch is read at its landing (0.2.8253 unless another lane notches first); its release-note
+    section is added after re-reading the note; the closing NOTICE releases the held files to melder_0's task.
+  NEXT: Delete M0-183 and clear its alert; then record the owner's "update it all" decision.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-17T21:24:30Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: The owner's direction (chat 2026-10-17: "dude update it all bro if its there and misunderstood then update
+    it"), with melder_1's reading sent back to him: the Rift room command is renamed too -
+    `CommandSystem.get_spell_by_id` and `StaticCommandSystem.get_spell_by_id` become `get_spell_by_spell_id`, with
+    the action name the command gate and memory record and the advertised command list - and wherever one of these
+    lookups swaps a spell_id for its index's spell, it returns exactly that spell. Origins 2-6 (19:49:27Z) still
+    wait for him. The internal `Spellbook._get_spell_by_id_via_aether` keeps its name (not asked).
+  EVIDENCE:
+  - src/melder/nexus/rift/command_system/command_system.py:404-435
+  - src/melder/nexus/rift/command_system/command_system.py:835-891
+  - src/melder/nexus/rift/command_system/static_command_system.py:511-547
+  IMPACT: Breaking for every caller of the room command's old name; the non-goal "the Rift room command keeps its
+    name" in the patch docs is replaced, and a component patch for the Rift command lookups is added before any
+    Rift edit.
+  NEXT: Record the Rift swaps found, then update the patch docs.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-17T21:24:30Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: The Rift room lookups, read whole on today's tree (src unchanged since 0.2.8251 but for melder_0's notch and
+    rebuild): (a) `CommandSystem.get_spell_by_source_id` takes the published record the source id names, then
+    resolves its index (`_get_spell_by_index_id_locked(record.spell_index_id)` ->
+    `owner_conduit.get_spell_by_index_id`) and returns the spell the index has active - for a projection that still
+    lists a version a notch has parked (projections refresh explicitly), the version now active instead of the one
+    named; (b) `StaticCommandSystem.get_spell_by_source_id` and (c) `StaticCommandSystem.get_spell_by_id` turn the
+    record or the spell_id into its index and return the live object of whichever published record of that index
+    melds first (`owner.meld_existing_spell(spell=record.spell_id)` over every record of the index), not the one
+    named; (d) `CommandSystem.get_spell_by_id` answers through the owner Book's `find_spell_by_id` and is exact once
+    the Book lookup is. Exact already: `CommandSystem.get_spell_permissions` (delegates to the Conduit),
+    `StaticCommandSystem.describe_spell_status_by_id` and `_by_source_id` (records with that spell_id). Outside
+    src: ten UX examples and `docs/expert/bind-hooks.md:49` call the old names, and two expert examples teach and
+    assert the old answer - expert 17 ("Every public spell_id->object lookup ... resolves any lineage spell_id to
+    ... the currently ACTIVE member"; `resolved_from_parked_id.spell_id == v1_id`) and expert 26
+    (`conduit.get_spell_by_id(staged).spell_id == v1`); `UX_and_AIX_experiences/pytest_examples` runs every example.
+    `04_expert/_concept_map.txt:794` is a dated retraction record (history; left as written).
+  EVIDENCE:
+  - src/melder/nexus/rift/command_system/command_system.py:292-364
+  - src/melder/nexus/rift/command_system/command_system.py:758-798
+  - src/melder/nexus/rift/command_system/command_system.py:835-891
+  - src/melder/nexus/rift/command_system/static_command_system.py:160-253
+  - src/melder/nexus/rift/command_system/static_command_system.py:255-291
+  - src/melder/nexus/rift/command_system/static_command_system.py:358-415
+  - src/melder/nexus/rift/command_system/static_command_system.py:511-547
+  - UX_and_AIX_experiences/04_expert/17_notch_swapping_a_live_object.py:1-171
+  - UX_and_AIX_experiences/04_expert/26_codegen_create_modify_iterate.py:170-240
+  IMPACT: (a)-(c) are made exact in this change (owner: "update it all"); (d) follows the Book. The two examples are
+    corrected to the exact answer with their renamed calls, the smallest edit that keeps them true and green; the
+    exact before/after goes to the owner in the report.
+  NEXT: Update the patch docs, then write edits_rift.py.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-17T21:36:47Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: Correction to (a) of the 21:24:30Z FACT: a capability room's projection is not a stale snapshot after a
+    notch. Probe on the 0.2.8251 tree (GIL off): with PricingV1 active and PricingV2 parked, the room's published
+    records list PricingV1 only; right after `notch_spell` to PricingV2, with no refresh, they list PricingV2 only
+    (the notch swaps the record in the live descriptor the projection reads); the room answers PricingV2 by its
+    spell_id, its source id and its index, and refuses PricingV1's spell_id and source id ("was not found in
+    frame"). Nexus publishes the version an index has active, so through the rooms the index-path answers of (a)-(c)
+    agree with the version named in a settled frame; the change still routes each lookup by spell_id or source id
+    to the version named (owner: "update it all"), and the parenthetical about stale projections is withdrawn from
+    the patch docs, the new docstrings and the tests.
+  EVIDENCE:
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/probes/probe_rift_projection_after_notch.py:1-63
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/probe_rift_projection_after_notch_base_gil0.txt:1-9
+  IMPACT: The Rift integration test checks the real publication - active answered three ways, parked refused - and
+    the unit tests with doubles pin the exactness (a record naming a version other than the index's active one).
+  NEXT: Re-create the work tree, apply the src edits with the Rift edits, run the test codemod and install the new
+    tests.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
 
 ## Context / Handoff Summary
 Current state (2026-10-17T20:39:13Z): this ticket has landed two source changes; fix #1 of the spell_id lookups is in progress.

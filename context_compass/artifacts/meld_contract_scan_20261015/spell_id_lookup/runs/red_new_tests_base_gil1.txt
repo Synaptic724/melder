@@ -1,0 +1,629 @@
+FFFFFFFFFFFFFFFFF...FFFF.FFFF.FFFFFF                                     [100%]
+=================================== FAILURES ===================================
+________________ test_active_spell_id_returns_its_active_spell _________________
+
+    def test_active_spell_id_returns_its_active_spell() -> None:
+        """The active version's spell_id answers that Spell."""
+        world = _Lineage()
+        try:
+>           assert world.book.find_spell_by_spell_id(world.id_a) is world.spell_a
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AttributeError: 'Spellbook' object has no attribute 'find_spell_by_spell_id'. Did you mean: 'find_spell_by_id'?
+
+tests/component/melder/spellbook/test_spellbook_component_find_spell_by_spell_id.py:161: AttributeError
+_____________ test_parked_spell_id_returns_the_parked_spell_itself _____________
+
+    def test_parked_spell_id_returns_the_parked_spell_itself() -> None:
+        """A parked version's spell_id answers that parked Spell, not the spell its index has active."""
+        world = _Lineage()
+        try:
+>           assert world.book.find_spell_by_spell_id(world.id_b) is world.spell_b
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AttributeError: 'Spellbook' object has no attribute 'find_spell_by_spell_id'. Did you mean: 'find_spell_by_id'?
+
+tests/component/melder/spellbook/test_spellbook_component_find_spell_by_spell_id.py:170: AttributeError
+____________ test_after_a_notch_each_spell_id_returns_its_own_spell ____________
+
+    def test_after_a_notch_each_spell_id_returns_its_own_spell() -> None:
+        """A notch moves which version the index has active; each spell_id still answers its own Spell."""
+        world = _Lineage()
+        try:
+            world.conduit.notch_spell(spell_index=world.index, spell=world.spell_b)
+            assert world.index.selected_spell_id == world.id_b
+>           assert world.book.find_spell_by_spell_id(world.id_b) is world.spell_b
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AttributeError: 'Spellbook' object has no attribute 'find_spell_by_spell_id'. Did you mean: 'find_spell_by_id'?
+
+tests/component/melder/spellbook/test_spellbook_component_find_spell_by_spell_id.py:182: AttributeError
+___________ test_parked_spell_moved_to_another_index_returns_itself ____________
+
+    def test_parked_spell_moved_to_another_index_returns_itself() -> None:
+        """An add-to-index move repoints the parked version's index; its spell_id still answers that Spell."""
+        world = _Lineage(second_index=True)
+        try:
+            spell_c = world.book._spells_by_id[world.id_c]
+            world.conduit.add_to_spell_index(spell=world.spell_b, target_index=spell_c.spell_index)
+>           assert world.book.find_spell_by_spell_id(world.id_b) is world.spell_b
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AttributeError: 'Spellbook' object has no attribute 'find_spell_by_spell_id'. Did you mean: 'find_spell_by_id'?
+
+tests/component/melder/spellbook/test_spellbook_component_find_spell_by_spell_id.py:194: AttributeError
+_________ test_parked_spell_split_off_to_a_fresh_index_returns_itself __________
+
+    def test_parked_spell_split_off_to_a_fresh_index_returns_itself() -> None:
+        """A version moved out to a fresh index has no active spell there, and its spell_id still answers it."""
+        world = _Lineage()
+        try:
+            world.conduit.remove_from_spell_index(spell=world.spell_b, source_index=world.index)
+>           assert world.book.find_spell_by_spell_id(world.id_b) is world.spell_b
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AttributeError: 'Spellbook' object has no attribute 'find_spell_by_spell_id'. Did you mean: 'find_spell_by_id'?
+
+tests/component/melder/spellbook/test_spellbook_component_find_spell_by_spell_id.py:207: AttributeError
+___________________ test_disposed_parked_spell_returns_none ____________________
+
+    def test_disposed_parked_spell_returns_none() -> None:
+        """Disposing a parked version drops its spell_id; the active version still answers."""
+        world = _Lineage()
+        try:
+            world.book.cleanup_spell(spell=world.spell_b)
+>           assert world.book.find_spell_by_spell_id(world.id_b) is None
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AttributeError: 'Spellbook' object has no attribute 'find_spell_by_spell_id'. Did you mean: 'find_spell_by_id'?
+
+tests/component/melder/spellbook/test_spellbook_component_find_spell_by_spell_id.py:219: AttributeError
+____________ test_transfer_moves_both_spell_ids_to_the_target_book _____________
+
+    def test_transfer_moves_both_spell_ids_to_the_target_book() -> None:
+        """A transfer moves the whole index: each spell_id answers its own Spell in the target Book, none in the source."""
+        configuration = _dynamic_configuration()
+        owner_book = Spellbook(configuration=configuration)
+        id_a = owner_book.bind(spell=_ServiceA, existence=Existence.unique, permissions="create", binding_name="a")
+        target_book = Spellbook(configuration=configuration)
+        owner = owner_book.conjure(dynamic=True, name="owner")
+        target = target_book.conjure(dynamic=True, name="target")
+        try:
+            index = owner_book._spells_by_id[id_a].spell_index
+            id_b = owner.bind_inactive(
+                spell=_ServiceB, spell_index=index, existence=Existence.unique,
+                permissions="create", binding_name="b",
+            )
+            owner.transfer_spell_ownership(spell=id_a, target_conduit=target)
+>           active = target_book.find_spell_by_spell_id(id_a)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AttributeError: 'Spellbook' object has no attribute 'find_spell_by_spell_id'. Did you mean: 'find_spell_by_id'?
+
+tests/component/melder/spellbook/test_spellbook_component_find_spell_by_spell_id.py:240: AttributeError
+________________ test_unknown_and_foreign_spell_ids_return_none ________________
+
+    def test_unknown_and_foreign_spell_ids_return_none() -> None:
+        """A spell_id no Book owns, and one owned by another Book, both miss."""
+        world = _Lineage()
+        foreign_book = Spellbook(aetheric_frame="foreign-frame")
+        try:
+            foreign_id = foreign_book.bind(spell=_ForeignService, existence=Existence.unique, permissions="create")
+>           assert world.book.find_spell_by_spell_id("no-such-spell-id") is None
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AttributeError: 'Spellbook' object has no attribute 'find_spell_by_spell_id'. Did you mean: 'find_spell_by_id'?
+
+tests/component/melder/spellbook/test_spellbook_component_find_spell_by_spell_id.py:257: AttributeError
+_____________ test_lookup_never_iterates_the_live_active_index_map _____________
+
+    def test_lookup_never_iterates_the_live_active_index_map() -> None:
+        """Every kind of spell_id is answered with single-key reads; a walk of the live map fails the test."""
+        world = _Lineage()
+        live_map = world.book._spells
+        world.book._spells = _NoIterationDict(live_map)
+        try:
+>           assert world.book.find_spell_by_spell_id(world.id_a) is world.spell_a
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AttributeError: 'Spellbook' object has no attribute 'find_spell_by_spell_id'. Did you mean: 'find_spell_by_id'?
+
+tests/component/melder/spellbook/test_spellbook_component_find_spell_by_spell_id.py:271: AttributeError
+__________ test_parked_spell_disposed_mid_lookup_never_makes_it_raise __________
+
+    def test_parked_spell_disposed_mid_lookup_never_makes_it_raise() -> None:
+        """
+        A parked version disposed after the lookup read it answers the Spell it read - a borrowed reference - and
+        the next lookup misses.
+    
+        The lookup thread pauses right after reading the parked Spell; the test thread disposes of it through the
+        public removal verb, which cleans the Spell; the lookup then resumes and returns what it read, without
+        raising. A Spell a lookup returns is borrowed, not leased, for active and parked versions alike.
+        """
+        world = _Lineage()
+        pausing = _PausingGetDict(world.book._inactive_spells, world.id_b)
+        world.book._inactive_spells = pausing
+        outcome: dict[str, Any] = {}
+    
+        def _lookup() -> None:
+            """Run the lookup and keep its result or its exception for the test thread."""
+            try:
+                outcome["result"] = world.book.find_spell_by_spell_id(world.id_b)
+            except BaseException as error:
+                outcome["error"] = error
+    
+        lookup_thread = threading.Thread(target=_lookup, name="find-spell-by-spell-id-lookup")
+        lookup_thread.start()
+        try:
+>           assert pausing.paused.wait(timeout=10), "the lookup never read the parked version"
+E           AssertionError: the lookup never read the parked version
+E           assert False
+E            +  where False = wait(timeout=10)
+E            +    where wait = <threading.Event at 0x2b9ba384a50: unset>.wait
+E            +      where <threading.Event at 0x2b9ba384a50: unset> = {'78b7d4a42e3bd402cab9493a6419fa2f96015401f83903add2f27c558dfc1730': Spell(name=_ServiceB, binding=b, frame=type, SHA256=78b7d4a42e3bd402cab9493a6419fa2f96015401f83903add2f27c558dfc1730)}.paused
+
+tests/component/melder/spellbook/test_spellbook_component_find_spell_by_spell_id.py:303: AssertionError
+_ test_get_spell_by_spell_id_with_a_parked_spell_id_returns_that_parked_spell __
+
+    def test_get_spell_by_spell_id_with_a_parked_spell_id_returns_that_parked_spell() -> None:
+        """French's spell_id gives the French Spell - on the lender that owns it and on the linked borrower."""
+        world = _World("lookup_parked")
+        for conduit in (world.lender, world.borrower):
+>           french = conduit.get_spell_by_spell_id(world.french_id)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AttributeError: 'Conduit' object has no attribute 'get_spell_by_spell_id'. Did you mean: 'get_spell_by_index_id'?
+
+tests/integration/melder/aether/conduit/test_spell_id_lookup_returns_that_spell_integration.py:122: AttributeError
+_________ test_after_a_notch_each_spell_id_still_returns_its_own_spell _________
+
+    def test_after_a_notch_each_spell_id_still_returns_its_own_spell() -> None:
+        """A notch moves which spell the index has active; it never changes what a spell_id names."""
+        world = _World("lookup_after_notch")
+        world.lender.notch_spell(spell_index=world.index, spell_id=world.french_id)
+        assert world.index.selected_spell_id == world.french_id
+>       english = world.lender.get_spell_by_spell_id(world.english_id)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'Conduit' object has no attribute 'get_spell_by_spell_id'. Did you mean: 'get_spell_by_index_id'?
+
+tests/integration/melder/aether/conduit/test_spell_id_lookup_returns_that_spell_integration.py:137: AttributeError
+_ test_get_spell_permissions_returns_the_permissions_that_spell_was_bound_with _
+
+    def test_get_spell_permissions_returns_the_permissions_that_spell_was_bound_with() -> None:
+        """French bound "read" beside English bound "create": each spell_id answers its own version's permissions."""
+        world = _World("lookup_permissions", french_permissions="read")
+>       assert world.lender.get_spell_permissions(world.french_id) == "read"
+E       AssertionError: assert 'create' == 'read'
+E         
+E         - read
+E         + create
+
+tests/integration/melder/aether/conduit/test_spell_id_lookup_returns_that_spell_integration.py:146: AssertionError
+______________ test_an_unknown_spell_id_still_raises_value_error _______________
+
+    def test_an_unknown_spell_id_still_raises_value_error() -> None:
+        """No conduit claims the id, so the `get_*` lookup raises."""
+        world = _World("lookup_unknown")
+        with pytest.raises(ValueError):
+>           world.lender.get_spell_by_spell_id("no-such-spell-id")
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AttributeError: 'Conduit' object has no attribute 'get_spell_by_spell_id'. Did you mean: 'get_spell_by_index_id'?
+
+tests/integration/melder/aether/conduit/test_spell_id_lookup_returns_that_spell_integration.py:154: AttributeError
+______________________ test_the_old_lookup_names_are_gone ______________________
+
+    def test_the_old_lookup_names_are_gone() -> None:
+        """The renamed lookups keep no alias (the owner's no-fallback rule): the old names raise AttributeError."""
+        world = _World("lookup_old_names", link=False)
+>       with pytest.raises(AttributeError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE AttributeError
+
+tests/integration/melder/aether/conduit/test_spell_id_lookup_returns_that_spell_integration.py:160: Failed
+__ test_add_spell_to_contract_by_the_parked_spell_id_grants_that_spell_parked __
+
+    def test_add_spell_to_contract_by_the_parked_spell_id_grants_that_spell_parked() -> None:
+        """
+        The borrower takes French by its spell_id; like a grant of the French Spell, the copy waits parked.
+    
+        The lender's outbound listing names the French Spell it granted. (The borrower's inbound listing resolves a
+        parked copy through `Spellbook._find_contracted_spell_by_id`, which still answers by index and finds no active
+        copy here; that lookup waits for the owner with the other contract-side lookups.)
+        """
+        world = _World("lookup_grant_by_id")
+        with world.borrower.transaction("link", conduits=[world.borrower, world.lender]):
+>           assert world.borrower.add_spell_to_contract(
+                spell_id=world.french_id, conduit=world.lender, permissions="create",
+            ) is True
+
+tests/integration/melder/aether/conduit/test_spell_id_lookup_returns_that_spell_integration.py:176: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/melder/aether/conduit/conduit.py:6880: in add_spell_to_contract
+    result = self._conduit_ward._add_spell_to_contract(
+src/melder/aether/conduit/conduit_ward/conduit_ward.py:1898: in _add_spell_to_contract
+    spell_id, spell = self._check_spell_id_and_spell(spell, spell_id, aetheric_frame)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard object at 0x2b9ba725780>
+spell = Spell(name=English, binding=greeter, frame=Greeter, SHA256=97229c7bc6f7568e4da5607c57204dc8bf85a793319873733f8b711eb97a188f)
+spell_id = 'aff0ec1cc350ea0232ba68c80576571a1b31e505280f3c38eabed7664a234111'
+aetheric_frame = 'default'
+
+    def _check_spell_id_and_spell(
+            self,
+            spell: Optional[Spell] = None,
+            spell_id: Optional[str] = None,
+            aetheric_frame: str = "default"
+    ) -> Tuple[str, Spell]:
+        """
+        Internal
+    
+        Validation and resolution helper: ensures both a spell ID and its corresponding spell object are available.
+    
+        Contract:
+            - If `spell` is an Spell instance, this uses `spell.spell_id` directly.
+            - If `spell` is a raw object, the ID is resolved via `inspect_spell`.
+    
+        Args:
+            spell (Spell, optional): The spell object.
+            spell_id (str, optional): The unique ID of the spell.
+            aetheric_frame (str): The Aetheric Frame to search within.
+    
+        Returns:
+            Tuple[str, Spell]: The resolved (spell_id, spell) pair.
+    
+        Raises:
+            ValueError: If neither `spell` nor `spell_id` is provided.
+            TypeError: If types are incorrect.
+            RuntimeError: If the spell cannot be resolved or if the provided ID and resolved ID mismatch.
+        """
+        if spell is None and spell_id is None:
+            self._logger.error(
+                "check_spell_id_and_spell: neither spell nor spell_id provided",
+                method_name="_check_spell_id_and_spell",
+                owner_id=self._id, owner_display=self._display_name,
+                mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
+            )
+            raise ValueError("Either spell or spell_id must be provided.")
+    
+        if spell is None:
+            if not isinstance(spell_id, str):
+                self._logger.error(
+                    f"check_spell_id_and_spell: spell_id wrong type {type(spell_id).__name__}",
+                    method_name="_check_spell_id_and_spell",
+                    owner_id=self._id, owner_display=self._display_name,
+                    mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
+                )
+                raise TypeError(f"Expected spell_id as str, got {type(spell_id).__name__}")
+            spell = self._conduit.get_spell_by_id(spell_id, aetheric_frame)
+            if spell is None:
+                self._logger.error(
+                    f"check_spell_id_and_spell: resolve by id failed ({spell_id})",
+                    method_name="_check_spell_id_and_spell",
+                    owner_id=self._id, owner_display=self._display_name,
+                    mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
+                )
+                raise RuntimeError(f"Could not resolve spell for spell_id '{spell_id}'.")
+    
+        if spell_id is None:
+            if not isinstance(spell, Spell):
+                self._logger.error(
+                    f"check_spell_id_and_spell: spell wrong type {type(spell).__name__}",
+                    method_name="_check_spell_id_and_spell",
+                    owner_id=self._id, owner_display=self._display_name,
+                    mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
+                )
+                raise TypeError(f"Expected Spell instance, got {type(spell).__name__}")
+            resolved_spell_id = spell.spell_id
+            spell_id = resolved_spell_id
+            if spell_id is None:
+                self._logger.error(
+                    "check_spell_id_and_spell: spell has no spell_id",
+                    method_name="_check_spell_id_and_spell",
+                    owner_id=self._id, owner_display=self._display_name,
+                    mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
+                )
+                raise RuntimeError("Could not determine spell_id from spell.")
+    
+        if isinstance(spell, Spell):
+            inspected_id: Optional[str] = spell.spell_id
+            if inspected_id is None:
+                self._logger.error(
+                    "check_spell_id_and_spell: spell has no spell_id",
+                    method_name="_check_spell_id_and_spell",
+                    owner_id=self._id, owner_display=self._display_name,
+                    mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
+                )
+                raise RuntimeError("Could not determine spell_id from spell.")
+        else:
+            inspected_id = self._conduit.inspect_spell(spell, aetheric_frame)
+        if spell_id != inspected_id:
+            self._logger.error(
+                f"check_spell_id_and_spell: mismatch provided={spell_id} inspected={inspected_id}",
+                method_name="_check_spell_id_and_spell",
+                owner_id=self._id, owner_display=self._display_name,
+                mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
+            )
+>           raise RuntimeError(f"Provided spell_id '{spell_id}' does not match inspected ID '{inspected_id}'.")
+E           RuntimeError: Provided spell_id 'aff0ec1cc350ea0232ba68c80576571a1b31e505280f3c38eabed7664a234111' does not match inspected ID '97229c7bc6f7568e4da5607c57204dc8bf85a793319873733f8b711eb97a188f'.
+
+src/melder/aether/conduit/conduit_ward/conduit_ward.py:1567: RuntimeError
+__ test_remove_spell_from_contract_by_the_parked_spell_id_removes_that_grant ___
+
+    def test_remove_spell_from_contract_by_the_parked_spell_id_removes_that_grant() -> None:
+        """A French grant is released by French's spell_id, and the borrower's parked copy goes with it."""
+        world = _World("lookup_ungrant_by_id")
+>       french_spell = world.lender.get_spell_by_spell_id(world.french_id)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'Conduit' object has no attribute 'get_spell_by_spell_id'. Did you mean: 'get_spell_by_index_id'?
+
+tests/integration/melder/aether/conduit/test_spell_id_lookup_returns_that_spell_integration.py:189: AttributeError
+_ test_get_spell_by_source_id_returns_the_spell_its_record_names_not_the_index_active_spell _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x2b9b9857310>
+
+    def test_get_spell_by_source_id_returns_the_spell_its_record_names_not_the_index_active_spell(
+            monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """The record `ops-spellbook:sha-old` answers the parked `sha-old` Spell, not the active `sha-new`."""
+        old_spell, new_spell = object(), object()
+        owner = _OwnerRoot(spells={"sha-old": old_spell, "sha-new": new_spell}, live_objects={})
+        command_system = CapabilityCommandSystem(**_make_room_doubles(_Projection()))
+        _install_owner(monkeypatch, command_system, owner)
+    
+>       assert command_system.get_spell_by_source_id("ops-spellbook:sha-old", frame_name="ops") is old_spell
+E       AssertionError: assert <object object at 0x2b9b6560700> is <object object at 0x2b9b65606e0>
+E        +  where <object object at 0x2b9b6560700> = get_spell_by_source_id('ops-spellbook:sha-old', frame_name='ops')
+E        +    where get_spell_by_source_id = <melder.nexus.rift.command_system.capability_command_system.CapabilityCommandSystem object at 0x2b9b76f0550>.get_spell_by_source_id
+
+tests/unit/melder/aether/test_command_system_spell_id_lookups.py:154: AssertionError
+__________ test_get_spell_by_spell_id_returns_the_spell_that_owns_it ___________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x2b9b9858350>
+
+    def test_get_spell_by_spell_id_returns_the_spell_that_owns_it(monkeypatch: pytest.MonkeyPatch) -> None:
+        """`sha-old` answers its own Spell through the owner Book; the index path still answers the active one."""
+        old_spell, new_spell = object(), object()
+        owner = _OwnerRoot(spells={"sha-old": old_spell, "sha-new": new_spell}, live_objects={})
+        command_system = CapabilityCommandSystem(**_make_room_doubles(_Projection()))
+        _install_owner(monkeypatch, command_system, owner)
+    
+>       assert command_system.get_spell_by_spell_id("sha-old", frame_name="ops") is old_spell
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'CapabilityCommandSystem' object has no attribute 'get_spell_by_spell_id'. Did you mean: 'get_spell_by_index_id'?
+
+tests/unit/melder/aether/test_command_system_spell_id_lookups.py:166: AttributeError
+___________ test_get_spell_by_source_id_refuses_an_ownerless_record ____________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x2b9b9856050>
+
+    def test_get_spell_by_source_id_refuses_an_ownerless_record(monkeypatch: pytest.MonkeyPatch) -> None:
+        """A record with no owner conduit has no Spellbook to answer from; the refusal names the source id."""
+        projection = _Projection()
+        projection.frame_descriptor.spell_records_by_key["ops-spellbook:sha-old"] = _make_spell_record(
+            spell_id="sha-old", owner_conduit_id=None,
+        )
+        owner = _OwnerRoot(spells={"sha-new": object()}, live_objects={})
+        command_system = CapabilityCommandSystem(**_make_room_doubles(projection))
+        _install_owner(monkeypatch, command_system, owner)
+    
+>       with pytest.raises(ValueError, match="Spell 'ops-spellbook:sha-old' has no owner conduit in frame 'ops'"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ValueError
+
+tests/unit/melder/aether/test_command_system_spell_id_lookups.py:180: Failed
+_ test_get_spell_by_source_id_refuses_a_spell_id_the_owner_book_no_longer_holds _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x2b9b9858210>
+
+    def test_get_spell_by_source_id_refuses_a_spell_id_the_owner_book_no_longer_holds(
+            monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """A stale record whose version its Book has disposed is refused, not answered with another version."""
+        owner = _OwnerRoot(spells={"sha-new": object()}, live_objects={})
+        command_system = CapabilityCommandSystem(**_make_room_doubles(_Projection()))
+        _install_owner(monkeypatch, command_system, owner)
+    
+>       with pytest.raises(
+                ValueError,
+                match="Spell 'ops-spellbook:sha-old' was not found in the owner spellbook for frame 'ops'",
+        ):
+E       Failed: DID NOT RAISE ValueError
+
+tests/unit/melder/aether/test_command_system_spell_id_lookups.py:192: Failed
+_______ test_static_get_spell_by_spell_id_melds_only_the_named_spell_id ________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x2b9b672b510>
+
+    def test_static_get_spell_by_spell_id_melds_only_the_named_spell_id(monkeypatch: pytest.MonkeyPatch) -> None:
+        """The static room melds `sha-old` itself; the active `sha-new`, published first, is never melded."""
+        old_object, new_object = object(), object()
+        owner = _OwnerRoot(spells={}, live_objects={"sha-old": old_object, "sha-new": new_object})
+        command_system = StaticCommandSystem(**_make_room_doubles(_Projection()))
+        _install_owner(monkeypatch, command_system, owner)
+    
+>       assert command_system.get_spell_by_spell_id("sha-old", frame_name="ops") is old_object
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'StaticCommandSystem' object has no attribute 'get_spell_by_spell_id'. Did you mean: 'get_spell_by_index_id'?
+
+tests/unit/melder/aether/test_command_system_spell_id_lookups.py:218: AttributeError
+________ test_static_get_spell_by_source_id_melds_only_the_named_record ________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x2b9b672bf10>
+
+    def test_static_get_spell_by_source_id_melds_only_the_named_record(monkeypatch: pytest.MonkeyPatch) -> None:
+        """The source id `ops-spellbook:sha-old` melds that version only."""
+        old_object, new_object = object(), object()
+        owner = _OwnerRoot(spells={}, live_objects={"sha-old": old_object, "sha-new": new_object})
+        command_system = StaticCommandSystem(**_make_room_doubles(_Projection()))
+        _install_owner(monkeypatch, command_system, owner)
+    
+>       assert command_system.get_spell_by_source_id("ops-spellbook:sha-old", frame_name="ops") is old_object
+E       AssertionError: assert <object object at 0x2b9b65608e0> is <object object at 0x2b9b65608c0>
+E        +  where <object object at 0x2b9b65608e0> = get_spell_by_source_id('ops-spellbook:sha-old', frame_name='ops')
+E        +    where get_spell_by_source_id = <melder.nexus.rift.command_system.static_command_system.StaticCommandSystem object at 0x2b9b8609610>.get_spell_by_source_id
+
+tests/unit/melder/aether/test_command_system_spell_id_lookups.py:229: AssertionError
+__ test_static_lookups_by_spell_id_and_source_id_never_answer_another_version __
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x2b9b672b310>
+
+    def test_static_lookups_by_spell_id_and_source_id_never_answer_another_version(
+            monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """With `sha-old` not live and `sha-new` live, both exact lookups refuse, naming what was asked."""
+        owner = _OwnerRoot(spells={}, live_objects={"sha-new": object()})
+        command_system = StaticCommandSystem(**_make_room_doubles(_Projection()))
+        _install_owner(monkeypatch, command_system, owner)
+    
+        with pytest.raises(ValueError, match="Spell id 'sha-old' is not live in frame 'ops'"):
+>           command_system.get_spell_by_spell_id("sha-old", frame_name="ops")
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AttributeError: 'StaticCommandSystem' object has no attribute 'get_spell_by_spell_id'. Did you mean: 'get_spell_by_index_id'?
+
+tests/unit/melder/aether/test_command_system_spell_id_lookups.py:242: AttributeError
+_ test_static_lookup_by_spell_id_names_the_spell_id_for_an_unsupported_existence _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x2b9b6729a10>
+
+    def test_static_lookup_by_spell_id_names_the_spell_id_for_an_unsupported_existence(
+            monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """A `many` version has no stored object to hand out; the refusal names the spell_id and the existence."""
+        projection = _Projection()
+        projection.frame_descriptor.spell_records_by_key["ops-spellbook:sha-old"] = _make_spell_record(
+            spell_id="sha-old", existence=Existence.many,
+        )
+        owner = _OwnerRoot(spells={}, live_objects={"sha-new": object()})
+        command_system = StaticCommandSystem(**_make_room_doubles(projection))
+        _install_owner(monkeypatch, command_system, owner)
+    
+        with pytest.raises(ValueError, match="Spell id 'sha-old' uses unsupported static existence 'many'"):
+>           command_system.get_spell_by_spell_id("sha-old", frame_name="ops")
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AttributeError: 'StaticCommandSystem' object has no attribute 'get_spell_by_spell_id'. Did you mean: 'get_spell_by_index_id'?
+
+tests/unit/melder/aether/test_command_system_spell_id_lookups.py:261: AttributeError
+_ test_rooms_advertise_get_spell_by_spell_id_and_keep_no_old_name[CapabilityCommandSystem] _
+
+room_class = <class 'melder.nexus.rift.command_system.capability_command_system.CapabilityCommandSystem'>
+
+    @pytest.mark.parametrize("room_class", (CapabilityCommandSystem, StaticCommandSystem))
+    def test_rooms_advertise_get_spell_by_spell_id_and_keep_no_old_name(room_class: type) -> None:
+        """Both rooms advertise the renamed command, and neither carries the old name (no alias)."""
+        command_system = room_class(**_make_room_doubles(_Projection()))
+    
+        supported = command_system.list_supported_command_methods()
+>       assert "get_spell_by_spell_id" in supported
+E       AssertionError: assert 'get_spell_by_spell_id' in ('link_frame', 'get_nexus_frame', 'describe_spells_in_conduit', 'get_resolution_state', 'get_active_spellspace', 'find_spell_id', ...)
+
+tests/unit/melder/aether/test_command_system_spell_id_lookups.py:284: AssertionError
+_ test_rooms_advertise_get_spell_by_spell_id_and_keep_no_old_name[StaticCommandSystem] _
+
+room_class = <class 'melder.nexus.rift.command_system.static_command_system.StaticCommandSystem'>
+
+    @pytest.mark.parametrize("room_class", (CapabilityCommandSystem, StaticCommandSystem))
+    def test_rooms_advertise_get_spell_by_spell_id_and_keep_no_old_name(room_class: type) -> None:
+        """Both rooms advertise the renamed command, and neither carries the old name (no alias)."""
+        command_system = room_class(**_make_room_doubles(_Projection()))
+    
+        supported = command_system.list_supported_command_methods()
+>       assert "get_spell_by_spell_id" in supported
+E       AssertionError: assert 'get_spell_by_spell_id' in ('link_frame', 'get_nexus_frame', 'describe_spells_in_conduit', 'get_resolution_state', 'get_active_spellspace', 'find_spell_id', ...)
+
+tests/unit/melder/aether/test_command_system_spell_id_lookups.py:284: AssertionError
+___ test_the_room_answers_the_active_version_by_spell_id_source_id_and_index ___
+
+    def test_the_room_answers_the_active_version_by_spell_id_source_id_and_index() -> None:
+        """Before the notch PricingV1 is active: its spell_id, its source id and its index all answer PricingV1."""
+        world = _build_world()
+        command = world["command"]
+>       by_spell_id = command.get_spell_by_spell_id(world["v1_id"], frame_name="default")
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'CapabilityCommandSystem' object has no attribute 'get_spell_by_spell_id'. Did you mean: 'get_spell_by_index_id'?
+
+tests/integration/melder/aether/rift/test_rift_spell_id_lookups_return_that_spell_integration.py:116: AttributeError
+__________ test_after_a_notch_the_room_answers_the_version_now_active __________
+
+    def test_after_a_notch_the_room_answers_the_version_now_active() -> None:
+        """The notch swaps the published record: PricingV2's spell_id and source id answer PricingV2, as does the index."""
+        world = _build_world()
+        command = world["command"]
+        world["root"].notch_spell(spell_index=world["index"], spell_id=world["v2_id"])
+>       by_spell_id = command.get_spell_by_spell_id(world["v2_id"], frame_name="default")
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'CapabilityCommandSystem' object has no attribute 'get_spell_by_spell_id'. Did you mean: 'get_spell_by_index_id'?
+
+tests/integration/melder/aether/rift/test_rift_spell_id_lookups_return_that_spell_integration.py:129: AttributeError
+__ test_a_parked_version_is_refused_never_answered_with_the_active_one[False] __
+
+notched = False
+
+    @pytest.mark.parametrize("notched", (False, True))
+    def test_a_parked_version_is_refused_never_answered_with_the_active_one(notched: bool) -> None:
+        """
+        The parked version - PricingV2 before the notch, PricingV1 after it - is not published, so the room refuses its
+        spell_id and its source id instead of answering the version its index has active.
+        """
+        world = _build_world()
+        command = world["command"]
+        parked_id = world["v1_id"] if notched else world["v2_id"]
+        if notched:
+            world["root"].notch_spell(spell_index=world["index"], spell_id=world["v2_id"])
+        with pytest.raises(ValueError, match="was not found in frame 'default'"):
+>           command.get_spell_by_spell_id(parked_id, frame_name="default")
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AttributeError: 'CapabilityCommandSystem' object has no attribute 'get_spell_by_spell_id'. Did you mean: 'get_spell_by_index_id'?
+
+tests/integration/melder/aether/rift/test_rift_spell_id_lookups_return_that_spell_integration.py:150: AttributeError
+__ test_a_parked_version_is_refused_never_answered_with_the_active_one[True] ___
+
+notched = True
+
+    @pytest.mark.parametrize("notched", (False, True))
+    def test_a_parked_version_is_refused_never_answered_with_the_active_one(notched: bool) -> None:
+        """
+        The parked version - PricingV2 before the notch, PricingV1 after it - is not published, so the room refuses its
+        spell_id and its source id instead of answering the version its index has active.
+        """
+        world = _build_world()
+        command = world["command"]
+        parked_id = world["v1_id"] if notched else world["v2_id"]
+        if notched:
+            world["root"].notch_spell(spell_index=world["index"], spell_id=world["v2_id"])
+        with pytest.raises(ValueError, match="was not found in frame 'default'"):
+>           command.get_spell_by_spell_id(parked_id, frame_name="default")
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AttributeError: 'CapabilityCommandSystem' object has no attribute 'get_spell_by_spell_id'. Did you mean: 'get_spell_by_index_id'?
+
+tests/integration/melder/aether/rift/test_rift_spell_id_lookups_return_that_spell_integration.py:150: AttributeError
+==================================== PASSES ====================================
+=========================== short test summary info ============================
+PASSED tests/integration/melder/aether/conduit/test_spell_id_lookup_returns_that_spell_integration.py::test_guard_a_transfer_by_the_parked_spell_id_moves_the_whole_index_unchanged
+PASSED tests/integration/melder/aether/conduit/test_spell_id_lookup_returns_that_spell_integration.py::test_guard_a_dependency_grant_after_the_notch_contracts_the_version_now_active
+PASSED tests/integration/melder/aether/conduit/test_spell_id_lookup_returns_that_spell_integration.py::test_guard_a_transfer_with_dependencies_after_the_notch_moves_the_dependency_index
+PASSED tests/unit/melder/aether/test_command_system_spell_id_lookups.py::test_get_spell_by_source_id_still_enforces_the_spell_index_acl
+PASSED tests/unit/melder/aether/test_command_system_spell_id_lookups.py::test_static_index_path_keeps_answering_the_live_object_of_a_record_of_the_index
+FAILED tests/component/melder/spellbook/test_spellbook_component_find_spell_by_spell_id.py::test_active_spell_id_returns_its_active_spell
+FAILED tests/component/melder/spellbook/test_spellbook_component_find_spell_by_spell_id.py::test_parked_spell_id_returns_the_parked_spell_itself
+FAILED tests/component/melder/spellbook/test_spellbook_component_find_spell_by_spell_id.py::test_after_a_notch_each_spell_id_returns_its_own_spell
+FAILED tests/component/melder/spellbook/test_spellbook_component_find_spell_by_spell_id.py::test_parked_spell_moved_to_another_index_returns_itself
+FAILED tests/component/melder/spellbook/test_spellbook_component_find_spell_by_spell_id.py::test_parked_spell_split_off_to_a_fresh_index_returns_itself
+FAILED tests/component/melder/spellbook/test_spellbook_component_find_spell_by_spell_id.py::test_disposed_parked_spell_returns_none
+FAILED tests/component/melder/spellbook/test_spellbook_component_find_spell_by_spell_id.py::test_transfer_moves_both_spell_ids_to_the_target_book
+FAILED tests/component/melder/spellbook/test_spellbook_component_find_spell_by_spell_id.py::test_unknown_and_foreign_spell_ids_return_none
+FAILED tests/component/melder/spellbook/test_spellbook_component_find_spell_by_spell_id.py::test_lookup_never_iterates_the_live_active_index_map
+FAILED tests/component/melder/spellbook/test_spellbook_component_find_spell_by_spell_id.py::test_parked_spell_disposed_mid_lookup_never_makes_it_raise
+FAILED tests/integration/melder/aether/conduit/test_spell_id_lookup_returns_that_spell_integration.py::test_get_spell_by_spell_id_with_a_parked_spell_id_returns_that_parked_spell
+FAILED tests/integration/melder/aether/conduit/test_spell_id_lookup_returns_that_spell_integration.py::test_after_a_notch_each_spell_id_still_returns_its_own_spell
+FAILED tests/integration/melder/aether/conduit/test_spell_id_lookup_returns_that_spell_integration.py::test_get_spell_permissions_returns_the_permissions_that_spell_was_bound_with
+FAILED tests/integration/melder/aether/conduit/test_spell_id_lookup_returns_that_spell_integration.py::test_an_unknown_spell_id_still_raises_value_error
+FAILED tests/integration/melder/aether/conduit/test_spell_id_lookup_returns_that_spell_integration.py::test_the_old_lookup_names_are_gone
+FAILED tests/integration/melder/aether/conduit/test_spell_id_lookup_returns_that_spell_integration.py::test_add_spell_to_contract_by_the_parked_spell_id_grants_that_spell_parked
+FAILED tests/integration/melder/aether/conduit/test_spell_id_lookup_returns_that_spell_integration.py::test_remove_spell_from_contract_by_the_parked_spell_id_removes_that_grant
+FAILED tests/unit/melder/aether/test_command_system_spell_id_lookups.py::test_get_spell_by_source_id_returns_the_spell_its_record_names_not_the_index_active_spell
+FAILED tests/unit/melder/aether/test_command_system_spell_id_lookups.py::test_get_spell_by_spell_id_returns_the_spell_that_owns_it
+FAILED tests/unit/melder/aether/test_command_system_spell_id_lookups.py::test_get_spell_by_source_id_refuses_an_ownerless_record
+FAILED tests/unit/melder/aether/test_command_system_spell_id_lookups.py::test_get_spell_by_source_id_refuses_a_spell_id_the_owner_book_no_longer_holds
+FAILED tests/unit/melder/aether/test_command_system_spell_id_lookups.py::test_static_get_spell_by_spell_id_melds_only_the_named_spell_id
+FAILED tests/unit/melder/aether/test_command_system_spell_id_lookups.py::test_static_get_spell_by_source_id_melds_only_the_named_record
+FAILED tests/unit/melder/aether/test_command_system_spell_id_lookups.py::test_static_lookups_by_spell_id_and_source_id_never_answer_another_version
+FAILED tests/unit/melder/aether/test_command_system_spell_id_lookups.py::test_static_lookup_by_spell_id_names_the_spell_id_for_an_unsupported_existence
+FAILED tests/unit/melder/aether/test_command_system_spell_id_lookups.py::test_rooms_advertise_get_spell_by_spell_id_and_keep_no_old_name[CapabilityCommandSystem]
+FAILED tests/unit/melder/aether/test_command_system_spell_id_lookups.py::test_rooms_advertise_get_spell_by_spell_id_and_keep_no_old_name[StaticCommandSystem]
+FAILED tests/integration/melder/aether/rift/test_rift_spell_id_lookups_return_that_spell_integration.py::test_the_room_answers_the_active_version_by_spell_id_source_id_and_index
+FAILED tests/integration/melder/aether/rift/test_rift_spell_id_lookups_return_that_spell_integration.py::test_after_a_notch_the_room_answers_the_version_now_active
+FAILED tests/integration/melder/aether/rift/test_rift_spell_id_lookups_return_that_spell_integration.py::test_a_parked_version_is_refused_never_answered_with_the_active_one[False]
+FAILED tests/integration/melder/aether/rift/test_rift_spell_id_lookups_return_that_spell_integration.py::test_a_parked_version_is_refused_never_answered_with_the_active_one[True]
+31 failed, 5 passed in 11.13s

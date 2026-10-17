@@ -3,14 +3,14 @@ Test-tree codemod for fix #1 (owner, 2026-10-17): the renamed spell_id lookups.
 
 Usage: python codemod_tests.py <root> <since_version> [--check]
 
-1. Generic, per occurrence, in every tests/**/*.py except the lane's own two new test files and the old
+1. Generic, per occurrence, in every tests/**/*.py except the lane's own four new test files and the old
    component test file they replace:
    - `find_spell_by_id` (a whole word) -> `find_spell_by_spell_id` (Spellbook calls, its fakes and mocks);
-   - `get_spell_by_id` (a whole word) -> `get_spell_by_spell_id` (Conduit calls, its fakes and mocks), except the
-     Rift room command of that name, which keeps it: an occurrence after `command_system.` or
-     `CommandSystem.`, or in quotes (the command's method name).
-2. Prose that described the old answer is rewritten by exact-once anchors (on the text after step 1), and two
-   Conduit facade test names follow the method.
+   - `get_spell_by_id` (a whole word) -> `get_spell_by_spell_id` (Conduit calls, the Rift room command - its calls,
+     its name in the advertised command lists and in the JSON testbench scenarios - and their fakes and mocks;
+     owner, 2026-10-17: "update it all").
+2. Prose that described the old answer is rewritten by exact-once anchors (on the text after step 1), and three
+   test names follow the methods.
 Nothing is written when an anchor misses, or with --check.
 """
 import pathlib
@@ -21,9 +21,11 @@ SKIP = {
     "tests/component/melder/spellbook/test_spellbook_component_find_spell_by_spell_id.py",
     "tests/component/melder/spellbook/test_spellbook_component_find_spell_by_id.py",
     "tests/integration/melder/aether/conduit/test_spell_id_lookup_returns_that_spell_integration.py",
+    "tests/unit/melder/aether/test_command_system_spell_id_lookups.py",
+    "tests/integration/melder/aether/rift/test_rift_spell_id_lookups_return_that_spell_integration.py",
 }
 FIND = re.compile(r"\bfind_spell_by_id\b")
-GET = re.compile(r"""(?<!command_system\.)(?<!CommandSystem\.)(?<!["'])\bget_spell_by_id\b(?!["'])""")
+GET = re.compile(r"\bget_spell_by_id\b")
 
 MANUAL = {
     "tests/unit/melder/spellbook/test_spell_cleanup_safe_index_read.py": [(
@@ -56,6 +58,12 @@ MANUAL = {
         "    grant takes the parked Spell object (until @@SINCE@@ `get_spell_by_id` answered a parked id with the active\n"
         "    member).\n",
     )],
+    "tests/unit/melder/aether/test_nexus.py": [
+        ("def test_command_system_can_get_spell_by_id(\n",
+         "def test_command_system_can_get_spell_by_spell_id(\n"),
+        ("            # The owner Book answers the lineage lookup from its id maps (0.2.8230).\n",
+         "            # The owner Book answers the spell_id lookup from its id maps (0.2.8230; exact since @@SINCE@@).\n"),
+    ],
     "tests/unit/melder/aether/conduit/test_conduit_facade.py": [
         ("def test_get_spell_by_id_returns_none_when_owner_missing(\n",
          "def test_get_spell_by_spell_id_returns_none_when_owner_missing(\n"),

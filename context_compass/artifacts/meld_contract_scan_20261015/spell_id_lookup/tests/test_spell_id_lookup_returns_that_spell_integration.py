@@ -1,15 +1,16 @@
 """
-Integration tests - a lookup by spell_id returns the spell that owns that spell_id (0.2.8252).
+Integration tests - a lookup by spell_id returns the spell that owns that spell_id (@@SINCE@@).
 
 The owner's rule (2026-10-17): a spell_id - the SHA `bind` and `bind_inactive` return - and a SpellIndex are
 separate things. Sharing an index follows whatever spell the index has active; sharing a spell by its spell_id is
-exactly that spell. So `Conduit.get_spell_by_id`, `Conduit.get_spell_permissions` and the grant and ungrant of a
-version by its spell_id answer with exactly that spell, active or parked, and only a lookup by index answers with
-the spell an index has active. Until 0.2.8252 `Spellbook.find_spell_by_id` (now `find_spell_by_spell_id`) found a
-parked spell under its spell_id and returned its index's active spell instead, so French's spell_id gave English.
+exactly that spell. So `Conduit.get_spell_by_spell_id`, `Conduit.get_spell_permissions` and the grant and ungrant of
+a version by its spell_id answer with exactly that spell, active or parked, and only a lookup by index answers with
+the spell an index has active. Until @@SINCE@@ the lookups were `Conduit.get_spell_by_id` and
+`Spellbook.find_spell_by_id`, which found a parked spell under its spell_id and returned its index's active spell
+instead, so French's spell_id gave English; both were renamed, with no alias.
 
 A transfer and a dependency grant work on the spell an index has active, and keep their answers: they look the
-spell up by spell_id and then ask its index. The guards at the end pass before and after 0.2.8252.
+spell up by spell_id and then ask its index. The guards at the end pass before and after @@SINCE@@.
 
 Each test builds its own dynamic frame with caching off: a lender Book binds English under (Greeter, "greeter")
 and the consumer Polite, conjures, stages French on Greeter's index with `bind_inactive` and links a borrower.
@@ -90,7 +91,8 @@ class _World:
         self.borrower_book.bind(spell=Note, existence=Existence.many, permissions="create")
         self.lender: Conduit = self.lender_book.conjure(dynamic=True, name="lender")
         self.borrower: Conduit = self.borrower_book.conjure(dynamic=True, name="borrower")
-        self.index: SpellIndex = self.lender.get_spell_by_id(self.english_id).spell_index
+        # The Book's active map, so the world builds on the trees before and after the rename.
+        self.index: SpellIndex = self.lender_book._spells_by_id[self.english_id].spell_index
         self.french_id: str = self.lender.bind_inactive(
             spell=French, spell_index=self.index, spellframe=Greeter, binding_name="greeter",
             existence=Existence.many, permissions=french_permissions,
@@ -113,15 +115,15 @@ def _fresh_aether() -> Iterator[None]:
     Conduit._aether = aether
 
 
-def test_get_spell_by_id_with_a_parked_spell_id_returns_that_parked_spell() -> None:
+def test_get_spell_by_spell_id_with_a_parked_spell_id_returns_that_parked_spell() -> None:
     """French's spell_id gives the French Spell - on the lender that owns it and on the linked borrower."""
     world = _World("lookup_parked")
     for conduit in (world.lender, world.borrower):
-        french = conduit.get_spell_by_id(world.french_id)
+        french = conduit.get_spell_by_spell_id(world.french_id)
         assert french is not None
         assert french.spell is French
         assert french.spell_id == world.french_id
-        english = conduit.get_spell_by_id(world.english_id)
+        english = conduit.get_spell_by_spell_id(world.english_id)
         assert english is not None
         assert english.spell is English
         assert english.spell_id == world.english_id
@@ -132,8 +134,8 @@ def test_after_a_notch_each_spell_id_still_returns_its_own_spell() -> None:
     world = _World("lookup_after_notch")
     world.lender.notch_spell(spell_index=world.index, spell_id=world.french_id)
     assert world.index.selected_spell_id == world.french_id
-    english = world.lender.get_spell_by_id(world.english_id)
-    french = world.lender.get_spell_by_id(world.french_id)
+    english = world.lender.get_spell_by_spell_id(world.english_id)
+    french = world.lender.get_spell_by_spell_id(world.french_id)
     assert english is not None and english.spell is English
     assert french is not None and french.spell is French
 
@@ -149,18 +151,34 @@ def test_an_unknown_spell_id_still_raises_value_error() -> None:
     """No conduit claims the id, so the `get_*` lookup raises."""
     world = _World("lookup_unknown")
     with pytest.raises(ValueError):
-        world.lender.get_spell_by_id("no-such-spell-id")
+        world.lender.get_spell_by_spell_id("no-such-spell-id")
+
+
+def test_the_old_lookup_names_are_gone() -> None:
+    """The renamed lookups keep no alias (the owner's no-fallback rule): the old names raise AttributeError."""
+    world = _World("lookup_old_names", link=False)
+    with pytest.raises(AttributeError):
+        world.lender.get_spell_by_id(world.english_id)
+    with pytest.raises(AttributeError):
+        world.lender_book.find_spell_by_id(world.english_id)
 
 
 def test_add_spell_to_contract_by_the_parked_spell_id_grants_that_spell_parked() -> None:
-    """The borrower takes French by its spell_id; like a grant of the French Spell, the copy waits parked."""
+    """
+    The borrower takes French by its spell_id; like a grant of the French Spell, the copy waits parked.
+
+    The lender's outbound listing names the French Spell it granted. (The borrower's inbound listing resolves a
+    parked copy through `Spellbook._find_contracted_spell_by_id`, which still answers by index and finds no active
+    copy here; that lookup waits for the owner with the other contract-side lookups.)
+    """
     world = _World("lookup_grant_by_id")
     with world.borrower.transaction("link", conduits=[world.borrower, world.lender]):
         assert world.borrower.add_spell_to_contract(
             spell_id=world.french_id, conduit=world.lender, permissions="create",
         ) is True
-    inbound = dict(world.borrower.get_spells_in_contract_by_conduit(world.lender._id)["inbound"])
-    assert set(inbound) == {world.french_id}
+    outbound = dict(world.lender.get_spells_in_contract_by_conduit(world.borrower._id)["outbound"])
+    assert set(outbound) == {world.french_id}
+    assert outbound[world.french_id].spell is French
     parked_copies = world.borrower_book._inactive_contracted_spells[world.lender._id]
     assert parked_copies[world.french_id].spell is French
 
@@ -168,7 +186,7 @@ def test_add_spell_to_contract_by_the_parked_spell_id_grants_that_spell_parked()
 def test_remove_spell_from_contract_by_the_parked_spell_id_removes_that_grant() -> None:
     """A French grant is released by French's spell_id, and the borrower's parked copy goes with it."""
     world = _World("lookup_ungrant_by_id")
-    french_spell = world.lender.get_spell_by_id(world.french_id)
+    french_spell = world.lender.get_spell_by_spell_id(world.french_id)
     with world.borrower.transaction("link", conduits=[world.borrower, world.lender]):
         assert world.borrower.add_spell_to_contract(
             spell=french_spell, conduit=world.lender, permissions="create",

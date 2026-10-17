@@ -1,0 +1,24 @@
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: PLAN
+  CLAIM: Tranche 2 (A6-A9) is done: S6-S8 filed, S2 and S4 widened, melder_1 told (M0-184), the owner told of
+    S6-S8 with the two new questions (chat). Tranche 3, same rules (read whole, then probe with the GIL off and on;
+    melder_1's lane and the backlog tasks excluded), in this order:
+    A10 cleanup_spell of an ACTIVE version whose index holds parked versions - the active branch of
+        `_dispose_spell`: what becomes of the index, its parked members, the frame claim, the lineage registration,
+        the record and index-link borrowers?
+    A11 a bind whose commit validation fails - a post-conjure `bind` (dynamic world) of a class whose phases 1-4
+        report it broken: what does the raise leave registered (the Book's maps, the frame claim, the lineage, the
+        record, research, Nexus), and can the agent bind a fixed version at that address afterwards?
+    A12 graft of an index with parked versions - `GraftRunner` over a captured index whose members include parked
+        versions, and over one whose members are all parked: does the live Book get every member (S5's restore gap)?
+  EVIDENCE:
+  - context_compass/system_docs/src_architecture.md:758-772
+  - context_compass/system_docs/src_architecture.md:948-1011
+  - context_compass/system_docs/src_architecture.md:2743-2765
+  IMPACT: Keeps the hunt on version lifecycle and on operations that fail part-way, where tranches 1-2 found every
+    defect so far.
+  NEXT: Read the active branch of `Spellbook._dispose_spell` and `Conduit.cleanup_spell` whole for A10.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7

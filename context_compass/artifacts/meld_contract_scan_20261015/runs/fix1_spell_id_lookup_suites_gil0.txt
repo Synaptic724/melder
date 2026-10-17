@@ -1,0 +1,8 @@
+work | unit_arch | rc=1 | secs=0 | 18 failed in 0.14s
+work | unit_gh | rc=1 | secs=4 | 52 failed, 1 passed, 438 errors in 2.83s
+work | unit_llm | rc=2 | secs=0 | 1 error in 0.07s
+work | unit_build | rc=1 | secs=3 | 2 failed, 114 passed in 1.99s
+work | unit_top | rc=1 | secs=5 | 1 failed, 145 passed in 4.23s
+work | unit_aether | rc=1 | secs=19 | 28 failed, 4512 passed in 18.26s
+work | unit_sb | rc=0 | secs=6 | 2582 passed in 5.00s
+work | unit_util | rc=0 | secs=8 | 831 passed, 2 skipped, 7 xfailed in 7.75s

@@ -1,5 +1,5 @@
 """
-Component tests - Spellbook.find_spell_by_spell_id returns the spell that owns the spell_id (0.2.8252).
+Component tests - Spellbook.find_spell_by_spell_id returns the spell that owns the spell_id (@@SINCE@@).
 
 A spell_id is the SHA `bind` and `bind_inactive` return; `find_spell_by_spell_id` answers it with exactly that
 Spell - the active version from the Book's active-id map, else the parked version from its parked map - or None.
@@ -8,7 +8,7 @@ It never answers with the spell the spell_id's index has active: that is the ind
 
 History: 0.2.8229 made the lookup answer from the id maps instead of walking the live index map (the walk raised
 "dictionary changed size during iteration", or skipped a registered spell, while other spells were bound or
-removed); it kept answering a parked spell_id with its index's active spell. 0.2.8252 renamed it from
+removed); it kept answering a parked spell_id with its index's active spell. @@SINCE@@ renamed it from
 `find_spell_by_id` and made it exact. These tests pin the exact answer across every writer that moves a spell_id
 between the maps - notch, add-to-index, remove-from-index, ownership transfer and parked disposal - and the two
 properties 0.2.8229 added: the lookup never iterates the live active-index map, and a parked version disposed in

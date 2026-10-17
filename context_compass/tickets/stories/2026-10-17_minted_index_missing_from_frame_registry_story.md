@@ -9,7 +9,7 @@
 - Agent Role: UNKNOWN
 - Priority: p2
 - Created: 2026-10-17T20:32:42Z
-- Updated: 2026-10-17T20:32:42Z
+- Updated: 2026-10-17T21:16:35Z
 
 ## User Narrative
 As an agent who separates a version into its own index with `remove_from_spell_index` - to keep it, try it on its
@@ -107,6 +107,9 @@ this does not make independent review mandatory for every ticket.
   - artifacts/correctness_defects_20261017/probes/probe_minted_index_registry.py (cases M1-M3)
   - artifacts/correctness_defects_20261017/runs/probe_minted_index_registry_gil0.txt
   - artifacts/correctness_defects_20261017/runs/probe_minted_index_registry_gil1.txt
+  - artifacts/correctness_defects_20261017/probes/probe_research_residency_moves.py (cases V2-V3: residency_view; FACT note)
+  - artifacts/correctness_defects_20261017/runs/probe_research_residency_moves_gil0.txt
+  - artifacts/correctness_defects_20261017/runs/probe_research_residency_moves_gil1.txt
 - DISPOSITION: retain_as_reference
 - CLEANUP_TRIGGER: the probe is re-run at the fix and kept as the defect's reproducer
 
@@ -149,6 +152,25 @@ this does not make independent review mandatory for every ticket.
   NEXT: The owner schedules the story; patch docs for the seam first.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-17T21:16:07Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: MutationResearch loses the version too (sweep A8, probe V2-V3). `residency_view` reads runtime truth from the
+    frames' spell registry (`_locate_live_membership` -> `AethericFrame.find_index_for_spell`), so a version in the
+    minted index reads `declared_only` with no index - parked there (V2) and after a notch made it active there
+    (V3) - while members of a registered index read right (V1, V4). Identical with the GIL off and on.
+  EVIDENCE:
+  - src/melder/mutation_research/mutation_research.py:1485-1525
+  - context_compass/artifacts/correctness_defects_20261017/probes/probe_research_residency_moves.py:1-110
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_research_residency_moves_gil0.txt:1-13
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_research_residency_moves_gil1.txt:1-13
+  IMPACT: The record agents read to see where their versions live misses every version in a minted index; the
+    regression tests should read `residency_view` too.
+  NEXT: The owner's scheduling.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
 
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user

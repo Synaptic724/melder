@@ -8,7 +8,7 @@
 - Agent Role: synaptic_python_developer
 - Priority: p1
 - Created: 2026-10-17T20:11:34Z
-- Updated: 2026-10-17T21:01:21Z
+- Updated: 2026-10-17T21:47:48Z
 - Target Window: 2026-Q4
 - Related Program/Initiative: Melder runtime correctness (the owner's direction, chat 2026-10-17)
 
@@ -102,6 +102,16 @@ those, and only those, keeps the core trustworthy without judging Melder by rule
   mints is missing from the frame's spell registry, so its version is unknown by spell_id (sweep A3).
 - [ ] Story: STORY-2026-10-17-restore_drops_separated_parked_version - a restore drops a parked version
   alone in its own index and still reports complete (sweep A5).
+- [ ] Story: STORY-2026-10-17-release_routes_parked_version_objects_to_active_pool - a release with no filter
+  sends a parked version's object to the active version's pool and strands its count (sweep A6).
+- [ ] Story: STORY-2026-10-17-book_teardown_leaves_parked_versions_uncleaned - Book teardown leaves
+  its parked versions and parked-only indexes uncleaned, beyond any cleanup (sweep A7).
+- [ ] Story: STORY-2026-10-17-failed_notch_keeps_switch_without_borrowers - a notch whose commit
+  validation fails keeps its switch and leaves its borrowers behind (sweep A9).
+- [ ] Story: STORY-2026-10-17-direct_cleanup_of_active_member_orphans_parked_versions - a direct cleanup
+  of an index's active member leaves its parked versions on a cleaned index (sweep A10).
+- [ ] Story: STORY-2026-10-17-minted_index_selects_its_parked_version - the index
+  remove_from_spell_index mints selects its parked version, so a graft activates it (sweep A12).
 
 ## Tasks (Cross-Cutting or Epic-Level)
 - [ ] Task: Verify Ticket Microcycle enforcement across active tickets/stories/tasks.
@@ -138,6 +148,24 @@ those, and only those, keeps the core trustworthy without judging Melder by rule
 - 2026-10-17T20:32:42Z: sweep A3 filed STORY-2026-10-17-minted_index_missing_from_frame_registry (MEASURE note).
 - 2026-10-17T20:36:54Z: sweep A4 checked, no story; sweep A5 filed
   STORY-2026-10-17-restore_drops_separated_parked_version (MEASURE note).
+- 2026-10-17T21:07:53Z: sweep A6 filed
+  STORY-2026-10-17-release_routes_parked_version_objects_to_active_pool (MEASURE note).
+- 2026-10-17T21:13:35Z: sweep A7 filed
+  STORY-2026-10-17-book_teardown_leaves_parked_versions_uncleaned and widened
+  STORY-2026-10-17-notch_moves_signature_by_incoming_key_only (MEASURE note).
+- 2026-10-17T21:16:35Z: sweep A8 checked, no story; widened
+  STORY-2026-10-17-minted_index_missing_from_frame_registry (residency_view; MEASURE note).
+- 2026-10-17T21:32:09Z: sweep A9 filed
+  STORY-2026-10-17-failed_notch_keeps_switch_without_borrowers (MEASURE note).
+- 2026-10-17T21:38:03Z: sweep A10 filed
+  STORY-2026-10-17-direct_cleanup_of_active_member_orphans_parked_versions (MEASURE note).
+- 2026-10-17T21:41:33Z: sweep A11 checked, no story (a failed late bind keeps
+  its spell by design); its precedent added to STORY-2026-10-17-failed_notch_keeps_switch_without_borrowers
+  (FACT notes).
+- 2026-10-17T21:47:06Z: sweep A12 filed
+  STORY-2026-10-17-minted_index_selects_its_parked_version and widened
+  STORY-2026-10-17-staged_version_releases_active_signature and
+  STORY-2026-10-17-restore_drops_separated_parked_version (graft side; MEASURE note).
 
 ## Artifact Links (Optional)
 Qualified independent reviewer acceptance and direct closure follow shared `ticketing.md`;
@@ -442,6 +470,264 @@ this does not make independent review mandatory for every ticket.
   REREAD: HELPFUL
   SCORE_0_TO_10: 7
 
+- DATETIME: 2026-10-17T21:06:35Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: Sweep A6, read whole and proven (identical with the GIL off and on, ids masked). One defect: when two
+    versions of one index bind the same class, a release with no filter sends an object leased from the parked
+    version to the active version's pool, and the parked version's limited_quantity or queue pool counts that object
+    as out for good. `ReleaseManagedSpell.release` resolves several pools of a class by keeping the one whose version
+    its index selects (`_resolve_pool`, `_is_selected_version`; the managed epic's lifecycle table: "resolver
+    prefers the active version"), `put_back` pools any object uncounted, and only the leasing pool's `reserve()`
+    raised a count. Probe Q2: A (limited_quantity, limit 1) leases Worker #2; B (same class, limit 2) is staged and
+    notched in; `release(obj)` puts #2 into B's pool (B count 0, idle 1; A count 1, idle 0); B serves #2 next; after
+    a notch back, A refuses with ManagedSpellExhaustedError "has all 1 objects out" while nothing is out - stuck
+    until someone leases #2 from B and releases it with spell_id=A. Q3: `release(obj, spell_id=A)` keeps both
+    pools right. Q6: versions that are two classes route by class, untouched. The rest of A6 holds by the owner's
+    rulings of 2026-10-14 (notch and cleanup_spell destroy nothing; identity is not tracked): a disposed version's
+    pool stays registered with its idle objects (Q4); a rebind under the same spell_id meets it, re-pointed, and
+    serves its idle object (Q5); index moves leave the pool alone and `_is_selected_version` follows the Spell's
+    current index; a lease from `managed_spell_meld` carries its pool, so it never misroutes.
+  EVIDENCE:
+  - src/melder/aether/conduit/creations/release_managed_spell.py:357-399
+  - src/melder/aether/conduit/creations/release_managed_spell.py:515-580
+  - src/melder/aether/conduit/creations/release_managed_spell.py:625-645
+  - src/melder/aether/conduit/creations/managed_spell_quantity.py:474-545
+  - src/melder/aether/conduit/creations/managed_spell_quantity.py:548-606
+  - src/melder/aether/conduit/conduit.py:5067-5179
+  - context_compass/tickets/epics/completed/2026-10-14_managed_spell_quantity_epic.md:401-412
+  - context_compass/tickets/epics/completed/2026-10-14_managed_spell_quantity_epic.md:679-687
+  - context_compass/artifacts/correctness_defects_20261017/probes/probe_managed_release_routing.py:1-205
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_managed_release_routing_gil0.txt:1-64
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_managed_release_routing_gil1.txt:1-64
+  IMPACT: Structure stuck: a pool's count names an object out that the pool will never get back, so a limited or
+    queue version refuses every lease after a notch back. The preference is an accepted design, so the story carries
+    the fix direction as the owner's question. The fix sits in release_managed_spell.py, which no lane holds.
+  NEXT: File the story; then sweep A7 (Book teardown with parked versions).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-17T21:11:57Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: Sweep A7, read whole and proven (identical with the GIL off and on, ids masked). One new defect and one
+    wider impact. New: Book teardown never cleans its parked versions or an index only they hold, and nothing can
+    clean them afterwards. `Spellbook._cleanup_spells` walks `_spells` (the active version per index) and cleans
+    each Spell and its index; `_cleanup_components` then clears `_inactive_spells` without cleaning one, while the
+    parked branch of `_dispose_spell` shows the local teardown a parked version needs (`_spellbook_cleanup` set,
+    `Spell.cleanup()`). A later direct `Spell.cleanup()` on such a version routes to its Book
+    (`_direct_removal_route` -> `cleanup_and_remove_spell`) and raises "Spellbook has already been cleaned.". Probe
+    T2: after the root's teardown English is cleaned and French (parked on its index) is not, and
+    `French.cleanup()` raises; T3: a parked version separated into its own minted index - neither it nor that index
+    is cleaned. Wider: STORY-2026-10-17-notch_moves_signature_by_incoming_key_only outlives the Book. After a notch
+    across keys the parked English still holds ('greeter', 'greeter') frame-wide; the notch's park popped that key
+    from the Book's `_lookup_spells`, and teardown releases only the keys in that map, so the claim survives the
+    Book (T4): every later bind of the signature in that frame is refused, naming a spell of a dead Book. The rest
+    holds: the record evicts the Book's custody in both locations and its index crystals by Book id; the root store's
+    cleanup unregisters every pool, parked versions' included (T5); the frame drops the conduit's registry entry.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spellbook.py:370-398
+  - src/melder/aether/spellbook/spellbook.py:405-556
+  - src/melder/aether/spellbook/spellbook.py:557-600
+  - src/melder/aether/spellbook/spellbook.py:602-748
+  - src/melder/aether/spellbook/spellbook.py:1500-1561
+  - src/melder/aether/spellbook/spellbook.py:4422-4563
+  - src/melder/aether/spellbook/spell.py:581-723
+  - src/melder/aether/spellbook/spell.py:725-763
+  - src/melder/crystallizer/persistence/persistence_profile.py:684-754
+  - context_compass/artifacts/correctness_defects_20261017/probes/probe_book_teardown_parked.py:1-231
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_book_teardown_parked_gil0.txt:1-30
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_book_teardown_parked_gil1.txt:1-30
+  IMPACT: Structure stuck twice over: parked versions of a dead Book stay uncleaned and cannot be cleaned, and a
+    signature a notch left claimed stays claimed for the frame's life. Both fixes sit in spellbook.py (melder_1's).
+  NEXT: File the teardown story; add T4 to the notch-signature story's Notes; then sweep A8.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-17T21:16:07Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: Sweep A8, read whole and proven (identical with the GIL off and on). No new seam; one wider impact of
+    STORY-2026-10-17-minted_index_missing_from_frame_registry. `MutationResearch.residency_view` takes runtime truth
+    from the frames (`_locate_live_membership` -> `AethericFrame.find_index_for_spell`, the registry the minted index
+    is missing from), so a version in the index `remove_from_spell_index` mints reads "declared_only" with no index:
+    probe V2 (French parked there) and V3 (French notched active there, under its own binding name) both answer
+    `declared_only in none` while the Book holds it parked, then active; V1 and V4 (members of a registered index)
+    read right. Nexus holds: it publishes active versions only, each with the index the Spell names
+    (`FrameDescriptorManager._publish_spell_record`), a notch inside a minted index publishes the incoming version
+    plainly, and its relationships read the Book's active pool; parked versions are never published. Seen on the way,
+    to be swept next: with French under English's binding name, the notch inside the minted index raised
+    SpellbookValidationError [DUPLICATE_SPELL_NAME] from its commit validation after the seam had run - what such a
+    failed notch leaves behind is unchecked.
+  EVIDENCE:
+  - src/melder/mutation_research/mutation_research.py:1374-1483
+  - src/melder/mutation_research/mutation_research.py:1485-1525
+  - src/melder/nexus/frame_descriptor_manager.py:512-584
+  - src/melder/aether/spellbook/spellbook.py:6533-6582
+  - context_compass/artifacts/correctness_defects_20261017/probes/probe_research_residency_moves.py:1-110
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_research_residency_moves_gil0.txt:1-13
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_research_residency_moves_gil1.txt:1-13
+  IMPACT: MutationResearch, the record agents read to see where their versions live, loses every version in a
+    minted index, active or parked; the S4 fix restores it. A failed notch commit may be a new seam (A9).
+  NEXT: Add V2-V3 to S4's Notes and Artifact Links; then sweep A9: what a notch whose commit validation fails
+    leaves behind.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-17T21:19:15Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: Sweep A9, read whole and proven (identical with the GIL off and on). One defect: a notch whose commit
+    validation fails raises but keeps its switch, and its borrowers never follow. `Conduit.notch_spell` runs the seam
+    (`Spellbook._notch_spell` -> `_apply_notch`: park, promote, index pointer, frame claim, re-registration, marks,
+    research, Nexus) inside the transaction, then `end_transaction(success=True)` commits; for a version never
+    compiled the commit runs phases 1-4 (`_default_structural_validator`). When they fail, the mediator runs the
+    session's abort pipeline - the notch registered no rollback action - and re-raises, so notch_spell exits before
+    its borrower fan-out (`_deactivate_borrowed_spell`, `_activate_borrowed_spell`, `_emit_index_notch`). Probe N2:
+    a staged version whose constructor takes its own class (SELF_DEPENDENCY); notch_spell raises
+    SpellbookValidationError, yet the lender's index selects it, it is active and English is parked, while the
+    index-linked borrower still holds English active and the new version parked; the lender's meld by address
+    raises, by English's spell_id KeyError. N3: a notch back to English restores both sides. N1 (a sound version):
+    owner and borrower both follow.
+  EVIDENCE:
+  - src/melder/aether/conduit/conduit.py:5622-5759
+  - src/melder/aether/spellbook/spellbook.py:3851-3904
+  - src/melder/aether/spellbook/spellbook.py:3906-4061
+  - src/melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py:783-835
+  - src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/transaction_mediator.py:1043-1091
+  - src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/transaction_session.py:502-526
+  - context_compass/artifacts/correctness_defects_20261017/probes/probe_failed_notch_commit.py:1-171
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_failed_notch_commit_gil0.txt:1-34
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_failed_notch_commit_gil1.txt:1-34
+  IMPACT: Structure wrong: after an operation that reported failure, the lender selects the new version and its
+    borrowers the old one, against "borrowers follow"; an agent reading the exception believes nothing moved. The
+    fix direction (roll the switch back, or let it stand as a failed bind's spell does and complete the fan-out) is
+    the owner's. The fix sits in conduit.py and spellbook.py, which melder_1 holds.
+  NEXT: File the story; NOTICE melder_1 of this story, the teardown story and the two widenings; tell the owner.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-17T21:33:36Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: PLAN
+  CLAIM: Tranche 2 (A6-A9) is done: S6-S8 filed, S2 and S4 widened, melder_1 told (M0-184), the owner told of
+    S6-S8 with the two new questions (chat). Tranche 3, same rules (read whole, then probe with the GIL off and on;
+    melder_1's lane and the backlog tasks excluded), in this order:
+    A10 cleanup_spell of an ACTIVE version whose index holds parked versions - the active branch of
+        `_dispose_spell`: what becomes of the index, its parked members, the frame claim, the lineage registration,
+        the record and index-link borrowers?
+    A11 a bind whose commit validation fails - a post-conjure `bind` (dynamic world) of a class whose phases 1-4
+        report it broken: what does the raise leave registered (the Book's maps, the frame claim, the lineage, the
+        record, research, Nexus), and can the agent bind a fixed version at that address afterwards?
+    A12 graft of an index with parked versions - `GraftRunner` over a captured index whose members include parked
+        versions, and over one whose members are all parked: does the live Book get every member (S5's restore gap)?
+  EVIDENCE:
+  - context_compass/system_docs/src_architecture.md:758-772
+  - context_compass/system_docs/src_architecture.md:948-1011
+  - context_compass/system_docs/src_architecture.md:2743-2765
+  IMPACT: Keeps the hunt on version lifecycle and on operations that fail part-way, where tranches 1-2 found every
+    defect so far.
+  NEXT: Read the active branch of `Spellbook._dispose_spell` and `Conduit.cleanup_spell` whole for A10.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
+- DATETIME: 2026-10-17T21:36:36Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: Sweep A10, read whole and proven (identical with the GIL off and on). `cleanup_spell` of the active member
+    of an index that also holds parked versions is refused by design ("notch away from it first": it would leave
+    the index headless), and D1 shows the refusal changes nothing. One defect: the two other public ways to dispose
+    that member skip the rule. A direct `Spell.cleanup()` routes to `Spellbook.cleanup_and_remove_spell`, which
+    resolves the active spell and then unregisters its whole index from SpellSystemStates, drops the index from the
+    frame registry and the record, and cleans the index - with no check for parked members. Probe D2
+    (`English.cleanup()`) and D3 (`cleanup_and_remove_spell(english_id)`), French parked on English's index: the
+    index is cleaned, French stays parked in the Book, uncleaned, pointing at the cleaned index and unknown to the
+    frame; a notch to it raises AttributeError, `add_to_spell_index` and `cleanup_spell` of it raise "SpellIndex has
+    already been cleaned.", the Book's teardown leaves it (S7) and `French.cleanup()` then raises "Spellbook has
+    already been cleaned.". The index-linked borrower keeps an active copy of the cleaned English and a parked copy
+    of French (the direct path sends no ward emission - the gap already with melder_1, A1 note).
+  EVIDENCE:
+  - src/melder/aether/spellbook/spellbook.py:4358-4421
+  - src/melder/aether/spellbook/spellbook.py:4422-4563
+  - src/melder/aether/spellbook/spellbook.py:602-748
+  - src/melder/aether/spellbook/spell.py:581-723
+  - src/melder/aether/spellbook/spell.py:725-763
+  - context_compass/artifacts/correctness_defects_20261017/probes/probe_direct_cleanup_active_member.py:1-186
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_direct_cleanup_active_member_gil0.txt:1-49
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_direct_cleanup_active_member_gil1.txt:1-49
+  IMPACT: Structure stuck: a parked version left on a cleaned index can be neither notched, moved, disposed nor
+    cleaned by its Book's teardown. The fix sits in spellbook.py (melder_1 holds it): apply cleanup_spell's own rule.
+  NEXT: File the story; then sweep A11 (a bind whose commit validation fails).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-17T21:41:15Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: Sweep A11, read whole and probed (identical with the GIL off and on): no story. A late `bind` stages its
+    spell on the bind transaction (`_stage_spell_for_structural_phases`) and the commit runs phases 1-4 for it; a
+    broken class fails there after the bind registered it, and `Spellbook.transaction` re-raises from its commit
+    with nothing unregistered. Probe B2: `bind(SelfMade)` raises SpellbookValidationError "Broken spells: SelfMade.",
+    and SelfMade stays active, holding its address, its lineage `invalid`, every meld refused - the documented
+    behaviour ("refused at that bind and at its melds", Failure Modes, 0.2.8224). Nothing is stuck: staging a fixed
+    class on its index and notching to it (B2), or `cleanup_spell` and a fresh bind (B3), gets the agent past it.
+    Two things for S8: a failed late bind keeps its spell - the precedent for S8's option (b) - but displaces
+    nothing, while a failed notch displaces a working version; and `_stage_spell_for_structural_phases` says notch
+    "does NOT stage" and runs the phases directly, which the validator, `_notch_spell` and probe N2 contradict - a
+    stale docstring for S8's fix to correct.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spellbook.py:5569-5896
+  - src/melder/aether/spellbook/spellbook.py:4788-4864
+  - src/melder/aether/spellbook/spellbook.py:4937-4958
+  - src/melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py:783-835
+  - context_compass/system_docs/src_architecture.md:2490-2502
+  - context_compass/artifacts/correctness_defects_20261017/probes/probe_broken_late_bind.py:1-187
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_broken_late_bind_gil0.txt:1-40
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_broken_late_bind_gil1.txt:1-40
+  IMPACT: A11 adds no story; it gives S8's open question its bind precedent and its fix a stale docstring to correct.
+  NEXT: Add the precedent to S8's Notes; then sweep A12 (graft of an index with parked versions).
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-17T21:45:24Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: Sweep A12, read whole and proven (each case records with the Crystallizer active, captures one index,
+    boots fresh and grafts it into a new host Book; identical with the GIL off and on). One new defect, two wider
+    impacts. New: the index `remove_from_spell_index` mints selects the parked version it holds -
+    `SpellIndex(initial_id=...)` makes its one member the selection, and `_apply_remove_from_index` leaves it so -
+    although `selected_spell_id` is documented as "the active spell's id" and `_is_selected_unless_cleaned` as
+    answering False for a parked member. The record captures that selection, and a graft (fresh-index mode) binds the
+    selected member ACTIVE: G2, French parked alone in the minted index, comes back active in the host. Wider: G4,
+    a graft parks members through `Conduit.bind_inactive`, so a parked member under the active member's signature
+    releases the host's claim for it (S1, as the restore did in R1); and the graft side of S5's gap is G2 - the
+    graft activates the separated version instead of dropping it. G1 and G3 (members of a registered index) graft
+    right: English active, French parked.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spellbook.py:4271-4356
+  - src/melder/aether/spellbook/bind/spell_index.py:83-116
+  - src/melder/aether/spellbook/bind/spell_index.py:143-164
+  - src/melder/aether/spellbook/bind/spell_index.py:358-388
+  - src/melder/crystallizer/persistence/persistence_profile.py:900-969
+  - src/melder/crystallizer/crystal_loader_system/graft_runner.py:230-330
+  - src/melder/crystallizer/crystal_loader_system/graft_runner.py:375-489
+  - context_compass/artifacts/correctness_defects_20261017/probes/probe_graft_parked_members.py:1-152
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_graft_parked_members_gil0.txt:1-26
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_graft_parked_members_gil1.txt:1-26
+  IMPACT: Structure wrong: the index and the Book disagree on whether its version is active, and the record and
+    every graft carry the index's answer. The seam is S4's (`_apply_remove_from_index`, spellbook.py, melder_1's).
+  NEXT: File the story; add G2 to S5's Notes and G4 to S1's; then NOTICE melder_1 and tell the owner.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
@@ -458,17 +744,27 @@ this does not make independent review mandatory for every ticket.
 ## Context / Handoff Summary
 - Scope: correctness defects - structure Melder records wrong or leaves stuck - by the owner's rulings (DECISION
   note); read-only; one story per confirmed defect; melder_1's lane excluded.
-- State: in_progress (melder_0), discovery. The planned sweep A1-A5 is done; five stories filed (ready,
-  unassigned): STORY-2026-10-17-staged_version_releases_active_signature (p1),
-  STORY-2026-10-17-notch_moves_signature_by_incoming_key_only (p2, open question),
+- State: in_progress (melder_0), discovery. A1-A12 are done; ten stories filed (ready, unassigned):
+  STORY-2026-10-17-staged_version_releases_active_signature (p1),
+  STORY-2026-10-17-notch_moves_signature_by_incoming_key_only (p2, open question; its leaked claim
+  outlives the Book, A7),
   STORY-2026-10-17-parked_cleanup_leaves_borrower_copies (p2),
-  STORY-2026-10-17-minted_index_missing_from_frame_registry (p2) and
-  STORY-2026-10-17-restore_drops_separated_parked_version (p2, open question). The first four fixes
-  sit in spellbook.py and conduit.py, which melder_1 holds; the fifth in restore_engine.py (free).
-- Done since: the owner told what was filed and the two open questions (chat); melder_1 told of the four
-  stories whose fixes sit in its files (M0-181, M0-182; it carries them to the owner with its fix #1).
-- Next: tranche 2 (PLAN 20:37:46Z): (1) A6 managed pools across a version's life; (2) A7 Book teardown
-  with parked versions; (3) A8 the views of moved and separated versions.
+  STORY-2026-10-17-minted_index_missing_from_frame_registry (p2; MutationResearch residency
+  misses the version too, A8),
+  STORY-2026-10-17-restore_drops_separated_parked_version (p2, open question; a graft activates
+  the version instead, A12),
+  STORY-2026-10-17-release_routes_parked_version_objects_to_active_pool (p2, open question),
+  STORY-2026-10-17-book_teardown_leaves_parked_versions_uncleaned (p3),
+  STORY-2026-10-17-failed_notch_keeps_switch_without_borrowers (p2, open question),
+  STORY-2026-10-17-direct_cleanup_of_active_member_orphans_parked_versions (p2) and
+  STORY-2026-10-17-minted_index_selects_its_parked_version (p3, open question).
+  Fixes in spellbook.py and conduit.py (S1-S4, S7-S10) wait for melder_1's release; restore_engine.py
+  (S5) and release_managed_spell.py (S6) are free.
+- Done since: the owner told of S1-S5, then S6-S8, then S9-S10 with their questions, the widenings and S8's
+  bind precedent (chat); melder_1 told of the eight stories whose fixes sit in its files (M0-181, M0-182,
+  M0-184, M0-185).
+- Next: (1) the owner's answers on the open questions of S2, S5, S6, S8 and S10 (each story's Open Questions);
+  (2) a fourth tranche on the owner's word; (3) melder_1 carries S1-S4 and S7-S10 with its hand-back.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

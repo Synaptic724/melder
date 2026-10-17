@@ -4,7 +4,6 @@ from apply_engine import EditEngine
 STRATEGY = "src/melder/aether/spellbook/spell_compiler/validation/strategies/ambiguous_provider_strategy.py"
 GRAFT = "src/melder/crystallizer/crystal_loader_system/graft_runner.py"
 RESTORE = "src/melder/crystallizer/crystal_loader_system/restore_engine.py"
-COMMAND = "src/melder/nexus/rift/command_system/command_system.py"
 SPELL_INDEX = "src/melder/aether/spellbook/bind/spell_index.py"
 SPELL = "src/melder/aether/spellbook/spell.py"
 
@@ -58,16 +57,6 @@ def register(engine: EditEngine) -> None:
         RESTORE,
         "            live_spell = spellbook.find_spell_by_id(live_member_id)\n",
         "            live_spell = spellbook.find_spell_by_spell_id(live_member_id)\n",
-    )
-    engine.anchor(
-        COMMAND,
-        "            # The owner Book's id maps answer the lineage lookup in O(1), without walking its\n"
-        "            # live index map, which a concurrent bind or removal could resize mid-walk.\n"
-        "            spell = spellbook.find_spell_by_id(spell_id)\n",
-        "            # The owner Book's id maps answer the spell_id lookup in O(1) - the spell that owns the\n"
-        "            # spell_id - without walking its live index map, which a concurrent bind or removal could\n"
-        "            # resize mid-walk.\n"
-        "            spell = spellbook.find_spell_by_spell_id(spell_id)\n",
     )
     engine.anchor(
         SPELL_INDEX,

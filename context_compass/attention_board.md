@@ -173,7 +173,8 @@ Message alert rules
 - NEW MESSAGE for muse_0 (from melder_0, 2026-10-01T11:10:44Z)
 - NEW MESSAGE for melder_2 (from melder_0, 2026-10-01T11:26:16Z)
 - NEW MESSAGE for muse_0 (from melder_0, 2026-10-01T11:26:16Z)
-- NEW MESSAGE for melder_1 (from melder_0, 2026-10-17T21:00:59Z)
+- NEW MESSAGE for melder_1 (from melder_0, 2026-10-17T21:32:34Z)
+- NEW MESSAGE for melder_1 (from melder_0, 2026-10-17T21:47:17Z)
 <!-- END USER-DEFINED: alerts -->
 
 ## Active Items
@@ -184,7 +185,7 @@ Message alert rules
 | defect_hunting_spellbook | in_progress | discovery | opencode | muse_0 | none | Slice spellbook component sections then read the surface behind each claim. | Contradiction list with evidence; meaty issues flagged apart from polish. | Sweep list triaged or owner redirects to conduit/meld or arch diffs. | tickets/tasks/2026-09-27_spellbook_sweep_task.md | 2026-09-27T15:56:49Z | REQUIRED |
 | defect_hunting_fixes_1 | in_progress | implementation | opencode | muse_0 | none | Re-slice each target fresh then repair findings 1-8 in order. | Corrected blocks with verified ranges; index check clean. | Batch repaired with gates passing or owner redirects scope. | tickets/tasks/2026-09-27_sweep_fixes_batch_1_task.md | 2026-09-27T16:07:16Z | REQUIRED |
 | meld_contract_scan | in_progress | implementation | claude | melder_1 | none | Fix #1 (owner's go-ahead): apply find_spell_by_spell_id, the exact spell_id lookup, on the scratch work tree; red tests green with the GIL off and on, then the suites. | `Spellbook.find_spell_by_spell_id` returns the spell that owns a spell_id (active, else parked, else None) and `Conduit.get_spell_by_id` / `get_spell_permissions` follow it; rule 2 and the removal fix (0.2.8250-0.2.8251) are landed. | The owner-approved change lands with tests, docs, notch and rebuild, or the owner redirects. | tickets/tasks/2026-10-16_recheck_contract_consumers_when_provider_changes_task.md | 2026-10-17T20:38:54Z | REQUIRED |
-| correctness_defects | in_progress | discovery | claude | melder_0 | none | Sweep A6: read ReleaseManagedSpell, the managed pool and the Creations pool paths whole, then probe a managed version across notch, disposal and release. | Defects where Melder's structure is wrong or stuck, a story each with a reproducer; the rest recorded as checked. | Every planned area swept and its defects filed as stories, or the owner redirects. | tickets/epics/2026-10-17_correctness_defects_epic.md | 2026-10-17T21:01:21Z | REQUIRED |
+| correctness_defects | in_progress | handoff | claude | melder_0 | none | Owner answers the open questions of S2, S5, S6, S8 and S10; then a fourth sweep tranche on the owner's word. | Defects where Melder's structure is wrong or stuck, a story each with a reproducer; the rest recorded as checked. | Every planned area swept and its defects filed as stories, or the owner redirects. | tickets/epics/2026-10-17_correctness_defects_epic.md | 2026-10-17T21:47:48Z | REQUIRED |
 <!-- END USER-DEFINED: active_items -->
 
 ## Active Attention Details
