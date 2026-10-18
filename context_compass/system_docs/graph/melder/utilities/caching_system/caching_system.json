@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/utilities/caching_system/caching_system.py",
- "source_sha256": "967509758d82c31c97ed0e2051cb5403c7aad836d53d262c834676a37a9e3945",
+ "source_sha256": "bdcaa48c320c164960d8321bdf96315186084f1c629e0cbd4c0b6d62593d67cb",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.utilities.caching_system.caching_system": {
@@ -57,7 +57,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "e615f6d83ab5f3c726b6c4f7ef561f909fbced950f671e099cc4dcedb70f8c56",
+   "span_sha256": "8c205ebc2353bea11530922948ad31b98ab0cb6168e838915cfe1dd2d8de2362",
    "role": "Conduit-scoped cache persistence utility.",
    "responsibilities": [
     "owns one rooted-conduit cache file and its in-memory spell-payload dictionary",

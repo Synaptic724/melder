@@ -1,0 +1,83 @@
+python 3.14.6 gil_enabled=True melder 0.2.8256
+[P01] pool composed at conjure, before any meld: mode=elastic limit=256 count=0 idle=0 out=0 spell_id_matches=True
+[P01] has_live_creation before any meld: False
+[P01] two melds, nothing released: distinct=True count=2 idle=0 out=2
+[P01] has_live_creation now: True
+[P01] after releasing a: count=2 idle=1 out=1 a.closed=False
+[P01] next meld reuses the released object: c_is_a=True count=2 idle=0 out=2
+[P01] newest released is leased first (LIFO): d_is_c=True d_is_b=False
+[P01] snapshot keys: ['active_version', 'baseline_idle', 'binding_name', 'children_recorded', 'count', 'decay_interval_seconds', 'decay_percent_per_interval', 'disposal_method_names', 'frame_name', 'holding_conduit_id', 'idle_count', 'limit', 'max_idle', 'mode', 'out_count', 'owner_conduit_id', 'reset_method_names', 'settle_time_seconds', 'spell_id', 'spell_name', 'stretch_percent', 'target_idle', 'timeout_seconds']
+[P01] purge of a managed spell removes nothing: 0
+[P01] root teardown disposed the idle objects: a.closed=True b.closed=True
+[P01] describe after teardown: ()
+[P02] elastic limit 2 still builds a third: count=3 idle=0 out=3
+[P02] releasing 3 into a pool that keeps 2: closed=[True, False, False] count=2 idle=2 out=0
+[P02] retention: baseline_idle=2 max_idle=2 target_idle=2
+[P03] two leases at limit 2: count=2 idle=0 out=2
+[P03] third lease refused: ManagedSpellExhaustedError is MeldExecutionError=True mode=limited_quantity limit=2 timeout_seconds=None spell_name=Ticket
+[P03] message: [MELD] Execution failed for spell 'Ticket' (52f4b9a721d71eb83a9357b8950ad7238320a4b87b4401536461af320dd94970): Managed spell 'Ticket' (limited_quantity, limit 2) has all 2 objects out. Release one with ReleaseManagedSpell().release(obj) before melding another, or bind it with a higher managed_spell_limit.
+[P03] nothing was built by the refusal: count=2 idle=0 out=2
+[P03] after a release the lease is served the released object: third_is_first=True count=2 idle=0 out=2
+[P03] release_all gives both back: count=2 idle=2 out=0
+[P04] waiter still waiting while the only Slot is out: alive=True
+[P04] release hands the object to the waiter: same=True waited~0.20s count=1 idle=0 out=1
+[P04] queue refuses at its timeout: waited>=0.3=True mode=queue limit=1 timeout_seconds=0.3
+[P04] message: [MELD] Execution failed for spell 'Slot' (2d7926e2392843625e017f42da0934d9184a4ff9034980502083e8a6768886ab): Managed spell 'Slot' (queue, limit 1) had no object free within 0.3 s. Release one with ReleaseManagedSpell().release(obj), or bind it with a higher managed_spell_limit or managed_spell_timeout_seconds.
+[P05] release runs the resets in order: resets=['clear', 'rewind'] data=[]
+[P05] the next lease gets the reset object: same=True data=[]
+[P05] a raising reset propagates its error (cannot reset a broken buffer); the object was destroyed: closed=True count=0 idle=0 out=0
+[P05] the next lease builds a new object: new=True count=1 idle=0 out=1
+[P06] inside the with block the object is out: count=1 idle=0 out=1 type=Lease
+[P06] the with block gave it back: count=1 idle=1 out=0
+[P06] managed_spell_meld returns a ManagedSpellLease=True same_object_reused=True released=False
+[P06] release twice is one release: released=True count=1 idle=1 out=0
+[P06] lease.object after release raises RuntimeError: This ManagedSpellLease was released; its object went back to its pool.
+[P06] a raising block still releases and does not suppress: count=1 idle=1 out=0
+[P06] ReleaseManagedSpell().managed(obj) leases what meld returned: same=True
+[P06] and gives it back on exit: count=1 idle=1 out=0
+[P06] managed_spell_meld refuses another existence: managed_spell_meld leases a managed spell; 'Plain' is many. Meld it with meld(), or bind it with existence=Existence.managed_spell_quantity.
+[P07] each injection is its own lease: distinct=True count=2 idle=0 out=2
+[P07] the request scope's exit disposed the handlers, which gave the leases back: h1.done=True h2.done=True count=2 idle=2 out=0
+[P07] the next request reuses a pooled connection: reused=True count=2 idle=1 out=1
+[P07] after the second request: count=2 idle=2 out=0
+[P08] before teardown: count=3 idle=1 out=2
+[P08] root teardown disposes idle objects only: idle.closed=True out.closed=False held.connection.closed=False
+[P08] release after teardown: ValueError: Connection is not a managed spell class in any live root: bind it with existence=Existence.managed_spell_quantity, or its root was torn down.
+[P09] release of a non-managed object: ValueError: Plain is not a managed spell class in any live root: bind it with existence=Existence.managed_spell_quantity, or its root was torn down.
+[P09] release with a non-str spell_id: TypeError: spell_id must be a str or None; got int.
+[P09] release with an unmatched spell_id: ValueError: No pool of managed class Connection matches spell_id=0000000000000000000000000000000000000000000000000000000000000000. Its pools: spell_id=fa047ec0c58f49a7c2dd837133f0ca4c8bd44909540993d4f16b473701a8934a, binding=default, frame=default, root=01M58EP56YM3F7EP4P8ZGAA3Q1, active=True. Pass the spell_id or conduit of one of them.
+[P09] release with conduit= picks the pool its root holds: count=1 idle=1 out=0
+[P09] describe of a non-class: TypeError: describe takes a class; got str.
+[P10] option on another existence: ValueError: managed_spell_limit only apply to Existence.managed_spell_quantity, but 'Ticket' is bound as Existence.many. Remove it, or bind 'Ticket' with existence=Existence.managed_spell_quantity.
+[P10] a function bound managed: TypeError: Existence.managed_spell_quantity binds classes only: its pool builds and reuses instances of a class, and 'factory' is a function or method. Bind the class itself as managed, or bind 'factory' with Existence.unique.
+[P10] limited_quantity without a limit: ValueError: managed_spell_mode 'limited_quantity' needs managed_spell_limit: the most objects of 'Ticket' alive at once (an int >= 1).
+[P10] queue without a timeout: ValueError: managed_spell_mode 'queue' needs managed_spell_timeout_seconds: how long a lease of 'Ticket' waits for a release before it raises (a number of seconds > 0).
+[P10] timeout on elastic: ValueError: managed_spell_timeout_seconds applies only to managed_spell_mode 'queue'; 'elastic' never waits for a release. Remove it, or bind 'Ticket' with managed_spell_mode='queue'.
+[P10] limit 0: ValueError: managed_spell_limit must be at least 1, got 0.
+[P10] unknown mode: ValueError: Unknown managed_spell_mode 'lifo'. Use 'elastic', 'limited_quantity' or 'queue' (or a ManagedSpellMode member).
+[P10] reset name that is not a method: ValueError: managed_spell_reset_methods names 'rinse', which is not a method of 'Ticket'. A reset method is a zero-argument method the pool calls on every release, before the object is leased again.
+[P10] reset names as a bare string: TypeError: managed_spell_reset_methods must be a list or tuple of method names, got str. Wrap a single name in a list: ['reset'].
+[P11] SpellBinder.as_managed_spell_quantity: mode=limited_quantity limit=3 reset=['reset'] dirty_after_release=False count=1 idle=1 out=0
+[P12] limit 1 refuses a second lease: count=1 idle=0 out=1
+[P12] cleanup_spell + bind with limit 3: same_spell_id=True limit=3 count=1 idle=0 out=1 out_still_open=True
+[P12] two more leases under the new limit: count=3 idle=0 out=3
+[P12] all three back: count=3 idle=3 out=0
+[P13] before: holding_root_is_source=True count=1 idle=1 out=0
+[P13] after transfer: holding_root_is_target=True count=1 idle=1 out=0
+[P13] the new owner leases the idle object the pool carried: same=True
+[P13] release still routes by class: count=1 idle=1 out=0
+[P14] SpellSpace.meld of a managed spell leases from the root pool: count=1 idle=0 out=1 type=Connection
+[P14] SpellSpace.purge of a managed spell: RuntimeError: Cannot purge spell 'Connection' (managed_spell_quantity) from a SpellSpace; purge it from its authorized conduit.
+[P14] after the space: count=1 idle=1 out=0
+[P15] managed -> unique_per_conduit at conjure: SpellbookValidationError: Spellbook validation failed. Broken spells: NeedsPerScope. | NeedsPerScope: |   - Spell 'NeedsPerScope' (managed_spell_quantity) depends on 'PerScope' (unique_per_conduit), which lives for a shorter scope, so 'NeedsPerScope' would keep a stale 'PerScope' after that scope ends. Give 'NeedsPerScope' the same or a shorter existence (or many), or give 'PerScope' a longer one. [scope_ordering_violation]
+[P16] override builds a fresh object: fresh_is_pooled=False size=9 count=1 idle=1 out=0
+[P16] releasing the override object pools it uncounted: count=1 idle=2 out=0
+[P17] a handler melded on the ROOT holds a lease: count=1 idle=0 out=1
+[P17] root teardown with a root-held handler: ExceptionGroup: Conduit torn down with disposal failures. (1 sub-exception) | inner=['ExceptionGroup: Errors occurred during cleaning (1 sub-exception)']
+[P17] handler.done=True connection.closed=False
+[P18] ReleaseManagedSpell() is one process singleton: True
+[P18] a bound release works for a hot loop: count=1 idle=1 out=0
+[P19] lease.release() after teardown (the lease holds the pool): RuntimeError: The pool of managed spell 'Connection' was torn down with its root conduit; the object is yours to dispose. released=True
+[P19] managed(obj) after teardown (resolved through the registry): ValueError: Connection is not a managed spell class in any live root: bind it with existence=Existence.managed_spell_quantity, or its root was torn down.
+[P19] objects that were out stay open: True
+rows=81 failed=0

@@ -1266,6 +1266,33 @@ restore_engine.py:1654; melder/__init__.py:68, :198.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-10-18T22:06:10Z
+  AUTHOR: melder_2
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: Authoring wave 42-48 (managed spell pools; EPIC-2026-10-18-managed_spell_examples_and_docs, S2): 42
+    elastic pool, 43 limited_quantity, 44 queue, 45 reset methods, 46 leases, 47 injection and request scopes, 48
+    settings rebind and transfer (dynamic), with pytest_examples/test_managed_spell_probes.py (34 rows) and a
+    MANAGED SPELL POOLS section in _concept_map.txt. NO INIT-SURFACE GAP: an AST walk finds 11 `md.*` names
+    across the eight files, every one in `melder.__all__` (73 names), and no deep import. Green on 3.14.6t, GIL
+    off and on, as scripts (7/7) and under the harness (55/55 managed rows). The tier's own reds on the tree at
+    5e3800c7a predate the wave (identical without it): lessons 31 and 37 and probes config_definition_laws,
+    a_different_frame_gets_a_different_cloud are one-object refusals of EPIC-2026-10-18-spell_identity_is_the_code,
+    which melder_0 is sweeping (M0-201); probe upgrade_to_normal raises KeyError, cause UNKNOWN. Teaching call:
+    47 shows request scopes because a ROOT-held consumer that releases at its own disposal meets a pool already
+    gone at root teardown (pools are cleaned before the root's disposable registry) - an owner question.
+  EVIDENCE:
+  - context_compass/tickets/stories/2026-10-18_managed_spell_ux_examples_story.md:142-191
+  - context_compass/artifacts/managed_spell_examples_20261018/runs/s2/lessons_as_scripts_gil0.txt:1-49
+  - context_compass/artifacts/managed_spell_examples_20261018/runs/s2/managed_rows_gil0.txt:1-63
+  - context_compass/artifacts/managed_spell_examples_20261018/runs/s2/base_tree_failures.xml:1-220
+  - UX_and_AIX_experiences/02_intermediate/_concept_map.txt:191-234
+  IMPACT: The tier teaches the seventh existence end to end with no new root names; its five pre-existing reds
+    are tracked by the identity landing, not by this wave.
+  NEXT: OWNER - the root-held consumer teardown order (EPIC-2026-10-18-managed_spell_examples_and_docs notes).
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
 ## Context / Handoff Summary
 Method: every example imports melder as md ONLY - a deep-path import in an example
 IS the finding. Examples are runnable scripts with honest asserts; they ride the

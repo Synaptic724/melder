@@ -1,15 +1,18 @@
 # Story: binding_manifest_hash - the bind signature becomes a binding manifest with its own SHA256
 
+- Completed: 2026-10-18T23:31:15Z
+- Summary: notched 0.2.8258: the binding manifest and its hash (Spell.binding_manifest, Spell.binding_hash) key both creation-cache tiers (generation 23) and ride the SpellCrystal (record 4.3.0); a restore reports binding_changes; the release-note section "A spell's binding is a manifest with its own hash".
+
 ## Metadata
 - Story ID: STORY-2026-10-18-binding_manifest_hash
 - Epic: EPIC-2026-10-18-spell_identity_is_the_code
-- Status: in_progress
+- Status: done
 - Owner: user
 - Agent Name: melder_0
 - Agent Role: synaptic_python_developer
 - Priority: p1
 - Created: 2026-10-18T11:45:58Z
-- Updated: 2026-10-18T19:59:24Z
+- Updated: 2026-10-18T23:31:15Z
 
 ## User Narrative
 As an agent, I want how a spell is kept - its address, lifetime, teardown, capability and settings - recorded as a
@@ -417,10 +420,50 @@ this does not make independent review mandatory for every ticket.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-10-18T23:18:31Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: S2's half of the tests documents landed with S1's (S1's MEASURE note of this time): the binding manifest's
+    and the crystal's binding-hash tests, the ordered-disposal replay's binding changes, the managed binding's
+    three binding hashes, the harness's binding hash and cache generation 23.
+  EVIDENCE: context_compass/system_docs/tests_components.md:3734-3747
+  IMPACT: S2's documents are current with S1's.
+  NEXT: With S1: the graph, the notches, the release note, the docs checks, the closure, the rebuild last.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
+- DATETIME: 2026-10-18T23:26:28Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: S2 notched 0.2.8258 with S1's 0.2.8257 (S1's FACT note of this time); the running note's S2 section,
+    "A spell's binding is a manifest with its own hash", names the two read-only properties, both cache tiers'
+    key, record 4.3.0 and the restore report's binding_changes.
+  EVIDENCE: release_docs/next_version_release.md:1-3
+  IMPACT: S2's source is versioned and documented for users.
+  NEXT: With S1: the docs checks, the closure, the rebuild last.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
+- DATETIME: 2026-10-18T23:31:15Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: State transition in_progress -> done (notched 0.2.8258): the owner's word to land S1 with
+    S2 and the crystallizer call are met - source, tests (whole tree green but melder_1's 18 S8 tests, the GIL
+    off and on), examples, docs and their checks, the four system documents, the graph, the release note -
+    and the rebuild follows as the landing's last step.
+  EVIDENCE: context_compass/tickets/stories/2026-10-18_binding_manifest_hash_story.md:462-488
+  IMPACT: The story moves to completed/; S3-S5 continue under the epic.
+  NEXT: The rebuild for 0.2.8258.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
 ## Closure Confirmation
-- [ ] Work walkthrough shared with user
-- [ ] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
-- [ ] Applicable anti-pattern checks are clear or escalated with evidence.
+- [x] Work walkthrough shared with user
+- [x] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
+- [x] Applicable anti-pattern checks are clear or escalated with evidence.
 
 ## Noting Behavior
 - Note focus: cross-task synthesis, dependency flow, and state-transition logic.
@@ -450,7 +493,13 @@ this does not make independent review mandatory for every ticket.
   23 green with the GIL off and on (MEASURE note of 2026-10-18T19:17:19Z).
 - Done since: the managed reversed premise rewritten - one spell_id, three binding hashes - and the
   whole tree green but melder_1's 18 S8 tests, the GIL off and on (FACT note of 2026-10-18T19:59:24Z).
-- Next: the landing pass with S1 - src and tests into the repository, docs, notches, the rebuild last.
+- Done since: applied to the repository with S1 and committed by the owner (5e3800c7a); promoted
+  into the source system documents (S1's FACT note of 2026-10-18T21:51:31Z).
+- Done since: the examples rewritten with S1 (S1's MEASURE note of 2026-10-18T22:52:11Z).
+- Done since: the tests system documents (FACT note of 2026-10-18T23:18:31Z).
+- Done since: notched 0.2.8258 with S1's 0.2.8257 (FACT note of 2026-10-18T23:26:28Z).
+- Closed: 2026-10-18T23:31:15Z - notched 0.2.8258; landed on the owner's word
+  (the epic's DECISION notes of 2026-10-18T15:01:53Z and 16:18:35Z).
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

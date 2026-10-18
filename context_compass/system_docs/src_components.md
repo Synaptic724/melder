@@ -896,6 +896,22 @@ EVIDENCE: `src/melder/aether/spellbook/bind/spell_code_digest.py:SpellCodeDigest
 `Bind.spell_id_inspector`, `src/melder/aether/spellbook/bind/binding_manifest.py:BindingManifest.build`,
 `BindingManifest.describe` and `src/melder/aether/spellbook/spell.py:Spell.binding_manifest`, `Spell.binding_hash`.
 
+Installed third-party code (decision B, 2026-10-18, 0.2.8257): the digest names, never digests, a class or plain
+function whose module is installed third-party - not standard library (its top-level name in
+`sys.stdlib_module_names`, or `builtins`), loaded in `sys.modules` with a `__file__` under one of the interpreter's
+site-packages roots (`sysconfig`'s purelib and platlib, `site.getsitepackages()` and `site.getusersitepackages()`) -
+as `<qualified name> <distribution>==<version>`: `importlib.metadata.version` of the top-level name, else the first
+distribution in sorted order that `packages_distributions()` maps it to, else `?==?`; an object of such a class is
+its type, that version and its repr. A module that is not loaded, or has no file, is application code and is
+digested; so is an editable install of the project, whose files are not under a site-packages root. An upgrade of an
+installed distribution therefore moves the spell_id of every class over its code, and a namespace package that
+several distributions install is named by the first in sorted order. The third-party verdict is memoized per module
+name and the version per top-level name, in the digest instance (one per Bind; `Bind.spell_id_inspector` builds a
+fresh one per call).
+EVIDENCE: `src/melder/aether/spellbook/bind/spell_code_digest.py:SpellCodeDigest._is_third_party_module`,
+`SpellCodeDigest._discover_site_roots`, `SpellCodeDigest._named`, `SpellCodeDigest._version` and
+`SpellCodeDigest._external`.
+
 Managed options (2026-10-15, 0.2.8242): `Bind._normalize_managed_options` runs once, after the disposal names and
 before the spell_id. Another existence takes no `managed_spell_*` option (ValueError); a managed binding is a class
 (TypeError otherwise); mode None means elastic, else a `ManagedSpellMode` member or its name; the limit is an int >= 1
@@ -3948,8 +3964,11 @@ Invariants/Guarantees:
 
 Failure Modes:
 - `ManagedSpellExhaustedError` (limited_quantity at its limit; queue at its timeout) before anything is built.
-- RuntimeError "The pool of managed spell '<name>' was torn down with its root conduit; ..." from a release, a
-  reserve or an adopt after teardown (a woken queue waiter included).
+- RuntimeError "The pool of managed spell '<name>' was torn down with its root conduit; ..." from the pool's
+  put_back, reserve or adopt after teardown - a `ManagedSpellLease.release` kept past it, a release that resolved
+  the pool before the teardown cleaned it, or a woken queue waiter. A `ReleaseManagedSpell().release(obj)` after the
+  teardown raises the not-managed ValueError instead: the root's store unregisters its pools before it cleans
+  them (corrected 2026-10-18: this named a release among the RuntimeError's sources).
 - ValueError from a release: not managed, ambiguous, no match; TypeError for filters of the wrong type.
 - A raising reset destroys the object, frees its place and propagates (an ExceptionGroup when its disposal failed
   too).
@@ -11660,6 +11679,12 @@ Companion documents:
   component and code-description patches are inputs to this document while a lane is open.
 
 ## Context / Handoff Summary
+
+2026-10-18 follow-ups to the identity landing (documentation only): the Binding Pipeline records decision B's lookup
+rule - what counts as installed third-party code, how it is named by distribution version, and what an editable
+install, an upgrade and a namespace package do to a spell_id; the Managed Spell Pools failure mode is corrected - a
+`ReleaseManagedSpell` release after the root's teardown raises the not-managed ValueError, and the torn-down
+RuntimeError comes from the pool through a lease or a release that resolved it before the teardown.
 
 2026-10-18 spell identity is the code (0.2.8257-0.2.8258; S1 and S2 of EPIC-2026-10-18-spell_identity_is_the_code):
 the Binding Pipeline carries the spell_id rule (`SpellCodeDigest`: what moves an id and what never does, decision B,

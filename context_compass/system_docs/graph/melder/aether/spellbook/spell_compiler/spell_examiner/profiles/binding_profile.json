@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py",
- "source_sha256": "e6b070157c4334abc967463d0891c5048f64bff859f4f0b50abed9f26afe5de0",
+ "source_sha256": "64f8585bbffe3415971b514568d0ea9a014a38dc73e008f81912074bc31f07c8",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile": {
@@ -101,7 +101,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "dbae87b0cec8746025683e8432133a00cae6ee3cc7ec4ef8e1b558aa8cd261f4",
+   "span_sha256": "2fe2142386cefa1d5d447edbfea82bbbde03a36302bee405aec301b8b2239247",
    "include": true,
    "role": "Binding-time view of a class candidate - enough to fingerprint it, reason about protocol compatibility, and produce diagnostics.",
    "responsibilities": [
@@ -127,7 +127,7 @@
    "label": "CallableParameterBindingSummary",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py",
-   "lineno": 234,
+   "lineno": 235,
    "bases": [],
    "markers": [],
    "public_methods": [],
@@ -136,7 +136,7 @@
     "has_bases": false,
     "trivial": true
    },
-   "span_sha256": "be56e4bf006cde12abe41bcbcab48ad72e11e9d5e07be4eaef2aab6c23efac6b",
+   "span_sha256": "5d4cdaa0f84f016482df0a579d3416148d67f9ae88b5b5a4181b794cb907cd0b",
    "include": true,
    "role": "The minimal binding-time view of one callable parameter, for fingerprinting and diagnostics.",
    "responsibilities": [
@@ -160,7 +160,7 @@
    "label": "CallableBindingProfile",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py",
-   "lineno": 274,
+   "lineno": 270,
    "bases": [
     "SpellBindingProfile"
    ],
@@ -173,7 +173,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "dae25a74db393f03fe74f4f67900bb23f1d612746a4b979b955bfbbd13acf97e",
+   "span_sha256": "542d1111566ba56b2a8610d8dfef47676aa5ee0c9a046818f5b2ef45dcdb797a",
    "include": true,
    "role": "Binding-time view of a function, method or lambda spell candidate.",
    "responsibilities": [
@@ -201,7 +201,7 @@
    "label": "InstanceBindingProfile",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py",
-   "lineno": 403,
+   "lineno": 391,
    "bases": [
     "SpellBindingProfile"
    ],
@@ -214,7 +214,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "53860cb6d660395367e4a9074836deab258e858c65dfffd9d80c08d7df084892",
+   "span_sha256": "eb9f41b2abe4b48f92c41e92be1cf3bf284555289d221b62bcd62c8e7339c897",
    "include": true,
    "role": "Binding-time view of an already-constructed object bound as an EXISTING_CREATION spell.",
    "responsibilities": [
@@ -237,7 +237,7 @@
    "label": "OtherBindingProfile",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py",
-   "lineno": 470,
+   "lineno": 450,
    "bases": [
     "SpellBindingProfile"
    ],
@@ -250,7 +250,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "9da6d5f0ba1f9b17ce6f36d70901f657ffc8a1e9bfec7a4c5f303c98a7bb7d7b",
+   "span_sha256": "b77f2315bf0a790b814136468735c3e737c9a7d29e0ed25541051e775f6cc899",
    "include": true,
    "role": "Fallback profile for candidates that fit none of the normal shapes.",
    "responsibilities": [

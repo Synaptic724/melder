@@ -137,6 +137,7 @@ belonging to its conduit, lineage root, or cluster.
 A managed spell's pool is not purged. Give its objects back with
 `ReleaseManagedSpell().release(obj)`; the pool disposes idle objects when it
 trims them and when the root that owns it is torn down.
+[Managed spell pools](managed-spells.md) walks through the whole lifecycle.
 
 Purge follows the configured disposal methods and their ordering. It attempts
 other selected objects after an object's disposal fails, then raises an

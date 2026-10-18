@@ -5,7 +5,7 @@
 - Status: in_progress
 - Owner:
 - Created: 2026-01-22
-- Updated: 2026-10-18
+- Updated: 2026-10-18T23:13:06Z
 
 ## Scope
 This document defines C3 components, C2 subcomponents, and C1 code references
@@ -288,6 +288,11 @@ Protects:
 - that every annotation in `src/melder` stays evaluable on 3.14
   (`_annotation_audit_support.py`, enforced by
   `tests/unit/melder/test_annotation_integrity.py`)
+- that one object stays one spell where a test needs a second registration of "the same" class
+  (`_spell_identity_test_support.py`, 0.2.8257): `version_of` builds a version of it - a subclass with the
+  same name, qualname and module and the class-level values given - whose code, and so spell_id, differs
+  while every lookup by name reads the original's; a test that restores or grafts the version defines a
+  module-level class instead, because a runtime class cannot be imported by its qualname
 
 Inputs:
 - descriptor payload builders
@@ -328,6 +333,7 @@ Key Files (C1):
 - `tests/_codegen_system_support.py`
 - `tests/_nexus_viewer_matrix_support.py`
 - `tests/_annotation_audit_support.py`
+- `tests/_spell_identity_test_support.py`
 - `tests/component/melder/spellbook/compiler_test_helpers.py`
 - `tests/component/melder/spellbook/spell_compiler_runtime_test_support.py`
 - `tests/integration/melder/aether/rift/static_rift_json_testbench_support.py`
@@ -418,7 +424,7 @@ Concurrency/Threading:
 
 Invariants/Guarantees:
 - unit tests stay close to class/method behavior
-- the densest tier: 510 `test_*.py` modules among 513 `.py` files (recounted 2026-10-18)
+- the densest tier: 514 `test_*.py` modules among 517 `.py` files (recounted 2026-10-18)
 - CI-script tests never import `melder`; each script is loaded as a standalone module
 
 Failure Modes:
@@ -438,7 +444,7 @@ Key Files (C1):
 - The aether tree carries 208 `test_*.py` modules beneath these; they are the
   CONTENT of this component rather than its key surfaces, and are counted here
   rather than cited so the core set stays a set an agent can verify.
-- No harness or support module of its own; the 48 test_*.py modules in
+- No harness or support module of its own; the 49 test_*.py modules in
   tests/unit/melder/crystallizer/ depend only on the shared surfaces at tests/ and the scoped
   conftests named in `tests_architecture.md`. Paths in this bullet are written
   WITHOUT backticks because they are directories - descriptive, never citations.
@@ -447,7 +453,7 @@ Key Files (C1):
   conftests named in `tests_architecture.md`. Paths in this bullet are written
   WITHOUT backticks because they are directories - descriptive, never citations.
 - `tests/unit/melder/spellbook/spell_compiler/support/compiler_test_support.py`
-- The spellbook tree carries 158 `test_*.py` modules beneath these; they are the
+- The spellbook tree carries 161 `test_*.py` modules beneath these; they are the
   CONTENT of this component rather than its key surfaces, and are counted here
   rather than cited so the core set stays a set an agent can verify.
 - No harness or support module of its own; the 54 test_*.py modules in
@@ -508,7 +514,7 @@ Concurrency/Threading:
 Invariants/Guarantees:
 - tier intent is explicitly documented in `tests/component/INFO.MD`: real core
   objects, stubbed external boundaries, deterministic, contract-level assertions
-- 166 `test_*.py` modules among 168 `.py` files (recounted 2026-10-17)
+- 167 `test_*.py` modules among 169 `.py` files (recounted 2026-10-18)
 
 Failure Modes:
 - component tests drift into unit-style internals or full integration sprawl
@@ -535,7 +541,7 @@ Key Files (C1):
   WITHOUT backticks because they are directories - descriptive, never citations.
 - `tests/component/melder/spellbook/compiler_test_helpers.py`
 - `tests/component/melder/spellbook/spell_compiler_runtime_test_support.py`
-- The spellbook tree carries 77 `test_*.py` modules beneath these; they are the
+- The spellbook tree carries 78 `test_*.py` modules beneath these; they are the
   CONTENT of this component rather than its key surfaces, and are counted here
   rather than cited so the core set stays a set an agent can verify.
 - No harness or support module of its own; the 4 test_*.py modules in
@@ -607,7 +613,7 @@ Concurrency/Threading:
 
 Invariants/Guarantees:
 - integration tests use real runtime stacks rather than hand-built shallow mocks
-- 175 `test_*.py` modules among 182 `.py` files (recounted 2026-10-18); the others are benches and the
+- 176 `test_*.py` modules among 183 `.py` files (recounted 2026-10-18); the others are benches and the
   live-sim application
 
 Failure Modes:
@@ -654,7 +660,7 @@ Key Files (C1):
   tests/integration/melder/mutation_research/ depend only on the shared surfaces at tests/ and the scoped
   conftests named in `tests_architecture.md`. Paths in this bullet are written
   WITHOUT backticks because they are directories - descriptive, never citations.
-- No harness or support module of its own; the 52 test_*.py modules in
+- No harness or support module of its own; the 53 test_*.py modules in
   tests/integration/melder/spellbook/ depend only on the shared surfaces at tests/ and the scoped
   conftests named in `tests_architecture.md`. Paths in this bullet are written
   WITHOUT backticks because they are directories - descriptive, never citations.
@@ -1093,6 +1099,9 @@ Protects:
 - managed options in the record (0.2.8242): a managed crystal records the mode's name, the limit, the timeout
   and the reset names in order; other crystals carry none of the four keys; a payload's options replay as bind
   keywords (none from a 4.1 record or another existence); RecordVersion 4.2.0 still reads 4.1 records
+- the binding hash in the record (0.2.8258; `test_spell_crystal_binding_hash.py`, 3 tests): a crystal
+  records its spell's `binding_hash`, two bindings of one spell_id record two binding hashes, and a cleaned
+  crystal refuses the read; RecordVersion is 4.3.0
 Key Files (C1):
 - `tests/unit/melder/crystallizer/test_crystallizer.py`
 - `tests/unit/melder/crystallizer/test_crystallizer_configuration.py`
@@ -1101,6 +1110,7 @@ Key Files (C1):
 - `tests/unit/melder/crystallizer/crystal_loader_system/test_restore_spell_id_regime.py` (2026-09-30)
 - `tests/unit/melder/crystallizer/crystal_analysis/test_custody_boundary_characterization.py` (2026-10-10)
 - `tests/unit/melder/crystallizer/test_spell_crystal_managed_options.py` (record 4.2.0, 2026-10-15)
+- `tests/unit/melder/crystallizer/test_spell_crystal_binding_hash.py` (record 4.3.0, 2026-10-18)
 
 ### Subcomponent: MutationResearch Unit Cluster
 Parent Component: Unit Test Suite
@@ -1124,8 +1134,10 @@ Purpose:
   verification, and snapshot-style helpers
 Protects:
 - bind refusals: modules, Protocols bound as spells, existing objects and callables
-  without `unique` existence, unnamed lambdas; binding-profile hashing, including
-  fingerprints with no memory address in them
+  without `unique` existence, unnamed lambdas, a non-bool `resolvable` before the target is examined;
+  the spell_id is the target's code digest (`Bind.spell_id_inspector` answers it), and two objects with
+  identical code and data share one spell_id while a content difference keeps them apart, with no
+  memory address in either (0.2.8257; `test_stable_spell_fingerprint.py` keeps its name)
 - Spell hooks, mutation override and cleanup; SpellIndex hash/equality stability
   and its context manager; scan-bind of marked objects; configuration defaults,
   freeze and disposal priority; conjure cache-path classification and emission
@@ -1150,11 +1162,11 @@ Protects:
 - managed bind options (0.2.8242; `test_bind_managed_spell_options.py`): the mode vocabulary and the elastic
   defaults (limit 256, no timeout, no resets); every refusal - an option on another existence, a function,
   method or existing object, an unknown mode, a bad limit, a timeout outside queue or not finite and positive,
-  reset names that are not a list or tuple naming methods of the class; every existing member's spell id
-  byte-identical to 0.2.8241, and a managed binding hashing exactly the inputs every binding hashes, whatever its
-  settings (0.2.8254; from 0.2.8242 to 0.2.8253 a `managed:<mode>:<limit>:<timeout>:<names>` part moved its id);
-  the index minted with that id; the decorator form and `spell_id_inspector` parity, which ignores the settings
-  too. Around it:
+  reset names that are not a list or tuple naming methods of the class; one spell_id - the class's code
+  digest - whatever the mode, limit, timeout and reset names (0.2.8257; the 0.2.8241 literal ids are
+  retired; 0.2.8254 took the settings out of the id, and from 0.2.8242 to 0.2.8253 a
+  `managed:<mode>:<limit>:<timeout>:<names>` part moved it); the index minted with that id; the decorator
+  form and `spell_id_inspector` parity, which answers the class's code too. Around it:
   `scan_bind` storing, reserving and replaying the options (`test_scan_bind_managed_options.py`), the Spell's
   read-only properties (`test_spell_managed_spell_options.py`) and `SpellBinder.as_managed_spell_quantity`
   (`test_spellbinder_managed_options.py`)
@@ -1210,6 +1222,16 @@ Protects:
   and removing the active version then marks its consumers; a spell_id the Book holds no copy of raises the
   not-found RuntimeError and leaves the active copy; both versions removed in either order leave no copy, active
   or parked, and an empty set of borrowed spell_ids
+- spell identity is the code (0.2.8257-0.2.8258): `test_spell_code_digest.py` (35 tests, 69 cases) pins
+  what moves a spell_id - a class's code (TestClassCode), a change inside a method body (TestInsideAMethod),
+  functions and values (TestFunctionsAndValues), an existing object's class and data (TestExistingObjects)
+  - what runtime state does not count (TestRuntimeStateDoesNotCount) and the digest's contract
+  (TestContract); `test_spell_code_digest_libraries.py` (9 tests) names installed third-party code by its
+  distribution version, digests an application class over an installed base by its own code, counts a
+  decorator and the function it wraps and a dataclass default factory, and leaves out a class a
+  class-level value names and a module-level helper a method calls; `test_binding_manifest.py` (7 tests,
+  20 cases) moves the binding hash with every manifest field and the disposal order, writes equal
+  settings alike and pins the hash's SHA256 input and `describe()`
 Key Files (C1):
 - `tests/unit/melder/spellbook/test_spellbook.py`
 - `tests/unit/melder/spellbook/test_spell.py`
@@ -1233,6 +1255,9 @@ Key Files (C1):
 - `tests/unit/melder/spellbook/test_spellbook_creation_system_parked_versions.py` (parked versions, 2026-10-16)
 - `tests/unit/melder/aether/conduit/test_conduit_notch_target.py` (public notch target, 2026-10-16)
 - `tests/unit/melder/aether/conduit/test_conduit_index_move_target.py` (index moves by spell_id, 2026-10-16)
+- `tests/unit/melder/spellbook/bind/test_spell_code_digest.py` (the spell_id is the code, 2026-10-18)
+- `tests/unit/melder/spellbook/bind/test_spell_code_digest_libraries.py` (installed code, 2026-10-18)
+- `tests/unit/melder/spellbook/bind/test_binding_manifest.py` (the binding hash, 2026-10-18)
 
 ### Subcomponent: Spellbook Compiler Unit Cluster
 Parent Component: Unit Test Suite
@@ -1532,6 +1557,12 @@ Protects:
   version, an unknown spell_id and another Book's spell_id answer None; the lookup never iterates the live
   active-index map, and a parked version disposed mid-lookup returns the Spell it read, borrowed, with the
   next lookup missing
+- one object, one spell over real wiring (0.2.8257-0.2.8258; `test_spellbook_component_spell_identity.py`,
+  8 tests): the spell_id bind returns is the object's code digest; a class bound another way keeps its
+  spell_id and changes its binding hash; a second registration of one object, and a second staging of one
+  class, are refused naming its spell_id; an edited class stages beside the old one and melds after a
+  notch; `inspect_spell` finds an existing object by its code and data; a spell keeps its binding after
+  cleanup; and a binding changed under one spell_id is another world to the creation cache
 Key Files (C1):
 - `tests/component/melder/spellbook/test_spellbook_component_bind.py`
 - `tests/component/melder/spellbook/test_spellbook_component_configuration.py`
@@ -1545,6 +1576,7 @@ Key Files (C1):
 - `tests/component/melder/spellbook/test_conjure_refusal_leaves_frame_unsettled_component.py` (refusal before settlement, 2026-09-30)
 - `tests/component/melder/spellbook/test_scan_bind_parity_component.py` (scan parity over real wiring, 2026-10-10)
 - `tests/component/melder/spellbook/test_spellbook_component_find_spell_by_spell_id.py` (exact lookup, 2026-10-17)
+- `tests/component/melder/spellbook/test_spellbook_component_spell_identity.py` (one object, one spell, 2026-10-18)
 
 ### Subcomponent: Spellbook Compiler Component Cluster
 Parent Component: Component Test Suite
@@ -1647,6 +1679,11 @@ Protects:
   records the active and the parked versions' options; a restore rebinds both with their options and spell
   ids, and a spell-index graft into a Book in another frame carries both members' options; the parked version
   differs in its disposal methods, because settings alone make the same spell (0.2.8254)
+- disposal order through a record (`test_ordered_disposal_replay.py`, 6 tests, 23 cases): the crystal and
+  its JSON keep each member's order, a cached restore keeps the order and the real cleanup, a graft keeps
+  the members under the receiving Book's order, and a restore under another receiving policy keeps every
+  spell_id and the exact selected member, reports each binding it rebuilt in `binding_changes` (0.2.8258)
+  and regrants contract details; a merge does not adopt a skipped resident's selection
 Key Files (C1):
 - `tests/integration/melder/crystallizer/test_spell_crystal_integration.py`
 - `tests/integration/melder/crystallizer/test_synthetic_module_integration.py`
@@ -1656,6 +1693,7 @@ Key Files (C1):
 - `tests/integration/melder/crystallizer/test_restore_per_frame_spell_worlds_integration.py` (2026-09-30)
 - `tests/integration/melder/crystallizer/test_recorded_leaf_source_read_integration.py` (leaf source reads, 2026-10-10)
 - `tests/integration/melder/crystallizer/test_managed_spell_options_record_integration.py` (2026-10-15)
+- `tests/integration/melder/crystallizer/test_ordered_disposal_replay.py` (receiving policy, 2026-10-18)
 
 ### Subcomponent: MutationResearch Integration Cluster
 Parent Component: Integration Runtime Suite
@@ -1699,8 +1737,12 @@ Protects:
   for unique, unique_per_conduit, many, managed_spell_quantity, an existing object and a function; before its
   notch neither is meldable by id (KeyError); a staged existing object is not registered in the store; a managed
   version staged before conjure has its pool (count 0) and its registry entry from conjure on and leases from it
-  after the notch, `with` giving the object back. The creation cache's generation history ends at 22
-  (`test_cache_schema_version_integration.py`: generation 22 is admitted, 1-21 load cold; 22 joined at 0.2.8254)
+  after the notch, `with` giving the object back. The creation cache's generation history ends at 23
+  (`test_cache_schema_version_integration.py`: generation 23 is admitted, 1-22 load cold; 22 joined at 0.2.8254,
+  23 - the binding manifest's keys - at 0.2.8258)
+- one spell_id, three binding hashes (0.2.8258; `test_managed_bind_options_integration.py`): one managed
+  class bound three ways keeps one spell_id - its code - and each binding has its own binding hash, because
+  the existence and the settings are the binding; a refused binding leaves the Book unchanged
 - the public notch target (0.2.8249; `test_notch_spell_by_id_integration.py`, 10 tests): in a dynamic world a
   notch by the spell_id `bind_inactive` returned promotes a version staged after conjure and one staged before it,
   the next meld builds it and the call returns it; a notch back by spell_id restores the first version with both
@@ -1904,7 +1946,8 @@ Purpose:
 - provide deterministic spell-crystal and synthetic-module harness data for
   crystallizer unit/component/integration graph cases
 - the harness spell double carries `aetheric_frame = "default"`, which SpellCrystal reads for its custody key
-  (0.2.8214)
+  (0.2.8214), and a `binding_hash` - the SHA256 of "binding:" and its spell_id, a fixed 64-hex value per
+  spell_id - which SpellCrystal records (record 4.3.0, 0.2.8258)
 Key Files (C1):
 - `tests/mocks/crystallizer/spell_crystal_harness.py`
 - `tests/mocks/crystallizer/synthetic_module_harness.py`
@@ -2023,12 +2066,12 @@ Key Files (C1):
   note: frame-isolated automatic/dynamic qualified-name regressions and real collision controls.
 
 Core is the DEDUPLICATED UNION OF EVERY `Key Files (C1)` LIST in the catalogs
-above - 264 paths (recounted 2026-10-18) - and nothing else. Change a component's key files and this set
+above - 272 paths (recounted 2026-10-18) - and nothing else. Change a component's key files and this set
 follows; if the two ever disagree, this section is wrong, not the catalog.
 
 WHAT COUNTS AS A KEY FILE ON THIS SIDE. A test component's key files are its
 HARNESS AND SUPPORT SURFACES - conftests, benches, mock packages, shared
-builders - not every `test_*.py` module beneath it. The 851 test modules of the
+builders - not every `test_*.py` module beneath it. The 857 test modules of the
 three CI tiers (and the 33 experimentation modules) are the component's CONTENT;
 they are counted in each entry rather than cited, because a
 core set that lists the entire tree is not a set anyone can verify, which is the
@@ -2070,6 +2113,13 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   end_line: 628
   loc: 628
   verified_at: 2026-09-26T22:11:36Z
+- path: `tests/_spell_identity_test_support.py`
+  start_line: 1
+  end_line: 46
+  loc: 46
+  verified_at: 2026-10-18T23:13:06Z
+  note: `version_of`: a version of a class - same name, qualname and module, other class-level values - for tests that
+    need a second registration of one class (0.2.8257).
 - path: `tests/unit/melder/test_annotation_integrity.py`
   start_line: 1
   end_line: 224
@@ -2282,9 +2332,10 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-09-26T22:11:36Z
 - path: `tests/mocks/crystallizer/spell_crystal_harness.py`
   start_line: 1
-  end_line: 775
-  loc: 775
-  verified_at: 2026-10-15T22:33:31Z
+  end_line: 779
+  loc: 779
+  verified_at: 2026-10-18T23:13:06Z
+  note: Rewritten for S1 and S2 (0.2.8257-0.2.8258).
 - path: `tests/mocks/crystallizer/synthetic_module_harness.py`
   start_line: 1
   end_line: 531
@@ -2397,9 +2448,10 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-10-15T22:33:31Z
 - path: `tests/unit/melder/crystallizer/test_crystallizer.py`
   start_line: 1
-  end_line: 202
-  loc: 202
-  verified_at: 2026-10-15T22:33:31Z
+  end_line: 206
+  loc: 206
+  verified_at: 2026-10-18T23:13:06Z
+  note: Rewritten for S1 and S2 (0.2.8257-0.2.8258).
 - path: `tests/unit/melder/crystallizer/test_crystallizer_configuration.py`
   start_line: 1
   end_line: 124
@@ -2428,9 +2480,10 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   note: custody classification, descent and retention around a nested virtual environment; roots never grant import.
 - path: `tests/unit/melder/mutation_research/test_mutation_research_root.py`
   start_line: 1
-  end_line: 944
-  loc: 944
-  verified_at: 2026-09-26T22:11:36Z
+  end_line: 994
+  loc: 994
+  verified_at: 2026-10-18T23:13:06Z
+  note: Remeasured (it had drifted).
 - path: `tests/unit/melder/mutation_research/test_mutation_research_root_matrix.py`
   start_line: 1
   end_line: 138
@@ -2464,9 +2517,10 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-09-26T22:11:36Z
 - path: `tests/unit/melder/spellbook/test_cache_runtime_verification.py`
   start_line: 1
-  end_line: 696
-  loc: 696
-  verified_at: 2026-10-15T22:33:31Z
+  end_line: 699
+  loc: 699
+  verified_at: 2026-10-18T23:13:06Z
+  note: Rewritten for S1 and S2 (0.2.8257-0.2.8258).
 - path: `tests/unit/melder/spellbook/configuration/test_configuration.py`
   start_line: 1
   end_line: 610
@@ -2474,9 +2528,10 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-09-26T22:11:36Z
 - path: `tests/unit/melder/spellbook/bind/test_bind.py`
   start_line: 1
-  end_line: 1939
-  loc: 1939
-  verified_at: 2026-10-15T22:33:31Z
+  end_line: 1608
+  loc: 1608
+  verified_at: 2026-10-18T23:13:06Z
+  note: Rewritten for S1 and S2 (0.2.8257-0.2.8258).
 - path: `tests/unit/melder/spellbook/bind/test_spell_index.py`
   start_line: 1
   end_line: 296
@@ -2589,9 +2644,10 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-09-26T22:11:36Z
 - path: `tests/component/melder/spellbook/test_spellbook_component_bind.py`
   start_line: 1
-  end_line: 582
-  loc: 582
-  verified_at: 2026-09-26T22:11:36Z
+  end_line: 575
+  loc: 575
+  verified_at: 2026-10-18T23:13:06Z
+  note: Rewritten for S1 and S2 (0.2.8257-0.2.8258).
 - path: `tests/component/melder/spellbook/test_spellbook_component_configuration.py`
   start_line: 1
   end_line: 408
@@ -2798,9 +2854,28 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-09-26T22:11:36Z
 - path: `tests/unit/melder/spellbook/bind/test_stable_spell_fingerprint.py`
   start_line: 1
-  end_line: 257
-  loc: 257
-  verified_at: 2026-09-26T22:11:36Z
+  end_line: 220
+  loc: 220
+  verified_at: 2026-10-18T23:13:06Z
+  note: Rewritten for S1 and S2 (0.2.8257-0.2.8258).
+- path: `tests/unit/melder/spellbook/bind/test_spell_code_digest.py`
+  start_line: 1
+  end_line: 464
+  loc: 464
+  verified_at: 2026-10-18T23:13:06Z
+  note: what moves a spell_id and what does not (0.2.8257).
+- path: `tests/unit/melder/spellbook/bind/test_spell_code_digest_libraries.py`
+  start_line: 1
+  end_line: 119
+  loc: 119
+  verified_at: 2026-10-18T23:13:06Z
+  note: installed third-party code named by distribution version (0.2.8257).
+- path: `tests/unit/melder/spellbook/bind/test_binding_manifest.py`
+  start_line: 1
+  end_line: 101
+  loc: 101
+  verified_at: 2026-10-18T23:13:06Z
+  note: the binding manifest and its hash (0.2.8258).
 - path: `tests/unit/melder/spellbook/bind/test_internal_registration_identity.py`
   start_line: 1
   end_line: 141
@@ -2999,9 +3074,16 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-10-15T22:33:31Z
 - path: `tests/component/melder/spellbook/test_spell_id_process_stability.py`
   start_line: 1
-  end_line: 111
-  loc: 111
-  verified_at: 2026-09-26T22:11:36Z
+  end_line: 109
+  loc: 109
+  verified_at: 2026-10-18T23:13:06Z
+  note: Rewritten for S1 and S2 (0.2.8257-0.2.8258).
+- path: `tests/component/melder/spellbook/test_spellbook_component_spell_identity.py`
+  start_line: 1
+  end_line: 187
+  loc: 187
+  verified_at: 2026-10-18T23:13:06Z
+  note: one object, one spell, over real wiring (0.2.8257-0.2.8258).
 - path: `tests/component/melder/spellbook/test_conjure_refusal_leaves_frame_unsettled_component.py`
   start_line: 1
   end_line: 148
@@ -3247,17 +3329,23 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
     on (0.2.8250).
 - path: `tests/unit/melder/crystallizer/test_spell_crystal_managed_options.py`
   start_line: 1
-  end_line: 150
-  loc: 150
-  verified_at: 2026-10-15T22:33:31Z
-  note: the crystal's managed options and RecordVersion 4.2.0 (0.2.8242).
+  end_line: 151
+  loc: 151
+  verified_at: 2026-10-18T23:13:06Z
+  note: the crystal's managed options and RecordVersion 4.2.0 (0.2.8242). Rewritten for S1 and S2 (0.2.8257-0.2.8258).
+- path: `tests/unit/melder/crystallizer/test_spell_crystal_binding_hash.py`
+  start_line: 1
+  end_line: 79
+  loc: 79
+  verified_at: 2026-10-18T23:13:06Z
+  note: the crystal's binding hash, record 4.3.0 (0.2.8258).
 - path: `tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py`
   start_line: 1
-  end_line: 581
-  loc: 581
-  verified_at: 2026-10-18T01:46:13Z
+  end_line: 511
+  loc: 511
+  verified_at: 2026-10-18T23:13:06Z
   note: the four managed bind options at the Bind seam: defaults, refusals, settings outside the id (0.2.8242,
-    0.2.8254).
+    0.2.8254). Rewritten for S1 and S2 (0.2.8257-0.2.8258).
 - path: `tests/unit/melder/spellbook/bind/test_spell_index_selected_probe.py`
   start_line: 1
   end_line: 64
@@ -3291,10 +3379,10 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   note: scan_bind declaring and replaying the managed options (0.2.8242).
 - path: `tests/unit/melder/spellbook/test_spell_managed_quantity_stamp.py`
   start_line: 1
-  end_line: 152
-  loc: 152
-  verified_at: 2026-10-15T22:33:31Z
-  note: an owner stamp ensuring the managed version's pool (0.2.8243).
+  end_line: 185
+  loc: 185
+  verified_at: 2026-10-18T23:13:06Z
+  note: an owner stamp ensuring the managed version's pool (0.2.8243). Remeasured (it had drifted).
 - path: `tests/unit/melder/spellbook/test_spell_managed_spell_options.py`
   start_line: 1
   end_line: 121
@@ -3327,28 +3415,32 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   note: non-resolvable definitions keep the Book flag down through worlds, notches, transfers and races (0.2.8247).
 - path: `tests/integration/melder/conduit/test_conduit_integration_managed_quantity_pool.py`
   start_line: 1
-  end_line: 262
-  loc: 262
-  verified_at: 2026-10-18T01:46:13Z
+  end_line: 263
+  loc: 263
+  verified_at: 2026-10-18T23:13:06Z
   note: pools in the owning root's store through conjure, binds, teardown and the probes (0.2.8243).
+    Rewritten for S1 and S2 (0.2.8257-0.2.8258).
 - path: `tests/integration/melder/conduit/test_conduit_integration_managed_spell_quantity.py`
   start_line: 1
-  end_line: 289
-  loc: 289
-  verified_at: 2026-10-18T01:46:13Z
+  end_line: 302
+  loc: 302
+  verified_at: 2026-10-18T23:13:06Z
   note: leases through real worlds: frames, binding names, notches, borrowers, lessers, a restore (0.2.8245).
+    Rewritten for S1 and S2 (0.2.8257-0.2.8258).
 - path: `tests/integration/melder/conduit/test_conduit_integration_release_managed_spell.py`
   start_line: 1
-  end_line: 315
-  loc: 315
-  verified_at: 2026-10-18T01:46:13Z
+  end_line: 336
+  loc: 336
+  verified_at: 2026-10-18T23:13:06Z
   note: the registry routing releases to the pools of live roots (0.2.8244).
+    Rewritten for S1 and S2 (0.2.8257-0.2.8258).
 - path: `tests/integration/melder/conduit/test_conduit_integration_managed_transfer.py`
   start_line: 1
-  end_line: 351
-  loc: 351
-  verified_at: 2026-10-18T01:46:13Z
+  end_line: 360
+  loc: 360
+  verified_at: 2026-10-18T23:13:06Z
   note: pools and owner stamps through moves, no-moves and failed transfers (0.2.8246).
+    Rewritten for S1 and S2 (0.2.8257-0.2.8258).
 - path: `tests/integration/melder/conduit/test_conduit_integration_managed_settings_rebind.py`
   start_line: 1
   end_line: 184
@@ -3358,23 +3450,31 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
     (0.2.8254).
 - path: `tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py`
   start_line: 1
-  end_line: 673
-  loc: 673
-  verified_at: 2026-10-17T23:33:39Z
+  end_line: 675
+  loc: 675
+  verified_at: 2026-10-18T23:13:06Z
   note: contract consumers and dependents following notches, grants and uncontracts; the
-    meld-vs-notch race as a non-strict xfail (0.2.8250).
+    meld-vs-notch race as a non-strict xfail (0.2.8250). Rewritten for S1 and S2 (0.2.8257-0.2.8258).
 - path: `tests/integration/melder/crystallizer/test_managed_spell_options_record_integration.py`
   start_line: 1
-  end_line: 178
-  loc: 178
-  verified_at: 2026-10-18T01:46:13Z
-  note: managed options through record, restore and graft (0.2.8242).
+  end_line: 185
+  loc: 185
+  verified_at: 2026-10-18T23:13:06Z
+  note: managed options through record, restore and graft (0.2.8242). Rewritten for S1 and S2 (0.2.8257-0.2.8258).
+- path: `tests/integration/melder/crystallizer/test_ordered_disposal_replay.py`
+  start_line: 1
+  end_line: 356
+  loc: 356
+  verified_at: 2026-10-18T23:13:06Z
+  note: disposal order through a record; a receiving policy keeps every spell_id (0.2.8258).
+    Rewritten for S1 and S2 (0.2.8257-0.2.8258).
 - path: `tests/integration/melder/spellbook/test_managed_bind_options_integration.py`
   start_line: 1
-  end_line: 171
-  loc: 171
-  verified_at: 2026-10-18T01:46:13Z
+  end_line: 180
+  loc: 180
+  verified_at: 2026-10-18T23:13:06Z
   note: managed bind options through a real Spellbook and its root (0.2.8242); settings outside the id (0.2.8254).
+    Rewritten for S1 and S2 (0.2.8257-0.2.8258).
 - path: `tests/integration/melder/spellbook/test_spellbook_integration_parked_before_conjure.py`
   start_line: 1
   end_line: 250
@@ -3390,16 +3490,18 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
     remedies; a sole member still removed (0.2.8256).
 - path: `tests/integration/melder/aether/conduit/test_notch_spell_by_id_integration.py`
   start_line: 1
-  end_line: 271
-  loc: 271
-  verified_at: 2026-10-16T15:48:52Z
+  end_line: 276
+  loc: 276
+  verified_at: 2026-10-18T23:13:06Z
   note: the stage -> notch -> meld loop by spell_id, its revert, and foreign targets refused intact (0.2.8249).
+    Rewritten for S1 and S2 (0.2.8257-0.2.8258).
 - path: `tests/integration/melder/aether/conduit/test_index_moves_by_spell_id_integration.py`
   start_line: 1
-  end_line: 226
-  loc: 226
-  verified_at: 2026-10-16T15:48:52Z
+  end_line: 234
+  loc: 234
+  verified_at: 2026-10-18T23:13:06Z
   note: add and remove by spell_id in a dynamic world; the refusals leave both indexes intact (0.2.8249).
+    Rewritten for S1 and S2 (0.2.8257-0.2.8258).
 - path: `tests/integration/melder/aether/conduit/test_spell_index_meld_and_contract_lifecycle.py`
   start_line: 1
   end_line: 271
@@ -3609,6 +3711,13 @@ graph TD
 - `tests/integration/melder/aether/rift/test_rift_spell_id_lookups_return_that_spell_integration.py`
 - `tests/integration/melder/spellbook/test_direct_cleanup_refuses_active_member_with_parked_versions_integration.py`
 - direct filesystem inventory of `tests/`
+- `tests/_spell_identity_test_support.py`
+- `tests/unit/melder/spellbook/bind/test_spell_code_digest.py`
+- `tests/unit/melder/spellbook/bind/test_spell_code_digest_libraries.py`
+- `tests/unit/melder/spellbook/bind/test_binding_manifest.py`
+- `tests/unit/melder/crystallizer/test_spell_crystal_binding_hash.py`
+- `tests/component/melder/spellbook/test_spellbook_component_spell_identity.py`
+- `tests/integration/melder/crystallizer/test_ordered_disposal_replay.py`
 
 ## Open Questions
 - ANSWERED 2026-09-26 (was: whether future external CI/docs should describe a
@@ -3621,6 +3730,21 @@ graph TD
   scan/bind coverage grows.
 
 ## Context / Handoff Summary
+
+2026-10-18 spell identity is the code (0.2.8257-0.2.8258; S1 and S2 of EPIC-2026-10-18-spell_identity_is_the_code):
+the Spellbook Runtime And Binding Unit Cluster gains `test_spell_code_digest.py` (35 tests, 69 cases),
+`test_spell_code_digest_libraries.py` (9) and `test_binding_manifest.py` (7 tests, 20 cases), and its bind,
+fingerprint and managed-option bullets now describe the code digest instead of the retired fingerprint; the
+Crystallizer Unit Cluster gains `test_spell_crystal_binding_hash.py` (3, record 4.3.0); the Spellbook Runtime And
+Binding Component Cluster gains `test_spellbook_component_spell_identity.py` (8); the Crystallizer Integration
+Cluster names `test_ordered_disposal_replay.py` (6 tests, 23 cases) as a key file; the shared support gains
+`_spell_identity_test_support.py` (`version_of`), which the suites use where a test bound one class twice; the
+Spellbook Integration Cluster names the managed binding's three binding hashes and generation 23; the mock harness's
+spell double carries a binding hash. Each new key file has a code-map record, so the core set is 272 paths, equal to
+the code map. Every code-map range was checked against disk on this pass and 21 records of rewritten files were
+re-stamped. Counts are recounted from disk (unit 514 of 517 `.py`, crystallizer tree 49, spellbook tree 161;
+component 167 of 169, spellbook tree 78; integration 176 of 183, spellbook tree 53; 857 test modules in the three
+tiers).
 
 2026-10-18 direct cleanup refusal (0.2.8256; STORY-2026-10-17-direct_cleanup_of_active_member_orphans_parked_versions):
 the Spellbook Integration Cluster gains `test_direct_cleanup_refuses_active_member_with_parked_versions_integration.py`

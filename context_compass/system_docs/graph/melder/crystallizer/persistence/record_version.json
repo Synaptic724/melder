@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/persistence/record_version.py",
- "source_sha256": "5ba93f3f16418ef6802ac76d143623a02a55f3693e10cda0a3087b7073a626e1",
+ "source_sha256": "5c0c7d32146fa02b154a101234953569e023ca0c82a494b12b0c7346a75333f0",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.persistence.record_version": {
@@ -41,7 +41,7 @@
     "has_bases": false,
     "trivial": false
    },
-   "span_sha256": "05e50269824dae4c30f247488bbb4113c274329dfed6117662ad9ac98dcb3b95",
+   "span_sha256": "668893611b533fe393e9a598db4687c600f5a349c3c163084cc0737e22c4610a",
    "role": "Static record-schema version authority (stamp 4.2.0; readers gate on MAJOR; absent stamps read 0.0.0).",
    "responsibilities": [
     "stamps cached items, formation records, and emission-tap envelopes",

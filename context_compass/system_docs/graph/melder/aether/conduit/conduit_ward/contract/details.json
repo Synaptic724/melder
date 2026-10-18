@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/conduit_ward/contract/details.py",
- "source_sha256": "a172b30575393835589e7272a212f70bc0e82098392c6f533ea3f87876d3bea5",
+ "source_sha256": "7f2ec85d0b66408b62990fc9a740d5fec972462bc51c17ae75e89d564df1edec",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.conduit_ward.contract.details": {
@@ -41,7 +41,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "ee6e7dcec1e953bd2582a9017fb22428a8ce29731d9744b119c6f04e89acaf19",
+   "span_sha256": "d9e931fdd62237dd7ecd1e353075330cf74d4944fc21ce8a16f81e1115d9129d",
    "role": "Spell-level permission entry stored inside a contract.",
    "responsibilities": [
     "stores lineage identity, version-at-contract time, permission, and direction metadata",
@@ -85,7 +85,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "f9131968058673220f71b137111caeeaf94e4c5ea2262cb5aa9c6279024a25d2",
+   "span_sha256": "00f86d40b748ee367fa9ab0674dbe13461429e221e3cd568d4c894e268a6f258",
    "include": true,
    "role": "Index-level entry subscribing a peer to a whole SpellIndex rather than one version.",
    "responsibilities": [

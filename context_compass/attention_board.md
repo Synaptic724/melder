@@ -100,79 +100,41 @@ Message alert rules
 
 ## Message Alerts
 <!-- BEGIN USER-DEFINED: alerts -->
-- NEW MESSAGE for melder_2 (from workflows_0, 2026-09-28T09:43:41Z)
 - NEW MESSAGE for muse_0 (from workflows_0, 2026-09-28T09:43:41Z)
-- NEW MESSAGE for melder_2 (from workflows_0, 2026-09-28T08:24:12Z)
 - NEW MESSAGE for muse_0 (from workflows_0, 2026-09-28T08:24:12Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-09-27T11:40:40Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-09-27T13:25:25Z)
 - NEW MESSAGE for muse_0 (from melder_0, 2026-09-27T20:29:26Z)
 - NEW MESSAGE for muse_0 (from melder_0, 2026-09-27T21:49:53Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-09-27T21:49:53Z)
-- NEW MESSAGE for melder_2 (from fable_0, 2026-09-27T22:06:50Z)
 - NEW MESSAGE for muse_0 (from fable_0, 2026-09-27T22:06:50Z)
 - NEW MESSAGE for muse_0 (from melder_0, 2026-09-27T23:08:51Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-09-27T23:08:51Z)
 - NEW MESSAGE for muse_0 (from melder_0, 2026-09-28T00:15:29Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-09-28T00:15:29Z)
 - NEW MESSAGE for muse_0 (from melder_0, 2026-09-28T00:24:01Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-09-28T00:24:01Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-09-28T00:24:01Z)
 - NEW MESSAGE for muse_0 (from melder_0, 2026-09-28T00:37:34Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-09-28T00:37:34Z)
 - NEW MESSAGE for muse_0 (from melder_0, 2026-09-28T01:00:46Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-09-28T01:00:46Z)
 - NEW MESSAGE for muse_0 (from melder_0, 2026-09-28T01:10:20Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-09-28T01:10:20Z)
 - NEW MESSAGE for muse_0 (from melder_0, 2026-09-28T01:11:37Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-09-28T01:11:37Z)
 - NEW MESSAGE for muse_0 (from melder_0, 2026-09-28T08:40:12Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-09-28T08:40:12Z)
 - NEW MESSAGE for muse_0 (from melder_0, 2026-09-29T21:28:19Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-09-29T21:28:19Z)
 - NEW MESSAGE for muse_0 (from melder_0, 2026-09-29T21:34:35Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-09-29T21:34:35Z)
 - NEW MESSAGE for muse_0 (from melder_0, 2026-09-29T22:29:43Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-09-29T22:29:43Z)
 - NEW MESSAGE for muse_0 (from melder_0, 2026-09-29T23:41:45Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-09-29T23:41:45Z)
 - NEW MESSAGE for muse_0 (from melder_0, 2026-09-30T00:05:25Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-09-30T00:05:25Z)
 - NEW MESSAGE for muse_0 (from melder_0, 2026-09-30T00:24:49Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-09-30T00:24:49Z)
 - NEW MESSAGE for muse_0 (from melder_0, 2026-09-30T10:44:26Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-09-30T10:44:26Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-09-30T12:27:27Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-09-30T12:39:23Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-09-30T12:52:02Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-09-30T15:49:07Z)
 - NEW MESSAGE for muse_0 (from melder_0, 2026-09-30T15:49:07Z)
 - NEW MESSAGE for muse_0 (from melder_0, 2026-09-30T17:19:01Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-09-30T17:19:01Z)
 - NEW MESSAGE for muse_0 (from melder_0, 2026-09-30T18:23:27Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-09-30T18:23:27Z)
 - NEW MESSAGE for muse_0 (from melder_0, 2026-09-30T18:48:41Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-09-30T18:48:41Z)
 - NEW MESSAGE for muse_0 (from melder_0, 2026-09-30T18:58:51Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-09-30T18:58:51Z)
 - NEW MESSAGE for muse_0 (from melder_0, 2026-09-30T19:31:23Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-09-30T19:31:23Z)
 - NEW MESSAGE for muse_0 (from melder_0, 2026-09-30T19:46:23Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-09-30T19:46:23Z)
 - NEW MESSAGE for muse_0 (from melder_0, 2026-09-30T20:21:52Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-09-30T20:21:52Z)
 - NEW MESSAGE for muse_0 (from melder_0, 2026-09-30T21:18:29Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-09-30T21:18:29Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-10-01T10:15:59Z)
 - NEW MESSAGE for muse_0 (from melder_0, 2026-10-01T10:15:59Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-10-01T10:47:49Z)
 - NEW MESSAGE for muse_0 (from melder_0, 2026-10-01T10:47:49Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-10-01T10:56:27Z)
 - NEW MESSAGE for muse_0 (from melder_0, 2026-10-01T10:56:27Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-10-01T11:10:44Z)
 - NEW MESSAGE for muse_0 (from melder_0, 2026-10-01T11:10:44Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-10-01T11:26:16Z)
 - NEW MESSAGE for muse_0 (from melder_0, 2026-10-01T11:26:16Z)
+- NEW MESSAGE for melder_2 (from melder_0, 2026-10-18T23:43:33Z)
 <!-- END USER-DEFINED: alerts -->
 
 ## Active Items
@@ -183,9 +145,7 @@ Message alert rules
 | defect_hunting_spellbook | in_progress | discovery | opencode | muse_0 | none | Slice spellbook component sections then read the surface behind each claim. | Contradiction list with evidence; meaty issues flagged apart from polish. | Sweep list triaged or owner redirects to conduit/meld or arch diffs. | tickets/tasks/2026-09-27_spellbook_sweep_task.md | 2026-09-27T15:56:49Z | REQUIRED |
 | defect_hunting_fixes_1 | in_progress | implementation | opencode | muse_0 | none | Re-slice each target fresh then repair findings 1-8 in order. | Corrected blocks with verified ranges; index check clean. | Batch repaired with gates passing or owner redirects scope. | tickets/tasks/2026-09-27_sweep_fixes_batch_1_task.md | 2026-09-27T16:07:16Z | REQUIRED |
 | correctness_defects | in_progress | handoff | claude | melder_0 | none | Keep the record current as melder_1 fixes S4, then S7; S8 waits for the owner (M1-33). | Defects where Melder's structure is wrong or stuck, a story each with a reproducer; the rest recorded as checked. | Every planned area swept and its defects filed as stories, or the owner redirects. | tickets/epics/2026-10-17_correctness_defects_epic.md | 2026-10-18T17:23:22Z | REQUIRED |
-| spell_identity_is_the_code | in_progress | implementation | claude | melder_0 | none | The landing pass of S1 and S2 (src and tests into the repository, docs, notches, the rebuild last); the tranche and the whole tree are green in the mirror. | A spell_id that is the object's code; the bind signature a manifest with its own hash that revalidates; one object, one spell. | S1-S5 land with notches, docs and the rebuild (S6 parked), or the owner redirects. | tickets/epics/2026-10-18_spell_identity_is_the_code_epic.md | 2026-10-18T19:59:24Z | REQUIRED |
-| spell_id_code_hash | in_progress | implementation | claude | melder_0 | none | The landing with S2 (the tranche done; the whole tree green but S8's 18, GIL off and on; bind's cost measured). | The spell_id is the SHA256 of the registered object's code - its bases, class-level values and an object's data included; docstrings and comments out. | S1 lands with S2 (tests, docs, notch, rebuild), or the owner redirects. | tickets/stories/2026-10-18_spell_id_hashes_the_object_code_story.md | 2026-10-18T19:59:24Z | REQUIRED |
-| binding_manifest_hash | in_progress | implementation | claude | melder_0 | none | The landing with S1 (S2's tests green in the mirror; the whole tree green but S8's 18). | The bind signature a binding manifest with its own SHA256, in the creation cache's keys beside the spell_id and in the SpellCrystal. | S2 lands with S1 (tests, docs, notch, rebuild), or the owner redirects. | tickets/stories/2026-10-18_binding_manifest_hash_story.md | 2026-10-18T19:59:24Z | REQUIRED |
+| spell_identity_is_the_code | ready | handoff | claude | melder_0 | none | S3-S5, each after its own patch, on the owner's word (S1 and S2 landed as 0.2.8257-0.2.8258). | A spell_id that is the object's code; the bind signature a manifest with its own hash that revalidates; one object, one spell. | S1-S5 land with notches, docs and the rebuild (S6 parked), or the owner redirects. | tickets/epics/2026-10-18_spell_identity_is_the_code_epic.md | 2026-10-18T23:43:33Z | REQUIRED |
 | failed_notch_refusal | blocked | handoff | claude | melder_1 | the owner's hold (chat 2026-10-18) | The owner's word to resume S8 (the edit list and its refinement). | A notch whose incoming version fails its commit check is refused with nothing moved; lender and borrowers stay on the outgoing version. | The fix lands with tests, docs, notch and rebuild, or the owner redirects. | tickets/stories/2026-10-17_failed_notch_keeps_switch_without_borrowers_story.md | 2026-10-18T13:40:43Z | REQUIRED |
 | minted_index_registry | in_progress | implementation | claude | melder_1 | spellbook.py and spell.py with melder_0 until S1 and S2 land (M1-40) | Apply A-D on the landed tree once melder_0 hands the files back; the red tests turn green, then docs, notch, rebuild. | The index remove_from_spell_index mints is in the frame's spell registry, so its version is found and granted by spell_id. | The fix lands with tests, docs, notch and rebuild, or the owner redirects. | tickets/stories/2026-10-17_minted_index_missing_from_frame_registry_story.md | 2026-10-18T18:47:35Z | REQUIRED |
 <!-- END USER-DEFINED: active_items -->
@@ -200,16 +160,6 @@ Message alert rules
   SWITCH_TRIGGER: S1-S5 land with notches, docs and the rebuild (S6 parked), or the owner redirects.
   RESUME_HIERARCHY:
     - tickets/epics/2026-10-18_spell_identity_is_the_code_epic.md
-- WORK_ITEM: spell_id_code_hash
-  SWITCH_TRIGGER: S1 lands with S2 (tests, docs, notch, rebuild), or the owner redirects.
-  RESUME_HIERARCHY:
-    - tickets/epics/2026-10-18_spell_identity_is_the_code_epic.md
-    - tickets/stories/2026-10-18_spell_id_hashes_the_object_code_story.md
-- WORK_ITEM: binding_manifest_hash
-  SWITCH_TRIGGER: S2 lands with S1 (tests, docs, notch, rebuild), or the owner redirects.
-  RESUME_HIERARCHY:
-    - tickets/epics/2026-10-18_spell_identity_is_the_code_epic.md
-    - tickets/stories/2026-10-18_binding_manifest_hash_story.md
 - WORK_ITEM: failed_notch_refusal
   SWITCH_TRIGGER: The fix lands with tests, docs, notch and rebuild, or the owner redirects.
   RESUME_HIERARCHY:
@@ -226,18 +176,18 @@ Message alert rules
 | work_item | status | agent_name | ticket | note | closed_at |
 | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: closed_anchors -->
-| managed_ownership_transfer | done | melder_0 | tickets/stories/completed/2026-10-15_managed_ownership_transfer_story.md | Landed 0.2.8246 (S6 of EPIC-2026-10-14-managed_spell_quantity: the owner stamp follows a transfer's lineage both ways, `discard_managed_quantity`). Next: S7 docs. | 2026-10-15T21:00:54Z |
-| non_resolvable_book_flag | done | melder_1 | tickets/tasks/completed/2026-10-15_make_meld_state_checks_follow_spell_state_task.md | Landed 0.2.8247 (a resolvable=False lineage no longer holds its Book's validation flag); owner accepted. Next: rule 2 in TASK-2026-10-16-recheck_contract_consumers_when_provider_changes. | 2026-10-16T09:36:46Z |
-| managed_docs_release | done | melder_0 | tickets/stories/completed/2026-10-15_managed_docs_release_story.md | Documentation, no notch (S7 of EPIC-2026-10-14-managed_spell_quantity: system docs, graph, README, release note, benchmarks); owner accepted. Next: none. | 2026-10-16T12:17:31Z |
-| parked_versions_wired_at_conjure | done | melder_0 | tickets/stories/completed/2026-10-16_parked_versions_wired_at_conjure_story.md | Landed 0.2.8248 (S8: conjure wires the versions staged before it; cache generation 21); owner accepted. Next: none. | 2026-10-16T12:17:31Z |
-| managed_spell_quantity | done | melder_0 | tickets/epics/completed/2026-10-14_managed_spell_quantity_epic.md | Epic accepted by the owner (S1-S8, 0.2.8241-0.2.8248). Next: TASK-2026-10-16-public_notch_target_for_staged_versions. | 2026-10-16T12:17:31Z |
-| public_notch_target | done | melder_0 | tickets/tasks/completed/2026-10-16_public_notch_target_for_staged_versions_task.md | Landed 0.2.8249 (`notch_spell` by spell_id with its target checked; on the owner's extension `add_to_spell_index` / `remove_from_spell_index` by spell_id too). Rebuilt last, both checks OK. Next: none; conduit.py released to melder_1. | 2026-10-16T16:06:21Z |
+| spell_id_code_hash | done | melder_0 | tickets/stories/completed/2026-10-18_spell_id_hashes_the_object_code_story.md | Landed 0.2.8257 (S1: a spell_id is the object's code, one object one spell). Next: S3-S5 under the epic. | 2026-10-18T23:31:15Z |
+| binding_manifest_hash | done | melder_0 | tickets/stories/completed/2026-10-18_binding_manifest_hash_story.md | Landed 0.2.8258 (S2: the binding manifest and its hash in the caches and the record). Next: S3-S5 under the epic. | 2026-10-18T23:31:15Z |
 | stamp_test_aether | done | melder_0 | tickets/tasks/completed/2026-10-16_stamp_test_boots_its_own_aether_task.md | Tests only, no notch: the managed stamp test installs a fresh Aether per test and passes after the frame tests (GIL off and on). Next: its tests_components entry rides the wording lane. | 2026-10-16T20:23:39Z |
 | spell_id_wording | done | melder_0 | tickets/tasks/completed/2026-10-16_spell_id_wording_near_spell_index_task.md | Landed 0.2.8252 ("version id" named as the spell_id in 214 lines of 113 files). Turned in on the owner's word. Next: TASK-2026-10-17-spell_id_wording_in_held_files (backlog) after melder_1's release. | 2026-10-17T20:49:39Z |
 | minted_index_selection | done | melder_0 | tickets/stories/completed/2026-10-17_minted_index_selects_its_parked_version_story.md | Withdrawn on the owner's ruling, no source change (not a defect: moving a version is the agent's call; activation takes a notch). Next: none; the graft side stays in STORY-2026-10-17-restore_drops_separated_parked_version. | 2026-10-17T23:25:30Z |
 | meld_contract_scan | done | melder_1 | tickets/tasks/completed/2026-10-16_recheck_contract_consumers_when_provider_changes_task.md | Landed 0.2.8250 (rule 2), 0.2.8251 (removal fix), 0.2.8253 (exact spell_id lookups) and 0.2.8255 (docstrings and comments call a SpellIndex a SpellIndex; renames withdrawn by the owner); turned in on the owner's "Land + close". Next: none; held files back to melder_0 (M1-28). | 2026-10-18T11:45:56Z |
 | managed_settings_spell_id | done | melder_0 | tickets/stories/completed/2026-10-17_release_routes_parked_version_objects_to_active_pool_story.md | Landed 0.2.8254 (part A: the four managed settings left the spell_id); turned in on the owner's identity direction, part B superseded. Next: EPIC-2026-10-18-spell_identity_is_the_code. | 2026-10-18T11:45:58Z |
 | direct_cleanup_refusal | done | melder_1 | tickets/stories/completed/2026-10-17_direct_cleanup_of_active_member_orphans_parked_versions_story.md | Landed 0.2.8256 (S9 of EPIC-2026-10-17-correctness_defects: the three cleanup calls refuse an index's active version while parked versions remain, naming the remedies); turned in on the owner's word. Next: S4 with melder_1; spellbook.py and spell.py back to melder_0 (M1-38). | 2026-10-18T16:49:55Z |
+| managed_spell_lifecycle_map | done | melder_2 | tickets/stories/completed/2026-10-18_managed_spell_lifecycle_map_story.md | S1 of EPIC-2026-10-18-managed_spell_examples_and_docs: lifecycle map from source plus a 19-case probe (81 rows, GIL off and on); no src change. Next: S2 lessons 42-47. | 2026-10-18T21:33:11Z |
+| managed_spell_ux_examples | done | melder_2 | tickets/stories/completed/2026-10-18_managed_spell_ux_examples_story.md | S2 of EPIC-2026-10-18-managed_spell_examples_and_docs: intermediate lessons 42-48 and 34 contract probes, green on 3.14t GIL off and on; owner walkthrough given; no src change. Next: S3 Sphinx page. | 2026-10-18T22:07:58Z |
+| managed_spell_sphinx_docs | done | melder_2 | tickets/stories/completed/2026-10-18_managed_spell_sphinx_docs_story.md | S3 of EPIC-2026-10-18-managed_spell_examples_and_docs: Sphinx chapter docs/intermediate/managed-spells.md (docs checks green, 313 pages) and one release-note bullet; no src change; the lane's rebuild waived by the owner. Next: none. | 2026-10-18T23:08:20Z |
+| managed_spell_examples_and_docs | done | melder_2 | tickets/epics/completed/2026-10-18_managed_spell_examples_and_docs_epic.md | Epic closed on the owner's directive: S1 lifecycle map, S2 lessons 42-48 and 34 probes (green on 3.14t), S3 chapter and release note; no src change, no notch; rebuild waived (melder_0's rebuild carries it). Next: the owner's answer on the root-held consumer teardown order. | 2026-10-18T23:08:20Z |
 <!-- END USER-DEFINED: closed_anchors -->
 
 ## Notes
@@ -340,6 +290,10 @@ Message alert rules
 - melder_0 landed 0.2.8254 (a managed spell's four settings - mode, limit, queue timeout, reset names - are not part
   of its spell_id; a rebind under the same spell_id gives its pool the new settings; creation cache generation 22;
   STORY-2026-10-17-release_routes_parked_version_objects_to_active_pool, part A). Notch above it if you land after.
+- melder_0 landed 0.2.8257 (a spell_id is the SHA256 of the registered object's code, nothing from the bind call;
+  one object is one spell; S1 of EPIC-2026-10-18-spell_identity_is_the_code) and 0.2.8258 (the binding manifest and
+  its hash in both cache tiers and the SpellCrystal, record 4.3.0, creation cache generation 23; S2). Notch above it
+  if you land after.
 ### Notch notice (melder_1, 2026-10-18)
 - melder_1 landed 0.2.8255 (docstrings and comments call a SpellIndex a SpellIndex; lineage stays for the conduit
   scope tree; nothing renamed; TASK-2026-10-16-recheck_contract_consumers_when_provider_changes). Notch above it if

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/spell_examiner/strategies/binding_profile_strategy.py",
- "source_sha256": "be9c267e94e07f8c12ead1057ca9f9df92abaf82c45ecf3fc373209f47bd5222",
+ "source_sha256": "f92a03e80990e4bf46f962a26ece05536bea968d9857aa1a9e09e4f85e89516b",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.spell_examiner.strategies.binding_profile_strategy": {
@@ -30,7 +30,7 @@
     "has_bases": false,
     "trivial": false
    },
-   "span_sha256": "f7feec883f899fd276002680684c5c2648b1cd33867e16a35fb8adb85c8c487e",
+   "span_sha256": "78aed7c51f1dc3502913b5710c0e2455c49c4846722a39c0164644dcde7c09fc",
    "role": "Strategy building binding profiles from raw candidates.",
    "responsibilities": [
     "builds the correct binding-profile variant from a raw candidate surface",

@@ -1,4 +1,4 @@
-# Melder 0.2.8256
+# Melder 0.2.8258
 
 **Unreleased**
 
@@ -958,6 +958,49 @@ What stays the same: removing the only version of an index, which goes with its 
 version; the teardown of a conduit, Spellbook or frame, which cleans every active version with its index as
 before. No public signature changes.
 
+## A spell_id is the SHA256 of the object's code, and one object is one spell
+
+**Breaking change:** every spell_id moves once. A spell_id is now the SHA256 of the registered object's code - its
+methods' and constructor's instructions and the constants they load, its class-level values, its base classes
+outside the standard library and, for an existing object, its data - and of nothing from the `bind` call: the
+spellframe, binding name, existence, disposal methods, `resolvable` and the managed settings are the spell's binding
+(next section). Docstrings, comments and line numbers never move it; any change to the code does, a renamed local
+variable included. Installed third-party code is named by its distribution and version instead of being read, so
+upgrading a library moves the spell_id of a class built over it. The same code is the same spell_id in every
+process, hash seed and GIL mode.
+
+One object is one spell. Registering an object a second time is refused - under another binding name, existence or
+spellframe, in a second Spellbook of the frame (under process-wide spell ids, the default), or staged again with
+`bind_inactive`: `bind` and `bind_inactive` raise RuntimeError "Spell ID collision detected: this object is already
+registered as spell_id <id>. ...", whose text names the rule and the remedies, and `conjure` refuses a second
+Spellbook's registration of it. To upgrade: share the spell already registered instead of binding it twice (meld it,
+or contract it to another conduit); to change how it is bound, `cleanup_spell` it and bind it again; to keep two
+versions of a class, edit it - a new spell_id - and stage it with `bind_inactive`, then notch. An edited class
+staged that way is now a new version even when only a method body changed (it was refused as a collision). Under
+per-frame spell ids a class can still be bound once in each frame.
+
+Also changed: `Bind.spell_id_inspector(spell)` takes the target alone (the binding keywords it took raise
+TypeError), and `Spellbook.inspect_spell` finds a registered object by its code. Creation-cache bundles are cold
+once. A Crystallizer record made before this release restores through `bind`, which gives each spell its new
+spell_id and maps the old ones; a record that holds one object twice fails at its second replayed bind.
+
+Known limits: `-O` changes the spell_id of code that holds an `assert`, including every `typing.NamedTuple` class,
+whose base reads a standard-library function that asserts; whether two patch releases of one Python version give one
+spell_id is not yet measured; a namespace package that several distributions install is named by the first in sorted
+order; a bind costs 37-55 us more (conjure and melds are unchanged); a definition rebound under another slotted
+existence can meet the removed definition's object at its first meld; and a version alone in an index that
+`remove_from_spell_index` minted is missed by the collision check until that index is registered with its frame.
+
+## A spell's binding is a manifest with its own hash
+
+`Spell.binding_manifest` and `Spell.binding_hash` (read-only) are how a spell is kept - its spellframe and kind,
+address, existence, ordered disposal methods, `resolvable` and managed settings - and the SHA256 of that record;
+`BindingManifest.describe()` gives both as plain data. Both creation-cache tiers key on the binding hash beside the
+spell_id, so a spell bound another way never replays a plan built for its old binding. The SpellCrystal records the
+binding hash (record 4.3.0; 4.x records still read), and a restore reports each binding it rebuilt differently -
+under another receiving Spellbook's disposal order, say - in `RestoreReport.describe()["binding_changes"]`, where
+the spell_id used to move.
+
 ## Packaging and documentation
 
 - The README's "Declarative Binding by Module" example passes `permissions="create"`, without which it raised
@@ -1011,10 +1054,11 @@ before. No public signature changes.
   `ReleaseManagedSpell` and the lease, leasing through compiled melds and `managed_spell_meld`, and pools in an
   ownership transfer. The packaged graph describes the five new modules; the code-map extents of the changed files
   are remeasured, and line citations that had drifted since 0.2.8235 point at their code again.
-- The internal-bind guard manifest holds 628 entries at 0.2.8244 (622 at 0.2.8227): `HolderDisposalEntry`, the
-  record that keeps a slotted object's `many` children with it, joined at 0.2.8238, `ManagedSpellMode` at
-  0.2.8242, the managed pool (`ManagedSpellQuantity`) and `ManagedSpellExhaustedError` at 0.2.8243, and
-  `ReleaseManagedSpell` and `ManagedSpellLease` at 0.2.8244.
+- The internal-bind guard manifest holds 630 entries at 0.2.8257 (628 at 0.2.8244, 622 at 0.2.8227):
+  `SpellCodeDigest` and `BindingManifest` joined at 0.2.8257; `HolderDisposalEntry`, the record that keeps a slotted
+  object's `many` children with it, joined at 0.2.8238, `ManagedSpellMode` at 0.2.8242, the managed pool
+  (`ManagedSpellQuantity`) and `ManagedSpellExhaustedError` at 0.2.8243, and `ReleaseManagedSpell` and
+  `ManagedSpellLease` at 0.2.8244.
 - The packaged system documents (`melder.__architecture__`, `melder.__components__`) and the packaged graph
   describe the lineage flag `SpellState.non_resolvable`, the registry's published set of flagged lineages and the
   validation flag's exclusion of them; the code-map extents of the six changed files are remeasured, and line
@@ -1060,4 +1104,24 @@ before. No public signature changes.
 - The packaged system documents (`melder.__architecture__`, `melder.__components__`) and the packaged graph
   describe the refusal on the three cleanup calls and its remedies; the code-map extents of `spellbook.py` and
   `spell.py` are remeasured, and their line citations remapped.
-- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8256.
+- The packaged system documents (`melder.__architecture__`, `melder.__components__`) and the packaged graph describe
+  spell identity: the spell_id as the SHA256 of the object's code (what counts, installed code named by version, the
+  parity across builds and GIL modes, `-O`), the binding manifest and its hash in both cache tiers and the record,
+  and the one-object refusals; the packaged test documents describe the new tests; the code-map extents of the
+  changed files are remeasured. The managed release's failure is corrected there:
+  `ReleaseManagedSpell().release(obj)` after the root's teardown raises the not-managed ValueError, and the
+  torn-down RuntimeError comes from a lease or a release that raced the teardown.
+- The examples teach one object, one spell: the lessons and probes in `UX_and_AIX_experiences/` that bound one class
+  twice bind a class of their own or a version of it. The glossary defines a Spell ID and says a frame does not
+  namespace it; the troubleshooting row, the inspection walkthrough, the configuration guide and the README's "Frame
+  Boundaries" section follow, and the configuration guide's disposal sentence is corrected (every declared method
+  runs; the failures are raised together).
+- The documentation site's intermediate level gains a chapter on managed spell pools
+  (`docs/intermediate/managed-spells.md`): binding a managed spell, the three modes and their refusals,
+  leasing by meld, injection and `managed_spell_meld`, giving objects back, reset methods, inspecting a
+  pool, request scopes and root teardown, and changing settings or moving a pool. Seven runnable
+  intermediate lessons back it, one per mode and lifecycle step (42-48 in
+  `UX_and_AIX_experiences/02_intermediate/`), with 34 contract probes in
+  `UX_and_AIX_experiences/pytest_examples/test_managed_spell_probes.py`; the scopes guide links the chapter
+  from its purge table.
+- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8258.

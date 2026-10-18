@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/structural_snapshot/structural_snapshot.py",
- "source_sha256": "21ff0bc39a830d7f145662767ead72594c005aa7849af2034450e28038b077da",
+ "source_sha256": "53499d1aba0b36d1d2e3c722086c92663fc54d42c706e1b55fdc2c46c4660772",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.structural_snapshot.structural_snapshot": {
@@ -38,7 +38,7 @@
     "has_bases": false,
     "trivial": false
    },
-   "span_sha256": "f5a29bf593ba693bb21c341db9001311a1531ac58af5f11d5bd2ec2336fc16b8"
+   "span_sha256": "adcb3492f656339443212f48d5791cd25a7bebf665b4941bb72eceac6d5ddaab"
   }
  },
  "edges_out": [],

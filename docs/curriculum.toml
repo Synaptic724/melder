@@ -176,6 +176,14 @@ lessons = ["intermediate:23", "intermediate:24", "intermediate:27", "intermediat
 show_steps = true
 
 [[chapter]]
+id = "intermediate/managed-spells"
+title = "Managed spell pools"
+level = "intermediate"
+source = "intermediate/managed-spells.md"
+lessons = ["intermediate:42", "intermediate:43", "intermediate:44", "intermediate:45", "intermediate:46", "intermediate:47", "intermediate:48"]
+show_steps = true
+
+[[chapter]]
 id = "intermediate/connected-subsystems"
 title = "Connected subsystem walkthrough"
 level = "intermediate"

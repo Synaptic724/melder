@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_graph.md'
-LINE_COUNT = 28086
-CONTENT_SHA256 = 'bbe9862238e8062368df276207756be82c29825c9c78225e02ebd3d865471671'
+LINE_COUNT = 28169
+CONTENT_SHA256 = '5cab642ea6c267640dd72450a9a9d0b586ffb0b275ea2e5a8c759bd30800a697'
 
 TEXT = """# src_graph
 
@@ -247,7 +247,7 @@ descriptors and reassemble.
 
 ## src/melder/__version__.py
 
-- source_sha256: `7d75720441d6ccb807ec5448b3f5069b1e96702b61d6c45cf5b1c4a19b1ea8e6`
+- source_sha256: `c71a4a8becf5c91de7117a86eda22ea75841059485469fdcad407647e7db24c0`
 - nodes: 1
 
 ### Nodes
@@ -336,7 +336,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_agent_documentation/manifest/agent_documentation_manifest.py
 
-- source_sha256: `2062dac5ab092381871ce652fb8da50cbcea0ef624845554ae2e48a01b93a47f`
+- source_sha256: `2ad260fa0355fa2bbdd54c2197c028f23e7928c9c73249d778809e482146a5ae`
 - nodes: 1
 
 ### Nodes
@@ -415,7 +415,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py
 
-- source_sha256: `95c970f17f8ae86d22eb3644bca6b3dc925adef10d2b59421dd2469fa9de1623`
+- source_sha256: `ee456c210764b0f512e48ab92769d7251ce22637979517c39edeca00e6cbc860`
 - nodes: 1
 
 ### Nodes
@@ -493,7 +493,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/graph_adjacency_manifest.py
 
-- source_sha256: `f3ea5011307b9bd6c8a573d5ba155ad699949a327812584cb427559b023dd15e`
+- source_sha256: `be1148fc37b54193265ea386f9d6ff2003cffb6c02022063c6c919cfe372643c`
 - nodes: 1
 
 ### Nodes
@@ -510,7 +510,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_index.py
 
-- source_sha256: `ba1507ab91ef4f41100fc990b8801fc265da0d82fa91d9e09ef1bce50b46fdd3`
+- source_sha256: `28be630ebc0f91751545500e845b767e165681aa2adff9afc80d03d511adf7a2`
 - nodes: 1
 
 ### Nodes
@@ -527,7 +527,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_manifest.py
 
-- source_sha256: `ab24c25792346ccd7b1c7ca10ccd603998461b5a84c073058542f7f3b25e3f92`
+- source_sha256: `f05acf27154a31057a888aecc98f68491a7f49313b9b916d7344a2c9e7ce7596`
 - nodes: 1
 
 ### Nodes
@@ -547,7 +547,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_architecture_payload.py
 
-- source_sha256: `0a94795334a29c8caee5e12f8f2cedeed3bca41fb5b7e6e92d6864d8c7c5526a`
+- source_sha256: `efaf81dc2e3b6f175c15ca934c57a4a3a53c9e5fa196f5500489a034f2bf5397`
 - nodes: 1
 
 ### Nodes
@@ -564,7 +564,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_components_payload.py
 
-- source_sha256: `1109d67ab429936997ddd4cd9b7a5373bc6796d30d02a2a1536871cb83606c6a`
+- source_sha256: `7225beeb9da6a2c62c415fe3269b7e2c2a00f7d8682fe3b78a176e874ff22e63`
 - nodes: 1
 
 ### Nodes
@@ -581,7 +581,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_graph_payload.py
 
-- source_sha256: `fbcda71916993f103fbe134c2b85b6be095a61f2670b161931f273f0afa63611`
+- source_sha256: `4cc37d2a3cb5e168123a2906dae560733cf2f261790477c88b91a048933f0308`
 - nodes: 1
 
 ### Nodes
@@ -625,7 +625,7 @@ descriptors and reassemble.
 
 ## src/melder/aether/aether.py
 
-- source_sha256: `f7f54c42f99cc3bfe0b0f83e7da7b543df6edf92df9cb94c6a215caf4b1512b2`
+- source_sha256: `94844af57f38aa0cfedd86a2d1e4af459511a1b484aeea103bbf455b1105ded3`
 - nodes: 2
 
 ### Nodes
@@ -715,7 +715,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aether_configuration.py
 
-- source_sha256: `4eb3c8bd77df5421714ed145465c7cbef11c55ca7a65f9f2626c14bb05930d00`
+- source_sha256: `75c9856e7b7c0ecbbc01efc3d6746d3afcd948db070cdaa04d45aaf795254682`
 - nodes: 2
 
 ### Nodes
@@ -3214,7 +3214,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py
 
-- source_sha256: `a4cf5b8b5b1c6891cffb3da1cf55ca1724c72eee14ef36da3d7c4548afc915a2`
+- source_sha256: `f8d8a0cc53bffbbfe3368b6df4395494cef108ce4bec75c75a047b36e6f209fb`
 - nodes: 2
 
 ### Nodes
@@ -3308,7 +3308,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/lookup_container.py
 
-- source_sha256: `65c82840423ad9cd10a762ef3660a60e9ca0f38759714b35b0c36f9456a26004`
+- source_sha256: `3400c96ff542e653380ba2d6fd21c31144dc376cbfd220092d8f1de922205232`
 - nodes: 2
 
 ### Nodes
@@ -4912,7 +4912,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/conduit_ward/contract/details.py
 
-- source_sha256: `a172b30575393835589e7272a212f70bc0e82098392c6f533ea3f87876d3bea5`
+- source_sha256: `7f2ec85d0b66408b62990fc9a740d5fec972462bc51c17ae75e89d564df1edec`
 - nodes: 3
 
 ### Nodes
@@ -5470,7 +5470,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/meld/conduit_meld.py
 
-- source_sha256: `b4b3f8ab45c2fcd6c22f92b8d194f77c4c81c7dcdeb1ccb25b243609664a4f27`
+- source_sha256: `16671f8f7c1f777fbda6ddfc3350d7db5454de284d65d880c89f93d0875661aa`
 - nodes: 2
 
 ### Nodes
@@ -5812,7 +5812,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/meld/meld.py
 
-- source_sha256: `d0aac188a4ee54956a072159be554fa6ee1169a1fd5fe2c84f4ad9cc22c38de7`
+- source_sha256: `de5becea69e0d7c6a2d1bd3666402fa2c277cac8978c2c62fe767473c348ca75`
 - nodes: 2
 
 ### Nodes
@@ -5899,7 +5899,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/meld/spellspace_meld.py
 
-- source_sha256: `888f9acb93b78f103a025568844b3cb42ba70a198710564be1b09d6c78229e88`
+- source_sha256: `b61050a6898139e05cc96c323ace159408f341a984f9a87818cc07448bacfd2e`
 - nodes: 2
 
 ### Nodes
@@ -6143,7 +6143,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/bind/bind.py
 
-- source_sha256: `921153b06464cbe1a04e41e76d7323d0a7fff97d5b58a32bca86101a76d23286`
+- source_sha256: `1bbfc68ae322390c3ae17056f08ddd5479f59ce821640dfebad5ed0c9581fbf3`
 - nodes: 2
 
 ### Nodes
@@ -6157,13 +6157,13 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `Bind` (class)
 
 - id: `melder.aether.spellbook.bind.bind.Bind`
-- defined at: `src/melder/aether/spellbook/bind/bind.py:130`
+- defined at: `src/melder/aether/spellbook/bind/bind.py:128`
 - extends: `Cleanable`
 - role: Spell registration gateway for one Spellbook.
 - responsibilities:
   - examines binding targets into canonical binding profiles
-  - fingerprints binding metadata into structural spell ids with no memory address in any input (address-free repr, default, signature and init_signature text), so the same object content gets one id in every process
-  - validates native resolvable bool before reflection; False uses its own hash domain while True preserves legacy ids
+  - takes each spell_id from SpellCodeDigest.spell_id(target) - the SHA256 of the target's code and, for an existing object, its data - and nothing from the bind call; spell_id_inspector(spell) answers the same id
+  - validates native resolvable bool before reflection; resolvable is a binding-manifest field, no part of the spell_id
   - admits Protocol definitions only with resolvable=False without relaxing other binding rules
   - resolves ordered disposal once at bind; book names own overlaps and priority selects front or back placement
   - matches requested inherited disposal through first-definition MRO namespaces without invoking descriptors or expanding fingerprinted profile members
@@ -6175,11 +6175,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - retires unpublished failed Spell and index allocations locally without disposing supplied application objects
   - classifies the spellframe before the structural check (_classify_spellframe): None -> SpellframeKind.none, str -> category, a typing.Protocol -> contract with the Protocol recorded; any other class or object is refused with a TypeError naming the two valid forms (0.2.8222, Breaking)
   - validates binding policy and spellframe semantics, running the direct-public-member Protocol check only for a contract frame
-  - hands the Spell its spellframe_kind and implemented_protocols; the fingerprint does not hash the kind
+  - hands the Spell its spellframe_kind and implemented_protocols; the spell_id does not read the kind, a binding-manifest field
   - validates and normalizes a managed binding's four options once (_normalize_managed_options: classes only, the mode defaulting to elastic, the limit, the queue-only timeout and callable reset names; every refusal before a Spell or index exists) and hands the normalized values to the Spell as its settings (0.2.8242); the fingerprint never reads them, so one class bound managed at one address with one disposal list has one spell_id whatever its settings, and spell_id_inspector checks them as bind does and hashes without them (0.2.8254; 0.2.8242-0.2.8253 appended a managed:<mode>:<limit>:<timeout>:<reset names> part)
 - owns_state: `_spellbook`, `_spell_examiner`, `_lifecycle_hooks`
 - phases: `init`, `runtime`, `cleanup`
-- public methods: `add_hooks`, `bind`, `capture_hooks`, `cleanup`, `clear_hooks`, `execute_post_hooks`, `get_hook_names`, `sha256_profile`, `spell_id_inspector`
+- public methods: `add_hooks`, `bind`, `capture_hooks`, `cleanup`, `clear_hooks`, `execute_post_hooks`, `get_hook_names`, `spell_id_inspector`
 
 ### Edges out
 
@@ -6197,19 +6197,20 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - `melder.aether.spellbook.bind.bind.Bind` -> `melder._build_assets._bind_guard.bind_guard`: Bind.bind calls the module-level assert_allowed() before constructing a Spell, and that check refuses registration when the candidate's exact (module, qualname) pair is present in INTERNAL_MANIFEST - the frozenset this hand-written loader publishes. Membership is an exact match and does NOT walk the MRO, so a user subclass of an internal class carries its own qualname, misses the manifest, and binds normally.
 - `melder.aether.spellbook.bind.bind.Bind` -> `melder.aether.conduit.conduit_ward.permissions.permissions.Permissions`: Bind accepts and carries Permissions as the access policy for newly registered spells.
-- `melder.aether.spellbook.bind.bind.Bind` -> `melder.aether.spellbook.bind.spell_index.SpellIndex`: Bind creates a SpellIndex lineage key from the structural fingerprint before constructing the Spell record.
+- `melder.aether.spellbook.bind.bind.Bind` -> `melder.aether.spellbook.bind.spell_index.SpellIndex`: Bind creates a SpellIndex lineage key from the spell_id (the code digest) before constructing the Spell record.
 - `melder.aether.spellbook.bind.bind.Bind` -> `melder.aether.spellbook.existence.existence.Existence`: Bind accepts Existence as the lifecycle policy for newly registered spells.
 - `melder.aether.spellbook.bind.bind.Bind` -> `melder.aether.spellbook.spell.Spell`: Bind turns one examined binding target into the canonical Spell runtime record for Spellbook registration.
 - `melder.aether.spellbook.bind.bind.Bind` -> `melder.aether.spellbook.spell_compiler.spell_examiner.spell_examiner.SpellExaminer`: Bind owns the SpellExaminer used to build registration profiles.
 - `melder.aether.spellbook.bind.bind.Bind` -> `melder.aether.spellbook.spell_types.spell_types.SpellType`: Bind resolves and stores SpellType to classify each registered spell family.
 - `melder.aether.spellbook.bind.bind.Bind` -> `melder.aether.spellbook.existence.managed_spell_mode.ManagedSpellMode`: Bind normalizes a managed binding's mode to a ManagedSpellMode member and hands it to the Spell as a setting; the spell_id does not hash it (0.2.8254).
 
-### Edge candidates (7, unconfirmed)
+### Edge candidates (8, unconfirmed)
 
 Instantiation guesses from the AST. Over-generated roughly 8x against the reference graph; confirm or drop before relying on them.
 
 - `melder.aether.spellbook.bind.bind.Bind` creates `RLock`
 - `melder.aether.spellbook.bind.bind.Bind` creates `SpellExaminer`
+- `melder.aether.spellbook.bind.bind.Bind` creates `SpellCodeDigest`
 - `melder.aether.spellbook.bind.bind.Bind` creates `TypeError`
 - `melder.aether.spellbook.bind.bind.Bind` creates `SpellIndex`
 - `melder.aether.spellbook.bind.bind.Bind` creates `Spell`
@@ -6217,6 +6218,38 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - `melder.aether.spellbook.bind.bind.Bind` creates `HookExecutionError`
 
 <!-- END FILE: src/melder/aether/spellbook/bind/bind.py -->
+
+<!-- BEGIN FILE: src/melder/aether/spellbook/bind/binding_manifest.py -->
+
+## src/melder/aether/spellbook/bind/binding_manifest.py
+
+- source_sha256: `31e27f12430622ce8f9a23ed6f359c77387c850761b648e91e99779c6db855b6`
+- nodes: 2
+
+### Nodes
+
+#### `binding_manifest` (module)
+
+- id: `melder.aether.spellbook.bind.binding_manifest`
+- defined at: `src/melder/aether/spellbook/bind/binding_manifest.py:1`
+- role: Module holding BindingManifest, how a spell is kept, and its SHA256 (0.2.8258).
+- responsibilities:
+  - defines BindingManifest and nothing at module scope but imports
+- phases: `init`
+
+#### `BindingManifest` (class)
+
+- id: `melder.aether.spellbook.bind.binding_manifest.BindingManifest`
+- defined at: `src/melder/aether/spellbook/bind/binding_manifest.py:14`
+- role: Value record of a spell's binding - the bind call - whose SHA256 is the binding hash.
+- responsibilities:
+  - build(...) records the spellframe and its kind, the address (frame and binding keys), existence, the ordered disposal names, resolvable and the managed settings, equal settings written alike
+  - binding_hash: the SHA256 of a tag and the field lines; it keys the creation caches beside the spell_id and rides the SpellCrystal (record 4.3.0)
+  - describe() gives the hash and the fields as plain data
+- phases: `init`, `runtime`
+- public methods: `binding_hash`, `binding_key`, `binding_name`, `build`, `describe`, `disposal_method_names`, `existence`, `fields`, `frame_key`, `managed_spell_limit`, `managed_spell_mode`, `managed_spell_reset_methods` (+5 more)
+
+<!-- END FILE: src/melder/aether/spellbook/bind/binding_manifest.py -->
 
 <!-- BEGIN FILE: src/melder/aether/spellbook/bind/scan.py -->
 
@@ -6283,11 +6316,61 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 <!-- END FILE: src/melder/aether/spellbook/bind/scan.py -->
 
+<!-- BEGIN FILE: src/melder/aether/spellbook/bind/spell_code_digest.py -->
+
+## src/melder/aether/spellbook/bind/spell_code_digest.py
+
+- source_sha256: `5175774c60332bddf5eab6417553464f8e7091db6c099fdadc77499316ecd8b6`
+- nodes: 2
+
+### Nodes
+
+#### `spell_code_digest` (module)
+
+- id: `melder.aether.spellbook.bind.spell_code_digest`
+- defined at: `src/melder/aether/spellbook/bind/spell_code_digest.py:1`
+- role: Module holding SpellCodeDigest, the encoder whose SHA256 is a spell_id (0.2.8257).
+- responsibilities:
+  - defines SpellCodeDigest and nothing at module scope but imports
+- phases: `init`
+
+#### `SpellCodeDigest` (class)
+
+- id: `melder.aether.spellbook.bind.spell_code_digest.SpellCodeDigest`
+- defined at: `src/melder/aether/spellbook/bind/spell_code_digest.py:33`
+- extends: `Cleanable`
+- role: Encodes a registration target's code and data into the text whose SHA256 is its spell_id.
+- responsibilities:
+  - spell_id(target): the SHA256 of 'v5-code', the interpreter's cache tag and the target's encoding
+  - encodes a class as its module, qualname, metaclass and bases and, for it and every MRO class outside the standard library, its namespace: functions by code, defaults, annotations, closures, class values
+  - encodes a function by its code object: instructions, loaded constants, argument counts, flags, name tables and exception table - never line numbers, docstrings or comments
+  - encodes an existing object as its class's code plus its slots and __dict__ by value
+  - names installed third-party code (a module file under a site-packages root) by qualified name and distribution version instead of digesting it (decision B), and names standard-library classes
+  - takes nothing from the bind call: spellframe, binding name, existence, disposal names, resolvable and the managed settings belong to the binding manifest
+- owns_state: `_code_memo`, `_third_party_memo`, `_version_memo`, `_distributions`
+- phases: `init`, `runtime`, `cleanup`
+- public methods: `cleanup`, `spell_id`, `target_encoding`
+
+### Edges out
+
+| from | relation | to | cardinality | phase | origin |
+| --- | --- | --- | --- | --- | --- |
+| `melder.aether.spellbook.bind.spell_code_digest.SpellCodeDigest` | specializes | `melder.utilities.general_base.cleanable.Cleanable` | - | - | derived |
+
+### Edge candidates (2, unconfirmed)
+
+Instantiation guesses from the AST. Over-generated roughly 8x against the reference graph; confirm or drop before relying on them.
+
+- `melder.aether.spellbook.bind.spell_code_digest.SpellCodeDigest` creates `WeakKeyDictionary`
+- `melder.aether.spellbook.bind.spell_code_digest.SpellCodeDigest` creates `Path`
+
+<!-- END FILE: src/melder/aether/spellbook/bind/spell_code_digest.py -->
+
 <!-- BEGIN FILE: src/melder/aether/spellbook/bind/spell_index.py -->
 
 ## src/melder/aether/spellbook/bind/spell_index.py
 
-- source_sha256: `bfda53a48a5105b486c61766a07d3800e783980d0fac7c5c2d88af706af69af7`
+- source_sha256: `0fae4148f2b9c36c68307b72fef21c14e6974b011f7622bc09ffbb3d294fd65f`
 - nodes: 2
 
 ### Nodes
@@ -6523,7 +6606,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell.py
 
-- source_sha256: `6350c7a94fadbffb8cc2b08c760e45184e5f2e51649baefc6ae22b236b87d62f`
+- source_sha256: `bcd93c2157f15658c05b6c01a983dc8507008a8f3b24dbfc2ffc90dbb433a892`
 - nodes: 2
 
 ### Nodes
@@ -6537,7 +6620,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `Spell` (class)
 
 - id: `melder.aether.spellbook.spell.Spell`
-- defined at: `src/melder/aether/spellbook/spell.py:63`
+- defined at: `src/melder/aether/spellbook/spell.py:64`
 - extends: `Cleanable`
 - role: Canonical bound spell runtime record.
 - responsibilities:
@@ -6554,7 +6637,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - a direct cleanup of the active version of an index that also holds parked versions raises the Book's refusal and leaves the spell as it was (Spellbook.cleanup_and_remove_spell, 0.2.8256)
 - owns_state: `_resolvable`, `_compiler_artifact`, `_creation_context`, `_creation_context_factory`, `_creation_context_switch`, `_spellbook`, `_spell_system_states`, `dependency_graph`, `dependencies`, `disposal_method_names`, `_creation_context_failure`, `spellframe_kind`, `implemented_protocols`, `_removal_lock`, `_managed_spell_mode`, `_managed_spell_limit`, `_managed_spell_timeout_seconds`, `_managed_spell_reset_methods`
 - phases: `init`, `validation`, `runtime`, `cleanup`
-- public methods: `apply_mutation_override`, `cleanup`, `clear_mutation_override`, `emit_cache`, `emit_cache_file`, `has_existing_object`, `has_mutation_override`, `invalidate_spell`, `is_broken`, `is_class_spell`, `is_existing_creation`, `is_lambda_spell` (+16 more)
+- public methods: `apply_mutation_override`, `binding_hash`, `cleanup`, `clear_mutation_override`, `emit_cache`, `emit_cache_file`, `has_existing_object`, `has_mutation_override`, `invalidate_spell`, `is_broken`, `is_class_spell`, `is_existing_creation` (+17 more)
 
 ### Edges out
 
@@ -8537,7 +8620,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_no_overrides_compiler.py
 
-- source_sha256: `d1cf948365d5e2bf551a29524064b1c3ad771a2b1d4c99040c88c56ff52f791c`
+- source_sha256: `217ef8231cb6f547796499c0d356543b470cfc40ef6dacb77b6a3741e5122e7d`
 - nodes: 1
 
 ### Nodes
@@ -8932,7 +9015,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/manifest/generalized_manifest.py
 
-- source_sha256: `d75496372f0d78e950b8e004c8bf6f1619e557447d4ae0fc74a2f4a3b7a218c3`
+- source_sha256: `9637e3bb904737bd28d87bf1c5ae33292b8dc9fc45cd64d73f93f50a229523a9`
 - nodes: 1
 
 ### Nodes
@@ -12558,7 +12641,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/inspector_utility.py
 
-- source_sha256: `4b666206e327cb3d0d599c1232cab9bd8fd7c7c58b5ec184c0d659de355f9916`
+- source_sha256: `0b8d098c29f5d1d56ad22a81aa4f9347fc52dd7bd49bc9385b02c5548e05feec`
 - nodes: 2
 
 ### Nodes
@@ -12704,7 +12787,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py
 
-- source_sha256: `e6b070157c4334abc967463d0891c5048f64bff859f4f0b50abed9f26afe5de0`
+- source_sha256: `64f8585bbffe3415971b514568d0ea9a014a38dc73e008f81912074bc31f07c8`
 - nodes: 8
 
 ### Nodes
@@ -12755,7 +12838,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `CallableParameterBindingSummary` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.CallableParameterBindingSummary`
-- defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py:234`
+- defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py:235`
 - role: The minimal binding-time view of one callable parameter, for fingerprinting and diagnostics.
 - responsibilities:
   - record the parameter's name, kind, default repr and annotation repr
@@ -12766,7 +12849,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `CallableBindingProfile` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.CallableBindingProfile`
-- defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py:274`
+- defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py:270`
 - extends: `SpellBindingProfile`
 - role: Binding-time view of a function, method or lambda spell candidate.
 - responsibilities:
@@ -12780,7 +12863,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `InstanceBindingProfile` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.InstanceBindingProfile`
-- defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py:403`
+- defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py:391`
 - extends: `SpellBindingProfile`
 - role: Binding-time view of an already-constructed object bound as an EXISTING_CREATION spell.
 - responsibilities:
@@ -12793,7 +12876,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `OtherBindingProfile` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.OtherBindingProfile`
-- defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py:470`
+- defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py:450`
 - extends: `SpellBindingProfile`
 - role: Fallback profile for candidates that fit none of the normal shapes.
 - responsibilities:
@@ -12970,7 +13053,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/spell_examiner/strategies/binding_profile_strategy.py
 
-- source_sha256: `be9c267e94e07f8c12ead1057ca9f9df92abaf82c45ecf3fc373209f47bd5222`
+- source_sha256: `f92a03e80990e4bf46f962a26ece05536bea968d9857aa1a9e09e4f85e89516b`
 - nodes: 2
 
 ### Nodes
@@ -13236,7 +13319,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/structural_snapshot/structural_snapshot.py
 
-- source_sha256: `21ff0bc39a830d7f145662767ead72594c005aa7849af2034450e28038b077da`
+- source_sha256: `53499d1aba0b36d1d2e3c722086c92663fc54d42c706e1b55fdc2c46c4660772`
 - nodes: 2
 
 ### Nodes
@@ -15761,7 +15844,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spellbook.py
 
-- source_sha256: `9f654467dddc61054aaa7d11ab087749e005647296f431216113690d51630fb1`
+- source_sha256: `ceaf3e5c1f60e8b8632000b9c5dbde4521749cd425beba98bd38667ac4ab3afe`
 - nodes: 2
 
 ### Nodes
@@ -15874,7 +15957,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spellbook_creation_system.py
 
-- source_sha256: `77667787ab30f0c3409203d0e6a915de3bcb1927c3c32a0a30e25d41cd04abf9`
+- source_sha256: `06e7e024b435e01de5214eaed17cd3c104e91f467b4471c81fb75c110551e64a`
 - nodes: 2
 
 ### Nodes
@@ -17600,7 +17683,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/crystallizer/crystal_loader_system/graft_runner.py
 
-- source_sha256: `f7e5bcf9af03e9385f86541f4efc6e9f0b783c6645c670120a6b0cb3f6f65a67`
+- source_sha256: `d001fe03780b9f6479ce9d006e8f0c69cd17d5a088bcf165460068bf9777e503`
 - nodes: 2
 
 ### Nodes
@@ -17766,7 +17849,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/crystallizer/crystal_loader_system/restore_engine.py
 
-- source_sha256: `bb1777f6a01a1c7fe1b634f1362ce199b8985a1691ac7b79f9349e02828fbc3f`
+- source_sha256: `b9134ea328a310fdcc180c26f248007acc378f006d42e3b262dd960c953c7f0c`
 - nodes: 3
 
 ### Nodes
@@ -17786,7 +17869,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `RestoreReport` (class)
 
 - id: `melder.crystallizer.crystal_loader_system.restore_engine.RestoreReport`
-- defined at: `src/melder/crystallizer/crystal_loader_system/restore_engine.py:28`
+- defined at: `src/melder/crystallizer/crystal_loader_system/restore_engine.py:29`
 - extends: `Cleanable`
 - role: Detached outcome record for one restore run, built to be judged honestly rather than trusted.
 - responsibilities:
@@ -17795,12 +17878,12 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - carry structural identity translations and changed bind-SHA translations in one locked report map
 - owns_state: `_lock`, `_profile_name`, `_checkpoint_ids`, `_built_counts`, `_shortfalls`, `_identity_map`, `_status`, `_failed_stage`, `_preflight`, `_plan_summary`
 - phases: `runtime`
-- public methods: `add_shortfall`, `cleanup`, `describe`, `map_identity`, `mark_complete`, `mark_failed`, `record_built`, `set_plan_summary`, `set_preflight`, `translate`
+- public methods: `add_shortfall`, `cleanup`, `describe`, `map_identity`, `mark_complete`, `mark_failed`, `record_binding_change`, `record_built`, `set_plan_summary`, `set_preflight`, `translate`
 
 #### `RestoreEngine` (class)
 
 - id: `melder.crystallizer.crystal_loader_system.restore_engine.RestoreEngine`
-- defined at: `src/melder/crystallizer/crystal_loader_system/restore_engine.py:383`
+- defined at: `src/melder/crystallizer/crystal_loader_system/restore_engine.py:436`
 - extends: `Cleanable`
 - role: Single-use all-or-nothing world restorer: folds a checkpoint chain and replays it through PUBLIC runtime verbs.
 - responsibilities:
@@ -18325,7 +18408,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/crystallizer/crystals/spell_crystal.py
 
-- source_sha256: `a8f20e27bcc7d1081733d3487739234120d7703c1f8abcb25ceaebd680067268`
+- source_sha256: `294526be66bdcad52509c45e5127b0708bdf25b2515655880fe59bb25e069475`
 - nodes: 2
 
 ### Nodes
@@ -18357,7 +18440,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - records a managed spell's options as plain values - the mode by name, the limit, the queue timeout and the reset names - only for managed_spell_quantity, so every other payload is unchanged (record 4.2.0, 0.2.8242); managed_spell_options returns them, and the static managed_bind_options(payload) is the one reader the restore and graft lanes replay them through, as settings: the replayed bind's spell_id does not depend on them (0.2.8254)
 - owns_state: `_analysis (one carried CrystalAnalysisResult)`, `_disposal_method_names (ordered recorded values)`, `_frame_name, _custody_key (the record key)`, `_spellframe_kind, _spellframe_module, _spellframe_qualname (recorded frame kind)`, `_managed_spell_mode_name, _managed_spell_limit, _managed_spell_timeout_seconds, _managed_spell_reset_methods (recorded managed options)`
 - phases: `init`, `runtime`, `cleanup`
-- public methods: `binding_name`, `cleanup`, `compose_custody_key`, `custody_key`, `describe`, `disposal_method_names`, `existence_name`, `frame_name`, `id`, `managed_bind_options`, `managed_spell_options`, `module_targets` (+29 more)
+- public methods: `binding_hash`, `binding_name`, `cleanup`, `compose_custody_key`, `custody_key`, `describe`, `disposal_method_names`, `existence_name`, `frame_name`, `id`, `managed_bind_options`, `managed_spell_options` (+30 more)
 
 ### Edges out
 
@@ -18640,7 +18723,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/crystallizer/persistence/record_version.py
 
-- source_sha256: `5ba93f3f16418ef6802ac76d143623a02a55f3693e10cda0a3087b7073a626e1`
+- source_sha256: `5c0c7d32146fa02b154a101234953569e023ca0c82a494b12b0c7346a75333f0`
 - nodes: 2
 
 ### Nodes
@@ -26012,7 +26095,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/utilities/caching_system/caching_system.py
 
-- source_sha256: `967509758d82c31c97ed0e2051cb5403c7aad836d53d262c834676a37a9e3945`
+- source_sha256: `bdcaa48c320c164960d8321bdf96315186084f1c629e0cbd4c0b6d62593d67cb`
 - nodes: 2
 
 ### Nodes

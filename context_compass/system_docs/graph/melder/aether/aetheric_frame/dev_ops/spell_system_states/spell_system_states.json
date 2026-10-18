@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py",
- "source_sha256": "a4cf5b8b5b1c6891cffb3da1cf55ca1724c72eee14ef36da3d7c4548afc915a2",
+ "source_sha256": "f8d8a0cc53bffbbfe3368b6df4395494cef108ce4bec75c75a047b36e6f209fb",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states": {
@@ -64,7 +64,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "16e0c321a9dd930cbac43f5dc263d0a623725221c0cbbffe06a3d98eed40c031",
+   "span_sha256": "5b67d0a9a42d555cfd721a7b80cc5ff8a0b6f853b7388d52880d1333c743ac3b",
    "role": "Per-frame lineage and resolution state registry.",
    "responsibilities": [
     "owns lineage state by index id and spell id",

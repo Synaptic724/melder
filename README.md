@@ -721,11 +721,15 @@ tenant_a = md.Spellbook(aetheric_frame="tenant-a")
 tenant_b = md.Spellbook(aetheric_frame="tenant-b")
 ```
 
-Use distinct `binding_name` or `spellframe` values when binding the same class
-in both worlds. Spell IDs are unique across the process: an identical binding
-fingerprint produces the same ID even in another frame and is refused.
-A `unique` spell is a singleton **per frame** — not per process. Two distinct
-bindings, two frames, two instances, one interpreter.
+Bind a distinct class in each world — a subclass per tenant is enough. A spell
+ID is the SHA256 of the registered object's code (its methods, constructor,
+class-level values and bases), with nothing from the bind call in it, and spell
+IDs are unique across the process: the same class bound in another frame is the
+same spell, and it is refused whatever `binding_name` or `spellframe` it gets.
+A `unique` spell is a singleton **per frame** — not per process. Two classes,
+two frames, two instances, one interpreter. To register one class in several
+worlds instead, turn `process_wide_unique_spell_ids` off in the Aether
+configuration before the first frame exists; spell IDs are then unique per frame.
 
 That makes frames the natural seam for multi-tenancy, plugin isolation, and test
 isolation (a fresh frame per test is a fresh world). Conduits link *within* a

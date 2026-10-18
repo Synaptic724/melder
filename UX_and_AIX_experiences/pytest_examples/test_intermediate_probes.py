@@ -488,8 +488,13 @@ def test_probe_config_definition_laws():
         config.set_property("phase_scheduler_workers_per_spellbook", 2)
     print("post-freeze:", type(frozen.value).__name__)
 
+    # The bare book binds its own class: one class registers once (a
+    # spell_id is the SHA256 of its code), and Payload is the first book's.
+    class BarePayload:
+        """The bare book's own spell."""
+
     bare = Spellbook(configuration=md.SpellbookConfiguration())
-    bare.bind(spell=Payload, existence="unique", binding_name="bare")
+    bare.bind(spell=BarePayload, existence="unique")
     with pytest.raises(Exception) as incomplete:
         bare.conjure(name="bare-probe")
     print("incomplete config at conjure:", type(incomplete.value).__name__)
@@ -789,6 +794,10 @@ class _Ledger:
     pass
 
 
+class _OtherLedger(_Ledger):
+    """The second frame's own ledger - a new class, so its own spell_id."""
+
+
 def test_probe_conduit_cloud_is_frame_owned_and_shared():
     """Lesson 37 HEADLINE: get_conduit_cloud() is a REACH, not a factory.
     melder's contract: "Reaches THROUGH the aetheric frame to the
@@ -852,13 +861,14 @@ def test_probe_conduit_cloud_is_not_on_the_package_root():
 def test_probe_a_different_frame_gets_a_different_cloud():
     """Lesson 37 claim: frames are worlds (advanced 03) and the cloud is a
     world-level object, so the frame wall holds here too."""
-    # binding_name differs because a spell_id does not carry the frame -
-    # identical bindings on two frames collide process-wide. The CLOUD is
-    # what this row is about, and it IS per-frame.
+    # The second frame binds its OWN class: a spell_id is the SHA256 of
+    # the class's code and carries neither the frame nor the binding_name,
+    # so _Ledger bound in both frames would be refused process-wide. The
+    # CLOUD is what this row is about, and it IS per-frame.
     first = Spellbook(aetheric_frame="probe-cloud-a")
     first.bind(spell=_Ledger, existence="unique", binding_name="cloud-a")
     second = Spellbook(aetheric_frame="probe-cloud-b")
-    second.bind(spell=_Ledger, existence="unique", binding_name="cloud-b")
+    second.bind(spell=_OtherLedger, existence="unique", binding_name="cloud-b")
 
     cloud_a = first.conjure(name="a-root").get_conduit_cloud()
     cloud_b = second.conjure(name="b-root").get_conduit_cloud()

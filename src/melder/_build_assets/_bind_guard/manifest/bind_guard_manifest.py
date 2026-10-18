@@ -14,9 +14,9 @@ Regenerate with:
 """
 
 MANIFEST_VERSION = "2.0.0"
-BUILT_FOR_VERSION = "0.2.8256"
-SOURCE_SHA256 = "08a7537c5f8a76caee833577b8d328dd22b5df9dd5a7eee41ecabeeffdc0649c"
-ENTRY_COUNT = 628
+BUILT_FOR_VERSION = "0.2.8258"
+SOURCE_SHA256 = "a70dfea1a0585b31ce4e86a6dc9b9990b9872e79cdeb244853c48406355ad944"
+ENTRY_COUNT = 630
 
 ENTRIES = (
     ('melder.aether.aether', 'Aether'),
@@ -153,8 +153,10 @@ ENTRIES = (
     ('melder.aether.conduit.spell_space.spell_space_thread_state', 'SpellSpaceThreadState'),
     ('melder.aether.conduit.spell_space.spell_space_thread_state', '_SpellSpaceLocal'),
     ('melder.aether.spellbook.bind.bind', 'Bind'),
+    ('melder.aether.spellbook.bind.binding_manifest', 'BindingManifest'),
     ('melder.aether.spellbook.bind.scan', 'Scan'),
     ('melder.aether.spellbook.bind.scan', 'ScanBindMetadata'),
+    ('melder.aether.spellbook.bind.spell_code_digest', 'SpellCodeDigest'),
     ('melder.aether.spellbook.bind.spell_index', 'SpellIndex'),
     ('melder.aether.spellbook.configuration.spellbook_configuration', 'SpellbookConfiguration'),
     ('melder.aether.spellbook.configuration.system_state', 'SystemState'),

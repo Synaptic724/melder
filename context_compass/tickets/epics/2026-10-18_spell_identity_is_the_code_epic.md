@@ -8,7 +8,7 @@
 - Agent Role: synaptic_python_developer
 - Priority: p1
 - Created: 2026-10-18T11:45:58Z
-- Updated: 2026-10-18T19:59:24Z
+- Updated: 2026-10-18T23:43:33Z
 - Target Window: 2026-Q4
 - Related Program/Initiative: Melder runtime correctness (the owner's direction, chat 2026-10-18); follows
   STORY-2026-10-17-release_routes_parked_version_objects_to_active_pool
@@ -743,6 +743,178 @@ this does not make independent review mandatory for every ticket.
   REREAD: HELPFUL
   SCORE_0_TO_10: 7
 
+- DATETIME: 2026-10-18T21:53:02Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: M2-15 from melder_2 (2026-10-18T21:32:20Z, NOTICE, ACK requested), consumed after the re-onboarding;
+    ACKed as M0-201. melder_2 runs EPIC-2026-10-18-managed_spell_examples_and_docs (owner request): new
+    example files only (lessons 42-47 in UX_and_AIX_experiences/02_intermediate and
+    pytest_examples/test_managed_spell_probes.py), a new docs/ page and a release-note entry under
+    Packaging and documentation; no src and no notch; its asset and LLM rebuild waits for this landing's.
+    It asks three things of this landing: (1) to be told before it edits UX_and_AIX_experiences/ or
+    docs/, because some UX examples bind one class twice, which S1 and S2 refuse - which ones is UNKNOWN
+    until swept, and the whole-tree runs (unit, component, integration, experimentation) never ran the
+    examples; (2) a correction: src_architecture's failure mode and src_components' managed-pool failure
+    modes say a release after the pool's root was torn down raises RuntimeError, while its probe (P08,
+    P19) shows `ReleaseManagedSpell().release` raising the not-managed ValueError through the registry and
+    only a `ManagedSpellLease` getting the RuntimeError - UNKNOWN until the release paths are read;
+    (3) a NOTICE when this landing's rebuild is done. melder_0 holds the running release note until then.
+  EVIDENCE:
+  - context_compass/tickets/stories/completed/2026-10-18_managed_spell_lifecycle_map_story.md:1-352
+  - context_compass/system_docs/src_architecture.md:2525-2535
+  - context_compass/system_docs/src_components.md:3951-3952
+  IMPACT: (1) widens the landing: an example that binds one class twice fails the way the 88 tests did, so
+    the examples are swept and run in the mirror before the rebuild, melder_2 told before any edit;
+    (2) is a documentation correction in two documents this pass holds, made only if the code confirms
+    it; (3) orders the two rebuilds and keeps one writer on the release note.
+  NEXT: Sweep UX_and_AIX_experiences/ and docs/ for one object bound twice; read the release paths for (2).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-18T22:18:15Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: M2-16 and M2-17 from melder_2 (2026-10-18T22:03:37Z and 22:10:43Z, NOTICEs), consumed after the
+    re-onboarding; M0-202 answers. M2-16: at 5e3800c7a (S1 and S2 committed on 0.2.8256) `pytest_examples`
+    fails 17 rows with the GIL off and on, the same without melder_2's files - 12 one-object refusals, 4
+    rows on premises in the identity area and expert 37's missing VERIFY header. This landing's mirror
+    agrees with clean caches: 17 failed with S1 and S2, 7 at 0.2.8256 (the 4 premise rows, the VERIFY
+    header and two contract probes that rebind one class), so 10 rows are new. melder_2's lane added,
+    each binding an object once, 02_intermediate/42-48_managed_spell_*.py,
+    pytest_examples/test_managed_spell_probes.py and a MANAGED SPELL POOLS section in
+    02_intermediate/_concept_map.txt. M2-17: its S3 edits six docs/ files - catalog.toml, curriculum.toml,
+    a new intermediate/managed-spells.md, one bullet of intermediate/index.md, one cross-link line of
+    intermediate/scopes.md and seo.toml. A read-only grep of docs/ (no .venv, no _build) for the old
+    identity rule finds candidates in other files only: reference/glossary.md, reference/troubleshooting.md
+    (and the advanced/worlds.md it links), advanced/inspection-walkthrough.md and
+    intermediate/configuration.md; intermediate/scopes.md names `spell_id=` once, for purge.
+  EVIDENCE:
+  - context_compass/tickets/stories/completed/2026-10-18_managed_spell_ux_examples_story.md:171-196
+  - context_compass/artifacts/spell_identity_20261018/runs/ux_examples/ux_s1s2_gil0_clean.txt:1-27
+  - context_compass/artifacts/spell_identity_20261018/runs/ux_examples/ux_base8256_gil0_clean.txt:1-17
+  - docs/reference/glossary.md:14-14
+  - docs/reference/troubleshooting.md:12-12
+  - docs/advanced/inspection-walkthrough.md:16-16
+  - docs/intermediate/configuration.md:82-82
+  - docs/intermediate/scopes.md:104-104
+  IMPACT: S3's six files and this sweep's candidates are disjoint, so melder_2's S3 proceeds; the examples sweep
+    owns the 10 new rows and decides the 7 older ones by reading them; melder_2's new files need nothing.
+  NEXT: Finish reading the failing rows' sources (37_the_frame_conduit_cloud.py, test_intermediate_probes.py
+    near 492 and 864), then record the sweep on S1 and write the rewrite script.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-18T22:28:21Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: M2-15's point (2) holds, read whole: `Creations.cleanup` unregisters its managed pools from
+    `ReleaseManagedSpell` (`_unregister_managed_quantities`) before it cleans them, and `unregister` drops
+    a class whose last pool goes (`_drop_pool`). So after a root's teardown `ReleaseManagedSpell().release`
+    finds no pool for the object's class and `_resolve_pool` raises ValueError "<Class> is not a managed
+    spell class in any live root: bind it with existence=Existence.managed_spell_quantity, or its root was
+    torn down." - unless another live root pools the class, whose pool then takes the object (one pool and
+    no filter is that pool's `put_back`, which trusts the object). The torn-down RuntimeError ("The pool of
+    managed spell '<name>' was torn down with its root conduit; the object is yours to dispose.") is
+    `put_back` on a cleaned pool: a `ManagedSpellLease` released after the teardown (it holds its pool), or
+    a registry release that read the pool before the store unregistered it. src_architecture's failure mode
+    and src_components' Managed Spell Pools failure modes give the RuntimeError for any release after
+    teardown; this docs pass corrects both. No code changes: routing by class through live roots is the
+    0.2.8244 design.
+  EVIDENCE:
+  - src/melder/aether/conduit/creations/creations.py:326-399
+  - src/melder/aether/conduit/creations/creations.py:1261-1282
+  - src/melder/aether/conduit/creations/release_managed_spell.py:319-355
+  - src/melder/aether/conduit/creations/release_managed_spell.py:357-399
+  - src/melder/aether/conduit/creations/release_managed_spell.py:515-580
+  - src/melder/aether/conduit/creations/release_managed_spell.py:666-686
+  - src/melder/aether/conduit/creations/managed_spell_quantity.py:553-611
+  - src/melder/aether/conduit/creations/managed_spell_quantity.py:916-928
+  - src/melder/aether/conduit/creations/managed_spell_lease.py:103-127
+  - context_compass/system_docs/src_architecture.md:2525-2535
+  - context_compass/system_docs/src_components.md:3951-3952
+  - context_compass/tickets/stories/completed/2026-10-18_managed_spell_lifecycle_map_story.md:1-352
+  IMPACT: Two documentation corrections in the source follow-ups of this pass; melder_2 hears it with the
+    rebuild NOTICE.
+  NEXT: The examples' rewrite (S1's PLAN note).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-18T22:55:41Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: M2-18 consumed (melder_2, 2026-10-18T22:38:41Z): S3's six docs/ files are on the tree - the managed
+    spells chapter, lessons 42-48 in the catalog, the chapter in the curriculum, a bullet in the intermediate
+    index, a cross-link in scopes.md and the page in seo.toml - with the docs checks green on melder_2's
+    mirror; this landing's rebuild carries them, and melder_2's release-note entry and rebuild wait for its
+    rebuild-done NOTICE. M0-203 answers: the docs sweep edits five pages, none of the six (glossary,
+    troubleshooting, the inspection walkthrough, configuration and the README's Frame Boundaries section),
+    and the examples' rewrite changed lesson text the site renders.
+  EVIDENCE: context_compass/tickets/stories/2026-10-18_managed_spell_sphinx_docs_story.md:172-199
+  IMPACT: The rebuild order holds: this landing's rebuild first, then melder_2's entry and rebuild; the docs
+    checks run over both lanes' docs before this landing's rebuild.
+  NEXT: The docs sweep applied, then the docs checks.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
+- DATETIME: 2026-10-18T23:06:32Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: M2-19 consumed (melder_2, 2026-10-18T23:04:33Z): on the owner's directive in melder_2's chat (23:01Z: finish
+    now, no rebuild in that lane) melder_2 added its one release-note bullet - the managed spells chapter,
+    docs/intermediate/managed-spells.md - directly above the closing rebuild line of `## Packaging and
+    documentation`, runs no rebuild and closes S3 and its epic; its writes to docs/ and release_docs/ end there.
+    So this landing's release-note pass re-reads the file and keeps that bullet above the rebuild line, and this
+    landing's rebuild is the one that carries melder_2's docs and release-note changes.
+  EVIDENCE:
+  - release_docs/next_version_release.md:1063-1070
+  - context_compass/tickets/stories/2026-10-18_managed_spell_sphinx_docs_story.md
+  IMPACT: No ordering wait remains on melder_2's side; the docs checks before the rebuild still cover both lanes'
+    docs, and the rebuild line names this landing's version.
+  NEXT: The tests system documents and the source follow-ups.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
+- DATETIME: 2026-10-18T23:31:15Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: S1 and S2 turned in: S1 notched 0.2.8257, S2 0.2.8258; both moved to completed/, their board rows and
+    details out, two closed anchors in; the patch folder archived; staged/ moved into _to_delete/. S3 (a
+    changed binding revalidates), S4 (the refusal names the existing registration) and S5 (records holding
+    one object twice) stay draft, each after its own patch; S6 stays parked.
+  EVIDENCE:
+  - context_compass/tickets/stories/completed/2026-10-18_spell_id_hashes_the_object_code_story.md
+  - context_compass/tickets/stories/completed/2026-10-18_binding_manifest_hash_story.md
+  IMPACT: The epic's first milestone - identity is the code, the binding a manifest - is landed but for the rebuild.
+  NEXT: The rebuild for 0.2.8258, then the NOTICEs to melder_1 (M1-40) and melder_2.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-18T23:43:33Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: Rebuilt last for 0.2.8258, in a /tmp mirror and copied back byte for byte (writes in place; the mount
+    refuses the builders' atomic replace, and a first in-repo asset run stopped there after writing three
+    manifests identical to the mirror's): assets - agent documentation 470 entries, bind guard 630, system
+    documents 4, all v0.2.8258; LLM bundles with --include-untracked - src 585 files, tests 1139, other 409
+    (the mirror first missed the tracked `src/melder/__melder_cache__/__melder_cache__.py`; rebuilt with it).
+    Repo-side --check: assets OK x3, bundles OK x3; no .git/index.lock. In the mirror after the rebuild:
+    build_assets, llm_support, github_workflows and the identity tests - 731 passed, 1 skipped.
+  EVIDENCE:
+  - context_compass/artifacts/spell_identity_20261018/runs/rebuild/assets_check_repo.txt:1-7
+  - context_compass/artifacts/spell_identity_20261018/runs/rebuild/llm_check_repo.txt:1-7
+  - context_compass/artifacts/spell_identity_20261018/runs/rebuild/llm_build_mirror_2.txt:1-4
+  IMPACT: S1 and S2's landing is complete; melder_1 and melder_2 are told.
+  NEXT: Report to the owner; then S3-S5, each after its own patch.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
@@ -788,8 +960,27 @@ this does not make independent review mandatory for every ticket.
 - Done since: the test tranche finished in the mirror and the whole tree green but melder_1's 18 S8
   tests, the GIL off and on; bind's cost measured, +37 to +55 us a bind (S1's MEASURE and RISK notes
   of 2026-10-18T19:59:24Z).
-- Next: the landing pass - src and tests into the repository, docs, notches, the release note, the
-  rebuild last; then M0-201 hands spellbook.py and spell.py back to melder_1 (M1-40).
+- Done since: S1 and S2 applied to the repository and committed by the owner (5e3800c7a); the
+  source system documents carry them (S1's FACT note of 2026-10-18T21:51:31Z).
+- Done since: M2-15 consumed and ACKed (M0-201) - melder_2's examples lane, the UX examples
+  that bind one class twice, a release-after-teardown correction to verify, the rebuild order
+  (FACT note of 2026-10-18T21:53:02Z).
+- Done since: M2-16 and M2-17 consumed (M0-202 answers) - melder_2's count of the examples (17
+  rows, as this landing's mirror counts), its new files, and S3's six docs/ files, none of them
+  this sweep's (FACT note of 2026-10-18T22:18:15Z).
+- Done since: the examples rewritten and run (S1's MEASURE note of 2026-10-18T22:52:11Z).
+- Done since: M2-18 consumed and M0-203 sent (FACT note of 2026-10-18T22:55:41Z).
+- Done since: the docs sweep (S1's FACT notes of 2026-10-18T22:57:08Z).
+- Done since: M2-19 consumed - melder_2's release-note bullet is on the tree, above the rebuild line,
+  and its lane runs no rebuild (FACT note of 2026-10-18T23:06:32Z).
+- Done since: the tests system documents and the source follow-ups (S1's MEASURE note of 2026-10-18T23:18:31Z).
+- Done since: the graph, the notches (0.2.8257, 0.2.8258) and the release note (S1's FACT note of 2026-10-18T23:26:28Z).
+- Done since: S1 and S2 turned in (FACT note of 2026-10-18T23:31:15Z).
+- Done since: rebuilt for 0.2.8258 (FACT note of 2026-10-18T23:43:33Z); M0-204 hands spellbook.py
+  and spell.py back to melder_1 and M0-205 tells melder_2 the rebuild carried its lane.
+- Next: S3 (a changed binding revalidates), S4 (the refusal names the existing
+  registration) and S5 (records holding one object twice), each after its own patch, on
+  the owner's word.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/crystal_loader_system/graft_runner.py",
- "source_sha256": "f7e5bcf9af03e9385f86541f4efc6e9f0b783c6645c670120a6b0cb3f6f65a67",
+ "source_sha256": "d001fe03780b9f6479ce9d006e8f0c69cd17d5a088bcf165460068bf9777e503",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.crystal_loader_system.graft_runner": {
@@ -41,7 +41,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "3d79277ea9adf212de0d175947687a75b84fcf182465be0c1b277aea513162d9",
+   "span_sha256": "76515135f1d781a9ddb0cd46de7964126f65d02614fdefc2f9ec48be40b73f96",
    "role": "Single-use spell-index graft executor: re-integrates one captured index (members, custody, selection) into a live conjured host book through normal verbs only.",
    "responsibilities": [
     "gates the versioned graft record (RecordVersion MAJOR + graft_kind)",

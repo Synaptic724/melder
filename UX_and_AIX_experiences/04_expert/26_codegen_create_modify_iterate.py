@@ -34,13 +34,13 @@ GOAL: THE LOOP TURNED MORE THAN ONCE - AND THE TWO BOOKS IT WRITES.
       that lane EMPTY, and this lesson asserts it.
 
       AND SINGLE RESIDENCE IS WHY YOU CANNOT JUST FILE IT ELSEWHERE.
-      One binding-signature SHA256 lives in exactly ONE lane, network
-      wide, permanently - there is no release verb. `bind_inactive`
-      already declared the staged version onto `default`, so
-      `register_spell(..., lane=...)` for that id raises the REDISCOVERY
-      signal naming the holding lane. That raise is a signal, not a
-      failure: identical content rebinds to the same SHA, and this is the
-      system saying "you built this before, here".
+      One spell_id - the SHA256 of a version's code - lives in exactly
+      ONE lane, network wide, permanently - there is no release verb.
+      `bind_inactive` already declared the staged version onto `default`,
+      so `register_spell(..., lane=...)` for that id raises the
+      REDISCOVERY signal naming the holding lane. That raise is a signal,
+      not a failure: identical code always mints the same SHA, and this
+      is the system saying "you built this before, here".
       The way to file it under a name is a different SET - a set is its
       own residence partition, so a version resident in one is simply
       unknown to another.

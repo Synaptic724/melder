@@ -1,15 +1,18 @@
 # Story: spell_id_hashes_the_object_code - the spell_id is the SHA256 of the registered object's code
 
+- Completed: 2026-10-18T23:31:15Z
+- Summary: notched 0.2.8257: a spell_id is the SHA256 of the registered object's code (SpellCodeDigest), nothing from the bind call; one object is one spell; examples, docs, system documents, graph and the Breaking release-note section carry it.
+
 ## Metadata
 - Story ID: STORY-2026-10-18-spell_id_hashes_the_object_code
 - Epic: EPIC-2026-10-18-spell_identity_is_the_code
-- Status: in_progress
+- Status: done
 - Owner: user
 - Agent Name: melder_0
 - Agent Role: synaptic_python_developer
 - Priority: p1
 - Created: 2026-10-18T11:45:58Z
-- Updated: 2026-10-18T20:03:20Z
+- Updated: 2026-10-18T23:31:15Z
 
 ## User Narrative
 As an agent iterating on a class in Melder, I want its spell_id to change exactly when its code changes - a method
@@ -657,10 +660,385 @@ this does not make independent review mandatory for every ticket.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-10-18T21:51:31Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: S1 and S2 are promoted into the source system documents, all-or-nothing (land_docs_arch.py and
+    land_docs_comp.py over docs_common.py; remap_s1s2_citations.py remapped the numeric citations into the
+    changed files line by line from 0.2.8256). src_architecture: the glossary (spell_id, binding manifest),
+    the boundary list, the guardrail's bind-guard count (630), the bind sequence, a new operational
+    invariant (the 0.2.8254 entry marked superseded in part), a Breaking failure mode, the capability
+    diagram, the code map (the changed files remeasured, the two modules added), the sources and the
+    handoff. src_components: the Binding Pipeline's identity entry, Spellbook Core (generation 23, the
+    one-object refusals, `inspect_spell`'s exact stage 3), the Crystallizer (record 4.3.0, the restore's
+    `binding_changes`), Spell Examination Profiles, the bind flow, two subcomponents, the code map, the
+    inventory, the sources and the handoff. Both indexes were regenerated and `--check` reads them current
+    now. The owner committed the source, the tests and these documents in 5e3800c7a (0.2.8256 was
+    dd98c0a59); `__version__` is still 0.2.8256, so the notches remain.
+  EVIDENCE:
+  - context_compass/artifacts/spell_identity_20261018/scripts/land_docs_arch.py:1-331
+  - context_compass/artifacts/spell_identity_20261018/scripts/land_docs_comp.py:1-435
+  - context_compass/artifacts/spell_identity_20261018/scripts/docs_common.py:1-104
+  - context_compass/artifacts/spell_identity_20261018/scripts/remap_s1s2_citations.py:1-105
+  - context_compass/system_docs/src_architecture.md:1140-1179
+  - context_compass/system_docs/src_architecture.md:4702-4711
+  - context_compass/system_docs/src_components.md:855-897
+  - context_compass/system_docs/src_components.md:11664-11673
+  IMPACT: The source half of the docs is done; the tests half, the decision-B lookup rules and the build parity
+    follow in this pass.
+  NEXT: The tests system documents (tests_components, tests_architecture) and the source follow-ups.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-18T21:51:31Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: A spell_id is the same on CPython 3.14.7's free-threaded build with the GIL off and on and on its GIL
+    build: probe_spell_id_build_parity.py digests 788 targets (every class and plain function of
+    src/melder's importable modules, `_build_assets` aside, and four user-like classes), each build
+    reports the cache tag cpython-314, and the three outputs are byte-identical (sha256
+    a4b971ede29a1629e7a1c083f9df4959297cbd8d787df979d99a4e92fc0ea77d). Under -O 8 of the 788 differ, and
+    their unhashed encodings show why (probe_o_namedtuple_encoding.py, the hash step replaced by the text it
+    hashes): `Nexus.__new__` holds an `assert`, which -O removes; the seven others are every
+    `typing.NamedTuple` class in the corpus, whose `__orig_bases__` holds the standard library's
+    `NamedTuple` function, encoded by its code - its `__dict__` holds `__mro_entries__`,
+    `typing._namedtuple_mro_entries`, whose `assert NamedTuple in bases` -O removes, so its instructions
+    and name table differ. Whether two 3.14 patch releases give one spell_id is UNKNOWN: the cache tag
+    names the minor only, so they agree exactly when they compile the same instructions for the code the
+    digest reads, standard-library functions held by a class included.
+  EVIDENCE:
+  - context_compass/artifacts/spell_identity_20261018/probes/probe_spell_id_build_parity.py:1-87
+  - context_compass/artifacts/spell_identity_20261018/runs/build_parity/ft_gil0.txt:1-2
+  - context_compass/artifacts/spell_identity_20261018/runs/build_parity/ft_gil1.txt:1-2
+  - context_compass/artifacts/spell_identity_20261018/runs/build_parity/gil_build.txt:1-2
+  - context_compass/artifacts/spell_identity_20261018/runs/build_parity/ft_gil0_O.txt:1-2
+  - context_compass/artifacts/spell_identity_20261018/runs/build_parity/diff_ft_gil0_O.txt:1-22
+  - context_compass/artifacts/spell_identity_20261018/probes/probe_o_namedtuple_encoding.py:1-21
+  - context_compass/artifacts/spell_identity_20261018/runs/build_parity/o_encoding_diff.txt:1-20
+  - context_compass/artifacts/spell_identity_20261018/runs/build_parity/o_encoding_plain_gil0.txt:110-116
+  - src/melder/nexus/nexus.py:156-185
+  - src/melder/aether/spellbook/bind/spell_code_digest.py:602-641
+  IMPACT: Ids are portable across one release's builds and GIL modes; -O is an input wherever the code the
+    digest reads holds an assert, and so is the standard library's code wherever a class holds one of
+    its functions (RISK below).
+  NEXT: The parity, the -O rule and the patch-release UNKNOWN into src_architecture (the identity invariant
+    and the Unknowns); the RISK to the owner.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-18T21:51:31Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: RISK
+  CLAIM: A class whose namespace holds a standard-library function - directly, or inside a value such as the
+    `__orig_bases__` of a `typing.NamedTuple` or `typing.TypedDict` class (each holds the function
+    `NamedTuple` or `TypedDict`) - has a spell_id that reads that function's code: `SpellCodeDigest._encode`
+    digests every plain function but an installed third-party one, while it names a standard-library
+    class. So the spell_id of such a class moves under -O when that code asserts (measured: the seven
+    NamedTuple classes) and would move with a patch release that changes that code (UNKNOWN whether any
+    3.14 release does), the class itself unchanged. It is the approved contract (the code-description
+    patch: functions by code), not a slip of the landing. Naming a standard-library function as a
+    standard-library class is named (`fn:<qualified>`; the minor is already in the cache tag) would make
+    those ids follow the class alone, moving each such class's spell_id once. The owner's call, not in
+    this landing.
+  EVIDENCE:
+  - src/melder/aether/spellbook/bind/spell_code_digest.py:602-641
+  - src/melder/aether/spellbook/bind/spell_code_digest.py:318-355
+  - context_compass/artifacts/spell_identity_20261018/runs/build_parity/o_encoding_plain_gil0.txt:110-116
+  - src/melder/utilities/ai_native_support_tools/system_document_view.py:83-83
+  - src/melder/utilities/helpers/class_surface_ast_describer.py:74-74
+  IMPACT: A NamedTuple or TypedDict class's spell_id - and a cache keyed by it - follows Python's standard
+    library: an upgrade within 3.14 that touches that code would make such a spell new to Melder (a
+    cold cache, a restore mapping its id), never a wrong replay. No other effect is known.
+  NEXT: Tell the owner with the landing report; a follow-up task under the identity epic if he wants it named.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-18T22:28:21Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: The examples' harness (UX_and_AIX_experiences/pytest_examples: each lesson's `main()` and the probes,
+    every process root reset per test) on the /tmp mirror, GIL off, clean crystallizer caches: 17 failed
+    and 554 passed with S1 and S2, 7 failed and 564 passed at 0.2.8256 - 10 rows are new, each the
+    one-object rule meeting an example that registers one class twice: lessons 02_frames_as_worlds and
+    16_ward_policies (advanced), 11_pointing_a_rift_at_your_own_frame and 16_rewiring_a_running_world
+    (expert), 31_spellbook_config_defined and 37_the_frame_conduit_cloud (intermediate), and the probes
+    frames_isolate_instances_but_not_identity, with_book_is_lock_only_not_cleanup, config_definition_laws
+    and a_different_frame_gets_a_different_cloud. Each binds one class in a second frame or Book under
+    another binding_name - refused at that bind when the first Book is conjured ("Spell ID collision
+    detected"), else at its conjure ("Conjure refused") - or twice in one Book; six say why in text S1
+    retired ("binding_name keeps the spell_id distinct", "a spell_id is a SHA256 over the BIND
+    FINGERPRINT"). The 7 older rows: three contract probes of identity premises S1 answers (same name
+    with other internals; one class rebound by binding_name, by spellframe), expert probe
+    two_visible_spells_may_not_share_a_name (names, 0.2.8206), intermediate probe
+    upgrade_to_normal_keeps_creations_and_registers (KeyError), beginner 39_agent_inventory_pattern
+    (AssertionError) and expert 37_review_agent_bindings' missing VERIFY header. Passing files teach the
+    retired rule too: beginner 18, 24 and 30, expert 13 and 26, and the examples' AGENTS.md (its DIVERGENCE
+    FLAG). Expert 09 and 27 failed only in the mirror's first run: its crystallizer cache in the package
+    directory held earlier runs' files, so FIFO retention evicted the checkpoint 09 had just flushed; with
+    the cache cleared both pass.
+  EVIDENCE:
+  - context_compass/artifacts/spell_identity_20261018/runs/ux_examples/ux_s1s2_gil0_clean.txt:1-27
+  - context_compass/artifacts/spell_identity_20261018/runs/ux_examples/ux_base8256_gil0_clean.txt:1-17
+  - context_compass/artifacts/spell_identity_20261018/runs/ux_examples/ux_s1s2_gil0_first_run.txt:1-2964
+  - src/melder/aether/spellbook/spellbook.py:5790-5810
+  - src/melder/aether/spellbook/spellbook.py:2777-2867
+  - UX_and_AIX_experiences/03_advanced/02_frames_as_worlds.py:50-90
+  - UX_and_AIX_experiences/03_advanced/16_ward_policies.py:78-178
+  - UX_and_AIX_experiences/04_expert/11_pointing_a_rift_at_your_own_frame.py:85-108
+  - UX_and_AIX_experiences/04_expert/16_rewiring_a_running_world.py:78-99
+  - UX_and_AIX_experiences/02_intermediate/31_spellbook_config_defined.py:48-93
+  - UX_and_AIX_experiences/02_intermediate/37_the_frame_conduit_cloud.py:77-160
+  - UX_and_AIX_experiences/pytest_examples/test_advanced_probes.py:52-69
+  - UX_and_AIX_experiences/pytest_examples/test_contract_probes.py:50-57
+  - UX_and_AIX_experiences/pytest_examples/test_contract_probes.py:126-184
+  - UX_and_AIX_experiences/pytest_examples/test_intermediate_probes.py:461-495
+  - UX_and_AIX_experiences/pytest_examples/test_intermediate_probes.py:852-868
+  - UX_and_AIX_experiences/01_beginner/18_bootstrap_pattern.py:6-8
+  - UX_and_AIX_experiences/01_beginner/24_same_class_many_names.py:3-8
+  - UX_and_AIX_experiences/01_beginner/30_double_bind_outcome.py:3-6
+  - UX_and_AIX_experiences/04_expert/13_one_workshop_many_worlds.py:86-88
+  - UX_and_AIX_experiences/04_expert/26_codegen_create_modify_iterate.py:36-43
+  - UX_and_AIX_experiences/AGENTS.md:99-105
+  IMPACT: The examples are documentation the docs site renders, so text that teaches the retired rule misleads as
+    a red row does: the sweep owns the 10 rows, that text and the three identity probes S1 answers; the
+    other 4 older rows are not identity's (names, the upgrade, the inventory, a header) and are reported.
+  NEXT: The rewrite script (PLAN note), then a fresh copy of the repository's examples in the mirror, run with
+    the GIL off and on.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-18T22:28:21Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: PLAN
+  CLAIM: The examples' rewrite, all-or-nothing in one script (rewrite_ux_examples.py over the repository or a
+    mirror root), each file kept CRLF as the working tree holds it. (1) Each world or Book binds its own
+    class: lesson 02's tenants a subclass each at one address (spellframe "tenant", binding_name
+    "cache"), so one address melds each world's own singleton; expert 11's four frames a Ledger subclass
+    each; 16_ward_policies' dynamic world DynamicPayload; 37's second frame OtherLedger; lesson 31's LAW 4
+    book BareService; the probes _OtherLedger, a local BarePayload and AfterWith. (2) Expert 16's `_pair`
+    binds nothing: the posture gate refuses link() before any spell is read. (3) The per-frame spell-id
+    regime, which lets one class live in several frames, is named in lesson 02's text and pinned by a new
+    advanced probe row with its own reset; a lesson installs no Aether configuration (advanced 07: lessons
+    share an interpreter). (4) The three identity contract probes assert S1's contract and are renamed for
+    it: same name with other internals -> two spells; one class rebound by binding_name or spellframe ->
+    refused at the second bind. (5) Every comment and lesson text that states the retired rule is
+    rewritten, never deleted; lesson 02's HISTORY gains a paragraph. (6) The 4 rows outside identity stay
+    as found. Validation: a fresh copy of the repository's examples (melder_2's files included) in the
+    mirror, clean caches, the GIL off and on - expected those 4 rows red and every other row green; then
+    the same script on the repository, and the docs sweep (melder_2 told first).
+  EVIDENCE:
+  - context_compass/tickets/stories/2026-10-18_spell_id_hashes_the_object_code_story.md:756-809
+  - UX_and_AIX_experiences/03_advanced/07_aether_config_two_doors.py:43-49
+  IMPACT: The examples teach S1's contract and the 10 rows go green; a reader of lesson 02 learns both ways
+    to have one shape in several worlds.
+  NEXT: Write rewrite_ux_examples.py; check it against the mirror's fresh copy, apply, run.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-18T22:52:11Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: The examples' rewrite is in the repository (rewrite_ux_examples.py, one all-or-nothing pass over 15
+    files, each kept CRLF). Six lessons bind one class per world or Book: advanced 02 a subclass per tenant
+    at one address (spellframe "tenant", binding_name "cache"), advanced 16 DynamicPayload, expert 11 a
+    Ledger subclass per frame, intermediate 31 BareService, intermediate 37 OtherLedger; expert 16's `_pair`
+    binds nothing and its two posture refusals print one sentence, as before. The probes follow: lesson
+    02's row asserts both halves (one class in two worlds refused at the second conjure; a class per world
+    at one address, one singleton each), a new row pins the per-frame regime in a reset world (one class,
+    one spell_id, two singletons), the with-book row binds AfterWith, the config and cloud rows bind
+    classes of their own, and the three identity contract rows are flipped and renamed (same name with
+    other code: two spells; one class rebound by binding_name or spellframe: refused at bind). The text
+    that taught the retired rule is rewritten: beginner 18, 24 and 30, expert 13 and 26, and AGENTS.md (its
+    divergence flag closed into the identity law). Run on a fresh copy of the repository's examples
+    (melder_2's 42-48 included) with clean caches: 4 failed and 623 passed, the GIL off and on - exactly
+    the 4 rows outside identity (beginner 39, expert 37's header, the expert probe
+    two_visible_spells_may_not_share_a_name, the intermediate probe
+    upgrade_to_normal_keeps_creations_and_registers); lesson 31 prints the exception types 0.2.8256 printed
+    (KeyError, RuntimeError, RuntimeError, ValueError). The repository's 15 files were byte-identical to
+    the mirror's originals when the same script wrote them, and the two examples trees are identical after.
+  EVIDENCE:
+  - context_compass/artifacts/spell_identity_20261018/scripts/rewrite_ux_examples.py:1-987
+  - context_compass/artifacts/spell_identity_20261018/runs/ux_examples/ux_rewrite_gil0.txt:1-213
+  - context_compass/artifacts/spell_identity_20261018/runs/ux_examples/ux_rewrite_gil1.txt:1-221
+  - context_compass/artifacts/spell_identity_20261018/runs/ux_examples/ux_rewrite.diff:1-743
+  - UX_and_AIX_experiences/03_advanced/02_frames_as_worlds.py:72-117
+  - UX_and_AIX_experiences/04_expert/16_rewiring_a_running_world.py:78-98
+  - UX_and_AIX_experiences/pytest_examples/test_advanced_probes.py:60-93
+  - UX_and_AIX_experiences/pytest_examples/test_advanced_probes.py:96-119
+  - UX_and_AIX_experiences/pytest_examples/test_contract_probes.py:141-166
+  - UX_and_AIX_experiences/pytest_examples/test_contract_probes.py:169-183
+  - UX_and_AIX_experiences/pytest_examples/test_contract_probes.py:186-201
+  - UX_and_AIX_experiences/AGENTS.md:99-113
+  IMPACT: The examples teach S1's contract and are red only where they were at 0.2.8256; the docs site renders
+    the rewritten lesson text (TIER, GOAL and SURFACE EXERCISED are what its catalog reads).
+  NEXT: The docs sweep: a NOTICE to melder_2 naming the docs/ files and the README section, then
+    docs/advanced/worlds.md and the other candidates corrected to S1.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-18T22:57:08Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: The user docs no longer teach the retired identity rule (rewrite_docs_identity.py, one all-or-nothing
+    pass; each page keeps its CRLF, README.md its mixed endings region by region). The glossary's Aetheric
+    frame entry says frame isolation does not namespace spell identity, and a new Spell ID entry defines it
+    (the object's code; nothing from the bind call; the binding has its own hash); the troubleshooting row
+    reads "One class is refused in a second world or under a second name" with its cause; the inspection
+    walkthrough's step 1 follows advanced 02 (a cache class per world at one address); configuration says a
+    receiving policy keeps the spell ID and changes the binding hash, listed under the restore's
+    `binding_changes`; the README's Frame Boundaries section - which the docs site renders as the
+    advanced/worlds chapter - binds a class per world and names the per-frame regime. Beside the replay
+    edit, configuration's disposal sentence said a failing method stops the object's remaining methods;
+    since 0.2.80 every declared method runs and the failures are raised together as one ExceptionGroup
+    once the store's cleanup ends (fix_docs_disposal_sentence.py). melder_2 was told first (M0-203); none of
+    the pages is one of its six. The docs checks (unit tests, check, build -W, check_site) run over the
+    whole change before the rebuild.
+  EVIDENCE:
+  - context_compass/artifacts/spell_identity_20261018/scripts/rewrite_docs_identity.py:1-215
+  - context_compass/artifacts/spell_identity_20261018/scripts/fix_docs_disposal_sentence.py:1-47
+  - context_compass/artifacts/spell_identity_20261018/runs/docs_sweep/docs_identity.diff:1-83
+  - docs/reference/glossary.md:12-15
+  - docs/reference/glossary.md:94-97
+  - docs/reference/troubleshooting.md:12-12
+  - docs/advanced/inspection-walkthrough.md:16-17
+  - docs/intermediate/configuration.md:60-66
+  - README.md:724-732
+  - src/melder/aether/conduit/creations/creations.py:326-399
+  - src/melder/aether/conduit/creations/creations.py:401-449
+  IMPACT: A reader of the docs site meets the same rule the code enforces: a class per world, or the per-frame
+    regime; a binding_name never makes one class two spells.
+  NEXT: The tests system documents and the source follow-ups.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-18T22:57:08Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: Found by the docs sweep, outside S1 and left as found: docs/expert/governed-change.md says "a lookup
+    by a parked spell_id returns the currently active member" - true until 0.2.8253, when
+    `Spellbook.find_spell_by_spell_id` (and the Conduit lookup through it) became exact: a parked
+    spell_id answers the parked version itself, never its index's active member. The page belongs to the
+    governed-change chapter, not to this sweep's five, and M0-203 named only those; it goes to the owner
+    with the landing report.
+  EVIDENCE:
+  - docs/expert/governed-change.md:22-26
+  - src/melder/aether/spellbook/spellbook.py:2079-2155
+  IMPACT: A reader of that chapter expects a parked spell_id lookup to answer the active version and would
+    notch or meld the wrong one; the code answers the version the spell_id names.
+  NEXT: Name it in the landing report; the owner decides who corrects it.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
+- DATETIME: 2026-10-18T23:18:31Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: The tests system documents carry S1 and S2 and the source documents their follow-ups. tests_components:
+    the four unit and one component test modules, the ordered-disposal replay and the `version_of` support
+    module as key files with code-map records and bullets saying what each protects; the retired fingerprint's
+    three spellbook bullets rewritten to the code digest; the harness's binding hash; cache generation 23;
+    counts from disk (857 test modules); every code-map range checked against disk, 21 re-stamped (19 rewritten
+    files; `test_mutation_research_root.py` and `test_spell_managed_quantity_stamp.py` had drifted); the core
+    set is 272 paths, equal to the code map (the 0.2.8256 entry said 264 where the file held 265).
+    tests_architecture: the inventory, the support module in the evidence, responsibilities, C2 and map (37
+    paths), a one-object invariant, the xfail evidence remapped to 626-675. src_architecture: the build parity
+    and -O rule in the identity invariant, the patch-release UNKNOWN, the release-after-teardown failure mode
+    corrected (the not-managed ValueError; the torn-down RuntimeError only through a lease or a raced
+    release). src_components: decision B's lookup rule and the same correction. Gates: all four indexes
+    --check current; portability and absolute-path greps empty; CR 0; every cited test path exists; the
+    preservation diffs remove only the replaced counts, re-stamped extents, appended notes and the corrected
+    sentences. Rubric (from the files on disk): tests_components 86 (B; Fidelity 4 - clusters outside this
+    lane not re-read against their tests), tests_architecture 84 (B; Depth 4), src_architecture 88 (B;
+    Fidelity 4 - the patch-release claim UNKNOWN), src_components 87 (B; Depth 4 per entry).
+  EVIDENCE:
+  - context_compass/artifacts/spell_identity_20261018/scripts/land_docs_tests_comp.py:1-339
+  - context_compass/artifacts/spell_identity_20261018/scripts/land_docs_tests_arch.py:1-157
+  - context_compass/artifacts/spell_identity_20261018/scripts/land_docs_src_followups.py:1-146
+  - context_compass/system_docs/tests_components.md:3734-3747
+  - context_compass/system_docs/tests_architecture.md:914-924
+  - context_compass/system_docs/src_architecture.md:4722-4727
+  - context_compass/system_docs/src_components.md:11683-11687
+  - src/melder/aether/conduit/creations/creations.py:362-379
+  - src/melder/aether/conduit/creations/release_managed_spell.py:540-553
+  - src/melder/aether/conduit/creations/managed_spell_quantity.py:589-590
+  - src/melder/aether/spellbook/bind/spell_code_digest.py:1170-1193
+  - src/melder/aether/spellbook/bind/spell_code_digest.py:1252-1305
+  IMPACT: The four system documents are current for the landing; the graph, the notches, the release note, the
+    docs checks, the closure and the rebuild remain.
+  NEXT: The graph: extract --strict, the two new modules' descriptors, assemble, the walker report.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-18T23:26:28Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: The graph and the notches. Graph: extract --strict (593 descriptors, skipped 0) and assemble (593
+    sections, 1231 nodes, every range verified, --check current); the four nodes of spell_code_digest.py and
+    binding_manifest.py authored (unsemantic 13 -> 9) and the four statements in bind.json that described the
+    retired fingerprint rewritten; none accepted - they report SEMANTICS_STALE until re-verified. Still stale
+    prose about the retired fingerprint: binding_profile, binding_profile_strategy, inspector_utility and
+    signature_reflection (their `fingerprint_repr` fields are gone from src). Notch: S1 is 0.2.8257, S2
+    0.2.8258 (`__version__` 0.2.8258, read 0.2.8256 at landing); the running note's header and rebuild line
+    name 0.2.8258, the Breaking S1 section and the S2 section sit before `## Packaging and documentation`, the
+    bind-guard count reads 630, two packaging bullets (system documents, examples and docs) sit above
+    melder_2's chapter bullet, which stays directly above the rebuild line; the board's notch notice says so.
+  EVIDENCE:
+  - context_compass/artifacts/spell_identity_20261018/scripts/land_graph_s1s2.py:1-108
+  - context_compass/artifacts/spell_identity_20261018/scripts/notch_and_release_note.py:1-157
+  - context_compass/system_docs/graph/melder/aether/spellbook/bind/spell_code_digest.json:1-126
+  - context_compass/system_docs/graph/melder/aether/spellbook/bind/binding_manifest.json:1-89
+  - src/melder/__version__.py:12-12
+  - release_docs/next_version_release.md:1-3
+  IMPACT: The source landing carries its version; what remains is the docs checks, the closure and the rebuild.
+    The four stale fingerprint descriptors are a graph follow-up, not a landing blocker (the walker flags them).
+  NEXT: The docs checks over both lanes' docs, then the closure, then the rebuild.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-18T23:31:15Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: The docs checks pass over the landed tree with both lanes' docs (this landing's pages and lessons, melder_2's
+    managed spells chapter): docs unit tests OK; build_docs check - 313 pages, 54 assets; build - 313 pages
+    (the only warning is melder's GIL-mode UserWarning at import); check_site - 39255 local links, sources
+    match; check_seo with READTHEDOCS_CANONICAL_URL set - 0 errors, 303 warnings (missing descriptions, warnings
+    by policy). Run in a /tmp mirror with a uv venv of docs/requirements.txt on CPython 3.14.7.
+  EVIDENCE:
+  - context_compass/artifacts/spell_identity_20261018/runs/docs_checks/summary.txt:1-6
+  - context_compass/artifacts/spell_identity_20261018/runs/docs_checks/check_seo.txt:1-2
+  IMPACT: Nothing in docs/ blocks the rebuild.
+  NEXT: The closure of S1 and S2, then the rebuild.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
+- DATETIME: 2026-10-18T23:31:15Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: State transition in_progress -> done (notched 0.2.8257): the owner's word to land S1 with
+    S2 and the crystallizer call are met - source, tests (whole tree green but melder_1's 18 S8 tests, the GIL
+    off and on), examples, docs and their checks, the four system documents, the graph, the release note -
+    and the rebuild follows as the landing's last step.
+  EVIDENCE: context_compass/tickets/stories/2026-10-18_spell_id_hashes_the_object_code_story.md:1037-1075
+  IMPACT: The story moves to completed/; S3-S5 continue under the epic.
+  NEXT: The rebuild for 0.2.8258.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
 ## Closure Confirmation
-- [ ] Work walkthrough shared with user
-- [ ] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
-- [ ] Applicable anti-pattern checks are clear or escalated with evidence.
+- [x] Work walkthrough shared with user
+- [x] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
+- [x] Applicable anti-pattern checks are clear or escalated with evidence.
 
 ## Noting Behavior
 - Note focus: cross-task synthesis, dependency flow, and state-transition logic.
@@ -697,8 +1075,18 @@ this does not make independent review mandatory for every ticket.
   S8 tests, the GIL off and on (MEASURE note of 2026-10-18T19:59:24Z).
 - Done since: bind's cost measured - +37 to +55 us a bind, setup +9-10%, conjure and melds unchanged
   (MEASURE and RISK notes of 2026-10-18T19:59:24Z).
-- Next: the landing pass with S2 - src and tests into the repository, docs, the notches (read at
-  landing, above 0.2.8256), the release note, the rebuild last.
+- Done since: S1 and S2 applied to the repository (FACT note of 2026-10-18T20:03:20Z) and committed
+  by the owner (5e3800c7a); the source system documents promoted; the build parity measured and
+  the standard-library RISK recorded (notes of 2026-10-18T21:51:31Z).
+- Done since: the examples swept - 10 rows S1 breaks, 7 older, the text teaching the retired
+  rule - and the rewrite planned (MEASURE and PLAN notes of 2026-10-18T22:28:21Z).
+- Done since: the examples rewritten and run - 4 failed and 623 passed with the GIL off and on,
+  the 4 rows outside identity - and applied to the repository (MEASURE note of 2026-10-18T22:52:11Z).
+- Done since: the docs sweep - five pages and the README section (FACT notes of 2026-10-18T22:57:08Z).
+- Done since: the tests system documents and the source follow-ups (MEASURE note of 2026-10-18T23:18:31Z).
+- Done since: the graph, the notch (0.2.8257) and the release note (FACT note of 2026-10-18T23:26:28Z).
+- Closed: 2026-10-18T23:31:15Z - notched 0.2.8257; landed on the owner's word
+  (the epic's DECISION notes of 2026-10-18T15:01:53Z and 16:18:35Z).
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

@@ -11,7 +11,8 @@ Use these terms to choose the right boundary before choosing an API.
 
    Aetheric frame
       A live world with its own runtime registries, posture, and instance isolation.
-      Frame isolation does not make identical binding identities distinct.
+      Frame isolation does not namespace spell identity: a spell ID is the object's code,
+      so one class bound in two frames is one spell.
 
    Bind
       Register a class, callable, or existing object and its address/lifetime policy.
@@ -89,6 +90,11 @@ Use these terms to choose the right boundary before choosing an API.
 
    Spell
       A bound object's runtime registration metadata, identity, and lifecycle contract.
+
+   Spell ID
+      The SHA256 of a registered object's code: its methods and constructor, class-level
+      values and bases, or an existing object's class and data. Nothing from the bind call
+      enters it, so one object registers once; how it is bound has its own binding hash.
 
    SpellContract
       A late-bound dependency socket filled through linking, a borrower pull, and resolution.

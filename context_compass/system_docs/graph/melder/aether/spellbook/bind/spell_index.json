@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/bind/spell_index.py",
- "source_sha256": "bfda53a48a5105b486c61766a07d3800e783980d0fac7c5c2d88af706af69af7",
+ "source_sha256": "0fae4148f2b9c36c68307b72fef21c14e6974b011f7622bc09ffbb3d294fd65f",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.bind.spell_index": {
@@ -41,7 +41,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "ee08aa8d274d28bed580f26f1fb840008bfd7645304b7f3f6b99860a22be98ea",
+   "span_sha256": "98d6966800489aaf0e8779a692d083379898eb00335fec220e419d1bbf329439",
    "role": "Stable lineage identity (an immutable ULID) with a mutable selected-spell pointer and the lineage's member set.",
    "responsibilities": [
     "provides hash- and equality-stable index identity (the ULID) for spell registries",

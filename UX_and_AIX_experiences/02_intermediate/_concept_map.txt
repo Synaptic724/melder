@@ -188,6 +188,47 @@ NAMED SCOPE DISCOVERY (2026-09-23)
   41 named_lesser_conduits (creation-only names, frame-wide Cloud discovery,
      collisions, separate per-conduit state, retirement and anonymous reuse).
 
+MANAGED SPELL POOLS (2026-10-18)
+  42 managed_spell_elastic_pool (Existence.managed_spell_quantity: one pool
+     per version in the owning root's store, composed at conjure; a meld
+     leases, ReleaseManagedSpell().release(obj) gives back by hand, the
+     newest released object is leased first; ELASTIC never refuses - its
+     limit (default 256) caps the IDLE objects and a small limit destroys
+     the oldest idle one, running its disposal; describe(cls) reads alive,
+     idle and out)
+  43 managed_spell_limited_quantity (the limit caps objects ALIVE, idle
+     plus out; at the limit with nothing idle a meld raises
+     ManagedSpellExhaustedError - a MeldExecutionError carrying mode, limit
+     and timeout_seconds - before building anything; a release frees a
+     place; release_all)
+  44 managed_spell_queue (at the limit a meld WAITS up to
+     managed_spell_timeout_seconds; a release hands the waiter the released
+     object; past the timeout the same refusal names the queue)
+  45 managed_spell_reset_methods (reset names run in order on EVERY
+     release; a raising reset destroys the object - disposal runs, its
+     place frees - and its error propagates from the release)
+  46 managed_spell_leases (Conduit.managed_spell_meld returns a
+     ManagedSpellLease: its `with` releases on exit, also when the block
+     raised, and never suppresses; a lease releases once and then refuses
+     its object; ReleaseManagedSpell().managed(obj) wraps a held object;
+     a spell that is not managed is refused)
+  47 managed_spell_injection_and_request_scopes (every injection is its
+     own lease; a handler's disposal releases, so a lesser conduit per
+     request returns its connections to the ROOT's pool; root teardown
+     disposes idle objects only, an object still out stays its holder's,
+     and a release after teardown is refused)
+  48 managed_spell_settings_and_transfer (dynamic: settings are not the
+     spell_id - cleanup_spell + bind keeps the spell_id and the pool, which
+     takes the new limit with every object alive still counted;
+     transfer_spell_ownership moves the pool with its idle objects and the
+     old owner can no longer meld the spell)
+  Probes: pytest_examples/test_managed_spell_probes.py (34 rows) pin every
+  law above. OPEN WITH THE OWNER: a consumer melded on the ROOT that
+  releases at its own disposal meets a pool already gone at root teardown
+  (pools are cleaned before the root's disposable registry), so the
+  teardown raises an ExceptionGroup; 47 teaches the request scope instead.
+
 HARNESS
   pytest_examples/test_intermediate_examples.py (every lesson runs)
   pytest_examples/test_intermediate_probes.py (contract probes)
+  pytest_examples/test_managed_spell_probes.py (managed pool contract probes)

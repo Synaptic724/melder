@@ -1,8 +1,8 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: other
-SOURCE FINGERPRINT: f9d2e81fc6d1ea012a1b1d2aa53f6d860acd7552485b3498435e9f9a73bc1853
-FILE COUNT: 400
+SOURCE FINGERPRINT: cb25cfee626218adcf53eff6f385ee0e17015ca92dfc434e08b406170ac25dc5
+FILE COUNT: 409
 
 ================================================================================
 BEGIN FILE: .gitattributes
@@ -6365,7 +6365,7 @@ END FILE: NOTICE
 ================================================================================
 ================================================================================
 BEGIN FILE: README.md
-CONTENT SHA256: f209b33b9b6f5ba4f41778cc43776cff955fa701f65664f6104cb83835140342
+CONTENT SHA256: bb95a65fdf993abe87166765cb7b0d37ae6bc119c0537952f08558b460b0881a
 SOURCE ENCODING: utf-8
 ================================================================================
 <div align="center">
@@ -7091,11 +7091,15 @@ tenant_a = md.Spellbook(aetheric_frame="tenant-a")
 tenant_b = md.Spellbook(aetheric_frame="tenant-b")
 ```
 
-Use distinct `binding_name` or `spellframe` values when binding the same class
-in both worlds. Spell IDs are unique across the process: an identical binding
-fingerprint produces the same ID even in another frame and is refused.
-A `unique` spell is a singleton **per frame** — not per process. Two distinct
-bindings, two frames, two instances, one interpreter.
+Bind a distinct class in each world — a subclass per tenant is enough. A spell
+ID is the SHA256 of the registered object's code (its methods, constructor,
+class-level values and bases), with nothing from the bind call in it, and spell
+IDs are unique across the process: the same class bound in another frame is the
+same spell, and it is refused whatever `binding_name` or `spellframe` it gets.
+A `unique` spell is a singleton **per frame** — not per process. Two classes,
+two frames, two instances, one interpreter. To register one class in several
+worlds instead, turn `process_wide_unique_spell_ids` off in the Aether
+configuration before the first frame exists; spell IDs are then unique per frame.
 
 That makes frames the natural seam for multi-tenancy, plugin isolation, and test
 isolation (a fresh frame per test is a fresh world). Conduits link *within* a
@@ -8324,7 +8328,7 @@ END FILE: UX_and_AIX_experiences/01_beginner/17_protocols_as_shapes.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/01_beginner/18_bootstrap_pattern.py
-CONTENT SHA256: 1f066b30b66d75a4cd6eaca1dbabec51e8482e9a2751415acc52e9bbafad6b4a
+CONTENT SHA256: ce8bb607a609c69b4c47a6de580a1b5a8fed613c5126de85d678b4109379aedd
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -8333,8 +8337,8 @@ GOAL: The composition root - ONE function that binds the whole world
       and hands back the conduit. Configured things are BUILT there and
       bound as instances; everything else in the app just melds. Note:
       melder worlds do not "switch environments" - the same objects
-      cannot register twice (spells are content-fingerprinted), so your
-      MODULE decides what to build, once, at the root.
+      cannot register twice (a spell_id is the SHA256 of an object's code
+      and data), so your MODULE decides what to build, once, at the root.
 SURFACE EXERCISED: the build_world() pattern, instance spells
 """
 import melder as md
@@ -8586,17 +8590,18 @@ END FILE: UX_and_AIX_experiences/01_beginner/23_reading_the_errors.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/01_beginner/24_same_class_many_names.py
-CONTENT SHA256: b0c5611a6d14fa07f8594c649bbfa69798a19727ec583e9a852a0e93864af533
+CONTENT SHA256: 773d7d942af226283d71b94702110a3b380e512ab08c5cbe74c7fe1bc9a0366b
 SOURCE ENCODING: utf-8
 ================================================================================
 """
 TIER: beginner (24)
-GOAL: One spell name, one visible spell - CURRENT RUNTIME TRUTH (probe-
-      proven): conjure refuses ANY two spells sharing a name, even
-      across frames, even with different internals. The working pattern
-      for one shape in many roles: tiny subclasses, one name each.
-      (The probe suite flags the intended SHA-content semantics as an
-      open runtime question - the lesson here is what works TODAY.)
+GOAL: One class, one spell - a spell_id is the SHA256 of the class's
+      code, so the SAME class registers once, whatever binding name or
+      lifecycle you give it (beginner 30). The working pattern for one
+      shape in many roles: tiny subclasses, one per role - each is a new
+      class, so its own spell, at its own address. (Same-NAMED classes
+      with different code may also coexist at different addresses since
+      0.2.8206; the contract probes pin both rules.)
 SURFACE EXERCISED: subclass-per-role registration, mixed lifecycles
 """
 import melder as md
@@ -8897,15 +8902,16 @@ END FILE: UX_and_AIX_experiences/01_beginner/29_many_state_isolation.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/01_beginner/30_double_bind_outcome.py
-CONTENT SHA256: 020242fd26b2b7658b536f74b9ffecb1fe304dad93d3f9faaaaa385d8ec8b8a1
+CONTENT SHA256: 6ed535a9b56ca9510c3bae8b80ab42cd004445bacdb374acc6b5e62b65150321
 SOURCE ENCODING: utf-8
 ================================================================================
 """
 TIER: beginner (30)
-GOAL: Binding the SAME class twice is refused - spells are
-      content-fingerprinted and one fingerprint registers once. When one
-      shape must serve two roles, make two shapes: subclass it (see 24).
-SURFACE EXERCISED: the one-fingerprint law at bind time
+GOAL: Binding the SAME class twice is refused - a spell_id is the
+      SHA256 of the class's code, and one object registers once, under
+      any binding name or lifecycle. When one shape must serve two
+      roles, make two shapes: subclass it (see 24).
+SURFACE EXERCISED: the one-object law at bind time
 """
 import melder as md
 
@@ -8925,9 +8931,9 @@ def main() -> None:
         book.bind(spell=Doubled, existence="many")
         print("second bind unexpectedly accepted")
     except Exception as err:
-        print("same fingerprint refused:", type(err).__name__)
+        print("same object refused:", type(err).__name__)
 
-    # the fix: a subclass IS a different fingerprint (and a different name)
+    # the fix: a subclass IS a new class - a new spell_id (and a new name)
     book.bind(spell=DoubledAgain, existence="many")
     print("subclass bound cleanly - two shapes, two spells")
 
@@ -11381,7 +11387,7 @@ END FILE: UX_and_AIX_experiences/02_intermediate/30_config_disposal_and_the_froz
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/02_intermediate/31_spellbook_config_defined.py
-CONTENT SHA256: f19ccbadff09de41ac5abc90683c3e034a5dbc8a492c39d68d58ef81ab42ed6e
+CONTENT SHA256: 31908944fba07ce581fb352d48d80aca66adbd3e7874c65d73cafe3df2197f64
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -11431,6 +11437,10 @@ class Service:
     pass
 
 
+class BareService:
+    """LAW 4's book's own spell - Service already belongs to the first book."""
+
+
 def main() -> None:
     # NOTE the absent with_defaults() call. This configuration states every
     # value it needs, so asking for the standard set first would only fight
@@ -11469,8 +11479,10 @@ def main() -> None:
 
     # LAW 4 - completion: a bare config you never finished refuses at
     # the conjure gate, naming what is missing.
+    # It binds its own class: one class registers once (a spell_id is the
+    # SHA256 of its code), and Service is the first book's.
     bare_book = md.Spellbook(configuration=md.SpellbookConfiguration())
-    bare_book.bind(spell=Service, existence="unique", binding_name="bare")
+    bare_book.bind(spell=BareService, existence="unique")
     try:
         bare_book.conjure()
         print("bare configuration unexpectedly conjured")
@@ -11877,7 +11889,7 @@ END FILE: UX_and_AIX_experiences/02_intermediate/36_late_binding_with_spellcontr
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/02_intermediate/37_the_frame_conduit_cloud.py
-CONTENT SHA256: 0820ec761928a46eb2c1123eafef26ee6eb753c26a15ee0b7d4a3e0f9da02d41
+CONTENT SHA256: b33d4d2c558fee02a9e5489a53bd8a8bb01f589c1954f1f787e15f77f5ff09f7
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -11956,6 +11968,10 @@ class Ledger:
     """Something to bind so the frame has real work in it."""
 
 
+class OtherLedger(Ledger):
+    """The other frame's own Ledger - a new class, so its own spell_id."""
+
+
 def main() -> None:
     book = md.Spellbook(aetheric_frame="cloud-demo")
     book.bind(spell=Ledger, existence="unique", binding_name="demo")
@@ -11983,11 +11999,12 @@ def main() -> None:
     assert root.get_conduit_cloud() is cloud
 
     # A DIFFERENT FRAME IS A DIFFERENT WORLD, and so a different cloud.
-    # A DIFFERENT binding_name, because a spell_id does not carry the
-    # frame - the same class bound identically in two frames collides
-    # process-wide. The CLOUD is still per-frame; identity is not.
+    # It binds its OWN class: a spell_id is the SHA256 of the class's
+    # code and carries neither the frame nor the binding_name, so Ledger
+    # bound here as well would be refused process-wide. The CLOUD is
+    # still per-frame; identity is not.
     other_book = md.Spellbook(aetheric_frame="cloud-other")
-    other_book.bind(spell=Ledger, existence="unique", binding_name="other")
+    other_book.bind(spell=OtherLedger, existence="unique", binding_name="other")
     other_root = other_book.conjure(name="other-root")
     other_cloud = other_root.get_conduit_cloud()
     assert other_cloud is not cloud
@@ -12377,8 +12394,976 @@ if __name__ == "__main__":
 END FILE: UX_and_AIX_experiences/02_intermediate/41_named_lesser_conduits.py
 ================================================================================
 ================================================================================
+BEGIN FILE: UX_and_AIX_experiences/02_intermediate/42_managed_spell_elastic_pool.py
+CONTENT SHA256: 4d25f2477cd1c1b5102bb00afe6ad56f42cd5d5a0adfce8ca468e01f36a1c9cb
+SOURCE ENCODING: utf-8
+================================================================================
+"""
+TIER: intermediate (42)
+GOAL: Lease pooled objects and give them back by hand - Existence.managed_spell_quantity.
+      A managed spell's objects live in a pool its root conduit owns. A meld takes an
+      idle object, or builds one when none is waiting; ReleaseManagedSpell().release(obj)
+      gives it back, and the next meld reuses it (the newest released object first).
+      Nothing returns an object automatically: you decide when it goes back.
+
+      Elastic is the default mode: a meld never refuses, and managed_spell_limit (256
+      by default) is how many IDLE objects the pool keeps. With a small limit, a release
+      that would keep more idle objects than the limit destroys the oldest idle one -
+      its disposal methods run. Root teardown disposes the idle objects; describe(cls)
+      shows what is alive, idle and out at any moment.
+SURFACE EXERCISED: md.Spellbook.bind (managed_spell_mode, managed_spell_limit,
+                   disposal_method_names), md.Existence.managed_spell_quantity,
+                   md.ManagedSpellMode.elastic, md.Conduit.meld,
+                   md.Conduit.has_live_creation, md.ReleaseManagedSpell (release, describe),
+                   md.Conduit.cleanup
+"""
+from typing import Tuple
+
+import melder as md
+
+
+class DatabaseConnection:
+    """A connection that is expensive to open and cheap to hand to the next caller.
+
+    `close` is its disposal method: the pool calls it when it destroys the object
+    (a trim, or root teardown), never on an ordinary release. `closed` is a lesson
+    diagnostic, so the example can observe disposal from the outside.
+    """
+
+    def __init__(self) -> None:
+        """Open the connection; the lesson only records that it is open."""
+        self.closed: bool = False
+        self.queries: int = 0
+
+    def close(self) -> None:
+        """Close the connection; called by the pool when it destroys this object."""
+        self.closed = True
+
+
+class ScratchBuffer:
+    """A pooled buffer bound with a small idle limit, to show the elastic trim."""
+
+    def __init__(self) -> None:
+        """Allocate the buffer; `closed` records disposal."""
+        self.closed: bool = False
+
+    def close(self) -> None:
+        """Release the buffer; called by the pool when it trims this object."""
+        self.closed = True
+
+
+def pool_counts(cls: type) -> Tuple[int, int, int]:
+    """Return (alive, idle, out) for the one pool of a managed class.
+
+    `ReleaseManagedSpell().describe(cls)` answers one snapshot per pool; this lesson
+    binds each class once, so there is exactly one.
+    """
+    (snapshot,) = md.ReleaseManagedSpell().describe(cls)
+    return snapshot["count"], snapshot["idle_count"], snapshot["out_count"]
+
+
+def main() -> None:
+    """Lease, release, reuse and trim pooled objects, then tear the root down.
+
+    Contract:
+        Every assertion checks an observable outcome: object identity, the pool's
+        counts from describe(), or the disposal flag. The conduit and the book are
+        cleaned in finally blocks.
+    Returns:
+        None.
+    """
+    book = md.Spellbook()
+    try:
+        book.bind(
+            spell=DatabaseConnection,
+            existence=md.Existence.managed_spell_quantity,
+            disposal_method_names=["close"],
+        )
+        book.bind(
+            spell=ScratchBuffer,
+            existence=md.Existence.managed_spell_quantity,
+            managed_spell_mode=md.ManagedSpellMode.elastic,
+            managed_spell_limit=2,
+            disposal_method_names=["close"],
+        )
+        conduit = book.conjure()
+        # Bind the release once: it is the one way back for every managed object.
+        release = md.ReleaseManagedSpell().release
+        try:
+            # The pool exists from conjure on, empty, with the default elastic policy.
+            (snapshot,) = md.ReleaseManagedSpell().describe(DatabaseConnection)
+            assert snapshot["mode"] == "elastic" and snapshot["limit"] == 256
+            assert pool_counts(DatabaseConnection) == (0, 0, 0)
+            assert not conduit.has_live_creation("DatabaseConnection")
+            print("pool ready at conjure:", snapshot["mode"], "limit", snapshot["limit"])
+
+            # Nothing is idle yet, so each meld builds a connection and leases it out.
+            first: DatabaseConnection = conduit.meld("DatabaseConnection")
+            second: DatabaseConnection = conduit.meld("DatabaseConnection")
+            assert first is not second
+            assert pool_counts(DatabaseConnection) == (2, 0, 2)
+            assert conduit.has_live_creation("DatabaseConnection")
+            print("two connections leased (alive, idle, out):", pool_counts(DatabaseConnection))
+
+            # Give one back: it becomes idle, still open, and the next meld reuses it.
+            first.queries += 1
+            release(first)
+            assert pool_counts(DatabaseConnection) == (2, 1, 1) and not first.closed
+            reused: DatabaseConnection = conduit.meld("DatabaseConnection")
+            assert reused is first and reused.queries == 1
+            print("the released connection came back on the next meld:", reused is first)
+
+            # The newest released object is leased first.
+            release(second)
+            release(reused)
+            newest: DatabaseConnection = conduit.meld("DatabaseConnection")
+            assert newest is reused
+            release(newest)
+            assert pool_counts(DatabaseConnection) == (2, 2, 0)
+            print("newest released leased first; all back (alive, idle, out):", pool_counts(DatabaseConnection))
+
+            # Elastic never refuses: with limit 2 a third buffer is still built...
+            buffers = [conduit.meld("ScratchBuffer") for _ in range(3)]
+            assert pool_counts(ScratchBuffer) == (3, 0, 3)
+            # ...but only 2 stay idle: the third release destroys the oldest idle buffer.
+            for buffer in buffers:
+                release(buffer)
+            assert [buffer.closed for buffer in buffers] == [True, False, False]
+            assert pool_counts(ScratchBuffer) == (2, 2, 0)
+            print("limit 2 keeps 2 idle buffers; the oldest was closed:", buffers[0].closed)
+        finally:
+            conduit.cleanup()
+
+        # Root teardown disposes what the pools hold and unregisters them.
+        assert first.closed and second.closed
+        assert md.ReleaseManagedSpell().describe(DatabaseConnection) == ()
+        print("root teardown closed the idle connections:", first.closed and second.closed)
+    finally:
+        book.cleanup()
+
+
+if __name__ == "__main__":
+    main()
+================================================================================
+END FILE: UX_and_AIX_experiences/02_intermediate/42_managed_spell_elastic_pool.py
+================================================================================
+================================================================================
+BEGIN FILE: UX_and_AIX_experiences/02_intermediate/43_managed_spell_limited_quantity.py
+CONTENT SHA256: 55db8c735eae01018d0b026f4f9235803740b618dab4f1da50190f7e5e3ef70a
+SOURCE ENCODING: utf-8
+================================================================================
+"""
+TIER: intermediate (43)
+GOAL: Cap how many objects exist at once - managed_spell_mode="limited_quantity".
+      managed_spell_limit (required here) is the most objects ALIVE at once: idle plus
+      out. Below the limit a meld builds; at the limit, with nothing idle, the meld is
+      refused with ManagedSpellExhaustedError before anything is built. The error is a
+      MeldExecutionError that names the mode and the limit, and says how to get out:
+      release an object, or bind a higher limit.
+
+      Releasing frees a place: the next meld is served the released object, so the
+      pool never grows past its limit. release_all(objects) gives many back at once.
+SURFACE EXERCISED: md.Spellbook.bind (managed_spell_mode, managed_spell_limit),
+                   md.ManagedSpellMode.limited_quantity, md.Conduit.meld,
+                   md.ManagedSpellExhaustedError (mode, limit, timeout_seconds),
+                   md.MeldExecutionError, md.ReleaseManagedSpell (release,
+                   release_all, describe), md.Conduit.cleanup
+"""
+from typing import Tuple
+
+import melder as md
+
+
+class LicenseSeat:
+    """One seat of a licence that allows a fixed number of concurrent users.
+
+    `close` is its disposal method, run when the pool destroys the seat (root
+    teardown here). `closed` is a lesson diagnostic.
+    """
+
+    def __init__(self) -> None:
+        """Claim the seat; the lesson only records that it is open."""
+        self.closed: bool = False
+
+    def close(self) -> None:
+        """Give the seat up for good; called by the pool when it destroys this object."""
+        self.closed = True
+
+
+def pool_counts(cls: type) -> Tuple[int, int, int]:
+    """Return (alive, idle, out) for the one pool of a managed class."""
+    (snapshot,) = md.ReleaseManagedSpell().describe(cls)
+    return snapshot["count"], snapshot["idle_count"], snapshot["out_count"]
+
+
+def main() -> None:
+    """Fill a limited pool, read its refusal, then release and lease again.
+
+    Contract:
+        The refusal is caught and its fields checked; the counts prove the refusal
+        built nothing and that releases never let the pool grow past its limit.
+    Returns:
+        None.
+    """
+    book = md.Spellbook()
+    try:
+        book.bind(
+            spell=LicenseSeat,
+            existence=md.Existence.managed_spell_quantity,
+            managed_spell_mode="limited_quantity",
+            managed_spell_limit=2,
+            disposal_method_names=["close"],
+        )
+        conduit = book.conjure()
+        try:
+            first: LicenseSeat = conduit.meld("LicenseSeat")
+            second: LicenseSeat = conduit.meld("LicenseSeat")
+            assert pool_counts(LicenseSeat) == (2, 0, 2)
+            print("both seats taken (alive, idle, out):", pool_counts(LicenseSeat))
+
+            # At the limit with nothing idle: refused before anything is built.
+            try:
+                conduit.meld("LicenseSeat")
+                raise AssertionError("a third seat was leased past the limit")
+            except md.ManagedSpellExhaustedError as refused:
+                assert isinstance(refused, md.MeldExecutionError)
+                assert refused.mode == "limited_quantity" and refused.limit == 2
+                assert refused.timeout_seconds is None
+                assert "Release one with ReleaseManagedSpell().release(obj)" in str(refused)
+                print("third seat refused:", type(refused).__name__, "- mode", refused.mode, "limit", refused.limit)
+            assert pool_counts(LicenseSeat) == (2, 0, 2)
+
+            # A release frees a place, and the next meld is served the released seat.
+            md.ReleaseManagedSpell().release(first)
+            again: LicenseSeat = conduit.meld("LicenseSeat")
+            assert again is first
+            assert pool_counts(LicenseSeat) == (2, 0, 2)
+            print("after a release the next user got the freed seat:", again is first)
+
+            # release_all gives every seat back; the pool still holds exactly two.
+            md.ReleaseManagedSpell().release_all([second, again])
+            assert pool_counts(LicenseSeat) == (2, 2, 0)
+            reused = {id(conduit.meld("LicenseSeat")), id(conduit.meld("LicenseSeat"))}
+            assert reused == {id(first), id(second)}
+            assert pool_counts(LicenseSeat) == (2, 0, 2)
+            print("two more leases reused the same two seats; alive stays at the limit:", pool_counts(LicenseSeat))
+        finally:
+            conduit.cleanup()
+
+        # Teardown disposes only what is idle; both seats were still out.
+        assert not first.closed and not second.closed
+        print("seats still out at teardown stay their holder's:", not first.closed)
+    finally:
+        book.cleanup()
+
+
+if __name__ == "__main__":
+    main()
+================================================================================
+END FILE: UX_and_AIX_experiences/02_intermediate/43_managed_spell_limited_quantity.py
+================================================================================
+================================================================================
+BEGIN FILE: UX_and_AIX_experiences/02_intermediate/44_managed_spell_queue.py
+CONTENT SHA256: 8b512ba74fda97a11510d844392378f7cd804de0563c0947e5caef5b841b6949
+SOURCE ENCODING: utf-8
+================================================================================
+"""
+TIER: intermediate (44)
+GOAL: Wait for a pooled object instead of failing - managed_spell_mode="queue".
+      A queue pool is limited_quantity with patience: at its limit a meld WAITS for a
+      release, up to managed_spell_timeout_seconds (required for a queue, refused for
+      the other modes). A release hands the waiting meld the released object. When the
+      timeout passes first, the meld raises ManagedSpellExhaustedError naming the
+      queue, its limit and its timeout.
+
+      The timeout bounds every wait, so a queue never blocks forever: choose it from
+      how long a caller may afford to wait for a turn.
+SURFACE EXERCISED: md.Spellbook.bind (managed_spell_mode, managed_spell_limit,
+                   managed_spell_timeout_seconds), md.ManagedSpellMode.queue,
+                   md.Conduit.meld, md.ManagedSpellExhaustedError (mode, limit,
+                   timeout_seconds), md.ReleaseManagedSpell (release, describe),
+                   md.Conduit.cleanup
+"""
+import threading
+import time
+from typing import List, Tuple
+
+import melder as md
+
+
+class GpuSlot:
+    """The one GPU slot a renderer may use; callers queue for it.
+
+    Bound with a generous timeout, so a waiting meld is served by a release.
+    """
+
+    def __init__(self) -> None:
+        """Reserve the slot; `jobs` counts the work done with it."""
+        self.jobs: int = 0
+
+
+class ExportSlot:
+    """A single export slot bound with a short timeout, to show the queue's refusal."""
+
+    def __init__(self) -> None:
+        """Reserve the slot."""
+        self.jobs: int = 0
+
+
+def pool_counts(cls: type) -> Tuple[int, int, int]:
+    """Return (alive, idle, out) for the one pool of a managed class."""
+    (snapshot,) = md.ReleaseManagedSpell().describe(cls)
+    return snapshot["count"], snapshot["idle_count"], snapshot["out_count"]
+
+
+def main() -> None:
+    """Hand a released slot to a waiting meld, then let a short wait run out.
+
+    Contract:
+        The waiting meld runs on a second thread. Its outcome is deterministic: the
+        pool's only slot is out, so the waiter can only finish after the release,
+        and it then holds exactly that slot. The refusal asserts the wait lasted at
+        least the bound timeout and carries the queue's policy.
+    Returns:
+        None.
+    """
+    book = md.Spellbook()
+    try:
+        book.bind(
+            spell=GpuSlot,
+            existence=md.Existence.managed_spell_quantity,
+            managed_spell_mode=md.ManagedSpellMode.queue,
+            managed_spell_limit=1,
+            managed_spell_timeout_seconds=5.0,
+        )
+        book.bind(
+            spell=ExportSlot,
+            existence=md.Existence.managed_spell_quantity,
+            managed_spell_mode="queue",
+            managed_spell_limit=1,
+            managed_spell_timeout_seconds=0.25,
+        )
+        conduit = book.conjure()
+        try:
+            held: GpuSlot = conduit.meld("GpuSlot")
+            held.jobs += 1
+            received: List[GpuSlot] = []
+            started = threading.Event()
+
+            def wait_for_slot() -> None:
+                """Meld a GpuSlot; with the only slot out, this waits for a release."""
+                started.set()
+                received.append(conduit.meld("GpuSlot"))
+
+            waiter = threading.Thread(target=wait_for_slot, name="renderer-2")
+            waiter.start()
+            started.wait()
+            time.sleep(0.2)
+            # The only slot is out, so the waiter cannot have finished.
+            assert waiter.is_alive() and not received
+            print("the second renderer is queued while the slot is out:", waiter.is_alive())
+
+            md.ReleaseManagedSpell().release(held)
+            waiter.join(timeout=5.0)
+            assert not waiter.is_alive()
+            assert received and received[0] is held and received[0].jobs == 1
+            assert pool_counts(GpuSlot) == (1, 0, 1)
+            print("the release handed the same slot to the waiting renderer:", received[0] is held)
+            md.ReleaseManagedSpell().release(received[0])
+
+            # A short timeout: the wait runs out and the meld is refused.
+            busy: ExportSlot = conduit.meld("ExportSlot")
+            began = time.monotonic()
+            try:
+                conduit.meld("ExportSlot")
+                raise AssertionError("a second export slot was leased past the limit")
+            except md.ManagedSpellExhaustedError as refused:
+                waited = time.monotonic() - began
+                assert waited >= 0.25
+                assert refused.mode == "queue" and refused.limit == 1
+                assert refused.timeout_seconds == 0.25
+                print(f"the export queue gave up after {waited:.2f} s:", refused.mode, "timeout", refused.timeout_seconds)
+            md.ReleaseManagedSpell().release(busy)
+            assert pool_counts(ExportSlot) == (1, 1, 0)
+        finally:
+            conduit.cleanup()
+    finally:
+        book.cleanup()
+
+
+if __name__ == "__main__":
+    main()
+================================================================================
+END FILE: UX_and_AIX_experiences/02_intermediate/44_managed_spell_queue.py
+================================================================================
+================================================================================
+BEGIN FILE: UX_and_AIX_experiences/02_intermediate/45_managed_spell_reset_methods.py
+CONTENT SHA256: 66260ecf6499dc0e770a245a72b0ba7552d05daadb703a1272fc54353e3e527c
+SOURCE ENCODING: utf-8
+================================================================================
+"""
+TIER: intermediate (45)
+GOAL: Hand the next caller a clean object - managed_spell_reset_methods.
+      A pooled object is reused, so whatever the last holder left in it would leak to
+      the next one. Name its reset methods at bind: zero-argument methods the pool
+      calls, in the order given, on EVERY release, before the object is idle again.
+      The next lease then gets the same object, reset.
+
+      A reset that raises means the object cannot be trusted: the pool destroys it
+      (its disposal methods run, its place is freed) and the reset's error propagates
+      from the release. The next meld builds a fresh object.
+SURFACE EXERCISED: md.Spellbook.bind (managed_spell_reset_methods,
+                   disposal_method_names), md.Existence.managed_spell_quantity,
+                   md.Conduit.meld, md.ReleaseManagedSpell (release, describe),
+                   md.Conduit.cleanup
+"""
+from typing import List, Tuple
+
+import melder as md
+
+
+class ReportBuilder:
+    """Accumulates report lines for one request; must start empty for the next one.
+
+    `clear_lines` and `rewind` are its reset methods; `calls` records the order the
+    pool ran them, as a lesson diagnostic.
+    """
+
+    def __init__(self) -> None:
+        """Start with no lines and the cursor at the top."""
+        self.lines: List[str] = []
+        self.cursor: int = 0
+        self.calls: List[str] = []
+
+    def clear_lines(self) -> None:
+        """Drop the previous request's lines."""
+        self.lines.clear()
+        self.calls.append("clear_lines")
+
+    def rewind(self) -> None:
+        """Move the cursor back to the top."""
+        self.cursor = 0
+        self.calls.append("rewind")
+
+
+class TemplateCache:
+    """A pooled cache whose reset refuses once the cache is corrupted.
+
+    `close` is its disposal method; the pool runs it when it destroys the object.
+    """
+
+    def __init__(self) -> None:
+        """Start valid and open."""
+        self.corrupted: bool = False
+        self.closed: bool = False
+
+    def reset(self) -> None:
+        """Empty the cache for the next holder; a corrupted cache cannot be reset."""
+        if self.corrupted:
+            raise ValueError("template cache is corrupted and cannot be reset")
+
+    def close(self) -> None:
+        """Dispose the cache; called when the pool destroys this object."""
+        self.closed = True
+
+
+def pool_counts(cls: type) -> Tuple[int, int, int]:
+    """Return (alive, idle, out) for the one pool of a managed class."""
+    (snapshot,) = md.ReleaseManagedSpell().describe(cls)
+    return snapshot["count"], snapshot["idle_count"], snapshot["out_count"]
+
+
+def main() -> None:
+    """Reset a pooled object on release, then watch a failing reset destroy one.
+
+    Contract:
+        Checks the reset order, the reused object's clean state, and that a raising
+        reset disposes the object, frees its place and propagates its error.
+    Returns:
+        None.
+    """
+    book = md.Spellbook()
+    try:
+        book.bind(
+            spell=ReportBuilder,
+            existence=md.Existence.managed_spell_quantity,
+            managed_spell_reset_methods=["clear_lines", "rewind"],
+        )
+        book.bind(
+            spell=TemplateCache,
+            existence=md.Existence.managed_spell_quantity,
+            managed_spell_reset_methods=["reset"],
+            disposal_method_names=["close"],
+        )
+        conduit = book.conjure()
+        release = md.ReleaseManagedSpell().release
+        try:
+            builder: ReportBuilder = conduit.meld("ReportBuilder")
+            builder.lines.extend(["header", "totals"])
+            builder.cursor = 2
+            release(builder)
+            # The resets ran in the order named at bind, on the release itself.
+            assert builder.calls == ["clear_lines", "rewind"]
+            assert builder.lines == [] and builder.cursor == 0
+            print("release ran the resets in order:", builder.calls)
+
+            nxt: ReportBuilder = conduit.meld("ReportBuilder")
+            assert nxt is builder and nxt.lines == []
+            print("the next request got the same builder, clean:", nxt is builder)
+            release(nxt)
+
+            cache: TemplateCache = conduit.meld("TemplateCache")
+            cache.corrupted = True
+            try:
+                release(cache)
+                raise AssertionError("a corrupted cache went back into the pool")
+            except ValueError as error:
+                # The pool destroyed the object: disposal ran and its place was freed.
+                assert cache.closed
+                assert pool_counts(TemplateCache) == (0, 0, 0)
+                print("a failing reset destroyed the cache and raised:", error)
+
+            fresh: TemplateCache = conduit.meld("TemplateCache")
+            assert fresh is not cache and not fresh.corrupted
+            assert pool_counts(TemplateCache) == (1, 0, 1)
+            print("the next meld built a fresh cache:", fresh is not cache)
+            release(fresh)
+        finally:
+            conduit.cleanup()
+    finally:
+        book.cleanup()
+
+
+if __name__ == "__main__":
+    main()
+================================================================================
+END FILE: UX_and_AIX_experiences/02_intermediate/45_managed_spell_reset_methods.py
+================================================================================
+================================================================================
+BEGIN FILE: UX_and_AIX_experiences/02_intermediate/46_managed_spell_leases.py
+CONTENT SHA256: a57f98ac11858e51e098b7ffa6900628882be1786c7973088c2547fb567c4976
+SOURCE ENCODING: utf-8
+================================================================================
+"""
+TIER: intermediate (46)
+GOAL: Let a `with` block give the object back - ManagedSpellLease.
+      conduit.managed_spell_meld(Spell) melds a managed spell and returns a lease: the
+      `with` target is the leased object, and leaving the block releases it, even when
+      the block raised (the block's exception is never swallowed). A lease releases
+      exactly once: release() a second time does nothing, and lease.object raises once
+      the object went back, because the pool may already have leased it again.
+
+      ReleaseManagedSpell().managed(obj) wraps an object you already hold - one meld
+      returned, or one injected into your constructor - in the same kind of lease.
+      managed_spell_meld refuses a spell that is not managed, before melding anything.
+SURFACE EXERCISED: md.Conduit.managed_spell_meld, md.ManagedSpellLease (object,
+                   release, released, with), md.ReleaseManagedSpell (managed,
+                   describe), md.Existence.managed_spell_quantity, md.Existence.many,
+                   md.Conduit.meld, md.Conduit.cleanup
+"""
+from typing import Tuple
+
+import melder as md
+
+
+class HttpSession:
+    """A pooled HTTP session; `requests` counts the requests made with it."""
+
+    def __init__(self) -> None:
+        """Open the session."""
+        self.requests: int = 0
+
+
+class RequestLog:
+    """A plain `many` spell, to show managed_spell_meld's refusal."""
+
+    def __init__(self) -> None:
+        """Start an empty log."""
+        self.entries: int = 0
+
+
+def pool_counts(cls: type) -> Tuple[int, int, int]:
+    """Return (alive, idle, out) for the one pool of a managed class."""
+    (snapshot,) = md.ReleaseManagedSpell().describe(cls)
+    return snapshot["count"], snapshot["idle_count"], snapshot["out_count"]
+
+
+def main() -> None:
+    """Use leases from managed_spell_meld and from ReleaseManagedSpell().managed.
+
+    Contract:
+        Checks that a `with` block releases on exit (also when it raises), that a
+        lease releases once, that a released lease refuses its object, and that a
+        non-managed spell is refused.
+    Returns:
+        None.
+    """
+    book = md.Spellbook()
+    try:
+        book.bind(spell=HttpSession, existence=md.Existence.managed_spell_quantity)
+        book.bind(spell=RequestLog, existence=md.Existence.many)
+        conduit = book.conjure()
+        try:
+            with conduit.managed_spell_meld(HttpSession) as session:
+                session.requests += 1
+                assert pool_counts(HttpSession) == (1, 0, 1)
+                print("inside the block the session is out (alive, idle, out):", pool_counts(HttpSession))
+            assert pool_counts(HttpSession) == (1, 1, 0)
+            print("leaving the block gave it back:", pool_counts(HttpSession))
+
+            # A lease held by hand: the same idle session comes back.
+            lease = conduit.managed_spell_meld("HttpSession")
+            assert isinstance(lease, md.ManagedSpellLease)
+            assert lease.object is session and not lease.released
+            lease.release()
+            lease.release()  # a second release does nothing
+            assert lease.released and pool_counts(HttpSession) == (1, 1, 0)
+            try:
+                lease.object
+                raise AssertionError("a released lease still handed out its object")
+            except RuntimeError as refused:
+                print("a released lease refuses its object:", refused)
+
+            # The block raises: the session still goes back, and the error is not swallowed.
+            try:
+                with conduit.managed_spell_meld(HttpSession) as session:
+                    session.requests += 1
+                    raise ConnectionError("upstream timed out")
+            except ConnectionError as error:
+                assert pool_counts(HttpSession) == (1, 1, 0)
+                print("the block raised", repr(error), "and the session went back anyway")
+
+            # Wrap an object you already hold - here, one a plain meld returned.
+            held: HttpSession = conduit.meld("HttpSession")
+            with md.ReleaseManagedSpell().managed(held) as same:
+                assert same is held and pool_counts(HttpSession) == (1, 0, 1)
+            assert pool_counts(HttpSession) == (1, 1, 0)
+            print("managed(obj) leased a melded session and gave it back:", same is held)
+
+            try:
+                conduit.managed_spell_meld("RequestLog")
+                raise AssertionError("managed_spell_meld leased a many spell")
+            except ValueError as refused:
+                print("managed_spell_meld refuses a spell that is not managed:", str(refused)[:60], "...")
+        finally:
+            conduit.cleanup()
+    finally:
+        book.cleanup()
+
+
+if __name__ == "__main__":
+    main()
+================================================================================
+END FILE: UX_and_AIX_experiences/02_intermediate/46_managed_spell_leases.py
+================================================================================
+================================================================================
+BEGIN FILE: UX_and_AIX_experiences/02_intermediate/47_managed_spell_injection_and_request_scopes.py
+CONTENT SHA256: 27b47a8c91e7e2c23bdbe66c72a600c21b42c5a412c813b52b61579dda926847
+SOURCE ENCODING: utf-8
+================================================================================
+"""
+TIER: intermediate (47)
+GOAL: Borrow a pooled object per request, give it back when the request ends.
+      A managed spell can be injected like any other: annotate a constructor parameter
+      with its class. Every injection is its own lease, so two handlers get two
+      objects. The holder gives its object back - here the handler's own disposal
+      method releases it, and the handler lives in a request scope (a lesser conduit),
+      so leaving the scope disposes the handler and the connection returns to the
+      ROOT's pool for the next request.
+
+      The pool belongs to the root and outlives every request scope. Root teardown
+      disposes the idle objects only: an object still out is its holder's, and a
+      release after teardown is refused because the pool left with its root. So give
+      leases back before the root ends - a consumer melded on the root itself that
+      releases at its own disposal meets a pool already gone at root teardown.
+SURFACE EXERCISED: md.Spellbook.bind, md.Existence.managed_spell_quantity,
+                   md.Existence.many (disposal_method_names), constructor injection,
+                   md.Conduit.enter_lesser_conduit, md.Conduit.meld,
+                   md.ReleaseManagedSpell (release, describe), md.Conduit.cleanup
+"""
+from typing import Tuple
+
+import melder as md
+
+
+class PooledConnection:
+    """A connection the root keeps pooled across requests; `close` disposes it."""
+
+    def __init__(self) -> None:
+        """Open the connection."""
+        self.closed: bool = False
+
+    def close(self) -> None:
+        """Close the connection; called when the pool destroys it."""
+        self.closed = True
+
+
+class RequestHandler:
+    """Handles one request with a pooled connection injected into its constructor.
+
+    `finish` is its disposal method: the request scope runs it when the scope ends,
+    and it hands the connection back to the root's pool exactly once.
+    """
+
+    def __init__(self, connection: PooledConnection) -> None:
+        """Keep the leased connection for the life of the request."""
+        self.connection: PooledConnection = connection
+        self.finished: bool = False
+
+    def finish(self) -> None:
+        """Give the connection back; later calls do nothing."""
+        if self.finished:
+            return
+        self.finished = True
+        md.ReleaseManagedSpell().release(self.connection)
+
+
+def pool_counts(cls: type) -> Tuple[int, int, int]:
+    """Return (alive, idle, out) for the one pool of a managed class."""
+    (snapshot,) = md.ReleaseManagedSpell().describe(cls)
+    return snapshot["count"], snapshot["idle_count"], snapshot["out_count"]
+
+
+def main() -> None:
+    """Serve two requests from one pool, then tear the root down.
+
+    Contract:
+        Checks that each injection leases its own object, that ending a request
+        scope returns its leases, that the next request reuses them, and what root
+        teardown does to idle and outstanding objects.
+    Returns:
+        None.
+    """
+    book = md.Spellbook()
+    try:
+        book.bind(
+            spell=PooledConnection,
+            existence=md.Existence.managed_spell_quantity,
+            disposal_method_names=["close"],
+        )
+        book.bind(spell=RequestHandler, existence=md.Existence.many, disposal_method_names=["finish"])
+        root = book.conjure()
+        try:
+            with root.enter_lesser_conduit() as request:
+                first: RequestHandler = request.meld("RequestHandler")
+                second: RequestHandler = request.meld("RequestHandler")
+                assert first.connection is not second.connection
+                assert pool_counts(PooledConnection) == (2, 0, 2)
+                print("two handlers, two leased connections (alive, idle, out):", pool_counts(PooledConnection))
+            # Leaving the request scope disposed both handlers; each released its connection.
+            assert first.finished and second.finished
+            assert pool_counts(PooledConnection) == (2, 2, 0)
+            print("the request ended and both connections went back:", pool_counts(PooledConnection))
+
+            with root.enter_lesser_conduit() as request:
+                third: RequestHandler = request.meld("RequestHandler")
+                assert third.connection in (first.connection, second.connection)
+                assert pool_counts(PooledConnection) == (2, 1, 1)
+                print("the next request reused a pooled connection:", True)
+            assert pool_counts(PooledConnection) == (2, 2, 0)
+
+            # Keep one connection out across root teardown.
+            outstanding: PooledConnection = root.meld("PooledConnection")
+            assert pool_counts(PooledConnection) == (2, 1, 1)
+        finally:
+            root.cleanup()
+
+        # Teardown closed the idle connection, left the outstanding one to its holder...
+        idle = second.connection if outstanding is first.connection else first.connection
+        assert idle.closed and not outstanding.closed
+        print("root teardown closed the idle connection, not the one still out:", not outstanding.closed)
+        # ...and the pool is gone, so giving it back now is refused.
+        try:
+            md.ReleaseManagedSpell().release(outstanding)
+            raise AssertionError("a connection was released into a torn-down root")
+        except ValueError as refused:
+            outstanding.close()  # it is ours to dispose now
+            print("a release after root teardown is refused:", str(refused)[:70], "...")
+    finally:
+        book.cleanup()
+
+
+if __name__ == "__main__":
+    main()
+================================================================================
+END FILE: UX_and_AIX_experiences/02_intermediate/47_managed_spell_injection_and_request_scopes.py
+================================================================================
+================================================================================
+BEGIN FILE: UX_and_AIX_experiences/02_intermediate/48_managed_spell_settings_and_transfer.py
+CONTENT SHA256: 6024ce526212964daa0673bb3e48f425c42858635c1353978de53d50bb1d720e
+SOURCE ENCODING: utf-8
+================================================================================
+"""
+TIER: intermediate (48)
+GOAL: Change a pool's settings and hand a pool to another root (dynamic mode).
+      A managed spell's mode, limit, queue timeout and reset methods are SETTINGS of
+      the spell, not part of its spell_id. To change them, cleanup_spell the spell and
+      bind it again: the spell_id stays the same, and so does its pool - every object
+      alive stays alive and counted, and the pool takes the new settings.
+
+      An ownership transfer moves the spell to another root, and the pool goes with it,
+      idle objects included. The new owner leases from it; releases keep routing by
+      class, so holders change nothing.
+SURFACE EXERCISED: md.Spellbook.conjure(dynamic=True), md.Conduit.bind (managed
+                   options), md.Conduit.cleanup_spell, md.Conduit.get_spell_by_spell_id,
+                   md.Conduit.link, md.Conduit.transfer_spell_ownership,
+                   md.ManagedSpellExhaustedError, md.ReleaseManagedSpell (release,
+                   release_all, describe), md.Conduit.cleanup
+"""
+import sys
+from pathlib import Path
+from typing import Any, Dict, List, Tuple
+
+sys.path.insert(0, str(Path(__file__).parent))  # local helper (see _dynamic_world)
+from _dynamic_world import dynamic_spellbook
+
+import melder as md
+
+
+class ExportWorker:
+    """A pooled export worker; `close` disposes it when its pool destroys it."""
+
+    def __init__(self) -> None:
+        """Start the worker."""
+        self.closed: bool = False
+
+    def close(self) -> None:
+        """Stop the worker for good."""
+        self.closed = True
+
+
+def pool_snapshot(cls: type) -> Dict[str, Any]:
+    """Return the one pool snapshot of a managed class (this lesson binds it once)."""
+    (snapshot,) = md.ReleaseManagedSpell().describe(cls)
+    return snapshot
+
+
+def pool_counts(cls: type) -> Tuple[int, int, int]:
+    """Return (alive, idle, out) for the one pool of a managed class."""
+    snapshot = pool_snapshot(cls)
+    return snapshot["count"], snapshot["idle_count"], snapshot["out_count"]
+
+
+def raise_the_limit(reports: md.Conduit, spell_id: str) -> List[ExportWorker]:
+    """Fill a limit-1 pool, rebind it with limit 3, lease up to the new limit.
+
+    Contract:
+        The rebind keeps the spell_id and the pool: the worker that was out stays
+        alive and counted under the new limit. Every worker is released at the end.
+    Args:
+        reports: The dynamic root that owns the managed spell.
+        spell_id: The spell_id the first bind returned.
+    Returns:
+        List[ExportWorker]: The three workers the pool now holds, all idle.
+    """
+    busy: ExportWorker = reports.meld("ExportWorker")
+    try:
+        reports.meld("ExportWorker")
+        raise AssertionError("limit 1 leased a second worker")
+    except md.ManagedSpellExhaustedError:
+        print("limit 1: a second worker is refused while one is out")
+
+    # Settings are not identity: rebinding with a higher limit keeps the spell_id and the pool.
+    reports.cleanup_spell(spell=reports.get_spell_by_spell_id(spell_id))
+    rebound_id = reports.bind(
+        spell=ExportWorker,
+        existence=md.Existence.managed_spell_quantity,
+        managed_spell_mode="limited_quantity",
+        managed_spell_limit=3,
+        disposal_method_names=["close"],
+    )
+    assert rebound_id == spell_id
+    assert pool_snapshot(ExportWorker)["limit"] == 3
+    assert pool_counts(ExportWorker) == (1, 0, 1) and not busy.closed
+    print("rebound with limit 3, same spell_id; the busy worker still counts:", pool_counts(ExportWorker))
+
+    workers = [busy, reports.meld("ExportWorker"), reports.meld("ExportWorker")]
+    assert pool_counts(ExportWorker) == (3, 0, 3)
+    md.ReleaseManagedSpell().release_all(workers)
+    assert pool_counts(ExportWorker) == (3, 3, 0)
+    print("three workers under the new limit, all back:", pool_counts(ExportWorker))
+    return workers
+
+
+def transfer_the_pool(reports: md.Conduit, archive: md.Conduit, spell_id: str, workers: List[ExportWorker]) -> None:
+    """Transfer the managed spell to another root and lease from the moved pool.
+
+    Contract:
+        After the transfer the pool lives in the archive root's store, with its idle
+        workers; the archive leases them, the old owner can no longer meld the spell.
+    Args:
+        reports: The current owner.
+        archive: The new owner, linked from `reports`.
+        spell_id: The managed spell's spell_id.
+        workers: The pool's idle workers before the transfer.
+    Returns:
+        None.
+    """
+    assert pool_snapshot(ExportWorker)["holding_conduit_id"] == reports.id
+    reports.link(archive)
+    reports.transfer_spell_ownership(spell=spell_id, target_conduit=archive)
+    assert pool_snapshot(ExportWorker)["holding_conduit_id"] == archive.id
+    assert pool_counts(ExportWorker) == (3, 3, 0)
+    moved: ExportWorker = archive.meld("ExportWorker")
+    assert any(moved is worker for worker in workers)
+    print("the archive root now holds the pool and leases its idle workers:", pool_counts(ExportWorker))
+
+    try:
+        reports.meld("ExportWorker")
+        raise AssertionError("the old owner still melds the transferred spell")
+    except KeyError as gone:
+        print("the old owner can no longer meld it:", type(gone).__name__)
+    md.ReleaseManagedSpell().release(moved)
+    assert pool_counts(ExportWorker) == (3, 3, 0)
+
+
+def main() -> None:
+    """Raise a pool's limit by rebinding, then transfer the spell and its pool.
+
+    Contract:
+        Both roots and both books are cleaned in finally blocks; the archive root's
+        teardown disposes the idle workers its moved pool holds.
+    Returns:
+        None.
+    """
+    reports_book = dynamic_spellbook()
+    try:
+        spell_id = reports_book.bind(
+            spell=ExportWorker,
+            existence=md.Existence.managed_spell_quantity,
+            managed_spell_mode="limited_quantity",
+            managed_spell_limit=1,
+            disposal_method_names=["close"],
+        )
+        reports = reports_book.conjure(dynamic=True, name="reports")
+        try:
+            archive_book = dynamic_spellbook()
+            try:
+                archive = archive_book.conjure(dynamic=True, name="archive")
+                try:
+                    workers = raise_the_limit(reports, spell_id)
+                    transfer_the_pool(reports, archive, spell_id, workers)
+                finally:
+                    archive.cleanup()
+                # The new owner's teardown disposed the idle workers its pool held.
+                assert all(worker.closed for worker in workers)
+                print("the new owner's teardown closed the pooled workers:", len(workers))
+            finally:
+                archive_book.cleanup()
+        finally:
+            reports.cleanup()
+    finally:
+        reports_book.cleanup()
+
+
+if __name__ == "__main__":
+    main()
+================================================================================
+END FILE: UX_and_AIX_experiences/02_intermediate/48_managed_spell_settings_and_transfer.py
+================================================================================
+================================================================================
 BEGIN FILE: UX_and_AIX_experiences/02_intermediate/_concept_map.txt
-CONTENT SHA256: c0a900d37450ce51bfe0da0f4e3b86e12a06794ac6809b5a89019e2539a03bf3
+CONTENT SHA256: a9a7df9be785ca669027a67d9c04ce4b0dc5560f93a0eefaf276af6820f867d7
 SOURCE ENCODING: utf-8
 ================================================================================
 CONCEPT MAP - 02_intermediate (README tier: YELLOW Intermediate)
@@ -12571,9 +13556,50 @@ NAMED SCOPE DISCOVERY (2026-09-23)
   41 named_lesser_conduits (creation-only names, frame-wide Cloud discovery,
      collisions, separate per-conduit state, retirement and anonymous reuse).
 
+MANAGED SPELL POOLS (2026-10-18)
+  42 managed_spell_elastic_pool (Existence.managed_spell_quantity: one pool
+     per version in the owning root's store, composed at conjure; a meld
+     leases, ReleaseManagedSpell().release(obj) gives back by hand, the
+     newest released object is leased first; ELASTIC never refuses - its
+     limit (default 256) caps the IDLE objects and a small limit destroys
+     the oldest idle one, running its disposal; describe(cls) reads alive,
+     idle and out)
+  43 managed_spell_limited_quantity (the limit caps objects ALIVE, idle
+     plus out; at the limit with nothing idle a meld raises
+     ManagedSpellExhaustedError - a MeldExecutionError carrying mode, limit
+     and timeout_seconds - before building anything; a release frees a
+     place; release_all)
+  44 managed_spell_queue (at the limit a meld WAITS up to
+     managed_spell_timeout_seconds; a release hands the waiter the released
+     object; past the timeout the same refusal names the queue)
+  45 managed_spell_reset_methods (reset names run in order on EVERY
+     release; a raising reset destroys the object - disposal runs, its
+     place frees - and its error propagates from the release)
+  46 managed_spell_leases (Conduit.managed_spell_meld returns a
+     ManagedSpellLease: its `with` releases on exit, also when the block
+     raised, and never suppresses; a lease releases once and then refuses
+     its object; ReleaseManagedSpell().managed(obj) wraps a held object;
+     a spell that is not managed is refused)
+  47 managed_spell_injection_and_request_scopes (every injection is its
+     own lease; a handler's disposal releases, so a lesser conduit per
+     request returns its connections to the ROOT's pool; root teardown
+     disposes idle objects only, an object still out stays its holder's,
+     and a release after teardown is refused)
+  48 managed_spell_settings_and_transfer (dynamic: settings are not the
+     spell_id - cleanup_spell + bind keeps the spell_id and the pool, which
+     takes the new limit with every object alive still counted;
+     transfer_spell_ownership moves the pool with its idle objects and the
+     old owner can no longer meld the spell)
+  Probes: pytest_examples/test_managed_spell_probes.py (34 rows) pin every
+  law above. OPEN WITH THE OWNER: a consumer melded on the ROOT that
+  releases at its own disposal meets a pool already gone at root teardown
+  (pools are cleaned before the root's disposable registry), so the
+  teardown raises an ExceptionGroup; 47 teaches the request scope instead.
+
 HARNESS
   pytest_examples/test_intermediate_examples.py (every lesson runs)
   pytest_examples/test_intermediate_probes.py (contract probes)
+  pytest_examples/test_managed_spell_probes.py (managed pool contract probes)
 ================================================================================
 END FILE: UX_and_AIX_experiences/02_intermediate/_concept_map.txt
 ================================================================================
@@ -12682,7 +13708,7 @@ END FILE: UX_and_AIX_experiences/03_advanced/01_deep_spell_override_paths.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/03_advanced/02_frames_as_worlds.py
-CONTENT SHA256: 162ce6915dc691d5a29da723e969966f5f3154f2a06fa746e0beb1c3449b6f3c
+CONTENT SHA256: 638a3debeea017b20c1bb8849e3175737949e3fc1a5be5308935ea3fe6824578
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -12699,26 +13725,35 @@ GOAL: Aetheric frames are WORLDS - the categories arc, act three.
         A FRAME IS A WORLD FOR INSTANCES AND RESOLUTION.
         IT IS NOT A NAMESPACE FOR IDENTITY.
 
-      A spell_id is a SHA256 over the BIND FINGERPRINT - structural
-      profile, lookup signature, existence, resolved disposal metadata.
-      READ THAT LIST AGAIN AND NOTICE WHAT IS ABSENT: the frame. So two
-      books on two different frames binding the same class with the same
-      parameters mint THE SAME ID, and the second conjure is refused
-      process-wide. Moving to another frame is not a fix, because the id
-      follows the fingerprint and the fingerprint has no frame in it.
+      A spell_id is the SHA256 of the registered object's CODE - its
+      methods and constructor, its class-level values, its bases - and
+      of nothing from the bind call. READ THAT AGAIN AND NOTICE WHAT IS
+      ABSENT: the frame, the spellframe, the binding_name. So two books
+      on two different frames binding the same class mint THE SAME ID,
+      whatever names they give it, and the second registration is
+      refused process-wide. Moving to another frame is not a fix, and
+      neither is another binding_name: one object is one spell.
 
-      The fix is to make the BINDINGS different, not the worlds:
-      `binding_name=` or `spellframe=`. Once you do, everything you
-      expect from a world wall holds - `unique` is one instance PER
-      FRAME, each world reuses its own singleton forever, and nothing
-      leaks across.
+      The fix is to make the CLASSES different, not the worlds or the
+      names: one subclass per world. A subclass is a new class, so a new
+      spell_id, and every world can then keep it at the SAME address.
+      Once you do, everything you expect from a world wall holds -
+      `unique` is one instance PER FRAME, each world reuses its own
+      singleton forever, and nothing leaks across.
+
+      THE OTHER WAY is a regime, not a binding: with
+      `process_wide_unique_spell_ids` turned off before the first frame
+      exists, a spell_id is unique per FRAME, and one class may live in
+      several worlds. That is Aether configuration, and a lesson never
+      installs it - lessons share one interpreter (advanced 07). The
+      probe suite pins it in a reset world.
 
       WHY IT IS BUILT THIS WAY: one spell_id names one spell, everywhere.
       An id that silently meant different things in different frames
       would make every checkpoint, every crystal and every research lane
       ambiguous the moment two frames existed.
-SURFACE EXERCISED: Spellbook(aetheric_frame=...), binding_name as the
-                   identity differentiator, per-frame instance isolation
+SURFACE EXERCISED: Spellbook(aetheric_frame=...), one class per world at
+                   one address, per-frame instance isolation
 VERIFY: rides the owner's 3.14t run; asserts are the contract.
 
 HISTORY: this lesson used to teach that two frames could bind the same
@@ -12726,6 +13761,11 @@ class under the same name "with zero collision", and it carried a note
 warning that S2 of EPIC-2026-08-02-process-wide-spell-id-uniqueness would
 retire exactly that claim. S2 landed. The claim is retired, and the
 lesson now teaches the line instead of the half of it that survived.
+
+0.2.8257: a spell_id became the SHA256 of the object's code, with nothing
+from the bind call in it, so a binding_name no longer makes one class two
+spells. The lesson used to bind TenantCache in both worlds under two
+binding_names; each world now binds its own subclass at one address.
 """
 import melder as md
 
@@ -12734,46 +13774,59 @@ class TenantCache:
     pass
 
 
+class TenantACache(TenantCache):
+    """Tenant A's cache - a new class, so its own spell_id."""
+
+
+class TenantBCache(TenantCache):
+    """Tenant B's cache - a new class, so its own spell_id."""
+
+
 def main() -> None:
     # Two books, two WORLDS. Naming the frame births it (lazy frames).
     book_a = md.Spellbook(aetheric_frame="tenant-a")
     book_b = md.Spellbook(aetheric_frame="tenant-b")
 
-    # THE SAME CLASS IN BOTH WORLDS - but the BINDINGS must differ.
-    # Bind these two identically and the second conjure is refused: the
-    # fingerprint would be byte-identical and the frame is not in it.
-    book_a.bind(spell=TenantCache, existence="unique", binding_name="tenant-a")
-    book_b.bind(spell=TenantCache, existence="unique", binding_name="tenant-b")
+    # ONE ADDRESS IN BOTH WORLDS, ONE CLASS PER WORLD. Binding TenantCache
+    # itself in both would be refused: its spell_id is its code, the same
+    # in every frame, and neither the frame nor a binding_name is in it.
+    book_a.bind(spell=TenantACache, existence="unique",
+                spellframe="tenant", binding_name="cache")
+    book_b.bind(spell=TenantBCache, existence="unique",
+                spellframe="tenant", binding_name="cache")
 
     conduit_a = book_a.conjure(name="cache-a")
     conduit_b = book_b.conjure(name="cache-b")
 
-    cache_a = conduit_a.meld("TenantCache", binding_name="tenant-a")
-    cache_b = conduit_b.meld("TenantCache", binding_name="tenant-b")
+    # The same address melds each world's own class.
+    cache_a = conduit_a.meld(spellframe="tenant", binding_name="cache")
+    cache_b = conduit_b.meld(spellframe="tenant", binding_name="cache")
 
     # "unique" = one instance per FRAME. Two frames, two singletons.
-    assert type(cache_a) is type(cache_b) is TenantCache
+    assert type(cache_a) is TenantACache
+    assert type(cache_b) is TenantBCache
+    assert isinstance(cache_a, TenantCache) and isinstance(cache_b, TenantCache)
     assert cache_a is not cache_b
-    print("one class, two worlds, two singletons:", cache_a is not cache_b)
+    print("one shape, two worlds, two singletons:", cache_a is not cache_b)
 
     # Each world reuses ITS OWN singleton, forever.
-    assert conduit_a.meld("TenantCache", binding_name="tenant-a") is cache_a
-    assert conduit_b.meld("TenantCache", binding_name="tenant-b") is cache_b
+    assert conduit_a.meld(spellframe="tenant", binding_name="cache") is cache_a
+    assert conduit_b.meld(spellframe="tenant", binding_name="cache") is cache_b
     print("per-frame reuse holds; nothing leaked across the wall")
 
-    # THE LINE, PROVEN. A third world binding the SAME class the SAME way
-    # as tenant-a is refused - and the refusal names the id, not the
-    # frame, because the frame was never what made them different.
+    # THE LINE, PROVEN. A third world binding tenant A's class - under a
+    # binding_name of its own - is refused, and the refusal names the
+    # spell_id: neither the frame nor the name was ever part of it.
     book_c = md.Spellbook(aetheric_frame="tenant-c")
     try:
-        book_c.bind(spell=TenantCache, existence="unique",
-                    binding_name="tenant-a")
+        book_c.bind(spell=TenantACache, existence="unique",
+                    binding_name="another-name")
         book_c.conjure(name="cache-c")
         raise AssertionError("expected a process-wide spell_id refusal")
     except RuntimeError as error:
         assert "spell_id" in str(error) or "Spell ID" in str(error)
         print()
-        print("a third frame with an IDENTICAL binding was refused:")
+        print("a third frame binding the SAME class was refused:")
         print("  frames isolate instances; they do not namespace identity")
 
 
@@ -14514,7 +15567,7 @@ END FILE: UX_and_AIX_experiences/03_advanced/15_what_you_cannot_see.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/03_advanced/16_ward_policies.py
-CONTENT SHA256: 2d10c9edd52592b28da1e4d03e84ae8222121686f898c41b60b42862b283f157
+CONTENT SHA256: 61a655db6649814f38044bb154379f990de54b47540202a7df4f662df285877f
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -14590,6 +15643,10 @@ class Payload:
     """A spell to give the ward something to be a policy about."""
 
 
+class DynamicPayload(Payload):
+    """The dynamic world's own Payload - a new class, so its own spell_id."""
+
+
 MODES = ("default", "whitelist_all", "block_all",
          "inbound_only", "outbound_only")
 
@@ -14612,11 +15669,11 @@ def main() -> None:
     # ------------------------------------------------------------------
     # REFUSAL 1 - DYNAMIC MODE ONLY
     # ------------------------------------------------------------------
-    # binding_name differs per frame ON PURPOSE. A spell_id is a hash of
-    # the BIND FINGERPRINT and the frame is not in it, so the same class
-    # bound identically in two frames mints the same id and the second
-    # conjure is refused process-wide. Frames isolate instances, not
-    # identity - see advanced 02.
+    # Each world binds its OWN class. A spell_id is the SHA256 of the
+    # class's code and neither the frame nor the binding_name is in it,
+    # so the same class bound in two frames is one spell_id and the
+    # second registration is refused process-wide. Frames isolate
+    # instances, not identity - see advanced 02.
     automatic_book = md.Spellbook(aetheric_frame="ward-automatic")
     automatic_book.bind(spell=Payload, existence="unique",
                         binding_name="automatic")
@@ -14632,7 +15689,7 @@ def main() -> None:
     # A DYNAMIC WORLD - now the door opens
     # ------------------------------------------------------------------
     book = md.Spellbook(aetheric_frame="ward-dynamic")
-    book.bind(spell=Payload, existence="unique", binding_name="dynamic")
+    book.bind(spell=DynamicPayload, existence="unique", binding_name="dynamic")
     book.configure_aether_frame(system_state="dynamic", disposal=None,
                                 disposal_method_names=None)
     root = book.conjure(name="ward-root")
@@ -17391,7 +18448,7 @@ END FILE: UX_and_AIX_experiences/04_expert/10_deep_overrides_paths_through_a_gra
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/04_expert/11_pointing_a_rift_at_your_own_frame.py
-CONTENT SHA256: dec4743ac1d76918ca49ef29c4c880f8069ebc5a1308e970d09799c4d505d00c
+CONTENT SHA256: 4014cc83b1ee8f35bde9a20fc8d1616f372b68b6cea630da43f814972dbf32f1
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -17478,12 +18535,31 @@ class Ledger:
     pass
 
 
-def _postured_frame(frame_name: str, *, dynamic: bool = False) -> None:
-    """Build one frame with the posture AR needs, then settle it."""
+class ClosedLedger(Ledger):
+    """closed-world's own Ledger - a new class, so its own spell_id."""
+
+
+class ObservableLedger(Ledger):
+    """observable's own Ledger - a new class, so its own spell_id."""
+
+
+class UnlistedLedger(Ledger):
+    """unlisted's own Ledger - a new class, so its own spell_id."""
+
+
+class WorkshopLedger(Ledger):
+    """workshop's own Ledger - a new class, so its own spell_id."""
+
+
+def _postured_frame(frame_name: str, spell: type[Ledger], *,
+                    dynamic: bool = False) -> None:
+    """Build one frame with the posture AR needs, bind that frame's own
+    Ledger class in it, then settle it."""
     book = md.Spellbook(aetheric_frame=frame_name)
-    # binding_name keeps the spell_id distinct per frame - identity is
-    # process-wide and the frame is not in the fingerprint (advanced 02).
-    book.bind(spell=Ledger, existence="unique", binding_name=frame_name)
+    # Each frame binds its OWN Ledger class: a spell_id is the SHA256 of
+    # the class's code, with neither the frame nor the binding_name in
+    # it, so one class bound in two frames is refused (advanced 02).
+    book.bind(spell=spell, existence="unique", binding_name=frame_name)
     if dynamic:
         book.configure_aether_frame(
             system_state="dynamic",
@@ -17507,15 +18583,16 @@ def _postured_frame(frame_name: str, *, dynamic: bool = False) -> None:
 def main() -> None:
     # A frame that never opted in. This is the default, on purpose.
     closed = md.Spellbook(aetheric_frame="closed-world")
-    closed.bind(spell=Ledger, existence="unique", binding_name="closed-world")
+    closed.bind(spell=ClosedLedger, existence="unique",
+                binding_name="closed-world")
     closed.conjure(name="closed-root")
 
     # ...and three that did. 'unlisted' is postured EXACTLY like
     # 'observable' - the only thing that will differ is the Nexus's own
     # policy, which is how we isolate gate A from gate B.
-    _postured_frame("observable")
-    _postured_frame("unlisted")
-    _postured_frame("workshop", dynamic=True)
+    _postured_frame("observable", ObservableLedger)
+    _postured_frame("unlisted", UnlistedLedger)
+    _postured_frame("workshop", WorkshopLedger, dynamic=True)
     print("four frames: one default, two rift-enabled, one AI-native")
 
     # The Rift domain has to be live before any of this matters - and the
@@ -17844,7 +18921,7 @@ END FILE: UX_and_AIX_experiences/04_expert/12_the_codegen_loop_end_to_end.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/04_expert/13_one_workshop_many_worlds.py
-CONTENT SHA256: 8a01fed3aec7e1a0c44278263ffbe0da21903d18010a81de7a6bcf22a35ac009
+CONTENT SHA256: b1bee3bf2e5e212f8aeafeed4ec7649958ac23862b57c453c6578dd237eeedf6
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -17932,9 +19009,10 @@ class AuditTrail:
 def _workshop_frame(frame_name: str, spell: type):
     """One AI-native, rift-visible world holding its own object."""
     book = md.Spellbook(aetheric_frame=frame_name)
-    # A distinct binding_name per frame: spell_id is process-wide and the
-    # frame is NOT in the fingerprint (advanced 02), so identical bindings
-    # across worlds would collide.
+    # A distinct class per frame: a spell_id is the SHA256 of the class's
+    # code, process-wide by default, with neither the frame nor the
+    # binding_name in it (advanced 02), so one class bound in two worlds
+    # would be refused. The binding_name only names each world's address.
     book.bind(spell=spell, existence="unique", binding_name=frame_name)
     book.configure_aether_frame(
         system_state="dynamic",
@@ -18642,7 +19720,7 @@ END FILE: UX_and_AIX_experiences/04_expert/15_campaigns_the_why_that_rides_along
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/04_expert/16_rewiring_a_running_world.py
-CONTENT SHA256: d0113e8342e468d873843571e94430038712482d3f2aeac7a9f913cf992f670f
+CONTENT SHA256: 0c5253277f5e030bca4663135abdee518f8016b256b6fdc996ce294c321e3a7c
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -18722,18 +19800,17 @@ class Consumer:
         self.label = "consumer"
 
 
-def _pair(frame_name: str, **posture):
-    """An owner and a borrower in one world, each from its own book."""
+def _pair(frame_name: str, **posture: object) -> tuple[md.Conduit, md.Conduit]:
+    """An owner and a borrower in one world, each from its own book.
+
+    Both books are EMPTY on purpose. link() asks the frame posture before
+    it reads a single spell, so these worlds need nothing bound to be
+    refused - and Service and Consumer are already one spell each in
+    rewire-world: a spell_id is the SHA256 of the class's code, so
+    binding them again here, under any binding_name, would be refused
+    before the posture gate ever spoke (advanced 02)."""
     owner_book = md.Spellbook(aetheric_frame=frame_name)
     borrower_book = md.Spellbook(aetheric_frame=frame_name)
-    service_id = owner_book.bind(
-        spell=Service, existence="unique", permissions="create",
-        binding_name=f"{frame_name}-service",
-    )
-    borrower_book.bind(
-        spell=Consumer, existence="unique", permissions="create",
-        binding_name=f"{frame_name}-consumer",
-    )
     if posture:
         owner_book.configure_aether_frame(
             disposal=None, disposal_method_names=None, **posture,
@@ -18743,7 +19820,7 @@ def _pair(frame_name: str, **posture):
     borrower = borrower_book.conjure(
         dynamic=dynamic, name=f"{frame_name}-borrower",
     )
-    return owner, borrower, service_id
+    return owner, borrower
 
 
 def main() -> None:
@@ -18792,7 +19869,7 @@ def main() -> None:
 
     # A WORLD TOLD NOT TO LINK REFUSES, AND SAYS WHY. This one IS
     # dynamic; it has simply been braked.
-    braked_owner, braked_borrower, _ = _pair(
+    braked_owner, braked_borrower = _pair(
         "rewire-braked", system_state="dynamic", disable_linking=True,
     )
     try:
@@ -18807,7 +19884,7 @@ def main() -> None:
     # AN ORDINARY STATIC WORLD REFUSES TOO - and with the SAME sentence,
     # because the posture gate answers first and an unconfigured
     # non-dynamic frame is already "not allowed to link" to it.
-    static_owner, static_borrower, _ = _pair("rewire-static")
+    static_owner, static_borrower = _pair("rewire-static")
     try:
         static_owner.link(static_borrower)
         raise AssertionError("expected a refusal: static cannot link")
@@ -20740,7 +21817,7 @@ END FILE: UX_and_AIX_experiences/04_expert/25_many_research_sets_one_world.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/04_expert/26_codegen_create_modify_iterate.py
-CONTENT SHA256: 01217780021744920e90d029c2ab61c9481901e5f0dcb910930dbf78e273383d
+CONTENT SHA256: fcf9d4fa1c682533d82b71d43d94592b30c4d9095f7dc3124e64623a4b647cd0
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -20779,13 +21856,13 @@ GOAL: THE LOOP TURNED MORE THAN ONCE - AND THE TWO BOOKS IT WRITES.
       that lane EMPTY, and this lesson asserts it.
 
       AND SINGLE RESIDENCE IS WHY YOU CANNOT JUST FILE IT ELSEWHERE.
-      One binding-signature SHA256 lives in exactly ONE lane, network
-      wide, permanently - there is no release verb. `bind_inactive`
-      already declared the staged version onto `default`, so
-      `register_spell(..., lane=...)` for that id raises the REDISCOVERY
-      signal naming the holding lane. That raise is a signal, not a
-      failure: identical content rebinds to the same SHA, and this is the
-      system saying "you built this before, here".
+      One spell_id - the SHA256 of a version's code - lives in exactly
+      ONE lane, network wide, permanently - there is no release verb.
+      `bind_inactive` already declared the staged version onto `default`,
+      so `register_spell(..., lane=...)` for that id raises the
+      REDISCOVERY signal naming the holding lane. That raise is a signal,
+      not a failure: identical code always mints the same SHA, and this
+      is the system saying "you built this before, here".
       The way to file it under a name is a different SET - a set is its
       own residence partition, so a version resident in one is simply
       unknown to another.
@@ -25043,7 +26120,7 @@ END FILE: UX_and_AIX_experiences/04_expert/_concept_map.txt
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/AGENTS.md
-CONTENT SHA256: e373cfcec8261e19179d2567b63994c698af4d8111b41798a11062731db3620a
+CONTENT SHA256: 6e0772fe6c3bd0f72bc7c5539e337e941470eb565ee6f57f2f0dc3ae0d40101a
 SOURCE ENCODING: utf-8
 ================================================================================
 # UX_and_AIX_experiences (AGENTS.md)
@@ -25144,13 +26221,21 @@ a probe here first; the probe's printed outcome then hardens the example.
   identity uses explicit `spell_id=`. Human-name/class forms derive the frame key
   from the NAME (so they miss framed binds), and a bind with binding_name answers
   only when the meld carries the same binding_name. binding_name alone is refused.
-- Spell NAMES are unique per book at conjure - CURRENT behavior refuses any
-  name collision regardless of binding names, frames, or content SHA.
-  DIVERGENCE FLAG: owner design intent (twice stated) is SHA256 content
-  matching with binding-name disambiguation; DuplicateSpellNameStrategy
-  ignores the disambiguators its own error message recommends. Tracked as a
-  runtime bug candidate on the beginner epic. Until fixed: subclass-per-role
-  (24) and collection-as-spell registries (33) are the working patterns.
+- SPELL IDENTITY IS THE CODE (0.2.8257): a spell_id is the SHA256 of the
+  registered object's code - its methods and constructor (bodies included),
+  class-level values and bases, or an existing object's class and data -
+  and of nothing from the bind call. One object registers once: binding it
+  again under any binding_name, existence or spellframe is refused at bind
+  ("Spell ID collision"), or at conjure when another Book holds it
+  ("Conjure refused"). A changed class is a new spell_id: stage it with
+  bind_inactive and notch. Same-NAMED classes with different code coexist
+  at different addresses (0.2.8206). Working patterns: subclass-per-role
+  (24) and collection-as-spell registries (33).
+  History: this bullet carried a DIVERGENCE FLAG - spell NAMES unique per
+  book at conjure, refused regardless of binding names, frames or content
+  SHA, against the owner's stated intent of SHA256 content matching.
+  0.2.8206 made Phase 4 check the full address and 0.2.8257 made the
+  spell_id the code; the flag is closed.
 - One book conjures ONE conduit ever (RuntimeError on the second); scopes are
   lesser conduits, extra roots are extra books.
 - Unregistered meld raises one stable KeyError. Same-spell double-bind is
@@ -25425,7 +26510,7 @@ END FILE: UX_and_AIX_experiences/pytest_examples/test_advanced_examples.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/pytest_examples/test_advanced_probes.py
-CONTENT SHA256: 09f3a1b3dc3a5082a8eba2f1e13ea780640f0d013a267f327d0da464ca35fe1a
+CONTENT SHA256: ea7b333c57fb8261a494dc0a3d1fd19e0002ffcc697f1b5e2be798d9fac43e15
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -25479,24 +26564,74 @@ class Payload:
     pass
 
 
-def test_probe_frames_isolate_instances_but_not_identity():
-    """Lesson 02 contract, REWRITTEN 2026-08-03. This row used to pin the
-    README claim that "two frames bind the SAME class with zero
-    collision". EPIC-2026-08-02 S2 retired that: a spell_id hashes the
-    bind fingerprint and the FRAME IS NOT IN IT, so identical bindings on
-    different frames mint one id and the second conjure is refused.
+class TenantAPayload(Payload):
+    """probe-tenant-a's own Payload - a new class, so its own spell_id."""
 
-    What survived is the half that was always the real point - once the
-    BINDINGS differ, `unique` is one instance PER FRAME and the wall
-    holds. Both halves are asserted here so neither can drift alone."""
+
+class TenantBPayload(Payload):
+    """probe-tenant-b's own Payload - a new class, so its own spell_id."""
+
+
+def test_probe_frames_isolate_instances_but_not_identity():
+    """Lesson 02 contract, REWRITTEN 2026-08-03 and again at 0.2.8257.
+    This row used to pin the README claim that "two frames bind the SAME
+    class with zero collision". EPIC-2026-08-02 S2 retired that, and
+    0.2.8257 finished it: a spell_id is the SHA256 of the class's CODE,
+    with neither the frame nor anything from the bind call in it, so the
+    same class in two frames is one spell_id under any binding_name and
+    the second conjure is refused (the second bind, once the first book
+    is conjured). Until 0.2.8257 a binding_name per frame told them apart.
+
+    What survived is the half that was always the real point - one class
+    PER FRAME, even at one address, and `unique` is one instance per
+    frame and the wall holds. Both halves are asserted here so neither
+    can drift alone."""
+    same_a = Spellbook(aetheric_frame="probe-same-a")
+    same_b = Spellbook(aetheric_frame="probe-same-b")
+    same_a.bind(spell=Payload, existence="unique", binding_name="tenant-a")
+    same_b.bind(spell=Payload, existence="unique", binding_name="tenant-b")
+    same_a.conjure()
+    with pytest.raises(RuntimeError, match="Conjure refused"):
+        same_b.conjure()
+
     book_a = Spellbook(aetheric_frame="probe-tenant-a")
     book_b = Spellbook(aetheric_frame="probe-tenant-b")
-    book_a.bind(spell=Payload, existence="unique", binding_name="tenant-a")
-    book_b.bind(spell=Payload, existence="unique", binding_name="tenant-b")
-    a = book_a.conjure().meld(spell=Payload, binding_name="tenant-a")
-    b = book_b.conjure().meld(spell=Payload, binding_name="tenant-b")
+    book_a.bind(spell=TenantAPayload, existence="unique",
+                spellframe="tenant", binding_name="payload")
+    book_b.bind(spell=TenantBPayload, existence="unique",
+                spellframe="tenant", binding_name="payload")
+    a = book_a.conjure().meld(spellframe="tenant", binding_name="payload")
+    b = book_b.conjure().meld(spellframe="tenant", binding_name="payload")
+    assert type(a) is TenantAPayload and type(b) is TenantBPayload
     assert a is not b
-    print("frame isolation pinned: same class, two worlds, two singletons")
+    print("frame isolation pinned: one address, a class per world, two "
+          "singletons; one class in two worlds is refused")
+
+
+def test_probe_per_frame_spell_ids_let_one_class_live_in_two_worlds():
+    """Lesson 02's other way, pinned. With `process_wide_unique_spell_ids`
+    off, a spell_id is unique per FRAME rather than per process, so ONE
+    class registers in several worlds - here Payload in two frames, one
+    spell_id, one singleton each. It is Aether configuration, installed
+    before any frame exists (the first frame seals the regime), which is
+    why a lesson never does it and this row may: the fixture resets the
+    world around it."""
+    policy = md.AetherConfiguration().with_defaults()
+    policy.with_process_wide_unique_spell_ids(False)
+    policy.activate()
+    Aether().activate(policy)
+    assert Aether().process_wide_unique_spell_ids is False
+
+    book_a = Spellbook(aetheric_frame="per-frame-a")
+    book_b = Spellbook(aetheric_frame="per-frame-b")
+    id_a = book_a.bind(spell=Payload, existence="unique")
+    id_b = book_b.bind(spell=Payload, existence="unique")
+    assert id_a == id_b
+    a = book_a.conjure().meld(spell=Payload)
+    b = book_b.conjure().meld(spell=Payload)
+    assert type(a) is type(b) is Payload
+    assert a is not b
+    print("per-frame spell ids pinned: one class, two worlds, two singletons")
 
 
 def test_probe_posture_public_door_then_freeze():
@@ -26968,7 +28103,7 @@ END FILE: UX_and_AIX_experiences/pytest_examples/test_beginner_examples.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/pytest_examples/test_contract_probes.py
-CONTENT SHA256: a77d3257f6a2b1611d154f5a8bf2bbe83c6cef8adb496e586cd9011d930f937e
+CONTENT SHA256: a41a99fdc629de91c64da29349d280aa009f55c8153cc3acd5f9c89b8d6a016f
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -27022,11 +28157,16 @@ def test_probe_spell_override_delivers_ctor_kwargs():
 
 def test_probe_with_book_is_lock_only_not_cleanup():
     """__exit__ releases the lock; the book must remain USABLE after."""
+    class AfterWith:
+        """A second spell for the book. Probe again would be refused
+        whether or not the book was cleaned: one class registers once,
+        because its spell_id is the SHA256 of its code (0.2.8257)."""
+
     book = md.Spellbook()
     with book:
         book.bind(spell=Probe, existence="unique")
     # if the with-block had cleaned the book, this second bind would raise
-    second = book.bind(spell=Probe, existence="many", binding_name="again")
+    second = book.bind(spell=AfterWith, existence="many", binding_name="again")
     assert isinstance(second, str)
 
 
@@ -27106,55 +28246,67 @@ def _make_potato(marker: str):
     return Potato
 
 
-def test_probe_same_name_different_internals_currently_refused():
+def test_probe_same_name_different_internals_are_two_spells():
     """
-    DIVERGENCE FLAG (runs 1-2): owner design intent says spells are
-    SHA256 content-matched and same-name/different-internals passes WITH
-    binding names. The runtime REFUSES it: DuplicateSpellNameStrategy
-    keys on the bare name and ignores the binding_name/spellframe
-    disambiguation its own error message recommends. This probe pins
-    CURRENT behavior; flip it to the pass-assertion when the strategy is
-    fixed (tracked on the UX/AIX beginner epic as a runtime bug).
+    FLIPPED (0.2.8206, 0.2.8257): two classes NAMED Potato with different
+    internals are two spells, each at its own address. A spell_id is the
+    SHA256 of each class's code - here a different class-level value and
+    a different closure value - so the ids differ, and since 0.2.8206
+    Phase 4 checks the full (spellframe, binding_name) address instead of
+    the bare name, so conjure accepts both.
+
+    This row used to pin the refusal under a DIVERGENCE FLAG: owner design
+    intent said spells are SHA256 content-matched and same-name/different-
+    internals passes WITH binding names, while DuplicateSpellNameStrategy
+    keyed on the bare name. The intent is the behavior now; the flag is
+    closed.
     """
     book = md.Spellbook()
     book.bind(spell=_make_potato("russet"), existence="unique",
               binding_name="russet")
     book.bind(spell=_make_potato("yukon"), existence="many",
               binding_name="yukon")
-    with pytest.raises(md.SpellbookValidationError):
-        book.conjure()
-    print("same-name diff-SHA with binding names: REFUSED (intent: pass)")
+    conduit = book.conjure()
+    russet = conduit.meld(spell="Potato", binding_name="russet")
+    yukon = conduit.meld(spell="Potato", binding_name="yukon")
+    assert russet.describe() == "potato:russet"
+    assert yukon.describe() == "potato:yukon"
+    print("same-name diff-SHA with binding names: two spells (the intent)")
 
 
-def test_probe_same_class_rebind_without_frames_fails_conjure():
+def test_probe_same_class_rebind_is_refused_at_bind():
     """
-    The observed run truth: the SAME class (same SHA) bound twice with
-    only binding_names to tell them apart dies at conjure with
+    The SAME class bound twice in one book, told apart only by
+    binding_name, is refused at the second BIND (0.2.8257): a spell_id is
+    the SHA256 of the class's code and of nothing from the bind call, so
+    both binds name one spell, and one object registers once. This row
+    used to pin the observed run truth before that - the binding_name made
+    a second spell_id and conjure refused the pair with
     DUPLICATE_SPELL_NAME.
     """
     book = md.Spellbook()
     book.bind(spell=Probe, existence="unique", binding_name="first")
-    book.bind(spell=Probe, existence="many", binding_name="second")
-    with pytest.raises(md.SpellbookValidationError):
-        book.conjure()
-    print("same-SHA rebind without frames: conjure refused (as observed)")
+    with pytest.raises(RuntimeError, match="Spell ID collision"):
+        book.bind(spell=Probe, existence="many", binding_name="second")
+    print("same class rebound by binding_name: refused at bind")
 
 
-def test_probe_same_class_rebind_with_distinct_frames():
+def test_probe_same_class_rebind_across_spellframes_is_refused_at_bind():
     """
-    ANSWERED (run 2): frame separation does NOT legalize same-name
-    rebinds - the name strategy ignores frames entirely. Part of the
-    same divergence flag as the potato probe.
+    ANSWERED (0.2.8257): another spellframe does not make the same class
+    a second spell either. The spell_id is the class's code, so the
+    second bind is refused whatever spellframe or binding_name it names.
+    This row used to pin a conjure refusal from the name strategy, which
+    ignored frames (run 2) - part of the potato row's divergence flag,
+    now closed.
     """
     book = md.Spellbook()
     book.bind(spell=Probe, existence="unique",
               spellframe="pool-a", binding_name="first")
-    book.bind(spell=Probe, existence="many",
-              spellframe="pool-b", binding_name="second")
-    with pytest.raises(md.SpellbookValidationError):
-        book.conjure()
-    print("same-SHA rebind across frames: REFUSED (frames do not "
-          "disambiguate the name strategy either - same divergence flag)")
+    with pytest.raises(RuntimeError, match="Spell ID collision"):
+        book.bind(spell=Probe, existence="many",
+                  spellframe="pool-b", binding_name="second")
+    print("same class rebound in another spellframe: refused at bind")
 ================================================================================
 END FILE: UX_and_AIX_experiences/pytest_examples/test_contract_probes.py
 ================================================================================
@@ -28537,7 +29689,7 @@ END FILE: UX_and_AIX_experiences/pytest_examples/test_intermediate_examples.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/pytest_examples/test_intermediate_probes.py
-CONTENT SHA256: b095af695ae1888163e61273825ce488fa0b914d4fb3534b064f4a94bd145892
+CONTENT SHA256: 47f56bb5adea645f9c7b4a1c5410a5d70eb911eb9f441821922157c58fa5a296
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -29030,8 +30182,13 @@ def test_probe_config_definition_laws():
         config.set_property("phase_scheduler_workers_per_spellbook", 2)
     print("post-freeze:", type(frozen.value).__name__)
 
+    # The bare book binds its own class: one class registers once (a
+    # spell_id is the SHA256 of its code), and Payload is the first book's.
+    class BarePayload:
+        """The bare book's own spell."""
+
     bare = Spellbook(configuration=md.SpellbookConfiguration())
-    bare.bind(spell=Payload, existence="unique", binding_name="bare")
+    bare.bind(spell=BarePayload, existence="unique")
     with pytest.raises(Exception) as incomplete:
         bare.conjure(name="bare-probe")
     print("incomplete config at conjure:", type(incomplete.value).__name__)
@@ -29331,6 +30488,10 @@ class _Ledger:
     pass
 
 
+class _OtherLedger(_Ledger):
+    """The second frame's own ledger - a new class, so its own spell_id."""
+
+
 def test_probe_conduit_cloud_is_frame_owned_and_shared():
     """Lesson 37 HEADLINE: get_conduit_cloud() is a REACH, not a factory.
     melder's contract: "Reaches THROUGH the aetheric frame to the
@@ -29394,13 +30555,14 @@ def test_probe_conduit_cloud_is_not_on_the_package_root():
 def test_probe_a_different_frame_gets_a_different_cloud():
     """Lesson 37 claim: frames are worlds (advanced 03) and the cloud is a
     world-level object, so the frame wall holds here too."""
-    # binding_name differs because a spell_id does not carry the frame -
-    # identical bindings on two frames collide process-wide. The CLOUD is
-    # what this row is about, and it IS per-frame.
+    # The second frame binds its OWN class: a spell_id is the SHA256 of
+    # the class's code and carries neither the frame nor the binding_name,
+    # so _Ledger bound in both frames would be refused process-wide. The
+    # CLOUD is what this row is about, and it IS per-frame.
     first = Spellbook(aetheric_frame="probe-cloud-a")
     first.bind(spell=_Ledger, existence="unique", binding_name="cloud-a")
     second = Spellbook(aetheric_frame="probe-cloud-b")
-    second.bind(spell=_Ledger, existence="unique", binding_name="cloud-b")
+    second.bind(spell=_OtherLedger, existence="unique", binding_name="cloud-b")
 
     cloud_a = first.conjure(name="a-root").get_conduit_cloud()
     cloud_b = second.conjure(name="b-root").get_conduit_cloud()
@@ -29470,6 +30632,528 @@ def test_probe_book_scan_binds_a_module_and_keeps_the_lifecycles():
     print("module scan pinned: 2 spell ids, lifecycles intact")
 ================================================================================
 END FILE: UX_and_AIX_experiences/pytest_examples/test_intermediate_probes.py
+================================================================================
+================================================================================
+BEGIN FILE: UX_and_AIX_experiences/pytest_examples/test_managed_spell_probes.py
+CONTENT SHA256: de7cdb1329e31c3113038435b5ed36267e1befdc943a34cede645b84734ed2b7
+SOURCE ENCODING: utf-8
+================================================================================
+"""
+Contract probes for the managed spell pool lessons (intermediate 42-48). Run on 3.14t:
+
+    pytest UX_and_AIX_experiences/pytest_examples/test_managed_spell_probes.py -v
+
+WHY THIS FILE EXISTS
+--------------------
+The example law (`UX_and_AIX_experiences/AGENTS.md`) lets a lesson assert only behaviour
+verified in source or proven by a probe row. These probes pin each behaviour the
+managed lessons rely on through the public `melder` surface - the three pool modes, the
+lease and release verbs, reset methods, request scopes, root teardown, a settings rebind
+and an ownership transfer - so a change in any of them fails here with a name, not as a
+lesson's bare assertion. The evidence behind each row is the lifecycle map of
+STORY-2026-10-18-managed_spell_lifecycle_map (probe_managed_lifecycle.py, 19 cases).
+
+Every test runs in a fresh world: the conftest fixture resets the hosted roots and
+Aether before and after each test, and each test cleans the conduits and books it made.
+"""
+import threading
+import time
+from typing import Any, Dict, Iterator, List, Tuple
+
+import pytest
+
+import melder as md
+
+
+# ----------------------------------------------------------------------------------------
+# Probe classes
+# ----------------------------------------------------------------------------------------
+class Resource:
+    """A pooled object with an observable disposal method (`close`)."""
+
+    def __init__(self) -> None:
+        """Start open."""
+        self.closed: bool = False
+
+    def close(self) -> None:
+        """Mark the object disposed."""
+        self.closed = True
+
+
+class Resettable:
+    """A pooled object that records the reset calls the pool makes."""
+
+    def __init__(self) -> None:
+        """Start with no reset calls and no state."""
+        self.calls: List[str] = []
+        self.state: List[str] = []
+        self.closed: bool = False
+
+    def first(self) -> None:
+        """First reset: clears the state."""
+        self.state.clear()
+        self.calls.append("first")
+
+    def second(self) -> None:
+        """Second reset."""
+        self.calls.append("second")
+
+    def close(self) -> None:
+        """Disposal method."""
+        self.closed = True
+
+
+class Breakable:
+    """A pooled object whose reset raises once broken."""
+
+    def __init__(self) -> None:
+        """Start intact and open."""
+        self.broken: bool = False
+        self.closed: bool = False
+
+    def reset(self) -> None:
+        """Refuse to reset a broken object."""
+        if self.broken:
+            raise ValueError("broken")
+
+    def close(self) -> None:
+        """Disposal method."""
+        self.closed = True
+
+
+class NotManaged:
+    """A plain `many` spell."""
+
+
+class Handler:
+    """A `many` consumer that receives a pooled Resource and releases it at its disposal."""
+
+    def __init__(self, resource: Resource) -> None:
+        """Keep the leased resource."""
+        self.resource: Resource = resource
+        self.finished: bool = False
+
+    def finish(self) -> None:
+        """Give the resource back once."""
+        if self.finished:
+            return
+        self.finished = True
+        md.ReleaseManagedSpell().release(self.resource)
+
+
+class Scoped:
+    """A `unique_per_conduit` spell."""
+
+
+class DependsOnScoped:
+    """A managed spell that depends on a shorter-lived spell."""
+
+    def __init__(self, scoped: Scoped) -> None:
+        """Keep the scoped dependency."""
+        self.scoped: Scoped = scoped
+
+
+# ----------------------------------------------------------------------------------------
+# Helpers
+# ----------------------------------------------------------------------------------------
+def pool_counts(cls: type) -> Tuple[int, int, int]:
+    """Return (alive, idle, out) for the one pool of a managed class."""
+    (snapshot,) = md.ReleaseManagedSpell().describe(cls)
+    return snapshot["count"], snapshot["idle_count"], snapshot["out_count"]
+
+
+@pytest.fixture
+def make_root() -> Iterator[Any]:
+    """Build roots from bind specs and clean every root and book afterwards.
+
+    Each call binds `(cls, kwargs)` pairs into a fresh Spellbook and conjures it;
+    `dynamic=True` settles the world dynamic for the rebind and transfer probes.
+    """
+    made: List[Tuple[md.Spellbook, md.Conduit]] = []
+
+    def build(*binds: Tuple[type, Dict[str, Any]], dynamic: bool = False, name: str = "") -> md.Conduit:
+        configuration = md.SpellbookConfiguration()
+        configuration.with_defaults()
+        book = md.Spellbook(configuration=configuration)
+        for cls, kwargs in binds:
+            book.bind(spell=cls, **kwargs)
+        conduit = book.conjure(dynamic=True, name=name) if dynamic else book.conjure()
+        made.append((book, conduit))
+        return conduit
+
+    yield build
+    for book, conduit in reversed(made):
+        if not conduit.cleaned:
+            conduit.cleanup()
+        book.cleanup()
+
+
+def managed(**options: Any) -> Dict[str, Any]:
+    """Return fresh bind options for a managed spell: the existence plus `options`.
+
+    Every call builds a new dict, so no probe can leak options into another.
+    """
+    return {"existence": md.Existence.managed_spell_quantity, **options}
+
+
+# ----------------------------------------------------------------------------------------
+# Composition and the elastic mode (lesson 42)
+# ----------------------------------------------------------------------------------------
+def test_probe_pool_exists_from_conjure_with_elastic_defaults(make_root: Any) -> None:
+    """A managed spell's pool is composed at conjure, empty, elastic with limit 256."""
+    conduit = make_root((Resource, managed()))
+    (snapshot,) = md.ReleaseManagedSpell().describe(Resource)
+    assert snapshot["mode"] == "elastic" and snapshot["limit"] == 256
+    assert snapshot["timeout_seconds"] is None
+    assert pool_counts(Resource) == (0, 0, 0)
+    assert not conduit.has_live_creation("Resource")
+
+
+def test_probe_release_makes_the_object_idle_and_the_newest_is_leased_first(make_root: Any) -> None:
+    """A release keeps the object open and idle; the next meld takes the newest idle object."""
+    conduit = make_root((Resource, managed()))
+    first = conduit.meld("Resource")
+    second = conduit.meld("Resource")
+    assert first is not second and pool_counts(Resource) == (2, 0, 2)
+    assert conduit.has_live_creation("Resource")
+    md.ReleaseManagedSpell().release(first)
+    md.ReleaseManagedSpell().release(second)
+    assert pool_counts(Resource) == (2, 2, 0) and not first.closed
+    assert conduit.meld("Resource") is second
+
+
+def test_probe_elastic_small_limit_destroys_the_oldest_idle_object(make_root: Any) -> None:
+    """Elastic never refuses; with limit 2 a third release destroys the oldest idle object."""
+    conduit = make_root((Resource, managed(managed_spell_limit=2, disposal_method_names=["close"])))
+    objects = [conduit.meld("Resource") for _ in range(3)]
+    assert pool_counts(Resource) == (3, 0, 3)
+    for obj in objects:
+        md.ReleaseManagedSpell().release(obj)
+    assert [obj.closed for obj in objects] == [True, False, False]
+    assert pool_counts(Resource) == (2, 2, 0)
+
+
+def test_probe_root_teardown_disposes_idle_objects_and_unregisters_the_pool(make_root: Any) -> None:
+    """Root teardown runs disposal on idle objects only and removes the class from the registry."""
+    conduit = make_root((Resource, managed(disposal_method_names=["close"])))
+    idle = conduit.meld("Resource")
+    out = conduit.meld("Resource")
+    md.ReleaseManagedSpell().release(idle)
+    conduit.cleanup()
+    assert idle.closed and not out.closed
+    assert md.ReleaseManagedSpell().describe(Resource) == ()
+
+
+# ----------------------------------------------------------------------------------------
+# limited_quantity and queue (lessons 43-44)
+# ----------------------------------------------------------------------------------------
+def test_probe_limited_quantity_refuses_at_its_limit_and_builds_nothing(make_root: Any) -> None:
+    """At the limit with nothing idle the meld raises ManagedSpellExhaustedError; count is unchanged."""
+    conduit = make_root((Resource, managed(managed_spell_mode="limited_quantity", managed_spell_limit=2)))
+    held = [conduit.meld("Resource"), conduit.meld("Resource")]
+    with pytest.raises(md.ManagedSpellExhaustedError) as refused:
+        conduit.meld("Resource")
+    error = refused.value
+    assert isinstance(error, md.MeldExecutionError)
+    assert (error.mode, error.limit, error.timeout_seconds) == ("limited_quantity", 2, None)
+    assert "Release one with ReleaseManagedSpell().release(obj)" in str(error)
+    assert pool_counts(Resource) == (2, 0, 2)
+    md.ReleaseManagedSpell().release(held[0])
+    assert conduit.meld("Resource") is held[0]
+
+
+def test_probe_release_all_gives_every_object_back(make_root: Any) -> None:
+    """release_all attempts every object; the pool then holds them idle."""
+    conduit = make_root((Resource, managed(managed_spell_mode="limited_quantity", managed_spell_limit=2)))
+    md.ReleaseManagedSpell().release_all([conduit.meld("Resource"), conduit.meld("Resource")])
+    assert pool_counts(Resource) == (2, 2, 0)
+
+
+def test_probe_queue_hands_the_released_object_to_a_waiting_meld(make_root: Any) -> None:
+    """At the limit a queue meld waits; a release hands it the released object."""
+    conduit = make_root(
+        (Resource, managed(managed_spell_mode="queue", managed_spell_limit=1, managed_spell_timeout_seconds=5.0)),
+    )
+    held = conduit.meld("Resource")
+    received: List[Resource] = []
+    waiter = threading.Thread(target=lambda: received.append(conduit.meld("Resource")))
+    waiter.start()
+    time.sleep(0.1)
+    assert waiter.is_alive() and not received
+    md.ReleaseManagedSpell().release(held)
+    waiter.join(timeout=5.0)
+    assert not waiter.is_alive() and received and received[0] is held
+
+
+def test_probe_queue_refuses_at_its_timeout(make_root: Any) -> None:
+    """A queue meld that waits past managed_spell_timeout_seconds raises, naming the queue policy."""
+    conduit = make_root(
+        (Resource, managed(managed_spell_mode=md.ManagedSpellMode.queue, managed_spell_limit=1,
+                           managed_spell_timeout_seconds=0.2)),
+    )
+    conduit.meld("Resource")
+    began = time.monotonic()
+    with pytest.raises(md.ManagedSpellExhaustedError) as refused:
+        conduit.meld("Resource")
+    assert time.monotonic() - began >= 0.2
+    assert (refused.value.mode, refused.value.limit, refused.value.timeout_seconds) == ("queue", 1, 0.2)
+
+
+# ----------------------------------------------------------------------------------------
+# Reset methods (lesson 45)
+# ----------------------------------------------------------------------------------------
+def test_probe_resets_run_in_order_on_every_release(make_root: Any) -> None:
+    """The named reset methods run in order on release; the next lease gets the reset object."""
+    conduit = make_root((Resettable, managed(managed_spell_reset_methods=["first", "second"])))
+    obj = conduit.meld("Resettable")
+    obj.state.append("dirty")
+    md.ReleaseManagedSpell().release(obj)
+    assert obj.calls == ["first", "second"] and obj.state == []
+    assert conduit.meld("Resettable") is obj
+
+
+def test_probe_a_raising_reset_destroys_the_object_and_propagates(make_root: Any) -> None:
+    """A raising reset runs the disposal methods, frees the place and re-raises from the release."""
+    conduit = make_root(
+        (Breakable, managed(managed_spell_reset_methods=["reset"], disposal_method_names=["close"])),
+    )
+    obj = conduit.meld("Breakable")
+    obj.broken = True
+    with pytest.raises(ValueError, match="broken"):
+        md.ReleaseManagedSpell().release(obj)
+    assert obj.closed and pool_counts(Breakable) == (0, 0, 0)
+    assert conduit.meld("Breakable") is not obj
+
+
+# ----------------------------------------------------------------------------------------
+# Leases (lesson 46)
+# ----------------------------------------------------------------------------------------
+def test_probe_managed_spell_meld_lease_releases_at_block_exit(make_root: Any) -> None:
+    """The `with` block of managed_spell_meld leases the object and releases it on exit."""
+    conduit = make_root((Resource, managed()))
+    with conduit.managed_spell_meld(Resource) as obj:
+        assert isinstance(obj, Resource) and pool_counts(Resource) == (1, 0, 1)
+    assert pool_counts(Resource) == (1, 1, 0)
+
+
+def test_probe_a_lease_releases_once_and_then_refuses_its_object(make_root: Any) -> None:
+    """release() twice is one release; lease.object raises RuntimeError after it."""
+    conduit = make_root((Resource, managed()))
+    lease = conduit.managed_spell_meld("Resource")
+    assert isinstance(lease, md.ManagedSpellLease) and not lease.released
+    lease.release()
+    lease.release()
+    assert lease.released and pool_counts(Resource) == (1, 1, 0)
+    with pytest.raises(RuntimeError):
+        lease.object
+
+
+def test_probe_a_raising_block_still_releases_and_is_not_suppressed(make_root: Any) -> None:
+    """The lease's exit releases even when the block raised, and never swallows the error."""
+    conduit = make_root((Resource, managed()))
+    with pytest.raises(ConnectionError):
+        with conduit.managed_spell_meld(Resource):
+            raise ConnectionError("block failed")
+    assert pool_counts(Resource) == (1, 1, 0)
+
+
+def test_probe_managed_wraps_an_object_already_held(make_root: Any) -> None:
+    """ReleaseManagedSpell().managed(obj) leases a melded object and releases it on exit."""
+    conduit = make_root((Resource, managed()))
+    held = conduit.meld("Resource")
+    with md.ReleaseManagedSpell().managed(held) as same:
+        assert same is held
+    assert pool_counts(Resource) == (1, 1, 0)
+
+
+def test_probe_managed_spell_meld_refuses_another_existence(make_root: Any) -> None:
+    """managed_spell_meld of a spell that is not managed raises ValueError before melding."""
+    conduit = make_root((NotManaged, {"existence": md.Existence.many}))
+    with pytest.raises(ValueError, match="leases a managed spell"):
+        conduit.managed_spell_meld("NotManaged")
+
+
+# ----------------------------------------------------------------------------------------
+# Injection, request scopes and teardown (lesson 47)
+# ----------------------------------------------------------------------------------------
+def test_probe_each_injection_leases_and_a_request_scope_returns_it(make_root: Any) -> None:
+    """Every injection is its own lease; a lesser scope's exit disposes the handlers, which release."""
+    root = make_root(
+        (Resource, managed(disposal_method_names=["close"])),
+        (Handler, {"existence": md.Existence.many, "disposal_method_names": ["finish"]}),
+    )
+    with root.enter_lesser_conduit() as request:
+        first = request.meld("Handler")
+        second = request.meld("Handler")
+        assert first.resource is not second.resource and pool_counts(Resource) == (2, 0, 2)
+    assert first.finished and second.finished and pool_counts(Resource) == (2, 2, 0)
+
+
+def test_probe_release_after_root_teardown_is_refused(make_root: Any) -> None:
+    """After root teardown the registry no longer knows the class (ValueError); a lease raises RuntimeError."""
+    root = make_root((Resource, managed(disposal_method_names=["close"])))
+    melded = root.meld("Resource")
+    lease = root.managed_spell_meld("Resource")
+    root.cleanup()
+    with pytest.raises(ValueError, match="not a managed spell class in any live root"):
+        md.ReleaseManagedSpell().release(melded)
+    with pytest.raises(RuntimeError, match="torn down with its root conduit"):
+        lease.release()
+    assert not melded.closed
+
+
+def test_probe_root_teardown_cleans_pools_before_root_held_consumers(make_root: Any) -> None:
+    """A root-held consumer that releases at its own disposal meets a pool already gone.
+
+    Pins the teardown order the lesson warns about: the root store cleans its pools
+    before its disposable registry, so the consumer's release fails and the root's
+    teardown raises its disposal failures after finishing.
+    """
+    root = make_root(
+        (Resource, managed()),
+        (Handler, {"existence": md.Existence.many, "disposal_method_names": ["finish"]}),
+    )
+    handler = root.meld("Handler")
+    with pytest.raises(ExceptionGroup):
+        root.cleanup()
+    assert handler.finished and not handler.resource.closed
+
+
+def test_probe_purge_does_not_touch_a_pool(make_root: Any) -> None:
+    """Conduit.purge returns 0 for a managed spell; SpellSpace.purge refuses it."""
+    conduit = make_root((Resource, managed()))
+    md.ReleaseManagedSpell().release(conduit.meld("Resource"))
+    assert conduit.purge("Resource") == 0
+    with conduit.enter_spellspace() as space:
+        with pytest.raises(RuntimeError, match="Cannot purge spell"):
+            space.purge("Resource")
+    assert pool_counts(Resource) == (1, 1, 0)
+
+
+# ----------------------------------------------------------------------------------------
+# Registry routing and bind refusals
+# ----------------------------------------------------------------------------------------
+def test_probe_release_routing_refusals(make_root: Any) -> None:
+    """Non-managed class, non-str spell_id, unmatched filter and a non-class describe are refused."""
+    conduit = make_root((Resource, managed()), (NotManaged, {"existence": md.Existence.many}))
+    with pytest.raises(ValueError, match="not a managed spell class"):
+        md.ReleaseManagedSpell().release(conduit.meld("NotManaged"))
+    obj = conduit.meld("Resource")
+    with pytest.raises(TypeError, match="spell_id must be a str"):
+        md.ReleaseManagedSpell().release(obj, spell_id=7)
+    with pytest.raises(ValueError, match="No pool of managed class"):
+        md.ReleaseManagedSpell().release(obj, spell_id="0" * 64)
+    with pytest.raises(TypeError, match="describe takes a class"):
+        md.ReleaseManagedSpell().describe("Resource")
+    md.ReleaseManagedSpell().release(obj, conduit=conduit)
+    assert pool_counts(Resource) == (1, 1, 0)
+
+
+def _factory() -> Resource:
+    """A function target, which a managed binding refuses."""
+    return Resource()
+
+
+@pytest.mark.parametrize(
+    ("label", "target", "kwargs", "error"),
+    [
+        ("option on another existence", Resource, {"existence": "many", "managed_spell_limit": 3}, ValueError),
+        ("function target", _factory, managed(), TypeError),
+        ("limited without a limit", Resource, managed(managed_spell_mode="limited_quantity"), ValueError),
+        ("queue without a timeout", Resource, managed(managed_spell_mode="queue", managed_spell_limit=1),
+         ValueError),
+        ("timeout on elastic", Resource, managed(managed_spell_timeout_seconds=1.0), ValueError),
+        ("limit below one", Resource, managed(managed_spell_limit=0), ValueError),
+        ("unknown mode", Resource, managed(managed_spell_mode="lifo"), ValueError),
+        ("reset name not a method", Resource, managed(managed_spell_reset_methods=["rinse"]), ValueError),
+        ("reset names as a string", Resource, managed(managed_spell_reset_methods="close"), TypeError),
+    ],
+)
+def test_probe_bind_refuses_malformed_managed_bindings(
+        label: str, target: Any, kwargs: Dict[str, Any], error: type,
+) -> None:
+    """Every malformed managed binding is refused at bind, next to the mistake."""
+    book = md.Spellbook()
+    try:
+        with pytest.raises(error):
+            book.bind(spell=target, **kwargs)
+    finally:
+        book.cleanup()
+
+
+def test_probe_a_managed_spell_cannot_depend_on_a_shorter_scope() -> None:
+    """Conjure refuses a managed spell that depends on unique_per_conduit (scope ordering)."""
+    book = md.Spellbook()
+    try:
+        book.bind(spell=Scoped, existence=md.Existence.unique_per_conduit)
+        book.bind(spell=DependsOnScoped, **managed())
+        with pytest.raises(md.SpellbookValidationError, match="scope_ordering_violation"):
+            book.conjure()
+    finally:
+        book.cleanup()
+
+
+def test_probe_spellbinder_as_managed_spell_quantity() -> None:
+    """SpellBinder stages the managed options; the pool carries them."""
+    book = md.Spellbook()
+    try:
+        spell_id = (
+            md.SpellBinder(book)
+            .bind(Resettable)
+            .as_managed_spell_quantity("limited_quantity", limit=3, reset_methods=["first"])
+            .finalize()
+        )
+        conduit = book.conjure()
+        try:
+            md.ReleaseManagedSpell().release(conduit.meld(spell_id=spell_id))
+            (snapshot,) = md.ReleaseManagedSpell().describe(Resettable)
+            assert (snapshot["mode"], snapshot["limit"], snapshot["reset_method_names"]) == (
+                "limited_quantity", 3, ["first"],
+            )
+        finally:
+            conduit.cleanup()
+    finally:
+        book.cleanup()
+
+
+# ----------------------------------------------------------------------------------------
+# Dynamic posture: settings rebind and transfer (lesson 48)
+# ----------------------------------------------------------------------------------------
+def test_probe_a_settings_rebind_keeps_the_spell_id_and_the_pool(make_root: Any) -> None:
+    """cleanup_spell + bind with another limit keeps the spell_id, the pool and its count."""
+    root = make_root(dynamic=True, name="rebind-root")
+    spell_id = root.bind(spell=Resource, **managed(managed_spell_mode="limited_quantity", managed_spell_limit=1))
+    out = root.meld("Resource")
+    root.cleanup_spell(spell=root.get_spell_by_spell_id(spell_id))
+    rebound = root.bind(spell=Resource, **managed(managed_spell_mode="limited_quantity", managed_spell_limit=3))
+    (snapshot,) = md.ReleaseManagedSpell().describe(Resource)
+    assert rebound == spell_id and snapshot["limit"] == 3
+    assert pool_counts(Resource) == (1, 0, 1)
+    md.ReleaseManagedSpell().release_all([out, root.meld("Resource"), root.meld("Resource")])
+    assert pool_counts(Resource) == (3, 3, 0)
+
+
+def test_probe_a_transfer_moves_the_pool_with_its_idle_objects(make_root: Any) -> None:
+    """transfer_spell_ownership moves the pool to the target root; the old owner cannot meld it."""
+    source = make_root((Resource, managed()), dynamic=True, name="source-root")
+    target = make_root(dynamic=True, name="target-root")
+    spell_id = md.ReleaseManagedSpell().describe(Resource)[0]["spell_id"]
+    obj = source.meld("Resource")
+    md.ReleaseManagedSpell().release(obj)
+    source.link(target)
+    source.transfer_spell_ownership(spell=spell_id, target_conduit=target)
+    (snapshot,) = md.ReleaseManagedSpell().describe(Resource)
+    assert snapshot["holding_conduit_id"] == target.id and pool_counts(Resource) == (1, 1, 0)
+    assert target.meld("Resource") is obj
+    with pytest.raises(KeyError):
+        source.meld("Resource")
+
+
+def test_probe_release_managed_spell_is_one_process_singleton() -> None:
+    """ReleaseManagedSpell() returns the one registry Aether built."""
+    assert md.ReleaseManagedSpell() is md.ReleaseManagedSpell()
+================================================================================
+END FILE: UX_and_AIX_experiences/pytest_examples/test_managed_spell_probes.py
 ================================================================================
 ================================================================================
 BEGIN FILE: agents.md
@@ -66971,7 +68655,7 @@ END FILE: docs/advanced/index.md
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/advanced/inspection-walkthrough.md
-CONTENT SHA256: b52d954574fc0cb3bb78888029bc9acddc77ec0a17efbe0618d59ec193ed5093
+CONTENT SHA256: 0c69d53be7426f0d1507555fbe689c24fc6f55dce1d75d6cb08f47e97bcd34bb
 SOURCE ENCODING: utf-8
 ================================================================================
 ---
@@ -66989,8 +68673,8 @@ Prerequisites: [world boundaries](worlds.md), [Nexus setup](nexus.md), and
 
 Follow the complete linked examples in this order:
 
-1. Build two isolated cache worlds with distinct binding identities. Compare the
-   instances and verify each world's reuse.
+1. Build two isolated cache worlds, each binding its own cache class at one
+   address. Compare the instances and verify each world's reuse.
 2. Open a static Rift and inspect its initial state. No assigned frames is a valid
    starting state, not an instruction to substitute the default frame.
 3. Use the target-attachment example to opt a frame into observation and attach
@@ -67677,7 +69361,7 @@ END FILE: docs/beginner/registration.md
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/catalog.toml
-CONTENT SHA256: bf8f4f77fa2acbba94061942a68e5e4ab7083d816536494c69b7c00510e0f7e4
+CONTENT SHA256: 8694dfb8db7d524aa6f942468c84bebc1989ca646f81abf91547e668dbf0f4c8
 SOURCE ENCODING: utf-8
 ================================================================================
 schema_version = 1
@@ -67775,6 +69459,13 @@ sources = [
   "39_purge_unneeded_objects.py",
   "40_bind_lifecycle_hooks.py",
   "41_named_lesser_conduits.py",
+  "42_managed_spell_elastic_pool.py",
+  "43_managed_spell_limited_quantity.py",
+  "44_managed_spell_queue.py",
+  "45_managed_spell_reset_methods.py",
+  "46_managed_spell_leases.py",
+  "47_managed_spell_injection_and_request_scopes.py",
+  "48_managed_spell_settings_and_transfer.py",
 ]
 
 [[level]]
@@ -67993,7 +69684,7 @@ END FILE: docs/conf.py
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/curriculum.toml
-CONTENT SHA256: 796fe3fb148b290e58fed9fee4560a6c127dc49b1e583cdd85a78e6e36c53d7d
+CONTENT SHA256: a1be47e0b093b16004ceaf039d3691267e9a7439572978c2b3514ffc5c956163
 SOURCE ENCODING: utf-8
 ================================================================================
 schema_version = 1
@@ -68171,6 +69862,14 @@ title = "Named conduits, transfer, and sever"
 level = "intermediate"
 source = "intermediate/ownership.md"
 lessons = ["intermediate:23", "intermediate:24", "intermediate:27", "intermediate:37"]
+show_steps = true
+
+[[chapter]]
+id = "intermediate/managed-spells"
+title = "Managed spell pools"
+level = "intermediate"
+source = "intermediate/managed-spells.md"
+lessons = ["intermediate:42", "intermediate:43", "intermediate:44", "intermediate:45", "intermediate:46", "intermediate:47", "intermediate:48"]
 show_steps = true
 
 [[chapter]]
@@ -69245,7 +70944,7 @@ END FILE: docs/index.md
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/intermediate/configuration.md
-CONTENT SHA256: e13ab7d69d3014307dcdbadf610e863220aedc9eaa001b1972f36772bcb9e2ca
+CONTENT SHA256: f2471626dcf4887f2b19579f48f1fe5fcbf023358c3c3fad3b6bde8c712fafe9
 SOURCE ENCODING: utf-8
 ================================================================================
 # Configure the book before conjure
@@ -69307,10 +71006,13 @@ The method-name property is set-once; choose it before `with_defaults()` fills i
 The priority flag can be adjusted during configuration assembly and freezes with
 the configuration. This is creation-time policy, not a post-bind mutation API.
 
-Existing scope/key/bucket teardown order is unchanged. Within one object, a
-method failure stops its remaining methods; other objects still receive cleanup.
+Existing scope/key/bucket teardown order is unchanged. Within one object, every
+declared method runs even when an earlier one fails, and other objects still
+receive cleanup; the failures are raised together, as one `ExceptionGroup`, once
+cleanup ends.
 Crystals preserve the resolved order, and replay applies the receiving book's
-normal binding policy. A different policy can yield a different content ID.
+normal binding policy. A different policy keeps the spell ID and changes the
+binding hash; the restore report lists that binding under `binding_changes`.
 
 ## Tune the compile phase deliberately
 
@@ -69463,7 +71165,7 @@ END FILE: docs/intermediate/hooks.md
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/intermediate/index.md
-CONTENT SHA256: a36fe4ce9074516766725c2fd88909b4efb58b474fef5ac74760860025ac1d2c
+CONTENT SHA256: 48bbfd50cf5f8c136ae76c843dd9d6b0cf6c425233de607389c5fc9edcdbd536
 SOURCE ENCODING: utf-8
 ================================================================================
 # 🟡 Intermediate
@@ -69482,6 +71184,7 @@ explicit public operations.
 - Dynamic posture, links, permissions, and ownership.
 - Late binding with `SpellContract` and connected-subsystem composition.
 - Early object disposal with `purge`, scoped cleanup, transfer, and severing relationships.
+- Managed spell pools: lease, release and reset pooled objects in elastic, limited and queue modes.
 - Named lesser scopes: Cloud lookup, creation-only names, collisions and retirement before pool reuse.
 
 ## Choose a route
@@ -69493,6 +71196,226 @@ and runtime inspection.
 [Beginner](../beginner/index.md) · [Full contents](../contents.md)
 ================================================================================
 END FILE: docs/intermediate/index.md
+================================================================================
+================================================================================
+BEGIN FILE: docs/intermediate/managed-spells.md
+CONTENT SHA256: 856dc010f4c95554fabfc838f7645bbd12637eecf69ac4a34cd8f5ef64a4fe9a
+SOURCE ENCODING: utf-8
+================================================================================
+---
+myst:
+  html_meta:
+    description: >-
+      Lease reusable Python objects from a Melder managed spell pool: elastic, limited
+      and queue modes, release, reset methods, refusals, inspection and teardown.
+---
+
+# Managed spell pools: lease, release, reset
+
+Prerequisites: [Choose an instance lifetime](../beginner/lifetimes.md),
+[Cleanup and memory ownership](../beginner/cleanup.md) and
+[Spell spaces, lineage, and child scopes](scopes.md).
+
+Some objects cost more to build than to lend: connections, sessions, buffers, licence
+seats. Bind such a class with the `managed_spell_quantity` existence and Melder keeps
+its objects in a pool. A meld *leases* an object - an idle one when the pool has one,
+a new one when it does not - and the holder gives it back when it is done. Nothing
+goes back on its own: returning an object is the holder's decision.
+
+## Bind a managed spell
+
+```python
+import melder as md
+
+book = md.Spellbook()
+book.bind(
+    spell=DatabaseConnection,
+    existence=md.Existence.managed_spell_quantity,
+    managed_spell_mode="limited_quantity",      # elastic (default) | limited_quantity | queue
+    managed_spell_limit=8,                      # at most 8 connections alive at once
+    managed_spell_reset_methods=["rollback"],   # run on every release, in order
+    disposal_method_names=["close"],            # run only when the pool destroys one
+)
+conduit = book.conjure()
+```
+
+The fluent form stages the same options:
+
+```python
+spell_id = (
+    md.SpellBinder(book)
+    .bind(DatabaseConnection)
+    .as_managed_spell_quantity("queue", limit=1, timeout_seconds=5.0, reset_methods=["rollback"])
+    .finalize()
+)
+```
+
+Each managed spell gets one pool in the store of the root conduit that owns it - at
+conjure, or at the bind itself when you bind on a live root. The pool starts empty and
+is registered with `md.ReleaseManagedSpell()`, the process-wide registry that objects
+go back through.
+
+| Option | Meaning |
+| --- | --- |
+| `managed_spell_mode` | `"elastic"` (default), `"limited_quantity"` or `"queue"`; a `md.ManagedSpellMode` member works too |
+| `managed_spell_limit` | elastic: the most idle objects the pool keeps (default 256); limited_quantity and queue: the most objects alive at once, idle plus out (required) |
+| `managed_spell_timeout_seconds` | queue only, and required there: how long a meld waits for a release |
+| `managed_spell_reset_methods` | names of zero-argument methods run, in order, on every release |
+
+Bind refuses a malformed managed binding before anything is registered: a managed
+option on another existence, a function or other non-class target, an unknown mode,
+a limit below 1, a limited_quantity or queue binding without a limit, a timeout on an
+elastic binding, a queue binding without one, and reset names that are not a list or
+tuple of method names of the class. A managed spell may not depend on a shorter-lived
+`unique_per_conduit` spell: conjure refuses that as a scope-ordering violation.
+
+## Choose a pool mode
+
+| Mode | When every object is out | Typical use |
+| --- | --- | --- |
+| `elastic` | Never refuses: a meld builds another object. A release that would keep more idle objects than the limit destroys the oldest idle one, and its disposal methods run. | Objects that must always be available; the limit caps what stays parked |
+| `limited_quantity` | A meld raises `ManagedSpellExhaustedError` before anything is built | A hard cap, such as licence seats or a connection quota |
+| `queue` | A meld waits up to `managed_spell_timeout_seconds`; a release hands the waiting meld the released object; past the timeout the meld raises `ManagedSpellExhaustedError` | A scarce resource where waiting beats failing |
+
+`ManagedSpellExhaustedError` is a `MeldExecutionError`. It carries `mode`, `limit`
+and `timeout_seconds` (`None` outside queue mode), and its message names the way out:
+release an object, or bind a higher limit - or, for a queue, a longer timeout.
+
+```python
+try:
+    conduit.meld("LicenseSeat")
+except md.ManagedSpellExhaustedError as refused:
+    print(refused.mode, refused.limit, refused.timeout_seconds)  # limited_quantity 2 None
+```
+
+Run [Managed spell elastic pool](../examples/intermediate/42-managed-spell-elastic-pool.md),
+[Managed spell limited quantity](../examples/intermediate/43-managed-spell-limited-quantity.md)
+and [Managed spell queue](../examples/intermediate/44-managed-spell-queue.md) to see each
+mode at its limit.
+
+## Lease objects
+
+- `conduit.meld("DatabaseConnection")` leases one object. The pool hands out the most
+  recently released idle object first and builds a new one only when none is idle.
+- Constructor injection leases too. Annotate a parameter with the managed class: every
+  injected parameter is its own lease, so two consumers hold two objects.
+- `conduit.managed_spell_meld(DatabaseConnection)` melds the spell and returns a
+  `md.ManagedSpellLease` whose `with` block gives the object back. It refuses a spell
+  that is not managed with `ValueError`, before melding anything.
+
+## Give objects back
+
+```python
+release = md.ReleaseManagedSpell().release
+
+connection = conduit.meld("DatabaseConnection")
+release(connection)                 # resets run, then the object is idle again
+
+with conduit.managed_spell_meld(DatabaseConnection) as connection:
+    ...                             # given back when the block ends, even if it raised
+
+held = conduit.meld("DatabaseConnection")
+with md.ReleaseManagedSpell().managed(held) as same:  # wrap an object you already hold
+    ...
+```
+
+`release(obj)` finds the pool by the object's class. When more than one pool manages
+that class, pass `spell_id=` or `conduit=` to pick one. A class that no live root
+pools, a filter that no pool matches and a filter of the wrong type are refused.
+`release_all(objects)` gives several objects back at once.
+
+A lease releases exactly once: a second `release()` does nothing, and `lease.object`
+raises `RuntimeError` once the object went back, because the pool may already have
+leased it to someone else. A `with` block never swallows the block's own exception.
+Run [Managed spell leases](../examples/intermediate/46-managed-spell-leases.md) for
+every lease form.
+
+## Reset objects between holders
+
+The pool calls the named reset methods, in the order given, on every release and
+before the object is idle again, so the next holder receives a clean object.
+
+A reset that raises means the object cannot be trusted. The pool destroys it - its
+disposal methods run and its place is freed - and the reset's error propagates from
+`release`. The next meld builds a fresh object. Run
+[Managed spell reset methods](../examples/intermediate/45-managed-spell-reset-methods.md)
+to watch both outcomes.
+
+## Inspect a pool
+
+```python
+(snapshot,) = md.ReleaseManagedSpell().describe(DatabaseConnection)
+print(snapshot["count"], snapshot["idle_count"], snapshot["out_count"])  # alive, idle, out
+print(snapshot["mode"], snapshot["limit"], snapshot["timeout_seconds"])
+```
+
+`describe(cls)` returns one snapshot per pool of the class, and an empty tuple when no
+live root pools it. Each snapshot also names the spell (`spell_id`, `spell_name`), the
+root that holds the pool (`holding_conduit_id`) and the reset and disposal method
+names.
+
+## Request scopes and root teardown
+
+The pool belongs to the root conduit and outlives every lesser conduit made from it.
+A request-scoped handler can return its connection in its own disposal method:
+leaving the request scope disposes the handler, and the connection goes back to the
+root's pool for the next request.
+
+```python
+class RequestHandler:
+    def __init__(self, connection: PooledConnection) -> None:
+        self.connection = connection
+
+    def finish(self) -> None:
+        md.ReleaseManagedSpell().release(self.connection)
+
+
+book.bind(spell=RequestHandler, existence=md.Existence.many, disposal_method_names=["finish"])
+root = book.conjure()
+
+with root.enter_lesser_conduit() as request:
+    handler = request.meld("RequestHandler")  # its connection is leased from the root's pool
+# the scope ended: finish() ran and the connection is idle in the root's pool
+```
+
+When the root is torn down, its pools are cleaned first: idle objects are disposed,
+and an object that is still out stays its holder's to dispose. The pools are then
+unregistered, so a later `ReleaseManagedSpell().release(obj)` raises `ValueError` and
+a lease's `release()` raises `RuntimeError`.
+
+Because the pools are cleaned before the root's other disposals run, a consumer
+melded on the root itself that releases its object in its own disposal method meets
+a pool that is already gone, and the root's teardown raises an `ExceptionGroup`.
+Release such objects before the root ends, or keep their holders in a lesser conduit
+as above. [Managed spell injection and request scopes](../examples/intermediate/47-managed-spell-injection-and-request-scopes.md)
+runs this pattern end to end.
+
+A purge does not empty a pool: `conduit.purge` returns `0` for a managed spell, and a
+spell space refuses to purge one (see [spell spaces and scopes](scopes.md)).
+
+## Change settings or move a pool
+
+A managed spell's mode, limit, queue timeout and reset methods are settings, not part
+of its spell_id. In a [dynamic world](dynamic-linking.md), change them with
+`cleanup_spell` and a new `bind`: the spell_id stays the same and so does the pool,
+and every object alive stays alive and counted under the new settings.
+
+```python
+spell_id = root.bind(spell=ExportWorker, existence=md.Existence.managed_spell_quantity,
+                     managed_spell_mode="limited_quantity", managed_spell_limit=1)
+root.cleanup_spell(spell=root.get_spell_by_spell_id(spell_id))
+rebound = root.bind(spell=ExportWorker, existence=md.Existence.managed_spell_quantity,
+                    managed_spell_mode="limited_quantity", managed_spell_limit=3)
+assert rebound == spell_id  # the same spell and the same pool, now with limit 3
+```
+
+`transfer_spell_ownership` moves the spell to another root, and its pool goes with it,
+idle objects included. The new owner leases from it, releases still find it by class,
+and the old owner can no longer meld the spell. Read
+[Named conduits, transfer, and sever](ownership.md) before moving spells, then run
+[Managed spell settings and transfer](../examples/intermediate/48-managed-spell-settings-and-transfer.md).
+================================================================================
+END FILE: docs/intermediate/managed-spells.md
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/intermediate/overrides.md
@@ -69710,7 +71633,7 @@ END FILE: docs/intermediate/registration.md
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/intermediate/scopes.md
-CONTENT SHA256: 879c2a5c6ff1c6bce12039e3993cff61619c9854bb8c3e6d2ecd5825d3c3fc98
+CONTENT SHA256: b84d8941496dcca8a5f3651c48e6bceab835a0a5b95ffb9e32bbec5bbd5f9119
 SOURCE ENCODING: utf-8
 ================================================================================
 # Spell spaces, lineage, and scopes that end
@@ -69852,6 +71775,7 @@ belonging to its conduit, lineage root, or cluster.
 A managed spell's pool is not purged. Give its objects back with
 `ReleaseManagedSpell().release(obj)`; the pool disposes idle objects when it
 trims them and when the root that owns it is torn down.
+[Managed spell pools](managed-spells.md) walks through the whole lifecycle.
 
 Purge follows the configured disposal methods and their ordering. It attempts
 other selected objects after an object's disposal fails, then raises an
@@ -70259,7 +72183,7 @@ END FILE: docs/reference/downloads.md
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/reference/glossary.md
-CONTENT SHA256: 791167960b5b41d9e417bca7dc2e0cee35f104e69829fbfca4e5e56ac2cc3a1c
+CONTENT SHA256: da21e33eabd163373c44118dbcda79e5789048e1fd3952381adfdc0cafca0d36
 SOURCE ENCODING: utf-8
 ================================================================================
 # Glossary
@@ -70275,7 +72199,8 @@ Use these terms to choose the right boundary before choosing an API.
 
    Aetheric frame
       A live world with its own runtime registries, posture, and instance isolation.
-      Frame isolation does not make identical binding identities distinct.
+      Frame isolation does not namespace spell identity: a spell ID is the object's code,
+      so one class bound in two frames is one spell.
 
    Bind
       Register a class, callable, or existing object and its address/lifetime policy.
@@ -70354,6 +72279,11 @@ Use these terms to choose the right boundary before choosing an API.
    Spell
       A bound object's runtime registration metadata, identity, and lifecycle contract.
 
+   Spell ID
+      The SHA256 of a registered object's code: its methods and constructor, class-level
+      values and bases, or an existing object's class and data. Nothing from the bind call
+      enters it, so one object registers once; how it is bound has its own binding hash.
+
    SpellContract
       A late-bound dependency socket filled through linking, a borrower pull, and resolution.
 
@@ -70424,7 +72354,7 @@ END FILE: docs/reference/releases.md
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/reference/troubleshooting.md
-CONTENT SHA256: 494198b394d663cf2cd6c9a5d352a37dfae57b0d3af2c3351011450eb34f2359
+CONTENT SHA256: 57224d6373d3f355776a24688ac7503a586dc2c4cf883b8d22914a623c76996a
 SOURCE ENCODING: utf-8
 ================================================================================
 # Troubleshooting by symptom
@@ -70438,7 +72368,7 @@ surface, and denied operation can mean different things.
 | Import warns about Python or the GIL | The interpreter selected by your shell or environment | [Install and first run](../beginner/install.md) |
 | A meld cannot find a named registration | Spellframe, binding name, and whether the target is a human name or explicit ID | [Address law](../beginner/addresses.md) |
 | A second bind or conjure is refused | Existing registration and the one-root-per-book rule | [Errors](../beginner/errors.md) |
-| Identical bindings collide across worlds | Process-wide spell identity; the frame is not part of that distinction | [World boundaries](../advanced/worlds.md) |
+| One class is refused in a second world or under a second name | One object is one spell: its spell ID is its code, unique across the process, with no frame or binding name in it | [World boundaries](../advanced/worlds.md) |
 | Constructor configuration seems ignored | Bind parameters versus meld overrides or a configured factory | [Flat overrides](../intermediate/overrides.md) |
 | Configuration edits fail | Defaults/set-once properties and whether conjure froze the object | [Configuration](../intermediate/configuration.md) |
 | A child scope retains memory | The actual owner and whether its cleanup ran | [Scopes that end](../intermediate/scopes.md) |
@@ -70472,7 +72402,7 @@ END FILE: docs/requirements.txt
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/seo.toml
-CONTENT SHA256: d38af79ab179970caa286c7ed2a3fc013f6191d89d0a4342d2fea5d4fccd5ec3
+CONTENT SHA256: f107182a3b8f3d969879589302d26fcdc6339cacb61699287deba43b6215d7f6
 SOURCE ENCODING: utf-8
 ================================================================================
 schema_version = 1
@@ -70488,6 +72418,7 @@ required_descriptions = [
   "expert/codegen.html",
   "examples/hello-melder.html",
   "examples/intermediate/15-constructor-di-by-annotation.html",
+  "intermediate/managed-spells.html",
 ]
 ================================================================================
 END FILE: docs/seo.toml
@@ -74569,10 +76500,10 @@ END FILE: release_docs/0.2.8227.md
 ================================================================================
 ================================================================================
 BEGIN FILE: release_docs/next_version_release.md
-CONTENT SHA256: 4a8ed8b6a9dce59fa937da05ffb4016e14d074bf6cb73a0852a316bcdbc660e1
+CONTENT SHA256: 7affdc80a5dcf2736f70eb2af81669f6e0ceefac5e58e308921cfca57b821a70
 SOURCE ENCODING: utf-8
 ================================================================================
-# Melder 0.2.8256
+# Melder 0.2.8258
 
 **Unreleased**
 
@@ -75532,6 +77463,49 @@ What stays the same: removing the only version of an index, which goes with its 
 version; the teardown of a conduit, Spellbook or frame, which cleans every active version with its index as
 before. No public signature changes.
 
+## A spell_id is the SHA256 of the object's code, and one object is one spell
+
+**Breaking change:** every spell_id moves once. A spell_id is now the SHA256 of the registered object's code - its
+methods' and constructor's instructions and the constants they load, its class-level values, its base classes
+outside the standard library and, for an existing object, its data - and of nothing from the `bind` call: the
+spellframe, binding name, existence, disposal methods, `resolvable` and the managed settings are the spell's binding
+(next section). Docstrings, comments and line numbers never move it; any change to the code does, a renamed local
+variable included. Installed third-party code is named by its distribution and version instead of being read, so
+upgrading a library moves the spell_id of a class built over it. The same code is the same spell_id in every
+process, hash seed and GIL mode.
+
+One object is one spell. Registering an object a second time is refused - under another binding name, existence or
+spellframe, in a second Spellbook of the frame (under process-wide spell ids, the default), or staged again with
+`bind_inactive`: `bind` and `bind_inactive` raise RuntimeError "Spell ID collision detected: this object is already
+registered as spell_id <id>. ...", whose text names the rule and the remedies, and `conjure` refuses a second
+Spellbook's registration of it. To upgrade: share the spell already registered instead of binding it twice (meld it,
+or contract it to another conduit); to change how it is bound, `cleanup_spell` it and bind it again; to keep two
+versions of a class, edit it - a new spell_id - and stage it with `bind_inactive`, then notch. An edited class
+staged that way is now a new version even when only a method body changed (it was refused as a collision). Under
+per-frame spell ids a class can still be bound once in each frame.
+
+Also changed: `Bind.spell_id_inspector(spell)` takes the target alone (the binding keywords it took raise
+TypeError), and `Spellbook.inspect_spell` finds a registered object by its code. Creation-cache bundles are cold
+once. A Crystallizer record made before this release restores through `bind`, which gives each spell its new
+spell_id and maps the old ones; a record that holds one object twice fails at its second replayed bind.
+
+Known limits: `-O` changes the spell_id of code that holds an `assert`, including every `typing.NamedTuple` class,
+whose base reads a standard-library function that asserts; whether two patch releases of one Python version give one
+spell_id is not yet measured; a namespace package that several distributions install is named by the first in sorted
+order; a bind costs 37-55 us more (conjure and melds are unchanged); a definition rebound under another slotted
+existence can meet the removed definition's object at its first meld; and a version alone in an index that
+`remove_from_spell_index` minted is missed by the collision check until that index is registered with its frame.
+
+## A spell's binding is a manifest with its own hash
+
+`Spell.binding_manifest` and `Spell.binding_hash` (read-only) are how a spell is kept - its spellframe and kind,
+address, existence, ordered disposal methods, `resolvable` and managed settings - and the SHA256 of that record;
+`BindingManifest.describe()` gives both as plain data. Both creation-cache tiers key on the binding hash beside the
+spell_id, so a spell bound another way never replays a plan built for its old binding. The SpellCrystal records the
+binding hash (record 4.3.0; 4.x records still read), and a restore reports each binding it rebuilt differently -
+under another receiving Spellbook's disposal order, say - in `RestoreReport.describe()["binding_changes"]`, where
+the spell_id used to move.
+
 ## Packaging and documentation
 
 - The README's "Declarative Binding by Module" example passes `permissions="create"`, without which it raised
@@ -75585,10 +77559,11 @@ before. No public signature changes.
   `ReleaseManagedSpell` and the lease, leasing through compiled melds and `managed_spell_meld`, and pools in an
   ownership transfer. The packaged graph describes the five new modules; the code-map extents of the changed files
   are remeasured, and line citations that had drifted since 0.2.8235 point at their code again.
-- The internal-bind guard manifest holds 628 entries at 0.2.8244 (622 at 0.2.8227): `HolderDisposalEntry`, the
-  record that keeps a slotted object's `many` children with it, joined at 0.2.8238, `ManagedSpellMode` at
-  0.2.8242, the managed pool (`ManagedSpellQuantity`) and `ManagedSpellExhaustedError` at 0.2.8243, and
-  `ReleaseManagedSpell` and `ManagedSpellLease` at 0.2.8244.
+- The internal-bind guard manifest holds 630 entries at 0.2.8257 (628 at 0.2.8244, 622 at 0.2.8227):
+  `SpellCodeDigest` and `BindingManifest` joined at 0.2.8257; `HolderDisposalEntry`, the record that keeps a slotted
+  object's `many` children with it, joined at 0.2.8238, `ManagedSpellMode` at 0.2.8242, the managed pool
+  (`ManagedSpellQuantity`) and `ManagedSpellExhaustedError` at 0.2.8243, and `ReleaseManagedSpell` and
+  `ManagedSpellLease` at 0.2.8244.
 - The packaged system documents (`melder.__architecture__`, `melder.__components__`) and the packaged graph
   describe the lineage flag `SpellState.non_resolvable`, the registry's published set of flagged lineages and the
   validation flag's exclusion of them; the code-map extents of the six changed files are remeasured, and line
@@ -75634,7 +77609,27 @@ before. No public signature changes.
 - The packaged system documents (`melder.__architecture__`, `melder.__components__`) and the packaged graph
   describe the refusal on the three cleanup calls and its remedies; the code-map extents of `spellbook.py` and
   `spell.py` are remeasured, and their line citations remapped.
-- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8256.
+- The packaged system documents (`melder.__architecture__`, `melder.__components__`) and the packaged graph describe
+  spell identity: the spell_id as the SHA256 of the object's code (what counts, installed code named by version, the
+  parity across builds and GIL modes, `-O`), the binding manifest and its hash in both cache tiers and the record,
+  and the one-object refusals; the packaged test documents describe the new tests; the code-map extents of the
+  changed files are remeasured. The managed release's failure is corrected there:
+  `ReleaseManagedSpell().release(obj)` after the root's teardown raises the not-managed ValueError, and the
+  torn-down RuntimeError comes from a lease or a release that raced the teardown.
+- The examples teach one object, one spell: the lessons and probes in `UX_and_AIX_experiences/` that bound one class
+  twice bind a class of their own or a version of it. The glossary defines a Spell ID and says a frame does not
+  namespace it; the troubleshooting row, the inspection walkthrough, the configuration guide and the README's "Frame
+  Boundaries" section follow, and the configuration guide's disposal sentence is corrected (every declared method
+  runs; the failures are raised together).
+- The documentation site's intermediate level gains a chapter on managed spell pools
+  (`docs/intermediate/managed-spells.md`): binding a managed spell, the three modes and their refusals,
+  leasing by meld, injection and `managed_spell_meld`, giving objects back, reset methods, inspecting a
+  pool, request scopes and root teardown, and changing settings or moving a pool. Seven runnable
+  intermediate lessons back it, one per mode and lifecycle step (42-48 in
+  `UX_and_AIX_experiences/02_intermediate/`), with 34 contract probes in
+  `UX_and_AIX_experiences/pytest_examples/test_managed_spell_probes.py`; the scopes guide links the chapter
+  from its purge table.
+- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8258.
 ================================================================================
 END FILE: release_docs/next_version_release.md
 ================================================================================

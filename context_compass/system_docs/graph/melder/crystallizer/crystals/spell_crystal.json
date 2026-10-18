@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/crystals/spell_crystal.py",
- "source_sha256": "a8f20e27bcc7d1081733d3487739234120d7703c1f8abcb25ceaebd680067268",
+ "source_sha256": "294526be66bdcad52509c45e5127b0708bdf25b2515655880fe59bb25e069475",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.crystals.spell_crystal": {
@@ -32,6 +32,7 @@
    ],
    "markers": [],
    "public_methods": [
+    "binding_hash",
     "binding_name",
     "cleanup",
     "compose_custody_key",
@@ -75,11 +76,11 @@
     "walk_errors"
    ],
    "shape": {
-    "method_count": 43,
+    "method_count": 44,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "876fe2fbf1fca1f23c005cc4541fa67f056c608640b4f737a7bb35a49b39e4ad",
+   "span_sha256": "b672fde4c5044e2f2f1ada9bff4a529214ad7cf7a94729b5e3097342a7cf1959",
    "role": "Spell custody twin + module-dependency manifest; carries the full bind signature and, for synthetic roots, the rebuildable module SOURCES (M3); opt-in user-source TEXT rides beside them (S2).",
    "responsibilities": [
     "captures identity and the full bind signature for one live spell target",

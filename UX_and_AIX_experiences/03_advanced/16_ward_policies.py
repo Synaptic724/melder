@@ -71,6 +71,10 @@ class Payload:
     """A spell to give the ward something to be a policy about."""
 
 
+class DynamicPayload(Payload):
+    """The dynamic world's own Payload - a new class, so its own spell_id."""
+
+
 MODES = ("default", "whitelist_all", "block_all",
          "inbound_only", "outbound_only")
 
@@ -93,11 +97,11 @@ def main() -> None:
     # ------------------------------------------------------------------
     # REFUSAL 1 - DYNAMIC MODE ONLY
     # ------------------------------------------------------------------
-    # binding_name differs per frame ON PURPOSE. A spell_id is a hash of
-    # the BIND FINGERPRINT and the frame is not in it, so the same class
-    # bound identically in two frames mints the same id and the second
-    # conjure is refused process-wide. Frames isolate instances, not
-    # identity - see advanced 02.
+    # Each world binds its OWN class. A spell_id is the SHA256 of the
+    # class's code and neither the frame nor the binding_name is in it,
+    # so the same class bound in two frames is one spell_id and the
+    # second registration is refused process-wide. Frames isolate
+    # instances, not identity - see advanced 02.
     automatic_book = md.Spellbook(aetheric_frame="ward-automatic")
     automatic_book.bind(spell=Payload, existence="unique",
                         binding_name="automatic")
@@ -113,7 +117,7 @@ def main() -> None:
     # A DYNAMIC WORLD - now the door opens
     # ------------------------------------------------------------------
     book = md.Spellbook(aetheric_frame="ward-dynamic")
-    book.bind(spell=Payload, existence="unique", binding_name="dynamic")
+    book.bind(spell=DynamicPayload, existence="unique", binding_name="dynamic")
     book.configure_aether_frame(system_state="dynamic", disposal=None,
                                 disposal_method_names=None)
     root = book.conjure(name="ward-root")

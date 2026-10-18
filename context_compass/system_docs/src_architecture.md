@@ -240,6 +240,17 @@ Each item must include:
   stories: `STORY-2026-02-13-spellstate-advanced-flag-producers`,
   `STORY-2026-02-13-mutation-research-runtime-wiring`).
 
+- UNKNOWN: whether two patch releases of one Python minor give a class one spell_id. The digest reads instruction
+  streams, constant and name tables and, for a class that holds one, a standard-library function's code, and the
+  interpreter's cache tag names the minor only (cpython-314), so two patch releases agree exactly when they compile
+  the same instructions for the code the digest reads. Measured on one release: 3.14.7's free-threaded build with
+  the GIL off and on and its GIL build agree byte for byte over 788 targets (every class and plain function of
+  `src/melder`'s importable modules and four user-like classes), and -O moves 8 of them (code that asserts). Why it
+  matters: a creation cache or a record keyed by a spell_id goes cold, or a restore maps every id, when a patch
+  release changes the compiled code. Where to investigate:
+  `src/melder/aether/spellbook/bind/spell_code_digest.py:SpellCodeDigest._code_digest` with the same targets
+  digested on two patch releases. Current status: uninvestigated (one patch release installed).
+
 ## System Context (C4)
 Melder is a Dependency Graph Runtime embedded into user systems. User code
 binds classes/functions/instances into a Spellbook, then conjures Conduits to
@@ -1165,6 +1176,10 @@ each entry in `src_components.md`; this list is the set that crosses components.
   3 finds any registered object by its code. Locks: the digest takes none; Bind calls it under its own lock, where
   the fingerprint ran, `spell_id_inspector` builds a fresh one per call, and it keeps no strong reference to a
   target. Cost: +37 to +55 us a bind on the gauntlet and on 200 generated classes; conjure and melds unchanged.
+  Parity: one release's builds and GIL modes give one spell_id (3.14.7's free-threaded build with the GIL off and on
+  and its GIL build: 788 targets byte-identical); -O is an input wherever the code the digest reads holds an
+  `assert` - `Nexus.__new__`, and the standard library's `typing._namedtuple_mro_entries`, which every
+  `typing.NamedTuple` class holds through `__orig_bases__` - and two patch releases are UNKNOWN (see Unknowns).
   Open: a rebind under another slotted existence keeps its spell_id, so its first meld can return the removed
   definition's slotted object (S3); a record made before 0.2.8257 that holds one object twice fails at its second
   replayed bind (S5); and until STORY-2026-10-17-minted_index_missing_from_frame_registry lands, bind's collision
@@ -2527,12 +2542,17 @@ each entry in `src_components.md`; this list is the set that crosses components.
   pick one." when several pools match (two binding names, two roots or frames, or a parked version notched in on the
   new owner after a no-move transfer); ValueError "No pool of managed class <Type> matches ..." for filters no pool
   matches; and TypeError for a filter of the wrong type (0.2.8244). A release after the pool's root was torn down
-  raises RuntimeError "The pool of managed spell '<name>' was torn down with its root conduit; the object is yours to
-  dispose." A reset that raises destroys the object (its disposal methods and recorded children run), frees its
+  raises the not-managed ValueError, because the root's store unregisters its pools before it cleans them, so no
+  live root pools the class (corrected 2026-10-18: this said RuntimeError). RuntimeError "The pool of managed spell
+  '<name>' was torn down with its root conduit; the object is yours to dispose." comes from the pool itself: a
+  `ManagedSpellLease.release` after the teardown, or a release that resolved the pool before the teardown cleaned
+  it. A reset that raises destroys the object (its disposal methods and recorded children run), frees its
   place and propagates (an ExceptionGroup when the disposal failed too). A release racing a transfer of its spell can
   meet the gap between extract and restore and raises the not-managed ValueError for that call.
-  EVIDENCE: `src/melder/aether/conduit/creations/release_managed_spell.py:ReleaseManagedSpell._resolve_pool` and
-  `src/melder/aether/conduit/creations/managed_spell_quantity.py:ManagedSpellQuantity.put_back`.
+  EVIDENCE: `src/melder/aether/conduit/creations/release_managed_spell.py:ReleaseManagedSpell._resolve_pool`,
+  `src/melder/aether/conduit/creations/managed_spell_quantity.py:ManagedSpellQuantity.put_back`,
+  `src/melder/aether/conduit/creations/creations.py:Creations.cleanup` and
+  `src/melder/aether/conduit/creations/managed_spell_lease.py:ManagedSpellLease.release`.
 - Bind refuses a managed binding before any registry change (0.2.8242): a `managed_spell_*` option on another
   existence (ValueError); a function, method, lambda or existing object (TypeError: classes only); an unknown mode; a
   limit that is not an int >= 1, or missing for limited_quantity or queue; a timeout given for elastic or
@@ -4698,6 +4718,13 @@ keeps the spell_id, moves the binding hash and is reported in the restore's `bin
 - `src/melder/utilities/ai_native_support_tools/protocol_crafter.py`
 
 ## Context / Handoff Summary
+
+2026-10-18 follow-ups to the identity landing (documentation only): the identity invariant records the build parity
+and the -O rule; the Unknowns gain the patch-release question; the managed release's failure mode is corrected - a
+`ReleaseManagedSpell` release after the root's teardown raises the not-managed ValueError, because the store
+unregisters its pools first, and the torn-down RuntimeError comes from the pool through a lease or a release that
+resolved it before the teardown. Checked against `Creations.cleanup`, `ReleaseManagedSpell._resolve_pool`,
+`ManagedSpellQuantity.put_back` and `ManagedSpellLease.release`.
 
 2026-10-18 spell identity is the code (0.2.8257-0.2.8258; S1 and S2 of EPIC-2026-10-18-spell_identity_is_the_code,
 on the owner's direction and calls): a spell_id is the SHA256 of the registered object's code (`SpellCodeDigest`),

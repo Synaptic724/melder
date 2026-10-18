@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/meld/conduit_meld.py",
- "source_sha256": "b4b3f8ab45c2fcd6c22f92b8d194f77c4c81c7dcdeb1ccb25b243609664a4f27",
+ "source_sha256": "16671f8f7c1f777fbda6ddfc3350d7db5454de284d65d880c89f93d0875661aa",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.meld.conduit_meld": {
@@ -44,7 +44,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "74aa20682b31df021d7553d4d7412a7fff365984bb4fe7126107446e4634a4f7",
+   "span_sha256": "e554c3718ec3e9a2683a076675bc29f224f4bfda7d6524c31c6faf8dfe83c944",
    "role": "Conduit-facing meld front door.",
    "responsibilities": [
     "routes conduit-local unique_per_conduit and many storage through ConduitCreations",

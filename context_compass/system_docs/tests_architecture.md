@@ -432,6 +432,13 @@ The most important recent integration addition is the dedicated
   after it tears down; a bare reset leaves the next test without a world.
 - Races are proven by deterministic stand-ins for the concurrent writer; the
   multithreading lane is stress coverage, not the proof.
+- One object is one spell in the suite too (0.2.8257): no test registers one class twice - under a second
+  binding name, existence or spellframe, in a second Book of a process-wide world, or staged again with
+  `bind_inactive` - because bind refuses it; a test that needs the shape binds a version (`version_of`) or
+  a class of its own, and the tests that pin the refusal expect RuntimeError naming the spell_id.
+  EVIDENCE:
+  - tests/_spell_identity_test_support.py:1-46
+  - tests/component/melder/spellbook/test_spellbook_component_spell_identity.py:98-135
 
 ## Source Coverage and Evidence
 Direct evidence used in this pass:
@@ -439,6 +446,7 @@ Direct evidence used in this pass:
 - `tests/conftest.py`
 - `tests/_frame_posture_test_support.py`
 - `tests/_codegen_system_support.py`
+- `tests/_spell_identity_test_support.py`
 - `tests/component/INFO.MD`
 - `tests/_nexus_viewer_matrix_support.py`
 - `tests/component/melder/spellbook/compiler_test_helpers.py`
@@ -458,12 +466,12 @@ Direct evidence used in this pass:
 - direct filesystem inventory over `tests/`
 
 Current Python test inventory from direct filesystem count:
-- `unit/`: 513 `.py` files, 510 of them `test_*.py` (465 on 2026-09-26, 334 on 2026-06-13)
-- `component/`: 168 `.py` files, 166 of them `test_*.py` (143, 81)
-- `integration/`: 182 `.py` files, 175 of them `test_*.py` (149, 88)
+- `unit/`: 517 `.py` files, 514 of them `test_*.py` (465 on 2026-09-26, 334 on 2026-06-13)
+- `component/`: 169 `.py` files, 167 of them `test_*.py` (143, 81)
+- `integration/`: 183 `.py` files, 176 of them `test_*.py` (149, 88)
 - `mocks/`: 44 `.py` files (44, 42)
 - `experimentation/`: 204 `.py` files, 33 of them `test_*.py` (196 on 2026-09-26)
-Recounted 2026-10-18 with `find tests/<tier> -name '*.py'` (pycache excluded); the three tiers' 851 `test_*.py`
+Recounted 2026-10-18 with `find tests/<tier> -name '*.py'` (pycache excluded); the three tiers' 857 `test_*.py`
 modules are the count `tests_components` states.
 
 ## Core Responsibilities
@@ -477,6 +485,9 @@ modules are the count `tests_components` states.
 - Frame-posture support centralizes automatic/dynamic runtime configuration
   helpers reused across spellbook, conduit, crystallizer, and
   mutation-research tests.
+- Spell-identity support (`version_of`, 0.2.8257) gives a test that needs a second registration of one
+  class a version of it - a subclass with the same name, qualname and module and class-level values of
+  its own - because one object is one spell and a second registration of it is refused.
 - Codegen/compiler support centralizes namespace doubles, event/memory doubles,
   and compiler-phase runner helpers reused across codegen-system and spell
   compiler test lanes.
@@ -516,6 +527,9 @@ modules are the count `tests_components` states.
 - `tests/_codegen_system_support.py`
   Purpose: shared codegen-system doubles and helper builders for compiler and
   codegen test lanes.
+- `tests/_spell_identity_test_support.py`
+  Purpose: `version_of`, a version of a class for a test that needs a second registration of one
+  class; a test that restores or grafts the version defines a module-level class instead.
 - `tests/_nexus_viewer_matrix_support.py`
   Purpose: shared descriptor + compiled ACL + viewer fixture builder.
 - `tests/component/melder/spellbook/compiler_test_helpers.py`
@@ -595,13 +609,13 @@ modules are the count `tests_components` states.
   meet the borrower's contracted copy parked by a notch, and the test xfails (2 of 5 GIL-off runs on
   2026-10-16); otherwise, and with the GIL on (5 of 5), it xpasses. Neither result fails the cell, any other
   exception still fails the test, and whoever closes that task deletes the marker.
-  EVIDENCE: tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py:624-673
+  EVIDENCE: tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py:626-675
 
 ## C1 Code Map (Core Only)
 Core here is the harness and entrypoint surfaces this document names - the runner configuration, the
-conftests, the shared support modules, the benches, the mock corpus and the CI driver: 36 paths, every one of
-them in the core set of `tests_components` (the deduplicated union of its `Key Files (C1)` lists, 247 paths on
-2026-10-15; corrected 2026-10-15 - this paragraph called this map that union). Every range below was MEASURED
+conftests, the shared support modules, the benches, the mock corpus and the CI driver: 37 paths, every one of
+them in the core set of `tests_components` (the deduplicated union of its `Key Files (C1)` lists, 272 paths on
+2026-10-18; corrected 2026-10-15 - this paragraph called this map that union). Every range below was MEASURED
 from disk on 2026-08-02, not carried
 forward - there is no graph on this side to join against, so nothing else would
 have caught a stale range.
@@ -636,6 +650,12 @@ constituent files.
   end_line: 638
   loc: 638
   verified_at: 2026-09-26T21:51:55Z
+- path: `tests/_spell_identity_test_support.py`
+  start_line: 1
+  end_line: 46
+  loc: 46
+  verified_at: 2026-10-18T23:15:23Z
+  note: `version_of`: a version of a class for a second registration of one class (0.2.8257).
 - path: `tests/experimentation/unittest_synthetic_module_edge_cases_testbench.py`
   start_line: 1
   end_line: 868
@@ -884,10 +904,24 @@ graph TD
 - `tests/unit/melder/aether/conduit/creations/test_managed_spell_quantity_multithreaded.py`
 - `tests/unit/melder/aether/conduit/creations/test_release_managed_spell_multithreaded.py`
 - `tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py`
+- `tests/_spell_identity_test_support.py`
+- `tests/component/melder/spellbook/test_spellbook_component_spell_identity.py`
 - `.gitignore`
 - direct filesystem inventory of `tests/`
 
 ## Context / Handoff Summary
+
+2026-10-18 spell identity is the code (0.2.8257-0.2.8258): the inventory is recounted from disk (unit 517 `.py`,
+component 169, integration 183, mocks 44, experimentation 204; 857 test modules in the three tiers) - the lane adds
+four unit modules (the digest's, the libraries', the manifest's and the crystal's binding hash) and one component
+module (spell identity over real wiring), catalogued in `tests_components`, and the integration count takes in the
+red-test module of STORY-2026-10-17-minted_index_missing_from_frame_registry
+(`test_separated_version_is_known_to_its_frame_integration.py`), which fails on purpose until that story lands. One
+shared support module joins the suite, `tests/_spell_identity_test_support.py` (`version_of`), and with it the
+evidence, the responsibilities, the C2 overview, a new operational invariant (one object is one spell in the suite
+too) and this map (37 paths). The xfail evidence into the notch-revalidation file is remapped to the marker's
+decorator and body (626-675); every range in this map was checked against disk (re-stamped: none). No tier, conftest
+or declared marker changes.
 
 2026-10-18 direct cleanup refusal (0.2.8256): the inventory is recounted from disk (unit 513 `.py`, component
 168, integration 182, mocks 44, experimentation 204; 851 test modules in the three tiers) - the lane adds one

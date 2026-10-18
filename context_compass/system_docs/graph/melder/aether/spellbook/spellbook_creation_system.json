@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spellbook_creation_system.py",
- "source_sha256": "77667787ab30f0c3409203d0e6a915de3bcb1927c3c32a0a30e25d41cd04abf9",
+ "source_sha256": "06e7e024b435e01de5214eaed17cd3c104e91f467b4471c81fb75c110551e64a",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spellbook_creation_system": {
@@ -59,7 +59,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "c962eebbd63afba9db942126ce2e9efe8e8a2c3ecceb82aba20caa8a6c192976",
+   "span_sha256": "3d32c78dd13bdf37442a91dd269ad7552dec9b38279e9281fd733b897084b438",
    "role": "Conjure orchestration helper for Spellbook; its static phase drivers also serve Conduit.validate_resolution and meld-time reruns.",
    "responsibilities": [
     "prepares spellbook configuration and structural phase execution before conjure",

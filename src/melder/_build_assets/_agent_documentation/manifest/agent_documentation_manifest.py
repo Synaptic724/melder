@@ -19,9 +19,9 @@ Regenerate with:
 """
 
 MANIFEST_VERSION = "2.0.0"
-BUILT_FOR_VERSION = "0.2.8256"
-SOURCE_SHA256 = "08a7537c5f8a76caee833577b8d328dd22b5df9dd5a7eee41ecabeeffdc0649c"
-MARKED_COUNT = 468
+BUILT_FOR_VERSION = "0.2.8258"
+SOURCE_SHA256 = "a70dfea1a0585b31ce4e86a6dc9b9990b9872e79cdeb244853c48406355ad944"
+MARKED_COUNT = 470
 EXEMPT_COUNT = 142
 PENDING_COUNT = 18
 
@@ -159,8 +159,10 @@ AGENT_METADATA = {
     ('melder.aether.conduit.spell_space.spell_space_thread_state', 'SpellSpaceThreadState'): ('internal', 'access: internal. Thread-local spellspace stack holder for one conduit. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
     ('melder.aether.conduit.spell_space.spell_space_thread_state', '_SpellSpaceLocal'): ('internal', 'access: internal. Per-thread spellspace storage for one `SpellSpaceThreadState`. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
     ('melder.aether.spellbook.bind.bind', 'Bind'): ('internal', 'access: internal. Spellbook registration gateway for classes, callables, and concrete objects. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
+    ('melder.aether.spellbook.bind.binding_manifest', 'BindingManifest'): ('public', "access: public. How a spell is bound - address, existence, disposal order, resolvable, managed settings - with its own SHA256 (`binding_hash`), separate from the spell_id, which is the object's code. Read it from `spell.binding_manifest`; `describe()` gives the fields and the hash as plain data."),
     ('melder.aether.spellbook.bind.scan', 'Scan'): ('public', 'access: public. Deferred registration. Pass ONE module to Spellbook.scan(...) and it binds objects decorated with scan_bind. Module-only - no package traversal - and re-exports are rejected by __module__ check.'),
     ('melder.aether.spellbook.bind.scan', 'ScanBindMetadata'): ('internal', 'access: internal. Frozen payload describing how a decorated object should be bound later. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
+    ('melder.aether.spellbook.bind.spell_code_digest', 'SpellCodeDigest'): ('internal', "access: internal. The spell_id rule: the SHA256 of what a registered class, function or object IS - its code, inherited code, class-level values and an object's data - never how it was bound. Read it to know why two bindings of one class are one spell and why an edited method is a new version."),
     ('melder.aether.spellbook.bind.spell_index', 'SpellIndex'): ('public', 'access: public. The stable index identity (immutable ULID) pointing at a mutable selected spell. Hash/equality use only the ULID, so a notch can repoint the active member without breaking any map. Version history belongs to MutationResearch.'),
     ('melder.aether.spellbook.configuration.spellbook_configuration', 'SpellbookConfiguration'): ('public', 'access: public. Rich per-book configuration: typed properties, idempotent keys, and the Meld/Conduit/Link/Contract hook registry. Must be frozen before conjure. Idempotent keys lock after first set, even before freeze.'),
     ('melder.aether.spellbook.configuration.system_state', 'SystemState'): ('public', 'access: public. Runtime posture: automatic (fixed graph, safer) or dynamic (rewiring allowed). Dynamic is REQUIRED for linking, severing, ownership transfer, and lesser-to-normal upgrade. Set it on SpellbookConfiguration.'),
@@ -776,6 +778,7 @@ CLASS_BASES = {
     ('melder.aether.conduit.spell_space.spell_space_thread_state', '_SpellSpaceLocal'): ('local',),
     ('melder.aether.spellbook.bind.bind', 'Bind'): ('Cleanable',),
     ('melder.aether.spellbook.bind.scan', 'Scan'): ('Cleanable',),
+    ('melder.aether.spellbook.bind.spell_code_digest', 'SpellCodeDigest'): ('Cleanable',),
     ('melder.aether.spellbook.bind.spell_index', 'SpellIndex'): ('Cleanable',),
     ('melder.aether.spellbook.configuration.spellbook_configuration', 'SpellbookConfiguration'): ('Cleanable',),
     ('melder.aether.spellbook.configuration.system_state', 'SystemState'): ('Enum',),
