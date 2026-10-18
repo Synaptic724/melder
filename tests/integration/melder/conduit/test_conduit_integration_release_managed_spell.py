@@ -13,6 +13,7 @@ from typing import Any, List, Tuple
 import pytest
 
 from melder.aether.aether import Aether
+from melder.aether.aether_configuration import AetherConfiguration
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.conduit.creations.managed_spell_quantity import ManagedSpellQuantity
 from melder.aether.conduit.creations.release_managed_spell import ReleaseManagedSpell
@@ -23,6 +24,7 @@ from tests._frame_posture_test_support import (
     apply_dynamic_defaults_for_spellbook_configuration,
     set_frame_system_state_for_spellbook_configuration,
 )
+from tests._spell_identity_test_support import version_of
 
 pytestmark = pytest.mark.integration
 
@@ -97,6 +99,13 @@ def _dynamic_book() -> Spellbook:
     return Spellbook(aetheric_frame="default", configuration=configuration)
 
 
+def _install_per_frame_spell_ids() -> None:
+    """Configure and activate per-frame spell ids before any frame exists, so a class can be bound per frame."""
+    policy = AetherConfiguration().with_defaults().with_process_wide_unique_spell_ids(False)
+    policy.activate()
+    Aether().activate(policy)
+
+
 def _bind_managed(book_or_root: Any, *, binding_name: Any = None, **options: Any) -> str:
     """
     Bind `Leased` as a managed spell with `reset` on release and `close` on disposal.
@@ -128,20 +137,22 @@ def _conjured(name: str = "managed-root", frame: str = "default", **binding: Any
         Tuple[Spellbook, Conduit, str]: The Book, its root and the managed spell id.
     """
     book = _automatic_book(frame)
-    # One anchor per root: under process-wide spell ids an identical binding in a second frame would collide.
+    # One anchor per root. Roots in two frames need per-frame spell ids (`_install_per_frame_spell_ids`): one
+    # class is one spell, so under process-wide ids a class bound in a second frame is refused.
     book.bind(spell=Anchor, binding_name=f"anchor-{name}", existence=Existence.unique, permissions="create")
     spell_id = _bind_managed(book, **binding)
     root = book.conjure(name=name)
     return book, root, spell_id
 
 
-def _out(pool: ManagedSpellQuantity, label: str) -> Leased:
+def _out(pool: ManagedSpellQuantity, label: str, cls: type = Leased) -> Leased:
     """
     Lease the way an emitted plan will: an idle pop, else reserve a place and build.
 
     Args:
         pool: The pool.
         label: Label of a newly built object.
+        cls: The class the pool's version builds - Leased, or a version of it.
 
     Returns:
         Leased: The leased object.
@@ -150,7 +161,7 @@ def _out(pool: ManagedSpellQuantity, label: str) -> Leased:
         return pool._idle.pop()
     except IndexError:
         served = pool.reserve()
-        return Leased(label) if served is None else served
+        return cls(label) if served is None else served
 
 
 def _pool_of(root: Conduit, spell_id: str) -> ManagedSpellQuantity:
@@ -199,68 +210,78 @@ def test_root_teardown_unregisters_its_pools() -> None:
         book.cleanup()
 
 
-def test_a_post_conjure_bind_registers_and_a_notch_moves_the_releases() -> None:
+def test_a_post_conjure_bind_registers_and_each_version_takes_its_own_releases() -> None:
     """
-    Two versions of one index: the active one takes a same-class release; a notch moves it.
+    Two versions of one index are two classes, so each version's pool takes the releases of its class.
 
-    The parked version differs by its disposal names: a managed spell's settings are not part of its spell_id
-    (0.2.8254), so the same class with only another limit would be the same spell.
+    One object is one spell (S1 of EPIC-2026-10-18-spell_identity_is_the_code): the parked version is a version
+    of Leased - its name, other code - registered under its own class, so a release by class reaches the pool
+    of the version that built the object, before and after a notch.
     """
     book = _dynamic_book()
     book.bind(spell=Anchor, existence=Existence.unique, permissions="create")
     root = book.conjure(dynamic=True, name="managed-late")
     try:
         active_id = _bind_managed(root, managed_spell_limit=16)
+        second = version_of(Leased, version=2)
         parked_id = root.bind_inactive(
-            spell=Leased, spell_index=book.find_spell_by_spell_id(active_id).spell_index,
+            spell=second, spell_index=book.find_spell_by_spell_id(active_id).spell_index,
             existence=Existence.managed_spell_quantity, permissions="create",
             disposal_method_names=["close", "reset"], managed_spell_limit=8,
         )
         active_pool, parked_pool = _pool_of(root, active_id), _pool_of(root, parked_id)
-        assert sorted(entry["spell_id"] for entry in ReleaseManagedSpell().describe(Leased)) == sorted(
-            [active_id, parked_id],
-        )
+        assert [entry["spell_id"] for entry in ReleaseManagedSpell().describe(Leased)] == [active_id]
+        assert [entry["spell_id"] for entry in ReleaseManagedSpell().describe(second)] == [parked_id]
         ReleaseManagedSpell().release(_out(active_pool, "first"))
-        assert (active_pool.idle_count, parked_pool.idle_count) == (1, 0)
+        ReleaseManagedSpell().release(_out(parked_pool, "second", second))
+        assert (active_pool.idle_count, parked_pool.idle_count) == (1, 1)
         # The notch needs the parked version itself, which _get_owned_spell answers (until 0.2.8253
         # find_spell_by_id answered a parked id with the index's live spell).
         parked = book._get_owned_spell(parked_id)
         root.notch_spell(spell_index=parked.spell_index, spell=parked)
-        ReleaseManagedSpell().release(_out(parked_pool, "second"))
+        for leased in (_out(active_pool, "third"), _out(parked_pool, "fourth", second)):
+            ReleaseManagedSpell().release(leased)
         assert (active_pool.idle_count, parked_pool.idle_count) == (1, 1)
     finally:
         root.cleanup()
         book.cleanup()
 
 
-def test_two_binding_names_in_one_root_need_a_spell_id() -> None:
-    """Both versions are selected in their own index; the conduit alone cannot pick, the spell id can."""
+def test_a_second_binding_name_in_one_root_is_refused_and_one_pool_takes_the_releases() -> None:
+    """
+    One object is one spell (S1 of EPIC-2026-10-18-spell_identity_is_the_code): Leased bound under a second binding name
+    is refused, so one root holds one pool of the class and a release by class reaches it without a filter.
+    """
     book = _automatic_book()
     book.bind(spell=Anchor, existence=Existence.unique, permissions="create")
     left_id = _bind_managed(book, binding_name="left")
-    right_id = _bind_managed(book, binding_name="right")
+    with pytest.raises(RuntimeError, match="Spell ID collision detected: this object is already registered as "
+                                           "spell_id " + left_id):
+        _bind_managed(book, binding_name="right")
     root = book.conjure(name="two-names")
     try:
-        right = _pool_of(root, right_id)
-        with pytest.raises(ValueError, match="Leased is managed by 2 pools: .*Pass spell_id=... or conduit=..."):
-            ReleaseManagedSpell().release(Leased())
-        with pytest.raises(ValueError, match="Leased is managed by 2 pools"):
-            ReleaseManagedSpell().release(Leased(), conduit=root)
-        ReleaseManagedSpell().release(_out(right, "r"), spell_id=right_id)
-        assert (right.idle_count, _pool_of(root, left_id).idle_count) == (1, 0)
+        left = _pool_of(root, left_id)
+        ReleaseManagedSpell().release(_out(left, "l"))
+        assert left.idle_count == 1
     finally:
         root.cleanup()
         book.cleanup()
 
 
 def test_two_roots_are_told_apart_by_conduit_including_a_lesser() -> None:
-    """The conduit names the root that holds the pool; a lesser names its root."""
+    """
+    The conduit names the root that holds the pool; a lesser names its root.
+
+    Leased is bound in two frames, which per-frame spell ids allow: one class is one spell
+    (S1 of EPIC-2026-10-18-spell_identity_is_the_code), so under process-wide ids the second frame's bind is refused.
+    """
+    _install_per_frame_spell_ids()
     first_book, first_root, first_id = _conjured(name="first-root", frame="frame-one", binding_name="one")
     second_book, second_root, second_id = _conjured(name="second-root", frame="frame-two", binding_name="two")
     lesser = second_root.create_lesser_conduit()
     try:
         first_pool, second_pool = _pool_of(first_root, first_id), _pool_of(second_root, second_id)
-        with pytest.raises(ValueError, match="Leased is managed by 2 pools"):
+        with pytest.raises(ValueError, match="Leased is managed by 2 pools: .*Pass spell_id=... or conduit=..."):
             ReleaseManagedSpell().release(Leased())
         ReleaseManagedSpell().release(_out(first_pool, "one"), conduit=first_root)
         ReleaseManagedSpell().release(_out(second_pool, "two"), conduit=lesser)

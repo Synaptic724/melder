@@ -141,10 +141,11 @@ def test_managed_bind_options_is_empty_without_a_recorded_mode() -> None:
     assert SpellCrystal.managed_bind_options({}) == {}
 
 
-def test_record_version_is_4_2_and_reads_4_1_records() -> None:
-    """4.2.0 adds keys (a minor); 4.1 and 4.2 payloads stay readable."""
-    assert RecordVersion.CURRENT == "4.2.0"
+def test_record_version_is_4_3_and_reads_4_1_and_4_2_records() -> None:
+    """4.2.0 added the managed options and 4.3.0 the binding hash (minors); 4.1-4.3 payloads stay readable."""
+    assert RecordVersion.CURRENT == "4.3.0"
     RecordVersion.check_readable({RecordVersion.KEY: "4.1.0"}, "older record")
-    RecordVersion.check_readable({RecordVersion.KEY: "4.2.0"}, "current record")
-    with pytest.raises(ValueError, match="newer than this code's 4.2.0"):
+    RecordVersion.check_readable({RecordVersion.KEY: "4.2.0"}, "managed-options record")
+    RecordVersion.check_readable({RecordVersion.KEY: "4.3.0"}, "current record")
+    with pytest.raises(ValueError, match="newer than this code's 4.3.0"):
         RecordVersion.check_readable({RecordVersion.KEY: "5.0.0"}, "future record")

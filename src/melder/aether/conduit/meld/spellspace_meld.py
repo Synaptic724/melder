@@ -263,8 +263,8 @@ class SpellSpaceMeld(Meld):
         Args:
             spell (str | object | None):
                 The primary spell identifier (first positional parameter).
-                - If a **string**, treated as the unique `spell_id` (typically the
-                  SHA256 structural fingerprint for the SpellIndex).
+                - If a **string**, treated as the unique `spell_id` (the SHA256 of
+                  the registered object's code that `bind` returned).
                 - If an **object** (e.g., a class or function), used together with
                   `spellframe` and `binding_name` to form the DI identity key via the
                   `SpellInputUtils` normalization helpers.

@@ -11,6 +11,7 @@ from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spellbook import Spellbook
 from tests.mocks.spellbook.core_classes import BasicConfig
 from tests.mocks.spellbook.core_classes import BasicService
+from tests._spell_identity_test_support import version_of
 from tests._frame_posture_test_support import (
     apply_dynamic_defaults_for_spellbook_configuration,
 )
@@ -65,16 +66,16 @@ def _cluster_conduit(
     """
     Bind one spell at the given existence and conjure a root conduit.
 
-    The spell_id is fingerprinted from the structural profile + binding_name +
-    existence (NOT the spellbook), so multiple conduits in ONE frame must each bind
-    a distinct binding_name to avoid a spell_id collision. The binding_name defaults
-    to the (unique) conduit name.
+    One class is one spell (S1 of EPIC-2026-10-18-spell_identity_is_the_code): the
+    spell_id is the class's code, so every conduit in ONE frame binds its own
+    version of `spell`, named for the conduit. The binding_name defaults to the
+    (unique) conduit name.
 
     Returns the (spellbook, conduit) pair so the caller can clean both up.
     """
     book = _make_book(frame_name)
     book.bind(
-        spell=spell,
+        spell=version_of(spell, conduit_name=name),
         existence=existence,
         permissions="create",
         binding_name=binding_name or name,

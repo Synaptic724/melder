@@ -69,7 +69,7 @@ class InspectorUtility:
         Return the complete repr() of an object with every CPython memory address removed.
 
         Purpose:
-            Give the bind fingerprint a representation that is identical in every process for the
+            Give the code digest behind a spell_id a representation that is identical in every process for the
             same object content. CPython's default reprs embed the object's address
             (`<function f at 0x...>`, `<C object at 0x...>`, `functools.partial(<function f at
             0x...>, ...)`), which differs between processes and would give the same spell a new id

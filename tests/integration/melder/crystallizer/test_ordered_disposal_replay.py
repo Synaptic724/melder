@@ -11,7 +11,6 @@ from melder.aether.aether_utility_system import AetherUtilitySystem
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.spellbook.bind.bind import Bind
 from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
-from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spellbook import Spellbook
 from melder.crystallizer.configuration.crystallizer_configuration import CrystallizerConfiguration
 from melder.crystallizer.crystal_loader_system.restore_engine import RestoreEngine
@@ -32,6 +31,19 @@ from tests.integration.melder.crystallizer.test_crystallizer_restore_integration
 pytestmark = pytest.mark.usefixtures("reset_world_singletons", "cache_root")
 
 
+class StagedDisposalService(OrderedDisposalService):
+    """
+    The second version of OrderedDisposalService that the captured index stages.
+
+    One object is one spell (S1 of EPIC-2026-10-18-spell_identity_is_the_code): staging the service itself again
+    is refused, so the staged member is new code - one class-level value more. It is bound under the service's
+    address (spellframe "OrderedDisposalService"), inherits every disposal method, and is defined at module
+    level so restore and graft can import it by its module and qualname.
+    """
+
+    version = 2
+
+
 @contextmanager
 def _recording_book(names: list[str], priority: bool, frame: str) -> Iterator[Spellbook]:
     """Use the existing recorded-world setup: freeze rich policy before binds, record it at conjure."""
@@ -47,7 +59,10 @@ def _recording_book(names: list[str], priority: bool, frame: str) -> Iterator[Sp
 
 
 def _capture_world(priority: bool) -> tuple[dict[str, Any], str]:
-    """Capture and seal two distinct bindings, then release their source book before replay."""
+    """
+    Capture and seal two members of one index - the service and its staged second version - then release
+    their source book before replay.
+    """
     crystallizer = _activate_crystallizer()
     with _recording_book(["flush", "missing", "flush"], priority, "disposal-source") as book:
         selected_id = book.bind(
@@ -58,8 +73,8 @@ def _capture_world(priority: bool) -> tuple[dict[str, Any], str]:
         assert selected is not None
         book.conjure(dynamic=True, name="disposal-root")
         parked_id = book.bind_inactive(
-            spell=OrderedDisposalService, spell_index=selected.spell_index,
-            existence="many", disposal_method_names=["close", "flush"],
+            spell=StagedDisposalService, spell_index=selected.spell_index,
+            existence="many", spellframe="OrderedDisposalService", disposal_method_names=["close", "flush"],
         )
         parked = book._get_owned_spell(parked_id)
         assert parked is not None
@@ -72,14 +87,13 @@ def _capture_world(priority: bool) -> tuple[dict[str, Any], str]:
     return record, checkpoint_id
 
 
-def _expected_identity(names: list[str]) -> str:
-    """Compute the expected content ID from an explicit expected final order, without book policy."""
-    return Bind.spell_id_inspector(
-        OrderedDisposalService,
-        spell_name="OrderedDisposalService",
-        existence=Existence.many,
-        disposal_method_names=names,
-    )
+def _expected_identity(target: type) -> str:
+    """
+    Return the spell_id a bind gives `target`: the SHA256 of its code (S1 of
+    EPIC-2026-10-18-spell_identity_is_the_code). No disposal order or Book policy enters it; the resolved order
+    is the binding's, recorded in its binding hash.
+    """
+    return Bind.spell_id_inspector(target)
 
 
 def _fresh_recorder(parallel: bool) -> Crystallizer:
@@ -108,14 +122,15 @@ def test_crystal_and_json_preserve_distinct_member_orders(priority: bool) -> Non
     parked_names = ["flush", "close"] if priority else ["close", "flush"]
     assert record["members"][selected_id]["payload"]["disposal_method_names"] == selected_names
     assert record["members"][parked_id]["payload"]["disposal_method_names"] == parked_names
-    assert selected_id == _expected_identity(selected_names)
-    assert parked_id == _expected_identity(parked_names)
+    assert selected_id == _expected_identity(OrderedDisposalService)
+    assert parked_id == _expected_identity(StagedDisposalService)
 
 
 @pytest.mark.parametrize("priority", [False, True])
 @pytest.mark.parametrize("parallel", [False, True])
 def test_cached_restore_preserves_order_and_actual_cleanup(priority: bool, parallel: bool) -> None:
-    """Real cache reload restores active/staged identities and cleanup under both loader drivers."""
+    """Real cache reload restores active/staged identities, their bindings unchanged, and cleanup under both
+    loader drivers."""
     record, checkpoint_id = _capture_world(priority)
     rebooted = _fresh_recorder(parallel)
     rebooted.reload_cached_checkpoint(checkpoint_id)
@@ -124,6 +139,7 @@ def test_cached_restore_preserves_order_and_actual_cleanup(priority: bool, paral
     assert report["built_counts"]["spell_active"] == 1
     assert report["built_counts"]["spell_staged"] == 1
     assert not [row for row in report["shortfalls"] if row["kind"] in ("spell_crystal", "spell_index")]
+    assert report["binding_changes"] == {}
     conduit = Aether().get_root_conduit_by_name("disposal-root", "disposal-source")
     selected_id = record["index_payload"]["selected_spell_id"]
     parked_id = next(member for member in record["members"] if member != selected_id)
@@ -152,7 +168,10 @@ def test_graft_preserves_members_and_receiving_book_order(
         changed_host: bool,
         mode: str,
 ) -> None:
-    """Fresh/merge grafts follow new binding IDs, with explicit selection adoption and ordered cleanup."""
+    """
+    Fresh/merge grafts keep the members' spell_ids and take the receiving Book's disposal order, with explicit
+    selection adoption and ordered cleanup.
+    """
     record, _checkpoint_id = _capture_world(priority)
     host_priority = not priority if changed_host else priority
     host_names = ["close", "flush"] if changed_host else ["flush"]
@@ -179,8 +198,8 @@ def test_graft_preserves_members_and_receiving_book_order(
         assert report["shortfalls"] == []
         assert report["members_bound"] == (1 if mode == "fresh" else 0)
         assert report["members_parked"] == (1 if mode == "fresh" else 2)
-        selected_id = _expected_identity(selected_names)
-        parked_id = _expected_identity(parked_names)
+        selected_id = _expected_identity(OrderedDisposalService)
+        parked_id = _expected_identity(StagedDisposalService)
         selected = host._get_owned_spell(selected_id)
         parked = host._get_owned_spell(parked_id)
         assert selected is not None and parked is not None
@@ -211,8 +230,14 @@ def test_graft_preserves_members_and_receiving_book_order(
 
 
 @pytest.mark.parametrize("priority", [False, True])
-def test_restore_changed_ids_preserves_anchor_and_exact_selected_member(priority: bool) -> None:
-    """Recorded names from another policy are rebound coherently without stale anchor or selection joins."""
+def test_restore_under_another_policy_keeps_ids_and_exact_selected_member(priority: bool) -> None:
+    """
+    Members recorded under another disposal policy keep their spell_ids and report their changed bindings.
+
+    The spell_id is the member's code, so the receiving policy changes no identity: nothing is translated, the
+    anchor and the requested selection join the recorded ids, and each member's binding hash follows the new
+    disposal order - reported, recorded beside live.
+    """
     record, checkpoint_id = _capture_world(not priority)
     crystallizer = Crystallizer()
     window = json.loads(json.dumps(crystallizer.checkpoint_replay_data(checkpoint_id)))
@@ -234,9 +259,17 @@ def test_restore_changed_ids_preserves_anchor_and_exact_selected_member(priority
             assert result["built_counts"]["selection_notch"] == 1
             selected_names = ["flush", "stop", "close"] if priority else ["stop", "close", "flush"]
             parked_names = ["flush", "close"] if priority else ["close", "flush"]
-            assert result["identity_map"][selected_recorded] == _expected_identity(selected_names)
-            assert result["identity_map"][parked_recorded] == _expected_identity(parked_names)
+            assert selected_recorded not in result["identity_map"]
+            assert parked_recorded not in result["identity_map"]
+            assert set(result["binding_changes"]) == {selected_recorded, parked_recorded}
             conduit = Aether().get_root_conduit_by_name("disposal-root", "disposal-source")
+            for recorded_id, names in ((selected_recorded, selected_names), (parked_recorded, parked_names)):
+                member = conduit._spellbook._get_owned_spell(recorded_id)
+                assert member is not None
+                assert member.disposal_method_names == names
+                change = result["binding_changes"][recorded_id]
+                assert change["recorded"] != change["live"]
+                assert change["live"] == member.binding_hash
             actual = conduit.meld("OrderedDisposalService")
             conduit.permanent_cleanup()
             assert actual.calls == parked_names
@@ -270,14 +303,17 @@ def test_merge_does_not_adopt_a_skipped_resident_selection(priority: bool) -> No
         assert {row["reason"] for row in report["shortfalls"]} == {
             "member_resident_in_host_skipped", "recorded_selection_not_grafted_not_adopted",
         }
-        parked_id = _expected_identity(["flush", "close"] if priority else ["close", "flush"])
+        parked_id = _expected_identity(StagedDisposalService)
         parked = host._get_owned_spell(parked_id)
         assert parked is not None
         host.cleanup_spell(spell=parked)
 
 
-def test_changed_id_restore_regrants_contract_details() -> None:
-    """Contract replay follows the translated owner binding and preserves borrowed-instance cleanup."""
+def test_restore_under_another_policy_regrants_contract_details() -> None:
+    """
+    Contract replay regrants the owner's spell under another disposal policy: its spell_id is kept, its changed
+    binding reported, and the borrowed instance disposes in the receiving order.
+    """
     crystallizer = _activate_crystallizer()
     with _recording_book(["flush"], False, "disposal-grant") as owner:
         with _recording_book([], False, "disposal-grant") as borrower:
@@ -303,12 +339,15 @@ def test_changed_id_restore_regrants_contract_details() -> None:
         report = engine.restore()
         try:
             result = report.describe()
-            expected_id = _expected_identity(["flush", "stop", "close"])
-            assert result["identity_map"][recorded_id] == expected_id
+            assert recorded_id == _expected_identity(OrderedDisposalService)
+            assert recorded_id not in result["identity_map"]
+            assert set(result["binding_changes"]) == {recorded_id}
+            change = result["binding_changes"][recorded_id]
+            assert change["recorded"] != change["live"]
             assert result["built_counts"]["contract_detail"] >= 1
             assert not [row for row in result["shortfalls"] if row["kind"] == "contract"]
             restored = Aether().get_root_conduit_by_name("borrower", "disposal-grant")
-            instance = restored.meld(spell_id=expected_id)
+            instance = restored.meld(spell_id=recorded_id)
             restored.permanent_cleanup()
             assert instance.calls == ["flush", "stop", "close"]
         finally:

@@ -14,7 +14,6 @@ from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.spellbook.bind.bind import Bind
 from melder.aether.spellbook.bind.scan import scan_bind
-from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spell import Spell
 from melder.aether.spellbook.spellbinder import SpellBinder
 from melder.aether.spellbook.spellbook import Spellbook
@@ -108,17 +107,28 @@ def test_append_clear_and_register_again_preserves_order(stage: str) -> None:
         """Append the second callback's marker without changing the subject."""
         calls.append("second")
 
+    # One object is one spell (S1 of EPIC-2026-10-18-spell_identity_is_the_code), so each registration binds a
+    # class of its own; the binding names stay as they were.
+    class FirstTarget:
+        """The first registration's target."""
+
+    class SecondTarget:
+        """The second registration's target, bound after the hooks were cleared."""
+
+    class ThirdTarget:
+        """The third registration's target, bound after a hook was registered again."""
+
     try:
         book.add_bind_hooks(**{stage: [first]})
         book.add_bind_hooks(**{stage: [second, first]})
-        book.bind(spell=HookService, existence="unique", binding_name="one")
+        book.bind(spell=FirstTarget, existence="unique", binding_name="one")
         assert calls == ["first", "second", "first"]
         book.clear_bind_hooks()
         book.clear_bind_hooks()
-        book.bind(spell=HookService, existence="unique", binding_name="two")
+        book.bind(spell=SecondTarget, existence="unique", binding_name="two")
         assert calls == ["first", "second", "first"]
         book.add_bind_hooks(**{stage: [second]})
-        book.bind(spell=HookService, existence="unique", binding_name="three")
+        book.bind(spell=ThirdTarget, existence="unique", binding_name="three")
         assert calls == ["first", "second", "first", "second"]
     finally:
         book.cleanup()
@@ -465,9 +475,7 @@ def test_bind_activation_preserves_native_hash_and_existing_creation_hook_preced
         registered.append(spell)
 
     try:
-        expected_id = Bind.spell_id_inspector(
-            HookService, spell_name="HookService", existence=Existence.unique,
-        )
+        expected_id = Bind.spell_id_inspector(HookService)
         book.add_bind_hooks(activation=[activation])
         spell_id = book.bind(
             spell=HookService, existence="unique", activation_hooks=[created.append],

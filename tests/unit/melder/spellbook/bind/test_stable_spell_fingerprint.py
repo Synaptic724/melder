@@ -1,11 +1,14 @@
 """
-Regression contracts: bind fingerprints never depend on memory addresses.
+Regression contracts: a spell_id never depends on a memory address.
 
 CPython's default reprs embed an object's address (`<function f at 0x...>`, `<C object at 0x...>`), which
-differs between processes. The bind fingerprint hashed those reprs (and signature text, where a default such
-as `object()` renders its address), so function, lambda, method, partial, callable-instance and default-repr
-instance spells got a new id in every process. Two content-identical objects created in one process differ
-only by address, which makes them a deterministic stand-in for "the same object in another process".
+differs between processes. The bind fingerprint once hashed those reprs (and signature text, where a default
+such as `object()` renders its address), so function, lambda, method, partial, callable-instance and
+default-repr instance spells got a new id in every process (fixed 2026-09-26). Since S1 of
+EPIC-2026-10-18-spell_identity_is_the_code the spell_id is the target's code (`SpellCodeDigest`): it reads an
+object by its type and data and keeps the address-free repr only where no Python-visible state exists. Two
+content-identical objects created in one process differ only by address, which makes them a deterministic
+stand-in for "the same object in another process".
 """
 
 import functools
@@ -15,14 +18,7 @@ from typing import Any, Callable, Tuple
 import pytest
 
 from melder.aether.spellbook.bind.bind import Bind
-from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.inspector_utility import InspectorUtility
-from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile import (
-    CallableBindingProfile,
-    CallableParameterBindingSummary,
-    InstanceBindingProfile,
-    SpellBindingKind,
-)
 from melder.aether.spellbook.spell_compiler.spell_examiner.strategies.binding_profile_strategy import (
     BindingProfileStrategy,
 )
@@ -135,13 +131,14 @@ def _twins(shape: str) -> Tuple[Any, Any]:
 
 
 def _spell_id(target: Any) -> str:
-    """Fingerprint one candidate exactly as the binding pipeline would (unique existence)."""
-    return Bind.spell_id_inspector(target, existence=Existence.unique)
+    """The spell_id one candidate is bound under: the inspector answers what bind gives (its code digest)."""
+    return Bind.spell_id_inspector(target)
 
 
 def test_stable_repr_removes_every_memory_address() -> None:
     """
-    Purpose: The fingerprint helper removes CPython's " at 0x<hex>" fragments, nested ones included.
+    Purpose: The address-free repr (the code digest's text for an object it reads by repr) removes
+    CPython's " at 0x<hex>" fragments, nested ones included.
     Contract: No address survives; the surrounding text is kept.
     """
     partial_text = InspectorUtility.stable_repr(functools.partial(_make_engine, size=4))
@@ -155,7 +152,7 @@ def test_stable_repr_removes_every_memory_address() -> None:
 
 def test_stable_repr_keeps_the_full_text_and_custom_reprs() -> None:
     """
-    Purpose: The fingerprint text is not the truncated display text.
+    Purpose: The address-free repr is not the truncated display text.
     Contract: Long reprs are kept whole; custom reprs without addresses are unchanged.
     """
     assert InspectorUtility.stable_repr(_LongRepr()) == repr(_LongRepr())
@@ -187,7 +184,7 @@ def test_stable_repr_of_a_failing_repr_returns_the_placeholder() -> None:
 def test_content_identical_objects_share_one_spell_id(shape: str) -> None:
     """
     Purpose: Regression for per-process spell ids of address-bearing spells.
-    Contract: Two distinct objects with identical fingerprint content get the same id.
+    Contract: Two distinct objects with identical code and data get the same id.
     """
     first, second = _twins(shape)
 
@@ -206,10 +203,11 @@ def test_content_differences_still_change_the_spell_id() -> None:
     assert _spell_id(_Settings()) != _spell_id(_NamedSettings("prod"))
 
 
-def test_strategy_keeps_display_reprs_and_adds_fingerprint_text() -> None:
+def test_strategy_keeps_display_reprs_with_their_addresses() -> None:
     """
-    Purpose: Display reprs are unchanged; the fingerprint text is carried beside them.
-    Contract: repr_string/default_repr keep the address; fingerprint fields have none.
+    Purpose: Display reprs are unchanged, and no profile text feeds the spell_id any more.
+    Contract: repr_string and default_repr keep the address (S1 removed the profile's fingerprint text fields;
+    the code digest reads the target itself).
     """
     strategy = BindingProfileStrategy()
     callable_profile = strategy.build_profile(_make_with_marker)
@@ -217,41 +215,6 @@ def test_strategy_keeps_display_reprs_and_adds_fingerprint_text() -> None:
     marker = callable_profile.parameters[0]
 
     assert " at 0x" in callable_profile.repr_string
-    assert callable_profile.fingerprint_repr == f"<function {_make_with_marker.__qualname__}>"
     assert " at 0x" in marker.default_repr
-    assert marker.default_fingerprint_repr == "<object object>"
     assert " at 0x" in instance_profile.repr_string
-    assert " at 0x" not in instance_profile.fingerprint_repr
 
-
-def test_profiles_without_fingerprint_text_hash_address_free_display_text() -> None:
-    """
-    Purpose: Profiles built directly (no strategy) fall back to the display text minus addresses.
-    Contract: Profiles differing only by addresses fingerprint identically.
-    """
-
-    def build(address: str) -> CallableBindingProfile:
-        return CallableBindingProfile(
-            kind=SpellBindingKind.CALLABLE,
-            original_object=_make_engine,
-            name="f",
-            qualname="f",
-            module="mod",
-            object_id=1,
-            type_name="function",
-            repr_string=f"<function f at {address}>",
-            signature=f"(marker=<object object at {address}>)",
-            parameters=[CallableParameterBindingSummary("marker", "POSITIONAL_OR_KEYWORD", f"<object object at {address}>", None)],
-        )
-
-    def instance(address: str) -> InstanceBindingProfile:
-        return InstanceBindingProfile(
-            kind=SpellBindingKind.INSTANCE,
-            original_object=object(),
-            type_name="T",
-            module="mod",
-            repr_string=f"<mod.T object at {address}>",
-        )
-
-    assert Bind.sha256_profile(build("0x7f00aa")) == Bind.sha256_profile(build("0x1b2c3d4e5f"))
-    assert Bind.sha256_profile(instance("0x7f00aa")) == Bind.sha256_profile(instance("0x1b2c3d4e5f"))

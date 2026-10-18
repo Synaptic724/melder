@@ -412,8 +412,9 @@ and `src/melder/aether/spellbook/spellbook.py:Spellbook.bind_inactive`.
 
 Managed bind options (2026-10-15, 0.2.8242-0.2.8243): `bind` and `bind_inactive` take the keyword-only
 `managed_spell_mode`, `managed_spell_limit`, `managed_spell_timeout_seconds` and `managed_spell_reset_methods` (all
-None by default) and pass them to Bind, which normalizes, refuses and fingerprints them (Component: Binding
-Pipeline); the Conduit facades forward them. Owner stamping - `define_conduit_into_spells` at conjure, the
+None by default) and pass them to Bind, which normalizes and refuses them; they are binding-manifest fields since
+0.2.8258, no part of the spell_id (Component: Binding Pipeline); the Conduit facades forward them. Owner
+stamping - `define_conduit_into_spells` at conjure, the
 post-conjure bind paths, an ownership transfer's stamps - composes a managed version's pool in the root store
 through `Spell._add_owned_conduit`.
 EVIDENCE: `src/melder/aether/spellbook/spellbook.py:Spellbook.bind`, `Spellbook.bind_inactive` and
@@ -510,6 +511,20 @@ Release-bound creation cache (2026-09-24):
   spell_id moved once and a bundle keys its payloads by spell_id, so such a bundle could only miss; the release change
   already cold-starts it, and the bump records why, as the owner asked ("you gotta notch the version for the cache").
   EVIDENCE: `src/melder/utilities/caching_system/caching_system.py:CachingSystem.CACHE_VERSION_HISTORY`.
+- Generation 23 (2026-10-18, `binding_manifest_keys`, 0.2.8258): the envelope is unchanged; the structural key gains
+  each spell's binding hash (`StructuralSnapshot.PAYLOAD_FORMAT` 2, `{format, spell_id, binding_hash,
+  annotation_refs}`; `payload_well_formed` refuses format 1) and the world stamp hashes every pool spell and every
+  borrowed spell as `<spell_id>=<binding_hash>`. The spell_id became the object's code at 0.2.8257 and no longer
+  covers the binding, so a binding changed under one spell_id - existence, disposal names, address, spellframe,
+  resolvable or managed settings - misses both tiers for the Book, as a changed spell_id did; a repeat world is a
+  byte-identical full hit, and a generation-22 bundle is cold once. Residual (RISK, low): a package staged at a meld
+  for an id the bundle lacked - only after that spell's conjure-end staging failed, which is logged - is replayed by
+  a later full hit of the stamped world even when the spell was rebound in between; the restaging that follows any
+  miss replaces it.
+  EVIDENCE:
+  `src/melder/aether/spellbook/spell_compiler/structural_snapshot/structural_snapshot.py:StructuralSnapshot.structural_key`,
+  `StructuralSnapshot.world_stamp`, `StructuralSnapshot.payload_well_formed` and
+  `src/melder/utilities/caching_system/caching_system.py:CachingSystem.CACHE_VERSION_HISTORY`.
 EVIDENCE: `src/melder/utilities/caching_system/caching_system.py:CachingSystem`,
 `src/melder/aether/spellbook/spellbook.py:Spellbook._emit_cache_file_if_required` and
 `src/melder/aether/spellbook/spellbook_creation_system.py:SpellbookCreationSystem._build_conjure_cache_state`.
@@ -641,9 +656,9 @@ Concurrency/Threading:
     ordering on each other". They do. That wording invited exactly the inversion
     described above.
   EVIDENCE:
-  - src/melder/aether/spellbook/spellbook.py:7596-7617 (`_run_structural_phases`; the caller-held-lock
+  - src/melder/aether/spellbook/spellbook.py:7606-7627 (`_run_structural_phases`; the caller-held-lock
     precondition is stated at :7423; remeasured 2026-10-16 at 0.2.8248)
-  - src/melder/aether/spellbook/spellbook_creation_system.py:2151 (the only
+  - src/melder/aether/spellbook/spellbook_creation_system.py:2157 (the only
     `_phase_run_lock` acquisition, reached from that path)
 - `_run_structural_phases` documents a CALLER-HELD precondition rather than
   taking a lock itself: the caller must hold the Spellbook lock for
@@ -651,7 +666,7 @@ Concurrency/Threading:
   which is why it is written down here.
   EVIDENCE:
   - src/melder/aether/spellbook/spellbook.py:288 (`_phase_run_lock` created)
-  - src/melder/aether/spellbook/spellbook_creation_system.py:2123-2151
+  - src/melder/aether/spellbook/spellbook_creation_system.py:2129-2157
     (`_run_scheduler_with_phases` - the only acquisition, with its rationale)
   - src/melder/aether/spellbook/spellbook.py:1119-1130 (the cache-emit flag re-checked and set under `_lock`)
 - `find_spell_by_spell_id` (`find_spell_by_id` until 0.2.8253) is lock-free on purpose (0.2.8229): it reads
@@ -697,6 +712,10 @@ Concurrency/Threading:
   `list(frame._conduits.values())`, which root registration writes under the frame lock, and every
   `Aether._check_for_spell` runs with no lock held, because those take frame locks and frame teardown takes
   frame -> conduit -> Book.
+- `inspect_spell`'s stage 3 re-derives the object's spell_id with `Bind.spell_id_inspector(spell)` - the target's
+  code digest, equal to bind's id whatever binding it was bound with - and confirms it with
+  `Aether._check_for_spell`, so it finds any registered object by its code (0.2.8257; it rarely matched while the id
+  hashed the bind call).
 - `cleanup_and_remove_spell` re-checks `_cleaned` under `_lock` (0.2.8233): its `check_cleaned()` runs before the
   lock, so a call can wait on `_lock` while `cleanup` tears the Book down and deletes the maps. Teardown cleans every
   active spell, so a Spell the teardown cleaned returns; anything else (an id, a parked or foreign Spell) raises the
@@ -771,6 +790,11 @@ Failure Modes:
   (`_binds_before_configuration_count`). Since 0.2.8211 the refusal leaves the frame posture as it was; before,
   it left an unsettled frame frozen dynamic, so later conjures there - automatic ones included - were refused.
 - RuntimeError for duplicate spell ids or lookup key collisions.
+  Since 0.2.8257 a duplicate spell id is one object registered twice (the one-object rule): bind and bind_inactive
+  raise "Spell ID collision detected: this object is already registered as spell_id <id>. ...", naming the rule and
+  the remedies (share it; `cleanup_spell` and bind again to change its binding; a changed method is a new spell_id
+  to stage and notch), and conjure's integrity check raises "[SPELLBOOK] Conjure refused: ... A spell_id is the
+  SHA256 of the registered object's code ..." for an object another Book of the frame already bound.
 - RuntimeError from the SpellIndex multi-member seams when their ownership /
   activity preconditions are violated: notching a spell that is not parked in
   `_inactive_spells`; adding onto an index this spellbook does not own; moving
@@ -790,7 +814,7 @@ Observability:
   There is no info/debug narration of the happy path; absence of log output is
   the normal state, not a sign that nothing ran.
   EVIDENCE:
-  - src/melder/aether/spellbook/spellbook.py:6077-6082 (`Spellbook._initialize_configuration`, the
+  - src/melder/aether/spellbook/spellbook.py:6087-6092 (`Spellbook._initialize_configuration`, the
     configuration-mismatch branch; remeasured 2026-10-16 at 0.2.8248)
 
 Extension Points:
@@ -828,8 +852,52 @@ Text is preserved as authored; only its location changed.
 Purpose:
 - Convert user objects into registered spell metadata with stable index identities.
 
+Spell identity and the binding manifest (2026-10-18, 0.2.8257-0.2.8258; S1 and S2 of
+EPIC-2026-10-18-spell_identity_is_the_code, on the owner's direction - "the bind signature shouldn't impact the
+spells identity" - and his calls): `Bind` owns one `SpellCodeDigest` (`_spell_code_digest`, built in `__init__`,
+cleaned and deleted in `cleanup` under the lock), and `_bind_logic` takes `spell_id =
+self._spell_code_digest.spell_id(spell)` where it called `sha256_profile(...)`, at the same point and under the same
+lock. The binding profile is still built - validation, the spell type, disposal matching and Nexus publication read
+it - and is no longer hashed; `sha256_profile`, `_fingerprint_repr_text` and `_fingerprint_default_text` are
+removed. The id is the SHA256 of `v5-code`, `sys.implementation.cache_tag` and the target's encoding: a class is its
+module, qualname, metaclass and bases and, per class of its MRO, its own namespace digest (standard-library classes
+named, installed third-party classes named by distribution version - decision B - any other digested); a namespace
+is every entry but interpreter bookkeeping (`__doc__`, `__dict__`, `__weakref__`, `__firstlineno__`,
+`__static_attributes__`, `__annotations_cache__`; `__annotate_func__` while None), sorted; a function is its code
+digest (the deoptimized instruction stream with the constants it loads, in first-load order, the argument counts,
+flags without CO_HAS_DOCSTRING, the name tables and the exception table - no line numbers, docstring or file path),
+its defaults, its annotate function, its closure values and type parameters; an existing object of application code
+with Python-visible state is its class's digest plus its slots and `__dict__` by value; a bound method, partial,
+enum member, scalar, container or builtin is encoded as a value; an object of an installed third-party class is its
+type, distribution version and address-free repr; anything else its type and address-free repr. So a method body, a
+parameter, a default, a class-level value, a decorator's code, a captured value, a renamed local or a base class's
+code moves the id, and a docstring, a comment, a blank line, member order or specialization never does. Code-object
+digests are memoized per digest, weakly keyed; classes and objects are encoded at each call, as they are then. The
+digest never raises for a target (an unknown value is `opaque:<type>`, data nested past the recursion limit falls
+back to the repr rule) and runs no target code but `repr()` of a target with no Python-visible state, of a value
+type's object or of an installed third-party object. `spell_id_inspector(spell)` takes the target alone (its binding
+keywords and managed checks are removed) and builds a fresh digest per call. The bind call becomes the Spell's
+binding manifest: `Spell.__init__` builds `BindingManifest.build(...)` last from its own arguments - the address
+keys, the spellframe as text and its kind, the binding name, the existence, the resolved disposal names in order,
+resolvable and the four managed settings - and `binding_hash` is the SHA256 of `v1-binding` and one
+`<field>=<repr(value)>` line per field; permissions, hooks, metadata and the frame are not in it. The manifest is an
+immutable value record: `Spell.binding_manifest` and `Spell.binding_hash` survive cleanup like `spell_id`, and
+`BindingManifest.describe()` gives the fields and the hash as plain data. The creation cache keys on it (Spellbook
+Core, generation 23) and the SpellCrystal records it (Crystallizer, record 4.3.0). With identity the code, the
+Book's duplicate-id refusals are the one-object rule (Spellbook Core): one object is one spell, strictly for now (S6
+parked). Cost: +37 to +55 us a bind (the gauntlet's 29 classes; 200 generated classes), conjure and melds unchanged.
+Open: a rebind under another slotted existence keeps its spell_id and its first meld can return the removed
+definition's slotted object (S3); a record made before 0.2.8257 that holds one object twice fails at its second
+replayed bind (S5).
+EVIDENCE: `src/melder/aether/spellbook/bind/spell_code_digest.py:SpellCodeDigest.spell_id`,
+`SpellCodeDigest._target_encoding`, `SpellCodeDigest._class_digest`, `SpellCodeDigest._namespace_digest`,
+`SpellCodeDigest._function_digest`, `SpellCodeDigest._code_digest`,
+`src/melder/aether/spellbook/bind/bind.py:Bind.__init__`, `Bind.cleanup`, `Bind._bind_logic`,
+`Bind.spell_id_inspector`, `src/melder/aether/spellbook/bind/binding_manifest.py:BindingManifest.build`,
+`BindingManifest.describe` and `src/melder/aether/spellbook/spell.py:Spell.binding_manifest`, `Spell.binding_hash`.
+
 Managed options (2026-10-15, 0.2.8242): `Bind._normalize_managed_options` runs once, after the disposal names and
-before the fingerprint. Another existence takes no `managed_spell_*` option (ValueError); a managed binding is a class
+before the spell_id. Another existence takes no `managed_spell_*` option (ValueError); a managed binding is a class
 (TypeError otherwise); mode None means elastic, else a `ManagedSpellMode` member or its name; the limit is an int >= 1
 (elastic defaults to 256, limited_quantity and queue require one, a bool is refused); a timeout only for queue, required
 there, finite and > 0; reset names are a list or tuple of non-empty strings naming callable attributes of the class,
@@ -839,7 +907,9 @@ binding exactly as any other - binding profile, spell name, spellframe, binding 
 names, resolvable - so one class bound managed at one address with one disposal list has one spell_id whatever its
 settings, and every other spell id is byte-identical. From 0.2.8242 to 0.2.8253 it appended a last part
 `managed:<mode>:<limit>:<timeout>:<names>` (`_managed_fingerprint_part`, removed), so every managed spell_id moved
-once. `spell_id_inspector` normalizes the four as bind does (it refuses what bind refuses) and hashes without them.
+once. `spell_id_inspector` normalized the four as bind does and hashed without them. Since 0.2.8257 no bind input is
+part of the spell_id (`sha256_profile` is removed and `spell_id_inspector` takes the target alone), and since 0.2.8258
+the four are binding-manifest fields (Spell identity, above).
 A settings-only `bind_inactive` onto the spell's SpellIndex meets the collision refusal; a settings change is
 `cleanup_spell`, then `bind`, whose pool takes the new settings (Component: Managed Spell Pools). The Spell keeps
 the normalized values behind
@@ -848,8 +918,8 @@ read-only properties (`managed_spell_mode`, `managed_spell_limit`, `managed_spel
 target options (28 reserved metadata keys) and `SpellBinder.as_managed_spell_quantity` is the fluent form.
 `SpellIndex._is_selected_unless_cleaned(spell_id)` answers the release registry's selected-version question without
 raising on a cleaned index (0.2.8244).
-EVIDENCE: `src/melder/aether/spellbook/bind/bind.py:Bind._normalize_managed_options`, `Bind.sha256_profile`,
-`Bind.spell_id_inspector`, `Bind._bind_logic`,
+EVIDENCE: `src/melder/aether/spellbook/bind/bind.py:Bind._normalize_managed_options`,
+`Bind.sha256_profile` (until 0.2.8257), `Bind.spell_id_inspector`, `Bind._bind_logic`,
 `src/melder/aether/spellbook/spell.py:Spell.managed_spell_mode`, `src/melder/aether/spellbook/bind/scan.py:scan_bind`,
 `src/melder/aether/spellbook/spellbinder.py:SpellBinder.as_managed_spell_quantity` and
 `src/melder/aether/spellbook/bind/spell_index.py:SpellIndex._is_selected_unless_cleaned`.
@@ -865,8 +935,8 @@ Spellframe kind (2026-10-04, 0.2.8222):
   was accepted as a frame and matched by name.
 - The Spell carries `spellframe_kind: SpellframeKind` and `implemented_protocols: tuple[type, ...]` (the
   Protocol the spell was structurally checked against, or `()`), set from the classification; both survive
-  `cleanup()` as identity data. Step 4's member check runs only for `contract`. The fingerprint is unchanged -
-  the kind is derived from the frame, not hashed.
+  `cleanup()` as identity data. Step 4's member check runs only for `contract`. The fingerprint was unchanged -
+  the kind is derived from the frame, not hashed; since 0.2.8258 it is a binding-manifest field.
 - EVIDENCE: `src/melder/aether/spellbook/bind/bind.py:Bind._classify_spellframe`, `Bind._bind_logic`,
   `src/melder/aether/spellbook/spell.py:Spell.__init__`,
   `src/melder/aether/spellbook/spellframe_kind/spellframe_kind.py:SpellframeKind` and
@@ -878,8 +948,9 @@ appending; duplicates retain their registration order. clear_hooks affects futur
 nested binds entered after an update. Current operations retain their previous set. Configuration
 seeds are captured once; callbacks are borrowed and are released without disposal during teardown.
 
-Pre receives the exact target before reflection. Native policy/profile/fingerprint construction
-creates the Spell, then activation receives it before profile completion. Book publishes an active
+Pre receives the exact target before reflection. Native policy, profile and spell_id construction (the
+code digest since 0.2.8257) creates the Spell, then activation receives it before profile completion.
+Book publishes an active
 or parked binding before execute_post_hooks receives the same Spell and captured tuple. Callback
 return values are ignored; ordinary exceptions become HookExecutionError with phase/name/cause.
 Callbacks execute outside Bind's construction RLock. Registry replacement and marker refresh are
@@ -892,7 +963,8 @@ effects. Native identity rules and later application-object creation hooks remai
 EVIDENCE: `src/melder/aether/spellbook/bind/bind.py:Bind.capture_hooks`, `Bind._bind_logic`,
 `Bind._cleanup_unpublished_spell` and `src/melder/aether/spellbook/spellbook.py:Spellbook.bind`.
 
-Process-stable fingerprints (2026-09-26):
+Process-stable fingerprints (2026-09-26; SUPERSEDED at 0.2.8257 by Spell identity, above: `sha256_profile`,
+`fingerprint_repr` and `default_fingerprint_repr` are removed, and a function body moves its spell_id):
 - Bind.sha256_profile hashes no memory address. Callable, instance and other profiles carry
   `fingerprint_repr` (the full repr from InspectorUtility.stable_repr with every " at 0x<hex>" removed,
   never truncated) and each callable parameter carries `default_fingerprint_repr`; the callable signature
@@ -905,20 +977,21 @@ Process-stable fingerprints (2026-09-26):
 - Identity stays signature-shaped, as for classes: editing a function body keeps its id, and a second object
   with identical fingerprint content under the same binding metadata gets the same id, which Spellbook
   rejects as a collision (it already shared the lookup key).
-- EVIDENCE: `src/melder/aether/spellbook/bind/bind.py:Bind.sha256_profile`, `Bind._fingerprint_repr_text`,
-  `Bind._fingerprint_default_text`;
+- EVIDENCE (until 0.2.8257): `src/melder/aether/spellbook/bind/bind.py:Bind.sha256_profile`,
+  `Bind._fingerprint_repr_text`, `Bind._fingerprint_default_text`;
   `src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/inspector_utility.py:InspectorUtility.stable_repr`.
 
 Native resolution capability (S2 foundation, 2026-09-19):
 - Bind validates resolvable as a strict bool before reflection; independent hash/inspector calls do
-  the same. Omitted/True keep the v4-binding hash sequence unchanged; False changes only the domain
-  to v4-binding-non-resolvable. Method bodies remain outside existing class-version identity.
+  the same. Omitted/True kept the v4-binding hash sequence unchanged; False changed only the domain
+  to v4-binding-non-resolvable (until 0.2.8257: resolvable is a binding-manifest field since 0.2.8258, no
+  part of the spell_id, which reads method bodies).
 - Spell stores the value in a private field with a read-only resolvable property and removes it on
   cleanup. Metadata, active/parked state, permissions and compilation readiness remain independent.
 - False permits application Protocol definitions while preserving kernel/module, naming, lifetime
   and Protocol spellframe member checks. A different SHA does not bypass active signature uniqueness.
 - Compiler/runtime consumers honor the capability; Nexus publishes it and crystal replay preserves it.
-- EVIDENCE: `src/melder/aether/spellbook/bind/bind.py:Bind._bind_logic`, `Bind.sha256_profile`,
+- EVIDENCE: `src/melder/aether/spellbook/bind/bind.py:Bind._bind_logic`, `Bind.sha256_profile` (until 0.2.8257),
   `Bind.spell_id_inspector`; `src/melder/aether/spellbook/spell.py:Spell.resolvable`.
 
 Protocol admission for supplied values (2026-09-19):
@@ -939,20 +1012,24 @@ Ordered disposal contract (2026-09-05; inherited matching corrected 2026-09-24):
   and duplicate names occur once. Book names own overlaps in BOTH priority modes.
 - `enforce_priority_disposal_methods=False` places spell-only names before the complete book
   block; True places that block first. Each block retains its supplied order.
-- That resolved order participates in the bind SHA and is retained directly by Spell.
+- That resolved order participated in the bind SHA until 0.2.8257 and is a binding-manifest field since
+  0.2.8258; Spell retains it directly.
   The first bind does not configure subsequent binds; conjure does not rematch names.
 - Existing declared profile methods retain their eligibility. Unmatched non-dunder candidates
   inspect class namespaces in Python MRO order; the first declaration wins, including a non-callable
   shadow. Profile-excluded local members remain excluded. Raw descriptors are never invoked during
   this fallback, and metaclass-only members do not qualify as instance disposal methods.
 - Matching remains class-only; factory-returned objects and prebuilt-instance methods are excluded.
-  The shallow method_names profile is unchanged. Only a changed resolved disposal list changes the
-  disposal contribution to the fingerprint; unrelated inherited members do not change spell IDs.
+  The shallow method_names profile is unchanged. Until 0.2.8257 only a changed resolved disposal list changed
+  the disposal contribution to the fingerprint and unrelated inherited members did not change spell IDs;
+  since then the list moves the binding hash, never the spell_id, and a base class's code outside the
+  standard library is part of the spell_id.
 - EVIDENCE: `src/melder/aether/spellbook/bind/bind.py:Bind._bind_logic` and `Bind._matches_disposal_method`.
 
 Responsibilities:
 - Build binding profiles via SpellExaminer.
-- Compute fingerprints and create SpellIndex entries (the stable index that categorizes and targets spells).
+- Compute the spell_id - the target's code digest (`SpellCodeDigest`, 0.2.8257) - and create SpellIndex entries
+  (the stable index that categorizes and targets spells); every Spell builds its binding manifest (0.2.8258).
 - Determine canonical SpellType from binding profile + name/spellframe.
 - Enforce Protocol and module binding constraints.
 - Reject module targets and resolvable Protocol targets while allowing class,
@@ -974,15 +1051,17 @@ Outputs:
 - Nothing at all from the internal-registration guard on the success path: it
   returns `None` when the candidate is bindable and raises otherwise.
   EVIDENCE:
-  - src/melder/aether/spellbook/bind/bind.py:466-603 (`bind`, decorator,
+  - src/melder/aether/spellbook/bind/bind.py:474-611 (`bind`, decorator,
     `_bind_logic -> Spell`)
-  - src/melder/aether/spellbook/spellbook.py:5605-5621 (`Spellbook.bind
+  - src/melder/aether/spellbook/spellbook.py:5610-5626 (`Spellbook.bind
     -> str`)
-  - src/melder/aether/spellbook/bind/bind.py:66-110 (`assert_allowed`)
+  - src/melder/aether/spellbook/bind/bind.py:65-109 (`assert_allowed`)
 
 Owned State:
 - SpellIndex: immutable ULID index that holds the active selected spell; versions owned by MutationResearch.
-- Spell: metadata, hooks, dependency placeholders, ownership fields.
+- Spell: metadata, hooks, dependency placeholders, ownership fields, the binding manifest (`binding_manifest`,
+  `binding_hash`, 0.2.8258; value data kept after cleanup).
+- Bind: one `SpellCodeDigest` (`_spell_code_digest`, 0.2.8257), cleaned and deleted in `Bind.cleanup` under its lock.
 
 Lifecycle/Cleanup:
 - SpellIndex and Spell are Cleanable and null references on cleanup.
@@ -1032,6 +1111,9 @@ Failure Modes:
 - Incompatible Protocol declarations report the class or existing object, Protocol name and failing members.
 - ValueError for invalid bindings (existence rules, binding name conflicts).
 - ValueError if method/lambda spells are bound with non-unique existence.
+- RuntimeError "Spell ID collision detected: this object is already registered as spell_id <id>. ..." from
+  `Spellbook.bind` and `bind_inactive` for a second registration of one object, and "[SPELLBOOK] Conjure refused: ..."
+  for one another Book bound where spell_ids are unique (0.2.8257, the one-object rule; Spellbook Core).
 - RuntimeError "SpellIndex has already been cleaned." from `has_spell` on a cleaned index, also when the cleanup
   races the call (0.2.8230; that race raised AttributeError).
 - RuntimeError from a direct `Spell.cleanup()`, raised by `Spellbook.cleanup_and_remove_spell`: the spell is
@@ -1046,7 +1128,7 @@ Observability:
   CALLING CONTEXT string passed in at the call site, so a refusal identifies
   which pipeline stage rejected it rather than only what was rejected.
   EVIDENCE:
-  - src/melder/aether/spellbook/bind/bind.py:106-110
+  - src/melder/aether/spellbook/bind/bind.py:105-109
 
 Extension Points:
 - `SpellExaminer.register_profile_builder(profile_name, builder)` - a plain
@@ -1062,6 +1144,8 @@ Extension Points:
 
 Key Files (C1):
 - `src/melder/aether/spellbook/bind/bind.py`
+- `src/melder/aether/spellbook/bind/spell_code_digest.py`
+- `src/melder/aether/spellbook/bind/binding_manifest.py`
 - `src/melder/aether/spellbook/bind/spell_index.py`
 - `src/melder/aether/spellbook/spell.py`
 - `src/melder/aether/spellbook/spell_types/spell_types.py`
@@ -1081,9 +1165,10 @@ Binding flow (local spell):
 2) `Bind._bind_logic`:
    - Rejects modules and resolvable Protocol targets; validates the native capability bool.
    - Uses SpellExaminer to build a binding profile.
-   - Fingerprints the profile and constructs a SpellIndex.
+   - Takes the spell_id from the target's code (`SpellCodeDigest`; it fingerprinted the profile until 0.2.8257)
+     and constructs a SpellIndex.
    - Validates lifecycle policy, then Protocol members on class and existing-object targets.
-   - Creates a Spell with metadata (existence, permissions, spellframe).
+   - Creates a Spell with metadata (existence, permissions, spellframe) and its binding manifest (0.2.8258).
 3) Bind activation receives the constructed Spell, then its general profile is completed.
    Spellbook attaches application-object creation hooks and registers the spell into local maps.
 4) SpellSystemStates registers the lineage and marks it dirty.
@@ -1699,6 +1784,25 @@ EVIDENCE: `src/melder/crystallizer/crystals/spell_crystal.py:SpellCrystal.manage
 `src/melder/crystallizer/crystal_loader_system/restore_engine.py:RestoreEngine._bind_one_active` and
 `src/melder/crystallizer/persistence/record_version.py:RecordVersion`.
 
+Binding hash in the record (2026-10-18, 0.2.8258; S2 of EPIC-2026-10-18-spell_identity_is_the_code, on the owner's
+word): `SpellCrystal` captures `Spell.binding_hash` at bind (`binding_hash`; `describe()["binding_hash"]` for every
+spell; the slot deleted at cleanup). RecordVersion 4.2.0 -> 4.3.0 (minor: an additive key 4.2 readers ignore; a 4.2
+record carries none and is not compared). `RestoreEngine._bind_one_active` and `_bind_one_staged` call
+`_record_binding_change(custody_key, crystal, live_spell)` after their bind (the staged path finds its parked spell
+with `find_spell_by_spell_id`): a recorded hash that differs from the rebuilt spell's goes to
+`RestoreReport.record_binding_change`, and `RestoreReport.describe()["binding_changes"]` holds `{<custody key>:
+{"recorded": <hash>, "live": <hash>}}`, empty when every binding replayed as recorded - information only, never a
+shortfall or a raise: the receiving Book's policy is the rule. The report writes the dict under its lock (the
+parallel driver's units write from worker threads, each its own custody keys) and deletes it at cleanup. Since the
+spell_id is the code (0.2.8257), a receiving policy with another disposal order keeps the spell_id and moves the
+binding hash, so selections, parked members and contract grants resolve without translation; a spell whose spell_id
+moved (its code or the interpreter changed) maps through the identity map as before. A graft reports no binding
+change (it has no identity map). Until S5, a record made before 0.2.8257 that holds one object twice meets the
+one-object refusal at its second replayed bind and the all-or-nothing restore rolls back.
+EVIDENCE: `src/melder/crystallizer/crystals/spell_crystal.py:SpellCrystal.binding_hash`,
+`src/melder/crystallizer/crystal_loader_system/restore_engine.py:RestoreReport.record_binding_change`,
+`RestoreEngine._record_binding_change` and `src/melder/crystallizer/persistence/record_version.py:RecordVersion`.
+
 Named lesser structure (2026-09-23):
 - Dynamic named acquisition emits ConduitCrystal after actual parent attachment. Its detached
   configuration carries role, root, immediate parent and ordered lineage_ancestors values. Unnamed
@@ -1742,7 +1846,9 @@ Ordered capture/replay (2026-09-05):
 - Active/staged restore applies the receiving book's normal policy. Same-policy composition
   is idempotent for newly recorded ordered metadata.
 - Changed Spell SHAs use the existing RestoreReport translation map. Staged anchors, exact
-  selected members, and contract grants follow the actual rebuilt binding identities.
+  selected members, and contract grants follow the actual rebuilt binding identities. Since
+  0.2.8257-0.2.8258 the order moves the binding hash, never the spell_id; the restore reports it
+  (`binding_changes`) and the translation map holds only spells whose spell_id moved.
 - Fresh graft passes its new index to sibling parking. Merge forwards each member's names
   and adopts only a successfully grafted selection using its returned live ID.
 - Old sorted records cannot reveal original ordering that was already discarded.
@@ -4472,8 +4578,9 @@ Structural snapshot seam (2026-09-26): `spell_compiler/structural_snapshot/struc
 end and their classification and replay before the next conjure's structural run (details under Spellbook
 Core, generation 15). It contains no matching, validation or graph logic: replay calls the registry helpers
 phases 3-4 call. A spell without live bind-time requirements, a non-replayable pool (an object or spellframe
-with a custom `__eq__`), a changed world stamp or a malformed payload is a structural miss and regenerates
-through the unchanged phases. Parity contracts (bind after conjure, notch, remove, transfer, contract grant,
+with a custom `__eq__`), a changed world stamp or binding hash (0.2.8258) or a malformed payload is a structural
+miss and regenerates through the unchanged phases. Parity contracts (bind after conjure, notch, remove,
+transfer, contract grant,
 two processes, crystallizer restore) compare cold and hydrated worlds field by field.
 EVIDENCE: `src/melder/aether/spellbook/spell_compiler/structural_snapshot/structural_snapshot.py:StructuralSnapshot`
 and `tests/component/melder/spellbook/test_spellbook_component_structural_snapshot_parity.py`.
@@ -5923,24 +6030,28 @@ Invariants/Guarantees:
   rendering when every name resolves, otherwise the unavailable name appears as its source text
   (`price: 'Optional[Decimal]' = None`), never as a ForwardRef owner or a memory address.
 - The binding profile's `init_signature` and callable `signature` strings - the text
-  `Bind.sha256_profile` hashes - use that rendering, so a class whose constructor names such a type
-  keeps one spell id across processes. `init_signature_object` stays the FORWARDREF signature the
+  `Bind.sha256_profile` hashed until 0.2.8257 - use that rendering, so a class whose constructor names
+  such a type kept one spell id across processes; since then the spell_id reads the code, not these
+  strings. `init_signature_object` stays the FORWARDREF signature the
   requirements finder borrows. `ClassInspector` reads class annotations with `eval_str=True` first and
   falls back to `SignatureReflection.class_annotations` (FORWARDREF) on NameError.
   EVIDENCE:
   - src/melder/utilities/helpers/signature_reflection.py:52-190
-  - src/melder/aether/spellbook/spell_compiler/spell_examiner/strategies/binding_profile_strategy.py:105-113
+  - src/melder/aether/spellbook/spell_compiler/spell_examiner/strategies/binding_profile_strategy.py:106-114
   - src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/class_inspector.py:150-175
 - The class binding profile reads class-level annotations the same way (2026-09-26,
   `BindingProfileStrategy._read_class_annotations`): a name unbound at runtime keeps its key, its value the
-  source text (`'Decimal'`, `'list[Decimal]'`). `Bind.sha256_profile` hashes the sorted keys, so every
-  annotated field counts in the spell id, and Nexus publishes the fields. Before, one such name dropped every
+  source text (`'Decimal'`, `'list[Decimal]'`). `Bind.sha256_profile` hashed the sorted keys until 0.2.8257,
+  so every annotated field counted in the spell id (since then the class's annotate function's code does),
+  and Nexus publishes the fields. Before, one such name dropped every
   annotation to `{}`; affected classes got a new id once. Any other read failure, or a failing fallback,
   still gives `{}`, so binding never fails over annotations.
   EVIDENCE:
-  - src/melder/aether/spellbook/spell_compiler/spell_examiner/strategies/binding_profile_strategy.py:147-191
-  - src/melder/aether/spellbook/bind/bind.py:1072-1082
-- Binding profiles carry the fingerprint text beside the display text (2026-09-26): `fingerprint_repr` on
+  - src/melder/aether/spellbook/spell_compiler/spell_examiner/strategies/binding_profile_strategy.py:148-192
+  - `src/melder/aether/spellbook/bind/spell_code_digest.py:SpellCodeDigest._namespace_digest` (the annotate
+    function since 0.2.8257; the fingerprint read the keys until then)
+- Binding profiles carried the fingerprint text beside the display text (2026-09-26; removed at 0.2.8257 with
+  the fingerprint, their only reader): `fingerprint_repr` on
   callable, instance and other profiles and `default_fingerprint_repr` on each callable parameter summary,
   built with `InspectorUtility.stable_repr` (full repr, memory addresses removed). `repr_string` and
   `default_repr` stay truncated display text that still shows addresses.
@@ -5949,13 +6060,14 @@ Failure Modes:
 - `SpellExaminer.create_profile(...)` raises `ValueError` when the requested
   profile name is not registered.
 - Builder or inspector failures bubble from the resolved builder path.
-- Both limits recorded here earlier on 2026-09-26 are fixed: function spell fingerprints hash an
-  address-free repr (process-stable ids), and class binding-profile annotations keep names unbound at
-  runtime. A class whose annotations cannot be read at all (not a NameError) still binds with `{}`.
+- Both limits recorded here earlier on 2026-09-26 are fixed: function spell fingerprints hashed an
+  address-free repr (process-stable ids; since 0.2.8257 a function's spell_id is its code, address-free by
+  construction), and class binding-profile annotations keep names unbound at runtime. A class whose
+  annotations cannot be read at all (not a NameError) still binds with `{}`.
   EVIDENCE:
-  - src/melder/aether/spellbook/bind/bind.py:1083-1099
-  - src/melder/aether/spellbook/bind/bind.py:1132-1152
-  - src/melder/aether/spellbook/spell_compiler/spell_examiner/strategies/binding_profile_strategy.py:147-191
+  - `src/melder/aether/spellbook/bind/spell_code_digest.py:SpellCodeDigest._function_digest` (the fingerprint's
+    repr text until 0.2.8257)
+  - src/melder/aether/spellbook/spell_compiler/spell_examiner/strategies/binding_profile_strategy.py:148-192
 
 Observability:
 - These layers are primarily introspection/tooling surfaces and do not define
@@ -6126,13 +6238,13 @@ Contract/Interface:
   with `raising=True`, so renaming or moving the seam fails LOUD instead of silently
   creating an attribute nothing reads. That matters because an autouse fixture
   neutralizes the guard for the whole file; a silently-dead patch would let the real
-  619-entry manifest start refusing binds mid-suite with no signal. Preserve
+  630-entry manifest (0.2.8257) start refusing binds mid-suite with no signal. Preserve
   `raising=True` if these sites are ever touched.
 Data Structures:
 - `INTERNAL_MANIFEST`: `FrozenSet[Tuple[str, str]]` of `(module, qualname)` pairs,
   imported from the hand-written loader `melder._build_assets._bind_guard.bind_guard`,
   which also re-exports `MANIFEST_VERSION`, `BUILT_FOR_VERSION` and
-  `MANIFEST_ENTRY_COUNT` (619 at 0.2.8215).
+  `MANIFEST_ENTRY_COUNT` (630 at 0.2.8257; 619 at 0.2.8215).
 - The TRUTH is the COMMITTED manifest `_bind_guard/manifest/bind_guard_manifest.py`. The
   loader hydrates it through a `.meldercache` under `__melder_cache__/__bind_guard__/` that is an
   ACCELERATOR, never the source; the manifest module is imported lazily on cache miss
@@ -6153,7 +6265,7 @@ Concurrency/Threading:
   module-level object, so it adds no contention to bind.
 Enforcement Surface:
 - Exactly one live call site:
-  `src/melder/aether/spellbook/bind/bind.py:715` (in `Bind._bind_logic`) -
+  `src/melder/aether/spellbook/bind/bind.py:723` (in `Bind._bind_logic`) -
   `assert_allowed(spell, context="bind")`. (Was cited as `:363` here and `:364`
   in `src_architecture.md` before subsequent edits, as `:404` in both until 2026-10-01, and as `:657`
   here until 2026-10-18; the current call is on 715. The documents disagreeing
@@ -6340,6 +6452,8 @@ Purpose:
 - Register a spell and update local maps and SpellSystemStates.
 Contract/Interface:
 - `Spellbook.bind(...)` and `Bind._bind_logic(...)`.
+- The spell_id is `SpellCodeDigest.spell_id(target)` (0.2.8257); the Spell carries its binding manifest and
+  `binding_hash` (0.2.8258).
 - The shared Bind path also admits inactive values; a Protocol mismatch fails before a Spell is returned.
 - Book captures callbacks once; Bind runs pre/activation outside its construction lock. Book runs
   captured post after active publication or inactive parking and before the transaction completes.
@@ -6350,6 +6464,8 @@ Concurrency/Threading:
 Key Files (C1):
 - `src/melder/aether/spellbook/spellbook.py`
 - `src/melder/aether/spellbook/bind/bind.py`
+- `src/melder/aether/spellbook/bind/spell_code_digest.py`
+- `src/melder/aether/spellbook/bind/binding_manifest.py`
 
 ### Subcomponent: SpellIndex (Spell Index / Categorization)
 Parent Component: Binding Pipeline (Bind, Spell, SpellIndex)
@@ -8045,11 +8161,13 @@ These flows describe concrete method sequences for core behaviors.
 1. `Spellbook.bind(...)`:
    - Converts permissions and existence enums.
    - Calls Bind.capture_hooks once inside the existing admitted transaction.
-   - Bind runs pre(reference), then native admission/profile/fingerprint construction.
+   - Bind runs pre(reference), then native admission and profile construction; the spell_id is the target's code
+     digest (`SpellCodeDigest`, 0.2.8257) and the Spell builds its binding manifest (0.2.8258).
    - Calls `Bind._bind_logic` to create SpellIndex and Spell.
    - Bind validates required direct Protocol members on classes and supplied values before Spell publication.
    - Runs activation(Spell), completes its profile, then attaches later creation hooks.
-   - Checks native collisions before registering local lookup keys.
+   - Checks native collisions before registering local lookup keys - since 0.2.8257 the one-object rule: a
+     second registration of one object is refused, its message naming the rule and the remedies.
    - Registers lineage in SpellSystemStates (marks dirty) and retires any per-conduit resolution verdict already
      held for the new spell id (0.2.8219), so a rebound content-stable id is resolved again per conduit.
    - If Conduit exists, stamps ownership and registers existing objects into Creations.
@@ -8097,7 +8215,7 @@ These flows describe concrete method sequences for core behaviors.
      `force_skip_plan_phases=True`, loads both-lane creation contexts from the
      cache, and skips `_enforce_conduit_resolution_valid`.
      EVIDENCE: `src/melder/aether/spellbook/spellbook_creation_system.py:242-263`,
-     `src/melder/aether/spellbook/spellbook_creation_system.py:616-740`.
+     `src/melder/aether/spellbook/spellbook_creation_system.py:616-746`.
    - Live 8-11 output contract:
      - phase 8 `_occurrence_graph_analysis`
      - phase 9 `_spell_codegen_model`
@@ -8384,10 +8502,11 @@ neither of which happens.
 
 - path: `src/melder/utilities/caching_system/caching_system.py`
   start_line: 1
-  end_line: 908
-  loc: 908
-  verified_at: 2026-10-18T01:43:29Z
+  end_line: 918
+  loc: 918
+  verified_at: 2026-10-18T20:32:16Z
   note: release-bound creation-cache admission and atomic envelope persistence; generation 22 (0.2.8254).
+    Generation 23, the binding hash in the structural key and the world stamp (0.2.8258).
 
 The CORE set: every path cited by a `Key Files (C1)` list in the C3 catalog,
 deduplicated. That union IS the definition of core here - a file a component
@@ -8435,7 +8554,7 @@ expanded into its real modules rather than given a plausible number.
   start_line: 1
   end_line: 937
   loc: 937
-  verified_at: 2026-09-30T18:30:47Z
+  verified_at: 2026-10-18T20:32:16Z
 - path: `src/melder/aether/aether_configuration_builder.py`
   start_line: 1
   end_line: 286
@@ -8448,9 +8567,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-09-26T20:10:34Z
 - path: `src/melder/aether/spellbook/spellbook.py`
   start_line: 1
-  end_line: 7802
-  loc: 7802
-  verified_at: 2026-10-18T16:37:15Z
+  end_line: 7812
+  loc: 7812
+  verified_at: 2026-10-18T20:32:16Z
 - path: `src/melder/aether/spellbook/spellbinder.py`
   start_line: 1
   end_line: 928
@@ -8463,19 +8582,31 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-10-15T21:40:35Z
 - path: `src/melder/aether/spellbook/bind/bind.py`
   start_line: 1
-  end_line: 1747
-  loc: 1747
-  verified_at: 2026-10-18T01:43:29Z
+  end_line: 1534
+  loc: 1534
+  verified_at: 2026-10-18T20:32:16Z
+- path: `src/melder/aether/spellbook/bind/spell_code_digest.py`
+  start_line: 1
+  end_line: 1316
+  loc: 1316
+  verified_at: 2026-10-18T20:32:16Z
+  note: `SpellCodeDigest`, the spell_id: the SHA256 of a target's code and data (0.2.8257).
+- path: `src/melder/aether/spellbook/bind/binding_manifest.py`
+  start_line: 1
+  end_line: 408
+  loc: 408
+  verified_at: 2026-10-18T20:32:16Z
+  note: `BindingManifest`, a spell's binding and its SHA256, the binding hash (0.2.8258).
 - path: `src/melder/aether/spellbook/bind/spell_index.py`
   start_line: 1
   end_line: 583
   loc: 583
-  verified_at: 2026-10-17T23:12:45Z
+  verified_at: 2026-10-18T20:32:16Z
 - path: `src/melder/aether/spellbook/spell.py`
   start_line: 1
-  end_line: 1972
-  loc: 1972
-  verified_at: 2026-10-18T16:37:15Z
+  end_line: 2024
+  loc: 2024
+  verified_at: 2026-10-18T20:32:16Z
 - path: `src/melder/aether/spellbook/spell_types/spell_types.py`
   start_line: 1
   end_line: 101
@@ -8515,7 +8646,7 @@ expanded into its real modules rather than given a plausible number.
   start_line: 1
   end_line: 3007
   loc: 3007
-  verified_at: 2026-10-15T21:40:35Z
+  verified_at: 2026-10-18T20:32:16Z
 - path: `src/melder/crystallizer/crystallizer.py`
   start_line: 1
   end_line: 3089
@@ -8881,17 +9012,17 @@ expanded into its real modules rather than given a plausible number.
   start_line: 1
   end_line: 2378
   loc: 2378
-  verified_at: 2026-10-16T16:51:53Z
+  verified_at: 2026-10-18T20:32:16Z
 - path: `src/melder/aether/conduit/meld/conduit_meld.py`
   start_line: 1
   end_line: 1116
   loc: 1116
-  verified_at: 2026-10-15T21:40:35Z
+  verified_at: 2026-10-18T20:32:16Z
 - path: `src/melder/aether/conduit/meld/spellspace_meld.py`
   start_line: 1
   end_line: 1051
   loc: 1051
-  verified_at: 2026-10-15T21:40:35Z
+  verified_at: 2026-10-18T20:32:16Z
 - path: `src/melder/aether/conduit/meld/creation_context/creation_context.py`
   start_line: 1
   end_line: 310
@@ -8936,7 +9067,7 @@ expanded into its real modules rather than given a plausible number.
   start_line: 1
   end_line: 2052
   loc: 2052
-  verified_at: 2026-10-16T16:51:53Z
+  verified_at: 2026-10-18T20:32:16Z
 - path: `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_state.py`
   start_line: 1
   end_line: 806
@@ -9169,9 +9300,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py`
   start_line: 1
-  end_line: 536
-  loc: 536
-  verified_at: 2026-09-26T20:10:34Z
+  end_line: 508
+  loc: 508
+  verified_at: 2026-10-18T20:32:16Z
 - path: `src/melder/aether/spellbook/spell_compiler/profiles/resolution_profile.py`
   start_line: 1
   end_line: 515
@@ -9214,9 +9345,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-10-17T23:12:45Z
 - path: `src/melder/crystallizer/crystals/spell_crystal.py`
   start_line: 1
-  end_line: 1445
-  loc: 1445
-  verified_at: 2026-10-18T01:43:29Z
+  end_line: 1481
+  loc: 1481
+  verified_at: 2026-10-18T20:32:16Z
 - path: `src/melder/crystallizer/crystal_analysis/crystal_analyzer.py`
   start_line: 1
   end_line: 1445
@@ -9239,9 +9370,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/crystallizer/crystal_loader_system/restore_engine.py`
   start_line: 1
-  end_line: 3074
-  loc: 3074
-  verified_at: 2026-10-17T23:12:45Z
+  end_line: 3178
+  loc: 3178
+  verified_at: 2026-10-18T20:32:16Z
 - path: `src/melder/mutation_research/mutation_configuration.py`
   start_line: 1
   end_line: 693
@@ -9307,9 +9438,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-09-23T11:33:20Z
 - path: `src/melder/crystallizer/crystal_loader_system/graft_runner.py`
   start_line: 1
-  end_line: 721
-  loc: 721
-  verified_at: 2026-10-17T23:12:45Z
+  end_line: 723
+  loc: 723
+  verified_at: 2026-10-18T20:32:16Z
 - path: `src/melder/crystallizer/crystal_loader_system/load_admission.py`
   start_line: 1
   end_line: 633
@@ -9569,7 +9700,7 @@ future expansion of a `Key Files (C1)` list must land here in the same pass.
   start_line: 1
   end_line: 173
   loc: 173
-  verified_at: 2026-10-01T11:06:26Z
+  verified_at: 2026-10-18T20:32:16Z
   note: `InspectorUtility`: low-level helpers of the inspector layer (Spell Examination Profiles).
 - path: `src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/method_inspector.py`
   start_line: 1
@@ -9579,9 +9710,9 @@ future expansion of a `Key Files (C1)` list must land here in the same pass.
   note: `MethodInspector`: callable inventory for the examiner (Spell Examination Profiles).
 - path: `src/melder/aether/spellbook/spell_compiler/spell_examiner/strategies/binding_profile_strategy.py`
   start_line: 1
-  end_line: 321
-  loc: 321
-  verified_at: 2026-10-01T11:06:26Z
+  end_line: 316
+  loc: 316
+  verified_at: 2026-10-18T20:32:16Z
   note: `BindingProfileStrategy`: binding profiles from user objects (Spell Examination Profiles).
 - path: `src/melder/utilities/custom_exceptions/spellbook_validation_error.py`
   start_line: 1
@@ -9828,7 +9959,11 @@ still owed.
   Per-thread spellspace storage for one `SpellSpaceThreadState`
 - `src/melder/aether/spellbook/bind/bind.py`
   Spellbook registration gateway for classes, callables, and concrete objects
+- `src/melder/aether/spellbook/bind/binding_manifest.py`
+  How one spell version is kept, with its own SHA256 (the binding hash), apart from its code
 - `src/melder/aether/spellbook/bind/scan.py` - Frozen payload describing how a decorated object should be bound later
+- `src/melder/aether/spellbook/bind/spell_code_digest.py`
+  The spell_id: the SHA256 of a registration target's code and, for an existing object, its data
 - `src/melder/aether/spellbook/bind/spell_index.py`
   A stable SpellIndex identity that points to a mutable selected-spell id and holds the set of...
 - `src/melder/aether/spellbook/configuration/spellbook_configuration.py`
@@ -11104,7 +11239,7 @@ completed epics/stories of 2026-07-11/12).
 - Restore: crystal_loader_system/graft_runner.py - GraftRunner
   (single-use, Cleanable): RecordVersion gate + graft_kind refusal ->
   unconjured-host refusal (public `Spellbook.conduit` accessor,
-  `src/melder/aether/spellbook/spellbook.py:6909`; the patch-lane copy cited
+  `src/melder/aether/spellbook/spellbook.py:6919`; the patch-lane copy cited
   :5412) -> per-member overlap rule via
   `host_frame.find_index_for_spell`
   (`src/melder/aether/aetheric_frame/aetheric_frame.py:902`; resident member
@@ -11413,6 +11548,8 @@ Primary source files (177, all resolved 2026-10-15T21:42:08Z):
 - `src/melder/utilities/custom_exceptions/managed_spell_exhausted_error.py`
 - `src/melder/utilities/custom_exceptions/spellbook_validation_error.py`
 - `src/melder/aether/spellbook/bind/bind.py`
+- `src/melder/aether/spellbook/bind/spell_code_digest.py`
+- `src/melder/aether/spellbook/bind/binding_manifest.py`
 - `src/melder/aether/spellbook/bind/scan.py`
 - `src/melder/aether/spellbook/bind/spell_index.py`
 - `src/melder/aether/spellbook/configuration/spellbook_configuration.py`
@@ -11523,6 +11660,17 @@ Companion documents:
   component and code-description patches are inputs to this document while a lane is open.
 
 ## Context / Handoff Summary
+
+2026-10-18 spell identity is the code (0.2.8257-0.2.8258; S1 and S2 of EPIC-2026-10-18-spell_identity_is_the_code):
+the Binding Pipeline carries the spell_id rule (`SpellCodeDigest`: what moves an id and what never does, decision B,
+the memo, the never-raise and no-target-code contracts), the binding manifest and its hash, `spell_id_inspector`'s
+single argument and the one-object rule, with the older fingerprint entries marked superseded; Spellbook Core
+carries creation cache generation 23 (the binding hash in the structural key and the world stamp), the collision
+refusals and `inspect_spell`'s exact stage 3; the Crystallizer carries record 4.3.0 and the restore's
+`binding_changes`; Spell Examination Profiles drops the fingerprint-only fields; the bind flow, two subcomponents
+(the guard's count is 630), the code map (the changed files remeasured, two modules added), the inventory and the
+sources follow. Numeric citations into the changed files were remapped line by line from 0.2.8256; the three that
+cited the removed fingerprint now cite the digest.
 
 2026-10-18 direct cleanup refusal (0.2.8256; STORY-2026-10-17-direct_cleanup_of_active_member_orphans_parked_versions,
 on the owner's choice of the refusal): Spellbook Core carries the refusal in `cleanup_and_remove_spell` - its

@@ -19,6 +19,7 @@ from melder.aether.spellbook.existence.managed_spell_mode import ManagedSpellMod
 from melder.aether.spellbook.spellbinder import SpellBinder
 from melder.aether.spellbook.spellbook import Spellbook
 from tests._frame_posture_test_support import apply_dynamic_defaults_for_spellbook_configuration
+from tests._spell_identity_test_support import version_of
 
 
 class PooledLogger:
@@ -78,9 +79,14 @@ def test_spellbook_bind_puts_the_options_on_the_spell() -> None:
         book.cleanup()
 
 
-def test_a_managed_binding_changes_the_spell_id_and_its_settings_do_not() -> None:
-    """The same class bound unique and managed gets two ids; managed with a limit keeps the managed one (0.2.8254)."""
+def test_a_managed_binding_keeps_the_spell_id_and_moves_the_binding_hash() -> None:
+    """
+    The same class bound unique, managed and managed with a limit is one spell_id - the class's code (S1 of
+    EPIC-2026-10-18-spell_identity_is_the_code) - and three bindings: the existence and the settings are the
+    binding, so each binding has its own binding hash (S2).
+    """
     ids = []
+    hashes = []
     for options in (
             {"existence": Existence.unique},
             {"existence": Existence.managed_spell_quantity},
@@ -88,11 +94,13 @@ def test_a_managed_binding_changes_the_spell_id_and_its_settings_do_not() -> Non
     ):
         book = _dynamic_book()
         try:
-            ids.append(book.bind(spell=PooledLogger, **options))
+            spell_id = book.bind(spell=PooledLogger, **options)
+            ids.append(spell_id)
+            hashes.append(book.find_spell_by_spell_id(spell_id).binding_hash)
         finally:
             book.cleanup()
-    assert ids[0] != ids[1]
-    assert ids[1] == ids[2]
+    assert ids[0] == ids[1] == ids[2]
+    assert len(set(hashes)) == 3
 
 
 def test_a_refused_binding_leaves_the_book_unchanged() -> None:
@@ -125,7 +133,7 @@ def test_a_managed_function_is_refused() -> None:
 
 
 def test_conduit_bind_and_bind_inactive_forward_the_options() -> None:
-    """A root binds a managed class after conjure, then parks a second version (other disposal names) with its own."""
+    """A root binds a managed class after conjure, then parks a second version of it (other code) with its own."""
     book = _dynamic_book()
     try:
         book.bind(spell=Steady, existence=Existence.unique)
@@ -139,7 +147,8 @@ def test_conduit_bind_and_bind_inactive_forward_the_options() -> None:
             ManagedSpellMode.queue, 2, 0.25,
         )
         parked_id = root.bind_inactive(
-            spell=PooledLogger, spell_index=active.spell_index, existence=Existence.managed_spell_quantity,
+            spell=version_of(PooledLogger, version=2), spell_index=active.spell_index,
+            existence=Existence.managed_spell_quantity,
             disposal_method_names=["flush"], managed_spell_mode=ManagedSpellMode.elastic, managed_spell_limit=16,
             managed_spell_reset_methods=["reset"],
         )

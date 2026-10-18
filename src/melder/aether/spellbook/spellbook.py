@@ -2564,13 +2564,13 @@ class Spellbook(Cleanable):
               2. IDENTITY frame-wide - every other conduit's Spellbook in the named frame
                  is walked, which is what keeps foreign spells (cluster shares, dynamic-link
                  providers) inspectable by object.
-              3. FINGERPRINT fallback - only if identity found nothing, the id is
+              3. CODE fallback - only if identity found nothing, the id is
                  re-derived from the object alone.
-            - Stage 3 is a LEGACY path and rarely matches a registered binding. The spell
-              fingerprint composes BIND-TIME facts (existence, disposal methods, binding
-              name, spell name) that a bare class, function, or instance cannot supply, so
-              an id re-derived from the object generally cannot equal the id recorded at
-              bind. Identity matching exists precisely because of that.
+            - Stage 3 matches exactly: a spell_id is the SHA256 of the registered object's
+              code (an existing object's class code plus its data) with nothing from the
+              bind call, so the id re-derived from the object equals the id recorded at bind
+              while the object's code and data are unchanged. Identity runs first: it is
+              cheaper, and it still finds an object whose data changed after bind.
             - Every stage confirms the candidate id against the Aether registry before
               returning it; a spell known locally but absent from the registry returns None.
             - THIS METHOD NEVER RAISES. Every exception is caught, logged, and converted to
@@ -2605,14 +2605,14 @@ class Spellbook(Cleanable):
             (lock_residuals, 0.2.8232)
         """
         try:
-            # The spell fingerprint composes bind-time facts (existence,
-            # disposal methods, binding name, spell name) that a bare
-            # class/function/instance cannot supply, so re-deriving the
-            # id from the object alone can never match a registered
-            # binding. Resolve by object identity against this
-            # Spellbook's registered spells first; fall back to the
-            # legacy default-fact fingerprint for foreign objects so
-            # cross-book inspection semantics stay unchanged.
+            # A spell_id is the object's code (SpellCodeDigest), so the id
+            # re-derived from the object matches its registered binding
+            # exactly while its code and data are what they were at bind.
+            # Resolve by object identity against this Spellbook's
+            # registered spells first - cheaper, and it still finds an
+            # object whose data changed after bind - then frame-wide by
+            # identity, and only then by the re-derived id (stage 3),
+            # which the Aether registry confirms like the other stages.
             # Only this walk holds this Spellbook's lock, the lock its writers hold: the confirmation and the stages
             # below take frame locks, and frame teardown takes this lock under its frame lock
             # (lock_residuals, 0.2.8232).
@@ -2635,9 +2635,9 @@ class Spellbook(Cleanable):
                 return candidate_spell_id if found else None
             # Frame-wide object inspection: walk the frame's registered
             # conduits' spellbooks so foreign spells (cluster shares,
-            # dynamic-link providers) remain inspectable by object, which
-            # the legacy fingerprint path provided before bind-time facts
-            # joined the id composition.
+            # dynamic-link providers) are found by object identity too,
+            # before stage 3 re-derives the id from the object's code
+            # (an existing object whose data changed misses there).
             if aetheric_frame != "default":
                 frame = Spellbook._aether._aetheric_frames[aetheric_frame]
             else:
@@ -2851,18 +2851,18 @@ class Spellbook(Cleanable):
             f"'{self._aetheric_frame_name}' by \n"
             "another Spellbook:\n"
             f"{described}\n"
-            "A spell_id is a SHA256 over the bind-time fingerprint (structural profile, \n"
-            "lookup signature, existence, and resolved disposal metadata) and does NOT \n"
-            "include the frame, so two Spellbooks binding the same target with the same \n"
-            "bind parameters mint the same id. That includes spells staged inactive \n"
-            "by bind_inactive - a parked spell still holds its id. \n"
+            "A spell_id is the SHA256 of the registered object's code (its methods, \n"
+            "constructor, class-level values and base classes, or an existing object's \n"
+            "class and data) and includes neither the frame nor the bind call, so two \n"
+            "Spellbooks binding the same object mint the same id. That includes spells \n"
+            "staged inactive by bind_inactive - a parked spell still holds its id. \n"
             "SCOPE: a spell_id is unique per PROCESS while "
             "`process_wide_unique_spell_ids` \n"
             "is on (the default), and per FRAME only when it is off. \n"
-            "Fix: differentiate the binding with a distinct spellframe or "
-            "binding_name. \n"
+            "Fix: bind the object in one Spellbook and share it with the others (a link "
+            "or a contract); one object is one spell. \n"
             "Moving to another aetheric frame is NOT a fix under the process-wide \n"
-            "regime - the id follows the fingerprint, and the fingerprint has no frame \n"
+            "regime - the id follows the code, and the code has no frame \n"
             "in it."
         )
 
@@ -5443,11 +5443,16 @@ class Spellbook(Cleanable):
                         exc_info=True,
                     )
                     raise RuntimeError(
-                        "Spell ID collision detected. spell_id is computed from the spell's bind-time \n"
-                        "fingerprint (e.g., structural profile, lookup signature, existence, and resolved \n"
-                        "disposal metadata). The existing spell with this id is already registered in the \n"
-                        "Spellbook or Aether for this frame. If you intended to register a distinct spell, ensure its \n"
-                        "bind-time fingerprint differs so it produces a unique spell_id."
+                        "Spell ID collision detected: this object is already registered as spell_id "
+                        f"{new_spell.spell_id}. A spell_id is the SHA256 of the object's code (its methods, \n"
+                        "constructor, class-level values and base classes, or an existing object's class and \n"
+                        "data), and one object is one spell: registering it again - under another binding \n"
+                        "name, existence or spellframe, or in another Spellbook where spell_ids are unique \n"
+                        "(the process by default, the frame under per-frame spell ids) - is refused. Use the \n"
+                        "spell already registered (another conduit shares it through a link or a contract), \n"
+                        "or cleanup_spell it and bind it again to change how it is bound. A changed method, \n"
+                        "constructor, class-level value or base class is a new spell_id: stage it with \n"
+                        "bind_inactive and notch to it."
                     )
 
                 self._add_hooks_to_spell(new_spell, **kwargs)
@@ -5557,7 +5562,7 @@ class Spellbook(Cleanable):
 
         Args:
             spell_id:
-                Binding-signature SHA256 entering the world.
+                The spell_id (the SHA256 of the registered object's code) entering the world.
             staged:
                 True for parked (`bind_inactive`) entries.
 
@@ -5792,11 +5797,16 @@ class Spellbook(Cleanable):
                         exc_info=True,
                     )
                     raise RuntimeError(
-                        "Spell ID collision detected. spell_id is computed from the spell's bind-time \n"
-                        "fingerprint (e.g., structural profile, lookup signature, existence, and resolved \n"
-                        "disposal metadata). The existing spell with this id is already registered in the \n"
-                        "Spellbook or Aether for this frame. If you intended to register a distinct spell, ensure its \n"
-                        "bind-time fingerprint differs so it produces a unique spell_id."
+                        "Spell ID collision detected: this object is already registered as spell_id "
+                        f"{new_spell.spell_id}. A spell_id is the SHA256 of the object's code (its methods, \n"
+                        "constructor, class-level values and base classes, or an existing object's class and \n"
+                        "data), and one object is one spell: registering it again - under another binding \n"
+                        "name, existence or spellframe, or in another Spellbook where spell_ids are unique \n"
+                        "(the process by default, the frame under per-frame spell ids) - is refused. Use the \n"
+                        "spell already registered (another conduit shares it through a link or a contract), \n"
+                        "or cleanup_spell it and bind it again to change how it is bound. A changed method, \n"
+                        "constructor, class-level value or base class is a new spell_id: stage it with \n"
+                        "bind_inactive and notch to it."
                     )
 
                 self._add_hooks_to_spell(new_spell, **kwargs)

@@ -4,9 +4,10 @@ Integration: a managed spell's options survive a crystallizer record and restore
 
 The crystal records the four options of a managed spell; the restore engine and the graft runner replay them
 through bind, so each rebuilt version gets the same normalized options, and the same spell id, as the recorded one.
-An active member and a parked member are covered on both lanes; the parked member differs by its disposal names,
-since a managed spell's settings are not part of its spell_id (0.2.8254). Managed spells are not melded here:
-dispensing arrives with STORY-2026-10-15-managed_dispense_codegen (S5).
+An active member and a parked member are covered on both lanes; the parked member is a second version's class
+(RecordedPoolNext): one object is one spell (S1 of EPIC-2026-10-18-spell_identity_is_the_code), so a version is new
+code, and its options, settings and disposal names are its binding. Managed spells are not melded here: dispensing
+arrives with STORY-2026-10-15-managed_dispense_codegen (S5).
 
 Runs only on 3.14t (melder package root import chain).
 """
@@ -36,6 +37,12 @@ class RecordedPool:
 
     def flush(self) -> None:
         """Write out buffered lines."""
+
+
+class RecordedPoolNext(RecordedPool):
+    """The parked second version: new code, module-scoped so a restore and a graft import it by qualname."""
+
+    version = 2
 
 
 class RecordedAnchor:
@@ -112,7 +119,7 @@ def _record_world() -> tuple:
     active_id = book.bind(spell=RecordedPool, existence=Existence.managed_spell_quantity, **ACTIVE_OPTIONS)
     root = book.conjure(dynamic=True, name="root")
     parked_id = root.bind_inactive(
-        spell=RecordedPool, spell_index=book.find_spell_by_spell_id(active_id).spell_index,
+        spell=RecordedPoolNext, spell_index=book.find_spell_by_spell_id(active_id).spell_index,
         existence=Existence.managed_spell_quantity, disposal_method_names=["flush"], **PARKED_OPTIONS,
     )
     return book, root, active_id, parked_id

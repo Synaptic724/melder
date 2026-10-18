@@ -15,6 +15,7 @@ from melder.aether.conduit.conduit_ward.permissions.permissions import Permissio
 from melder.aether.conduit.meld.creation_context.creation_context_factory import (
     CreationContextFactory,
 )
+from melder.aether.spellbook.bind.binding_manifest import BindingManifest
 from melder.aether.spellbook.bind.spell_index import SpellIndex
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
@@ -87,13 +88,19 @@ class Spell(Cleanable):
     - Becomes unusable after `cleanup()` completes; later live-object methods
       are expected to fail through `check_cleaned()`.
     - Disposal metadata is established once at bind. The ordered list, presence
-      flag, and bind-time SHA describe that same policy. Post-creation mutation
+      flag, and binding hash describe that same policy. Post-creation mutation
       is unsupported; this class adds no copying or mutation guards.
     - Resolution capability is fixed per bound version and exposed by the
       read-only resolvable property, independently of activity and compilation state.
     - The managed options of an `Existence.managed_spell_quantity` binding (mode, limit,
       queue timeout, reset method names) are fixed per bound version the same way, as
-      Bind normalized and hashed them, and exposed by read-only properties.
+      Bind normalized them, and exposed by read-only properties; they are part of the
+      binding manifest, never of the spell_id.
+    - `binding_manifest` records how this version is bound - its address, spellframe and
+      kind, existence, disposal order, resolvable and managed settings - with its own
+      SHA256, `binding_hash`. Built once at construction from the same arguments and kept
+      after cleanup, like `spell_id`: what a spell IS is its spell_id, how it is kept is
+      its binding (EPIC-2026-10-18-spell_identity_is_the_code).
 
     Core Responsibilities:
     - Holds an immutable reference to the object (function/class/instance) it represents.
@@ -118,7 +125,9 @@ class Spell(Cleanable):
           still allowed.
 
     Key Concepts:
-        - Each spell has a unique SHA256 `spell_id`, generated from its bind-time fingerprint.
+        - Each spell has a SHA256 `spell_id`: the digest of the registered object's code
+          (`SpellCodeDigest`) and nothing from the bind call. How it is bound is its
+          `binding_manifest`, hashed apart as `binding_hash`.
         - `spellframe` is the category half of the address: a string category or a
           Protocol contract. `spellframe_kind` records which (or `none` for a bare
           binding) and `implemented_protocols` the Protocol bind checked the spell
@@ -133,7 +142,8 @@ class Spell(Cleanable):
             The actual object to register (function, class, lambda, or existing instance).
 
         spell_index (SpellIndex):
-            Versioned identity for this spell (current + historical fingerprints).
+            The SpellIndex this spell is organized under; the index selects one member
+            version as active.
 
         spellframe (Optional[Any]):
             Frame context (usually a Protocol, class, or string) to scope the spell's identity.
@@ -154,7 +164,8 @@ class Spell(Cleanable):
             whether it participates in spellframes and/or binding names.
 
         spell_id (str):
-            Unique identifier derived from object fingerprinting (SHA256).
+            The SHA256 of the registered object's code (`SpellCodeDigest`); nothing from
+            the bind call enters it.
 
         permissions (Permissions):
             Defines access control level for borrowing, invoking, or recreating this spell.
@@ -306,6 +317,7 @@ class Spell(Cleanable):
         "_managed_spell_limit",
         "_managed_spell_timeout_seconds",
         "_managed_spell_reset_methods",
+        "binding_manifest",
     ]
     def __init__(
             self,
@@ -344,7 +356,7 @@ class Spell(Cleanable):
             spell_name (str): Resolved name for the spell (qualname or type name).
             existence (Existence): Lifecycle policy for instantiation/sharing semantics.
             spell_type (SpellType): Classification of the spell (class/method/lambda/existing-creation variants).
-            spell_id (str): SHA256 fingerprint for this spell's structural identity.
+            spell_id (str): The SHA256 of the registered object's code (`SpellCodeDigest`).
             permissions (Permissions): Access policy for other conduits.
             aetheric_frame (str): Aether frame identifier this spell belongs to.
             spellbook (Spellbook): Back-reference to the owning spellbook for coordination.
@@ -379,10 +391,13 @@ class Spell(Cleanable):
               metadata bag, so a misspelled parameter name lands in `metadata`
               rather than raising `TypeError`.
             - TWO DISTINCT IDENTITIES are established. `spell_id` is the
-              caller-supplied structural fingerprint; `_id` is a fresh ULID
+              caller-supplied code digest of the target; `_id` is a fresh ULID
               minted here that identifies THIS record. They are not
-              interchangeable - the fingerprint describes what the spell IS,
+              interchangeable - the digest describes what the spell IS,
               the ULID describes which object you are holding.
+            - The binding manifest (`binding_manifest`, `binding_hash`) is built
+              last, from these same arguments: how this version is bound, hashed
+              apart from what it is. A value record, kept after cleanup.
             - The four `is_*` family flags are computed ONCE from `spell_type`
               and cover all 14 `SpellType` members with no overlap, so exactly
               one is True for the object's whole life.
@@ -426,8 +441,9 @@ class Spell(Cleanable):
         self._removal_lock: Optional[RLock] = None
         self._active = True  # active in its index; flipped by notch/disable
         self._resolvable: bool = resolvable
-        # Managed options (Existence.managed_spell_quantity): normalized by Bind and hashed into spell_id,
-        # read-only per-version policy like `_resolvable`; None / None / None / () on any other existence.
+        # Managed options (Existence.managed_spell_quantity): normalized by Bind, part of the binding manifest
+        # and never of the spell_id (since 0.2.8254); read-only per-version policy like `_resolvable`;
+        # None / None / None / () on any other existence.
         # The spell's pool is composed from them when its owner store is stamped (S3).
         self._managed_spell_mode: Optional[ManagedSpellMode] = managed_spell_mode
         self._managed_spell_limit: Optional[int] = managed_spell_limit
@@ -438,7 +454,7 @@ class Spell(Cleanable):
         # Spell Data
         self.spell_index: SpellIndex = spell_index
         self.spell: Any = spell  # Object reference
-        self.spell_id: str = spell_id  # SHA256 unique identifier
+        self.spell_id: str = spell_id  # SHA256 of the target's code (SpellCodeDigest)
         self.spellframe: Any | None = spellframe
         # Frame kind recorded by Bind (none / category / contract) and the
         # Protocol this spell was structurally checked against. Identity data
@@ -576,6 +592,23 @@ class Spell(Cleanable):
         )
         self._key = (frame_key, bind_key)
 
+        # How this version is bound, as a value record with its own SHA256 (S2 of
+        # EPIC-2026-10-18-spell_identity_is_the_code): built last, from the arguments above, so a
+        # bound, staged, restored or grafted Spell carries one. Kept after cleanup, like `spell_id`.
+        self.binding_manifest: BindingManifest = BindingManifest.build(
+            key=self._key,
+            spellframe=self.spellframe,
+            spellframe_kind=self.spellframe_kind,
+            binding_name=self.binding_name,
+            existence=self.existence,
+            disposal_method_names=self.disposal_method_names,
+            resolvable=resolvable,
+            managed_spell_mode=managed_spell_mode,
+            managed_spell_limit=managed_spell_limit,
+            managed_spell_timeout_seconds=managed_spell_timeout_seconds,
+            managed_spell_reset_methods=managed_spell_reset_methods,
+        )
+
 
     #region Disposal
     def cleanup(self) -> None:
@@ -610,6 +643,8 @@ class Spell(Cleanable):
               waiting on it holds its own reference.
             - Deletes the disposal-name reference without clearing its list;
               creation entries may still retain that established metadata.
+            - Keeps the identity data readable: `spell_id`, the address (`key`),
+              the spellframe and its kind, and `binding_manifest` / `binding_hash`.
 
         Threading:
             The Book removal takes the Spellbook lock, frame locks and the Nexus
@@ -793,8 +828,8 @@ class Spell(Cleanable):
         Return the pool policy of this managed version.
 
         Contract:
-            Set once at bind (default elastic for a managed binding) and part of the spell id. No live
-            setter; changing it takes another binding.
+            Set once at bind (default elastic for a managed binding) and part of the binding manifest,
+            not the spell_id. No live setter; changing it takes another binding.
 
         Returns:
             Optional[ManagedSpellMode]: The mode, or None when the spell is not
@@ -813,7 +848,8 @@ class Spell(Cleanable):
 
         Contract:
             elastic: the most idle objects its pool keeps (default 256). limited_quantity and queue: the
-            most objects alive at once, idle plus out. Set once at bind and part of the spell id.
+            most objects alive at once, idle plus out. Set once at bind and part of the binding
+            manifest, not the spell_id.
 
         Returns:
             Optional[int]: The limit, or None when the spell is not managed.
@@ -830,8 +866,8 @@ class Spell(Cleanable):
         Return how long a queue lease of this version waits for a release.
 
         Contract:
-            Set once at bind for the queue mode and part of the spell id; always None for elastic and
-            limited_quantity, which never wait.
+            Set once at bind for the queue mode and part of the binding manifest, not the spell_id;
+            always None for elastic and limited_quantity, which never wait.
 
         Returns:
             Optional[float]: Seconds, or None.
@@ -849,7 +885,7 @@ class Spell(Cleanable):
 
         Contract:
             Zero-argument methods of the class, run in this order on every release before the object
-            is leased again. Set once at bind and part of the spell id.
+            is leased again. Set once at bind and part of the binding manifest, not the spell_id.
 
         Returns:
             tuple[str, ...]: The names; empty when none were named or the spell is not managed.
@@ -859,6 +895,22 @@ class Spell(Cleanable):
         """
         self.check_cleaned()
         return self._managed_spell_reset_methods
+
+    @property
+    def binding_hash(self) -> str:
+        """
+        Return the SHA256 of this version's binding manifest.
+
+        Contract:
+            How this version is bound - address, spellframe and kind, existence, disposal order,
+            resolvable and managed settings - hashed apart from its code (`spell_id`). Equal bind
+            arguments give equal hashes in every process; a change of any of them gives another.
+            Readable after cleanup, like `spell_id` (`binding_manifest` is a value record).
+
+        Returns:
+            str: 64 hex characters (`binding_manifest.binding_hash`).
+        """
+        return self.binding_manifest.binding_hash
 
     def _set_hooks(
             self,
@@ -1748,7 +1800,7 @@ class Spell(Cleanable):
 
         Args:
             dependencies:
-                A list of spell_ids (SHA256 fingerprints) that this spell depends on.
+                A list of spell_ids (SHA256 code digests) that this spell depends on.
 
         Raises:
             ValueError:

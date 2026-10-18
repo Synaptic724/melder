@@ -645,6 +645,11 @@ class SpellbookCreationSystem(Cleanable):
               compiled in another world. Every payload matched under a
               different stamp is the mixed path; nothing matched is the full
               miss; an empty live set stays a full miss.
+            - The stamp carries each pool and borrowed spell's binding hash
+              beside its spell_id (generation 23,
+              EPIC-2026-10-18-spell_identity_is_the_code), so a binding
+              changed under one spell_id - its existence, disposal order,
+              address, resolvable or managed settings - is another world too.
             - Creates the Spellbook-owned CachingSystem only when caching is
               enabled; the stamp is computed only then.
 
@@ -677,8 +682,9 @@ class SpellbookCreationSystem(Cleanable):
             )
             cached_spell_ids = set(caching_system.cached_spell_ids)
             # The executor payloads are a function of the world the structural
-            # tier already stamps (pool ids, posture, borrowed ids); a bundle
-            # staged in another world is never replayed as a full hit.
+            # tier already stamps (pool and borrowed ids, each with its binding
+            # hash, and the posture); a bundle staged in another world - another
+            # binding under one spell_id included - is never replayed as a full hit.
             world_stamp = StructuralSnapshot.world_stamp(spellbook)
             world_matches = caching_system.world_stamp == world_stamp
         matched_spell_ids = live_spell_ids.intersection(cached_spell_ids)

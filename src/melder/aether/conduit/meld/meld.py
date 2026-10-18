@@ -450,8 +450,8 @@ class Meld(Cleanable, ABC):
         Args:
             spell (str | object | None):
                 The primary spell identifier (first positional parameter).
-                - If a **string**, treated as the unique `spell_id` (typically the
-                  SHA256 structural fingerprint for the SpellIndex).
+                - If a **string**, treated as the unique `spell_id` (the SHA256 of
+                  the registered object's code that `bind` returned).
                 - If an **object** (e.g., a class or function), used together with
                   `spellframe` and `binding_name` to form the DI identity key via the
                   `SpellInputUtils` normalization helpers.
@@ -2077,7 +2077,7 @@ class Meld(Cleanable, ABC):
 
         Resolve an Spell using either:
 
-        1. A direct spell_id string (SHA256 fingerprint), or
+        1. A direct spell_id string (the SHA256 of the registered object's code), or
         2. A logical identity tuple derived from
            (spellframe | spell, binding_name).
 
@@ -2158,7 +2158,7 @@ class Meld(Cleanable, ABC):
 
         Args:
             spell_id:
-                The SHA256 fingerprint associated with the spell.
+                The spell's spell_id - the SHA256 of the registered object's code.
 
         Returns:
             Spell:

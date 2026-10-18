@@ -12,6 +12,7 @@ from typing import Any, List, Tuple
 import pytest
 
 from melder.aether.aether import Aether
+from melder.aether.aether_configuration import AetherConfiguration
 from melder.aether.aether_utility_system import AetherUtilitySystem
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.conduit.creations.managed_spell_quantity import ManagedSpellQuantity
@@ -42,8 +43,8 @@ class Session:
 
 class SessionNext(Session):
     """
-    A second version's class: a managed spell's settings are not part of its spell_id (0.2.8254), so a version of
-    its own needs another class (or address, or disposal names).
+    A second version's class: a spell_id is the class's code (S1 of EPIC-2026-10-18-spell_identity_is_the_code), so
+    a version of its own needs another class; its settings, address and disposal names are its binding.
     """
 
 
@@ -129,7 +130,15 @@ def _pool(root: Conduit, spell_id: str) -> ManagedSpellQuantity:
 
 
 def _two_roots() -> Tuple[Tuple[Spellbook, Conduit, str], Tuple[Spellbook, Conduit, str]]:
-    """Two automatic roots in two frames, each with its own Session binding."""
+    """
+    Two automatic roots in two frames, each with its own Session binding.
+
+    Session is bound in both frames, which per-frame spell ids allow: one class is one spell (S1 of
+    EPIC-2026-10-18-spell_identity_is_the_code), so under process-wide ids the second frame's bind is refused.
+    """
+    policy = AetherConfiguration().with_defaults().with_process_wide_unique_spell_ids(False)
+    policy.activate()
+    Aether().activate(policy)
     roots = []
     for frame, name in (("frame-one", "one"), ("frame-two", "two")):
         book = _automatic_book(frame)
@@ -158,14 +167,18 @@ def test_roots_in_two_frames_dispense_from_their_own_pools() -> None:
 
 
 def test_two_binding_names_in_one_root_dispense_from_two_pools() -> None:
-    """One class bound twice: two versions, two pools, a release picks one by spell id."""
+    """
+    Two binding names in one root are two classes - one object is one spell (S1 of
+    EPIC-2026-10-18-spell_identity_is_the_code) - so each has its own pool; a release picks one by spell id.
+    """
     book = _automatic_book()
     left_id = _bind_session(book, binding_name="left")
-    right_id = _bind_session(book, binding_name="right")
+    right_id = book.bind(spell=SessionNext, binding_name="right", existence=Existence.managed_spell_quantity,
+                         permissions="create")
     root = book.conjure(name="two-names")
     try:
         left = root.meld(spell=Session, binding_name="left")
-        right = root.meld(spell=Session, binding_name="right")
+        right = root.meld(spell=SessionNext, binding_name="right")
         assert (_pool(root, left_id).count, _pool(root, right_id).count) == (1, 1)
         ReleaseManagedSpell().release(right, spell_id=right_id)
         assert root.meld(spell_id=right_id) is right

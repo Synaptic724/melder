@@ -42,6 +42,9 @@ class SpellCrystal(Cleanable):
         - records a managed spell's options (record 4.2.0) - mode by name, limit,
           queue timeout and reset method names - and nothing new for any other
           existence, so every other payload is unchanged
+        - records the spell's binding hash (record 4.3.0): the SHA256 of how it is
+          bound, apart from its code (`Spell.binding_hash`); a restore compares the
+          binding it rebuilds with it
         - records the spell's frame and its record key (`custody_key`): the
           spell id under process-wide ids, "<spell_id>@<frame>" under
           per-frame ids, where one spell id may be bound in several frames
@@ -155,6 +158,7 @@ class SpellCrystal(Cleanable):
         "_managed_spell_limit",
         "_managed_spell_timeout_seconds",
         "_managed_spell_reset_methods",
+        "_binding_hash",
     ]
 
     def __init__(
@@ -187,6 +191,8 @@ class SpellCrystal(Cleanable):
             - Captures resolved disposal names in execution order. This detached
               persistence value does not sort or reapply book policy.
             - Captures native resolution capability so replay cannot enable a definition.
+            - Captures the spell's binding hash (record 4.3.0), the SHA256 of its
+              binding manifest; a restore reports a binding it rebuilt differently.
             - Captures a managed spell's options (record 4.2.0) as plain values - the
               mode's name, the limit, the queue timeout and the reset names - only when
               the existence is `managed_spell_quantity`; other spells capture nothing new.
@@ -325,6 +331,11 @@ class SpellCrystal(Cleanable):
         self._existence_name: str = spell.existence.name
         self._permissions_name: str = spell.permissions.name
         self._resolvable: bool = spell.resolvable
+        # Binding hash (record 4.3.0, EPIC-2026-10-18-spell_identity_is_the_code): the SHA256 of how this
+        # version is bound - its address, spellframe and kind, existence, disposal order, resolvable and
+        # managed settings - apart from its code (`spell_id`). A restore compares the binding it rebuilds
+        # with it and reports a difference.
+        self._binding_hash: str = spell.binding_hash
         # Managed options (record 4.2.0): read only for a managed spell, so every other crystal - and its
         # describe() payload - is unchanged. Plain values: the mode is recorded by NAME, never the enum.
         if self._existence_name == "managed_spell_quantity":
@@ -460,6 +471,7 @@ class SpellCrystal(Cleanable):
             del self._existence_name
             del self._permissions_name
             del self._resolvable
+            del self._binding_hash
             del self._managed_spell_mode_name
             del self._managed_spell_limit
             del self._managed_spell_timeout_seconds
@@ -929,6 +941,28 @@ class SpellCrystal(Cleanable):
         }
 
     @property
+    def binding_hash(self) -> str:
+        """
+        Return the binding hash recorded at bind (record 4.3.0).
+
+        Contract:
+            - The SHA256 of the spell's binding manifest at capture (`Spell.binding_hash`): how
+              the version was bound - address, spellframe and kind, existence, disposal order,
+              resolvable and managed settings - hashed apart from its code (`id`).
+            - A restore compares it with the binding it rebuilds under the receiving Book's
+              policy and reports a difference (`RestoreReport.record_binding_change`).
+
+        Returns:
+            str: 64 hex characters.
+
+        Raises:
+            RuntimeError: If the crystal has been cleaned.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._binding_hash
+
+    @property
     def profile_family(self) -> str:
         """
         Return the examination-profile family recorded at bind.
@@ -1380,6 +1414,8 @@ class SpellCrystal(Cleanable):
                 "existence_name": self._existence_name,
                 "permissions_name": self._permissions_name,
                 "resolvable": self._resolvable,
+                # Record 4.3.0: written for every spell; a restore compares it.
+                "binding_hash": self._binding_hash,
                 "disposal_method_names": list(self._disposal_method_names),
                 "profile_family": self._profile_family,
                 "rebindability": self._rebindability,

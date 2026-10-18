@@ -23,9 +23,9 @@ class LookupContainer:
           for the SAME spell_id is idempotent.
         - The forward map (`signature -> spell_id`) and the reverse map
           (`spell_id -> signature`) are maintained together by every mutating
-          method, so the two never diverge. The relationship is 1:1: the
-          binding signature is folded into the spell_id fingerprint, so a given
-          spell_id occupies exactly one signature.
+          method, so the two never diverge. The relationship is 1:1: one
+          object registers once (bind refuses a second registration of its
+          spell_id, the object's code), so a spell_id occupies one signature.
         - Resolution (signature -> SpellIndex -> Spell) is NOT this object's
           job; this is the uniqueness/claim surface only. The value is the
           active `spell_id`, which re-points on notch.

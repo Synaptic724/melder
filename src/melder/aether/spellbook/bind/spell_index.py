@@ -157,7 +157,7 @@ class SpellIndex(Cleanable):
 
         Threading:
             - Safe on free-threaded builds; attribute reference loads are
-              atomic. This property is the hottest fingerprint read in the
+              atomic. This property is the hottest spell_id read in the
               compiler phases (thousands of reads per conjure), and the
               per-read RLock acquire/release dominated its cost on nogil.
         """

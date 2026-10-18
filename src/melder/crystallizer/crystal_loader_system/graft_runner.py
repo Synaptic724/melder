@@ -394,8 +394,9 @@ class GraftRunner(Cleanable):
 
         Returns:
             Tuple[Optional[SpellIndex], int]: Newly bound index (borrowed) and
-                member count. Parking uses this actual result because receiving
-                book policy can change the bound member's SHA.
+                member count. Parking uses this actual result because the bound
+                member's spell_id follows its code, which may have moved since the
+                record; the receiving Book's policy decides only its binding.
 
         Raises:
             ValueError: If the selected member's target cannot hydrate
@@ -453,8 +454,8 @@ class GraftRunner(Cleanable):
             shortfalls:
                 Collector for honest rows.
             anchor_index:
-                Actual index returned by the selected bind, borrowed for this call.
-                No recorded-SHA lookup is needed after receiving-book composition.
+                Actual index returned by the selected bind, borrowed for this call;
+                no lookup by recorded spell_id is needed.
 
         Returns:
             int: Members parked.
@@ -506,9 +507,10 @@ class GraftRunner(Cleanable):
             selection. Index internals stay untouched.
 
         Contract:
-            - Receiving-book policy applies at each bind. Selection adoption
-              follows the live ID returned by the selected member's bind,
-              which may differ from its recorded SHA.
+            - Receiving-book policy applies at each bind and decides the binding,
+              not the spell_id. Selection adoption follows the live spell_id the
+              selected member's bind returned, which differs from the recorded one
+              only when the member's code moved since the record.
             - Adoption is honest: requested-but-ungrafted selection
               lands a shortfall instead of a silent no-op.
             - Each parked member retains its recorded resolution capability and, when

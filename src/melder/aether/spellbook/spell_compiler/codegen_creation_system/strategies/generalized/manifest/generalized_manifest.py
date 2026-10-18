@@ -188,9 +188,9 @@ def _enrich_phase11_row(
           emitter make the inlinable-common-shape decision from row data
           alone, so source emission never consults live spells.
         - `spell_has_disposal_methods` is the authoritative emit-time disposal
-          fact, read from bind-time spell truth (which composes into the spell
-          fingerprint alongside existence) rather than trusting plan-step
-          plumbing for disposal data.
+          fact, read from bind-time spell truth (which composes into the spell's
+          binding hash alongside existence; the creation cache keys on it) rather
+          than trusting plan-step plumbing for disposal data.
         - Additive only; shared row fields are never mutated.
     """
     # Copy before stamping: the contract line below ("never mutated") was

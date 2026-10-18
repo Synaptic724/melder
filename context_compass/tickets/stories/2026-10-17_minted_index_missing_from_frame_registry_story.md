@@ -9,7 +9,7 @@
 - Agent Role: synaptic_python_developer
 - Priority: p2
 - Created: 2026-10-17T20:32:42Z
-- Updated: 2026-10-18T19:12:43Z
+- Updated: 2026-10-18T19:46:10Z
 
 ## User Narrative
 As an agent who separates a version into its own index with `remove_from_spell_index` - to keep it, try it on its
@@ -705,6 +705,48 @@ this does not make independent review mandatory for every ticket.
   REREAD: HELPFUL
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-10-18T19:40:31Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: remap_s4_citations.py runs after A-D are applied: it rebuilds each file's pre-edit text by undoing the
+    edits it reads from apply_s4.py, then maps old line numbers to new. Since apply_s4.py fills a `{notch}` placeholder
+    in its new texts, the remap could no longer find the applied texts; it now takes --notch and fills the
+    placeholder the same way before undoing. Checked on a /tmp root holding the three files with A-D at 0.2.8259 and
+    today's two documents: spellbook.py 7802 -> 7848 lines, spell.py 1972 -> 1975, mutation_research.py 3990 -> 4005;
+    9 citation lines in src_architecture and 14 in src_components remap. The landing scripts write no numeric
+    citation into these three files, so the remap can run before or after land_s4_docs.py without shifting a line
+    twice.
+  EVIDENCE:
+  - context_compass/artifacts/minted_index_registry_20261018/scripts/remap_s4_citations.py:1-133
+  - context_compass/artifacts/minted_index_registry_20261018/scripts/apply_s4.py:225-265
+  IMPACT: The citation step of the landing pass runs as scripted, with the notch passed as apply_s4.py takes it.
+  NEXT: melder_0's handover NOTICE (the mailbox read every 30 seconds while blocked).
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
+- DATETIME: 2026-10-18T19:46:10Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: The rebuild step is scripted too (rebuild_s4_assets.py, S9's procedure). It copies src/ and the system
+    documents into a /tmp mirror, runs the asset runner there whole (its system-documents writer unlinks its
+    payloads, which the connected folder refuses), and lists every file the run changed under
+    src/melder/_build_assets; with --apply it writes each over its original, reads it back byte-equal and compares
+    the mirror's src/ and the runner's documents with the repository's. Tried on 0.2.8256 (28 and 40 s): the runner
+    reproduces the committed assets byte for byte - nothing to copy - and the trees compare equal, so the mirror
+    holds everything the three builders read. The checks still run in the repository afterwards: the runner's
+    --check, the LLM bundles (--include-untracked, then --check) and the runner's --check again.
+  EVIDENCE:
+  - context_compass/artifacts/minted_index_registry_20261018/scripts/rebuild_s4_assets.py:1-122
+  - context_compass/artifacts/minted_index_registry_20261018/runs/rebuild_trial_dryrun_0_2_8256.txt:1-4
+  - context_compass/artifacts/minted_index_registry_20261018/runs/rebuild_trial_apply_0_2_8256.txt:1-5
+  - src/melder/_build_assets/_system_documents/_builder.py:542-626
+  IMPACT: The landing's last step needs no hand copying; a run that removes a file, or a mirror gone stale, stops it.
+  NEXT: melder_0's handover NOTICE (the mailbox read every 30 seconds while blocked).
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
@@ -735,7 +777,8 @@ this does not make independent review mandatory for every ticket.
   (2) the tests green in the repository, the whole tree in a mirror and the probes, GIL off and on; (3) system
   documents with their indexes and the graph, the release note, the next free notch, closure, the rebuild last,
   the files handed back. Steps (1) and (3) are scripted in the lane folder (apply_s4.py, land_s4_docs.py,
-  graph_prose_s4.py, release_note_s4.py, remap_s4_citations.py; FACT note of the landing scripts).
+  graph_prose_s4.py, release_note_s4.py, remap_s4_citations.py, close_s4.py, rebuild_s4_assets.py; FACT notes
+  of the landing scripts, the remap's notch and the rebuild script).
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

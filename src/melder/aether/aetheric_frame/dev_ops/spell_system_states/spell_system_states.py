@@ -95,7 +95,7 @@ class SpellSystemStates(Cleanable):
         spell cannot leave a stale "valid" verdict behind on either axis.
         Registering an index retires any verdict already held for the version
         id it publishes, because spell ids are content-stable: a rebind of the
-        same class at the same address mints the same id for a new Spell with
+        same class mints the same id (the class's code) for a new Spell with
         no compiler artifact, and a verdict carried across that boundary would
         send the first meld of the replacement straight to the context builder
         with no plan to build from (the rebind-after-first-meld defect).

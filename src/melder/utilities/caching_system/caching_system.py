@@ -82,8 +82,9 @@ class CachingSystem(Cleanable):
           bytes and DROPS the source's structural payload (the receiving
           Book captures its own on its next conjure).
         - Since generation 19 the envelope also carries `world_stamp`: the
-          structural tier's world stamp (sorted pool ids, posture, borrowed
-          ids) recorded by `set_world_stamp` when the executor payloads were
+          structural tier's world stamp (the sorted pool and borrowed ids,
+          each with its spell's binding hash since generation 23, and the
+          posture) recorded by `set_world_stamp` when the executor payloads were
           last staged. The executor tier admits a full hit only when the live
           world carries the same stamp; "" (an empty store, or a bundle
           written without the field) never matches, so the rule fails closed.
@@ -201,6 +202,14 @@ class CachingSystem(Cleanable):
     # release change already cold-starts every bundle (version 9); the bump
     # records why, as the owner asked ("you gotta notch the version for the
     # cache because this is a bug").
+    # Version 23 retires bundles keyed by the spell_id before it became the
+    # SHA256 of the registered object's code alone (S1 of
+    # EPIC-2026-10-18-spell_identity_is_the_code): the bind call left it and
+    # became the binding manifest, whose hash the structural key (payload
+    # format 2) and the world stamp now carry beside each spell_id (S2), so a
+    # binding changed under one spell_id misses both tiers. Every spell_id
+    # moved, and a release change already cold-starts every bundle (version 9);
+    # the bump records why.
     CACHE_VERSION_HISTORY: ClassVar[Mapping[int, str]] = MappingProxyType({
         1: "legacy_executor_payloads",
         2: "decoded_manifest_package_payloads",
@@ -224,6 +233,7 @@ class CachingSystem(Cleanable):
         20: "annotation_kind_matching",
         21: "managed_spell_lease_codegen",
         22: "managed_settings_leave_spell_id",
+        23: "binding_manifest_keys",
     })
     CURRENT_VERSION: ClassVar[int] = max(CACHE_VERSION_HISTORY)
 

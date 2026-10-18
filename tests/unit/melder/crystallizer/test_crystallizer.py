@@ -1,3 +1,4 @@
+import hashlib
 import importlib
 from pathlib import Path
 from types import SimpleNamespace
@@ -45,6 +46,9 @@ class _DummySpell:
         # (SimpleNamespace type-name classifies as the "general" fallback).
         self.disposal_method_names = []
         self.profile = SimpleNamespace()
+        # Binding hash (record 4.3.0): SpellCrystal records the spell's `binding_hash`, the SHA256 of its
+        # binding manifest (`Spell.binding_hash`). A double carries a fixed 64-hex value per spell_id.
+        self.binding_hash = hashlib.sha256(("binding:" + spell_id).encode("utf-8")).hexdigest()
 
 
 @pytest.fixture(autouse=True)

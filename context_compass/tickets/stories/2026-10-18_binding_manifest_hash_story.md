@@ -9,7 +9,7 @@
 - Agent Role: synaptic_python_developer
 - Priority: p1
 - Created: 2026-10-18T11:45:58Z
-- Updated: 2026-10-18T19:17:19Z
+- Updated: 2026-10-18T19:59:24Z
 
 ## User Narrative
 As an agent, I want how a spell is kept - its address, lifetime, teardown, capability and settings - recorded as a
@@ -398,6 +398,25 @@ this does not make independent review mandatory for every ticket.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-10-18T19:59:24Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: S2's last failure is closed: the managed reversed premise is rewritten (batch one_object_b) - the same
+    class bound unique, managed and managed with a limit is one spell_id and three bindings, each with its
+    own binding hash (`test_a_managed_binding_keeps_the_spell_id_and_moves_the_binding_hash`). With the
+    tranche done, the whole tree on the mirror fails only melder_1's 18 S8 tests, the GIL off and on (S1's
+    MEASURE note of 2026-10-18T19:59:24Z).
+  EVIDENCE:
+  - context_compass/artifacts/spell_identity_20261018/scripts/tests_edits_one_object_b.py:1-472
+  - context_compass/artifacts/spell_identity_20261018/staged/runs/tests_one_object_b_gil0.txt:1-1
+  - context_compass/artifacts/spell_identity_20261018/staged/runs/tests_one_object_b_gil1.txt:1-1
+  - context_compass/artifacts/spell_identity_20261018/blast_radius/whole_tree_s1s2_run2/summary.txt:1-14
+  IMPACT: S2's tests are green in the mirror; it lands with S1.
+  NEXT: The landing pass with S1.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
@@ -429,8 +448,9 @@ this does not make independent review mandatory for every ticket.
   2026-10-18T18:44:20Z).
 - Done since: the ordered-disposal replay rewritten - kept ids and the reported binding changes,
   23 green with the GIL off and on (MEASURE note of 2026-10-18T19:17:19Z).
-- Next: S1's test tranche (the rest of (c), then (d) and (e)), which carries S2's last failure (the
-  managed reversed premise); then the landing pass with S1.
+- Done since: the managed reversed premise rewritten - one spell_id, three binding hashes - and the
+  whole tree green but melder_1's 18 S8 tests, the GIL off and on (FACT note of 2026-10-18T19:59:24Z).
+- Next: the landing pass with S1 - src and tests into the repository, docs, notches, the rebuild last.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

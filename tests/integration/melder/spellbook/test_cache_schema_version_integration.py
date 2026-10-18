@@ -32,6 +32,7 @@ EXPECTED_CACHE_VERSION_HISTORY = {
     20: "annotation_kind_matching",
     21: "managed_spell_lease_codegen",
     22: "managed_settings_leave_spell_id",
+    23: "binding_manifest_keys",
 }
 
 

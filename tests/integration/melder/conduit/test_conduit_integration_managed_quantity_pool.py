@@ -24,6 +24,7 @@ from tests._frame_posture_test_support import (
     apply_dynamic_defaults_for_spellbook_configuration,
     set_frame_system_state_for_spellbook_configuration,
 )
+from tests._spell_identity_test_support import version_of
 
 pytestmark = pytest.mark.integration
 
@@ -178,11 +179,11 @@ def test_a_post_conjure_bind_and_bind_inactive_each_get_their_pool() -> None:
     try:
         active_id = _bind_managed(root, OtherPooled, managed_spell_limit=16)
         parked_id = root.bind_inactive(
-            spell=OtherPooled, spell_index=book.find_spell_by_spell_id(active_id).spell_index,
+            spell=version_of(OtherPooled, version=2), spell_index=book.find_spell_by_spell_id(active_id).spell_index,
             existence=Existence.managed_spell_quantity, permissions="create", disposal_method_names=[],
             managed_spell_limit=8,
         )
-        # No disposal names: a version of its own (0.2.8254: a managed spell's settings are not in its spell_id).
+        # A version of its own is other code - one object is one spell; its settings and empty disposal list bind it.
         active_pool = root._creations.get_managed_quantity(active_id)
         parked_pool = root._creations.get_managed_quantity(parked_id)
         assert (active_pool.limit, parked_pool.limit) == (16, 8)

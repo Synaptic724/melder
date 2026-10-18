@@ -9,7 +9,7 @@
 - Agent Role: synaptic_python_developer
 - Priority: p1
 - Created: 2026-10-18T11:45:58Z
-- Updated: 2026-10-18T19:11:29Z
+- Updated: 2026-10-18T20:03:20Z
 
 ## User Narrative
 As an agent iterating on a class in Melder, I want its spell_id to change exactly when its code changes - a method
@@ -83,8 +83,8 @@ both at the root.
 - [x] Task: the patches (architecture; Binding Pipeline and Spell Examination Profiles component;
   code-description) - written 2026-10-18; approved by the owner's word to land (2026-10-18T15:01:53Z),
   updated for decision B and strict uniqueness.
-- [ ] Task: red regression tests from P1-P10 and I1-I9.
-- [ ] Task: implement and measure bind's cost.
+- [x] Task: red regression tests from P1-P10 and I1-I9 (staged/tests; green on the mirror, GIL off and on).
+- [ ] Task: implement and measure bind's cost (measured, MEASURE note of 2026-10-18T19:59:24Z; lands with S2).
 - [ ] Task: docs, graph, notch (with S2) and the rebuild last.
 - [ ] Enforce Ticket Microcycle across all linked tasks.
 - [ ] Record meaningful attributed findings in supported Notes/comments or authorized linked evidence.
@@ -545,6 +545,118 @@ this does not make independent review mandatory for every ticket.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-10-18T19:59:24Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: The test tranche is done in the mirror: batches ordered_replay, one_object_a and one_object_b of
+    tests_apply_s1_s2.py close the last 74 failed ids - (b) 1; (c) 70, one object registered twice, by a
+    class of its own where a test only needs a second spell, `version_of` (a subclass with the same name,
+    qualname and module and one class-level value more) where the name matters, a module-level class where
+    a restore or graft imports the version, and per-frame spell ids where one class lives in two roots; (d)
+    1, a managed binding keeps its spell_id and moves its binding hash; (e) 2, the process-stability child
+    and the two-frame conjure. Batch A's files pass 114 tests and batch B's 113, the GIL off and on. The
+    whole tree on the mirror (14,645 tests: unit 9,707, component 2,427, integration 2,257,
+    experimentation 254) then fails the same 18 ids with the GIL off and on, all melder_1's S8 tests - red
+    on the 0.2.8255 baseline and on hold with the owner (M1-33); S9's 7 from that baseline pass at
+    0.2.8256. Run 2 counts 52 ids fewer than run 1: 89 gone (the retired API's tests and renamed ones), 37
+    new (successors, renames and the binding-hash tests).
+  EVIDENCE:
+  - context_compass/artifacts/spell_identity_20261018/blast_radius/whole_tree_s1s2_run2/summary.txt:1-14
+  - context_compass/artifacts/spell_identity_20261018/blast_radius/whole_tree_s1s2_run2/failed_gil0.txt:1-18
+  - context_compass/artifacts/spell_identity_20261018/blast_radius/whole_tree_s1s2_run2/failed_gil1.txt:1-18
+  - context_compass/artifacts/spell_identity_20261018/blast_radius/whole_tree_s1s2_run2/id_diff_run1_run2.txt:1-133
+  - context_compass/artifacts/spell_identity_20261018/blast_radius/whole_tree_s1s2/base_8255_failed.txt:1-25
+  - context_compass/artifacts/spell_identity_20261018/staged/runs/tests_one_object_a_gil0.txt:1-1
+  - context_compass/artifacts/spell_identity_20261018/staged/runs/tests_one_object_a_gil1.txt:1-1
+  - context_compass/artifacts/spell_identity_20261018/staged/runs/tests_one_object_b_gil0.txt:1-1
+  - context_compass/artifacts/spell_identity_20261018/staged/runs/tests_one_object_b_gil1.txt:1-1
+  - context_compass/artifacts/spell_identity_20261018/scripts/tests_edits_one_object_a.py:1-302
+  - context_compass/artifacts/spell_identity_20261018/scripts/tests_edits_one_object_b.py:1-472
+  - context_compass/artifacts/spell_identity_20261018/staged/tests/_spell_identity_test_support.py:1-46
+  IMPACT: S1 and S2 are green in the mirror end to end, and every batch lands through the same applier, so the
+    landing's tree is the mirror's; the exit gate's last item, bind's cost, is the next note.
+  NEXT: The landing pass: apply_s1_s2.py and tests_apply_s1_s2.py on the repository (--check, then the run),
+    with a copy batch for the two new tests no batch copies; then the notches, the docs and the rebuild.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-18T19:59:24Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: Bind's cost before (0.2.8256) and after (S1 and S2), through the benchmark's own cycle
+    (profile_bind_conjure_cycle.run_cycle, caching disabled, no meld sweep - its sweep fails at 0.2.8256,
+    before and after alike), 20 cycles a run: the gauntlet's 29 classes bind in 5.9-6.2 ms before and
+    7.8-8.0 ms after with the GIL off (6.3 and 7.9 ms with it on), one bind's median 194-200 us before and
+    249-253 us after, +55 us; 200 generated classes bind in 38.6-39.4 ms before and 46.5-48.0 ms after,
+    187-189 us a bind before and 225 us after, +37 us. Conjure is unchanged (12.3-12.7 ms; 60.8-61.8 ms),
+    so setup grows about 10% (18.6 to 20.4 ms) and 9% (100 to 109 ms); a meld reads none of it. The
+    profile puts the difference in `SpellCodeDigest.spell_id`: `Bind._bind_logic` takes 0.150 s before
+    and 0.225 s after over 580 profiled binds, spell_id 0.077 s of it; the binding profile costs the same
+    before and after. The code memo is per Bind, so each new Spellbook digests every class's code again.
+  EVIDENCE:
+  - context_compass/artifacts/spell_identity_20261018/probes/probe_bind_cost.py:1-74
+  - context_compass/artifacts/spell_identity_20261018/probes/probe_bind_cost_profile.py:1-54
+  - context_compass/artifacts/spell_identity_20261018/runs/bind_cost/gauntlet_before_gil0_r1.txt:1-5
+  - context_compass/artifacts/spell_identity_20261018/runs/bind_cost/gauntlet_before_gil0_r2.txt:1-5
+  - context_compass/artifacts/spell_identity_20261018/runs/bind_cost/gauntlet_before_gil1_r1.txt:1-9
+  - context_compass/artifacts/spell_identity_20261018/runs/bind_cost/gauntlet_after_gil0_r1.txt:1-5
+  - context_compass/artifacts/spell_identity_20261018/runs/bind_cost/gauntlet_after_gil0_r2.txt:1-5
+  - context_compass/artifacts/spell_identity_20261018/runs/bind_cost/gauntlet_after_gil1_r1.txt:1-9
+  - context_compass/artifacts/spell_identity_20261018/runs/bind_cost/synth200_before_gil0_r1.txt:1-5
+  - context_compass/artifacts/spell_identity_20261018/runs/bind_cost/synth200_before_gil0_r2.txt:1-5
+  - context_compass/artifacts/spell_identity_20261018/runs/bind_cost/synth200_after_gil0_r1.txt:1-5
+  - context_compass/artifacts/spell_identity_20261018/runs/bind_cost/synth200_after_gil0_r2.txt:1-5
+  - context_compass/artifacts/spell_identity_20261018/runs/bind_cost/profile_bind_before_gil0.txt:1-52
+  - context_compass/artifacts/spell_identity_20261018/runs/bind_cost/profile_bind_after_gil0.txt:1-52
+  IMPACT: The exit gate's measurement is made: +37 to +55 us a bind, once per registration; melds unchanged.
+  NEXT: The landing pass (the tranche note's NEXT); the cost is the owner's to weigh (RISK note).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-18T19:59:24Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: RISK
+  CLAIM: Bind costs 20-31% more after S1 (+37 to +55 us a class, setup +9-10%) because the spell_id now reads
+    every function's code. Two remedies, unmeasured and not in this landing: a code memo shared by every
+    Spellbook (owned by Aether, weakly keyed by code object), so a class bound again in a new Book
+    digests nothing; and hashing incrementally instead of joining text. How much each recovers is UNKNOWN.
+  EVIDENCE:
+  - context_compass/artifacts/spell_identity_20261018/runs/bind_cost/profile_bind_after_gil0.txt:1-52
+  - context_compass/artifacts/spell_identity_20261018/runs/bind_cost/gauntlet_after_gil0_r1.txt:1-5
+  - context_compass/artifacts/spell_identity_20261018/runs/bind_cost/synth200_after_gil0_r1.txt:1-5
+  IMPACT: A world binding a few hundred classes pays a few milliseconds more at setup; a process that builds
+    Books often pays it for every Book.
+  NEXT: Land as measured unless the owner says otherwise; told in chat with the numbers.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-18T20:03:20Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: S1 and S2 are applied to the repository: apply_s1_s2.py (26 files edited, the two new modules copied)
+    and tests_apply_s1_s2.py (every batch, then a new batch `new_tests`), each --check first, wrote
+    nothing until every anchor matched, and the repository's src/ then equals the mirror's byte for byte.
+    tests/ equals it too but for two files melder_1 committed at 0.2.8256 after the mirror was built - its
+    S4 red tests (test_separated_version_is_known_to_its_frame_integration.py and the residency test in
+    test_mutation_research_root.py), red by design until S4 lands. One new test module existed only in the
+    mirror, test_spell_code_digest_libraries.py (decision B's nine tests, in both whole-tree runs): it is
+    staged now and copied by `new_tests` with the binding manifest's tests and the component test.
+  EVIDENCE:
+  - context_compass/artifacts/spell_identity_20261018/scripts/apply_s1_s2.py:1-39
+  - context_compass/artifacts/spell_identity_20261018/scripts/tests_apply_s1_s2.py:1-105
+  - context_compass/artifacts/spell_identity_20261018/scripts/tests_edits_new_tests.py:1-23
+  - context_compass/artifacts/spell_identity_20261018/staged/tests/unit/melder/spellbook/bind/test_spell_code_digest_libraries.py:1-119
+  IMPACT: The code and tests of the landing are in place; nothing is committed (the owner commits). The landed
+    tree's whole run, with melder_1's S4 tests, comes with the rebuild mirror.
+  NEXT: The docs: the patch docs promoted into the system documents, their indexes, the graph; then the
+    notches, the release note, the closure and the rebuild.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
@@ -580,9 +692,13 @@ this does not make independent review mandatory for every ticket.
   baseline; the doubles rewritten and green (MEASURE note of 2026-10-18T18:44:20Z).
 - Done since: category (b) in nine of its ten files with the rewrites they held - 116 failed ids
   closed, 503 tests green with the GIL off and on (MEASURE note of 2026-10-18T19:11:29Z).
-- Next: test_ordered_disposal_replay.py, then (c) one object registered twice in 20 more files, (d)
-  the managed reversed premise, (e) the process-stability and two-frame tests; then the whole tree
-  with the GIL off and on, and the landing pass with S2, notched above 0.2.8256.
+- Done since: the tranche finished - the ordered-disposal replay (S2's MEASURE note of
+  2026-10-18T19:17:19Z), then (c), (d) and (e) in 20 files - and the whole tree green but melder_1's 18
+  S8 tests, the GIL off and on (MEASURE note of 2026-10-18T19:59:24Z).
+- Done since: bind's cost measured - +37 to +55 us a bind, setup +9-10%, conjure and melds unchanged
+  (MEASURE and RISK notes of 2026-10-18T19:59:24Z).
+- Next: the landing pass with S2 - src and tests into the repository, docs, the notches (read at
+  landing, above 0.2.8256), the release note, the rebuild last.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

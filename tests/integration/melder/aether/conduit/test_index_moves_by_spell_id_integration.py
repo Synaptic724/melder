@@ -49,6 +49,14 @@ class _ServiceY:
         self.tag = "Y"
 
 
+class _ServiceOther:
+    """The spell another Book of the frame owns: one class is one spell, so it is a class of its own."""
+
+    def __init__(self) -> None:
+        """Tag the object with its spell."""
+        self.tag = "other"
+
+
 def _reset_world() -> None:
     """Fresh Aether and utility-system singletons for one test."""
     Aether._reset_singleton_for_tests()
@@ -183,7 +191,7 @@ def test_index_move_refuses_another_books_spell_id(verb: str) -> None:
     with _two_indexes() as (book, root, id_a, id_b, id_y, index_x, index_y):
         other_book = _make_spellbook()
         id_other = other_book.bind(
-            spell=_ServiceB, existence=Existence.unique, permissions="create", binding_name="other_b",
+            spell=_ServiceOther, existence=Existence.unique, permissions="create", binding_name="other_b",
         )
         with pytest.raises(ValueError, match="is not owned by this conduit's Spellbook"):
             if verb == "add_to_spell_index":

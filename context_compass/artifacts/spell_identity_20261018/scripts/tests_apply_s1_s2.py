@@ -9,7 +9,7 @@ from the staged folder.
 import argparse
 import pathlib
 import sys
-from typing import Callable, Dict
+from typing import Callable, Dict, List, Tuple
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from apply_common import Applier
@@ -28,6 +28,30 @@ class TestApplier(Applier):
         self.texts[rel] = text.replace(old, new)
         self.counts[rel] = self.counts.get(rel, 0) + count
 
+    def edit_preserving(self, rel: str, pairs: List[Tuple[str, str]], label: str) -> None:
+        """
+        Edit a file whose committed copy mixes CRLF and LF lines (git i/mixed) without normalizing it.
+
+        Each `old`, written with LF, is matched in its CRLF form exactly once and replaced by `new` in CRLF, so only
+        the lines it replaces change and every other line keeps its own ending. Anchors must lie in CRLF lines.
+        """
+        if rel not in self.texts:
+            raw = (self.root / rel).read_bytes().decode("utf-8")
+            self.texts[rel] = raw
+            self.originals[rel] = raw
+            # The text keeps its own endings, so writing maps nothing.
+            self.newline[rel] = "\n"
+        text = self.texts[rel]
+        for index, (old, new) in enumerate(pairs):
+            old_crlf = old.replace("\n", "\r\n")
+            count = text.count(old_crlf)
+            if count != 1:
+                self.errors.append(f"ANCHOR {label}#{index} in {rel}: found {count}: {old[:70]!r}")
+                continue
+            text = text.replace(old_crlf, new.replace("\n", "\r\n"))
+            self.counts[rel] = self.counts.get(rel, 0) + 1
+        self.texts[rel] = text
+
 
 def batches() -> Dict[str, Callable[[TestApplier], None]]:
     """The edit batches in landing order; each module exposes `apply(applier)`."""
@@ -38,9 +62,11 @@ def batches() -> Dict[str, Callable[[TestApplier], None]]:
     import tests_edits_inherited
     import tests_edits_lifecycle_hooks
     import tests_edits_managed
+    import tests_edits_new_tests
     import tests_edits_ordered_disposal
     import tests_edits_ordered_replay
     import tests_edits_one_object_a
+    import tests_edits_one_object_b
     import tests_edits_profile_strategy
     import tests_edits_resolvable_registration
     return {
@@ -56,6 +82,8 @@ def batches() -> Dict[str, Callable[[TestApplier], None]]:
         "resolvable_registration": tests_edits_resolvable_registration.apply,
         "ordered_replay": tests_edits_ordered_replay.apply,
         "one_object_a": tests_edits_one_object_a.apply,
+        "one_object_b": tests_edits_one_object_b.apply,
+        "new_tests": tests_edits_new_tests.apply,
     }
 
 

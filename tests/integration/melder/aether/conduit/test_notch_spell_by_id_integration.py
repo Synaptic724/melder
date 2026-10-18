@@ -22,6 +22,7 @@ from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spellbook import Spellbook
 
 from tests._frame_posture_test_support import apply_dynamic_defaults_for_spellbook_configuration
+from tests._spell_identity_test_support import version_of
 
 pytestmark = pytest.mark.integration
 
@@ -98,24 +99,28 @@ def _staged(
 
     Args:
         before_conjure: Stage B on the Book before `conjure` (True) or on the root after it (False).
-        tag: Suffix for the binding names, so two worlds can share a frame.
+        tag: Names a second world sharing the frame: its binding names take the suffix and it binds versions
+            of the services of its own, since one class is one spell (S1 of
+            EPIC-2026-10-18-spell_identity_is_the_code).
 
     Yields:
         Tuple: (book, root, id_a, id_b, index).
     """
+    service_a = version_of(_ServiceA, world=tag) if tag else _ServiceA
+    service_b = version_of(_ServiceB, world=tag) if tag else _ServiceB
     book = _make_spellbook()
-    id_a = book.bind(spell=_ServiceA, existence=Existence.unique, permissions="create", binding_name=f"a{tag}")
+    id_a = book.bind(spell=service_a, existence=Existence.unique, permissions="create", binding_name=f"a{tag}")
     index = book.find_spell_by_spell_id(id_a).spell_index
     if before_conjure:
         id_b = book.bind_inactive(
-            spell=_ServiceB, spell_index=index, existence=Existence.unique, permissions="create",
+            spell=service_b, spell_index=index, existence=Existence.unique, permissions="create",
             binding_name=f"b{tag}",
         )
         root = book.conjure(dynamic=True, name=f"root{tag}")
     else:
         root = book.conjure(dynamic=True, name=f"root{tag}")
         id_b = root.bind_inactive(
-            spell=_ServiceB, spell_index=index, existence=Existence.unique, permissions="create",
+            spell=service_b, spell_index=index, existence=Existence.unique, permissions="create",
             binding_name=f"b{tag}",
         )
     try:

@@ -1588,7 +1588,9 @@ def test_build_conjure_cache_state_reports_disabled_path() -> None:
         None.
     """
     spellbook = types.SimpleNamespace(
-        _spell_id_pool={"spell-a": types.SimpleNamespace(is_existing_creation=False, resolvable=True)},
+        _spell_id_pool={
+            "spell-a": types.SimpleNamespace(is_existing_creation=False, resolvable=True, binding_hash="b" * 64),
+        },
         _system_caching_enabled_in_aether=lambda: False,
     )
 
@@ -1621,8 +1623,8 @@ def test_build_conjure_cache_state_reports_full_hit_path() -> None:
     )
     spellbook = types.SimpleNamespace(
         _spell_id_pool={
-            "spell-a": types.SimpleNamespace(is_existing_creation=False, resolvable=True),
-            "spell-b": types.SimpleNamespace(is_existing_creation=False, resolvable=True),
+            "spell-a": types.SimpleNamespace(is_existing_creation=False, resolvable=True, binding_hash="b" * 64),
+            "spell-b": types.SimpleNamespace(is_existing_creation=False, resolvable=True, binding_hash="b" * 64),
         },
         _system_caching_enabled_in_aether=lambda: True,
         _get_or_create_caching_system=lambda conduit_name=None: caching_system,
@@ -1663,8 +1665,8 @@ def test_build_conjure_cache_state_reports_mixed_path() -> None:
     )
     spellbook = types.SimpleNamespace(
         _spell_id_pool={
-            "spell-a": types.SimpleNamespace(is_existing_creation=False, resolvable=True),
-            "spell-b": types.SimpleNamespace(is_existing_creation=False, resolvable=True),
+            "spell-a": types.SimpleNamespace(is_existing_creation=False, resolvable=True, binding_hash="b" * 64),
+            "spell-b": types.SimpleNamespace(is_existing_creation=False, resolvable=True, binding_hash="b" * 64),
         },
         _system_caching_enabled_in_aether=lambda: True,
         _get_or_create_caching_system=lambda conduit_name=None: caching_system,
@@ -1702,8 +1704,8 @@ def test_build_conjure_cache_state_treats_stale_surplus_cache_as_full_hit() -> N
     )
     spellbook = types.SimpleNamespace(
         _spell_id_pool={
-            "spell-a": types.SimpleNamespace(is_existing_creation=False, resolvable=True),
-            "spell-b": types.SimpleNamespace(is_existing_creation=False, resolvable=True),
+            "spell-a": types.SimpleNamespace(is_existing_creation=False, resolvable=True, binding_hash="b" * 64),
+            "spell-b": types.SimpleNamespace(is_existing_creation=False, resolvable=True, binding_hash="b" * 64),
         },
         _system_caching_enabled_in_aether=lambda: True,
         _get_or_create_caching_system=lambda conduit_name=None: caching_system,

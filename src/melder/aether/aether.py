@@ -2587,10 +2587,10 @@ class Aether(Cleanable):
             return frame.find_index_for_spell(spell_id)
 
         # PROCESS-WIDE SWEEP. The named frame does not hold it; under the
-        # process-wide regime another frame still might, because spell_id is a
-        # SHA256 over the bind-time fingerprint and does NOT include the frame -
-        # the same target bound with the same parameters mints the same id
-        # everywhere. Owner ruling 2026-08-02: one spell_id means one spell,
+        # process-wide regime another frame still might, because spell_id is the
+        # SHA256 of the registered object's code and does NOT include the frame -
+        # the same object mints the same id everywhere, however it is bound.
+        # Owner ruling 2026-08-02: one spell_id means one spell,
         # process-wide, so every consumer of this lookup - the bind guard AND
         # `Spellbook.inspect_spell` - answers at process scope.
         #

@@ -20,6 +20,7 @@ from melder.aether.spellbook.configuration.spellbook_configuration import Spellb
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spellbook import Spellbook
 from tests._frame_posture_test_support import apply_dynamic_defaults_for_spellbook_configuration
+from tests._spell_identity_test_support import version_of
 
 pytestmark = pytest.mark.integration
 
@@ -39,11 +40,11 @@ class Session:
         self.closed = True
 
     def flush(self) -> None:
-        """A second disposal step the parked version names, so it is a version of its own (0.2.8254)."""
+        """A second disposal step the parked version's binding names (its binding, not its version)."""
 
 
 class Keeper:
-    """A `unique` class; a second version differs by its disposal names."""
+    """A `unique` class; its staged second version is `version_of(Keeper, version=2)`."""
 
     def close(self) -> None:
         """Nothing to release."""
@@ -119,31 +120,39 @@ def _park_second_version(owner_book: Spellbook, owner: Conduit, spell_id: str, t
         owner_book: The owner Book.
         owner: The owner root.
         spell_id: The active version's id.
-        target_class: Session (limit 8, disposal "close" and "flush": a managed spell's settings are not part
-            of its spell_id since 0.2.8254, so the disposal names make the second version) or Keeper (disposal
-            "close").
+        target_class: Session (limit 8, disposal "close" and "flush") or Keeper (disposal "close"). The staged
+            class is `version_of(target_class, version=2)`: one object is one spell (S1 of
+            EPIC-2026-10-18-spell_identity_is_the_code), so a version is new code under the same name, and its
+            settings and disposal names are its binding.
 
     Returns:
         Spell: The parked version.
     """
     spell_index = owner_book.find_spell_by_spell_id(spell_id).spell_index
     if target_class is Session:
-        parked_id = owner.bind_inactive(spell=Session, spell_index=spell_index,
+        parked_id = owner.bind_inactive(spell=version_of(Session, version=2), spell_index=spell_index,
                                         existence=Existence.managed_spell_quantity, permissions="create",
                                         disposal_method_names=["close", "flush"], managed_spell_limit=8)
     else:
-        parked_id = owner.bind_inactive(spell=Keeper, spell_index=spell_index, existence=Existence.unique,
-                                        permissions="create", disposal_method_names=["close"])
+        parked_id = owner.bind_inactive(spell=version_of(Keeper, version=2), spell_index=spell_index,
+                                        existence=Existence.unique, permissions="create",
+                                        disposal_method_names=["close"])
     return owner_book._get_owned_spell(parked_id)
 
 
 def _registry(owner: Conduit, target: Conduit) -> List[Tuple[str, str, int, int]]:
-    """The registry's rows for Session: (spell id, holding root label, count, idle count), sorted."""
+    """
+    The registry's rows for Session and its versions: (spell id, holding root label, count, idle count), sorted.
+
+    A staged version is a class of its own (one object is one spell), registered under that class, so the rows
+    of every Session subclass count; a subclass with no live pool adds none.
+    """
     labels = {owner.id: "owner", target.id: "target"}
     return sorted(
         (row["spell_id"], labels.get(row["holding_conduit_id"], row["holding_conduit_id"]), row["count"],
          row["idle_count"])
-        for row in ReleaseManagedSpell().describe(Session)
+        for cls in (Session, *Session.__subclasses__())
+        for row in ReleaseManagedSpell().describe(cls)
     )
 
 
@@ -237,9 +246,9 @@ def test_no_move_with_a_parked_version_leases_from_the_target_after_a_notch() ->
     """
     The parked version is stamped onto the target, which composes its pool; the owner keeps its old one.
 
-    Once that version is notched in, a release by class meets three Session pools (the first version's in the
-    target, the second's in each root), two of them the selected version's, and raises the documented ambiguity; a
-    release naming the conduit reaches the target's pool.
+    Once that version is notched in, a release by class meets the second version's two pools - its class is its
+    own, since one object is one spell - one in each root, both the selected version's, and raises the
+    documented ambiguity; a release naming the conduit reaches the target's pool.
     """
     owner_book, target_book, owner, target, spell_id = _world()
     parked = _park_second_version(owner_book, owner, spell_id)
@@ -253,7 +262,7 @@ def test_no_move_with_a_parked_version_leases_from_the_target_after_a_notch() ->
     target.notch_spell(spell_index=parked.spell_index, spell=parked)
     leased = target.meld(spell=Session)
     assert (new_parked_pool.count, old_parked_pool.count) == (1, 0)
-    with pytest.raises(ValueError, match="is managed by 3 pools"):
+    with pytest.raises(ValueError, match="is managed by 2 pools"):
         ReleaseManagedSpell().release(leased)
     ReleaseManagedSpell().release(leased, conduit=target)
     assert new_parked_pool.idle_count == 1

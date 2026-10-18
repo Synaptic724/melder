@@ -4,8 +4,9 @@ and src_components.md after S4's edits A-D, line by line (melder_1; adapted from
 The pre-edit text of each file is rebuilt by undoing its edits (their exact strings, read from apply_s4.py's EDITS);
 difflib maps every old line to its new one. A range's start maps to the start of a replaced block and its end to the
 block's end. The Context / Handoff Summary sections are history and are left as written. mutation_research.py is
-CRLF in the working tree and is compared with its line endings normalized.
-Usage: remap_s4_citations.py --root <tree> --check|--apply
+CRLF in the working tree and is compared with its line endings normalized. The new texts carry {notch} where the
+notch S4 takes stands; it is filled in, as apply_s4.py fills it, before an edit is undone.
+Usage: remap_s4_citations.py --root <tree> --notch <version> --check|--apply
 """
 import ast
 import difflib
@@ -22,8 +23,9 @@ FILES = {
 DOCS = ("context_compass/system_docs/src_architecture.md", "context_compass/system_docs/src_components.md")
 
 
-def edits_by_file() -> dict:
-    """Read apply_s4.py's EDITS (its file names are module-level names, given here) and group them by file."""
+def edits_by_file(notch: str) -> dict:
+    """Read apply_s4.py's EDITS (its file names are module-level names, given here) and group them by file, each
+    new text with its {notch} filled in as apply_s4.py fills it."""
     tree = ast.parse((LANE / "scripts/apply_s4.py").read_text(encoding="utf-8"))
     names = {}
     edits = None
@@ -40,7 +42,7 @@ def edits_by_file() -> dict:
     by_file = {}
     for group in sorted(groups):
         for rel, label, old, new in groups[group]:
-            by_file.setdefault(rel, []).append((label, old, new))
+            by_file.setdefault(rel, []).append((label, old, new.replace("{notch}", notch)))
     return by_file
 
 
@@ -81,10 +83,12 @@ def line_map(path: pathlib.Path, edits: list) -> tuple:
 def main() -> None:
     """Report every changed citation; write the documents only with --apply."""
     args = sys.argv[1:]
-    if len(args) != 3 or args[0] != "--root" or args[2] not in ("--check", "--apply"):
+    if len(args) != 5 or args[0] != "--root" or args[2] != "--notch" or args[4] not in ("--check", "--apply"):
         raise SystemExit(__doc__)
+    if not re.fullmatch(r"0\.2\.82\d\d", args[3]):
+        raise SystemExit("--notch must read 0.2.82NN, got %r" % args[3])
     root = pathlib.Path(args[1])
-    grouped = edits_by_file()
+    grouped = edits_by_file(args[3])
     maps = {}
     for rel in FILES:
         start, end, old_n, new_n = line_map(root / rel, grouped[rel])
@@ -117,12 +121,12 @@ def main() -> None:
                 print("%s:%d\n  - %s\n  + %s" % (doc.name, idx + 1, lines[idx].strip()[:150], new_line.strip()[:150]))
                 lines[idx] = new_line
         print("%s: %d lines changed" % (doc.name, changes))
-        if args[2] == "--apply":
+        if args[4] == "--apply":
             text = "\n".join(lines)
             doc.write_bytes(text.encode("utf-8"))
             if doc.read_bytes().decode("utf-8") != text:
                 raise SystemExit("read-back mismatch in %s" % doc.name)
-    if args[2] == "--apply":
+    if args[4] == "--apply":
         print("applied")
 
 

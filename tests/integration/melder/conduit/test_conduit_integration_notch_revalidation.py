@@ -25,6 +25,7 @@ from melder.aether.spellbook.spellbook import Spellbook
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 from melder.utilities.custom_exceptions.spellbook_validation_error import SpellbookValidationError
 from melder.utilities.custom_exceptions.unresolved_input_error import UnresolvedInputError
+from tests._spell_identity_test_support import version_of
 
 
 @runtime_checkable
@@ -427,8 +428,9 @@ def test_a_notch_back_reactivates_a_version_grant_and_its_consumer_rebuilds_with
     world = _lend("anchored_back", ImplA, index_link=False)
     bystander_book = Spellbook(aetheric_frame="anchored_back",
                                configuration=SpellbookConfiguration("anchored_back").with_defaults())
-    bystander_id = bystander_book.bind(spell=Consumer, binding_name="bystander", existence=Existence.many,
-                                       permissions="create")
+    # A version of Consumer of its own: one class is one spell, and the borrower bound Consumer.
+    bystander_id = bystander_book.bind(spell=version_of(Consumer, bystander=True), binding_name="bystander",
+                                       existence=Existence.many, permissions="create")
     bystander = bystander_book.conjure(dynamic=True, name="bystander")
     try:
         world.lender.link(bystander)

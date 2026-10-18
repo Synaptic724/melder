@@ -84,7 +84,10 @@ class RecordVersion:
     # Minor 4.2 adds a managed spell's options to its spell crystal (`managed_spell_mode`,
     # `managed_spell_limit`, `managed_spell_timeout_seconds`, `managed_spell_reset_methods`), written only
     # for `Existence.managed_spell_quantity`; 4.1 readers ignore them, and a 4.1 record holds no such keys.
-    CURRENT: ClassVar[str] = "4.2.0"
+    # Minor 4.3 adds the spell crystal's `binding_hash` (EPIC-2026-10-18-spell_identity_is_the_code, S2):
+    # the SHA256 of the spell's binding manifest, written for every spell; 4.2 readers ignore it, and a
+    # 4.2 record read by a 4.3 loader compares no binding.
+    CURRENT: ClassVar[str] = "4.3.0"
     KEY: ClassVar[str] = "record_version"
 
     @staticmethod

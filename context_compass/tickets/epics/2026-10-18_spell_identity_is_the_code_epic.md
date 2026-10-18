@@ -8,7 +8,7 @@
 - Agent Role: synaptic_python_developer
 - Priority: p1
 - Created: 2026-10-18T11:45:58Z
-- Updated: 2026-10-18T18:44:20Z
+- Updated: 2026-10-18T19:59:24Z
 - Target Window: 2026-Q4
 - Related Program/Initiative: Melder runtime correctness (the owner's direction, chat 2026-10-18); follows
   STORY-2026-10-17-release_routes_parked_version_objects_to_active_pool
@@ -785,9 +785,11 @@ this does not make independent review mandatory for every ticket.
   the landing (FACT note of 2026-10-18T18:40:11Z).
 - Done since: the whole tree run with S1 and S2 in the mirror - 406 new failures in five categories,
   the 213 doubles fixed (S1's MEASURE note of 2026-10-18T18:44:20Z).
-- Next: (1) the test tranche - the retired API's tests, one object registered twice, the reversed
-  premises, the rest - then the whole tree with the GIL off and on; (2) the landing pass - src,
-  green, docs, notches, the rebuild last.
+- Done since: the test tranche finished in the mirror and the whole tree green but melder_1's 18 S8
+  tests, the GIL off and on; bind's cost measured, +37 to +55 us a bind (S1's MEASURE and RISK notes
+  of 2026-10-18T19:59:24Z).
+- Next: the landing pass - src and tests into the repository, docs, notches, the release note, the
+  rebuild last; then M0-201 hands spellbook.py and spell.py back to melder_1 (M1-40).
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

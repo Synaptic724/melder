@@ -98,8 +98,9 @@ def _append_step_resolution_source(
     existence = Existence[row["existence"]]
     inlinable_params = row_inlinable_common_shape(row)
     # Bind-time spell truth stamped by the manifest builder; disposal facts
-    # compose into the spell fingerprint, so this can never go stale without
-    # rolling the spell version (and with it, this manifest).
+    # compose into the spell's binding hash, which the creation cache keys on
+    # beside the spell_id, so this can never go stale without rebuilding this
+    # manifest (EPIC-2026-10-18-spell_identity_is_the_code).
     has_disposal_methods = bool(row["spell_has_disposal_methods"])
     needs_register_block = not (
         existence is Existence.many and not has_disposal_methods

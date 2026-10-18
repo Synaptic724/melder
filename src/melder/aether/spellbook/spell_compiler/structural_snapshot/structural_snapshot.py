@@ -57,8 +57,8 @@ class StructuralSnapshot:
           registered `SpellLocalTopology`, the SpellIndex's `SpellSystemState`
           (validity and the `contract_unvalidated` flag) and the bind-time
           profile requirements (annotation type references for the key).
-        - Payload schema (`PAYLOAD_FORMAT` 1):
-          ``{"key": {"format", "spell_id", "annotation_refs"},
+        - Payload schema (`PAYLOAD_FORMAT` 2):
+          ``{"key": {"format", "spell_id", "binding_hash", "annotation_refs"},
              "world_stamp": str, "replayable": bool,
              "phase3": {"dependency_ids": [...], "sockets": [...]},
              "phase4": {"validity": str, "contract_unvalidated": bool}}``
@@ -70,9 +70,11 @@ class StructuralSnapshot:
           dependency ids (without the spell itself) followed by the spell id,
           the same law phase 3 applies.
         - The world stamp is a SHA-256 over the inputs phases 3-4 read from
-          the world: the sorted pool ids, the frame posture and the sorted
-          borrowed (contracted) spell ids. A payload is only meaningful for
-          the world it was captured in.
+          the world: the sorted pool ids, each with its spell's binding hash,
+          the frame posture and the sorted borrowed (contracted) spell ids,
+          each with its binding hash. A payload is only meaningful for the
+          world it was captured in; a binding changed under one spell_id is
+          another world (EPIC-2026-10-18-spell_identity_is_the_code).
         - Replayability is a POOL property: phase 3 disables its candidate
           index, and so falls back to `==` scans, when any bound object or
           spellframe in the pool overrides `__eq__`; such matching cannot be
@@ -131,7 +133,9 @@ class StructuralSnapshot:
 
     __slots__ = ()
 
-    PAYLOAD_FORMAT: ClassVar[int] = 1
+    # Format 2 (EPIC-2026-10-18-spell_identity_is_the_code, S2): the key carries the spell's
+    # binding hash beside its spell_id, which became the code digest alone.
+    PAYLOAD_FORMAT: ClassVar[int] = 2
 
     @staticmethod
     def type_refs(value: Any) -> List[Tuple[str, str]]:
@@ -262,11 +266,14 @@ class StructuralSnapshot:
 
         Contract:
             - ``{"format": PAYLOAD_FORMAT, "spell_id": spell.spell_id,
-              "annotation_refs": [...]}``; the spell id already covers the
-              spell's own signature, names, existence and resolvability, and
-              the annotation refs add the (module, qualname) of every type the
-              spell's sockets match on, so a type that moves module while
-              keeping its rendered name changes the key.
+              "binding_hash": spell.binding_hash, "annotation_refs": [...]}``.
+              The spell_id is the spell's code (`SpellCodeDigest`), the binding
+              hash how it is bound - address, spellframe, existence, disposal
+              order, resolvable and managed settings (`BindingManifest`) - so
+              a payload captured for one binding is never replayed for another
+              under the same spell_id. The annotation refs add the (module,
+              qualname) of every type the spell's sockets match on, so a type
+              that moves module while keeping its rendered name changes the key.
             - None when the spell has no live bind-time requirements.
 
         Args:
@@ -283,6 +290,7 @@ class StructuralSnapshot:
         return {
             "format": StructuralSnapshot.PAYLOAD_FORMAT,
             "spell_id": spell.spell_id,
+            "binding_hash": spell.binding_hash,
             "annotation_refs": StructuralSnapshot.annotation_refs(requirements),
         }
 
@@ -292,11 +300,14 @@ class StructuralSnapshot:
         Digest the world inputs phases 3-4 read for this Book.
 
         Contract:
-            - SHA-256 hex over three lines: the sorted ids of
-              `spellbook._spell_id_pool`, the frame posture name
-              (`system_state`, empty when no frame configuration is bound)
-              and the sorted ids of the borrowed spells in
-              `spellbook._contracted_spells`.
+            - SHA-256 hex over three lines: `pool:` and the sorted
+              `<spell_id>=<binding_hash>` entries of `spellbook._spell_id_pool`,
+              `posture:` and the frame posture name (`system_state`, empty when
+              no frame configuration is bound), and `borrowed:` and the sorted
+              `<spell_id>=<binding_hash>` entries of the borrowed spells in
+              `spellbook._contracted_spells`. With the binding hash a binding
+              changed under one spell_id is another world, for both cache
+              tiers (payload format 2, cache generation 23).
             - No runtime identity (frame name, conduit id, ULIDs) enters the
               stamp.
 
@@ -308,17 +319,19 @@ class StructuralSnapshot:
             str:
                 Hex digest.
         """
-        pool_ids = sorted(spellbook._spell_id_pool.keys())
+        pool_entries = sorted(
+            f"{spell_id}={spell.binding_hash}" for spell_id, spell in spellbook._spell_id_pool.items()
+        )
         frame_configuration = spellbook._aetheric_frame_configuration
         posture = "" if frame_configuration is None else frame_configuration.system_state.name
-        borrowed_ids: set[str] = set()
+        borrowed_entries: set[str] = set()
         for by_index in spellbook._contracted_spells.values():
             for borrowed in by_index.values():
-                borrowed_ids.add(borrowed.spell_id)
+                borrowed_entries.add(f"{borrowed.spell_id}={borrowed.binding_hash}")
         text = "\n".join((
-            "pool:" + ",".join(pool_ids),
+            "pool:" + ",".join(pool_entries),
             "posture:" + posture,
-            "borrowed:" + ",".join(sorted(borrowed_ids)),
+            "borrowed:" + ",".join(sorted(borrowed_entries)),
         ))
         return hashlib.sha256(text.encode("utf-8")).hexdigest()
 

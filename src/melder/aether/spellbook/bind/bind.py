@@ -1,6 +1,5 @@
 import inspect
 import threading
-import hashlib
 import math
 from typing import TYPE_CHECKING, Any, Callable, Optional, Sequence, Tuple, Union, ClassVar, TypeVar
 
@@ -118,11 +117,10 @@ from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.general_prof
 from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile import (
     ClassBindingProfile,
     CallableBindingProfile,
-    CallableParameterBindingSummary,
     InstanceBindingProfile,
     OtherBindingProfile,
 )
-from melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.inspector_utility import InspectorUtility
+from melder.aether.spellbook.bind.spell_code_digest import SpellCodeDigest
 
 
 #region Bind
@@ -134,11 +132,12 @@ class Bind(Cleanable):
     `Bind` is the public control-plane surface that turns an arbitrary binding
     target into a canonical `Spell`. It is where lifecycle scope
     (`Existence`), access policy (`Permissions`), spellframe grouping, and
-    structural fingerprinting first come together.
+    the spell's identity (the code digest) first come together.
 
     The registration pipeline involves:
     1.  **Reflection:** Examining the object using `SpellExaminer` to create a binding profile.
-    2.  **Fingerprinting:** Generating a deterministic SHA256 unique ID (`spell_id`) based on the profile.
+    2.  **Identity:** The `spell_id` is the SHA256 of the object's code (`SpellCodeDigest`); the bind
+        call's values become the Spell's binding manifest, hashed apart.
     3.  **Validation:** Enforcing rules regarding naming conventions, existence, and spell type.
     4.  **Registration:** Creating the final `Spell` object, which encapsulates the component
         and its metadata for resolution and dependency injection.
@@ -147,7 +146,10 @@ class Bind(Cleanable):
     - `Bind` does not resolve spells; it registers them into one owning
       `Spellbook`.
     - Successful registration always flows through canonical profile
-      examination and deterministic fingerprinting rather than ad hoc ids.
+      examination and the code digest (`SpellCodeDigest`) rather than ad hoc ids.
+    - One object is one spell: binding it again under any name, existence or
+      spellframe gives the same spell_id, which the Spellbook's duplicate-id
+      refusals refuse (EPIC-2026-10-18-spell_identity_is_the_code).
     - Decorator-style and direct-call usage share the same binding pipeline.
     - Resolution capability is native per-Spell policy, defaulting to True;
       disabling it does not change naming, lifetime, or ownership rules.
@@ -165,17 +167,18 @@ class Bind(Cleanable):
 
     Subsystem Context:
         The registration gateway where lifecycle (`Existence`), access policy
-        (`Permissions`), spellframe grouping, and structural fingerprinting
+        (`Permissions`), spellframe grouping, and the code digest
         first converge. It produces the `SpellIndex` + `Spell` pair the rest of
         the runtime resolves against.
 
     System Context:
-        DETERMINISTIC FINGERPRINTING is the property everything downstream
-        depends on. The `spell_id` is a SHA256 over the examined profile, so it
-        is CONTENT-DERIVED and stable across processes and sessions - which is
-        why the crystallizer can replay custody by recorded spell id while
-        refusing to rehydrate ULIDs, and why the same object bound in two
-        processes carries the same identity.
+        DETERMINISTIC IDENTITY is the property everything downstream depends on.
+        The `spell_id` is the SHA256 of the object's code - its methods with their
+        bodies, inherited code, class-level values and, for an existing object, its
+        data - so it is CONTENT-DERIVED and stable across processes and sessions:
+        the crystallizer can replay custody by recorded spell id while refusing to
+        rehydrate ULIDs, the same object bound in two processes carries the same
+        identity, and an edited method is a new version an agent stages and notches.
         The refusals are as load-bearing as the successes. Modules are rejected;
         Protocol targets require explicit `resolvable=False` because they have
         no construction contract. Method and lambda bindings are forced to `Existence.unique`
@@ -199,6 +202,7 @@ class Bind(Cleanable):
         "_spellbook",
         "_spell_examiner",
         "_lifecycle_hooks",
+        "_spell_code_digest",
     ]
     _EMPTY_HOOKS: ClassVar[BindLifecycleHooks] = ((), (), ())
     _HOOK_NAMES: ClassVar[tuple[str, ...]] = ("bind:pre", "bind:activation", "bind:post")
@@ -227,7 +231,8 @@ class Bind(Cleanable):
             initial_hooks: Validated immutable configuration seed, or None for
                 empty stages. Captured once; later changes stay Book-local.
         Contract:
-            - Owns one `SpellExaminer` helper for profile creation.
+            - Owns one `SpellExaminer` helper for profile creation and one
+              `SpellCodeDigest` for spell_ids (its code-object memo lives as long as Bind).
             - Serializes registration work behind an internal lock.
             - Treats the supplied spellbook as the destination authority for
               all created spell bindings.
@@ -242,6 +247,7 @@ class Bind(Cleanable):
         self._spellbook: Spellbook = spellbook
         self._lock = threading.RLock()
         self._spell_examiner: SpellExaminer = SpellExaminer()
+        self._spell_code_digest: SpellCodeDigest = SpellCodeDigest()
         self._lifecycle_hooks: BindLifecycleHooks = (
             self._EMPTY_HOOKS if initial_hooks is None else initial_hooks
         )
@@ -256,7 +262,7 @@ class Bind(Cleanable):
 
         Contract:
         - Idempotent and lock-guarded.
-        - Cleans the owned `SpellExaminer` before dropping references.
+        - Cleans the owned `SpellExaminer` and `SpellCodeDigest` before dropping references.
         - Releases stored callbacks without invoking their cleanup methods.
           An in-flight bind retains its own immutable callback set until it ends;
           callers must quiesce runtime work before destroying the owning book.
@@ -273,8 +279,10 @@ class Bind(Cleanable):
             self._cleaned = True
             if self._spell_examiner is not None:
                 self._spell_examiner.cleanup()
+            self._spell_code_digest.cleanup()
             del self._spellbook
             del self._spell_examiner
+            del self._spell_code_digest
             del self._lifecycle_hooks
         del self._lock
 
@@ -492,7 +500,7 @@ class Bind(Cleanable):
         2. **Decorator:** `@Bind.bind(permissions, ...)` applied to a class or function.
 
         In both modes, the same binding pipeline is used: examine the target,
-        fingerprint the binding profile, validate spellframe / existence rules,
+        digest its code into the spell_id, validate spellframe / existence rules,
         and register the canonical `Spell` into the owning spellbook.
 
         Args:
@@ -637,14 +645,14 @@ class Bind(Cleanable):
           - Method/lambda spells may also be grouped under Protocol or string
             spellframes (factory / handler semantics), but are not structurally
             validated against the Protocol.
-        * Computes a deterministic fingerprint and SpellIndex from a `SpellBindingProfile`.
-        * Resolves disposal names once in group priority order, hashes the resolved
-          list, and passes that same list to Spell without another conversion.
+        * Computes the spell_id - the SHA256 of the target's code (`SpellCodeDigest`), nothing
+          from this call - and the SpellIndex from it.
+        * Resolves disposal names once in group priority order and passes that list to Spell
+          without another conversion; it enters the Spell's binding manifest, not the spell_id.
         * Validates and normalizes the four managed options once
           (`_normalize_managed_options`), after the profile; the Spell keeps them. They are
-          settings of the one spell, not its identity: the fingerprint never reads them
-          (owner ruling 2026-10-17), so a managed class bound with other settings at the same
-          address, existence and disposal list gets the same spell_id.
+          settings of the one spell, not its identity (owner ruling 2026-10-17): the spell_id
+          never reads them, and they are part of the binding manifest.
         * Determines the canonical SpellType.
         * Constructs the final `Spell` instance.
         * Replaces the initial raw binding artifact with the combined
@@ -674,14 +682,14 @@ class Bind(Cleanable):
             receives the actual Spell immediately after construction and before
             profile completion. Both run outside the construction lock. Activation
             or profile failure retires the unpublished Spell and its fresh index.
-            Native fingerprint rules are unchanged and callback returns are ignored.
+            They never change the spell_id rule, and callback returns are ignored.
 
         Disposal contract:
             Retain declared profile methods and requested inherited callables,
             respecting the first class declaration in Python's MRO. Non-callable
             shadows and hidden dunders remain excluded; descriptors are not invoked
-            during matching. The shallow profile and its fingerprint inputs do not
-            expand. Missing names and non-class profiles contribute nothing. Book names
+            during matching. The shallow profile does not expand. Missing names and
+            non-class profiles contribute nothing. Book names
             own overlaps in both modes and keep their configured order. Spell-only
             names keep their supplied order, before or after the book block. Each
             matching name appears once in the single result list.
@@ -742,7 +750,7 @@ class Bind(Cleanable):
             spellframe_kind, implemented_protocols = Bind._classify_spellframe(spellframe)
 
             # ------------------------------------------------------------------
-            # 2. Build binding profile and fingerprint
+            # 2. Build the binding profile; the spell_id is the target's code
             # ------------------------------------------------------------------
             provisional_general_profile = self._spell_examiner.create_profile(
                 spell,
@@ -774,9 +782,9 @@ class Bind(Cleanable):
                             resolved_disposal_method_names.insert(spell_position, method_name)
                             spell_position += 1
             # Managed options (Existence.managed_spell_quantity): validated and normalized here, once,
-            # and kept by the Spell. They are settings, not identity: the fingerprint below never reads
-            # them (owner ruling 2026-10-17). Any other existence must leave all four unset. Refusals
-            # happen before a Spell or index exists.
+            # and kept by the Spell. They are settings, not identity: the spell_id below never reads them
+            # (owner ruling 2026-10-17); they are part of the Spell's binding manifest. Any other existence
+            # must leave all four unset. Refusals happen before a Spell or index exists.
             (
                 normalized_managed_mode,
                 normalized_managed_limit,
@@ -792,16 +800,13 @@ class Bind(Cleanable):
                 managed_spell_timeout_seconds,
                 managed_spell_reset_methods,
             )
-            fingerprint: str = Bind.sha256_profile(
-                binding_profile,
-                spellframe=spellframe,
-                spell_name=spell_name,
-                binding_name=binding_name,
-                existence=existence,
-                disposal_method_names=resolved_disposal_method_names,
-                resolvable=resolvable,
-            )
-            spell_index = SpellIndex(initial_id=fingerprint)
+            # The spell_id is the SHA256 of the target's code - methods with their bodies, inherited code,
+            # class-level values, an existing object's data - and of nothing from this bind call
+            # (EPIC-2026-10-18-spell_identity_is_the_code). The call's values become the Spell's binding
+            # manifest, hashed apart, so one object is one spell: the duplicate-id refusals downstream
+            # refuse a second registration of it.
+            spell_id: str = self._spell_code_digest.spell_id(spell)
+            spell_index = SpellIndex(initial_id=spell_id)
 
             # Check if this should be treated as an "existing creation"
             is_instance = isinstance(
@@ -859,7 +864,7 @@ class Bind(Cleanable):
                 existence=existence,
                 spell_type=spell_type,
                 profile=provisional_general_profile,
-                spell_id=fingerprint,
+                spell_id=spell_id,
                 permissions=permissions,
                 aetheric_frame=aetheric_frame,
                 existing_object=spell if is_instance else None,
@@ -914,7 +919,7 @@ class Bind(Cleanable):
             bool: Whether the class exposes an eligible disposal candidate.
 
         Lifecycle / Threading:
-            Runs under the existing Bind lock before fingerprinting. Owns no
+            Runs under the existing Bind lock before the spell_id is computed. Owns no
             state, invokes no cleanup and adds no work to ordinary resolution.
         """
         if method_name in profile.method_names:
@@ -928,254 +933,37 @@ class Bind(Cleanable):
 
     #region Spell Inspector Helpers
     @staticmethod
-    def spell_id_inspector(
-            spell: Any,
-            *,
-            spellframe: Any = None,
-            spell_name: Optional[str] = None,
-            binding_name: Optional[str] = None,
-            existence: Existence = Existence.unique,
-            disposal_method_names: Sequence[str] = (),
-            resolvable: bool = True,
-            managed_spell_mode: Optional[Union[ManagedSpellMode, str]] = None,
-            managed_spell_limit: Optional[int] = None,
-            managed_spell_timeout_seconds: Optional[float] = None,
-            managed_spell_reset_methods: Optional[Sequence[str]] = None,
-    ) -> str:
+    def spell_id_inspector(spell: Any) -> str:
         """
-        Compute the canonical spell fingerprint without registering the spell.
+        Return the spell_id bind gives a target, without registering it.
 
-        This is the read-only convenience path for tooling or diagnostics that
-        need the same deterministic fingerprint used by the real binding
-        pipeline but do not want to create or register a `Spell`.
+        Purpose:
+            The read-only path for tooling and diagnostics, and for `Spellbook.inspect_spell`'s stage 3:
+            re-derive the id an object is, or would be, registered under.
+
+        Contract:
+            - The spell_id is the SHA256 of the target's code (`SpellCodeDigest`), so the target alone decides
+              it: the id is the same whatever binding the target is bound with (spellframe, binding name,
+              existence, disposal names, resolvable, managed settings), and equals the id `_bind_logic` gives it.
+            - Builds a fresh `SpellCodeDigest` per call and cleans it before returning: no shared memo, no lock,
+              no state left behind. Registers nothing and checks no binding rule (that is bind's admission).
 
         Args:
-            spell (Any): The spell object (class, function, or instance) to inspect.
-            spellframe (Optional[Any]): Logical interface or Protocol used as the DI contract / grouping key.
-            spell_name (Optional[str]): A specific key used to distinguish this spell among others in its frame.
-            binding_name (Optional[str]): A specific key used to distinguish this spell.
-            existence (Existence): The lifecycle scope for this spell.
-            disposal_method_names (Sequence[str]): Already-resolved disposal names in execution order.
-            resolvable (bool): Per-version capability; omission preserves the legacy fingerprint.
-            managed_spell_mode (Optional[Union[ManagedSpellMode, str]]): Managed pool policy, or None.
-            managed_spell_limit (Optional[int]): Managed idle cap (elastic) or alive limit, or None.
-            managed_spell_timeout_seconds (Optional[float]): Queue wait in seconds, or None.
-            managed_spell_reset_methods (Optional[Sequence[str]]): Reset method names, or None.
-        Contract:
-            - Builds the same `SpellGeneralProfile` / `SpellBindingProfile`
-              chain used by the real binding path.
-            - Returns the same fingerprint that `_bind_logic(...)` would use
-              when supplied the same resolved name, binding metadata, and ordered
-              disposal list. This helper does not apply book priority or match names.
-            - Does not register anything into a spellbook or mutate runtime
-              binding state.
-            - Checks the managed options with bind's own `_normalize_managed_options`,
-              so it refuses exactly what bind refuses; like bind, it never hashes them
-              (a managed spell_id does not depend on its settings).
+            spell (Any): The class, function or object to identify.
 
         Returns:
-            str: A unique identifier string (SHA256 hash) for the spell.
-
-        Raises:
-            TypeError: If resolvable is not a bool (checked before target reflection), or a
-                managed option has the wrong type or targets a non-class.
-            ValueError: If a managed option is malformed or set on another existence.
+            str: The 64-character spell_id.
         """
-        Bind._validate_resolvable(resolvable)
-        profile = SpellGeneralProfile.create_from_target(spell)
-        # Error messages name the target; the inspector hashes `spell_name` only when given, as bind would.
-        # The target is caller-supplied, so `getattr` with a default is the external-object exception.
-        display_name = spell_name if spell_name is not None else getattr(spell, "__name__", type(spell).__name__)
-        # Checked as bind checks them, never hashed: a managed spell's settings are not part of its spell_id.
-        Bind._normalize_managed_options(
-            spell,
-            profile.binding_profile,
-            str(display_name),
-            existence,
-            managed_spell_mode,
-            managed_spell_limit,
-            managed_spell_timeout_seconds,
-            managed_spell_reset_methods,
-        )
-        return Bind.sha256_profile(
-            profile.binding_profile,
-            spellframe=spellframe,
-            spell_name=spell_name,
-            binding_name=binding_name,
-            existence=existence,
-            disposal_method_names=tuple(disposal_method_names),
-            resolvable=resolvable,
-        )
-
-    @staticmethod
-    def sha256_profile(
-            profile: SpellBindingProfile,
-            *,
-            spellframe: Any = None,
-            spell_name: Optional[str] = None,
-            binding_name: Optional[str] = None,
-            existence: Optional[Existence] = None,
-            disposal_method_names: Sequence[str] = (),
-            resolvable: bool = True,
-    ) -> str:
-        """
-        Computes the SHA256 hash of a spell's binding profile metadata.
-
-        The binding profile includes just enough structural metadata to create a
-        unique, versioned fingerprint of the spell's shape.
-
-        This function is intentionally coupled to the `SpellBindingProfile`
-        dataclasses rather than the heavier inspector profiles.
-
-        Contract:
-            - Fingerprints normalized bind-time metadata only, not transient
-              runtime object identity.
-            - Repr-derived inputs (callable/instance/other repr and callable parameter
-              defaults) are address-free: the profile's `fingerprint_repr` /
-              `default_fingerprint_repr` when present, otherwise the display text with every
-              " at 0x<hex>" removed. The same object content therefore gets the same id in
-              every process (2026-09-26). The class init_signature and callable
-              signature texts are hashed with addresses removed too (a default such as
-              object() renders its address inside the signature).
-            - Uses the explicit `v4-binding` schema prefix for omitted/True and
-              `v4-binding-non-resolvable` for False, preserving all remaining inputs so future
-              fingerprint-shape changes can version cleanly. v4 replaced the
-              class source preview (first-5-lines text: docstring-sensitive,
-              constructor-blind, and the only source-file read on the bind
-              hot path) with the constructor signature string, so the
-              fingerprint tracks exactly the shape compiled wiring depends
-              on: constructor changes invalidate caches, docstring edits do
-              not.
-            - Includes the direct bind-time parameters that shape later
-              compiler/runtime behavior: spell_name, spellframe, binding_name,
-              existence, resolvable, and resolved disposal metadata in execution order.
-            - Never hashes a managed binding's settings (mode, limit, queue timeout, reset
-              names): they are settings of the one spell, not its identity (owner ruling
-              2026-10-17: "the bind call itself shouldn't impact the actual SHA256"), so a
-              managed binding hashes exactly the inputs above. From 0.2.8242 to 0.2.8253 a
-              managed binding appended a `managed:<mode>:<limit>:<timeout>:<reset names>`
-              part; every managed spell_id moved once when it left (0.2.8254), and no other
-              spell_id ever had it.
-            - Equal bind signatures produce equal hashes; materially different
-              signatures should produce different hashes.
-        Returns:
-            str: Deterministic SHA256 fingerprint for the supplied binding
-                profile.
-
-        Raises:
-            TypeError: If resolvable is not a bool; no truthiness coercion is applied.
-        """
-        Bind._validate_resolvable(resolvable)
-        # Keep the legacy schema intact; only False selects a different hash domain.
-        parts: list[str] = ["v4-binding" if resolvable else "v4-binding-non-resolvable"]
-
-        if isinstance(profile, ClassBindingProfile):
-            parts += [
-                profile.name,
-                profile.qualname,
-                profile.module,
-                ",".join(sorted(profile.bases)),
-                ",".join(sorted(profile.mro)),
-                ",".join(sorted(profile.annotations.keys())),
-                ",".join(sorted(profile.method_names)),
-                InspectorUtility.strip_memory_addresses(profile.init_signature or ""),
-            ]
-        elif isinstance(profile, CallableBindingProfile):
-            param_parts = [
-                f"{p.name}:{p.kind}={Bind._fingerprint_default_text(p)}"
-                for p in (profile.parameters or ())
-            ]
-            parts += [
-                profile.name,
-                profile.qualname or "",
-                profile.module or "",
-                InspectorUtility.strip_memory_addresses(profile.signature or ""),
-                ",".join(param_parts),
-                Bind._fingerprint_repr_text(profile),
-                profile.type_name,
-                "lambda" if profile.lambda_function else "",
-                "builtin" if profile.builtin_module else "",
-                "extension" if profile.extension_module else "",
-                ]
-        elif isinstance(profile, InstanceBindingProfile):
-            parts += [
-                profile.type_name,
-                profile.module or "",
-                Bind._fingerprint_repr_text(profile),
-                ]
-        elif isinstance(profile, OtherBindingProfile):
-            parts += [
-                profile.type_name,
-                profile.module or "",
-                Bind._fingerprint_repr_text(profile),
-                ]
-        else:
-            # Absolute fallback – should effectively never happen.
-            parts.append(repr(type(profile)))
-
-        if spell_name is not None:
-            parts.append(spell_name)
-        if spellframe is not None:
-            parts.append(str(spellframe))
-        if binding_name is not None:
-            parts.append(binding_name)
-
-        if existence is not None:
-            parts.append(existence.name)
-
-        parts.extend(tuple(disposal_method_names))
-
-        key = "::".join(parts)
-        return hashlib.sha256(key.encode("utf-8")).hexdigest()
-
-    @staticmethod
-    def _fingerprint_repr_text(
-            profile: Union[CallableBindingProfile, InstanceBindingProfile, OtherBindingProfile],
-    ) -> str:
-        """
-        Return the address-free representation text a binding profile contributes to its fingerprint.
-
-        Contract:
-            - Prefers `fingerprint_repr` (full repr, addresses removed, built by the binding
-              strategy); strips surrounding whitespace like the display text always was.
-            - Falls back to `repr_string` with memory addresses removed for profiles built without
-              it (direct constructions); that text may still be truncated display text.
-
-        Args:
-            profile: Callable, instance or other binding profile.
-
-        Returns:
-            str: Text hashed into the fingerprint.
-        """
-        if profile.fingerprint_repr is not None:
-            return profile.fingerprint_repr.strip()
-        return InspectorUtility.strip_memory_addresses((profile.repr_string or "").strip())
-
-    @staticmethod
-    def _fingerprint_default_text(parameter: CallableParameterBindingSummary) -> Optional[str]:
-        """
-        Return the address-free default-value text one callable parameter contributes to the fingerprint.
-
-        Contract:
-            - Prefers `default_fingerprint_repr`; otherwise `default_repr` with memory addresses
-              removed; None when the parameter has no default (rendered as "None", unchanged).
-
-        Args:
-            parameter: Parameter summary from a callable binding profile.
-
-        Returns:
-            Optional[str]: Default text hashed into the fingerprint, or None.
-        """
-        if parameter.default_fingerprint_repr is not None:
-            return parameter.default_fingerprint_repr
-        if parameter.default_repr is None:
-            return None
-        return InspectorUtility.strip_memory_addresses(parameter.default_repr)
+        digest = SpellCodeDigest()
+        try:
+            return digest.spell_id(spell)
+        finally:
+            digest.cleanup()
 
     @staticmethod
     def _validate_resolvable(resolvable: bool) -> None:
         """
-        Reject non-boolean capability inputs at independent admission/fingerprint boundaries.
+        Reject a non-boolean capability input at bind's admission.
 
         Args:
             resolvable: Per-version resolution capability supplied by the caller.
@@ -1208,7 +996,7 @@ class Bind(Cleanable):
 
         Purpose:
             The one place the options of `Existence.managed_spell_quantity` are checked, so a malformed binding
-            fails at bind, next to the mistake, and the fingerprint, the Spell and the crystal all read the same
+            fails at bind, next to the mistake, and the Spell, its binding manifest and the crystal all read the same
             normalized values.
 
         Contract:
@@ -1471,8 +1259,7 @@ class Bind(Cleanable):
         Enforce binding-policy rules before a `Spell` is created.
 
         This is the policy gate that keeps obviously-invalid bindings out of
-        the spellbook before profile fingerprinting and spell construction are
-        allowed to proceed.
+        the spellbook before spell construction is allowed to proceed.
 
         Args:
             profile (SpellBindingProfile): The binding profile of the spell.

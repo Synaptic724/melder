@@ -11,6 +11,7 @@ from melder.aether.spellbook.configuration.spellbook_configuration import (
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spellbook import Spellbook
 from tests.mocks.spellbook.core_classes import BasicService
+from tests._spell_identity_test_support import version_of
 from tests._frame_posture_test_support import (
     apply_dynamic_defaults_for_spellbook_configuration,
 )
@@ -48,17 +49,18 @@ def _make_configuration(*, aether_frame: str) -> SpellbookConfiguration:
 
 def _make_cluster_conduit(frame_name: str, *, name: str) -> Tuple[Spellbook, Conduit]:
     """
-    Bind one unique_per_conduit_cluster spell (distinct via binding_name) + conjure.
+    Bind one unique_per_conduit_cluster spell (a version of BasicService of its own) + conjure.
 
-    The binding_name is the unique conduit name so every conduit in the frame gets a
-    distinct spell_id (the fingerprint includes binding_name, not the spellbook).
+    One class is one spell (S1 of EPIC-2026-10-18-spell_identity_is_the_code): every conduit in the frame
+    binds its own version of BasicService, named for the conduit, so each gets a distinct spell_id; the
+    binding_name is the conduit name too.
     """
     book = Spellbook(
         aetheric_frame=frame_name,
         configuration=_make_configuration(aether_frame=frame_name),
     )
     book.bind(
-        spell=BasicService,
+        spell=version_of(BasicService, conduit_name=name),
         existence=Existence.unique_per_conduit_cluster,
         permissions="create",
         binding_name=name,

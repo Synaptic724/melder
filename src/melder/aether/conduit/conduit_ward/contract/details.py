@@ -195,7 +195,7 @@ class Detail(Cleanable):
         Check whether this row's SpellIndex contains a specific spell id.
 
         Args:
-            spell_id: SHA fingerprint to check within the index member history.
+            spell_id: Spell id (the SHA256 of an object's code) to check within the index member history.
 
         Returns:
             bool: True if the SpellIndex holds that spell id, else False; False once the
@@ -431,7 +431,7 @@ class IndexDetail(Cleanable):
         Check whether the contracted SpellIndex contains a specific spell id.
 
         Args:
-            spell_id: SHA fingerprint to check within the index member set.
+            spell_id: Spell id (the SHA256 of an object's code) to check within the index member set.
 
         Returns:
             bool: True if the SpellIndex holds that spell id, else False; False once the
