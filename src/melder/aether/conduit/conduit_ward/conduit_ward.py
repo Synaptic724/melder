@@ -111,10 +111,10 @@ class ConduitWard(Cleanable):
         The relationship half of a conduit, opposite `ConduitMeld` (resolution)
         and `ConduitCreations` (storage). It owns the four ward vocabularies in
         practice: `Policies` decides whether a link may form at all,
-        `Permissions` bounds what each granted lineage allows, and
+        `Permissions` bounds what each granted spell or SpellIndex allows, and
         `ContractTypes` / `DetailReason` annotate the `Detail` rows it writes
         into each `Contract`. `TransferOfOwnership` sits above it for the one
-        operation wards cannot express - changing who OWNS a lineage rather
+        operation wards cannot express - changing who OWNS a SpellIndex rather
         than who may borrow it.
 
     System Context:
@@ -1663,11 +1663,11 @@ class ConduitWard(Cleanable):
         """
         Internal
 
-        Factory for a lineage-aware Detail entry.
+        Factory for a Detail entry: one granted spell and the SpellIndex it is organized under.
 
         Args:
             spell (Spell): The spell being granted/received.
-            permissions (Permissions): The permissions applied to this lineage.
+            permissions (Permissions): The permissions applied to this spell.
             contract_type (ContractTypes): Role of this Detail from the
                 perspective of the ward that will own it.
             reason (DetailReason): Why this detail is being added.
@@ -1859,15 +1859,15 @@ class ConduitWard(Cleanable):
 
         Adds a single spell to an existing contract with a peer conduit.
 
-        It contracts one version of the spell's SpellIndex lineage. The borrower
-        holds a copy of that version: active while the version is the lineage's
+        It contracts one version, one member of the spell's SpellIndex. The borrower
+        holds a copy of that version: active while the version is its index's
         active member, parked while it is not. A notch away parks it on every
         linked peer and a notch back makes it active again, and the copy's
         consumers revalidate at their next meld; a grant of a parked version
         starts parked and becomes active when the owner notches to it
         (corrected 2026-10-16: this said lookups resolve to each new version,
         which only an index link does). An index link (`_add_index_to_contract`)
-        follows the lineage to every new version instead.
+        follows the SpellIndex to every newly selected version instead.
         When a new contract entry is added, cached consumer creations that
         declare a matching SpellContract are invalidated so future melds
         re-resolve dependencies.
@@ -2103,15 +2103,15 @@ class ConduitWard(Cleanable):
         """
         Internal
 
-        Link a whole SpellIndex (lineage) into the contract with `conduit` as an
+        Link a whole SpellIndex into the contract with `conduit` as an
         index-link: the borrower follows the index, not a captured version. Mirrors
         `_add_spell_to_contract`, but is identified by `index.id`, records an
         `IndexDetail` whose head is `index.selected_spell_id`, and registers the
         concrete index on the borrower spellbook via `_add_contracted_index`.
 
         Args:
-            index: The owned lineage to share.
-            conduit / conduit_id: The owner conduit of the lineage (peer in the
+            index: The owned SpellIndex to share.
+            conduit / conduit_id: The owner conduit of the SpellIndex (peer in the
                 contract; the borrower is this ward's conduit).
             permissions: Permission to grant (default create).
             aetheric_frame: Frame to resolve entities in.
@@ -2145,7 +2145,7 @@ class ConduitWard(Cleanable):
             )
 
         # The index's current active member must be an owned, eligible spell of the
-        # owner conduit. Reuse the spell eligibility on the lineage's active head.
+        # owner conduit. Reuse the spell eligibility on the index's selected spell.
         active_spell = conduit._spellbook.spells.get(index)
         if active_spell is None:
             self._logger.error(
@@ -2203,7 +2203,7 @@ class ConduitWard(Cleanable):
                     system_groups=self._log_sysgroups,
                 )
                 raise
-        # Map every member of the lineage as a per-member spell contract of the
+        # Map every member of the SpellIndex as a per-member spell contract of the
         # index-link's permission (active head -> active borrowed copy, the rest
         # parked). Idempotent per member, so re-links only add newly-seen members. The
         # index is the source of truth for its membership; we do NOT track members on
@@ -2276,7 +2276,7 @@ class ConduitWard(Cleanable):
         Internal
 
         Return the distinct peer conduits that hold an index-link for `index_id`
-        through any of this ward's contracts. The owner uses this to emit lineage
+        through any of this ward's contracts. The owner uses this to emit SpellIndex
         deltas to the receiving conduits when the index changes (notch/add/remove).
 
         Args:
@@ -2328,11 +2328,11 @@ class ConduitWard(Cleanable):
         """
         Internal
 
-        Owner-side emission for a notch on an index-linked lineage. For every
+        Owner-side emission for a notch of a SpellIndex shared by index link. For every
         index-link contract covering `index`, move the subscription head to
         `new_spell_id` (`IndexDetail.update_selected`) and tell the receiving
         spellbook to park the old version and activate the new one -- index-link
-        receivers follow the lineage. Version-anchored borrowers are handled
+        receivers follow the index's selected spell. Version-anchored borrowers are handled
         separately by the conduit's deactivate and activate fan-outs
         (`Conduit._deactivate_borrowed_spell`, `Conduit._activate_borrowed_spell`).
 
@@ -2341,7 +2341,7 @@ class ConduitWard(Cleanable):
         version is simply skipped until it is contracted (the eager-contract slice).
 
         Args:
-            index: The notched lineage.
+            index: The notched SpellIndex.
             old_spell_id: The outgoing active member id (parked on receivers).
             new_spell_id: The new active member id (activated on receivers).
 
@@ -2390,11 +2390,11 @@ class ConduitWard(Cleanable):
         """
         Internal
 
-        Owner-side emission when an index-linked lineage is destroyed: for every
+        Owner-side emission when a SpellIndex shared by index link is destroyed: for every
         index-link contract covering `index_id`, untrack the index on the receiving
         spellbook (`_remove_contracted_index`), tear down the per-member spell Details,
         and drop (and clean) the contract's IndexDetail, so no receiver keeps a
-        subscription to a dead lineage.
+        subscription to a dead SpellIndex.
 
         Args:
             index_id: Stable id of the destroyed index.
@@ -2433,7 +2433,7 @@ class ConduitWard(Cleanable):
                 for member_id in member_ids:
                     self._uncontract_member_spell(contract, self, member_id)
                 index_detail.cleanup()
-        # Record: the destroyed lineage's subscriptions left these contracts.
+        # Record: the destroyed index's subscriptions left these contracts.
         for record_contract in record_affected_contracts:
             self._emit_contract_record(record_contract)
 
@@ -2450,7 +2450,7 @@ class ConduitWard(Cleanable):
 
         Issue ONE per-member spell contract for an index-link: create a spell Detail
         of `permission` on the owner side of `contract`, and populate the borrower's
-        contracted copy -- active if the member is the lineage's active head, parked
+        contracted copy -- active if the member is the index's selected spell, parked
         otherwise (`member_spell._active`). No-op if the member is already detailed.
 
         The owner side is passed explicitly (`owner_ward`) because this runs from both
@@ -2520,12 +2520,12 @@ class ConduitWard(Cleanable):
         """
         Internal
 
-        Owner-side emission when a member is added to an index-linked lineage: for
+        Owner-side emission when a member is added to a SpellIndex shared by index link: for
         every index-link contract covering the index, issue a per-member spell
         contract for the new member, of the index-link's permission. Idempotent.
 
         Args:
-            index: The lineage that gained a member.
+            index: The SpellIndex that gained a member.
             member_id: Version id of the newly added member.
 
         Threading:
@@ -2558,12 +2558,12 @@ class ConduitWard(Cleanable):
         """
         Internal
 
-        Owner-side emission when a member leaves an index-linked lineage: for every
+        Owner-side emission when a member leaves a SpellIndex shared by index link: for every
         index-link contract covering the index, remove that member's per-member spell
         contract. Idempotent.
 
         Args:
-            index_id: Stable id of the lineage that lost a member.
+            index_id: Stable id of the SpellIndex that lost a member.
             member_id: Version id of the removed member.
 
         Threading:
@@ -2782,7 +2782,7 @@ class ConduitWard(Cleanable):
 
         Detail entries can be tagged with `sources` so the ward can tell which
         contracted spells were pulled in transitively for one specific root
-        lineage. This helper removes one `root_spell_id` source from matching
+        spell. This helper removes one `root_spell_id` source from matching
         details, drops now-orphaned contracted spells from peer spellbooks, and
         severs any contract that becomes empty afterward.
 
@@ -2922,7 +2922,7 @@ class ConduitWard(Cleanable):
 
         def walk(dep_id: str) -> None:
             """
-            Depth-first dependency contracting walk for one root lineage.
+            Depth-first dependency contracting walk for one root spell.
 
             Contract:
                 - Skips already-visited dependency versions.
@@ -3154,7 +3154,7 @@ class ConduitWard(Cleanable):
         Bulk wrapper over `_add_spell_to_contract(...)`.
 
         This helper does not introduce new contract semantics. It simply
-        applies the single-spell lineage-aware add path repeatedly and returns
+        applies the single-spell, SpellIndex-aware add path repeatedly and returns
         a per-spell success/failure report so callers can surface partial
         outcomes without losing the first failure.
 
@@ -3360,7 +3360,7 @@ class ConduitWard(Cleanable):
 
         This helper applies the single-spell removal path repeatedly and
         returns a per-spell success/failure report. It preserves the same
-        lineage/source-aware removal semantics and cleanup behavior as the
+        SpellIndex- and source-aware removal semantics and cleanup behavior as the
         single-item API.
 
         Args:
@@ -3495,13 +3495,13 @@ class ConduitWard(Cleanable):
         Semantics:
             * Contracts are anchored on SpellIndex (via Detail.spell_index).
             * Resolution uses Spellbook._find_contracted_spell(spell_index),
-              so if the lineage has mutated, we get the **current** spell object.
+              so if the index's selected spell has moved, we get the **current** spell object.
             * The version ID returned in the tuple is spell.spell_id (head).
 
         Contract:
             - Optionally validates all contracts first and fails fast if any are
               inconsistent.
-            - Returns the current visible version for each contracted lineage,
+            - Returns the current visible version for each contracted SpellIndex,
               not the historical version captured at contract-creation time.
         """
         if validate:
@@ -3536,7 +3536,7 @@ class ConduitWard(Cleanable):
                     spells: list[Tuple[str, Spell]] = []
 
                     for detail in detail_map.values():
-                        # lineage-based resolution
+                        # SpellIndex-based resolution
                         spell_index = detail.spell_index
                         try:
                             spell = self._conduit._spellbook._find_contracted_spell(spell_index)
@@ -3594,9 +3594,9 @@ class ConduitWard(Cleanable):
 
         Resolve one contracted spell version through the contract graph.
 
-        This now behaves in a lineage-aware way:
+        This now resolves through each Detail's SpellIndex:
 
-            * spell_id may be ANY version SHA belonging to the lineage.
+            * spell_id may be ANY version SHA in a contracted spell's SpellIndex.
             * We search each Detail's SpellIndex using Detail.has_spell(spell_id).
             * If matched, we resolve via Spellbook._find_contracted_spell(spell_index)
               and return the **current** spell object (not the historical version).
@@ -3609,7 +3609,7 @@ class ConduitWard(Cleanable):
 
         Contract:
             The returned spell object is the current head for the matched
-            lineage, not necessarily the historical version string the caller
+            SpellIndex, not necessarily the historical version string the caller
             searched with.
         Threading:
             Holds this ward's lock for the walk of its contracts and each contract's
@@ -3628,8 +3628,8 @@ class ConduitWard(Cleanable):
                 spell_index = None
                 with contract._lock:
                     detail_map = contract._get_detail_map(peer_ward)
-                    # O(1) first: the detail contracted for exactly this version. The lineage walk runs
-                    # only when the id is another version of a contracted lineage; every detail whose index
+                    # O(1) first: the detail contracted for exactly this version. The index walk runs
+                    # only when the id is another version in a contracted SpellIndex; every detail whose index
                     # holds the id shares that index, so both paths resolve the same head.
                     detail = detail_map.get(spell_id)
                     if detail is not None and detail.has_spell(spell_id):
@@ -3817,8 +3817,8 @@ class ConduitWard(Cleanable):
                 never disposes anything.
             include_dependencies: If True, transfer owned dependencies as well.
             force_unshare: If True, strip all contracts/shares for this spell during transfer.
-            invalidate_after_transfer: If True, mark lineage dirty after transfer.
-            mark_dependencies_dirty: If True, mark dependency lineages dirty (even if not moved).
+            invalidate_after_transfer: If True, mark the moved SpellIndex dirty after transfer.
+            mark_dependencies_dirty: If True, mark the dependencies' indexes dirty (even if not moved).
 
         Returns:
             dict: Preflight summary of the transfer plan.

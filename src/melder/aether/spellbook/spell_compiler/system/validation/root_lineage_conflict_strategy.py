@@ -29,12 +29,12 @@ from melder.aether.spellbook.spell_compiler.system.validation.strategy_base impo
 
 class RootLineageConflictStrategy(SpellSystemValidationStrategy):
     """
-    Guard that one lineage does not fan out into multiple structural roots.
+    Guard that one SpellIndex does not fan out into multiple structural roots.
 
     A root blueprint is supposed to represent a distinct root spell version in
-    the frame. If multiple root spell ids map back to the same lineage, the
+    the frame. If multiple root spell ids map back to the same SpellIndex, the
     system is effectively declaring multiple root revisions of one logical spell
-    family at once. This strategy detects that root-lineage split before the
+    family at once. This strategy detects that root SpellIndex split before the
     planner treats those roots as separate entrypoints with independent
     occurrence, validation, or execution semantics.
     """
@@ -53,15 +53,15 @@ class RootLineageConflictStrategy(SpellSystemValidationStrategy):
             cancel_event: Optional[CancellationEvent],
     ) -> None:
         """
-        Validate that each lineage maps to at most one root spell id.
+        Validate that each SpellIndex maps to at most one root spell id.
 
         Purpose:
             Prevent the blueprint set from advertising multiple structural roots
-            for one logical spell lineage.
+            for one SpellIndex.
         Contract:
-            - Uses blueprint keys as the root set and resolves lineage identity
+            - Uses blueprint keys as the root set and resolves SpellIndex identity
               from the system index.
-            - Missing index nodes and lineage-less roots are ignored here so
+            - Missing index nodes and roots without a SpellIndex id are ignored here so
               dedicated index/root coverage strategies can report those failures
               without duplicate noise.
             - Emits one ERROR diagnostic per conflicting root so every root id
@@ -72,7 +72,7 @@ class RootLineageConflictStrategy(SpellSystemValidationStrategy):
             blueprints: Root blueprints keyed by root spell id.
             phase4_results: Phase-4 validation artifacts keyed by spell id.
             broken_spell_ids: Set of broken spell ids.
-            spell_system_states: SpellSystemStates registry for topology and lineage data.
+            spell_system_states: SpellSystemStates registry for topology and SpellIndex state data.
             spell_lookup: Mapping of visible spell_ids to spell objects.
             diagnostics: Collection that receives diagnostics.
             cancel_event: Optional cancellation signal.

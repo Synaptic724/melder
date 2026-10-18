@@ -173,7 +173,7 @@ class Meld(Cleanable, ABC):
         Meld is also the gate, not just the resolver: it enforces structural
         validity, per-conduit resolution validity, and change-control
         dirty-root state BEFORE any instance is handed back, and re-runs the
-        lazy phases when a lineage's validity is UNKNOWN or GATED. Contract
+        lazy phases when a SpellIndex's validity is UNKNOWN or GATED. Contract
         validity is part of structural validity: a change of the provider a
         SpellContract consumer resolves marks the consumer, and its structural
         rerun (Phase 4) rechecks the contract; a satisfied contract costs no
@@ -953,7 +953,7 @@ class Meld(Cleanable, ABC):
           refresh the structure of every stale dependency its plan expands
           (`_refresh_stale_dependencies`, D2 of 2026-10-16); a valid spell with
           a valid verdict reads no topology
-        - rerun structural phases when the lineage is unknown or gated; for a
+        - rerun structural phases when its SpellIndex is unknown or gated; for a
           SpellContract consumer that rerun is the contract recheck: a change
           of its provider marked it `gated`, Phase 4 checks the provider is
           present, and a consumer whose provider is gone stays `gated`, so the
@@ -1221,7 +1221,7 @@ class Meld(Cleanable, ABC):
         interprets the current spell-system state plus change-control state and
         answers one question:
 
-        "Is this lineage eligible to continue as-is, or must meld force a
+        "Is this SpellIndex eligible to continue as-is, or must meld force a
         structural validation pass first?"
 
         Decision rules:
@@ -1232,7 +1232,7 @@ class Meld(Cleanable, ABC):
         - dirty root under change-control -> hard runtime block
 
         Raises:
-            SpellbookValidationError: If the lineage is already in a hard-fail
+            SpellbookValidationError: If the SpellIndex is already in a hard-fail
                 state.
             MeldExecutionError: If change-control reports the root as dirty for
                 the active conduit.
@@ -1360,13 +1360,13 @@ class Meld(Cleanable, ABC):
               lane, which every door runs right after the gate, compiles it and
               runs its own catch-up first (`_ensure_runtime_resolution_ready`),
               so the gate does not walk for it twice.
-            - True when the lineage has no registered state, or is `unknown` or
+            - True when its SpellIndex has no registered state, or is `unknown` or
               `gated`: the structural branch reruns it and gates its verdict,
               so a 5-11 pass follows.
-            - For a `valid` lineage, True exactly when its effective verdict for
+            - For a `valid` SpellIndex, True exactly when its effective verdict for
               the resolution conduit (`_get_resolution_validity`) is `unknown`
               or `gated`, the verdicts `_ensure_resolution_resolvable` rebuilds.
-            - False otherwise: an `invalid`, `disabled` or `cleaned` lineage or
+            - False otherwise: an `invalid`, `disabled` or `cleaned` SpellIndex or
               verdict fails without compiling, and a valid spell with a valid
               verdict compiles nothing, so the gate stays two state reads.
             - Reads state only and mutates nothing.
@@ -1397,11 +1397,11 @@ class Meld(Cleanable, ABC):
     @staticmethod
     def _is_stale(spell: Spell) -> bool:
         """
-        Report whether a dependency's structure is stale: its lineage is
+        Report whether a dependency's structure is stale: its SpellIndex is
         registered and `gated` or `unknown`.
 
         Contract:
-            - A registered lineage that is `gated` or `unknown` needs phases 1-4
+            - A registered SpellIndex that is `gated` or `unknown` needs phases 1-4
               before a plan that expands it compiles: a notch, a provider change
               or the registry's downstream walk left it so.
             - A spell with no registered state is not stale: Phase 5 drops an id
@@ -1425,7 +1425,7 @@ class Meld(Cleanable, ABC):
 
     def _refresh_stale_dependencies(self, spell: Spell) -> None:
         """
-        Refresh the structure of every stale lineage the spell's plan expands,
+        Refresh the structure of every stale dependency the spell's plan expands,
         before the plan compiles (D2, 2026-10-16).
 
         Purpose:
@@ -1435,8 +1435,8 @@ class Meld(Cleanable, ABC):
             id a notch took out of the pool. A plan compiled over the stale
             topology of a dependency two hops from a notch misses the parked
             version and records a visibility failure that keeps the spell
-            refused. The catch-up reruns phases 1-4 of each stale lineage first
-            and resets that lineage's own plan, so it rebuilds at its own next
+            refused. The catch-up reruns phases 1-4 of each stale dependency first
+            and resets that dependency's own plan, so it rebuilds at its own next
             meld too.
 
         Contract:
@@ -1446,7 +1446,7 @@ class Meld(Cleanable, ABC):
             - Refreshes a dependency (`_refresh_dependency_structure`) only when
               `_is_stale` says so, and reads its topology after the refresh, so
               the walk follows what the rerun Phase 3 recorded. A valid
-              dependency is walked through, not refreshed: a stale lineage
+              dependency is walked through, not refreshed: a stale dependency
               further down is still reached, once.
             - Resolves through the spell's Book (`spell._spellbook`, the Book
               its resolution pass compiles in) and the spell's registry at every
@@ -1489,7 +1489,7 @@ class Meld(Cleanable, ABC):
     ) -> List[Spell]:
         """
         Return the dependencies a plan of `spell` expands, at the versions their
-        lineages select now, as Phase 8 expands them.
+        indexes select now, as Phase 8 expands them.
 
         Contract:
             - Reads the topology Phase 3 last recorded for the spell's version
@@ -1500,11 +1500,11 @@ class Meld(Cleanable, ABC):
               SPELL_CONTRACT socket with a `contract_key` adds the provider the
               Book's active contracted maps hold for that key (lookup map, then
               index, then copy - the path Phase 8 resolves a contract through).
-            - Each dependency is taken to the version its lineage selects now
+            - Each dependency is taken to the version its SpellIndex selects now
               (`_current_in_pool`): a recorded id a notch superseded leads to
               the incoming version, and an id the Book's pool does not hold is
               skipped, as Phase 5 drops it.
-            - May return one lineage twice (two sockets naming it); the caller's
+            - May return one dependency twice (two sockets naming it); the caller's
               visited set keeps one.
             - Walks the outer contracted lookup map through a one-call snapshot;
               every other read is one dict get.
@@ -1513,7 +1513,7 @@ class Meld(Cleanable, ABC):
             spell: The spell whose recorded topology is expanded.
             spellbook: The compiling Book (the melded spell's), whose pool and
                 contracted maps the plan resolves through.
-            spell_system_states: The frame's lineage registry.
+            spell_system_states: The frame's SpellIndex state registry.
 
         Returns:
             List[Spell]: The planned dependencies, current versions only.
@@ -1559,25 +1559,25 @@ class Meld(Cleanable, ABC):
             spell_id: str,
     ) -> Optional[Spell]:
         """
-        Return the active Spell of the lineage a version id belongs to, from the
+        Return the active Spell of the SpellIndex a version id belongs to, from the
         compiling Book's pool, or None.
 
         Contract:
             - The registry maps every version id an index has selected to its
-              lineage (`get_by_spell_id`; a notch adds the incoming id and keeps
-              the old one), so a superseded id leads to the lineage's current
+              SpellIndex (`get_by_spell_id`; a notch adds the incoming id and keeps
+              the old one), so a superseded id leads to the index's current
               version id; an id the registry does not know is looked up as is.
             - Returns the pool's Spell for that id, or None when the Book's pool
               does not hold it (Phase 5 drops such an id from a scope).
             - Reads only.
 
         Args:
-            spell_system_states: The frame's lineage registry.
+            spell_system_states: The frame's SpellIndex state registry.
             spell_id_pool: The compiling Book's active pool (`_spell_id_pool`).
             spell_id: A version id a topology or a contracted map recorded.
 
         Returns:
-            Optional[Spell]: The lineage's active Spell in the Book, or None.
+            Optional[Spell]: The SpellIndex's active Spell in the Book, or None.
         """
         state = spell_system_states.get_by_spell_id(spell_id)
         current_spell_id = state.current_spell_id if state is not None else spell_id
@@ -1587,7 +1587,7 @@ class Meld(Cleanable, ABC):
         """
         Rerun phases 1-4 of one stale dependency with its owner Book and reset
         its own plan, so neither the compile that found it nor its own next meld
-        uses a plan built before its lineage went stale.
+        uses a plan built before its SpellIndex went stale.
 
         Contract:
             - Enters the dependency's rebuild window, then its lock - the order
@@ -1596,7 +1596,7 @@ class Meld(Cleanable, ABC):
             - Runs the structural phases with the dependency's own Book
               (`dependency._spellbook`): a borrowed provider is refreshed by its
               lender's Book, which owns its compiler state.
-            - Broken after the rerun: pins the lineage `invalid`, as the gate
+            - Broken after the rerun: pins its SpellIndex `invalid`, as the gate
               pins a broken melded spell, and raises SpellbookValidationError
               listing the dependency. Still not `valid`, or unregistered: raises
               the same error. Nothing is reset in either case.
@@ -1619,7 +1619,7 @@ class Meld(Cleanable, ABC):
             only; the caller holds no other spell lock and no index ticket.
 
         Args:
-            dependency: A stale lineage's active Spell, found by the walk.
+            dependency: The active Spell of a stale SpellIndex, found by the walk.
 
         Raises:
             SpellbookValidationError: When the dependency is broken or not valid
@@ -2153,7 +2153,7 @@ class Meld(Cleanable, ABC):
         Resolve a spell by its current canonical spell id.
 
         This is the direct-id lookup path for callers that already know the
-        exact current lineage id and do not need logical frame/binding
+        exact current spell_id and do not need logical frame/binding
         normalization.
 
         Args:

@@ -63,7 +63,7 @@ class ChangeControlManager(Cleanable):
     Change-control registry for an Aetheric Frame.
 
     Purpose:
-        Provide DevOps-facing bookkeeping for spell lineages, dirty roots, and
+        Provide DevOps-facing bookkeeping for spell indexes, dirty roots, and
         change-control admission helpers. This is the frame-level control-plane
         owner for admission, embargo, conflict, staging, and targeted
         revalidation bookkeeping; it is not the hot-path resolver itself.
@@ -1124,16 +1124,16 @@ class ChangeControlManager(Cleanable):
             metadata: Optional[Dict[str, Any]] = None,
     ) -> None:
         """
-        Record a pending change for a spell lineage.
+        Record a pending change for a SpellIndex.
 
         Purpose:
-            Track DevOps/AI-visible metadata for a SpellIndex lineage.
+            Track DevOps/AI-visible metadata for a SpellIndex.
         Contract:
             - Stores metadata keyed by spell_index.id.
-            - Last-write-wins for duplicate lineage ids.
+            - Last-write-wins for duplicate SpellIndex ids.
         Args:
             spell_index:
-                The SpellIndex for the lineage being tracked.
+                The SpellIndex being tracked.
             reason:
                 Short reason code (e.g. "mutation_candidate").
             metadata:
@@ -1168,7 +1168,7 @@ class ChangeControlManager(Cleanable):
             spell_index_id: str,
     ) -> Optional[Dict[str, Any]]:
         """
-        Return a snapshot of pending change metadata for a lineage.
+        Return a snapshot of pending change metadata for a SpellIndex.
 
         Purpose:
             Provide tooling with a stable view of pending change metadata.
@@ -1176,7 +1176,7 @@ class ChangeControlManager(Cleanable):
             - Returns a shallow copy; callers cannot mutate internal state.
         Args:
             spell_index_id:
-                SpellIndex id of the lineage to query.
+                Id of the SpellIndex to query.
         Returns:
             Optional[Dict[str, Any]]:
                 Snapshot metadata if present, otherwise None.
@@ -1203,7 +1203,7 @@ class ChangeControlManager(Cleanable):
         Return a snapshot of all pending changes.
 
         Purpose:
-            Provide a tooling-friendly snapshot of all pending lineage changes.
+            Provide a tooling-friendly snapshot of all pending SpellIndex changes.
         Contract:
             - Returns a new mapping; callers cannot mutate internal state.
         Returns:
@@ -1226,7 +1226,7 @@ class ChangeControlManager(Cleanable):
     # ----------------------------------------------------------------------
     def clear_pending_change(self, spell_index_id: str) -> None:
         """
-        Clear pending-change metadata for a lineage.
+        Clear pending-change metadata for a SpellIndex.
 
         Purpose:
             Remove stale pending-change metadata after completion or cancelation.

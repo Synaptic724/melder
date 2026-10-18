@@ -2,10 +2,11 @@
 
 ## Metadata
 - Patch ID: managed_settings_spell_id_2026_10_17
-- Status: approved for part A (owner, chat 2026-10-18: "just do the 4"); part B and the legacy record are open
+- Status: part A landed at 0.2.8254 and is promoted to the system documents and the graph; part B and the
+  legacy record are open, for the talk with the owner
 - Owner: user (ruling, chat 2026-10-17); melder_0 (synaptic_python_developer) (patch)
 - Created: 2026-10-18T00:10:00Z
-- Updated: 2026-10-18T00:42:22Z
+- Updated: 2026-10-18T02:05:25Z
 - Ticket: STORY-2026-10-17-release_routes_parked_version_objects_to_active_pool (S6 of
   EPIC-2026-10-17-correctness_defects)
 

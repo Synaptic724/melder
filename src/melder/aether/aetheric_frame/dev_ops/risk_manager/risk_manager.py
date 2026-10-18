@@ -20,8 +20,8 @@ class _ConduitRiskState:
 
     The outer `RiskManager` keeps one of these for each registered conduit so it
     can separate:
-    - which lineages the conduit currently knows about
-    - which of those lineages are structurally risky
+    - which spell indexes the conduit currently knows about
+    - which of those spell indexes are structurally risky
     - which are resolution-risky for that specific conduit
     - which spellbook should have its validation-required flag updated
 
@@ -44,13 +44,13 @@ class _ConduitRiskState:
 
     System Context:
         The four tracked facts map exactly onto the two-axis validity model
-        this package is built around. Which lineages a conduit KNOWS ABOUT
+        this package is built around. Which spell indexes a conduit KNOWS ABOUT
         bounds the question; structural risk mirrors frame-global
         `SpellSystemState`; resolution risk mirrors per-conduit
         `ConduitResolutionState`; and the spellbook pointer is where the
         distilled answer lands.
         Keeping structural and resolution risk in separate sets - rather than
-        one merged risky-lineage set - is what preserves the distinction at the
+        one merged risky-index set - is what preserves the distinction at the
         aggregation layer. Merging them would make it impossible to tell
         whether a conduit is risky because the spell itself is broken
         everywhere or because THIS conduit cannot currently resolve it, which
@@ -77,7 +77,7 @@ class _ConduitRiskState:
             spellbook: Owning Spellbook used to toggle validation-required state.
 
         Contract:
-        - Starts with empty lineage and risk sets.
+        - Starts with empty spell-index and risk sets.
         - Retains the live spellbook reference so later risk refreshes can push
           validation-required state back onto the conduit owner.
 
@@ -99,15 +99,15 @@ class RiskManager(Cleanable):
     flows. It does not validate spells itself. Instead, it watches validity
     state changes and folds them into one operational question per conduit:
 
-    "Does this conduit currently own or see any lineage whose state means meld
+    "Does this conduit currently own or see any SpellIndex whose state means meld
     should not be trusted without another validation pass?"
 
     Risk model:
-    - structural risk is tracked by lineage id
-    - resolution risk is tracked by conduit-local lineage or spell id key
+    - structural risk is tracked by SpellIndex id
+    - resolution risk is tracked by conduit-local SpellIndex id or spell id key
     - any non-`SpellValidity.valid` state is treated as risky
     - the owning spellbook is marked as requiring validation while either risk
-      set holds a key that is not excluded; a lineage whose state carries
+      set holds a key that is not excluded; a SpellIndex whose state carries
       `SpellState.non_resolvable` (its selected version is a resolvable=False
       definition) is excluded, and its risk stays tracked in the sets
 
@@ -132,31 +132,31 @@ class RiskManager(Cleanable):
 
     Subsystem Context:
         The AGGREGATOR of the control plane. `SpellSystemStates` holds the
-        per-lineage and per-conduit verdicts; this class folds many verdicts
+        per-SpellIndex and per-conduit verdicts; this class folds many verdicts
         into ONE boolean per spellbook. It explicitly does not validate
         anything - it only watches and distils.
 
     System Context:
         The distillation exists because meld needs a cheap "should I even
         check?" signal. Asking `SpellSystemStates` per resolution whether ANY
-        relevant lineage is risky would be a scan; a single spellbook-level
+        relevant SpellIndex is risky would be a scan; a single spellbook-level
         validation-required flag is one read. This is the same
         cheap-gate/rich-detail split as `SpellValidity` versus `SpellState`,
         applied one layer up.
         Treating any non-`valid` state as risky - including `unknown` - is
         deliberately conservative, and it is what makes the flag SAFE rather
-        than merely fast. A never-validated lineage is indistinguishable from a
+        than merely fast. A never-validated SpellIndex is indistinguishable from a
         broken one until a pass runs, so optimism here would let meld trust
         something nobody has checked.
         Risk is bucketed PER CONDUIT for the same reason
         `ConduitResolutionState` exists: resolution risk is a property of a
-        (lineage, conduit) pair, so one conduit's gated lineage must not mark a
+        (SpellIndex, conduit) pair, so one conduit's gated SpellIndex must not mark a
         sibling conduit risky. Structural risk, being global, is tracked by
-        lineage id instead.
+        SpellIndex id instead.
         `SpellSystemStates.unregister_index` notifies this manager to FORCE
-        validation gating - removing a lineage must never leave a stale "valid"
+        validation gating - removing a SpellIndex must never leave a stale "valid"
         verdict behind that meld could still act on.
-        The one exclusion is declared, not inferred. A lineage whose selected
+        The one exclusion is declared, not inferred. A SpellIndex whose selected
         version was bound resolvable=False carries `SpellState.non_resolvable`,
         written by `SpellSystemStates.register_index`: it owes no resolution
         verdict, so its `unknown` never resolves, and every meld door refuses it
@@ -189,13 +189,13 @@ class RiskManager(Cleanable):
 
         Args:
             spell_system_states:
-                SpellSystemStates registry used to resolve lineage ids and
+                SpellSystemStates registry used to resolve SpellIndex ids and
                 per-conduit resolution validity.
         Raises:
             ValueError: If spell_system_states is None.
 
         Contract:
-        - Starts with empty conduit-state and lineage-to-conduit indexes.
+        - Starts with empty conduit-state and index-to-conduit maps.
         - Treats `spell_system_states` as the source of truth for structural and
           resolution validity lookups.
         - Borrows the frame-owned dev-ops information registry for future
@@ -225,7 +225,7 @@ class RiskManager(Cleanable):
 
         Contract:
         - Idempotent and lock-guarded.
-        - Clears conduit and lineage indexes before dropping the
+        - Clears the conduit and index-to-conduit maps before dropping the
           `SpellSystemStates` reference.
         - Leaves future callers to fail through `check_cleaned()`.
 
@@ -296,11 +296,11 @@ class RiskManager(Cleanable):
 
     def unregister_conduit(self, conduit_id: str) -> None:
         """
-        Remove conduit tracking and clear lineage mappings.
+        Remove conduit tracking and clear its index-to-conduit mappings.
 
         Contract:
         - Removes the conduit risk bucket.
-        - Removes the conduit from every lineage-to-conduit reverse index it
+        - Removes the conduit from every index-to-conduit reverse map it
           currently participates in.
         - Does not modify SpellSystemStates.
 
@@ -334,7 +334,7 @@ class RiskManager(Cleanable):
         Register a spell into a conduit's risk tracking.
 
         Contract:
-        - Adds the spell lineage to the conduit risk state.
+        - Adds the spell's SpellIndex to the conduit risk state.
         - Recomputes both structural and resolution risk for the spell based on
           live `SpellSystemStates` data.
         - Clears any stale resolution key for the spell's current spell_id
@@ -360,9 +360,9 @@ class RiskManager(Cleanable):
         Remove a spell from a conduit's risk tracking.
 
         Contract:
-        - Removes the spell lineage from the conduit risk state.
+        - Removes the spell's SpellIndex from the conduit risk state.
         - Clears both structural and resolution risk markers tied to that
-          lineage.
+          SpellIndex.
         - Refreshes the spellbook validation-required flag.
 
         Args:
@@ -399,17 +399,17 @@ class RiskManager(Cleanable):
 
     def on_structural_validity_change(self, lineage_id: str, validity: Optional[SpellValidity]) -> None:
         """
-        Update risk when structural validity changes for a lineage.
+        Update risk when structural validity changes for a SpellIndex.
 
         Contract:
-        - Updates all conduits currently referencing the lineage.
+        - Updates all conduits currently referencing the SpellIndex.
         - Applies the same validity transition to every conduit bucket that has
-          registered that lineage.
+          registered that SpellIndex.
         - Refreshes the spellbook validation-required flag after each conduit
           update.
 
         Args:
-            lineage_id: Lineage identifier whose structural validity changed.
+            lineage_id: SpellIndex id whose structural validity changed.
             validity: New structural validity (None treated as risky).
         Raises:
             RuntimeError: If this RiskManager has been cleaned.
@@ -436,10 +436,10 @@ class RiskManager(Cleanable):
         Update risk when per-conduit resolution validity changes.
 
         Contract:
-        - Treats resolution risk as conduit-local even when the same lineage is
+        - Treats resolution risk as conduit-local even when the same SpellIndex is
           visible elsewhere.
-        - Prefers lineage id tracking when the current spell id can be folded
-          back onto a known lineage; otherwise falls back to a spell-version key.
+        - Prefers SpellIndex id tracking when the current spell id can be folded
+          back onto a known SpellIndex; otherwise falls back to a spell-version key.
         - Refreshes the conduit spellbook validation-required flag.
 
         Args:
@@ -465,26 +465,26 @@ class RiskManager(Cleanable):
     # ------------------------------------------------------------------ #
     def _register_spell_risk(self, conduit_id: str, spell: Spell) -> bool:
         """
-        Track one spell's lineage in a conduit's risk bucket without refreshing the Book flag.
+        Track one spell's SpellIndex in a conduit's risk bucket without refreshing the Book flag.
 
         The body of `register_spell` before its refresh, shared with
         `register_conduit`, which seeds every visible spell and refreshes once.
 
         Contract:
-            - Adds the lineage to the bucket and to the lineage-to-conduit index,
+            - Adds the SpellIndex to the bucket and to the index-to-conduit map,
               drops a stale `spell:<id>` key for the selected version, and
-              recomputes the lineage's structural and resolution risk from the
+              recomputes the SpellIndex's structural and resolution risk from the
               live registry - what `register_spell` always did.
             - Returns False and changes nothing when the conduit id or the spell
-              is missing, the spell has no lineage (cleaned), or the conduit has
+              is missing, the spell has no SpellIndex (cleaned), or the conduit has
               no bucket.
 
         Args:
             conduit_id: Conduit whose bucket is updated.
-            spell: Spell whose lineage is tracked.
+            spell: Spell whose SpellIndex is tracked.
 
         Returns:
-            bool: True when the bucket tracked the lineage, so a refresh is due.
+            bool: True when the bucket tracked the SpellIndex, so a refresh is due.
         """
         if not conduit_id or spell is None:
             return False
@@ -533,12 +533,12 @@ class RiskManager(Cleanable):
 
     def _resolve_lineage_id(self, spell: Spell) -> Optional[str]:
         """
-        Resolve the stable lineage id for a spell, if available.
+        Resolve the stable SpellIndex id for a spell, if available.
 
         Args:
             spell: Spell instance to inspect.
         Returns:
-            Optional[str]: Lineage id or None if unavailable.
+            Optional[str]: SpellIndex id or None if unavailable.
         """
         if spell._cleaned:
             return None
@@ -546,16 +546,16 @@ class RiskManager(Cleanable):
             return spell.spell_index.id
     def _resolve_lineage_id_from_spell_id(self, spell_id: str) -> Optional[str]:
         """
-        Resolve a lineage id from a current spell_id.
+        Resolve a SpellIndex id from a current spell_id.
 
         This is the reverse lookup used when callers only have a current spell
         id but risk tracking needs to fold the event back onto the owning
-        lineage.
+        SpellIndex.
 
         Args:
             spell_id: Versioned spell id.
         Returns:
-            Optional[str]: Lineage id or None if unavailable.
+            Optional[str]: SpellIndex id or None if unavailable.
         """
         states = self._spell_system_states
         state = states.get_by_spell_id(spell_id)
@@ -572,7 +572,7 @@ class RiskManager(Cleanable):
         Returns:
             Optional[SpellValidity]:
                 Structural validity when available, SpellValidity.cleaned when the
-                spell is cleaned, or SpellValidity.unknown when no lineage state
+                spell is cleaned, or SpellValidity.unknown when no SpellIndex state
                 is available.
         """
         if spell._cleaned:
@@ -617,11 +617,11 @@ class RiskManager(Cleanable):
             validity: Optional[SpellValidity],
     ) -> None:
         """
-        Update the structural-risk set for one conduit/lineage pair.
+        Update the structural-risk set for one conduit/SpellIndex pair.
 
         Args:
             conduit_id: Conduit identifier to update.
-            lineage_id: Lineage identifier to mark risky or safe.
+            lineage_id: SpellIndex id to mark risky or safe.
             validity: Structural validity (None treated as risky).
         """
         with self._lock:
@@ -643,12 +643,12 @@ class RiskManager(Cleanable):
         Update the resolution-risk set for one conduit-local key.
 
         Resolution risk is tracked separately from structural risk because a
-        lineage can be structurally fine but still need conduit-local
+        SpellIndex can be structurally fine but still need conduit-local
         revalidation before meld may proceed.
 
         Args:
             conduit_id: Conduit identifier to update.
-            lineage_key: Lineage id or spell id key for tracking.
+            lineage_key: SpellIndex id or spell id key for tracking.
             validity: Resolution validity (None treated as risky).
         """
         with self._lock:
@@ -666,15 +666,15 @@ class RiskManager(Cleanable):
 
         The spellbook-facing `validation_required` flag is the outward signal of
         this manager. It is set while the conduit holds a risky key that is not
-        excluded - a `spell:<id>` key, or a lineage whose registered state does
+        excluded - a `spell:<id>` key, or a SpellIndex whose registered state does
         not carry `SpellState.non_resolvable` (`_has_unexcluded_risk`) - and
         cleared otherwise.
 
         Contract:
-            - The risk sets are read, never changed: a flagged lineage stays in
+            - The risk sets are read, never changed: a flagged SpellIndex stays in
               them, so it counts again the moment a registration clears its flag.
             - The sets are snapshotted under the manager lock; the registry's
-              published set of flagged lineages is read outside it, with no lock
+              published set of flagged spell indexes is read outside it, with no lock
               at all: the registry calls this manager under the registry lock, so
               the manager never takes the registry lock.
             - With both sets empty nothing else is read.
@@ -704,15 +704,15 @@ class RiskManager(Cleanable):
         """
         Return whether any risky key still calls for validation.
 
-        A lineage whose registered state carries `SpellState.non_resolvable` is
+        A SpellIndex whose registered state carries `SpellState.non_resolvable` is
         excluded: its selected version is a resolvable=False definition, which
         owes no resolution verdict and is refused at every meld door before the
         validation gate, so its risk says nothing about whether a meld may skip
-        the gate. A `spell:<id>` key (a verdict not folded onto a lineage) and a
-        lineage with no registered state (removed, and not yet dropped by
+        the gate. A `spell:<id>` key (a verdict not folded onto a SpellIndex) and a
+        SpellIndex with no registered state (removed, and not yet dropped by
         `unregister_spell`) are never excluded.
 
-        The registry publishes the flagged lineages as one immutable set
+        The registry publishes the flagged spell indexes as one immutable set
         (`SpellSystemStates.non_resolvable_index_ids`), so the answer is one
         subset test, with no Python work per key however many definitions the
         Book holds.
@@ -723,7 +723,7 @@ class RiskManager(Cleanable):
 
         Returns:
             bool: True when some key is not in the published set; False when
-            every key is a flagged lineage.
+            every key is a flagged SpellIndex.
 
         Raises:
             RuntimeError: If the frame's registry has been cleaned.

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/existence/managed_spell_mode.py",
- "source_sha256": "2034412f62916afb7816a495aa70ec9696354f279d99796b3792a26b3a6f6f01",
+ "source_sha256": "565aaa0bb67eb46571a2bfec118638c31a8d60e61993113089f469cf2d257137",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.existence.managed_spell_mode": {
@@ -37,14 +37,14 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "70b985b8f184e114057eadcdc62152b8c5b68a347121fa53850c3f70653605e1",
+   "span_sha256": "3844194be57e6051613eb93bb5d0a2c1dcded3fc23a3ad460263a3c44be80342",
    "include": true,
    "role": "Pool policy of a managed spell, chosen at bind with managed_spell_mode: what a lease does when no idle object is waiting.",
    "responsibilities": [
     "elastic: a miss always builds; managed_spell_limit is the most idle objects kept (default 256), trimmed like the kernel pools' idle objects; never refuses",
     "limited_quantity: managed_spell_limit (required) is the most objects alive at once, idle plus out; a miss at the limit refuses before building anything",
     "queue: like limited_quantity, but a miss at the limit waits up to managed_spell_timeout_seconds (required) for a release, which serves the waiter, and refuses at the deadline",
-    "identity data: with the limit, the timeout and the reset names it is hashed into a managed spell's id, recorded by name in its crystal and replayed by restore and graft; __str__ returns the bare name"
+    "a setting, not identity: with the limit, the timeout and the reset names it is not part of a managed spell's spell_id (0.2.8254; 0.2.8242-0.2.8253 hashed them), so changing it is cleanup_spell and a new bind, which keeps the spell_id and the pool; recorded by name in its crystal and replayed by restore and graft; __str__ returns the bare name"
    ],
    "owns_state": [
     "elastic",
@@ -55,7 +55,7 @@
     "init",
     "runtime"
    ],
-   "semantics_authored_against": "70b985b8f184e114057eadcdc62152b8c5b68a347121fa53850c3f70653605e1"
+   "semantics_authored_against": "3844194be57e6051613eb93bb5d0a2c1dcded3fc23a3ad460263a3c44be80342"
   }
  },
  "edges_out": [],

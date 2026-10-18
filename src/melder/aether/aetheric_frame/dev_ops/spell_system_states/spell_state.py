@@ -17,10 +17,10 @@ class SpellState(Enum):
       clears only topology-driven dirt flags; contract, mutation, and ops flags
       must be flipped by their own control-plane logic.
     - `non_resolvable` is the capability flag. `SpellSystemStates.register_index`
-      sets it when the lineage's selected version was bound resolvable=False and
+      sets it when the SpellIndex's selected version was bound resolvable=False and
       clears it when a resolvable version (or, with no stated capability, another
       version) is selected. Validation never clears it and it changes no
-      validity; its one reader is RiskManager, which leaves a flagged lineage's
+      validity; its one reader is RiskManager, which leaves a flagged SpellIndex's
       risk out of the Book's validation flag.
 
     Threading:
@@ -39,7 +39,7 @@ class SpellState(Enum):
     System Context:
         Multiple simultaneous flags are the normal case, not an edge case, and
         that is why this is a flag SET rather than a status field: topology,
-        contract, mutation, and ops concerns genuinely overlap on one lineage.
+        contract, mutation, and ops concerns genuinely overlap on one SpellIndex.
         A spell can be dependency-dirty AND awaiting a contract provider at the
         same time, and collapsing that into one value would force the control
         plane to pick which truth to discard.

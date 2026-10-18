@@ -39,7 +39,7 @@ if TYPE_CHECKING:
 
 class TransferOfOwnership(Cleanable):
     """
-    Control-plane helper that migrates a spell lineage between conduit owners.
+    Control-plane helper that migrates a spell's SpellIndex between conduit owners.
 
     This class is the implementation behind dynamic spell ownership transfer.
     It keeps the high-risk parts of the move in one place so the runtime can
@@ -48,20 +48,20 @@ class TransferOfOwnership(Cleanable):
 
     The transfer lifecycle has two phases:
 
-    - `preflight()` performs a read-only inventory of the lineage, its
+    - `preflight()` performs a read-only inventory of the SpellIndex, its
       borrowers, its dependent spell ids, and any creation/existence state that
       will be affected.
     - `execute()` performs the actual migration by temporarily disabling the
-      lineage, flipping the canonical registry/spellbook ownership under lock,
+      SpellIndex, flipping the canonical registry/spellbook ownership under lock,
       reconciling contracts/clusters, and then leaving the impacted state
       gated/dirty so later validation phases can rebuild a truthful runtime
       view.
 
     Accepted spellspace boundary:
-    - Transfer moves canonical lineage ownership plus conduit-owned runtime
+    - Transfer moves canonical SpellIndex ownership plus conduit-owned runtime
       state only.
     - Live spellspace-local request objects are intentionally excluded.
-    - If a spellspace-scoped lineage is transferred while an old source
+    - If the SpellIndex of a spellspace-scoped spell is transferred while an old source
       `SpellSpace` still exists, that old request object may become stale and
       must be cleaned as request-local state; ownership transfer does not try
       to preserve or rehome it.
@@ -94,7 +94,7 @@ class TransferOfOwnership(Cleanable):
     Subsystem Context:
         The heaviest control-plane operation in the conduit package and the
         only one that rewrites OWNERSHIP rather than relationships.
-        `ConduitWard` grants and revokes access to a lineage someone else owns;
+        `ConduitWard` grants and revokes access to a spell or SpellIndex someone else owns;
         this class changes who the owner IS. That is why it reconciles wards,
         clusters, and creations rather than living inside any one of them.
 
@@ -102,7 +102,7 @@ class TransferOfOwnership(Cleanable):
         The two-phase shape is the whole safety argument. `preflight()` is
         strictly read-only, so the full blast radius - borrowers, dependent
         spell ids, affected creations - is known BEFORE anything mutates. Only
-        then does `execute()` disable the lineage, flip ownership under guard,
+        then does `execute()` disable the SpellIndex, flip ownership under guard,
         and leave the impacted state gated/dirty so later validation phases
         rebuild a truthful view rather than trusting a mid-move snapshot.
         Leaving state DIRTY on purpose is the counterintuitive part: the
@@ -120,7 +120,7 @@ class TransferOfOwnership(Cleanable):
     AGENT_ACCESS: internal
 
     AGENT_PURPOSE:
-        access: internal. Control-plane helper that migrates a spell lineage between conduit
+        access: internal. Control-plane helper that migrates a spell's SpellIndex between conduit
         owners. Melder kernel machinery: read it to understand the runtime, do not drive it
         directly.
     """
@@ -164,33 +164,33 @@ class TransferOfOwnership(Cleanable):
         policy choices that define how aggressive the move should be. Those
         options decide whether existing instances are carried to the target or
         left out of the transfer (taken out of the source store, not disposed),
-        whether owned dependencies move with the root lineage, whether existing
-        shares are force-unshared or repointed, and whether impacted lineages
+        whether owned dependencies move with the root spell, whether existing
+        shares are force-unshared or repointed, and whether impacted indexes
         should remain gated after the move so validation reruns before normal
         resolution resumes.
 
         Args:
-            source_conduit: Conduit that currently owns the root lineage.
+            source_conduit: Conduit that currently owns the spell's SpellIndex.
             target_conduit: Conduit that should become the new owner.
             spell: Spell object, spell id, or `SpellIndex` identifying the
-                lineage to move.
-            move_creations: When true, move the lineage's instances from the
+                SpellIndex to move.
+            move_creations: When true, move the index members' instances from the
                 source conduit's store into the target's (`_move_creations`);
                 when false, take the active member's instances out of the
                 source store without moving or disposing them
                 (`_teardown_creations`). The public verbs default to True
                 (0.2.8239) and always pass the value; this constructor keeps
                 False as its own default for direct construction.
-            include_dependencies: When true, transfer owned dependency lineages
+            include_dependencies: When true, transfer the owned dependencies' indexes
                 with the root instead of requiring the target side to resolve
                 them independently.
             force_unshare: When true, remove outward shares/borrowers instead of
                 trying to repoint them at the new owner.
-            invalidate_after_transfer: When true, leave the moved lineage and
+            invalidate_after_transfer: When true, leave the moved SpellIndex and
                 impacted conduits gated/dirty so the runtime revalidates phases
                 before reuse.
             mark_dependencies_dirty: If dependencies are not moved, mark their
-                lineages dirty so stale downstream state is not reused.
+                indexes dirty so stale downstream state is not reused.
 
         Returns:
             None.
@@ -287,7 +287,7 @@ class TransferOfOwnership(Cleanable):
     # ------------------------------------------------------------------
     def preflight(self) -> Dict[str, Any]:
         """
-        Build a read-only transfer plan for the requested lineage.
+        Build a read-only transfer plan for the requested SpellIndex.
 
         Preflight does not mutate ownership. Its job is to prove the basic
         invariants first, then capture the runtime surface that `execute()`
@@ -371,12 +371,12 @@ class TransferOfOwnership(Cleanable):
         The method intentionally separates the minimal ownership flip from the
         larger cleanup/repair surface:
 
-        1. disable the lineage so callers cannot resolve it mid-transfer
+        1. disable the SpellIndex so callers cannot resolve it mid-transfer
         2. pre-clean contract state if `force_unshare` requires it
         3. flip the canonical registry and spellbook ownership under lock
         4. reconcile conduit-owned creations, contracts/clusters, and dependency
            handling
-        5. leave the lineage gated/dirty or simply re-enable it according to
+        5. leave the SpellIndex gated/dirty or simply re-enable it according to
            the constructor options
 
         Scope note:
@@ -385,7 +385,7 @@ class TransferOfOwnership(Cleanable):
             intentionally outside ownership-transfer continuity.
 
         If any step fails, rollback handlers attempt to restore a coherent
-        runtime view, the lineage is lifted back to a safe gated state, and the
+        runtime view, the SpellIndex is lifted back to a safe gated state, and the
         incident/change-control systems are notified.
 
         Raises:
@@ -440,7 +440,7 @@ class TransferOfOwnership(Cleanable):
             elif self.mark_dependencies_dirty:
                 self._dirty_dependencies(summary["dependencies"])
 
-            # After successful transfer, move lineage back to gated/dirty so validation can clear it.
+            # After successful transfer, move the SpellIndex back to gated/dirty so validation can clear it.
             if self.invalidate_after_transfer:
                 self._gate_transfer_impacts(spell_obj=spell_obj, summary=summary)
             else:
@@ -514,7 +514,7 @@ class TransferOfOwnership(Cleanable):
         Enforce the runtime precondition for ownership transfer.
 
         Ownership transfer is only supported in the dynamic environment because
-        the move depends on runtime contract teardown/repointing and lineage
+        the move depends on runtime contract teardown/repointing and SpellIndex
         invalidation flows that do not exist in the static model.
 
         Raises:
@@ -531,7 +531,7 @@ class TransferOfOwnership(Cleanable):
 
         Transfer entrypoints allow several spell identifiers for convenience,
         but the transfer machinery itself operates on the concrete spell object
-        so it can inspect ownership, dependencies, creations, and lineage
+        so it can inspect ownership, dependencies, creations, and SpellIndex
         state.
 
         Contract:
@@ -593,7 +593,7 @@ class TransferOfOwnership(Cleanable):
 
     def _enumerate_borrowers(self, spell_id: str) -> List[Dict[str, Any]]:
         """
-        Enumerate downstream runtime surfaces currently borrowing this lineage.
+        Enumerate downstream runtime surfaces currently borrowing this spell or its SpellIndex.
 
         Borrowers can come from direct ward contracts or conduit-cluster share
         tables. `execute()` uses this inventory to decide whether those surfaces
@@ -699,7 +699,7 @@ class TransferOfOwnership(Cleanable):
 
         This is the safety gate for transfers that do not move owned
         dependencies. If the target side cannot already resolve the dependency
-        ids, the root lineage would arrive in a knowingly broken state.
+        ids, the moved SpellIndex would arrive in a knowingly broken state.
 
         Contract:
             - Each dependency spell_id resolves in two explicit steps: the spell
@@ -738,15 +738,15 @@ class TransferOfOwnership(Cleanable):
 
     def _mark_lineage_dirty(self, spell: Any) -> None:
         """
-        Record a structural-change gate for one lineage in `SpellSystemStates`.
+        Record a structural-change gate for one SpellIndex in `SpellSystemStates`.
 
         This is the lighter-weight post-transfer invalidation path. Instead of
-        hard-disabling the lineage, it marks the lineage as structurally changed
-        so later spell-crafter phases rerun before callers trust the lineage
+        hard-disabling the SpellIndex, it marks the SpellIndex as structurally changed
+        so later spell-crafter phases rerun before callers trust the SpellIndex
         again.
 
         Args:
-            spell_index: Lineage whose spell-system state should be marked dirty.
+            spell_index: SpellIndex whose spell-system state should be marked dirty.
         """
         self.check_cleaned()
         spellbook = spell._spellbook
@@ -769,13 +769,13 @@ class TransferOfOwnership(Cleanable):
             summary: Dict[str, Any],
     ) -> None:
         """
-        Dirty the moved lineage and every conduit that may now see changed
+        Dirty the moved SpellIndex and every conduit that may now see changed
         transfer fallout.
 
-        The root lineage itself is structurally changed by the ownership flip,
+        The moved SpellIndex itself is structurally changed by the ownership flip,
         but the runtime impact is wider than that one spell. Borrowers,
         peers, cluster members, and any conduit currently holding an impacted
-        lineage may all need to rerun later spell-crafter phases before their
+        SpellIndex may all need to rerun later spell-crafter phases before their
         local view is trustworthy again.
         """
         self.check_cleaned()
@@ -817,7 +817,7 @@ class TransferOfOwnership(Cleanable):
         - currently contracted peers
         - cluster members surfaced by the borrower inventory
         - any conduit whose owned or contracted spellbook already contains one
-          of the impacted lineages
+          of the impacted indexes
 
         That broader closure is what lets the transfer leave the runtime in a
         safe gated state instead of assuming only the two owners were touched.
@@ -849,7 +849,7 @@ class TransferOfOwnership(Cleanable):
                 conduit_ids.update([cid for cid in cluster_members if cid])
 
         # Roots only, by design: a lesser scope owns nothing but the lifecycle of what it creates, so the
-        # lineage sweep never needs the lesser lineage (owner ruling, 2026-09-27).
+        # impacted-index sweep never needs the lesser lineage (owner ruling, 2026-09-27).
         for conduit_id in self._aether.list_root_conduit_ids(self._frame_name):
             if not conduit_id:
                 continue
@@ -873,7 +873,7 @@ class TransferOfOwnership(Cleanable):
             impacted_lineages: Set[str],
     ) -> bool:
         """
-        Check whether a conduit currently holds any lineage in the impacted
+        Check whether a conduit currently holds any SpellIndex in the impacted
         closure.
 
         Both owned and contracted spell maps are considered because transfer
@@ -900,16 +900,16 @@ class TransferOfOwnership(Cleanable):
 
     def _mark_lineage_disabled(self, spell_index: SpellIndex) -> None:
         """
-        Hard-disable the lineage while the ownership flip is actively in flight.
+        Hard-disable the SpellIndex while the ownership flip is actively in flight.
 
         This is stronger than the later dirty/gated state used after a
-        successful move. During the critical transfer window the lineage should
+        successful move. During the critical transfer window the SpellIndex should
         not resolve at all, because ownership, contract state, and creation
         bookkeeping may be temporarily inconsistent. The previous validity state
         is captured as a rollback action before the disable is applied.
 
         Args:
-            spell_index: Lineage being moved between conduit owners.
+            spell_index: SpellIndex being moved between conduit owners.
         """
         self.check_cleaned()
         spell_states = self._source_spellbook._spell_system_states
@@ -986,20 +986,20 @@ class TransferOfOwnership(Cleanable):
         This rollback step repairs the local spell registries after a failed
         transfer that already crossed the critical ownership-flip boundary. It
         moves the spell record back into the source spellbook, removes the
-        partially moved target-side entries, restores lineage ownership pointers
+        partially moved target-side entries, restores the index's ownership pointers
         on the spell and `SpellIndex`, and re-registers the spell with the
         source-side risk/validation surfaces.
 
         The intent is not only to put the spell back in the right dictionary.
         It is to restore one coherent owner view so later validation,
         risk-management, and resolution logic all agree on which conduit owns
-        the lineage after the failed move.
+        the SpellIndex after the failed move.
 
         Args:
             spell_obj: Live spell object whose ownership flip is being undone.
-            src_book: Original owner spellbook that should regain the lineage.
+            src_book: Original owner spellbook that should regain the SpellIndex.
             tgt_book: Partially updated target spellbook that must release the
-                lineage.
+                SpellIndex.
         """
         self.check_cleaned()
         spell_id = spell_obj.spell_index.selected_spell_id
@@ -1128,7 +1128,7 @@ class TransferOfOwnership(Cleanable):
 
         Some transfer paths move creation state in batches rather than one
         object at a time. This rollback step first tries to drain any partial
-        target-side creations for the lineage, then restores the original
+        target-side creations for the index's members, then restores the original
         extracted payload to the source so ownership and disposal state line up
         with the pre-transfer world again.
 
@@ -1151,7 +1151,7 @@ class TransferOfOwnership(Cleanable):
 
     def _snapshot_current_state(self, spell_obj: Any) -> Dict[str, Any]:
         """
-        Capture the minimal transfer-recovery snapshot for this lineage.
+        Capture the minimal transfer-recovery snapshot for this SpellIndex.
 
         The snapshot intentionally stays small. It records only the pieces of
         state needed to detect partial progress and rebuild cluster exposure
@@ -1172,7 +1172,7 @@ class TransferOfOwnership(Cleanable):
 
     def _spell_in_registry(self, conduit: Any, spell_index: SpellIndex) -> bool:
         """
-        Check whether Aether already records this lineage under the conduit.
+        Check whether Aether already records this SpellIndex under the conduit.
 
         This is used for rollback/idempotence bookkeeping rather than ordinary
         resolution. The transfer logic needs to know whether a target-side
@@ -1181,9 +1181,9 @@ class TransferOfOwnership(Cleanable):
 
         Args:
             conduit: Conduit whose frame-level Aether registry is being checked.
-            spell_index: Lineage key to look for in that registry.
+            spell_index: SpellIndex key to look for in that registry.
         Returns:
-            bool: `True` when the lineage is already registered for the conduit.
+            bool: `True` when the SpellIndex is already registered for the conduit.
         """
         self.check_cleaned()
         try:
@@ -1212,7 +1212,7 @@ class TransferOfOwnership(Cleanable):
             spell_obj: Spell object whose local ownership presence is being
                 tested.
         Returns:
-            bool: `True` when the spellbook currently contains the lineage.
+            bool: `True` when the spellbook currently contains the SpellIndex.
         """
         self.check_cleaned()
         try:
@@ -1325,7 +1325,7 @@ class TransferOfOwnership(Cleanable):
 
         Cluster sharing is orthogonal to the direct spellbook/registry flip, so
         rollback needs a small side snapshot to know whether the source-owned
-        lineage was exposed through any conduit clusters before transfer began.
+        SpellIndex was exposed through any conduit clusters before transfer began.
 
         Returns:
             List[Dict[str, Any]]: Cluster-share descriptors sufficient to
@@ -1387,20 +1387,20 @@ class TransferOfOwnership(Cleanable):
         Exit the hard-disabled in-flight state after transfer success or
         failure.
 
-        The method does not "return to normal" blindly. It converts the lineage
+        The method does not "return to normal" blindly. It converts the SpellIndex
         from the temporary transfer-in-progress state into either:
 
         - `gated`, when the runtime should force later validation before the
-          lineage is trusted again, or
+          SpellIndex is trusted again, or
         - `unknown`, when the caller wants the disable removed without
           immediately asserting the stronger gated posture
 
         In both cases the explicit `transfer_in_progress` flag is removed so the
-        lineage no longer looks mid-flight to downstream readers.
+        SpellIndex no longer looks mid-flight to downstream readers.
 
         Args:
-            spell_index: Lineage leaving the hard-disabled transfer state.
-            gated: Whether the lineage should remain blocked behind validation
+            spell_index: SpellIndex leaving the hard-disabled transfer state.
+            gated: Whether the SpellIndex should remain blocked behind validation
                 (`True`) or return to the weaker unknown state (`False`).
         """
         self.check_cleaned()
@@ -1434,13 +1434,13 @@ class TransferOfOwnership(Cleanable):
         source conduit is still the canonical owner everywhere. After this step,
         registry state, spellbook state, spell ownership pointers, and
         spell-system/risk registrations all need to agree that the target owns
-        the lineage.
+        the SpellIndex.
 
         The helper therefore stages rollback handlers around both layers of the
         move:
 
         - frame-level Aether registry membership for the `SpellIndex`
-        - spellbook-local ownership maps and lineage/risk registrations
+        - spellbook-local ownership maps and SpellIndex/risk registrations
 
         If any sub-step fails, the caller treats the whole ownership flip as
         failed and runs the accumulated rollback stack to rebuild one coherent
@@ -1559,7 +1559,7 @@ class TransferOfOwnership(Cleanable):
         This branch preserves runtime object continuity across ownership
         transfer, and it is the public verbs' default (`move_creations=True`,
         0.2.8239). Instead of leaving the existing instances behind and having
-        the new owner build its own, it extracts the lineage's creation payload
+        the new owner build its own, it extracts the index members' creation payload
         from the source and restores that payload into the target conduit's
         `Creations` store, so a `unique` stays one object and a holder's row
         carries the `many` children recorded with it (0.2.8238). The restore
@@ -1578,7 +1578,7 @@ class TransferOfOwnership(Cleanable):
         self.check_cleaned()
         creations = self.source_conduit._creations
         tgt_creations = self.target_conduit._creations
-        # Migrate creations for every member of the lineage (active + inactive),
+        # Migrate creations for every member of the SpellIndex (active + inactive),
         # best-effort and per-member: a member with no extractable creations is
         # skipped. The whole index changes owners, so all members' creations follow.
         for member_id in spell_obj.spell_index.spells_in_index():
@@ -1634,9 +1634,9 @@ class TransferOfOwnership(Cleanable):
 
     def _migrate_inactive_members(self, spell_obj: Any) -> None:
         """
-        Carry the lineage's INACTIVE members to the target spellbook.
+        Carry the SpellIndex's INACTIVE members to the target spellbook.
 
-        Transfer of ownership moves an index (lineage). `_flip_registry_and_spellbooks`
+        Transfer of ownership moves a whole SpellIndex. `_flip_registry_and_spellbooks`
         moves only the active/selected member through the active maps; this helper
         carries every other member that is parked in the source spellbook's
         `_inactive_spells` so the whole index ends up owned by the target. Each parked
@@ -1779,7 +1779,7 @@ class TransferOfOwnership(Cleanable):
         Stamp a member onto the target root, registering the rollback that undoes it.
 
         Purpose:
-            Make the owner stamp follow the lineage both ways (2026-10-15): the
+            Make the owner stamp follow the SpellIndex both ways (2026-10-15): the
             flip stamps the active member through this, and
             `_migrate_inactive_members` every parked member that carries a stamp,
             so after a transfer each names the target's store, and after a failed
@@ -1835,7 +1835,7 @@ class TransferOfOwnership(Cleanable):
               unregisters it. When the store no longer holds it - a moving
               transfer replaced it with the moved pool, which the row rollback
               already took back to the source - nothing happens.
-            - A removed pool is cleaned. It is empty: the lineage is disabled for
+            - A removed pool is cleaned. It is empty: the SpellIndex is disabled for
               the whole transfer, so nothing was ever leased from it, and the
               cleanup disposes nothing ("a transfer disposes nothing").
 
@@ -1856,7 +1856,7 @@ class TransferOfOwnership(Cleanable):
         Remove downstream borrower visibility instead of migrating it.
 
         This is the conservative borrower strategy used when `force_unshare`
-        is enabled. After the root lineage changes owners, peers that used to
+        is enabled. After the moved SpellIndex changes owners, peers that used to
         borrow it from the source should stop resolving it entirely until they
         explicitly relink or are re-exposed by some later operation.
 
@@ -2025,7 +2025,7 @@ class TransferOfOwnership(Cleanable):
 
     def _transfer_owned_dependencies(self, deps: List[str]) -> None:
         """
-        Transfer source-owned dependency lineages alongside the root lineage.
+        Transfer the source-owned dependencies' indexes alongside the root spell's SpellIndex.
 
         This is the ownership-preserving dependency strategy. Each dependency is
         transferred with a nested `TransferOfOwnership`, but the recursion is
@@ -2074,7 +2074,7 @@ class TransferOfOwnership(Cleanable):
                     mark_dependencies_dirty=self.mark_dependencies_dirty,
                 )
                 sub_transfer.execute()
-                # Mark dependency lineage dirty if requested
+                # Mark the dependency's SpellIndex dirty if requested
                 if self.invalidate_after_transfer:
                     if isinstance(dep_spell.spell_index, SpellIndex):
                         self._mark_lineage_dirty(dep_spell)
@@ -2083,16 +2083,16 @@ class TransferOfOwnership(Cleanable):
 
     def _dirty_dependencies(self, deps: List[str]) -> None:
         """
-        Leave dependencies in place but force their lineages back through
+        Leave dependencies in place but force their indexes back through
         validation.
 
         This is the lightweight dependency strategy used when the transfer
         should not migrate dependency ownership. Rather than moving those
-        lineages, it marks them dirty so downstream runtime state is not
+        indexes, it marks them dirty so downstream runtime state is not
         trusted blindly after the root transfer changes ownership/topology.
 
         Args:
-            deps: Dependency spell ids whose lineages should be marked dirty.
+            deps: Dependency spell ids whose indexes should be marked dirty.
         """
         self.check_cleaned()
         for dep_id in deps:
@@ -2113,7 +2113,7 @@ class TransferOfOwnership(Cleanable):
         Publish a pending-change record before the transfer mutates ownership.
 
         This is the change-control breadcrumb for the operation. It tells the
-        surrounding governance layer that a lineage is about to undergo an
+        surrounding governance layer that a SpellIndex is about to undergo an
         ownership rewrite and records enough metadata for later diagnostics or
         manual inspection if the transfer fails mid-flight.
 
@@ -2122,7 +2122,7 @@ class TransferOfOwnership(Cleanable):
         attempting the actual ownership move.
 
         Args:
-            summary: Preflight payload that describes the lineage, endpoints,
+            summary: Preflight payload that describes the SpellIndex, endpoints,
                 borrowers, dependencies, creations, and transfer options.
         """
         self.check_cleaned()
@@ -2158,7 +2158,7 @@ class TransferOfOwnership(Cleanable):
         closes that loop.
 
         Args:
-            spell_index: Lineage whose pending transfer record should be
+            spell_index: SpellIndex whose pending transfer record should be
                 cleared.
         """
         self.check_cleaned()
@@ -2173,14 +2173,14 @@ class TransferOfOwnership(Cleanable):
         support.
 
         Incident emission is deliberately secondary to runtime recovery. The
-        transfer first tries to restore a coherent lineage state; this helper
+        transfer first tries to restore a coherent SpellIndex state; this helper
         then records what failed so operators or future automation can inspect
         the partial move with the same preflight metadata that informed the
         transfer itself.
 
         Args:
             summary: Preflight/transfer summary payload describing the affected
-                lineage and participants.
+                SpellIndex and participants.
             exc: Exception that triggered the failure path.
         """
         self.check_cleaned()

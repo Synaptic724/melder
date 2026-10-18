@@ -1275,7 +1275,7 @@ def emit_specialized_step_plan_source(
         - Root-is-captured collapses the tail to `return cap_inst_K` with no
           alias emission for the root slot.
         - Store-clear soundness is NOT guarded here by design: owner stores
-          clear only on teardown paths already blocked by lineage/validity
+          clear only on teardown paths already blocked by SpellIndex-unregister/validity
           gating before any executor runs (see patch lane architecture doc,
           Guard Policy).
 

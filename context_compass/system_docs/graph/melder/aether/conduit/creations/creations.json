@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/creations/creations.py",
- "source_sha256": "3dc1a77d4e0fee211408c80560ce2023481f98a8072ba085075352327211d382",
+ "source_sha256": "e030e3c34c2ae9323ec8ec26256e2cb4ceb3323062f027d4c0bafb61970a9275",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.creations.creations": {
@@ -124,7 +124,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "39d3d9df264818f90a63599f73cf307fa6e2a65ba39a0886e57fff717fff2da8",
+   "span_sha256": "91ace6558a201e888223c894ca6fbb3302fcec8d1c9187d37bdfd4b9eea242da",
    "role": "Generic scoped live-object registry with disposal metadata kept beside it: a (object, methods) tuple per unique key, a ManyDisposalBucket per disposal-bearing many key, a HolderDisposalEntry per slotted holder that adopted many children.",
    "responsibilities": [
     "stores raw objects in one scoped live registry and cleanup records in a separate registry: unique keys hold (object, methods), disposal-bearing many keys hold a ManyDisposalBucket that aliases the live bucket and records the key's method list once",
@@ -136,7 +136,7 @@
     "keeps the store lock a leaf around dict work; refuses (and disposes) publication into a store cleaned during the build",
     "purges a whole selected target or one supplied creation under the slot's build lock then the store lock, with paired registry removal and shared disposal helpers; no scope discovery or authorization",
     "records a just-published slotted holder's disposal-bearing many children with the holder (adopt_children, 0.2.8238): moves them out of their spells' buckets into the holder's HolderDisposalEntry, so purge, extract/restore and whole-store disposal reach them through the holder's key with one dict read; a many purge or live-creation probe of a child's spell counts only children no holder adopted",
-    "keeps one ManagedSpellQuantity per managed version a root store owns in _managed_quantities, a map of its own, so lookups, live probes and purge never meet a pool: ensure_managed_quantity composes it at an owner stamp (idempotent; a rebind re-points it), get_managed_quantity is a lock-free read, discard_managed_quantity gives up an identity-checked pool without cleaning it (0.2.8243-0.2.8246)",
+    "keeps one ManagedSpellQuantity per managed version a root store owns in _managed_quantities, a map of its own, so lookups, live probes and purge never meet a pool: ensure_managed_quantity composes it at an owner stamp (idempotent) and, when a definition bound again under the same spell_id meets the pool its earlier definition left, hands it the new Spell after releasing the store lock (ManagedSpellQuantity._rebind_spell takes the new settings, 0.2.8254), get_managed_quantity is a lock-free read, discard_managed_quantity gives up an identity-checked pool without cleaning it (0.2.8243-0.2.8246)",
     "cleans its pools first at cleanup, newest first, before the disposable registry - a pool is composed at conjure, before the uniques its objects hold - their failures joining the store's group; extract/restore carry a pool as a managed row, a restore cleaning the pool it replaced after the lock; purge returns 0 for a managed spell (0.2.8243)",
     "registers every pool it takes and unregisters every pool it gives up with ReleaseManagedSpell, outside the store lock, so the registry holds exactly the pools live stores hold (0.2.8244)"
    ],
@@ -154,7 +154,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "f57cc1e6103be6b490508192851a5558c88add8a7a3187e59b13edab4f479ae6"
+   "semantics_authored_against": "91ace6558a201e888223c894ca6fbb3302fcec8d1c9187d37bdfd4b9eea242da"
   }
  },
  "edges_out": [

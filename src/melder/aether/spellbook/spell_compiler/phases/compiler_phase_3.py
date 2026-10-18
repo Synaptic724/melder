@@ -599,7 +599,7 @@ class CompilerPhase3:
         buckets = self._index_buckets_for(candidate_index, annotation, collection=collection)
 
         # Replicate the scan's dict semantics exactly: when one SpellIndex
-        # matches through multiple pool entries (version lineages), the scan
+        # matches through multiple pool entries (several of its versions), the scan
         # keeps the FIRST insertion position but the LAST matching spell
         # object (dict insert-then-overwrite).
         # collected: id(index) -> [first_pos, value_pos, index, spell_obj]

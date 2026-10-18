@@ -74,8 +74,8 @@ class Spell(Cleanable):
     of a loose bundle of values.
 
     Contract:
-    - Wraps exactly one registered spell target plus its `SpellIndex`
-      lineage/version record.
+    - Wraps exactly one registered spell target plus its `SpellIndex`, the
+      index that organizes this spell with the other members and selects one.
     - Owns spell-local mutable runtime state such as hooks, dependency/build
       artifacts, the spell-owned `CreationContextFactory`, the spell-owned
       `CreationContext`, execution-plan dispatch-route metadata, and mutation
@@ -212,9 +212,9 @@ class Spell(Cleanable):
 
     Subsystem Context:
         The unit of currency of the spellbook subsystem. `Bind` produces one `Spell`
-        (paired with its `SpellIndex` lineage/version record) from a user target;
+        (paired with the `SpellIndex` that organizes it) from a user target;
         `Spellbook` registers it into its owned/contracted maps and spell-id caches and
-        registers the lineage into `SpellSystemStates`. Downstream, the SpellCompiler
+        registers its SpellIndex into `SpellSystemStates`. Downstream, the SpellCompiler
         keys every phase artifact on this spell (by `spell_index.selected_spell_id`) and
         `Meld` reads it to choose reuse-vs-construct. It hands structural identity to
         `SpellIndex`, build/plan artifacts to the SpellCompiler, and its `Permissions`
@@ -338,7 +338,7 @@ class Spell(Cleanable):
 
         Args:
             spell (Any): The underlying callable/class/instance being registered.
-            spell_index (SpellIndex): Lineage/version tracker for this spell.
+            spell_index (SpellIndex): The SpellIndex this spell is organized under (it selects one member).
             spellframe (Optional[Any]): Logical frame/contract used to scope the spell.
             binding_name (Optional[str]): Optional binding key is used to disambiguate spells under the same frame.
             spell_name (str): Resolved name for the spell (qualname or type name).
@@ -1024,7 +1024,7 @@ class Spell(Cleanable):
                 True when the owning conduit runs in dynamic mode.
             creation_gate_controller:
                 Frame-owned CreationGateController used by the factory for
-                spell-lineage gate operations.
+                spell-index gate operations.
 
         Returns:
             None.
@@ -1610,8 +1610,8 @@ class Spell(Cleanable):
             1. spell-local runtime invalidation
                - clear the cached `CreationContext`
                - force deferred runtime resolution to run again
-            2. lineage/control-plane invalidation
-               - mark the lineage structurally gated in `SpellSystemStates`
+            2. control-plane invalidation of its SpellIndex
+               - mark its SpellIndex structurally gated in `SpellSystemStates`
 
         Contract:
             - Safe to call multiple times on a live spell.
@@ -1631,7 +1631,7 @@ class Spell(Cleanable):
 
         Args:
             change_reason:
-                Optional structural change reason to record in the lineage
+                Optional structural change reason to record in its SpellIndex's
                 state. When omitted, the helper uses
                 `SpellStateChangeReason.structure_changed`.
 
@@ -1763,21 +1763,21 @@ class Spell(Cleanable):
     @property
     def system_state(self) -> SpellSystemState | None:
         """
-        Return the SpellSystemState instance associated with this spell's lineage.
+        Return the SpellSystemState instance associated with this spell's SpellIndex.
 
         This is a read-mostly view into the change-control and validation state
         tracked by SpellSystemStates.
 
         Contract:
-            - Mutation and contract operations can ask for the current lineage state.
+            - Mutation and contract operations can ask for the current state of its SpellIndex.
             - Higher-level dev-ops and validation pipelines can inspect this value
               while orchestrating Phase 1-7 revalidation.
-            - Returns `None` when SpellSystemStates are unavailable or the lineage is
+            - Returns `None` when SpellSystemStates are unavailable or the SpellIndex is
               not currently tracked.
 
         Returns:
             Optional[SpellSystemState]:
-                The state object for this spell's lineage, if available.
+                The state object for this spell's SpellIndex, if available.
 
         """
         self.check_cleaned()

@@ -173,6 +173,7 @@ Message alert rules
 - NEW MESSAGE for muse_0 (from melder_0, 2026-10-01T11:10:44Z)
 - NEW MESSAGE for melder_2 (from melder_0, 2026-10-01T11:26:16Z)
 - NEW MESSAGE for muse_0 (from melder_0, 2026-10-01T11:26:16Z)
+- NEW MESSAGE for melder_1 (from melder_0, 2026-10-18T02:14:40Z)
 <!-- END USER-DEFINED: alerts -->
 
 ## Active Items
@@ -182,9 +183,9 @@ Message alert rules
 | gauntlet_runtime_speed | in_progress | discovery | claude | melder_2 | none | Owner decides whether an open lever (thread-affine pools, one-lock anonymous link, single-check fast door) is worth a task. | Per-scope-cycle cost map vs dishka and dependency-injector, with ranked and prototyped candidates. | Next lever validated and its task opened, or the owner redirects. | tickets/tasks/2026-09-26_measure_gauntlet_scope_cycle_costs_task.md | 2026-09-26T23:01:16Z | REQUIRED |
 | defect_hunting_spellbook | in_progress | discovery | opencode | muse_0 | none | Slice spellbook component sections then read the surface behind each claim. | Contradiction list with evidence; meaty issues flagged apart from polish. | Sweep list triaged or owner redirects to conduit/meld or arch diffs. | tickets/tasks/2026-09-27_spellbook_sweep_task.md | 2026-09-27T15:56:49Z | REQUIRED |
 | defect_hunting_fixes_1 | in_progress | implementation | opencode | muse_0 | none | Re-slice each target fresh then repair findings 1-8 in order. | Corrected blocks with verified ranges; index check clean. | Batch repaired with gates passing or owner redirects scope. | tickets/tasks/2026-09-27_sweep_fixes_batch_1_task.md | 2026-09-27T16:07:16Z | REQUIRED |
-| meld_contract_scan | in_progress | handoff | claude | melder_1 | none | Owner: fix #1 accepted; direction on the findings re-examined id by id (handoff summary), then closure and the held-file release. | `Spellbook.find_spell_by_spell_id`, `Conduit.get_spell_by_spell_id` and the Rift room's renamed lookup return exactly the spell a spell_id names (active, else parked, else none); rule 2 and the removal fix (0.2.8250-0.2.8251) are landed. | The owner-approved change lands with tests, docs, notch and rebuild, or the owner redirects. | tickets/tasks/2026-10-16_recheck_contract_consumers_when_provider_changes_task.md | 2026-10-18T00:57:31Z | REQUIRED |
+| meld_contract_scan | in_progress | implementation | claude | melder_1 | none | Report the src lineage pass (546 edits, 70 files) to the owner with the kept lists; the system docs after M0-192. | The spell_id lookups return exactly the spell a spell_id names (0.2.8253, accepted; 0.2.8250-0.2.8251 landed); src docstrings and comments call a SpellIndex a SpellIndex and keep lineage for the conduit scope tree. | The owner-approved change lands with tests, docs, notch and rebuild, or the owner redirects. | tickets/tasks/2026-10-16_recheck_contract_consumers_when_provider_changes_task.md | 2026-10-18T02:09:33Z | REQUIRED |
 | correctness_defects | in_progress | handoff | claude | melder_0 | none | S6's fix lane runs (its own row); then a fourth sweep tranche on the owner's word. | Defects where Melder's structure is wrong or stuck, a story each with a reproducer; the rest recorded as checked. | Every planned area swept and its defects filed as stories, or the owner redirects. | tickets/epics/2026-10-17_correctness_defects_epic.md | 2026-10-17T23:50:39Z | REQUIRED |
-| managed_settings_spell_id | in_progress | implementation | claude | melder_0 | none | Land part A: the fingerprint, the pool rebind and cache generation 22 with tests, docs, the notch above 0.2.8253 and the rebuild last; then report to the owner. | The four managed settings leave the spell_id; a same-id rebind re-composes its pool; the notch and cache generation 22 retire old bundles. | The fix lands with tests, docs, notch and rebuild, or the owner redirects. | tickets/stories/2026-10-17_release_routes_parked_version_objects_to_active_pool_story.md | 2026-10-18T00:42:22Z | REQUIRED |
+| managed_settings_spell_id | in_progress | handoff | claude | melder_0 | none | The owner's word on part B's staging refusal, the legacy record and anything more of the bind call (part A landed at 0.2.8254, rebuilt, files released). | The four managed settings leave the spell_id; a same-id rebind re-composes its pool; the notch and cache generation 22 retire old bundles. | The fix lands with tests, docs, notch and rebuild, or the owner redirects. | tickets/stories/2026-10-17_release_routes_parked_version_objects_to_active_pool_story.md | 2026-10-18T02:15:32Z | REQUIRED |
 <!-- END USER-DEFINED: active_items -->
 
 ## Active Attention Details
@@ -318,6 +319,10 @@ Message alert rules
   `Conduit.get_spell_by_spell_id`, renamed from `find_spell_by_id` / `get_spell_by_id` with no alias, return the
   active or parked version the spell_id names, and the Rift rooms' command is renamed with them;
   TASK-2026-10-16-recheck_contract_consumers_when_provider_changes). Notch above it if you land after.
+### Notch notice (melder_0, 2026-10-18)
+- melder_0 landed 0.2.8254 (a managed spell's four settings - mode, limit, queue timeout, reset names - are not part
+  of its spell_id; a rebind under the same spell_id gives its pool the new settings; creation cache generation 22;
+  STORY-2026-10-17-release_routes_parked_version_objects_to_active_pool, part A). Notch above it if you land after.
 ### Device VM git hazard (melder_2, 2026-09-26)
 - The connected folder refuses deletes, so any git command that refreshes the index from the device VM
   (plain `git status`, `git diff`) can leave an empty .git/index.lock that blocks the owner's commits.

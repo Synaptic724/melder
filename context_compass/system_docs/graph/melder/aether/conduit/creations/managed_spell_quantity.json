@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/creations/managed_spell_quantity.py",
- "source_sha256": "ce7a1e5a4fec8d711a85c4873a09335536dbf63d949234aaffb70588a2b961c0",
+ "source_sha256": "55ed82013f5a3893368e16f241359c02b0d8904e7bb97d95e72d2ac95346b0b7",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.creations.managed_spell_quantity": {
@@ -61,19 +61,20 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "3e9aa7386f163d65c73337fb7dea128c4d4dcfc6c7344667da837afc359c7d9d",
+   "span_sha256": "8d5a2f74360fb06b747faf9e0a7b2b76feb415f027b1b52bced8a22f0bcde05e",
    "include": true,
    "role": "The pool of one Existence.managed_spell_quantity version in its owner root's Creations: idle objects for reuse, a count of the objects alive, and the version's mode applied when a lease misses.",
    "responsibilities": [
     "keeps the idle objects in the base pool's _idle deque (newest last); the emitted plan leases with an inline _idle.pop() and only an empty pool calls reserve() - the pool never builds (create_object and acquire refuse)",
     "reserve(): elastic counts a place and records pressure (_note_miss); limited_quantity counts a place below its limit, else serves an object released since the plan's pop, else raises ManagedSpellExhaustedError; queue waits on its condition for a place or a released object until a deadline taken once at the call, then raises it; a torn-down pool raises RuntimeError",
     "put_back(obj): runs the reset names in order outside every lock; a raising reset destroys the object and propagates (one ExceptionGroup when its disposal fails too); otherwise appends the object, wakes one queue waiter and, above baseline_idle, runs the base pool's elastic band (stretch, timed decay, trim of the oldest idle objects destroyed outside the lock)",
-    "is sized by mode: elastic keeps baseline min(20, limit) and at most limit idle with the kernel pools' retention defaults; limited_quantity and queue are fixed at their limit, so count never exceeds it and nothing is evicted",
+    "is sized by mode: elastic keeps baseline min(20, limit) and at most limit idle with the kernel pools' retention defaults; limited_quantity and queue are fixed at their limit, so count never exceeds it and nothing is evicted while that limit stands - after a rebind to a lower limit (r9) the objects alive stay counted above it, and each release that leaves more idle objects than the new limit evicts the oldest one",
     "keeps no reference to an object that is out (identity is not tracked): only id(obj) keys the record of the disposal-bearing many children adopt() records for it, and a record whose id was reused moves to the orphaned records",
     "abandon(children, error): a failed build gives its place back, wakes one waiter and disposes the children it built, each failure added as a note on the build's error",
     "destroy_object: the Spell's disposal methods, then the object's recorded children newest first, count down by one and one waiter woken; disposal never runs on a plain release",
     "cleanup(): under the lock drains the idle objects, swaps the children maps for empty ones, deletes the borrowed Spell and wakes every waiter; outside it disposes the idle objects with their children, then the children of objects still out, then the orphans, failures as one ExceptionGroup; other fields stay as tombstones",
-    "describe(): the base retention keys without in_use_count, plus identity, policy, count, out_count and children_recorded"
+    "describe(): the base retention keys without in_use_count, plus identity, policy, count, out_count and children_recorded",
+    "_rebind_spell(spell): a definition bound again under the same spell_id (cleanup_spell, then bind) meets this pool through Creations.ensure_managed_quantity after the store lock is released; under the pool lock it re-points the Spell, the class key and the disposal list and, when a setting differs, takes the new mode, limit, queue timeout and reset names, sizes the retention band as a fresh pool of those settings (elastic: baseline min(20, limit), ceiling the limit; limited_quantity and queue: both the limit; the target back at the baseline) and wakes every waiter to re-check; equal settings (an ownership transfer's restamp) only re-point; nothing is destroyed - the count stays the objects alive (0.2.8254)"
    ],
    "owns_state": [
     "_count",
@@ -94,7 +95,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "3e9aa7386f163d65c73337fb7dea128c4d4dcfc6c7344667da837afc359c7d9d"
+   "semantics_authored_against": "8d5a2f74360fb06b747faf9e0a7b2b76feb415f027b1b52bced8a22f0bcde05e"
   }
  },
  "edges_out": [
@@ -159,7 +160,7 @@
    "from": "melder.aether.conduit.creations.managed_spell_quantity.ManagedSpellQuantity",
    "to": "melder.aether.spellbook.spell.Spell",
    "relation": "borrows",
-   "why": "The pool reads the managed options and the disposal list from its version's Spell at construction and keeps the Spell borrowed (a rebind under the same id re-points it); it never cleans it.",
+   "why": "The pool reads the managed options and the disposal list from its version's Spell at construction and keeps the Spell borrowed (a rebind under the same spell_id re-points it and gives the pool that Spell's settings, 0.2.8254); it never cleans it.",
    "cardinality": "many_to_one",
    "phase": [
     "init",

@@ -28,10 +28,10 @@ from melder.aether.spellbook.spell_compiler.system.validation.strategy_base impo
 
 class ContractedVersionDriftStrategy(SpellSystemValidationStrategy):
     """
-    Guard that the visible system index does not drift onto stale lineage versions.
+    Guard that the visible system index does not drift onto stale versions of a SpellIndex.
 
     This strategy compares the spell_ids stored on `SpellSystemIndex` nodes
-    against the currently visible spell versions for each lineage. It is aimed
+    against the currently visible spell versions for each SpellIndex. It is aimed
     at contracted/borrowed visibility scenarios where the system graph can lag
     behind the active visible version set and end up validating or planning
     against an outdated node revision.
@@ -51,11 +51,11 @@ class ContractedVersionDriftStrategy(SpellSystemValidationStrategy):
             cancel_event: Optional[CancellationEvent],
     ) -> None:
         """
-        Validate that index nodes align with visible lineage versions.
+        Validate that index nodes align with the visible versions of each SpellIndex.
 
         Purpose:
             Surface cases where SpellSystemIndex references outdated
-            spell_ids for a lineage visible in the spellbook.
+            spell_ids for a SpellIndex visible in the spellbook.
         Contract:
             - Uses spell_lookup to determine visible current versions.
             - Emits errors when a node's spell_id is not a visible version.
@@ -65,7 +65,7 @@ class ContractedVersionDriftStrategy(SpellSystemValidationStrategy):
             blueprints: Root blueprints keyed by root spell id.
             phase4_results: Phase-4 validation artifacts keyed by spell id.
             broken_spell_ids: Set of broken spell ids.
-            spell_system_states: SpellSystemStates registry for topology and lineage data.
+            spell_system_states: SpellSystemStates registry for topology and SpellIndex state data.
             spell_lookup: Mapping of visible spell_ids to spell objects.
             diagnostics: Collection that receives diagnostics.
             cancel_event: Optional cancellation signal.

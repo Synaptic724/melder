@@ -54,7 +54,7 @@ class StructuralSnapshot:
     Contract:
         - Reads DURABLE state only. The per-spell phase artifacts are reset
           before conjure end, so the rows come from `Spell.dependencies`, the
-          registered `SpellLocalTopology`, the lineage `SpellSystemState`
+          registered `SpellLocalTopology`, the SpellIndex's `SpellSystemState`
           (validity and the `contract_unvalidated` flag) and the bind-time
           profile requirements (annotation type references for the key).
         - Payload schema (`PAYLOAD_FORMAT` 1):
@@ -362,12 +362,12 @@ class StructuralSnapshot:
 
         Contract:
             - Requires the key (bind-time requirements), a bound SpellIndex,
-              the lineage state and the registered local topology; returns
+              the SpellIndex's state and the registered local topology; returns
               None when any is missing (the spell is then a structural miss).
             - `phase3.dependency_ids` is `Spell.dependencies` as phase 3 left
               it (resolution order, de-duplicated, a recorded self-dependency
               included); `phase3.sockets` are the topology descriptor rows.
-            - `phase4.validity` is the lineage validity name and
+            - `phase4.validity` is the SpellIndex state's validity name and
               `phase4.contract_unvalidated` the flag's presence.
             - Values only; two builds over the same state are equal.
 
@@ -375,7 +375,7 @@ class StructuralSnapshot:
             spell:
                 Owned spell to snapshot.
             spell_system_states:
-                Frame registry holding the lineage state and topology.
+                Frame registry holding the SpellIndex state and topology.
             world_stamp:
                 Digest from `world_stamp` for this conjure.
             replayable:
@@ -641,7 +641,7 @@ class StructuralSnapshot:
               validation_passed, flags_to_remove=[contract_unvalidated])` or
               `set_validity(gated, contract_unvalidated,
               flags_to_add=[contract_unvalidated])` - the calls phase 4 makes.
-            - A spell whose lineage state is missing raises RuntimeError (it
+            - A spell whose SpellIndex state is missing raises RuntimeError (it
               exists from bind; its absence is a contract violation, not a
               cache condition).
             - No artifact is touched; no scheduler runs.
@@ -659,7 +659,7 @@ class StructuralSnapshot:
             KeyError:
                 When an owned spell has no payload in `hits`.
             RuntimeError:
-                When an owned spell has no lineage state.
+                When an owned spell has no SpellIndex state.
         """
         spell_system_states = spellbook._spell_system_states
         owned: Dict[str, "Spell"] = {}

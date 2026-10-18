@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: other
-SOURCE FINGERPRINT: 04242556482fd78620d1bf1c5f21c09cca6b933451185bb6576acb4c679ed7de
+SOURCE FINGERPRINT: 9ca563349b1ffb3d073f636029738db732a8842868ef0cec53118aa1fe3a0410
 FILE COUNT: 404
 
 ================================================================================
@@ -75737,10 +75737,10 @@ END FILE: release_docs/0.2.8227.md
 ================================================================================
 ================================================================================
 BEGIN FILE: release_docs/next_version_release.md
-CONTENT SHA256: 61df1bf0cb080e911f2604affde22d2a4544f2f282fe6f60f0ac92657cbeba0e
+CONTENT SHA256: 2d9f8537f09fd1f6aaaa01bb8d4c7b8194d4dbebddbc1bde56e42f89faacd39e
 SOURCE ENCODING: utf-8
 ================================================================================
-# Melder 0.2.8253
+# Melder 0.2.8254
 
 **Unreleased**
 
@@ -76135,7 +76135,8 @@ parser. A meld, or an injection into a constructor, leases an idle object from t
 conduit that owns the binding, or builds one; the holder gives the object back explicitly and the next lease reuses
 it. 0.2.8241 added the member and its place in Melder's lifetime rules, 0.2.8242 its bind options, 0.2.8243 its pool
 in the owning root, 0.2.8244 the way objects go back (`ReleaseManagedSpell`), 0.2.8245 leasing through a meld
-(`Conduit.managed_spell_meld` included) and 0.2.8246 its pools in an ownership transfer.
+(`Conduit.managed_spell_meld` included), 0.2.8246 its pools in an ownership transfer, and 0.2.8254 took its four
+settings out of its spell_id.
 
 - `Existence.managed_spell_quantity` (`str()` gives `"managed_spell_quantity"`) comes after the six existing members.
 - At conjure, a managed spell may depend on `unique` spells, other managed spells and `many` spells; a dependency on
@@ -76172,8 +76173,35 @@ book.bind(
 - `spell.managed_spell_mode`, `managed_spell_limit`, `managed_spell_timeout_seconds` and
   `managed_spell_reset_methods` read them back (the default limit filled in); other spells answer None, None,
   None and `()`.
-- Each option is part of a managed spell's id: the same class bound with other options is a different spell
-  version (park it with `bind_inactive` and `notch_spell` to it, as with any version).
+- The four options are settings of the one spell, not part of its spell_id (0.2.8254): one class bound managed at one
+  address with one list of disposal methods has one spell_id whatever its mode, limit, timeout or reset methods.
+  Staging it again with other settings (`bind_inactive` on its index) is refused as the same spell - `RuntimeError`
+  "Spell ID collision detected. ..." - and nothing is registered. A version that differs in more than its settings
+  (another class, binding name or disposal methods) is a version of its own, as before.
+- To change a managed spell's settings, dispose it and bind it again. The spell_id stays, and the pool the earlier
+  binding left takes the new settings with its idle objects and its count, so an object leased before goes back to
+  it. The rebind destroys nothing: every object alive stays alive and counted, even above a lower limit, and the
+  pool settles to the new limit as objects are released; a lease waiting in a `queue` pool checks the new settings.
+
+```python
+sid = book.bind(spell=Parser, existence="managed_spell_quantity",
+                managed_spell_mode="limited_quantity", managed_spell_limit=1)
+root = book.conjure(dynamic=True, name="parsers")
+
+parser = root.meld(spell_id=sid)
+root.cleanup_spell(spell=root.get_spell_by_spell_id(sid))   # the pool stays, with the parser out
+assert root.bind(spell=Parser, existence="managed_spell_quantity",
+                 managed_spell_mode="limited_quantity", managed_spell_limit=2) == sid   # the same spell
+second = root.meld(spell_id=sid)                  # limit 2 now: a second parser
+md.ReleaseManagedSpell().release(parser)          # back to the same pool, counted
+```
+
+- Builds 0.2.8242-0.2.8253 hashed the four settings into the spell_id, so a managed spell bound by one of them has
+  another spell_id from 0.2.8254 on (no other spell's id moves). A Crystallizer record made by one of them restores
+  through `bind`, which gives each managed spell its new spell_id. Under process-wide spell ids (the default), one
+  managed class bound at one address in two frames now has one spell_id whatever its settings, so the second binding
+  is refused as a duplicate, as for any other class: at its `bind` once the first frame's Spellbook is conjured
+  ("Spell ID collision detected. ..."), otherwise at its `conjure()` ("Conjure refused: ... already registered").
 
 `bind` refuses, before anything is registered and with a message that says what to change: a `managed_spell_*`
 option on another existence (`ValueError`); a managed binding of a function, method, lambda or existing object
@@ -76276,9 +76304,10 @@ with conduit.managed_spell_meld(Parser) as p:   # meld and lease in one call; gi
   bind it with existence=Existence.managed_spell_quantity."), and raises `MeldExecutionError` ("Managed spell
   'Parser' has no pool to lease from: its owner root was torn down, ...") when the version has no pool. A lease on
   an object built fresh by own-parameter overrides gives that object to the pool when it is released.
-- Compiled plans cached before managed spells existed are retired: the creation cache moves to generation 21
-  (0.2.8248). Every release change already makes the first `conjure()` after an upgrade compile cold, so nothing
-  else changes.
+- Compiled plans cached by earlier builds are retired: the creation cache moves to generation 21 (0.2.8248), which
+  retires the bundles written before managed spells existed, and to 22 (0.2.8254), which retires those written while
+  the settings were part of the spell_id. Every release change already makes the first `conjure()` after an upgrade
+  compile cold, so nothing else changes.
 
 Pools follow an ownership transfer (0.2.8246). A pool is one more record of its spell version, so
 `transfer_spell_ownership` treats it as it treats the others:
@@ -76705,7 +76734,11 @@ missing-provider report. No public signature changes.
   (`agents/MELDER_AGENT_OPERATIONS.md`) use the new names, and the guide's lookup trap now describes the exact
   lookup; the walkthroughs that call the lookups use the new names, and lessons 17 (notch-swapping a live object)
   and 26 (codegen create, modify, iterate) show a parked spell_id answering its own version.
-- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8253.
+- The packaged system documents (`melder.__architecture__`, `melder.__components__`) and the packaged graph
+  describe a managed spell's settings as settings of the one spell: the fingerprint without them, the pool taking
+  new settings on a rebind under its spell_id, and the creation cache's generation 22; `ManagedSpellMode` and the
+  bind fingerprint's docstrings say the same, and the code-map extents of the changed files are remeasured.
+- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8254.
 ================================================================================
 END FILE: release_docs/next_version_release.md
 ================================================================================

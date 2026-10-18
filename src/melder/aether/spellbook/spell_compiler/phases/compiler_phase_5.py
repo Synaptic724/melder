@@ -277,7 +277,7 @@ class CompilerPhase5:
             Share index construction between frame-wide and local Phase 5 paths.
         Contract:
             - Requires every snapshot spell id to be present in "spell_lookup".
-            - Resolves lineage ids from SpellSystemStates.
+            - Resolves each spell's SpellIndex id from SpellSystemStates.
             - Does not mutate snapshot or spell_lookup.
         Args:
             snapshot:

@@ -33,7 +33,7 @@ class IndexDependencySanityStrategy(SpellSystemValidationStrategy):
     real node.
 
     This is the index-local counterpart to the broader graph consistency check.
-    Before later strategies reason about reachability, lineage, or root
+    Before later strategies reason about reachability, SpellIndex identity, or root
     viability, the index itself must at least be internally self-consistent.
 
     Contract:
@@ -68,7 +68,7 @@ class IndexDependencySanityStrategy(SpellSystemValidationStrategy):
             blueprints: Root blueprints keyed by root spell id.
             phase4_results: Phase-4 validation artifacts keyed by spell id.
             broken_spell_ids: Set of broken spell ids.
-            spell_system_states: SpellSystemStates registry for topology and lineage data.
+            spell_system_states: SpellSystemStates registry for topology and SpellIndex state data.
             spell_lookup: Mapping of visible spell_ids to spell objects.
             diagnostics: Collection that receives diagnostics.
             cancel_event: Optional cancellation signal.

@@ -1474,7 +1474,7 @@ class ViewMultiFrame(Cleanable):
             even when an index currently has only one visible member.
 
         Contract:
-            - Groups by spell INDEX id, so each group is one version LINEAGE rather than
+            - Groups by spell INDEX id, so each group is one SpellIndex's versions rather than
               one spell.
             - DESCRIPTOR-LEVEL and CROSS-FRAME: scoped at FRAME granularity by the
               rift's reachable frames, then reading descriptor records directly rather
@@ -2402,7 +2402,7 @@ class ViewMultiFrame(Cleanable):
 
         Contract:
             - Index ids across the scope. Duplicates are EXPECTED, since many spells share
-              one lineage.
+              one SpellIndex.
             - DESCRIPTOR-LEVEL and CROSS-FRAME: scoped at FRAME granularity by the
               rift's reachable frames, then reading descriptor records directly rather
               than the ACL-filtered link set, so results need not match ViewFrame /

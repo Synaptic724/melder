@@ -1621,7 +1621,7 @@ class CommandSystem(Cleanable):
         Raises:
             ValueError:
                 If the spell id is empty, missing, or ambiguous across
-                published lineages.
+                published spell indexes.
         """
         if not spell_id:
             raise ValueError("spell_id cannot be empty.")

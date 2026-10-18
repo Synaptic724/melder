@@ -9,7 +9,7 @@
 - Agent Role: synaptic_python_developer
 - Priority: p2
 - Created: 2026-10-17T21:07:53Z
-- Updated: 2026-10-18T00:54:49Z
+- Updated: 2026-10-18T02:15:32Z
 
 ## User Narrative
 
@@ -95,7 +95,8 @@ a release after a notch can leave a limited_quantity or queue pool counting an o
 - [x] Task: the owner's confirmation of the scope (2026-10-18: only the four settings; DECISION note).
 - [x] Task: patch docs for the Binding Pipeline and the Managed Spell Pools (written 2026-10-18T00:07:52Z,
   linked below); the owner's go for part A (2026-10-18).
-- [ ] Task: part A with symptom-named regression tests, docs, notch and the rebuild last.
+- [x] Task: part A with symptom-named regression tests, docs, notch and the rebuild last (0.2.8254,
+  2026-10-18; MEASURE notes).
 - [ ] Task: part B after melder_1 releases spellbook.py.
 - [ ] Enforce Ticket Microcycle across all linked tasks.
 - [ ] Record meaningful attributed findings in supported Notes/comments or authorized linked evidence.
@@ -114,7 +115,8 @@ a release after a notch can leave a limited_quantity or queue pool counting an o
 - Regression tests named for the symptom, e.g. `test_managed_settings_do_not_change_the_spell_id`,
   `test_restaging_a_settings_only_version_is_refused_as_the_same_spell` and
   `test_rebinding_with_new_managed_settings_recomposes_its_pool`; the managed fingerprint tests moved to the new rule;
-  GIL off and on; probes Q1-Q6 and S1-S2 re-run. Not run: no fix exists yet.
+  GIL off and on; probes Q1-Q6, S1-S2 and R1-R3 re-run at the fix. Part A ran green (MEASURE notes); not run:
+  hosted CI and coverage (the owner's).
 
 ## UX / API / Data Notes
 
@@ -124,7 +126,8 @@ a release after a notch can leave a limited_quantity or queue pool counting an o
 - A record made by 0.2.8242-0.2.8253 restores with mapped ids (restore maps a changed SHA); one holding two
   settings-only versions of one class in one index cannot rebuild both - the patch decides refusal or a shortfall.
 - Under process-wide spell ids, two frames binding one managed class at one address now share its spell_id, so the
-  second bind is refused as any other duplicate is.
+  second binding is refused as any other duplicate is: at its bind once the first frame's Book is conjured,
+  otherwise at its conjure (probe C1-C4).
 
 ## Risks / Mitigations
 
@@ -173,6 +176,18 @@ this does not make independent review mandatory for every ticket.
   - artifacts/correctness_defects_20261017/runs/probe_settings_rebind_tree_gil1.txt
   - artifacts/correctness_defects_20261017/runs/probe_settings_rebind_proto_gil0.txt
   - artifacts/correctness_defects_20261017/runs/probe_settings_rebind_proto_gil1.txt
+  - artifacts/correctness_defects_20261017/runs/probe_managed_release_routing_after_gil0.txt (Q1-Q6 re-run at the fix)
+  - artifacts/correctness_defects_20261017/runs/probe_managed_release_routing_after_gil1.txt
+  - artifacts/correctness_defects_20261017/runs/probe_same_id_staging_after_gil0.txt (S1-S2 re-run at the fix)
+  - artifacts/correctness_defects_20261017/runs/probe_same_id_staging_after_gil1.txt
+  - artifacts/correctness_defects_20261017/runs/probe_settings_rebind_after_gil0.txt (R1-R3 re-run at the fix)
+  - artifacts/correctness_defects_20261017/runs/probe_settings_rebind_after_gil1.txt
+  - artifacts/correctness_defects_20261017/probes/probe_release_note_s6.py (cases E1, E2: the release note's example)
+  - artifacts/correctness_defects_20261017/runs/probe_release_note_s6_gil0.txt
+  - artifacts/correctness_defects_20261017/runs/probe_release_note_s6_gil1.txt
+  - artifacts/correctness_defects_20261017/probes/probe_cross_frame_same_id.py (cases C1-C4: one managed class in two frames)
+  - artifacts/correctness_defects_20261017/runs/probe_cross_frame_same_id_gil0.txt
+  - artifacts/correctness_defects_20261017/runs/probe_cross_frame_same_id_gil1.txt
   - system_docs/patches/active/managed_settings_spell_id_2026_10_17/architecture_patch.md
   - system_docs/patches/active/managed_settings_spell_id_2026_10_17/component_patch_binding_fingerprint.md
   - system_docs/patches/active/managed_settings_spell_id_2026_10_17/component_patch_managed_pool_rebind.md
@@ -439,6 +454,177 @@ this does not make independent review mandatory for every ticket.
   REREAD: HELPFUL
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-10-18T01:28:45Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: Part A is in the tree (on 0.2.8253, notch next) and the whole tree is green with the GIL off and on. src
+    (scripts/s6_part_a_src.py): `Bind.sha256_profile` takes no managed keyword and `_managed_fingerprint_part` is
+    gone, so `_bind_logic` and `spell_id_inspector` hash the class profile, name, spellframe, binding name,
+    existence, disposal names and resolvable only (the inspector still checks the options as bind does);
+    `ManagedSpellQuantity._rebind_spell` re-composes mode, limit, timeout, reset names and the retention sizes under
+    the pool lock (equal settings: a re-point) and wakes waiters; `Creations.ensure_managed_quantity` calls it after
+    the store lock is released; creation cache generation 22 "managed_settings_leave_spell_id" (the schema-history
+    test pins it: a 21 bundle is cold, a 22 bundle loads); ManagedSpellMode and SpellCrystal say the settings are not
+    identity. Tests: 182 new and changed pass (15 were red before); the managed suites 737; the 13 integration tests
+    that made a second version from one class's settings now make it differ in identity (scripts/
+    s6_part_a_move_tests.py). Whole tree in a /tmp mirror (the connected folder refuses the tests' temp-dir deletes):
+    unit 7134 + 2513 passed (3 skipped, 7 xfailed), component 2396 (23 skipped, 1 xfailed), integration 2221
+    (2 skipped, 9 xfailed, 3 xpassed - the two DI fault tests and melder_1's notch race), experimentation 250
+    (4 skipped); identical per mode, every collected id accounted for. Probes after the fix: R1 one spell_id and one
+    pool, limit 2, counts true; R2 refused "Spell ID collision detected", pool unchanged; R3 limited 1 keeps three
+    objects alive and counted, two after a release; S1 refused as before and S2's rebind keeps the spell_id; Q2-Q4
+    now stop at staging (the settings-only version is the same spell); Q1, Q5 and Q6 unchanged.
+  EVIDENCE:
+  - src/melder/aether/spellbook/bind/bind.py:1011-1129
+  - src/melder/aether/spellbook/bind/bind.py:931-1008
+  - src/melder/aether/conduit/creations/managed_spell_quantity.py:840-914
+  - src/melder/aether/conduit/creations/creations.py:1118-1183
+  - src/melder/utilities/caching_system/caching_system.py:197-228
+  - tests/integration/melder/spellbook/test_cache_schema_version_integration.py:12-35
+  - context_compass/artifacts/correctness_defects_20261017/runs/s6_validation_index.md:1-37
+  - context_compass/artifacts/correctness_defects_20261017/scripts/s6_part_a_src.py:1-347
+  - context_compass/artifacts/correctness_defects_20261017/scripts/s6_part_a_move_tests.py:1-157
+  - context_compass/artifacts/correctness_defects_20261017/scripts/s6_part_a_cache_test.py:1-32
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_settings_rebind_after_gil0.txt:1-34
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_same_id_staging_after_gil0.txt:1-7
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_managed_release_routing_after_gil0.txt:1-49
+  IMPACT: The exit gate's behaviour and test items hold; left are the notch, the release note, the system documents
+    and the graph, and the rebuild last.
+  NEXT: Notch to 0.2.8254 with the release-note section; NOTICE melder_1.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-18T01:33:43Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: melder_1 asked (M1-27, 2026-10-18T01:17:21Z; consumed) which src files S6 edits: the owner ruled that a
+    SpellIndex is not a lineage (a lineage is a conduit scope tree) and directed melder_1 to reword every docstring
+    and comment that calls a SpellIndex a lineage, src first, then the system documents and the graph prose; it
+    skips this lane's files until they are released and notches above whatever __version__ reads at its landing.
+    Answered by M0-190: part A holds bind.py, managed_spell_quantity.py, creations.py, caching_system.py,
+    managed_spell_mode.py and spell_crystal.py, then __version__ and the release note, the four system documents
+    with their indexes and the graph descriptors of those six files, until its rebuild; released by NOTICE M0-191.
+    This lane's new prose calls an index a SpellIndex, never a lineage (the owner's ruling).
+  EVIDENCE: context_compass/tickets/tasks/2026-10-16_recheck_contract_consumers_when_provider_changes_task.md:3035-3056
+  IMPACT: Two lanes edit the system documents today; they meet in sequence (this lane's docs and rebuild first), and
+    S6's docs pass must not call a SpellIndex a lineage.
+  NEXT: The notch to 0.2.8254 with the release-note entry.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-18T01:35:11Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: Notched 0.2.8254 (read 0.2.8253 at the notch) and wrote the release-note entry in the managed spells
+    section, where the note said "Each option is part of a managed spell's id" - one section per subject: the four
+    options are settings of the one spell; a settings-only re-stage is refused as the same spell; changing settings
+    is `cleanup_spell` and `bind`, the spell_id and the pool stay and the pool takes the new settings; builds
+    0.2.8242-0.2.8253 gave other ids; cache generations 21 and 22; a packaging line. The example runs as written
+    (probe E1: same spell_id, limit 2, count 2, one idle, one out; E2: re-stage refused, members unchanged). Checked
+    before the note repeats the patch docs' "now a duplicate, as for any other spell": under process-wide ids one
+    class bound at one address in two frames binds in both and the second frame's `conjure()` is refused
+    ("Conjure refused: 1 spell(s) owned by this Spellbook are already registered ..."), plain, managed with equal
+    settings and managed with another limit alike (C1-C3); the story's UX line said the second bind is refused - it
+    is the second conjure. melder_1 told (M0-191; the board's notch notice).
+  EVIDENCE:
+  - src/melder/__version__.py:12-12
+  - release_docs/next_version_release.md:389-586
+  - context_compass/artifacts/correctness_defects_20261017/scripts/s6_part_a_notch.py:1-94
+  - context_compass/artifacts/correctness_defects_20261017/probes/probe_release_note_s6.py:1-97
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_release_note_s6_gil0.txt:1-5
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_release_note_s6_gil1.txt:1-5
+  - context_compass/artifacts/correctness_defects_20261017/probes/probe_cross_frame_same_id.py:1-70
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_cross_frame_same_id_gil0.txt:1-13
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_cross_frame_same_id_gil1.txt:1-13
+  IMPACT: The notch and the note are in; the system documents, the graph and the rebuild remain for part A.
+  NEXT: Promote the patch docs into src_architecture, src_components and the tests pair, then the graph.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-18T01:36:24Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: Correction to the previous note's cross-frame finding: the second frame's binding is refused at its `bind`
+    when the first frame's Book is already conjured ("Spell ID collision detected", bind's cross-frame check; probe
+    C4), and at its `conjure()` otherwise (C1-C3). So "a duplicate, as for any other spell" holds as the patch docs
+    say; the release note and the story's UX line now name both points.
+  EVIDENCE:
+  - context_compass/artifacts/correctness_defects_20261017/probes/probe_cross_frame_same_id.py:1-90
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_cross_frame_same_id_gil0.txt:1-14
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_cross_frame_same_id_gil1.txt:1-14
+  - release_docs/next_version_release.md:456-461
+  IMPACT: The release note and the docs pass state where the refusal comes from.
+  NEXT: Promote the patch docs into src_architecture, src_components and the tests pair, then the graph.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
+- DATETIME: 2026-10-18T02:05:06Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: Part A's documentation and graph are in. The four system documents carry the new rule - src_architecture: a
+    new operational invariant first, two failure modes, the glossary, the boundary list, the managed lease diagram
+    and six code-map entries remeasured; src_components: the Binding Pipeline and Managed Spell Pools components
+    with their flows and code map; the tests pair: the new integration module and the moved fingerprint tests - and
+    their four indexes check current (5103, 12053, 1003 and 3864 lines). The graph: seven descriptors re-extracted
+    on 3.14 with --strict and installed behind an authored-tier check (scripts/s6_graph.py): Bind r15,
+    ManagedSpellQuantity r3, Creations r9, ManagedSpellMode r3 and SpellCrystal r7 rewritten from the old rule,
+    ManagedSpellQuantity r9 (the rebind) and CachingSystem r11 (generation 22) added, the two edge reasons that said
+    the mode is hashed or the rebind only re-points rewritten; the six class nodes re-read against their source
+    (each one's diff since its stamp) and accepted; the assembled graph checks current (591 sections, 28084 lines).
+    Two old-rule lines remain in descriptors of melder_1's held files (Spellbook r19, RestoreEngine r13); they go to
+    melder_1 with the release. Module nodes stay unverified, as across the graph.
+  EVIDENCE:
+  - context_compass/system_docs/src_architecture.md:1126-1151
+  - context_compass/system_docs/src_architecture.md:2223-2245
+  - context_compass/system_docs/src_components.md:3714-3827
+  - context_compass/system_docs/tests_components.md:1150-1157
+  - context_compass/system_docs/tests_components.md:1793-1798
+  - context_compass/system_docs/src_graph.md:6123-6200
+  - context_compass/system_docs/src_graph.md:5323-5384
+  - context_compass/system_docs/src_graph.md:5180-5272
+  - context_compass/system_docs/src_graph.md:25990-26054
+  - context_compass/system_docs/src_graph.md:6429-6461
+  - context_compass/system_docs/src_graph.md:18303-18363
+  - context_compass/system_docs/src_graph.md:15781-15781
+  - context_compass/system_docs/src_graph.md:17799-17799
+  - context_compass/artifacts/correctness_defects_20261017/scripts/s6_graph.py:1-256
+  IMPACT: Part A's docs and graph match the code; left are the boards, the patch docs' status, the rebuild last, the
+    release of the held files and the report to the owner.
+  NEXT: Sync the board rows and the patch docs' status, then rebuild through a /tmp mirror.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-18T02:14:40Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: Part A is landed at 0.2.8254 and rebuilt last, from the repository root on Python 3.14.7t, after the code,
+    tests, release note, system documents, graph, Notes and board rows. The asset runner ran whole in a /tmp mirror
+    (src/ and the system docs, copied from the repo; the system-documents builder unlinks its payloads and the
+    connected folder refuses deletes): all three assets at v0.2.8254 (468, 628, 4 entries); the eight files it
+    changed - three payloads, the system-documents manifest and index, the graph adjacency manifest and the two other
+    manifests - were copied over their originals (none added or removed, each byte-equal after the copy), and the
+    asset --check on the repo printed three OK lines. The LLM bundles (--include-untracked) rewrote src (583 files),
+    tests (1129) and other (404) and the manifest, and their --check printed three OK lines. No .git/index.lock.
+    melder_1's src wording pass was in progress meanwhile, so the bundles carry its edits as they stood; its own
+    landing rebuilds again.
+  EVIDENCE:
+  - context_compass/artifacts/correctness_defects_20261017/runs/s6_rebuild_assets_mirror.txt:1-7
+  - context_compass/artifacts/correctness_defects_20261017/runs/s6_rebuild_assets_copyback.txt:1-8
+  - context_compass/artifacts/correctness_defects_20261017/runs/s6_rebuild_assets_check.txt:1-7
+  - context_compass/artifacts/correctness_defects_20261017/runs/s6_rebuild_llm.txt:1-8
+  - context_compass/artifacts/correctness_defects_20261017/runs/s6_rebuild_llm_check.txt:1-7
+  IMPACT: Part A's exit gate holds (behaviour, tests with the GIL off and on, docs, notch, rebuild with both checks
+    OK). Left: release the held files to melder_1, report to the owner, the talk on part B and the legacy record.
+  NEXT: NOTICE M0-192 to melder_1 releasing the held files; then the report to the owner.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
@@ -457,13 +643,16 @@ this does not make independent review mandatory for every ticket.
 - Scope: the managed settings leave the spell_id (the owner's ruling); a same-id rebind re-composes its pool; the
   notch and a cache generation bump retire old bundles; part B refuses the residual same-class staging. Defect
   proven on 0.2.8252 (Notes); probes and runs in Artifact Links.
-- State: in_progress (melder_0), implementation. The direction and the scope are the owner's (DECISION notes
+- State: in_progress (melder_0), handoff. The direction and the scope are the owner's (DECISION notes
   of 2026-10-17T23:50:39Z and 2026-10-18T00:42:22Z): only the four managed settings leave the spell_id.
-  melder_1's 0.2.8253 landed (M1-26). Part A sits in free files (bind.py, managed_spell_quantity.py,
-  creations.py, caching_system.py); part B in spellbook.py (melder_1's until its release).
-- Next: (1) part A with its tests, docs, notch (above 0.2.8253) and the rebuild last; (2) report to the owner
-  and talk through part B, the legacy record and anything more of the bind call; (3) part B after melder_1's
-  release of spellbook.py.
+  Part A is landed at 0.2.8254 - the fingerprint, the pool's rebind, cache generation 22 - with its tests green
+  with the GIL off and on (the whole tree), the release note, the system documents and the graph, and rebuilt
+  last with both checks OK (MEASURE notes); its files are released to melder_1 (M0-192). Part B sits in
+  spellbook.py (melder_1's until its release); its patch doc is a draft.
+- Next: (1) the owner's talk: part B's staging refusal, the legacy record (two settings-only versions of one
+  class in one index: with no extra code its restore fails whole on the collision) and anything more of the
+  bind call; (2) part B on his word, after melder_1 releases spellbook.py; (3) closure: the walkthrough, the
+  patch docs archived, the board synced.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

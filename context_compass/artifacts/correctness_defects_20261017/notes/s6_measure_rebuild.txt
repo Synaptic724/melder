@@ -1,0 +1,25 @@
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: Part A is landed at 0.2.8254 and rebuilt last, from the repository root on Python 3.14.7t, after the code,
+    tests, release note, system documents, graph, Notes and board rows. The asset runner ran whole in a /tmp mirror
+    (src/ and the system docs, copied from the repo; the system-documents builder unlinks its payloads and the
+    connected folder refuses deletes): all three assets at v0.2.8254 (468, 628, 4 entries); the eight files it
+    changed - three payloads, the system-documents manifest and index, the graph adjacency manifest and the two other
+    manifests - were copied over their originals (none added or removed, each byte-equal after the copy), and the
+    asset --check on the repo printed three OK lines. The LLM bundles (--include-untracked) rewrote src (583 files),
+    tests (1129) and other (404) and the manifest, and their --check printed three OK lines. No .git/index.lock.
+    melder_1's src wording pass was in progress meanwhile, so the bundles carry its edits as they stood; its own
+    landing rebuilds again.
+  EVIDENCE:
+  - context_compass/artifacts/correctness_defects_20261017/runs/s6_rebuild_assets_mirror.txt:1-7
+  - context_compass/artifacts/correctness_defects_20261017/runs/s6_rebuild_assets_copyback.txt:1-8
+  - context_compass/artifacts/correctness_defects_20261017/runs/s6_rebuild_assets_check.txt:1-7
+  - context_compass/artifacts/correctness_defects_20261017/runs/s6_rebuild_llm.txt:1-8
+  - context_compass/artifacts/correctness_defects_20261017/runs/s6_rebuild_llm_check.txt:1-7
+  IMPACT: Part A's exit gate holds (behaviour, tests with the GIL off and on, docs, notch, rebuild with both checks
+    OK). Left: release the held files to melder_1, report to the owner, the talk on part B and the legacy record.
+  NEXT: NOTICE M0-192 to melder_1 releasing the held files; then the report to the owner.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9

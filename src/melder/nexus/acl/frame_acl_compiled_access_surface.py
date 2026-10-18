@@ -480,7 +480,7 @@ class CompiledFrameACLAccessSurface(Cleanable):
         Return the visible spell index ids.
 
         Returns:
-            Tuple[str, ...]: Visible stable spell lineage ids.
+            Tuple[str, ...]: Visible stable SpellIndex ids.
         """
         self.check_cleaned()
         return self._visible_spell_index_ids
@@ -502,7 +502,7 @@ class CompiledFrameACLAccessSurface(Cleanable):
         Return spell index ids enabled for command access.
 
         Returns:
-            Tuple[str, ...]: Enabled spell lineage ids.
+            Tuple[str, ...]: Enabled SpellIndex ids.
         """
         self.check_cleaned()
         return self._enabled_spell_index_ids

@@ -59,14 +59,14 @@ class BrokenSpellInDagStrategy(SpellSystemValidationStrategy):
             - If no broken spell ids are provided, emits nothing.
             - Each broken node reachable from a root yields one diagnostic.
             - A single broken spell may contribute diagnostics to multiple
-              roots when its lineage is shared across those rooted DAGs.
+              roots when that spell is shared across those rooted DAGs.
             - Cancellation is honored between roots.
         Args:
             index: Spell system index being validated.
             blueprints: Root blueprints keyed by root spell id.
             phase4_results: Phase-4 validation artifacts keyed by spell id.
             broken_spell_ids: Set of broken spell ids.
-            spell_system_states: SpellSystemStates registry for topology and lineage data.
+            spell_system_states: SpellSystemStates registry for topology and SpellIndex state data.
             spell_lookup: Mapping of visible spell_ids to spell objects.
             diagnostics: Collection that receives diagnostics.
             cancel_event: Optional cancellation signal.

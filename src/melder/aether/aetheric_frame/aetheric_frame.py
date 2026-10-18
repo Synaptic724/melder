@@ -38,7 +38,7 @@ class AethericFrame(Cleanable):
     Contract:
       - Owns root conduits and their spell registries.
       - Owns a stable root-conduit name index for per-frame lookup.
-      - Owns the version registry for all `SpellIndex` lineages in this frame.
+      - Owns the version registry for every `SpellIndex` in this frame.
       - Owns one `DevOpsInformationRegistry` as the frame-local topology and
         transaction mirror for reporting and future strategy resolution.
       - Owns one `ConduitCloud` over the frame-local conduit registries.
@@ -81,7 +81,7 @@ class AethericFrame(Cleanable):
     System Context:
         The frame is the ISOLATION BOUNDARY that makes multi-tenant runtime
         work possible in one process. Two frames can hold identically named
-        conduits, clusters, and spell lineages without collision, which is why
+        conduits, clusters, and spells without collision, which is why
         Nexus can offer `single`, `indexed`, and `one_per_workspace` topologies
         as pure frame policy rather than as runtime special-cases.
         Frames also come BEFORE books in the canonical boot order
@@ -194,7 +194,7 @@ class AethericFrame(Cleanable):
             devops_information_registry=self._devops_information_registry,
         )
 
-        # Per-frame graph + dirtiness registry for all spell lineages.
+        # Per-frame graph + dirtiness registry for all spell indexes.
         self._spell_system_states: SpellSystemStates = SpellSystemStates(
             self,
             self._devops_information_registry,
@@ -486,7 +486,7 @@ class AethericFrame(Cleanable):
         Per-frame SpellSystemStates registry.
 
         This is the "control tower" for:
-          - lineage graph topology,
+          - SpellIndex graph topology,
           - dirty vs transitively dirty flags,
           - basic impact analysis.
 
@@ -946,7 +946,7 @@ class AethericFrame(Cleanable):
 
         Contract:
           - Scans the frame-owned `_spell_registry`.
-          - Returns `None` for empty ids or when no matching lineage is found.
+          - Returns `None` for empty ids or when no matching SpellIndex is found.
 
         Args:
             spell_id: The SHA256 spell_id to search for.
@@ -1015,7 +1015,7 @@ class AethericFrame(Cleanable):
         once the frame is cleaned instead of raising.
 
         Returns:
-            Optional[SpellIndex]: The index whose lineage holds `spell_id` while the
+            Optional[SpellIndex]: The index whose members hold `spell_id` while the
                 frame is live; None when none does or the frame is cleaned.
 
         Threading:
@@ -1291,7 +1291,7 @@ class AethericFrame(Cleanable):
         scanning the frame-owned `_spell_registry` under the frame lock.
 
         Returns:
-            str | None: Owning conduit id, or `None` when no lineage in this
+            str | None: Owning conduit id, or `None` when no SpellIndex in this
             frame advertises that version.
         """
         self.check_cleaned()

@@ -5,7 +5,7 @@
 - Status: in_progress
 - Owner:
 - Created: 2026-01-22
-- Updated: 2026-10-17
+- Updated: 2026-10-18
 
 ## Scope
 This document defines C3 components, C2 subcomponents, and C1 code references
@@ -363,10 +363,10 @@ Protects:
   `### Subcomponent: Repository Tooling Unit Cluster`)
 - race fixes, as deterministic stand-ins for the concurrent writer (see
   `### Flow: Concurrent-Writer Stand-In`)
-- managed spells (0.2.8241-0.2.8246): the member and its Phase 6 rank, the bind options with their refusals and
-  ids, the pool in each mode, the release registry and the lease, the plans' managed sites and the owner stamp
-  through an ownership transfer (see `### Subcomponent: Managed Spell Pools Unit Cluster` and the spellbook
-  clusters)
+- managed spells (0.2.8241-0.2.8246, 0.2.8254): the member and its Phase 6 rank, the bind options with their
+  refusals and the ids they leave alone, the pool in each mode and its rebind, the release registry and the lease,
+  the plans' managed sites and the owner stamp through an ownership transfer (see
+  `### Subcomponent: Managed Spell Pools Unit Cluster` and the spellbook clusters)
 - the control plane's capability flag (0.2.8247): `SpellState.non_resolvable`, the registry's published set of
   flagged lineages and RiskManager's Book flag that leaves them out (see
   `### Subcomponent: DevOps Control Plane Unit Cluster`)
@@ -567,8 +567,8 @@ Protects:
 - a whole application bootstrapped the way a user would, automatic and dynamic
   (see `### Subcomponent: Live Sim Integration Cluster`)
 - managed pools through real worlds (0.2.8241-0.2.8246): pools in the owning root's store, leases across frames,
-  binding names, notches, borrowers and lessers, the release registry, ownership transfers and a restored world
-  (see `### Subcomponent: Conduit Integration Cluster`)
+  binding names, notches, borrowers and lessers, the release registry, ownership transfers, a restored world and a
+  settings change that keeps one spell and pool (0.2.8254) (see `### Subcomponent: Conduit Integration Cluster`)
 - versions staged before conjure (0.2.8248): every family staged with `bind_inactive` before conjure melds after a
   notch as one staged after it (see `### Subcomponent: Spellbook Integration Cluster`)
 - the public notch target (0.2.8249): the stage -> notch -> meld loop and its revert by version id in real worlds,
@@ -607,7 +607,7 @@ Concurrency/Threading:
 
 Invariants/Guarantees:
 - integration tests use real runtime stacks rather than hand-built shallow mocks
-- 172 `test_*.py` modules among 179 `.py` files (recounted 2026-10-17); the others are benches and the
+- 173 `test_*.py` modules among 180 `.py` files (recounted 2026-10-18); the others are benches and the
   live-sim application
 
 Failure Modes:
@@ -1020,13 +1020,20 @@ Protects:
   with the torn-down error when the root is torn down; a release runs the reset names in order and never
   disposes; a raising reset destroys the object and its recorded children and frees its place; cleanup disposes
   the idle objects, then the children of objects out, then orphans, in one aggregated group, and leaves objects
-  out to their holders; the pool keeps no reference to an object out
+  out to their holders; the pool keeps no reference to an object out; a rebind (0.2.8254) with equal settings keeps
+  the band, and one with new settings takes a higher or smaller limit, a timeout and reset names, keeps every
+  object alive and counted under a smaller limit (the fixed capacity evicting the oldest idle object at later
+  releases), resizes the band from elastic to limited_quantity and back like a fresh pool, wakes a queue waiter
+  into a raised limit, makes a limited pool turned queue wait, describes the new settings and leaves a torn-down
+  pool alone
 - the pool under eight threads (`test_managed_spell_quantity_multithreaded.py`): limited_quantity 3 never has
   more than 3 objects alive or out; queue 2 never hangs and never exceeds 2; elastic ends with its count equal to
   its idle objects; six waiters on a full queue all wake with the torn-down error; a queue of 1 never hands one
-  object to two leases (see `### Flow: Managed Pool Stress Under Eight Threads`)
+  object to two leases; a ninth thread changing the limit between 3 and 5 against eight leasers leaves the count
+  equal to the objects alive (0.2.8254) (see `### Flow: Managed Pool Stress Under Eight Threads`)
 - the store (`test_creations_managed_quantities.py`): one pool per version, composed only for a managed spell
-  in a live store; an idempotent ensure that re-points a kept pool at a rebound Spell; a pool never in
+  in a live store; an idempotent ensure; a rebind under the same spell_id keeping the pool and giving it the new
+  Spell's settings, with the store lock free while it runs (0.2.8254); a pool never in
   `_creations`; purge 0; clears that never touch a pool; pools cleaned before the disposable registry and newest
   first, their failures in the store's group; the `managed` extract/restore row (a replaced pool cleaned, its
   failures raised once the moved pool is in place); the registry calls at ensure, extract, restore and cleanup.
@@ -1144,8 +1151,10 @@ Protects:
   defaults (limit 256, no timeout, no resets); every refusal - an option on another existence, a function,
   method or existing object, an unknown mode, a bad limit, a timeout outside queue or not finite and positive,
   reset names that are not a list or tuple naming methods of the class; every existing member's spell id
-  byte-identical to 0.2.8241 while the part `managed:<mode>:<limit>:<timeout>:<names>` moves a managed
-  binding's id; the index minted with that id; the decorator form and `spell_id_inspector` parity. Around it:
+  byte-identical to 0.2.8241, and a managed binding hashing exactly the inputs every binding hashes, whatever its
+  settings (0.2.8254; from 0.2.8242 to 0.2.8253 a `managed:<mode>:<limit>:<timeout>:<names>` part moved its id);
+  the index minted with that id; the decorator form and `spell_id_inspector` parity, which ignores the settings
+  too. Around it:
   `scan_bind` storing, reserving and replaying the options (`test_scan_bind_managed_options.py`), the Spell's
   read-only properties (`test_spell_managed_spell_options.py`) and `SpellBinder.as_managed_spell_quantity`
   (`test_spellbinder_managed_options.py`)
@@ -1636,7 +1645,8 @@ Protects:
   reads back with no drift verdict while the fingerprinted project module reports drift
 - managed options through a record (0.2.8242; `test_managed_spell_options_record_integration.py`): the crystal
   records the active and the parked versions' options; a restore rebinds both with their options and spell
-  ids, and a spell-index graft into a Book in another frame carries both members' options
+  ids, and a spell-index graft into a Book in another frame carries both members' options; the parked version
+  differs in its disposal methods, because settings alone make the same spell (0.2.8254)
 Key Files (C1):
 - `tests/integration/melder/crystallizer/test_spell_crystal_integration.py`
 - `tests/integration/melder/crystallizer/test_synthetic_module_integration.py`
@@ -1680,16 +1690,17 @@ Protects:
   retain direct-meld refusal; genuine case-normalized address conflicts still fail at bind.
   Contracted validation tests verify independent owner/borrower bindings and validity after unlink.
 - managed bind options through a real Book (0.2.8242; `test_managed_bind_options_integration.py`): the options
-  on the Spell, not in its metadata; one class bound unique, managed by default and managed with a limit gets
-  three ids; a refused binding (an option on `unique`, a managed function) registers nothing; a root's `bind`
-  and `bind_inactive` forward the options; SpellBinder ends in the same Spell
+  on the Spell, not in its metadata; one class bound unique and managed gets two ids, and managed with a limit
+  the managed one's id (0.2.8254; it was a third); a refused binding (an option on `unique`, a managed function)
+  registers nothing; a root's `bind` and `bind_inactive` forward the options (the parked version differing in its
+  disposal methods); SpellBinder ends in the same Spell
 - versions staged before conjure (0.2.8248; `test_spellbook_integration_parked_before_conjure.py`): in a dynamic
   world a version staged with `bind_inactive` before conjure melds after a notch exactly as one staged after it,
   for unique, unique_per_conduit, many, managed_spell_quantity, an existing object and a function; before its
   notch neither is meldable by id (KeyError); a staged existing object is not registered in the store; a managed
   version staged before conjure has its pool (count 0) and its registry entry from conjure on and leases from it
-  after the notch, `with` giving the object back. The creation cache's generation history ends at 21
-  (`test_cache_schema_version_integration.py`: generation 21 is admitted, 1-20 load cold)
+  after the notch, `with` giving the object back. The creation cache's generation history ends at 22
+  (`test_cache_schema_version_integration.py`: generation 22 is admitted, 1-21 load cold; 22 joined at 0.2.8254)
 - the public notch target (0.2.8249; `test_notch_spell_by_id_integration.py`, 10 tests): in a dynamic world a
   notch by the spell_id `bind_inactive` returned promotes a version staged after conjure and one staged before it,
   the next meld builds it and the call returns it; a notch back by spell_id restores the first version with both
@@ -1779,6 +1790,13 @@ Protects:
   pool; no move gives the target fresh pools and disposes nothing; a failed transfer, with or without a move,
   leaves the pools, the stamps and a `unique` object with the owner; a parked `unique` version moved and
   notched in stores its object in the target
+- a managed spell's settings outside its spell_id (0.2.8254; `test_conduit_integration_managed_settings_rebind.py`, 3
+  tests): staging the class again on its SpellIndex with only another limit is refused as the same spell and
+  changes nothing; `cleanup_spell` then `bind` with limit 2 keeps the spell_id and the pool, leases up to 2,
+  refuses a third and takes back the object leased before; elastic with three idle objects rebound
+  limited_quantity 1 keeps all three alive and counted and disposes one at the next release above the limit. The
+  other managed files make their second versions differ in identity - another class, or other disposal methods -
+  where they differed in settings
 - contract consumers and dependents following a provider change (0.2.8250;
   `test_conduit_integration_notch_revalidation.py`, 16 tests): a borrower's contract consumer follows its
   lender's notch, notch back and repeat notch with one 5-11 pass each and none on warm melds, an object built
@@ -1813,6 +1831,7 @@ Key Files (C1):
 - `tests/integration/melder/conduit/test_conduit_integration_release_managed_spell.py` (2026-10-15)
 - `tests/integration/melder/conduit/test_conduit_integration_managed_transfer.py` (2026-10-15)
 - `tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py` (2026-10-16)
+- `tests/integration/melder/conduit/test_conduit_integration_managed_settings_rebind.py` (2026-10-18)
 
 ### Subcomponent: Multithreading Integration Cluster
 Parent Component: Integration Runtime Suite
@@ -1967,10 +1986,13 @@ Key Files (C1):
    caught and counted), the peak out and `count` stay within the limit, `count == idle_count` once everything
    is back, six waiters woken by `cleanup()` raise the torn-down error, and no object is held by two leases at
    once. The release registry's stress file starts its workers the same way, behind one barrier with a join
-   timeout.
+   timeout. A ninth thread changing the pool's limit between 3 and 5, 200 times, against eight leasers (its own
+   barrier of nine, the same join timeout) leaves the count equal to the objects built and not destroyed, every
+   one idle and never more than 5 (0.2.8254).
    EVIDENCE:
    - tests/unit/melder/aether/conduit/creations/test_managed_spell_quantity_multithreaded.py:77-124
    - tests/unit/melder/aether/conduit/creations/test_managed_spell_quantity_multithreaded.py:127-238
+   - tests/unit/melder/aether/conduit/creations/test_managed_spell_quantity_multithreaded.py:241-311
    - tests/unit/melder/aether/conduit/creations/test_release_managed_spell_multithreaded.py:94-122
 
 ## C1 Code Map (Core)
@@ -1989,12 +2011,12 @@ Key Files (C1):
   note: frame-isolated automatic/dynamic qualified-name regressions and real collision controls.
 
 Core is the DEDUPLICATED UNION OF EVERY `Key Files (C1)` LIST in the catalogs
-above - 263 paths (recounted 2026-10-17) - and nothing else. Change a component's key files and this set
+above - 264 paths (recounted 2026-10-18) - and nothing else. Change a component's key files and this set
 follows; if the two ever disagree, this section is wrong, not the catalog.
 
 WHAT COUNTS AS A KEY FILE ON THIS SIDE. A test component's key files are its
 HARNESS AND SUPPORT SURFACES - conftests, benches, mock packages, shared
-builders - not every `test_*.py` module beneath it. The 847 test modules of the
+builders - not every `test_*.py` module beneath it. The 848 test modules of the
 three CI tiers (and the 33 experimentation modules) are the component's CONTENT;
 they are counted in each entry rather than cited, because a
 core set that lists the entire tree is not a set anyone can verify, which is the
@@ -3131,22 +3153,25 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
 
 - path: `tests/unit/melder/aether/conduit/creations/test_managed_spell_quantity.py`
   start_line: 1
-  end_line: 913
-  loc: 913
-  verified_at: 2026-10-15T22:33:31Z
-  note: the managed pool per mode: reserve, waits, put_back and resets, destroy, adopt, abandon, cleanup (0.2.8243).
+  end_line: 1040
+  loc: 1040
+  verified_at: 2026-10-18T01:46:13Z
+  note: the managed pool per mode: reserve, waits, put_back and resets, destroy, adopt, abandon, cleanup (0.2.8243);
+    the rebind under the same spell_id (0.2.8254).
 - path: `tests/unit/melder/aether/conduit/creations/test_managed_spell_quantity_multithreaded.py`
   start_line: 1
-  end_line: 238
-  loc: 238
-  verified_at: 2026-10-15T22:33:31Z
-  note: eight barrier-released threads against the pool's limits, waits and teardown (0.2.8243).
+  end_line: 311
+  loc: 311
+  verified_at: 2026-10-18T01:46:13Z
+  note: eight barrier-released threads against the pool's limits, waits and teardown (0.2.8243); a rebinding
+    ninth thread (0.2.8254).
 - path: `tests/unit/melder/aether/conduit/creations/test_creations_managed_quantities.py`
   start_line: 1
-  end_line: 393
-  loc: 393
-  verified_at: 2026-10-15T22:33:31Z
-  note: the Creations pool map: ensure, cleanup order, the managed row, the registry calls (0.2.8243-0.2.8244).
+  end_line: 433
+  loc: 433
+  verified_at: 2026-10-18T01:46:13Z
+  note: the Creations pool map: ensure, cleanup order, the managed row, the registry calls (0.2.8243-0.2.8244); the
+    rebind after the store lock (0.2.8254).
 - path: `tests/unit/melder/aether/conduit/creations/test_creations_discard_managed_quantity.py`
   start_line: 1
   end_line: 152
@@ -3216,10 +3241,11 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   note: the crystal's managed options and RecordVersion 4.2.0 (0.2.8242).
 - path: `tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py`
   start_line: 1
-  end_line: 590
-  loc: 590
-  verified_at: 2026-10-15T22:33:31Z
-  note: the four managed bind options at the Bind seam: defaults, refusals, the managed id part (0.2.8242).
+  end_line: 581
+  loc: 581
+  verified_at: 2026-10-18T01:46:13Z
+  note: the four managed bind options at the Bind seam: defaults, refusals, settings outside the id (0.2.8242,
+    0.2.8254).
 - path: `tests/unit/melder/spellbook/bind/test_spell_index_selected_probe.py`
   start_line: 1
   end_line: 64
@@ -3289,28 +3315,35 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   note: non-resolvable definitions keep the Book flag down through worlds, notches, transfers and races (0.2.8247).
 - path: `tests/integration/melder/conduit/test_conduit_integration_managed_quantity_pool.py`
   start_line: 1
-  end_line: 261
-  loc: 261
-  verified_at: 2026-10-15T22:33:31Z
+  end_line: 262
+  loc: 262
+  verified_at: 2026-10-18T01:46:13Z
   note: pools in the owning root's store through conjure, binds, teardown and the probes (0.2.8243).
 - path: `tests/integration/melder/conduit/test_conduit_integration_managed_spell_quantity.py`
   start_line: 1
-  end_line: 282
-  loc: 282
-  verified_at: 2026-10-15T22:33:31Z
+  end_line: 289
+  loc: 289
+  verified_at: 2026-10-18T01:46:13Z
   note: leases through real worlds: frames, binding names, notches, borrowers, lessers, a restore (0.2.8245).
 - path: `tests/integration/melder/conduit/test_conduit_integration_release_managed_spell.py`
   start_line: 1
-  end_line: 310
-  loc: 310
-  verified_at: 2026-10-17T23:33:39Z
+  end_line: 315
+  loc: 315
+  verified_at: 2026-10-18T01:46:13Z
   note: the registry routing releases to the pools of live roots (0.2.8244).
 - path: `tests/integration/melder/conduit/test_conduit_integration_managed_transfer.py`
   start_line: 1
-  end_line: 346
-  loc: 346
-  verified_at: 2026-10-15T22:33:31Z
+  end_line: 351
+  loc: 351
+  verified_at: 2026-10-18T01:46:13Z
   note: pools and owner stamps through moves, no-moves and failed transfers (0.2.8246).
+- path: `tests/integration/melder/conduit/test_conduit_integration_managed_settings_rebind.py`
+  start_line: 1
+  end_line: 184
+  loc: 184
+  verified_at: 2026-10-18T01:46:13Z
+  note: settings outside the spell_id: a settings-only re-stage refused; a rebind keeps one spell and pool
+    (0.2.8254).
 - path: `tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py`
   start_line: 1
   end_line: 673
@@ -3320,16 +3353,16 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
     meld-vs-notch race as a non-strict xfail (0.2.8250).
 - path: `tests/integration/melder/crystallizer/test_managed_spell_options_record_integration.py`
   start_line: 1
-  end_line: 177
-  loc: 177
-  verified_at: 2026-10-15T22:33:31Z
+  end_line: 178
+  loc: 178
+  verified_at: 2026-10-18T01:46:13Z
   note: managed options through record, restore and graft (0.2.8242).
 - path: `tests/integration/melder/spellbook/test_managed_bind_options_integration.py`
   start_line: 1
-  end_line: 169
-  loc: 169
-  verified_at: 2026-10-15T22:33:31Z
-  note: managed bind options through a real Spellbook and its root (0.2.8242).
+  end_line: 171
+  loc: 171
+  verified_at: 2026-10-18T01:46:13Z
+  note: managed bind options through a real Spellbook and its root (0.2.8242); settings outside the id (0.2.8254).
 - path: `tests/integration/melder/spellbook/test_spellbook_integration_parked_before_conjure.py`
   start_line: 1
   end_line: 250
@@ -3521,6 +3554,7 @@ graph TD
 - `tests/integration/melder/conduit/test_conduit_integration_managed_spell_quantity.py`
 - `tests/integration/melder/conduit/test_conduit_integration_release_managed_spell.py`
 - `tests/integration/melder/conduit/test_conduit_integration_managed_transfer.py`
+- `tests/integration/melder/conduit/test_conduit_integration_managed_settings_rebind.py`
 - `tests/integration/melder/crystallizer/test_managed_spell_options_record_integration.py`
 - `tests/integration/melder/spellbook/test_managed_bind_options_integration.py`
 - `tests/component/melder/aether/conduit/test_conduit_component_purge.py`
@@ -3567,6 +3601,16 @@ graph TD
   scan/bind coverage grows.
 
 ## Context / Handoff Summary
+
+2026-10-18 managed settings leave the spell_id (0.2.8254; part A of
+STORY-2026-10-17-release_routes_parked_version_objects_to_active_pool): the Conduit Integration Cluster gains
+`test_conduit_integration_managed_settings_rebind.py` (3 tests: the settings-only re-stage refused, the rebind that
+keeps one spell and pool, a mode change that destroys nothing), a key file with a code-map record; the Managed Spell
+Pools Unit Cluster names the pool's ten rebind tests, the rebinding ninth thread of the stress file (its flow gains
+the case) and the store's rebind after the store lock; the Spellbook clusters name the fingerprint without the
+settings and the cache history ending at 22; the crystallizer and conduit clusters say their second versions now
+differ in identity. Ten records are remeasured; counts are recounted from disk (integration 173 of 180; 848 test
+modules in the three tiers). The core set is 264 paths, equal to the code map.
 
 2026-10-17 lookup by spell_id is exact (0.2.8253): the Aether/Nexus/Rift Unit Cluster gains
 `test_command_system_spell_id_lookups.py` (the Rift rooms' spell_id and source-id lookups over doubles, 12

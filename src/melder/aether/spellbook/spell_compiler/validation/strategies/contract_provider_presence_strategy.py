@@ -34,7 +34,7 @@ class ContractProviderPresenceStrategy(SpellValidationStrategy):
         - Emits errors when more than one provider matches a contract key.
         - Emits warnings for missing SpellContract providers in dynamic mode. The
           warning names the contract and the remedy (D1-B, 2026-10-16): it is the
-          one warning Phase 4 gates a lineage on, so SpellbookValidationError
+          one warning Phase 4 gates a SpellIndex on, so SpellbookValidationError
           lists it as the reason a consumer is refused.
         - Walks one-call snapshots of the Book's contracted maps, built once per
           validation pass. Under rule 2 (2026-10-16) this check is the recheck a

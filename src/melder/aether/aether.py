@@ -2551,7 +2551,7 @@ class Aether(Cleanable):
         """
         Checks if a SHA256 spell_id exists in ANY SpellIndex within a frame,
         using the frame's _selected_spell_registry cache (maintained per-conduit as
-        conduits register and unregister their lineages).
+        conduits register and unregister their spell indexes).
 
         Args:
             spell_id (str): The SHA256 spell ID to check.

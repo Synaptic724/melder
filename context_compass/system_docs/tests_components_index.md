@@ -12,10 +12,10 @@ Line numbers are 1-based and inclusive on both ends.
 | --- | --- |
 | document | `tests_components.md` |
 | index_version | 1.1.0 |
-| generated_at | 2026-10-17T23:33:39Z |
-| line_count | 3820 |
+| generated_at | 2026-10-18T01:46:14Z |
+| line_count | 3864 |
 | line_ending | lf |
-| content_sha256 | `8e48260e6e562965d0330d4ef17e8aa451fe288fb6888f628d604d4a4ece9495` |
+| content_sha256 | `1f91347a1fa09c060fcaacd99d197b4daa09123ae77a80ab53f2feceafda4164` |
 | sections | 69 |
 
 Recompute all three of `line_count`, `line_ending`, and `content_sha256`
@@ -44,7 +44,7 @@ which you did.
 | 546-661 | 3 | C3 Components Catalog > Component: Integration Runtime Suite |
 | 662-751 | 3 | C3 Components Catalog > Component: Mock Fixture Corpus |
 | 752-814 | 3 | C3 Components Catalog > Component: Experimentation And Profiling Trees (Local Only) |
-| 815-1880 | 2 | C2 Subcomponents Catalog |
+| 815-1899 | 2 | C2 Subcomponents Catalog |
 | 817-825 | 3 | C2 Subcomponents Catalog > Subcomponent: `conftest.py` Path Bootstrap |
 | 826-836 | 3 | C2 Subcomponents Catalog > Subcomponent: Frame Posture Test Support |
 | 837-846 | 3 | C2 Subcomponents Catalog > Subcomponent: Nexus Viewer Matrix Support |
@@ -56,43 +56,43 @@ which you did.
 | 918-957 | 3 | C2 Subcomponents Catalog > Subcomponent: Aether/Nexus/Rift Unit Cluster |
 | 958-972 | 3 | C2 Subcomponents Catalog > Subcomponent: Aetheric Mediator Lifecycle Unit Cluster |
 | 973-1007 | 3 | C2 Subcomponents Catalog > Subcomponent: DevOps Control Plane Unit Cluster |
-| 1008-1064 | 3 | C2 Subcomponents Catalog > Subcomponent: Managed Spell Pools Unit Cluster |
-| 1065-1097 | 3 | C2 Subcomponents Catalog > Subcomponent: Crystallizer Unit Cluster |
-| 1098-1111 | 3 | C2 Subcomponents Catalog > Subcomponent: MutationResearch Unit Cluster |
-| 1112-1227 | 3 | C2 Subcomponents Catalog > Subcomponent: Spellbook Runtime And Binding Unit Cluster |
-| 1228-1285 | 3 | C2 Subcomponents Catalog > Subcomponent: Spellbook Compiler Unit Cluster |
-| 1286-1316 | 3 | C2 Subcomponents Catalog > Subcomponent: Package Root Unit Cluster |
-| 1317-1335 | 3 | C2 Subcomponents Catalog > Subcomponent: Build Assets Unit Cluster |
-| 1336-1377 | 3 | C2 Subcomponents Catalog > Subcomponent: Utilities Unit Cluster |
-| 1378-1407 | 3 | C2 Subcomponents Catalog > Subcomponent: Repository Tooling Unit Cluster |
-| 1408-1469 | 3 | C2 Subcomponents Catalog > Subcomponent: Aether Component Cluster |
-| 1470-1482 | 3 | C2 Subcomponents Catalog > Subcomponent: Crystallizer Component Cluster |
-| 1483-1493 | 3 | C2 Subcomponents Catalog > Subcomponent: MutationResearch Component Cluster |
-| 1494-1539 | 3 | C2 Subcomponents Catalog > Subcomponent: Spellbook Runtime And Binding Component Cluster |
-| 1540-1563 | 3 | C2 Subcomponents Catalog > Subcomponent: Spellbook Compiler Component Cluster |
-| 1564-1579 | 3 | C2 Subcomponents Catalog > Subcomponent: Utilities Component Cluster |
-| 1580-1617 | 3 | C2 Subcomponents Catalog > Subcomponent: Aether Integration Cluster |
-| 1618-1649 | 3 | C2 Subcomponents Catalog > Subcomponent: Crystallizer Integration Cluster |
-| 1650-1666 | 3 | C2 Subcomponents Catalog > Subcomponent: MutationResearch Integration Cluster |
-| 1667-1735 | 3 | C2 Subcomponents Catalog > Subcomponent: Spellbook Integration Cluster |
-| 1736-1816 | 3 | C2 Subcomponents Catalog > Subcomponent: Conduit Integration Cluster |
-| 1817-1845 | 3 | C2 Subcomponents Catalog > Subcomponent: Multithreading Integration Cluster |
-| 1846-1860 | 3 | C2 Subcomponents Catalog > Subcomponent: Live Sim Integration Cluster |
-| 1861-1869 | 3 | C2 Subcomponents Catalog > Subcomponent: Mock Spellbook Fixtures |
-| 1870-1880 | 3 | C2 Subcomponents Catalog > Subcomponent: Mock Crystallizer Harnesses |
-| 1881-1975 | 2 | Method-Level Call Flows (C1) |
-| 1883-1888 | 3 | Method-Level Call Flows (C1) > Flow: Pytest Bootstrap |
-| 1889-1906 | 3 | Method-Level Call Flows (C1) > Flow: Singleton Reset And Re-Boot |
-| 1907-1913 | 3 | Method-Level Call Flows (C1) > Flow: Viewer Matrix Fixture Build |
-| 1914-1920 | 3 | Method-Level Call Flows (C1) > Flow: Static Rift JSON Bench |
-| 1921-1927 | 3 | Method-Level Call Flows (C1) > Flow: Capability Rift JSON Bench |
-| 1928-1941 | 3 | Method-Level Call Flows (C1) > Flow: CI Runtime Qualification |
-| 1942-1957 | 3 | Method-Level Call Flows (C1) > Flow: Concurrent-Writer Stand-In |
-| 1958-1975 | 3 | Method-Level Call Flows (C1) > Flow: Managed Pool Stress Under Eight Threads |
-| 1976-3386 | 2 | C1 Code Map (Core) |
-| 3387-3437 | 2 | Diagrams |
-| 3388-3414 | 3 | Diagrams > ASCII Component Diagram (C3/C2) |
-| 3415-3437 | 3 | Diagrams > Mermaid Component Diagram (C3/C2) |
-| 3438-3558 | 2 | Information Sources |
-| 3559-3568 | 2 | Open Questions |
-| 3569-3820 | 2 | Context / Handoff Summary |
+| 1008-1071 | 3 | C2 Subcomponents Catalog > Subcomponent: Managed Spell Pools Unit Cluster |
+| 1072-1104 | 3 | C2 Subcomponents Catalog > Subcomponent: Crystallizer Unit Cluster |
+| 1105-1118 | 3 | C2 Subcomponents Catalog > Subcomponent: MutationResearch Unit Cluster |
+| 1119-1236 | 3 | C2 Subcomponents Catalog > Subcomponent: Spellbook Runtime And Binding Unit Cluster |
+| 1237-1294 | 3 | C2 Subcomponents Catalog > Subcomponent: Spellbook Compiler Unit Cluster |
+| 1295-1325 | 3 | C2 Subcomponents Catalog > Subcomponent: Package Root Unit Cluster |
+| 1326-1344 | 3 | C2 Subcomponents Catalog > Subcomponent: Build Assets Unit Cluster |
+| 1345-1386 | 3 | C2 Subcomponents Catalog > Subcomponent: Utilities Unit Cluster |
+| 1387-1416 | 3 | C2 Subcomponents Catalog > Subcomponent: Repository Tooling Unit Cluster |
+| 1417-1478 | 3 | C2 Subcomponents Catalog > Subcomponent: Aether Component Cluster |
+| 1479-1491 | 3 | C2 Subcomponents Catalog > Subcomponent: Crystallizer Component Cluster |
+| 1492-1502 | 3 | C2 Subcomponents Catalog > Subcomponent: MutationResearch Component Cluster |
+| 1503-1548 | 3 | C2 Subcomponents Catalog > Subcomponent: Spellbook Runtime And Binding Component Cluster |
+| 1549-1572 | 3 | C2 Subcomponents Catalog > Subcomponent: Spellbook Compiler Component Cluster |
+| 1573-1588 | 3 | C2 Subcomponents Catalog > Subcomponent: Utilities Component Cluster |
+| 1589-1626 | 3 | C2 Subcomponents Catalog > Subcomponent: Aether Integration Cluster |
+| 1627-1659 | 3 | C2 Subcomponents Catalog > Subcomponent: Crystallizer Integration Cluster |
+| 1660-1676 | 3 | C2 Subcomponents Catalog > Subcomponent: MutationResearch Integration Cluster |
+| 1677-1746 | 3 | C2 Subcomponents Catalog > Subcomponent: Spellbook Integration Cluster |
+| 1747-1835 | 3 | C2 Subcomponents Catalog > Subcomponent: Conduit Integration Cluster |
+| 1836-1864 | 3 | C2 Subcomponents Catalog > Subcomponent: Multithreading Integration Cluster |
+| 1865-1879 | 3 | C2 Subcomponents Catalog > Subcomponent: Live Sim Integration Cluster |
+| 1880-1888 | 3 | C2 Subcomponents Catalog > Subcomponent: Mock Spellbook Fixtures |
+| 1889-1899 | 3 | C2 Subcomponents Catalog > Subcomponent: Mock Crystallizer Harnesses |
+| 1900-1997 | 2 | Method-Level Call Flows (C1) |
+| 1902-1907 | 3 | Method-Level Call Flows (C1) > Flow: Pytest Bootstrap |
+| 1908-1925 | 3 | Method-Level Call Flows (C1) > Flow: Singleton Reset And Re-Boot |
+| 1926-1932 | 3 | Method-Level Call Flows (C1) > Flow: Viewer Matrix Fixture Build |
+| 1933-1939 | 3 | Method-Level Call Flows (C1) > Flow: Static Rift JSON Bench |
+| 1940-1946 | 3 | Method-Level Call Flows (C1) > Flow: Capability Rift JSON Bench |
+| 1947-1960 | 3 | Method-Level Call Flows (C1) > Flow: CI Runtime Qualification |
+| 1961-1976 | 3 | Method-Level Call Flows (C1) > Flow: Concurrent-Writer Stand-In |
+| 1977-1997 | 3 | Method-Level Call Flows (C1) > Flow: Managed Pool Stress Under Eight Threads |
+| 1998-3419 | 2 | C1 Code Map (Core) |
+| 3420-3470 | 2 | Diagrams |
+| 3421-3447 | 3 | Diagrams > ASCII Component Diagram (C3/C2) |
+| 3448-3470 | 3 | Diagrams > Mermaid Component Diagram (C3/C2) |
+| 3471-3592 | 2 | Information Sources |
+| 3593-3602 | 2 | Open Questions |
+| 3603-3864 | 2 | Context / Handoff Summary |

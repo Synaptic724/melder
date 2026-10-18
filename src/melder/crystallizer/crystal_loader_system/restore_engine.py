@@ -2575,7 +2575,7 @@ class RestoreEngine(Cleanable):
             - First cut restores cluster existence + membership through the
               frame ConduitCloud; recorded leaders and explicit share
               entries are REPORTED (auto-share on join covers the shareable
-              lineages; leader election is a runtime act).
+              spells; leader election is a runtime act).
 
         Returns:
             None.
@@ -2658,7 +2658,7 @@ class RestoreEngine(Cleanable):
             )
         shared_entries = list(payload.get("shared_spells", []))
         if shared_entries:
-            # Auto-share on member join re-grants shareable lineages;
+            # Auto-share on member join re-grants the shareable spells;
             # whether it reproduces EVERY recorded entry cannot be
             # verified at replay time - one honest signal per cluster.
             self._report.add_shortfall(
@@ -2677,7 +2677,7 @@ class RestoreEngine(Cleanable):
               (0.2.8214); unchanged SHAs remain direct. Conduit endpoints
               translate through the existing identity map.
             - Ward record truth: a plain detail lives in the map of the
-              side that OWNS the lineage ("initiated" via the link-time
+              side that OWNS the spell ("initiated" via the link-time
               bulk grant, "received" via the borrow verb, which files
               under the owner per the ward eligibility check). Either way
               the PEER is the borrower, and the live re-grant verb is
@@ -2747,7 +2747,7 @@ class RestoreEngine(Cleanable):
                 self._conduits.get(str(payload.get(granter_key)), {}).get("spellbook_id")
             )
             for detail in list(payload.get(details_key, [])):
-                # The map holder OWNS the lineage (both detail labels);
+                # The map holder OWNS the spell (both detail labels);
                 # the peer borrowed it. The live verb is borrower-
                 # called naming the owner (the ward eligibility check
                 # demands the `conduit` argument own the spell).

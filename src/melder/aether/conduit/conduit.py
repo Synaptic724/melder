@@ -3109,7 +3109,7 @@ class Conduit(Cleanable):
         """
         Internal
 
-        Adds this Conduit's local spell lineages (SpellIndex keys) into the shared
+        Adds this Conduit's local spell indexes (SpellIndex keys) into the shared
         Aether world's registry.
 
         Aether is responsible for mapping individual version IDs inside each
@@ -3150,7 +3150,7 @@ class Conduit(Cleanable):
         Raises:
             RuntimeError: If the Conduit is cleaned.
             ValueError: If no conduit in the frame claims the id - unknown or removed, bound in
-                another frame, its owner cleaned, or a lineage between owners while an
+                another frame, its owner cleaned, or its SpellIndex between owners while an
                 ownership transfer runs - or the frame does not exist.
         """
         self.check_cleaned()
@@ -3229,7 +3229,7 @@ class Conduit(Cleanable):
         Raises:
             RuntimeError: If the Conduit is cleaned, or the owning conduit has no spellbook.
             ValueError: If no conduit in the frame claims the id - unknown or removed, bound in
-                another frame, its owner cleaned, or a lineage between owners while an
+                another frame, its owner cleaned, or its SpellIndex between owners while an
                 ownership transfer runs - or the frame does not exist. A miss raises, as the
                 `get_*` lookups do (owner decision 2026-10-11); until 0.2.8230 this docstring
                 promised None.
@@ -3247,23 +3247,23 @@ class Conduit(Cleanable):
         """
         Public API
 
-        Retrieve a spell object by its stable SpellIndex lineage id.
+        Retrieve a spell object by the stable id of its SpellIndex.
 
         Purpose:
-            Expose the Spellbook-owned stable-lineage lookup path on the
+            Expose the Spellbook-owned SpellIndex lookup path on the
             conduit facade so higher runtime surfaces can consume
             `spell_index_id` directly.
 
         Contract:
-            - Resolves by SPELL INDEX id, so it addresses a whole version LINEAGE
-              rather than one version - the spell you get back is the lineage's
+            - Resolves by SPELL INDEX id, so it addresses a whole SpellIndex
+              rather than one version - the spell you get back is the index's
               current selection, not a fixed version.
             - Logs and handles an unavailable spellbook rather than dereferencing it,
               so a torn-down conduit fails loudly rather than with an AttributeError.
 
         Args:
             spell_index_id:
-                Stable SpellIndex lineage id (ULID) to resolve.
+                Stable SpellIndex id (ULID) to resolve.
 
         Returns:
             Optional[Spell]:
@@ -3349,9 +3349,9 @@ class Conduit(Cleanable):
         Finds a spell's current version ID (SHA256 spell_id) using its logical identifiers.
 
         This now uses:
-          1) Spellbook.find_spell_index(...) to locate the SpellIndex lineage.
+          1) Spellbook.find_spell_index(...) to locate the SpellIndex.
           2) Spellbook._find_spell(SpellIndex) to retrieve the Spell.
-          3) Returns spell.spell_id (the current head version for that lineage).
+          3) Returns spell.spell_id (the version that SpellIndex selects now).
 
         Contract:
             - TRANSLATES THE UNDERLYING ERROR: the spellbook raises `RuntimeError` for
@@ -4195,7 +4195,7 @@ class Conduit(Cleanable):
               (`Spellbook.find_spell_by_spell_id`), so a spell reachable by contract from a
               peer conduit is NOT found here.
             - EXACT: the spell_id names one spell, active or parked, and the answer is the
-              permissions THAT spell was bound with. Until 0.2.8253 it matched by lineage,
+              permissions THAT spell was bound with. Until 0.2.8253 it matched by SpellIndex,
               and a parked spell_id answered the permissions of the spell its index had
               active.
             - Lock-free (0.2.8230): the lookup answers from the Book's id maps instead of
@@ -4287,7 +4287,7 @@ class Conduit(Cleanable):
         Transfer stewardship of a spell to another conduit.
 
         Contract:
-            - The whole lineage moves: the spell's index, with its active and
+            - The spell's whole SpellIndex moves: the index, with its active and
               parked members, leaves this conduit's Spellbook and frame registry
               entry and joins the target's. The target becomes the spell's
               owner, so a `unique` instance lives in the target's store from
@@ -4341,8 +4341,8 @@ class Conduit(Cleanable):
                 receives those spells (and, with `move_creations`, their
                 instances) instead of depending on this conduit for them.
             force_unshare: If True, strip all contracts/shares for this spell during transfer.
-            invalidate_after_transfer: If True, mark lineage dirty after transfer.
-            mark_dependencies_dirty: If True, mark dependency lineages dirty (even if not moved).
+            invalidate_after_transfer: If True, mark the moved SpellIndex dirty after transfer.
+            mark_dependencies_dirty: If True, mark the dependencies' indexes dirty (even if not moved).
 
         Returns:
             dict: Preflight summary of the transfer plan.
@@ -4416,19 +4416,19 @@ class Conduit(Cleanable):
 
         Args:
             spell:
-                Spell object, spell id string, or SpellIndex-like lineage
+                Spell object, spell id string, or SpellIndex
                 object being transferred.
             target_conduit:
                 Conduit that should become the new owner.
             move_creations:
                 Whether creation state should move to the target.
             include_dependencies:
-                Whether owned dependency lineages should also transfer.
+                Whether the owned dependencies' indexes should also transfer.
             force_unshare:
                 Whether borrower visibility should be stripped instead of
                 repointed.
             invalidate_after_transfer:
-                Whether the moved lineage should remain gated/dirty afterward.
+                Whether the moved SpellIndex should remain gated/dirty afterward.
             mark_dependencies_dirty:
                 Whether dependencies should be dirtied when they are not moved.
 
@@ -4526,11 +4526,11 @@ class Conduit(Cleanable):
             move_creations:
                 Whether creation state should move to the target.
             include_dependencies:
-                Whether owned dependency lineages should also transfer.
+                Whether the owned dependencies' indexes should also transfer.
             force_unshare:
                 Whether borrower visibility should be stripped instead of repointed.
             invalidate_after_transfer:
-                Whether the moved lineage should remain gated/dirty afterward.
+                Whether the moved SpellIndex should remain gated/dirty afterward.
             mark_dependencies_dirty:
                 Whether dependencies should be dirtied when they are not moved.
 
@@ -5679,7 +5679,7 @@ class Conduit(Cleanable):
               and its conduits claimed EXCLUSIVE), so no other index operation can move the
               target between that check and the switch. A refused call changes nothing.
             - REPOINTS THE ACTIVE MEMBER of an existing index - it does not create, bind or
-              remove anything. The previous member stays in the lineage, parked, and a
+              remove anything. The previous member stays in the index, parked, and a
               notch back by its spell_id restores it.
             - Notching to the index's active version is a no-op: nothing moves and no
               borrower is touched.
@@ -5781,7 +5781,7 @@ class Conduit(Cleanable):
             # grant parked by an earlier notch away comes back here (D3, 2026-10-16); the
             # peer Book's reactivation marks the copy's consumers for revalidation.
             self._activate_borrowed_spell(spell.spell_id)
-            # Index-link receivers follow the lineage: move their subscription head
+            # Index-link receivers follow the index's selected spell: move their subscription head
             # to the new active member (park old, activate new) via the ward.
             self._conduit_ward._emit_index_notch(spell_index, outgoing_id, spell.spell_id)
         return result
@@ -6021,7 +6021,7 @@ class Conduit(Cleanable):
         transaction and the owning Spellbook moves the spell inside the held window.
 
         Purpose:
-            Move a staged (parked) spell into another index's lineage, ahead of a notch to
+            Move a staged (parked) spell into another SpellIndex, ahead of a notch to
             it there. Name it by `spell_id`, the spell_id `bind` or `bind_inactive`
             returned, or by its Spell object.
 
@@ -6034,7 +6034,7 @@ class Conduit(Cleanable):
               `get_spell_by_id` answered a parked spell_id with the index's active spell).
             - ONLY A PARKED SPELL MOVES: the Spellbook refuses an active spell (notch away
               from it first), a spell it does not own, and a `target_index` it does not own.
-            - Adds a version to the lineage WITHOUT making it active - selection is a
+            - Adds a version to the index WITHOUT making it active - selection is a
               separate `notch_spell` step, so adding is safe to do ahead of a switch.
             - The spell leaves its current index, and an index the move empties is
               destroyed. After the window, index-link borrowers gain the member on the
@@ -6089,7 +6089,7 @@ class Conduit(Cleanable):
             "spell_index_id": target_index._id,
             "binding_key": spell._key,
         }
-        # Capture the source lineage BEFORE the move: the seam repoints
+        # Capture the source index BEFORE the move: the seam repoints
         # spell.spell_index to the target and destroys the source if it empties.
         source_index = spell.spell_index
         source_id = source_index.id
@@ -6134,7 +6134,7 @@ class Conduit(Cleanable):
         and the owning Spellbook splits the spell out inside the held window.
 
         Purpose:
-            Take a staged (parked) spell out of an index's lineage, into an index of its
+            Take a staged (parked) spell out of its SpellIndex, into an index of its
             own. Name it by `spell_id`, the spell_id `bind` or `bind_inactive` returned,
             or by its Spell object.
 
@@ -6258,7 +6258,7 @@ class Conduit(Cleanable):
         # pre-read of spell.spell_index here raised AttributeError for a disposed spell and could disagree with
         # what the Spellbook then did (cross_object_lock_gaps, 0.2.8231).
         destroyed_index_id = self._spellbook._dispose_spell(spell)
-        # A destroyed index-linked lineage must be dropped on its receivers so they
+        # A destroyed SpellIndex shared by index link must be dropped on its receivers so they
         # do not keep a subscription to a dead index.
         if destroyed_index_id is not None:
             self._conduit_ward._emit_index_destroy(destroyed_index_id, (spell_id,))
@@ -7394,7 +7394,7 @@ class Conduit(Cleanable):
 
         Args:
             root_spell_id:
-                Lineage root whose contracted details should be untracked across
+                The root spell whose contracted details should be untracked across
                 every peer contract this conduit participates in.
         """
         self._qualify_contracts()
@@ -7457,7 +7457,7 @@ class Conduit(Cleanable):
 
         Args:
             spell:
-                The spell or lineage to grant across the existing contract.
+                The spell (one version) to grant across the existing contract.
             peer_conduit:
                 The borrowing peer that should gain access.
         """

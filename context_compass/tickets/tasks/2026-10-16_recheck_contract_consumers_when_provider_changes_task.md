@@ -10,7 +10,7 @@
 - Agent Role: synaptic_python_developer
 - Priority: p1
 - Created: 2026-10-16T09:46:14Z
-- Updated: 2026-10-18T01:10:17Z
+- Updated: 2026-10-18T02:12:55Z
 
 ## Objective
 Rule 2 of the owner's 2026-10-15 direction, settled in principle on 2026-10-16: a spell's own state decides when the
@@ -3057,8 +3057,230 @@ this does not make independent review mandatory for every ticket.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-10-18T01:29:02Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: The lineage wording sweep started on the owner's direction ("hand fix them not some ... grep swap ... only
+    change the ones related to spellindex"). Inventory of the tree before any edit (tokenized .py, every NAME,
+    STRING and COMMENT token holding "lineage"): src 281 NAME, 903 STRING, 94 COMMENT; tests 823, 1060, 35; system
+    docs 216 lines; graph descriptors 243; UX 40; docs 12; README 3, agent guides 4, release note 7. Each occurrence
+    is read in its context and classified: the SpellIndex or its member set (rewritten by hand) or the conduit scope
+    tree (kept: `unique_per_conduit_lineage`, lesser lineage, lineage root, the ward's lineage walk). Batch 01 is
+    applied: 46 hand-written line edits in details.py (22 places) and spell_index.py (9 places), each naming its file,
+    line and exact old text, replaced one line for one line (file lengths unchanged, 497 and 583), no identifier
+    renamed. `Detail` now says it records the granted spell_id and the SpellIndex that spell is organized under;
+    `IndexDetail` follows the index's selected spell; SpellIndex's own docstrings say the index organizes versions
+    and selects one. A case-insensitive search for "lineage" in both files finds nothing. The src change takes its
+    notch, release-note line and rebuild at the end of the sweep.
+  EVIDENCE:
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/inventory_lineage.py:1-103
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/runs/lineage_inventory_before.jsonl:1-3724
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/apply_line_edits.py:1-78
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/edits/batch01_details_spell_index.py:1-145
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/runs/batch01_apply.txt:1-194
+  - src/melder/aether/conduit/conduit_ward/contract/details.py:17-442
+  - src/melder/aether/spellbook/bind/spell_index.py:47-483
+  IMPACT: The two files whose docstrings defined the wrong reading now say what the owner ruled. Nothing is
+    committed (the owner commits); no test reads these docstrings.
+  NEXT: Classify and hand-write batch 02 (spell.py, spellbook.py), after checking which files melder_0's S6 lane holds.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-18T01:32:42Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: Lineage sweep batch 02 applied: 40 hand-written line edits, 13 in spell.py and 27 in spellbook.py (both
+    held by this lane). Every "lineage" there meant the SpellIndex, none the scope tree: the Spell's index ("lineage/
+    version record"), SpellSystemStates' per-index state (`system_state`, `invalidate_spell`, the notch's downstream
+    walk), `get_spell_permissions` and `find_spell_index`, the contracted-copy reads and `cleanup_spell`. One
+    neighbouring comment line (spellbook.py 4030) changed with its sentence so "its stale CreationContext" names the
+    spell. Line counts unchanged (1968, 7771); both files parse; no "lineage" left in either. Behaviour text is
+    unchanged - `_find_contracted_spell_by_id` still says what it does today (the owner's open finding).
+  EVIDENCE:
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/edits/batch02_spell_spellbook.py:1-150
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/runs/batch02_apply.txt:1-187
+  - src/melder/aether/spellbook/spell.py:77-1780
+  - src/melder/aether/spellbook/spellbook.py:174-4515
+  IMPACT: The Spell and Spellbook docstrings stop teaching that a SpellIndex is a lineage.
+  NEXT: Classify conduit_ward.py, conduit.py and transfer_of_ownership.py occurrence by occurrence (both meanings).
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
+- DATETIME: 2026-10-18T01:40:01Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: Lineage sweep batches 03-05 applied, each occurrence read in its method and classified. conduit_ward.py (55
+    lines): 38 edits on the contract side (Details, index links and their emissions, the dependency walk's root
+    spell, the contract reads, the transfer Args); kept 15 scope-tree lines (the lesser tree, its root pointer, the
+    "Root conduit is not set for this lineage." errors) and the identifier `lineage_id`. conduit.py (97 lines): 28
+    edits (get_spell_by_index_id, find_spell_id, the transfer Args, the notch and index-move docstrings, two
+    comments, the root spell and the one granted version at 7397 and 7460); kept 69 scope-tree lines (lesser
+    lineage, lineage root and its `unique_per_conduit_lineage` store, shared lineage hooks, the gate controller's
+    lineage rebinding, recorded lineage ancestors, enable/disable meld, the root errors). transfer_of_ownership.py
+    (92 lines): 73 edits (the transfer moves a spell's whole SpellIndex and gates its per-index state); kept the
+    `unique_per_conduit_lineage` comment, "the lesser lineage" at 852, 13 identifier lines and one RuntimeError
+    text. All three files parse with unchanged line counts (3999, 7867, 2223); a search for "lineage" in each
+    returns only the kept lines. Runtime strings (error and log text) are not changed in this pass.
+  EVIDENCE:
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/edits/batch03_conduit_ward.py:1-141
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/edits/batch04_conduit.py:1-110
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/edits/batch05_transfer_of_ownership.py:1-248
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/runs/batch03_apply.txt:1-179
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/runs/batch04_apply.txt:1-134
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/runs/batch05_apply.txt:1-346
+  - src/melder/aether/conduit/conduit_ward/conduit_ward.py:114-3821
+  - src/melder/aether/conduit/conduit.py:3112-7460
+  - src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py:42-2183
+  IMPACT: The ward, conduit and transfer docstrings now separate the two things: lineage is the scope tree, the
+    SpellIndex is what contracts, notches and transfers move. Identifiers and runtime strings that still say
+    lineage for a SpellIndex go on the owner's list.
+  NEXT: The remaining held files (command_system.py, static_command_system.py, restore_engine.py, graft_runner.py),
+    then contract.py, contract_types.py, detail_reason.py, permissions.py and policies.py.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-18T01:40:23Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: melder_0 answered M1-27 (M0-190, ACK; M0-191, NOTICE; consumed from the mailbox). S6 part A holds until its
+    rebuild, about two hours from 01:34Z: src bind.py, creations/managed_spell_quantity.py, creations/creations.py,
+    caching_system.py, existence/managed_spell_mode.py, crystals/spell_crystal.py, then __version__, the release
+    note, the four system documents with their indexes and the graph descriptors of those six files; M0-192 will
+    release them. Part A took 0.2.8254 (__version__ and the release note's header); this lane notches above whatever
+    __version__ reads when it lands. His new prose calls an index a SpellIndex, never a lineage; part B later needs
+    spellbook.py.
+  EVIDENCE:
+  - context_compass/tickets/stories/2026-10-17_release_routes_parked_version_objects_to_active_pool_story.md:28-52
+  - src/melder/__version__.py:12-12
+  IMPACT: The lineage sweep skips those six src files, the system documents and those descriptors until M0-192;
+    every other src file is free, and the sweep's own notch, release-note line and rebuild wait for that release.
+  NEXT: Continue the src sweep in the free files (command_system.py, restore_engine.py first).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-18T01:58:19Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: Lineage sweep batches 06-10 applied: 210 hand edits in 28 files (435 in 35 files since 01:29Z), each
+    occurrence read in its method and classified. 06: command_system.py 1624 (the published spell indexes a
+    spell_id is looked up across) and restore_engine.py 2578-2750 (the cluster stage re-grants shareable spells; a
+    plain detail lives with the side that owns the granted spell); command_system.py 209 is the scope tree and
+    stays; static_command_system.py and graft_runner.py hold none. 07: risk_manager.py, 55 edits - risk is tracked
+    per SpellIndex id; its `__slots__` names and identifiers keep their names. 08: spell_system_states.py, 55 edits -
+    one SpellSystemState per SpellIndex; `Meld._ensure_lineage_resolvable` (121) is an identifier. 09: meld.py, 26
+    edits - the gate's state reads and the catch-up read the SpellSystemState of a spell's SpellIndex, and 2156
+    called a spell_id "the current lineage id"; kept 166, 353, 1297 and 1852 (scope tree). conduit_meld.py 755 and
+    915 mean spells scoped to a spellspace request; its store selection and runtime labels stay. 10:
+    conduit_cluster.py 40 and 1502 (members share root spell indexes, recorded per owner by SpellIndex id; its 20
+    member-root drains stay) and 65 edits in the 21 Phase 6 validation strategies, whose `lineage_id` is the
+    SpellIndex id (Phase 5 fills it from `SpellSystemState.spell_index_id`); their identifiers, diagnostic codes
+    and detail keys are kept, and broken_spell_in_dag 62 now says the shared thing is the spell node. All scope
+    tree, not edited: creation_gate_controller.py, conduit_lineage_gate_ops.py, dev_ops_manager.py,
+    spellspace_meld.py, creation_runtime_door_compiler.py. Every edited file parses and keeps its line count and
+    line endings, and the "lineage" text left in it is the kept lines.
+  EVIDENCE:
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/edits/batch06_command_system_restore_engine.py:1-28
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/edits/batch07_risk_manager.py:1-176
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/edits/batch08_spell_system_states.py:1-176
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/edits/batch09_meld_conduit_meld.py:1-100
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/edits/batch10_cluster_phase6_strategies.py:1-194
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/runs/batch06_apply.txt:1-30
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/runs/batch07_apply.txt:1-250
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/runs/batch08_apply.txt:1-227
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/runs/batch09_apply.txt:1-137
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/runs/batch10_apply.txt:1-334
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/remaining_text.py:1-33
+  - src/melder/nexus/rift/command_system/command_system.py:1624-1624
+  - src/melder/crystallizer/crystal_loader_system/restore_engine.py:2578-2750
+  - src/melder/aether/aetheric_frame/dev_ops/risk_manager/risk_manager.py:23-726
+  - src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py:68-1734
+  - src/melder/aether/conduit/meld/meld.py:176-2156
+  - src/melder/aether/conduit/meld/conduit_meld.py:755-915
+  - src/melder/aether/conduit/conduit_cluster.py:40-1502
+  - src/melder/aether/spellbook/spell_compiler/system/validation/lineage_alignment_strategy.py:32-73
+  - src/melder/aether/spellbook/spell_compiler/system/validation/broken_spell_in_dag_strategy.py:40-106
+  - src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py:266-315
+  - src/melder/aether/spellbook/spell_compiler/system/spell_system_node.py:14-24
+  IMPACT: The control plane (risk, per-index state), the meld gate, the cluster and the Phase 6 checks now say
+    SpellIndex where they meant it; lineage stays only where it is the conduit scope tree. Identifiers, diagnostic
+    codes and runtime strings that still say lineage for a SpellIndex go on the owner's list unchanged.
+  NEXT: Continue the free src files (compiler and system: spell_system_node.py, spell_system_index.py,
+    root_resolution_blueprint.py, compiler_phase_5.py and _6.py first), then the transaction strategies.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-18T02:09:33Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: Lineage sweep batches 11-12 applied: 111 hand edits in 35 files; the src docstring and comment pass over the
+    free files is done (546 edits in 70 files since 01:29Z). 11: a SpellSystemNode's `lineage_id` and a blueprint's
+    `root_lineage_id` are SpellIndex ids; SpellSystemState, SpellState, the structural snapshot, change control's
+    pending changes, incidents and Phase 4's gate are per SpellIndex; the frame's registries hold spell indexes;
+    SpellSystemValidationSystem's "lineage validity" lines now say per-conduit resolution validity, which is what
+    it records; a SpellContract's consumer spell revalidates. 12: the ward vocabulary (permissions, policies,
+    contract, contract types, detail reason) names the shared thing a spell, a Detail per spell_id or an IndexDetail
+    per SpellIndex; the contract crystal's index rows, the SpellIndexCrystal's grouping and a cluster's shares are
+    SpellIndexes; the Nexus views and the ACL's `spell_index_id` sets say SpellIndex; SpellbookValidationError's
+    gating warning holds a SpellIndex gated. The 422 string and comment lines left in 74 src files are the kept
+    kinds: the conduit scope tree, identifiers, slot and parameter names, diagnostic codes and data keys, runtime
+    messages, two other meanings (the ACL configuration chain's revision lineage and IDBuilder's dotted
+    ownership-chain ids), melder_0's held creations.py (6 lines, all scope tree), and three files with mixed line
+    endings, not edited: compiler_phase_5.py 280, frame_viewer.py 3637 and 6486, view_spell.py 854, 1731-1732 (all
+    SpellIndex meaning). Every edited file parses, keeps its HEAD line count and its line endings, and has no new
+    line over 120 characters.
+  EVIDENCE:
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/edits/batch11_compiler_control_plane.py:1-249
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/edits/batch12_contracts_crystals_views.py:1-211
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/runs/batch11_apply.txt:1-337
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/runs/batch12_apply.txt:1-274
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/runs/remaining_text_after_batch12.txt:1-500
+  - src/melder/aether/spellbook/spell_compiler/system/spell_system_validation_system.py:50-268
+  - src/melder/aether/spellbook/spell_compiler/system/validation/lineage_alignment_strategy.py:84-116
+  - src/melder/aether/spellbook/spell_compiler/structural_snapshot/structural_snapshot.py:353-400
+  - src/melder/aether/aetheric_frame/aetheric_frame.py:163-180
+  - src/melder/aether/conduit/conduit_ward/contract/details.py:14-246
+  - src/melder/crystallizer/crystals/cluster_crystal.py:6-115
+  - context_compass/system_docs/patches/active/generalized_singleton_specialization_2026_07_01/architecture_patch.md:55-72
+  IMPACT: No src docstring or comment in the free files calls a SpellIndex a lineage any more. Left for the owner:
+    the identifiers, codes and runtime messages; the three mixed-ending files; then, after melder_0's M0-192, the
+    system documents, the graph's authored prose and the agent guides, with the notch, release-note line and
+    rebuild last.
+  NEXT: Report the src pass to the owner with the kept lists and the scope question for tests, UX and docs.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-18T02:12:55Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: The owner's answers on the lineage wording fix (chat 2026-10-18, after the src-pass report): (1) "Messages and
+    renames" - reword the runtime messages that call a SpellIndex a lineage AND rename the identifiers, diagnostic
+    codes and keys that do (Breaking where public, in the release note); (2) "Also tests, UX, docs" - test docstrings
+    and comments, the UX examples, docs pages and the README lines are in scope, SpellIndex uses only; (3) "Yes, keep
+    each ending" - the six SpellIndex lines in compiler_phase_5.py, frame_viewer.py and view_spell.py are edited with
+    each line keeping its own line ending. Scope-tree uses of lineage stay everywhere (`unique_per_conduit_lineage`,
+    the conduit lineage gates, lesser lineage, lineage roots, `lineage_ancestors`, `lineage_depth`).
+  EVIDENCE:
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/runs/remaining_text_after_batch12.txt:1-500
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/runs/runtime_strings_after_batch12.txt:1-89
+  IMPACT: The renames change public names (Phase 6 diagnostic codes and detail keys, three strategy classes and their
+    modules) and touch src, tests, system documents, the graph and possibly recorded or cached data keys; the exact
+    rename map and its compatibility notes go to the owner as patch docs before any rename lands. Wording edits in
+    tests, UX and docs follow the src method: read in context, one line for one line.
+  NEXT: Edit the six mixed-ending lines; inventory every SpellIndex-meaning identifier with its references, then
+    write the rename patch docs for the owner's approval.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 ## Context / Handoff Summary
-Current state (2026-10-18T00:57:15Z): three source changes landed and rebuilt; the owner accepted fix #1 (Notes 00:40Z).
+Current state (2026-10-18T02:09:33Z): three source changes landed and rebuilt; the owner accepted fix #1 (Notes
+00:40Z); the lineage wording sweep the owner directed at 01:10Z has finished its src pass (Notes 01:29Z-02:09Z).
 - 0.2.8250, rule 2 with D1-D5 (owner-accepted, Notes 18:23Z; in the owner's commit 192482b4c): a satisfied
   SpellContract is not checked on every meld; a change of what a spell resolves marks it for revalidation; the meld
   refreshes stale dependencies before a plan compiles; a lost provider is named with its remedy; a notch back makes
@@ -3074,6 +3296,17 @@ Current state (2026-10-18T00:57:15Z): three source changes landed and rebuilt; t
   their indexes (Notes 23:07Z-23:35Z), the graph (Notes 00:14Z) and the release note (Notes 00:04Z) are in the
   repo; the suites are green with the GIL off and on (22:41Z) and the release-note examples run in both modes.
   Section "A spell_id lookup answers the spell it names" (Breaking). Rubric 83 / 83 / 83 / 74 (00:16Z).
+- Lineage wording sweep (owner, 2026-10-18: a SpellIndex is not a lineage, lineage is the conduit scope tree; hand
+  edits, only the uses that mean the SpellIndex): 546 hand edits in 70 src files, docstrings and comments only,
+  one line for one line, each file parsed with its line count and line endings unchanged; uncommitted, not yet
+  notched. Not edited, mixed line endings: compiler_phase_5.py 280, frame_viewer.py 3637 and 6486, view_spell.py
+  854 and 1731-1732. Edits, runs and Notes drafts: artifacts/meld_contract_scan_20261015/lineage_wording/. Kept and
+  listed for the owner, unchanged: identifiers (`lineage_id`, `_mark_lineage_dirty`, `impacted_lineages`,
+  RiskManager's slots, `Meld._ensure_lineage_resolvable`, the three Phase 6 strategy classes and modules),
+  diagnostic codes and detail keys, runtime strings (transfer_of_ownership.py 921). Held until melder_0's M0-192:
+  his six S6 part A src files, `__version__`, the release note, the four system documents with their indexes
+  and those files' graph descriptors. At landing: notch above whatever `__version__` reads (0.2.8254 is
+  melder_0's), a release-note line under "Packaging and documentation", NOTICE M1-28, rebuild last.
 Patch docs: system_docs/patches/completed/contract_recheck_on_notch_2026_10_16/ (archived);
 system_docs/patches/active/contracted_copy_removal_by_version_2026_10_16/ and
 system_docs/patches/active/find_spell_by_spell_id_2026_10_17/ (promoted; archive at closure).
@@ -3089,12 +3322,16 @@ stale graph edges (00:11Z); `Contract`'s inverted map-direction docstring (00:56
 tests_components (00:16Z); the flake `test_concurrent_adds_of_same_conduit_admit_exactly_one` (22:08Z). From
 melder_0's correctness epic this lane's set is S1-S4 and S7-S9, waiting for the owner; S6's fix runs in melder_0's
 lane, its Part B waits for spellbook.py (Notes 23:54Z).
-Next: (1) the owner's direction on the open items above, after the explanation sent 2026-10-18; (2) his word on
-closure - summary naming 0.2.8250, 0.2.8251 and 0.2.8253 with their release-note sections, the two active patch
-folders archived, board and artifact sync, then a rebuild only if a closure step touches system_docs - and on
-releasing spellbook.py, conduit.py and fix #1's other files to melder_0 (M1-26 told him the shared documents are
-free).
-Evidence: the Notes from 09:57:21Z on; artifacts/meld_contract_scan_20261015/ (fix #1 under spell_id_lookup/).
+Next: (1) report the src pass to the owner with the kept lists (identifiers, codes, runtime messages, the three
+mixed-ending files) and ask the scope for tests, UX and docs; after M0-192 the system documents, the graph's
+authored prose and the agent guides (melder_0's held src files need none: their lineage text is the scope tree);
+(2) the owner's direction on the open items above, after the explanation sent 2026-10-18; (3) his word on
+closure - summary naming 0.2.8250, 0.2.8251, 0.2.8253 and the sweep's notch with their release-note sections,
+the two active patch folders archived, board and artifact sync, then a rebuild only if a closure step touches
+system_docs - and on releasing spellbook.py, conduit.py and fix #1's other files to melder_0 (M1-26 told him the
+shared documents are free).
+Evidence: the Notes from 09:57:21Z on; artifacts/meld_contract_scan_20261015/ (fix #1 under spell_id_lookup/,
+the sweep under lineage_wording/).
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

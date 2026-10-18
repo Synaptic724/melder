@@ -57,7 +57,7 @@ and ask the owner when the intent is unclear.
 - Status: in_progress
 - Owner:
 - Created: 2026-01-17
-- Updated: 2026-10-17
+- Updated: 2026-10-18
 
 ## Scope and Intent
 This document describes the Melder core architecture at the C4 level for
@@ -346,6 +346,8 @@ Dependencies include:
 - Managed spell: a spell bound with `Existence.managed_spell_quantity` (0.2.8241-0.2.8246). Its objects are leased
   from the `ManagedSpellQuantity` pool its owning root keeps for that version, given back explicitly through
   `ReleaseManagedSpell` (optionally reset) and reused; the pool, not the meld, decides when an object is disposed.
+  Its four bind settings (mode, limit, queue timeout, reset methods) are settings of the one spell, not part of its
+  spell_id (0.2.8254).
 - ReleaseManagedSpell: the process singleton Aether builds last and owns - the class-keyed registry of the pools
   live root stores hold, through which a managed object goes back to its pool (0.2.8244).
 
@@ -538,7 +540,8 @@ External interfaces are Python APIs:
   `managed_spell_timeout_seconds` and `managed_spell_reset_methods` on `Spellbook.bind` / `bind_inactive`, the
   Conduit facades, `SpellBinder.as_managed_spell_quantity` and `scan_bind`; `ReleaseManagedSpell()` (`release`,
   `managed`, `release_all`, `describe`), `ManagedSpellLease` and `ManagedSpellExhaustedError`, exported at the
-  package root with `ManagedSpellMode`.
+  package root with `ManagedSpellMode`. The four options are the spell's settings, not part of its spell_id
+  (0.2.8254): changing them is `cleanup_spell` and a new `bind`, which keeps the spell_id and the pool.
 - `Conduit.create_lesser_conduit(...)` for child scopes.
 - `Conduit.enter_lesser_conduit(...)` (0.2.8203) for a child scope used as a `with` block. `with` on any
   Conduit is a dispose scope: at block exit a lesser returns to its root's pool and a root is torn down, and
@@ -654,7 +657,7 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:3911-4361 (the three seams, r
   Exported, user-constructible surfaces such as the custom exceptions, `SafeGuard`, and
   `ProtocolCrafter` remain importable and usable while being unbindable.
 - The only live enforcement call site is
-  `src/melder/aether/spellbook/bind/bind.py:713` (in `Bind._bind_logic`) -
+  `src/melder/aether/spellbook/bind/bind.py:715` (in `Bind._bind_logic`) -
   `assert_allowed(spell, context="bind")`, a direct call to the
   module-level function. Identity resolution is factored into the pure helper
   `_internal_identity_of(candidate)` in the same module.
@@ -1120,6 +1123,32 @@ each entry in `src_components.md`; this list is the set that crosses components.
 - Validation strategies registered in `SpellValidationSystem`.
 
 ## Operational Invariants
+- A managed spell's settings are not part of its spell_id (2026-10-18, 0.2.8254; the owner's ruling, chat 2026-10-17:
+  "the bind call itself shouldn't impact the actual SHA256 thats absurd"): `Bind.sha256_profile` hashes the binding
+  profile, the spell name, spellframe, binding name, existence, the resolved disposal names and resolvable (the hash
+  domain) and nothing else, so one class bound managed at one address with one disposal list has one spell_id
+  whatever its mode, limit, queue timeout or reset methods. `_normalize_managed_options` still checks and normalizes
+  the four before the fingerprint, the Spell keeps them, and `spell_id_inspector` checks them as bind does and hashes
+  without them. A settings-only re-stage therefore meets the existing collision refusal, and a rebind under the same
+  spell_id (`cleanup_spell`, then `bind`) meets the pool the earlier definition left in the owner store:
+  `Creations.ensure_managed_quantity` finds it under the store lock, releases that lock and calls
+  `ManagedSpellQuantity._rebind_spell`, which under the pool lock re-points the Spell, its class and its disposal list
+  and, when a setting differs, takes the new mode, limit, timeout and reset names, sizes the retention band as a
+  fresh pool of those settings (elastic: baseline min(20, limit), maximum the limit; limited_quantity and queue: both
+  the limit; the target back at the baseline) and wakes every waiter to re-check. Equal settings (an ownership
+  transfer's restamp) are a pure re-point that keeps the band. Nothing is destroyed: the count stays the objects
+  alive, even above a lower limit, and the pool settles as objects are released. No emitted plan reads a managed
+  setting, so plans are unchanged; creation cache generation 22 ("managed_settings_leave_spell_id") retires the
+  bundles written while the settings were hashed (the release change cold-starts them anyway). Locks: the store lock
+  stays a leaf (the rebind runs after it is released), the pool lock stays a leaf taken under the Spell lock as owner
+  stamping takes it, and no user code runs under either. Not changed: the address, existence, disposal names and
+  resolvable stay in the spell_id (owner, 2026-10-18), and one class staged in one SpellIndex at another address or
+  with another disposal list is still a second version with its own pool (part B of
+  STORY-2026-10-17-release_routes_parked_version_objects_to_active_pool, pending).
+  EVIDENCE: `src/melder/aether/spellbook/bind/bind.py:Bind.sha256_profile`, `Bind.spell_id_inspector`,
+  `Bind._bind_logic`, `src/melder/aether/conduit/creations/managed_spell_quantity.py:ManagedSpellQuantity._rebind_spell`,
+  `src/melder/aether/conduit/creations/creations.py:Creations.ensure_managed_quantity` and
+  `src/melder/utilities/caching_system/caching_system.py:CachingSystem.CACHE_VERSION_HISTORY`.
 - Lookup by spell_id is exact (2026-10-17, 0.2.8253; the owner's rule: a spell_id - the SHA256 `bind` and
   `bind_inactive` return - and a SpellIndex - its ULID - are separate things; sharing an index follows whatever
   spell it has active, sharing a spell by spell_id is exactly that spell, and a spell_id lookup never answers with
@@ -1366,8 +1395,9 @@ each entry in `src_components.md`; this list is the set that crosses components.
 - Managed spell pools (2026-10-15, 0.2.8241-0.2.8243): `Existence.managed_spell_quantity` (the seventh member,
   appended, so the six keep their values) binds classes only and ranks 0 with `unique` in Phase 6 (it may depend on
   unique, managed and many spells; any holder may depend on it). Its four bind options are normalized once in
-  `Bind._normalize_managed_options` and hashed into the spell id only for managed bindings, so no other spell id
-  moves; the crystal records them (RecordVersion 4.2.0) and restore and graft replay them. Every stamped managed
+  `Bind._normalize_managed_options` (0.2.8242-0.2.8253 hashed them into a managed spell's id; since 0.2.8254 they
+  are settings, not identity - see the 0.2.8254 entry at the top of this section); the crystal records them
+  (RecordVersion 4.2.0) and restore and graft replay them. Every stamped managed
   version owns one `ManagedSpellQuantity` (an `AbstractElasticPool`) in its owner root's Creations, in
   `_managed_quantities` beside `_creations`, so resolution, the live probes and purge never read a pool as an object;
   conduit purge returns 0 for a managed spell and a spellspace refuses it. elastic keeps a baseline of min(20, limit)
@@ -2190,6 +2220,29 @@ each entry in `src_components.md`; this list is the set that crosses components.
   not the same thing as a Rift-level event orchestrator.
 
 ## Failure Modes and Error Paths
+- Breaking (0.2.8254): every managed spell's spell_id moves once - the four settings left the fingerprint - and no
+  other spell's does. `bind_inactive` of a managed binding that differs from the version on its SpellIndex only in
+  its settings raises the existing RuntimeError "Spell ID collision detected. ..." with nothing registered (it was a
+  second version with its own pool); change settings with `cleanup_spell`, then `bind` (the spell_id and the pool
+  stay). Under process-wide spell ids one managed class bound at one address in two frames is one spell_id whatever
+  its settings, so the second binding is refused as a duplicate, as any spell's is: at its bind once the first
+  frame's Book is conjured, else at its conjure ("Conjure refused: ... already registered"). Bundles written before
+  are cold once (generation 22), and a Crystallizer record made by 0.2.8242-0.2.8253 restores through `bind`, which
+  gives each managed spell its new spell_id.
+  EVIDENCE: `src/melder/aether/spellbook/bind/bind.py:Bind.sha256_profile` and
+  `src/melder/utilities/caching_system/caching_system.py:CachingSystem.CACHE_VERSION_HISTORY`.
+- Fixed in 0.2.8254: changing a managed spell's settings no longer leaves a pool counting an object it never gets
+  back. A rebind with other settings minted a new spell_id and a second pool, and a release with no filter of an
+  object leased before went to the new version's pool uncounted while the disposed version's pool counted it out
+  for good; staging the class with only another limit in its SpellIndex did the same across a notch, and a
+  limited_quantity or queue pool so stranded refused leases once its count reached the limit. A rebind now meets its
+  pool under the same spell_id and the pool takes the new settings, and a settings-only re-stage is refused. Known,
+  not fixed (part B of STORY-2026-10-17-release_routes_parked_version_objects_to_active_pool): one class staged in
+  one SpellIndex at another address or with another disposal list is still a second version with its own pool, so
+  an unfiltered release after a notch still goes to the active version's pool; pass `spell_id=` to route it.
+  EVIDENCE: `src/melder/aether/conduit/creations/managed_spell_quantity.py:ManagedSpellQuantity._rebind_spell`,
+  `src/melder/aether/conduit/creations/creations.py:Creations.ensure_managed_quantity` and
+  `src/melder/aether/conduit/creations/release_managed_spell.py:ReleaseManagedSpell._resolve_pool`.
 - Breaking (0.2.8253): `Spellbook.find_spell_by_id` and `Conduit.get_spell_by_id` are gone, with no alias (a call
   raises AttributeError); `find_spell_by_spell_id` and `get_spell_by_spell_id` take the same arguments. Their
   answer for a parked spell_id changed: the parked spell itself, where the old pair answered the spell its index
@@ -3013,11 +3066,11 @@ Spellbook and binding:
   note: fluent binding adapter; `as_managed_spell_quantity` (0.2.8242).
 - path: `src/melder/aether/spellbook/bind/bind.py`
   start_line: 1
-  end_line: 1803
-  loc: 1803
-  verified_at: 2026-10-15T21:20:35Z
-  note: binding pipeline; classifies the spellframe kind and refuses concrete-class frames (0.2.8222); normalizes and
-    fingerprints the managed options (`_normalize_managed_options`, 0.2.8242).
+  end_line: 1747
+  loc: 1747
+  verified_at: 2026-10-18T01:42:03Z
+  note: binding pipeline; classifies the spellframe kind and refuses concrete-class frames (0.2.8222); normalizes the
+    managed options (`_normalize_managed_options`, 0.2.8242), which the fingerprint leaves out since 0.2.8254.
 - path: `src/melder/aether/spellbook/spellframe_kind/spellframe_kind.py`
   start_line: 1
   end_line: 47
@@ -3059,10 +3112,10 @@ Spellbook and binding:
   note: existence modes; `managed_spell_quantity`, the seventh member (0.2.8241).
 - path: `src/melder/aether/spellbook/existence/managed_spell_mode.py`
   start_line: 1
-  end_line: 89
-  loc: 89
-  verified_at: 2026-10-15T21:20:35Z
-  note: `ManagedSpellMode`: elastic, limited_quantity, queue (0.2.8242).
+  end_line: 91
+  loc: 91
+  verified_at: 2026-10-18T01:42:03Z
+  note: `ManagedSpellMode`: elastic, limited_quantity, queue (0.2.8242); a setting, not identity (0.2.8254).
 - path: `src/melder/aether/spellbook/spell_types/spell_types.py`
   start_line: 1
   end_line: 101
@@ -3221,12 +3274,12 @@ Aether and frames:
     and the loader - see "Persistence Subsystem Topology" below).
 - path: `src/melder/crystallizer/crystals/spell_crystal.py`
   start_line: 1
-  end_line: 1443
-  loc: 1443
-  verified_at: 2026-10-15T21:20:35Z
+  end_line: 1445
+  loc: 1445
+  verified_at: 2026-10-18T01:42:03Z
   note: bind-signature CARRIER for one spell version; delegates module-world analysis to crystal_analysis and carries
     the result (moved + slimmed, 2026-07-10); records the frame kind and Protocol coordinates (0.2.8222); records the
-    managed options (RecordVersion 4.2.0, 0.2.8242).
+    managed options (RecordVersion 4.2.0, 0.2.8242), settings a replayed bind passes, not identity (0.2.8254).
 - path: `src/melder/crystallizer/persistence/persistence_profile.py`
   start_line: 1
   end_line: 1636
@@ -3786,11 +3839,12 @@ Resolution and creations:
 
 - path: `src/melder/aether/conduit/creations/managed_spell_quantity.py`
   start_line: 1
-  end_line: 938
-  loc: 938
-  verified_at: 2026-10-15T21:20:35Z
+  end_line: 995
+  loc: 995
+  verified_at: 2026-10-18T01:42:03Z
   note: the managed pool: an `AbstractElasticPool` of one managed version's idle objects, its count, reserve, put_back,
-    abandon, adopt, destroy and cleanup (0.2.8243).
+    abandon, adopt, destroy and cleanup (0.2.8243); `_rebind_spell` gives a same-spell_id rebind the new settings
+    (0.2.8254).
 - path: `src/melder/aether/conduit/creations/release_managed_spell.py`
   start_line: 1
   end_line: 686
@@ -3831,12 +3885,13 @@ Resolution and creations:
   note: SpellContract descriptor; keeps binding_name as written (0.2.8226).
 - path: `src/melder/aether/conduit/creations/creations.py`
   start_line: 1
-  end_line: 1871
-  loc: 1871
-  verified_at: 2026-10-15T21:20:35Z
+  end_line: 1880
+  loc: 1880
+  verified_at: 2026-10-18T01:42:03Z
   note: instance registry; `ManyDisposalBucket` and `register_many` (0.2.8216); `HolderDisposalEntry` and
     `adopt_children` (0.2.8238); the managed pool map, `ensure_managed_quantity`, `discard_managed_quantity`, pools
-    cleaned first, the `managed` row (0.2.8243-0.2.8246).
+    cleaned first, the `managed` row (0.2.8243-0.2.8246); `ensure_managed_quantity` rebinds a found pool after the
+    store lock (0.2.8254).
 - path: `src/melder/aether/conduit/creations/conduit_creations.py`
   start_line: 1
   end_line: 134
@@ -3922,11 +3977,11 @@ Utilities:
 
 - path: `src/melder/utilities/caching_system/caching_system.py`
   start_line: 1
-  end_line: 900
-  loc: 900
-  verified_at: 2026-10-16T11:03:50Z
+  end_line: 908
+  loc: 908
+  verified_at: 2026-10-18T01:42:03Z
   note: release-bound creation-cache admission, the envelope's world stamp and atomic persistence;
-    generation 21, "managed_spell_lease_codegen" (0.2.8248).
+    generation 22, "managed_settings_leave_spell_id" (0.2.8254).
 
 - path: `src/melder/utilities/general_base/abstract_elastic_pool.py`
   start_line: 1
@@ -4201,6 +4256,7 @@ meld or injection -> plan: pop the pool's idle deque -> hit: the object (no lock
 holder -> ReleaseManagedSpell().release(obj) -> type(obj) -> pool.put_back: resets -> append (-> trim, notify)
 root teardown -> Creations.cleanup: pools first (idle objects + recorded children) -> unregistered
 ownership transfer -> rows carry the pool; the owner stamp follows; a failed one stamps back, discards composed pools
+rebind under the same spell_id (cleanup_spell, bind) -> ensure_managed_quantity -> the same pool, new settings
 ```
 
 ```mermaid
@@ -4217,6 +4273,7 @@ flowchart LR
   L --> S[Resets, then back to the idle deque]
   S --> P
   T[Root teardown] --> C[Pools cleaned before the store's registry]
+  N[Rebind under the same spell_id] -->|the pool takes the new settings| P
 ```
 
 ### ASCII Context Diagram (C4)
@@ -4486,6 +4543,18 @@ without rewriting the original record or existing live IDs.
 - `src/melder/utilities/ai_native_support_tools/protocol_crafter.py`
 
 ## Context / Handoff Summary
+
+2026-10-18 managed settings leave the spell_id (0.2.8254; part A of
+STORY-2026-10-17-release_routes_parked_version_objects_to_active_pool, on the owner's ruling "the bind call itself
+shouldn't impact the actual SHA256"): a managed spell's mode, limit, queue timeout and reset methods are settings of
+the one spell, not its identity - the fingerprint no longer hashes them, a rebind under the same spell_id gives its
+pool the new settings, and creation cache generation 22 retires older bundles. The glossary, the boundary list, a new
+operational invariant (the 0.2.8241-0.2.8243 pools entry's hashing sentence points at it), two failure modes (one
+Breaking, one fixed with its part-B residue), the managed lease diagram and the code map (six files remeasured)
+carry it; the component map carries the per-component contracts. The guardrail's citation of the internal-bind call
+moves to `src/melder/aether/spellbook/bind/bind.py:715` (it had drifted two lines). Open with the owner: part B
+(refusing a second managed version of one class in one SpellIndex), a record holding two settings-only versions of
+one class, and whether more of the bind call leaves the spell_id.
 
 2026-10-17 lookup by spell_id is exact (0.2.8253; the owner's rule: a spell_id and a SpellIndex are separate
 things, and a spell_id lookup never answers with the spell its index has active): `Spellbook.find_spell_by_id`

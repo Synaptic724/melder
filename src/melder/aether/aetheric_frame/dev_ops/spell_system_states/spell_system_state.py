@@ -64,13 +64,13 @@ class SpellSystemState(Cleanable):
 
     Lifecycle / Cleanup:
         One per spell index, created at `register_index(...)` and retired when
-        the lineage is unregistered.
+        the SpellIndex is unregistered.
 
     Registration:
         MELDER KERNEL - guarded. Frame-owned control-plane state.
 
     Subsystem Context:
-        The per-lineage row of the control tower. Its per-conduit counterpart
+        The per-SpellIndex row of the control tower. Its per-conduit counterpart
         is `ConduitResolutionState`; the split is the structural-versus-
         resolution axis and is the single most important distinction in this
         package.
@@ -86,7 +86,7 @@ class SpellSystemState(Cleanable):
         `direct_dependents` exists for one purpose: answering "what breaks if
         this changes" without walking the whole graph. Storing reverse edges at
         write time is what lets `compute_impact_closure` dirty a bounded set at
-        change time instead of revalidating every lineage in the frame.
+        change time instead of revalidating every SpellIndex in the frame.
 
     AGENT_ACCESS: internal
 
@@ -306,7 +306,7 @@ class SpellSystemState(Cleanable):
             ask about one flag: `SpellSystemStates.index_has_flag` answers
             through it, and `SpellSystemStates.register_index` reads
             `SpellState.non_resolvable` through it to keep the registry's
-            published set of flagged lineages (`non_resolvable_index_ids`) in
+            published set of flagged spell indexes (`non_resolvable_index_ids`) in
             step with this state.
 
         Args:
@@ -512,10 +512,10 @@ class SpellSystemState(Cleanable):
             `set_validity` publishes only a changed validity. When the owning
             registry changes a flag that RiskManager reads
             (`SpellState.non_resolvable`) while this index is already `gated`,
-            the gate publishes nothing, and the conduits holding the lineage would
+            the gate publishes nothing, and the conduits holding the SpellIndex would
             keep a Book flag distilled from the old flag - a borrower whose copy
             came back by reactivation is never re-registered with RiskManager.
-            The registry calls this so every conduit holding the lineage
+            The registry calls this so every conduit holding the SpellIndex
             refreshes.
 
         Contract:

@@ -37,7 +37,7 @@ class ConduitCluster(Cleanable):
     LAYER 1 - Spell sharing (the core; always on; needs NO leader)
     ==================================================================
     The cluster's primary job. Members automatically contract ("share") their
-    shareable root `SpellIndex` lineages to one another, so every member can
+    shareable root spell indexes to one another, so every member can
     resolve every other member's shared roots. This layer is fully functional
     with no elected leader; a cluster can exist and share spells forever without
     one.
@@ -1499,7 +1499,7 @@ class ConduitCluster(Cleanable):
         Returns:
             dict:
                 Snapshot containing cluster name, dependency-link policy,
-                member ids, and shared-root lineage ids grouped by owner.
+                member ids, and shared root SpellIndex ids grouped by owner.
         """
         self.check_cleaned()
         with self._lock:

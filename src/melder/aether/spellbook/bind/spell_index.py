@@ -45,8 +45,8 @@ class SpellIndex(Cleanable):
 
     Subsystem Context:
         The stable identity spells are organized under. `Spell` is one version;
-        the index is the lineage. Version HISTORY belongs to MutationResearch,
-        not here.
+        the index organizes versions and selects one of them. Version HISTORY
+        belongs to MutationResearch, not here.
 
     System Context:
         The design note names the real problem this solves: the MUTABLE
@@ -60,7 +60,7 @@ class SpellIndex(Cleanable):
         to this index, following the head), so a notch updates every borrower
         without renegotiating a single contract. The crystallizer records index
         MEMBERSHIP as its own twin (`SpellIndexCrystal`) for the same reason -
-        membership is lineage truth, distinct from any one spell's custody.
+        membership is the index's own truth, distinct from any one spell's custody.
         The explicit non-ownership of lookup-map propagation is the boundary
         that keeps this class small: the index organizes ids, the spell_id
         resolves, and the Spellbook is what republishes lookups on a notch.
@@ -68,7 +68,7 @@ class SpellIndex(Cleanable):
     AGENT_ACCESS: public
 
     AGENT_PURPOSE:
-        access: public. The stable lineage identity (immutable ULID) pointing at a mutable
+        access: public. The stable index identity (immutable ULID) pointing at a mutable
         selected spell. Hash/equality use only the ULID, so a notch can repoint the active
         member without breaking any map. Version history belongs to MutationResearch.
     """
@@ -180,8 +180,8 @@ class SpellIndex(Cleanable):
             - SELECTS a new current spell id AND adds it to the member set, so
               selection always implies membership.
             - DOES NOT RETIRE THE PREVIOUS ID. The superseded version stays a
-              MEMBER - parked in its Book - so the member set is the lineage
-              and the selected id only the current head. A lookup by spell_id
+              MEMBER - parked in its Book - so the member set holds every version
+              and the selected id names only the selected one. A lookup by spell_id
               (`Spellbook.find_spell_by_spell_id`) answers the superseded spell
               itself, never the head; the head is what `selected_spell_id` and a
               lookup by index id name.
@@ -217,7 +217,7 @@ class SpellIndex(Cleanable):
             spell_id (str): The candidate member spell id to record.
 
         Contract:
-            - Adds to the lineage WITHOUT changing the selected id, so it grows the
+            - Adds to the index WITHOUT changing the selected id, so it grows the
               version set without promoting anything.
             - Set semantics: re-adding an existing id is a silent no-op.
 
@@ -295,10 +295,10 @@ class SpellIndex(Cleanable):
             spell_id (str): The spell id to check.
 
         Contract:
-            - Tests MEMBERSHIP OF THE LINEAGE, not equality with the selected id, so a
+            - Tests MEMBERSHIP OF THE INDEX, not equality with the selected id, so a
               superseded or parked version still answers True. A membership test only:
               a spell_id names its own spell (`Spellbook.find_spell_by_spell_id`), not
-              the lineage's selected head.
+              the index's selected spell.
 
         Threading:
             Reads and writes under `self._lock`, so the result is a coherent
@@ -337,8 +337,8 @@ class SpellIndex(Cleanable):
             walk "not a member" is the truthful answer, where `has_spell` raises.
 
         Contract:
-            - Same membership semantics as `has_spell` (the whole version
-              lineage, not only the selected id) while the index is live.
+            - Same membership semantics as `has_spell` (every member
+              spell id, not only the selected id) while the index is live.
             - Never raises for a cleaned index; returns False.
 
         Threading:
@@ -371,7 +371,7 @@ class SpellIndex(Cleanable):
             cleanup would meet an AttributeError there.
 
         Contract:
-            - Tests SELECTION, not membership: a parked member of the lineage answers False.
+            - Tests SELECTION, not membership: a parked member of the index answers False.
             - Never raises for a cleaned index; returns False.
             - Pure read: changes nothing.
 
@@ -479,7 +479,7 @@ class SpellIndex(Cleanable):
         Contract:
             - Hashes on index IDENTITY ONLY, never on contents, so the hash is stable
               while membership changes. That is what allows a live index to be a dict
-              key while its lineage evolves.
+              key while its member set changes.
             - DELIBERATELY NOT `check_cleaned()` GUARDED, so a cleaned index stays
               hashable and can still be removed from the collections holding it.
 

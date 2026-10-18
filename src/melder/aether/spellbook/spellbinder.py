@@ -632,7 +632,7 @@ class SpellBinder(Cleanable):
         Args:
             permissions:
                 `Permissions` member or its string name setting the capability
-                ceiling for this lineage.
+                ceiling for this spell.
         """
         self.check_cleaned()
         with self._lock:

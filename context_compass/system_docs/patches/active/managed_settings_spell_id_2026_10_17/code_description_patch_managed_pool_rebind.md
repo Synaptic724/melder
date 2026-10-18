@@ -3,10 +3,11 @@
 ## Metadata
 - Patch ID: managed_settings_spell_id_2026_10_17
 - Component: Managed Spell Pools - `ManagedSpellQuantity._rebind_spell`, `Creations.ensure_managed_quantity`
-- Status: approved (owner, chat 2026-10-18: "just do the 4")
+- Status: landed at 0.2.8254 and promoted to the system documents and the graph; active with the story until
+  part B
 - Owner: user; melder_0 (synaptic_python_developer)
 - Created: 2026-10-18T00:10:00Z
-- Updated: 2026-10-18T00:42:22Z
+- Updated: 2026-10-18T02:05:25Z
 
 ## Trigger Justification
 - Concurrency: the policy of a live pool changes while plans pop its idle deque, `reserve()` raises its count, queue

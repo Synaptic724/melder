@@ -150,12 +150,12 @@ class CompilerPhase4:
             if issue.code == "SPELL_CONTRACT_MISSING_PROVIDER":
                 has_contract_missing_provider = True
 
-        # Update global structural validity for this lineage.
+        # Update global structural validity for this spell's SpellIndex.
         if spell_system_states is not None and spell.spell_index is not None:
             state = spell_system_states.get_by_index_id(spell.spell_index.id)
             if state is not None:
                 if artifact._is_broken:
-                    # First-fail semantics: validation errors make the lineage invalid.
+                    # First-fail semantics: validation errors make the SpellIndex state invalid.
                     state.set_validity(
                         SpellValidity.invalid,
                         change_reason=SpellStateChangeReason.validation_failed,

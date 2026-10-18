@@ -5,7 +5,7 @@
 - Status: in_progress
 - Owner:
 - Created: 2026-01-22
-- Updated: 2026-10-17
+- Updated: 2026-10-18
 
 ## Scope and Intent
 This document describes the tests architecture (C4) for `tests/` and how it
@@ -460,10 +460,10 @@ Direct evidence used in this pass:
 Current Python test inventory from direct filesystem count:
 - `unit/`: 512 `.py` files, 509 of them `test_*.py` (465 on 2026-09-26, 334 on 2026-06-13)
 - `component/`: 168 `.py` files, 166 of them `test_*.py` (143, 81)
-- `integration/`: 179 `.py` files, 172 of them `test_*.py` (149, 88)
+- `integration/`: 180 `.py` files, 173 of them `test_*.py` (149, 88)
 - `mocks/`: 44 `.py` files (44, 42)
 - `experimentation/`: 204 `.py` files, 33 of them `test_*.py` (196 on 2026-09-26)
-Recounted 2026-10-17 with `find tests/<tier> -name '*.py'` (pycache excluded); the three tiers' 847 `test_*.py`
+Recounted 2026-10-18 with `find tests/<tier> -name '*.py'` (pycache excluded); the three tiers' 848 `test_*.py`
 modules are the count `tests_components` states.
 
 ## Core Responsibilities
@@ -888,6 +888,13 @@ graph TD
 - direct filesystem inventory of `tests/`
 
 ## Context / Handoff Summary
+
+2026-10-18 managed settings leave the spell_id (0.2.8254): the inventory is recounted from disk (unit 512 `.py`,
+component 168, integration 180, mocks 44, experimentation 204; 848 test modules in the three tiers) - the lane adds
+one integration module (a managed spell's settings outside its spell_id), catalogued in `tests_components`, and a
+ninth-thread rebind case to the managed pool's stress file after its other cases, so the worker-hang guard's evidence
+under `## Failure Modes and Error Paths` (`_run_threads`, 94-124) does not move. No tier, conftest, declared marker or
+shared support module changes, and no extent in this map moves.
 
 2026-10-17 lookup by spell_id is exact (0.2.8253): the inventory is recounted from disk (unit 512 `.py`,
 component 168, integration 179, mocks 44, experimentation 204; 847 test modules in the three tiers) - the lane

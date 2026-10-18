@@ -34,7 +34,7 @@ class SpellbookValidationError(RuntimeError):
         dependency at fault and says what to change. Errors marked `[internal]`
         come from Melder's own consistency checks and are Melder bugs; report
         them with the message. Warnings never block conjure and are only
-        counted here, except one that holds a spell's lineage gated (a lost
+        counted here, except one that holds a spell's SpellIndex gated (a lost
         SpellContract provider at meld): it is listed as that spell's reason,
         with its remedy. `conjure(validation_warnings=True)` logs the others.
         Fix the binding, not the validator.
@@ -62,7 +62,7 @@ class SpellbookValidationError(RuntimeError):
           `system_diagnostics`.
         - Never lists warnings, strategy sources or details payloads, except the
           gating warnings of a spell that shows no error: they are why its
-          lineage is gated, so they are its reason (2026-10-16).
+          SpellIndex is gated, so they are its reason (2026-10-16).
         - Remains resilient when spell artifacts are partially unavailable or
           cleaned while the error is being rendered. Rendering a diagnostic must
           never raise a second error on top of the first.
@@ -139,7 +139,7 @@ class SpellbookValidationError(RuntimeError):
         "CIRCULAR_DEPENDENCY": "SELF_DEPENDENCY",
     }
 
-    # Phase-4 warnings that hold a lineage `gated` (`CompilerPhase4.run`): a spell refused only because of one lists
+    # Phase-4 warnings that hold a SpellIndex `gated` (`CompilerPhase4.run`): a spell refused only because of one lists
     # it as its reason instead of "No validation error was recorded" (D1-B, 2026-10-16). A unit test pins this set
     # to the codes Phase 4 gates on.
     GATING_WARNING_CODES: ClassVar[FrozenSet[str]] = frozenset({"SPELL_CONTRACT_MISSING_PROVIDER"})

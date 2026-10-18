@@ -1,0 +1,29 @@
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: Notched 0.2.8254 (read 0.2.8253 at the notch) and wrote the release-note entry in the managed spells
+    section, where the note said "Each option is part of a managed spell's id" - one section per subject: the four
+    options are settings of the one spell; a settings-only re-stage is refused as the same spell; changing settings
+    is `cleanup_spell` and `bind`, the spell_id and the pool stay and the pool takes the new settings; builds
+    0.2.8242-0.2.8253 gave other ids; cache generations 21 and 22; a packaging line. The example runs as written
+    (probe E1: same spell_id, limit 2, count 2, one idle, one out; E2: re-stage refused, members unchanged). Checked
+    before the note repeats the patch docs' "now a duplicate, as for any other spell": under process-wide ids one
+    class bound at one address in two frames binds in both and the second frame's `conjure()` is refused
+    ("Conjure refused: 1 spell(s) owned by this Spellbook are already registered ..."), plain, managed with equal
+    settings and managed with another limit alike (C1-C3); the story's UX line said the second bind is refused - it
+    is the second conjure. melder_1 told (M0-191; the board's notch notice).
+  EVIDENCE:
+  - src/melder/__version__.py:12-12
+  - release_docs/next_version_release.md:389-586
+  - context_compass/artifacts/correctness_defects_20261017/scripts/s6_part_a_notch.py:1-94
+  - context_compass/artifacts/correctness_defects_20261017/probes/probe_release_note_s6.py:1-97
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_release_note_s6_gil0.txt:1-5
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_release_note_s6_gil1.txt:1-5
+  - context_compass/artifacts/correctness_defects_20261017/probes/probe_cross_frame_same_id.py:1-70
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_cross_frame_same_id_gil0.txt:1-13
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_cross_frame_same_id_gil1.txt:1-13
+  IMPACT: The notch and the note are in; the system documents, the graph and the rebuild remain for part A.
+  NEXT: Promote the patch docs into src_architecture, src_components and the tests pair, then the graph.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8

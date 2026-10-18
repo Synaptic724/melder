@@ -101,7 +101,7 @@ class SpellSystemRootBlueprintBuilder:
 
             blueprint = RootResolutionBlueprint(
                 root_spell_id=root_spell_id,
-                root_lineage_id=None,          # lineages can be threaded later if needed
+                root_lineage_id=None,          # SpellIndex ids can be threaded later if needed
                 dag=dag,
                 ordered_node_ids=ordered_ids,  # Sequence[str] in topo order
                 requires_spellspace_request=requires_spellspace_request_by_id.get(root_spell_id, False),
@@ -162,7 +162,7 @@ class SpellSystemRootBlueprintBuilder:
 
         blueprint = RootResolutionBlueprint(
             root_spell_id=root_spell_id,
-            root_lineage_id=None,          # lineages can be threaded later if needed
+            root_lineage_id=None,          # SpellIndex ids can be threaded later if needed
             dag=dag,
             ordered_node_ids=ordered_ids,  # Sequence[str] in topo order
             requires_spellspace_request=requires_spellspace_request_by_id.get(root_spell_id, False),

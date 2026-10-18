@@ -1,0 +1,14 @@
+process-wide spell ids: True
+C1 plain bound in both; same spell_id: True
+C1 plain conjure a: ok
+C1 plain conjure b raised RuntimeError: [SPELLBOOK] Conjure refused: 1 spell(s) owned by this 
+C1 plain meld through root-a: Plain
+C2 managed equal bound in both; same spell_id: True
+C2 managed equal conjure a: ok
+C2 managed equal conjure b raised RuntimeError: [SPELLBOOK] Conjure refused: 1 spell(s) owned by this 
+C2 managed equal meld through root-a: Parser
+C3 managed other limit bound in both; same spell_id: True
+C3 managed other limit conjure a: ok
+C3 managed other limit conjure b raised RuntimeError: [SPELLBOOK] Conjure refused: 1 spell(s) owned by this 
+C3 managed other limit meld through root-a: Parser
+C4 managed other limit, a conjured first: bind in b refused: Spell ID collision detected.

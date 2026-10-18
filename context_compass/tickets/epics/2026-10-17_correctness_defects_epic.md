@@ -8,7 +8,7 @@
 - Agent Role: synaptic_python_developer
 - Priority: p1
 - Created: 2026-10-17T20:11:34Z
-- Updated: 2026-10-18T00:42:22Z
+- Updated: 2026-10-18T02:15:32Z
 - Target Window: 2026-Q4
 - Related Program/Initiative: Melder runtime correctness (the owner's direction, chat 2026-10-17)
 
@@ -103,8 +103,8 @@ those, and only those, keeps the core trustworthy without judging Melder by rule
 - [ ] Story: STORY-2026-10-17-restore_drops_separated_parked_version - a restore drops a parked version
   alone in its own index and still reports complete (sweep A5).
 - [ ] Story: STORY-2026-10-17-release_routes_parked_version_objects_to_active_pool - a release with no filter
-  sends a parked version's object to the active version's pool and strands its count (sweep A6). In progress:
-  the managed settings leave the spell_id (owner, 2026-10-17).
+  sends a parked version's object to the active version's pool and strands its count (sweep A6). Part A landed
+  at 0.2.8254 (the managed settings left the spell_id; owner, 2026-10-17); part B waits for the owner's talk.
 - [ ] Story: STORY-2026-10-17-book_teardown_leaves_parked_versions_uncleaned - Book teardown leaves
   its parked versions and parked-only indexes uncleaned, beyond any cleanup (sweep A7).
 - [ ] Story: STORY-2026-10-17-failed_notch_keeps_switch_without_borrowers - a notch whose commit
@@ -880,8 +880,8 @@ this does not make independent review mandatory for every ticket.
   misses the version too, A8),
   STORY-2026-10-17-restore_drops_separated_parked_version (p2; answered: restore and graft rebuild it
   parked; a graft activates it today, A12),
-  STORY-2026-10-17-release_routes_parked_version_objects_to_active_pool (p2; in progress, melder_0: the managed
-  settings leave the spell_id),
+  STORY-2026-10-17-release_routes_parked_version_objects_to_active_pool (p2; in progress, melder_0: part A
+  landed at 0.2.8254, part B open),
   STORY-2026-10-17-book_teardown_leaves_parked_versions_uncleaned (p3),
   STORY-2026-10-17-failed_notch_keeps_switch_without_borrowers (p2; answered: refused with nothing moved),
   STORY-2026-10-17-direct_cleanup_of_active_member_orphans_parked_versions (p2) and
@@ -895,8 +895,9 @@ this does not make independent review mandatory for every ticket.
   not a defect (DECISION note of 2026-10-17T23:25:30Z); melder_1 told (M0-188). The owner chose S6's direction
   (DECISION note of 2026-10-17T23:50:39Z): the managed settings leave the spell_id; melder_0 runs its fix lane.
   The owner confirmed S6's scope (DECISION note of 2026-10-18T00:42:22Z); melder_1's 0.2.8253 landed (M1-26).
-- Next: (1) S6's part A (the owner's go, 2026-10-18; melder_1's 0.2.8253 landed), then the talk on its part B and
-  legacy record; (2) a fourth tranche on the owner's word; (3) melder_1 carries S1-S4 and S7-S9 with its hand-back.
+  S6's part A landed at 0.2.8254 and was rebuilt last; its files are released to melder_1 (M0-192).
+- Next: (1) the owner's talk on S6's part B, its legacy record and anything more of the bind call; (2) a fourth
+  tranche on the owner's word; (3) melder_1 carries S1-S4 and S7-S9 with its hand-back.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

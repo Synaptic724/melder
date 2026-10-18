@@ -13,7 +13,7 @@ Regenerate with:
     python src/melder/_build_assets/_build_asset_runner.py
 """
 
-BUILT_FOR_VERSION = "0.2.8253"
+BUILT_FOR_VERSION = "0.2.8254"
 NODE_COUNT = 1227
 EDGE_COUNT = 1415
 WHY_COUNT = 956
@@ -3788,7 +3788,7 @@ WHY = {
     ('melder.aether.conduit.creations.creations.Creations', 'melder.aether.conduit.creations.release_managed_spell.ReleaseManagedSpell'): 'The store registers each pool it takes and unregisters each pool it gives up, outside its lock.',
     ('melder.aether.conduit.creations.managed_spell_lease.ManagedSpellLease', 'melder.aether.conduit.creations.managed_spell_quantity.ManagedSpellQuantity'): "The lease gives its object back through the pool's put_back exactly once, then drops both references.",
     ('melder.aether.conduit.creations.managed_spell_quantity.ManagedSpellQuantity', 'melder.aether.spellbook.existence.managed_spell_mode.ManagedSpellMode'): 'The mode decides what a miss does - build, refuse or wait - and how the pool is sized.',
-    ('melder.aether.conduit.creations.managed_spell_quantity.ManagedSpellQuantity', 'melder.aether.spellbook.spell.Spell'): "The pool reads the managed options and the disposal list from its version's Spell at construction and keeps the Spell borrowed (a rebind under the same id re-points it); it never cleans it.",
+    ('melder.aether.conduit.creations.managed_spell_quantity.ManagedSpellQuantity', 'melder.aether.spellbook.spell.Spell'): "The pool reads the managed options and the disposal list from its version's Spell at construction and keeps the Spell borrowed (a rebind under the same spell_id re-points it and gives the pool that Spell's settings, 0.2.8254); it never cleans it.",
     ('melder.aether.conduit.creations.managed_spell_quantity.ManagedSpellQuantity', 'melder.utilities.custom_exceptions.managed_spell_exhausted_error.ManagedSpellExhaustedError'): 'reserve() raises ManagedSpellExhaustedError.limited or .queue when its mode refuses a lease; nothing has been built by then.',
     ('melder.aether.conduit.creations.release_managed_spell.ReleaseManagedSpell', 'melder.aether.conduit.conduit.Conduit'): 'A conduit filter names its root (_root_conduit_id); the registry keeps no conduit.',
     ('melder.aether.conduit.creations.release_managed_spell.ReleaseManagedSpell', 'melder.aether.conduit.creations.managed_spell_lease.ManagedSpellLease'): 'managed(obj) wraps the object and the pool it resolved in a lease.',
@@ -3822,7 +3822,7 @@ WHY = {
     ('melder.aether.spellbook.bind.bind.Bind', 'melder.aether.conduit.conduit_ward.permissions.permissions.Permissions'): 'Bind accepts and carries Permissions as the access policy for newly registered spells.',
     ('melder.aether.spellbook.bind.bind.Bind', 'melder.aether.spellbook.bind.spell_index.SpellIndex'): 'Bind creates a SpellIndex lineage key from the structural fingerprint before constructing the Spell record.',
     ('melder.aether.spellbook.bind.bind.Bind', 'melder.aether.spellbook.existence.existence.Existence'): 'Bind accepts Existence as the lifecycle policy for newly registered spells.',
-    ('melder.aether.spellbook.bind.bind.Bind', 'melder.aether.spellbook.existence.managed_spell_mode.ManagedSpellMode'): "Bind normalizes a managed binding's mode to a ManagedSpellMode member before hashing it into the spell id.",
+    ('melder.aether.spellbook.bind.bind.Bind', 'melder.aether.spellbook.existence.managed_spell_mode.ManagedSpellMode'): "Bind normalizes a managed binding's mode to a ManagedSpellMode member and hands it to the Spell as a setting; the spell_id does not hash it (0.2.8254).",
     ('melder.aether.spellbook.bind.bind.Bind', 'melder.aether.spellbook.spell.Spell'): 'Bind turns one examined binding target into the canonical Spell runtime record for Spellbook registration.',
     ('melder.aether.spellbook.bind.bind.Bind', 'melder.aether.spellbook.spell_compiler.spell_examiner.spell_examiner.SpellExaminer'): 'Bind owns the SpellExaminer used to build registration profiles.',
     ('melder.aether.spellbook.bind.bind.Bind', 'melder.aether.spellbook.spell_types.spell_types.SpellType'): 'Bind resolves and stores SpellType to classify each registered spell family.',

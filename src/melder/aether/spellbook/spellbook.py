@@ -171,7 +171,7 @@ class Spellbook(Cleanable):
         _apply_remove_from_index - which run inside the held change-control window. The
         PUBLIC verbs are on Conduit (notch_spell, add_to_spell_index,
         remove_from_spell_index): the Conduit admits the transaction because it owns the
-        lineage, and Spellbook applies the membership change because it owns the index
+        SpellIndex, and Spellbook applies the membership change because it owns the index
         maps. Neither half is callable on its own.
     """
     _aether: ClassVar[Aether] = Aether()
@@ -1835,8 +1835,8 @@ class Spellbook(Cleanable):
 
         Ensure `spell` is the ACTIVE contracted (borrowed) spell for `conduit_id`,
         contracting it eagerly if this spellbook does not hold it yet. This is the
-        eager "follow" used when an owner notches an index-linked lineage to a
-        version this borrower has not seen:
+        eager "follow" used when an owner notches a SpellIndex this borrower holds through an
+        index link to a version this borrower has not seen:
             - already active for this conduit -> no-op.
             - parked inactive for this conduit -> reactivate it.
             - not held at all -> add it as a fresh active contracted copy.
@@ -2076,7 +2076,7 @@ class Spellbook(Cleanable):
               active version to `_spells_by_id`; `bind_inactive` and a notch
               park a version in `_inactive_spells`; index moves and parked
               disposal keep that map in step; an ownership transfer migrates
-              the whole lineage.
+              every version of the index.
             - O(1): at most two dict reads.
             - Returns None on a miss. This is deliberately unlike the
               `find_spell_index` / `find_spell_key` siblings, which raise on a
@@ -2131,14 +2131,14 @@ class Spellbook(Cleanable):
         """
         Public API
 
-        Read the capability ceiling recorded for one LOCAL spell lineage.
+        Read the capability ceiling recorded for the active spell of one LOCAL SpellIndex.
 
         Purpose:
-            Report what this Spellbook is willing to expose for a lineage it OWNS, which is
+            Report what this Spellbook is willing to expose for a SpellIndex it OWNS, which is
             the upper bound any contract can grant a peer.
 
         Contract:
-            - LOCAL ONLY. Contracted (borrowed) lineages are not searched, so a lineage
+            - LOCAL ONLY. Contracted (borrowed) indexes are not searched, so a SpellIndex
               this book borrows raises rather than reporting the lender's permission. That
               is deliberate: the ceiling belongs to the owner, not the borrower.
             - Returns the enum's NAME as a string, not the `Permissions` member. Compare
@@ -2152,7 +2152,7 @@ class Spellbook(Cleanable):
 
         Args:
             spell_index:
-                Lineage handle whose owning spell should be read.
+                The SpellIndex whose active spell's permissions are read.
 
         Returns:
             str:
@@ -2332,16 +2332,16 @@ class Spellbook(Cleanable):
         """
         Public API
 
-        Resolve the lineage (`SpellIndex`) behind one logical spell address.
+        Resolve the `SpellIndex` behind one logical spell address.
 
         Purpose:
             Turn the human-facing `(spellframe, spell_name, binding_name)` address into the
-            durable lineage handle, so callers can follow the lineage rather than pinning
+            durable SpellIndex, so callers can follow its selected spell rather than pinning
             whichever version happens to be selected right now.
 
         Contract:
             - Searches LOCAL spells first, then every contracted (borrowed) spellbook map.
-              A borrowed lineage is therefore resolvable through the borrower's own book.
+              A borrowed SpellIndex is therefore resolvable through the borrower's own book.
             - The three inputs are normalized into one lookup key before matching, so
               casing differences in the binding name do not change the result.
             - NEVER RETURNS None. Despite the `Optional[SpellIndex]` annotation, the only
@@ -2358,9 +2358,9 @@ class Spellbook(Cleanable):
 
         Returns:
             SpellIndex:
-                The lineage handle for the addressed spell. The returned index is the
+                The SpellIndex of the addressed spell. The returned index is the
                 stable identity - its `selected_spell_id` may move underneath you when the
-                owner notches, which is the intended way to follow a lineage.
+                owner notches, which is the intended way to follow the index's selected spell.
 
         Raises:
             RuntimeError: If the address matches neither a local nor a contracted spell.
@@ -2480,7 +2480,7 @@ class Spellbook(Cleanable):
               bound?", not to discover an address you did not already have.
             - NEVER RETURNS None. Despite the `Optional[tuple]` annotation, the outcomes
               are a key or a raised `RuntimeError`.
-            - Use `find_spell_index(...)` instead when you want the lineage itself; that is
+            - Use `find_spell_index(...)` instead when you want the SpellIndex itself; that is
               the call that returns information you did not already hold.
 
         Args:
@@ -2711,7 +2711,7 @@ class Spellbook(Cleanable):
 
         Raises:
             ValueError: If no conduit in the frame claims the id - unknown or removed, bound in
-                another frame, its owner cleaned, or a lineage between owners while an ownership
+                another frame, its owner cleaned, or its SpellIndex between owners while an ownership
                 transfer runs - or the frame does not exist (`Aether._get_conduit_by_spell_id`).
                 It always raised; until 0.2.8230 this docstring promised None.
         """
@@ -3057,7 +3057,7 @@ class Spellbook(Cleanable):
             Lock-free. Answers by key first (cross_object_lock_gaps, 0.2.8231): the active borrowed copy is held in
             `_contracted_spells_by_id` under its own version id, and a parked one in
             `_inactive_contracted_spells`, whose index (read under the parked spell's own lock) keys the
-            lineage's active copy in `_contracted_spells` - single-key reads, no copy. Only a version this
+            index's active copy in `_contracted_spells` - single-key reads, no copy. Only a version this
             Book holds no copy of falls back to the walk: a one-call snapshot of the contracted map, which
             grants and revocations change while no lock is held here, probing each index with
             `SpellIndex._has_spell_unless_cleaned` (the lender can clean an index this map still holds, and
@@ -3074,7 +3074,7 @@ class Spellbook(Cleanable):
         spell_map = self._contracted_spells.get(conduit_id)
         if spell_map is None:
             return None
-        # Still O(1): a parked borrowed copy's index keys its lineage's active copy.
+        # Still O(1): a parked borrowed copy's index keys that index's active copy.
         parked = self._inactive_contracted_spells.get(conduit_id)
         if parked is not None:
             parked_spell = parked.get(spell_id)
@@ -3260,7 +3260,7 @@ class Spellbook(Cleanable):
         and the per-conduit existence set are populated -- NOT the active
         `_contracted_spells` / `_lookup_contracted_spells` / `_contracted_spells_by_id`
         maps and NOT the shared `_spell_id_pool`. The borrowed copy therefore stays
-        off resolution (unmeldable) until the owner notches the lineage and the
+        off resolution (unmeldable) until the owner notches the SpellIndex and the
         owning Conduit drives `_activate_contract_spell` on this spellbook.
 
         This is the inactive counterpart of `_add_contracted_spell`. The linking
@@ -3286,7 +3286,7 @@ class Spellbook(Cleanable):
                 parked = {}
                 self._inactive_contracted_spells[conduit_id] = parked
             parked[spell_id] = spell
-            # Existence: track every member id of the lineage, matching the active
+            # Existence: track every member id of the SpellIndex, matching the active
             # path, so the borrower knows all versions exist.
             conduit_spell_ids = self._contracted_spell_ids[conduit_id]
             member_ids = spell_index._spells_in_index
@@ -3868,7 +3868,7 @@ class Spellbook(Cleanable):
 
         `change_reason` records WHY the active member was repointed; it defaults
         to `selected_different_spell` (a general selection, not a mutation) and is
-        threaded into the spell-owned invalidation so the lineage -- and its
+        threaded into the spell-owned invalidation so the SpellIndex -- and its
         dependents -- are flagged with that reason.
 
         Contract:
@@ -3937,7 +3937,7 @@ class Spellbook(Cleanable):
             4. Repoint the framewide binding signature old -> new active id.
             5. Re-register the index so it is structurally gated + dirty; meld-time
                revalidation recompiles lazily on next resolve.
-            6. Mark every lineage downstream of this one for revalidation
+            6. Mark every SpellIndex downstream of this one for revalidation
                (`SpellSystemStates.mark_dependents_for_revalidation`; D2 of
                contract_recheck_on_notch_2026_10_16): its dependents by registry
                edge, in any Book, and the SpellContract consumers of its binding
@@ -4004,7 +4004,7 @@ class Spellbook(Cleanable):
             resolvable=spell.resolvable,
             binding_key=spell._key,
         )
-        # D2: everything downstream of the notched lineage - its dependents by registry edge, in any Book, and the
+        # D2: everything downstream of the notched SpellIndex - its dependents by registry edge, in any Book, and the
         # SpellContract consumers of its binding key - revalidates at its next meld (mark only).
         self._spell_system_states.mark_dependents_for_revalidation((spell_index.id,))
         # Refresh the spellbook validation-required flag for the promoted member:
@@ -4026,8 +4026,8 @@ class Spellbook(Cleanable):
                 self._replace_spell_record_in_nexus(outgoing.spell_id, spell)
             else:
                 self._publish_spell_record_to_nexus(spell)
-        # Mark the promoted lineage structurally changed (the walk above marked its
-        # dependents) and clear its stale CreationContext. invalidate_spell also sets
+        # Mark the promoted spell's SpellIndex structurally changed (the walk above marked its
+        # dependents) and clear the spell's stale CreationContext. invalidate_spell also sets
         # resolution_required=True as a side effect; bind-parity routing below sets
         # it back to False so meld's validation-required lane (the one that runs
         # the full 5-7/8-11 target pass) owns the recompile, exactly as it does for
@@ -4365,7 +4365,7 @@ class Spellbook(Cleanable):
         Public API
 
         Fully dispose an owned spell. Invalidate it FIRST so the spell and its
-        lineage are flagged dirty (and dependents are rechecked) while the index
+        SpellIndex are flagged dirty (and dependents are rechecked) while the index
         and dependency edges still exist, then take it off every resolution
         surface, destroying its index when the spell was that index's only member.
         This is the disposal path `remove_from_spell_index` points at for a
@@ -4378,7 +4378,7 @@ class Spellbook(Cleanable):
               first. The sole member of an index may always be disposed -- the
               index is destroyed with it.
             - Invalidation happens FIRST (`spell.invalidate_spell()`): the creation
-              context is cleared and the lineage is marked structurally changed so
+              context is cleared and its SpellIndex is marked structurally changed so
               dependents are rechecked, while the index and dependency edges still
               exist. Teardown only runs afterwards.
             - An ACTIVE spell is then disposed through `cleanup_and_remove_spell`,
@@ -4512,7 +4512,7 @@ class Spellbook(Cleanable):
                 )
         # Reached only when this call marked the spell above: nothing between the mark and here can raise.
         try:
-            # CLEAN UP. Only an ACTIVE spell is invalidated first: flag it + its lineage
+            # CLEAN UP. Only an ACTIVE spell is invalidated first: flag it + its SpellIndex
             # dirty (clear the creation context, force a next-meld rebuild) while the index
             # and dependency edges still exist, so dependents can be rechecked before
             # teardown. An INACTIVE member is off the resolution surface -- nothing resolves

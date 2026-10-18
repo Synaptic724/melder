@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/bind/bind.py",
- "source_sha256": "745bd68927d0bbd712d6507c7fa7f3580f0343d221787c9c2e0d3430605ab388",
+ "source_sha256": "921153b06464cbe1a04e41e76d7323d0a7fff97d5b58a32bca86101a76d23286",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.bind.bind": {
@@ -36,11 +36,11 @@
     "spell_id_inspector"
    ],
    "shape": {
-    "method_count": 28,
+    "method_count": 27,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "a4cb97b3a15518c49a02f2a2baa67e55666fa40445789d16d9a4b7f6000f2ad2",
+   "span_sha256": "4844aa7f5461a7e63cd316e89738f3b460b1ef084e98e53142e2469e074dd65b",
    "role": "Spell registration gateway for one Spellbook.",
    "responsibilities": [
     "examines binding targets into canonical binding profiles",
@@ -58,7 +58,7 @@
     "classifies the spellframe before the structural check (_classify_spellframe): None -> SpellframeKind.none, str -> category, a typing.Protocol -> contract with the Protocol recorded; any other class or object is refused with a TypeError naming the two valid forms (0.2.8222, Breaking)",
     "validates binding policy and spellframe semantics, running the direct-public-member Protocol check only for a contract frame",
     "hands the Spell its spellframe_kind and implemented_protocols; the fingerprint does not hash the kind",
-    "validates and normalizes a managed binding's four options once (_normalize_managed_options: classes only, the mode defaulting to elastic, the limit, the queue-only timeout and callable reset names; every refusal before a Spell or index exists), appends one managed:<mode>:<limit>:<timeout>:<reset names> part to a managed binding's fingerprint only, so no other spell id moves, and hands the normalized values to the Spell (0.2.8242)"
+    "validates and normalizes a managed binding's four options once (_normalize_managed_options: classes only, the mode defaulting to elastic, the limit, the queue-only timeout and callable reset names; every refusal before a Spell or index exists) and hands the normalized values to the Spell as its settings (0.2.8242); the fingerprint never reads them, so one class bound managed at one address with one disposal list has one spell_id whatever its settings, and spell_id_inspector checks them as bind does and hashes without them (0.2.8254; 0.2.8242-0.2.8253 appended a managed:<mode>:<limit>:<timeout>:<reset names> part)"
    ],
    "owns_state": [
     "_spellbook",
@@ -70,7 +70,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "a4cb97b3a15518c49a02f2a2baa67e55666fa40445789d16d9a4b7f6000f2ad2"
+   "semantics_authored_against": "4844aa7f5461a7e63cd316e89738f3b460b1ef084e98e53142e2469e074dd65b"
   }
  },
  "edges_out": [
@@ -259,7 +259,7 @@
    "from": "melder.aether.spellbook.bind.bind.Bind",
    "to": "melder.aether.spellbook.existence.managed_spell_mode.ManagedSpellMode",
    "relation": "uses",
-   "why": "Bind normalizes a managed binding's mode to a ManagedSpellMode member before hashing it into the spell id.",
+   "why": "Bind normalizes a managed binding's mode to a ManagedSpellMode member and hands it to the Spell as a setting; the spell_id does not hash it (0.2.8254).",
    "cardinality": "many_to_one",
    "phase": [
     "runtime"

@@ -9,9 +9,9 @@ class SpellIndexCrystal(Cleanable):
 
     Purpose:
         Custody crystals capture each spell's bind facts, but index GROUPING
-        (which parked members ride which lineage, and which member is
+        (which parked members sit in which SpellIndex, and which member is
         selected) is index-owned state. This twin records it so restore can
-        regroup staged members onto the right lineage and transfer of
+        regroup staged members onto the right SpellIndex and transfer of
         ownership can re-anchor a moved index under its new spellbook.
 
     Guidance:
@@ -45,9 +45,9 @@ class SpellIndexCrystal(Cleanable):
     Subsystem Context:
         One member of the crystal-twin family. Where the custody crystals (spell
         crystals) capture each spell's bind facts, this twin captures the
-        index-owned GROUPING state: which parked members ride which lineage and
+        index-owned GROUPING state: which parked members sit in which SpellIndex and
         which member is selected. Restore reads it to regroup staged members onto
-        the right lineage, and transfer-of-ownership uses it to re-anchor a moved
+        the right SpellIndex, and transfer-of-ownership uses it to re-anchor a moved
         index under its new spellbook. It rides under its owning
         `SpellbookCrystal`.
 

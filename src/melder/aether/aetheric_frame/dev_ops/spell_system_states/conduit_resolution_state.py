@@ -102,7 +102,7 @@ class ConduitResolutionState(Cleanable):
     System Context:
         This class exists because resolution validity is genuinely NOT a
         property of a spell - it is a property of a (spell, conduit) pair. The
-        same lineage can be perfectly resolvable in one conduit and gated in
+        same spell can be perfectly resolvable in one conduit and gated in
         another, because the conduits differ in linked contracts, cluster
         membership, and change-control dirty roots. A single global verdict
         would have to be the pessimistic intersection, which would gate healthy
@@ -575,12 +575,12 @@ class ConduitResolutionState(Cleanable):
             - Marks the state dirty with `change_reason` only when a verdict was
               actually removed; a miss changes nothing.
             - Does NOT notify the `RiskManager`. Forgetting is a change of
-              scope, not of verdict: lineage membership in the risk model is
+              scope, not of verdict: SpellIndex membership in the risk model is
               owned by `RiskManager.register_spell` / `unregister_spell`, which
               the Spellbook calls on bind and on removal and which recompute
               risk from the live verdict. A callback from here would leave a
               risky key behind in every conduit that never registers the
-              lineage again (a peer that resolved the id through a contract).
+              SpellIndex again (a peer that resolved the id through a contract).
 
         Args:
             spell_id:

@@ -15,15 +15,15 @@ class Detail(Cleanable):
     """
     Spell-level permission entry stored inside a Contract.
 
-    A `Detail` records which lineage is being shared, which version was
-    present when the contract was created, and what permission applies.
-    It is lineage-aware (uses `SpellIndex`) and direction-aware (via
-    `contract_type`). It also carries optional `sources`, which lets the ward
+    A `Detail` records which spell is being shared (the spell_id granted),
+    the SpellIndex that spell is organized under, and what permission
+    applies. It is direction-aware (via `contract_type`). It also carries
+    optional `sources`, which lets the ward
     distinguish details that were added for one specific root-driven dependency
     expansion from details that were granted independently.
 
     Attributes:
-        spell_index (SpellIndex): Lineage identity for the contracted spell.
+        spell_index (SpellIndex): The SpellIndex the contracted spell is organized under.
         spell_id (str): Spell id (SHA) captured at contract creation time.
         permissions (Permissions): Granted permission (read/create/block).
         contract_type (ContractTypes): Whether this entry was initiated
@@ -50,22 +50,22 @@ class Detail(Cleanable):
 
     Registration:
         MELDER KERNEL - guarded. Details are authored by `ConduitWard` when a
-        lineage is granted or borrowed; users read contract state through ward
+        spell is granted or borrowed; users read contract state through ward
         verbs rather than constructing entries.
 
     Subsystem Context:
         The VERSION-SNAPSHOT row of the ward contract model, paired with
-        `IndexDetail`, which subscribes to a whole lineage instead. Its three
+        `IndexDetail`, which subscribes to a whole SpellIndex instead. Its three
         enum fields are the vocabulary defined alongside it: `permissions`
         bounds capability, `contract_type` records whose perspective wrote the
         row, and `reason` records why it exists.
 
     System Context:
-        `sources` is what makes dependency-linked rollback correct. One lineage
+        `sources` is what makes dependency-linked rollback correct. One spell
         can be pulled into a contract by several roots at once, so removal
         cannot be a plain delete - the ward discards the departing root's id and
         retires the detail only when the set empties. Without it, unlinking one
-        root would revoke a lineage another root still depends on.
+        root would revoke a spell another root still depends on.
         This pairs directly with `DetailReason`: `dependency` rows are the ones
         carrying justifying sources, while a `manual` grant was never owned by
         any root and therefore survives root removal entirely.
@@ -100,9 +100,9 @@ class Detail(Cleanable):
         Initialize a contract detail.
 
         Args:
-            spell_index: Lineage identifier for the contracted spell.
+            spell_index: The SpellIndex the contracted spell is organized under.
             spell_id: Spell id (SHA) captured at contract creation time.
-            permissions: Permission granted to this lineage.
+            permissions: Permission granted for this spell.
             contract_type: Direction of the grant from the owning ward's view.
             reason: Why this detail exists.
             sources:
@@ -113,8 +113,8 @@ class Detail(Cleanable):
 
         Contract:
             `spell_id` records the spell id visible at creation time, while
-            `spell_index` remains the durable lineage anchor used for later
-            current-head resolution.
+            `spell_index` records the SpellIndex that spell is organized under,
+            which later reads use to find the index's selected spell.
 
         Returns:
             None.
@@ -160,7 +160,7 @@ class Detail(Cleanable):
         """
         Idempotently clear contract metadata and mark this detail cleaned.
 
-        Drops references to the lineage, version, permissions, and contract
+        Drops references to the SpellIndex, spell id, permissions, and contract
         direction so the object cannot be reused after cleanup.
 
         Returns:
@@ -192,17 +192,17 @@ class Detail(Cleanable):
 
     def has_spell(self, spell_id: str) -> bool:
         """
-        Check whether this lineage contains a specific version SHA.
+        Check whether this row's SpellIndex contains a specific spell id.
 
         Args:
             spell_id: SHA fingerprint to check within the index member history.
 
         Returns:
-            bool: True if the lineage advertises the version, else False; False once the
+            bool: True if the SpellIndex holds that spell id, else False; False once the
             owning Book has cleaned the index.
 
         Threading:
-            The index belongs to the Book that owns the lineage, which can clean it while
+            The index belongs to the Book that owns its spells, which can clean it while
             this detail still holds it, so membership is read through
             `SpellIndex._has_spell_unless_cleaned` under the index lock (0.2.8230; it read
             the member set unlocked, which raised AttributeError when the cleanup won).
@@ -216,7 +216,7 @@ class Detail(Cleanable):
 
         Contract:
             Source tagging is additive. Multiple roots may point at the same
-            detail when they transitively require the same contracted lineage.
+            detail when they transitively require the same contracted spell.
 
         Returns:
             None.
@@ -251,15 +251,15 @@ class IndexDetail(Cleanable):
     Index-level contract entry stored inside a Contract.
 
     Where a `Detail` snapshots a version, an `IndexDetail` subscribes a peer to a
-    whole SpellIndex (lineage). It is identified by the index's stable id
-    (`index_id`), and `selected_spell_id` tracks the lineage's CURRENT active
-    member -- it is updated as the owner notches, so the contract surface never has
+    whole SpellIndex. It is identified by the index's stable id
+    (`index_id`), and `selected_spell_id` tracks the index's CURRENT selected
+    spell -- it is updated as the owner notches, so the contract surface never has
     to be rewritten on a version change. The receiving conduit consumes the
     selected-id deltas; the index id is the durable subscription key.
 
     Attributes:
-        spell_index (SpellIndex): The contracted lineage (durable identity).
-        selected_spell_id (str): The lineage's current active member id (mutable).
+        spell_index (SpellIndex): The contracted SpellIndex (durable identity).
+        selected_spell_id (str): The index's currently selected spell id (mutable).
         permissions (Permissions): Granted permission (read/create/block).
         contract_type (ContractTypes): Direction of the grant from the owning
             ward's perspective.
@@ -293,9 +293,9 @@ class IndexDetail(Cleanable):
     System Context:
         This row is what decouples cross-conduit sharing from version churn.
         Because the borrower follows the INDEX rather than a captured member,
-        an owner can notch a lineage - repointing its active spell - and every
+        an owner can notch a SpellIndex - repointing its selected spell - and every
         peer sees the new head without any contract being renegotiated. The
-        alternative, re-granting each borrowed lineage on every notch, would
+        alternative, re-granting each borrowed SpellIndex on every notch, would
         make version movement O(peers) and would race with in-flight
         resolution.
         `SpellIndex` identity is a ULID and immutable, which is precisely what
@@ -333,9 +333,9 @@ class IndexDetail(Cleanable):
         Initialize an index-level contract detail.
 
         Args:
-            spell_index: The contracted lineage (durable identity / map key source).
-            selected_spell_id: The lineage's active member id at creation time.
-            permissions: Permission granted to this lineage.
+            spell_index: The contracted SpellIndex (durable identity / map key source).
+            selected_spell_id: The index's selected spell id at creation time.
+            permissions: Permission granted for this SpellIndex.
             contract_type: Direction of the grant from the owning ward's view.
             reason: Why this detail exists.
             sources: Optional root spell ids that currently justify this detail.
@@ -388,13 +388,13 @@ class IndexDetail(Cleanable):
 
     def update_selected(self, spell_id: str) -> None:
         """
-        Repoint the subscription to the lineage's new active member.
+        Repoint the subscription to the index's newly selected spell.
 
         Called when the owner notches the index, so the contract entry persists and
         only its current-head pointer moves.
 
         Args:
-            spell_id: The lineage's new active member id.
+            spell_id: The index's newly selected spell id.
 
         Returns:
             None.
@@ -428,17 +428,17 @@ class IndexDetail(Cleanable):
 
     def has_spell(self, spell_id: str) -> bool:
         """
-        Check whether the contracted lineage contains a specific version SHA.
+        Check whether the contracted SpellIndex contains a specific spell id.
 
         Args:
             spell_id: SHA fingerprint to check within the index member set.
 
         Returns:
-            bool: True if the lineage advertises the version, else False; False once the
+            bool: True if the SpellIndex holds that spell id, else False; False once the
             owning Book has cleaned the index.
 
         Threading:
-            The index belongs to the Book that owns the lineage, which can clean it while
+            The index belongs to the Book that owns its spells, which can clean it while
             this detail still holds it, so membership is read through
             `SpellIndex._has_spell_unless_cleaned` under the index lock (0.2.8230; it read
             the member set unlocked, which raised AttributeError when the cleanup won).

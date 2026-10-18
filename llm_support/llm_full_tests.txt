@@ -1,8 +1,8 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: tests
-SOURCE FINGERPRINT: 8992b09c0ac28a8a90d315609a209d3e63c3470c53cfcc3b352185f2bd57008e
-FILE COUNT: 1128
+SOURCE FINGERPRINT: 1087e3e0d5df5dcf1dde69319fe6f9bb4d4d79b4fe83e7db3ed2d57a9d03a651
+FILE COUNT: 1129
 
 ================================================================================
 BEGIN FILE: tests/_annotation_audit_support.py
@@ -118839,7 +118839,7 @@ END FILE: tests/integration/melder/conduit/test_conduit_integration_lookup_helpe
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/conduit/test_conduit_integration_managed_quantity_pool.py
-CONTENT SHA256: e1f4f7ef8fdacf6b1316563cc4ee81e93d82913290ddcb4afaa7bb0fe3798f9e
+CONTENT SHA256: 58448c2118ebcd69845d7f9ce412dfafae8793e99b6d463676088b220cbc709e
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -119023,9 +119023,10 @@ def test_a_post_conjure_bind_and_bind_inactive_each_get_their_pool() -> None:
         active_id = _bind_managed(root, OtherPooled, managed_spell_limit=16)
         parked_id = root.bind_inactive(
             spell=OtherPooled, spell_index=book.find_spell_by_spell_id(active_id).spell_index,
-            existence=Existence.managed_spell_quantity, permissions="create", disposal_method_names=["close"],
+            existence=Existence.managed_spell_quantity, permissions="create", disposal_method_names=[],
             managed_spell_limit=8,
         )
+        # No disposal names: a version of its own (0.2.8254: a managed spell's settings are not in its spell_id).
         active_pool = root._creations.get_managed_quantity(active_id)
         parked_pool = root._creations.get_managed_quantity(parked_id)
         assert (active_pool.limit, parked_pool.limit) == (16, 8)
@@ -119107,8 +119108,200 @@ def test_disposing_the_managed_spell_leaves_its_pool_in_place() -> None:
 END FILE: tests/integration/melder/conduit/test_conduit_integration_managed_quantity_pool.py
 ================================================================================
 ================================================================================
+BEGIN FILE: tests/integration/melder/conduit/test_conduit_integration_managed_settings_rebind.py
+CONTENT SHA256: b4adc7caf4cc1b7b0ee83aeb0d5a7f13d878957705c9aaf6e8692df13a471af7
+SOURCE ENCODING: utf-8
+================================================================================
+"""
+Integration: a managed spell's settings are not part of its spell_id
+(STORY-2026-10-17-release_routes_parked_version_objects_to_active_pool, part A).
+
+Through a real dynamic Spellbook and its root conduit, so `cleanup_spell` and a late `bind` run on a live root: one
+class bound managed at one address is one spell whatever its mode, limit, queue timeout or reset names (owner ruling,
+2026-10-17: "the bind call itself shouldn't impact the actual SHA256"). Staging it again with only other settings is
+refused as the same spell, with nothing changed. Changing its settings is `cleanup_spell`, then `bind`, which keeps the
+spell_id and the pool: the pool takes the new settings, keeps every object alive and counted, and an object leased
+before the change goes back to it. Run under `-X gil=0` and `-X gil=1`.
+"""
+from collections.abc import Iterator
+from typing import Any, Dict, List, Tuple
+
+import pytest
+
+from melder.aether.aether import Aether
+from melder.aether.conduit.conduit import Conduit
+from melder.aether.conduit.creations.managed_spell_quantity import ManagedSpellQuantity
+from melder.aether.conduit.creations.release_managed_spell import ReleaseManagedSpell
+from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spellbook import Spellbook
+from melder.utilities.custom_exceptions.managed_spell_exhausted_error import ManagedSpellExhaustedError
+from tests._frame_posture_test_support import apply_dynamic_defaults_for_spellbook_configuration
+
+pytestmark = pytest.mark.integration
+
+
+class Anchor:
+    """A plain unique binding so the root has an ordinary spell beside the managed one."""
+
+
+class Worker:
+    """The managed class: a disposal method that logs through the class."""
+
+    log: List[str] = []
+
+    def close(self) -> None:
+        """Record one disposal."""
+        Worker.log.append("close")
+
+
+def _reset_aether() -> None:
+    """Install a fresh Aether (and with it a fresh release registry) for Spellbook and Conduit."""
+    Aether._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+
+
+@pytest.fixture(autouse=True)
+def fresh_aether() -> Iterator[None]:
+    """A fresh Aether and an empty log per test."""
+    _reset_aether()
+    Worker.log = []
+    yield
+    _reset_aether()
+
+
+def _options(**settings: Any) -> Dict[str, Any]:
+    """
+    Bind options of Worker at its one address, with `settings` as its managed settings.
+
+    Args:
+        **settings: Managed bind options (mode, limit, timeout, reset names).
+
+    Returns:
+        Dict[str, Any]: Keyword arguments for `bind` and `bind_inactive`.
+    """
+    return dict(
+        spell=Worker, spellframe="workers", binding_name="worker", existence=Existence.managed_spell_quantity,
+        permissions="create", disposal_method_names=["close"], **settings,
+    )
+
+
+def _dynamic_root(**settings: Any) -> Tuple[Spellbook, Conduit, str]:
+    """
+    A conjured dynamic root with Anchor and Worker bound managed.
+
+    Args:
+        **settings: Worker's managed settings.
+
+    Returns:
+        Tuple[Spellbook, Conduit, str]: The Book, its root and Worker's spell_id.
+    """
+    configuration = SpellbookConfiguration(aether_frame="default")
+    apply_dynamic_defaults_for_spellbook_configuration(configuration)
+    configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
+    configuration.finalize()
+    book = Spellbook(aetheric_frame="default", configuration=configuration)
+    book.bind(spell=Anchor, existence=Existence.unique, permissions="create")
+    spell_id = book.bind(**_options(**settings))
+    root = book.conjure(dynamic=True, name="managed-settings")
+    return book, root, spell_id
+
+
+def _pool_of(root: Conduit, spell_id: str) -> ManagedSpellQuantity:
+    """
+    Return the pool the root's store holds for Worker.
+
+    Args:
+        root: The owning root.
+        spell_id: Worker's spell_id.
+
+    Returns:
+        ManagedSpellQuantity: The pool.
+    """
+    pool = root._creations.get_managed_quantity(spell_id)
+    assert pool is not None
+    return pool
+
+
+def _pooled_spell_ids() -> List[str]:
+    """Return the spell_id of every pool of Worker the release registry holds."""
+    return [entry["spell_id"] for entry in ReleaseManagedSpell().describe(Worker)]
+
+
+def test_restaging_a_settings_only_version_is_refused_as_the_same_spell() -> None:
+    """Worker limit 1 is active; Worker limit 2 on its index is the same spell: refused, and nothing changes."""
+    book, root, spell_id = _dynamic_root(managed_spell_mode="limited_quantity", managed_spell_limit=1)
+    try:
+        spell = book.find_spell_by_spell_id(spell_id)
+        index = spell.spell_index
+        with pytest.raises(RuntimeError, match="Spell ID collision detected"):
+            root.bind_inactive(
+                spell_index=index, **_options(managed_spell_mode="limited_quantity", managed_spell_limit=2),
+            )
+        assert index.spells_in_index() == {spell_id}
+        assert book.find_spell_by_spell_id(spell_id) is spell
+        pool = _pool_of(root, spell_id)
+        assert (pool.limit, pool.spell) == (1, spell)
+        assert _pooled_spell_ids() == [spell_id]
+    finally:
+        root.cleanup()
+        book.cleanup()
+
+
+def test_rebinding_with_new_managed_settings_recomposes_its_pool() -> None:
+    """cleanup_spell, then bind with limit 2: one spell_id and pool; it leases up to 2; the first object goes back."""
+    book, root, spell_id = _dynamic_root(managed_spell_mode="limited_quantity", managed_spell_limit=1)
+    try:
+        first = root.meld(spell_id=spell_id)
+        pool = _pool_of(root, spell_id)
+        root.cleanup_spell(spell=book.find_spell_by_spell_id(spell_id))
+        assert root.bind(**_options(managed_spell_mode="limited_quantity", managed_spell_limit=2)) == spell_id
+        assert _pool_of(root, spell_id) is pool
+        assert (pool.limit, pool.count) == (2, 1)
+        second = root.meld(spell_id=spell_id)
+        assert second is not first
+        assert pool.count == 2
+        with pytest.raises(ManagedSpellExhaustedError):
+            root.meld(spell_id=spell_id)
+        ReleaseManagedSpell().release(first)
+        assert (pool.count, pool.idle_count) == (2, 1)
+        assert root.meld(spell_id=spell_id) is first
+        assert _pooled_spell_ids() == [spell_id]
+    finally:
+        root.cleanup()
+        book.cleanup()
+
+
+def test_a_mode_change_keeps_every_object_alive_and_counted() -> None:
+    """elastic with three idle objects -> limited_quantity limit 1: nothing is destroyed at the rebind."""
+    book, root, spell_id = _dynamic_root()
+    try:
+        objects = [root.meld(spell_id=spell_id) for _ in range(3)]
+        for obj in objects:
+            ReleaseManagedSpell().release(obj)
+        pool = _pool_of(root, spell_id)
+        assert (pool.count, pool.idle_count) == (3, 3)
+        root.cleanup_spell(spell=book.find_spell_by_spell_id(spell_id))
+        assert root.bind(**_options(managed_spell_mode="limited_quantity", managed_spell_limit=1)) == spell_id
+        assert (pool.mode.name, pool.limit, pool.count, pool.idle_count, Worker.log) == (
+            "limited_quantity", 1, 3, 3, [],
+        )
+        leased = root.meld(spell_id=spell_id)
+        assert leased in objects
+        ReleaseManagedSpell().release(leased)
+        # The fixed capacity of 1 evicts the oldest idle object on each release above it.
+        assert (pool.count, pool.idle_count, Worker.log) == (2, 2, ["close"])
+    finally:
+        root.cleanup()
+        book.cleanup()
+================================================================================
+END FILE: tests/integration/melder/conduit/test_conduit_integration_managed_settings_rebind.py
+================================================================================
+================================================================================
 BEGIN FILE: tests/integration/melder/conduit/test_conduit_integration_managed_spell_quantity.py
-CONTENT SHA256: e018eec75dbb25ba830977a5d37812888094af97c426e1c2897b5adad8fa08f2
+CONTENT SHA256: d0153ae4edc0b64127f9c010086b07440991f6bc8b52cf4e1be005677a79b501
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -119151,6 +119344,13 @@ class Session:
     def __init__(self) -> None:
         """Record the build."""
         Session.built.append(self)
+
+
+class SessionNext(Session):
+    """
+    A second version's class: a managed spell's settings are not part of its spell_id (0.2.8254), so a version of
+    its own needs another class (or address, or disposal names).
+    """
 
 
 class Handler:
@@ -119306,14 +119506,14 @@ def test_a_notch_dispenses_from_the_new_versions_pool() -> None:
     try:
         active_id = _bind_session(root, managed_spell_limit=16)
         parked_id = root.bind_inactive(
-            spell=Session, spell_index=book.find_spell_by_spell_id(active_id).spell_index,
+            spell=SessionNext, spell_index=book.find_spell_by_spell_id(active_id).spell_index,
             existence=Existence.managed_spell_quantity, permissions="create", managed_spell_limit=8,
         )
         old = root.meld(spell_id=active_id)
         ReleaseManagedSpell().release(old)
         parked = book._get_owned_spell(parked_id)
         root.notch_spell(spell_index=parked.spell_index, spell=parked)
-        new = root.meld(spell=Session)
+        new = root.meld(spell=SessionNext)
         assert new is not old
         assert (_pool(root, active_id).idle_count, _pool(root, parked_id).count) == (1, 1)
     finally:
@@ -119398,7 +119598,7 @@ END FILE: tests/integration/melder/conduit/test_conduit_integration_managed_spel
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/conduit/test_conduit_integration_managed_transfer.py
-CONTENT SHA256: c7e41fa7ecf0e87bf3120f916d25d58393abcd2f426a6cf25f835e8a441053e6
+CONTENT SHA256: 09101ce50c0f4eb0b7f5052aeaa5845f31409c5f05b16acf2dafe49de2e84f7a
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -119440,6 +119640,9 @@ class Session:
     def close(self) -> None:
         """The disposal method: mark closed."""
         self.closed = True
+
+    def flush(self) -> None:
+        """A second disposal step the parked version names, so it is a version of its own (0.2.8254)."""
 
 
 class Keeper:
@@ -119519,7 +119722,9 @@ def _park_second_version(owner_book: Spellbook, owner: Conduit, spell_id: str, t
         owner_book: The owner Book.
         owner: The owner root.
         spell_id: The active version's id.
-        target_class: Session (limit 8) or Keeper (disposal "close").
+        target_class: Session (limit 8, disposal "close" and "flush": a managed spell's settings are not part
+            of its spell_id since 0.2.8254, so the disposal names make the second version) or Keeper (disposal
+            "close").
 
     Returns:
         Spell: The parked version.
@@ -119528,7 +119733,7 @@ def _park_second_version(owner_book: Spellbook, owner: Conduit, spell_id: str, t
     if target_class is Session:
         parked_id = owner.bind_inactive(spell=Session, spell_index=spell_index,
                                         existence=Existence.managed_spell_quantity, permissions="create",
-                                        disposal_method_names=["close"], managed_spell_limit=8)
+                                        disposal_method_names=["close", "flush"], managed_spell_limit=8)
     else:
         parked_id = owner.bind_inactive(spell=Keeper, spell_index=spell_index, existence=Existence.unique,
                                         permissions="create", disposal_method_names=["close"])
@@ -121164,7 +121369,7 @@ END FILE: tests/integration/melder/conduit/test_conduit_integration_public_api.p
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/conduit/test_conduit_integration_release_managed_spell.py
-CONTENT SHA256: cd815c294da9d9b383570546206ae0d025a2928c6704cbcee1d1ea7210ef2952
+CONTENT SHA256: 74131e95592d1a1bb37b7b67150737f19f14d96ccc6f11675f5ea864ab5f83d7
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -121369,7 +121574,12 @@ def test_root_teardown_unregisters_its_pools() -> None:
 
 
 def test_a_post_conjure_bind_registers_and_a_notch_moves_the_releases() -> None:
-    """Two versions of one index: the active one takes a same-class release; a notch moves it."""
+    """
+    Two versions of one index: the active one takes a same-class release; a notch moves it.
+
+    The parked version differs by its disposal names: a managed spell's settings are not part of its spell_id
+    (0.2.8254), so the same class with only another limit would be the same spell.
+    """
     book = _dynamic_book()
     book.bind(spell=Anchor, existence=Existence.unique, permissions="create")
     root = book.conjure(dynamic=True, name="managed-late")
@@ -121377,8 +121587,8 @@ def test_a_post_conjure_bind_registers_and_a_notch_moves_the_releases() -> None:
         active_id = _bind_managed(root, managed_spell_limit=16)
         parked_id = root.bind_inactive(
             spell=Leased, spell_index=book.find_spell_by_spell_id(active_id).spell_index,
-            existence=Existence.managed_spell_quantity, permissions="create", disposal_method_names=["close"],
-            managed_spell_limit=8,
+            existence=Existence.managed_spell_quantity, permissions="create",
+            disposal_method_names=["close", "reset"], managed_spell_limit=8,
         )
         active_pool, parked_pool = _pool_of(root, active_id), _pool_of(root, parked_id)
         assert sorted(entry["spell_id"] for entry in ReleaseManagedSpell().describe(Leased)) == sorted(
@@ -131558,7 +131768,7 @@ END FILE: tests/integration/melder/crystallizer/test_crystallizer_restore_integr
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/crystallizer/test_managed_spell_options_record_integration.py
-CONTENT SHA256: 45d8164fc4c9a054724d854cfe7f835f56cab79960e72d00855ce862bf2be1fd
+CONTENT SHA256: 03b2c26c9b9804a6abbb85b90fa41e5267bc60f81e1d6933b1ba2bc1bedb19a2
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -131566,8 +131776,9 @@ Integration: a managed spell's options survive a crystallizer record and restore
 (STORY-2026-10-15-managed_bind_options, S2; record 4.2.0).
 
 The crystal records the four options of a managed spell; the restore engine and the graft runner replay them
-through bind, so each rebuilt version gets the same normalized options - and therefore the same spell id - as the
-recorded one. An active member and a parked member are covered on both lanes. Managed spells are not melded here:
+through bind, so each rebuilt version gets the same normalized options, and the same spell id, as the recorded one.
+An active member and a parked member are covered on both lanes; the parked member differs by its disposal names,
+since a managed spell's settings are not part of its spell_id (0.2.8254). Managed spells are not melded here:
 dispensing arrives with STORY-2026-10-15-managed_dispense_codegen (S5).
 
 Runs only on 3.14t (melder package root import chain).
@@ -131675,7 +131886,7 @@ def _record_world() -> tuple:
     root = book.conjure(dynamic=True, name="root")
     parked_id = root.bind_inactive(
         spell=RecordedPool, spell_index=book.find_spell_by_spell_id(active_id).spell_index,
-        existence=Existence.managed_spell_quantity, **PARKED_OPTIONS,
+        existence=Existence.managed_spell_quantity, disposal_method_names=["flush"], **PARKED_OPTIONS,
     )
     return book, root, active_id, parked_id
 
@@ -140204,7 +140415,7 @@ END FILE: tests/integration/melder/spellbook/test_cache_runtime_integration.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/spellbook/test_cache_schema_version_integration.py
-CONTENT SHA256: 3432d9b299e5fefef8b4891ff7e935c961702f9e50040cc62f4ade8dfb7af63e
+CONTENT SHA256: a7d2cbb9ed8eaaa6aaab33e7b6a39bc1eaee1773b5678d12ac8c96f7d46697da
 SOURCE ENCODING: utf-8
 ================================================================================
 import logging
@@ -140240,6 +140451,7 @@ EXPECTED_CACHE_VERSION_HISTORY = {
     19: "executor_world_stamp",
     20: "annotation_kind_matching",
     21: "managed_spell_lease_codegen",
+    22: "managed_settings_leave_spell_id",
 }
 
 
@@ -140961,7 +141173,7 @@ END FILE: tests/integration/melder/spellbook/test_existing_instance_protocol_inj
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/spellbook/test_managed_bind_options_integration.py
-CONTENT SHA256: e2d63f9ef4103b01c8d544b0469cdc7f29750c83b7e31ed2623e8e11bcbf302c
+CONTENT SHA256: 9be36bbf6b3d92d70c7cafd0482bcd53429883dc1b39273a55ea35f3fe6821e5
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -141044,8 +141256,8 @@ def test_spellbook_bind_puts_the_options_on_the_spell() -> None:
         book.cleanup()
 
 
-def test_a_managed_binding_and_its_options_each_change_the_spell_id() -> None:
-    """The same class bound unique, managed by default, and managed with a limit gets three ids."""
+def test_a_managed_binding_changes_the_spell_id_and_its_settings_do_not() -> None:
+    """The same class bound unique and managed gets two ids; managed with a limit keeps the managed one (0.2.8254)."""
     ids = []
     for options in (
             {"existence": Existence.unique},
@@ -141057,7 +141269,8 @@ def test_a_managed_binding_and_its_options_each_change_the_spell_id() -> None:
             ids.append(book.bind(spell=PooledLogger, **options))
         finally:
             book.cleanup()
-    assert len(set(ids)) == 3
+    assert ids[0] != ids[1]
+    assert ids[1] == ids[2]
 
 
 def test_a_refused_binding_leaves_the_book_unchanged() -> None:
@@ -141090,7 +141303,7 @@ def test_a_managed_function_is_refused() -> None:
 
 
 def test_conduit_bind_and_bind_inactive_forward_the_options() -> None:
-    """A root binds a managed class after conjure, then parks a second version with other options."""
+    """A root binds a managed class after conjure, then parks a second version (other disposal names) with its own."""
     book = _dynamic_book()
     try:
         book.bind(spell=Steady, existence=Existence.unique)
@@ -141105,7 +141318,8 @@ def test_conduit_bind_and_bind_inactive_forward_the_options() -> None:
         )
         parked_id = root.bind_inactive(
             spell=PooledLogger, spell_index=active.spell_index, existence=Existence.managed_spell_quantity,
-            managed_spell_mode=ManagedSpellMode.elastic, managed_spell_limit=16, managed_spell_reset_methods=["reset"],
+            disposal_method_names=["flush"], managed_spell_mode=ManagedSpellMode.elastic, managed_spell_limit=16,
+            managed_spell_reset_methods=["reset"],
         )
         assert parked_id != active_id
         parked = book._get_owned_spell(parked_id)
@@ -193778,7 +193992,7 @@ END FILE: tests/unit/melder/aether/conduit/creations/test_creations_holder_child
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/conduit/creations/test_creations_managed_quantities.py
-CONTENT SHA256: 659a79f6ecf8bf6a589bd00f6c77d0e012584998f6f1569ff6f9da4be4b2d449
+CONTENT SHA256: d57f49e8f6a05c7477f392089788b6e10ac74a8d258cf1e03bee32a1ce418ee6
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -193791,6 +194005,7 @@ Scope:
     reusable clears that root stores never run (pools untouched). Since S4 (STORY-2026-10-15-release_managed_spell)
     the store registers every pool it takes with `ReleaseManagedSpell` and unregisters every pool it gives up.
 """
+import threading
 from collections.abc import Iterator
 from threading import RLock
 from typing import Any, List, Optional, Tuple
@@ -194174,6 +194389,45 @@ def test_a_store_cleaned_after_the_registry_is_gone_still_cleans(store: ConduitC
     ReleaseManagedSpell._reset_singleton_for_tests()
     store.cleanup()
     assert pool.cleaned is True
+
+
+def test_ensure_with_new_settings_keeps_the_pool_and_takes_the_settings(store: ConduitCreations) -> None:
+    """A rebind under the same spell_id with other settings meets the pool, which takes them (0.2.8254)."""
+    first = store.ensure_managed_quantity(_SpellStub(mode=ManagedSpellMode.limited_quantity, limit=1))
+    rebound = _SpellStub(mode=ManagedSpellMode.limited_quantity, limit=2)
+    second = store.ensure_managed_quantity(rebound)
+    assert second is first
+    assert (second.limit, second.spell) == (2, rebound)
+    assert [entry["spell_id"] for entry in ReleaseManagedSpell().describe(_Probe)] == ["managed-sid"]
+
+
+def test_ensure_rebinds_an_existing_pool_after_releasing_the_store_lock(
+        store: ConduitCreations,
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The rebind takes the pool's lock, so it runs with the store lock free: the store lock stays a leaf."""
+    store.ensure_managed_quantity(_SpellStub())
+    store_lock_free: List[bool] = []
+    original = ManagedSpellQuantity._rebind_spell
+
+    def _spy(pool: ManagedSpellQuantity, spell: Any) -> None:
+        probe: List[bool] = []
+
+        def _try_store_lock() -> None:
+            acquired = store._lock.acquire(timeout=1.0)
+            probe.append(acquired)
+            if acquired:
+                store._lock.release()
+
+        prober = threading.Thread(target=_try_store_lock)
+        prober.start()
+        prober.join()
+        store_lock_free.append(probe[0])
+        original(pool, spell)
+
+    monkeypatch.setattr(ManagedSpellQuantity, "_rebind_spell", _spy, raising=True)
+    store.ensure_managed_quantity(_SpellStub())
+    assert store_lock_free == [True]
 ================================================================================
 END FILE: tests/unit/melder/aether/conduit/creations/test_creations_managed_quantities.py
 ================================================================================
@@ -195229,7 +195483,7 @@ END FILE: tests/unit/melder/aether/conduit/creations/test_managed_spell_lease.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/conduit/creations/test_managed_spell_quantity.py
-CONTENT SHA256: 589fecf1fd15bf2d01005cdd353afc578a952d79b4016c3fda87e657344f9c33
+CONTENT SHA256: b1935cb655b8f68f22d5f17c279cf2378734aa0dee5142d7c24b3a18df4a9945
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -196145,12 +196399,139 @@ def test_a_rebind_moves_the_managed_class() -> None:
     pool._rebind_spell(rebound)
     assert pool.managed_class is _Redefined
     assert pool.spell is rebound
+
+
+# --- a rebind with other settings (STORY-2026-10-17-release_routes_parked_version_objects_to_active_pool) -----------
+
+def test_a_rebind_with_equal_settings_keeps_the_retention_state() -> None:
+    """Equal settings re-point the Spell and keep the stretched target, the count and every idle object."""
+    pool = _pool()
+    log: List[str] = []
+    objects = [_lease(pool, lambda label=f"o{n}": _Pooled(label, log)) for n in range(30)]
+    for obj in objects:
+        pool.put_back(obj)
+    stretched = pool.target_idle
+    assert stretched > pool.baseline_idle
+    rebound = _SpellStub()
+    pool._rebind_spell(rebound)
+    assert pool.spell is rebound
+    assert (pool.target_idle, pool.count, pool.idle_count, log) == (stretched, 30, 30, [])
+
+
+def test_a_rebind_with_a_higher_limit_lets_the_pool_build_again() -> None:
+    """limited_quantity 1 -> 2: the object out stays counted and one more can be built."""
+    pool = _pool(mode=ManagedSpellMode.limited_quantity, limit=1)
+    log: List[str] = []
+    first = _lease(pool, lambda: _Pooled("a", log))
+    with pytest.raises(ManagedSpellExhaustedError):
+        pool.reserve()
+    pool._rebind_spell(_SpellStub(mode=ManagedSpellMode.limited_quantity, limit=2))
+    assert (pool.limit, pool.count, pool.baseline_idle, pool.max_idle) == (2, 1, 2, 2)
+    second = _lease(pool, lambda: _Pooled("b", log))
+    assert second is not first
+    assert pool.count == 2
+    pool.put_back(first)
+    pool.put_back(second)
+    assert (pool.count, pool.idle_count, log) == (2, 2, [])
+
+
+def test_a_rebind_to_a_smaller_limit_keeps_every_object_alive_and_counted() -> None:
+    """limited_quantity 3 -> 1: nothing is destroyed at the rebind; releases above the new capacity evict."""
+    pool = _pool(mode=ManagedSpellMode.limited_quantity, limit=3)
+    log: List[str] = []
+    objects = [_lease(pool, lambda label=f"o{n}": _Pooled(label, log)) for n in range(3)]
+    pool._rebind_spell(_SpellStub(mode=ManagedSpellMode.limited_quantity, limit=1))
+    assert (pool.limit, pool.count, log) == (1, 3, [])
+    with pytest.raises(ManagedSpellExhaustedError):
+        pool.reserve()
+    for obj in objects:
+        pool.put_back(obj)
+    assert (pool.count, pool.idle_count) == (1, 1)
+    assert log == ["close:o0", "close:o1"]
+
+
+def test_a_rebind_from_elastic_to_limited_quantity_fixes_the_band_at_the_limit() -> None:
+    """elastic (limit 256) -> limited_quantity 4: baseline, ceiling and target all become 4."""
+    pool = _pool()
+    pool._rebind_spell(_SpellStub(mode=ManagedSpellMode.limited_quantity, limit=4))
+    assert (pool.mode, pool.limit, pool.baseline_idle, pool.max_idle, pool.target_idle) == (
+        ManagedSpellMode.limited_quantity, 4, 4, 4, 4,
+    )
+
+
+def test_a_rebind_to_elastic_sizes_the_band_like_a_new_elastic_pool() -> None:
+    """limited_quantity 2 -> elastic limit 100: the band a fresh elastic pool of limit 100 gets."""
+    pool = _pool(mode=ManagedSpellMode.limited_quantity, limit=2)
+    pool._rebind_spell(_SpellStub(mode=ManagedSpellMode.elastic, limit=100))
+    fresh = _pool(limit=100)
+    assert (pool.baseline_idle, pool.max_idle, pool.target_idle) == (
+        fresh.baseline_idle, fresh.max_idle, fresh.target_idle,
+    ) == (20, 100, 20)
+
+
+def test_a_rebind_that_raises_a_queue_limit_wakes_a_waiter_into_the_new_place() -> None:
+    """A queue lease waiting at limit 1 gets a place when a rebind raises the limit to 2."""
+    pool = _pool(mode=ManagedSpellMode.queue, limit=1, timeout=5.0)
+    log: List[str] = []
+    _lease(pool, lambda: _Pooled("a", log))
+    thread, outcome = _run_in_thread(pool.reserve)
+    _wait_for_waiter(pool)
+    assert thread.is_alive()
+    pool._rebind_spell(_SpellStub(mode=ManagedSpellMode.queue, limit=2, timeout=5.0))
+    thread.join(timeout=2.0)
+    assert not thread.is_alive()
+    assert outcome == {"result": None}
+    assert pool.count == 2
+
+
+def test_a_rebind_to_queue_makes_a_lease_at_the_limit_wait_for_a_release() -> None:
+    """limited_quantity -> queue: at the limit a lease waits for the next release instead of refusing."""
+    pool = _pool(mode=ManagedSpellMode.limited_quantity, limit=1)
+    log: List[str] = []
+    first = _lease(pool, lambda: _Pooled("a", log))
+    pool._rebind_spell(_SpellStub(mode=ManagedSpellMode.queue, limit=1, timeout=5.0))
+    thread, outcome = _run_in_thread(pool.reserve)
+    _wait_for_waiter(pool)
+    assert thread.is_alive()
+    pool.put_back(first)
+    thread.join(timeout=2.0)
+    assert not thread.is_alive()
+    assert outcome == {"result": first}
+
+
+def test_a_rebind_changes_the_reset_names_a_release_runs() -> None:
+    """A release after the rebind runs the new reset names."""
+    pool = _pool(resets=("reset",))
+    log: List[str] = []
+    obj = _lease(pool, lambda: _Pooled("a", log))
+    pool._rebind_spell(_SpellStub(resets=("flush",)))
+    pool.put_back(obj)
+    assert (pool.reset_method_names, log) == (("flush",), ["flush:a"])
+
+
+def test_describe_reports_the_settings_a_rebind_gave() -> None:
+    """The snapshot shows the current Spell's settings."""
+    pool = _pool(mode=ManagedSpellMode.limited_quantity, limit=1)
+    pool._rebind_spell(_SpellStub(mode=ManagedSpellMode.queue, limit=3, timeout=2.0, resets=("reset",)))
+    snapshot = pool.describe()
+    assert (snapshot["mode"], snapshot["limit"], snapshot["timeout_seconds"], snapshot["reset_method_names"]) == (
+        "queue", 3, 2.0, ["reset"],
+    )
+
+
+def test_a_rebind_of_a_torn_down_pool_changes_nothing() -> None:
+    """A pool torn down meanwhile keeps its tombstone settings and stays retired."""
+    pool = _pool(mode=ManagedSpellMode.limited_quantity, limit=1)
+    pool.cleanup()
+    pool._rebind_spell(_SpellStub(mode=ManagedSpellMode.limited_quantity, limit=5))
+    assert pool.limit == 1
+    assert pool._spell_unless_cleaned() is None
 ================================================================================
 END FILE: tests/unit/melder/aether/conduit/creations/test_managed_spell_quantity.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/conduit/creations/test_managed_spell_quantity_multithreaded.py
-CONTENT SHA256: 5af217fcbe20f0ce7bb2983e537d652033aa65f6f80c7cb632a24007e46a3be1
+CONTENT SHA256: 5ee5e08eb31bbd7f0be95092bd87d4aa067a2acf787e596cefff025a732a84ad
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -196391,6 +196772,79 @@ def test_releases_racing_a_queue_waiter_hand_over_each_object_once() -> None:
     assert _run_threads(8, _body) == []
     assert clashes == []
     assert pool.count == 1
+
+
+class _CountedWorker:
+    """A pooled object counting its builds and its disposals under one class lock."""
+
+    lock = threading.Lock()
+    built = 0
+    closed = 0
+
+    def __init__(self) -> None:
+        """Count one build."""
+        with _CountedWorker.lock:
+            _CountedWorker.built += 1
+
+    def reset(self) -> None:
+        """Nothing to clear."""
+
+    def close(self) -> None:
+        """Count one disposal."""
+        with _CountedWorker.lock:
+            _CountedWorker.closed += 1
+
+
+def test_rebinds_racing_leases_and_releases_keep_the_count_equal_to_the_objects_alive() -> None:
+    """
+    A thread that keeps changing the limit (3 <-> 5) under eight leasing threads never breaks the count
+    (STORY-2026-10-17-release_routes_parked_version_objects_to_active_pool): once everything is back it equals the
+    objects built and not destroyed, every one of them idle, and never more than the larger limit.
+    """
+    _CountedWorker.built = 0
+    _CountedWorker.closed = 0
+    pool = ManagedSpellQuantity(spell=_SpellStub(ManagedSpellMode.limited_quantity, 3), owner_conduit_id="root")
+    start = threading.Barrier(9)
+    errors: List[BaseException] = []
+    errors_lock = threading.Lock()
+
+    def _leaser() -> None:
+        start.wait()
+        try:
+            for _ in range(300):
+                try:
+                    obj = pool._idle.pop()
+                except IndexError:
+                    try:
+                        served = pool.reserve()
+                    except ManagedSpellExhaustedError:
+                        continue
+                    obj = _CountedWorker() if served is None else served
+                pool.put_back(obj)
+        except BaseException as error:
+            with errors_lock:
+                errors.append(error)
+
+    def _rebinder() -> None:
+        start.wait()
+        try:
+            for n in range(200):
+                pool._rebind_spell(_SpellStub(ManagedSpellMode.limited_quantity, 5 if n % 2 == 0 else 3))
+        except BaseException as error:
+            with errors_lock:
+                errors.append(error)
+
+    threads = [threading.Thread(target=_leaser, daemon=True) for _ in range(8)]
+    threads.append(threading.Thread(target=_rebinder, daemon=True))
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join(60.0)
+        assert not thread.is_alive(), "a worker hung"
+    assert errors == []
+    assert pool.count == _CountedWorker.built - _CountedWorker.closed
+    assert pool.count == pool.idle_count
+    assert pool.count <= 5
 ================================================================================
 END FILE: tests/unit/melder/aether/conduit/creations/test_managed_spell_quantity_multithreaded.py
 ================================================================================
@@ -292854,7 +293308,7 @@ END FILE: tests/unit/melder/spellbook/bind/test_bind.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py
-CONTENT SHA256: 8ea8f99219051d725dc6cbe9e47c7e27253dc848bb2d52d9a65dca80b22fdb01
+CONTENT SHA256: 3b84ec93ca4f9d407def141ec0c7f973af151cfd8e3b2572c10cb747233a9b2b
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -292863,8 +293317,10 @@ Unit: the four managed bind options at the Bind seam (STORY-2026-10-15-managed_b
 `Existence.managed_spell_quantity` bindings carry `managed_spell_mode`, `managed_spell_limit`,
 `managed_spell_timeout_seconds` and `managed_spell_reset_methods`. Bind normalizes them once - after the profile,
 before the fingerprint - refuses every malformed combination before a Spell exists, hands the normalized values
-to the Spell, and adds one fingerprint part for managed bindings only. Every other binding keeps its spell id
-byte for byte: the literal ids below were computed on 0.2.8241, before the options existed
+to the Spell, and never hashes them: they are settings of the one spell, not part of its spell_id (owner ruling,
+2026-10-17: "the bind call itself shouldn't impact the actual SHA256"; 0.2.8242-0.2.8253 appended a `managed:`
+part, STORY-2026-10-17-release_routes_parked_version_objects_to_active_pool removed it). Every other binding keeps
+its spell id byte for byte: the literal ids below were computed on 0.2.8241, before the options existed
 (context_compass/artifacts/managed_spell_quantity_20261015/runs/s2_golden_ids_pre.txt).
 """
 import hashlib
@@ -293337,30 +293793,15 @@ def _managed_key(part: str) -> str:
     return hashlib.sha256("::".join(parts).encode("utf-8")).hexdigest()
 
 
-def test_the_managed_part_is_appended_after_the_existence_in_its_documented_form() -> None:
-    """`managed:<mode>:<limit>:<timeout>:<names>` closes the hash input of a managed binding."""
-    assert _managed_key("") == GOLDEN_MANAGED_WITHOUT_PART
+def test_a_managed_binding_hashes_the_inputs_every_binding_hashes() -> None:
+    """No settings part: a managed id is the documented key of its profile, name and existence (0.2.8254)."""
     assert Bind.sha256_profile(
         golden_class_profile(), spell_name="Pooled", existence=Existence.managed_spell_quantity,
-        managed_spell_mode=ManagedSpellMode.elastic, managed_spell_limit=256,
-    ) == _managed_key("managed:elastic:256::")
-    assert Bind.sha256_profile(
-        golden_class_profile(), spell_name="Pooled", existence=Existence.managed_spell_quantity,
-        managed_spell_mode=ManagedSpellMode.queue, managed_spell_limit=3, managed_spell_timeout_seconds=0.5,
-        managed_spell_reset_methods=("clear", "reset"),
-    ) == _managed_key("managed:queue:3:0.5:clear,reset")
+    ) == _managed_key("") == GOLDEN_MANAGED_WITHOUT_PART
 
 
-def test_without_a_mode_no_managed_part_is_hashed() -> None:
-    """The part needs a mode: limit, timeout and names alone leave the id as it was."""
-    assert Bind.sha256_profile(
-        golden_class_profile(), spell_name="Pooled", existence=Existence.managed_spell_quantity,
-        managed_spell_limit=9, managed_spell_timeout_seconds=1.0, managed_spell_reset_methods=("reset",),
-    ) == GOLDEN_MANAGED_WITHOUT_PART
-
-
-def test_each_managed_option_changes_the_spell_id(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Mode, limit, timeout and reset names (and their order) each move the id; the default differs from 0.2.8241."""
+def test_managed_settings_do_not_change_the_spell_id(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Mode, limit, timeout and reset names (in any order) give one spell_id: the managed id with no settings."""
     variants = [
         {},
         {"managed_spell_limit": 8},
@@ -293371,9 +293812,10 @@ def test_each_managed_option_changes_the_spell_id(monkeypatch: pytest.MonkeyPatc
         {"managed_spell_reset_methods": ["reset", "clear"]},
         {"managed_spell_reset_methods": ["clear", "reset"]},
     ]
-    ids = [bind_with(monkeypatch, Existence.managed_spell_quantity, **variant).kwargs["spell_id"] for variant in variants]
-    assert len(set(ids)) == len(ids)
-    assert GOLDEN_MANAGED_WITHOUT_PART not in ids
+    ids = {bind_with(monkeypatch, Existence.managed_spell_quantity, **variant).kwargs["spell_id"] for variant in variants}
+    assert ids == {
+        Bind.sha256_profile(golden_class_profile(), spell_name="PooledTarget", existence=Existence.managed_spell_quantity)
+    }
 
 
 def test_equal_timeouts_hash_alike(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -293426,21 +293868,24 @@ def test_leftover_keywords_still_flow_beside_the_options(monkeypatch: pytest.Mon
 
 
 def test_spell_id_inspector_matches_the_bind_fingerprint_for_a_managed_class() -> None:
-    """The read-only inspector normalizes the options exactly as bind does."""
+    """The read-only inspector checks the settings as bind does and, like bind, does not hash them."""
     profile = SpellGeneralProfile.create_from_target(PooledTarget)
     try:
         expected = Bind.sha256_profile(
             profile.binding_profile, spell_name="PooledTarget", existence=Existence.managed_spell_quantity,
-            managed_spell_mode=ManagedSpellMode.queue, managed_spell_limit=2, managed_spell_timeout_seconds=1.5,
-            managed_spell_reset_methods=("reset",),
         )
     finally:
         profile.cleanup()
-    assert Bind.spell_id_inspector(
-        PooledTarget, spell_name="PooledTarget", existence=Existence.managed_spell_quantity,
-        managed_spell_mode="queue", managed_spell_limit=2, managed_spell_timeout_seconds=1.5,
-        managed_spell_reset_methods=["reset"],
-    ) == expected
+    for settings in (
+            {},
+            {
+                "managed_spell_mode": "queue", "managed_spell_limit": 2, "managed_spell_timeout_seconds": 1.5,
+                "managed_spell_reset_methods": ["reset"],
+            },
+    ):
+        assert Bind.spell_id_inspector(
+            PooledTarget, spell_name="PooledTarget", existence=Existence.managed_spell_quantity, **settings,
+        ) == expected
 
 
 def test_spell_id_inspector_refuses_what_bind_refuses() -> None:

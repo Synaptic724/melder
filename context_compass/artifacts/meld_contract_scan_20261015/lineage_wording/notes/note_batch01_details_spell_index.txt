@@ -1,0 +1,29 @@
+- DATETIME: {ts}
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: The lineage wording sweep started on the owner's direction ("hand fix them not some ... grep swap ... only
+    change the ones related to spellindex"). Inventory of the tree before any edit (tokenized .py, every NAME,
+    STRING and COMMENT token holding "lineage"): src 281 NAME, 903 STRING, 94 COMMENT; tests 823, 1060, 35; system
+    docs 216 lines; graph descriptors 243; UX 40; docs 12; README 3, agent guides 4, release note 7. Each occurrence
+    is read in its context and classified: the SpellIndex or its member set (rewritten by hand) or the conduit scope
+    tree (kept: `unique_per_conduit_lineage`, lesser lineage, lineage root, the ward's lineage walk). Batch 01 is
+    applied: 46 hand-written line edits in details.py (22 places) and spell_index.py (9 places), each naming its file,
+    line and exact old text, replaced one line for one line (file lengths unchanged, 497 and 583), no identifier
+    renamed. `Detail` now says it records the granted spell_id and the SpellIndex that spell is organized under;
+    `IndexDetail` follows the index's selected spell; SpellIndex's own docstrings say the index organizes versions
+    and selects one. A case-insensitive search for "lineage" in both files finds nothing. The src change takes its
+    notch, release-note line and rebuild at the end of the sweep.
+  EVIDENCE:
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/inventory_lineage.py:1-103
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/runs/lineage_inventory_before.jsonl:1-3724
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/apply_line_edits.py:1-78
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/edits/batch01_details_spell_index.py:1-145
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/runs/batch01_apply.txt:1-194
+  - src/melder/aether/conduit/conduit_ward/contract/details.py:17-442
+  - src/melder/aether/spellbook/bind/spell_index.py:47-483
+  IMPACT: The two files whose docstrings defined the wrong reading now say what the owner ruled. Nothing is
+    committed (the owner commits); no test reads these docstrings.
+  NEXT: Classify and hand-write batch 02 (spell.py, spellbook.py), after checking which files melder_0's S6 lane holds.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8

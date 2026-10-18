@@ -3634,7 +3634,7 @@ class FrameViewer(Cleanable):
         Purpose:
             Make visible ambiguity explicit at the frame-local surface so the
             operator can see where multiple visible spells share the same
-            binding name, spell name, lineage, or spellframe.
+            binding name, spell name, spell index, or spellframe.
 
         Contract:
             - FACADE PASS-THROUGH to `ViewFrame.describe_visible_collisions(...)`. Filtering, ordering and raise
@@ -6483,7 +6483,7 @@ class FrameViewer(Cleanable):
 
         Purpose:
             Give the operator one direct spell crosswalk from the spell to its
-            conduit, root conduit, peer conduits, spellbook, lineage, and
+            conduit, root conduit, peer conduits, spellbook, spell index, and
             visible sibling spells.
 
         Contract:

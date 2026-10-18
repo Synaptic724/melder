@@ -21,13 +21,13 @@ class Contract(Cleanable):
     Bidirectional contract between two conduit wards.
 
     A Contract is symmetric: both wards keep their own Detail maps describing
-    which lineages are shared and with what permissions. Each side can grant
+    which spells and spell indexes are shared and with what permissions. Each side can grant
     or revoke independently; the contract object simply tracks both views.
 
     In practice this object is the shared storage for:
         - per-ward spell/detail maps
         - the relationship between the two participating wards
-        - lineage-aware source tagging used by dependency-linked rollback
+        - root-spell source tagging used by dependency-linked rollback
 
     Attributes:
         _ward_a / _ward_b: The two participating wards.
@@ -68,7 +68,7 @@ class Contract(Cleanable):
         The two detail families exist because a contract must survive VERSION
         MOVEMENT. A `Detail` captures the spell_id visible at contract time,
         which is a point-in-time answer; an `IndexDetail` instead subscribes to
-        a `SpellIndex`, so the borrower follows the lineage HEAD rather than a
+        a `SpellIndex`, so the borrower follows the index's selected spell rather than a
         frozen version. That is what lets a notch repoint the active member of
         an index without silently stranding every peer that borrowed it.
         Keeping both is deliberate: the captured id preserves what was actually
@@ -118,7 +118,7 @@ class Contract(Cleanable):
         self._details_a: Dict[str, Detail] = {} # Borrowed from conduit b
         self._details_b: Dict[str, Detail] = {} # Borrowed from conduit a
 
-        # Index-link details: per-ward maps of index_id -> IndexDetail (lineage
+        # Index-link details: per-ward maps of index_id -> IndexDetail (SpellIndex
         # subscriptions; the borrower follows the index, not a captured version).
         self._index_details_a: Dict[str, IndexDetail] = {} # Borrowed from conduit b
         self._index_details_b: Dict[str, IndexDetail] = {} # Borrowed from conduit a
@@ -271,7 +271,7 @@ class Contract(Cleanable):
         detail_map = self._get_detail_map(ward)
         existing = detail_map.get(contract_detail.spell_id)
         if existing is not None:
-            # Merge sources if this lineage already exists with the same permissions.
+            # Merge sources if this spell_id already has a Detail with the same permissions.
             if existing.permissions != contract_detail.permissions:
                 raise RuntimeError(
                     f"Detail already exists for spell_id {contract_detail.spell_id} with different permissions "

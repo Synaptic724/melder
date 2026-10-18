@@ -228,7 +228,7 @@ descriptors and reassemble.
 
 ## src/melder/__version__.py
 
-- source_sha256: `050126fe3a5c37157ef732e40e1671a6b7764451d089fc00d09145e0b340fa5d`
+- source_sha256: `c5217944ac31c0a985dc0e703242f98db64d329e71c18d2bb7a49a3972f13f2d`
 - nodes: 1
 
 ### Nodes
@@ -5181,7 +5181,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/creations/creations.py
 
-- source_sha256: `3dc1a77d4e0fee211408c80560ce2023481f98a8072ba085075352327211d382`
+- source_sha256: `e030e3c34c2ae9323ec8ec26256e2cb4ceb3323062f027d4c0bafb61970a9275`
 - nodes: 4
 
 ### Nodes
@@ -5238,7 +5238,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - keeps the store lock a leaf around dict work; refuses (and disposes) publication into a store cleaned during the build
   - purges a whole selected target or one supplied creation under the slot's build lock then the store lock, with paired registry removal and shared disposal helpers; no scope discovery or authorization
   - records a just-published slotted holder's disposal-bearing many children with the holder (adopt_children, 0.2.8238): moves them out of their spells' buckets into the holder's HolderDisposalEntry, so purge, extract/restore and whole-store disposal reach them through the holder's key with one dict read; a many purge or live-creation probe of a child's spell counts only children no holder adopted
-  - keeps one ManagedSpellQuantity per managed version a root store owns in _managed_quantities, a map of its own, so lookups, live probes and purge never meet a pool: ensure_managed_quantity composes it at an owner stamp (idempotent; a rebind re-points it), get_managed_quantity is a lock-free read, discard_managed_quantity gives up an identity-checked pool without cleaning it (0.2.8243-0.2.8246)
+  - keeps one ManagedSpellQuantity per managed version a root store owns in _managed_quantities, a map of its own, so lookups, live probes and purge never meet a pool: ensure_managed_quantity composes it at an owner stamp (idempotent) and, when a definition bound again under the same spell_id meets the pool its earlier definition left, hands it the new Spell after releasing the store lock (ManagedSpellQuantity._rebind_spell takes the new settings, 0.2.8254), get_managed_quantity is a lock-free read, discard_managed_quantity gives up an identity-checked pool without cleaning it (0.2.8243-0.2.8246)
   - cleans its pools first at cleanup, newest first, before the disposable registry - a pool is composed at conjure, before the uniques its objects hold - their failures joining the store's group; extract/restore carry a pool as a managed row, a restore cleaning the pool it replaced after the lock; purge returns 0 for a managed spell (0.2.8243)
   - registers every pool it takes and unregisters every pool it gives up with ReleaseManagedSpell, outside the store lock, so the registry holds exactly the pools live stores hold (0.2.8244)
 - owns_state: `_creations`, `_disposable_creations`, `_slot_guards`, `_owner_conduit_id`, `_id`, `_lock`, `_managed_quantities`
@@ -5324,7 +5324,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/creations/managed_spell_quantity.py
 
-- source_sha256: `ce7a1e5a4fec8d711a85c4873a09335536dbf63d949234aaffb70588a2b961c0`
+- source_sha256: `55ed82013f5a3893368e16f241359c02b0d8904e7bb97d95e72d2ac95346b0b7`
 - nodes: 2
 
 ### Nodes
@@ -5348,12 +5348,13 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - keeps the idle objects in the base pool's _idle deque (newest last); the emitted plan leases with an inline _idle.pop() and only an empty pool calls reserve() - the pool never builds (create_object and acquire refuse)
   - reserve(): elastic counts a place and records pressure (_note_miss); limited_quantity counts a place below its limit, else serves an object released since the plan's pop, else raises ManagedSpellExhaustedError; queue waits on its condition for a place or a released object until a deadline taken once at the call, then raises it; a torn-down pool raises RuntimeError
   - put_back(obj): runs the reset names in order outside every lock; a raising reset destroys the object and propagates (one ExceptionGroup when its disposal fails too); otherwise appends the object, wakes one queue waiter and, above baseline_idle, runs the base pool's elastic band (stretch, timed decay, trim of the oldest idle objects destroyed outside the lock)
-  - is sized by mode: elastic keeps baseline min(20, limit) and at most limit idle with the kernel pools' retention defaults; limited_quantity and queue are fixed at their limit, so count never exceeds it and nothing is evicted
+  - is sized by mode: elastic keeps baseline min(20, limit) and at most limit idle with the kernel pools' retention defaults; limited_quantity and queue are fixed at their limit, so count never exceeds it and nothing is evicted while that limit stands - after a rebind to a lower limit (r9) the objects alive stay counted above it, and each release that leaves more idle objects than the new limit evicts the oldest one
   - keeps no reference to an object that is out (identity is not tracked): only id(obj) keys the record of the disposal-bearing many children adopt() records for it, and a record whose id was reused moves to the orphaned records
   - abandon(children, error): a failed build gives its place back, wakes one waiter and disposes the children it built, each failure added as a note on the build's error
   - destroy_object: the Spell's disposal methods, then the object's recorded children newest first, count down by one and one waiter woken; disposal never runs on a plain release
   - cleanup(): under the lock drains the idle objects, swaps the children maps for empty ones, deletes the borrowed Spell and wakes every waiter; outside it disposes the idle objects with their children, then the children of objects still out, then the orphans, failures as one ExceptionGroup; other fields stay as tombstones
   - describe(): the base retention keys without in_use_count, plus identity, policy, count, out_count and children_recorded
+  - _rebind_spell(spell): a definition bound again under the same spell_id (cleanup_spell, then bind) meets this pool through Creations.ensure_managed_quantity after the store lock is released; under the pool lock it re-points the Spell, the class key and the disposal list and, when a setting differs, takes the new mode, limit, queue timeout and reset names, sizes the retention band as a fresh pool of those settings (elastic: baseline min(20, limit), ceiling the limit; limited_quantity and queue: both the limit; the target back at the baseline) and wakes every waiter to re-check; equal settings (an ownership transfer's restamp) only re-point; nothing is destroyed - the count stays the objects alive (0.2.8254)
 - owns_state: `_count`, `_condition`, `_children_by_object`, `_orphaned_children`, `_managed_class`, `_mode`, `_limit`, `_timeout_seconds`, `_reset_method_names`, `_notify_on_return`, `_spell (borrowed)`, `_disposal_method_names (borrowed)`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `abandon`, `acquire`, `adopt`, `binding_name`, `cleanup`, `count`, `create_object`, `describe`, `destroy_object`, `disposal_method_names`, `frame_name`, `limit` (+11 more)
@@ -5367,7 +5368,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 | `melder.aether.conduit.creations.managed_spell_quantity.ManagedSpellQuantity` | uses | `melder.aether.spellbook.existence.managed_spell_mode.ManagedSpellMode` | many_to_one | init,runtime | authored |
 | `melder.aether.conduit.creations.managed_spell_quantity.ManagedSpellQuantity` | creates | `melder.utilities.custom_exceptions.managed_spell_exhausted_error.ManagedSpellExhaustedError` | one_to_many | runtime | authored |
 
-- `melder.aether.conduit.creations.managed_spell_quantity.ManagedSpellQuantity` -> `melder.aether.spellbook.spell.Spell`: The pool reads the managed options and the disposal list from its version's Spell at construction and keeps the Spell borrowed (a rebind under the same id re-points it); it never cleans it.
+- `melder.aether.conduit.creations.managed_spell_quantity.ManagedSpellQuantity` -> `melder.aether.spellbook.spell.Spell`: The pool reads the managed options and the disposal list from its version's Spell at construction and keeps the Spell borrowed (a rebind under the same spell_id re-points it and gives the pool that Spell's settings, 0.2.8254); it never cleans it.
 - `melder.aether.conduit.creations.managed_spell_quantity.ManagedSpellQuantity` -> `melder.aether.spellbook.existence.managed_spell_mode.ManagedSpellMode`: The mode decides what a miss does - build, refuse or wait - and how the pool is sized.
 - `melder.aether.conduit.creations.managed_spell_quantity.ManagedSpellQuantity` -> `melder.utilities.custom_exceptions.managed_spell_exhausted_error.ManagedSpellExhaustedError`: reserve() raises ManagedSpellExhaustedError.limited or .queue when its mode refuses a lease; nothing has been built by then.
 
@@ -6123,7 +6124,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/bind/bind.py
 
-- source_sha256: `745bd68927d0bbd712d6507c7fa7f3580f0343d221787c9c2e0d3430605ab388`
+- source_sha256: `921153b06464cbe1a04e41e76d7323d0a7fff97d5b58a32bca86101a76d23286`
 - nodes: 2
 
 ### Nodes
@@ -6156,7 +6157,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - classifies the spellframe before the structural check (_classify_spellframe): None -> SpellframeKind.none, str -> category, a typing.Protocol -> contract with the Protocol recorded; any other class or object is refused with a TypeError naming the two valid forms (0.2.8222, Breaking)
   - validates binding policy and spellframe semantics, running the direct-public-member Protocol check only for a contract frame
   - hands the Spell its spellframe_kind and implemented_protocols; the fingerprint does not hash the kind
-  - validates and normalizes a managed binding's four options once (_normalize_managed_options: classes only, the mode defaulting to elastic, the limit, the queue-only timeout and callable reset names; every refusal before a Spell or index exists), appends one managed:<mode>:<limit>:<timeout>:<reset names> part to a managed binding's fingerprint only, so no other spell id moves, and hands the normalized values to the Spell (0.2.8242)
+  - validates and normalizes a managed binding's four options once (_normalize_managed_options: classes only, the mode defaulting to elastic, the limit, the queue-only timeout and callable reset names; every refusal before a Spell or index exists) and hands the normalized values to the Spell as its settings (0.2.8242); the fingerprint never reads them, so one class bound managed at one address with one disposal list has one spell_id whatever its settings, and spell_id_inspector checks them as bind does and hashes without them (0.2.8254; 0.2.8242-0.2.8253 appended a managed:<mode>:<limit>:<timeout>:<reset names> part)
 - owns_state: `_spellbook`, `_spell_examiner`, `_lifecycle_hooks`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `add_hooks`, `bind`, `capture_hooks`, `cleanup`, `clear_hooks`, `execute_post_hooks`, `get_hook_names`, `sha256_profile`, `spell_id_inspector`
@@ -6182,7 +6183,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - `melder.aether.spellbook.bind.bind.Bind` -> `melder.aether.spellbook.spell.Spell`: Bind turns one examined binding target into the canonical Spell runtime record for Spellbook registration.
 - `melder.aether.spellbook.bind.bind.Bind` -> `melder.aether.spellbook.spell_compiler.spell_examiner.spell_examiner.SpellExaminer`: Bind owns the SpellExaminer used to build registration profiles.
 - `melder.aether.spellbook.bind.bind.Bind` -> `melder.aether.spellbook.spell_types.spell_types.SpellType`: Bind resolves and stores SpellType to classify each registered spell family.
-- `melder.aether.spellbook.bind.bind.Bind` -> `melder.aether.spellbook.existence.managed_spell_mode.ManagedSpellMode`: Bind normalizes a managed binding's mode to a ManagedSpellMode member before hashing it into the spell id.
+- `melder.aether.spellbook.bind.bind.Bind` -> `melder.aether.spellbook.existence.managed_spell_mode.ManagedSpellMode`: Bind normalizes a managed binding's mode to a ManagedSpellMode member and hands it to the Spell as a setting; the spell_id does not hash it (0.2.8254).
 
 ### Edge candidates (7, unconfirmed)
 
@@ -6429,7 +6430,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/existence/managed_spell_mode.py
 
-- source_sha256: `2034412f62916afb7816a495aa70ec9696354f279d99796b3792a26b3a6f6f01`
+- source_sha256: `565aaa0bb67eb46571a2bfec118638c31a8d60e61993113089f469cf2d257137`
 - nodes: 2
 
 ### Nodes
@@ -6453,7 +6454,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - elastic: a miss always builds; managed_spell_limit is the most idle objects kept (default 256), trimmed like the kernel pools' idle objects; never refuses
   - limited_quantity: managed_spell_limit (required) is the most objects alive at once, idle plus out; a miss at the limit refuses before building anything
   - queue: like limited_quantity, but a miss at the limit waits up to managed_spell_timeout_seconds (required) for a release, which serves the waiter, and refuses at the deadline
-  - identity data: with the limit, the timeout and the reset names it is hashed into a managed spell's id, recorded by name in its crystal and replayed by restore and graft; __str__ returns the bare name
+  - a setting, not identity: with the limit, the timeout and the reset names it is not part of a managed spell's spell_id (0.2.8254; 0.2.8242-0.2.8253 hashed them), so changing it is cleanup_spell and a new bind, which keeps the spell_id and the pool; recorded by name in its crystal and replayed by restore and graft; __str__ returns the bare name
 - owns_state: `elastic`, `limited_quantity`, `queue`
 - phases: `init`, `runtime`
 
@@ -18303,7 +18304,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/crystallizer/crystals/spell_crystal.py
 
-- source_sha256: `044de292ef544223d57ae73d37f98c21e122edf6d888f2d36eb6b1b23b9fcc3d`
+- source_sha256: `a8f20e27bcc7d1081733d3487739234120d7703c1f8abcb25ceaebd680067268`
 - nodes: 2
 
 ### Nodes
@@ -18332,7 +18333,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - captures native per-version resolution capability as a detached replay value
   - keys its record entry: custody_key is the spell id, or "<spell_id>@<frame>" when built with per_frame_custody (the frame read from spell.aetheric_frame)
   - records the frame kind (spellframe_kind) and, for a contract, the Protocol's module and qualname (spellframe_module, spellframe_qualname) so restore and graft rebind the Protocol rather than a same-named category (0.2.8222, record 4.1.0)
-  - records a managed spell's options as plain values - the mode by name, the limit, the queue timeout and the reset names - only for managed_spell_quantity, so every other payload is unchanged (record 4.2.0, 0.2.8242); managed_spell_options returns them, and the static managed_bind_options(payload) is the one reader the restore and graft lanes replay them through
+  - records a managed spell's options as plain values - the mode by name, the limit, the queue timeout and the reset names - only for managed_spell_quantity, so every other payload is unchanged (record 4.2.0, 0.2.8242); managed_spell_options returns them, and the static managed_bind_options(payload) is the one reader the restore and graft lanes replay them through, as settings: the replayed bind's spell_id does not depend on them (0.2.8254)
 - owns_state: `_analysis (one carried CrystalAnalysisResult)`, `_disposal_method_names (ordered recorded values)`, `_frame_name, _custody_key (the record key)`, `_spellframe_kind, _spellframe_module, _spellframe_qualname (recorded frame kind)`, `_managed_spell_mode_name, _managed_spell_limit, _managed_spell_timeout_seconds, _managed_spell_reset_methods (recorded managed options)`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `binding_name`, `cleanup`, `compose_custody_key`, `custody_key`, `describe`, `disposal_method_names`, `existence_name`, `frame_name`, `id`, `managed_bind_options`, `managed_spell_options`, `module_targets` (+29 more)
@@ -25990,7 +25991,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/utilities/caching_system/caching_system.py
 
-- source_sha256: `471298768f7fd45dc22a68e12d86250105885d7452f5b4e19917af08e78edee7`
+- source_sha256: `967509758d82c31c97ed0e2051cb5403c7aad836d53d262c834676a37a9e3945`
 - nodes: 2
 
 ### Nodes
@@ -26022,6 +26023,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - carries the executor-tier world stamp in the envelope (generation 19): set_world_stamp records it after staging and reports a change; a loaded bundle without the field is unstamped and never admits a full hit
   - cache generation 20 retires bundles whose phase 3-4 rows were captured under the name matcher (annotation matching by kind, 0.2.8222)
   - cache generation 21 retires bundles written before the managed lease codegen (0.2.8245), the explicit retirement the owner asked for whenever codegen changes (0.2.8248)
+  - cache generation 22 retires bundles written while a managed spell's settings were part of its spell_id (managed_settings_leave_spell_id, 0.2.8254): every managed spell_id moved once, so the ids those bundles were keyed by are gone
 - owns_state: `_id`, `_lock`, `_frame_name`, `_conduit_name`, `_cache_root_path`, `_bundle_path`, `_cache_data`, `_logger`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `bundle_path`, `cached_spell_ids`, `cached_structural_spell_ids`, `cleanup`, `conduit_name`, `emit`, `get_spell_payload`, `get_structural_payload`, `has_spell_payload`, `has_structural_payload`, `remove_spell_payload`, `remove_structural_payload` (+7 more)
