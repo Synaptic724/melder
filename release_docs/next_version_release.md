@@ -1,4 +1,4 @@
-# Melder 0.2.8255
+# Melder 0.2.8256
 
 **Unreleased**
 
@@ -900,6 +900,64 @@ What stays the same: when a borrower holds one version of an index, an unlink, a
 destroy remove the same copy as before, and a consumer of a removed active copy still fails its next meld with the
 missing-provider report. No public signature changes.
 
+## A cleanup of an index's active version is refused while parked versions remain
+
+A spell index can hold parked versions beside its active one - staged with `bind_inactive`, or the version a notch
+moved away from. `Conduit.cleanup_spell` has always refused to dispose the active version of such an index. The two
+other ways to dispose a spell - its own `cleanup()` and `Spellbook.cleanup_and_remove_spell` - did not: they removed
+the version and cleaned the index under its parked versions, which then stayed in the Spellbook uncleaned and out of
+reach. A notch to one raised `AttributeError`, `add_to_spell_index` and `cleanup_spell` of one raised "SpellIndex has
+already been cleaned.", the Spellbook's teardown left them, and their own `cleanup()` then raised "Spellbook has
+already been cleaned.". From 0.2.8256 all three refuse, change nothing, and say how to go on:
+
+```python
+class English:
+    def greet(self) -> str:
+        return "hello"
+
+
+class French:
+    def greet(self) -> str:
+        return "bonjour"
+
+
+book = md.Spellbook()
+english = book.bind(spell=English, existence="many", binding_name="english")
+world = book.conjure(dynamic=True, name="world")
+index = world.get_spell_by_spell_id(english).spell_index
+french = world.bind_inactive(spell=French, spell_index=index, existence="many", binding_name="french")
+
+try:
+    world.get_spell_by_spell_id(english).cleanup()     # until 0.2.8256: cleaned the index under French
+except RuntimeError as error:
+    print(error)    # Spellbook cannot remove spell <spell_id>: it is the active member of a multi-member index, ...
+
+world.notch_spell(spell_index=index, spell_id=french)            # one remedy: notch first,
+world.cleanup_spell(spell=world.get_spell_by_spell_id(english))  # then dispose the old version, now parked
+assert world.meld(spell_id=french).greet() == "bonjour"
+```
+
+**Breaking change:** `Spell.cleanup()` and `Spellbook.cleanup_and_remove_spell(spell)` of the active version of an
+index that also holds parked versions raise `RuntimeError` "Spellbook cannot remove spell <spell_id>: it is the
+active member of a multi-member index, and disposing it would leave the index's parked versions without an active
+one. Notch the index to one of them, dispose them with cleanup_spell, or move them out with remove_from_spell_index
+first." Retire such a version in the order you choose - Melder picks no version for you:
+
+- Notch the index to a parked version, then dispose the old version with `cleanup_spell`: it is parked now.
+- Dispose the parked versions with `cleanup_spell`; the active version is then the index's only member, and any of
+  the three removes it with its index.
+- Move the parked versions out with `remove_from_spell_index` - each gets an index of its own and stays parked -
+  then remove the active version.
+
+`cleanup_spell`'s refusal keeps its type and its moment and names the same remedies: "cleanup_spell: spell
+<spell_id> is the active member of a multi-member index, and disposing it would leave the index's parked versions
+without an active one. Notch the index to one of them, dispose them with cleanup_spell, or move them out with
+remove_from_spell_index first." (it said "...; notch away from it before disposing it.").
+
+What stays the same: removing the only version of an index, which goes with its index; `cleanup_spell` of a parked
+version; the teardown of a conduit, Spellbook or frame, which cleans every active version with its index as
+before. No public signature changes.
+
 ## Packaging and documentation
 
 - The README's "Declarative Binding by Module" example passes `permissions="create"`, without which it raised
@@ -999,4 +1057,7 @@ missing-provider report. No public signature changes.
 - Docstrings and comments that called a `SpellIndex` a lineage now call it a SpellIndex; "lineage" stays for the
   conduit scope tree (`unique_per_conduit_lineage`, a root and its lesser conduits). Identifiers, diagnostic codes
   and runtime messages are unchanged.
-- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8255.
+- The packaged system documents (`melder.__architecture__`, `melder.__components__`) and the packaged graph
+  describe the refusal on the three cleanup calls and its remedies; the code-map extents of `spellbook.py` and
+  `spell.py` are remeasured, and their line citations remapped.
+- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8256.

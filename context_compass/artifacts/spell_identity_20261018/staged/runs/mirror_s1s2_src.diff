@@ -1,0 +1,2018 @@
+diff -ru --strip-trailing-cr -x __pycache__ -x __melder_cache__ -x '*.meldercache' -x __conjure_cache__ src/melder/aether/aether.py /tmp/m0_mq/wt/src/melder/aether/aether.py
+--- src/melder/aether/aether.py	2026-10-18 02:06:36.502902000 +0000
++++ /tmp/m0_mq/wt/src/melder/aether/aether.py	2026-10-18 17:47:45.540699971 +0000
+@@ -2587,10 +2587,10 @@
+             return frame.find_index_for_spell(spell_id)
+ 
+         # PROCESS-WIDE SWEEP. The named frame does not hold it; under the
+-        # process-wide regime another frame still might, because spell_id is a
+-        # SHA256 over the bind-time fingerprint and does NOT include the frame -
+-        # the same target bound with the same parameters mints the same id
+-        # everywhere. Owner ruling 2026-08-02: one spell_id means one spell,
++        # process-wide regime another frame still might, because spell_id is the
++        # SHA256 of the registered object's code and does NOT include the frame -
++        # the same object mints the same id everywhere, however it is bound.
++        # Owner ruling 2026-08-02: one spell_id means one spell,
+         # process-wide, so every consumer of this lookup - the bind guard AND
+         # `Spellbook.inspect_spell` - answers at process scope.
+         #
+diff -ru --strip-trailing-cr -x __pycache__ -x __melder_cache__ -x '*.meldercache' -x __conjure_cache__ src/melder/aether/aether_configuration.py /tmp/m0_mq/wt/src/melder/aether/aether_configuration.py
+--- src/melder/aether/aether_configuration.py	2026-10-02 19:53:04.705919400 +0000
++++ /tmp/m0_mq/wt/src/melder/aether/aether_configuration.py	2026-10-18 17:47:45.541699971 +0000
+@@ -102,9 +102,9 @@
+             "channel_logger_activation_enabled": False,
+             "channel_logger_resolver": None,
+             "default_logger": None,
+-            # DEFAULT ON. A spell_id is a SHA256 over the bind-time fingerprint
+-            # and does not include the frame, so the same target bound with the
+-            # same parameters mints the same id in every frame. Owner ruling
++            # DEFAULT ON. A spell_id is the SHA256 of the registered object's
++            # code and does not include the frame, so the same object mints the
++            # same id in every frame, however it is bound. Owner ruling
+             # 2026-08-02: one spell_id means one spell, process-wide.
+             "process_wide_unique_spell_ids": True,
+         }
+@@ -606,7 +606,7 @@
+             - Turning this OFF restores per-frame id scoping, which permits the
+               multi-tenant shape: the same class bound independently in several
+               frames, each with its own instance. Leaving it ON means a second
+-              bind of the same fingerprint is refused anywhere in the process.
++              bind of the same object is refused anywhere in the process.
+ 
+         Args:
+             enabled:
+diff -ru --strip-trailing-cr -x __pycache__ -x __melder_cache__ -x '*.meldercache' -x __conjure_cache__ src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py /tmp/m0_mq/wt/src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py
+--- src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py	2026-10-18 01:44:52.785585100 +0000
++++ /tmp/m0_mq/wt/src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py	2026-10-18 17:47:45.541699971 +0000
+@@ -95,7 +95,7 @@
+         spell cannot leave a stale "valid" verdict behind on either axis.
+         Registering an index retires any verdict already held for the version
+         id it publishes, because spell ids are content-stable: a rebind of the
+-        same class at the same address mints the same id for a new Spell with
++        same class mints the same id (the class's code) for a new Spell with
+         no compiler artifact, and a verdict carried across that boundary would
+         send the first meld of the replacement straight to the context builder
+         with no plan to build from (the rebind-after-first-meld defect).
+diff -ru --strip-trailing-cr -x __pycache__ -x __melder_cache__ -x '*.meldercache' -x __conjure_cache__ src/melder/aether/aetheric_frame/lookup_container.py /tmp/m0_mq/wt/src/melder/aether/aetheric_frame/lookup_container.py
+--- src/melder/aether/aetheric_frame/lookup_container.py	2026-08-29 20:29:56.500825500 +0000
++++ /tmp/m0_mq/wt/src/melder/aether/aetheric_frame/lookup_container.py	2026-10-18 17:47:45.540699971 +0000
+@@ -23,9 +23,9 @@
+           for the SAME spell_id is idempotent.
+         - The forward map (`signature -> spell_id`) and the reverse map
+           (`spell_id -> signature`) are maintained together by every mutating
+-          method, so the two never diverge. The relationship is 1:1: the
+-          binding signature is folded into the spell_id fingerprint, so a given
+-          spell_id occupies exactly one signature.
++          method, so the two never diverge. The relationship is 1:1: one
++          object registers once (bind refuses a second registration of its
++          spell_id, the object's code), so a spell_id occupies one signature.
+         - Resolution (signature -> SpellIndex -> Spell) is NOT this object's
+           job; this is the uniqueness/claim surface only. The value is the
+           active `spell_id`, which re-points on notch.
+diff -ru --strip-trailing-cr -x __pycache__ -x __melder_cache__ -x '*.meldercache' -x __conjure_cache__ src/melder/aether/conduit/conduit_ward/contract/details.py /tmp/m0_mq/wt/src/melder/aether/conduit/conduit_ward/contract/details.py
+--- src/melder/aether/conduit/conduit_ward/contract/details.py	2026-10-18 01:20:06.132897100 +0000
++++ /tmp/m0_mq/wt/src/melder/aether/conduit/conduit_ward/contract/details.py	2026-10-18 17:47:45.542699971 +0000
+@@ -195,7 +195,7 @@
+         Check whether this row's SpellIndex contains a specific spell id.
+ 
+         Args:
+-            spell_id: SHA fingerprint to check within the index member history.
++            spell_id: Spell id (the SHA256 of an object's code) to check within the index member history.
+ 
+         Returns:
+             bool: True if the SpellIndex holds that spell id, else False; False once the
+@@ -431,7 +431,7 @@
+         Check whether the contracted SpellIndex contains a specific spell id.
+ 
+         Args:
+-            spell_id: SHA fingerprint to check within the index member set.
++            spell_id: Spell id (the SHA256 of an object's code) to check within the index member set.
+ 
+         Returns:
+             bool: True if the SpellIndex holds that spell id, else False; False once the
+diff -ru --strip-trailing-cr -x __pycache__ -x __melder_cache__ -x '*.meldercache' -x __conjure_cache__ src/melder/aether/conduit/meld/conduit_meld.py /tmp/m0_mq/wt/src/melder/aether/conduit/meld/conduit_meld.py
+--- src/melder/aether/conduit/meld/conduit_meld.py	2026-10-18 11:22:26.023599900 +0000
++++ /tmp/m0_mq/wt/src/melder/aether/conduit/meld/conduit_meld.py	2026-10-18 17:47:45.541699971 +0000
+@@ -304,8 +304,8 @@
+         Args:
+             spell (str | object | None):
+                 The primary spell identifier (first positional parameter).
+-                - If a **string**, treated as the unique `spell_id` (typically the
+-                  SHA256 structural fingerprint for the SpellIndex).
++                - If a **string**, treated as the unique `spell_id` (the SHA256 of
++                  the registered object's code that `bind` returned).
+                 - If an **object** (e.g., a class or function), used together with
+                   `spellframe` and `binding_name` to form the DI identity key via the
+                   `SpellInputUtils` normalization helpers.
+diff -ru --strip-trailing-cr -x __pycache__ -x __melder_cache__ -x '*.meldercache' -x __conjure_cache__ src/melder/aether/conduit/meld/meld.py /tmp/m0_mq/wt/src/melder/aether/conduit/meld/meld.py
+--- src/melder/aether/conduit/meld/meld.py	2026-10-18 01:46:04.606949200 +0000
++++ /tmp/m0_mq/wt/src/melder/aether/conduit/meld/meld.py	2026-10-18 17:47:45.541699971 +0000
+@@ -450,8 +450,8 @@
+         Args:
+             spell (str | object | None):
+                 The primary spell identifier (first positional parameter).
+-                - If a **string**, treated as the unique `spell_id` (typically the
+-                  SHA256 structural fingerprint for the SpellIndex).
++                - If a **string**, treated as the unique `spell_id` (the SHA256 of
++                  the registered object's code that `bind` returned).
+                 - If an **object** (e.g., a class or function), used together with
+                   `spellframe` and `binding_name` to form the DI identity key via the
+                   `SpellInputUtils` normalization helpers.
+@@ -2077,7 +2077,7 @@
+ 
+         Resolve an Spell using either:
+ 
+-        1. A direct spell_id string (SHA256 fingerprint), or
++        1. A direct spell_id string (the SHA256 of the registered object's code), or
+         2. A logical identity tuple derived from
+            (spellframe | spell, binding_name).
+ 
+@@ -2158,7 +2158,7 @@
+ 
+         Args:
+             spell_id:
+-                The SHA256 fingerprint associated with the spell.
++                The spell's spell_id - the SHA256 of the registered object's code.
+ 
+         Returns:
+             Spell:
+diff -ru --strip-trailing-cr -x __pycache__ -x __melder_cache__ -x '*.meldercache' -x __conjure_cache__ src/melder/aether/conduit/meld/spellspace_meld.py /tmp/m0_mq/wt/src/melder/aether/conduit/meld/spellspace_meld.py
+--- src/melder/aether/conduit/meld/spellspace_meld.py	2026-10-15 13:26:23.962148500 +0000
++++ /tmp/m0_mq/wt/src/melder/aether/conduit/meld/spellspace_meld.py	2026-10-18 17:47:45.542699971 +0000
+@@ -263,8 +263,8 @@
+         Args:
+             spell (str | object | None):
+                 The primary spell identifier (first positional parameter).
+-                - If a **string**, treated as the unique `spell_id` (typically the
+-                  SHA256 structural fingerprint for the SpellIndex).
++                - If a **string**, treated as the unique `spell_id` (the SHA256 of
++                  the registered object's code that `bind` returned).
+                 - If an **object** (e.g., a class or function), used together with
+                   `spellframe` and `binding_name` to form the DI identity key via the
+                   `SpellInputUtils` normalization helpers.
+diff -ru --strip-trailing-cr -x __pycache__ -x __melder_cache__ -x '*.meldercache' -x __conjure_cache__ src/melder/aether/spellbook/bind/bind.py /tmp/m0_mq/wt/src/melder/aether/spellbook/bind/bind.py
+--- src/melder/aether/spellbook/bind/bind.py	2026-10-18 00:54:49.169219700 +0000
++++ /tmp/m0_mq/wt/src/melder/aether/spellbook/bind/bind.py	2026-10-18 17:47:45.537699970 +0000
+@@ -1,6 +1,5 @@
+ import inspect
+ import threading
+-import hashlib
+ import math
+ from typing import TYPE_CHECKING, Any, Callable, Optional, Sequence, Tuple, Union, ClassVar, TypeVar
+ 
+@@ -118,11 +117,10 @@
+ from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile import (
+     ClassBindingProfile,
+     CallableBindingProfile,
+-    CallableParameterBindingSummary,
+     InstanceBindingProfile,
+     OtherBindingProfile,
+ )
+-from melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.inspector_utility import InspectorUtility
++from melder.aether.spellbook.bind.spell_code_digest import SpellCodeDigest
+ 
+ 
+ #region Bind
+@@ -134,11 +132,12 @@
+     `Bind` is the public control-plane surface that turns an arbitrary binding
+     target into a canonical `Spell`. It is where lifecycle scope
+     (`Existence`), access policy (`Permissions`), spellframe grouping, and
+-    structural fingerprinting first come together.
++    the spell's identity (the code digest) first come together.
+ 
+     The registration pipeline involves:
+     1.  **Reflection:** Examining the object using `SpellExaminer` to create a binding profile.
+-    2.  **Fingerprinting:** Generating a deterministic SHA256 unique ID (`spell_id`) based on the profile.
++    2.  **Identity:** The `spell_id` is the SHA256 of the object's code (`SpellCodeDigest`); the bind
++        call's values become the Spell's binding manifest, hashed apart.
+     3.  **Validation:** Enforcing rules regarding naming conventions, existence, and spell type.
+     4.  **Registration:** Creating the final `Spell` object, which encapsulates the component
+         and its metadata for resolution and dependency injection.
+@@ -147,7 +146,10 @@
+     - `Bind` does not resolve spells; it registers them into one owning
+       `Spellbook`.
+     - Successful registration always flows through canonical profile
+-      examination and deterministic fingerprinting rather than ad hoc ids.
++      examination and the code digest (`SpellCodeDigest`) rather than ad hoc ids.
++    - One object is one spell: binding it again under any name, existence or
++      spellframe gives the same spell_id, which the Spellbook's duplicate-id
++      refusals refuse (EPIC-2026-10-18-spell_identity_is_the_code).
+     - Decorator-style and direct-call usage share the same binding pipeline.
+     - Resolution capability is native per-Spell policy, defaulting to True;
+       disabling it does not change naming, lifetime, or ownership rules.
+@@ -165,17 +167,18 @@
+ 
+     Subsystem Context:
+         The registration gateway where lifecycle (`Existence`), access policy
+-        (`Permissions`), spellframe grouping, and structural fingerprinting
++        (`Permissions`), spellframe grouping, and the code digest
+         first converge. It produces the `SpellIndex` + `Spell` pair the rest of
+         the runtime resolves against.
+ 
+     System Context:
+-        DETERMINISTIC FINGERPRINTING is the property everything downstream
+-        depends on. The `spell_id` is a SHA256 over the examined profile, so it
+-        is CONTENT-DERIVED and stable across processes and sessions - which is
+-        why the crystallizer can replay custody by recorded spell id while
+-        refusing to rehydrate ULIDs, and why the same object bound in two
+-        processes carries the same identity.
++        DETERMINISTIC IDENTITY is the property everything downstream depends on.
++        The `spell_id` is the SHA256 of the object's code - its methods with their
++        bodies, inherited code, class-level values and, for an existing object, its
++        data - so it is CONTENT-DERIVED and stable across processes and sessions:
++        the crystallizer can replay custody by recorded spell id while refusing to
++        rehydrate ULIDs, the same object bound in two processes carries the same
++        identity, and an edited method is a new version an agent stages and notches.
+         The refusals are as load-bearing as the successes. Modules are rejected;
+         Protocol targets require explicit `resolvable=False` because they have
+         no construction contract. Method and lambda bindings are forced to `Existence.unique`
+@@ -199,6 +202,7 @@
+         "_spellbook",
+         "_spell_examiner",
+         "_lifecycle_hooks",
++        "_spell_code_digest",
+     ]
+     _EMPTY_HOOKS: ClassVar[BindLifecycleHooks] = ((), (), ())
+     _HOOK_NAMES: ClassVar[tuple[str, ...]] = ("bind:pre", "bind:activation", "bind:post")
+@@ -227,7 +231,8 @@
+             initial_hooks: Validated immutable configuration seed, or None for
+                 empty stages. Captured once; later changes stay Book-local.
+         Contract:
+-            - Owns one `SpellExaminer` helper for profile creation.
++            - Owns one `SpellExaminer` helper for profile creation and one
++              `SpellCodeDigest` for spell_ids (its code-object memo lives as long as Bind).
+             - Serializes registration work behind an internal lock.
+             - Treats the supplied spellbook as the destination authority for
+               all created spell bindings.
+@@ -242,6 +247,7 @@
+         self._spellbook: Spellbook = spellbook
+         self._lock = threading.RLock()
+         self._spell_examiner: SpellExaminer = SpellExaminer()
++        self._spell_code_digest: SpellCodeDigest = SpellCodeDigest()
+         self._lifecycle_hooks: BindLifecycleHooks = (
+             self._EMPTY_HOOKS if initial_hooks is None else initial_hooks
+         )
+@@ -256,7 +262,7 @@
+ 
+         Contract:
+         - Idempotent and lock-guarded.
+-        - Cleans the owned `SpellExaminer` before dropping references.
++        - Cleans the owned `SpellExaminer` and `SpellCodeDigest` before dropping references.
+         - Releases stored callbacks without invoking their cleanup methods.
+           An in-flight bind retains its own immutable callback set until it ends;
+           callers must quiesce runtime work before destroying the owning book.
+@@ -273,8 +279,10 @@
+             self._cleaned = True
+             if self._spell_examiner is not None:
+                 self._spell_examiner.cleanup()
++            self._spell_code_digest.cleanup()
+             del self._spellbook
+             del self._spell_examiner
++            del self._spell_code_digest
+             del self._lifecycle_hooks
+         del self._lock
+ 
+@@ -492,7 +500,7 @@
+         2. **Decorator:** `@Bind.bind(permissions, ...)` applied to a class or function.
+ 
+         In both modes, the same binding pipeline is used: examine the target,
+-        fingerprint the binding profile, validate spellframe / existence rules,
++        digest its code into the spell_id, validate spellframe / existence rules,
+         and register the canonical `Spell` into the owning spellbook.
+ 
+         Args:
+@@ -637,14 +645,14 @@
+           - Method/lambda spells may also be grouped under Protocol or string
+             spellframes (factory / handler semantics), but are not structurally
+             validated against the Protocol.
+-        * Computes a deterministic fingerprint and SpellIndex from a `SpellBindingProfile`.
+-        * Resolves disposal names once in group priority order, hashes the resolved
+-          list, and passes that same list to Spell without another conversion.
++        * Computes the spell_id - the SHA256 of the target's code (`SpellCodeDigest`), nothing
++          from this call - and the SpellIndex from it.
++        * Resolves disposal names once in group priority order and passes that list to Spell
++          without another conversion; it enters the Spell's binding manifest, not the spell_id.
+         * Validates and normalizes the four managed options once
+           (`_normalize_managed_options`), after the profile; the Spell keeps them. They are
+-          settings of the one spell, not its identity: the fingerprint never reads them
+-          (owner ruling 2026-10-17), so a managed class bound with other settings at the same
+-          address, existence and disposal list gets the same spell_id.
++          settings of the one spell, not its identity (owner ruling 2026-10-17): the spell_id
++          never reads them, and they are part of the binding manifest.
+         * Determines the canonical SpellType.
+         * Constructs the final `Spell` instance.
+         * Replaces the initial raw binding artifact with the combined
+@@ -674,14 +682,14 @@
+             receives the actual Spell immediately after construction and before
+             profile completion. Both run outside the construction lock. Activation
+             or profile failure retires the unpublished Spell and its fresh index.
+-            Native fingerprint rules are unchanged and callback returns are ignored.
++            They never change the spell_id rule, and callback returns are ignored.
+ 
+         Disposal contract:
+             Retain declared profile methods and requested inherited callables,
+             respecting the first class declaration in Python's MRO. Non-callable
+             shadows and hidden dunders remain excluded; descriptors are not invoked
+-            during matching. The shallow profile and its fingerprint inputs do not
+-            expand. Missing names and non-class profiles contribute nothing. Book names
++            during matching. The shallow profile does not expand. Missing names and
++            non-class profiles contribute nothing. Book names
+             own overlaps in both modes and keep their configured order. Spell-only
+             names keep their supplied order, before or after the book block. Each
+             matching name appears once in the single result list.
+@@ -742,7 +750,7 @@
+             spellframe_kind, implemented_protocols = Bind._classify_spellframe(spellframe)
+ 
+             # ------------------------------------------------------------------
+-            # 2. Build binding profile and fingerprint
++            # 2. Build the binding profile; the spell_id is the target's code
+             # ------------------------------------------------------------------
+             provisional_general_profile = self._spell_examiner.create_profile(
+                 spell,
+@@ -774,9 +782,9 @@
+                             resolved_disposal_method_names.insert(spell_position, method_name)
+                             spell_position += 1
+             # Managed options (Existence.managed_spell_quantity): validated and normalized here, once,
+-            # and kept by the Spell. They are settings, not identity: the fingerprint below never reads
+-            # them (owner ruling 2026-10-17). Any other existence must leave all four unset. Refusals
+-            # happen before a Spell or index exists.
++            # and kept by the Spell. They are settings, not identity: the spell_id below never reads them
++            # (owner ruling 2026-10-17); they are part of the Spell's binding manifest. Any other existence
++            # must leave all four unset. Refusals happen before a Spell or index exists.
+             (
+                 normalized_managed_mode,
+                 normalized_managed_limit,
+@@ -792,16 +800,13 @@
+                 managed_spell_timeout_seconds,
+                 managed_spell_reset_methods,
+             )
+-            fingerprint: str = Bind.sha256_profile(
+-                binding_profile,
+-                spellframe=spellframe,
+-                spell_name=spell_name,
+-                binding_name=binding_name,
+-                existence=existence,
+-                disposal_method_names=resolved_disposal_method_names,
+-                resolvable=resolvable,
+-            )
+-            spell_index = SpellIndex(initial_id=fingerprint)
++            # The spell_id is the SHA256 of the target's code - methods with their bodies, inherited code,
++            # class-level values, an existing object's data - and of nothing from this bind call
++            # (EPIC-2026-10-18-spell_identity_is_the_code). The call's values become the Spell's binding
++            # manifest, hashed apart, so one object is one spell: the duplicate-id refusals downstream
++            # refuse a second registration of it.
++            spell_id: str = self._spell_code_digest.spell_id(spell)
++            spell_index = SpellIndex(initial_id=spell_id)
+ 
+             # Check if this should be treated as an "existing creation"
+             is_instance = isinstance(
+@@ -859,7 +864,7 @@
+                 existence=existence,
+                 spell_type=spell_type,
+                 profile=provisional_general_profile,
+-                spell_id=fingerprint,
++                spell_id=spell_id,
+                 permissions=permissions,
+                 aetheric_frame=aetheric_frame,
+                 existing_object=spell if is_instance else None,
+@@ -914,7 +919,7 @@
+             bool: Whether the class exposes an eligible disposal candidate.
+ 
+         Lifecycle / Threading:
+-            Runs under the existing Bind lock before fingerprinting. Owns no
++            Runs under the existing Bind lock before the spell_id is computed. Owns no
+             state, invokes no cleanup and adds no work to ordinary resolution.
+         """
+         if method_name in profile.method_names:
+@@ -928,254 +933,37 @@
+ 
+     #region Spell Inspector Helpers
+     @staticmethod
+-    def spell_id_inspector(
+-            spell: Any,
+-            *,
+-            spellframe: Any = None,
+-            spell_name: Optional[str] = None,
+-            binding_name: Optional[str] = None,
+-            existence: Existence = Existence.unique,
+-            disposal_method_names: Sequence[str] = (),
+-            resolvable: bool = True,
+-            managed_spell_mode: Optional[Union[ManagedSpellMode, str]] = None,
+-            managed_spell_limit: Optional[int] = None,
+-            managed_spell_timeout_seconds: Optional[float] = None,
+-            managed_spell_reset_methods: Optional[Sequence[str]] = None,
+-    ) -> str:
++    def spell_id_inspector(spell: Any) -> str:
+         """
+-        Compute the canonical spell fingerprint without registering the spell.
+-
+-        This is the read-only convenience path for tooling or diagnostics that
+-        need the same deterministic fingerprint used by the real binding
+-        pipeline but do not want to create or register a `Spell`.
++        Return the spell_id bind gives a target, without registering it.
+ 
+-        Args:
+-            spell (Any): The spell object (class, function, or instance) to inspect.
+-            spellframe (Optional[Any]): Logical interface or Protocol used as the DI contract / grouping key.
+-            spell_name (Optional[str]): A specific key used to distinguish this spell among others in its frame.
+-            binding_name (Optional[str]): A specific key used to distinguish this spell.
+-            existence (Existence): The lifecycle scope for this spell.
+-            disposal_method_names (Sequence[str]): Already-resolved disposal names in execution order.
+-            resolvable (bool): Per-version capability; omission preserves the legacy fingerprint.
+-            managed_spell_mode (Optional[Union[ManagedSpellMode, str]]): Managed pool policy, or None.
+-            managed_spell_limit (Optional[int]): Managed idle cap (elastic) or alive limit, or None.
+-            managed_spell_timeout_seconds (Optional[float]): Queue wait in seconds, or None.
+-            managed_spell_reset_methods (Optional[Sequence[str]]): Reset method names, or None.
+-        Contract:
+-            - Builds the same `SpellGeneralProfile` / `SpellBindingProfile`
+-              chain used by the real binding path.
+-            - Returns the same fingerprint that `_bind_logic(...)` would use
+-              when supplied the same resolved name, binding metadata, and ordered
+-              disposal list. This helper does not apply book priority or match names.
+-            - Does not register anything into a spellbook or mutate runtime
+-              binding state.
+-            - Checks the managed options with bind's own `_normalize_managed_options`,
+-              so it refuses exactly what bind refuses; like bind, it never hashes them
+-              (a managed spell_id does not depend on its settings).
+-
+-        Returns:
+-            str: A unique identifier string (SHA256 hash) for the spell.
+-
+-        Raises:
+-            TypeError: If resolvable is not a bool (checked before target reflection), or a
+-                managed option has the wrong type or targets a non-class.
+-            ValueError: If a managed option is malformed or set on another existence.
+-        """
+-        Bind._validate_resolvable(resolvable)
+-        profile = SpellGeneralProfile.create_from_target(spell)
+-        # Error messages name the target; the inspector hashes `spell_name` only when given, as bind would.
+-        # The target is caller-supplied, so `getattr` with a default is the external-object exception.
+-        display_name = spell_name if spell_name is not None else getattr(spell, "__name__", type(spell).__name__)
+-        # Checked as bind checks them, never hashed: a managed spell's settings are not part of its spell_id.
+-        Bind._normalize_managed_options(
+-            spell,
+-            profile.binding_profile,
+-            str(display_name),
+-            existence,
+-            managed_spell_mode,
+-            managed_spell_limit,
+-            managed_spell_timeout_seconds,
+-            managed_spell_reset_methods,
+-        )
+-        return Bind.sha256_profile(
+-            profile.binding_profile,
+-            spellframe=spellframe,
+-            spell_name=spell_name,
+-            binding_name=binding_name,
+-            existence=existence,
+-            disposal_method_names=tuple(disposal_method_names),
+-            resolvable=resolvable,
+-        )
+-
+-    @staticmethod
+-    def sha256_profile(
+-            profile: SpellBindingProfile,
+-            *,
+-            spellframe: Any = None,
+-            spell_name: Optional[str] = None,
+-            binding_name: Optional[str] = None,
+-            existence: Optional[Existence] = None,
+-            disposal_method_names: Sequence[str] = (),
+-            resolvable: bool = True,
+-    ) -> str:
+-        """
+-        Computes the SHA256 hash of a spell's binding profile metadata.
+-
+-        The binding profile includes just enough structural metadata to create a
+-        unique, versioned fingerprint of the spell's shape.
+-
+-        This function is intentionally coupled to the `SpellBindingProfile`
+-        dataclasses rather than the heavier inspector profiles.
+-
+-        Contract:
+-            - Fingerprints normalized bind-time metadata only, not transient
+-              runtime object identity.
+-            - Repr-derived inputs (callable/instance/other repr and callable parameter
+-              defaults) are address-free: the profile's `fingerprint_repr` /
+-              `default_fingerprint_repr` when present, otherwise the display text with every
+-              " at 0x<hex>" removed. The same object content therefore gets the same id in
+-              every process (2026-09-26). The class init_signature and callable
+-              signature texts are hashed with addresses removed too (a default such as
+-              object() renders its address inside the signature).
+-            - Uses the explicit `v4-binding` schema prefix for omitted/True and
+-              `v4-binding-non-resolvable` for False, preserving all remaining inputs so future
+-              fingerprint-shape changes can version cleanly. v4 replaced the
+-              class source preview (first-5-lines text: docstring-sensitive,
+-              constructor-blind, and the only source-file read on the bind
+-              hot path) with the constructor signature string, so the
+-              fingerprint tracks exactly the shape compiled wiring depends
+-              on: constructor changes invalidate caches, docstring edits do
+-              not.
+-            - Includes the direct bind-time parameters that shape later
+-              compiler/runtime behavior: spell_name, spellframe, binding_name,
+-              existence, resolvable, and resolved disposal metadata in execution order.
+-            - Never hashes a managed binding's settings (mode, limit, queue timeout, reset
+-              names): they are settings of the one spell, not its identity (owner ruling
+-              2026-10-17: "the bind call itself shouldn't impact the actual SHA256"), so a
+-              managed binding hashes exactly the inputs above. From 0.2.8242 to 0.2.8253 a
+-              managed binding appended a `managed:<mode>:<limit>:<timeout>:<reset names>`
+-              part; every managed spell_id moved once when it left (0.2.8254), and no other
+-              spell_id ever had it.
+-            - Equal bind signatures produce equal hashes; materially different
+-              signatures should produce different hashes.
+-        Returns:
+-            str: Deterministic SHA256 fingerprint for the supplied binding
+-                profile.
+-
+-        Raises:
+-            TypeError: If resolvable is not a bool; no truthiness coercion is applied.
+-        """
+-        Bind._validate_resolvable(resolvable)
+-        # Keep the legacy schema intact; only False selects a different hash domain.
+-        parts: list[str] = ["v4-binding" if resolvable else "v4-binding-non-resolvable"]
+-
+-        if isinstance(profile, ClassBindingProfile):
+-            parts += [
+-                profile.name,
+-                profile.qualname,
+-                profile.module,
+-                ",".join(sorted(profile.bases)),
+-                ",".join(sorted(profile.mro)),
+-                ",".join(sorted(profile.annotations.keys())),
+-                ",".join(sorted(profile.method_names)),
+-                InspectorUtility.strip_memory_addresses(profile.init_signature or ""),
+-            ]
+-        elif isinstance(profile, CallableBindingProfile):
+-            param_parts = [
+-                f"{p.name}:{p.kind}={Bind._fingerprint_default_text(p)}"
+-                for p in (profile.parameters or ())
+-            ]
+-            parts += [
+-                profile.name,
+-                profile.qualname or "",
+-                profile.module or "",
+-                InspectorUtility.strip_memory_addresses(profile.signature or ""),
+-                ",".join(param_parts),
+-                Bind._fingerprint_repr_text(profile),
+-                profile.type_name,
+-                "lambda" if profile.lambda_function else "",
+-                "builtin" if profile.builtin_module else "",
+-                "extension" if profile.extension_module else "",
+-                ]
+-        elif isinstance(profile, InstanceBindingProfile):
+-            parts += [
+-                profile.type_name,
+-                profile.module or "",
+-                Bind._fingerprint_repr_text(profile),
+-                ]
+-        elif isinstance(profile, OtherBindingProfile):
+-            parts += [
+-                profile.type_name,
+-                profile.module or "",
+-                Bind._fingerprint_repr_text(profile),
+-                ]
+-        else:
+-            # Absolute fallback – should effectively never happen.
+-            parts.append(repr(type(profile)))
+-
+-        if spell_name is not None:
+-            parts.append(spell_name)
+-        if spellframe is not None:
+-            parts.append(str(spellframe))
+-        if binding_name is not None:
+-            parts.append(binding_name)
+-
+-        if existence is not None:
+-            parts.append(existence.name)
+-
+-        parts.extend(tuple(disposal_method_names))
+-
+-        key = "::".join(parts)
+-        return hashlib.sha256(key.encode("utf-8")).hexdigest()
+-
+-    @staticmethod
+-    def _fingerprint_repr_text(
+-            profile: Union[CallableBindingProfile, InstanceBindingProfile, OtherBindingProfile],
+-    ) -> str:
+-        """
+-        Return the address-free representation text a binding profile contributes to its fingerprint.
+-
+-        Contract:
+-            - Prefers `fingerprint_repr` (full repr, addresses removed, built by the binding
+-              strategy); strips surrounding whitespace like the display text always was.
+-            - Falls back to `repr_string` with memory addresses removed for profiles built without
+-              it (direct constructions); that text may still be truncated display text.
+-
+-        Args:
+-            profile: Callable, instance or other binding profile.
+-
+-        Returns:
+-            str: Text hashed into the fingerprint.
+-        """
+-        if profile.fingerprint_repr is not None:
+-            return profile.fingerprint_repr.strip()
+-        return InspectorUtility.strip_memory_addresses((profile.repr_string or "").strip())
+-
+-    @staticmethod
+-    def _fingerprint_default_text(parameter: CallableParameterBindingSummary) -> Optional[str]:
+-        """
+-        Return the address-free default-value text one callable parameter contributes to the fingerprint.
++        Purpose:
++            The read-only path for tooling and diagnostics, and for `Spellbook.inspect_spell`'s stage 3:
++            re-derive the id an object is, or would be, registered under.
+ 
+         Contract:
+-            - Prefers `default_fingerprint_repr`; otherwise `default_repr` with memory addresses
+-              removed; None when the parameter has no default (rendered as "None", unchanged).
++            - The spell_id is the SHA256 of the target's code (`SpellCodeDigest`), so the target alone decides
++              it: the id is the same whatever binding the target is bound with (spellframe, binding name,
++              existence, disposal names, resolvable, managed settings), and equals the id `_bind_logic` gives it.
++            - Builds a fresh `SpellCodeDigest` per call and cleans it before returning: no shared memo, no lock,
++              no state left behind. Registers nothing and checks no binding rule (that is bind's admission).
+ 
+         Args:
+-            parameter: Parameter summary from a callable binding profile.
++            spell (Any): The class, function or object to identify.
+ 
+         Returns:
+-            Optional[str]: Default text hashed into the fingerprint, or None.
++            str: The 64-character spell_id.
+         """
+-        if parameter.default_fingerprint_repr is not None:
+-            return parameter.default_fingerprint_repr
+-        if parameter.default_repr is None:
+-            return None
+-        return InspectorUtility.strip_memory_addresses(parameter.default_repr)
++        digest = SpellCodeDigest()
++        try:
++            return digest.spell_id(spell)
++        finally:
++            digest.cleanup()
+ 
+     @staticmethod
+     def _validate_resolvable(resolvable: bool) -> None:
+         """
+-        Reject non-boolean capability inputs at independent admission/fingerprint boundaries.
++        Reject a non-boolean capability input at bind's admission.
+ 
+         Args:
+             resolvable: Per-version resolution capability supplied by the caller.
+@@ -1208,7 +996,7 @@
+ 
+         Purpose:
+             The one place the options of `Existence.managed_spell_quantity` are checked, so a malformed binding
+-            fails at bind, next to the mistake, and the fingerprint, the Spell and the crystal all read the same
++            fails at bind, next to the mistake, and the Spell, its binding manifest and the crystal all read the same
+             normalized values.
+ 
+         Contract:
+@@ -1471,8 +1259,7 @@
+         Enforce binding-policy rules before a `Spell` is created.
+ 
+         This is the policy gate that keeps obviously-invalid bindings out of
+-        the spellbook before profile fingerprinting and spell construction are
+-        allowed to proceed.
++        the spellbook before spell construction is allowed to proceed.
+ 
+         Args:
+             profile (SpellBindingProfile): The binding profile of the spell.
+Only in /tmp/m0_mq/wt/src/melder/aether/spellbook/bind: binding_manifest.py
+Only in /tmp/m0_mq/wt/src/melder/aether/spellbook/bind: spell_code_digest.py
+diff -ru --strip-trailing-cr -x __pycache__ -x __melder_cache__ -x '*.meldercache' -x __conjure_cache__ src/melder/aether/spellbook/bind/spell_index.py /tmp/m0_mq/wt/src/melder/aether/spellbook/bind/spell_index.py
+--- src/melder/aether/spellbook/bind/spell_index.py	2026-10-18 01:20:06.155777600 +0000
++++ /tmp/m0_mq/wt/src/melder/aether/spellbook/bind/spell_index.py	2026-10-18 17:47:45.541699971 +0000
+@@ -157,7 +157,7 @@
+ 
+         Threading:
+             - Safe on free-threaded builds; attribute reference loads are
+-              atomic. This property is the hottest fingerprint read in the
++              atomic. This property is the hottest spell_id read in the
+               compiler phases (thousands of reads per conjure), and the
+               per-read RLock acquire/release dominated its cost on nogil.
+         """
+diff -ru --strip-trailing-cr -x __pycache__ -x __melder_cache__ -x '*.meldercache' -x __conjure_cache__ src/melder/aether/spellbook/spell.py /tmp/m0_mq/wt/src/melder/aether/spellbook/spell.py
+--- src/melder/aether/spellbook/spell.py	2026-10-18 16:02:48.944188300 +0000
++++ /tmp/m0_mq/wt/src/melder/aether/spellbook/spell.py	2026-10-18 17:47:45.537699970 +0000
+@@ -15,6 +15,7 @@
+ from melder.aether.conduit.meld.creation_context.creation_context_factory import (
+     CreationContextFactory,
+ )
++from melder.aether.spellbook.bind.binding_manifest import BindingManifest
+ from melder.aether.spellbook.bind.spell_index import SpellIndex
+ from melder.aether.spellbook.existence.existence import Existence
+ from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
+@@ -87,13 +88,19 @@
+     - Becomes unusable after `cleanup()` completes; later live-object methods
+       are expected to fail through `check_cleaned()`.
+     - Disposal metadata is established once at bind. The ordered list, presence
+-      flag, and bind-time SHA describe that same policy. Post-creation mutation
++      flag, and binding hash describe that same policy. Post-creation mutation
+       is unsupported; this class adds no copying or mutation guards.
+     - Resolution capability is fixed per bound version and exposed by the
+       read-only resolvable property, independently of activity and compilation state.
+     - The managed options of an `Existence.managed_spell_quantity` binding (mode, limit,
+       queue timeout, reset method names) are fixed per bound version the same way, as
+-      Bind normalized and hashed them, and exposed by read-only properties.
++      Bind normalized them, and exposed by read-only properties; they are part of the
++      binding manifest, never of the spell_id.
++    - `binding_manifest` records how this version is bound - its address, spellframe and
++      kind, existence, disposal order, resolvable and managed settings - with its own
++      SHA256, `binding_hash`. Built once at construction from the same arguments and kept
++      after cleanup, like `spell_id`: what a spell IS is its spell_id, how it is kept is
++      its binding (EPIC-2026-10-18-spell_identity_is_the_code).
+ 
+     Core Responsibilities:
+     - Holds an immutable reference to the object (function/class/instance) it represents.
+@@ -118,7 +125,9 @@
+           still allowed.
+ 
+     Key Concepts:
+-        - Each spell has a unique SHA256 `spell_id`, generated from its bind-time fingerprint.
++        - Each spell has a SHA256 `spell_id`: the digest of the registered object's code
++          (`SpellCodeDigest`) and nothing from the bind call. How it is bound is its
++          `binding_manifest`, hashed apart as `binding_hash`.
+         - `spellframe` is the category half of the address: a string category or a
+           Protocol contract. `spellframe_kind` records which (or `none` for a bare
+           binding) and `implemented_protocols` the Protocol bind checked the spell
+@@ -133,7 +142,8 @@
+             The actual object to register (function, class, lambda, or existing instance).
+ 
+         spell_index (SpellIndex):
+-            Versioned identity for this spell (current + historical fingerprints).
++            The SpellIndex this spell is organized under; the index selects one member
++            version as active.
+ 
+         spellframe (Optional[Any]):
+             Frame context (usually a Protocol, class, or string) to scope the spell's identity.
+@@ -154,7 +164,8 @@
+             whether it participates in spellframes and/or binding names.
+ 
+         spell_id (str):
+-            Unique identifier derived from object fingerprinting (SHA256).
++            The SHA256 of the registered object's code (`SpellCodeDigest`); nothing from
++            the bind call enters it.
+ 
+         permissions (Permissions):
+             Defines access control level for borrowing, invoking, or recreating this spell.
+@@ -306,6 +317,7 @@
+         "_managed_spell_limit",
+         "_managed_spell_timeout_seconds",
+         "_managed_spell_reset_methods",
++        "binding_manifest",
+     ]
+     def __init__(
+             self,
+@@ -344,7 +356,7 @@
+             spell_name (str): Resolved name for the spell (qualname or type name).
+             existence (Existence): Lifecycle policy for instantiation/sharing semantics.
+             spell_type (SpellType): Classification of the spell (class/method/lambda/existing-creation variants).
+-            spell_id (str): SHA256 fingerprint for this spell's structural identity.
++            spell_id (str): The SHA256 of the registered object's code (`SpellCodeDigest`).
+             permissions (Permissions): Access policy for other conduits.
+             aetheric_frame (str): Aether frame identifier this spell belongs to.
+             spellbook (Spellbook): Back-reference to the owning spellbook for coordination.
+@@ -379,10 +391,13 @@
+               metadata bag, so a misspelled parameter name lands in `metadata`
+               rather than raising `TypeError`.
+             - TWO DISTINCT IDENTITIES are established. `spell_id` is the
+-              caller-supplied structural fingerprint; `_id` is a fresh ULID
++              caller-supplied code digest of the target; `_id` is a fresh ULID
+               minted here that identifies THIS record. They are not
+-              interchangeable - the fingerprint describes what the spell IS,
++              interchangeable - the digest describes what the spell IS,
+               the ULID describes which object you are holding.
++            - The binding manifest (`binding_manifest`, `binding_hash`) is built
++              last, from these same arguments: how this version is bound, hashed
++              apart from what it is. A value record, kept after cleanup.
+             - The four `is_*` family flags are computed ONCE from `spell_type`
+               and cover all 14 `SpellType` members with no overlap, so exactly
+               one is True for the object's whole life.
+@@ -426,8 +441,9 @@
+         self._removal_lock: Optional[RLock] = None
+         self._active = True  # active in its index; flipped by notch/disable
+         self._resolvable: bool = resolvable
+-        # Managed options (Existence.managed_spell_quantity): normalized by Bind and hashed into spell_id,
+-        # read-only per-version policy like `_resolvable`; None / None / None / () on any other existence.
++        # Managed options (Existence.managed_spell_quantity): normalized by Bind, part of the binding manifest
++        # and never of the spell_id (since 0.2.8254); read-only per-version policy like `_resolvable`;
++        # None / None / None / () on any other existence.
+         # The spell's pool is composed from them when its owner store is stamped (S3).
+         self._managed_spell_mode: Optional[ManagedSpellMode] = managed_spell_mode
+         self._managed_spell_limit: Optional[int] = managed_spell_limit
+@@ -438,7 +454,7 @@
+         # Spell Data
+         self.spell_index: SpellIndex = spell_index
+         self.spell: Any = spell  # Object reference
+-        self.spell_id: str = spell_id  # SHA256 unique identifier
++        self.spell_id: str = spell_id  # SHA256 of the target's code (SpellCodeDigest)
+         self.spellframe: Any | None = spellframe
+         # Frame kind recorded by Bind (none / category / contract) and the
+         # Protocol this spell was structurally checked against. Identity data
+@@ -576,6 +592,23 @@
+         )
+         self._key = (frame_key, bind_key)
+ 
++        # How this version is bound, as a value record with its own SHA256 (S2 of
++        # EPIC-2026-10-18-spell_identity_is_the_code): built last, from the arguments above, so a
++        # bound, staged, restored or grafted Spell carries one. Kept after cleanup, like `spell_id`.
++        self.binding_manifest: BindingManifest = BindingManifest.build(
++            key=self._key,
++            spellframe=self.spellframe,
++            spellframe_kind=self.spellframe_kind,
++            binding_name=self.binding_name,
++            existence=self.existence,
++            disposal_method_names=self.disposal_method_names,
++            resolvable=resolvable,
++            managed_spell_mode=managed_spell_mode,
++            managed_spell_limit=managed_spell_limit,
++            managed_spell_timeout_seconds=managed_spell_timeout_seconds,
++            managed_spell_reset_methods=managed_spell_reset_methods,
++        )
++
+ 
+     #region Disposal
+     def cleanup(self) -> None:
+@@ -610,6 +643,8 @@
+               waiting on it holds its own reference.
+             - Deletes the disposal-name reference without clearing its list;
+               creation entries may still retain that established metadata.
++            - Keeps the identity data readable: `spell_id`, the address (`key`),
++              the spellframe and its kind, and `binding_manifest` / `binding_hash`.
+ 
+         Threading:
+             The Book removal takes the Spellbook lock, frame locks and the Nexus
+@@ -793,8 +828,8 @@
+         Return the pool policy of this managed version.
+ 
+         Contract:
+-            Set once at bind (default elastic for a managed binding) and part of the spell id. No live
+-            setter; changing it takes another binding.
++            Set once at bind (default elastic for a managed binding) and part of the binding manifest,
++            not the spell_id. No live setter; changing it takes another binding.
+ 
+         Returns:
+             Optional[ManagedSpellMode]: The mode, or None when the spell is not
+@@ -813,7 +848,8 @@
+ 
+         Contract:
+             elastic: the most idle objects its pool keeps (default 256). limited_quantity and queue: the
+-            most objects alive at once, idle plus out. Set once at bind and part of the spell id.
++            most objects alive at once, idle plus out. Set once at bind and part of the binding
++            manifest, not the spell_id.
+ 
+         Returns:
+             Optional[int]: The limit, or None when the spell is not managed.
+@@ -830,8 +866,8 @@
+         Return how long a queue lease of this version waits for a release.
+ 
+         Contract:
+-            Set once at bind for the queue mode and part of the spell id; always None for elastic and
+-            limited_quantity, which never wait.
++            Set once at bind for the queue mode and part of the binding manifest, not the spell_id;
++            always None for elastic and limited_quantity, which never wait.
+ 
+         Returns:
+             Optional[float]: Seconds, or None.
+@@ -849,7 +885,7 @@
+ 
+         Contract:
+             Zero-argument methods of the class, run in this order on every release before the object
+-            is leased again. Set once at bind and part of the spell id.
++            is leased again. Set once at bind and part of the binding manifest, not the spell_id.
+ 
+         Returns:
+             tuple[str, ...]: The names; empty when none were named or the spell is not managed.
+@@ -860,6 +896,22 @@
+         self.check_cleaned()
+         return self._managed_spell_reset_methods
+ 
++    @property
++    def binding_hash(self) -> str:
++        """
++        Return the SHA256 of this version's binding manifest.
++
++        Contract:
++            How this version is bound - address, spellframe and kind, existence, disposal order,
++            resolvable and managed settings - hashed apart from its code (`spell_id`). Equal bind
++            arguments give equal hashes in every process; a change of any of them gives another.
++            Readable after cleanup, like `spell_id` (`binding_manifest` is a value record).
++
++        Returns:
++            str: 64 hex characters (`binding_manifest.binding_hash`).
++        """
++        return self.binding_manifest.binding_hash
++
+     def _set_hooks(
+             self,
+             *,
+@@ -1748,7 +1800,7 @@
+ 
+         Args:
+             dependencies:
+-                A list of spell_ids (SHA256 fingerprints) that this spell depends on.
++                A list of spell_ids (SHA256 code digests) that this spell depends on.
+ 
+         Raises:
+             ValueError:
+diff -ru --strip-trailing-cr -x __pycache__ -x __melder_cache__ -x '*.meldercache' -x __conjure_cache__ src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_no_overrides_compiler.py /tmp/m0_mq/wt/src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_no_overrides_compiler.py
+--- src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_no_overrides_compiler.py	2026-10-18 02:06:36.298947700 +0000
++++ /tmp/m0_mq/wt/src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_no_overrides_compiler.py	2026-10-18 17:47:45.538699970 +0000
+@@ -98,8 +98,9 @@
+     existence = Existence[row["existence"]]
+     inlinable_params = row_inlinable_common_shape(row)
+     # Bind-time spell truth stamped by the manifest builder; disposal facts
+-    # compose into the spell fingerprint, so this can never go stale without
+-    # rolling the spell version (and with it, this manifest).
++    # compose into the spell's binding hash, which the creation cache keys on
++    # beside the spell_id, so this can never go stale without rebuilding this
++    # manifest (EPIC-2026-10-18-spell_identity_is_the_code).
+     has_disposal_methods = bool(row["spell_has_disposal_methods"])
+     needs_register_block = not (
+         existence is Existence.many and not has_disposal_methods
+diff -ru --strip-trailing-cr -x __pycache__ -x __melder_cache__ -x '*.meldercache' -x __conjure_cache__ src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/manifest/generalized_manifest.py /tmp/m0_mq/wt/src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/manifest/generalized_manifest.py
+--- src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/manifest/generalized_manifest.py	2026-10-15 16:53:37.236231500 +0000
++++ /tmp/m0_mq/wt/src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/manifest/generalized_manifest.py	2026-10-18 17:47:45.539699971 +0000
+@@ -188,9 +188,9 @@
+           emitter make the inlinable-common-shape decision from row data
+           alone, so source emission never consults live spells.
+         - `spell_has_disposal_methods` is the authoritative emit-time disposal
+-          fact, read from bind-time spell truth (which composes into the spell
+-          fingerprint alongside existence) rather than trusting plan-step
+-          plumbing for disposal data.
++          fact, read from bind-time spell truth (which composes into the spell's
++          binding hash alongside existence; the creation cache keys on it) rather
++          than trusting plan-step plumbing for disposal data.
+         - Additive only; shared row fields are never mutated.
+     """
+     # Copy before stamping: the contract line below ("never mutated") was
+diff -ru --strip-trailing-cr -x __pycache__ -x __melder_cache__ -x '*.meldercache' -x __conjure_cache__ src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/inspector_utility.py /tmp/m0_mq/wt/src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/inspector_utility.py
+--- src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/inspector_utility.py	2026-09-26 10:57:59.690317200 +0000
++++ /tmp/m0_mq/wt/src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/inspector_utility.py	2026-10-18 17:47:45.542699971 +0000
+@@ -69,7 +69,7 @@
+         Return the complete repr() of an object with every CPython memory address removed.
+ 
+         Purpose:
+-            Give the bind fingerprint a representation that is identical in every process for the
++            Give the code digest behind a spell_id a representation that is identical in every process for the
+             same object content. CPython's default reprs embed the object's address
+             (`<function f at 0x...>`, `<C object at 0x...>`, `functools.partial(<function f at
+             0x...>, ...)`), which differs between processes and would give the same spell a new id
+diff -ru --strip-trailing-cr -x __pycache__ -x __melder_cache__ -x '*.meldercache' -x __conjure_cache__ src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py /tmp/m0_mq/wt/src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py
+--- src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py	2026-09-26 10:57:59.703307500 +0000
++++ /tmp/m0_mq/wt/src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py	2026-10-18 17:47:45.537699970 +0000
+@@ -68,8 +68,9 @@
+     """
+     Binding-time view of a class candidate.
+ 
+-    Enough to fingerprint, reason about protocol compatibility, and produce diagnostics.
+-    Very shallow per-method view (names only), no deep inspection.
++    Enough to reason about protocol compatibility and produce diagnostics. Very shallow
++    per-method view (names only), no deep inspection; the spell_id is the class's code
++    digest (`SpellCodeDigest`), never read from this profile.
+     """
+     __slots__ = SpellBindingProfile.__slots__ + [
+         "name",
+@@ -134,9 +135,9 @@
+             origin_line:
+                 Optional source line number.
+             init_signature:
+-                Optional constructor signature string (`str(inspect.signature(cls))`).
+-                Part of the v4 fingerprint: constructor-shape changes must
+-                change the spell id so stale cache bundles cannot full-hit.
++                Optional constructor signature string (`str(inspect.signature(cls))`),
++                address-free, for descriptors and diagnostics. It does not feed the
++                spell_id: the code digest reads the constructor's code itself.
+             source_preview:
+                 Optional truncated source preview. When omitted, the preview
+                 is read lazily from `original_object` on first access
+@@ -233,9 +234,9 @@
+ 
+ class CallableParameterBindingSummary:
+     """
+-    Minimal binding-time view of a single callable parameter (for fingerprint/diagnostics).
++    Minimal binding-time view of a single callable parameter (for diagnostics).
+     """
+-    __slots__ = ["name", "kind", "default_repr", "annotation_repr", "default_fingerprint_repr"]
++    __slots__ = ["name", "kind", "default_repr", "annotation_repr"]
+ 
+     def __init__(
+             self,
+@@ -243,7 +244,6 @@
+             kind: str,
+             default_repr: Optional[str],
+             annotation_repr: Optional[str],
+-            default_fingerprint_repr: Optional[str] = None,
+     ) -> None:
+         """
+         Initialize one minimal callable-parameter binding summary.
+@@ -257,9 +257,6 @@
+                 Optional default-value representation.
+             annotation_repr:
+                 Optional annotation representation.
+-            default_fingerprint_repr:
+-                Optional address-free, untruncated default repr used only by the bind
+-                fingerprint. None means the fingerprint derives it from `default_repr`.
+ 
+         Returns:
+             None.
+@@ -268,7 +265,6 @@
+         self.kind: str = kind
+         self.default_repr: Optional[str] = default_repr
+         self.annotation_repr: Optional[str] = annotation_repr
+-        self.default_fingerprint_repr: Optional[str] = default_fingerprint_repr
+ 
+ 
+ class CallableBindingProfile(SpellBindingProfile):
+@@ -288,7 +284,6 @@
+         "object_id",
+         "type_name",
+         "repr_string",
+-        "fingerprint_repr",
+         "signature",
+         "parameters",
+         "builtin_module",
+@@ -314,7 +309,6 @@
+             extension_module: bool = False,
+             lambda_function: bool = False,
+             abstract: bool = False,
+-            fingerprint_repr: Optional[str] = None,
+     ) -> None:
+         """
+         Initialize one callable binding profile.
+@@ -348,10 +342,6 @@
+                 Whether the callable is a lambda.
+             abstract:
+                 Whether the callable appears abstract.
+-            fingerprint_repr:
+-                Optional address-free, untruncated repr used only by the bind fingerprint
+-                (`InspectorUtility.stable_repr`). None means the fingerprint derives the text
+-                from `repr_string` with memory addresses removed.
+ 
+         Returns:
+             None.
+@@ -369,7 +359,6 @@
+         self.extension_module: bool = extension_module
+         self.lambda_function: bool = lambda_function
+         self.abstract: bool = abstract
+-        self.fingerprint_repr: Optional[str] = fingerprint_repr
+ 
+     def cleanup(self) -> None:
+         """
+@@ -395,7 +384,6 @@
+         del self.extension_module
+         del self.lambda_function
+         del self.abstract
+-        del self.fingerprint_repr
+ 
+         super().cleanup()
+ 
+@@ -408,7 +396,6 @@
+         "type_name",
+         "module",
+         "repr_string",
+-        "fingerprint_repr",
+     ]
+ 
+     def __init__(
+@@ -419,7 +406,6 @@
+             type_name: str,
+             module: str,
+             repr_string: str,
+-            fingerprint_repr: Optional[str] = None,
+     ) -> None:
+         """
+         Initialize one instance binding profile.
+@@ -435,10 +421,6 @@
+                 Declaring module name.
+             repr_string:
+                 Detached representation string.
+-            fingerprint_repr:
+-                Optional address-free, untruncated repr used only by the bind fingerprint
+-                (`InspectorUtility.stable_repr`). None means the fingerprint derives the text
+-                from `repr_string` with memory addresses removed.
+ 
+         Returns:
+             None.
+@@ -447,7 +429,6 @@
+         self.type_name: str = type_name
+         self.module: str = module
+         self.repr_string: str = repr_string
+-        self.fingerprint_repr: Optional[str] = fingerprint_repr
+ 
+     def cleanup(self) -> None:
+         """
+@@ -462,7 +443,6 @@
+         del self.type_name
+         del self.module
+         del self.repr_string
+-        del self.fingerprint_repr
+ 
+         super().cleanup()
+ 
+@@ -479,7 +459,6 @@
+         "type_name",
+         "module",
+         "repr_string",
+-        "fingerprint_repr",
+     ]
+ 
+     def __init__(
+@@ -490,7 +469,6 @@
+             type_name: str,
+             module: str,
+             repr_string: str,
+-            fingerprint_repr: Optional[str] = None,
+     ) -> None:
+         """
+         Initialize one fallback binding profile.
+@@ -506,10 +484,6 @@
+                 Declaring module name.
+             repr_string:
+                 Detached representation string.
+-            fingerprint_repr:
+-                Optional address-free, untruncated repr used only by the bind fingerprint
+-                (`InspectorUtility.stable_repr`). None means the fingerprint derives the text
+-                from `repr_string` with memory addresses removed.
+ 
+         Returns:
+             None.
+@@ -518,7 +492,6 @@
+         self.type_name: str = type_name
+         self.module: str = module
+         self.repr_string: str = repr_string
+-        self.fingerprint_repr: Optional[str] = fingerprint_repr
+ 
+     def cleanup(self) -> None:
+         """
+@@ -532,5 +505,4 @@
+         del self.type_name
+         del self.module
+         del self.repr_string
+-        del self.fingerprint_repr
+         super().cleanup()
+diff -ru --strip-trailing-cr -x __pycache__ -x __melder_cache__ -x '*.meldercache' -x __conjure_cache__ src/melder/aether/spellbook/spell_compiler/spell_examiner/strategies/binding_profile_strategy.py /tmp/m0_mq/wt/src/melder/aether/spellbook/spell_compiler/spell_examiner/strategies/binding_profile_strategy.py
+--- src/melder/aether/spellbook/spell_compiler/spell_examiner/strategies/binding_profile_strategy.py	2026-09-26 16:24:33.590848800 +0000
++++ /tmp/m0_mq/wt/src/melder/aether/spellbook/spell_compiler/spell_examiner/strategies/binding_profile_strategy.py	2026-10-18 17:47:45.537699970 +0000
+@@ -75,16 +75,17 @@
+         3.14 ForwardRefs. TYPE_CHECKING-only imports must not erase the cached
+         signature; known annotation objects and default values remain intact.
+ 
+-        The `init_signature` text feeds the bind fingerprint (spell id). A
+-        ForwardRef's repr embeds its owner, including a memory address, so the
+-        text renders those names as source text
++        The `init_signature` text is descriptor and diagnostic data; the spell_id
++        is the class's code digest (`SpellCodeDigest`), which reads the
++        constructor's code, not this text. A ForwardRef's repr embeds its owner,
++        including a memory address, so the text renders those names as source text
+         (`SignatureReflection.stabilize_signature`) and stays identical across
+         processes; the cached signature object keeps the ForwardRefs.
+ 
+         Class-level annotations come from `_read_class_annotations`: evaluated
+         where every name resolves, otherwise read without evaluating the
+-        unavailable names, which stay as their source text (2026-09-26). The
+-        bind fingerprint hashes their keys, so every annotated field counts.
++        unavailable names, which stay as their source text (2026-09-26), so every
++        annotated field reaches the published spell descriptor.
+         """
+         module = inspect.getmodule(cls)
+ 
+@@ -95,8 +96,8 @@
+         except Exception:
+             origin_file = None
+ 
+-        # No source-file read here: the v4 fingerprint hashes the constructor
+-        # signature instead of a source preview, and the preview itself is
++        # No source-file read here: the spell_id is the class's code digest
++        # (SpellCodeDigest reads code objects, never files), and the preview itself is
+         # served lazily by ClassBindingProfile.source_preview for descriptor
+         # and diagnostic consumers. `__firstlineno__` (3.13+) supplies the
+         # origin line without touching the file system.
+@@ -160,8 +161,8 @@
+               uses): the same keys, each unavailable name as its source text
+               (`'Decimal'`, `'list[Decimal]'`), quoted strings as written.
+               Before 2026-09-26 this case dropped every annotation of the class.
+-            - Keys are always the class's own annotation names, so the bind
+-              fingerprint (which hashes the sorted keys) sees every annotated field.
++            - Keys are always the class's own annotation names, so the profile (and
++              the spell descriptor Nexus publishes from it) lists every annotated field.
+             - Best-effort: any other failure, including one inside that fallback,
+               yields an empty mapping, so binding never fails because a class's
+               annotations cannot be read.
+@@ -197,10 +198,9 @@
+         Partial annotation evaluation retains TYPE_CHECKING-only names in the
+         signature without invoking the callable or dropping its parameters. The
+         signature text and annotation reprs render those names as source text so
+-        they never embed an object address.
+-        `fingerprint_repr` and each parameter's `default_fingerprint_repr` carry the
+-        address-free, untruncated repr the bind fingerprint hashes; `repr_string` and
+-        `default_repr` stay the truncated display text.
++        they never embed an object address. `repr_string` and each parameter's
++        `default_repr` are the truncated display text; the spell_id is the callable's
++        code digest (`SpellCodeDigest`), so no full repr is kept here.
+         """
+         effective = InspectorUtility.unwrap_callable(fn)
+         module = inspect.getmodule(effective)
+@@ -220,10 +220,8 @@
+             parameter_summaries: List[CallableParameterBindingSummary] = []
+             for parameter in signature.parameters.values():
+                 default_repr = None
+-                default_fingerprint_repr = None
+                 if parameter.default is not inspect.Parameter.empty:
+                     default_repr = InspectorUtility.safe_repr(parameter.default, self.max_repr)
+-                    default_fingerprint_repr = InspectorUtility.stable_repr(parameter.default)
+                 annotation_repr = None
+                 if parameter.annotation is not inspect.Parameter.empty:
+                     annotation_repr = InspectorUtility.safe_repr(parameter.annotation, self.max_repr)
+@@ -234,7 +232,6 @@
+                         kind=parameter.kind.name,
+                         default_repr=default_repr,
+                         annotation_repr=annotation_repr,
+-                        default_fingerprint_repr=default_fingerprint_repr,
+                     )
+                 )
+         except (ValueError, TypeError):
+@@ -253,7 +250,6 @@
+             object_id=id(effective),
+             type_name=type(effective).__name__,
+             repr_string=InspectorUtility.safe_repr(effective, self.max_repr),
+-            fingerprint_repr=InspectorUtility.stable_repr(effective),
+             signature=signature_str,
+             parameters=parameter_summaries,
+             builtin_module=builtin_module,
+@@ -266,8 +262,8 @@
+         """
+         Build the binding-time profile for one existing instance candidate.
+ 
+-        The display `repr_string` is truncated; `fingerprint_repr` is the full repr with memory
+-        addresses removed, so a default-repr object gets the same spell id in every process.
++        The display `repr_string` is truncated. The spell_id is the object's digest
++        (`SpellCodeDigest`: its class's code plus its slots and `__dict__`), not a repr.
+         """
+         type_name = type(obj).__name__
+         module = getattr(type(obj), "__module__", "<unknown>")
+@@ -278,14 +274,14 @@
+             type_name=type_name,
+             module=module,
+             repr_string=InspectorUtility.safe_repr(obj, self.max_repr),
+-            fingerprint_repr=InspectorUtility.stable_repr(obj),
+         )
+ 
+     def _build_other_profile(self, obj: Any) -> OtherBindingProfile:
+         """
+         Build the fallback binding profile for unsupported candidate shapes.
+ 
+-        Carries the same address-free `fingerprint_repr` as the instance profile.
++        Carries the same display surface as the instance profile; the spell_id is the
++        candidate's digest (`SpellCodeDigest`).
+         """
+         type_name = type(obj).__name__
+         module = getattr(type(obj), "__module__", "<unknown>")
+@@ -296,7 +292,6 @@
+             type_name=type_name,
+             module=module,
+             repr_string=InspectorUtility.safe_repr(obj, self.max_repr),
+-            fingerprint_repr=InspectorUtility.stable_repr(obj),
+         )
+ 
+     @staticmethod
+diff -ru --strip-trailing-cr -x __pycache__ -x __melder_cache__ -x '*.meldercache' -x __conjure_cache__ src/melder/aether/spellbook/spell_compiler/structural_snapshot/structural_snapshot.py /tmp/m0_mq/wt/src/melder/aether/spellbook/spell_compiler/structural_snapshot/structural_snapshot.py
+--- src/melder/aether/spellbook/spell_compiler/structural_snapshot/structural_snapshot.py	2026-10-18 02:06:36.264927600 +0000
++++ /tmp/m0_mq/wt/src/melder/aether/spellbook/spell_compiler/structural_snapshot/structural_snapshot.py	2026-10-18 17:47:45.538699970 +0000
+@@ -57,8 +57,8 @@
+           registered `SpellLocalTopology`, the SpellIndex's `SpellSystemState`
+           (validity and the `contract_unvalidated` flag) and the bind-time
+           profile requirements (annotation type references for the key).
+-        - Payload schema (`PAYLOAD_FORMAT` 1):
+-          ``{"key": {"format", "spell_id", "annotation_refs"},
++        - Payload schema (`PAYLOAD_FORMAT` 2):
++          ``{"key": {"format", "spell_id", "binding_hash", "annotation_refs"},
+              "world_stamp": str, "replayable": bool,
+              "phase3": {"dependency_ids": [...], "sockets": [...]},
+              "phase4": {"validity": str, "contract_unvalidated": bool}}``
+@@ -70,9 +70,11 @@
+           dependency ids (without the spell itself) followed by the spell id,
+           the same law phase 3 applies.
+         - The world stamp is a SHA-256 over the inputs phases 3-4 read from
+-          the world: the sorted pool ids, the frame posture and the sorted
+-          borrowed (contracted) spell ids. A payload is only meaningful for
+-          the world it was captured in.
++          the world: the sorted pool ids, each with its spell's binding hash,
++          the frame posture and the sorted borrowed (contracted) spell ids,
++          each with its binding hash. A payload is only meaningful for the
++          world it was captured in; a binding changed under one spell_id is
++          another world (EPIC-2026-10-18-spell_identity_is_the_code).
+         - Replayability is a POOL property: phase 3 disables its candidate
+           index, and so falls back to `==` scans, when any bound object or
+           spellframe in the pool overrides `__eq__`; such matching cannot be
+@@ -131,7 +133,9 @@
+ 
+     __slots__ = ()
+ 
+-    PAYLOAD_FORMAT: ClassVar[int] = 1
++    # Format 2 (EPIC-2026-10-18-spell_identity_is_the_code, S2): the key carries the spell's
++    # binding hash beside its spell_id, which became the code digest alone.
++    PAYLOAD_FORMAT: ClassVar[int] = 2
+ 
+     @staticmethod
+     def type_refs(value: Any) -> List[Tuple[str, str]]:
+@@ -262,11 +266,14 @@
+ 
+         Contract:
+             - ``{"format": PAYLOAD_FORMAT, "spell_id": spell.spell_id,
+-              "annotation_refs": [...]}``; the spell id already covers the
+-              spell's own signature, names, existence and resolvability, and
+-              the annotation refs add the (module, qualname) of every type the
+-              spell's sockets match on, so a type that moves module while
+-              keeping its rendered name changes the key.
++              "binding_hash": spell.binding_hash, "annotation_refs": [...]}``.
++              The spell_id is the spell's code (`SpellCodeDigest`), the binding
++              hash how it is bound - address, spellframe, existence, disposal
++              order, resolvable and managed settings (`BindingManifest`) - so
++              a payload captured for one binding is never replayed for another
++              under the same spell_id. The annotation refs add the (module,
++              qualname) of every type the spell's sockets match on, so a type
++              that moves module while keeping its rendered name changes the key.
+             - None when the spell has no live bind-time requirements.
+ 
+         Args:
+@@ -283,6 +290,7 @@
+         return {
+             "format": StructuralSnapshot.PAYLOAD_FORMAT,
+             "spell_id": spell.spell_id,
++            "binding_hash": spell.binding_hash,
+             "annotation_refs": StructuralSnapshot.annotation_refs(requirements),
+         }
+ 
+@@ -292,11 +300,14 @@
+         Digest the world inputs phases 3-4 read for this Book.
+ 
+         Contract:
+-            - SHA-256 hex over three lines: the sorted ids of
+-              `spellbook._spell_id_pool`, the frame posture name
+-              (`system_state`, empty when no frame configuration is bound)
+-              and the sorted ids of the borrowed spells in
+-              `spellbook._contracted_spells`.
++            - SHA-256 hex over three lines: `pool:` and the sorted
++              `<spell_id>=<binding_hash>` entries of `spellbook._spell_id_pool`,
++              `posture:` and the frame posture name (`system_state`, empty when
++              no frame configuration is bound), and `borrowed:` and the sorted
++              `<spell_id>=<binding_hash>` entries of the borrowed spells in
++              `spellbook._contracted_spells`. With the binding hash a binding
++              changed under one spell_id is another world, for both cache
++              tiers (payload format 2, cache generation 23).
+             - No runtime identity (frame name, conduit id, ULIDs) enters the
+               stamp.
+ 
+@@ -308,17 +319,19 @@
+             str:
+                 Hex digest.
+         """
+-        pool_ids = sorted(spellbook._spell_id_pool.keys())
++        pool_entries = sorted(
++            f"{spell_id}={spell.binding_hash}" for spell_id, spell in spellbook._spell_id_pool.items()
++        )
+         frame_configuration = spellbook._aetheric_frame_configuration
+         posture = "" if frame_configuration is None else frame_configuration.system_state.name
+-        borrowed_ids: set[str] = set()
++        borrowed_entries: set[str] = set()
+         for by_index in spellbook._contracted_spells.values():
+             for borrowed in by_index.values():
+-                borrowed_ids.add(borrowed.spell_id)
++                borrowed_entries.add(f"{borrowed.spell_id}={borrowed.binding_hash}")
+         text = "\n".join((
+-            "pool:" + ",".join(pool_ids),
++            "pool:" + ",".join(pool_entries),
+             "posture:" + posture,
+-            "borrowed:" + ",".join(sorted(borrowed_ids)),
++            "borrowed:" + ",".join(sorted(borrowed_entries)),
+         ))
+         return hashlib.sha256(text.encode("utf-8")).hexdigest()
+ 
+diff -ru --strip-trailing-cr -x __pycache__ -x __melder_cache__ -x '*.meldercache' -x __conjure_cache__ src/melder/aether/spellbook/spellbook.py /tmp/m0_mq/wt/src/melder/aether/spellbook/spellbook.py
+--- src/melder/aether/spellbook/spellbook.py	2026-10-18 16:02:48.914938600 +0000
++++ /tmp/m0_mq/wt/src/melder/aether/spellbook/spellbook.py	2026-10-18 17:47:45.540699971 +0000
+@@ -2564,13 +2564,13 @@
+               2. IDENTITY frame-wide - every other conduit's Spellbook in the named frame
+                  is walked, which is what keeps foreign spells (cluster shares, dynamic-link
+                  providers) inspectable by object.
+-              3. FINGERPRINT fallback - only if identity found nothing, the id is
++              3. CODE fallback - only if identity found nothing, the id is
+                  re-derived from the object alone.
+-            - Stage 3 is a LEGACY path and rarely matches a registered binding. The spell
+-              fingerprint composes BIND-TIME facts (existence, disposal methods, binding
+-              name, spell name) that a bare class, function, or instance cannot supply, so
+-              an id re-derived from the object generally cannot equal the id recorded at
+-              bind. Identity matching exists precisely because of that.
++            - Stage 3 matches exactly: a spell_id is the SHA256 of the registered object's
++              code (an existing object's class code plus its data) with nothing from the
++              bind call, so the id re-derived from the object equals the id recorded at bind
++              while the object's code and data are unchanged. Identity runs first: it is
++              cheaper, and it still finds an object whose data changed after bind.
+             - Every stage confirms the candidate id against the Aether registry before
+               returning it; a spell known locally but absent from the registry returns None.
+             - THIS METHOD NEVER RAISES. Every exception is caught, logged, and converted to
+@@ -2605,14 +2605,14 @@
+             (lock_residuals, 0.2.8232)
+         """
+         try:
+-            # The spell fingerprint composes bind-time facts (existence,
+-            # disposal methods, binding name, spell name) that a bare
+-            # class/function/instance cannot supply, so re-deriving the
+-            # id from the object alone can never match a registered
+-            # binding. Resolve by object identity against this
+-            # Spellbook's registered spells first; fall back to the
+-            # legacy default-fact fingerprint for foreign objects so
+-            # cross-book inspection semantics stay unchanged.
++            # A spell_id is the object's code (SpellCodeDigest), so the id
++            # re-derived from the object matches its registered binding
++            # exactly while its code and data are what they were at bind.
++            # Resolve by object identity against this Spellbook's
++            # registered spells first - cheaper, and it still finds an
++            # object whose data changed after bind - then frame-wide by
++            # identity, and only then by the re-derived id (stage 3),
++            # which the Aether registry confirms like the other stages.
+             # Only this walk holds this Spellbook's lock, the lock its writers hold: the confirmation and the stages
+             # below take frame locks, and frame teardown takes this lock under its frame lock
+             # (lock_residuals, 0.2.8232).
+@@ -2635,9 +2635,9 @@
+                 return candidate_spell_id if found else None
+             # Frame-wide object inspection: walk the frame's registered
+             # conduits' spellbooks so foreign spells (cluster shares,
+-            # dynamic-link providers) remain inspectable by object, which
+-            # the legacy fingerprint path provided before bind-time facts
+-            # joined the id composition.
++            # dynamic-link providers) are found by object identity too,
++            # before stage 3 re-derives the id from the object's code
++            # (an existing object whose data changed misses there).
+             if aetheric_frame != "default":
+                 frame = Spellbook._aether._aetheric_frames[aetheric_frame]
+             else:
+@@ -2851,18 +2851,18 @@
+             f"'{self._aetheric_frame_name}' by \n"
+             "another Spellbook:\n"
+             f"{described}\n"
+-            "A spell_id is a SHA256 over the bind-time fingerprint (structural profile, \n"
+-            "lookup signature, existence, and resolved disposal metadata) and does NOT \n"
+-            "include the frame, so two Spellbooks binding the same target with the same \n"
+-            "bind parameters mint the same id. That includes spells staged inactive \n"
+-            "by bind_inactive - a parked spell still holds its id. \n"
++            "A spell_id is the SHA256 of the registered object's code (its methods, \n"
++            "constructor, class-level values and base classes, or an existing object's \n"
++            "class and data) and includes neither the frame nor the bind call, so two \n"
++            "Spellbooks binding the same object mint the same id. That includes spells \n"
++            "staged inactive by bind_inactive - a parked spell still holds its id. \n"
+             "SCOPE: a spell_id is unique per PROCESS while "
+             "`process_wide_unique_spell_ids` \n"
+             "is on (the default), and per FRAME only when it is off. \n"
+-            "Fix: differentiate the binding with a distinct spellframe or "
+-            "binding_name. \n"
++            "Fix: bind the object in one Spellbook and share it with the others (a link "
++            "or a contract); one object is one spell. \n"
+             "Moving to another aetheric frame is NOT a fix under the process-wide \n"
+-            "regime - the id follows the fingerprint, and the fingerprint has no frame \n"
++            "regime - the id follows the code, and the code has no frame \n"
+             "in it."
+         )
+ 
+@@ -5443,11 +5443,16 @@
+                         exc_info=True,
+                     )
+                     raise RuntimeError(
+-                        "Spell ID collision detected. spell_id is computed from the spell's bind-time \n"
+-                        "fingerprint (e.g., structural profile, lookup signature, existence, and resolved \n"
+-                        "disposal metadata). The existing spell with this id is already registered in the \n"
+-                        "Spellbook or Aether for this frame. If you intended to register a distinct spell, ensure its \n"
+-                        "bind-time fingerprint differs so it produces a unique spell_id."
++                        "Spell ID collision detected: this object is already registered as spell_id "
++                        f"{new_spell.spell_id}. A spell_id is the SHA256 of the object's code (its methods, \n"
++                        "constructor, class-level values and base classes, or an existing object's class and \n"
++                        "data), and one object is one spell: registering it again - under another binding \n"
++                        "name, existence or spellframe, or in another Spellbook where spell_ids are unique \n"
++                        "(the process by default, the frame under per-frame spell ids) - is refused. Use the \n"
++                        "spell already registered (another conduit shares it through a link or a contract), \n"
++                        "or cleanup_spell it and bind it again to change how it is bound. A changed method, \n"
++                        "constructor, class-level value or base class is a new spell_id: stage it with \n"
++                        "bind_inactive and notch to it."
+                     )
+ 
+                 self._add_hooks_to_spell(new_spell, **kwargs)
+@@ -5557,7 +5562,7 @@
+ 
+         Args:
+             spell_id:
+-                Binding-signature SHA256 entering the world.
++                The spell_id (the SHA256 of the registered object's code) entering the world.
+             staged:
+                 True for parked (`bind_inactive`) entries.
+ 
+@@ -5792,11 +5797,16 @@
+                         exc_info=True,
+                     )
+                     raise RuntimeError(
+-                        "Spell ID collision detected. spell_id is computed from the spell's bind-time \n"
+-                        "fingerprint (e.g., structural profile, lookup signature, existence, and resolved \n"
+-                        "disposal metadata). The existing spell with this id is already registered in the \n"
+-                        "Spellbook or Aether for this frame. If you intended to register a distinct spell, ensure its \n"
+-                        "bind-time fingerprint differs so it produces a unique spell_id."
++                        "Spell ID collision detected: this object is already registered as spell_id "
++                        f"{new_spell.spell_id}. A spell_id is the SHA256 of the object's code (its methods, \n"
++                        "constructor, class-level values and base classes, or an existing object's class and \n"
++                        "data), and one object is one spell: registering it again - under another binding \n"
++                        "name, existence or spellframe, or in another Spellbook where spell_ids are unique \n"
++                        "(the process by default, the frame under per-frame spell ids) - is refused. Use the \n"
++                        "spell already registered (another conduit shares it through a link or a contract), \n"
++                        "or cleanup_spell it and bind it again to change how it is bound. A changed method, \n"
++                        "constructor, class-level value or base class is a new spell_id: stage it with \n"
++                        "bind_inactive and notch to it."
+                     )
+ 
+                 self._add_hooks_to_spell(new_spell, **kwargs)
+diff -ru --strip-trailing-cr -x __pycache__ -x __melder_cache__ -x '*.meldercache' -x __conjure_cache__ src/melder/aether/spellbook/spellbook_creation_system.py /tmp/m0_mq/wt/src/melder/aether/spellbook/spellbook_creation_system.py
+--- src/melder/aether/spellbook/spellbook_creation_system.py	2026-10-16 09:48:42.073641600 +0000
++++ /tmp/m0_mq/wt/src/melder/aether/spellbook/spellbook_creation_system.py	2026-10-18 17:47:45.538699970 +0000
+@@ -645,6 +645,11 @@
+               compiled in another world. Every payload matched under a
+               different stamp is the mixed path; nothing matched is the full
+               miss; an empty live set stays a full miss.
++            - The stamp carries each pool and borrowed spell's binding hash
++              beside its spell_id (generation 23,
++              EPIC-2026-10-18-spell_identity_is_the_code), so a binding
++              changed under one spell_id - its existence, disposal order,
++              address, resolvable or managed settings - is another world too.
+             - Creates the Spellbook-owned CachingSystem only when caching is
+               enabled; the stamp is computed only then.
+ 
+@@ -677,8 +682,9 @@
+             )
+             cached_spell_ids = set(caching_system.cached_spell_ids)
+             # The executor payloads are a function of the world the structural
+-            # tier already stamps (pool ids, posture, borrowed ids); a bundle
+-            # staged in another world is never replayed as a full hit.
++            # tier already stamps (pool and borrowed ids, each with its binding
++            # hash, and the posture); a bundle staged in another world - another
++            # binding under one spell_id included - is never replayed as a full hit.
+             world_stamp = StructuralSnapshot.world_stamp(spellbook)
+             world_matches = caching_system.world_stamp == world_stamp
+         matched_spell_ids = live_spell_ids.intersection(cached_spell_ids)
+diff -ru --strip-trailing-cr -x __pycache__ -x __melder_cache__ -x '*.meldercache' -x __conjure_cache__ src/melder/crystallizer/crystal_loader_system/graft_runner.py /tmp/m0_mq/wt/src/melder/crystallizer/crystal_loader_system/graft_runner.py
+--- src/melder/crystallizer/crystal_loader_system/graft_runner.py	2026-10-17 22:22:06.229172000 +0000
++++ /tmp/m0_mq/wt/src/melder/crystallizer/crystal_loader_system/graft_runner.py	2026-10-18 17:47:45.539699971 +0000
+@@ -394,8 +394,9 @@
+ 
+         Returns:
+             Tuple[Optional[SpellIndex], int]: Newly bound index (borrowed) and
+-                member count. Parking uses this actual result because receiving
+-                book policy can change the bound member's SHA.
++                member count. Parking uses this actual result because the bound
++                member's spell_id follows its code, which may have moved since the
++                record; the receiving Book's policy decides only its binding.
+ 
+         Raises:
+             ValueError: If the selected member's target cannot hydrate
+@@ -453,8 +454,8 @@
+             shortfalls:
+                 Collector for honest rows.
+             anchor_index:
+-                Actual index returned by the selected bind, borrowed for this call.
+-                No recorded-SHA lookup is needed after receiving-book composition.
++                Actual index returned by the selected bind, borrowed for this call;
++                no lookup by recorded spell_id is needed.
+ 
+         Returns:
+             int: Members parked.
+@@ -506,9 +507,10 @@
+             selection. Index internals stay untouched.
+ 
+         Contract:
+-            - Receiving-book policy applies at each bind. Selection adoption
+-              follows the live ID returned by the selected member's bind,
+-              which may differ from its recorded SHA.
++            - Receiving-book policy applies at each bind and decides the binding,
++              not the spell_id. Selection adoption follows the live spell_id the
++              selected member's bind returned, which differs from the recorded one
++              only when the member's code moved since the record.
+             - Adoption is honest: requested-but-ungrafted selection
+               lands a shortfall instead of a silent no-op.
+             - Each parked member retains its recorded resolution capability and, when
+diff -ru --strip-trailing-cr -x __pycache__ -x __melder_cache__ -x '*.meldercache' -x __conjure_cache__ src/melder/crystallizer/crystal_loader_system/restore_engine.py /tmp/m0_mq/wt/src/melder/crystallizer/crystal_loader_system/restore_engine.py
+--- src/melder/crystallizer/crystal_loader_system/restore_engine.py	2026-10-18 01:41:11.131624400 +0000
++++ /tmp/m0_mq/wt/src/melder/crystallizer/crystal_loader_system/restore_engine.py	2026-10-18 17:47:45.539699971 +0000
+@@ -19,6 +19,7 @@
+ 
+ if TYPE_CHECKING:
+     from melder.aether.conduit.conduit import Conduit
++    from melder.aether.spellbook.spell import Spell
+     from melder.aether.spellbook.spellbook import Spellbook
+     from melder.utilities.synchronization.phase_scheduler import (
+         PhaseScheduler,
+@@ -49,6 +50,11 @@
+           entered here; nothing is silently under-built.
+         - Recorded ULIDs appear ONLY inside the translation map; they never
+           escape into the rebuilt world (never-rehydrate-ULIDs policy).
++        - Binding changes (record 4.3.0): a spell whose binding the receiving
++          Book rebuilt differently from the record - another disposal order,
++          say - is listed by custody key with its recorded and live binding
++          hashes. It is information, never a shortfall: the receiving Book's
++          policy is the restore's rule, and the spell_id (its code) is kept.
+ 
+     Threading:
+         One internal RLock serializes every mutator and reader (S4,
+@@ -94,6 +100,7 @@
+         "_built_counts",
+         "_shortfalls",
+         "_identity_map",
++        "_binding_changes",
+         "_status",
+         "_failed_stage",
+         "_preflight",
+@@ -132,6 +139,8 @@
+         self._built_counts: Dict[str, int] = {}
+         self._shortfalls: List[Dict[str, str]] = []
+         self._identity_map: Dict[str, str] = {}
++        # custody key -> {"recorded": hash, "live": hash} for each binding rebuilt differently (record 4.3.0).
++        self._binding_changes: Dict[str, Dict[str, str]] = {}
+         self._status: str = "pending"
+         self._failed_stage: Optional[str] = None
+         # Load-time strategy analysis (owner ruling: strategies run AS
+@@ -171,6 +180,7 @@
+             del self._built_counts
+             del self._shortfalls
+             del self._identity_map
++            del self._binding_changes
+             del self._status
+             del self._failed_stage
+             del self._preflight
+@@ -271,9 +281,12 @@
+         """
+         Record one recorded identity -> actual live identity translation.
+ 
+-        Structural ULIDs are always translated. Spell SHA entries are added
+-        when a new bind's resolved signature differs from its recorded one;
+-        unchanged content IDs remain directly addressable without an entry.
++        Structural ULIDs are always translated. A spell_id entry is added
++        when a replayed bind returns another spell_id than the recorded one -
++        the target's code moved since the record (a class edited on disk,
++        another Python version); unchanged spell_ids need no entry. A binding
++        the receiving Book's policy rebuilt differently keeps its spell_id and
++        is reported by `record_binding_change` instead.
+ 
+         Args:
+             recorded_id:
+@@ -292,6 +305,41 @@
+         with self._lock:
+             self._identity_map[recorded_id] = live_id
+ 
++    def record_binding_change(
++            self,
++            custody_key: str,
++            recorded_binding_hash: str,
++            live_binding_hash: str,
++    ) -> None:
++        """
++        Record one binding a replayed bind rebuilt differently from its record (record 4.3.0).
++
++        Contract:
++            - Keyed by custody key; a later call for the same key replaces the entry.
++            - Information only: no shortfall is filed and nothing raises.
++
++        Args:
++            custody_key:
++                The folded custody key of the replayed spell.
++            recorded_binding_hash:
++                The binding hash the record carries.
++            live_binding_hash:
++                The binding hash of the spell the replayed bind registered.
++
++        Returns:
++            None.
++
++        Raises:
++            RuntimeError:
++                If the report has been cleaned.
++        """
++        self.check_cleaned()
++        with self._lock:
++            self._binding_changes[custody_key] = {
++                "recorded": recorded_binding_hash,
++                "live": live_binding_hash,
++            }
++
+     def translate(self, recorded_id: str) -> Optional[str]:
+         """
+         Resolve one recorded identity to its fresh live identity.
+@@ -352,14 +400,16 @@
+         Return the report payload as value-shaped containers.
+ 
+         Contract:
+-            Recreates checkpoint ids, built counts, shortfall rows, and identity
+-            mappings. The preflight dictionary is copied at its outer boundary;
++            Recreates checkpoint ids, built counts, shortfall rows, identity
++            mappings and binding changes (record 4.3.0; empty when every binding
++            replayed as recorded). The preflight dictionary is copied at its outer boundary;
+             consumers should treat nested finding rows as immutable report data.
+ 
+         Returns:
+             Dict[str, object]:
+                 Status, profile, chain ids, built counts, shortfall entries,
+-                and the identity translation map - fully detached copies.
++                the identity translation map and the binding changes - fully
++                detached copies.
+ 
+         Raises:
+             RuntimeError:
+@@ -375,6 +425,9 @@
+                 "built_counts": dict(self._built_counts),
+                 "shortfalls": [dict(entry) for entry in self._shortfalls],
+                 "identity_map": dict(self._identity_map),
++                "binding_changes": {
++                    key: dict(entry) for key, entry in self._binding_changes.items()
++                },
+                 "preflight": dict(self._preflight),
+                 "plan": dict(self._plan_summary),
+             }
+@@ -1902,9 +1955,13 @@
+               self-admits its window), the recorded root conduit conjures,
+               staged members bind_inactive onto their live anchors POST-
+               conjure, then divergent selections notch.
+-            - Spell SHAs stay stable when recorded signature and receiving policy
+-              agree. A changed signature maps to the actual bind result in the
+-              existing report, before member/selection/contract references replay.
++            - A spell_id is the target's code, so the receiving policy never moves
++              it; it moves only when the code moved since the record (a class
++              edited on disk, another Python version), and a moved id maps to the
++              actual bind result in the report before member, selection and
++              contract references replay. A binding the receiving policy rebuilds
++              differently (another disposal order) keeps its spell_id and is
++              reported as a binding change (record 4.3.0).
+ 
+         Returns:
+             None.
+@@ -2151,7 +2208,9 @@
+ 
+         Contract:
+             Forward ordered disposal names through normal book composition.
+-            Record a changed SHA before resolving dependent staged members.
++            Record a changed spell_id (the code moved since the record) before
++            resolving dependent staged members, and report a binding the receiving
++            Book rebuilt differently (record 4.3.0).
+             Preserve recorded capability; only legacy absence defaults to True.
+             Replay a managed spell's recorded options (record 4.2.0), so it
+             rebinds with its own options and spell id.
+@@ -2165,7 +2224,8 @@
+                 The live rebuilt Spellbook.
+             custody_key:
+                 The folded custody key (the spell id, or "<spell_id>@<frame>");
+-                receiving policy determines the new bind ID.
++                the replayed spell_id follows the target's code, the receiving
++                policy its binding.
+             crystal:
+                 The folded custody payload.
+ 
+@@ -2192,6 +2252,7 @@
+         self._report.record_built("spell_active")
+         self._map_spell_identity(spellbook_id, spell_id, new_spell_id)
+         live_spell = spellbook.find_spell_by_spell_id(new_spell_id)
++        self._record_binding_change(custody_key, crystal, live_spell)
+         recorded_index_id = self._index_id_for_member(spellbook_id, spell_id)
+         if recorded_index_id is not None and live_spell is not None:
+             self._report.map_identity(
+@@ -2210,8 +2271,9 @@
+         Replay one STAGED member onto its live index anchor.
+ 
+         Contract:
+-            Retain the ordered recorded names and map any changed bind identity
+-            before the selection stage resolves this exact parked member.
++            Retain the ordered recorded names, map a changed spell_id before the
++            selection stage resolves this exact parked member, and report a
++            binding the receiving Book rebuilt differently (record 4.3.0).
+             Preserve the parked version's own resolution capability and, for a
+             managed version, its own recorded options (record 4.2.0).
+             The anchor index is found within this Book, the custody key names
+@@ -2226,7 +2288,8 @@
+                 The live conduit hosting `bind_inactive`.
+             custody_key:
+                 The folded custody key (the spell id, or "<spell_id>@<frame>");
+-                receiving policy determines the new bind ID.
++                the replayed spell_id follows the target's code, the receiving
++                policy its binding.
+             crystal:
+                 The folded custody payload.
+ 
+@@ -2266,6 +2329,8 @@
+             **SpellCrystal.managed_bind_options(crystal),
+         )
+         self._map_spell_identity(spellbook_id, spell_id, new_spell_id)
++        # The exact lookup (0.2.8253) answers the parked version itself.
++        self._record_binding_change(custody_key, crystal, spellbook.find_spell_by_spell_id(new_spell_id))
+         self._report.record_built("spell_staged")
+ 
+     def _enforce_selections(
+@@ -2333,7 +2398,9 @@
+ 
+         Contract:
+             - A changed id goes to the report's identity map (as before) and to
+-              the per-Book translation; an unchanged id needs neither.
++              the per-Book translation; an unchanged id needs neither. A spell_id
++              changes only with the target's code, never with the receiving
++              policy (EPIC-2026-10-18-spell_identity_is_the_code).
+             - Per Book (0.2.8214): one spell id rebuilt in two Books may bind
+               to two new ids, and each Book's references must follow its own.
+ 
+@@ -2353,6 +2420,42 @@
+         self._report.map_identity(spell_id, new_spell_id)
+         self._spell_translation[(spellbook_id, spell_id)] = new_spell_id
+ 
++    def _record_binding_change(
++            self,
++            custody_key: str,
++            crystal: Dict[str, object],
++            live_spell: Optional[Spell],
++    ) -> None:
++        """
++        Internal
++
++        Report one binding a replayed bind rebuilt differently from its record (record 4.3.0).
++
++        Contract:
++            - Compares the recorded `binding_hash` with the rebuilt spell's; a
++              difference goes to `RestoreReport.record_binding_change`, never a
++              shortfall or a raise - the receiving Book's policy is the rule.
++            - A record older than 4.3.0 carries no binding hash and is not
++              compared; a spell the bind did not leave findable is not compared.
++
++        Args:
++            custody_key:
++                The folded custody key the bind replayed.
++            crystal:
++                The folded custody payload.
++            live_spell:
++                The Spell the replayed bind registered (active or parked), or None.
++
++        Returns:
++            None.
++        """
++        recorded = crystal.get("binding_hash")
++        if not isinstance(recorded, str) or live_spell is None:
++            return
++        live = live_spell.binding_hash
++        if live != recorded:
++            self._report.record_binding_change(custody_key, recorded, live)
++
+     def _translate_spell(self, spellbook_id: str, spell_id: str) -> str:
+         """
+         Internal
+@@ -2672,9 +2775,10 @@
+         Stage 9 (LAST): re-grant recorded contract details.
+ 
+         Contract:
+-            - Detail Spell IDs follow recorded-to-live translation when a bind
+-              changed its signature, within the granting conduit's Book
+-              (0.2.8214); unchanged SHAs remain direct. Conduit endpoints
++            - Detail spell_ids follow the recorded-to-live translation when a
++              replayed bind returned another spell_id (its code moved since the
++              record), within the granting conduit's Book (0.2.8214); unchanged
++              spell_ids remain direct. Conduit endpoints
+               translate through the existing identity map.
+             - Ward record truth: a plain detail lives in the map of the
+               side that OWNS the spell ("initiated" via the link-time
+diff -ru --strip-trailing-cr -x __pycache__ -x __melder_cache__ -x '*.meldercache' -x __conjure_cache__ src/melder/crystallizer/crystals/spell_crystal.py /tmp/m0_mq/wt/src/melder/crystallizer/crystals/spell_crystal.py
+--- src/melder/crystallizer/crystals/spell_crystal.py	2026-10-18 00:54:49.228208200 +0000
++++ /tmp/m0_mq/wt/src/melder/crystallizer/crystals/spell_crystal.py	2026-10-18 17:47:45.539699971 +0000
+@@ -42,6 +42,9 @@
+         - records a managed spell's options (record 4.2.0) - mode by name, limit,
+           queue timeout and reset method names - and nothing new for any other
+           existence, so every other payload is unchanged
++        - records the spell's binding hash (record 4.3.0): the SHA256 of how it is
++          bound, apart from its code (`Spell.binding_hash`); a restore compares the
++          binding it rebuilds with it
+         - records the spell's frame and its record key (`custody_key`): the
+           spell id under process-wide ids, "<spell_id>@<frame>" under
+           per-frame ids, where one spell id may be bound in several frames
+@@ -155,6 +158,7 @@
+         "_managed_spell_limit",
+         "_managed_spell_timeout_seconds",
+         "_managed_spell_reset_methods",
++        "_binding_hash",
+     ]
+ 
+     def __init__(
+@@ -187,6 +191,8 @@
+             - Captures resolved disposal names in execution order. This detached
+               persistence value does not sort or reapply book policy.
+             - Captures native resolution capability so replay cannot enable a definition.
++            - Captures the spell's binding hash (record 4.3.0), the SHA256 of its
++              binding manifest; a restore reports a binding it rebuilt differently.
+             - Captures a managed spell's options (record 4.2.0) as plain values - the
+               mode's name, the limit, the queue timeout and the reset names - only when
+               the existence is `managed_spell_quantity`; other spells capture nothing new.
+@@ -325,6 +331,11 @@
+         self._existence_name: str = spell.existence.name
+         self._permissions_name: str = spell.permissions.name
+         self._resolvable: bool = spell.resolvable
++        # Binding hash (record 4.3.0, EPIC-2026-10-18-spell_identity_is_the_code): the SHA256 of how this
++        # version is bound - its address, spellframe and kind, existence, disposal order, resolvable and
++        # managed settings - apart from its code (`spell_id`). A restore compares the binding it rebuilds
++        # with it and reports a difference.
++        self._binding_hash: str = spell.binding_hash
+         # Managed options (record 4.2.0): read only for a managed spell, so every other crystal - and its
+         # describe() payload - is unchanged. Plain values: the mode is recorded by NAME, never the enum.
+         if self._existence_name == "managed_spell_quantity":
+@@ -460,6 +471,7 @@
+             del self._existence_name
+             del self._permissions_name
+             del self._resolvable
++            del self._binding_hash
+             del self._managed_spell_mode_name
+             del self._managed_spell_limit
+             del self._managed_spell_timeout_seconds
+@@ -929,6 +941,28 @@
+         }
+ 
+     @property
++    def binding_hash(self) -> str:
++        """
++        Return the binding hash recorded at bind (record 4.3.0).
++
++        Contract:
++            - The SHA256 of the spell's binding manifest at capture (`Spell.binding_hash`): how
++              the version was bound - address, spellframe and kind, existence, disposal order,
++              resolvable and managed settings - hashed apart from its code (`id`).
++            - A restore compares it with the binding it rebuilds under the receiving Book's
++              policy and reports a difference (`RestoreReport.record_binding_change`).
++
++        Returns:
++            str: 64 hex characters.
++
++        Raises:
++            RuntimeError: If the crystal has been cleaned.
++        """
++        self.check_cleaned()
++        with self._lock:
++            return self._binding_hash
++
++    @property
+     def profile_family(self) -> str:
+         """
+         Return the examination-profile family recorded at bind.
+@@ -1380,6 +1414,8 @@
+                 "existence_name": self._existence_name,
+                 "permissions_name": self._permissions_name,
+                 "resolvable": self._resolvable,
++                # Record 4.3.0: written for every spell; a restore compares it.
++                "binding_hash": self._binding_hash,
+                 "disposal_method_names": list(self._disposal_method_names),
+                 "profile_family": self._profile_family,
+                 "rebindability": self._rebindability,
+diff -ru --strip-trailing-cr -x __pycache__ -x __melder_cache__ -x '*.meldercache' -x __conjure_cache__ src/melder/crystallizer/persistence/record_version.py /tmp/m0_mq/wt/src/melder/crystallizer/persistence/record_version.py
+--- src/melder/crystallizer/persistence/record_version.py	2026-10-15 10:47:04.562303100 +0000
++++ /tmp/m0_mq/wt/src/melder/crystallizer/persistence/record_version.py	2026-10-18 17:47:45.539699971 +0000
+@@ -84,7 +84,10 @@
+     # Minor 4.2 adds a managed spell's options to its spell crystal (`managed_spell_mode`,
+     # `managed_spell_limit`, `managed_spell_timeout_seconds`, `managed_spell_reset_methods`), written only
+     # for `Existence.managed_spell_quantity`; 4.1 readers ignore them, and a 4.1 record holds no such keys.
+-    CURRENT: ClassVar[str] = "4.2.0"
++    # Minor 4.3 adds the spell crystal's `binding_hash` (EPIC-2026-10-18-spell_identity_is_the_code, S2):
++    # the SHA256 of the spell's binding manifest, written for every spell; 4.2 readers ignore it, and a
++    # 4.2 record read by a 4.3 loader compares no binding.
++    CURRENT: ClassVar[str] = "4.3.0"
+     KEY: ClassVar[str] = "record_version"
+ 
+     @staticmethod
+diff -ru --strip-trailing-cr -x __pycache__ -x __melder_cache__ -x '*.meldercache' -x __conjure_cache__ src/melder/utilities/caching_system/caching_system.py /tmp/m0_mq/wt/src/melder/utilities/caching_system/caching_system.py
+--- src/melder/utilities/caching_system/caching_system.py	2026-10-18 00:54:49.209479200 +0000
++++ /tmp/m0_mq/wt/src/melder/utilities/caching_system/caching_system.py	2026-10-18 17:47:45.538699970 +0000
+@@ -82,8 +82,9 @@
+           bytes and DROPS the source's structural payload (the receiving
+           Book captures its own on its next conjure).
+         - Since generation 19 the envelope also carries `world_stamp`: the
+-          structural tier's world stamp (sorted pool ids, posture, borrowed
+-          ids) recorded by `set_world_stamp` when the executor payloads were
++          structural tier's world stamp (the sorted pool and borrowed ids,
++          each with its spell's binding hash since generation 23, and the
++          posture) recorded by `set_world_stamp` when the executor payloads were
+           last staged. The executor tier admits a full hit only when the live
+           world carries the same stamp; "" (an empty store, or a bundle
+           written without the field) never matches, so the rule fails closed.
+@@ -201,6 +202,14 @@
+     # release change already cold-starts every bundle (version 9); the bump
+     # records why, as the owner asked ("you gotta notch the version for the
+     # cache because this is a bug").
++    # Version 23 retires bundles keyed by the spell_id before it became the
++    # SHA256 of the registered object's code alone (S1 of
++    # EPIC-2026-10-18-spell_identity_is_the_code): the bind call left it and
++    # became the binding manifest, whose hash the structural key (payload
++    # format 2) and the world stamp now carry beside each spell_id (S2), so a
++    # binding changed under one spell_id misses both tiers. Every spell_id
++    # moved, and a release change already cold-starts every bundle (version 9);
++    # the bump records why.
+     CACHE_VERSION_HISTORY: ClassVar[Mapping[int, str]] = MappingProxyType({
+         1: "legacy_executor_payloads",
+         2: "decoded_manifest_package_payloads",
+@@ -224,6 +233,7 @@
+         20: "annotation_kind_matching",
+         21: "managed_spell_lease_codegen",
+         22: "managed_settings_leave_spell_id",
++        23: "binding_manifest_keys",
+     })
+     CURRENT_VERSION: ClassVar[int] = max(CACHE_VERSION_HISTORY)
+ 

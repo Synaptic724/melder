@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/system/validation/dependency_type_sanity_strategy.py",
- "source_sha256": "69959ce02eae76b007ba99a07c218cbecf024a0fa56993efd86968ec998a4bd8",
+ "source_sha256": "34c06f079c9725b440dbd8bd5630c5ac6fe5f9a51eebb69d739a8619b7952d8a",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.system.validation.dependency_type_sanity_strategy": {
@@ -39,7 +39,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "608e9564464b74451ce1df33ef4e8aefa3db9edfb7e381c77595dc8c984c1a22",
+   "span_sha256": "66b26aba5734f47c49799ddbdd4563da9349dd23727456320cef3a06968d4018",
    "include": true,
    "role": "An advisory check on dependency SHAPE: rooted system dependencies leaning on method/lambda spell types where class or existing-creation nodes are expected.",
    "responsibilities": [

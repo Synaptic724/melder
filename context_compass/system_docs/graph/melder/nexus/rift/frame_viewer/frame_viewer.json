@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/rift/frame_viewer/frame_viewer.py",
- "source_sha256": "28ce784581117a2042b191c97be5e7dcb5fb9dcd2db060e1b0130f3e3d0c9fdf",
+ "source_sha256": "ced7ac875af3c0e44466a48856022adfb2583c5d67aa883cb34c6cb88ddbcdbd",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.rift.frame_viewer.frame_viewer": {
@@ -187,7 +187,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "e3d8fbf3bce28d1efd6782b3d5a20535bca8180bf7eb47812c47e44d1596a9d5",
+   "span_sha256": "52265bee1c5e90f0a731e1135fac9b6233996976093f9c8b7e7207cad1530b78",
    "role": "Projection-backed room viewer asset.",
    "responsibilities": [
     "holds the current per-frame projection-set references for the room",

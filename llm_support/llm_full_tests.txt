@@ -1,8 +1,8 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: tests
-SOURCE FINGERPRINT: 1087e3e0d5df5dcf1dde69319fe6f9bb4d4d79b4fe83e7db3ed2d57a9d03a651
-FILE COUNT: 1129
+SOURCE FINGERPRINT: b12ac8e186d88cd69c6a46889ef37da496ce2fe0b83ad03f84361e08c8f1f233
+FILE COUNT: 1132
 
 ================================================================================
 BEGIN FILE: tests/_annotation_audit_support.py
@@ -93249,6 +93249,517 @@ def test_unhashable_input_never_writes_the_resolution_cache():
 END FILE: tests/integration/melder/aether/conduit/test_meld_unhashable_input_cache_aliasing.py
 ================================================================================
 ================================================================================
+BEGIN FILE: tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py
+CONTENT SHA256: 91a2888902267fb5b8a94ea3d38ed6e8e72210afc9c1125350f7dd471d84be1c
+SOURCE ENCODING: utf-8
+================================================================================
+"""
+Integration: a notch whose incoming version fails its structural check is refused with nothing moved
+(STORY-2026-10-17-failed_notch_keeps_switch_without_borrowers; patch failed_notch_refusal_2026_10_18).
+
+Phases 1-4 of a version that was never compiled run when it is notched in. Until 0.2.8256 they ran at the
+transaction's commit, after the switch, and nothing undid the switch: `notch_spell` raised SpellbookValidationError
+while the lender's index selected the broken version, its borrowers kept the old one, and the lender could not meld
+the index by address. The notch now runs the check inside its window and, when the check fails, puts the structure
+back before it raises: the owner's answer (a), "refuse it and throw and move on".
+
+The broken version is `SelfMade`, whose constructor takes its own class (SELF_DEPENDENCY at Phase 4): it is only
+checked once it is active, because a parked version is not in the pool Phase 3 resolves against.
+
+Worlds follow probe N1-N3 (artifacts/correctness_defects_20261017/probes/probe_failed_notch_commit.py): a dynamic
+frame with caching off, English active on the lender's index and, when a borrower is asked for, a second Book that
+links and contracts the whole index.
+"""
+import contextlib
+from typing import Any, Iterator, List, Optional, Protocol, Set, Tuple
+
+import pytest
+
+from melder.aether.aether import Aether
+from melder.aether.aether_utility_system import AetherUtilitySystem
+from melder.aether.conduit.conduit import Conduit
+from melder.aether.spellbook.bind.spell_index import SpellIndex
+from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spellbook import Spellbook
+from melder.nexus.nexus import Nexus
+from melder.utilities.custom_exceptions.spellbook_validation_error import SpellbookValidationError
+
+pytestmark = pytest.mark.integration
+
+
+class Greeter(Protocol):
+    """The contract every version implements."""
+
+    def greet(self) -> str:
+        """Return a greeting."""
+        ...
+
+
+class English:
+    """The version bound active."""
+
+    def greet(self) -> str:
+        """Return the English greeting."""
+        return "hello"
+
+
+class French:
+    """A sound version staged beside it."""
+
+    def greet(self) -> str:
+        """Return the French greeting."""
+        return "bonjour"
+
+
+class SelfMade:
+    """A broken version: its constructor takes its own class (SELF_DEPENDENCY once it is active)."""
+
+    def __init__(self, other: SelfMade) -> None:
+        """
+        Keep the other instance.
+
+        Args:
+            other: Another instance of this class; no meld can supply one.
+        """
+        self.other = other
+
+    def greet(self) -> str:
+        """Return a greeting."""
+        return "hi"
+
+
+class Speaker:
+    """The borrower Book's consumer of the lender's index."""
+
+    def __init__(self, greeter: Greeter) -> None:
+        """
+        Keep the greeter the borrower resolves.
+
+        Args:
+            greeter: The version the borrower's contracted copy of the index makes active.
+        """
+        self.greeter = greeter
+
+
+def _reset_world() -> None:
+    """Fresh utility, Nexus and Aether singletons, rebound on Spellbook and Conduit."""
+    AetherUtilitySystem._reset_singleton_for_tests()
+    Nexus._reset_singleton_for_tests()
+    Aether._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+
+
+@pytest.fixture(autouse=True)
+def fresh_world() -> Iterator[None]:
+    """Isolate each test behind fresh singletons."""
+    _reset_world()
+    yield
+    _reset_world()
+
+
+def _make_spellbook(frame: str, *, configure_frame: bool, rift_enabled: bool = False) -> Spellbook:
+    """
+    A Book in `frame`; the first Book of a frame also sets the frame's posture.
+
+    Args:
+        frame: The frame the Book lives in.
+        configure_frame: Set the frame dynamic with caching off (probe N1-N3's posture); only the first Book does.
+        rift_enabled: Make the frame publish into passive Nexus records.
+
+    Returns:
+        Spellbook: A new Book.
+    """
+    book = Spellbook(aetheric_frame=frame, configuration=SpellbookConfiguration(frame).with_defaults())
+    if configure_frame:
+        book.configure_aether_frame(
+            system_state="dynamic", disposal=None, disposal_method_names=None, system_caching_enabled=False,
+            rift_enabled=rift_enabled,
+        )
+    return book
+
+
+class _World:
+    """Handles of one lender and, when one was built, its index-linked borrower."""
+
+    def __init__(self, book: Spellbook, lender: Conduit, index: SpellIndex, english_id: str, frame: str) -> None:
+        """
+        Keep the lender's handles; `_world` sets the borrower's when it builds one.
+
+        Args:
+            book: The lender's Book.
+            lender: The lender's root conduit.
+            index: The index English is active on.
+            english_id: English's spell_id.
+            frame: The frame the Books live in.
+        """
+        self.book = book
+        self.lender = lender
+        self.index = index
+        self.english_id = english_id
+        self.frame = frame
+        self.borrower_book: Optional[Spellbook] = None
+        self.borrower: Optional[Conduit] = None
+        self.speaker_id: Optional[str] = None
+
+    def stage(self, spell: type, binding_name: str = "greeter") -> str:
+        """
+        Stage `spell` on the lender's index through the lender.
+
+        Args:
+            spell: The class to stage.
+            binding_name: The address it is staged at.
+
+        Returns:
+            str: The staged version's spell_id.
+        """
+        return self.lender.bind_inactive(
+            spell=spell, spell_index=self.index, spellframe=Greeter, binding_name=binding_name,
+            existence=Existence.many, permissions="create",
+        )
+
+    def frame_claim(self, key: Tuple[str, str]) -> Optional[str]:
+        """
+        The spell_id the frame's lookup holds for `key`, or None.
+
+        Args:
+            key: A binding signature `(frame_key, bind_key)`.
+
+        Returns:
+            Optional[str]: The claiming spell_id.
+        """
+        return Aether().get_frame(self.frame).get_lookup(key)
+
+    def borrower_copies(self) -> Tuple[Set[str], Set[str]]:
+        """
+        The borrower's active and parked copies of the lender's versions, by spell_id.
+
+        Returns:
+            Tuple[Set[str], Set[str]]: (active spell_ids, parked spell_ids).
+        """
+        assert self.borrower_book is not None
+        active = set(self.borrower_book._contracted_spells_by_id.get(self.lender._id, {}))
+        parked = set(self.borrower_book._inactive_contracted_spells.get(self.lender._id, {}))
+        return active, parked
+
+    def nexus_spell_records(self) -> Set[Tuple[str, str]]:
+        """
+        The passive Nexus spell-record keys of the frame, `(spellbook id, spell_id)`.
+
+        Returns:
+            Set[Tuple[str, str]]: The published keys.
+        """
+        return set(Nexus()._get_required_frame_descriptor(self.frame).spell_records_by_key)
+
+
+@contextlib.contextmanager
+def _world(frame: str, *, borrower: bool = False, rift_enabled: bool = False) -> Iterator[_World]:
+    """
+    English active on the lender's index; optionally a borrower that contracts the whole index.
+
+    Args:
+        frame: The frame for both Books.
+        borrower: Build an index-linked borrower Book with a consumer (`Speaker`) of the index.
+        rift_enabled: Make the frame publish passive Nexus records.
+
+    Yields:
+        _World: The handles; both roots are torn down on exit.
+    """
+    book = _make_spellbook(frame, configure_frame=True, rift_enabled=rift_enabled)
+    borrower_book = _make_spellbook(frame, configure_frame=False) if borrower else None
+    english_id = book.bind(
+        spell=English, spellframe=Greeter, binding_name="greeter", existence=Existence.many, permissions="create",
+    )
+    speaker_id = None
+    if borrower_book is not None:
+        speaker_id = borrower_book.bind(spell=Speaker, existence=Existence.many, permissions="create")
+    lender = book.conjure(dynamic=True, name="lender")
+    world = _World(book, lender, book.find_spell_by_spell_id(english_id).spell_index, english_id, frame)
+    try:
+        if borrower_book is not None:
+            world.borrower_book = borrower_book
+            world.borrower = borrower_book.conjure(dynamic=True, name="borrower")
+            world.speaker_id = speaker_id
+            lender.link(world.borrower)
+            with world.borrower.transaction("link", conduits=[world.borrower, lender]):
+                assert world.borrower.add_index_to_contract(index=world.index, conduit=lender, permissions="create")
+        yield world
+    finally:
+        if world.borrower is not None:
+            world.borrower.cleanup()
+        lender.cleanup()
+
+
+def _refused_notch(world: _World, spell_id: str, index: Optional[SpellIndex] = None) -> SpellbookValidationError:
+    """
+    Notch to `spell_id` and return the SpellbookValidationError it must raise.
+
+    Args:
+        world: The handles.
+        spell_id: The broken version's spell_id.
+        index: The index to notch; the world's index when None.
+
+    Returns:
+        SpellbookValidationError: The refusal.
+    """
+    with pytest.raises(SpellbookValidationError) as refused:
+        world.lender.notch_spell(spell_index=world.index if index is None else index, spell_id=spell_id)
+    return refused.value
+
+
+def _assert_english_stands(world: _World, broken_id: str) -> None:
+    """
+    Assert the lender is as before the refused notch: English selected, active, claimed and routed; the broken
+    version parked and unchecked.
+
+    Args:
+        world: The handles.
+        broken_id: The refused version's spell_id.
+    """
+    english = world.book.find_spell_by_spell_id(world.english_id)
+    assert world.index.selected_spell_id == world.english_id
+    assert world.index.spells_in_index() >= {world.english_id, broken_id}
+    assert world.frame_claim(english.key) == world.english_id
+    # The Book's address lookup and active map are the structure a meld by address reads.
+    assert world.book._lookup_spells[english.key] is world.index
+    assert world.english_id in world.book._spells_by_id
+    assert broken_id in world.book._inactive_spells
+    assert world.book.find_spell_by_spell_id(broken_id).validation_result_phase4 is None
+    assert isinstance(world.lender.meld(spellframe=Greeter, binding_name="greeter"), English)
+    assert isinstance(world.lender.meld(spell_id=world.english_id), English)
+    with pytest.raises(KeyError):
+        world.lender.meld(spell_id=broken_id)
+
+
+def test_a_notch_refused_at_commit_leaves_the_old_version_active() -> None:
+    """
+    Regression (probe N2): the lender used to select the broken version after the error.
+
+    Contract:
+        - The index selects English, English is active and holds its claim and address, SelfMade is parked with no
+          Phase-4 result, and English melds by address and by spell_id.
+    """
+    with _world("refused_old_version") as world:
+        broken_id = world.stage(SelfMade)
+
+        _refused_notch(world, broken_id)
+
+        _assert_english_stands(world, broken_id)
+
+
+def test_a_notch_refused_at_commit_says_it_did_not_happen() -> None:
+    """The error's first line says the notch did not happen and names the version still active; the report follows."""
+    with _world("refused_message") as world:
+        broken_id = world.stage(SelfMade)
+
+        error = _refused_notch(world, broken_id)
+
+        lines = str(error).splitlines()
+        assert lines[0] == (
+            f"notch_spell refused: 'SelfMade' (spell_id {broken_id}) failed its structural check, so the notch did "
+            f"not happen; 'English' (spell_id {world.english_id}) is still the active version of the index."
+        )
+        assert lines[1] == "Spellbook validation failed. Broken spells: SelfMade."
+        assert "[SELF_DEPENDENCY]" in str(error)
+        assert isinstance(error.__cause__, SpellbookValidationError)
+
+
+def test_a_refused_notch_is_checked_again_when_retried() -> None:
+    """A retry of the refused notch runs the check again and is refused again; the lender stays on English."""
+    with _world("refused_retry") as world:
+        broken_id = world.stage(SelfMade)
+
+        _refused_notch(world, broken_id)
+        _refused_notch(world, broken_id)
+
+        _assert_english_stands(world, broken_id)
+
+
+def test_a_refused_notch_releases_the_claim_it_took_for_the_broken_versions_address() -> None:
+    """
+    Regression: a version staged at another address of the index took that address's frame claim with the switch.
+
+    Contract:
+        - After the refusal that address is unclaimed and unrouted, as before the notch, and English keeps its own.
+    """
+    with _world("refused_other_address") as world:
+        broken_id = world.stage(SelfMade, binding_name="greeter_v2")
+        broken_key = world.book.find_spell_by_spell_id(broken_id).key
+        assert world.frame_claim(broken_key) is None
+
+        _refused_notch(world, broken_id)
+
+        assert world.frame_claim(broken_key) is None
+        assert broken_key not in world.book._lookup_spells
+        _assert_english_stands(world, broken_id)
+
+
+def test_a_notch_refused_at_commit_leaves_borrowers_on_the_lenders_version() -> None:
+    """
+    Regression (probe N2): the borrower kept English while the lender selected SelfMade.
+
+    Contract:
+        - The borrower's copies are as before (English active, SelfMade parked), its consumer melds English, and the
+          lender is on English too.
+    """
+    with _world("refused_borrower", borrower=True) as world:
+        broken_id = world.stage(SelfMade)
+        before = world.borrower_copies()
+
+        _refused_notch(world, broken_id)
+
+        assert world.borrower_copies() == before == ({world.english_id}, {broken_id})
+        assert world.borrower is not None
+        assert isinstance(world.borrower.meld(spell_id=world.speaker_id).greeter, English)
+        _assert_english_stands(world, broken_id)
+
+
+def test_a_notch_back_after_a_refusal_changes_nothing() -> None:
+    """Probe N3: after the refusal English is active, so a notch to it is a no-op on both sides."""
+    with _world("refused_notch_back", borrower=True) as world:
+        broken_id = world.stage(SelfMade)
+        _refused_notch(world, broken_id)
+
+        result = world.lender.notch_spell(spell_index=world.index, spell_id=world.english_id)
+
+        assert result.spell_id == world.english_id
+        assert world.borrower_copies() == ({world.english_id}, {broken_id})
+        _assert_english_stands(world, broken_id)
+
+
+def test_a_sound_notch_after_a_refusal_moves_owner_and_borrower() -> None:
+    """Probe N1 after a refusal: a sound version notched in is followed by the borrower, as always."""
+    with _world("refused_then_sound", borrower=True) as world:
+        broken_id = world.stage(SelfMade)
+        french_id = world.stage(French)
+        _refused_notch(world, broken_id)
+
+        world.lender.notch_spell(spell_index=world.index, spell_id=french_id)
+
+        assert world.index.selected_spell_id == french_id
+        assert isinstance(world.lender.meld(spellframe=Greeter, binding_name="greeter"), French)
+        active, parked = world.borrower_copies()
+        assert active == {french_id}
+        assert parked == {world.english_id, broken_id}
+
+
+def test_a_refused_notch_leaves_the_nexus_record_on_the_old_version() -> None:
+    """On a frame that publishes into Nexus, the refusal leaves English's record published and none for SelfMade."""
+    with _world("refused_nexus", rift_enabled=True) as world:
+        broken_id = world.stage(SelfMade)
+        assert (world.book.id, world.english_id) in world.nexus_spell_records()
+
+        _refused_notch(world, broken_id)
+
+        records = world.nexus_spell_records()
+        assert (world.book.id, world.english_id) in records
+        assert (world.book.id, broken_id) not in records
+
+
+def test_a_refused_activation_of_a_minted_index_leaves_it_parked_and_unregistered() -> None:
+    """
+    A version split into its own index (`remove_from_spell_index`) has no active version; activating it takes a
+    notch. Refused, it stays parked, its index is not tracked, published or claimed, and English is untouched.
+    """
+    with _world("refused_minted", rift_enabled=True) as world:
+        broken_id = world.stage(SelfMade, binding_name="greeter_v2")
+        world.lender.remove_from_spell_index(spell_id=broken_id, source_index=world.index)
+        minted = world.book.find_spell_by_spell_id(broken_id).spell_index
+        broken_key = world.book.find_spell_by_spell_id(broken_id).key
+        assert minted is not world.index
+        assert world.book._spell_system_states.get_by_index_id(minted.id) is None
+
+        _refused_notch(world, broken_id, index=minted)
+
+        assert minted.selected_spell_id == broken_id
+        assert minted not in world.book._spells
+        assert broken_id in world.book._inactive_spells
+        assert world.book._spell_system_states.get_by_index_id(minted.id) is None
+        assert world.book.find_spell_by_spell_id(broken_id).validation_result_phase4 is None
+        assert world.frame_claim(broken_key) is None
+        assert broken_key not in world.book._lookup_spells
+        assert (world.book.id, broken_id) not in world.nexus_spell_records()
+        english = world.book.find_spell_by_spell_id(world.english_id)
+        assert world.frame_claim(english.key) == world.english_id
+        assert world.book._lookup_spells[english.key] is world.index
+        assert isinstance(world.lender.meld(spellframe=Greeter, binding_name="greeter"), English)
+
+
+def test_after_a_refusal_the_book_flag_falls_once_english_melds() -> None:
+    """The refusal leaves English gated like any notch back; one meld recompiles it and the Book flag falls."""
+    with _world("refused_flag") as world:
+        broken_id = world.stage(SelfMade)
+        _refused_notch(world, broken_id)
+
+        world.lender.meld(spell_id=world.english_id)
+
+        assert world.book._spellbook_validation_required is False
+
+
+def _research_acts(spell_id: str) -> List[str]:
+    """
+    The acts the default research set journaled for `spell_id`.
+
+    Args:
+        spell_id: A version's spell_id.
+
+    Returns:
+        List[str]: The journaled acts, oldest first.
+    """
+    history = Aether().mutation_research.research_set().history(spell_id)
+    return [entry["act"] for entry in history["transitions"]]
+
+
+@contextlib.contextmanager
+def _research_active() -> Iterator[Any]:
+    """
+    MutationResearch activated for one test.
+
+    Yields:
+        Any: The hosted MutationResearch root.
+    """
+    root = Aether().mutation_research
+    root.configure(root.create_configuration().with_defaults().activate())
+    root.activate(hydrate_from_record=False)
+    try:
+        yield root
+    finally:
+        root.deactivate()
+
+
+def test_a_refused_notch_journals_no_promotion() -> None:
+    """
+    Regression: the research journal kept a promotion of SelfMade although the notch raised.
+
+    Contract:
+        - With MutationResearch active, neither version's history gains an act from the refused notch.
+    """
+    with _research_active():
+        with _world("refused_journal") as world:
+            broken_id = world.stage(SelfMade)
+            before = (_research_acts(broken_id), _research_acts(world.english_id))
+
+            _refused_notch(world, broken_id)
+
+            assert (_research_acts(broken_id), _research_acts(world.english_id)) == before
+
+
+def test_a_standing_notch_journals_its_promotion_once() -> None:
+    """Control: a sound notch journals one promotion for the incoming version, after its check passed."""
+    with _research_active():
+        with _world("standing_journal") as world:
+            french_id = world.stage(French)
+            before = _research_acts(french_id)
+
+            world.lender.notch_spell(spell_index=world.index, spell_id=french_id)
+
+            assert _research_acts(french_id) == before + ["promoted"]
+================================================================================
+END FILE: tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py
+================================================================================
+================================================================================
 BEGIN FILE: tests/integration/melder/aether/conduit/test_notch_spell_by_id_integration.py
 CONTENT SHA256: 18fa4e145522ace46e76980f50de3ea7002d8769f8bfd54f3fb7c1416f9d6c70
 SOURCE ENCODING: utf-8
@@ -140677,6 +141188,326 @@ def test_resolved_signature_keeps_binding_fingerprint_text() -> None:
         profile.cleanup()
 ================================================================================
 END FILE: tests/integration/melder/spellbook/test_deferred_annotations.py
+================================================================================
+================================================================================
+BEGIN FILE: tests/integration/melder/spellbook/test_direct_cleanup_refuses_active_member_with_parked_versions_integration.py
+CONTENT SHA256: 27094e4f95e0ef39adaa1a6c660ea6a19b5dbd0b29271d50292f893859f69508
+SOURCE ENCODING: utf-8
+================================================================================
+"""
+Integration: a direct removal of an index's active member that has parked siblings is refused with nothing changed
+(STORY-2026-10-17-direct_cleanup_of_active_member_orphans_parked_versions; patch direct_cleanup_refusal_2026_10_18).
+
+`Conduit.cleanup_spell` refuses the active member of a multi-member index. Until the fix the two other public doors -
+a direct `Spell.cleanup()` and `Spellbook.cleanup_and_remove_spell` - cleaned the index under its parked versions,
+leaving a version no later call could notch, move, dispose or clean (probe D2 and D3,
+artifacts/correctness_defects_20261017/probes/probe_direct_cleanup_active_member.py). All three now refuse it, each
+message naming the remedies - notch the index to a parked version, dispose the parked versions, or move them out -
+and the sole member of an index is removed as before (the owner's choice, 2026-10-18).
+"""
+import contextlib
+import re
+from typing import Iterator, Optional, Protocol, Set, Tuple
+
+import pytest
+
+from melder.aether.aether import Aether
+from melder.aether.aether_utility_system import AetherUtilitySystem
+from melder.aether.conduit.conduit import Conduit
+from melder.aether.spellbook.bind.spell_index import SpellIndex
+from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spell import Spell
+from melder.aether.spellbook.spellbook import Spellbook
+from melder.nexus.nexus import Nexus
+
+pytestmark = pytest.mark.integration
+
+
+def _refusal() -> str:
+    """
+    The part of the refusal message both doors share with `cleanup_spell`'s, as a `pytest.raises` pattern.
+
+    Returns:
+        str: The pattern.
+    """
+    return re.escape(
+        "is the active member of a multi-member index, and disposing it would leave the index's parked versions "
+        "without an active one. Notch the index to one of them, dispose them with cleanup_spell, or move them out "
+        "with remove_from_spell_index first."
+    )
+
+
+class Greeter(Protocol):
+    """The contract every version implements."""
+
+    def greet(self) -> str:
+        """Return a greeting."""
+        ...
+
+
+class English:
+    """The version bound active."""
+
+    def greet(self) -> str:
+        """Return the English greeting."""
+        return "hello"
+
+
+class French:
+    """A version parked on English's index."""
+
+    def greet(self) -> str:
+        """Return the French greeting."""
+        return "bonjour"
+
+
+class Note:
+    """A plain spell so the borrower Book has something to conjure."""
+
+
+def _reset_world() -> None:
+    """Fresh utility, Nexus and Aether singletons, rebound on Spellbook and Conduit."""
+    AetherUtilitySystem._reset_singleton_for_tests()
+    Nexus._reset_singleton_for_tests()
+    Aether._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+
+
+@pytest.fixture(autouse=True)
+def fresh_world() -> Iterator[None]:
+    """Isolate each test behind fresh singletons."""
+    _reset_world()
+    yield
+    _reset_world()
+
+
+class _World:
+    """Handles of the lender (English active, French parked when staged) and its index-linked borrower."""
+
+    def __init__(self, book: Spellbook, lender: Conduit, borrower_book: Spellbook, borrower: Conduit,
+                 english: Spell) -> None:
+        """
+        Keep the handles; `_world` stages French when asked.
+
+        Args:
+            book: The lender's Book.
+            lender: The lender's root conduit.
+            borrower_book: The borrower's Book.
+            borrower: The borrower's root conduit, linked to the lender and contracting English's index.
+            english: The active English Spell.
+        """
+        self.book = book
+        self.lender = lender
+        self.borrower_book = borrower_book
+        self.borrower = borrower
+        self.english = english
+        self.index: SpellIndex = english.spell_index
+        self.french: Optional[Spell] = None
+
+    def find_index(self, spell_id: str) -> Optional[SpellIndex]:
+        """
+        The index the frame's spell registry names for `spell_id`, or None.
+
+        Args:
+            spell_id: A version's spell_id.
+
+        Returns:
+            Optional[SpellIndex]: The registered index.
+        """
+        return self.book._aetheric_frame.find_index_for_spell(spell_id)
+
+    def borrower_copies(self) -> Tuple[Set[str], Set[str]]:
+        """
+        The borrower's active and parked copies of the lender's versions, by spell_id.
+
+        Returns:
+            Tuple[Set[str], Set[str]]: (active spell_ids, parked spell_ids).
+        """
+        active = set(self.borrower_book._contracted_spells_by_id.get(self.lender._id, {}))
+        parked = set(self.borrower_book._inactive_contracted_spells.get(self.lender._id, {}))
+        return active, parked
+
+
+@contextlib.contextmanager
+def _world(frame: str, *, stage_french: bool = True) -> Iterator[_World]:
+    """
+    English active on the lender's index, a borrower contracting the whole index, French parked on it when asked.
+
+    Args:
+        frame: The frame for both Books.
+        stage_french: Stage French on English's index after the borrower contracted it.
+
+    Yields:
+        _World: The handles; both roots are torn down on exit.
+    """
+    book = Spellbook(aetheric_frame=frame, configuration=SpellbookConfiguration(frame).with_defaults())
+    book.configure_aether_frame(
+        system_state="dynamic", disposal=None, disposal_method_names=None, system_caching_enabled=False,
+    )
+    borrower_book = Spellbook(aetheric_frame=frame, configuration=SpellbookConfiguration(frame).with_defaults())
+    english_id = book.bind(
+        spell=English, spellframe=Greeter, binding_name="greeter", existence=Existence.many, permissions="create",
+    )
+    borrower_book.bind(spell=Note, existence=Existence.many, permissions="create")
+    lender = book.conjure(dynamic=True, name="lender")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
+    world = _World(book, lender, borrower_book, borrower, book.find_spell_by_spell_id(english_id))
+    try:
+        lender.link(borrower)
+        with borrower.transaction("link", conduits=[borrower, lender]):
+            assert borrower.add_index_to_contract(index=world.index, conduit=lender, permissions="create")
+        if stage_french:
+            french_id = lender.bind_inactive(
+                spell=French, spell_index=world.index, spellframe=Greeter, binding_name="greeter",
+                existence=Existence.many, permissions="create",
+            )
+            world.french = book.find_spell_by_spell_id(french_id)
+        yield world
+    finally:
+        borrower.cleanup()
+        lender.cleanup()
+
+
+def _assert_nothing_changed(world: _World) -> None:
+    """
+    Assert the refused removal changed nothing: the index live and selecting English, English active, French parked,
+    both registered with the frame, the lineage tracked, the borrower's copies as staged, English meldable.
+
+    Args:
+        world: The handles (French staged).
+    """
+    assert world.french is not None
+    english_id, french_id = world.english.spell_id, world.french.spell_id
+    assert not world.index.cleaned
+    assert world.index.selected_spell_id == english_id
+    assert world.index.spells_in_index() == {english_id, french_id}
+    assert not world.english.cleaned and not world.french.cleaned
+    assert world.book._spells_by_id[english_id] is world.english
+    assert world.book._inactive_spells[french_id] is world.french
+    assert world.find_index(english_id) is world.index
+    assert world.find_index(french_id) is world.index
+    assert world.book._spell_system_states.get_by_index_id(world.index.id) is not None
+    assert world.borrower_copies() == ({english_id}, {french_id})
+    assert isinstance(world.lender.meld(spell_id=english_id), English)
+
+
+def test_direct_cleanup_of_an_active_member_with_parked_siblings_refuses() -> None:
+    """
+    Regression (probe D2): `English.cleanup()` cleaned the index under the parked French.
+
+    Contract:
+        - It raises the multi-member RuntimeError and changes nothing.
+    """
+    with _world("direct_cleanup_refused") as world:
+        with pytest.raises(RuntimeError, match=_refusal()):
+            world.english.cleanup()
+
+        _assert_nothing_changed(world)
+
+
+@pytest.mark.parametrize("by_spell_id", [False, True], ids=["by_spell", "by_spell_id"])
+def test_cleanup_and_remove_spell_refuses_a_member_with_parked_siblings(by_spell_id: bool) -> None:
+    """
+    Regression (probe D3): `cleanup_and_remove_spell(English)` cleaned the index under the parked French.
+
+    Contract:
+        - Named by Spell or by spell_id, it raises the multi-member RuntimeError and changes nothing.
+    """
+    with _world("remove_refused_" + ("id" if by_spell_id else "spell")) as world:
+        target = world.english.spell_id if by_spell_id else world.english
+        with pytest.raises(RuntimeError, match=_refusal()):
+            world.book.cleanup_and_remove_spell(target)
+
+        _assert_nothing_changed(world)
+
+
+def test_cleanup_spell_refusal_names_the_remedies() -> None:
+    """
+    `cleanup_spell(English)` keeps its refusal of the active member and now names the same three remedies.
+
+    Contract:
+        - It raises the multi-member RuntimeError, prefixed "cleanup_spell: spell <spell_id>", and changes nothing.
+    """
+    with _world("cleanup_spell_refused") as world:
+        prefix = "^cleanup_spell: spell " + re.escape(world.english.spell_id) + " "
+        with pytest.raises(RuntimeError, match=prefix + _refusal()):
+            world.lender.cleanup_spell(spell=world.english)
+
+        _assert_nothing_changed(world)
+
+
+def test_after_the_refusal_a_notch_away_lets_the_old_version_go() -> None:
+    """The refusal's remedy: notch to French, then dispose the now-parked English; French serves on its live index."""
+    with _world("refused_then_notch_away") as world:
+        assert world.french is not None
+        with pytest.raises(RuntimeError, match=_refusal()):
+            world.english.cleanup()
+
+        world.lender.notch_spell(spell_index=world.index, spell_id=world.french.spell_id)
+        world.lender.cleanup_spell(spell=world.english)
+
+        assert world.english.cleaned and not world.index.cleaned
+        assert world.index.spells_in_index() == {world.french.spell_id}
+        assert isinstance(world.lender.meld(spell_id=world.french.spell_id), French)
+
+
+def test_after_the_refusal_disposing_the_parked_version_lets_the_member_go() -> None:
+    """The other remedy: dispose French first; English is then the index's sole member and is removed with it."""
+    with _world("refused_then_dispose_parked") as world:
+        assert world.french is not None
+        english_id = world.english.spell_id
+        with pytest.raises(RuntimeError, match=_refusal()):
+            world.english.cleanup()
+
+        world.lender.cleanup_spell(spell=world.french)
+        world.english.cleanup()
+
+        assert world.english.cleaned and world.french.cleaned and world.index.cleaned
+        assert world.find_index(english_id) is None
+        assert english_id not in world.book._spells_by_id
+
+
+def test_after_the_refusal_moving_the_parked_version_out_lets_the_member_go() -> None:
+    """
+    The third remedy: move French out with `remove_from_spell_index`; English is then its index's sole member and is
+    removed with it, while French stays parked, alone in a fresh index.
+    """
+    with _world("refused_then_move_parked_out") as world:
+        assert world.french is not None
+        english_id, french_id = world.english.spell_id, world.french.spell_id
+        with pytest.raises(RuntimeError, match=_refusal()):
+            world.english.cleanup()
+
+        world.lender.remove_from_spell_index(spell_id=french_id, source_index=world.index)
+        world.english.cleanup()
+
+        assert world.english.cleaned and world.index.cleaned
+        assert english_id not in world.book._spells_by_id
+        assert not world.french.cleaned
+        assert world.book._inactive_spells[french_id] is world.french
+        assert world.french.spell_index is not world.index
+        assert world.french.spell_index.spells_in_index() == {french_id}
+
+
+@pytest.mark.parametrize("door", ["spell_cleanup", "cleanup_and_remove_spell"])
+def test_a_sole_active_member_is_still_removed_directly(door: str) -> None:
+    """Control: English alone on its index is removed by either door, its index cleaned and gone from the frame."""
+    with _world("sole_member_" + door, stage_french=False) as world:
+        english_id = world.english.spell_id
+
+        if door == "spell_cleanup":
+            world.english.cleanup()
+        else:
+            world.book.cleanup_and_remove_spell(english_id)
+
+        assert world.english.cleaned and world.index.cleaned
+        assert world.find_index(english_id) is None
+        assert english_id not in world.book._spells_by_id
+================================================================================
+END FILE: tests/integration/melder/spellbook/test_direct_cleanup_refuses_active_member_with_parked_versions_integration.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/spellbook/test_existing_instance_additional_regressions.py
@@ -355478,6 +356309,104 @@ def test_circular_dependency_hidden_when_self_dependency_reported() -> None:
     assert "Two-spell cycle. [CIRCULAR_DEPENDENCY]" in message
 ================================================================================
 END FILE: tests/unit/melder/utilities/custom_exceptions/test_spellbook_validation_error.py
+================================================================================
+================================================================================
+BEGIN FILE: tests/unit/melder/utilities/custom_exceptions/test_spellbook_validation_error_preface.py
+CONTENT SHA256: 4815f668b06896f855d6ac5f143a4006f52f22882c7f7b22186c338c498e83e9
+SOURCE ENCODING: utf-8
+================================================================================
+"""
+Unit: SpellbookValidationError's `preface` - one line placed before the report (patch failed_notch_refusal_2026_10_18;
+STORY-2026-10-17-failed_notch_keeps_switch_without_borrowers). `Conduit.notch_spell` passes it when it refuses a
+notch, so the first line says the notch did not happen; without it the message is unchanged.
+"""
+from types import SimpleNamespace
+from typing import TYPE_CHECKING, Any, List, cast
+
+import pytest
+
+from melder.aether.spellbook.spell_compiler.validation.spell_validation_issue import SpellValidationIssue
+from melder.utilities.custom_exceptions.spellbook_validation_error import SpellbookValidationError
+
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spell import Spell
+
+
+def _broken_spell() -> List[Spell]:
+    """
+    One spell stand-in whose Phase-4 result holds one error, as the renderer reads it.
+
+    Returns:
+        List[Spell]: A one-spell list for the error's `broken_spells`.
+    """
+    issue = SpellValidationIssue(
+        severity="error", code="SELF_DEPENDENCY", message="Spell 'SelfMade' depends on itself.",
+        source="SomeStrategy", details={},
+    )
+    spell = SimpleNamespace(
+        spell_name="SelfMade",
+        spell_id="spell-1",
+        spellframe="greeter",
+        validation_result_phase4=SimpleNamespace(issues=[issue]),
+        validation_result_phase6=SimpleNamespace(errors=[], warnings=[]),
+    )
+    return [cast("Spell", spell)]
+
+
+def test_without_a_preface_the_message_is_unchanged() -> None:
+    """
+    Contract:
+        - `preface=None` (the default) renders the same message, starting with the report's first line.
+    """
+    spells = _broken_spell()
+
+    plain = str(SpellbookValidationError(spells))
+    explicit = str(SpellbookValidationError(spells, preface=None))
+
+    assert explicit == plain
+    assert plain.splitlines()[0] == "Spellbook validation failed. Broken spells: SelfMade."
+
+
+def test_a_preface_is_the_first_line_and_the_report_follows_unchanged() -> None:
+    """
+    Contract:
+        - The preface is the first line; the lines after it are the message without a preface, byte for byte.
+        - `broken_spells` is kept as given.
+    """
+    spells = _broken_spell()
+    preface = "notch_spell refused: 'SelfMade' (spell_id spell-1) failed its structural check."
+
+    error = SpellbookValidationError(spells, preface=preface)
+
+    lines = str(error).splitlines()
+    assert lines[0] == preface
+    assert "\n".join(lines[1:]) == str(SpellbookValidationError(spells))
+    assert error.broken_spells is spells
+
+
+def test_a_preface_goes_before_the_message_of_an_error_with_no_broken_spells() -> None:
+    """With no spells and no diagnostics the message is its one fallback line; a preface still comes first."""
+    error = SpellbookValidationError([], preface="notch_spell refused.")
+
+    assert str(error).splitlines() == [
+        "notch_spell refused.",
+        "SpellbookValidationError raised with no broken spells.",
+    ]
+
+
+@pytest.mark.parametrize("preface", [42, b"bytes", ["a line"]])
+def test_a_preface_that_is_not_a_string_is_refused(preface: Any) -> None:
+    """A non-str preface raises TypeError naming the type it got; nothing is built."""
+    with pytest.raises(TypeError, match=r"takes one line of text, a non-empty str; got " + type(preface).__name__):
+        SpellbookValidationError(_broken_spell(), preface=preface)
+
+
+def test_an_empty_preface_is_refused() -> None:
+    """An empty preface would add a blank first line, so it is refused like a non-str one."""
+    with pytest.raises(TypeError, match=r"takes one line of text, a non-empty str; got an empty str"):
+        SpellbookValidationError(_broken_spell(), preface="")
+================================================================================
+END FILE: tests/unit/melder/utilities/custom_exceptions/test_spellbook_validation_error_preface.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/utilities/data_structures/test_abstract_elastic_pool.py

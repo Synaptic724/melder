@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/system/validation/contract_graph_cycle_strategy.py",
- "source_sha256": "07edcf640262778824d6d1dc666a15116aaa9c1510bb5abbfc58a07f76c2c282",
+ "source_sha256": "1257df8a4f596fb90d0927ed2b5dc8fa82a58214739768a4edeff77c58bcfbcc",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.system.validation.contract_graph_cycle_strategy": {
@@ -39,7 +39,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "07611280cf9a1714b9fcab9255c6fe3cb2fd3938fd40963936322f509206e0f6",
+   "span_sha256": "1a40aa4a8c361d3eb8ac4df33a0c7dede72f3cff26fd118bc38bd281723d456e",
    "include": true,
    "role": "Guard that SpellContract sockets do not introduce cycles the normal-dependency DAG check cannot see.",
    "responsibilities": [

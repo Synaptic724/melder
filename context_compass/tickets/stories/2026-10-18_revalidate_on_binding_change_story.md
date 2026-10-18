@@ -9,7 +9,7 @@
 - Agent Role: synaptic_python_developer
 - Priority: p1
 - Created: 2026-10-18T11:45:58Z
-- Updated: 2026-10-18T12:01:17Z
+- Updated: 2026-10-18T16:24:12Z
 
 ## User Narrative
 As an agent changing how a spell is kept - its lifetime, teardown, address or capability - I want Melder to
@@ -131,6 +131,31 @@ this does not make independent review mandatory for every ticket.
   NEXT: the component patch once S1 and S2 land.
   REREAD: HELPFUL
   SCORE_0_TO_10: 7
+
+- DATETIME: 2026-10-18T16:24:12Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: For S3, answered by probe (the UNKNOWN in S2's inventory note): under S1 and S2 (the blast-radius
+    mirror) a rebind of one class under another existence after `cleanup_spell` keeps its spell_id, and on a
+    root the new binding's first meld returns the object the removed definition left in its slot whenever
+    both existences are slotted (unique -> unique_per_conduit and unique_per_conduit -> unique:
+    second_meld_is_old_object=True); a `many` side builds fresh (unique_per_conduit -> many and
+    many -> unique_per_conduit: False). unique -> unique is the case of the 2026-10-03 surviving-product
+    ruling. The same with the GIL off and on. Today the existence is in the spell_id, so such a rebind is
+    another spell_id and another slot; S1 changes that, and this story decides whether a slotted entry
+    follows the new binding (kept per binding hash, or retired on a binding change).
+  EVIDENCE:
+  - context_compass/artifacts/spell_identity_20261018/blast_radius/probes/probe_same_id_rebind_store.py:1-48
+  - context_compass/artifacts/spell_identity_20261018/blast_radius/runs/probe_same_id_rebind_store_gil0.txt:1-5
+  - context_compass/artifacts/spell_identity_20261018/blast_radius/runs/probe_same_id_rebind_store_gil1.txt:1-9
+  - context_compass/tickets/stories/2026-10-18_binding_manifest_hash_story.md:156-192
+  IMPACT: Between S1 and S2's landing and this story's, a rebind under another slotted existence meets the removed
+    definition's object: a RISK the epic carries to the release note unless this story lands in the same
+    release.
+  NEXT: This story's component patch, after S1 and S2.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
 
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user

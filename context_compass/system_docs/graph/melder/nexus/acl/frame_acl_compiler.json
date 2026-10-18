@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/acl/frame_acl_compiler.py",
- "source_sha256": "3a90d3180ef897cb029740ec97ab9d521c690af56a8a7cd758f18bbef6b69f50",
+ "source_sha256": "8b4fc90c56f6d0272f63d071a20d7dd521ef754120c58565f6bc25d119fd7ea5",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.acl.frame_acl_compiler": {
@@ -33,7 +33,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "fb085c868694358ed45a20a90328759a859c071be23ff8401b77b598ca3ca648",
+   "span_sha256": "5d244b6fd6ccb6e740b0374598f3b19d02521ad722f95b7b87cc1e13777dcc65",
    "role": "Compiler from descriptor truth and typed ACL config into a consumer-facing access surface.",
    "responsibilities": [
     "compiles typed ACL configuration against descriptor truth",

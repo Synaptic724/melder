@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_state.py",
- "source_sha256": "a81bc1e6697265f9578c1f85bccac0d911a66afa0ee9a98f23e47e0a32f27651",
+ "source_sha256": "f6ca049174cdaf889bf53d56e641c011ee9e6899a20c89e4f76930414935c8c4",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_state": {
@@ -53,7 +53,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "d63f7d027663b74b6c47357bb89a49adbb99fc7916c43da0b7db6e53d220817f",
+   "span_sha256": "231055cfe6dc2e79dd0d77099013d67c8a03f4e2540073a89c09c9f43dc71573",
    "role": "System-level state for a single spell lineage.",
    "responsibilities": [
     "stores direct topology, structural validity, flags, and latest change reason for one lineage",

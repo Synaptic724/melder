@@ -1,0 +1,4 @@
+repo gil0: get_spell_by_spell_id(french) raised ValueError: Spell version 5f8fa0 ... not found
+repo gil1: get_spell_by_spell_id(french) raised ValueError: Spell version 5f8fa0 ... not found
+mirror gil0: every assert holds
+mirror gil1: every assert holds

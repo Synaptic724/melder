@@ -12,10 +12,10 @@ Line numbers are 1-based and inclusive on both ends.
 | --- | --- |
 | document | `tests_components.md` |
 | index_version | 1.1.0 |
-| generated_at | 2026-10-18T01:46:14Z |
-| line_count | 3864 |
+| generated_at | 2026-10-18T16:37:56Z |
+| line_count | 3894 |
 | line_ending | lf |
-| content_sha256 | `1f91347a1fa09c060fcaacd99d197b4daa09123ae77a80ab53f2feceafda4164` |
+| content_sha256 | `c5cf1a56c108e5608f547ed0f7b4e379ae71e3579ee983a03de5806de7a6b3b7` |
 | sections | 69 |
 
 Recompute all three of `line_count`, `line_ending`, and `content_sha256`
@@ -44,7 +44,7 @@ which you did.
 | 546-661 | 3 | C3 Components Catalog > Component: Integration Runtime Suite |
 | 662-751 | 3 | C3 Components Catalog > Component: Mock Fixture Corpus |
 | 752-814 | 3 | C3 Components Catalog > Component: Experimentation And Profiling Trees (Local Only) |
-| 815-1899 | 2 | C2 Subcomponents Catalog |
+| 815-1911 | 2 | C2 Subcomponents Catalog |
 | 817-825 | 3 | C2 Subcomponents Catalog > Subcomponent: `conftest.py` Path Bootstrap |
 | 826-836 | 3 | C2 Subcomponents Catalog > Subcomponent: Frame Posture Test Support |
 | 837-846 | 3 | C2 Subcomponents Catalog > Subcomponent: Nexus Viewer Matrix Support |
@@ -74,25 +74,25 @@ which you did.
 | 1589-1626 | 3 | C2 Subcomponents Catalog > Subcomponent: Aether Integration Cluster |
 | 1627-1659 | 3 | C2 Subcomponents Catalog > Subcomponent: Crystallizer Integration Cluster |
 | 1660-1676 | 3 | C2 Subcomponents Catalog > Subcomponent: MutationResearch Integration Cluster |
-| 1677-1746 | 3 | C2 Subcomponents Catalog > Subcomponent: Spellbook Integration Cluster |
-| 1747-1835 | 3 | C2 Subcomponents Catalog > Subcomponent: Conduit Integration Cluster |
-| 1836-1864 | 3 | C2 Subcomponents Catalog > Subcomponent: Multithreading Integration Cluster |
-| 1865-1879 | 3 | C2 Subcomponents Catalog > Subcomponent: Live Sim Integration Cluster |
-| 1880-1888 | 3 | C2 Subcomponents Catalog > Subcomponent: Mock Spellbook Fixtures |
-| 1889-1899 | 3 | C2 Subcomponents Catalog > Subcomponent: Mock Crystallizer Harnesses |
-| 1900-1997 | 2 | Method-Level Call Flows (C1) |
-| 1902-1907 | 3 | Method-Level Call Flows (C1) > Flow: Pytest Bootstrap |
-| 1908-1925 | 3 | Method-Level Call Flows (C1) > Flow: Singleton Reset And Re-Boot |
-| 1926-1932 | 3 | Method-Level Call Flows (C1) > Flow: Viewer Matrix Fixture Build |
-| 1933-1939 | 3 | Method-Level Call Flows (C1) > Flow: Static Rift JSON Bench |
-| 1940-1946 | 3 | Method-Level Call Flows (C1) > Flow: Capability Rift JSON Bench |
-| 1947-1960 | 3 | Method-Level Call Flows (C1) > Flow: CI Runtime Qualification |
-| 1961-1976 | 3 | Method-Level Call Flows (C1) > Flow: Concurrent-Writer Stand-In |
-| 1977-1997 | 3 | Method-Level Call Flows (C1) > Flow: Managed Pool Stress Under Eight Threads |
-| 1998-3419 | 2 | C1 Code Map (Core) |
-| 3420-3470 | 2 | Diagrams |
-| 3421-3447 | 3 | Diagrams > ASCII Component Diagram (C3/C2) |
-| 3448-3470 | 3 | Diagrams > Mermaid Component Diagram (C3/C2) |
-| 3471-3592 | 2 | Information Sources |
-| 3593-3602 | 2 | Open Questions |
-| 3603-3864 | 2 | Context / Handoff Summary |
+| 1677-1758 | 3 | C2 Subcomponents Catalog > Subcomponent: Spellbook Integration Cluster |
+| 1759-1847 | 3 | C2 Subcomponents Catalog > Subcomponent: Conduit Integration Cluster |
+| 1848-1876 | 3 | C2 Subcomponents Catalog > Subcomponent: Multithreading Integration Cluster |
+| 1877-1891 | 3 | C2 Subcomponents Catalog > Subcomponent: Live Sim Integration Cluster |
+| 1892-1900 | 3 | C2 Subcomponents Catalog > Subcomponent: Mock Spellbook Fixtures |
+| 1901-1911 | 3 | C2 Subcomponents Catalog > Subcomponent: Mock Crystallizer Harnesses |
+| 1912-2009 | 2 | Method-Level Call Flows (C1) |
+| 1914-1919 | 3 | Method-Level Call Flows (C1) > Flow: Pytest Bootstrap |
+| 1920-1937 | 3 | Method-Level Call Flows (C1) > Flow: Singleton Reset And Re-Boot |
+| 1938-1944 | 3 | Method-Level Call Flows (C1) > Flow: Viewer Matrix Fixture Build |
+| 1945-1951 | 3 | Method-Level Call Flows (C1) > Flow: Static Rift JSON Bench |
+| 1952-1958 | 3 | Method-Level Call Flows (C1) > Flow: Capability Rift JSON Bench |
+| 1959-1972 | 3 | Method-Level Call Flows (C1) > Flow: CI Runtime Qualification |
+| 1973-1988 | 3 | Method-Level Call Flows (C1) > Flow: Concurrent-Writer Stand-In |
+| 1989-2009 | 3 | Method-Level Call Flows (C1) > Flow: Managed Pool Stress Under Eight Threads |
+| 2010-3438 | 2 | C1 Code Map (Core) |
+| 3439-3489 | 2 | Diagrams |
+| 3440-3466 | 3 | Diagrams > ASCII Component Diagram (C3/C2) |
+| 3467-3489 | 3 | Diagrams > Mermaid Component Diagram (C3/C2) |
+| 3490-3612 | 2 | Information Sources |
+| 3613-3622 | 2 | Open Questions |
+| 3623-3894 | 2 | Context / Handoff Summary |

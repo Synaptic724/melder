@@ -9,7 +9,7 @@
 - Agent Role: synaptic_python_developer
 - Priority: p1
 - Created: 2026-10-18T11:45:58Z
-- Updated: 2026-10-18T15:01:53Z
+- Updated: 2026-10-18T19:11:29Z
 
 ## User Narrative
 As an agent iterating on a class in Melder, I want its spell_id to change exactly when its code changes - a method
@@ -110,8 +110,8 @@ both at the root.
   interpreter.
 - A closure's captured values count (derived from calls 2-3; stated for the owner in the architecture patch):
   two classes a factory makes with different captured values are two spells.
-- Bind's cost: code digests memoized; a class over a large third-party base costs milliseconds (D9); measured on
-  the gauntlet at landing.
+- Bind's cost: code digests memoized; a class over a large third-party base costs milliseconds when digested
+  (D9), and decision B names installed bases instead (a version lookup); measured on the gauntlet at landing.
 
 ## Applicable Anti-Patterns
 - [ ] No story-state transition without linked task-state evidence.
@@ -139,6 +139,7 @@ both at the root.
   duplicate bind lands with this story as S6 (the epic's DECISION note).
 - 2026-10-18T15:01:53Z: the owner's word to land this story now, with S2's cache keys; duplicates strictly refused, S6
   parked (the epic's DECISION note).
+- 2026-10-18T15:45:30Z: the patches updated for decision B and strict uniqueness (FACT note).
 
 ## Artifact Links (Optional)
 Qualified independent reviewer acceptance and direct closure follow shared `ticketing.md`;
@@ -277,6 +278,273 @@ this does not make independent review mandatory for every ticket.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-10-18T15:45:30Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: S1's patches are updated for the owner's word and decisions (the epic's DECISION notes of
+    2026-10-18T14:14:10Z and 15:01:53Z), nothing in src/: the architecture patch is approved and records his
+    decisions as DECIDED (the third-party-object reading - type, version and address-free repr - stated for
+    him to narrow), invariant 4 counts repr() of an installed third-party object, invariant 7 names the key and
+    the stamp, the new invariant 8 states decision B, the matrix gains the binding manifest and the creation
+    cache (bind-guard 628 -> 630), and the statements table gains the creation system's and the caching
+    system's stamp text and five "fingerprint" statements (meld.py, contract/details.py, inspector_utility.py).
+    The Binding Pipeline patch carries the corrected refusal texts with no duplicate option, the S2 section
+    and the file order (M1-36). The code-description patch states B: a third-party class, metaclass or
+    function named `<qualified> <dist>==<version>`, a third-party object `ext:` with its repr, site-packages
+    detection and the version lookup. The Spell Examination Profiles patch is approved with its
+    recommendation (the fields go).
+  EVIDENCE:
+  - context_compass/system_docs/patches/active/spell_identity_is_the_code_2026_10_18/architecture_patch.md:1-218
+  - context_compass/system_docs/patches/active/spell_identity_is_the_code_2026_10_18/component_patch_binding_pipeline.md:1-155
+  - context_compass/system_docs/patches/active/spell_identity_is_the_code_2026_10_18/code_description_patch_spell_code_digest.md:1-181
+  - context_compass/system_docs/patches/active/spell_identity_is_the_code_2026_10_18/component_patch_spell_examination_profiles.md:1-63
+  IMPACT: S1's patches match what lands; the PLAN note's mapping stands, with SpellCodeDigest gaining the
+    site-packages check and the version lookup (measured on the device: importlib.metadata.version about
+    0.2 ms, packages_distributions 14.7 ms once).
+  NEXT: The blast-radius run in a /tmp mirror with S2.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-18T16:24:12Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: The blast radius (the architecture patch's Migration step 2), measured in a /tmp mirror of 0.2.8255
+    with nothing in the repository edited: the prototype code digest with decision B as the spell_id (in
+    `Bind._bind_logic` and `spell_id_inspector`) and S2's binding hash in the creation cache's structural
+    key and world stamp. The whole tree ran with the GIL off and on: 14542 tests each, 126 failed, 25 of them
+    in the unpatched baseline (melder_1's S8 and S9 red tests), so 101 new failures - the same set in both
+    modes - and none is a Melder defect: 88 register one object twice and meet strict uniqueness at bind
+    ("Spell ID collision detected"); 1 binds one class in two frames' Books under process-wide ids and
+    meets conjure's integrity check; 5 pin S2's cache format and stamp; 2 use `Bind.sha256_profile` as their
+    oracle; 3 assert that a binding change moves the spell_id; 1 asserts the opposite of the owner's call 1
+    (a base-class change); 1 expects the frame claim's message before the collision. triage.md lists each
+    test and its rewrite. The landing's own whole-tree run gives the final count (the FACT note below).
+  EVIDENCE:
+  - context_compass/artifacts/spell_identity_20261018/blast_radius/triage.md:1-148
+  - context_compass/artifacts/spell_identity_20261018/blast_radius/tally_output.txt:1-18
+  - context_compass/artifacts/spell_identity_20261018/blast_radius/mirror/_br_digest.py:1-158
+  - context_compass/artifacts/spell_identity_20261018/blast_radius/mirror/mirror_bind.diff:1-38
+  - context_compass/artifacts/spell_identity_20261018/blast_radius/mirror/mirror_structural_snapshot.diff:1-31
+  IMPACT: The landing rewrites 101 tests by category - distinct classes or subclasses where a test wants two
+    registrations, a refusal test where one object twice is the point, the new oracle, the reversed premises
+    - and no src finding blocks S1.
+  NEXT: The crystallizer record patch (S2); then S1 built in a /tmp working mirror from the code-description
+    patch.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-18T16:24:12Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: Python 3.14 adds keys to a class's `__dict__` when its annotations are read: a class with no annotations
+    gains `__annotate_func__` = None and `__annotations_cache__` (A1); a class with annotations holds
+    `__annotate_func__` from creation and gains `__annotations_cache__` (A2). The prototype excluded only
+    `__annotations_cache__`, so one class's spell_id differed before and after anything read its annotations
+    (A3: False), and Melder reads them itself (the binding profile's `_read_class_annotations`). Skipping
+    `__annotate_func__` while it is None keeps the id stable (A3: True), with the GIL off and on. The
+    code-description patch's excluded keys and validation list gain that rule before SpellCodeDigest is
+    written; a class with annotations keeps its annotate function in the encoding (its annotations' code).
+  EVIDENCE:
+  - context_compass/artifacts/spell_identity_20261018/blast_radius/probes/probe_annotate_func_in_class_dict.py:1-76
+  - context_compass/artifacts/spell_identity_20261018/blast_radius/runs/probe_annotate_func_in_class_dict_gil0.txt:1-7
+  - context_compass/artifacts/spell_identity_20261018/blast_radius/runs/probe_annotate_func_in_class_dict_gil1.txt:1-7
+  - context_compass/artifacts/spell_identity_20261018/probes/code_digest_v2.py:54-57
+  - context_compass/system_docs/patches/active/spell_identity_is_the_code_2026_10_18/code_description_patch_spell_code_digest.md:103-109
+  - src/melder/aether/spellbook/spell_compiler/spell_examiner/strategies/binding_profile_strategy.py:147-191
+  IMPACT: Without the rule a spell_id would depend on whether a class's annotations had been read before bind:
+    unstable across processes and call orders, the opposite of S1's contract.
+  NEXT: The rule into the code-description patch, with the crystallizer record patch.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-18T17:05:55Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: SpellCodeDigest is written from the code-description patch - src/melder/aether/spellbook/bind/
+    spell_code_digest.py, staged under the epic's artifacts and copied into the /tmp working mirror (0.2.8255
+    with S9's E1-E7); nothing in the repository's src. The prototype's probes, re-run against it through a
+    two-line adapter: the 42 cases E01-E34 give the designed verdicts and D1-D10 too, D6 keeping its recorded
+    limit (two C objects without Python-visible state collide, as under today's repr rule); every id is
+    byte-identical across hash seeds 1 and 2 and GIL 0 and 1. The corpus: 783 targets of src/melder digest
+    without error; per target cold (a fresh digest, site roots found each time) median 0.46 ms, p95 1.7 ms;
+    warm median 0.12 ms, p95 0.47 ms; today's fingerprint median 0.066 ms. A class over pygments'
+    PythonLexer, named by version under decision B, costs 0.53 ms cold and 0.013 ms warm (2.6-3.2 ms when it
+    was digested).
+  EVIDENCE:
+  - context_compass/artifacts/spell_identity_20261018/staged/src/melder/aether/spellbook/bind/spell_code_digest.py:1-1316
+  - context_compass/artifacts/spell_identity_20261018/staged/runs/src_digest_cases_gil0_seed1.txt:1-42
+  - context_compass/artifacts/spell_identity_20261018/staged/runs/src_digest_cases_gil1_seed2.txt:1-46
+  - context_compass/artifacts/spell_identity_20261018/staged/runs/src_digest_design_edges_gil0_seed1.txt:1-13
+  - context_compass/artifacts/spell_identity_20261018/staged/runs/src_digest_corpus_gil0_seed1.txt:1-6
+  - context_compass/artifacts/spell_identity_20261018/staged/runs/src_digest_stability_md5.txt:1-8
+  IMPACT: S1's digest is ready for Bind; the probes' cases become its unit tests (red first, against src).
+  NEXT: BindingManifest and the Spell's manifest (S2), then Bind wired to the digest in the mirror.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-18T17:05:55Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: Four refinements of the code-description contract, made while writing SpellCodeDigest and written into
+    the patch in this pass; every probe verdict is unchanged. (1) A code constant that is a number, string
+    or bytes literal, None, Ellipsis or a bool is its exact repr: stripping " at 0x..." from every constant
+    made a literal such as "listening at 0x1F" equal "listening". (2) An int past the interpreter's decimal
+    conversion limit is written in hex: `int.__repr__` raises ValueError there, and the digest never raises.
+    (3) A type-parameter or alias part given eagerly (`TypeVar("T", bound=int)`) is `const:` and its stored
+    value: its evaluator is a `_typing._ConstEvaluator`, which the `ref:` row reduced to its type, so a bound
+    change did not move the id; a part given lazily (PEP 695 syntax) stays its evaluate function's code,
+    never called. (4) Containers are read through their builtin base type in one call (`tuple.__iter__`,
+    `dict.items`), so a subclass's `__iter__` never runs and a concurrent writer never makes a walk raise.
+  EVIDENCE:
+  - context_compass/artifacts/spell_identity_20261018/staged/src/melder/aether/spellbook/bind/spell_code_digest.py:573-598
+  - context_compass/artifacts/spell_identity_20261018/staged/src/melder/aether/spellbook/bind/spell_code_digest.py:687-700
+  - context_compass/artifacts/spell_identity_20261018/staged/src/melder/aether/spellbook/bind/spell_code_digest.py:702-738
+  - context_compass/artifacts/spell_identity_20261018/staged/src/melder/aether/spellbook/bind/spell_code_digest.py:866-889
+  - context_compass/system_docs/patches/active/spell_identity_is_the_code_2026_10_18/code_description_patch_spell_code_digest.md:151-155
+  IMPACT: The patch stays the exact contract of the code that lands; (1) and (3) close two ways a real change
+    kept its id, (2) a way the digest could raise at bind.
+  NEXT: Unit tests for the four, beside the probes' cases.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-18T17:51:07Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: S1 is applied to the /tmp working mirror (0.2.8256 plus the two new modules; nothing in the repository's
+    src): one applier over every edit list, all anchors matched in check mode, then written. edits_bind:
+    26 edits, one of them the 246-line cut of the old inspector and `sha256_profile`; edits_spell: 19;
+    edits_profiles: binding_profile.py 22 and binding_profile_strategy.py 13 (the fingerprint-only fields
+    and the `stable_repr` calls that filled them removed, the docstrings corrected); edits_statements: 21 -
+    spellbook.py 7 (`inspect_spell`'s stage 3 and its two comments, the conjure refusal, both collision
+    refusals, which now name the colliding spell_id, and the research entry's Args), lookup_container.py,
+    aether.py, aether_configuration.py (2), the three meld doors, meld.py's two resolvers, details.py (2),
+    inspector_utility.py, spell_system_states.py and spell_index.py. The sweep of src/ for "fingerprint"
+    found three statements the architecture patch's table did not list (the research entry's
+    "Binding-signature SHA256", spell_system_states.py's "the same class at the same address mints the same
+    id", spell_index.py's "hottest fingerprint read"); what still says fingerprint is the crystallizer's
+    module and seal fingerprints, the codegen's row constants, generation 22's history comment and the new
+    modules' mentions of the retired fingerprint. binding_profile_strategy.py mixes CRLF (244 lines) and LF
+    (77) in the working tree while git holds it LF; the applier writes it all CRLF, as binding_profile.py is.
+    Smoke on the mirror, the GIL off and on, identical: a bound class's spell_id is SpellCodeDigest's, its
+    Spell carries its binding manifest, a second registration under another binding name and existence is
+    refused with the new text naming the spell_id, and `inspect_spell` finds the class after conjure (an
+    unbound class: None).
+  EVIDENCE:
+  - context_compass/artifacts/spell_identity_20261018/scripts/apply_s1_s2.py:1-39
+  - context_compass/artifacts/spell_identity_20261018/scripts/edits_statements.py:1-215
+  - context_compass/artifacts/spell_identity_20261018/scripts/edits_profiles.py:1-136
+  - context_compass/artifacts/spell_identity_20261018/staged/runs/mirror_s1s2_src.diff:1-2018
+  - context_compass/artifacts/spell_identity_20261018/staged/runs/mirror_smoke_s1s2_gil0.txt:1-6
+  - context_compass/artifacts/spell_identity_20261018/staged/runs/mirror_smoke_s1s2_gil1.txt:1-6
+  - context_compass/system_docs/patches/active/spell_identity_is_the_code_2026_10_18/architecture_patch.md:165-182
+  - src/melder/aether/spellbook/spellbook.py:2544-2675
+  IMPACT: S1's source edits are complete in the mirror; before the landing come its tests - the digest's cases
+    as unit tests, red against the repository's src and green on the mirror - the blast radius's 101
+    rewrites and the whole tree with the GIL off and on; then docs, the notch and the rebuild.
+  NEXT: test_spell_code_digest.py from the probes' cases (E01-E34, D1-D10, A1-A3, P1-P10, I1-I9) and the four
+    refinements.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-18T18:44:20Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: The whole tree on the /tmp mirror with S1 and S2 (0.2.8256, the two new modules and the new tests; GIL
+    off; 14,697 tests: unit 9,759, component 2,428, integration 2,256, experimentation 254) fails 424. 18
+    are melder_1's S8 tests, red on the 0.2.8255 baseline too and on hold with the owner (M1-33); 406 are
+    new. By category (whole_tree_triage.py over the failed ids and their first errors): (a) 213 test
+    doubles and pins of what S2 changed - the fake Spells of the crystal harness and the snapshot tests have
+    no `binding_hash`, and PAYLOAD_FORMAT 2, generation 23 and RecordVersion 4.3.0 moved the pins; (b) 96
+    tests of the retired API - `Bind.sha256_profile` (47 of test_bind.py's 48), the profiles'
+    `fingerprint_repr` and `spell_id_inspector`'s old keywords; (c) 88 tests that register one object
+    twice, now refused (24 files, test_ordered_disposal_replay.py 22); (d) 2 reversed premises (a resolved
+    disposal order or a managed binding no longer changes the spell_id); (e) 4 others (the cross-process
+    stability test, two resolvable regexes, a two-frame conjure); 3 failed only because the mirror lacked
+    repository files, copied in since. The blast radius counted 101 (triage.md) because it ran the identity
+    change with the old API and pins in place; categories (a) and (b) are what it could not see. The
+    doubles are rewritten (tests_edits_doubles.py: the harness and seven test files): those files and the
+    new binding-hash test pass, 350 tests.
+  EVIDENCE:
+  - context_compass/artifacts/spell_identity_20261018/blast_radius/whole_tree_s1s2/whole_tree_triage_gil0.txt:1-80
+  - context_compass/artifacts/spell_identity_20261018/blast_radius/whole_tree_s1s2/failed_gil0.txt:1-424
+  - context_compass/artifacts/spell_identity_20261018/blast_radius/whole_tree_s1s2/base_8255_failed.txt:1-25
+  - context_compass/artifacts/spell_identity_20261018/scripts/whole_tree_triage.py:1-93
+  - context_compass/artifacts/spell_identity_20261018/scripts/tests_edits_doubles.py:1-234
+  - context_compass/artifacts/spell_identity_20261018/staged/runs/tests_doubles_gil0.txt:1-6
+  IMPACT: The tranche is four times the blast radius; (b) to (e) remain: (b) retires the tests of the removed
+    API onto their successors or converts them, (c) gives each test one registration per object or makes
+    it a refusal test, (d) asserts the binding hash moves where the spell_id used to, (e) one at a time.
+  NEXT: Category (b): read test_bind.py's `sha256_profile` tests and map each to its successor before
+    retiring it.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-18T18:48:19Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: test_bind.py's 44 test functions of `Bind.sha256_profile` (47 cases), read whole, test a function S1
+    removes. 43 are retired onto the successors that carry their property now (the map names one per
+    test); the non-bool `resolvable` check (4 cases) moves to public `Bind.bind`, refused before the
+    target is examined; the inspector test is rewritten - `Bind.spell_id_inspector` equals
+    `SpellCodeDigest().spell_id`, the same on every call, with no binding profile built. Three successor
+    cases are added to test_spell_code_digest.py where none existed: methods defined in another order
+    keep the spell_id, a parameter's kind moves it, and non-ASCII identifiers digest stably. Five of the
+    retired tests pinned what the owner's design reverses (annotation values and parameter annotations,
+    the dataclass and decorated flags, the origin file); their successors assert the opposite. Section
+    comments left without tests are kept and say where their tests went. The owner was told (chat).
+  EVIDENCE:
+  - context_compass/artifacts/spell_identity_20261018/blast_radius/whole_tree_s1s2/retired_sha256_profile_tests.md:1-65
+  - tests/unit/melder/spellbook/bind/test_bind.py:365-399
+  - tests/unit/melder/spellbook/bind/test_bind.py:638-734
+  - tests/unit/melder/spellbook/bind/test_bind.py:936-966
+  - tests/unit/melder/spellbook/bind/test_bind.py:1004-1017
+  - tests/unit/melder/spellbook/bind/test_bind.py:1193-1204
+  - tests/unit/melder/spellbook/bind/test_bind.py:1269-1282
+  - tests/unit/melder/spellbook/bind/test_bind.py:1425-1456
+  - tests/unit/melder/spellbook/bind/test_bind.py:1605-1660
+  - tests/unit/melder/spellbook/bind/test_bind.py:1715-1728
+  - tests/unit/melder/spellbook/bind/test_bind.py:1764-1826
+  IMPACT: test_bind.py's 48 failures close and every property they pinned stays under test, on the digest or
+    the manifest; the edit list is the batch `bind` of tests_apply_s1_s2.py.
+  NEXT: tests_edits_bind.py: check, apply to the mirror, run test_bind.py and the digest's tests (GIL off).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-18T19:11:29Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: Category (b), the retired API's tests, is done in nine of its ten files, and with it the rewrites
+    those files held of the other categories: nine batches of tests_apply_s1_s2.py (bind, managed,
+    fingerprint, profile_strategy, component_bind, lifecycle_hooks, inherited, ordered_disposal,
+    resolvable_registration), applied to the /tmp mirror, close 116 of the 424 failed ids - (b) 95 of
+    96, (c) one object registered twice 18 of 88, (d) the ordered-disposal reversed premise 1 of 2,
+    (e) the two resolvable-registration regexes 2 of 4. The nine files and the digest's test pass, 503
+    tests, with the GIL off and on. A staged second member is a second version of its class - a subclass
+    with the same name, qualname and module and one class-level value more (`second_version_of`) -
+    because staging the class itself again is refused. Left: test_ordered_disposal_replay.py (1 of (b),
+    22 of (c)), 48 of (c) in 20 other files, 1 of (d), 2 of (e); beside them melder_1's 18 S8 baselines.
+  EVIDENCE:
+  - context_compass/artifacts/spell_identity_20261018/staged/runs/tests_category_b_gil0.txt:1-4
+  - context_compass/artifacts/spell_identity_20261018/staged/runs/tests_category_b_gil1.txt:1-2
+  - context_compass/artifacts/spell_identity_20261018/blast_radius/whole_tree_s1s2/whole_tree_triage_gil0.txt:1-80
+  - context_compass/artifacts/spell_identity_20261018/scripts/tests_apply_s1_s2.py:1-73
+  - context_compass/artifacts/spell_identity_20261018/scripts/tests_edits_ordered_disposal.py:1-133
+  IMPACT: 74 failed ids of S1 and S2 remain before the whole tree reruns; every batch lands in the
+    repository through the same applier, so the mirror's green is the landing's.
+  NEXT: test_ordered_disposal_replay.py: the staged member becomes a second version of the service, the
+    restore-policy tests assert the kept spell_ids and the reported binding changes; batch ordered_replay.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
@@ -293,14 +561,28 @@ this does not make independent review mandatory for every ticket.
 ## Context / Handoff Summary
 - Scope: the spell_id hashes the registered object's code only.
 - State: in_progress (melder_0), implementation: the owner's word to land it now with S2 (the epic's DECISION
-  note of 2026-10-18T15:01:53Z); the patches are updated for B and strict uniqueness before the code. spellbook.py
-  and spell.py are melder_1's for S9 and asked for (M0-196).
+  note of 2026-10-18T15:01:53Z); the patches are updated for B and strict uniqueness before the code. S9
+  landed as 0.2.8256 and spellbook.py and spell.py are back (M1-38; the epic's FACT note of
+  2026-10-18T17:23:22Z).
 - Done: Bind's fingerprint and the binding profile read whole; the prototype extended to bases, class-level
   values, object data and closures, and measured (MEASURE note).
 - Done since: the four patch docs in system_docs/patches/active/spell_identity_is_the_code_2026_10_18/, the D
   probe (MEASURE note) and the mapping (PLAN note).
-- Next: the patches updated for B and strict uniqueness; the blast-radius run in a /tmp mirror; the landing
-  pass with S2.
+- Done since: the patches updated for B and strict uniqueness (FACT note).
+- Done since: the blast radius measured and the `__annotate_func__` rule found (MEASURE and FACT notes of
+  2026-10-18T16:24:12Z).
+- Done since: the `__annotate_func__` rule written into the code-description patch (2026-10-18T16:32:46Z).
+- Done since: SpellCodeDigest written and probed in the mirror; four contract refinements in the
+  code-description patch (MEASURE and DECISION notes of 2026-10-18T17:05:55Z).
+- Done since: S1 applied to the /tmp working mirror with S2 - the profiles and the statements sweep -
+  and smoke-checked (FACT note of 2026-10-18T17:51:07Z).
+- Done since: the whole tree run on the mirror and triaged - 424 failures, 18 of them melder_1's S8
+  baseline; the doubles rewritten and green (MEASURE note of 2026-10-18T18:44:20Z).
+- Done since: category (b) in nine of its ten files with the rewrites they held - 116 failed ids
+  closed, 503 tests green with the GIL off and on (MEASURE note of 2026-10-18T19:11:29Z).
+- Next: test_ordered_disposal_replay.py, then (c) one object registered twice in 20 more files, (d)
+  the managed reversed premise, (e) the process-stability and two-frame tests; then the whole tree
+  with the GIL off and on, and the landing pass with S2, notched above 0.2.8256.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

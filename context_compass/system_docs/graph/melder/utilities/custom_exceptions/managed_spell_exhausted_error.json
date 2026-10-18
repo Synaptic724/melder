@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/utilities/custom_exceptions/managed_spell_exhausted_error.py",
- "source_sha256": "2abb50abb5ef48a4f754b4e4129b9f35382eaca8857eec923568789a4b301e60",
+ "source_sha256": "d0c4dd45d07718f765916383b3189cc5335d5278184b4c4edfad4ac279a07b6a",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.utilities.custom_exceptions.managed_spell_exhausted_error": {
@@ -39,7 +39,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "426fe049df1619934c3bc65169786ed99ce524e93070c3298c3f9d2961e09f4d",
+   "span_sha256": "0975396af58d95e5579e133f7255298814aab6fa2d8d52863b5a9feaa72ece43",
    "include": true,
    "role": "MeldExecutionError raised at meld when a managed pool has no place: limited_quantity with every object out, or queue after its timeout.",
    "responsibilities": [

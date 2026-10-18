@@ -458,12 +458,12 @@ Direct evidence used in this pass:
 - direct filesystem inventory over `tests/`
 
 Current Python test inventory from direct filesystem count:
-- `unit/`: 512 `.py` files, 509 of them `test_*.py` (465 on 2026-09-26, 334 on 2026-06-13)
+- `unit/`: 513 `.py` files, 510 of them `test_*.py` (465 on 2026-09-26, 334 on 2026-06-13)
 - `component/`: 168 `.py` files, 166 of them `test_*.py` (143, 81)
-- `integration/`: 180 `.py` files, 173 of them `test_*.py` (149, 88)
+- `integration/`: 182 `.py` files, 175 of them `test_*.py` (149, 88)
 - `mocks/`: 44 `.py` files (44, 42)
 - `experimentation/`: 204 `.py` files, 33 of them `test_*.py` (196 on 2026-09-26)
-Recounted 2026-10-18 with `find tests/<tier> -name '*.py'` (pycache excluded); the three tiers' 848 `test_*.py`
+Recounted 2026-10-18 with `find tests/<tier> -name '*.py'` (pycache excluded); the three tiers' 851 `test_*.py`
 modules are the count `tests_components` states.
 
 ## Core Responsibilities
@@ -888,6 +888,14 @@ graph TD
 - direct filesystem inventory of `tests/`
 
 ## Context / Handoff Summary
+
+2026-10-18 direct cleanup refusal (0.2.8256): the inventory is recounted from disk (unit 513 `.py`, component
+168, integration 182, mocks 44, experimentation 204; 851 test modules in the three tiers) - the lane adds one
+integration module (the three cleanup doors refusing an index's active version while parked versions remain),
+catalogued in `tests_components`. The count also takes in the two red-test modules written for the held
+STORY-2026-10-17-failed_notch_keeps_switch_without_borrowers (one unit, one integration), whose 18 tests
+fail on purpose until that story lands and catalogues them. No tier, conftest, declared marker or shared
+support module changes, and no extent in this map moves.
 
 2026-10-18 managed settings leave the spell_id (0.2.8254): the inventory is recounted from disk (unit 512 `.py`,
 component 168, integration 180, mocks 44, experimentation 204; 848 test modules in the three tiers) - the lane adds

@@ -635,8 +635,12 @@ class Spell(Cleanable):
         Raises:
             RuntimeError: On a direct call, from
                 `Spellbook.cleanup_and_remove_spell`: the spell is not its Book's
-                current active version (a parked version, for one), or the Book
-                has been cleaned and did not clean this spell.
+                current active version (a parked version, for one); it is the
+                active version of an index that also holds parked versions
+                (nothing changes: notch the index to one of them, dispose them
+                with `cleanup_spell`, or move them out with
+                `remove_from_spell_index` first); or the Book has been cleaned
+                and did not clean this spell.
 
         """
         if self._cleaned:

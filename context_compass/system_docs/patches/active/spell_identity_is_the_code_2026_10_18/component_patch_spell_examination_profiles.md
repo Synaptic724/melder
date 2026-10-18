@@ -8,10 +8,11 @@
   (`src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py:234-536`)
   and their builders `BindingProfileStrategy._build_callable_profile`, `_build_instance_profile` and
   `_build_other_profile` (`.../strategies/binding_profile_strategy.py:193-301`)
-- Status: draft - for the owner's approval (he may keep the fields; then this patch is dropped and they stay unused)
+- Status: approved - the owner's word to land S1 (2026-10-18T15:01:53Z) approves it with its recommendation:
+  the fields are removed
 - Owner: user; melder_0 (synaptic_python_developer)
 - Created: 2026-10-18T13:21:00Z
-- Updated: 2026-10-18T13:21:00Z
+- Updated: 2026-10-18T15:40:03Z
 
 ## Component Purpose and Boundary
 - Current boundary: at every bind the strategy computes `InspectorUtility.stable_repr(...)` - the full repr with
@@ -21,7 +22,8 @@
   `Bind._fingerprint_default_text`; searched: src/melder).
 - Target boundary: the four fields, their constructor keywords, their cleanup deletions and the `stable_repr` calls
   that fill them are removed. The display fields stay; `InspectorUtility.stable_repr` stays, because SpellCodeDigest
-  uses it for a target with no Python-visible state (code-description patch).
+  uses it for a target with no Python-visible state and for an object of an installed third-party class
+  (decision B; code-description patch).
 
 ## Before/After Behavior Summary
 - Before: one or two full reprs per callable and per object at bind, kept on the profile for its life.
@@ -51,8 +53,8 @@
 
 ## Unknowns and Open Decisions
 - UNKNOWN: none in the code paths read.
-- The owner may keep the fields (no reader would remain); recommended: remove them, since a field nothing reads is
-  a second, stale description of identity.
+- DECIDED (the owner's word to land S1, 2026-10-18): the fields are removed, as recommended - a field nothing
+  reads is a second, stale description of identity.
 
 ## Context / Handoff Summary
 - What changed: nothing in `src/`.

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py",
- "source_sha256": "03c0cffd316a6fac7c3e199ff0c3e8c1c9f967b531ae29e4ea2413c5433d9808",
+ "source_sha256": "7b58a3933b6dccc1cb6a2e5f620647efaaa15fbc89655c50f284916a5270a66c",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.conduit_ward.transfer.transfer_of_ownership": {
@@ -41,7 +41,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "15f211fbc42bfdd111d25df331aba9a2e82d2dda7b740884af1635e85e57d7fa",
+   "span_sha256": "4e03d4bfa83c22e6d0d240f546cc87131570ac4c8fd883a4c0a7b8aaf33ad89f",
    "role": "Control-plane helper that migrates a spell lineage between conduit owners.",
    "responsibilities": [
     "preflights and executes dynamic spell ownership transfer between conduits",

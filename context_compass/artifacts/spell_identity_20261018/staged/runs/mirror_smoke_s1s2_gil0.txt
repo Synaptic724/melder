@@ -1,0 +1,6 @@
+version 0.2.8256
+id == digest: True
+binding_hash: 64a05860b7f9 manifest existence: unique
+second registration refused: Spell ID collision detected: this object is already registered as spell_id <sid>
+inspect_spell after conjure: True
+inspect_spell of an unbound class: None

@@ -8,7 +8,7 @@
 - Agent Role: synaptic_python_developer
 - Priority: p1
 - Created: 2026-10-17T20:11:34Z
-- Updated: 2026-10-18T14:14:10Z
+- Updated: 2026-10-18T18:08:26Z
 - Target Window: 2026-Q4
 - Related Program/Initiative: Melder runtime correctness (the owner's direction, chat 2026-10-17)
 
@@ -112,9 +112,11 @@ those, and only those, keeps the core trustworthy without judging Melder by rule
   validation fails keeps its switch and leaves its borrowers behind (sweep A9). melder_1's (the owner-approved
   patch failed_notch_refusal_2026_10_18; M1-30, M1-31); on hold by the owner since 2026-10-18T13:38:59Z, no src
   edit made (M1-33).
-- [ ] Story: STORY-2026-10-17-direct_cleanup_of_active_member_orphans_parked_versions - a direct cleanup
-  of an index's active member leaves its parked versions on a cleaned index (sweep A10). melder_1 is fixing it
-  (patch direct_cleanup_refusal_2026_10_18; M1-33); S4 and S7 follow with melder_1, one at a time (M1-32).
+- [x] Story: STORY-2026-10-17-direct_cleanup_of_active_member_orphans_parked_versions - a direct cleanup
+  of an index's active member leaves its parked versions on a cleaned index (sweep A10). Landed by melder_1
+  at 0.2.8256 with the refusal the owner chose (M1-37): all three cleanup calls refuse the active member of
+  an index that holds parked versions, naming the remedies; turned in 2026-10-18 (M1-38), in
+  tickets/stories/completed/. S4 and S7 follow with melder_1, one at a time (M1-32).
 - [x] Story: STORY-2026-10-17-minted_index_selects_its_parked_version - the index
   remove_from_spell_index mints selects its parked version, so a graft activates it (sweep A12). Withdrawn on
   the owner's ruling (2026-10-17): not a defect; in tickets/stories/completed/.
@@ -192,6 +194,11 @@ those, and only those, keeps the core trustworthy without judging Melder by rule
   with melder_1; S3 waits for its open question; S1, S2 and S5 wait for EPIC-2026-10-18-spell_identity_is_the_code.
 - 2026-10-18T14:14:10Z: S8 on hold by the owner (13:38:59Z); melder_1 started S9 and holds spellbook.py and
   spell.py for it (FACT note).
+- 2026-10-18T15:15:34Z: M1-35 - the owner's rule for S9 (an index whose active version is cleaned up keeps its
+  parked versions with nothing active; the refusal goes) supersedes sweep A10's "refused by design";
+  melder_1 holds spell_index.py too, released by M0-197 (FACT note).
+- 2026-10-18T17:23:22Z: M1-38 - S9 landed at 0.2.8256 with the refusal the owner chose (M1-37) and is turned in;
+  the hole rule of the 15:15:34Z entry did not land (FACT note).
 
 ## Artifact Links (Optional)
 Qualified independent reviewer acceptance and direct closure follow shared `ticketing.md`;
@@ -942,6 +949,79 @@ this does not make independent review mandatory for every ticket.
   REREAD: HELPFUL
   SCORE_0_TO_10: 7
 
+- DATETIME: 2026-10-18T15:15:34Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: M1-35 from melder_1 (2026-10-18T15:04:57Z), consumed. The owner's rule for S9 (chat 2026-10-18; S9's
+    DECISION note of 2026-10-18T15:04:57Z): cleaning up an index's active version - `cleanup_spell`,
+    `Spell.cleanup()` or `cleanup_and_remove_spell` - marks it invalid and removes it; the index stays with its
+    parked versions and nothing active, no version promoted; what resolves through it meets a hole naming the
+    index; only an index left without members is destroyed; `cleanup_spell`'s refusal goes. It supersedes
+    "refused by design" in sweep A10's MEASURE note: the defect there (two calls skip the refusal) is fixed by
+    giving all three calls the new rule. The fix needs a SpellIndex that can hold no selection, so melder_1
+    holds spell_index.py beside spellbook.py and spell.py until S9 lands. melder_0 released it (M0-197): S1 and
+    S2 of EPIC-2026-10-18-spell_identity_is_the_code edit nothing in it. They plan to edit bind.py,
+    binding_profile.py, binding_profile_strategy.py, two new modules, structural_snapshot.py,
+    spellbook_creation_system.py and caching_system.py, and docstrings in lookup_container.py, aether.py,
+    aether_configuration.py, conduit_meld.py, meld.py, spellspace_meld.py, generalized_manifest.py and
+    generalized_manifest_no_overrides_compiler.py; of these only meld.py and generalized_manifest.py read
+    `selected_spell_id`, the field S9's inventory starts from.
+  EVIDENCE:
+  - context_compass/tickets/stories/2026-10-17_direct_cleanup_of_active_member_orphans_parked_versions_story.md:361-389
+  - context_compass/tickets/epics/2026-10-17_correctness_defects_epic.md:672-701
+  - context_compass/tickets/stories/2026-10-18_spell_id_hashes_the_object_code_story.md:254-278
+  IMPACT: S9 now changes SpellIndex's selection contract and its readers, so it holds three files longer and may
+    reach a file of the identity epic's plan; S4 and S7 still follow it with melder_1. Sweep A10's record reads
+    with this note.
+  NEXT: Keep this record current as melder_1 lands S9; take any shared file in turn with melder_1.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-18T17:23:22Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: M1-38 from melder_1 (2026-10-18T17:07:19Z, NOTICE), consumed. S9
+    (STORY-2026-10-17-direct_cleanup_of_active_member_orphans_parked_versions) landed at 0.2.8256 and is turned
+    in, rebuilt last with both checks OK. It took the refusal, the owner's choice once he reopened the rule
+    (M1-36, M1-37): `cleanup_spell`, `Spellbook.cleanup_and_remove_spell` and a direct `Spell.cleanup()` refuse
+    the active version of an index that holds parked versions, change nothing and name the remedies (notch to a
+    parked version first, dispose the parked versions, or move them out); Book teardown is unaffected. The hole
+    rule this epic's FACT note of 2026-10-18T15:15:34Z records (M1-35) did not land: sweep A10's "refused by
+    design" stands, now on all three calls. melder_1 takes S4 next; spellbook.py, spell.py and spell_index.py
+    are melder_0's again.
+  EVIDENCE:
+  - context_compass/tickets/stories/completed/2026-10-17_direct_cleanup_of_active_member_orphans_parked_versions_story.md:1-9
+  - src/melder/aether/spellbook/spellbook.py:602-781
+  - context_compass/system_docs/src_architecture.md:1126-1152
+  IMPACT: S9 is done; the defects left with melder_1 are S4 and S7 (S8 on hold); the record of sweep A10 reads with
+    this note, not the 15:15:34Z one.
+  NEXT: Keep this record current as melder_1 lands S4.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-18T18:08:26Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: M1-39 from melder_1 (2026-10-18T18:04:38Z), consumed. S4
+    (STORY-2026-10-17-minted_index_missing_from_frame_registry) has the owner's word on edits A-C:
+    `remove_from_spell_index` registers the index it mints as a post-conjure `bind` does, the root's
+    teardown unregisters it with the rest, and `residency_view` reads its version parked. melder_1 holds
+    mutation_research.py for it and takes spellbook.py once S1 and S2 of
+    EPIC-2026-10-18-spell_identity_is_the_code land, notching above them. Its probe on 0.2.8256 widens the
+    defect: bind's collision guard misses a version alone in a minted index (M4b, M5b), and a transfer by
+    that version's spell_id is refused (M7).
+  EVIDENCE:
+  - context_compass/tickets/stories/2026-10-17_minted_index_missing_from_frame_registry_story.md:304-327
+  - context_compass/artifacts/minted_index_registry_20261018/runs/probe_minted_index_fix_cases_0_2_8256_gil0.txt:1-31
+  - src/melder/aether/aether.py:2550-2622
+  IMPACT: S4 is the story in progress with melder_1; S7 follows it, S8 stays on hold (M1-33).
+  NEXT: Keep this record current as melder_1 lands S4.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
@@ -958,8 +1038,8 @@ this does not make independent review mandatory for every ticket.
 ## Context / Handoff Summary
 - Scope: correctness defects - structure Melder records wrong or leaves stuck - by the owner's rulings (DECISION
   note); read-only; one story per confirmed defect; melder_1's lane excluded.
-- State: in_progress (melder_0), handoff. A1-A12 are done; ten stories filed - S9 in_progress with melder_1
-  (M1-33); S8 blocked, on hold by the owner (M1-33); S4 and S7 next with melder_1; S3 waiting for its open
+- State: in_progress (melder_0), handoff. A1-A12 are done; ten stories filed - S9 done (0.2.8256, the
+  refusal; M1-38); S8 blocked, on hold by the owner (M1-33); S4 next with melder_1, then S7; S3 waiting for its open
   question; S1, S2 and S5 waiting for EPIC-2026-10-18-spell_identity_is_the_code (M1-32); S6 done; S10
   withdrawn:
   STORY-2026-10-17-staged_version_releases_active_signature (p1),
@@ -974,11 +1054,12 @@ this does not make independent review mandatory for every ticket.
   turned in 2026-10-18 with part B superseded by EPIC-2026-10-18-spell_identity_is_the_code),
   STORY-2026-10-17-book_teardown_leaves_parked_versions_uncleaned (p3),
   STORY-2026-10-17-failed_notch_keeps_switch_without_borrowers (p2; answered: refused with nothing moved),
-  STORY-2026-10-17-direct_cleanup_of_active_member_orphans_parked_versions (p2) and
+  STORY-2026-10-17-direct_cleanup_of_active_member_orphans_parked_versions (p2; done: landed at 0.2.8256
+  with the refusal, turned in 2026-10-18) and
   STORY-2026-10-17-minted_index_selects_its_parked_version (p3; withdrawn: not a defect, owner 2026-10-17).
-  The owner's order is parallel (M1-30, M1-32): melder_1 holds spellbook.py and spell.py for S9 until it lands
-  (M1-33, M0-195); conduit.py, spellbook_validation_error.py and change_control_manager.py are back with
-  melder_0 while S8 is on hold; each lane claims a file from the other by mailbox before editing it.
+  The owner's order is parallel (M1-30, M1-32): S9 landed and melder_1 handed spellbook.py, spell.py and
+  spell_index.py back (M1-37, M1-38); conduit.py, spellbook_validation_error.py and change_control_manager.py
+  are with melder_0 while S8 is on hold; each lane claims a file from the other by mailbox before editing it.
 - Done since: the owner told of S1-S5, then S6-S8, then S9-S10 with their questions, the widenings and S8's
   bind precedent (chat); melder_1 told of the eight stories whose fixes sit in its files (M0-181, M0-182,
   M0-184, M0-185). The owner answered S2 and S5 (DECISION note of 2026-10-17T21:55:46Z); melder_1 told (M0-186).
@@ -989,8 +1070,11 @@ this does not make independent review mandatory for every ticket.
   S6's part A landed at 0.2.8254 and was rebuilt last; its files are released to melder_1 (M0-192). S6 is
   turned in on the owner's identity direction (DECISION note of 2026-10-18T12:06:53Z); its open items moved to
   EPIC-2026-10-18-spell_identity_is_the_code; melder_1 handed every file back (M1-28) and is told (M0-193).
-- Next: (1) melder_1 fixes S9, then S4 and S7, one at a time, and S8 when the owner lifts its hold (M1-32,
-  M1-33); (2) S3 after the owner answers its open question, S1, S2 and S5 after the identity epic; (3) each fix
+- Done since: M1-38 consumed - S9 landed at 0.2.8256 with the refusal (FACT note of 2026-10-18T17:23:22Z).
+- Done since: M1-39 consumed - S4 has the owner's word on edits A-C and is in progress with
+  melder_1 (FACT note of 2026-10-18T18:08:26Z).
+- Next: (1) melder_1 fixes S4, then S7, one at a time (S9 landed, M1-38), and S8 when the owner lifts its
+  hold (M1-32, M1-33); (2) S3 after the owner answers its open question, S1, S2 and S5 after the identity epic; (3) each fix
   with the patch gate, its notch and the rebuild; (4) a fourth tranche on the owner's word.
 
 ## Project-Specific Additions

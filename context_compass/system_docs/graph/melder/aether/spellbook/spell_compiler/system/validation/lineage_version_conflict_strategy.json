@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/system/validation/lineage_version_conflict_strategy.py",
- "source_sha256": "b9b3dc6bc443e8558b3c3b6d80e786f289d07e4cff668ea7d1f5546d6bef2ccb",
+ "source_sha256": "c8cb8ce497ca90546a68905a961213f4f2731f45dcdae0f4ddbd23e7edbb801d",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.system.validation.lineage_version_conflict_strategy": {
@@ -39,7 +39,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "ca11094e22fb304d50fc844499ed83a4a1929e13f2ee14d10cb3140a65fcaec6",
+   "span_sha256": "b7dad5fb078473399ede5dafb948457448604df9bb79685aecc06930c3d8ef86",
    "include": true,
    "role": "Guard that one root DAG does not mix multiple versions of the same lineage - a root is one coherent runtime slice.",
    "responsibilities": [

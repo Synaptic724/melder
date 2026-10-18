@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/crystal_loader_system/restore_engine.py",
- "source_sha256": "f0ceace9f90bcdd931f5d223d62103c91a85c943ed4851691488218a1d22c75c",
+ "source_sha256": "bb1777f6a01a1c7fe1b634f1362ce199b8985a1691ac7b79f9349e02828fbc3f",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.crystal_loader_system.restore_engine": {
@@ -95,7 +95,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "6a24fbc60557be28ebdbeb6e189b3deef113abd814145b527f10953abacf8bcd",
+   "span_sha256": "d365fb83b712dbb1c25803d8a6bbc9c6160fd04033d109b1629634823f7e0c9a",
    "role": "Single-use all-or-nothing world restorer: folds a checkpoint chain and replays it through PUBLIC runtime verbs.",
    "responsibilities": [
     "fold: oldest-first later-wins with tombstones and custody routing; journal-without-payload is an honesty shortfall",

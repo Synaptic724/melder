@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/utilities/custom_exceptions/meld_execution_error.py",
- "source_sha256": "c4ef62802568d6b6dc2caeb0081b205a16537811418061db8b4a59d1eb3543fb",
+ "source_sha256": "7dcf97304d582386599083d76372bacf020c5401f3e8d676bb09185f02da2311",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.utilities.custom_exceptions.meld_execution_error": {
@@ -37,7 +37,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "9dd8280f0eadd35c8759313e893cae571a4f010fb202169c7283f4c513dd458f",
+   "span_sha256": "f9987e6ca5ca4827aff2c933fa9989c717ca58ae66b1f9ca731b11d2012be589",
    "role": "Runtime exception for meld execution failures.",
    "responsibilities": [
     "captures spell/runtime context for meld execution errors"

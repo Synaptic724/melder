@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spellbinder.py",
- "source_sha256": "6a7abc5b705d59ddcdbbdab1283f3d796346473a1ce744cdfa919c17b650cc6c",
+ "source_sha256": "02c474e986115947d6ff16d8d18af1530732368a7a31b1ae2481009b9488b14d",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spellbinder": {
@@ -52,7 +52,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "e8c325f22c2e42680758cb5a619d3763a27fb79eecc4162a2aebecb38f61bf8a",
+   "span_sha256": "bb5dcac61c808702fae62fd23ade731bd81a84d1a6631ec5c00fb7a22cb3defb",
    "role": "Fluent registration helper for Spellbook bind operations.",
    "responsibilities": [
     "accumulates bind-time choices for one pending registration and delegates them to Spellbook.bind on finalize",

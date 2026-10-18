@@ -613,6 +613,11 @@ class Spellbook(Cleanable):
         Contract:
             - Accepts either a live `Spell` or its current `spell_id`.
             - Supports only locally owned spells in this Spellbook.
+            - Refuses the active member of an index that also holds parked
+              versions (`SpellIndex.is_sole_member` False) before anything is
+              unregistered, as `cleanup_spell` refuses it, and changes nothing.
+              The sole member of an index is removed with its index. Book
+              teardown and the parked disposal never reach this method.
             - Unregisters the spell index from `SpellSystemStates` before local
               spell cleanup.
             - Removes Spellbook id maps and lookup maps before local spell
@@ -635,13 +640,22 @@ class Spellbook(Cleanable):
                 If the spell is not found locally or is not owned by this
                 Spellbook.
             RuntimeError:
+                If the spell is the active member of an index that also holds
+                parked versions; nothing changes. Notch the index to one of
+                them, dispose them with `cleanup_spell`, or move them out with
+                `remove_from_spell_index` first.
+            RuntimeError:
                 If this Spellbook has been cleaned - including one torn down
                 while the call waited for its lock, unless that teardown cleaned
                 the Spell given (then the call returns).
 
         Threading:
-            Resolves the spell, unregisters its index and drops it from `_spells`
-            and `_lookup_spells` under the Spellbook lock; releases the lock for
+            Resolves the spell, refuses an active member whose index holds
+            parked versions (the index's membership is read under the index
+            lock inside the Spellbook lock - Spellbook -> index, the order
+            `_dispose_spell` takes, so no new edge), unregisters its index and
+            drops it from `_spells` and `_lookup_spells` under the Spellbook
+            lock; releases the lock for
             the risk-manager and Aether/frame calls; takes it again to drop the
             id maps (the Nexus record is removed after); releases the frame
             lookup; and cleans the spell and its index last, holding no Spellbook
@@ -682,6 +696,19 @@ class Spellbook(Cleanable):
                 return
 
             target_spell_index = target_spell.spell_index
+            # The active member of an index that still holds parked versions is refused, as cleanup_spell refuses
+            # it: removing it here would clean the index under those versions, where no later call reaches them.
+            # Book teardown and the parked disposal never route here - they set _spellbook_cleanup first - so this
+            # refuses only a caller's removal (direct_cleanup_refusal, 0.2.8256).
+            if not target_spell_index.is_sole_member(target_spell_id):
+                refusal = (
+                    f"Spellbook cannot remove spell {target_spell_id}: it is the active member of a multi-member "
+                    f"index, and disposing it would leave the index's parked versions without an active one. Notch "
+                    f"the index to one of them, dispose them with cleanup_spell, or move them out with "
+                    f"remove_from_spell_index first."
+                )
+                self._logger.error(refusal, "cleanup_and_remove_spell", exc_info=True)
+                raise RuntimeError(refusal)
             target_lookup_key = target_spell.key
             owner_conduit_id = target_spell._owner_conduit_id
 
@@ -4374,9 +4401,12 @@ class Spellbook(Cleanable):
         Contract:
             - Only a spell owned by THIS Spellbook may be disposed.
             - The ACTIVE member of a MULTI-member index cannot be disposed
-              directly (it would leave the index headless); notch away from it
-              first. The sole member of an index may always be disposed -- the
-              index is destroyed with it.
+              (it would leave the index's parked versions without an active
+              one): notch the index to one of them, dispose them with
+              `cleanup_spell`, or move them out with `remove_from_spell_index`
+              first. `cleanup_and_remove_spell`, and so a direct
+              `Spell.cleanup()`, refuses it the same way. The sole member of an
+              index may always be disposed -- the index is destroyed with it.
             - Invalidation happens FIRST (`spell.invalidate_spell()`): the creation
               context is cleared and its SpellIndex is marked structurally changed so
               dependents are rechecked, while the index and dependency edges still
@@ -4507,8 +4537,9 @@ class Spellbook(Cleanable):
                     exc_info=True,
                 )
                 raise RuntimeError(
-                    f"cleanup_spell: spell {spell_id} is the active member of a multi-member "
-                    f"index; notch away from it before disposing it."
+                    f"cleanup_spell: spell {spell_id} is the active member of a multi-member index, and disposing "
+                    f"it would leave the index's parked versions without an active one. Notch the index to one of "
+                    f"them, dispose them with cleanup_spell, or move them out with remove_from_spell_index first."
                 )
         # Reached only when this call marked the spell above: nothing between the mark and here can raise.
         try:

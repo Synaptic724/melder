@@ -6,11 +6,12 @@
   `Bind.spell_id_inspector`; `Bind.sha256_profile`, `Bind._fingerprint_repr_text` and `Bind._fingerprint_default_text`
   removed; the new `SpellCodeDigest`; `Spellbook.inspect_spell` (stage-3 text) and the three collision refusals
   (remedy text); the docstrings that define the spell_id (architecture patch, "Statements That Define the spell_id
-  Today", rows marked S1)
-- Status: draft - for the owner's approval
+  Today", rows marked S1); for S2, in the same landing, the new `BindingManifest`, built and carried by `Spell`
+- Status: approved by the owner's word to land S1 with S2 (2026-10-18T15:01:53Z); updated for decision B and
+  strict uniqueness
 - Owner: user; melder_0 (synaptic_python_developer)
 - Created: 2026-10-18T13:21:00Z
-- Updated: 2026-10-18T13:21:00Z
+- Updated: 2026-10-18T17:05:55Z
 
 ## Component Purpose and Boundary
 - Current boundary: `_bind_logic` builds the general profile, resolves the disposal names, normalizes the managed
@@ -52,7 +53,21 @@
   for no input (code-description patch: a target too deeply nested falls back to today's repr rule). The collision
   refusals keep their logic; their remedy text changes in this landing - "differentiate the binding with a distinct
   spellframe or binding_name" stops working once the binding leaves the id - and S4 makes them name the existing
-  registration.
+  registration. One object is strictly one spell (the owner, 2026-10-18), so no text names a duplicate option.
+  - bind and bind_inactive: "Spell ID collision detected: this object is already registered as spell_id <id>. A
+    spell_id is the SHA256 of the object's code (its methods, constructor, class-level values and base classes,
+    or an existing object's class and data), and one object is one spell: registering it again - under another
+    binding name, existence or spellframe, or in another Spellbook where spell_ids are unique (the process by
+    default, the frame under per-frame spell ids) - is refused. Use the spell already registered (another conduit
+    shares it through a link or a contract), or cleanup_spell it and bind it again to change how it is bound. A
+    changed method, constructor, class-level value or base class is a new spell_id: stage it with bind_inactive
+    and notch to it."
+  - conjure's integrity check keeps its head and SCOPE lines; its explanation becomes "A spell_id is the SHA256 of
+    the registered object's code (its methods, constructor, class-level values and base classes, or an existing
+    object's class and data) and includes neither the frame nor the bind call, so two Spellbooks binding the same
+    object mint the same id", its fix "bind the object in one Spellbook and share it with the others (a link or
+    a contract); one object is one spell", and its last sentence ends "the id follows the code, and the code has
+    no frame in it".
 
 ## State and Lifecycle Deltas
 - Owned state: `Bind` gains the slot `_spell_code_digest: SpellCodeDigest`, built in `__init__` and, in `cleanup`
@@ -60,7 +75,7 @@
   memo of code-object digests and nothing else.
 - `spell_id_inspector` stays static and builds a fresh SpellCodeDigest per call: no shared memo, no lock, no state
   left behind.
-- Spell and SpellIndex: no field changes.
+- Spell and SpellIndex: no field changes for S1; S2 adds `Spell.binding_manifest` (S2 section).
 
 ## Failure Mode Deltas
 - New failure mode: none at bind. A second registration of one object under another binding is now refused by the
@@ -76,8 +91,9 @@
    ids and that stamp (`spellbook_creation_system.py:616-740`), and emitted plans trust that disposal facts "compose
    into the spell fingerprint" (`generalized_manifest_no_overrides_compiler.py:99-101`). Without S2 a binding changed
    under one spell_id could replay a plan built for the old binding.
-2. The spellbook.py edits (inspect_spell's text, the three refusal texts) wait for spellbook.py to come back from
-   melder_1 (M1-31, S8's landing).
+2. The spellbook.py edits (inspect_spell's text, the three refusal texts) and the spell.py edits (the spell_id
+   docstrings, the S2 manifest) wait for both files to come back from melder_1 (M0-196; S9 holds them, M1-33;
+   their order waits for the owner's pick in S9, M1-36).
 3. The test moves follow the blast-radius classification (architecture patch, step 2).
 
 ## Validation Expectations
@@ -97,11 +113,45 @@
 - Probes on src: probe_fingerprint_reads_code (F1-F5 now as the owner wants), probe_code_digest_cases,
   probe_code_digest_design_edges.
 
+## S2 (same landing): the binding manifest
+- Purpose: once the spell_id is the object's code, how a spell is kept needs an identity of its own (the owner,
+  chat 2026-10-18: "bind signature can get its own hash signature we could put into a manifest associated with an
+  object"). `BindingManifest` (new: `src/melder/aether/spellbook/bind/binding_manifest.py`) is that record: a
+  value object holding no live reference, built once per Spell.
+- Fields, in hash order: `frame_key` and `binding_key` (the address, `Spell._key`, normalized as bind claims it);
+  `spellframe` (the bind call's spellframe as text: "" for none, the category as written, `<module>.<qualname>`
+  of a Protocol contract); `spellframe_kind` (the `SpellframeKind` name); `binding_name` (as written, or None);
+  `existence` (the `Existence` name); `disposal_method_names` (the resolved list in execution order, a tuple);
+  `resolvable`; `managed_spell_mode` (the `ManagedSpellMode` name, or None), `managed_spell_limit`,
+  `managed_spell_timeout_seconds` and `managed_spell_reset_methods` (a tuple).
+- `binding_hash` is the SHA256 hex digest of `"v1-binding\n"` and one `<field>=<repr(value)>` line per field, in
+  that order, newline-joined. Every value is None, a bool, an int, a float, a str or a tuple of str, so the text
+  is the same in every process and GIL mode.
+- Not in it: permissions, hooks, application metadata and the aetheric frame - no compiled plan, structural row
+  or verdict reads them (searched: `aether/spellbook/spell_compiler`, `aether/conduit/meld`) - and the object's
+  code, which is its spell_id.
+- `Spell.__init__` builds it last, from its own arguments (`BindingManifest.build(...)`), so every Spell - bound,
+  staged, restored or grafted - carries one, computed once; Bind passes nothing new. `Spell.binding_manifest` is
+  public and read-only by contract and `Spell.binding_hash` returns its hash (a Spell has no `describe()`; corrected
+  2026-10-18); both survive cleanup like `spell_id` (value data). No lock: the constructor runs before the Spell is
+  reachable.
+- `BindingManifest.describe()` returns the fields and the hash as a marshal- and JSON-safe dict.
+- Consumers in this landing: the creation cache (component_patch_creation_cache.md) and, on the owner's word, the
+  SpellCrystal, which records the hash, and restore, which reports a binding it rebuilt differently from the
+  record (component_patch_crystallizer_record.md). Later: S3 revalidates a spell whose binding hash changes.
+- Validation: each field moves the hash and nothing else does; equal arguments give equal hashes in two processes
+  and with the GIL off and on; `BindingManifest.describe()`; a bound, a staged and a restored Spell carry the
+  manifest their bind call implies; `Spell.binding_hash` after cleanup.
+
 ## Unknowns and Open Decisions
-- DECISION_REQUEST (owner): third-party code and objects (architecture patch).
-- UNKNOWN: how many tests outside the 14 bind one object twice (the blast-radius run measures it).
+- DECIDED (owner, 2026-10-18): installed third-party code and objects are named by distribution version (B;
+  architecture patch, invariant 8).
+- MEASURED (2026-10-18): 89 tests register one object twice; the landing rewrites them, none is a Melder
+  defect (the blast radius, S1's MEASURE note).
 
 ## Context / Handoff Summary
 - What changed: nothing in `src/`; the prototype measured the rules and the cost (S1's MEASURE note, the D probe).
-- Remaining risks: the bind cost of classes over large third-party bases (D9); records holding one object twice (S5).
-- Next entrypoint: `src/melder/aether/spellbook/bind/bind.py:Bind._bind_logic` (the fingerprint call at 795-803).
+- Remaining risks: the bind cost of the distribution-version lookup for installed packages (decision B; D9's
+  digest cost no longer applies to them); records holding one object twice (S5).
+- Next entrypoint: `src/melder/aether/spellbook/bind/bind.py:Bind._bind_logic` (the fingerprint call at 795-803);
+  for S2, `src/melder/aether/spellbook/spell.py:Spell.__init__` (its last lines, 569-576).

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/creations/release_managed_spell.py",
- "source_sha256": "7da4851b6cc85de496ad95cde567e2a7a402275729a9aef9e77a5f05841249f6",
+ "source_sha256": "ba1bc887f06b470ebee7dd4a07d0f02221d0fe0b8c85a0eb9440eb5fee81230a",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.creations.release_managed_spell": {
@@ -46,7 +46,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "2fa6359c58343d28f9fd6566e45aa5710b950bc88747f3e26d06360a2333324f",
+   "span_sha256": "3279bc57c1670e49c2668b8980d2002db1c2da0569d479c4b8a7cc931ee5f922",
    "include": true,
    "role": "Process singleton Aether builds last and owns: the class-keyed registry of the managed pools live root stores hold, through which a managed object is given back to its pool.",
    "responsibilities": [

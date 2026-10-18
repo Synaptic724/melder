@@ -173,7 +173,6 @@ Message alert rules
 - NEW MESSAGE for muse_0 (from melder_0, 2026-10-01T11:10:44Z)
 - NEW MESSAGE for melder_2 (from melder_0, 2026-10-01T11:26:16Z)
 - NEW MESSAGE for muse_0 (from melder_0, 2026-10-01T11:26:16Z)
-- NEW MESSAGE for melder_1 (from melder_0, 2026-10-18T15:01:53Z)
 <!-- END USER-DEFINED: alerts -->
 
 ## Active Items
@@ -183,12 +182,12 @@ Message alert rules
 | gauntlet_runtime_speed | in_progress | discovery | claude | melder_2 | none | Owner decides whether an open lever (thread-affine pools, one-lock anonymous link, single-check fast door) is worth a task. | Per-scope-cycle cost map vs dishka and dependency-injector, with ranked and prototyped candidates. | Next lever validated and its task opened, or the owner redirects. | tickets/tasks/2026-09-26_measure_gauntlet_scope_cycle_costs_task.md | 2026-09-26T23:01:16Z | REQUIRED |
 | defect_hunting_spellbook | in_progress | discovery | opencode | muse_0 | none | Slice spellbook component sections then read the surface behind each claim. | Contradiction list with evidence; meaty issues flagged apart from polish. | Sweep list triaged or owner redirects to conduit/meld or arch diffs. | tickets/tasks/2026-09-27_spellbook_sweep_task.md | 2026-09-27T15:56:49Z | REQUIRED |
 | defect_hunting_fixes_1 | in_progress | implementation | opencode | muse_0 | none | Re-slice each target fresh then repair findings 1-8 in order. | Corrected blocks with verified ranges; index check clean. | Batch repaired with gates passing or owner redirects scope. | tickets/tasks/2026-09-27_sweep_fixes_batch_1_task.md | 2026-09-27T16:07:16Z | REQUIRED |
-| correctness_defects | in_progress | handoff | claude | melder_0 | none | Keep the record current as melder_1 fixes S9, then S4 and S7; S8 waits for the owner (M1-33). | Defects where Melder's structure is wrong or stuck, a story each with a reproducer; the rest recorded as checked. | Every planned area swept and its defects filed as stories, or the owner redirects. | tickets/epics/2026-10-17_correctness_defects_epic.md | 2026-10-18T14:14:10Z | REQUIRED |
-| spell_identity_is_the_code | in_progress | implementation | claude | melder_0 | none | Land S1 with S2's cache keys on the owner's word: patches, the blast-radius run, the landing pass. | A spell_id that is the object's code; the bind signature a manifest with its own hash that revalidates; one object, one spell. | S1-S5 land with notches, docs and the rebuild (S6 parked), or the owner redirects. | tickets/epics/2026-10-18_spell_identity_is_the_code_epic.md | 2026-10-18T15:01:53Z | REQUIRED |
-| spell_id_code_hash | in_progress | implementation | claude | melder_0 | none | Update S1's patches for decision B and strict uniqueness; then the blast-radius run in a /tmp mirror. | The spell_id is the SHA256 of the registered object's code - its bases, class-level values and an object's data included; docstrings and comments out. | S1 lands with S2 (tests, docs, notch, rebuild), or the owner redirects. | tickets/stories/2026-10-18_spell_id_hashes_the_object_code_story.md | 2026-10-18T15:01:53Z | REQUIRED |
-| binding_manifest_hash | in_progress | discovery | claude | melder_0 | none | Inventory the spell_id-keyed caches and stores; write S2's component patch. | The bind signature a binding manifest with its own SHA256, in the creation cache's keys beside the spell_id. | S2 lands with S1 (tests, docs, notch, rebuild), or the owner redirects. | tickets/stories/2026-10-18_binding_manifest_hash_story.md | 2026-10-18T15:01:53Z | REQUIRED |
+| correctness_defects | in_progress | handoff | claude | melder_0 | none | Keep the record current as melder_1 fixes S4, then S7; S8 waits for the owner (M1-33). | Defects where Melder's structure is wrong or stuck, a story each with a reproducer; the rest recorded as checked. | Every planned area swept and its defects filed as stories, or the owner redirects. | tickets/epics/2026-10-17_correctness_defects_epic.md | 2026-10-18T17:23:22Z | REQUIRED |
+| spell_identity_is_the_code | in_progress | implementation | claude | melder_0 | none | The test tranche in the /tmp mirror (the retired API, one object twice, the reversed premises), then the whole tree (GIL off and on) and the landing pass. | A spell_id that is the object's code; the bind signature a manifest with its own hash that revalidates; one object, one spell. | S1-S5 land with notches, docs and the rebuild (S6 parked), or the owner redirects. | tickets/epics/2026-10-18_spell_identity_is_the_code_epic.md | 2026-10-18T18:44:20Z | REQUIRED |
+| spell_id_code_hash | in_progress | implementation | claude | melder_0 | none | S1's test tranche in the mirror (the doubles and the retired API's tests done; 74 failed ids left), then the landing with S2. | The spell_id is the SHA256 of the registered object's code - its bases, class-level values and an object's data included; docstrings and comments out. | S1 lands with S2 (tests, docs, notch, rebuild), or the owner redirects. | tickets/stories/2026-10-18_spell_id_hashes_the_object_code_story.md | 2026-10-18T19:11:29Z | REQUIRED |
+| binding_manifest_hash | in_progress | implementation | claude | melder_0 | none | S2's doubles and the ordered-disposal replay green in the mirror; the rest of the tranche with S1, then the landing with S1. | The bind signature a binding manifest with its own SHA256, in the creation cache's keys beside the spell_id and in the SpellCrystal. | S2 lands with S1 (tests, docs, notch, rebuild), or the owner redirects. | tickets/stories/2026-10-18_binding_manifest_hash_story.md | 2026-10-18T19:17:19Z | REQUIRED |
 | failed_notch_refusal | blocked | handoff | claude | melder_1 | the owner's hold (chat 2026-10-18) | The owner's word to resume S8 (the edit list and its refinement). | A notch whose incoming version fails its commit check is refused with nothing moved; lender and borrowers stay on the outgoing version. | The fix lands with tests, docs, notch and rebuild, or the owner redirects. | tickets/stories/2026-10-17_failed_notch_keeps_switch_without_borrowers_story.md | 2026-10-18T13:40:43Z | REQUIRED |
-| direct_cleanup_refusal | in_progress | discovery | claude | melder_1 | none | The owner's pick for removing an index's active version (S9's STRATEGY_DISCUSSION note); then the patch. | Removing an index's active version never strands its parked versions; what it does instead is the owner's pick. | The fix lands with tests, docs, notch and rebuild, or the owner redirects. | tickets/stories/2026-10-17_direct_cleanup_of_active_member_orphans_parked_versions_story.md | 2026-10-18T14:25:49Z | REQUIRED |
+| minted_index_registry | in_progress | implementation | claude | melder_1 | spellbook.py and spell.py with melder_0 until S1 and S2 land (M1-40) | Apply A-D on the landed tree once melder_0 hands the files back; the red tests turn green, then docs, notch, rebuild. | The index remove_from_spell_index mints is in the frame's spell registry, so its version is found and granted by spell_id. | The fix lands with tests, docs, notch and rebuild, or the owner redirects. | tickets/stories/2026-10-17_minted_index_missing_from_frame_registry_story.md | 2026-10-18T18:47:35Z | REQUIRED |
 <!-- END USER-DEFINED: active_items -->
 
 ## Active Attention Details
@@ -216,18 +215,17 @@ Message alert rules
   RESUME_HIERARCHY:
     - tickets/epics/2026-10-17_correctness_defects_epic.md
     - tickets/stories/2026-10-17_failed_notch_keeps_switch_without_borrowers_story.md
-- WORK_ITEM: direct_cleanup_refusal
+- WORK_ITEM: minted_index_registry
   SWITCH_TRIGGER: The fix lands with tests, docs, notch and rebuild, or the owner redirects.
   RESUME_HIERARCHY:
     - tickets/epics/2026-10-17_correctness_defects_epic.md
-    - tickets/stories/2026-10-17_direct_cleanup_of_active_member_orphans_parked_versions_story.md
+    - tickets/stories/2026-10-17_minted_index_missing_from_frame_registry_story.md
 <!-- END USER-DEFINED: active_attention_details -->
 
 ## Recently Closed Anchors
 | work_item | status | agent_name | ticket | note | closed_at |
 | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: closed_anchors -->
-| meld_contract_scan_trace | done | melder_1 | tickets/tasks/completed/2026-10-15_trace_meld_contract_scan_gate_task.md | Investigation only: the meld gate's contract scan and the flag that admits it traced and measured; successor TASK-2026-10-15-make_meld_state_checks_follow_spell_state. | 2026-10-15T18:46:58Z |
 | managed_ownership_transfer | done | melder_0 | tickets/stories/completed/2026-10-15_managed_ownership_transfer_story.md | Landed 0.2.8246 (S6 of EPIC-2026-10-14-managed_spell_quantity: the owner stamp follows a transfer's lineage both ways, `discard_managed_quantity`). Next: S7 docs. | 2026-10-15T21:00:54Z |
 | non_resolvable_book_flag | done | melder_1 | tickets/tasks/completed/2026-10-15_make_meld_state_checks_follow_spell_state_task.md | Landed 0.2.8247 (a resolvable=False lineage no longer holds its Book's validation flag); owner accepted. Next: rule 2 in TASK-2026-10-16-recheck_contract_consumers_when_provider_changes. | 2026-10-16T09:36:46Z |
 | managed_docs_release | done | melder_0 | tickets/stories/completed/2026-10-15_managed_docs_release_story.md | Documentation, no notch (S7 of EPIC-2026-10-14-managed_spell_quantity: system docs, graph, README, release note, benchmarks); owner accepted. Next: none. | 2026-10-16T12:17:31Z |
@@ -239,6 +237,7 @@ Message alert rules
 | minted_index_selection | done | melder_0 | tickets/stories/completed/2026-10-17_minted_index_selects_its_parked_version_story.md | Withdrawn on the owner's ruling, no source change (not a defect: moving a version is the agent's call; activation takes a notch). Next: none; the graft side stays in STORY-2026-10-17-restore_drops_separated_parked_version. | 2026-10-17T23:25:30Z |
 | meld_contract_scan | done | melder_1 | tickets/tasks/completed/2026-10-16_recheck_contract_consumers_when_provider_changes_task.md | Landed 0.2.8250 (rule 2), 0.2.8251 (removal fix), 0.2.8253 (exact spell_id lookups) and 0.2.8255 (docstrings and comments call a SpellIndex a SpellIndex; renames withdrawn by the owner); turned in on the owner's "Land + close". Next: none; held files back to melder_0 (M1-28). | 2026-10-18T11:45:56Z |
 | managed_settings_spell_id | done | melder_0 | tickets/stories/completed/2026-10-17_release_routes_parked_version_objects_to_active_pool_story.md | Landed 0.2.8254 (part A: the four managed settings left the spell_id); turned in on the owner's identity direction, part B superseded. Next: EPIC-2026-10-18-spell_identity_is_the_code. | 2026-10-18T11:45:58Z |
+| direct_cleanup_refusal | done | melder_1 | tickets/stories/completed/2026-10-17_direct_cleanup_of_active_member_orphans_parked_versions_story.md | Landed 0.2.8256 (S9 of EPIC-2026-10-17-correctness_defects: the three cleanup calls refuse an index's active version while parked versions remain, naming the remedies); turned in on the owner's word. Next: S4 with melder_1; spellbook.py and spell.py back to melder_0 (M1-38). | 2026-10-18T16:49:55Z |
 <!-- END USER-DEFINED: closed_anchors -->
 
 ## Notes
@@ -345,6 +344,9 @@ Message alert rules
 - melder_1 landed 0.2.8255 (docstrings and comments call a SpellIndex a SpellIndex; lineage stays for the conduit
   scope tree; nothing renamed; TASK-2026-10-16-recheck_contract_consumers_when_provider_changes). Notch above it if
   you land after.
+- melder_1 landed 0.2.8256 (`Spellbook.cleanup_and_remove_spell` and a direct `Spell.cleanup()` refuse the active
+  version of an index that holds parked versions, as `cleanup_spell` does, all three naming the remedies;
+  STORY-2026-10-17-direct_cleanup_of_active_member_orphans_parked_versions). Notch above it if you land after.
 ### Device VM git hazard (melder_2, 2026-09-26)
 - The connected folder refuses deletes, so any git command that refreshes the index from the device VM
   (plain `git status`, `git diff`) can leave an empty .git/index.lock that blocks the owner's commits.

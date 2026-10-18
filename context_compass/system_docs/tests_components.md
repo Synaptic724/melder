@@ -418,7 +418,7 @@ Concurrency/Threading:
 
 Invariants/Guarantees:
 - unit tests stay close to class/method behavior
-- the densest tier: 509 `test_*.py` modules among 512 `.py` files (recounted 2026-10-17)
+- the densest tier: 510 `test_*.py` modules among 513 `.py` files (recounted 2026-10-18)
 - CI-script tests never import `melder`; each script is loaded as a standalone module
 
 Failure Modes:
@@ -450,7 +450,7 @@ Key Files (C1):
 - The spellbook tree carries 158 `test_*.py` modules beneath these; they are the
   CONTENT of this component rather than its key surfaces, and are counted here
   rather than cited so the core set stays a set an agent can verify.
-- No harness or support module of its own; the 53 test_*.py modules in
+- No harness or support module of its own; the 54 test_*.py modules in
   tests/unit/melder/utilities/ depend only on the shared surfaces at tests/ and the scoped
   conftests named in `tests_architecture.md`. Paths in this bullet are written
   WITHOUT backticks because they are directories - descriptive, never citations.
@@ -607,7 +607,7 @@ Concurrency/Threading:
 
 Invariants/Guarantees:
 - integration tests use real runtime stacks rather than hand-built shallow mocks
-- 173 `test_*.py` modules among 180 `.py` files (recounted 2026-10-18); the others are benches and the
+- 175 `test_*.py` modules among 182 `.py` files (recounted 2026-10-18); the others are benches and the
   live-sim application
 
 Failure Modes:
@@ -626,12 +626,12 @@ Key Files (C1):
 - `tests/integration/melder/aether/rift/capability_rift_json_testbench_support.py`
 - `tests/integration/melder/aether/rift/codegen_rift_json_testbench_support.py`
 - `tests/integration/melder/aether/rift/static_rift_json_testbench_support.py`
-- The aether tree carries 48 `test_*.py` modules beneath these; they are the
+- The aether tree carries 49 `test_*.py` modules beneath these; they are the
   CONTENT of this component rather than its key surfaces, and are counted here
   rather than cited so the core set stays a set an agent can verify.
 - The rift tree (inside the aether tree) carries 4 `test_*.py` modules, three of them
   over the same three benches; they are counted here rather than cited.
-- No harness or support module of its own; the 44 test_*.py modules in
+- No harness or support module of its own; the 45 test_*.py modules in
   tests/integration/melder/conduit/ depend only on the shared surfaces at tests/ and the scoped
   conftests named in `tests_architecture.md`. Paths in this bullet are written
   WITHOUT backticks because they are directories - descriptive, never citations.
@@ -654,7 +654,7 @@ Key Files (C1):
   tests/integration/melder/mutation_research/ depend only on the shared surfaces at tests/ and the scoped
   conftests named in `tests_architecture.md`. Paths in this bullet are written
   WITHOUT backticks because they are directories - descriptive, never citations.
-- No harness or support module of its own; the 51 test_*.py modules in
+- No harness or support module of its own; the 52 test_*.py modules in
   tests/integration/melder/spellbook/ depend only on the shared surfaces at tests/ and the scoped
   conftests named in `tests_architecture.md`. Paths in this bullet are written
   WITHOUT backticks because they are directories - descriptive, never citations.
@@ -1728,6 +1728,17 @@ Protects:
   outbound listing naming French; three guards keep the index-step answers - a transfer by the parked
   spell_id moves the whole index with English still active, a dependency grant after a notch contracts
   French, and a transfer with dependencies after a notch moves Greeter's index with French active
+- a cleanup of an index's active version refuses while parked versions remain (0.2.8256;
+  `test_direct_cleanup_refuses_active_member_with_parked_versions_integration.py`, 9 tests): in a dynamic
+  world with English active and French parked on Greeter's index, contracted whole by a linked borrower,
+  `English.cleanup()` and `cleanup_and_remove_spell` - by the Spell and by its spell_id - raise the
+  multi-member RuntimeError naming the three remedies and change nothing (the index live and selecting
+  English, both versions uncleaned and found by the frame, the lineage registered, the borrower's copies as
+  staged, English meldable); `cleanup_spell(English)` raises its own refusal naming the same remedies; after
+  a refusal each remedy works - a notch to French and then `cleanup_spell` of the parked English,
+  `cleanup_spell(French)` and then `English.cleanup()`, `remove_from_spell_index(French)` and then
+  `English.cleanup()` (French stays parked, alone in a fresh index); and English alone on its index is still
+  removed by either door, its index cleaned and gone from the frame
 Key Files (C1):
 - `tests/integration/melder/spellbook/test_spellbook_integration_core.py`
 - `tests/integration/melder/spellbook/test_spellbook_integration_scan_bind.py`
@@ -1739,6 +1750,7 @@ Key Files (C1):
 - `tests/integration/melder/spellbook/test_spellbook_integration_validation_system.py`
 - `tests/integration/melder/spellbook/test_managed_bind_options_integration.py` (2026-10-15)
 - `tests/integration/melder/spellbook/test_spellbook_integration_parked_before_conjure.py` (2026-10-16)
+- `tests/integration/melder/spellbook/test_direct_cleanup_refuses_active_member_with_parked_versions_integration.py` (2026-10-18)
 - `tests/integration/melder/aether/conduit/test_notch_spell_by_id_integration.py` (2026-10-16)
 - `tests/integration/melder/aether/conduit/test_index_moves_by_spell_id_integration.py` (2026-10-16)
 - `tests/integration/melder/aether/conduit/test_spell_index_meld_and_contract_lifecycle.py` (2026-10-16)
@@ -2016,7 +2028,7 @@ follows; if the two ever disagree, this section is wrong, not the catalog.
 
 WHAT COUNTS AS A KEY FILE ON THIS SIDE. A test component's key files are its
 HARNESS AND SUPPORT SURFACES - conftests, benches, mock packages, shared
-builders - not every `test_*.py` module beneath it. The 848 test modules of the
+builders - not every `test_*.py` module beneath it. The 851 test modules of the
 three CI tiers (and the 33 experimentation modules) are the component's CONTENT;
 they are counted in each entry rather than cited, because a
 core set that lists the entire tree is not a set anyone can verify, which is the
@@ -3369,6 +3381,13 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   loc: 250
   verified_at: 2026-10-16T11:13:43Z
   note: versions staged before or after conjure meld after a notch, every family (0.2.8248).
+- path: `tests/integration/melder/spellbook/test_direct_cleanup_refuses_active_member_with_parked_versions_integration.py`
+  start_line: 1
+  end_line: 312
+  loc: 312
+  verified_at: 2026-10-18T16:37:15Z
+  note: the three cleanup doors refuse an index's active version while parked versions remain; the
+    remedies; a sole member still removed (0.2.8256).
 - path: `tests/integration/melder/aether/conduit/test_notch_spell_by_id_integration.py`
   start_line: 1
   end_line: 271
@@ -3588,6 +3607,7 @@ graph TD
 - `tests/component/melder/spellbook/test_spellbook_component_find_spell_by_spell_id.py`
 - `tests/integration/melder/aether/conduit/test_spell_id_lookup_returns_that_spell_integration.py`
 - `tests/integration/melder/aether/rift/test_rift_spell_id_lookups_return_that_spell_integration.py`
+- `tests/integration/melder/spellbook/test_direct_cleanup_refuses_active_member_with_parked_versions_integration.py`
 - direct filesystem inventory of `tests/`
 
 ## Open Questions
@@ -3601,6 +3621,16 @@ graph TD
   scan/bind coverage grows.
 
 ## Context / Handoff Summary
+
+2026-10-18 direct cleanup refusal (0.2.8256; STORY-2026-10-17-direct_cleanup_of_active_member_orphans_parked_versions):
+the Spellbook Integration Cluster gains `test_direct_cleanup_refuses_active_member_with_parked_versions_integration.py`
+(9 tests: both direct doors refused with nothing changed, `cleanup_spell`'s message, the three remedies, the
+sole-member controls), a key file with a code-map record. Counts are recounted from disk (unit 510 of 513
+`.py`, utilities tree 54; integration 175 of 182, aether tree 49, conduit tree 45, spellbook tree 52; 851 test
+modules in the three tiers). Besides this lane's module they take in the two red-test modules written for the
+held STORY-2026-10-17-failed_notch_keeps_switch_without_borrowers (one unit, one integration;
+18 tests that fail until that story lands and catalogues them), and the conduit tree's count, one short since
+0.2.8254's module.
 
 2026-10-18 managed settings leave the spell_id (0.2.8254; part A of
 STORY-2026-10-17-release_routes_parked_version_objects_to_active_pool): the Conduit Integration Cluster gains

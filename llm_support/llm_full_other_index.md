@@ -10,11 +10,11 @@ Line numbers are 1-based and inclusive.
 | bundle | llm_full_other.txt |
 | schema_version | 1.0.0 |
 | generator_sha256 | d75f1de961817875c099e1b3bc6eaa3a6c670dc89752cd94864d977e452b88e3 |
-| source_fingerprint | 1906914a916df8d9f24a10dc3714a04994cb6a9d8958afe68727f044b2a4ef6d |
-| bundle_sha256 | 2ffd0d381debf4face0180b597fecb97da53e5ae58b5ef6d4f0f9878bc92bc0c |
-| bundle_line_count | 77830 |
+| source_fingerprint | f9d2e81fc6d1ea012a1b1d2aa53f6d860acd7552485b3498435e9f9a73bc1853 |
+| bundle_sha256 | 66553956f1b840ae7eca7c6ee7ba377cecc6ff3b42e0ceb81c75ef70c821da4a |
+| bundle_line_count | 76723 |
 | bundle_line_ending | lf |
-| files | 404 |
+| files | 400 |
 
 ## Files
 
@@ -414,13 +414,9 @@ Line numbers are 1-based and inclusive.
 | 73628-73673 | 73633-73670 | 1595 | utf-8 | 455b2395dc270ae50b546d78518a8110b4f9dc09f35bbc96a4ded2cec87464d6 | docs/tools/page_metadata.py |
 | 73674-73702 | 73679-73699 | 464 | utf-8 | 8c616af406d11267294c71aa8814e29115fa1956d3e9f8c1085b4cf42707429d | docs/tools/site_model.py |
 | 73703-73956 | 73708-73953 | 7799 | utf-8 | 896ce27dbaa92f1719d4a70b324c77f6b68f9a2d4d6e8bf73e3c6fbe87e216a1 | pyproject.toml |
-| 73957-74169 | 73962-74166 | 13066 | utf-8 | 1865e61282295b272c2e2d43d7cd255ff50688f5d38852e97ad9eacdde0409ae | release_docs/0.2.43.md |
-| 74170-74432 | 74175-74429 | 12983 | utf-8 | 3dd5db190054a458525c1fbc39b655a168375a36efbaa689d7d7e687c2dd8125 | release_docs/0.2.50.md |
-| 74433-75041 | 74438-75038 | 41553 | utf-8 | f9f4960cbdb865f03a17d87d0bb81d0c630d745ac9128bc61e03e47733e6a068 | release_docs/0.2.77.md |
-| 75042-75124 | 75047-75121 | 4947 | utf-8 | 18956953a24a740fcba9c3b4e02a43941d8106b8ee2c74d16bac07d5875d7abe | release_docs/0.2.82.md |
-| 75125-75737 | 75130-75734 | 41777 | utf-8 | 6646878d3aebed185dead51cc1b2bb7f935906dc74e6ffa74cb7625b0177af79 | release_docs/0.2.8227.md |
-| 75738-76747 | 75743-76744 | 71282 | utf-8 | e8ff9350a7ceda6f684754cab68a3fad9646372582c269381d34254e5c5dd9ff | release_docs/next_version_release.md |
-| 76748-76816 | 76753-76813 | 2442 | utf-8 | 45f6cd2e3085d0fb0116dd67ce8d3ac1dfe2f4a32007841ef5e571baa874f7f0 | requirements.txt |
-| 76817-76843 | 76822-76840 | 1035 | utf-8 | f2d8050c4a7c4e4ee7cd5067e7d71636969e0387f7a8dd6b7e9c3fbbc1d5cc52 | roadmap.md |
-| 76844-77344 | 76849-77341 | 26171 | utf-8 | c88d2075a3fdea71e193bb3a1082ce0fba894e11d2259b283940453c0cc7ed23 | roadmap/melder-roadmap-expanded.md |
-| 77345-77830 | 77350-77827 | 22675 | utf-8 | 83f37b9881d1f47c25415e94e5b018b5c130677d8adc59e587456ca1d104e32f | roadmap/melder-roadmap-source-notes.md |
+| 73957-74569 | 73962-74566 | 41777 | utf-8 | 6646878d3aebed185dead51cc1b2bb7f935906dc74e6ffa74cb7625b0177af79 | release_docs/0.2.8227.md |
+| 74570-75640 | 74575-75637 | 75053 | utf-8 | 4a8ed8b6a9dce59fa937da05ffb4016e14d074bf6cb73a0852a316bcdbc660e1 | release_docs/next_version_release.md |
+| 75641-75709 | 75646-75706 | 2442 | utf-8 | 45f6cd2e3085d0fb0116dd67ce8d3ac1dfe2f4a32007841ef5e571baa874f7f0 | requirements.txt |
+| 75710-75736 | 75715-75733 | 1035 | utf-8 | f2d8050c4a7c4e4ee7cd5067e7d71636969e0387f7a8dd6b7e9c3fbbc1d5cc52 | roadmap.md |
+| 75737-76237 | 75742-76234 | 26171 | utf-8 | c88d2075a3fdea71e193bb3a1082ce0fba894e11d2259b283940453c0cc7ed23 | roadmap/melder-roadmap-expanded.md |
+| 76238-76723 | 76243-76720 | 22675 | utf-8 | 83f37b9881d1f47c25415e94e5b018b5c130677d8adc59e587456ca1d104e32f | roadmap/melder-roadmap-source-notes.md |

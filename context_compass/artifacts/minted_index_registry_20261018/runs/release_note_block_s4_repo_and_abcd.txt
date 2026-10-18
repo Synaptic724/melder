@@ -1,0 +1,4 @@
+repo gil0: raised ValueError: Spell version  ...  found in any conduit.
+repo gil1: raised ValueError: Spell version  ...  found in any conduit.
+mirror_abcd gil0: every assert holds
+mirror_abcd gil1: every assert holds

@@ -8,7 +8,7 @@
 - Agent Role: synaptic_python_developer
 - Priority: p1
 - Created: 2026-10-18T11:45:58Z
-- Updated: 2026-10-18T15:01:53Z
+- Updated: 2026-10-18T18:44:20Z
 - Target Window: 2026-Q4
 - Related Program/Initiative: Melder runtime correctness (the owner's direction, chat 2026-10-18); follows
   STORY-2026-10-17-release_routes_parked_version_objects_to_active_pool
@@ -48,9 +48,10 @@ consumer.
   (set aside by the owner), melder_1's lanes and the other stories of EPIC-2026-10-17-correctness_defects.
 - DEPENDENCIES: STORY-2026-10-17-release_routes_parked_version_objects_to_active_pool (part A, 0.2.8254, done); the
   owner's calls; one writer per file - melder_1 turned in its lane and released every file it held (M1-28), so
-  melder_0 writes the files these stories touch and announces each landing by mailbox (M0-193); since M1-33
-  melder_1 holds spellbook.py and spell.py for STORY-2026-10-17-direct_cleanup_of_active_member_orphans_parked_versions
-  until it lands (released, M0-195; S8 is on hold), and melder_0 claims a file back by message before editing it.
+  melder_0 writes the files these stories touch and announces each landing by mailbox (M0-193); melder_1
+  held spellbook.py, spell.py and spell_index.py for
+  STORY-2026-10-17-direct_cleanup_of_active_member_orphans_parked_versions until it landed as 0.2.8256 and
+  handed them back (M1-37, M1-38); each lane claims a file from the other by message before editing it.
 - EXIT_GATE: every story accepted; one notch per landed source change with its release-note entry; the system
   documents and the graph; the rebuild last with both checks OK; board and artifact sync; the owner's disposition.
 - FAILURE_ESCALATION: DECISION_REQUEST for each edge the owner has not called; CONFLICT when a needed file is held by
@@ -97,10 +98,13 @@ consumer.
 
 ## Constraints / Assumptions
 - One writer per file: melder_1 turned in its lane at 2026-10-18T11:51:41Z and released every file it held (M1-28);
-  melder_0 writes the files these stories touch and says so by mailbox before each landing (M0-193). Since M1-33
-  S8 is on hold and melder_1 holds spellbook.py and spell.py for S9 of EPIC-2026-10-17-correctness_defects until
-  it lands (M1-34, M0-195); conduit.py, spellbook_validation_error.py and change_control_manager.py are free. The
-  next notch is above 0.2.8255, or above S9's if it lands first.
+  melder_0 writes the files these stories touch and says so by mailbox before each landing (M0-193). S8 is
+  on hold (M1-33); S9 of EPIC-2026-10-17-correctness_defects landed as 0.2.8256 and melder_1 handed
+  spellbook.py, spell.py and spell_index.py back (M1-37, M1-38); conduit.py, spellbook_validation_error.py
+  and change_control_manager.py are free. The next notches are above 0.2.8256: S1's, then S2's, each with
+  its release-note entry. melder_1 holds mutation_research.py for S4 of
+  EPIC-2026-10-17-correctness_defects and takes spellbook.py and spell.py once S1 and S2
+  land, notching above them (M1-39, M1-40).
 - Compiled instructions are specific to the Python version (and to -O); the creation cache is already admitted per
   release and interpreter.
 - Device runs: `. ~/.melder_env`, TMPDIR under /tmp, the rebuild through a /tmp mirror.
@@ -117,7 +121,7 @@ consumer.
 - src/melder/aether/spellbook/spell_compiler/structural_snapshot/structural_snapshot.py
 
 ## Milestones (Track Progress)
-- [ ] Milestone 1: the owner's calls on the edges; the architecture patch and the first component patches approved.
+- [x] Milestone 1: the owner's calls on the edges; the architecture patch and the first component patches approved.
 - [ ] Milestone 2: the code hash and the binding manifest landed (S1, S2).
 - [ ] Milestone 3: revalidation on binding change and one registration per object landed (S3, S4).
 - [ ] Milestone 4: the migration, docs, notches and rebuild (S5); the owner's disposition.
@@ -140,7 +144,7 @@ consumer.
 - [x] Task: the owner's calls on the open edges (Open Questions; all five made 2026-10-18).
 - [x] Task: the parked configurables epic filed (EPIC-2026-10-18-identity_and_caching_configurables, backlog).
 - [ ] Task: the architecture patch for the epic; a component patch per story before its code (the architecture
-  patch and S1's patches written 2026-10-18; the owner's approval pending).
+  patch and S1's and S2's patches approved by the owner's word to land, 2026-10-18; S3-S5 before their code).
 - [ ] Task: complete each story above.
 - [ ] Task: Verify Ticket Microcycle enforcement across active tickets/stories/tasks.
 
@@ -156,6 +160,9 @@ consumer.
 - A cache or store keyed by spell_id alone that misses a binding change: S2's patch inventories every spell_id-keyed
   cache and store before code.
 - Overlap with another lane's files: one writer per file; a mailbox NOTICE before each landing (M0-193).
+- One object bound twice through a minted index, until melder_1's S4 lands: bind's collision
+  guard misses a version alone in an index `remove_from_spell_index` minted (M4b, M5b); S4's
+  edit A closes it, and this epic's S4 takes M4b and M5b as acceptance cases.
 
 ## Applicable Anti-Patterns
 - [ ] No epic-state transition without story-level evidence.
@@ -211,6 +218,12 @@ consumer.
   the configurables epic filed in the backlog (STRATEGY_DISCUSSION note).
 - 2026-10-18T15:01:53Z: the owner's word - land S1 with S2's cache keys now, duplicates strictly refused, S6 parked;
   binding and caching patterns later (DECISION note).
+- 2026-10-18T15:45:30Z: Milestone 1 met - S1's patches updated, S2's written (FACT note).
+- 2026-10-18T16:18:35Z: M1-37 consumed - S9 takes the refusal and lands first (FACT note); the owner's word - the
+  binding hash goes into the SpellCrystal in this landing, the third-party reading is accepted, keep
+  moving (DECISION note).
+- 2026-10-18T17:23:22Z: M1-38 consumed - S9 landed as 0.2.8256 with the refusal; spellbook.py and spell.py are back
+  (FACT note).
 
 ## Artifact Links (Optional)
 Qualified independent reviewer acceptance and direct closure follow shared `ticketing.md`;
@@ -550,6 +563,186 @@ this does not make independent review mandatory for every ticket.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-10-18T15:38:29Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: M1-36 from melder_1 (2026-10-18T15:27:07Z, ACK), consumed; it answers M0-196 and M0-197. The owner
+    reopened S9's rule - refusal on all three doors, or the hole rule (S9's TRADEOFF note) - and melder_1 sends
+    his pick as M1-37. Under the refusal S9 is a check in `cleanup_and_remove_spell` (spellbook.py) and a
+    Raises entry on `Spell.cleanup` (spell.py): it lands first, both files come back by message right after,
+    and S1 and S2 notch above it. Under the hole rule both files come here at once and S9 follows S1, then also
+    needing conduit.py and details.py, maybe meld.py, each claimed by message first. melder_1 edits neither
+    file before M1-37; spell_index.py stays with melder_1 (M0-197).
+  EVIDENCE:
+  - context_compass/tickets/stories/2026-10-17_direct_cleanup_of_active_member_orphans_parked_versions_story.md:424-459
+  - context_compass/tickets/stories/2026-10-17_direct_cleanup_of_active_member_orphans_parked_versions_story.md:461-480
+  IMPACT: S1 and S2's edits in spell.py and spellbook.py wait for M1-37 either way; the patch updates, S2's
+    component patch and the blast-radius run do not need them. Under the hole rule S9 would edit details.py
+    and maybe meld.py, which S1's statement sweep also touches (their "fingerprint" docstrings): those files
+    are taken in turn.
+  NEXT: Apply S1's patch updates and S2's component patch; the blast-radius run; read the mailbox for M1-37.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-18T15:45:30Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: Milestone 1 is met: the architecture patch and S1's patches are approved by the owner's word to land
+    and updated for his decisions (decision B, strict uniqueness, S6 parked); S2's patches are written - the
+    binding manifest (Binding Pipeline, S2 section) and the creation cache's keys (generation 23) - with S2's
+    inventory, decisions and mapping in its story. Nothing in src/ yet. The binding hash joins the record in
+    S5, not this landing (S2's DECISION note).
+  EVIDENCE:
+  - context_compass/system_docs/patches/active/spell_identity_is_the_code_2026_10_18/architecture_patch.md:1-218
+  - context_compass/tickets/stories/2026-10-18_spell_id_hashes_the_object_code_story.md:281-307
+  - context_compass/tickets/stories/2026-10-18_binding_manifest_hash_story.md:148-184
+  - context_compass/tickets/stories/2026-10-18_binding_manifest_hash_story.md:186-204
+  IMPACT: S1 and S2 move to the blast-radius run; their spell.py and spellbook.py edits wait for M1-37.
+  NEXT: The blast-radius run in a /tmp mirror.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-18T16:18:35Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: M1-37 from melder_1 (2026-10-18T15:41:09Z, NOTICE), consumed; it answers M0-196 (M1-36). The owner chose
+    the refusal for S9 of EPIC-2026-10-17-correctness_defects: all three cleanup doors refuse the active
+    member of an index that holds parked versions, the messages naming the remedies; Book teardown is
+    unaffected. S9 lands first: its edits are `cleanup_and_remove_spell`'s check and docstring,
+    `_dispose_spell`'s refusal text and `cleanup_spell`'s docstring in spellbook.py, and `Spell.cleanup`'s
+    Raises entry in spell.py, nothing else. melder_1 hands both files back by message right after its
+    landing, rebuild included, and S1 notches above it; spell_index.py and conduit.py are melder_0's again
+    now. Since then the owner gave his word on those edits (E1-E7) and named the notch 0.2.8256 (melder_1's
+    DECISION note of 2026-10-18T16:02:48Z).
+  EVIDENCE:
+  - context_compass/tickets/stories/2026-10-17_direct_cleanup_of_active_member_orphans_parked_versions_story.md:517-542
+  - context_compass/tickets/stories/2026-10-17_direct_cleanup_of_active_member_orphans_parked_versions_story.md:584-598
+  IMPACT: S1 and S2 edit spell.py and spellbook.py only after melder_1's hand-back; until then they are built
+    and tested in a /tmp working mirror. The next notches are above 0.2.8256.
+  NEXT: The owner's crystallizer call (DECISION note below).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-18T16:18:35Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: The owner (chat 2026-10-18, mid-turn): "ok cool make sure you land the binding hash going into
+    crystallizer too please, those 3 things for library version are fine, and lets keep moving on this, to
+    finish it off, M1 is working on refusal yeah". So: (1) the binding hash goes into the SpellCrystal record in
+    this landing, with S2, not in S5: S2's DECISION note of 2026-10-18T15:45:30Z, point (1), is superseded,
+    S2's Requirements, Acceptance Criteria and EXIT_GATE say so again, and a record patch (the field, its
+    RecordVersion, what restore and graft do with a recorded hash) is written and linked before any
+    crystallizer code. (2) The third-party reading stated for him in the architecture patch - an object of an
+    installed package hashed as its type, its distribution version and its address-free repr, an installed
+    class, metaclass or function named with its distribution version - is accepted as written. (3) S9 takes
+    the refusal and lands first (M1-37). (4) Keep moving to finish: S1 and S2 are built and run in a /tmp
+    working mirror while S9 lands, and copied into the repository once spellbook.py and spell.py are back.
+  EVIDENCE:
+  - context_compass/tickets/stories/2026-10-18_binding_manifest_hash_story.md:194-212
+  - context_compass/system_docs/patches/active/spell_identity_is_the_code_2026_10_18/architecture_patch.md:196-202
+  - context_compass/system_docs/patches/active/spell_identity_is_the_code_2026_10_18/architecture_patch.md:113-118
+  IMPACT: S2 gains the crystal's record (spell_crystal.py, the record version, and the replays in restore_engine.py
+    and graft_runner.py where they read it); the architecture patch's matrix and S2's mapping gain the
+    record row; the third-party reading is final, not for him to narrow.
+  NEXT: Record the blast-radius run; read the crystal, the record version and both replays whole; write the
+    record patch.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-18T16:24:12Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: Migration step 2 is done: the blast radius of S1 and S2 is 101 new failures with the GIL off and on and
+    none a Melder defect (S1's MEASURE note); S1 alone replays the creation cache across bindings and S2's
+    keys repair it (S2's MEASURE note); a class's spell_id must not depend on whether its annotations were
+    read, so the digest skips `__annotate_func__` while it is None (S1's FACT note); and until S3 lands a
+    rebind under another slotted existence meets the object the removed definition left in its slot (S3's
+    FACT note) - a RISK carried to the release note unless S3 lands in the same release.
+  EVIDENCE:
+  - context_compass/tickets/stories/2026-10-18_spell_id_hashes_the_object_code_story.md:309-336
+  - context_compass/tickets/stories/2026-10-18_spell_id_hashes_the_object_code_story.md:338-361
+  - context_compass/tickets/stories/2026-10-18_binding_manifest_hash_story.md:262-282
+  - context_compass/tickets/stories/2026-10-18_revalidate_on_binding_change_story.md:135-158
+  IMPACT: Nothing found blocks S1 and S2; the landing rewrites the 101 tests from triage.md.
+  NEXT: The crystallizer record patch for S2; M0-198 to melder_1; S1 and S2 built in a /tmp working mirror.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-18T17:23:22Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: M1-38 from melder_1 (2026-10-18T17:07:19Z, NOTICE), consumed. S9 of EPIC-2026-10-17-correctness_defects
+    landed at 0.2.8256 and is turned in, rebuilt last with both checks OK; spellbook.py and spell.py are
+    melder_0's again, as spell_index.py and conduit.py already were (M1-37). S9's src edits were its E1-E7 in
+    those two files and the notch: `cleanup_and_remove_spell`'s refusal and docstring, `_dispose_spell`'s
+    refusal text and `cleanup_spell`'s docstring, and `Spell.cleanup`'s Raises entry - none of S1's or S2's
+    edit sites; the mirror's spell.py and spellbook.py are byte-identical to the repository's (diff -rq), so
+    edits_spell.py's check run holds for the repository. Outside src the landing re-reads what S9 changed: the
+    four system documents and their indexes, the spellbook.json and spell.json graph descriptors (accepted)
+    and the graph, and the running release note (header 0.2.8256, a new section, the packaging lines). The
+    next notches are above 0.2.8256.
+  EVIDENCE:
+  - context_compass/tickets/stories/completed/2026-10-17_direct_cleanup_of_active_member_orphans_parked_versions_story.md:1-9
+  - src/melder/__version__.py:12-12
+  - src/melder/aether/spellbook/spellbook.py:602-781
+  - release_docs/next_version_release.md:1-3
+  IMPACT: S1 and S2's spell.py and spellbook.py edits go into the repository at the landing; the mirror moves to
+    0.2.8256 (its __version__, build assets and release note) before the apply.
+  NEXT: Sync the mirror to 0.2.8256; then edits_profiles.py.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-18T18:08:26Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: M1-39 from melder_1 (2026-10-18T18:04:38Z, NOTICE, ACK requested), consumed after the re-onboarding;
+    ACKed as M0-199. S4 of EPIC-2026-10-17-correctness_defects has the owner's word (chat 2026-10-18):
+    `remove_from_spell_index` registers the index it mints as a post-conjure `bind` registers its new
+    index, the root's teardown unregisters it with the rest, and `residency_view` reads its version parked;
+    no new index state. melder_1 claims mutation_research.py, which S1 and S2 do not edit, and asks for
+    spellbook.py once S1 and S2 land, notching above them. A gap for strict uniqueness, read in
+    `Aether._check_for_spell` and proven by melder_1's probe on 0.2.8256: the guard asks the frame's
+    `has_spell` and then returns `find_index_for_spell`, None for a version alone in a minted index, so a
+    second bind of that version's spell_id - by another Book of the frame (M4b), or of another frame under
+    process-wide ids (M5b) - is accepted, and an unconjured Book's later conjure is refused. Under S1 the
+    spell_id is the object's code, so until S4's edit A lands one object can be registered twice this way.
+  EVIDENCE:
+  - context_compass/tickets/stories/2026-10-17_minted_index_missing_from_frame_registry_story.md:304-327
+  - context_compass/artifacts/minted_index_registry_20261018/runs/probe_minted_index_fix_cases_0_2_8256_gil0.txt:1-31
+  - src/melder/aether/aether.py:2550-2622
+  IMPACT: S1 and S2 keep their edit list; spellbook.py is handed to melder_1 at their landing. The gap is a
+    Risk of this epic and an acceptance case of its S4 (one_registration_per_object) once melder_1's S4
+    has landed; the release note names it if S1 and S2 land first.
+  NEXT: The S1+S2 component test in the /tmp mirror (GIL off and on), red against the repository.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-18T18:40:11Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: M1-40 from melder_1 (2026-10-18T18:16:51Z, NOTICE, ACK requested), consumed after the re-onboarding;
+    ACKed as M0-200. S4's edit D is a docstring in spell.py (`Spell._spell_index_unless_cleaned` names the
+    root's teardown among its readers), so melder_1 asks spell.py back with spellbook.py when S1 and S2
+    land, edits neither before that message, and re-checks S4's anchors in both against the landed tree;
+    mutation_research.py stays with melder_1 until S4 lands. S1 and S2's 19 spell.py edits do not touch
+    that docstring.
+  EVIDENCE:
+  - context_compass/artifacts/spell_identity_20261018/scripts/edits_spell.py:1-118
+  - src/melder/aether/spellbook/spell.py:911-948
+  IMPACT: The landing NOTICE hands back spellbook.py and spell.py together; nothing else in S1 and S2's edit
+    list changes.
+  NEXT: The test tranche in the mirror: category (b), the tests of the retired `Bind.sha256_profile`.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
@@ -569,14 +762,32 @@ this does not make independent review mandatory for every ticket.
   revalidates the spell when it changes; one object is one spell; every spell_id moves once.
 - State: in_progress (melder_0), implementation. The owner's word (DECISION note of 2026-10-18T15:01:53Z): land S1
   with S2's cache keys now, duplicates strictly refused (S6 parked in the backlog), binding and caching
-  patterns later (EPIC-2026-10-18-identity_and_caching_configurables). His earlier calls and decisions
-  stand (DECISION notes of 2026-10-18T12:15:14Z, 13:06:51Z, 14:14:10Z). S1 and S2 in_progress; S3-S5
-  draft, each after its own patch; nothing in src/ yet. melder_1 holds spellbook.py and spell.py for S9 of
-  EPIC-2026-10-17-correctness_defects (M1-33); both are asked for by M0-196. The next notch is above
-  0.2.8255, or above S9's.
-- Next: (1) S1's patches updated for B and strict uniqueness, S2's component patch; (2) the blast-radius run
-  in a /tmp mirror; (3) the landing pass - red tests, src, green, the moved tests, the whole tree with the
-  GIL off and on, docs, notches, the rebuild last.
+  patterns later (EPIC-2026-10-18-identity_and_caching_configurables); and (DECISION note of
+  2026-10-18T16:18:35Z) the binding hash goes into the SpellCrystal in this landing and the third-party reading
+  is accepted as written. His earlier calls and decisions stand (DECISION notes of 2026-10-18T12:15:14Z,
+  13:06:51Z, 14:14:10Z). S1 and S2 in_progress; S3-S5 draft, each after its own patch; nothing in src/ yet.
+  S9 of EPIC-2026-10-17-correctness_defects took the refusal and landed first as 0.2.8256 (M1-37, M1-38);
+  spellbook.py, spell.py, spell_index.py and conduit.py are melder_0's, and S1 and S2 notch above 0.2.8256.
+- Done since: M1-37 consumed and the owner's crystallizer call recorded (FACT and DECISION notes of
+  2026-10-18T16:18:35Z).
+- Done since: the blast radius recorded (MEASURE note of 2026-10-18T16:24:12Z).
+- Done since: the crystallizer record patch written and the `__annotate_func__` rule added to the
+  code-description patch (S2's PLAN note of 2026-10-18T16:32:46Z).
+- Done since: S1's SpellCodeDigest and S2's BindingManifest written and probed in the mirror (the
+  stories' notes of 2026-10-18T17:05:55Z).
+- Done since: M1-38 consumed - S9 landed as 0.2.8256; spellbook.py and spell.py are back (FACT note of
+  2026-10-18T17:23:22Z).
+- Done since: S1 and S2 applied to the /tmp working mirror and smoke-checked, the GIL off and on (the
+  stories' FACT notes of 2026-10-18T17:51:07Z).
+- Done since: M1-39 consumed and ACKed (M0-199) - melder_1's S4, its file claims and the
+  minted-index guard gap (FACT note of 2026-10-18T18:08:26Z).
+- Done since: M1-40 consumed and ACKed (M0-200) - spell.py goes back with spellbook.py at
+  the landing (FACT note of 2026-10-18T18:40:11Z).
+- Done since: the whole tree run with S1 and S2 in the mirror - 406 new failures in five categories,
+  the 213 doubles fixed (S1's MEASURE note of 2026-10-18T18:44:20Z).
+- Next: (1) the test tranche - the retired API's tests, one object registered twice, the reversed
+  premises, the rest - then the whole tree with the GIL off and on; (2) the landing pass - src,
+  green, docs, notches, the rebuild last.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

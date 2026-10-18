@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/crystals/cluster_crystal.py",
- "source_sha256": "1546a6bda835766a2220b602f0c9580dc639e9412151387859044ba0825840c4",
+ "source_sha256": "74ab9fe5600359eaeec0b2a309dd81ba09a41ecdf706fb9360834dd23feece17",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.crystals.cluster_crystal": {
@@ -41,7 +41,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "3540055b5a04799674bcd44c6d4048af9f05cbceeefb886c6cbfce0cf2e04330",
+   "span_sha256": "e7dcb9d4d91aa12b6eb388202279ceea6257b6b64a0a2566112b417cd7763974",
    "include": true,
    "role": "Digital twin of one ConduitCluster: membership, elected leader and shared lineage entries.",
    "responsibilities": [

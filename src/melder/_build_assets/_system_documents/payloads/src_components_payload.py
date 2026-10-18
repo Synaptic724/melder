@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_components.md'
-LINE_COUNT = 12053
-CONTENT_SHA256 = '939fc43c469b67d7c6f03a6fdf5f820306006a3418562bfa11300a3a9b8e14af'
+LINE_COUNT = 12102
+CONTENT_SHA256 = '4ae74fe98922680727fed62d7bc06b24f3f669a7b0f4212725d3e4b91dfbfa6f'
 
 TEXT = """# Src Components (C3/C2/C1)
 
@@ -588,10 +588,10 @@ Responsibilities:
   `mediator.start_transaction(...)` itself and calling in here inside the
   held window.
   EVIDENCE:
-  - src/melder/aether/spellbook/spellbook.py:3856, 3911 (`_notch_spell` -> `_apply_notch`)
-  - src/melder/aether/spellbook/spellbook.py:4068, 4101 (`_add_to_spell_index` -> `_apply_add_to_index`)
-  - src/melder/aether/spellbook/spellbook.py:4244, 4276 (`_remove_from_spell_index` -> `_apply_remove_from_index`)
-  - src/melder/aether/spellbook/spellbook.py:3896-3898 (states the Conduit admits it)
+  - src/melder/aether/spellbook/spellbook.py:3883, 3938 (`_notch_spell` -> `_apply_notch`)
+  - src/melder/aether/spellbook/spellbook.py:4095, 4128 (`_add_to_spell_index` -> `_apply_add_to_index`)
+  - src/melder/aether/spellbook/spellbook.py:4271, 4303 (`_remove_from_spell_index` -> `_apply_remove_from_index`)
+  - src/melder/aether/spellbook/spellbook.py:3923-3925 (states the Conduit admits it)
   - src/melder/aether/conduit/conduit.py:5739, 6079, 6186 (notch/add/remove
     acquire `_get_required_transaction_mediator()`)
 - Run phase pipelines before conjure.
@@ -660,7 +660,7 @@ Concurrency/Threading:
     ordering on each other". They do. That wording invited exactly the inversion
     described above.
   EVIDENCE:
-  - src/melder/aether/spellbook/spellbook.py:7565-7586 (`_run_structural_phases`; the caller-held-lock
+  - src/melder/aether/spellbook/spellbook.py:7596-7617 (`_run_structural_phases`; the caller-held-lock
     precondition is stated at :7423; remeasured 2026-10-16 at 0.2.8248)
   - src/melder/aether/spellbook/spellbook_creation_system.py:2151 (the only
     `_phase_run_lock` acquisition, reached from that path)
@@ -672,7 +672,7 @@ Concurrency/Threading:
   - src/melder/aether/spellbook/spellbook.py:288 (`_phase_run_lock` created)
   - src/melder/aether/spellbook/spellbook_creation_system.py:2123-2151
     (`_run_scheduler_with_phases` - the only acquisition, with its rationale)
-  - src/melder/aether/spellbook/spellbook.py:1092-1103 (the cache-emit flag re-checked and set under `_lock`)
+  - src/melder/aether/spellbook/spellbook.py:1119-1130 (the cache-emit flag re-checked and set under `_lock`)
 - `find_spell_by_spell_id` (`find_spell_by_id` until 0.2.8253) is lock-free on purpose (0.2.8229): it reads
   `_spells_by_id`, then `_inactive_spells` (until 0.2.8253 a parked hit also read
   `Spell._spell_index_unless_cleaned`, then `_spells.get(index)`) - single-key reads, never an iteration - so a
@@ -723,6 +723,17 @@ Concurrency/Threading:
   outside `_lock`; a direct `Spell.cleanup()` now reaches it outside the spell lock too (Binding Pipeline), so the
   spell locks `_cleanup_spells` and conjure take under `_lock` never wait on it. A teardown that starts after its first
   locked section is not ordered against the rest of the removal.
+- `cleanup_and_remove_spell` refuses the active member of an index that still holds parked versions
+  (0.2.8256): in its first `_lock` section, after it resolves the spell and before `unregister_index`, it
+  reads `SpellIndex.is_sole_member` under the index lock - Spellbook -> index, the order `_dispose_spell`
+  takes - and raises with nothing changed, so no lock or lock-order edge is added. Book teardown and the
+  parked disposal set `_spellbook_cleanup` before they clean a spell and never reach the method;
+  `_dispose_spell` reaches it only for a sole member. `cleanup_spell` decides and removes in two `_lock`
+  sections with no transaction, so a version staged onto the index between them now meets this refusal -
+  raised after the spell was invalidated (creation context cleared, resolution required again, lineage
+  gated), with nothing removed - where the removal used to clean the index under it. A staging or index move
+  that starts after the first locked section is still not ordered against the rest of the removal (callers
+  quiesce moves before a direct removal, as before Book teardown).
 
 Invariants/Guarantees:
 - Conjure allowed once per Spellbook instance, tracked by the `_conjured` flag
@@ -730,6 +741,17 @@ Invariants/Guarantees:
   ownership checks, and `cleanup` deletes it along with the rest of the slots.
 - `SpellbookConfiguration` must be frozen before Conduit creation.
 - Existing-object spells are registered into Creations on conjure/bind.
+- An index keeps an active version while it holds parked ones (0.2.8256; the owner's choice of the refusal,
+  2026-10-18): `cleanup_spell`, `cleanup_and_remove_spell` and a direct `Spell.cleanup()` refuse its active
+  member with nothing changed, each message naming the remedies - notch the index to a parked version,
+  dispose the parked versions with `cleanup_spell`, or move them out with `remove_from_spell_index`, which
+  mints an index for each - and the sole member of an index is removed with its index. No caller's removal
+  leaves a parked version on a cleaned index, and Melder picks no version for the agent. Book teardown is
+  not a caller's removal and never meets the check: `_cleanup_spells` cleans each active spell and its
+  index (its parked versions are STORY-2026-10-17-book_teardown_leaves_parked_versions_uncleaned).
+  EVIDENCE: `src/melder/aether/spellbook/spellbook.py:Spellbook.cleanup_and_remove_spell`,
+  `Spellbook._dispose_spell`, `Spellbook._cleanup_spells` and
+  `src/melder/aether/spellbook/spell.py:Spell.cleanup`.
 - A conjure refused by the recorded-world configuration discipline has no posture side effect (0.2.8211):
   `conjure` starts the CONJURE transaction, predicts the effective mode (`_effective_conjure_mode`, pure, branch
   for branch the same as `_settle_or_inherit_conjure_mode`), refuses on it, and only then settles. The
@@ -750,6 +772,14 @@ Failure Modes:
   never fire. `_get_spell_by_id_via_aether` returns None only when the owner's `find_spell_by_spell_id` misses.
 - RuntimeError "cleanup_spell: spell <id> has already been disposed." for a spell already disposed (0.2.8231; it
   raised AttributeError), besides the "not owned by this spellbook" and multi-member refusals.
+- RuntimeError "cleanup_spell: spell <id> is the active member of a multi-member index, and disposing it
+  would leave the index's parked versions without an active one. Notch the index to one of them, dispose
+  them with cleanup_spell, or move them out with remove_from_spell_index first." (0.2.8256; it ended "...;
+  notch away from it before disposing it."), and RuntimeError "Spellbook cannot remove spell <id>: it is
+  the active member of a multi-member index, ..." with the same remedies from `cleanup_and_remove_spell`
+  and a direct `Spell.cleanup()` (0.2.8256, Breaking): both used to remove the version and clean the index
+  under its parked versions, which stayed in the Book uncleaned where no later call could notch, move,
+  dispose or clean them. Either refusal changes nothing.
 - RuntimeError "cleanup_spell: spell <id> is already being disposed by another call." while another `cleanup_spell`
   of the same spell runs (0.2.8232; before, both disposed it and one failed part-way).
 - RuntimeError "Spellbook has already been cleaned. " from `cleanup_and_remove_spell` when the Book is torn down while
@@ -767,9 +797,9 @@ Failure Modes:
   separating a spell that is the SOLE member of its source index (use
   `cleanup_spell` to dispose it instead).
   EVIDENCE:
-  - src/melder/aether/spellbook/spellbook.py:3911-4066 (`_apply_notch`)
-  - src/melder/aether/spellbook/spellbook.py:4101-4195 (`_apply_add_to_index`)
-  - src/melder/aether/spellbook/spellbook.py:4276-4361 (`_apply_remove_from_index`)
+  - src/melder/aether/spellbook/spellbook.py:3938-4093 (`_apply_notch`)
+  - src/melder/aether/spellbook/spellbook.py:4128-4222 (`_apply_add_to_index`)
+  - src/melder/aether/spellbook/spellbook.py:4303-4388 (`_apply_remove_from_index`)
 
 Observability:
 - `SafeLogger` on the Spellbook instance, used at `error` level on the failure
@@ -779,7 +809,7 @@ Observability:
   There is no info/debug narration of the happy path; absence of log output is
   the normal state, not a sign that nothing ran.
   EVIDENCE:
-  - src/melder/aether/spellbook/spellbook.py:6046-6051 (`Spellbook._initialize_configuration`, the
+  - src/melder/aether/spellbook/spellbook.py:6077-6082 (`Spellbook._initialize_configuration`, the
     configuration-mismatch branch; remeasured 2026-10-16 at 0.2.8248)
 
 Extension Points:
@@ -965,7 +995,7 @@ Outputs:
   EVIDENCE:
   - src/melder/aether/spellbook/bind/bind.py:466-603 (`bind`, decorator,
     `_bind_logic -> Spell`)
-  - src/melder/aether/spellbook/spellbook.py:5574-5590 (`Spellbook.bind
+  - src/melder/aether/spellbook/spellbook.py:5605-5621 (`Spellbook.bind
     -> str`)
   - src/melder/aether/spellbook/bind/bind.py:66-110 (`assert_allowed`)
 
@@ -987,6 +1017,10 @@ Concurrency/Threading:
   else takes `_removal_lock`, so two direct cleanups of one spell still serialize (the second waits, then returns) and
   no lock-order cycle runs through it; a caller holding `with spell:` around a direct cleanup brings the old order
   back. Cost: about 1 us on a ~18 us direct cleanup; bind, Book teardown and meld unchanged (measured).
+- The Book refuses that removal for the active version of an index that also holds parked versions
+  (0.2.8256): `cleanup_and_remove_spell` checks `SpellIndex.is_sole_member` in its first `_lock` section,
+  before anything is unregistered, so the direct call raises with nothing changed; `Spell.cleanup` takes
+  no new lock (Spellbook Core).
 - `Spell._spell_index_unless_cleaned()` (0.2.8229) reads `spell_index` under the spell's `_lock` and answers
   None once `_cleaned` is set. `Spell.cleanup` sets `_cleaned` and deletes `spell_index` under that lock and keeps
   `_lock` itself, so the read never raises on a cleaned Spell; it holds no other lock, and an index move (which
@@ -1019,6 +1053,10 @@ Failure Modes:
 - ValueError if method/lambda spells are bound with non-unique existence.
 - RuntimeError "SpellIndex has already been cleaned." from `has_spell` on a cleaned index, also when the cleanup
   races the call (0.2.8230; that race raised AttributeError).
+- RuntimeError from a direct `Spell.cleanup()`, raised by `Spellbook.cleanup_and_remove_spell`: the spell is
+  not its Book's active version (a parked version, for one); it is the active version of an index that also
+  holds parked versions (0.2.8256; nothing changes, and the message names the remedies); or the Book has
+  been cleaned and did not clean this spell.
 
 Observability:
 - EXCEPTIONS ONLY - `bind.py` holds no logger. The refusal messages are the
@@ -3149,7 +3187,9 @@ Failure Modes:
   reach the transfer and be refused there with "Source conduit does not own the spell.").
 - RuntimeError from `cleanup_spell` for a spell already disposed ("cleanup_spell: spell <id> has already been
   disposed."; 0.2.8231, it raised AttributeError), being disposed by another call ("... is already being disposed by
-  another call."; 0.2.8232), not owned by this conduit's Book, or the active member of a multi-member index.
+  another call."; 0.2.8232), not owned by this conduit's Book, or the active member of a multi-member
+  index - a refusal whose message names the remedies since 0.2.8256 (notch the index to a parked version,
+  dispose the parked versions, or move them out with `remove_from_spell_index`).
 - ExceptionGroup from `cleanup()` or a `with` block exit, after the pool return or teardown finished
   (0.2.8203; before, conduit paths only logged these): "Lesser conduit returned to its pool with disposal
   failures." or "Conduit torn down with disposal failures.", each holding Creations groups. With a failing
@@ -6370,14 +6410,14 @@ Contract/Interface:
   THE ADD AND REMOVE DOCSTRINGS WERE WRONG UNTIL 0.2.8249. Both said "Delegates to
   the owning Spellbook, WHICH ADMITS the [...] change-control transaction", while
   both methods call `mediator.start_transaction(...)` a few lines further down;
-  `src/melder/aether/spellbook/spellbook.py:3896-3898` states it correctly.
+  `src/melder/aether/spellbook/spellbook.py:3923-3925` states it correctly.
   `notch_spell`'s docstring said the same. Since 0.2.8249 all three say the conduit
   admits the transaction (raised on TASK-2026-08-02-stale-source-docstrings).
   EVIDENCE:
   - src/melder/aether/conduit/conduit.py:5650, 6009, 6122 (public verbs)
   - src/melder/aether/conduit/conduit.py:5789, 5828, 5883, 5934, 5970 (`_resolve_notch_target`,
     `_owned_notch_target`, `_check_spell_argument`, `_owned_spell_by_id`, `_resolve_spell_to_move`)
-  - src/melder/aether/spellbook/spellbook.py:3911, 4101, 4276 (applied seams)
+  - src/melder/aether/spellbook/spellbook.py:3938, 4128, 4303 (applied seams)
 Data Structures:
 - Transaction metadata carrying spellbook/conduit ids, binding key, member id,
   and source/target SpellIndex ids.
@@ -8427,9 +8467,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-09-26T20:10:34Z
 - path: `src/melder/aether/spellbook/spellbook.py`
   start_line: 1
-  end_line: 7771
-  loc: 7771
-  verified_at: 2026-10-17T23:12:45Z
+  end_line: 7802
+  loc: 7802
+  verified_at: 2026-10-18T16:37:15Z
 - path: `src/melder/aether/spellbook/spellbinder.py`
   start_line: 1
   end_line: 928
@@ -8452,9 +8492,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-10-17T23:12:45Z
 - path: `src/melder/aether/spellbook/spell.py`
   start_line: 1
-  end_line: 1968
-  loc: 1968
-  verified_at: 2026-10-17T23:12:45Z
+  end_line: 1972
+  loc: 1972
+  verified_at: 2026-10-18T16:37:15Z
 - path: `src/melder/aether/spellbook/spell_types/spell_types.py`
   start_line: 1
   end_line: 101
@@ -11083,7 +11123,7 @@ completed epics/stories of 2026-07-11/12).
 - Restore: crystal_loader_system/graft_runner.py - GraftRunner
   (single-use, Cleanable): RecordVersion gate + graft_kind refusal ->
   unconjured-host refusal (public `Spellbook.conduit` accessor,
-  `src/melder/aether/spellbook/spellbook.py:6878`; the patch-lane copy cited
+  `src/melder/aether/spellbook/spellbook.py:6909`; the patch-lane copy cited
   :5412) -> per-member overlap rule via
   `host_frame.find_index_for_spell`
   (`src/melder/aether/aetheric_frame/aetheric_frame.py:902`; resident member
@@ -11502,6 +11542,15 @@ Companion documents:
   component and code-description patches are inputs to this document while a lane is open.
 
 ## Context / Handoff Summary
+
+2026-10-18 direct cleanup refusal (0.2.8256; STORY-2026-10-17-direct_cleanup_of_active_member_orphans_parked_versions,
+on the owner's choice of the refusal): Spellbook Core carries the refusal in `cleanup_and_remove_spell` - its
+check, its lock order and the race it now refuses inside `cleanup_spell` - the invariant that an index keeps
+an active version while it holds parked ones, and the reworded and new messages; the Binding Pipeline carries
+the direct `Spell.cleanup()` route's refusal and its failure entry; Conduit Runtime's `cleanup_spell` entry
+names the remedies; the code map remeasures spellbook.py and spell.py. The numeric citations into
+spellbook.py past the check moved 27 lines (31 past `cleanup_spell`'s docstring) and were remapped line by
+line (14 lines).
 
 2026-10-18 managed settings leave the spell_id (0.2.8254; part A of
 STORY-2026-10-17-release_routes_parked_version_objects_to_active_pool): the Binding Pipeline carries the fingerprint

@@ -2,13 +2,15 @@
 Integration: a direct removal of an index's active member that has parked siblings is refused with nothing changed
 (STORY-2026-10-17-direct_cleanup_of_active_member_orphans_parked_versions; patch direct_cleanup_refusal_2026_10_18).
 
-`Conduit.cleanup_spell` refuses the active member of a multi-member index ("notch away from it first"). Until the fix
-the two other public doors - a direct `Spell.cleanup()` and `Spellbook.cleanup_and_remove_spell` - cleaned the index
-under its parked versions, leaving a version no later call could notch, move, dispose or clean (probe D2 and D3,
-artifacts/correctness_defects_20261017/probes/probe_direct_cleanup_active_member.py). Both now refuse the same way,
-and the sole member of an index is removed as before.
+`Conduit.cleanup_spell` refuses the active member of a multi-member index. Until the fix the two other public doors -
+a direct `Spell.cleanup()` and `Spellbook.cleanup_and_remove_spell` - cleaned the index under its parked versions,
+leaving a version no later call could notch, move, dispose or clean (probe D2 and D3,
+artifacts/correctness_defects_20261017/probes/probe_direct_cleanup_active_member.py). All three now refuse it, each
+message naming the remedies - notch the index to a parked version, dispose the parked versions, or move them out -
+and the sole member of an index is removed as before (the owner's choice, 2026-10-18).
 """
 import contextlib
+import re
 from typing import Iterator, Optional, Protocol, Set, Tuple
 
 import pytest
@@ -33,7 +35,11 @@ def _refusal() -> str:
     Returns:
         str: The pattern.
     """
-    return "is the active member of a multi-member index; notch away from it before disposing it"
+    return re.escape(
+        "is the active member of a multi-member index, and disposing it would leave the index's parked versions "
+        "without an active one. Notch the index to one of them, dispose them with cleanup_spell, or move them out "
+        "with remove_from_spell_index first."
+    )
 
 
 class Greeter(Protocol):
@@ -222,6 +228,21 @@ def test_cleanup_and_remove_spell_refuses_a_member_with_parked_siblings(by_spell
         _assert_nothing_changed(world)
 
 
+def test_cleanup_spell_refusal_names_the_remedies() -> None:
+    """
+    `cleanup_spell(English)` keeps its refusal of the active member and now names the same three remedies.
+
+    Contract:
+        - It raises the multi-member RuntimeError, prefixed "cleanup_spell: spell <spell_id>", and changes nothing.
+    """
+    with _world("cleanup_spell_refused") as world:
+        prefix = "^cleanup_spell: spell " + re.escape(world.english.spell_id) + " "
+        with pytest.raises(RuntimeError, match=prefix + _refusal()):
+            world.lender.cleanup_spell(spell=world.english)
+
+        _assert_nothing_changed(world)
+
+
 def test_after_the_refusal_a_notch_away_lets_the_old_version_go() -> None:
     """The refusal's remedy: notch to French, then dispose the now-parked English; French serves on its live index."""
     with _world("refused_then_notch_away") as world:
@@ -251,6 +272,28 @@ def test_after_the_refusal_disposing_the_parked_version_lets_the_member_go() -> 
         assert world.english.cleaned and world.french.cleaned and world.index.cleaned
         assert world.find_index(english_id) is None
         assert english_id not in world.book._spells_by_id
+
+
+def test_after_the_refusal_moving_the_parked_version_out_lets_the_member_go() -> None:
+    """
+    The third remedy: move French out with `remove_from_spell_index`; English is then its index's sole member and is
+    removed with it, while French stays parked, alone in a fresh index.
+    """
+    with _world("refused_then_move_parked_out") as world:
+        assert world.french is not None
+        english_id, french_id = world.english.spell_id, world.french.spell_id
+        with pytest.raises(RuntimeError, match=_refusal()):
+            world.english.cleanup()
+
+        world.lender.remove_from_spell_index(spell_id=french_id, source_index=world.index)
+        world.english.cleanup()
+
+        assert world.english.cleaned and world.index.cleaned
+        assert english_id not in world.book._spells_by_id
+        assert not world.french.cleaned
+        assert world.book._inactive_spells[french_id] is world.french
+        assert world.french.spell_index is not world.index
+        assert world.french.spell_index.spells_in_index() == {french_id}
 
 
 @pytest.mark.parametrize("door", ["spell_cleanup", "cleanup_and_remove_spell"])

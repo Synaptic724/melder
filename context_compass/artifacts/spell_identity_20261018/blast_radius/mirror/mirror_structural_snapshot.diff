@@ -1,0 +1,31 @@
+--- /sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/src/melder/aether/spellbook/spell_compiler/structural_snapshot/structural_snapshot.py	2026-10-18 02:06:36.264927600 +0000
++++ br_tree/src/melder/aether/spellbook/spell_compiler/structural_snapshot/structural_snapshot.py	2026-10-18 15:59:02.976142623 +0000
+@@ -280,9 +280,11 @@
+         requirements = StructuralSnapshot.bind_time_requirements(spell)
+         if requirements is None:
+             return None
++        import _br_digest  # BLAST-RADIUS MIRROR ONLY (S2)
+         return {
+             "format": StructuralSnapshot.PAYLOAD_FORMAT,
+             "spell_id": spell.spell_id,
++            "binding_hash": _br_digest.MirrorBinding.binding_hash(spell),
+             "annotation_refs": StructuralSnapshot.annotation_refs(requirements),
+         }
+ 
+@@ -308,13 +310,14 @@
+             str:
+                 Hex digest.
+         """
+-        pool_ids = sorted(spellbook._spell_id_pool.keys())
++        import _br_digest  # BLAST-RADIUS MIRROR ONLY (S2)
++        pool_ids = sorted(f"{sid}={_br_digest.MirrorBinding.binding_hash(sp)}" for sid, sp in spellbook._spell_id_pool.items())
+         frame_configuration = spellbook._aetheric_frame_configuration
+         posture = "" if frame_configuration is None else frame_configuration.system_state.name
+         borrowed_ids: set[str] = set()
+         for by_index in spellbook._contracted_spells.values():
+             for borrowed in by_index.values():
+-                borrowed_ids.add(borrowed.spell_id)
++                borrowed_ids.add(f"{borrowed.spell_id}={_br_digest.MirrorBinding.binding_hash(borrowed)}")
+         text = "\n".join((
+             "pool:" + ",".join(pool_ids),
+             "posture:" + posture,

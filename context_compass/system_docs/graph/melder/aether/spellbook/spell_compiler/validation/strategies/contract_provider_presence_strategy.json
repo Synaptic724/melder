@@ -1,95 +1,95 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/aether/spellbook/spell_compiler/validation/strategies/contract_provider_presence_strategy.py",
-  "source_sha256": "8c387258f21b568e3f2dcbccc7270632770ad7fb86e7909076312f44c916b538",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.aether.spellbook.spell_compiler.validation.strategies.contract_provider_presence_strategy": {
-      "id": "melder.aether.spellbook.spell_compiler.validation.strategies.contract_provider_presence_strategy",
-      "label": "contract_provider_presence_strategy",
-      "kind": "module",
-      "file": "src/melder/aether/spellbook/spell_compiler/validation/strategies/contract_provider_presence_strategy.py",
-      "lineno": 1,
-      "include": true,
-      "role": "Phase 4 check: missing or ambiguous SpellContract providers, mode-sensitive.",
-      "responsibilities": [
-        "provides one validation or examination strategy/support surface"
-      ],
-      "phases": [
-        "validation",
-        "runtime"
-      ],
-      "semantics_authored_against": ""
-    },
-    "melder.aether.spellbook.spell_compiler.validation.strategies.contract_provider_presence_strategy.ContractProviderPresenceStrategy": {
-      "id": "melder.aether.spellbook.spell_compiler.validation.strategies.contract_provider_presence_strategy.ContractProviderPresenceStrategy",
-      "label": "ContractProviderPresenceStrategy",
-      "kind": "class",
-      "file": "src/melder/aether/spellbook/spell_compiler/validation/strategies/contract_provider_presence_strategy.py",
-      "lineno": 23,
-      "bases": [
-        "SpellValidationStrategy"
-      ],
-      "markers": [],
-      "public_methods": [
-        "validate"
-      ],
-      "shape": {
-        "method_count": 1,
-        "has_bases": true,
-        "trivial": false
-      },
-      "span_sha256": "6d88f21d0e39170d940cb892e3a39cdda7afdd5f80dcfa0532b113a138e2772e",
-      "include": true,
-      "role": "Explains at Phase 4 why a contracted spell cannot resolve, rather than letting it fail later without a reason.",
-      "responsibilities": [
-        "error on malformed contract descriptors and on more than one provider matching a contract key",
-        "warn on missing SpellContract providers in dynamic mode but error on contract sockets in automatic system state",
-        "read one-call snapshots of the Spellbook's contracted-spell maps - this is the recheck a marked consumer's next meld runs, so a provider change may still be writing them under the Book lock (0.2.8250) - and the frame system_state",
-        "caches provider IDs and capability together, rejects a selected False provider and skips False-root provider obligations",
-        "each error says what to change; an ambiguity error states how many providers match the contract",
-        "names the contract key and the remedy in its SPELL_CONTRACT_MISSING_PROVIDER warning, the one Phase 4 gates a lineage on, which SpellbookValidationError shows as the consumer's reason (0.2.8250)"
-      ],
-      "phases": [
-        "compile"
-      ],
-      "semantics_authored_against": "6d88f21d0e39170d940cb892e3a39cdda7afdd5f80dcfa0532b113a138e2772e"
-    }
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/spell_compiler/validation/strategies/contract_provider_presence_strategy.py",
+ "source_sha256": "49dd0cbab8abfcac6c09e128f0dbaead1b8c15dee32954094dee8942114a2b2a",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.spell_compiler.validation.strategies.contract_provider_presence_strategy": {
+   "id": "melder.aether.spellbook.spell_compiler.validation.strategies.contract_provider_presence_strategy",
+   "label": "contract_provider_presence_strategy",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/spell_compiler/validation/strategies/contract_provider_presence_strategy.py",
+   "lineno": 1,
+   "include": true,
+   "role": "Phase 4 check: missing or ambiguous SpellContract providers, mode-sensitive.",
+   "responsibilities": [
+    "provides one validation or examination strategy/support surface"
+   ],
+   "phases": [
+    "validation",
+    "runtime"
+   ],
+   "semantics_authored_against": ""
   },
-  "edges_out": [
-    {
-      "from": "melder.aether.spellbook.spell_compiler.validation.strategies.contract_provider_presence_strategy.ContractProviderPresenceStrategy",
-      "to_label": "SpellValidationStrategy",
-      "relation": "specializes",
-      "to": "melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy.SpellValidationStrategy"
-    }
-  ],
-  "edge_candidates": [
-    {
-      "from": "melder.aether.spellbook.spell_compiler.validation.strategies.contract_provider_presence_strategy.ContractProviderPresenceStrategy",
-      "to_label": "SpellValidationIssue",
-      "relation": "creates",
-      "confidence": "candidate"
-    }
-  ],
-  "published_aliases": [],
-  "imports": {
-    "TYPE_CHECKING": "typing.TYPE_CHECKING",
-    "Dict": "typing.Dict",
-    "List": "typing.List",
-    "Optional": "typing.Optional",
-    "Tuple": "typing.Tuple",
-    "SpellContract": "melder.aether.conduit.meld.contracts.spell_contract.SpellContract",
-    "SystemState": "melder.aether.spellbook.configuration.system_state.SystemState",
-    "ParameterDIShape": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_di_shape.ParameterDIShape",
-    "SpellValidationIssue": "melder.aether.spellbook.spell_compiler.validation.spell_validation_issue.SpellValidationIssue",
-    "SpellValidationStrategy": "melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy.SpellValidationStrategy",
-    "SpellInputUtils": "melder.utilities.helpers.general_helpers.SpellInputUtils",
-    "SpellValidationContext": "melder.aether.spellbook.spell_compiler.validation.spell_validation_context.SpellValidationContext"
-  },
-  "collapse_candidate": {
-    "module": "melder.aether.spellbook.spell_compiler.validation.strategies.contract_provider_presence_strategy",
-    "class": "melder.aether.spellbook.spell_compiler.validation.strategies.contract_provider_presence_strategy.ContractProviderPresenceStrategy",
-    "label": "ContractProviderPresenceStrategy"
+  "melder.aether.spellbook.spell_compiler.validation.strategies.contract_provider_presence_strategy.ContractProviderPresenceStrategy": {
+   "id": "melder.aether.spellbook.spell_compiler.validation.strategies.contract_provider_presence_strategy.ContractProviderPresenceStrategy",
+   "label": "ContractProviderPresenceStrategy",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/validation/strategies/contract_provider_presence_strategy.py",
+   "lineno": 23,
+   "bases": [
+    "SpellValidationStrategy"
+   ],
+   "markers": [],
+   "public_methods": [
+    "validate"
+   ],
+   "shape": {
+    "method_count": 1,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "0e4c9bcb403c398fec8e82c83d4326d431ab4c6686caaec339ba2b41581e32d2",
+   "include": true,
+   "role": "Explains at Phase 4 why a contracted spell cannot resolve, rather than letting it fail later without a reason.",
+   "responsibilities": [
+    "error on malformed contract descriptors and on more than one provider matching a contract key",
+    "warn on missing SpellContract providers in dynamic mode but error on contract sockets in automatic system state",
+    "read one-call snapshots of the Spellbook's contracted-spell maps - this is the recheck a marked consumer's next meld runs, so a provider change may still be writing them under the Book lock (0.2.8250) - and the frame system_state",
+    "caches provider IDs and capability together, rejects a selected False provider and skips False-root provider obligations",
+    "each error says what to change; an ambiguity error states how many providers match the contract",
+    "names the contract key and the remedy in its SPELL_CONTRACT_MISSING_PROVIDER warning, the one Phase 4 gates a lineage on, which SpellbookValidationError shows as the consumer's reason (0.2.8250)"
+   ],
+   "phases": [
+    "compile"
+   ],
+   "semantics_authored_against": "6d88f21d0e39170d940cb892e3a39cdda7afdd5f80dcfa0532b113a138e2772e"
   }
+ },
+ "edges_out": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.validation.strategies.contract_provider_presence_strategy.ContractProviderPresenceStrategy",
+   "to_label": "SpellValidationStrategy",
+   "relation": "specializes",
+   "to": "melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy.SpellValidationStrategy"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.validation.strategies.contract_provider_presence_strategy.ContractProviderPresenceStrategy",
+   "to_label": "SpellValidationIssue",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "Dict": "typing.Dict",
+  "List": "typing.List",
+  "Optional": "typing.Optional",
+  "Tuple": "typing.Tuple",
+  "SpellContract": "melder.aether.conduit.meld.contracts.spell_contract.SpellContract",
+  "SystemState": "melder.aether.spellbook.configuration.system_state.SystemState",
+  "ParameterDIShape": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_di_shape.ParameterDIShape",
+  "SpellValidationIssue": "melder.aether.spellbook.spell_compiler.validation.spell_validation_issue.SpellValidationIssue",
+  "SpellValidationStrategy": "melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy.SpellValidationStrategy",
+  "SpellInputUtils": "melder.utilities.helpers.general_helpers.SpellInputUtils",
+  "SpellValidationContext": "melder.aether.spellbook.spell_compiler.validation.spell_validation_context.SpellValidationContext"
+ },
+ "collapse_candidate": {
+  "module": "melder.aether.spellbook.spell_compiler.validation.strategies.contract_provider_presence_strategy",
+  "class": "melder.aether.spellbook.spell_compiler.validation.strategies.contract_provider_presence_strategy.ContractProviderPresenceStrategy",
+  "label": "ContractProviderPresenceStrategy"
+ }
 }

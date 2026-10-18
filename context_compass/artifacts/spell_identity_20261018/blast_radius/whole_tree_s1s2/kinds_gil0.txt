@@ -1,0 +1,150 @@
+  1 tests/component/melder/aether/conduit/test_conduit_component_policy_reader.py :: RuntimeError: Spell ID collision detected: this object is already registered as spell_id b9a9d6e5f0ab939abee36d438ba3ed320be77c5b1f3b84a7ef8e17d656d9e485. A spell_id is the SHA256 of the object's code
+      e.g. test_the_member_the_reader_returns_is_accepted_by_the_writer
+  1 tests/component/melder/aether/test_configure_aether_frame_posture_component.py :: RuntimeError: Spell ID collision detected: this object is already registered as spell_id 4b4973026e618fa46a56c3d620a3ec780d6f1b15050e6ccb64a2ff15d23fee91. A spell_id is the SHA256 of the object's code
+      e.g. test_codegen_rooms_need_both_knobs_and_the_door_now_supplies_both
+  3 tests/component/melder/spellbook/test_bind_lifecycle_hooks.py :: RuntimeError: Spell ID collision detected: this object is already registered as spell_id d3bcbfcfbb71f70b08756e8f7d9dd093d400257d48d87b29ebb2ccecedcada15. A spell_id is the SHA256 of the object's code
+      e.g. test_append_clear_and_register_again_preserves_order[pre]
+  1 tests/component/melder/spellbook/test_bind_lifecycle_hooks.py :: TypeError: Bind.spell_id_inspector() got an unexpected keyword argument 'spell_name'
+      e.g. test_bind_activation_preserves_native_hash_and_existing_creation_hook_precedence
+  1 tests/component/melder/spellbook/test_inherited_disposal_binding.py :: RuntimeError: Spell ID collision detected: this object is already registered as spell_id 0ec6dbb4aadd89affab45d659ae602ce8b5fbb6caf929f95d91a9d85896c2f4f. A spell_id is the SHA256 of the object's code
+      e.g. test_inactive_binding_resolves_inherited_cleanup_before_fingerprinting
+  1 tests/component/melder/spellbook/test_inherited_disposal_binding.py :: TypeError: Bind.spell_id_inspector() got an unexpected keyword argument 'existence'
+      e.g. test_unrequested_base_callable_does_not_change_binding_identity
+  4 tests/component/melder/spellbook/test_inherited_disposal_binding.py :: TypeError: Bind.spell_id_inspector() got an unexpected keyword argument 'spell_name'
+      e.g. test_requested_inherited_cleanup_is_retained[general-explicit]
+  1 tests/component/melder/spellbook/test_ordered_disposal_binding.py :: AssertionError: assert '43ade5a92f6855b3b0930629ae023002c153e0fbb8f011ea054afd0ae3646bca' != '43ade5a92f6855b3b0930629ae023002c153e0fbb8f011ea054afd0ae3646bca'
+      e.g. test_resolved_order_changes_sha_but_unmatched_names_do_not
+  6 tests/component/melder/spellbook/test_ordered_disposal_binding.py :: RuntimeError: Spell ID collision detected: this object is already registered as spell_id 43ade5a92f6855b3b0930629ae023002c153e0fbb8f011ea054afd0ae3646bca. A spell_id is the SHA256 of the object's code
+      e.g. test_each_binding_uses_its_own_explicit_names[False]
+  8 tests/component/melder/spellbook/test_ordered_disposal_binding.py :: TypeError: Bind.spell_id_inspector() got an unexpected keyword argument 'spell_name'
+      e.g. test_binding_combines_groups_in_priority_order[False-expected0]
+  1 tests/component/melder/spellbook/test_spell_id_process_stability.py :: AssertionError: Traceback (most recent call last):
+      e.g. test_address_bearing_spell_ids_match_across_fresh_processes
+  1 tests/component/melder/spellbook/test_spellbook_component_bind.py :: TypeError: Bind.spell_id_inspector() got an unexpected keyword argument 'spell_name'
+      e.g. test_component_bind_creates_class_spell_with_metadata
+  2 tests/component/melder/spellbook/test_spellbook_component_resolvable_registration.py :: AssertionError: Regex pattern did not match.
+      e.g. test_invalid_capability_is_rejected_before_user_reflection[True]
+  8 tests/component/melder/spellbook/test_spellbook_component_resolvable_registration.py :: RuntimeError: Spell ID collision detected: this object is already registered as spell_id 3c87f344459135153d72187732160c693732dbdba46baebc7e03caaa782beac2. A spell_id is the SHA256 of the object's code
+      e.g. test_fluent_capability_does_not_leak_to_next_registration[False]
+  2 tests/component/melder/spellbook/test_spellbook_component_resolvable_registration.py :: TypeError: Bind.spell_id_inspector() got an unexpected keyword argument 'spell_name'
+      e.g. test_inspector_and_real_bind_agree_on_effective_inputs[True]
+  1 tests/component/melder/spellbook/test_spellbook_component_structural_snapshot_capture.py :: AssertionError: assert {'format': 2,...ion_refs': []} == {'format': 2,...ion_refs': []}
+      e.g. test_conjure_end_captures_a_structural_payload_per_owned_spell
+  4 tests/experimentation/test_borrower_provider_validation_experiment.py :: RuntimeError: Spell ID collision detected: this object is already registered as spell_id b7795456b4214970794214e8b8917470916e1c0f9d2f80ca4bbff176c513e0e1. A spell_id is the SHA256 of the object's code
+      e.g. test_characterize_provider_validation_boundary[2-no_validation]
+  1 tests/integration/melder/aether/conduit/test_annotation_category_collision_integration.py :: RuntimeError: Spell ID collision detected: this object is already registered as spell_id 6bebcf1bff332c07935bf2c820c56d3ca72023d61ef8969c5a630146072ae894. A spell_id is the SHA256 of the object's code
+      e.g. test_guard_two_providers_of_the_annotated_type_still_raise_ambiguity
+  2 tests/integration/melder/aether/conduit/test_index_moves_by_spell_id_integration.py :: RuntimeError: Spell ID collision detected: this object is already registered as spell_id 113e8ba8004f595397a34a8c0d4be1c96272172c53460b6ffca1796d7932e2ff. A spell_id is the SHA256 of the object's code
+      e.g. test_index_move_refuses_another_books_spell_id[add_to_spell_index]
+  1 tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py :: AssertionError: assert 'Spellbook va...ls: SelfMade.' == 'notch_spell ...of the index.'
+      e.g. test_a_notch_refused_at_commit_says_it_did_not_happen
+  1 tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py :: AssertionError: assert 'dc4950f1aa74...fb1cec7c688ac' == 'fc8f52672d7a...e401bf4c636c5'
+      e.g. test_a_notch_refused_at_commit_leaves_the_old_version_active
+  1 tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py :: AssertionError: assert 'dc4950f1aa7452981a01fef24e89695c404ed5797b1bf0c6d46fb1cec7c688ac' is None
+      e.g. test_a_refused_notch_releases_the_claim_it_took_for_the_broken_versions_address
+  1 tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py :: AssertionError: assert ('01M583FEHCBAPZ7ERRFE3WX26G', 'fc8f52672d7aa99a1f35d0cfa6f894790558b93d06cf9267198e401bf4c636c5') in {('01M583FEHCBAPZ7ERRFE3WX26G', 'dc4950f1aa7452981a01fef24e89695c404ed5797b
+      e.g. test_a_refused_notch_leaves_the_nexus_record_on_the_old_version
+  1 tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py :: AssertionError: assert (['staged', '..., 'promoted']) == (['staged'], ['registered'])
+      e.g. test_a_refused_notch_journals_no_promotion
+  1 tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py :: AssertionError: assert <melder.aether.spellbook.spell_compiler.validation.spell_validation_result.SpellValidationResult object at 0x48fed347580> is None
+      e.g. test_a_notch_back_after_a_refusal_changes_nothing
+  1 tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py :: AssertionError: assert {'7a18363d2ed...401bf4c636c5'} == {'7a18363d2ed...b2b28a4e6feb'}
+      e.g. test_a_sound_notch_after_a_refusal_moves_owner_and_borrower
+  1 tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py :: Failed: DID NOT RAISE SpellbookValidationError
+      e.g. test_a_refused_notch_is_checked_again_when_retried
+  1 tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py :: KeyError: '[MELD] No spell found with spell_id: fc8f52672d7aa99a1f35d0cfa6f894790558b93d06cf9267198e401bf4c636c5'
+      e.g. test_after_a_refusal_the_book_flag_falls_once_english_melds
+  1 tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py :: assert <SpellIndex id=01M583FEJDBRCRAE77SBHWC51P current=dc4950f1aa7452981a01fef24e89695c404ed5797b1bf0c6d46fb1cec7c688ac> not in {<SpellIndex id=01M583FEJ4TWMRDM3WRKJ2MSS1 current=fc8f52672d7aa99a1f3
+      e.g. test_a_refused_activation_of_a_minted_index_leaves_it_parked_and_unregistered
+  1 tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py :: melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed. Broken spells: Speaker.
+      e.g. test_a_notch_refused_at_commit_leaves_borrowers_on_the_lenders_version
+  1 tests/integration/melder/aether/conduit/test_notch_spell_by_id_integration.py :: RuntimeError: Spell ID collision detected: this object is already registered as spell_id 3a3317fa9f301d3a49174ef66a7c2d6cf1e66617183b265e33f871e2098ef7e6. A spell_id is the SHA256 of the object's code
+      e.g. test_notch_refuses_a_version_another_book_owns_and_keeps_the_index_active
+  4 tests/integration/melder/aether/test_aether_integration_cluster_membership_transactions.py :: RuntimeError: Spell ID collision detected: this object is already registered as spell_id 5d6f44c9e7ff172e88c30cb56db56dc27a3a04c9dab02e64c86d464cb158e17e. A spell_id is the SHA256 of the object's code
+      e.g. test_add_three_conduits_tracks_all_members
+  7 tests/integration/melder/aether/test_aether_integration_cluster_transactions_concurrency.py :: RuntimeError: Spell ID collision detected: this object is already registered as spell_id 5d6f44c9e7ff172e88c30cb56db56dc27a3a04c9dab02e64c86d464cb158e17e. A spell_id is the SHA256 of the object's code
+      e.g. test_concurrent_joins_to_one_cluster_track_every_member
+  1 tests/integration/melder/aether/test_aether_integration_frames.py :: RuntimeError: [SPELLBOOK] Conjure refused: 1 spell(s) owned by this
+      e.g. test_aether_conduit_cloud_isolated_by_frame
+  2 tests/integration/melder/aether/test_non_resolvable_graph_replay.py :: RuntimeError: Spell ID collision detected: this object is already registered as spell_id 1d6aefd17cdf835c5639bbb295a2ffa9bfc5b5bc0d485e8c2f0541f16cedc1e7. A spell_id is the SHA256 of the object's code
+      e.g. test_nexus_exposes_definition_reference_and_base_relationships
+  1 tests/integration/melder/aether/test_non_resolvable_graph_replay.py :: RuntimeError: Spell ID collision detected: this object is already registered as spell_id 4ae5fae79c8e48b8afabe7f2c13853aafc7a01b8f13e025863880ec6f9b0d436. A spell_id is the SHA256 of the object's code
+      e.g. test_checkpoint_replay_preserves_false_and_reemits_it
+  1 tests/integration/melder/conduit/test_conduit_integration_managed_quantity_pool.py :: RuntimeError: Spell ID collision detected: this object is already registered as spell_id 05b0c1feb26fff422bf100f771b0dc7b0cc0068d5cebb34ad72364f402d37af9. A spell_id is the SHA256 of the object's code
+      e.g. test_a_post_conjure_bind_and_bind_inactive_each_get_their_pool
+  1 tests/integration/melder/conduit/test_conduit_integration_managed_spell_quantity.py :: RuntimeError: Spell ID collision detected: this object is already registered as spell_id 3b36053eb7d0c9460cc31a68207b1c3977ae69a1bb97a611a91d1c1c5fd35435. A spell_id is the SHA256 of the object's code
+      e.g. test_two_binding_names_in_one_root_dispense_from_two_pools
+  1 tests/integration/melder/conduit/test_conduit_integration_managed_spell_quantity.py :: RuntimeError: Spell ID collision detected: this object is already registered as spell_id 9995a82dbfc7c1d63a4fc9f36a2c3e5ac635ebf5f0ff4f55302ce792e50cc5fe. A spell_id is the SHA256 of the object's code
+      e.g. test_roots_in_two_frames_dispense_from_their_own_pools
+  1 tests/integration/melder/conduit/test_conduit_integration_managed_transfer.py :: RuntimeError: Spell ID collision detected: this object is already registered as spell_id 02595bb302e2b11d574d728a24b86f142c2e1eec02679ce869978b5850d38a96. A spell_id is the SHA256 of the object's code
+      e.g. test_a_parked_unique_version_moved_and_notched_in_stores_its_object_in_the_target
+  5 tests/integration/melder/conduit/test_conduit_integration_managed_transfer.py :: RuntimeError: Spell ID collision detected: this object is already registered as spell_id 09e77e6f3913710fbe53967242cc0ce983067722e9a617868ec4f4a629fa5d40. A spell_id is the SHA256 of the object's code
+      e.g. test_a_parked_version_moved_and_notched_in_leases_from_its_moved_pool
+  1 tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py :: RuntimeError: Spell ID collision detected: this object is already registered as spell_id b20b33e0e827514a030bdfe343dd057cedebacce9299ac2f29b6e2e760d98a35. A spell_id is the SHA256 of the object's code
+      e.g. test_a_notch_back_reactivates_a_version_grant_and_its_consumer_rebuilds_with_one_pass
+  2 tests/integration/melder/conduit/test_conduit_integration_release_managed_spell.py :: RuntimeError: Spell ID collision detected: this object is already registered as spell_id 5f17fd021146e3e2a4947ee0f4d7935a36e62550656e8dea9e453365b1bed7ca. A spell_id is the SHA256 of the object's code
+      e.g. test_a_post_conjure_bind_registers_and_a_notch_moves_the_releases
+  1 tests/integration/melder/conduit/test_conduit_integration_release_managed_spell.py :: RuntimeError: Spell ID collision detected: this object is already registered as spell_id c7cde9ea1e5e3fb5aaa701817267ec91ed0450569603f41bb080818221743914. A spell_id is the SHA256 of the object's code
+      e.g. test_two_roots_are_told_apart_by_conduit_including_a_lesser
+  3 tests/integration/melder/crystallizer/test_managed_spell_options_record_integration.py :: RuntimeError: Spell ID collision detected: this object is already registered as spell_id 9b18555390632e3513ad1f9df81966c61a6eacc63e94bca4e129e2a3d39cd2f2. A spell_id is the SHA256 of the object's code
+      e.g. test_the_crystal_records_both_versions_options
+ 22 tests/integration/melder/crystallizer/test_ordered_disposal_replay.py :: RuntimeError: Spell ID collision detected: this object is already registered as spell_id 82b0b740cbd79f2903efad05e7c00a273a4f4507559b2db5e7c1c1fba92ba01c. A spell_id is the SHA256 of the object's code
+      e.g. test_crystal_and_json_preserve_distinct_member_orders[False]
+  1 tests/integration/melder/crystallizer/test_ordered_disposal_replay.py :: TypeError: Bind.spell_id_inspector() got an unexpected keyword argument 'spell_name'
+      e.g. test_changed_id_restore_regrants_contract_details
+  5 tests/integration/melder/spellbook/test_binding_name_case_parity_integration.py :: RuntimeError: Spell ID collision detected: this object is already registered as spell_id 39f69994d946c1d7f60b50f81e8bdae130a7bb60b34f253da2d1e1cfd541975d. A spell_id is the SHA256 of the object's code
+      e.g. test_capitalized_spellmap_binding_name_no_longer_fails_to_resolve[reported]
+ 22 tests/integration/melder/spellbook/test_cache_schema_version_integration.py :: AssertionError: assert {1: 'legacy_e...m_names', ...} == {1: 'legacy_e...m_names', ...}
+      e.g. test_cache_schema_version_history_accepts_only_current_bundle[1]
+  1 tests/integration/melder/spellbook/test_managed_bind_options_integration.py :: AssertionError: assert '1a8df98aab8ade0a3efe9de584067047679f06bf76e681296df40523eb901171' != '1a8df98aab8ade0a3efe9de584067047679f06bf76e681296df40523eb901171'
+      e.g. test_a_managed_binding_changes_the_spell_id_and_its_settings_do_not
+  1 tests/integration/melder/spellbook/test_managed_bind_options_integration.py :: RuntimeError: Spell ID collision detected: this object is already registered as spell_id 1a8df98aab8ade0a3efe9de584067047679f06bf76e681296df40523eb901171. A spell_id is the SHA256 of the object's code
+      e.g. test_conduit_bind_and_bind_inactive_forward_the_options
+  1 tests/integration/melder/spellbook/test_provider_artifact_ownership.py :: RuntimeError: Spell ID collision detected: this object is already registered as spell_id 0a412c3d6c7173b456f70862b010492137b6f2fd1e2062ecfd48524ab4eded63. A spell_id is the SHA256 of the object's code
+      e.g. test_provider_survives_repeated_borrower_validation_and_cleanup[2-2]
+  1 tests/integration/melder/spellbook/test_spellbook_integration_resolution_contract_more.py :: RuntimeError: Spell ID collision detected: this object is already registered as spell_id be4fdb0ef5142e378986e7ef1237e386d0a1abca2ca0f081ff4f371ac63a200b. A spell_id is the SHA256 of the object's code
+      e.g. test_type_hint_di_ambiguous_concrete_class_raises
+  1 tests/unit/github_workflows/test_workflow_contracts.py :: FileNotFoundError: [Errno 2] No such file or directory: '/tmp/m0_mq/wt/.readthedocs.yaml'
+      e.g. test_docs_metadata_validation_precedes_artifact_upload_and_rtd_staging
+  1 tests/unit/melder/build_assets/test_system_documents_builder.py :: StopIteration
+      e.g. test_unavailable_entry_matches_a_live_entry_key_for_key
+  1 tests/unit/melder/build_assets/test_system_documents_builder.py :: assert []
+      e.g. test_shipped_entries_carry_sections_and_a_digest
+  1 tests/unit/melder/crystallizer/persistence/test_restore_engine.py :: AttributeError: 'DummySpell' object has no attribute 'binding_hash'. Did you mean: 'binding_name'?
+      e.g. test_spell_crystal_harvests_synthetic_module_sources
+  1 tests/unit/melder/crystallizer/test_crystallizer.py :: AttributeError: '_DummySpell' object has no attribute 'binding_hash'. Did you mean: 'binding_name'?
+      e.g. test_crystallizer_create_spell_crystal_uses_configured_user_source_roots
+  7 tests/unit/melder/crystallizer/test_spell_crystal.py :: AttributeError: 'DummySpell' object has no attribute 'binding_hash'. Did you mean: 'binding_name'?
+      e.g. test_spell_crystal_records_unknown_import_targets_honestly
+  1 tests/unit/melder/crystallizer/test_spell_crystal_managed_options.py :: AssertionError: assert '4.3.0' == '4.2.0'
+      e.g. test_record_version_is_4_2_and_reads_4_1_records
+  4 tests/unit/melder/crystallizer/test_spell_crystal_managed_options.py :: AttributeError: 'DummySpell' object has no attribute 'binding_hash'. Did you mean: 'binding_name'?
+      e.g. test_a_managed_crystal_records_the_options_as_plain_values
+ 47 tests/unit/melder/spellbook/bind/test_bind.py :: AttributeError: type object 'Bind' has no attribute 'sha256_profile'
+      e.g. test_sha256_profile_deterministic_class
+  1 tests/unit/melder/spellbook/bind/test_bind.py :: assert 0 == 2
+      e.g. test_spell_id_inspector_uses_examiner
+ 17 tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py :: AttributeError: type object 'Bind' has no attribute 'sha256_profile'
+      e.g. test_existing_member_ids_are_byte_identical_to_0_2_8241[class/many/False]
+  1 tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py :: TypeError: Bind.spell_id_inspector() got an unexpected keyword argument 'existence'
+      e.g. test_spell_id_inspector_refuses_what_bind_refuses
+  1 tests/unit/melder/spellbook/bind/test_stable_spell_fingerprint.py :: AttributeError: 'CallableBindingProfile' object has no attribute 'fingerprint_repr'
+      e.g. test_strategy_keeps_display_reprs_and_adds_fingerprint_text
+  1 tests/unit/melder/spellbook/bind/test_stable_spell_fingerprint.py :: AttributeError: type object 'Bind' has no attribute 'sha256_profile'
+      e.g. test_profiles_without_fingerprint_text_hash_address_free_display_text
+  9 tests/unit/melder/spellbook/bind/test_stable_spell_fingerprint.py :: TypeError: Bind.spell_id_inspector() got an unexpected keyword argument 'existence'
+      e.g. test_content_identical_objects_share_one_spell_id[bound_method]
+ 16 tests/unit/melder/spellbook/spell_compiler/structural_snapshot/test_structural_snapshot.py :: AssertionError: assert False is True
+      e.g. test_payload_well_formed_rejects_each_shape_violation[format]
+ 15 tests/unit/melder/spellbook/spell_compiler/structural_snapshot/test_structural_snapshot.py :: AttributeError: '_Spell' object has no attribute 'binding_hash'
+      e.g. test_structural_key_holds_format_id_and_sorted_refs
+  1 tests/unit/melder/spellbook/spell_crafter/spell_examiner/strategies/test_binding_profile_strategy.py :: AttributeError: type object 'Bind' has no attribute 'sha256_profile'
+      e.g. test_bind_fingerprint_counts_fields_typed_with_type_checking_names
+ 12 tests/unit/melder/spellbook/test_cache_runtime_verification.py :: AttributeError: '_RecordingSpell' object has no attribute 'binding_hash'
+      e.g. test_build_conjure_cache_state_classifies_live_vs_cached_spell_sets[False-cached_ids0-live-disabled-False-False-True]
+  3 tests/unit/melder/spellbook/test_spellbook_creation_system_resolution_fastpath.py :: AttributeError: 'types.SimpleNamespace' object has no attribute 'binding_hash'
+      e.g. test_build_conjure_cache_state_reports_full_hit_path
+  4 tests/unit/melder/utilities/custom_exceptions/test_spellbook_validation_error_preface.py :: AssertionError: Regex pattern did not match.
+      e.g. test_a_preface_that_is_not_a_string_is_refused[42]
+  3 tests/unit/melder/utilities/custom_exceptions/test_spellbook_validation_error_preface.py :: TypeError: SpellbookValidationError.__init__() got an unexpected keyword argument 'preface'
+      e.g. test_without_a_preface_the_message_is_unchanged

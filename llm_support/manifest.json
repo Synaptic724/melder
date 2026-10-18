@@ -2,14 +2,14 @@
   "corpora": {
     "other": {
       "bundle": {
-        "bytes": 3344590,
-        "lines": 77830,
+        "bytes": 3273828,
+        "lines": 76723,
         "path": "llm_support/llm_full_other.txt",
-        "sha256": "2ffd0d381debf4face0180b597fecb97da53e5ae58b5ef6d4f0f9878bc92bc0c"
+        "sha256": "66553956f1b840ae7eca7c6ee7ba377cecc6ff3b42e0ceb81c75ef70c821da4a"
       },
-      "content_bytes": 3120406,
-      "content_lines": 74592,
-      "file_count": 404,
+      "content_bytes": 3051628,
+      "content_lines": 73517,
+      "file_count": 400,
       "files": {
         ".gitattributes": {
           "content_bytes": 2466,
@@ -2375,30 +2375,6 @@
           "content_sha256": "896ce27dbaa92f1719d4a70b324c77f6b68f9a2d4d6e8bf73e3c6fbe87e216a1",
           "source_encoding": "utf-8"
         },
-        "release_docs/0.2.43.md": {
-          "content_bytes": 13066,
-          "content_lines": 205,
-          "content_sha256": "1865e61282295b272c2e2d43d7cd255ff50688f5d38852e97ad9eacdde0409ae",
-          "source_encoding": "utf-8"
-        },
-        "release_docs/0.2.50.md": {
-          "content_bytes": 12983,
-          "content_lines": 255,
-          "content_sha256": "3dd5db190054a458525c1fbc39b655a168375a36efbaa689d7d7e687c2dd8125",
-          "source_encoding": "utf-8"
-        },
-        "release_docs/0.2.77.md": {
-          "content_bytes": 41553,
-          "content_lines": 601,
-          "content_sha256": "f9f4960cbdb865f03a17d87d0bb81d0c630d745ac9128bc61e03e47733e6a068",
-          "source_encoding": "utf-8"
-        },
-        "release_docs/0.2.82.md": {
-          "content_bytes": 4947,
-          "content_lines": 75,
-          "content_sha256": "18956953a24a740fcba9c3b4e02a43941d8106b8ee2c74d16bac07d5875d7abe",
-          "source_encoding": "utf-8"
-        },
         "release_docs/0.2.8227.md": {
           "content_bytes": 41777,
           "content_lines": 605,
@@ -2406,9 +2382,9 @@
           "source_encoding": "utf-8"
         },
         "release_docs/next_version_release.md": {
-          "content_bytes": 71282,
-          "content_lines": 1002,
-          "content_sha256": "e8ff9350a7ceda6f684754cab68a3fad9646372582c269381d34254e5c5dd9ff",
+          "content_bytes": 75053,
+          "content_lines": 1063,
+          "content_sha256": "4a8ed8b6a9dce59fa937da05ffb4016e14d074bf6cb73a0852a316bcdbc660e1",
           "source_encoding": "utf-8"
         },
         "requirements.txt": {
@@ -2437,22 +2413,22 @@
         }
       },
       "index": {
-        "bytes": 67421,
-        "lines": 426,
+        "bytes": 66870,
+        "lines": 422,
         "path": "llm_support/llm_full_other_index.md",
-        "sha256": "68561b5b13d21fa461e081e68aea332bcb3349cb0a2f09b6738ef3c15fec5b40"
+        "sha256": "a2b477d8a835f5126c38abe43e4ce628a61782c8087abcf54c33de241cc6fa60"
       },
-      "source_fingerprint": "1906914a916df8d9f24a10dc3714a04994cb6a9d8958afe68727f044b2a4ef6d"
+      "source_fingerprint": "f9d2e81fc6d1ea012a1b1d2aa53f6d860acd7552485b3498435e9f9a73bc1853"
     },
     "src": {
       "bundle": {
-        "bytes": 11304703,
-        "lines": 283055,
+        "bytes": 11307416,
+        "lines": 283090,
         "path": "llm_support/llm_full_src.txt",
-        "sha256": "e0ba8af1e7bcdcfc18fc288850295a020dcf4e39a9183c9fcbd4f2fc95da5dfa"
+        "sha256": "2b775c3ddeca18bd4859cba7cd35afb550b29c89888cec0c4d241ade2b31b855"
       },
-      "content_bytes": 10951409,
-      "content_lines": 278385,
+      "content_bytes": 10954122,
+      "content_lines": 278420,
       "file_count": 583,
       "files": {
         "src/melder/__architecture__.py": {
@@ -2512,7 +2488,7 @@
         "src/melder/__version__.py": {
           "content_bytes": 316,
           "content_lines": 12,
-          "content_sha256": "7d75720441d6ccb807ec5448b3f5069b1e96702b61d6c45cf5b1c4a19b1ea8e6",
+          "content_sha256": "c71a4a8becf5c91de7117a86eda22ea75841059485469fdcad407647e7db24c0",
           "source_encoding": "utf-8"
         },
         "src/melder/_build_assets/_agent_documentation/_builder.py": {
@@ -3272,9 +3248,9 @@
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/spell.py": {
-          "content_bytes": 85208,
-          "content_lines": 1968,
-          "content_sha256": "7c0580105fe9c40bf083d302d69eb4ec8bc3066158b72f333c2a798df6a8d4f2",
+          "content_bytes": 85482,
+          "content_lines": 1972,
+          "content_sha256": "6350c7a94fadbffb8cc2b08c760e45184e5f2e51649baefc6ae22b236b87d62f",
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_injection_analysis.py": {
@@ -4418,9 +4394,9 @@
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/spellbook.py": {
-          "content_bytes": 351800,
-          "content_lines": 7771,
-          "content_sha256": "9b4ccb662e62648447b3691417f7d3f831076a892941f090476f982ca4ce85c9",
+          "content_bytes": 354239,
+          "content_lines": 7802,
+          "content_sha256": "9f654467dddc61054aaa7d11ab087749e005647296f431216113690d51630fb1",
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/spellbook_creation_system.py": {
@@ -5958,20 +5934,20 @@
         "bytes": 114111,
         "lines": 605,
         "path": "llm_support/llm_full_src_index.md",
-        "sha256": "f122702240f0906b9c6b0830eb7c52e28ebf9a9e0e8b36832c586305e9237fcd"
+        "sha256": "55a1301f1e6e357bf83606df8a8b6e496d92981e4c034d95000a219bf9bf3ccf"
       },
-      "source_fingerprint": "461a58a42f61bfd892a8850159f204ca0aa3e192d68d75a37f0d82d3e93fe41d"
+      "source_fingerprint": "55dfa8f6db2bcf386a07aacd97b0b81b29416c220d4c765aed696cfb4524f003"
     },
     "tests": {
       "bundle": {
-        "bytes": 13401443,
-        "lines": 366845,
+        "bytes": 13440054,
+        "lines": 367774,
         "path": "llm_support/llm_full_tests.txt",
-        "sha256": "0f941289139141e775bc0c1bf2a8ae7a89b93c651cd1fc6aecb0c69ef329344b"
+        "sha256": "cfc2a975359a96905666d3e10110e90d55893f983c4da54eb90f3069daccd1ea"
       },
-      "content_bytes": 12712485,
-      "content_lines": 357807,
-      "file_count": 1129,
+      "content_bytes": 12749174,
+      "content_lines": 358712,
+      "file_count": 1132,
       "files": {
         "tests/_annotation_audit_support.py": {
           "content_bytes": 29598,
@@ -8355,6 +8331,12 @@
           "content_sha256": "985dd528d6dfba297f006b6d14ae207b025745eb422eae2b2ed30e37612163d6",
           "source_encoding": "utf-8"
         },
+        "tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py": {
+          "content_bytes": 20094,
+          "content_lines": 503,
+          "content_sha256": "91a2888902267fb5b8a94ea3d38ed6e8e72210afc9c1125350f7dd471d84be1c",
+          "source_encoding": "utf-8"
+        },
         "tests/integration/melder/aether/conduit/test_notch_spell_by_id_integration.py": {
           "content_bytes": 11169,
           "content_lines": 271,
@@ -9085,6 +9067,12 @@
           "content_bytes": 7090,
           "content_lines": 158,
           "content_sha256": "9cc21eacd44f5cc6df7d261d3648a744d6ee013162b4a8b89732814273015f75",
+          "source_encoding": "utf-8"
+        },
+        "tests/integration/melder/spellbook/test_direct_cleanup_refuses_active_member_with_parked_versions_integration.py": {
+          "content_bytes": 12939,
+          "content_lines": 312,
+          "content_sha256": "27094e4f95e0ef39adaa1a6c660ea6a19b5dbd0b29271d50292f893859f69508",
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/spellbook/test_existing_instance_additional_regressions.py": {
@@ -12507,6 +12495,12 @@
           "content_sha256": "9d1703993534ed4833eddc39f5febe5b4dea07b5016f4ab7b53cad719b529be0",
           "source_encoding": "utf-8"
         },
+        "tests/unit/melder/utilities/custom_exceptions/test_spellbook_validation_error_preface.py": {
+          "content_bytes": 3656,
+          "content_lines": 90,
+          "content_sha256": "4815f668b06896f855d6ac5f143a4006f52f22882c7f7b22186c338c498e83e9",
+          "source_encoding": "utf-8"
+        },
         "tests/unit/melder/utilities/data_structures/test_abstract_elastic_pool.py": {
           "content_bytes": 14225,
           "content_lines": 541,
@@ -12749,12 +12743,12 @@
         }
       },
       "index": {
-        "bytes": 222127,
-        "lines": 1151,
+        "bytes": 222773,
+        "lines": 1154,
         "path": "llm_support/llm_full_tests_index.md",
-        "sha256": "671610a7ce60b25af074f8fd734a7358849ff94b8961b365b08e2b721064e5a1"
+        "sha256": "ae01983dbd8108c910705282596ecd26ae54c0e344aa631fa4ae6a187cb97a77"
       },
-      "source_fingerprint": "1087e3e0d5df5dcf1dde69319fe6f9bb4d4d79b4fe83e7db3ed2d57a9d03a651"
+      "source_fingerprint": "b12ac8e186d88cd69c6a46889ef37da496ce2fe0b83ad03f84361e08c8f1f233"
     }
   },
   "generator_sha256": "d75f1de961817875c099e1b3bc6eaa3a6c670dc89752cd94864d977e452b88e3",
