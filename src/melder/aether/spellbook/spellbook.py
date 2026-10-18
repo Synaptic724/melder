@@ -2049,37 +2049,42 @@ class Spellbook(Cleanable):
 
     #region Core Methods
     #region General Methods
-    def find_spell_by_id(self, spell_id: str) -> Spell | None:
+    def find_spell_by_spell_id(self, spell_id: str) -> Optional[Spell]:
         """
         Public API
 
-        Return the local spell whose index owns `spell_id`, or None.
+        Return the spell this Spellbook owns under `spell_id`, or None.
 
         Purpose:
-            Resolve any id in a spell's version lineage back to the live
-            `Spell` object that currently represents it.
+            Look a spell up by its spell_id - the SHA256 `bind` and
+            `bind_inactive` return - and answer with exactly the spell bound
+            under it, active or parked. A spell_id and a SpellIndex are separate
+            things (owner ruling, 2026-10-17): the spell an index has active is a
+            lookup by the index's id (`get_spell_by_index_id`), never the answer
+            to a spell_id.
 
         Contract:
+            - Returns the Spell whose `spell_id` is the argument: the active
+              version from `_spells_by_id`, else the parked version from
+              `_inactive_spells`. Never another version of its index, and never
+              the spell the index has active in its place.
             - Searches THIS spellbook's registry only. Spells reachable through
               contracted conduits or through other books in the frame are not
               consulted; `inspect_spell` is the frame-wide search.
-            - Answers from the Book's id maps and never walks `_spells`. The
-              current version id of every owned lineage is a key of
-              `_spells_by_id`; every superseded or parked version is a key of
-              `_inactive_spells` (a notch parks the outgoing version there,
-              index moves and parked disposal keep it in step, and ownership
-              transfer migrates the whole lineage). A superseded or parked id
-              therefore still resolves - to the live spell of the index that
-              holds it, the spell as it exists NOW, not the state that version
-              described.
-            - O(1): at most three dict reads and one lock-guarded attribute read.
+            - Answers from the Book's two id maps and never walks a live map.
+              Every owned version is a key of one of them: bind publishes an
+              active version to `_spells_by_id`; `bind_inactive` and a notch
+              park a version in `_inactive_spells`; index moves and parked
+              disposal keep that map in step; an ownership transfer migrates
+              the whole lineage.
+            - O(1): at most two dict reads.
             - Returns None on a miss. This is deliberately unlike the
               `find_spell_index` / `find_spell_key` siblings, which raise on a
-              miss; a None here means "no local index claims this id", not
-              "lookup failed". A parked version whose index has no active member
-              (a fresh index split off by `remove_from_spell_index`) also
-              answers None.
+              miss; a None here means "this Book owns no spell under this
+              spell_id", not "lookup failed".
             - Pure lookup: creates, registers, and mutates nothing.
+            - Until 0.2.8253 this was `find_spell_by_id`, which answered a
+              parked spell_id with the spell its index had active.
 
         Threading:
             Does not acquire `self._lock`, by design: conjure holds that lock
@@ -2088,47 +2093,39 @@ class Spellbook(Cleanable):
             dict operation and no live map is iterated, so a concurrent bind,
             removal, notch, index move or transfer can never make this raise or
             skip a registered spell. A notch, and a transfer between its flip
-            and its inactive-member migration, move ids between maps in steps;
-            a lookup that lands between two steps answers None for that
-            lineage, so answers are not linearized against writers. An index
-            move only repoints a parked version's index, so a lookup racing it
-            answers as before the move or as after it.
-            The parked branch reads the parked spell's index through
-            `Spell._spell_index_unless_cleaned`, under that spell's own lock, so a
-            version disposed concurrently answers None instead of raising.
+            and its inactive-member migration, move spell_ids between the maps
+            in steps; a lookup that lands between two steps answers None for
+            that spell_id, so answers are not linearized against writers.
             The returned `Spell` is a borrowed reference, not a lease: a
             concurrent removal, notch or transfer can retire or move it after
-            this returns.
+            this returns. A parked version disposed while the lookup runs is
+            returned as it was read, or missed once its spell_id has left the
+            map; the lookup never raises for it.
 
         Lifecycle / Cleanup:
             Guarded by `check_cleaned()`.
 
         Args:
             spell_id:
-                Any id belonging to the target spell's version lineage.
+                The spell_id of the spell, active or parked.
 
         Returns:
             Optional[Spell]:
-                The owning spell, or None when no local index claims the id.
+                The spell bound under `spell_id`, or None when this Book owns no
+                spell under it.
 
         Raises:
             RuntimeError: If the spellbook has already been cleaned.
         """
         self.check_cleaned()
-        # Current version: one atomic read of the active-id map.
+        # The active version: one atomic read of the active spell_id map.
         spell = self._spells_by_id.get(spell_id)
         if spell is not None:
             return spell
-        # Superseded or parked version: the parked spell names its index, and that
-        # index's live spell is the answer. Reading the index under the parked
-        # spell's lock turns a concurrent disposal into a miss instead of an error.
-        parked = self._inactive_spells.get(spell_id)
-        if parked is None:
-            return None
-        spell_index = parked._spell_index_unless_cleaned()
-        if spell_index is None:
-            return None
-        return self._spells.get(spell_index)
+        # A parked version - staged by bind_inactive or parked by a notch - is the answer itself. Its
+        # index is not consulted: the spell the index has active is a lookup by index id
+        # (get_spell_by_index_id), not by spell_id. Until 0.2.8253 this branch returned that spell.
+        return self._inactive_spells.get(spell_id)
 
     def get_spell_permissions(self, spell_index: SpellIndex) -> str | None:
         """
@@ -2899,19 +2896,27 @@ class Spellbook(Cleanable):
         """
         Internal
 
-        Resolve a spell by id through Aether ownership lookup.
+        Resolve a spell by its spell_id through Aether ownership lookup.
+
+        Contract:
+            - Two steps: Aether names the conduit that owns `spell_id`
+              (`_get_conduit_by_spell_id`), and that conduit's Spellbook answers
+              with the spell bound under it, active or parked
+              (`Spellbook.find_spell_by_spell_id`) - never the spell its index has
+              active in its place.
 
         Args:
             spell_id:
-                Version id / spell id to resolve.
+                The spell_id (SHA256) to resolve, active or parked.
             aetheric_frame_name:
                 Frame name to search. `"default"` is normalized to this
                 Spellbook's current frame.
 
         Returns:
             Optional[Spell]:
-                The live spell of the lineage holding the id, or None when the owning conduit's
-                Spellbook does not resolve it (`Spellbook.find_spell_by_id`).
+                The spell that owns `spell_id` in the owning conduit's Spellbook,
+                or None when that Spellbook holds no spell under it (it moved or
+                left between the two steps).
 
         Raises:
             ValueError: If no conduit in the frame claims the id, or the frame does not exist
@@ -2924,7 +2929,7 @@ class Spellbook(Cleanable):
         owner_spellbook = owner._spellbook
         if owner_spellbook is None:
             raise RuntimeError("Owner conduit has no spellbook.")
-        return owner_spellbook.find_spell_by_id(spell_id)
+        return owner_spellbook.find_spell_by_spell_id(spell_id)
 
     def describe_spells_in_spellbook(self) -> list[dict[str, Any]]:
         """

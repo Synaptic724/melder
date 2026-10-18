@@ -534,11 +534,22 @@ class TransferOfOwnership(Cleanable):
         so it can inspect ownership, dependencies, creations, and lineage
         state.
 
+        Contract:
+            - A Spell object is used as given; a `SpellIndex` resolves to the spell
+              it has active in the source Book.
+            - A spell_id names one member and the transfer moves its whole index,
+              so it resolves in two explicit steps: the spell that owns the
+              spell_id (`get_spell_by_spell_id`, active or parked), then the spell
+              its index has active in the source Book - the SpellIndex branch's
+              read. For a spell the source owns that is the spell the spell_id
+              lookup itself returned until 0.2.8253.
+
         Returns:
             The resolved spell object owned by the source conduit's spellbook.
         Raises:
             RuntimeError: If the provided spell reference cannot be resolved
-                into a live spell object.
+                into a live spell object - for a spell_id, when the source Book
+                has no active spell in the index of the spell that owns it.
         """
         self.check_cleaned()
         # spell may be object, id, or SpellIndex
@@ -550,7 +561,23 @@ class TransferOfOwnership(Cleanable):
             with book._lock:
                 return book._spells.get(idx)
         if isinstance(self.spell, str):
-            return self.source_conduit.get_spell_by_id(self.spell, self._frame_name)
+            # The spell_id lookup answers the member itself, a parked one included; the transfer moves
+            # the whole index, so ask the source Book for the spell that index has active, as the
+            # SpellIndex branch above does.
+            member = self.source_conduit.get_spell_by_spell_id(self.spell, self._frame_name)
+            member_index = (
+                member._spell_index_unless_cleaned() if member is not None else None
+            )
+            if member_index is not None:
+                book = self._source_spellbook
+                with book._lock:
+                    spell_obj = book._spells.get(member_index)
+                if spell_obj is not None:
+                    return spell_obj
+            raise RuntimeError(
+                f"Unable to resolve spell for transfer: the source conduit's Spellbook has no active "
+                f"spell in the index of spell_id '{self.spell}'."
+            )
         raise RuntimeError("Unable to resolve spell for transfer.")
 
     def _assert_ownership(self, spell_obj: Any) -> None:
@@ -674,6 +701,17 @@ class TransferOfOwnership(Cleanable):
         dependencies. If the target side cannot already resolve the dependency
         ids, the root lineage would arrive in a knowingly broken state.
 
+        Contract:
+            - Each dependency spell_id resolves in two explicit steps: the spell
+              that owns it (`get_spell_by_spell_id`, active or parked), then the
+              spell its index has active in that spell's Book. A dependency whose
+              index has no active spell does not resolve - the answer the
+              spell_id lookup itself gave until 0.2.8253.
+            - Any error while resolving counts as unresolvable.
+
+        Args:
+            deps: Dependency spell ids discovered during preflight.
+
         Returns:
             bool: `True` when every dependency id resolves on the target side,
             otherwise `False`.
@@ -683,7 +721,15 @@ class TransferOfOwnership(Cleanable):
             return True
         for dep_id in deps:
             try:
-                spell = self.target_conduit.get_spell_by_id(dep_id, self._frame_name)
+                member = self.target_conduit.get_spell_by_spell_id(dep_id, self._frame_name)
+                member_index = (
+                    member._spell_index_unless_cleaned() if member is not None else None
+                )
+                if member_index is None:
+                    return False
+                book = member._spellbook
+                with book._lock:
+                    spell = book._spells.get(member_index)
                 if spell is None:
                     return False
             except Exception:
@@ -1987,13 +2033,32 @@ class TransferOfOwnership(Cleanable):
         pulling their own dependencies unless a higher-level caller explicitly
         requests that behavior.
 
+        Contract:
+            - A dependency spell_id names the version the root was compiled
+              against; the sub-transfer moves that version's whole index, handed
+              the spell the index has active in the source Book. It is resolved in
+              two explicit steps - the spell that owns the spell_id
+              (`get_spell_by_spell_id`, active or parked), then its index's active
+              spell - because the spell_id lookup answers the version itself since
+              0.2.8253. A parked Spell object is never handed to a sub-transfer.
+            - A dependency the source does not own, or whose index has no active
+              spell, is skipped; so is one whose sub-transfer fails.
+
         Args:
             deps: Dependency spell ids discovered during preflight.
         """
         self.check_cleaned()
         for dep_id in deps:
             try:
-                dep_spell = self.source_conduit.get_spell_by_id(dep_id, self._frame_name)
+                dep_member = self.source_conduit.get_spell_by_spell_id(dep_id, self._frame_name)
+                dep_index = (
+                    dep_member._spell_index_unless_cleaned() if dep_member is not None else None
+                )
+                if dep_index is None:
+                    continue
+                book = self._source_spellbook
+                with book._lock:
+                    dep_spell = book._spells.get(dep_index)
                 if dep_spell is None:
                     continue
                 if dep_spell._owner_conduit_id != self.source_conduit._id:
@@ -2032,7 +2097,7 @@ class TransferOfOwnership(Cleanable):
         self.check_cleaned()
         for dep_id in deps:
             try:
-                dep_spell = self.source_conduit.get_spell_by_id(dep_id, self._frame_name)
+                dep_spell = self.source_conduit.get_spell_by_spell_id(dep_id, self._frame_name)
                 if dep_spell is None:
                     continue
                 if isinstance(dep_spell.spell_index, SpellIndex):

@@ -9,7 +9,7 @@
 - Agent Role: UNKNOWN
 - Priority: p2
 - Created: 2026-10-17T20:23:51Z
-- Updated: 2026-10-17T21:13:35Z
+- Updated: 2026-10-17T21:55:46Z
 
 ## User Narrative
 As an agent notching between versions, I want the frame's signature claims to follow the active version - the
@@ -23,19 +23,19 @@ inside an index `remove_from_spell_index` minted puts a second active spell at a
 holds (wrong: the next meld by address is refused).
 
 ## Ticket Contract
-- ENTRY_GATE: the owner's answer to the open question below; the owner schedules the story and assigns an agent;
+- ENTRY_GATE: the owner schedules the story and assigns an agent (the open question was answered on 2026-10-17);
   spellbook.py's holder releases it or carries the fix; an active board row; a component patch for the seam.
-- EXECUTION_BOUNDARY: step 4 of `Spellbook._apply_notch` (the signature repoint) and, if the owner rules that one
-  index holds one signature, the admission checks of `bind_inactive` and `add_to_spell_index`; regression tests;
-  system docs with their indexes and the graph; the release note; one notch; the rebuild last.
+- EXECUTION_BOUNDARY: step 4 of `Spellbook._apply_notch` (the signature repoint and the refusal of a key another
+  active spell holds); regression tests; system docs with their indexes and the graph; the release note; one notch;
+  the rebuild last. Staging stays open to any key (owner, 2026-10-17).
 - DEPENDENCIES: EPIC-2026-10-17-correctness_defects; STORY-2026-10-17-staged_version_releases_active_signature (the same
   claims; staging disturbs them until it lands, so this story's tests heal or avoid that first);
   TASK-2026-10-16-notch_seam_checks_incoming_before_parking (the same seam: a check moved ahead of the park); the
   probe and its runs.
 - EXIT_GATE: the probe's C5 and C7 show the claims following the active version, or the notch refused before
   anything moved; regression tests pass with the GIL off and on; docs, notch and the rebuild with both checks OK.
-- FAILURE_ESCALATION: DECISION_REQUEST for the open question; CONFLICT if the notch-seam backlog task lands first
-  with another order of checks.
+- FAILURE_ESCALATION: CONFLICT if the notch-seam backlog task lands first with another order of checks, or while
+  spellbook.py is held.
 
 ## Requirements (Functional)
 - After a notch the frame claims the incoming version's key for it, and the outgoing version's claim is released
@@ -50,7 +50,8 @@ holds (wrong: the next meld by address is refused).
   notch window before the park, so a refused notch changes nothing.
 
 ## Scope Boundaries
-- In scope: the notch's signature handling; the staging admission only if the owner rules one signature per index.
+- In scope: the notch's signature handling. One index may hold versions under different signatures (owner,
+  2026-10-17), so staging and index moves keep their admission.
 - Out of scope: `_destroy_spell_index` (STORY-2026-10-17-staged_version_releases_active_signature); spell_id lookups and
   contracts (melder_1's lane).
 
@@ -65,7 +66,7 @@ holds (wrong: the next meld by address is refused).
 - TASK-2026-10-16-notch_seam_checks_incoming_before_parking (backlog).
 
 ## Tasks (Implementation Checklist)
-- [ ] Task: the owner's answer on one signature per index.
+- [x] Task: the owner's answer on one signature per index (2026-10-17: one index may hold several; DECISION note).
 - [ ] Task: patch docs for the seam; the owner's approval.
 - [ ] Task: the fix with symptom-named regression tests, docs, notch and the rebuild last.
 - [ ] Enforce Ticket Microcycle across all linked tasks.
@@ -76,8 +77,7 @@ holds (wrong: the next meld by address is refused).
   names the incoming version; a notch back restores K1 and frees K2.
 - A notch that would give the incoming version a key another active spell holds raises before anything moves, and
   both indexes stay as they were.
-- Or, if the owner rules one signature per index: staging or adding a version keyed differently from its index's
-  signature is refused, so C5's world cannot be built; C7's refusal holds either way.
+- Staging or adding a version keyed differently from its index's other versions stays allowed (owner, 2026-10-17).
 
 ## Validation / Test Plan
 - Regression tests named for the symptom, e.g. `test_notch_across_keys_frees_the_outgoing_signature`,
@@ -99,9 +99,13 @@ holds (wrong: the next meld by address is refused).
 ## Open Questions
 - May one SpellIndex hold versions under different binding signatures? If yes, the notch moves the claim (above); if
   no, staging refuses a differently keyed version and C5 cannot occur. C7 needs the notch refusal either way.
+  Answered (owner, 2026-10-17T21:55:46Z): yes - "1 spellindex can hold versions with different binding
+  signatures, this is why revalidation happens" (DECISION note).
 
 ## Decision Log
 - 2026-10-17T20:23:51Z: filed under EPIC-2026-10-17-correctness_defects from sweep A1 (Notes).
+- 2026-10-17T21:55:46Z: the owner answered the open question - one index may hold versions under different
+  signatures, so the notch moves the claim (DECISION note).
 
 ## Artifact Links (Optional)
 Qualified independent reviewer acceptance and direct closure follow shared `ticketing.md`;
@@ -182,6 +186,25 @@ this does not make independent review mandatory for every ticket.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-10-17T21:55:46Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: The open question is answered (owner, chat 2026-10-17): "Yes 1 spellindex can hold versions with different
+    binding signatures, this is why revalidation happens". The story takes its first branch: after a notch the frame
+    claims the incoming version's key for it and releases the outgoing version's claim by spell_id when the keys
+    differ (C5); a notch whose incoming key another active spell of the frame holds is refused before anything is
+    parked (C7); staging or adding a differently keyed version stays allowed. The one-signature-per-index branch is
+    out of scope.
+  EVIDENCE:
+  - context_compass/tickets/stories/2026-10-17_notch_moves_signature_by_incoming_key_only_story.md:40-46
+  - src/melder/aether/spellbook/spellbook.py:3906-4061
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_signature_claims_gil0.txt:1-91
+  IMPACT: The ENTRY_GATE's question is met; the fix is the notch's step 4 alone (no staging admission change).
+  NEXT: The owner's scheduling, after melder_1 releases spellbook.py; then patch docs for `_apply_notch` step 4.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
@@ -198,10 +221,11 @@ this does not make independent review mandatory for every ticket.
 ## Context / Handoff Summary
 - Scope: a notch hands the binding signature to the incoming version, frees the outgoing one, and refuses a key
   another active spell holds (Requirements). Defect proven on 0.2.8251 (Notes); probe and runs in Artifact Links.
-- State: ready, unassigned; filed by melder_0 under EPIC-2026-10-17-correctness_defects; one open question for the
-  owner (one signature per index?). The fix sits in spellbook.py, which melder_1 holds until its rule-2 closure.
-- Next: (1) the owner's answer and scheduling; (2) patch docs for `_apply_notch` step 4; (3) the fix, its tests,
-  docs, notch and the rebuild.
+- State: ready, unassigned; filed by melder_0 under EPIC-2026-10-17-correctness_defects; the owner answered its
+  question (one index may hold several signatures; the notch moves the claim). The fix sits in spellbook.py, which
+  melder_1 holds until its rule-2 closure.
+- Next: (1) the owner's scheduling; (2) patch docs for `_apply_notch` step 4; (3) the fix, its tests, docs, notch
+  and the rebuild.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

@@ -220,7 +220,7 @@ def test_conduit_public_api_spell_lookup_helpers() -> None:
     Purpose:
         Validate Conduit spell lookup helpers resolve local spell metadata.
     Contract:
-        - get_spell_by_id returns the local spell wrapper.
+        - get_spell_by_spell_id returns the local spell wrapper.
         - find_spell_id and find_spell_key resolve known spells.
         - inspect_spell returns the registered spell id.
         - check_spell_id returns True for known spell ids.
@@ -242,7 +242,7 @@ def test_conduit_public_api_spell_lookup_helpers() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        spell = conduit.get_spell_by_id(spell_id)
+        spell = conduit.get_spell_by_spell_id(spell_id)
         assert spell is not None
         assert spell.spell_id == spell_id
 
@@ -291,8 +291,8 @@ def test_conduit_public_api_bind_and_binder_register_spells() -> None:
         with spellbook.transaction("bind"):
             logger_id = SpellBinder(conduit._spellbook, ).bind(BasicLogger).as_unique().finalize()
 
-        config_spell = conduit.get_spell_by_id(config_id)
-        logger_spell = conduit.get_spell_by_id(logger_id)
+        config_spell = conduit.get_spell_by_spell_id(config_id)
+        logger_spell = conduit.get_spell_by_spell_id(logger_id)
         assert config_spell is not None
         assert logger_spell is not None
         assert config_spell.spell_id == config_id

@@ -196,7 +196,7 @@ def test_direct_spell_cleanup_reaches_its_book_with_the_spell_lock_free(monkeypa
     book = _make_book()
     spell_id = _bind(book, _Doomed, "doomed")
     book.conjure(dynamic=True, name="owner")
-    spell = book.find_spell_by_id(spell_id)
+    spell = book.find_spell_by_spell_id(spell_id)
 
     parked = _ParkedRemoval(monkeypatch, book, spell, spell.cleanup)
     held = parked.spell_lock_held
@@ -205,7 +205,7 @@ def test_direct_spell_cleanup_reaches_its_book_with_the_spell_lock_free(monkeypa
     assert held is False
     assert "error" not in outcome, outcome.get("error")
     assert spell._cleaned is True
-    assert book.find_spell_by_id(spell_id) is None
+    assert book.find_spell_by_spell_id(spell_id) is None
 
 
 def test_root_teardown_finishes_while_a_direct_spell_cleanup_waits_for_the_book(
@@ -220,7 +220,7 @@ def test_root_teardown_finishes_while_a_direct_spell_cleanup_waits_for_the_book(
     book = _make_book()
     spell_id = _bind(book, _Doomed, "doomed")
     root = book.conjure(dynamic=True, name="owner")
-    spell = book.find_spell_by_id(spell_id)
+    spell = book.find_spell_by_spell_id(spell_id)
 
     parked = _ParkedRemoval(monkeypatch, book, spell, spell.cleanup)
     _fail_if_the_spell_lock_is_held(parked, "a root teardown")
@@ -243,7 +243,7 @@ def test_conjure_finishes_while_a_direct_spell_cleanup_waits_for_the_book(monkey
     book = _make_book()
     doomed_id = _bind(book, _Doomed, "doomed")
     keeper_id = _bind(book, _Keeper, "keeper")
-    spell = book.find_spell_by_id(doomed_id)
+    spell = book.find_spell_by_spell_id(doomed_id)
 
     parked = _ParkedRemoval(monkeypatch, book, spell, spell.cleanup)
     _fail_if_the_spell_lock_is_held(parked, "a conjure of its Book")
@@ -254,7 +254,7 @@ def test_conjure_finishes_while_a_direct_spell_cleanup_waits_for_the_book(monkey
 
     assert "error" not in outcome, outcome.get("error")
     assert spell._cleaned is True
-    assert book.find_spell_by_id(doomed_id) is None
+    assert book.find_spell_by_spell_id(doomed_id) is None
     assert isinstance(roots[0].meld(spell_id=keeper_id), _Keeper)
 
 
@@ -268,7 +268,7 @@ def test_two_direct_cleanups_of_one_spell_run_the_book_removal_once(monkeypatch:
     book = _make_book()
     spell_id = _bind(book, _Doomed, "doomed")
     book.conjure(dynamic=True, name="owner")
-    spell = book.find_spell_by_id(spell_id)
+    spell = book.find_spell_by_spell_id(spell_id)
     entries: List[str] = []
     first_inside, release = threading.Event(), threading.Event()
     real_remove = Spellbook.cleanup_and_remove_spell
@@ -305,7 +305,7 @@ def test_two_direct_cleanups_of_one_spell_run_the_book_removal_once(monkeypatch:
     assert entries == ["first"]
     assert outcomes == {}
     assert spell._cleaned is True
-    assert book.find_spell_by_id(spell_id) is None
+    assert book.find_spell_by_spell_id(spell_id) is None
 
 
 def test_cleanup_and_remove_spell_that_waited_through_a_book_teardown_returns_for_the_spell_it_cleaned(
@@ -319,7 +319,7 @@ def test_cleanup_and_remove_spell_that_waited_through_a_book_teardown_returns_fo
     book = _make_book()
     spell_id = _bind(book, _Doomed, "doomed")
     root = book.conjure(dynamic=True, name="owner")
-    spell = book.find_spell_by_id(spell_id)
+    spell = book.find_spell_by_spell_id(spell_id)
 
     parked = _ParkedRemoval(monkeypatch, book, spell, lambda: book.cleanup_and_remove_spell(spell))
     _run_on_other_thread(root.cleanup)
@@ -340,7 +340,7 @@ def test_cleanup_and_remove_spell_by_id_that_waited_through_a_book_teardown_rais
     book = _make_book()
     spell_id = _bind(book, _Doomed, "doomed")
     root = book.conjure(dynamic=True, name="owner")
-    spell = book.find_spell_by_id(spell_id)
+    spell = book.find_spell_by_spell_id(spell_id)
 
     parked = _ParkedRemoval(monkeypatch, book, spell, lambda: book.cleanup_and_remove_spell(spell_id))
     _run_on_other_thread(root.cleanup)

@@ -109,7 +109,7 @@ def test_conduit_meld_registers_one_record_per_key_aliasing_the_bucket() -> None
             assert isinstance(record, ManyDisposalBucket)
             assert record.entries is store._creations[spell_id]
             assert record.entries == expected
-            spell = spellbook.find_spell_by_id(spell_id)
+            spell = spellbook.find_spell_by_spell_id(spell_id)
             assert spell is not None
             assert record.methods is spell.disposal_method_names
             assert record.methods == ["cleanup"]

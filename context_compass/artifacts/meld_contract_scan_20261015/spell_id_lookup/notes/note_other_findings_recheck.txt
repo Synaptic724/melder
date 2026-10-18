@@ -1,0 +1,40 @@
+- DATETIME: {ts}
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: The other open findings re-checked on 0.2.8253 (GIL off). Transfer (18:23:11Z, probed on 0.2.8250): the
+    three probes, rerun with the renamed lookup, print the same worlds but for fresh ULIDs - an index-link borrower
+    stays on the old owner under the default unshare (the per-spell removal is refused for an index member and the
+    refusal swallowed); `force_unshare=False` repoints nothing (the repoint calls `_add_spell_to_contract` with the
+    roles reversed; "is not owned by this conduit" is swallowed); the moved spell is in neither Book's `_spell_ids`,
+    so the new owner cannot stage on the index; the registry holds no binding key for the moved lineage, because
+    `_flip_registry_and_spellbooks` and `_rollback_spellbook_move` call `register_index` without `binding_key=`.
+    Crystallizer cache (22:41:43Z): cause found and reproduced - retention orders a profile's cached files by the
+    `checkpoint_number` each payload records, a number minted per process (1 + the highest in THIS process's record),
+    while the folder outlives processes; the repo's `default` folder holds 100 files numbered 2-4 from earlier runs,
+    so a fresh process's checkpoint 1 sorts oldest and is deleted right after it is written - `flush_checkpoint`
+    returns its id, yet the file is gone and `list_cached_checkpoint_ids()` lacks it; with the folder empty it is
+    kept. SpellIndex's graph edges (00:11:54Z): its descriptor's authored "holds Spell" and "borrows Spellbook" say
+    it keeps Spell and Spellbook attachments; it keeps its ULID, lock, selected spell_id and member ids, and its
+    docstring gives lookup propagation to the Spellbook. Not rerun: the flake (2 of 40 on both trees, 22:08:07Z;
+    cause UNKNOWN); the stamp-test record (152 lines recorded, 185 on disk, 00:16:09Z); the quoted `"Spell | None"`
+    in ambiguous_provider_strategy.py and "version id" at tests_components lines 376 and 574 are wording.
+  EVIDENCE:
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/probe_transfer_and_contracts_8253_gil0.txt:1-66
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/probe_transfer_unshare_refusal_8253_gil0.txt:1-7
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/probe_transfer_repoint_refusal_8253_gil0.txt:1-3
+  - src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py:1429-1553
+  - src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py:982-1048
+  - src/melder/crystallizer/asset_management/crystallizer_cache.py:177-264
+  - src/melder/crystallizer/persistence/persistence_system.py:1349-1379
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/probes/probe_cache_retention_order.py:1-56
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/probe_cache_retention_order_gil0.txt:1-14
+  - src/melder/aether/spellbook/bind/spell_index.py:83-116
+  - src/melder/aether/spellbook/bind/spell_index.py:20-40
+  - src/melder/aether/spellbook/spell_compiler/validation/strategies/ambiguous_provider_strategy.py:166-166
+  IMPACT: The transfer findings and the binding-key gap stand unchanged; the cache finding is now a known cause (a
+    per-process sequence used as a cross-process age), not a suspicion; the graph edges are stale prose. All wait
+    for the owner's direction; nothing is filed or changed.
+  NEXT: Rewrite the handoff summary's open items, then report to the owner.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9

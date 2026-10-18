@@ -10,7 +10,7 @@
 - Agent Role: synaptic_python_developer
 - Priority: p1
 - Created: 2026-10-16T09:46:14Z
-- Updated: 2026-10-17T21:36:47Z
+- Updated: 2026-10-18T01:10:17Z
 
 ## Objective
 Rule 2 of the owner's 2026-10-15 direction, settled in principle on 2026-10-16: a spell's own state decides when the
@@ -65,7 +65,7 @@ docs for the owner's approval, and no `src/` edit before it.
       borrower Book's contracted-map mutators; record what reaches a consumer's state and what does not.
 - [x] Write the patch docs; get the owner's approval; get melder_0's handoff of spellbook.py.
 - [x] Red tests, the change, green suites (GIL off and on), measurement.
-- [ ] Docs, release note, notch, rebuild last.
+- [x] Docs, release note, notch, rebuild last.
 - [ ] Run Ticket Microcycle during execution:
       `Investigate -> Document -> Strategy/Plan -> Document -> Implement ->
       Document -> Validate -> Document`.
@@ -2286,39 +2286,815 @@ this does not make independent review mandatory for every ticket.
   REREAD: HELPFUL
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-10-17T21:54:49Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: Fix #1 on the scratch work tree (a copy of today's src - identical to the repo's but for `__version__` and
+    the generated build assets - with the apply script, the test codemod and the four new tests installed): the apply
+    changed 11 src files and found no code use of the old names. The four new test files went from 31 failed, 5
+    passed (the five guards: three transfer and dependency guards, the ACL guard, the static index path) on the
+    untouched copy to 36 passed on the work tree, with the GIL off and on. First suite batch on the work tree, GIL
+    off: spellbook unit 2582 passed; utilities unit 831 passed, 2 skipped, 7 xfailed; aether unit 4512 passed, 28
+    failed (next note). The failures in the architecture (18), GitHub-workflow (52 failed, 438 errors), LLM (1
+    error), build (2) and package-root (1) chunks are UNKNOWN until the same chunks run on the untouched copy: the
+    scratch trees hold only src, tests and pyproject.toml, so missing folders may explain them.
+  EVIDENCE:
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/work_tree_src_files_changed.txt:1-11
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/red_new_tests_base_gil0.txt:1-629
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/red_new_tests_base_gil1.txt:1-629
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/green_new_tests_work_gil0.txt:1-40
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/green_new_tests_work_gil1.txt:1-40
+  - context_compass/artifacts/meld_contract_scan_20261015/runs/fix1_spell_id_lookup_suites_gil0.txt:1-8
+  IMPACT: The change does what fix #1 says on its own tests; the 28 aether failures are the next thing to clear, and
+    the environmental suspicion is checked against the untouched copy before anything is called unrelated.
+  NEXT: Re-run the aether unit chunk with the doubles fixed (next note), then the other chunks, GIL off and on.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-17T21:54:49Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: The 28 aether unit failures are test doubles that lack what the explicit index step reads - the dependency
+    walks and the transfer's spell_id handles now find the spell by spell_id, then ask its index for the spell the
+    index has active: `FakeSpell` and the transfer tests' SimpleNamespace spells have no
+    `_spell_index_unless_cleaned` (14 + 2 AttributeErrors); the walks then see no dependencies or the wrong ones (the
+    RuntimeError "Dependencies are not resolvable on target" and the list and set assertions); and
+    `test_transfer_spell_ownership_calls_transfer_flow` expects the spell `get_spell_by_spell_id` returns where the
+    ward now passes the one `get_spell_by_index_id` returns. Fixed in the doubles, test-only (technical_expertise:
+    test setup follows the production contract): `scripts/apply_test_doubles.py` (exact-once anchors, all or
+    nothing, `--check`, line endings and BOMs kept; run after `codemod_tests.py`) adds
+    `FakeSpell._spell_index_unless_cleaned` (the index, None once cleaned, under the spell lock),
+    `FakeSpellbook._find_spell` (the index's active spell under the Book lock), the same read on `build_spell`'s
+    spells in both transfer test files, and the index step to the ward test's expectation. Applied to the work tree
+    (4 files).
+  EVIDENCE:
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/scripts/apply_test_doubles.py:1-144
+  - tests/unit/melder/aether/conduit/conduit_ward/test_conduit_ward_contracts.py:67-142
+  - tests/unit/melder/aether/conduit/conduit_ward/test_conduit_ward_contracts.py:146-418
+  - tests/unit/melder/aether/conduit/conduit_ward/test_conduit_ward.py:2025-2061
+  - tests/unit/melder/aether/conduit/conduit_ward/transfer/test_transfer_of_ownership.py:1076-1144
+  - tests/unit/melder/aether/conduit/conduit_ward/transfer/test_transfer_of_ownership_contracts.py:1027-1095
+  IMPACT: No src change; the script runs again at landing, after the codemod. Any failure left after it is read
+    whole before it is classified.
+  NEXT: Re-run the aether unit chunk on the work tree (GIL off).
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-17T21:54:49Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: Mailbox M0-184 and M0-185 (melder_0, NOTICE, 2026-10-17T21:32:34Z and 21:47:17Z, no ACK asked), copied before
+    consumption: four more stories under EPIC-2026-10-17-correctness_defects whose fixes sit in files this lane holds
+    (ready, unassigned, nothing edited). S7 book_teardown_leaves_parked_versions_uncleaned: spellbook.py
+    `_cleanup_spells` never cleans parked versions or parked-only indexes, and `Spell.cleanup()` then raises. S8
+    failed_notch_keeps_switch_without_borrowers: conduit.py `notch_spell` keeps the seam's switch and skips the
+    borrower fan-out when commit validation fails (an owner question is open; the bind precedent and a stale
+    `_stage_spell_for_structural_phases` docstring were added). S9
+    direct_cleanup_of_active_member_orphans_parked_versions: `cleanup_and_remove_spell`, and a direct
+    `Spell.cleanup()` through it, cleans an index under its parked versions, which `cleanup_spell` refuses.
+    S10 minted_index_selects_its_parked_version: `_apply_remove_from_index`
+    mints an index that selects its parked member, so a graft activates it. Widened: S1 hits grafts too (G4); S2's
+    leaked claim outlives the Book (T4); S4's minted index is missing from `residency_view` too (V2-V3); S5's graft
+    side activates the version (G2). His asks: say whether S8 overlaps this lane's notch work (then he re-scopes
+    it), and carry S7-S10 with the others when spellbook.py and conduit.py are handed back.
+  EVIDENCE:
+  - context_compass/tickets/stories/2026-10-17_book_teardown_leaves_parked_versions_uncleaned_story.md:1-186
+  - context_compass/tickets/stories/2026-10-17_failed_notch_keeps_switch_without_borrowers_story.md:1-247
+  - context_compass/tickets/stories/2026-10-17_direct_cleanup_of_active_member_orphans_parked_versions_story.md:1-192
+  - context_compass/tickets/stories/2026-10-17_minted_index_selects_its_parked_version_story.md:1-199
+  - context_compass/tickets/epics/2026-10-17_correctness_defects_epic.md:1-781
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/scripts/edits_lookup.py:284-342
+  IMPACT: None is in fix #1 (owner: fix #1 only). S8 does not overlap it in behaviour: in conduit.py fix #1 changes
+    only docstrings (notch_spell, `_resolve_notch_target`, `_owned_spell_by_id`, add_to_spell_index) and the notch
+    target's refusal message (the renamed lookup in its remedy), not the commit path S8 is about; so no reply is
+    owed under his own terms. Taking S7-S10 on is the owner's call; they go to him with fix #1's report, with
+    M0-181's stories.
+  NEXT: Delete M0-184 and M0-185 and clear their alerts.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-17T22:08:07Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: Fix #1's suites on the work tree with the GIL off (pass 2, every chunk of the tests tree): green but for one
+    pre-existing flake and the scratch trees' missing folders. Unit: aether 4540, spellbook 2582, utilities 831 (2
+    skipped, 7 xfailed), mutation research 277, crystallizer 607. Component: aether 1386 (1 xfailed), spellbook 819,
+    utilities 21 (43 skipped), mutation research 40, crystallizer 110. Integration: aether 821 passed and 1 failed (5
+    xfailed), conduit 350 (1 xfailed), spellbook 647 (2 skipped, 2 xpassed - the same two on the untouched copy),
+    mutation research 67, crystallizer 276 (3 xfailed), multithreading 54, live sim 1 (1 xfailed). Two fixes on the
+    way, both test-side: two SimpleNamespace dependency spells in test_conduit_ward_contracts.py also lacked the
+    index read (added to apply_test_doubles.py; aether unit then 4540 passed), and
+    test_get_spell_permissions_answers_from_the_id_maps_without_walking pinned the old answer - a parked
+    spell_id's permissions were the active version's - so the codemod now expects the version's own ("read") and
+    rewords its contract (the patch doc's Breaking change). The integration failure,
+    test_concurrent_adds_of_same_conduit_admit_exactly_one ("assert 0 >= 1": no racing add was rejected), is a
+    flake fix #1 does not touch: 2 of 40 runs fail on the untouched copy and 2 of 40 on the work tree. The
+    architecture (18), GitHub-workflow (52 + 438 errors), LLM (1), build (2), package-root (1) and experimentation
+    (1) failures are the same test ids on both trees: architecture_and_design/tools, .github/scripts, llm_support
+    and benchmarks are missing there, and the scratch assets are not stamped for the live version.
+  EVIDENCE:
+  - context_compass/artifacts/meld_contract_scan_20261015/runs/fix1_spell_id_lookup_suites_pass2_gil0.txt:1-32
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/flaky_cluster_add_rate_gil0.txt:1-6
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/env_failures_base_vs_work_gil0.txt:1-521
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/scripts/apply_test_doubles.py:81-128
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/scripts/codemod_tests.py:68-79
+  IMPACT: GIL off is green for fix #1. The six environment chunks get their real run in the repo at landing; the
+    flake is outside fix #1 and goes to the owner in the report (no ticket filed without his word).
+  NEXT: The same pass with the GIL on.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-17T22:13:34Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: The same pass with the GIL on: every chunk green but the six environment chunks, whose failing test ids
+    are again identical on the untouched copy. Unit: aether 4540, spellbook 2582, utilities 831 (2 skipped, 7
+    xfailed), mutation research 277, crystallizer 607. Component: aether 1386 (1 xfailed), spellbook 819,
+    utilities 21 (43 skipped), mutation research 40, crystallizer 110. Integration: aether 822 (5 xfailed), conduit
+    350 (1 xpassed: the non-strict race test of
+    TASK-2026-10-16-order_inflight_borrower_melds_against_notch_fanout, which passes in most runs), spellbook 647 (2
+    skipped, 2 xpassed), mutation research 67, crystallizer 276 (3 xfailed), multithreading 54, live sim 1 (1
+    xfailed).
+  EVIDENCE:
+  - context_compass/artifacts/meld_contract_scan_20261015/runs/fix1_spell_id_lookup_suites_pass2_gil1.txt:1-29
+  - tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py:624-635
+  IMPACT: Fix #1's src and test changes pass both modes on the scratch trees; what is left before landing is the UX
+    examples and their harness, then the repo run of the six environment chunks.
+  NEXT: Copy UX_and_AIX_experiences into the work tree, apply the renames and the corrections to experts 17 and 26
+    by script, and run its harness with the GIL off and on.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-17T22:21:22Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: The UX examples on the work tree: `scripts/apply_ux_examples.py` (exact-once, line endings kept, mixed
+    endings refused, `--check`) renames the old methods in the ten examples that call them and corrects experts 17
+    and 26, which taught and asserted the old answer. Expert 17: its header now says a spell_id names one version and
+    the lookups answer exactly that version, active or parked (until 0.2.8253 they answered a parked spell_id with
+    the ACTIVE member); its lookup block asserts the parked spell_id returns the parked spell (`== v2_id`, was
+    `v1_id`) and prints so; its VERIFY line takes today's run. Expert 26: the staged spell_id's lookup asserts the
+    staged version itself, and one added line asserts v1 is still selected, which keeps its point ("This lesson
+    keeps it parked"). `_concept_map.txt` keeps its dated record. Harness, GIL off and on: 564 passed, 7 failed on
+    both trees; the 7 failing ids are identical on the untouched copy (pre-existing probes and the 39 beginner
+    example; none is an example fix #1 edits), and the ten edited examples' rows pass.
+  EVIDENCE:
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/scripts/apply_ux_examples.py:1-136
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/ux_examples_fix1.diff:1-283
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/ux_harness_base_vs_work.txt:1-14
+  - UX_and_AIX_experiences/04_expert/17_notch_swapping_a_live_object.py:1-171
+  - UX_and_AIX_experiences/04_expert/26_codegen_create_modify_iterate.py:228-236
+  IMPACT: The examples teach the exact answer and stay green; the before/after of 17 and 26 goes to the owner in
+    the report.
+  NEXT: The landing plan (next note), then the landing.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-17T22:21:22Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: PLAN
+  CLAIM: Fix #1's landing, the patch's migration order 4-6 on the repo (the scripts are all or nothing; each runs
+    `--check` first): (1) re-read `__version__` (0.2.8252 expected) and the release note; (2)
+    `apply_find_spell_by_spell_id.py <repo> 0.2.8253` (11 src files; block SHAs and anchors verified on a copy
+    identical to the repo's src), `codemod_tests.py`, `install_new_tests.py` (the old component file renamed to
+    the new name, then overwritten), `apply_test_doubles.py`, `apply_ux_examples.py <repo> 0.2.8253 2026-10-17`;
+    docs/expert/bind-hooks.md and agents/MELDER_AGENT_OPERATIONS.md by hand-checked anchors; (3) a full-repo copy
+    under the VM's /tmp (no .git, caches or generated folders), every chunk and the UX harness with the GIL off and
+    on; (4) system docs with their indexes (after the authoring instructions), the graph descriptors and
+    reassembly; (5) the release note's Breaking section and its older references, header 0.2.8253; (6) the notch;
+    (7) notes, handoff summary, board and artifact rows; (8) the rebuild last, both checks OK. Mapping addendum
+    for the Rift (I6) and the UX examples, patch section -> implementation -> validation: I6 -> `edits_rift.py`
+    (both rooms' renamed lookup, the exact source-id paths, the shared static helper) -> the command-system unit
+    tests with doubles, the Rift integration test and the static, capability and codegen JSON testbenches, green
+    both modes; renamed call sites (UX) -> `apply_ux_examples.py` -> the UX harness, both modes.
+  EVIDENCE:
+  - context_compass/system_docs/patches/active/find_spell_by_spell_id_2026_10_17/architecture_patch.md:82-90
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/scripts/edits_rift.py:1-573
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/scripts/apply_find_spell_by_spell_id.py:1-76
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/scripts/install_new_tests.py:1-76
+  - context_compass/special_instructions/agent_contribution_guide.md:15-97
+  IMPACT: The repo moves from 0.2.8252 to 0.2.8253 in one pass; nothing is committed (the owner commits).
+  NEXT: Re-read `__version__` and the release note, then run each script with `--check` on the repo.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-17T22:41:43Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: Fix #1 applied to the repo (src still 0.2.8252, no notch yet): the src script wrote 11 files with no code
+    use of the old names left (10 dated history mentions), the codemod 82 test files (202 find, 84 get), the old
+    component test renamed to `test_spellbook_component_find_spell_by_spell_id.py` and the four new tests
+    installed, the doubles 4 files, the UX script 10 examples; by hand, docs/expert/bind-hooks.md:49 (renamed
+    call) and agents/MELDER_AGENT_OPERATIONS.md:454 (the "critical lookup trap" rewritten as the exact lookup:
+    the version a spell_id names, never the selected member; `get_spell_by_index_id` is the lookup that answers
+    the selected member; `notch_spell` takes `spell_id=` or `spell=`). A full copy of the repo on the VM (no
+    .git, caches or generated folders) passes every chunk with the GIL off and on - the six environment chunks
+    too: architecture 18, GitHub workflows 491, LLM support 28, build assets 116, package root 146,
+    experimentation 250 (4 skipped), and every other chunk as on the work tree. UX harness: 564 passed and the
+    7 pre-existing failures, both modes. Two more UX failures (experts 09 and 27) follow the repo's local
+    crystallizer cache, not fix #1: its `src/melder/__melder_cache__/__crystallizer_cache__/default` holds 100
+    checkpoint files (the cache's cap) and with it a freshly flushed checkpoint is missing from
+    `list_cached_checkpoint_ids()`; the untouched src given the same 100 files fails the same two, and both pass
+    with the folder emptied - a possible retention defect, outside fix #1.
+  EVIDENCE:
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/landing_apply_src.txt:1-23
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/landing_apply_tests_ux.txt:1-106
+  - context_compass/artifacts/meld_contract_scan_20261015/runs/fix1_spell_id_lookup_landed_gil0.txt:1-25
+  - context_compass/artifacts/meld_contract_scan_20261015/runs/fix1_spell_id_lookup_landed_gil1.txt:1-25
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/ux_cache_state_check.txt:1-7
+  - agents/MELDER_AGENT_OPERATIONS.md:454-454
+  - docs/expert/bind-hooks.md:49-49
+  IMPACT: The code side of fix #1 is in the repo and green in both modes; the docs side remains (system docs,
+    graph, release note), then the notch and the rebuild last. The cache finding goes to the owner in the report.
+  NEXT: Read the system-document authoring instructions, then update src_architecture.md.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-17T22:56:43Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: Mailbox M0-186 and M0-187 (melder_0, NOTICE, 2026-10-17T21:56:19Z and 22:13:40Z, no ACK asked), copied
+    before consumption: the owner answered three of the correctness epic's questions (chat 2026-10-17). S2: one
+    SpellIndex may hold versions under different binding signatures, so S2's fix in `_apply_notch` step 4 moves the
+    frame claim with the active version (release the outgoing claim by spell_id, claim the incoming key, refuse a
+    key another active spell holds) and staging keeps its admission; S1 takes its minimal fix
+    (`_destroy_spell_index` stops releasing claims it does not hold). S5: a parked-only index is restored and grafted
+    parked (restore_engine.py and graft_runner.py, which no lane holds). S8: a notch whose incoming version fails the
+    structural check its commit runs is refused with nothing moved - the index, the frame claim, Nexus and every
+    index-linked borrower stay on the outgoing version, the incoming one stays parked, and the error says the notch
+    did not happen; the fix sits in `Conduit.notch_spell` / `Spellbook._apply_notch`. melder_0 edited nothing.
+  EVIDENCE:
+  - context_compass/tickets/stories/2026-10-17_notch_moves_signature_by_incoming_key_only_story.md:1-242
+  - context_compass/tickets/stories/2026-10-17_staged_version_releases_active_signature_story.md:1-258
+  - context_compass/tickets/stories/2026-10-17_restore_drops_separated_parked_version_story.md:1-235
+  - context_compass/tickets/stories/2026-10-17_failed_notch_keeps_switch_without_borrowers_story.md:1-275
+  - context_compass/tickets/epics/2026-10-17_correctness_defects_epic.md:1-827
+  IMPACT: S1, S2 and S8 sit in files this lane holds (spellbook.py, conduit.py) and are outside fix #1 (owner: fix #1
+    only); who takes them is the owner's call, reported with S7-S10 and M0-181's stories. Nothing in them changes
+    fix #1's docs, and restore_engine.py and graft_runner.py carry only fix #1's renamed calls.
+  NEXT: Delete M0-186 and M0-187 and clear their alerts; then fix the code-map anchor in
+    docs_src_architecture_fix1.py and apply it.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-17T23:07:04Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: src_architecture carries fix #1 (after src_architecture_instructions; every claim read against the landed
+    src diffs and each cited symbol's def): the boundary list's sentence and a new bullet for the renamed lookups; a
+    new first operational invariant "Lookup by spell_id is exact" (the exact lookup, the explicit index steps and
+    their locks, the Rift rooms, what is left to the owner), the 0.2.8229 entry marked SUPERSEDED in part with its
+    evidence repointed; four new failure modes (Breaking: the renames and answers, the minted-index caveat; the
+    parked grant fixed; transfer resolution; the static and base room messages); the notch remedy, the former
+    no-op entry, the ValueError and 0.2.8229 failure entries and the cross-object and spell-map entries renamed; the
+    eleven code-map entries remeasured (verified_at 23:03:04Z) with notes; a handoff entry. The script's first
+    check failed because a code-map entry's last note line lost its newline at the entry boundary; fixed in
+    `entry_span`. Index regenerated (62 sections, 5034 lines, --check OK). Content Preservation Gate PASS: 20 lines
+    changed by the citation remap (digits only) and 61 rewritten by the anchors, nothing unaccounted. Portability
+    and absolute-path checks empty; the doc's citation recipe: 41 citations, all in bounds.
+  EVIDENCE:
+  - context_compass/system_docs/src_architecture.md:514-532
+  - context_compass/system_docs/src_architecture.md:1122-1167
+  - context_compass/system_docs/src_architecture.md:2192-2235
+  - context_compass/system_docs/src_architecture.md:4488-4503
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/scripts/docs_src_architecture_fix1.py:1-329
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/scripts/gate_src_architecture_fix1.py:1-79
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/docs_gate_src_architecture.txt:1-4
+  IMPACT: The architecture document describes the landed code; src_components is next, then the tests pair, the
+    graph and the release note.
+  NEXT: Regenerate src_components_index.md (citations remapped), slice the six components, write the edit script.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-17T23:13:19Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: src_components carries fix #1 (after src_components_instructions; the same reads of the landed src):
+    Spellbook Core (a dated paragraph on the exact lookup, its threading and failure notes), the Binding Pipeline
+    (`_spell_index_unless_cleaned`'s readers, the SpellIndex docstrings), the RiftSpace Workstation And Command
+    Surface (an invariant on the exact room lookups and the renamed command, their concurrency and messages),
+    Conduit Runtime (a dated paragraph on `get_spell_by_spell_id`, per-version permissions and the transfer
+    footprint's explicit step; the notch paragraph, concurrency and two failure modes), ConduitWard and Contracts (a
+    dated paragraph on the exact grant check, the dependency walks' and the transfer handle's explicit step and the
+    outbound listing; the listing bullet; a failure mode), the Ownership Transfer and RiftSpace Command System
+    subcomponents, the transfer flow, a new flow "Conduit.get_spell_by_spell_id -> Owner Book (Exact)", the ten core
+    code-map entries remeasured (verified_at 23:12:45Z) and a handoff entry. Index regenerated (155 sections over
+    12008 lines, --check OK). Content Preservation Gate PASS: 23 lines changed by the citation remap, 47 rewritten
+    by the anchors, nothing unaccounted. Portability and absolute-path checks empty; the Key Files join resolves
+    every cited path against src_graph_index.
+  EVIDENCE:
+  - context_compass/system_docs/src_components.md:348-361
+  - context_compass/system_docs/src_components.md:2714-2727
+  - context_compass/system_docs/src_components.md:2826-2840
+  - context_compass/system_docs/src_components.md:3178-3194
+  - context_compass/system_docs/src_components.md:6736-6744
+  - context_compass/system_docs/src_components.md:8220-8233
+  - context_compass/system_docs/src_components.md:11452-11465
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/scripts/docs_src_components_fix1.py:1-307
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/docs_gate_src_components.txt:1-4
+  IMPACT: Both source system documents describe the landed lookups; the tests pair is next.
+  NEXT: Read tests_components_instructions.md and tests_architecture_instructions.md, then add the four new test
+    files and the renamed component test to the tests pair.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-17T23:28:59Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: The tests pair at fix #1's landing, read after the 23:16Z compaction's re-onboarding and both authoring
+    instructions: tests_components and tests_architecture equal their 2026-10-16 baselines and their indexes are
+    current. From disk now: unit 512 `.py` (509 test modules), component 168 (166), integration 179 (172), mocks
+    44, experimentation 204 (33), so 847 test modules in the three tiers (844 at 0.2.8250); the unit aether tree
+    holds 208, the integration aether tree 48, its rift tree 4. The four new modules collect 12, 10, 10 and 4
+    tests. tests_components' core set is 259 paths, equal to its 259 code-map records; the document says 258,
+    since the 0.2.8251 entry added a key file without counting it. Three records are stale: the release-registry
+    and notch-revalidation integration files each grew one line when fix #1's codemod rewrote a comment about the
+    old answer as history (310 and 673 lines), and the managed stamp test (185 lines, 152 recorded) since
+    TASK-2026-10-16-stamp_test_boots_its_own_aether, whose closure leaves its entry to the wording lane.
+    tests_architecture's 36 records match disk, and neither document names an old lookup.
+  EVIDENCE:
+  - context_compass/system_docs/tests_components.md:1945-1952
+  - context_compass/system_docs/tests_components.md:3208-3213
+  - context_compass/system_docs/tests_components.md:3256-3273
+  - context_compass/system_docs/tests_architecture.md:460-467
+  - tests/integration/melder/conduit/test_conduit_integration_release_managed_spell.py:220-221
+  - tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py:463-464
+  - context_compass/attention_board.md:215-215
+  IMPACT: tests_components gains four key files with code-map records (core set 263), the recounted tree and tier
+    counts and the two codemod records; the stamp record stays with its lane and goes in the report.
+    tests_architecture gains the recount and a handoff entry; no extent of its map moves.
+  NEXT: Write docs_tests_components_fix1.py with exact-once anchors, check it, apply it, regenerate the index and
+    run the gate, portability and existence checks.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-17T23:35:22Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: The tests pair carries fix #1 (each new module read whole before its entry was written).
+    tests_components: Protects bullets and key files in four C2 clusters - Aether/Nexus/Rift Unit (the room
+    lookups, 12 tests), Spellbook Runtime And Binding Component (the exact Book lookup, 10), Aether Integration
+    (a capability room, 4) and Spellbook Integration (a lender and borrower world, 10) - with the Unit, Component
+    and Integration suites naming the protection; four new code-map records, the two codemod records remeasured
+    (310, 673), the recounted tier and tree counts, the core set 263 (key-file union equal to the code map), the
+    information sources, Metadata and a handoff entry; the stamp record stays stale on purpose, as the entry says.
+    tests_architecture: the recount, the race test's evidence moved to 624-673, Metadata and a handoff entry.
+    Both indexes regenerated (69 sections over 3820 lines; 32 over 996), --check OK. Content Preservation Gate
+    PASS for both: 16 and 5 lines rewritten, all on lines the edit anchors touch (the gate now takes an anchor's
+    whole lines, since one anchor sits inside a line), 110 and 12 added. Portability and absolute-path checks
+    empty; the documents' own citation recipe finds no missing path and nothing out of bounds, and only the stamp
+    record as a stale range.
+  EVIDENCE:
+  - context_compass/system_docs/tests_components.md:918-957
+  - context_compass/system_docs/tests_components.md:1494-1539
+  - context_compass/system_docs/tests_components.md:1580-1617
+  - context_compass/system_docs/tests_components.md:1667-1735
+  - context_compass/system_docs/tests_components.md:3358-3385
+  - context_compass/system_docs/tests_components.md:3570-3586
+  - context_compass/system_docs/tests_architecture.md:460-467
+  - context_compass/system_docs/tests_architecture.md:592-598
+  - context_compass/system_docs/tests_architecture.md:892-898
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/scripts/docs_tests_components_fix1.py:1-252
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/scripts/docs_tests_architecture_fix1.py:1-67
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/docs_gate_tests_components.txt:1-4
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/docs_gate_tests_architecture.txt:1-4
+  IMPACT: The four system documents describe fix #1; the graph is next, then the release note, the notch, the
+    ticket and the rebuild.
+  NEXT: Extract the graph on 3.14 with --strict, then read the walker's report for the changed files' nodes.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-17T23:54:03Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: Mailbox M0-188 (melder_0, NOTICE, 2026-10-17T23:26:15Z, no ACK asked) and M0-189 (NOTICE, 23:50:56Z, ACK
+    asked), copied before consumption. M0-188: the owner ruled S10 (minted_index_selects_its_parked_version) not a
+    defect - moving a version with remove_from_spell_index is the agent's call and making it active takes a notch;
+    S10 is withdrawn to completed and the graft side stays in S5; melder_0 counts this lane's set from the epic as
+    S1-S4 and S7-S9; if the owner picks S6's option 3, its fix lands in spellbook.py too. M0-189: the owner chose
+    S6's direction - the four managed settings leave the spell_id, a same-id rebind re-composes its pool's settings,
+    and the notch plus cache generation 22 retire old bundles; melder_0 runs it (board row managed_settings_spell_id)
+    in bind.py, managed_spell_quantity.py, creations.py, caching_system.py and their tests, lands after 0.2.8253
+    with the next number, and asks to be told when `__version__`, the release note, the four system docs with their
+    indexes and the graph are free. His Part B (refusing a second managed version of one class in one index at
+    bind_inactive / add_to_spell_index, and the collision error's settings remedy) waits for spellbook.py.
+  EVIDENCE:
+  - context_compass/tickets/stories/completed/2026-10-17_minted_index_selects_its_parked_version_story.md:1-243
+  - context_compass/tickets/stories/2026-10-17_release_routes_parked_version_objects_to_active_pool_story.md:1-323
+  - context_compass/tickets/epics/2026-10-17_correctness_defects_epic.md:1-897
+  - src/melder/aether/spellbook/bind/bind.py:1019-1150
+  IMPACT: Nothing in fix #1 changes: melder_0's four files are outside it. The shared files he waits for are free
+    once this lane's notch, release-note entry, graph and rebuild are done; spellbook.py stays held until the owner
+    decides the closure and the held-file release.
+  NEXT: ACK M0-189 as M1-25, delete M0-188 and M0-189 and clear their alerts; then record the graph analysis.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-17T23:54:57Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: PLAN
+  CLAIM: The rest of fix #1's landing, re-planned after the 23:46Z compaction's re-onboarding to follow the
+    contribution guide's turn-in order (notes, the notch, the release-note entry, closure, rebuild): (1) the notch -
+    `__version__` re-read at 0.2.8252, set to 0.2.8253; (2) the release note - a script with exact-once anchors adds
+    the Breaking section, renames the older references to the two lookups and their examples, sets the header and the
+    closing rebuild line to 0.2.8253, then a Content Preservation Gate against docs_baselines; (3) the graph - a
+    3.14 extraction with --strict into scratch after the notch, the descriptors of fix #1's eleven files and
+    `__version__.py` taken only where the diff is mechanical, the authored prose re-read against the landed source,
+    then accept and reassemble; (4) the Notes, the handoff summary, the board and artifact rows, the attention-board
+    notch notice and the rubric scores; (5) the rebuild last, both checks OK; then M1-26 to melder_0. The 22:21Z
+    PLAN put the graph before the release note and the notch; the graph now follows the notch because
+    `__version__.json` is extracted from the notched file.
+  EVIDENCE:
+  - context_compass/special_instructions/agent_contribution_guide.md:93-95
+  - context_compass/special_instructions/agent_contribution_guide.md:27-31
+  - src/melder/__version__.py:12-12
+  IMPACT: One pass from 0.2.8252 to 0.2.8253 with the assets rebuilt last; closure and the held-file release stay
+    with the owner.
+  NEXT: Set `__version__` to 0.2.8253 (LF kept) and read it back.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-18T00:04:58Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: Notched 0.2.8253 (`__version__` read at 0.2.8252 at 23:55Z, LF kept) and wrote the running release note's
+    entry: header `# Melder 0.2.8253`; a new section after the 0.2.8229-0.2.8230 lookup section, "A spell_id lookup
+    answers the spell it names", leading with **Breaking change:** (the renames with no alias, the exact answer, a
+    lookup by the index for what it has active), one example, the per-version permissions, the split-off version,
+    grants and releases by a parked spell_id, the transfer refusal, the Rift rooms and what stays the same; the
+    older sections put in the past where they described the old answer (0.2.8229's "What stays the same", the
+    0.2.8249 notch section's intro, its no-op bullet and its "What stays the same") and renamed in four examples and
+    the notch refusal's message; two Packaging bullets and the rebuild line at 0.2.8253. Content Preservation Gate
+    PASS (33 lines rewritten, all on lines the anchors touch; 98 added). The new example and the four renamed ones
+    run as written on the landed tree with the GIL off and on (5 of 5 each); the old names raise AttributeError and
+    `get_spell_permissions` answers per version (create, read).
+  EVIDENCE:
+  - src/melder/__version__.py:12-12
+  - release_docs/next_version_release.md:40-71
+  - release_docs/next_version_release.md:72-136
+  - release_docs/next_version_release.md:874-966
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/scripts/docs_release_note_fix1.py:1-236
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/scripts/gate_release_note_fix1.py:1-51
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/docs_gate_release_note.txt:1-3
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/release_note_examples_gil0.txt:1-6
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/release_note_examples_gil1.txt:1-6
+  IMPACT: The version and the note match the landed change; the graph is the last document before the ticket and
+    the rebuild.
+  NEXT: Extract the graph on 3.14 with --strict into scratch and diff fix #1's eleven descriptors and
+    `__version__.json` against the repo's.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-18T00:11:54Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: The graph at 0.2.8253, extracted on 3.14 with --strict (nothing skipped) into a scratch copy of the repo's
+    descriptors: fix #1's eleven descriptors and `__version__.json` differ from the repo's only in the mechanical
+    tier (source and span hashes, the renamed public methods, two TYPE_CHECKING imports and one method more in each
+    command system, one line move), never in an authored field. Eight class nodes carry stamps equal to their spans
+    at 0.2.8252, so fix #1's diff of each file, read whole, is all that separates their prose from today's source:
+    Spellbook, Conduit, ConduitWard, Spell, GraftRunner, RestoreEngine, StaticCommandSystem and
+    AmbiguousProviderStrategy. CommandSystem's stamp predates 0.2.8252; its role, six responsibilities, state and
+    two edges were read against today's source (init and cleanup, the two conduit resolvers, the result binding)
+    and hold. TransferOfOwnership's stamp predates 0.2.8252 and SpellIndex's matches neither span, so both stay
+    SEMANTICS_STALE; SpellIndex keeps only its ULID, lock, selected spell_id and member set, so its authored edges
+    "holds Spell" and "borrows Spellbook" (attachments it would update) describe nothing it keeps - pre-existing,
+    for the owner. 69 other descriptors drift from source through other lanes (the 0.2.8252 wording lane's files,
+    the build-asset manifests) and are left alone; the walker counts melder.__version__ as AUTHORED.
+  EVIDENCE:
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/graph_fix1_extract_scratch.txt:1-46
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/graph_fix1_descriptor_diffs.txt:1-43
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/graph_fix1_stamp_states.txt:1-13
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/graph_fix1_walker_scratch.txt:1-238
+  - src/melder/nexus/rift/command_system/command_system.py:102-294
+  - src/melder/aether/spellbook/bind/spell_index.py:83-116
+  IMPACT: Fix #1's prose goes in as one responsibility each on Spellbook (and its r16 says spell_id), Conduit,
+    ConduitWard, CommandSystem, StaticCommandSystem and TransferOfOwnership; nine nodes are accepted, two stay
+    stale, and only these twelve descriptors are installed before the graph is reassembled.
+  NEXT: Author the six responsibilities in the scratch descriptors, accept the nine nodes there, re-serialize with
+    indent=1, install the twelve files and reassemble.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-18T00:14:24Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: The graph carries fix #1. In the scratch descriptors `graph_fix1.py author` added one responsibility each -
+    Spellbook r24 (the exact lookup; r16 now says spell_id), Conduit r29 (the renamed lookup, per-version
+    permissions, the transfer's explicit step), ConduitWard r11 (the exact grant check, the outbound listing, the
+    dependency walks' and transfer handle's explicit step), TransferOfOwnership r7, CommandSystem r6 and
+    StaticCommandSystem r4 (the room lookups); the walker accepted the nine verified nodes; the twelve files were
+    re-serialized as the extractor writes them and installed only after `install` proved each authored tier equal
+    to the repo's but for these additions (stamps aside). Reassembled: 591 sections, 1227 nodes, 1415 edges, 28082
+    lines (6 more), all ranges verified, --check clean; the document diff touches only the twelve files' sections.
+    Walker on the repo descriptors: TransferOfOwnership and SpellIndex are the only stale nodes in fix #1's files.
+    No portability marker or absolute path in src_graph.md.
+  EVIDENCE:
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/scripts/graph_fix1.py:1-167
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/graph_fix1_install.txt:1-13
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/graph_fix1_assemble.txt:1-4
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/graph_fix1_assemble_check.txt:1-4
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/graph_fix1_src_graph.diff:1-76
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/graph_fix1_walker_repo.txt:1-180
+  IMPACT: The five system documents and the graph describe fix #1; the ticket's handoff, the boards and the rubric
+    scores remain, then the rebuild last.
+  NEXT: Score the four system documents on the rubric, then rewrite the handoff summary and sync the boards.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-18T00:16:09Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: Rubric scores at fix #1, from disk after the index rebuilds (self-scored; no independent reviewer):
+    src_architecture 83 (B) - fidelity 4, contract 5, depth 4, addressability 4, join 4, mirror 4; src_components 83
+    (B) - 4, 5, 4, 4, 4, 4; tests_architecture 83 (B) - 4, 5, 4, 4, 4, 4; tests_components 74 (C) - 4, 4, 3, 4, 3,
+    4. Basis: src_architecture was read whole after the 23:46Z compaction; in the other three the sections fix #1
+    wrote were re-read from disk. The measurable half (the rule 2 script, rerun): one H1 each, no duplicate indexed
+    name, no unclosed heading, contracts complete and in order, no portability or absolute-path hit, 162 / 36 / 234
+    / 263 code-map records complete, every Key Files path resolving; one extent drifts. Why not 5, as at rule 2:
+    fidelity - both meld-flow diagrams still name "Phase12 Compiled Executors"; depth - thin fields in four
+    src_components entries (PhaseScheduler) and in tests_components' Mock Fixture Corpus; addressability - container
+    H2s that hold only sub-headings; join - verified_at stamps carried forward; mirror - each pair adds different
+    non-contract sections; tests_components contract 4 - a Table of Contents and a Component Template among its
+    sections. New: tests_components' join drops to 3 because the stamp test's record says 152 lines and the file
+    has 185 (left for TASK-2026-10-16-stamp_test_boots_its_own_aether's successor), which takes it to band C.
+  EVIDENCE:
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/rubric_checks_fix1.txt:1-52
+  - context_compass/system_docs/src_architecture.md:4274-4274
+  - context_compass/system_docs/src_components.md:11191-11191
+  - context_compass/system_docs/src_architecture.md:762-763
+  - context_compass/system_docs/src_components.md:5928-6001
+  - context_compass/system_docs/tests_components.md:156-189
+  - context_compass/system_docs/tests_components.md:662-739
+  - context_compass/system_docs/tests_components.md:3254-3259
+  - context_compass/agent_onboarding/default/design_engineer/policies/system_document_quality_rubric.md:158-187
+  IMPACT: The source pair and tests_architecture stay band B; tests_components is band C (usable, refresh before
+    high-risk suite work) until that record is remeasured - one line, the owner's call whether it rides this lane.
+  NEXT: Rewrite the handoff summary, then the board row, the artifact rows and the attention-board notch notice.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-18T00:26:38Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: Rebuilt last at 0.2.8253, from the repository root on Python 3.14.7t, after the code, tests, docs, system
+    documents, graph, release note, Notes, handoff summary and board rows. The asset run on the connected folder
+    wrote the agent-documentation and bind-guard manifests and the system-documents index, then stopped with
+    PermissionError: the system-documents builder unlinks its payload modules before rewriting them and the folder
+    refuses deletes (as at 0.2.8247 and 0.2.8252). The runner then ran whole in a mirror under /tmp (src/ and the
+    system docs, byte-equal to the repo's): all three assets at v0.2.8253 (468, 628, 4 entries). The five files it
+    changed beyond the repo - three payloads, the system-documents manifest, the graph adjacency manifest - were
+    copied over their originals (nothing deleted or added; byte-equal after copy), and the asset --check on the
+    repo printed only OK lines. The LLM bundles (--include-untracked) rewrote src (583 files), tests (1128) and
+    other (404) and the manifest; their --check printed only OK lines. No .git/index.lock.
+  EVIDENCE:
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/rebuild_assets_0_2_8253.txt:1-24
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/rebuild_assets_0_2_8253_mirror.txt:1-7
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/rebuild_assets_0_2_8253_check.txt:1-7
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/rebuild_llm_0_2_8253.txt:1-8
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/rebuild_llm_0_2_8253_check.txt:1-7
+  IMPACT: Fix #1 is landed whole at 0.2.8253 and nothing is committed (the owner commits); the shared documents
+    are free for melder_0's S6 lane. Closure, the patch-folder archive and the held-file release wait for the owner.
+  NEXT: Send M1-26 to melder_0 (0.2.8253 taken, the shared documents free), set the board row to review, then
+    report to the owner.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-18T00:40:52Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: The owner accepted fix #1 as landed at 0.2.8253 (chat 2026-10-18: "ok cool I accept fix sure"). In the same
+    message he asked that every other finding be explained - "you can't just blanket look for ID not every ID means
+    the same thing": each finding must say what the id at that place in the code names (a version's spell_id, a
+    lineage's SpellIndex id, a peer conduit's id) and why that is or is not a defect, with a concrete scenario, read
+    from the code and its callers, not from where "id" matches. The message I answered asked to accept fix #1 and
+    close this ticket; his reply accepts the fix and says nothing about closing, so closure, the archive of the two
+    active patch folders and the held-file release stay open until he says so.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spellbook.py:2052-2128
+  - context_compass/tickets/tasks/2026-10-16_recheck_contract_consumers_when_provider_changes_task.md:2856-2881
+  IMPACT: Fix #1 is accepted (not committed; the owner commits). The origins 2-6 report of 19:49Z is re-examined id
+    by id, read-only on src/, before any of it is put to the owner again; a finding that rests only on a name match
+    is withdrawn.
+  NEXT: Re-read the 19:49Z-21:36Z origin notes, then each origin method whole with its callers.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-18T00:55:54Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: Origins 2-6 re-examined id by id on 0.2.8253 (each method and its callers read whole; probe in four worlds,
+    GIL off and on identical). The borrower holds each borrowed version under its own spell_id - active copies in
+    `_contracted_spells_by_id`, parked ones in `_inactive_contracted_spells` - and the lender keeps one `Detail` row
+    per granted version, keyed by that spell_id. (1) `Spellbook._find_contracted_spell_by_id` (behind
+    `Conduit.find_contracted_spell` and the inbound half of `get_spells_in_contract_by_conduit`) and
+    `ConduitWard._get_spell_in_contracts` (behind `Conduit.get_spell_in_contracts` and the capability and codegen
+    rooms' command) take a version's spell_id and, unless it is an active copy, answer the borrower's active copy of
+    that version's index: index link with English active and French parked - French's spell_id -> English, though
+    the borrower holds French; English granted, French never granted - French's spell_id -> English; English granted,
+    notch, French granted - English's spell_id -> French; English granted and parked by a notch - None. The inbound
+    listing pairs French's row with English's Spell and English's row with French's Spell, and drops a parked grant's
+    row. (2) `get_all_spells_in_contracts` asks what the conduit can consume now - an index question, so resolving
+    each row's index is right and every pair it returns is self-consistent; it lists a lineage once per row
+    (duplicates). (3) `_validate_contracts_and_define` checks a version row by its index's active copy, so a grant
+    parked by a notch away - the 0.2.8250 design - makes the contract invalid, `validate_received_contracts()` False
+    and `get_all_spells_in_contracts()` raise "One or more contracts are invalid..." until the lender notches back.
+    (4) `_remove_spell_from_contract` invalidates by the key of the copy (1) returns; for a parked grant that is None,
+    which `_invalidate_contract_consumers` reads as every SpellContract consumer of the Book: removing a parked
+    English grant gated an unrelated consumer (Ticker, provider Clock, never changed) and took its stored object out
+    of the store; with English active (control) Ticker was untouched. (5) `Detail` stores the version's spell_id and
+    its index; its docstring's "where they disagree, the index resolves the current head" describes what only an
+    `IndexDetail` does since 0.2.8250, and `Detail.has_spell` answers lineage membership - what lets (1) answer a
+    French that was never granted.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spellbook.py:3041-3093
+  - src/melder/aether/conduit/conduit.py:3288-3341
+  - src/melder/aether/conduit/conduit_ward/conduit_ward.py:3591-3664
+  - src/melder/aether/conduit/conduit_ward/conduit_ward.py:3668-3723
+  - src/melder/aether/conduit/conduit_ward/conduit_ward.py:3483-3587
+  - src/melder/aether/conduit/conduit_ward/conduit_ward.py:3915-3973
+  - src/melder/aether/conduit/conduit_ward/conduit_ward.py:3209-3350
+  - src/melder/aether/conduit/conduit_ward/conduit_ward.py:2690-2748
+  - src/melder/aether/conduit/conduit_ward/contract/details.py:14-246
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/probes/probe_contract_side_reads.py:1-175
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/probe_contract_side_reads_gil0.txt:1-45
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/probe_contract_side_reads_gil1.txt:1-49
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/probes/probe_parked_grant_removal_scope.py:1-112
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/probe_parked_grant_removal_scope_gil0.txt:1-11
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/probe_parked_grant_removal_scope_gil1.txt:1-11
+  IMPACT: Real, with scenarios: (1) wrong answers from spell_id lookups and listings (read side; melds resolve by
+    binding key and never go through these reads); (3) a by-design parked grant reported broken and the listing
+    raising; (4) an unrelated consumer's stored object dropped. (2) is right in principle (duplicates only). No src
+    change without the owner's word.
+  NEXT: Record what is by design or withdrawn, then the re-check of the other findings.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-18T00:56:08Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: Where a spell_id is meant as a lineage handle, read the same way, and withdrawn from the findings. (a)
+    `Meld._current_in_pool`: the id is a version a plan's recorded topology names, and the question is which version
+    of that lineage the plan will expand now (Phase 8 builds the version its lineage selects, so rule 2's catch-up
+    must refresh that one); answering through the registry's lineage of the id is the design. (b)
+    `_find_governing_index_link`: "is this version governed by an index link" is lineage membership, so
+    `IndexDetail.has_spell` is right there. (c) Phase 8's SpellContract resolution, mirrored in
+    `_iter_planned_dependencies`, goes binding key -> index -> active copy - the provider a consumer meets is the
+    active copy by design, and no meld path goes through the reads of the MEASURE above. (d) The three paths that
+    file or unfile a borrowed copy under `spell.spell_index.selected_spell_id` (`_add_contracted_spell`,
+    `_clear_contracted_spells_for_conduit`, `_destroy_detached_link_contract`): that id is the lender index's
+    selected version and the maps are keyed by the copy's own spell_id, but the three only handle active copies,
+    and an active copy is its index's selected version in every settled state, so the two ids are equal; they could
+    differ only if the lender's index moved between a notch's commit and its fan-out reaching this borrower, which
+    I did not reproduce - not a defect I can show. Side finding, documentation only: `Contract`'s class docstring
+    and field comments say a ward's detail map holds what that ward BORROWED; the code writes a row into the
+    LENDER's map (`_add_spell_to_contract` adds to `conduit._conduit_ward`, whose ownership
+    `_check_spell_if_eligible` requires; `_contract_member_spell` adds to `owner_ward`), and every reader treats a
+    ward's map as what it granted.
+  EVIDENCE:
+  - src/melder/aether/conduit/meld/meld.py:1484-1584
+  - src/melder/aether/conduit/conduit_ward/conduit_ward.py:2591-2618
+  - src/melder/aether/spellbook/spellbook.py:3183-3252
+  - src/melder/aether/spellbook/spellbook.py:3478-3550
+  - src/melder/aether/spellbook/spellbook.py:3698-3749
+  - src/melder/aether/conduit/conduit_ward/contract/contract.py:19-124
+  - src/melder/aether/conduit/conduit_ward/conduit_ward.py:1779-1842
+  - src/melder/aether/conduit/conduit_ward/conduit_ward.py:1844-2091
+  - src/melder/aether/conduit/conduit_ward/conduit_ward.py:2440-2489
+  IMPACT: The 19:49:27Z list shrinks: `Meld._current_in_pool` is by design and the selected-id filing is not a
+    defect I can show; what stands is the version-row reads of the MEASURE above. The map-direction docstring is a
+    one-file documentation fix for the owner to schedule.
+  NEXT: Re-check the other open findings on 0.2.8253.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-18T00:56:41Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: The other open findings re-checked on 0.2.8253 (GIL off). Transfer (18:23:11Z, probed on 0.2.8250): the
+    three probes, rerun with the renamed lookup, print the same worlds but for fresh ULIDs - an index-link borrower
+    stays on the old owner under the default unshare (the per-spell removal is refused for an index member and the
+    refusal swallowed); `force_unshare=False` repoints nothing (the repoint calls `_add_spell_to_contract` with the
+    roles reversed; "is not owned by this conduit" is swallowed); the moved spell is in neither Book's `_spell_ids`,
+    so the new owner cannot stage on the index; the registry holds no binding key for the moved lineage, because
+    `_flip_registry_and_spellbooks` and `_rollback_spellbook_move` call `register_index` without `binding_key=`.
+    Crystallizer cache (22:41:43Z): cause found and reproduced - retention orders a profile's cached files by the
+    `checkpoint_number` each payload records, a number minted per process (1 + the highest in THIS process's record),
+    while the folder outlives processes; the repo's `default` folder holds 100 files numbered 2-4 from earlier runs,
+    so a fresh process's checkpoint 1 sorts oldest and is deleted right after it is written - `flush_checkpoint`
+    returns its id, yet the file is gone and `list_cached_checkpoint_ids()` lacks it; with the folder empty it is
+    kept. SpellIndex's graph edges (00:11:54Z): its descriptor's authored "holds Spell" and "borrows Spellbook" say
+    it keeps Spell and Spellbook attachments; it keeps its ULID, lock, selected spell_id and member ids, and its
+    docstring gives lookup propagation to the Spellbook. Not rerun: the flake (2 of 40 on both trees, 22:08:07Z;
+    cause UNKNOWN); the stamp-test record (152 lines recorded, 185 on disk, 00:16:09Z); the quoted `"Spell | None"`
+    in ambiguous_provider_strategy.py and "version id" at tests_components lines 376 and 574 are wording.
+  EVIDENCE:
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/probe_transfer_and_contracts_8253_gil0.txt:1-66
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/probe_transfer_unshare_refusal_8253_gil0.txt:1-7
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/probe_transfer_repoint_refusal_8253_gil0.txt:1-3
+  - src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py:1429-1553
+  - src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py:982-1048
+  - src/melder/crystallizer/asset_management/crystallizer_cache.py:177-264
+  - src/melder/crystallizer/persistence/persistence_system.py:1349-1379
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/probes/probe_cache_retention_order.py:1-56
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/probe_cache_retention_order_gil0.txt:1-14
+  - src/melder/aether/spellbook/bind/spell_index.py:83-116
+  - src/melder/aether/spellbook/bind/spell_index.py:20-40
+  - src/melder/aether/spellbook/spell_compiler/validation/strategies/ambiguous_provider_strategy.py:166-166
+  IMPACT: The transfer findings and the binding-key gap stand unchanged; the cache finding is now a known cause (a
+    per-process sequence used as a cross-process age), not a suspicion; the graph edges are stale prose. All wait
+    for the owner's direction; nothing is filed or changed.
+  NEXT: Rewrite the handoff summary's open items, then report to the owner.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-18T01:10:17Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: The owner's correction and direction (chat 2026-10-18): a SpellIndex is not a lineage - it is an index
+    that organizes spells, like a table index in SQL, and it has one selected spell; "lineage is for a scope tree" (a
+    root conduit and its lessers). Three different things: a spell_id names exactly one spell; a SpellIndex organizes
+    spells and selects one of them; a lineage is a conduit scope tree. Direction: "fix that ... remove that" - every
+    place the code or the docs call a SpellIndex (or its member set) a lineage is reworded; places where lineage
+    means the conduit scope tree stay as they are. melder_1 had repeated the code's wording ("lineage identity",
+    "a spell index holds a lineage of versions") in its explanations and in the Notes of 00:55Z-00:56Z; those Notes'
+    findings stand, read with "the SpellIndex the spell sits in" wherever they say lineage.
+  EVIDENCE:
+  - src/melder/aether/conduit/conduit_ward/contract/details.py:14-246
+  - src/melder/aether/conduit/conduit_ward/contract/details.py:249-497
+  - src/melder/aether/spellbook/bind/spell_index.py:83-116
+  - context_compass/system_docs/src_architecture.md:19-19
+  IMPACT: A wording change across src docstrings and comments, the system documents, the graph's authored prose and
+    the docs, classified occurrence by occurrence (never a blanket replace); identifiers keep their names unless the
+    owner says otherwise; src docstrings take a notch, a release-note line and a rebuild; files melder_0's lane holds
+    are coordinated through the mailbox first.
+  NEXT: Inventory every "lineage" occurrence, by tree and file.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 ## Context / Handoff Summary
-Current state (2026-10-17T20:39:13Z): this ticket has landed two source changes; fix #1 of the spell_id lookups is in progress.
+Current state (2026-10-18T00:57:15Z): three source changes landed and rebuilt; the owner accepted fix #1 (Notes 00:40Z).
 - 0.2.8250, rule 2 with D1-D5 (owner-accepted, Notes 18:23Z; in the owner's commit 192482b4c): a satisfied
-  SpellContract is not checked on every meld; a change of what a spell resolves marks it for revalidation (the
-  borrower Book's five contracted-map mutators; a notch's downstream walk, D2); the meld refreshes stale
-  dependencies before a plan compiles; a lost provider is named with its remedy (D1-B); a notch back makes a
-  parked version grant active again (D3). Release-note section "A satisfied `SpellContract` is not checked on
-  every meld; a notch reaches every spell that depends on the notched one".
-- 0.2.8251, the removal fix (owner-approved, Notes 21:22Z): `Spellbook._remove_contracted_spell` removes
-  exactly the copy of the spell_id it is given, so an index unlink after a notch completes in any member order.
-  Release-note section "Unlinking an index after a notch removes every version's copy".
-Both carry tests (green with the GIL off and on), system docs with their indexes, the graph and the release note.
-Patch docs: system_docs/patches/completed/contract_recheck_on_notch_2026_10_16/ (archived) and
-system_docs/patches/active/contracted_copy_removal_by_version_2026_10_16/ (promoted; archive at closure).
-Open, the owner's: whether a contract's per-version row carries active/inactive state (Notes 20:59Z); what
-borrowers get after an ownership transfer - index links and the repoint option are refused silently (18:23Z);
-rule 2's binding-key gap on the transfer flip (18:23Z; fix: pass binding_key=spell_obj._key in its
-register_index and rollback); the spell_id lookups - the owner's rule (2026-10-17, Notes 19:41Z, 20:00Z): a
-spell_id lookup returns that spell or nothing, never the index's active spell; the six origins are found (Notes
-19:49Z). IN PROGRESS, fix #1 only (owner's go-ahead, PLAN 20:22Z): `find_spell_by_id` renamed
-`find_spell_by_spell_id` and exact, its transfer and dependency callers given an explicit index step; patch docs
-system_docs/patches/active/find_spell_by_spell_id_2026_10_17/; red tests in place. Origins 2-6 and the three
-decisions (a transfer given a parked spell_id, the dependency grant walk, parked grants in the contract listing)
-wait for the owner after fix #1; it ends the parked spell_id grant refusal (21:36Z). Mailbox (Notes 20:37Z,
-20:38Z): melder_0 notches first (M1-24 grants it); his three stories in held files and the minted-index registry
-go to the owner with fix #1's report. Decided: contract rows carry no active/inactive state (2026-10-17). Filed: TASK-2026-10-16-order_inflight_borrower_melds_against_notch_fanout (its race
-test is xfail) and TASK-2026-10-16-investigate_lent_consumer_provider_loss.
-Next: (1) fix #1 - the apply script on the scratch work tree, red -> green with the GIL off and on, the suites,
-then the repo, docs, release note and its notch (after melder_0's, M1-24); (2) the owner's direction on the open
-items; (3) the closure - summary naming 0.2.8250, 0.2.8251 and fix #1's notch and their release-note sections, the
-patch docs archived, board and artifact sync; (4) the rebuild last, both checks OK; (5) a NOTICE releasing the files
-melder_0 waits for (Notes 18:46Z).
-Evidence: the Notes from 09:57:21Z on; artifacts/meld_contract_scan_20261015/.
+  SpellContract is not checked on every meld; a change of what a spell resolves marks it for revalidation; the meld
+  refreshes stale dependencies before a plan compiles; a lost provider is named with its remedy; a notch back makes
+  a parked version grant active again. Release-note section "A satisfied `SpellContract` is not checked on every
+  meld; a notch reaches every spell that depends on the notched one".
+- 0.2.8251, the removal fix (owner-approved, Notes 21:22Z): `Spellbook._remove_contracted_spell` removes exactly
+  the copy of the spell_id it is given. Section "Unlinking an index after a notch removes every version's copy".
+- 0.2.8253, fix #1 (the owner's direction of 2026-10-17, PLAN 20:22Z): `find_spell_by_spell_id` and
+  `get_spell_by_spell_id` (renamed, no alias) answer exactly the spell a spell_id names, active or parked;
+  per-version permissions; the transfer and contract-dependency paths take an explicit index step; the grant check
+  is exact; the Rift rooms' command is renamed and their lookups exact. Code, four new test modules and a renamed
+  one, the codemod over 82 test files, ten UX examples, the expert and agent guides, the four system documents with
+  their indexes (Notes 23:07Z-23:35Z), the graph (Notes 00:14Z) and the release note (Notes 00:04Z) are in the
+  repo; the suites are green with the GIL off and on (22:41Z) and the release-note examples run in both modes.
+  Section "A spell_id lookup answers the spell it names" (Breaking). Rubric 83 / 83 / 83 / 74 (00:16Z).
+Patch docs: system_docs/patches/completed/contract_recheck_on_notch_2026_10_16/ (archived);
+system_docs/patches/active/contracted_copy_removal_by_version_2026_10_16/ and
+system_docs/patches/active/find_spell_by_spell_id_2026_10_17/ (promoted; archive at closure).
+Open, the owner's, re-examined id by id on 0.2.8253 (Notes 00:55Z-00:56Z): the version-row reads on the
+borrower side - `_find_contracted_spell_by_id` / `find_contracted_spell`, `get_spell_in_contracts` and the inbound
+listing answer a version's spell_id with its index's active copy; `_validate_contracts_and_define` reports a grant
+parked by a notch invalid and `get_all_spells_in_contracts()` raises; removing a parked grant invalidates every
+SpellContract consumer of the Book; `Detail`'s docstring and `has_spell`. By design, withdrawn:
+`Meld._current_in_pool`; not shown, withdrawn: the selected-id filing. Also open: what borrowers get after an
+ownership transfer and its binding-key gap (18:23Z, unchanged at 0.2.8253); the crystallizer cache's retention,
+which orders checkpoints of different processes by a per-process number (cause reproduced, 00:56Z); SpellIndex's two
+stale graph edges (00:11Z); `Contract`'s inverted map-direction docstring (00:56Z); the stamp test's stale record in
+tests_components (00:16Z); the flake `test_concurrent_adds_of_same_conduit_admit_exactly_one` (22:08Z). From
+melder_0's correctness epic this lane's set is S1-S4 and S7-S9, waiting for the owner; S6's fix runs in melder_0's
+lane, its Part B waits for spellbook.py (Notes 23:54Z).
+Next: (1) the owner's direction on the open items above, after the explanation sent 2026-10-18; (2) his word on
+closure - summary naming 0.2.8250, 0.2.8251 and 0.2.8253 with their release-note sections, the two active patch
+folders archived, board and artifact sync, then a rebuild only if a closure step touches system_docs - and on
+releasing spellbook.py, conduit.py and fix #1's other files to melder_0 (M1-26 told him the shared documents are
+free).
+Evidence: the Notes from 09:57:21Z on; artifacts/meld_contract_scan_20261015/ (fix #1 under spell_id_lookup/).
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

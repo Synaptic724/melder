@@ -54,7 +54,7 @@ def _capture_world(priority: bool) -> tuple[dict[str, Any], str]:
             spell=OrderedDisposalService, existence="many",
             disposal_method_names=["stop", "close", "flush", "stop"],
         )
-        selected = book.find_spell_by_id(selected_id)
+        selected = book.find_spell_by_spell_id(selected_id)
         assert selected is not None
         book.conjure(dynamic=True, name="disposal-root")
         parked_id = book.bind_inactive(
@@ -168,7 +168,7 @@ def test_graft_preserves_members_and_receiving_book_order(
         merge_index = None
         if mode != "fresh":
             resident_id = host.bind(spell=RestoreGamma, existence="many")
-            resident = host.find_spell_by_id(resident_id)
+            resident = host.find_spell_by_spell_id(resident_id)
             assert resident is not None
             merge_index = resident.spell_index
         conduit = host.conjure(dynamic=True)
@@ -255,7 +255,7 @@ def test_merge_does_not_adopt_a_skipped_resident_selection(priority: bool) -> No
             spell=OrderedDisposalService, existence="many",
             disposal_method_names=["stop", "close", "flush"],
         )
-        resident = host.find_spell_by_id(resident_id)
+        resident = host.find_spell_by_spell_id(resident_id)
         assert resident is not None
         assert resident_id == record["index_payload"]["selected_spell_id"]
         host.conjure(dynamic=True)

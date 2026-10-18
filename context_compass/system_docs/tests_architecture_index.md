@@ -12,10 +12,10 @@ Line numbers are 1-based and inclusive on both ends.
 | --- | --- |
 | document | `tests_architecture.md` |
 | index_version | 1.1.0 |
-| generated_at | 2026-10-16T17:07:46Z |
-| line_count | 988 |
+| generated_at | 2026-10-17T23:34:52Z |
+| line_count | 996 |
 | line_ending | lf |
-| content_sha256 | `ebebacf6ecaf6c82996848bf6c061e085c91c618192e02edf4e3bb0a14e1f7ad` |
+| content_sha256 | `a581b0e6654fab2a47872ec656c26588f78835754a15bf982490e81e14c612fe` |
 | sections | 32 |
 
 Recompute all three of `line_count`, `line_ending`, and `content_sha256`
@@ -58,4 +58,4 @@ which you did.
 | 796-822 | 3 | Diagrams > ASCII Diagram (C4) |
 | 823-850 | 3 | Diagrams > Mermaid Diagram (C4) |
 | 851-889 | 2 | Information Sources |
-| 890-988 | 2 | Context / Handoff Summary |
+| 890-996 | 2 | Context / Handoff Summary |

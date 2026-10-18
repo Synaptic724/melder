@@ -121,7 +121,7 @@ def _tenant_book(frame: str, service: type, root_name: str) -> Tuple[Spellbook, 
 
 def _park_next_version(book: Spellbook, conduit: Conduit, spell_id: str) -> str:
     """Stage TenantServiceNext as a parked member of the tenant service's index; return its spell id."""
-    index = book.find_spell_by_id(spell_id).spell_index
+    index = book.find_spell_by_spell_id(spell_id).spell_index
     return conduit.bind_inactive(spell=TenantServiceNext, spell_index=index, existence="many")
 
 
@@ -178,7 +178,7 @@ def test_same_class_in_two_frames_restores_both_tenants_under_per_frame_ids(cach
     next_id = _park_next_version(book_a, conduit_a, tenant_id)
     assert _park_next_version(book_b, conduit_b, tenant_id) == next_id
     conduit_a.notch_spell(
-        spell_index=book_a.find_spell_by_id(tenant_id).spell_index,
+        spell_index=book_a.find_spell_by_spell_id(tenant_id).spell_index,
         spell=book_a._inactive_spells[next_id],
     )
     checkpoint_id = _record(crystallizer)
@@ -193,8 +193,8 @@ def test_same_class_in_two_frames_restores_both_tenants_under_per_frame_ids(cach
     assert report["built_counts"]["spell_staged"] == 2
     assert [entry for entry in list(report["shortfalls"]) if entry["kind"] == "spell_crystal"] == []
     assert Aether().process_wide_unique_spell_ids is False
-    index_a = _live_book("tenant_a", "root_a").find_spell_by_id(tenant_id).spell_index
-    index_b = _live_book("tenant_b", "root_b").find_spell_by_id(tenant_id).spell_index
+    index_a = _live_book("tenant_a", "root_a").find_spell_by_spell_id(tenant_id).spell_index
+    index_b = _live_book("tenant_b", "root_b").find_spell_by_spell_id(tenant_id).spell_index
     assert index_a.selected_spell_id == next_id
     assert index_b.selected_spell_id == tenant_id
     assert rebooted.get_spell_crystal(tenant_id, frame_name="tenant_b").custody_key == f"{tenant_id}@tenant_b"

@@ -88,7 +88,7 @@ def test_each_scanned_object_runs_registration_callbacks_once(entry: str) -> Non
         else:
             spell_ids = book.scan(module)
         assert len(spell_ids) == 1
-        spell = book.find_spell_by_id(spell_ids[0])
+        spell = book.find_spell_by_spell_id(spell_ids[0])
         assert spell is not None
         assert pre == [Service]
         assert activation == [spell] and post == [spell]
@@ -135,7 +135,7 @@ def test_post_conjure_scan_carries_disposal_order_and_definitions_into_a_live_wo
     root = book.conjure(dynamic=True)
     try:
         resource_id, contract_id = root.scan(module)
-        resource_spell = book.find_spell_by_id(resource_id)
+        resource_spell = book.find_spell_by_spell_id(resource_id)
         assert resource_spell is not None
         assert resource_spell.disposal_method_names == ["stop", "close"]
         assert isinstance(root.meld(spell_id=resource_id), Resource)

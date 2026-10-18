@@ -888,7 +888,7 @@ class FakeConduit:
     Minimal conduit implementation for transfer tests.
 
     Contract:
-    - get_spell_by_id returns spells stored in the spellbook.
+    - get_spell_by_spell_id returns spells stored in the spellbook.
     """
 
     _aether: Optional[FakeAether] = None
@@ -939,7 +939,7 @@ class FakeConduit:
         """
         return self._conduit_cloud
 
-    def get_spell_by_id(self, spell_id: str, frame_name: str) -> Optional[Any]:
+    def get_spell_by_spell_id(self, spell_id: str, frame_name: str) -> Optional[Any]:
         """
         Return a spell by id from this conduit.
 
@@ -1091,7 +1091,17 @@ def build_spell(
         spell._dynamic_environment = dynamic_environment
         spell._creation_gate_controller = creation_gate_controller
 
+    def _spell_index_unless_cleaned() -> Optional[SpellIndex]:
+        """
+        Return the spell's current index, as `Spell._spell_index_unless_cleaned` does for a live spell.
+
+        Returns:
+            Optional[SpellIndex]: The index the spell belongs to now.
+        """
+        return spell.spell_index
+
     spell._add_owned_conduit = _add_owned_conduit
+    spell._spell_index_unless_cleaned = _spell_index_unless_cleaned
     return spell
 
 

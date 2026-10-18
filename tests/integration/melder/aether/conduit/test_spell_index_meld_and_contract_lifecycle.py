@@ -89,7 +89,7 @@ def _linked_pair() -> Iterator[tuple]:
     owner = owner_book.conjure(dynamic=True, name="owner")
     borrower = borrower_book.conjure(dynamic=True, name="borrower")
     owner.link(borrower)
-    index = owner_book.find_spell_by_id(service_id).spell_index
+    index = owner_book.find_spell_by_spell_id(service_id).spell_index
     try:
         yield (owner_book, borrower_book, owner, borrower, service_id, index)
     finally:
@@ -252,7 +252,7 @@ def test_removing_a_parked_version_grant_keeps_the_active_versions_copy() -> Non
         removal took the new version's active copy instead and left the old one parked.
     """
     with _linked_pair() as (owner_book, borrower_book, owner, borrower, service_id, index):
-        primary_spell = owner.get_spell_by_id(service_id)
+        primary_spell = owner.get_spell_by_spell_id(service_id)
         with borrower.transaction("link", conduits=[borrower, owner]):
             assert borrower.add_spell_to_contract(spell_id=service_id, conduit=owner, permissions="create")
         staged_id = _stage_secondary(owner, index)

@@ -236,3 +236,76 @@ def test_releases_racing_a_queue_waiter_hand_over_each_object_once() -> None:
     assert _run_threads(8, _body) == []
     assert clashes == []
     assert pool.count == 1
+
+
+class _CountedWorker:
+    """A pooled object counting its builds and its disposals under one class lock."""
+
+    lock = threading.Lock()
+    built = 0
+    closed = 0
+
+    def __init__(self) -> None:
+        """Count one build."""
+        with _CountedWorker.lock:
+            _CountedWorker.built += 1
+
+    def reset(self) -> None:
+        """Nothing to clear."""
+
+    def close(self) -> None:
+        """Count one disposal."""
+        with _CountedWorker.lock:
+            _CountedWorker.closed += 1
+
+
+def test_rebinds_racing_leases_and_releases_keep_the_count_equal_to_the_objects_alive() -> None:
+    """
+    A thread that keeps changing the limit (3 <-> 5) under eight leasing threads never breaks the count
+    (STORY-2026-10-17-release_routes_parked_version_objects_to_active_pool): once everything is back it equals the
+    objects built and not destroyed, every one of them idle, and never more than the larger limit.
+    """
+    _CountedWorker.built = 0
+    _CountedWorker.closed = 0
+    pool = ManagedSpellQuantity(spell=_SpellStub(ManagedSpellMode.limited_quantity, 3), owner_conduit_id="root")
+    start = threading.Barrier(9)
+    errors: List[BaseException] = []
+    errors_lock = threading.Lock()
+
+    def _leaser() -> None:
+        start.wait()
+        try:
+            for _ in range(300):
+                try:
+                    obj = pool._idle.pop()
+                except IndexError:
+                    try:
+                        served = pool.reserve()
+                    except ManagedSpellExhaustedError:
+                        continue
+                    obj = _CountedWorker() if served is None else served
+                pool.put_back(obj)
+        except BaseException as error:
+            with errors_lock:
+                errors.append(error)
+
+    def _rebinder() -> None:
+        start.wait()
+        try:
+            for n in range(200):
+                pool._rebind_spell(_SpellStub(ManagedSpellMode.limited_quantity, 5 if n % 2 == 0 else 3))
+        except BaseException as error:
+            with errors_lock:
+                errors.append(error)
+
+    threads = [threading.Thread(target=_leaser, daemon=True) for _ in range(8)]
+    threads.append(threading.Thread(target=_rebinder, daemon=True))
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join(60.0)
+        assert not thread.is_alive(), "a worker hung"
+    assert errors == []
+    assert pool.count == _CountedWorker.built - _CountedWorker.closed
+    assert pool.count == pool.idle_count
+    assert pool.count <= 5

@@ -55,7 +55,7 @@ class ExistingConjureCase:
             existence=Existence.unique_per_conduit,
             disposal_method_names=["cleanup"],
         )
-        assert self.source.find_spell_by_id(self.old_id).disposal_method_names == ["cleanup"]
+        assert self.source.find_spell_by_spell_id(self.old_id).disposal_method_names == ["cleanup"]
         self.book = Spellbook(
             aetheric_frame="existing-conjure", configuration=config if shared else None,
         )
@@ -167,7 +167,7 @@ def test_existing_conjure_retains_target_and_store_with_an_empty_new_book(
     assert existing_case.book.conduit is target
     assert target._spellbook is existing_case.book
     assert existing_case.book.spells == {}
-    assert existing_case.source.find_spell_by_id(existing_case.old_id) is not None
+    assert existing_case.source.find_spell_by_spell_id(existing_case.old_id) is not None
     with pytest.raises(KeyError):
         target.meld(spell_id=existing_case.old_id)
     assert existing_case.root.meld(spell_id=existing_case.old_id) is not existing_case.retained
@@ -184,8 +184,8 @@ def test_existing_conjure_runs_new_definitions_under_the_supplied_id(
     value = target.meld(spell_id=new_id)
     assert isinstance(value, GraduatedService)
     assert target.meld(spell_id=new_id) is value
-    assert existing_case.book.find_spell_by_id(new_id)._owner_conduit_id == target.id
-    assert existing_case.source.find_spell_by_id(new_id) is None
+    assert existing_case.book.find_spell_by_spell_id(new_id)._owner_conduit_id == target.id
+    assert existing_case.source.find_spell_by_spell_id(new_id) is None
     assert target.purge(spell_id=new_id) == 1
 
 
@@ -204,7 +204,7 @@ def test_existing_conjure_supports_later_binding_through_the_same_conduit(
 
     assert receiving_calls == [GraduatedService]
     assert source_calls == []
-    assert existing_case.source.find_spell_by_id(new_id) is None
+    assert existing_case.source.find_spell_by_spell_id(new_id) is None
     assert isinstance(target.meld(spell_id=new_id), GraduatedService)
     assert target.purge(spell_id=new_id) == 1
 

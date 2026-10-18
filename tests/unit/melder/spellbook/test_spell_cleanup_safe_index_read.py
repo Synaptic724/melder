@@ -1,9 +1,11 @@
 """
 Unit tests - Spell._spell_index_unless_cleaned, the cleanup-safe index read (0.2.8229).
 
-Spellbook.find_spell_by_id reads a parked spell's index through this accessor without holding the Book
-lock, so the read must answer the live index, follow an index move, answer None once the spell is cleaned,
-and never interleave with a cleanup running under the spell's lock.
+Readers that hold a Spell and no Book lock read its index through this accessor - the parked branch of
+Spellbook._find_contracted_spell_by_id and, since 0.2.8253, the explicit index steps of the ownership
+transfer and the contract dependency walks (until then the parked branch of Spellbook.find_spell_by_id) - so
+the read must answer the live index, follow an index move, answer None once the spell is cleaned, and never
+interleave with a cleanup running under the spell's lock.
 """
 
 import threading

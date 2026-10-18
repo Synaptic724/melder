@@ -15,13 +15,13 @@ GOAL: LINEAGES, AND A HOT SWAP TAKEN END TO END. An index is a
         conduit.notch_spell(          v2 becomes the active member
             spell_index=index, spell_id=v2_id)
 
-      NAME THE VERSION BY ITS SPELL_ID. Every public spell_id->object
-      lookup (`get_spell_by_id`, `find_spell_by_id`) resolves any
-      lineage spell_id to the spell AS IT EXISTS NOW - the currently
-      ACTIVE member - which is documented and correct for what those
-      verbs are for. So a parked version is never fetched as an
-      object: `notch_spell` takes its spell_id and resolves the exact
-      version inside the call. The Spellbook is still not the surface
+      NAME THE VERSION BY ITS SPELL_ID. A spell_id names one version,
+      and the public spell_id->object lookups (`get_spell_by_spell_id`,
+      `find_spell_by_spell_id`) answer exactly that version, active or
+      parked (owner ruling 2026-10-17; until 0.2.8253 they answered a
+      parked spell_id with the ACTIVE member). `notch_spell` takes the
+      spell_id too and resolves the exact version inside the call. The
+      Spellbook is still not the surface
       you notch from - the conduit's verb does the resolving (owner
       ruling 2026-10-16; until then the verb took only the parked
       OBJECT, no public door handed one out, and this lesson stopped
@@ -65,8 +65,8 @@ GOAL: LINEAGES, AND A HOT SWAP TAKEN END TO END. An index is a
       statement read out of its scope becomes a false one.
 SURFACE EXERCISED: Conduit.bind_inactive, Conduit.notch_spell(spell_id=...),
                    Conduit.meld, SpellIndex.selected_spell_id /
-                   spells_in_index, Conduit.get_spell_by_id
-VERIFY: RUN GREEN 2026-10-16 on 3.14t, GIL off and on.
+                   spells_in_index, Conduit.get_spell_by_spell_id
+VERIFY: RUN GREEN 2026-10-17 on 3.14t, GIL off and on.
 """
 import melder as md
 
@@ -91,7 +91,7 @@ def main() -> None:
 
     # THE INDEX IS PUBLICLY REACHABLE from the active spell, and it is a
     # LINEAGE: a set of member ids plus exactly one selection.
-    active = conduit.get_spell_by_id(v1_id)
+    active = conduit.get_spell_by_spell_id(v1_id)
     assert active is not None
     index = active.spell_index
     assert index.selected_spell_id == v1_id
@@ -127,16 +127,15 @@ def main() -> None:
     print("meld -> rate", still.rate, " (v2 is parked, not resolvable)")
     print("  the costly half of a swap is done while v1 still serves")
 
-    # WHY THE NOTCH IS GIVEN A SPELL_ID. A parked spell_id resolves to
-    # the CURRENT member, because that is what the lookups are for: they
-    # answer "what is live for this lineage", not "give me the object
-    # behind this exact version".
-    resolved_from_parked_id = conduit.get_spell_by_id(v2_id)
+    # A SPELL_ID NAMES ONE VERSION. Looking up the parked spell_id answers
+    # the parked version itself - not the member live for this lineage -
+    # and the notch below is given that same spell_id.
+    resolved_from_parked_id = conduit.get_spell_by_spell_id(v2_id)
     assert resolved_from_parked_id is not None
-    assert resolved_from_parked_id.spell_id == v1_id
+    assert resolved_from_parked_id.spell_id == v2_id
     print()
-    print("looking up the PARKED spell_id returned the ACTIVE spell")
-    print("  so the notch is told the version by its spell_id instead")
+    print("looking up the PARKED spell_id returned the PARKED spell")
+    print("  and the notch is told the same version by the same spell_id")
 
     # TAKE THE SWAP. The spell_id bind_inactive returned names the version;
     # the notch resolves it inside the call and checks that it belongs to

@@ -110,7 +110,7 @@ def q1() -> None:
 def two_versions(frame: str):
     """A active (limit 1) with one object out; B (limit 2) staged on A's index and notched in."""
     spellbook, conduit, a = world(frame)
-    index = spellbook.find_spell_by_id(a).spell_index
+    index = spellbook.find_spell_by_spell_id(a).spell_index
     names = {a: "A"}
     obj = lease(conduit, a, "A")
     b = stage(conduit, index)
@@ -162,7 +162,7 @@ def q5() -> None:
     names = {a: "A"}
     obj = lease(conduit, a, "A")
     ReleaseManagedSpell().release(obj)
-    conduit.cleanup_spell(spell=spellbook.find_spell_by_id(a))
+    conduit.cleanup_spell(spell=spellbook.find_spell_by_spell_id(a))
     pools("after cleanup_spell(A)", Worker, names)
     again = conduit.bind(spell=Worker, spellframe="workers", binding_name="worker",
                          existence=Existence.managed_spell_quantity, permissions="create",
@@ -178,7 +178,7 @@ def q6() -> None:
     """Control: two versions that are two classes."""
     print("Q6 control: A binds Worker, B binds WorkerV2 on the same index")
     spellbook, conduit, a = world("q6")
-    index = spellbook.find_spell_by_id(a).spell_index
+    index = spellbook.find_spell_by_spell_id(a).spell_index
     names = {a: "A"}
     obj = lease(conduit, a, "A")
     b = stage(conduit, index, cls=WorkerV2)

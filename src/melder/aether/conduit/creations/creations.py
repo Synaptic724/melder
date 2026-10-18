@@ -1129,7 +1129,11 @@ class Creations(Cleanable):
             - Idempotent: one pool per (store, spell id); a second call returns
               the same pool. A rebind under the same content-stable id meets the
               pool its earlier definition left (as a slotted replacement meets
-              its slot, 0.2.8219), which is re-pointed at the new Spell object.
+              its slot, 0.2.8219), which takes the new Spell object and its
+              settings (`ManagedSpellQuantity._rebind_spell`): a managed spell's
+              settings are not part of its spell_id (0.2.8254), so a rebind with
+              another mode, limit, timeout or reset names keeps the pool, its
+              objects and its count.
             - A new pool is composed from the Spell's options and owned by this
               store's conduit (`owner_conduit_id`); it holds no object yet.
             - Registers the pool with `ReleaseManagedSpell` under this store's
@@ -1155,21 +1159,26 @@ class Creations(Cleanable):
         Threading:
             The map read and write run under the store lock, a leaf; composing a
             pool runs no user code. Called under the Spell's lock by owner
-            stamping, the established build-lock-then-store-lock order. The pool
-            is registered with `ReleaseManagedSpell` after this lock is released
-            (its own lock is a leaf held only to publish), so the order is Spell
-            lock -> registry lock and the store lock stays a leaf.
+            stamping, the established build-lock-then-store-lock order. A rebind
+            runs after this lock is released, because it takes the pool's lock
+            (a leaf held only for field writes and a notify); the pool is then
+            registered with `ReleaseManagedSpell` (its own lock is a leaf held
+            only to publish). So the orders are Spell lock -> store lock, Spell
+            lock -> pool lock and Spell lock -> registry lock, and the store lock
+            stays a leaf.
         """
         with self._lock:
             self.check_cleaned()
             spell_id = spell.spell_id
             pool = self._managed_quantities.get(spell_id)
+            rebind = pool is not None
             if pool is None:
                 pool = ManagedSpellQuantity(spell=spell, owner_conduit_id=self._owner_conduit_id)
                 self._managed_quantities[spell_id] = pool
-            else:
-                pool._rebind_spell(spell)
             owner_conduit_id = self._owner_conduit_id
+        if rebind:
+            # Outside the store lock: the rebind takes the pool's lock, and the store lock stays a leaf.
+            pool._rebind_spell(spell)
         ReleaseManagedSpell().register(pool, root_conduit_id=owner_conduit_id)
         return pool
 

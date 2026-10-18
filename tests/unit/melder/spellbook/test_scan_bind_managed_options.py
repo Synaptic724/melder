@@ -177,7 +177,7 @@ def test_a_scan_binds_a_managed_class_with_its_options_through_a_real_book() -> 
             managed_spell_limit=3, managed_spell_reset_methods=["reset"],
         )(_fresh_class())
         (spell_id,) = book.scan(_module_with(target))
-        spell = book.find_spell_by_id(spell_id)
+        spell = book.find_spell_by_spell_id(spell_id)
         assert spell.managed_spell_mode is ManagedSpellMode.limited_quantity
         assert spell.managed_spell_limit == 3
         assert spell.managed_spell_timeout_seconds is None

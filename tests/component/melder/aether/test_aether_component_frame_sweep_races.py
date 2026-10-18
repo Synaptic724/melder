@@ -158,7 +158,7 @@ def test_bind_succeeds_when_a_frame_is_born_during_the_cross_frame_sweep(monkeyp
     )
 
     assert "error" not in outcome, outcome.get("error")
-    assert book_a.find_spell_by_id(outcome["spell_id"]) is not None
+    assert book_a.find_spell_by_spell_id(outcome["spell_id"]) is not None
     assert aether.list_frame_names() == ("frame-a", "frame-b", "frame-c")
 
 
@@ -179,5 +179,5 @@ def test_bind_succeeds_when_another_frame_is_cleaned_during_the_cross_frame_swee
     )
 
     assert "error" not in outcome, outcome.get("error")
-    assert book_a.find_spell_by_id(outcome["spell_id"]) is not None
+    assert book_a.find_spell_by_spell_id(outcome["spell_id"]) is not None
     assert aether.find_frame("frame-x") is None

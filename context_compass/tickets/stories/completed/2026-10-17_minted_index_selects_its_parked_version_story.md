@@ -1,15 +1,21 @@
 # Story: minted_index_selects_its_parked_version - an index never names a parked version as its active one
 
+- Completed: 2026-10-17T23:25:30Z
+- Summary: withdrawn on the owner's ruling (chat 2026-10-17), not a defect: moving a version with
+  `remove_from_spell_index` is the agent's call and making it active takes a notch, so the split-off index naming
+  its parked member stays as it is. No fix, no notch; nothing edited. The graft side (a graft activating that
+  member without a notch) stays in STORY-2026-10-17-restore_drops_separated_parked_version.
+
 ## Metadata
 - Story ID: STORY-2026-10-17-minted_index_selects_its_parked_version
 - Epic: EPIC-2026-10-17-correctness_defects
-- Status: ready
+- Status: done
 - Owner: user
 - Agent Name: unassigned
 - Agent Role: UNKNOWN
 - Priority: p3
 - Created: 2026-10-17T21:47:06Z
-- Updated: 2026-10-17T21:47:06Z
+- Updated: 2026-10-17T23:25:30Z
 
 ## User Narrative
 As an agent who separates a parked version into its own index and later records or grafts that index, I want the
@@ -22,10 +28,9 @@ index `remove_from_spell_index` mints names its parked member as its selection, 
 the Crystallizer record keeps the index's answer and a graft acts on it, turning a parked version into an active one.
 
 ## Ticket Contract
-- ENTRY_GATE: the owner's answer to the open question below and to the open question of
-  STORY-2026-10-17-restore_drops_separated_parked_version (what a restore or a graft of a parked-only index should
-  produce); the owner schedules the story and assigns an agent; melder_1 has released spellbook.py; an active board
-  row; patch docs for the seam (and for SpellIndex when the answer is (a)).
+- ENTRY_GATE: the owner's answer to the open question below (S5's was answered on 2026-10-17: a parked-only index is
+  rebuilt parked); the owner schedules the story and assigns an agent; melder_1 has released spellbook.py; an active
+  board row; patch docs for the seam (and for SpellIndex when the answer is (a)).
 - EXECUTION_BOUNDARY: `Spellbook._apply_remove_from_index` and, per the answer, `SpellIndex` (an index whose
   members are all parked selects nothing) with the readers of `selected_spell_id` that assume an active version -
   or those readers alone (the record's index crystal, the graft runner, `_is_selected_unless_cleaned`); regression
@@ -34,10 +39,9 @@ the Crystallizer record keeps the index's answer and a graft acts on it, turning
 - DEPENDENCIES: EPIC-2026-10-17-correctness_defects; the probe and its runs (Artifact Links);
   STORY-2026-10-17-minted_index_missing_from_frame_registry (the same seam: one patch can carry both);
   STORY-2026-10-17-restore_drops_separated_parked_version (the restore and graft lanes for a parked-only index).
-- EXIT_GATE: probe G2 no longer brings French back active (it comes back parked, or the graft refuses with a reason,
-  per S5's answer), and the live minted index no longer names French as selected (or no reader treats that as
-  active, per the answer); G1, G3 and G4 unchanged; regression tests pass with the GIL off and on; docs, notch and
-  the rebuild with both checks OK.
+- EXIT_GATE: probe G2 brings French back parked (S5's answer, with S5's graft lane), and the live minted index no
+  longer names French as selected (or no reader treats that as active, per the answer); G1, G3 and G4 unchanged;
+  regression tests pass with the GIL off and on; docs, notch and the rebuild with both checks OK.
 - FAILURE_ESCALATION: DECISION_REQUEST for the open question; CONFLICT while spellbook.py is held, or if the S4 fix
   lands first with another shape for the minted index.
 
@@ -58,26 +62,26 @@ the Crystallizer record keeps the index's answer and a graft acts on it, turning
   throwaway index Bind mints inside `bind_inactive`, which never outlives the call.
 
 ## State Transition Event
-- from_state: draft
-- to_state: ready
-- transition_reason: the defect is proven on 0.2.8252 by a probe with the GIL off and on (Notes); one open question
-  for the owner.
+- from_state: ready
+- to_state: done
+- transition_reason: withdrawn on the owner's ruling (chat 2026-10-17): not a defect - moving a version is the
+  agent's call and making it active takes a notch (DECISION note). Filed draft -> ready at 2026-10-17T21:47:06Z.
 
 ## Dependencies / Related Work
 - STORY-2026-10-17-minted_index_missing_from_frame_registry (same seam).
 - STORY-2026-10-17-restore_drops_separated_parked_version (restore drops the version; graft activates it).
 
 ## Tasks (Implementation Checklist)
-- [ ] Task: the owner's answer on the open question (and S5's).
-- [ ] Task: patch docs for the seam; the owner's approval.
-- [ ] Task: the fix with symptom-named regression tests, docs, notch and the rebuild last.
+- [x] Task: the owner's answer on the open question (2026-10-17: not a defect; withdrawn, DECISION note).
+- [ ] Task: patch docs for the seam; the owner's approval (not needed: withdrawn).
+- [ ] Task: the fix with symptom-named regression tests, docs, notch and the rebuild last (not needed: withdrawn).
 - [ ] Enforce Ticket Microcycle across all linked tasks.
 - [ ] Record meaningful attributed findings in supported Notes/comments or authorized linked evidence.
 
 ## Acceptance Criteria
 - After `remove_from_spell_index(spell_id=French)`: the minted index does not report French as active - to the
   record, to `_is_selected_unless_cleaned(French)` (False) and to a graft.
-- Grafting that index's record into a host never makes French active there.
+- Grafting that index's record into a host gives French parked there (S5's lane), never active.
 - After a notch to French inside the minted index, the index selects French as today.
 
 ## Validation / Test Plan
@@ -104,9 +108,14 @@ the Crystallizer record keeps the index's answer and a graft acts on it, turning
   (recommended: the index then says what is true, and the notch already handles an index with no active version),
   or (b) keep naming its member while the record, the graft and the release resolver check the Book's active map
   instead of trusting the selection?
+  Answered (owner, 2026-10-17T23:25:30Z): neither - not a defect: "if you go into a [...] spell index and you move
+  the version [...] then its not my [...] problem you gotta use notch" (DECISION note).
 
 ## Decision Log
 - 2026-10-17T21:47:06Z: filed under EPIC-2026-10-17-correctness_defects from sweep A12 (Notes).
+- 2026-10-17T21:55:46Z: S5's question answered by the owner (rebuild parked); G2's criterion narrowed (FACT note).
+- 2026-10-17T23:25:30Z: the owner ruled it not a defect - moving a version is the agent's call, activation takes a
+  notch; withdrawn (DECISION note).
 
 ## Artifact Links (Optional)
 Qualified independent reviewer acceptance and direct closure follow shared `ticketing.md`;
@@ -118,7 +127,9 @@ this does not make independent review mandatory for every ticket.
   - artifacts/correctness_defects_20261017/runs/probe_graft_parked_members_gil0.txt
   - artifacts/correctness_defects_20261017/runs/probe_graft_parked_members_gil1.txt
 - DISPOSITION: retain_as_reference
-- CLEANUP_TRIGGER: the probe is re-run at the fix and kept as the defect's reproducer
+- CLEANUP_TRIGGER: withdrawn with no fix; the probe and its runs stay rowed under
+  STORY-2026-10-17-restore_drops_separated_parked_version (G2) and
+  STORY-2026-10-17-staged_version_releases_active_signature (G4)
 
 ## Context Management
 - CONTEXT_MANAGEMENT_REQUIRED: false
@@ -163,10 +174,44 @@ this does not make independent review mandatory for every ticket.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-10-17T21:55:46Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: S5's open question is answered (owner, chat 2026-10-17: "we restore what should be restored"): a parked-only
+    index is rebuilt parked by a restore and by a graft. So G2's exit criterion is "French comes back parked", not a
+    refusal; the graft's lane for it is S5's, and this story keeps the selection the record and the graft read.
+  EVIDENCE:
+  - context_compass/tickets/stories/2026-10-17_restore_drops_separated_parked_version_story.md:94-98
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_graft_parked_members_gil0.txt:7-12
+  IMPACT: One answer left for this story (its own open question).
+  NEXT: The owner's answer on this story's open question.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
+- DATETIME: 2026-10-17T23:25:30Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: The owner ruled on this story (chat 2026-10-17): "if you go into a [...] spell index and you move the version
+    [...] then its not my [...] problem you gotta use notch". Not a defect: moving a version with
+    `remove_from_spell_index` is the agent's call and making it active takes a notch, so the split-off index naming
+    its parked member as its selection stays as it is; the story is withdrawn with no fix and no notch. What his
+    rule does cover - a graft activating that parked member without a notch (G2) - is already the graft lane of
+    STORY-2026-10-17-restore_drops_separated_parked_version, which now decides from each member's recorded custody
+    instead of the selection. melder_0 tells the owner so in this turn's reply; his word can override.
+  EVIDENCE:
+  - context_compass/tickets/stories/completed/2026-10-17_minted_index_selects_its_parked_version_story.md:107-112
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_graft_parked_members_gil0.txt:7-12
+  IMPACT: The story closes as withdrawn; S5 carries the graft side; melder_1's files lose one story.
+  NEXT: None for this story.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
 ## Closure Confirmation
-- [ ] Work walkthrough shared with user
-- [ ] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
-- [ ] Applicable anti-pattern checks are clear or escalated with evidence.
+- [x] Work walkthrough shared with user
+- [x] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
+- [x] Applicable anti-pattern checks are clear or escalated with evidence.
 
 ## Noting Behavior
 - Note focus: cross-task synthesis, dependency flow, and state-transition logic.
@@ -177,12 +222,11 @@ this does not make independent review mandatory for every ticket.
   continuation. Current scope/state/decisions/handoff stay coherent at material transitions.
 
 ## Context / Handoff Summary
-- Scope: the index `remove_from_spell_index` mints never names its parked version as active (Requirements). Defect
-  proven on 0.2.8252 (Notes); probe and runs in Artifact Links.
-- State: ready, unassigned; filed by melder_0 under EPIC-2026-10-17-correctness_defects; one open question for the
-  owner. The fix sits in spellbook.py (S4's seam), which melder_1 holds.
-- Next: (1) the owner's answers (this story's and S5's) and scheduling; (2) patch docs; (3) the fix, its tests,
-  docs, notch and the rebuild.
+- Scope: the index `remove_from_spell_index` mints names its parked member as its selection (Notes, probe G2).
+- State: done - withdrawn on the owner's ruling (2026-10-17): not a defect; moving a version is the agent's call and
+  making it active takes a notch. No fix, no notch; nothing edited.
+- Next: none here. The graft side (a graft activating the parked member without a notch) stays in
+  STORY-2026-10-17-restore_drops_separated_parked_version, whose lanes read each member's recorded custody.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

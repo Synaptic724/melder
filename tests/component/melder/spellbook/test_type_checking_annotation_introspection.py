@@ -169,7 +169,7 @@ def test_bind_fingerprint_text_is_address_free_for_type_checking_annotations() -
         its ForwardRef for the requirements finder.
     """
     book, _conduit, car_id = _conjured_world("tc-fingerprint", dynamic=False)
-    binding_profile = book.find_spell_by_id(car_id).profile.binding_profile
+    binding_profile = book.find_spell_by_spell_id(car_id).profile.binding_profile
 
     assert binding_profile.init_signature.endswith(", price: 'Optional[Decimal]' = None) -> None")
     assert "owner=" not in binding_profile.init_signature
@@ -215,7 +215,7 @@ def test_detailed_profile_of_spell_with_type_checking_annotations() -> None:
     """
     book, _conduit, car_id = _conjured_world("tc-detailed", dynamic=False)
 
-    profile = SpellExaminer().create_profile(book.find_spell_by_id(car_id), "detailed")
+    profile = SpellExaminer().create_profile(book.find_spell_by_spell_id(car_id), "detailed")
 
     assert profile.class_profile.annotations == {"ratio": "Decimal"}
     quote = profile.class_profile.members["quote"]

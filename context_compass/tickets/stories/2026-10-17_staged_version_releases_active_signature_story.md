@@ -9,7 +9,7 @@
 - Agent Role: UNKNOWN
 - Priority: p1
 - Created: 2026-10-17T20:23:51Z
-- Updated: 2026-10-17T21:47:06Z
+- Updated: 2026-10-17T21:55:46Z
 
 ## User Narrative
 As an agent iterating on a spell in a live world, I want staging a new version with `bind_inactive`, moving a parked
@@ -32,8 +32,8 @@ happens to repair it.
 - DEPENDENCIES: EPIC-2026-10-17-correctness_defects; the probe and its runs (Artifact Links).
 - EXIT_GATE: the probe's C1, C2, C3, C4 and C6 show every other spell's claim and route unchanged; the regression
   tests pass with the GIL off and on; docs, notch and the rebuild with both checks OK.
-- FAILURE_ESCALATION: DECISION_REQUEST if the fix should make staging refuse a version keyed like another active
-  spell (C6) instead of only not releasing it; CONFLICT if the holder of spellbook.py is mid-change in the seam.
+- FAILURE_ESCALATION: CONFLICT if the holder of spellbook.py is mid-change in the seam. Staging stays open to any
+  key (DECISION note of 2026-10-17T21:55:46Z).
 
 ## Requirements (Functional)
 - Destroying an emptied index releases a frame claim and drops a Book route only when they belong to that index: the
@@ -97,9 +97,13 @@ happens to repair it.
 ## Open Questions
 - Should staging also refuse a version whose key another Book's active spell holds (C6), or only stop releasing that
   claim? The owner's call; the minimal fix is the latter.
+  Settled (2026-10-17T21:55:46Z) by the owner's answer on STORY-2026-10-17-notch_moves_signature_by_incoming_key_only:
+  the minimal fix - staging stays open to any key (DECISION note).
 
 ## Decision Log
 - 2026-10-17T20:23:51Z: filed under EPIC-2026-10-17-correctness_defects from sweep A1 (Notes).
+- 2026-10-17T21:55:46Z: the open question settled by the owner's answer on the notch-signature story: the minimal
+  fix (DECISION note).
 
 ## Artifact Links (Optional)
 Qualified independent reviewer acceptance and direct closure follow shared `ticketing.md`;
@@ -196,6 +200,25 @@ this does not make independent review mandatory for every ticket.
   - context_compass/artifacts/correctness_defects_20261017/runs/probe_graft_parked_members_gil1.txt:20-25
   IMPACT: The fix's tests should include one graft beside the restore.
   NEXT: The owner schedules the story.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-17T21:55:46Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: The open question follows from the owner's answer on
+    STORY-2026-10-17-notch_moves_signature_by_incoming_key_only (chat 2026-10-17: one SpellIndex can hold versions
+    with different binding signatures). A parked version claims no signature, so staging stays allowed for any key,
+    C6 included, and this story takes the minimal fix: stop releasing claims that belong to other spells. If C6's
+    version is later notched active while Book O's spell holds the key, that story's notch refusal stops it. Drawn
+    by melder_0 from the owner's answer and told to him; his word overrides.
+  EVIDENCE:
+  - context_compass/tickets/stories/2026-10-17_staged_version_releases_active_signature_story.md:97-101
+  - context_compass/tickets/stories/2026-10-17_notch_moves_signature_by_incoming_key_only_story.md:40-46
+  - src/melder/aether/spellbook/spellbook.py:4192-4237
+  IMPACT: No open question remains here; the execution boundary stays `_destroy_spell_index` and its callers.
+  NEXT: The owner's scheduling, after melder_1 releases spellbook.py.
   REREAD: HELPFUL
   SCORE_0_TO_10: 8
 

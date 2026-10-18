@@ -67,7 +67,7 @@ def test_spellbook_bind_puts_the_options_on_the_spell() -> None:
             spell=PooledLogger, existence=Existence.managed_spell_quantity, managed_spell_mode="limited_quantity",
             managed_spell_limit=4, managed_spell_reset_methods=["reset", "flush"],
         )
-        spell = book.find_spell_by_id(spell_id)
+        spell = book.find_spell_by_spell_id(spell_id)
         assert spell.existence is Existence.managed_spell_quantity
         assert spell.managed_spell_mode is ManagedSpellMode.limited_quantity
         assert spell.managed_spell_limit == 4
@@ -78,8 +78,8 @@ def test_spellbook_bind_puts_the_options_on_the_spell() -> None:
         book.cleanup()
 
 
-def test_a_managed_binding_and_its_options_each_change_the_spell_id() -> None:
-    """The same class bound unique, managed by default, and managed with a limit gets three ids."""
+def test_a_managed_binding_changes_the_spell_id_and_its_settings_do_not() -> None:
+    """The same class bound unique and managed gets two ids; managed with a limit keeps the managed one (0.2.8254)."""
     ids = []
     for options in (
             {"existence": Existence.unique},
@@ -91,7 +91,8 @@ def test_a_managed_binding_and_its_options_each_change_the_spell_id() -> None:
             ids.append(book.bind(spell=PooledLogger, **options))
         finally:
             book.cleanup()
-    assert len(set(ids)) == 3
+    assert ids[0] != ids[1]
+    assert ids[1] == ids[2]
 
 
 def test_a_refused_binding_leaves_the_book_unchanged() -> None:
@@ -102,7 +103,7 @@ def test_a_refused_binding_leaves_the_book_unchanged() -> None:
             book.bind(spell=PooledLogger, existence=Existence.unique, managed_spell_limit=2)
         assert book.describe_spells_in_spellbook() == []
         spell_id = book.bind(spell=PooledLogger, existence=Existence.unique)
-        assert book.find_spell_by_id(spell_id) is not None
+        assert book.find_spell_by_spell_id(spell_id) is not None
     finally:
         book.cleanup()
 
@@ -124,7 +125,7 @@ def test_a_managed_function_is_refused() -> None:
 
 
 def test_conduit_bind_and_bind_inactive_forward_the_options() -> None:
-    """A root binds a managed class after conjure, then parks a second version with other options."""
+    """A root binds a managed class after conjure, then parks a second version (other disposal names) with its own."""
     book = _dynamic_book()
     try:
         book.bind(spell=Steady, existence=Existence.unique)
@@ -133,13 +134,14 @@ def test_conduit_bind_and_bind_inactive_forward_the_options() -> None:
             spell=PooledLogger, existence=Existence.managed_spell_quantity, managed_spell_mode="queue",
             managed_spell_limit=2, managed_spell_timeout_seconds=0.25,
         )
-        active = book.find_spell_by_id(active_id)
+        active = book.find_spell_by_spell_id(active_id)
         assert (active.managed_spell_mode, active.managed_spell_limit, active.managed_spell_timeout_seconds) == (
             ManagedSpellMode.queue, 2, 0.25,
         )
         parked_id = root.bind_inactive(
             spell=PooledLogger, spell_index=active.spell_index, existence=Existence.managed_spell_quantity,
-            managed_spell_mode=ManagedSpellMode.elastic, managed_spell_limit=16, managed_spell_reset_methods=["reset"],
+            disposal_method_names=["flush"], managed_spell_mode=ManagedSpellMode.elastic, managed_spell_limit=16,
+            managed_spell_reset_methods=["reset"],
         )
         assert parked_id != active_id
         parked = book._get_owned_spell(parked_id)
@@ -160,7 +162,7 @@ def test_spellbinder_binds_a_managed_class_into_a_real_book() -> None:
             .as_managed_spell_quantity("elastic", limit=32, reset_methods=["flush"])
             .finalize()
         )
-        spell = book.find_spell_by_id(spell_id)
+        spell = book.find_spell_by_spell_id(spell_id)
         assert spell.managed_spell_mode is ManagedSpellMode.elastic
         assert spell.managed_spell_limit == 32
         assert spell.managed_spell_reset_methods == ("flush",)

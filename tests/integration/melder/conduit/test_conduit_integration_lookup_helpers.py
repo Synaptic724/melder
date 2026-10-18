@@ -104,7 +104,7 @@ def test_conduit_find_spell_id_and_key_return_current_ids() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        spell = conduit.get_spell_by_id(spell_id)
+        spell = conduit.get_spell_by_spell_id(spell_id)
         assert spell is not None
 
         resolved_id = conduit.find_spell_id(

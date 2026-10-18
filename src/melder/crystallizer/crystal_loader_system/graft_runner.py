@@ -423,7 +423,7 @@ class GraftRunner(Cleanable):
             resolvable=crystal.get("resolvable", True),
             **SpellCrystal.managed_bind_options(crystal),
         )
-        live_spell = self._host_book.find_spell_by_id(new_spell_id)
+        live_spell = self._host_book.find_spell_by_spell_id(new_spell_id)
         live_index = (
             live_spell.spell_index if live_spell is not None else None
         )
@@ -552,14 +552,17 @@ class GraftRunner(Cleanable):
         selection_adopted = False
         if self._adopt_recorded_selection:
             # TRIAGE (2026-07-12): the first cut resolved the adoptee via
-            # find_spell_by_id, which returns the index's ACTIVE spell
-            # for ANY member id (spellbook.py:1852-1855) - so adoption
-            # notched the target's own current selection (a self-notch)
-            # and the selection never moved. _get_owned_spell is the
-            # member-resolution seam the notch harness itself uses: it
-            # returns the owned spell active OR PARKED (the merged
-            # member is parked by construction). Read-only seam; the
-            # mediated write remains the public notch verb below.
+            # find_spell_by_id, which then returned the index's ACTIVE
+            # spell for ANY member id - so adoption notched the target's
+            # own current selection (a self-notch) and the selection never
+            # moved. _get_owned_spell is the member-resolution seam the
+            # notch harness itself uses: it returns the owned spell active
+            # OR PARKED (the merged member is parked by construction).
+            # Read-only seam; the mediated write remains the public notch
+            # verb below. Since 0.2.8253 the lookup is exact - renamed
+            # find_spell_by_spell_id, it answers the spell that owns the
+            # spell_id, active or parked - so it would find this member
+            # too; the owned seam stays.
             adopted_spell = (
                 self._host_book._get_owned_spell(live_selected_id)
                 if live_selected_id is not None

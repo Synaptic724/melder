@@ -80,7 +80,7 @@ def test_a_user_subclass_of_an_internal_class_registers_normally(spellbook: Spel
 
     spell_id = spellbook.bind(spell=UserRefusal, existence="unique")
 
-    assert spellbook.find_spell_by_id(spell_id).spell is UserRefusal
+    assert spellbook.find_spell_by_spell_id(spell_id).spell is UserRefusal
 
 
 def test_an_instance_of_an_internal_class_is_refused_like_the_class(spellbook: Spellbook) -> None:
@@ -110,7 +110,7 @@ def test_a_forked_identity_outside_the_melder_package_is_not_guarded(spellbook: 
     assert_allowed(forked_aether, context="bind")
     spell_id = spellbook.bind(spell=forked_aether, existence="unique")
 
-    assert spellbook.find_spell_by_id(spell_id).spell is forked_aether
+    assert spellbook.find_spell_by_spell_id(spell_id).spell is forked_aether
 
 
 def test_a_user_class_claiming_a_melder_identity_is_refused(spellbook: Spellbook) -> None:

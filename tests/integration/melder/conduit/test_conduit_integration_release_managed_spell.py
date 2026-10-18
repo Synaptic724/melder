@@ -200,16 +200,21 @@ def test_root_teardown_unregisters_its_pools() -> None:
 
 
 def test_a_post_conjure_bind_registers_and_a_notch_moves_the_releases() -> None:
-    """Two versions of one index: the active one takes a same-class release; a notch moves it."""
+    """
+    Two versions of one index: the active one takes a same-class release; a notch moves it.
+
+    The parked version differs by its disposal names: a managed spell's settings are not part of its spell_id
+    (0.2.8254), so the same class with only another limit would be the same spell.
+    """
     book = _dynamic_book()
     book.bind(spell=Anchor, existence=Existence.unique, permissions="create")
     root = book.conjure(dynamic=True, name="managed-late")
     try:
         active_id = _bind_managed(root, managed_spell_limit=16)
         parked_id = root.bind_inactive(
-            spell=Leased, spell_index=book.find_spell_by_id(active_id).spell_index,
-            existence=Existence.managed_spell_quantity, permissions="create", disposal_method_names=["close"],
-            managed_spell_limit=8,
+            spell=Leased, spell_index=book.find_spell_by_spell_id(active_id).spell_index,
+            existence=Existence.managed_spell_quantity, permissions="create",
+            disposal_method_names=["close", "reset"], managed_spell_limit=8,
         )
         active_pool, parked_pool = _pool_of(root, active_id), _pool_of(root, parked_id)
         assert sorted(entry["spell_id"] for entry in ReleaseManagedSpell().describe(Leased)) == sorted(
@@ -217,7 +222,8 @@ def test_a_post_conjure_bind_registers_and_a_notch_moves_the_releases() -> None:
         )
         ReleaseManagedSpell().release(_out(active_pool, "first"))
         assert (active_pool.idle_count, parked_pool.idle_count) == (1, 0)
-        # find_spell_by_id answers a parked id with the index's live spell; the notch needs the parked one.
+        # The notch needs the parked version itself, which _get_owned_spell answers (until 0.2.8253
+        # find_spell_by_id answered a parked id with the index's live spell).
         parked = book._get_owned_spell(parked_id)
         root.notch_spell(spell_index=parked.spell_index, spell=parked)
         ReleaseManagedSpell().release(_out(parked_pool, "second"))

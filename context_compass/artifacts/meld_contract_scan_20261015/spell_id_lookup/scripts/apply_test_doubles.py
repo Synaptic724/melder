@@ -6,8 +6,10 @@ Usage: python apply_test_doubles.py <root> [--check]
 The ownership transfer's spell_id handles and the contract dependency walks now find a spell by spell_id and then
 ask its index for the spell it has active: they read `Spell._spell_index_unless_cleaned()` and, in the walks, the
 owner Book's `_find_spell(index)`. The unit doubles gain those two reads, mirroring the runtime contract (the index
-while live, None once cleaned; the Book's active spell for the index under its lock), and the ward's transfer test
-expects the spell the index step returns. Exact-once anchors; nothing is written when one misses, or with --check.
+while live, None once cleaned; the Book's active spell for the index under its lock) - `FakeSpell`, `FakeSpellbook`,
+the transfer tests' `build_spell` and the two SimpleNamespace dependency spells of the "without dependencies attr"
+tests - and the ward's transfer test expects the spell the index step returns. Exact-once anchors; nothing is
+written when one misses, or with --check.
 """
 import pathlib
 import sys
@@ -74,6 +76,54 @@ EDITS = {
         \"\"\"Return the local spell an index has active, under the Book lock, as Spellbook._find_spell does.\"\"\"
         with self._lock:
             return self._spells.get(spell_index)
+""",
+        ),
+        (
+            """        _owner_conduit_id=owner._id,
+    )
+    owner._spell_by_id[dep_spell.spell_id] = dep_spell
+    owner._spellbook._spells[dep_spell.spell_index] = dep_spell
+    root_spell = _register_spell(
+        borrower,
+        "root-no-child-attr",
+""",
+            """        _owner_conduit_id=owner._id,
+    )
+
+    def _spell_index_unless_cleaned() -> Optional[SpellIndex]:
+        \"\"\"Return the dependency's index, as `Spell._spell_index_unless_cleaned` does for a live spell.\"\"\"
+        return dep_spell.spell_index
+
+    dep_spell._spell_index_unless_cleaned = _spell_index_unless_cleaned
+    owner._spell_by_id[dep_spell.spell_id] = dep_spell
+    owner._spellbook._spells[dep_spell.spell_index] = dep_spell
+    root_spell = _register_spell(
+        borrower,
+        "root-no-child-attr",
+""",
+        ),
+        (
+            """        _owner_conduit_id=owner._id,
+    )
+    owner._spell_by_id[dep_spell.spell_id] = dep_spell
+    owner._spellbook._spells[dep_spell.spell_index] = dep_spell
+    root_spell = _register_spell(
+        borrower,
+        "root-preflight-child-no-deps",
+""",
+            """        _owner_conduit_id=owner._id,
+    )
+
+    def _spell_index_unless_cleaned() -> Optional[SpellIndex]:
+        \"\"\"Return the dependency's index, as `Spell._spell_index_unless_cleaned` does for a live spell.\"\"\"
+        return dep_spell.spell_index
+
+    dep_spell._spell_index_unless_cleaned = _spell_index_unless_cleaned
+    owner._spell_by_id[dep_spell.spell_id] = dep_spell
+    owner._spellbook._spells[dep_spell.spell_index] = dep_spell
+    root_spell = _register_spell(
+        borrower,
+        "root-preflight-child-no-deps",
 """,
         ),
     ],

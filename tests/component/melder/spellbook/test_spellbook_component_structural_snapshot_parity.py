@@ -184,11 +184,11 @@ def _event_notch(book: Spellbook, conduit: Conduit, ids: Dict[str, str]) -> Any:
     unknown spell_id". Cold and hydrated worlds must end alike either way.
     """
     before = conduit.meld(spell=Car)
-    engine_index = book.find_spell_by_id(ids["Engine"]).spell_index
+    engine_index = book.find_spell_by_spell_id(ids["Engine"]).spell_index
     staged_id = conduit.bind_inactive(spell=EngineAlternative, spell_index=engine_index, existence="unique")
     conduit.notch_spell(spell_index=engine_index, spell_id=staged_id)
     member = conduit.meld(spell_id=staged_id)
-    staged_is_active = book.find_spell_by_id(staged_id).spell_id == staged_id
+    staged_is_active = book.find_spell_by_spell_id(staged_id).spell_id == staged_id
     try:
         after: Any = type(conduit.meld(spell=Car).engine).__name__
     except UnresolvedInputError as error:
@@ -203,7 +203,7 @@ def _event_notch(book: Spellbook, conduit: Conduit, ids: Dict[str, str]) -> Any:
 def _event_remove(book: Spellbook, conduit: Conduit, ids: Dict[str, str]) -> Any:
     """Remove the consumer and meld a remaining provider."""
     book.cleanup_and_remove_spell(ids["Car"])
-    return (book.find_spell_by_id(ids["Car"]) is None, type(conduit.meld(spell=Engine)).__name__)
+    return (book.find_spell_by_spell_id(ids["Car"]) is None, type(conduit.meld(spell=Engine)).__name__)
 
 
 def _event_transfer(book: Spellbook, conduit: Conduit, ids: Dict[str, str]) -> Any:
@@ -214,8 +214,8 @@ def _event_transfer(book: Spellbook, conduit: Conduit, ids: Dict[str, str]) -> A
     car = conduit.meld(spell=Car)
     return (
         summary["spell_id"] == ids["Radio"],
-        book.find_spell_by_id(ids["Radio"]) is None,
-        target_book.find_spell_by_id(ids["Radio"]) is not None,
+        book.find_spell_by_spell_id(ids["Radio"]) is None,
+        target_book.find_spell_by_spell_id(ids["Radio"]) is not None,
         type(car.engine).__name__,
     )
 
@@ -256,7 +256,7 @@ def _contract_world(fragment: Path) -> Tuple[Tuple[str, Tuple[str, ...]], Any]:
     book = _new_world_book(FRAME, fragment)
     consumer_id = book.bind(spell=ContractConsumerPrimary, existence=Existence.unique, permissions="create")
     borrower = book.conjure(name="root", dynamic=True)
-    consumer = book.find_spell_by_id(consumer_id)
+    consumer = book.find_spell_by_spell_id(consumer_id)
     state = book._spell_system_states.get_by_index_id(consumer.spell_index.id)
     verdict = (state.validity.name, tuple(sorted(flag.name for flag in state.flags)))
 

@@ -1,0 +1,715 @@
+......................FFFFFFFFF.................FFF........              [100%]
+=================================== FAILURES ===================================
+___________ test_caching_system_upsert_remove_and_reload_round_trip ____________
+
+    def test_caching_system_upsert_remove_and_reload_round_trip() -> None:
+        """
+        Verify the cache utility can persist, remove, and reload one spell payload.
+    
+        Returns:
+            None.
+        """
+>       cache_root_path = _prepare_cache_root(
+            Path("tests/unit/melder/utilities/_caching_system_tmp_round_trip")
+        )
+
+tests/unit/melder/utilities/test_caching_system.py:125: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/unit/melder/utilities/test_caching_system.py:27: in _prepare_cache_root
+    shutil.rmtree(path)
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/shutil.py:852: in rmtree
+    _rmtree_impl(path, dir_fd, onexc)
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/shutil.py:721: in _rmtree_safe_fd
+    _rmtree_safe_fd_step(stack, onexc)
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/shutil.py:802: in _rmtree_safe_fd_step
+    onexc(func, path, err)
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/shutil.py:795: in _rmtree_safe_fd_step
+    onexc(os.unlink, fullname, err)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+stack = [], onexc = <function rmtree.<locals>.onexc at 0x267220ea200>
+
+    def _rmtree_safe_fd_step(stack, onexc):
+        # Each stack item has four elements:
+        # * func: The first operation to perform: os.lstat, os.close or os.rmdir.
+        #   Walking a directory starts with an os.lstat() to detect symlinks; in
+        #   this case, func is updated before subsequent operations and passed to
+        #   onexc() if an error occurs.
+        # * dirfd: Open file descriptor, or None if we're processing the top-level
+        #   directory given to rmtree() and the user didn't supply dir_fd.
+        # * path: Path of file to operate upon. This is passed to onexc() if an
+        #   error occurs.
+        # * orig_entry: os.DirEntry, or None if we're processing the top-level
+        #   directory given to rmtree(). We used the cached stat() of the entry to
+        #   save a call to os.lstat() when walking subdirectories.
+        func, dirfd, path, orig_entry = stack.pop()
+        name = path if orig_entry is None else orig_entry.name
+        try:
+            if func is os.close:
+                os.close(dirfd)
+                return
+            if func is os.rmdir:
+                os.rmdir(name, dir_fd=dirfd)
+                return
+    
+            # Note: To guard against symlink races, we use the standard
+            # lstat()/open()/fstat() trick.
+            assert func is os.lstat
+            if orig_entry is None:
+                orig_st = os.lstat(name, dir_fd=dirfd)
+            else:
+                orig_st = orig_entry.stat(follow_symlinks=False)
+    
+            func = os.open  # For error reporting.
+            topfd = os.open(name, os.O_RDONLY | os.O_NONBLOCK, dir_fd=dirfd)
+    
+            func = os.path.islink  # For error reporting.
+            try:
+                if not os.path.samestat(orig_st, os.fstat(topfd)):
+                    # Symlinks to directories are forbidden, see GH-46010.
+                    raise OSError("Cannot call rmtree on a symbolic link")
+                stack.append((os.rmdir, dirfd, path, orig_entry))
+            finally:
+                stack.append((os.close, topfd, path, orig_entry))
+    
+            func = os.scandir  # For error reporting.
+            with os.scandir(topfd) as scandir_it:
+                entries = list(scandir_it)
+            for entry in entries:
+                fullname = os.path.join(path, entry.name)
+                try:
+                    if entry.is_dir(follow_symlinks=False):
+                        # Traverse into sub-directory.
+                        stack.append((os.lstat, topfd, fullname, entry))
+                        continue
+                except FileNotFoundError:
+                    continue
+                except OSError:
+                    pass
+                try:
+>                   os.unlink(entry.name, dir_fd=topfd)
+E                   PermissionError: [Errno 1] Operation not permitted: 'tests/unit/melder/utilities/_caching_system_tmp_round_trip/frame-a'
+
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/shutil.py:791: PermissionError
+________ test_caching_system_transfer_moves_payload_between_cache_files ________
+
+    def test_caching_system_transfer_moves_payload_between_cache_files() -> None:
+        """
+        Verify one spell payload can move from one conduit cache to another.
+    
+        Returns:
+            None.
+        """
+>       cache_root_path = _prepare_cache_root(
+            Path("tests/unit/melder/utilities/_caching_system_tmp_transfer")
+        )
+
+tests/unit/melder/utilities/test_caching_system.py:157: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/unit/melder/utilities/test_caching_system.py:27: in _prepare_cache_root
+    shutil.rmtree(path)
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/shutil.py:852: in rmtree
+    _rmtree_impl(path, dir_fd, onexc)
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/shutil.py:721: in _rmtree_safe_fd
+    _rmtree_safe_fd_step(stack, onexc)
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/shutil.py:802: in _rmtree_safe_fd_step
+    onexc(func, path, err)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+stack = [], onexc = <function rmtree.<locals>.onexc at 0x267220ea2c0>
+
+    def _rmtree_safe_fd_step(stack, onexc):
+        # Each stack item has four elements:
+        # * func: The first operation to perform: os.lstat, os.close or os.rmdir.
+        #   Walking a directory starts with an os.lstat() to detect symlinks; in
+        #   this case, func is updated before subsequent operations and passed to
+        #   onexc() if an error occurs.
+        # * dirfd: Open file descriptor, or None if we're processing the top-level
+        #   directory given to rmtree() and the user didn't supply dir_fd.
+        # * path: Path of file to operate upon. This is passed to onexc() if an
+        #   error occurs.
+        # * orig_entry: os.DirEntry, or None if we're processing the top-level
+        #   directory given to rmtree(). We used the cached stat() of the entry to
+        #   save a call to os.lstat() when walking subdirectories.
+        func, dirfd, path, orig_entry = stack.pop()
+        name = path if orig_entry is None else orig_entry.name
+        try:
+            if func is os.close:
+                os.close(dirfd)
+                return
+            if func is os.rmdir:
+>               os.rmdir(name, dir_fd=dirfd)
+E               PermissionError: [Errno 1] Operation not permitted: PosixPath('tests/unit/melder/utilities/_caching_system_tmp_transfer')
+
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/shutil.py:753: PermissionError
+_____________ test_caching_system_builds_expected_bundle_metadata ______________
+
+    def test_caching_system_builds_expected_bundle_metadata() -> None:
+        """
+        Verify the default cache metadata for a new conduit cache.
+    
+        Returns:
+            None.
+        """
+>       cache_root_path = _prepare_cache_root(
+            Path("tests/unit/melder/utilities/_caching_system_tmp_metadata")
+        )
+
+tests/unit/melder/utilities/test_caching_system.py:190: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/unit/melder/utilities/test_caching_system.py:27: in _prepare_cache_root
+    shutil.rmtree(path)
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/shutil.py:852: in rmtree
+    _rmtree_impl(path, dir_fd, onexc)
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/shutil.py:721: in _rmtree_safe_fd
+    _rmtree_safe_fd_step(stack, onexc)
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/shutil.py:802: in _rmtree_safe_fd_step
+    onexc(func, path, err)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+stack = [], onexc = <function rmtree.<locals>.onexc at 0x267220ea800>
+
+    def _rmtree_safe_fd_step(stack, onexc):
+        # Each stack item has four elements:
+        # * func: The first operation to perform: os.lstat, os.close or os.rmdir.
+        #   Walking a directory starts with an os.lstat() to detect symlinks; in
+        #   this case, func is updated before subsequent operations and passed to
+        #   onexc() if an error occurs.
+        # * dirfd: Open file descriptor, or None if we're processing the top-level
+        #   directory given to rmtree() and the user didn't supply dir_fd.
+        # * path: Path of file to operate upon. This is passed to onexc() if an
+        #   error occurs.
+        # * orig_entry: os.DirEntry, or None if we're processing the top-level
+        #   directory given to rmtree(). We used the cached stat() of the entry to
+        #   save a call to os.lstat() when walking subdirectories.
+        func, dirfd, path, orig_entry = stack.pop()
+        name = path if orig_entry is None else orig_entry.name
+        try:
+            if func is os.close:
+                os.close(dirfd)
+                return
+            if func is os.rmdir:
+>               os.rmdir(name, dir_fd=dirfd)
+E               PermissionError: [Errno 1] Operation not permitted: PosixPath('tests/unit/melder/utilities/_caching_system_tmp_metadata')
+
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/shutil.py:753: PermissionError
+___________ test_caching_system_exposes_read_only_spell_payload_view ___________
+
+    def test_caching_system_exposes_read_only_spell_payload_view() -> None:
+        """
+        Verify the spell payload surface is read-only.
+    
+        Returns:
+            None.
+        """
+>       cache_root_path = _prepare_cache_root(
+            Path("tests/unit/melder/utilities/_caching_system_tmp_read_only")
+        )
+
+tests/unit/melder/utilities/test_caching_system.py:212: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/unit/melder/utilities/test_caching_system.py:27: in _prepare_cache_root
+    shutil.rmtree(path)
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/shutil.py:852: in rmtree
+    _rmtree_impl(path, dir_fd, onexc)
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/shutil.py:721: in _rmtree_safe_fd
+    _rmtree_safe_fd_step(stack, onexc)
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/shutil.py:802: in _rmtree_safe_fd_step
+    onexc(func, path, err)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+stack = [], onexc = <function rmtree.<locals>.onexc at 0x267220ea440>
+
+    def _rmtree_safe_fd_step(stack, onexc):
+        # Each stack item has four elements:
+        # * func: The first operation to perform: os.lstat, os.close or os.rmdir.
+        #   Walking a directory starts with an os.lstat() to detect symlinks; in
+        #   this case, func is updated before subsequent operations and passed to
+        #   onexc() if an error occurs.
+        # * dirfd: Open file descriptor, or None if we're processing the top-level
+        #   directory given to rmtree() and the user didn't supply dir_fd.
+        # * path: Path of file to operate upon. This is passed to onexc() if an
+        #   error occurs.
+        # * orig_entry: os.DirEntry, or None if we're processing the top-level
+        #   directory given to rmtree(). We used the cached stat() of the entry to
+        #   save a call to os.lstat() when walking subdirectories.
+        func, dirfd, path, orig_entry = stack.pop()
+        name = path if orig_entry is None else orig_entry.name
+        try:
+            if func is os.close:
+                os.close(dirfd)
+                return
+            if func is os.rmdir:
+>               os.rmdir(name, dir_fd=dirfd)
+E               PermissionError: [Errno 1] Operation not permitted: PosixPath('tests/unit/melder/utilities/_caching_system_tmp_read_only')
+
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/shutil.py:753: PermissionError
+__________ test_caching_system_returns_empty_keys_view_for_new_cache ___________
+
+    def test_caching_system_returns_empty_keys_view_for_new_cache() -> None:
+        """
+        Verify a new cache starts with no cached spell ids.
+    
+        Returns:
+            None.
+        """
+>       cache_root_path = _prepare_cache_root(
+            Path("tests/unit/melder/utilities/_caching_system_tmp_empty_keys")
+        )
+
+tests/unit/melder/utilities/test_caching_system.py:233: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/unit/melder/utilities/test_caching_system.py:27: in _prepare_cache_root
+    shutil.rmtree(path)
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/shutil.py:852: in rmtree
+    _rmtree_impl(path, dir_fd, onexc)
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/shutil.py:721: in _rmtree_safe_fd
+    _rmtree_safe_fd_step(stack, onexc)
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/shutil.py:802: in _rmtree_safe_fd_step
+    onexc(func, path, err)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+stack = [], onexc = <function rmtree.<locals>.onexc at 0x267220eb1c0>
+
+    def _rmtree_safe_fd_step(stack, onexc):
+        # Each stack item has four elements:
+        # * func: The first operation to perform: os.lstat, os.close or os.rmdir.
+        #   Walking a directory starts with an os.lstat() to detect symlinks; in
+        #   this case, func is updated before subsequent operations and passed to
+        #   onexc() if an error occurs.
+        # * dirfd: Open file descriptor, or None if we're processing the top-level
+        #   directory given to rmtree() and the user didn't supply dir_fd.
+        # * path: Path of file to operate upon. This is passed to onexc() if an
+        #   error occurs.
+        # * orig_entry: os.DirEntry, or None if we're processing the top-level
+        #   directory given to rmtree(). We used the cached stat() of the entry to
+        #   save a call to os.lstat() when walking subdirectories.
+        func, dirfd, path, orig_entry = stack.pop()
+        name = path if orig_entry is None else orig_entry.name
+        try:
+            if func is os.close:
+                os.close(dirfd)
+                return
+            if func is os.rmdir:
+>               os.rmdir(name, dir_fd=dirfd)
+E               PermissionError: [Errno 1] Operation not permitted: PosixPath('tests/unit/melder/utilities/_caching_system_tmp_empty_keys')
+
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/shutil.py:753: PermissionError
+____________ test_caching_system_missing_payload_surfaces_are_safe _____________
+
+    def test_caching_system_missing_payload_surfaces_are_safe() -> None:
+        """
+        Verify missing spell payload reads are safe.
+    
+        Returns:
+            None.
+        """
+>       cache_root_path = _prepare_cache_root(
+            Path("tests/unit/melder/utilities/_caching_system_tmp_missing")
+        )
+
+tests/unit/melder/utilities/test_caching_system.py:249: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/unit/melder/utilities/test_caching_system.py:27: in _prepare_cache_root
+    shutil.rmtree(path)
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/shutil.py:852: in rmtree
+    _rmtree_impl(path, dir_fd, onexc)
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/shutil.py:721: in _rmtree_safe_fd
+    _rmtree_safe_fd_step(stack, onexc)
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/shutil.py:802: in _rmtree_safe_fd_step
+    onexc(func, path, err)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+stack = [], onexc = <function rmtree.<locals>.onexc at 0x267220eb640>
+
+    def _rmtree_safe_fd_step(stack, onexc):
+        # Each stack item has four elements:
+        # * func: The first operation to perform: os.lstat, os.close or os.rmdir.
+        #   Walking a directory starts with an os.lstat() to detect symlinks; in
+        #   this case, func is updated before subsequent operations and passed to
+        #   onexc() if an error occurs.
+        # * dirfd: Open file descriptor, or None if we're processing the top-level
+        #   directory given to rmtree() and the user didn't supply dir_fd.
+        # * path: Path of file to operate upon. This is passed to onexc() if an
+        #   error occurs.
+        # * orig_entry: os.DirEntry, or None if we're processing the top-level
+        #   directory given to rmtree(). We used the cached stat() of the entry to
+        #   save a call to os.lstat() when walking subdirectories.
+        func, dirfd, path, orig_entry = stack.pop()
+        name = path if orig_entry is None else orig_entry.name
+        try:
+            if func is os.close:
+                os.close(dirfd)
+                return
+            if func is os.rmdir:
+>               os.rmdir(name, dir_fd=dirfd)
+E               PermissionError: [Errno 1] Operation not permitted: PosixPath('tests/unit/melder/utilities/_caching_system_tmp_missing')
+
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/shutil.py:753: PermissionError
+_____________ test_caching_system_upsert_replaces_existing_payload _____________
+
+    def test_caching_system_upsert_replaces_existing_payload() -> None:
+        """
+        Verify upsert replaces an existing spell payload cleanly.
+    
+        Returns:
+            None.
+        """
+>       cache_root_path = _prepare_cache_root(
+            Path("tests/unit/melder/utilities/_caching_system_tmp_replace")
+        )
+
+tests/unit/melder/utilities/test_caching_system.py:266: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/unit/melder/utilities/test_caching_system.py:27: in _prepare_cache_root
+    shutil.rmtree(path)
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/shutil.py:852: in rmtree
+    _rmtree_impl(path, dir_fd, onexc)
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/shutil.py:721: in _rmtree_safe_fd
+    _rmtree_safe_fd_step(stack, onexc)
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/shutil.py:802: in _rmtree_safe_fd_step
+    onexc(func, path, err)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+stack = [], onexc = <function rmtree.<locals>.onexc at 0x267220e9e40>
+
+    def _rmtree_safe_fd_step(stack, onexc):
+        # Each stack item has four elements:
+        # * func: The first operation to perform: os.lstat, os.close or os.rmdir.
+        #   Walking a directory starts with an os.lstat() to detect symlinks; in
+        #   this case, func is updated before subsequent operations and passed to
+        #   onexc() if an error occurs.
+        # * dirfd: Open file descriptor, or None if we're processing the top-level
+        #   directory given to rmtree() and the user didn't supply dir_fd.
+        # * path: Path of file to operate upon. This is passed to onexc() if an
+        #   error occurs.
+        # * orig_entry: os.DirEntry, or None if we're processing the top-level
+        #   directory given to rmtree(). We used the cached stat() of the entry to
+        #   save a call to os.lstat() when walking subdirectories.
+        func, dirfd, path, orig_entry = stack.pop()
+        name = path if orig_entry is None else orig_entry.name
+        try:
+            if func is os.close:
+                os.close(dirfd)
+                return
+            if func is os.rmdir:
+>               os.rmdir(name, dir_fd=dirfd)
+E               PermissionError: [Errno 1] Operation not permitted: PosixPath('tests/unit/melder/utilities/_caching_system_tmp_replace')
+
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/shutil.py:753: PermissionError
+_____________ test_caching_system_emit_writes_expected_file_shape ______________
+
+    def test_caching_system_emit_writes_expected_file_shape() -> None:
+        """
+        Verify flush persists the top-level cache dict shape.
+    
+        Returns:
+            None.
+        """
+>       cache_root_path = _prepare_cache_root(
+            Path("tests/unit/melder/utilities/_caching_system_tmp_flush")
+        )
+
+tests/unit/melder/utilities/test_caching_system.py:283: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/unit/melder/utilities/test_caching_system.py:27: in _prepare_cache_root
+    shutil.rmtree(path)
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/shutil.py:852: in rmtree
+    _rmtree_impl(path, dir_fd, onexc)
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/shutil.py:721: in _rmtree_safe_fd
+    _rmtree_safe_fd_step(stack, onexc)
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/shutil.py:802: in _rmtree_safe_fd_step
+    onexc(func, path, err)
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/shutil.py:795: in _rmtree_safe_fd_step
+    onexc(os.unlink, fullname, err)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+stack = [], onexc = <function rmtree.<locals>.onexc at 0x267220e9240>
+
+    def _rmtree_safe_fd_step(stack, onexc):
+        # Each stack item has four elements:
+        # * func: The first operation to perform: os.lstat, os.close or os.rmdir.
+        #   Walking a directory starts with an os.lstat() to detect symlinks; in
+        #   this case, func is updated before subsequent operations and passed to
+        #   onexc() if an error occurs.
+        # * dirfd: Open file descriptor, or None if we're processing the top-level
+        #   directory given to rmtree() and the user didn't supply dir_fd.
+        # * path: Path of file to operate upon. This is passed to onexc() if an
+        #   error occurs.
+        # * orig_entry: os.DirEntry, or None if we're processing the top-level
+        #   directory given to rmtree(). We used the cached stat() of the entry to
+        #   save a call to os.lstat() when walking subdirectories.
+        func, dirfd, path, orig_entry = stack.pop()
+        name = path if orig_entry is None else orig_entry.name
+        try:
+            if func is os.close:
+                os.close(dirfd)
+                return
+            if func is os.rmdir:
+                os.rmdir(name, dir_fd=dirfd)
+                return
+    
+            # Note: To guard against symlink races, we use the standard
+            # lstat()/open()/fstat() trick.
+            assert func is os.lstat
+            if orig_entry is None:
+                orig_st = os.lstat(name, dir_fd=dirfd)
+            else:
+                orig_st = orig_entry.stat(follow_symlinks=False)
+    
+            func = os.open  # For error reporting.
+            topfd = os.open(name, os.O_RDONLY | os.O_NONBLOCK, dir_fd=dirfd)
+    
+            func = os.path.islink  # For error reporting.
+            try:
+                if not os.path.samestat(orig_st, os.fstat(topfd)):
+                    # Symlinks to directories are forbidden, see GH-46010.
+                    raise OSError("Cannot call rmtree on a symbolic link")
+                stack.append((os.rmdir, dirfd, path, orig_entry))
+            finally:
+                stack.append((os.close, topfd, path, orig_entry))
+    
+            func = os.scandir  # For error reporting.
+            with os.scandir(topfd) as scandir_it:
+                entries = list(scandir_it)
+            for entry in entries:
+                fullname = os.path.join(path, entry.name)
+                try:
+                    if entry.is_dir(follow_symlinks=False):
+                        # Traverse into sub-directory.
+                        stack.append((os.lstat, topfd, fullname, entry))
+                        continue
+                except FileNotFoundError:
+                    continue
+                except OSError:
+                    pass
+                try:
+>                   os.unlink(entry.name, dir_fd=topfd)
+E                   PermissionError: [Errno 1] Operation not permitted: 'tests/unit/melder/utilities/_caching_system_tmp_flush/frame-a'
+
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/shutil.py:791: PermissionError
+___________ test_caching_system_resident_store_holds_untracked_bytes ___________
+
+    def test_caching_system_resident_store_holds_untracked_bytes() -> None:
+        """
+        Pin the GC-motivated resident-store contract (regression, 2026-07-02).
+    
+        Contract:
+            - The in-memory store keeps nested-marshal BYTES per spell, never
+              decoded containers: the free-threaded GC scans the full tracked
+              heap per collection, and a decoded resident bundle measurably
+              fattened every pass (~13% warm wall regression on the gauntlet).
+            - Reads return fresh decodes: caller mutations are never persisted.
+    
+        Returns:
+            None.
+        """
+>       cache_root_path = _prepare_cache_root(
+            Path("tests/unit/melder/utilities/_caching_system_tmp_untracked")
+        )
+
+tests/unit/melder/utilities/test_caching_system.py:320: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/unit/melder/utilities/test_caching_system.py:27: in _prepare_cache_root
+    shutil.rmtree(path)
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/shutil.py:852: in rmtree
+    _rmtree_impl(path, dir_fd, onexc)
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/shutil.py:721: in _rmtree_safe_fd
+    _rmtree_safe_fd_step(stack, onexc)
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/shutil.py:802: in _rmtree_safe_fd_step
+    onexc(func, path, err)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+stack = [], onexc = <function rmtree.<locals>.onexc at 0x267220ec780>
+
+    def _rmtree_safe_fd_step(stack, onexc):
+        # Each stack item has four elements:
+        # * func: The first operation to perform: os.lstat, os.close or os.rmdir.
+        #   Walking a directory starts with an os.lstat() to detect symlinks; in
+        #   this case, func is updated before subsequent operations and passed to
+        #   onexc() if an error occurs.
+        # * dirfd: Open file descriptor, or None if we're processing the top-level
+        #   directory given to rmtree() and the user didn't supply dir_fd.
+        # * path: Path of file to operate upon. This is passed to onexc() if an
+        #   error occurs.
+        # * orig_entry: os.DirEntry, or None if we're processing the top-level
+        #   directory given to rmtree(). We used the cached stat() of the entry to
+        #   save a call to os.lstat() when walking subdirectories.
+        func, dirfd, path, orig_entry = stack.pop()
+        name = path if orig_entry is None else orig_entry.name
+        try:
+            if func is os.close:
+                os.close(dirfd)
+                return
+            if func is os.rmdir:
+>               os.rmdir(name, dir_fd=dirfd)
+E               PermissionError: [Errno 1] Operation not permitted: PosixPath('tests/unit/melder/utilities/_caching_system_tmp_untracked')
+
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/shutil.py:753: PermissionError
+______________ test_caching_system_transfer_to_self_returns_false ______________
+
+    def test_caching_system_transfer_to_self_returns_false() -> None:
+        """
+        Verify self-transfer is ignored.
+    
+        Returns:
+            None.
+        """
+>       cache_root_path = _prepare_cache_root(
+            Path("tests/unit/melder/utilities/_caching_system_tmp_transfer_self")
+        )
+
+tests/unit/melder/utilities/test_caching_system.py:502: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/unit/melder/utilities/test_caching_system.py:27: in _prepare_cache_root
+    shutil.rmtree(path)
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/shutil.py:852: in rmtree
+    _rmtree_impl(path, dir_fd, onexc)
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/shutil.py:721: in _rmtree_safe_fd
+    _rmtree_safe_fd_step(stack, onexc)
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/shutil.py:802: in _rmtree_safe_fd_step
+    onexc(func, path, err)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+stack = [], onexc = <function rmtree.<locals>.onexc at 0x267220ec000>
+
+    def _rmtree_safe_fd_step(stack, onexc):
+        # Each stack item has four elements:
+        # * func: The first operation to perform: os.lstat, os.close or os.rmdir.
+        #   Walking a directory starts with an os.lstat() to detect symlinks; in
+        #   this case, func is updated before subsequent operations and passed to
+        #   onexc() if an error occurs.
+        # * dirfd: Open file descriptor, or None if we're processing the top-level
+        #   directory given to rmtree() and the user didn't supply dir_fd.
+        # * path: Path of file to operate upon. This is passed to onexc() if an
+        #   error occurs.
+        # * orig_entry: os.DirEntry, or None if we're processing the top-level
+        #   directory given to rmtree(). We used the cached stat() of the entry to
+        #   save a call to os.lstat() when walking subdirectories.
+        func, dirfd, path, orig_entry = stack.pop()
+        name = path if orig_entry is None else orig_entry.name
+        try:
+            if func is os.close:
+                os.close(dirfd)
+                return
+            if func is os.rmdir:
+>               os.rmdir(name, dir_fd=dirfd)
+E               PermissionError: [Errno 1] Operation not permitted: PosixPath('tests/unit/melder/utilities/_caching_system_tmp_transfer_self')
+
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/shutil.py:753: PermissionError
+___________ test_caching_system_transfer_missing_spell_returns_false ___________
+
+    def test_caching_system_transfer_missing_spell_returns_false() -> None:
+        """
+        Verify transfer returns false when the source spell is missing.
+    
+        Returns:
+            None.
+        """
+>       cache_root_path = _prepare_cache_root(
+            Path("tests/unit/melder/utilities/_caching_system_tmp_transfer_missing")
+        )
+
+tests/unit/melder/utilities/test_caching_system.py:517: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/unit/melder/utilities/test_caching_system.py:27: in _prepare_cache_root
+    shutil.rmtree(path)
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/shutil.py:852: in rmtree
+    _rmtree_impl(path, dir_fd, onexc)
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/shutil.py:721: in _rmtree_safe_fd
+    _rmtree_safe_fd_step(stack, onexc)
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/shutil.py:802: in _rmtree_safe_fd_step
+    onexc(func, path, err)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+stack = [], onexc = <function rmtree.<locals>.onexc at 0x267220ec300>
+
+    def _rmtree_safe_fd_step(stack, onexc):
+        # Each stack item has four elements:
+        # * func: The first operation to perform: os.lstat, os.close or os.rmdir.
+        #   Walking a directory starts with an os.lstat() to detect symlinks; in
+        #   this case, func is updated before subsequent operations and passed to
+        #   onexc() if an error occurs.
+        # * dirfd: Open file descriptor, or None if we're processing the top-level
+        #   directory given to rmtree() and the user didn't supply dir_fd.
+        # * path: Path of file to operate upon. This is passed to onexc() if an
+        #   error occurs.
+        # * orig_entry: os.DirEntry, or None if we're processing the top-level
+        #   directory given to rmtree(). We used the cached stat() of the entry to
+        #   save a call to os.lstat() when walking subdirectories.
+        func, dirfd, path, orig_entry = stack.pop()
+        name = path if orig_entry is None else orig_entry.name
+        try:
+            if func is os.close:
+                os.close(dirfd)
+                return
+            if func is os.rmdir:
+>               os.rmdir(name, dir_fd=dirfd)
+E               PermissionError: [Errno 1] Operation not permitted: PosixPath('tests/unit/melder/utilities/_caching_system_tmp_transfer_missing')
+
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/shutil.py:753: PermissionError
+__________________ test_caching_system_cleanup_is_idempotent ___________________
+
+    def test_caching_system_cleanup_is_idempotent() -> None:
+        """
+        Verify cleanup is safe to call more than once.
+    
+        Returns:
+            None.
+        """
+>       cache_root_path = _prepare_cache_root(
+            Path("tests/unit/melder/utilities/_caching_system_tmp_cleanup")
+        )
+
+tests/unit/melder/utilities/test_caching_system.py:545: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/unit/melder/utilities/test_caching_system.py:27: in _prepare_cache_root
+    shutil.rmtree(path)
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/shutil.py:852: in rmtree
+    _rmtree_impl(path, dir_fd, onexc)
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/shutil.py:721: in _rmtree_safe_fd
+    _rmtree_safe_fd_step(stack, onexc)
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/shutil.py:802: in _rmtree_safe_fd_step
+    onexc(func, path, err)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+stack = [], onexc = <function rmtree.<locals>.onexc at 0x267220ed140>
+
+    def _rmtree_safe_fd_step(stack, onexc):
+        # Each stack item has four elements:
+        # * func: The first operation to perform: os.lstat, os.close or os.rmdir.
+        #   Walking a directory starts with an os.lstat() to detect symlinks; in
+        #   this case, func is updated before subsequent operations and passed to
+        #   onexc() if an error occurs.
+        # * dirfd: Open file descriptor, or None if we're processing the top-level
+        #   directory given to rmtree() and the user didn't supply dir_fd.
+        # * path: Path of file to operate upon. This is passed to onexc() if an
+        #   error occurs.
+        # * orig_entry: os.DirEntry, or None if we're processing the top-level
+        #   directory given to rmtree(). We used the cached stat() of the entry to
+        #   save a call to os.lstat() when walking subdirectories.
+        func, dirfd, path, orig_entry = stack.pop()
+        name = path if orig_entry is None else orig_entry.name
+        try:
+            if func is os.close:
+                os.close(dirfd)
+                return
+            if func is os.rmdir:
+>               os.rmdir(name, dir_fd=dirfd)
+E               PermissionError: [Errno 1] Operation not permitted: PosixPath('tests/unit/melder/utilities/_caching_system_tmp_cleanup')
+
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/shutil.py:753: PermissionError
+=========================== short test summary info ============================
+FAILED tests/unit/melder/utilities/test_caching_system.py::test_caching_system_upsert_remove_and_reload_round_trip
+FAILED tests/unit/melder/utilities/test_caching_system.py::test_caching_system_transfer_moves_payload_between_cache_files
+FAILED tests/unit/melder/utilities/test_caching_system.py::test_caching_system_builds_expected_bundle_metadata
+FAILED tests/unit/melder/utilities/test_caching_system.py::test_caching_system_exposes_read_only_spell_payload_view
+FAILED tests/unit/melder/utilities/test_caching_system.py::test_caching_system_returns_empty_keys_view_for_new_cache
+FAILED tests/unit/melder/utilities/test_caching_system.py::test_caching_system_missing_payload_surfaces_are_safe
+FAILED tests/unit/melder/utilities/test_caching_system.py::test_caching_system_upsert_replaces_existing_payload
+FAILED tests/unit/melder/utilities/test_caching_system.py::test_caching_system_emit_writes_expected_file_shape
+FAILED tests/unit/melder/utilities/test_caching_system.py::test_caching_system_resident_store_holds_untracked_bytes
+FAILED tests/unit/melder/utilities/test_caching_system.py::test_caching_system_transfer_to_self_returns_false
+FAILED tests/unit/melder/utilities/test_caching_system.py::test_caching_system_transfer_missing_spell_returns_false
+FAILED tests/unit/melder/utilities/test_caching_system.py::test_caching_system_cleanup_is_idempotent
+12 failed, 47 passed in 11.54s

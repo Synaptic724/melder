@@ -9,8 +9,9 @@ Usage: python codemod_tests.py <root> <since_version> [--check]
    - `get_spell_by_id` (a whole word) -> `get_spell_by_spell_id` (Conduit calls, the Rift room command - its calls,
      its name in the advertised command lists and in the JSON testbench scenarios - and their fakes and mocks;
      owner, 2026-10-17: "update it all").
-2. Prose that described the old answer is rewritten by exact-once anchors (on the text after step 1), and three
-   test names follow the methods.
+2. Prose that described the old answer is rewritten by exact-once anchors (on the text after step 1), three
+   test names follow the methods, and one assertion that pinned the old answer - a parked spell_id's
+   permissions were the active version's - now expects the version's own.
 Nothing is written when an anchor misses, or with --check.
 """
 import pathlib
@@ -63,6 +64,18 @@ MANUAL = {
          "def test_command_system_can_get_spell_by_spell_id(\n"),
         ("            # The owner Book answers the lineage lookup from its id maps (0.2.8230).\n",
          "            # The owner Book answers the spell_id lookup from its id maps (0.2.8230; exact since @@SINCE@@).\n"),
+    ],
+    "tests/component/melder/spellbook/test_spellbook_component_spell_map_races.py": [
+        ("        The permissions of a current id, and of a parked id (the lineage's CURRENT permissions, not the\n"
+         "        version's own), resolve without iterating the live active-index map; an id the Book does not know\n"
+         "        raises RuntimeError. Before 0.2.8230 the method walked that map under the conduit lock, which a\n"
+         "        concurrent bind or removal could resize mid-walk.\n",
+         "        The permissions of a current id, and of a parked id (the version's own permissions since @@SINCE@@;\n"
+         "        before, the lineage's CURRENT ones), resolve without iterating the live active-index map; an id the\n"
+         "        Book does not know raises RuntimeError. Before 0.2.8230 the method walked that map under the conduit\n"
+         "        lock, which a concurrent bind or removal could resize mid-walk.\n"),
+        ('            assert conduit.get_spell_permissions(id_b) == "create"\n',
+         '            assert conduit.get_spell_permissions(id_b) == "read"\n'),
     ],
     "tests/unit/melder/aether/conduit/test_conduit_facade.py": [
         ("def test_get_spell_by_id_returns_none_when_owner_missing(\n",

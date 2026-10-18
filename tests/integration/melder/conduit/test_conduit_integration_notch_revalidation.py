@@ -264,7 +264,7 @@ def _lend(frame: str, impl: type, *, consumer_existence: Existence = Existence.m
     lender = lender_book.conjure(dynamic=True, name="lender")
     borrower = borrower_book.conjure(dynamic=True, name="borrower")
     lender.link(borrower)
-    index = lender_book.find_spell_by_id(provider_id).spell_index
+    index = lender_book.find_spell_by_spell_id(provider_id).spell_index
     with borrower.transaction("link", conduits=[borrower, lender]):
         if index_link:
             assert borrower.add_index_to_contract(index=index, conduit=lender, permissions="create")
@@ -328,7 +328,7 @@ def test_a_notch_marks_the_contract_consumer_and_builds_nothing(resolution_passe
 
         world.notch_to(ImplB)
 
-        state = world.borrower_book.find_spell_by_id(world.consumer_id).system_state
+        state = world.borrower_book.find_spell_by_spell_id(world.consumer_id).system_state
         assert state.validity is SpellValidity.gated
         assert state.has_flag(SpellState.contract_unvalidated)
         assert resolution_passes == []
@@ -374,7 +374,7 @@ def test_destroying_the_providers_index_fails_the_consumer_naming_the_lost_contr
     world = _lend("s4", ImplA)
     try:
         assert world.meld_ping() == "A"
-        world.lender.cleanup_spell(spell=world.lender_book.find_spell_by_id(world.provider_id))
+        world.lender.cleanup_spell(spell=world.lender_book.find_spell_by_spell_id(world.provider_id))
 
         with pytest.raises(SpellbookValidationError) as raised:
             world.meld_ping()
@@ -460,7 +460,8 @@ def test_a_grant_of_a_parked_version_becomes_active_when_the_lender_notches_to_i
     """
     D3: a version granted while parked stays off resolution - the consumer fails naming the lost contract - until
     the lender notches to it; the notch makes the borrower's copy active and the consumer builds that version. The
-    grant takes the parked Spell object, because `get_spell_by_id` answers a parked id with the active member.
+    grant takes the parked Spell object (until 0.2.8253 `get_spell_by_id` answered a parked id with the active
+    member).
     """
     lender_book, borrower_book = _books("grant_parked")
     a_id = lender_book.bind(spell=ImplA, spellframe=IService, binding_name="svc", existence=Existence.many,
@@ -470,7 +471,7 @@ def test_a_grant_of_a_parked_version_becomes_active_when_the_lender_notches_to_i
     borrower = borrower_book.conjure(dynamic=True, name="borrower")
     try:
         lender.link(borrower)
-        index = lender_book.find_spell_by_id(a_id).spell_index
+        index = lender_book.find_spell_by_spell_id(a_id).spell_index
         b_id = lender.bind_inactive(spell=ImplB, spell_index=index, spellframe=IService, binding_name="svc",
                                     existence=Existence.many, permissions="create")
         parked_b = lender_book._get_owned_spell(b_id)
@@ -500,7 +501,7 @@ def _chain(frame: str, *, by_class: bool = False) -> Tuple[Spellbook, Conduit, S
     book.bind(spell=p_cls, existence=Existence.many, permissions="create")
     book.bind(spell=q_cls, existence=Existence.many, permissions="create")
     root = book.conjure(dynamic=True, name="root")
-    return book, root, book.find_spell_by_id(dep_id).spell_index, p_cls, q_cls
+    return book, root, book.find_spell_by_spell_id(dep_id).spell_index, p_cls, q_cls
 
 
 def _notch_dep(book: Spellbook, root: Conduit, index: SpellIndex, *, by_class: bool = False) -> None:
@@ -581,8 +582,8 @@ def _across(frame: str) -> Tuple[Spellbook, Spellbook, Conduit, Conduit, SpellIn
     lender = lender_book.conjure(dynamic=True, name="lender")
     borrower = borrower_book.conjure(dynamic=True, name="borrower")
     lender.link(borrower)
-    p_index = lender_book.find_spell_by_id(p_id).spell_index
-    d_index = lender_book.find_spell_by_id(dep_id).spell_index
+    p_index = lender_book.find_spell_by_spell_id(p_id).spell_index
+    d_index = lender_book.find_spell_by_spell_id(dep_id).spell_index
     with borrower.transaction("link", conduits=[borrower, lender]):
         assert borrower.add_index_to_contract(index=p_index, conduit=lender, permissions="create")
         assert borrower.add_index_to_contract(index=d_index, conduit=lender, permissions="create")

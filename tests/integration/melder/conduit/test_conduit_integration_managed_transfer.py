@@ -38,6 +38,9 @@ class Session:
         """The disposal method: mark closed."""
         self.closed = True
 
+    def flush(self) -> None:
+        """A second disposal step the parked version names, so it is a version of its own (0.2.8254)."""
+
 
 class Keeper:
     """A `unique` class; a second version differs by its disposal names."""
@@ -116,16 +119,18 @@ def _park_second_version(owner_book: Spellbook, owner: Conduit, spell_id: str, t
         owner_book: The owner Book.
         owner: The owner root.
         spell_id: The active version's id.
-        target_class: Session (limit 8) or Keeper (disposal "close").
+        target_class: Session (limit 8, disposal "close" and "flush": a managed spell's settings are not part
+            of its spell_id since 0.2.8254, so the disposal names make the second version) or Keeper (disposal
+            "close").
 
     Returns:
         Spell: The parked version.
     """
-    spell_index = owner_book.find_spell_by_id(spell_id).spell_index
+    spell_index = owner_book.find_spell_by_spell_id(spell_id).spell_index
     if target_class is Session:
         parked_id = owner.bind_inactive(spell=Session, spell_index=spell_index,
                                         existence=Existence.managed_spell_quantity, permissions="create",
-                                        disposal_method_names=["close"], managed_spell_limit=8)
+                                        disposal_method_names=["close", "flush"], managed_spell_limit=8)
     else:
         parked_id = owner.bind_inactive(spell=Keeper, spell_index=spell_index, existence=Existence.unique,
                                         permissions="create", disposal_method_names=["close"])

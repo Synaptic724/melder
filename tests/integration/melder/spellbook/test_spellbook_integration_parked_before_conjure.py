@@ -100,7 +100,7 @@ class _World:
             spell=active_target, existence=family.existence, permissions="create", binding_name="active",
             **family.options,
         )
-        self.index: Any = self.book.find_spell_by_id(self.active_id).spell_index
+        self.index: Any = self.book.find_spell_by_spell_id(self.active_id).spell_index
         if staged_before_conjure:
             self.staged_id: str = self.book.bind_inactive(
                 spell=staged_target, spell_index=self.index, existence=family.existence, permissions="create",

@@ -1,0 +1,30 @@
+- DATETIME: {ts}
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: The tests pair at fix #1's landing, read after the 23:16Z compaction's re-onboarding and both authoring
+    instructions: tests_components and tests_architecture equal their 2026-10-16 baselines and their indexes are
+    current. From disk now: unit 512 `.py` (509 test modules), component 168 (166), integration 179 (172), mocks
+    44, experimentation 204 (33), so 847 test modules in the three tiers (844 at 0.2.8250); the unit aether tree
+    holds 208, the integration aether tree 48, its rift tree 4. The four new modules collect 12, 10, 10 and 4
+    tests. tests_components' core set is 259 paths, equal to its 259 code-map records; the document says 258,
+    since the 0.2.8251 entry added a key file without counting it. Three records are stale: the release-registry
+    and notch-revalidation integration files each grew one line when fix #1's codemod rewrote a comment about the
+    old answer as history (310 and 673 lines), and the managed stamp test (185 lines, 152 recorded) since
+    TASK-2026-10-16-stamp_test_boots_its_own_aether, whose closure leaves its entry to the wording lane.
+    tests_architecture's 36 records match disk, and neither document names an old lookup.
+  EVIDENCE:
+  - context_compass/system_docs/tests_components.md:1945-1952
+  - context_compass/system_docs/tests_components.md:3208-3213
+  - context_compass/system_docs/tests_components.md:3256-3273
+  - context_compass/system_docs/tests_architecture.md:460-467
+  - tests/integration/melder/conduit/test_conduit_integration_release_managed_spell.py:220-221
+  - tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py:463-464
+  - context_compass/attention_board.md:215-215
+  IMPACT: tests_components gains four key files with code-map records (core set 263), the recounted tree and tier
+    counts and the two codemod records; the stamp record stays with its lane and goes in the report.
+    tests_architecture gains the recount and a handoff entry; no extent of its map moves.
+  NEXT: Write docs_tests_components_fix1.py with exact-once anchors, check it, apply it, regenerate the index and
+    run the gate, portability and existence checks.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8

@@ -57,7 +57,7 @@ and ask the owner when the intent is unclear.
 - Status: in_progress
 - Owner:
 - Created: 2026-01-17
-- Updated: 2026-10-16
+- Updated: 2026-10-17
 
 ## Scope and Intent
 This document describes the Melder core architecture at the C4 level for
@@ -492,7 +492,7 @@ External interfaces are Python APIs:
   CORRECTED 2026-08-02: this document previously said the Conduit "delegates to
   the owning Spellbook, WHICH ADMITS the change-control transaction". It does
   not. That wording was inherited from the Conduit docstrings, which say the
-  same thing and are also wrong - see `src/melder/aether/spellbook/spellbook.py:3891-3893`, which states the
+  same thing and are also wrong - see `src/melder/aether/spellbook/spellbook.py:3896-3898`, which states the
   opposite correctly. The code settles it, and since 0.2.8249 all three Conduit docstrings say so.
   All three name the spell they act on by `spell_id=` - the spell_id `bind` or `bind_inactive` returned - or by
   `spell=`, exactly one, and resolve a spell_id inside the call to the exact spell the conduit's Spellbook owns,
@@ -500,16 +500,35 @@ External interfaces are Python APIs:
   non-str spell_id or a str given as `spell` a TypeError, and a spell_id that Spellbook does not own a ValueError
   before anything starts. Before the transaction and again inside the held window a notch also refuses a spell of
   another index (ValueError); the index moves leave the rest to their seams (RuntimeError: an active spell, another
-  Book's spell or target index, a non-member or only member on removal). `get_spell_by_id` and `find_spell_by_id`
-  still answer a parked spell_id with the index's active member, so a parked spell is named by its spell_id.
+  Book's spell or target index, a non-member or only member on removal). Since 0.2.8253 the spell_id lookups
+  (`get_spell_by_spell_id`, `find_spell_by_spell_id`) answer a parked spell_id with that parked spell, so a
+  parked version can be named by its spell_id or by the Spell they return.
   EVIDENCE:
-  - src/melder/aether/conduit/conduit.py:5622, 5735 (`notch_spell`; starts the transaction)
-  - src/melder/aether/conduit/conduit.py:5761-5977 (`_resolve_notch_target`, `_owned_notch_target`,
+  - src/melder/aether/conduit/conduit.py:5650, 5763 (`notch_spell`; starts the transaction)
+  - src/melder/aether/conduit/conduit.py:5789-6007 (`_resolve_notch_target`, `_owned_notch_target`,
     `_check_spell_argument`, `_owned_spell_by_id`, `_resolve_spell_to_move`)
-  - src/melder/aether/conduit/conduit.py:5979, 6069 (`add_to_spell_index`; starts it)
-  - src/melder/aether/conduit/conduit.py:6092, 6167 (`remove_from_spell_index`; starts it)
-  - src/melder/aether/spellbook/spellbook.py:4063 (`_add_to_spell_index` entry)
-  - src/melder/aether/spellbook/spellbook.py:4096 (`_apply_add_to_index` seam)
+  - src/melder/aether/conduit/conduit.py:6009, 6099 (`add_to_spell_index`; starts it)
+  - src/melder/aether/conduit/conduit.py:6122, 6197 (`remove_from_spell_index`; starts it)
+  - src/melder/aether/spellbook/spellbook.py:4068 (`_add_to_spell_index` entry)
+  - src/melder/aether/spellbook/spellbook.py:4101 (`_apply_add_to_index` seam)
+- `Spellbook.find_spell_by_spell_id(spell_id)` and `Conduit.get_spell_by_spell_id(spell_id,
+  aetheric_frame_name="default")` (0.2.8253; renamed from `find_spell_by_id` and `get_spell_by_id`, with no
+  alias): the spell a spell_id names - the active version, else the parked one - or None from the Book, and
+  ValueError from the Conduit for a spell_id no conduit of the frame claims. A spell_id and a SpellIndex are
+  separate things (owner ruling, 2026-10-17): the spell an index has active is a lookup by the index's id
+  (`Conduit.get_spell_by_index_id`), never the answer to a spell_id. `Conduit.get_spell_permissions(spell_id)`
+  answers the permissions that version was bound with. The Rift rooms' `get_spell_by_spell_id(spell_id, *,
+  frame_name=None)` (renamed from `get_spell_by_id`, its command name and advertised name with it) and
+  `get_spell_by_source_id` answer the spell their argument names - a capability or codegen room the Spell, a
+  static room its live object - or raise.
+  EVIDENCE:
+  - `src/melder/aether/spellbook/spellbook.py:Spellbook.find_spell_by_spell_id`,
+    `Spellbook._get_spell_by_id_via_aether`
+  - `src/melder/aether/conduit/conduit.py:Conduit.get_spell_by_spell_id`, `Conduit.get_spell_permissions`
+  - `src/melder/nexus/rift/command_system/command_system.py:CommandSystem.get_spell_by_spell_id`,
+    `CommandSystem.get_spell_by_source_id`
+  - `src/melder/nexus/rift/command_system/static_command_system.py:StaticCommandSystem.get_spell_by_spell_id`,
+    `StaticCommandSystem.get_spell_by_source_id`
 - `Spellbook.conjure(...)` for building a root Conduit.
 - `Conduit.meld(...)` for resolving instances.
 - `Conduit.managed_spell_meld(spell=None, *, spell_id=None, spellframe=None, binding_name=None, override=None)`
@@ -601,7 +620,7 @@ so a `unique` can have one live object per version while agents iterate on one o
 on the version they want (corrected 2026-10-15: this paragraph called the borrower update a missing
 fan-out). A notch names its target by spell_id or by Spell and checks that it is the Book's version of that
 index before anything moves; the two index moves take a spell_id the same way (0.2.8249).
-EVIDENCE: src/melder/aether/spellbook/spellbook.py:3906-4356 (the three seams, remeasured 2026-10-16 at 0.2.8251);
+EVIDENCE: src/melder/aether/spellbook/spellbook.py:3911-4361 (the three seams, remeasured 2026-10-16 at 0.2.8251);
 `src/melder/aether/conduit/conduit.py:Conduit.notch_spell`, `Conduit._owned_notch_target` (the target check),
 `Conduit._resolve_spell_to_move` (the index moves' spell_id), `Conduit._deactivate_borrowed_spell`,
 `Conduit._activate_borrowed_spell` and
@@ -997,14 +1016,14 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:3906-4356 (the three seams, r
    borrowers build the new version at their next meld; objects built from older versions stay alive, so
    agents iterating on one object keep their work while it converges.
    EVIDENCE:
-   - src/melder/aether/spellbook/spellbook.py:3906-4061
-   - src/melder/aether/spellbook/spellbook.py:4096-4190
-   - src/melder/aether/spellbook/spellbook.py:4271-4356
-   - src/melder/aether/conduit/conduit.py:5622-5759
-   - src/melder/aether/conduit/conduit.py:5761-5977
-   - src/melder/aether/conduit/conduit.py:5979-6180
-   - src/melder/aether/conduit/conduit.py:6236-6265
-   - src/melder/aether/conduit/conduit.py:6267-6310
+   - src/melder/aether/spellbook/spellbook.py:3911-4066
+   - src/melder/aether/spellbook/spellbook.py:4101-4195
+   - src/melder/aether/spellbook/spellbook.py:4276-4361
+   - src/melder/aether/conduit/conduit.py:5650-5787
+   - src/melder/aether/conduit/conduit.py:5789-6007
+   - src/melder/aether/conduit/conduit.py:6009-6210
+   - src/melder/aether/conduit/conduit.py:6266-6295
+   - src/melder/aether/conduit/conduit.py:6297-6340
    - src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/notch_transaction_strategy.py:239-269
    - src/melder/aether/conduit/conduit_ward/conduit_ward.py:2322-2387
    - src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py:921-1036
@@ -1080,7 +1099,7 @@ check and raises `TypeError("Expected Conduit-compatible object, got {type}")`.
 THIS IS NOT A STRUCTURAL CONTRACT AND CANNOT BE SATISFIED BY DUCK TYPING - a
 conduit-shaped object that is not a `Conduit` subclass is rejected outright.
   EVIDENCE:
-  - src/melder/aether/conduit/conduit.py:5571-5573 (the check and the raise -
+  - src/melder/aether/conduit/conduit.py:5599-5601 (the check and the raise -
     cited as :4342-4344 in the patch lane, which was off by one)
   - src/melder/nexus/nexus_frame_builder.py:254 (`create(...) -> Conduit`)
   - src/melder/nexus/rift/rift_space/event_system/rift_event.py
@@ -1101,6 +1120,51 @@ each entry in `src_components.md`; this list is the set that crosses components.
 - Validation strategies registered in `SpellValidationSystem`.
 
 ## Operational Invariants
+- Lookup by spell_id is exact (2026-10-17, 0.2.8253; the owner's rule: a spell_id - the SHA256 `bind` and
+  `bind_inactive` return - and a SpellIndex - its ULID - are separate things; sharing an index follows whatever
+  spell it has active, sharing a spell by spell_id is exactly that spell, and a spell_id lookup never answers with
+  the spell its index has active): `Spellbook.find_spell_by_spell_id(spell_id)` returns the Spell bound under the
+  spell_id - one read of `_spells_by_id` (active versions), else one of `_inactive_spells` (parked) - or None, and
+  reads no index; its predecessor `find_spell_by_id` returned, for a parked spell_id, the spell the parked
+  version's index had active. `Conduit.get_spell_by_spell_id` returns what the owner Book's lookup returns (Aether
+  names the owner conduit; `Spellbook._get_spell_by_id_via_aether`), and `Conduit.get_spell_permissions` the
+  permissions that version was bound with. A caller that needs the spell an index has active takes an explicit
+  index step: it finds the member by spell_id, reads its index (`Spell._spell_index_unless_cleaned`) and asks for
+  the index's active spell - the owner Book's `_find_spell` in the contract dependency walk and its preflight
+  (`ConduitWard._link_spell_dependencies`, `_preflight_contract_dependency_collisions`), the conduit's
+  `get_spell_by_index_id` in `Conduit._resolve_transfer_spell` and `ConduitWard._transfer_spell_ownership`, the
+  source Book's `_spells` under its lock in `TransferOfOwnership._resolve_spell` and
+  `_transfer_owned_dependencies`, the member's own Book in `_deps_resolvable_on_target`. That is what the old
+  lookup returned for every spell_id of an owned spell, so a transfer, a dependency grant and their checks answer
+  as before, and a parked Spell object never reaches a transfer. The grant check
+  (`ConduitWard._check_spell_id_and_spell`) resolves exactly, so a grant or ungrant by a parked spell_id proceeds
+  (a grant parks the copy on the borrower), and the outbound half of a contract listing names each granted
+  version's own Spell. The Rift rooms follow: a lookup by spell_id or by a source id answers that spell - a
+  capability or codegen room through the owner Book's lookup (`CommandSystem._get_spell_by_record_locked` for a
+  source id), a static room by melding only the records published for that spell_id
+  (`StaticCommandSystem._meld_live_spell_from_records_locked`, which the index path shares) - and only a lookup by
+  spell index id answers what the index has active. Nexus publishes the version an index has active, so a room
+  refuses a parked version's spell_id or source id rather than answering another version. Locks: the lookup takes
+  none (two single-key dict reads; a disposal racing it returns the Spell it read, borrowed, or misses once the
+  spell_id has left the map); an explicit index step reads the member's index under the member's own spell lock,
+  releases it, then takes one Book lock alone, at a call site that holds no other lock, so no lock-order edge is
+  added. Nothing persisted, cached or emitted reads the lookups, so no cache generation or record version moves.
+  Not changed (the owner's to decide): `Spellbook._find_contracted_spell_by_id`, the contract row `Detail`,
+  `ConduitWard._get_spell_in_contracts`, `_get_all_spells_in_contracts` and `_validate_contracts_and_define`, and
+  `Meld._current_in_pool` still resolve a spell_id through its index, and three paths file a borrowed copy under
+  `spell_index.selected_spell_id`.
+  EVIDENCE: `src/melder/aether/spellbook/spellbook.py:Spellbook.find_spell_by_spell_id`,
+  `Spellbook._get_spell_by_id_via_aether`, `src/melder/aether/conduit/conduit.py:Conduit.get_spell_by_spell_id`,
+  `Conduit.get_spell_permissions`, `Conduit._resolve_transfer_spell`,
+  `src/melder/aether/conduit/conduit_ward/conduit_ward.py:ConduitWard._link_spell_dependencies`,
+  `ConduitWard._preflight_contract_dependency_collisions`, `ConduitWard._transfer_spell_ownership`,
+  `ConduitWard._check_spell_id_and_spell`, `ConduitWard._get_spells_in_contract_by_conduit`,
+  `src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py:TransferOfOwnership._resolve_spell`,
+  `TransferOfOwnership._deps_resolvable_on_target`, `TransferOfOwnership._transfer_owned_dependencies`,
+  `src/melder/aether/spellbook/spell.py:Spell._spell_index_unless_cleaned`,
+  `src/melder/nexus/rift/command_system/command_system.py:CommandSystem._get_spell_by_record_locked`,
+  `CommandSystem.get_spell_by_spell_id` and
+  `src/melder/nexus/rift/command_system/static_command_system.py:StaticCommandSystem._meld_live_spell_from_records_locked`.
 - One version, one copy (2026-10-16, 0.2.8251; the owner's rule: "you remove that spell if its not active, you look
   in inactive"): a borrower Book holds each borrowed copy, by spell_id, either among its active contracted copies or
   among its parked ones, and `Spellbook._remove_contracted_spell` removes exactly the copy of the spell_id it is
@@ -1448,7 +1512,8 @@ each entry in `src_components.md`; this list is the set that crosses components.
   (notch, index moves, bind_inactive) or with none (`Conduit.cleanup_spell`), so the frame mediator, which serializes
   LINK/UNLINK against those transactions, never orders them against a link or sever. Contract detail maps are read
   and written under the contract lock (`_contract_member_spell` included); the borrower reads answer by key first,
-  and the contract listing resolves ids through the Book (`_find_contracted_spell_by_id`, `find_spell_by_id`), never
+  and the contract listing resolves ids through the Book (`_find_contracted_spell_by_id`, `find_spell_by_id` -
+  `find_spell_by_spell_id` since 0.2.8253), never
   through the Conduit lookups, whose conduit lock taken under the ward lock deadlocked with link and sever (conduit
   lock, then ward locks). `Conduit.cleanup_spell` emits the index destroy that `Spellbook._dispose_spell` reports
   from its decision under the Book lock. Bind's cross-frame sweep and `_get_all_spell_ids` read
@@ -1471,7 +1536,8 @@ each entry in `src_components.md`; this list is the set that crosses components.
   `next(iter(...))` over the live view is not): the book-wide phase factories and the resolution cleanup pass,
   which public `Conduit.validate_resolution` runs with no Book lock, `inspect_spell` over another Book, the
   contracted-spell lookup and the transfer impact walk. `Conduit.get_spell_permissions` and
-  `CommandSystem.get_spell_by_id` resolve lineages through `Spellbook.find_spell_by_id` instead of walking.
+  `CommandSystem.get_spell_by_id` resolve through `Spellbook.find_spell_by_id` instead of walking (renamed
+  `get_spell_by_spell_id` and `find_spell_by_spell_id`, and exact, in 0.2.8253).
   `SpellIndex.has_spell` repeats its cleaned check under the index lock, so a racing cleanup raises the documented
   RuntimeError, never AttributeError; walks over indexes the caller neither owns nor locks (contracted maps,
   contract details) probe with `SpellIndex._has_spell_unless_cleaned`, which answers False for a cleaned index.
@@ -1480,7 +1546,10 @@ each entry in `src_components.md`; this list is the set that crosses components.
   `src/melder/aether/spellbook/bind/spell_index.py:SpellIndex.has_spell`, `SpellIndex._has_spell_unless_cleaned`,
   `src/melder/aether/conduit/conduit_ward/contract/details.py:Detail.has_spell`, `IndexDetail.has_spell` and
   `src/melder/aether/spellbook/spellbook_creation_system.py:SpellbookCreationSystem.cleanup_phase_artifacts_after_resolution`.
-- Lookup by version id (2026-10-11, 0.2.8229): `Spellbook.find_spell_by_id` answers from the Book's id maps and
+- Lookup by version id (2026-10-11, 0.2.8229; SUPERSEDED in part at 0.2.8253 by the exact lookup above: renamed
+  `find_spell_by_spell_id`, its parked branch returns the parked Spell and reads no index; the id maps, the
+  absence of a Book lock and the concurrency answers below survive, per spell_id rather than per lineage):
+  `Spellbook.find_spell_by_id` answers from the Book's id maps and
   never iterates a live map. A current version id is one read of `_spells_by_id`; a superseded or parked id is a
   read of `_inactive_spells`, then of the parked Spell's index through `Spell._spell_index_unless_cleaned` (under
   that Spell's own lock, the one `Spell.cleanup` deletes `spell_index` under, which cleanup keeps), then of
@@ -1492,8 +1561,8 @@ each entry in `src_components.md`; this list is the set that crosses components.
   both may call it from other threads. A concurrent bind, removal, notch, index move or transfer therefore never
   makes it raise or skip a registered spell; a lookup inside a notch, or between a transfer's flip and its
   migration, answers None for that lineage, and the returned Spell is borrowed, not leased.
-  EVIDENCE: `src/melder/aether/spellbook/spellbook.py:Spellbook.find_spell_by_id`,
-  `src/melder/aether/spellbook/spell.py:Spell._spell_index_unless_cleaned`, `Spell.cleanup` and
+  EVIDENCE: `src/melder/aether/spellbook/spellbook.py:Spellbook.find_spell_by_spell_id` (`find_spell_by_id` until
+  0.2.8253), `src/melder/aether/spellbook/spell.py:Spell._spell_index_unless_cleaned`, `Spell.cleanup` and
   `src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py:TransferOfOwnership.execute`.
 - Scan declarations (2026-10-10, 0.2.8228): a module scan registers what the module's source declares, through
   the one bind pipeline. `scan_bind` takes every target option `Spellbook.bind` takes - `resolvable`, per-target
@@ -2069,10 +2138,10 @@ each entry in `src_components.md`; this list is the set that crosses components.
     gone, because the `dynamic` argument reaching it is now the EFFECTIVE mode
     resolved from the posture, which makes a mismatch structurally impossible.
   EVIDENCE:
-  - src/melder/aether/spellbook/spellbook.py:6941-6984
+  - src/melder/aether/spellbook/spellbook.py:6946-6989
     (`Spellbook._settle_or_inherit_conjure_mode`; in-place settle :6971-6983,
     effective-mode return :6984; remeasured 2026-10-16 at 0.2.8251)
-  - src/melder/aether/spellbook/spellbook.py:7197
+  - src/melder/aether/spellbook/spellbook.py:7202
     (`conjure` resolves the effective mode as it enters the transaction window,
     passing `dynamic=self._settle_or_inherit_conjure_mode(dynamic)`)
   - src/melder/aether/aetheric_frame/aetheric_frame.py:726-787
@@ -2121,6 +2190,49 @@ each entry in `src_components.md`; this list is the set that crosses components.
   not the same thing as a Rift-level event orchestrator.
 
 ## Failure Modes and Error Paths
+- Breaking (0.2.8253): `Spellbook.find_spell_by_id` and `Conduit.get_spell_by_id` are gone, with no alias (a call
+  raises AttributeError); `find_spell_by_spell_id` and `get_spell_by_spell_id` take the same arguments. Their
+  answer for a parked spell_id changed: the parked spell itself, where the old pair answered the spell its index
+  had active (English for French's spell_id). `find_spell_by_spell_id` also answers a version split off by
+  `remove_from_spell_index` into an index with no active spell (it was None); the Conduit lookup still raises "not
+  found in any conduit" for such a version, because the index the move mints is missing from the frame registry
+  (pre-existing; STORY-2026-10-17-minted_index_missing_from_frame_registry). `Conduit.get_spell_permissions`
+  answers that version's own permissions (it was the active version's). The Rift rooms' command
+  `get_spell_by_id` is `get_spell_by_spell_id`, advertised under that name, and `get_spell_by_source_id` answers
+  the spell its source id names. To reach the version an index has active, ask the index:
+  `conduit.get_spell_by_index_id(conduit.get_spell_by_spell_id(spell_id).spell_index.id)`.
+  EVIDENCE: `src/melder/aether/spellbook/spellbook.py:Spellbook.find_spell_by_spell_id`,
+  `src/melder/aether/conduit/conduit.py:Conduit.get_spell_by_spell_id`, `Conduit.get_spell_permissions` and
+  `src/melder/nexus/rift/command_system/command_system.py:CommandSystem.get_spell_by_spell_id`.
+- A grant or ungrant by a parked spell_id no longer refuses (fixed in 0.2.8253): `add_spell_to_contract(spell_id=...)`
+  and `remove_spell_from_contract(spell_id=...)` raised RuntimeError "Provided spell_id '<parked>' does not match
+  inspected ID '<active>'." because the lookup answered the active version; a grant now parks the copy on the
+  borrower, as a grant of the Spell object does. The inbound half of a contract listing still answers a parked
+  grant through its index (`Spellbook._find_contracted_spell_by_id`: the index's active copy, or nothing),
+  pending with the owner.
+  EVIDENCE: `src/melder/aether/conduit/conduit_ward/conduit_ward.py:ConduitWard._check_spell_id_and_spell` and
+  `ConduitWard._get_spells_in_contract_by_conduit`.
+- An ownership transfer handed a spell_id still moves the index the spell_id belongs to, resolved to the version
+  the index has active on the source (0.2.8253). A spell_id the source conduit cannot resolve to an active spell
+  of that index - another conduit's spell whose index the source neither owns nor borrows - now refuses at
+  resolution: RuntimeError "[CONDUIT] Transfer-ownership could not resolve the source spell on this conduit."
+  (`Conduit`) or "Could not resolve spell for ownership transfer." (`ConduitWard`), where the old lookup handed
+  the other conduit's spell on and the transfer refused it later with "Source conduit does not own the spell.".
+  `TransferOfOwnership` constructed with a spell_id it cannot resolve raises RuntimeError "Unable to resolve spell
+  for transfer: the source conduit's Spellbook has no active spell in the index of spell_id '<id>'." from its
+  preflight; it failed with AttributeError on the None it handed to its ownership check.
+  EVIDENCE: `src/melder/aether/conduit/conduit.py:Conduit._resolve_transfer_spell`,
+  `src/melder/aether/conduit/conduit_ward/conduit_ward.py:ConduitWard._transfer_spell_ownership` and
+  `src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py:TransferOfOwnership._resolve_spell`.
+- A static Rift room names what was asked when a spell_id or source-id lookup refuses (0.2.8253): ValueError
+  "Spell id '<id>' uses unsupported static existence '<name>'." and "Spell id '<id>' is not live in frame
+  '<frame>'.", and "Spell '<source_id>' ..." for a source id (they said "Spell index '<index id>' ..."; the index
+  path keeps that wording). The base room's source-id lookup raises "Spell '<source_id>' has no owner conduit in
+  frame '<frame>'." and "Spell '<source_id>' was not found in the owner spellbook for frame '<frame>'." (it said
+  "Spell index id '<id>' was not found in the owner spellbooks for frame '<frame>'.").
+  EVIDENCE:
+  - `src/melder/nexus/rift/command_system/static_command_system.py:StaticCommandSystem._meld_live_spell_from_records_locked`
+  - `src/melder/nexus/rift/command_system/command_system.py:CommandSystem._get_spell_by_record_locked`
 - Fixed in 0.2.8251: a borrower that held a parked copy of one version of an index beside the active copy of
   another - an index link after the owner notched it, or two version grants across a notch - lost the wrong copy
   when the parked version was removed: `_remove_contracted_spell` matched an active copy by index membership, so it
@@ -2183,9 +2295,10 @@ each entry in `src_components.md`; this list is the set that crosses components.
   not owned by this conduit's Spellbook. ..." (remedy: notch through the conduit of the Spellbook that owns it, or
   stage the class on this index with bind_inactive, which returns the spell_id to pass) and "notch_spell: spell_id
   '<id>' belongs to another SpellIndex, not the one passed. ..." (remedy: pass
-  `conduit.get_spell_by_id('<id>').spell_index`, or move it with add_to_spell_index first). A refusal before the
-  transaction changes nothing; one inside the window (another operation moved the target after the first check)
-  ends the transaction as failed, and the Spellbook is never called.
+  `conduit.get_spell_by_spell_id('<id>').spell_index` - `get_spell_by_id` until 0.2.8253 - or move it with
+  add_to_spell_index first). A refusal before the transaction changes nothing; one inside the window (another
+  operation moved the target after the first check) ends the transaction as failed, and the Spellbook is never
+  called.
   EVIDENCE: `src/melder/aether/conduit/conduit.py:Conduit._check_spell_argument` and `Conduit._owned_notch_target`.
 - `Conduit.add_to_spell_index` and `remove_from_spell_index` refuse before anything starts (0.2.8249): the same
   argument refusals worded for the verb ("<verb> accepts either `spell` or `spell_id`, not both.", "<verb> needs a
@@ -2209,9 +2322,11 @@ each entry in `src_components.md`; this list is the set that crosses components.
   until a notch back. Each now raises the ValueError above with both indexes as they were.
   EVIDENCE: `src/melder/aether/conduit/conduit.py:Conduit._owned_notch_target`,
   `src/melder/aether/spellbook/spellbook.py:Spellbook._apply_notch` and `Spellbook._reactivate_owned_spell`.
-- A notch to the Spell `get_spell_by_id` or `find_spell_by_id` returns for a parked spell_id is a silent no-op, by
-  their contract: they answer a parked spell_id with the index's active member. Name a parked version by `spell_id=`.
-  EVIDENCE: `src/melder/aether/spellbook/spellbook.py:Spellbook.find_spell_by_id`.
+- A notch to the Spell the spell_id lookup returns for a parked spell_id moves the index to it (fixed in
+  0.2.8253): `get_spell_by_spell_id` and `find_spell_by_spell_id` return the parked version itself. Through
+  0.2.8252 `get_spell_by_id` and `find_spell_by_id` returned the index's active member, so that notch was a
+  silent no-op.
+  EVIDENCE: `src/melder/aether/spellbook/spellbook.py:Spellbook.find_spell_by_spell_id`.
 - A Book holding a definition bound resolvable=False - a Protocol or abstract base kept for discovery, whose
   consumers receive the value by override - no longer runs the meld-time validation gate on every meld (fixed in
   0.2.8247). The definition never receives a resolution verdict, so RiskManager counted it as risk and kept the
@@ -2341,20 +2456,23 @@ each entry in `src_components.md`; this list is the set that crosses components.
   '_spells_in_index'", and a contract detail over an index its owner cleaned answers False instead of raising.
   EVIDENCE: `src/melder/aether/spellbook/bind/spell_index.py:SpellIndex.has_spell` and
   `src/melder/aether/spellbook/spellbook.py:Spellbook.bind`.
-- `Conduit.get_spell_by_id` and `Conduit.get_conduit_by_spell_id` raise ValueError "Spell version <id> not found in
-  any conduit." for an id no conduit in the frame claims - unknown or removed, bound in another frame, its owner
+- `Conduit.get_spell_by_spell_id` (`get_spell_by_id` until 0.2.8253) and `Conduit.get_conduit_by_spell_id` raise
+  ValueError "Spell version <id> not found in any conduit." for an id no conduit in the frame claims - unknown or
+  removed, bound in another frame, its owner
   cleaned, or a lineage between owners while an ownership transfer runs - and "Aetheric frame '<name>' does not
   exist." for an unknown frame. They always did; until 0.2.8230 their docstrings said they return None. A `get_*`
   lookup raises on a miss and a `find_*` lookup returns None (owner decision 2026-10-11).
   EVIDENCE: `src/melder/aether/aether.py:Aether._get_conduit_by_spell_id` and
   `src/melder/aether/spellbook/spellbook.py:Spellbook._get_conduit_by_spell_id`.
-- `Spellbook.find_spell_by_id`, and `Conduit.get_spell_by_id` through it, no longer fail while other spells are
+- `Spellbook.find_spell_by_id`, and `Conduit.get_spell_by_id` through it (`find_spell_by_spell_id` and
+  `get_spell_by_spell_id` since 0.2.8253), no longer fail while other spells are
   bound, removed or parked on other threads (fixed in 0.2.8229; MelderOps hit it on 0.2.8226, reproduced on
   0.2.8228). The old walk over the live index map raised RuntimeError "dictionary changed size during
   iteration", AttributeError "'SpellIndex' object has no attribute '_spells_in_index'" or RuntimeError
   "SpellIndex has already been cleaned.", or returned None for a spell that was still registered. A parked
-  version disposed during a lookup now answers None instead of raising.
-  EVIDENCE: `src/melder/aether/spellbook/spellbook.py:Spellbook.find_spell_by_id`.
+  version disposed during a lookup answered None instead of raising (since 0.2.8253 it answers the Spell the
+  lookup read, borrowed, or None once its spell_id has left the map).
+  EVIDENCE: `src/melder/aether/spellbook/spellbook.py:Spellbook.find_spell_by_spell_id`.
 - Breaking (0.2.8228): a module scan no longer registers an undecorated subclass of a `scan_bind`-decorated
   class; decorate the subclass to register it. Before, the subclass was bound with its parent's declaration.
   A module-level instance of a decorated class, a class whose metaclass was decorated and a module object
@@ -2863,9 +2981,9 @@ Spellbook and binding:
 
 - path: `src/melder/aether/spellbook/spellbook.py`
   start_line: 1
-  end_line: 7766
-  loc: 7766
-  verified_at: 2026-10-16T21:54:02Z
+  end_line: 7771
+  loc: 7771
+  verified_at: 2026-10-17T23:03:04Z
   note: Spellbook core and conjure pipeline; `find_spell_by_id` answers from the id maps (0.2.8229); bind publishes
     its spell maps under the Book lock (0.2.8230); `cleanup_spell` decides through `_dispose_spell` and contracted
     lookups answer by key (0.2.8231); overlapping disposals refuse and `inspect_spell` asks the frames with no lock
@@ -2876,7 +2994,8 @@ Spellbook and binding:
     SpellContract consumers (`_mark_contract_dependents_dirty`), bind and `_apply_notch` record the binding key,
     and `_apply_notch` marks everything downstream of the notched lineage (0.2.8250);
     `_remove_contracted_spell` removes the copy of the spell_id it is given, matched by the copy's own
-    spell_id (0.2.8251).
+    spell_id (0.2.8251); `find_spell_by_id` renamed `find_spell_by_spell_id` and exact - a parked spell_id
+    answers its own spell, no index read (0.2.8253).
 - path: `src/melder/aether/spellbook/spellbook_creation_system.py`
   start_line: 1
   end_line: 3545
@@ -2915,21 +3034,23 @@ Spellbook and binding:
     (0.2.8242).
 - path: `src/melder/aether/spellbook/bind/spell_index.py`
   start_line: 1
-  end_line: 580
-  loc: 580
-  verified_at: 2026-10-15T21:20:35Z
+  end_line: 583
+  loc: 583
+  verified_at: 2026-10-17T23:03:04Z
   note: stable index that categorizes/targets spells and holds the active selected spell; `has_spell` re-checks
     cleaned under its lock and `_has_spell_unless_cleaned` is the cleanup-safe probe (0.2.8230);
-    `_is_selected_unless_cleaned`, the release registry's selected-version probe (0.2.8244).
+    `_is_selected_unless_cleaned`, the release registry's selected-version probe (0.2.8244); `update` and
+    `has_spell` say a spell_id names its own spell, not the head (0.2.8253).
 - path: `src/melder/aether/spellbook/spell.py`
   start_line: 1
-  end_line: 1964
-  loc: 1964
-  verified_at: 2026-10-15T21:20:35Z
+  end_line: 1968
+  loc: 1968
+  verified_at: 2026-10-17T23:03:04Z
   note: spell metadata and hooks; carries `spellframe_kind` and `implemented_protocols` (0.2.8222);
     `_spell_index_unless_cleaned`, the cleanup-safe index read (0.2.8229); a direct `cleanup()` removes the spell
     outside the spell lock, under its removal lock (0.2.8233); the four managed fields; `_add_owned_conduit` ensures a
-    managed version's pool (0.2.8242-0.2.8243).
+    managed version's pool (0.2.8242-0.2.8243); `_spell_index_unless_cleaned` names its readers, the explicit
+    index steps among them (0.2.8253).
 - path: `src/melder/aether/spellbook/existence/existence.py`
   start_line: 1
   end_line: 165
@@ -3028,10 +3149,11 @@ SpellCompiler and validation:
   note: phase 4 validation; registers `AmbiguousProviderStrategy` after the required-holes strategy (0.2.8224).
 - path: `src/melder/aether/spellbook/spell_compiler/validation/strategies/ambiguous_provider_strategy.py`
   start_line: 1
-  end_line: 196
-  loc: 196
-  verified_at: 2026-10-04T17:15:00Z
-  note: Phase-4 refusal of a single typed parameter with several providers; names every candidate's address (0.2.8224).
+  end_line: 198
+  loc: 198
+  verified_at: 2026-10-17T23:03:04Z
+  note: Phase-4 refusal of a single typed parameter with several providers; names every candidate's address
+    (0.2.8224); describes candidates through `find_spell_by_spell_id` (0.2.8253).
 - path: `src/melder/aether/spellbook/spell_compiler/validation/strategies/contract_provider_presence_strategy.py`
   start_line: 1
   end_line: 264
@@ -3116,17 +3238,17 @@ Aether and frames:
   start_line: 1
   end_line: 3074
   loc: 3074
-  verified_at: 2026-10-15T21:20:35Z
+  verified_at: 2026-10-17T23:03:04Z
   note: staged restore driver; stage 1 installs or reports the recorded spell-id regime, stage 6 replays custody per
     Book (0.2.8213-0.2.8214); hydrates Protocol frames or degrades them to categories with a shortfall (0.2.8222);
-    replays the managed options through bind (0.2.8242).
+    replays the managed options through bind (0.2.8242); calls `find_spell_by_spell_id` (0.2.8253).
 - path: `src/melder/crystallizer/crystal_loader_system/graft_runner.py`
   start_line: 1
-  end_line: 718
-  loc: 718
-  verified_at: 2026-10-15T21:20:35Z
+  end_line: 721
+  loc: 721
+  verified_at: 2026-10-17T23:03:04Z
   note: spell-index graft driver; the same frame hydration as the restore engine (0.2.8222); replays the managed
-    options (0.2.8242).
+    options (0.2.8242); calls `find_spell_by_spell_id`, its adoption TRIAGE comment corrected (0.2.8253).
 - path: `src/melder/crystallizer/crystal_analysis/conduit_hierarchy.py`
   start_line: 1
   end_line: 264
@@ -3446,16 +3568,20 @@ Aetheric mediator plane (WIRED - FRAME_CREATE LIVE, held by Aether):
   note: immutable room-memory record object.
 - path: `src/melder/nexus/rift/command_system/command_system.py`
   start_line: 1
-  end_line: 1698
-  loc: 1698
-  verified_at: 2026-10-11T15:21:03Z
-  note: shared room-local command surface.
+  end_line: 1823
+  loc: 1823
+  verified_at: 2026-10-17T23:03:04Z
+  note: shared room-local command surface; `get_spell_by_id` renamed `get_spell_by_spell_id` (command name,
+    raw-access label, advertised list), `get_spell_by_source_id` exact through `_get_spell_by_record_locked`
+    (0.2.8253).
 - path: `src/melder/nexus/rift/command_system/static_command_system.py`
   start_line: 1
-  end_line: 687
-  loc: 687
-  verified_at: 2026-10-15T21:20:35Z
-  note: static command posture; treats a managed spell like `many` (0.2.8243).
+  end_line: 789
+  loc: 789
+  verified_at: 2026-10-17T23:03:04Z
+  note: static command posture; treats a managed spell like `many` (0.2.8243); `get_spell_by_spell_id` (renamed)
+    and `get_spell_by_source_id` meld only the named version through `_meld_live_spell_from_records_locked`,
+    which the index path shares (0.2.8253).
 - path: `src/melder/nexus/rift/command_system/capability_command_system.py`
   start_line: 1
   end_line: 1681
@@ -3599,9 +3725,9 @@ Conduit runtime:
 
 - path: `src/melder/aether/conduit/conduit.py`
   start_line: 1
-  end_line: 7837
-  loc: 7837
-  verified_at: 2026-10-16T16:48:16Z
+  end_line: 7867
+  loc: 7867
+  verified_at: 2026-10-17T23:03:04Z
   note: conduit lifecycle and meld facade; `cleanup_spell` emits the index destroy the Book reports (0.2.8231);
     `find_contracted_spell` and `inspect_spell` take no conduit lock (0.2.8232); builds its SpellSpacePool and a
     root's ConduitPool elastic, baseline 20 / max 256 (0.2.8234); a root's teardown leaves its cluster first
@@ -3610,7 +3736,8 @@ Conduit runtime:
     `notch_spell` names its target by `spell_id=` or `spell=` and checks it before and inside its transaction,
     and `add_to_spell_index` / `remove_from_spell_index` take `spell_id=` too (0.2.8249); after a notch every
     linked peer's parked copy of the incoming version is made active again (`_activate_borrowed_spell`,
-    0.2.8250).
+    0.2.8250); `get_spell_by_id` renamed `get_spell_by_spell_id` and exact, `get_spell_permissions` per version,
+    `_resolve_transfer_spell` takes the explicit index step (0.2.8253).
 - path: `src/melder/aether/conduit/conduit_pool.py`
   start_line: 1
   end_line: 165
@@ -3625,12 +3752,13 @@ Conduit runtime:
   note: conduit state enum.
 - path: `src/melder/aether/conduit/conduit_ward/conduit_ward.py`
   start_line: 1
-  end_line: 3965
-  loc: 3965
-  verified_at: 2026-10-16T16:48:16Z
+  end_line: 3999
+  loc: 3999
+  verified_at: 2026-10-17T23:03:04Z
   note: contracts and lineage; owner-side emissions under the ward lock, contract reads under the contract
     lock, the listing resolved through the Book (0.2.8231); the version grant's docstring says what a notch does
-    to its copy (0.2.8250).
+    to its copy (0.2.8250); the dependency walks and the transfer's spell_id handle take the explicit index step,
+    the grant check and the outbound listing resolve exactly (0.2.8253).
 - path: `src/melder/aether/conduit/conduit_ward/policies/policies.py`
   start_line: 1
   end_line: 75
@@ -3645,13 +3773,14 @@ Conduit runtime:
   note: permission enum.
 - path: `src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py`
   start_line: 1
-  end_line: 2158
-  loc: 2158
-  verified_at: 2026-10-16T11:03:50Z
+  end_line: 2223
+  loc: 2223
+  verified_at: 2026-10-17T23:03:04Z
   note: ownership transfer; moves by default and disposes nothing (0.2.8239); the owner stamp follows the lineage both
     ways (`_restamp`, 0.2.8246); the flip and its rollback pass the moved version's `resolvable` to
     `register_index` (0.2.8247); `_migrate_inactive_members` documents the conjure stamp of pre-conjure staged versions
-    (0.2.8248).
+    (0.2.8248); `_resolve_spell`, `_deps_resolvable_on_target` and `_transfer_owned_dependencies` take the
+    explicit index step from a spell_id (0.2.8253).
 
 Resolution and creations:
 
@@ -4358,6 +4487,20 @@ without rewriting the original record or existing live IDs.
 
 ## Context / Handoff Summary
 
+2026-10-17 lookup by spell_id is exact (0.2.8253; the owner's rule: a spell_id and a SpellIndex are separate
+things, and a spell_id lookup never answers with the spell its index has active): `Spellbook.find_spell_by_id`
+and `Conduit.get_spell_by_id` are renamed `find_spell_by_spell_id` and `get_spell_by_spell_id` (Breaking, no
+alias) and answer the spell a spell_id names, active or parked; `get_spell_permissions` answers per version;
+callers that need an index's active spell (the transfer's spell_id handles, the contract dependency walks) take
+an explicit index step and answer as before; the Rift rooms' `get_spell_by_id` command is renamed
+`get_spell_by_spell_id` and both rooms' spell_id and source-id lookups answer the spell named. The boundary list,
+a new operational invariant (the 0.2.8229 lookup entry marked superseded in part), four failure modes (one
+Breaking), the corrected notch remedy and no-op entry, and the code map (eleven files remeasured) carry it; the
+component map carries the per-component contracts. Every numeric citation into the changed files was remapped
+line by line. Open with the owner: the five other places that resolve a spell_id through its index (the
+contracted-copy lookup, the contract row `Detail`, and three ConduitWard contract reads and checks),
+`Meld._current_in_pool`, and the three paths that file a borrowed copy under the selected id.
+
 2026-10-16 one version, one copy (0.2.8251; the owner's rule for removing a borrowed copy):
 `_remove_contracted_spell` matches an active copy by its own spell_id, never by index membership, so an unlink after
 a notch completes in any member order and a removal never takes another version's copy. A new operational
@@ -4575,7 +4718,7 @@ emitted line.
 manifest holds 619 entries at 0.2.8215 (cited as 582) and is 641 lines; the conjure sequence's
 evidence now covers the whole verdict gate (242-263) and the two cache-classifying methods (616-721).
 The other suspect citations here read true when opened: the Spellbook comment at
-`src/melder/aether/spellbook/spellbook.py:3811` and `check_system_state` at 1253-1292. Citations
+`src/melder/aether/spellbook/spellbook.py:3816` and `check_system_state` at 1253-1292. Citations
 the audit heuristic could not tie to a symbol were not opened.
 
 2026-10-01 frame lookups and read accessors (0.2.8208, documented now): the boundary list, the operational

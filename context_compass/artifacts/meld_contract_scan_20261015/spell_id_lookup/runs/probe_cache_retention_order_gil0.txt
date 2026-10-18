@@ -1,0 +1,14 @@
+== the folder holds the repo's 100 cached files (numbers 2-4, earlier processes)
+files in the folder before: 100, checkpoint numbers: [(2, 22), (3, 40), (4, 38)]
+flush_checkpoint returned the id: True
+file written then kept: False
+in list_cached_checkpoint_ids(): False
+files in the folder after: 100, checkpoint numbers: [(2, 22), (3, 40), (4, 38)]
+this process's checkpoint number: (its file was removed) / removed numbers: []
+== control: the folder is empty
+files in the folder before: 0, checkpoint numbers: []
+flush_checkpoint returned the id: True
+file written then kept: True
+in list_cached_checkpoint_ids(): True
+files in the folder after: 1, checkpoint numbers: [(1, 1)]
+this process's checkpoint number: [1] / removed numbers: []

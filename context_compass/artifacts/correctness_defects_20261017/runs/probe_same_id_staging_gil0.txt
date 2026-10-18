@@ -1,0 +1,7 @@
+S1 bind_inactive of the same class with the same settings (the same spell_id) on its index
+    raised RuntimeError: Spell ID collision detected. spell_id is computed from the spell's bind-time fingerprint (e.g., structural profile, lookup signature, existence, and resolved disposal metadata). The existing spell with this id is already registered in the Spellbook or Aether for this frame. If you intended to register a distinct spell, ensure its bind-time fingerprint differs so it produces a unique spell_id.
+    parked versions in the Book: 0; the id still names the active version: True
+
+S2 cleanup_spell of the only version, then bind the same class again with limit 2
+    rebound: same id today: False (the managed part differs, so a new id today)
+

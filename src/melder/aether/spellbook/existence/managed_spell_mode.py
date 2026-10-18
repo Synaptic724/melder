@@ -35,9 +35,11 @@ class ManagedSpellMode(Enum):
         from a root-owned pool and released back; this enum says what the pool does when it has nothing idle.
 
     System Context:
-        The mode is identity data: it is hashed into the spell id of a managed binding (with the limit, the
-        timeout and the reset names), recorded by the crystallizer and replayed by restore and graft, so two
-        bindings of one class that differ only in their mode are two spell versions.
+        The mode is a setting of the spell, not identity data: it is not part of the spell id (nor are the
+        limit, the timeout and the reset names; owner ruling 2026-10-17, 0.2.8254), so one class bound managed
+        at one address is one spell whatever its mode. It is recorded by the crystallizer and replayed by
+        restore and graft. To change it, `cleanup_spell` the spell and bind it again: the spell keeps its spell
+        id and its pool takes the new settings.
 
     AGENT_ACCESS: public
 

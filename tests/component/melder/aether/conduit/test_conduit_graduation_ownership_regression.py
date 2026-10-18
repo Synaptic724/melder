@@ -207,8 +207,8 @@ def test_graduated_binding_is_not_registered_in_the_parent_book(
     )
 
     assert isinstance(graduation_world.child.meld(spell_id=child_id), GraduatedService)
-    assert graduation_world.child._spellbook.find_spell_by_id(child_id) is not None
-    assert graduation_world.book.find_spell_by_id(child_id) is None
+    assert graduation_world.child._spellbook.find_spell_by_spell_id(child_id) is not None
+    assert graduation_world.book.find_spell_by_spell_id(child_id) is None
 
 
 @pytest.mark.parametrize("stage", ["pre", "activation", "post"])
@@ -280,7 +280,7 @@ def test_graduated_bind_hook_clear_preserves_parent_callbacks(
     expected = (
         LaterParentService
         if stage == "pre"
-        else graduation_world.book.find_spell_by_id(parent_id)
+        else graduation_world.book.find_spell_by_spell_id(parent_id)
     )
     assert parent_calls == [expected]
 
@@ -347,7 +347,7 @@ def test_graduated_cleanup_disposes_its_own_unique_without_disposing_parent(
         disposal_method_names=["cleanup"],
     )
     child_creation = graduation_world.child.meld(spell_id=child_id)
-    registered = graduation_world.child._spellbook.find_spell_by_id(child_id)
+    registered = graduation_world.child._spellbook.find_spell_by_spell_id(child_id)
     assert registered.disposal_method_names == ["cleanup"]
     graduation_world.child.permanent_cleanup()
 
@@ -381,4 +381,4 @@ def test_post_graduation_spellspace_resolves_only_the_new_books_local_binding(
         creation = space.meld(spell_id=child_id)
         assert isinstance(creation, GraduatedService)
         assert space.meld(spell_id=child_id) is creation
-        assert graduation_world.book.find_spell_by_id(child_id) is None
+        assert graduation_world.book.find_spell_by_spell_id(child_id) is None

@@ -4,8 +4,10 @@ Unit: the four managed bind options at the Bind seam (STORY-2026-10-15-managed_b
 `Existence.managed_spell_quantity` bindings carry `managed_spell_mode`, `managed_spell_limit`,
 `managed_spell_timeout_seconds` and `managed_spell_reset_methods`. Bind normalizes them once - after the profile,
 before the fingerprint - refuses every malformed combination before a Spell exists, hands the normalized values
-to the Spell, and adds one fingerprint part for managed bindings only. Every other binding keeps its spell id
-byte for byte: the literal ids below were computed on 0.2.8241, before the options existed
+to the Spell, and never hashes them: they are settings of the one spell, not part of its spell_id (owner ruling,
+2026-10-17: "the bind call itself shouldn't impact the actual SHA256"; 0.2.8242-0.2.8253 appended a `managed:`
+part, STORY-2026-10-17-release_routes_parked_version_objects_to_active_pool removed it). Every other binding keeps
+its spell id byte for byte: the literal ids below were computed on 0.2.8241, before the options existed
 (context_compass/artifacts/managed_spell_quantity_20261015/runs/s2_golden_ids_pre.txt).
 """
 import hashlib
@@ -478,30 +480,15 @@ def _managed_key(part: str) -> str:
     return hashlib.sha256("::".join(parts).encode("utf-8")).hexdigest()
 
 
-def test_the_managed_part_is_appended_after_the_existence_in_its_documented_form() -> None:
-    """`managed:<mode>:<limit>:<timeout>:<names>` closes the hash input of a managed binding."""
-    assert _managed_key("") == GOLDEN_MANAGED_WITHOUT_PART
+def test_a_managed_binding_hashes_the_inputs_every_binding_hashes() -> None:
+    """No settings part: a managed id is the documented key of its profile, name and existence (0.2.8254)."""
     assert Bind.sha256_profile(
         golden_class_profile(), spell_name="Pooled", existence=Existence.managed_spell_quantity,
-        managed_spell_mode=ManagedSpellMode.elastic, managed_spell_limit=256,
-    ) == _managed_key("managed:elastic:256::")
-    assert Bind.sha256_profile(
-        golden_class_profile(), spell_name="Pooled", existence=Existence.managed_spell_quantity,
-        managed_spell_mode=ManagedSpellMode.queue, managed_spell_limit=3, managed_spell_timeout_seconds=0.5,
-        managed_spell_reset_methods=("clear", "reset"),
-    ) == _managed_key("managed:queue:3:0.5:clear,reset")
+    ) == _managed_key("") == GOLDEN_MANAGED_WITHOUT_PART
 
 
-def test_without_a_mode_no_managed_part_is_hashed() -> None:
-    """The part needs a mode: limit, timeout and names alone leave the id as it was."""
-    assert Bind.sha256_profile(
-        golden_class_profile(), spell_name="Pooled", existence=Existence.managed_spell_quantity,
-        managed_spell_limit=9, managed_spell_timeout_seconds=1.0, managed_spell_reset_methods=("reset",),
-    ) == GOLDEN_MANAGED_WITHOUT_PART
-
-
-def test_each_managed_option_changes_the_spell_id(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Mode, limit, timeout and reset names (and their order) each move the id; the default differs from 0.2.8241."""
+def test_managed_settings_do_not_change_the_spell_id(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Mode, limit, timeout and reset names (in any order) give one spell_id: the managed id with no settings."""
     variants = [
         {},
         {"managed_spell_limit": 8},
@@ -512,9 +499,10 @@ def test_each_managed_option_changes_the_spell_id(monkeypatch: pytest.MonkeyPatc
         {"managed_spell_reset_methods": ["reset", "clear"]},
         {"managed_spell_reset_methods": ["clear", "reset"]},
     ]
-    ids = [bind_with(monkeypatch, Existence.managed_spell_quantity, **variant).kwargs["spell_id"] for variant in variants]
-    assert len(set(ids)) == len(ids)
-    assert GOLDEN_MANAGED_WITHOUT_PART not in ids
+    ids = {bind_with(monkeypatch, Existence.managed_spell_quantity, **variant).kwargs["spell_id"] for variant in variants}
+    assert ids == {
+        Bind.sha256_profile(golden_class_profile(), spell_name="PooledTarget", existence=Existence.managed_spell_quantity)
+    }
 
 
 def test_equal_timeouts_hash_alike(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -567,21 +555,24 @@ def test_leftover_keywords_still_flow_beside_the_options(monkeypatch: pytest.Mon
 
 
 def test_spell_id_inspector_matches_the_bind_fingerprint_for_a_managed_class() -> None:
-    """The read-only inspector normalizes the options exactly as bind does."""
+    """The read-only inspector checks the settings as bind does and, like bind, does not hash them."""
     profile = SpellGeneralProfile.create_from_target(PooledTarget)
     try:
         expected = Bind.sha256_profile(
             profile.binding_profile, spell_name="PooledTarget", existence=Existence.managed_spell_quantity,
-            managed_spell_mode=ManagedSpellMode.queue, managed_spell_limit=2, managed_spell_timeout_seconds=1.5,
-            managed_spell_reset_methods=("reset",),
         )
     finally:
         profile.cleanup()
-    assert Bind.spell_id_inspector(
-        PooledTarget, spell_name="PooledTarget", existence=Existence.managed_spell_quantity,
-        managed_spell_mode="queue", managed_spell_limit=2, managed_spell_timeout_seconds=1.5,
-        managed_spell_reset_methods=["reset"],
-    ) == expected
+    for settings in (
+            {},
+            {
+                "managed_spell_mode": "queue", "managed_spell_limit": 2, "managed_spell_timeout_seconds": 1.5,
+                "managed_spell_reset_methods": ["reset"],
+            },
+    ):
+        assert Bind.spell_id_inspector(
+            PooledTarget, spell_name="PooledTarget", existence=Existence.managed_spell_quantity, **settings,
+        ) == expected
 
 
 def test_spell_id_inspector_refuses_what_bind_refuses() -> None:

@@ -2,13 +2,13 @@
   "corpora": {
     "other": {
       "bundle": {
-        "bytes": 3335471,
-        "lines": 77718,
+        "bytes": 3341494,
+        "lines": 77794,
         "path": "llm_support/llm_full_other.txt",
-        "sha256": "710028c93b2481f174ab5034cf67897b91eba7cf2d654657638172daec8fc83e"
+        "sha256": "bf8b27a5f8f5a3892242e6b6efa9e513cd1cb29fae44835849f5f58dad591111"
       },
-      "content_bytes": 3111287,
-      "content_lines": 74480,
+      "content_bytes": 3117310,
+      "content_lines": 74556,
       "file_count": 404,
       "files": {
         ".gitattributes": {
@@ -618,9 +618,9 @@
           "source_encoding": "utf-8"
         },
         "UX_and_AIX_experiences/02_intermediate/06_spell_metadata_kwargs.py": {
-          "content_bytes": 1189,
+          "content_bytes": 1201,
           "content_lines": 37,
-          "content_sha256": "934c0eb0c82b7d0bdd0d9dd7045627e917cbcb5bb57034c01f0d6c4ab727ef74",
+          "content_sha256": "49f236ee7902ce382e6b64d9241ae9c41ff78df1c6aa967b69bd02f7bac8b187",
           "source_encoding": "utf-8"
         },
         "UX_and_AIX_experiences/02_intermediate/07_lesser_conduits_child_scopes.py": {
@@ -660,9 +660,9 @@
           "source_encoding": "utf-8"
         },
         "UX_and_AIX_experiences/02_intermediate/13_spell_ids_and_lookup.py": {
-          "content_bytes": 823,
+          "content_bytes": 841,
           "content_lines": 28,
-          "content_sha256": "0059acb5a20c3d96418ae9e552016423f791c605b2f4920e39af1e15e4c77f46",
+          "content_sha256": "369dac8c3b9e2073b3f8bd7661b9c0436bfbbf9fe29d44447c0f52827beba250",
           "source_encoding": "utf-8"
         },
         "UX_and_AIX_experiences/02_intermediate/14_introspect_the_book.py": {
@@ -816,9 +816,9 @@
           "source_encoding": "utf-8"
         },
         "UX_and_AIX_experiences/02_intermediate/40_bind_lifecycle_hooks.py": {
-          "content_bytes": 4434,
+          "content_bytes": 4464,
           "content_lines": 105,
-          "content_sha256": "e42a74aeb3faddce693ba1e54e1e7123d9c3a53722002ab711414f48dad0bb0c",
+          "content_sha256": "70e54b96c09cdbeb3d604b863c2396d7c9fa8434e088b42672afb059e7a244ac",
           "source_encoding": "utf-8"
         },
         "UX_and_AIX_experiences/02_intermediate/41_named_lesser_conduits.py": {
@@ -1056,9 +1056,9 @@
           "source_encoding": "utf-8"
         },
         "UX_and_AIX_experiences/04_expert/17_notch_swapping_a_live_object.py": {
-          "content_bytes": 7586,
-          "content_lines": 171,
-          "content_sha256": "e59e30c8811c0564afb36e08c9edee93b2b71ccdf07d4a575174cadccac3cf1c",
+          "content_bytes": 7550,
+          "content_lines": 170,
+          "content_sha256": "33f6cf979ed059c88f915cfb8938a12287b3a4a6e25e6ebf8c6aae19f4ffda52",
           "source_encoding": "utf-8"
         },
         "UX_and_AIX_experiences/04_expert/18_the_package_reads_itself_to_you.py": {
@@ -1092,9 +1092,9 @@
           "source_encoding": "utf-8"
         },
         "UX_and_AIX_experiences/04_expert/23_branching_the_record_and_joining_back.py": {
-          "content_bytes": 9559,
+          "content_bytes": 9565,
           "content_lines": 219,
-          "content_sha256": "fa6c0c2ca7d4ed7c200c928a5962270b32e66d6e04c529ab64c4824fcdd510f8",
+          "content_sha256": "ce0941bf3d4767dcce053bb38759bceee15434f553485d00e064bffd51b4ae0c",
           "source_encoding": "utf-8"
         },
         "UX_and_AIX_experiences/04_expert/24_loading_a_whole_world_back.py": {
@@ -1110,9 +1110,9 @@
           "source_encoding": "utf-8"
         },
         "UX_and_AIX_experiences/04_expert/26_codegen_create_modify_iterate.py": {
-          "content_bytes": 11042,
-          "content_lines": 244,
-          "content_sha256": "4c559e9058bcf03c54457c05fa1c32ce9edbb5030f591d9edeb90b50a5fda4d6",
+          "content_bytes": 11108,
+          "content_lines": 245,
+          "content_sha256": "01217780021744920e90d029c2ab61c9481901e5f0dcb910930dbf78e273383d",
           "source_encoding": "utf-8"
         },
         "UX_and_AIX_experiences/04_expert/27_a_world_that_outlives_its_own_runtime.py": {
@@ -1122,15 +1122,15 @@
           "source_encoding": "utf-8"
         },
         "UX_and_AIX_experiences/04_expert/28_the_record_crosses_as_a_json_string.py": {
-          "content_bytes": 8940,
+          "content_bytes": 8946,
           "content_lines": 218,
-          "content_sha256": "d0636ec07b23ea707c1e378a4a09534fa762dd69dc8e52ee8161a5af554d07bd",
+          "content_sha256": "9b7ce20c8971b35661f51d8c2ef6544badb18697314a68dfb34ee93c87fa28c7",
           "source_encoding": "utf-8"
         },
         "UX_and_AIX_experiences/04_expert/29_reading_your_own_recorded_code.py": {
-          "content_bytes": 10700,
+          "content_bytes": 10706,
           "content_lines": 244,
-          "content_sha256": "3f566b93f15f071a29de4bd3e760708f244a1c15b8b1624e7d13f96a1ae249f1",
+          "content_sha256": "175c2ad6ca7daeabe07b6420c15f22abbf64a17718296c976f8ae7ab866a1aea",
           "source_encoding": "utf-8"
         },
         "UX_and_AIX_experiences/04_expert/30_composing_a_version_in_the_workshop.py": {
@@ -1140,9 +1140,9 @@
           "source_encoding": "utf-8"
         },
         "UX_and_AIX_experiences/04_expert/31_organising_lanes_after_the_fact.py": {
-          "content_bytes": 9014,
+          "content_bytes": 9020,
           "content_lines": 209,
-          "content_sha256": "466685cb15a616f3b2fda7b323dfaca13a54b57f573ced85dcf677cd4001b9ad",
+          "content_sha256": "f6854d2e34fb40aba3b83f1f4662b0d7e2f81940208beeb6f5c9d8c52bc157f5",
           "source_encoding": "utf-8"
         },
         "UX_and_AIX_experiences/04_expert/32_a_subsystems_blast_radius.py": {
@@ -1176,9 +1176,9 @@
           "source_encoding": "utf-8"
         },
         "UX_and_AIX_experiences/04_expert/37_review_agent_bindings.py": {
-          "content_bytes": 7998,
+          "content_bytes": 8028,
           "content_lines": 180,
-          "content_sha256": "b41ed7164d697403ba259347060e05423acc5ef6a5f529155220a698110d9551",
+          "content_sha256": "6a73b7f3f37ea4e5cb4f1ba30fbdd539868ffd21f34f943232e330288131cb88",
           "source_encoding": "utf-8"
         },
         "UX_and_AIX_experiences/04_expert/38_named_scopes_in_nexus_and_restore.py": {
@@ -1272,9 +1272,9 @@
           "source_encoding": "utf-8"
         },
         "agents/MELDER_AGENT_OPERATIONS.md": {
-          "content_bytes": 51981,
+          "content_bytes": 52255,
           "content_lines": 668,
-          "content_sha256": "9ac23bc211dbe7dfa1bd9452a80fc1e57e3c68f3b1de0286332ff52e6eb73b23",
+          "content_sha256": "4a1d8516c2496c43b7089c723bc236f290a19d407d9f7b7c80022ae5ddcb3761",
           "source_encoding": "utf-8"
         },
         "architecture_and_design/01_overview/capability_ladder.md": {
@@ -2052,9 +2052,9 @@
           "source_encoding": "utf-8"
         },
         "docs/expert/bind-hooks.md": {
-          "content_bytes": 4480,
+          "content_bytes": 4486,
           "content_lines": 89,
-          "content_sha256": "513e1e35c1a974de8a9c6daac09f1925ba537b8e5a21ed4c7db9b449c1cfb05a",
+          "content_sha256": "e5697107b42c57fecdda11257c278781727689a5a346fe7a1108382bcbd651db",
           "source_encoding": "utf-8"
         },
         "docs/expert/codegen.md": {
@@ -2406,9 +2406,9 @@
           "source_encoding": "utf-8"
         },
         "release_docs/next_version_release.md": {
-          "content_bytes": 62587,
-          "content_lines": 890,
-          "content_sha256": "ef35fb84d673f8acb84339f8ec66460501747c2317d155ac311e5ea88f594ade",
+          "content_bytes": 68186,
+          "content_lines": 966,
+          "content_sha256": "61df1bf0cb080e911f2604affde22d2a4544f2f282fe6f60f0ac92657cbeba0e",
           "source_encoding": "utf-8"
         },
         "requirements.txt": {
@@ -2440,19 +2440,19 @@
         "bytes": 67421,
         "lines": 426,
         "path": "llm_support/llm_full_other_index.md",
-        "sha256": "d3cd515dd2093dee3f04651a291614f2908fde0a79ebb4487fca1828a9b39bf7"
+        "sha256": "2f4fbf989ac507d609aea02346d8d311075ca5198fc285f7232431946f03656b"
       },
-      "source_fingerprint": "9ec928567deddc9ac2f07460bd9213fe962a8070543677ae51bf33e5b47ad365"
+      "source_fingerprint": "04242556482fd78620d1bf1c5f21c09cca6b933451185bb6576acb4c679ed7de"
     },
     "src": {
       "bundle": {
-        "bytes": 11279911,
-        "lines": 282660,
+        "bytes": 11299646,
+        "lines": 283033,
         "path": "llm_support/llm_full_src.txt",
-        "sha256": "43dc797d9ec5395c7da1fffcec9609456cdee138de8a8f318c97332881a3c9e8"
+        "sha256": "d17c04eb18935d8ad0cd8c90cc37c18e7cf555a797dddf1966412d61a335cc95"
       },
-      "content_bytes": 10926617,
-      "content_lines": 277990,
+      "content_bytes": 10946352,
+      "content_lines": 278363,
       "file_count": 583,
       "files": {
         "src/melder/__architecture__.py": {
@@ -2512,7 +2512,7 @@
         "src/melder/__version__.py": {
           "content_bytes": 316,
           "content_lines": 12,
-          "content_sha256": "5387d425891edefab095deabe2e0b3d7254e852bdd6c964f2f4494fcc417c89e",
+          "content_sha256": "050126fe3a5c37157ef732e40e1671a6b7764451d089fc00d09145e0b340fa5d",
           "source_encoding": "utf-8"
         },
         "src/melder/_build_assets/_agent_documentation/_builder.py": {
@@ -3044,9 +3044,9 @@
           "source_encoding": "utf-8"
         },
         "src/melder/aether/conduit/conduit.py": {
-          "content_bytes": 343064,
-          "content_lines": 7837,
-          "content_sha256": "b3c9d9f6ab123dfadbde190813b29c0f9bfa55bb5f07a31a75d83194ac219f0a",
+          "content_bytes": 345200,
+          "content_lines": 7867,
+          "content_sha256": "1b446d6efdf6bf7502ce02275ef0df7d4e4019e70d09a7e305fbc70aeee934f1",
           "source_encoding": "utf-8"
         },
         "src/melder/aether/conduit/conduit_cluster.py": {
@@ -3068,9 +3068,9 @@
           "source_encoding": "utf-8"
         },
         "src/melder/aether/conduit/conduit_ward/conduit_ward.py": {
-          "content_bytes": 178099,
-          "content_lines": 3965,
-          "content_sha256": "16de3e7d18f7b74871f878ba1f0de65785da1e17e91c6f68a705df4007f14869",
+          "content_bytes": 180180,
+          "content_lines": 3999,
+          "content_sha256": "81d96c19ee4dd35074f6fdd42a985f7b85db7b4d51dcfb25d350cd9a989274d2",
           "source_encoding": "utf-8"
         },
         "src/melder/aether/conduit/conduit_ward/contract/contract.py": {
@@ -3110,9 +3110,9 @@
           "source_encoding": "utf-8"
         },
         "src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py": {
-          "content_bytes": 99757,
-          "content_lines": 2158,
-          "content_sha256": "11aad5b7f51686309534e7bf8f391cffc24ab48047b7be8dcdce954341093a85",
+          "content_bytes": 103317,
+          "content_lines": 2223,
+          "content_sha256": "03c0cffd316a6fac7c3e199ff0c3e8c1c9f967b531ae29e4ea2413c5433d9808",
           "source_encoding": "utf-8"
         },
         "src/melder/aether/conduit/creations/cluster_creations.py": {
@@ -3236,9 +3236,9 @@
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/bind/spell_index.py": {
-          "content_bytes": 22652,
-          "content_lines": 580,
-          "content_sha256": "e08418cecfbe9b1adae5b0f6747ad92afad0a644a99e873376029776340f77a8",
+          "content_bytes": 22846,
+          "content_lines": 583,
+          "content_sha256": "1c1376fe544c3c957daec5a7fa1cc8642775f326f4b4f28964314f7a30099b44",
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/configuration/spellbook_configuration.py": {
@@ -3272,9 +3272,9 @@
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/spell.py": {
-          "content_bytes": 84777,
-          "content_lines": 1964,
-          "content_sha256": "10162d70abc7843bcfc8bae2f77bb4cada0842fa40b19eae9664597b7e3f20d8",
+          "content_bytes": 85092,
+          "content_lines": 1968,
+          "content_sha256": "911901862888719a984a21d84729dff3845188a9466ad71c71a5581ec14e62bf",
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_injection_analysis.py": {
@@ -4310,9 +4310,9 @@
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/spell_compiler/validation/strategies/ambiguous_provider_strategy.py": {
-          "content_bytes": 9535,
-          "content_lines": 196,
-          "content_sha256": "8873cfc3ee3b7311e554dfe43993b30e924a657200b1f9fd218dfc3cbd09ec68",
+          "content_bytes": 9573,
+          "content_lines": 198,
+          "content_sha256": "a859938850269f358e348e2590c5af13d1938dd34d2744bb6360841cd4ea02df",
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/spell_compiler/validation/strategies/annotation_shape_guard_strategy.py": {
@@ -4418,9 +4418,9 @@
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/spellbook.py": {
-          "content_bytes": 351232,
-          "content_lines": 7766,
-          "content_sha256": "47eac897c84c8ac3066418791e02f1d4ccca366a96c4c7cbc76201df48ce3ea9",
+          "content_bytes": 351671,
+          "content_lines": 7771,
+          "content_sha256": "30d474731077ad9a85ce7b2734520592202849329e7f6594b3af65eb60d19c7b",
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/spellbook_creation_system.py": {
@@ -4664,9 +4664,9 @@
           "source_encoding": "utf-8"
         },
         "src/melder/crystallizer/crystal_loader_system/graft_runner.py": {
-          "content_bytes": 30287,
-          "content_lines": 718,
-          "content_sha256": "a30e13be7e95bde23ec7d03432f4a59541ad6bc763837257abaabbf4fa89a309",
+          "content_bytes": 30505,
+          "content_lines": 721,
+          "content_sha256": "f7e5bcf9af03e9385f86541f4efc6e9f0b783c6645c670120a6b0cb3f6f65a67",
           "source_encoding": "utf-8"
         },
         "src/melder/crystallizer/crystal_loader_system/load_admission.py": {
@@ -4682,9 +4682,9 @@
           "source_encoding": "utf-8"
         },
         "src/melder/crystallizer/crystal_loader_system/restore_engine.py": {
-          "content_bytes": 126459,
+          "content_bytes": 126471,
           "content_lines": 3074,
-          "content_sha256": "36829dd899804709efd18079de7ff56816dacdc3e433b716b702e092f11d9352",
+          "content_sha256": "f0ceace9f90bcdd931f5d223d62103c91a85c943ed4851691488218a1d22c75c",
           "source_encoding": "utf-8"
         },
         "src/melder/crystallizer/crystal_loader_system/user_world_rebuild.py": {
@@ -5498,15 +5498,15 @@
           "source_encoding": "utf-8"
         },
         "src/melder/nexus/rift/command_system/command_system.py": {
-          "content_bytes": 58382,
-          "content_lines": 1698,
-          "content_sha256": "937c03c3ad85b6af6b525d1723f18a772c0ed6d2a05e904093511b31ad628e34",
+          "content_bytes": 64202,
+          "content_lines": 1823,
+          "content_sha256": "47f5b962dcb2a76ed5a55ed26114c293f8115a3cbca37ef9b8143e15c19ea526",
           "source_encoding": "utf-8"
         },
         "src/melder/nexus/rift/command_system/static_command_system.py": {
-          "content_bytes": 24754,
-          "content_lines": 687,
-          "content_sha256": "a6c528c7110983fb7e29d92667cdd74c6b6860514661b64661a88a3b39c35be5",
+          "content_bytes": 29676,
+          "content_lines": 789,
+          "content_sha256": "32512bd76e281a0e7fae716c721826a33f27341869cc5c70ed360a015fa86a47",
           "source_encoding": "utf-8"
         },
         "src/melder/nexus/rift/frame_link/frame_link.py": {
@@ -5955,23 +5955,23 @@
         }
       },
       "index": {
-        "bytes": 114110,
+        "bytes": 114111,
         "lines": 605,
         "path": "llm_support/llm_full_src_index.md",
-        "sha256": "1a2656ac197df85765d071fc02acd562e65b9a318c776beaf29dbbcdff1ed159"
+        "sha256": "6ed1c85d57558b26a9ef38539b7de7cf152dcfee100739acd5be6b2accf4c8f8"
       },
-      "source_fingerprint": "0376931172738abbcd0502326021c175a43dca78244ad21199ddd10ae36237f1"
+      "source_fingerprint": "c7a95a28d3b37c5d49946f4fe41c9d4fbb226237448cf48b848b361ab37639cc"
     },
     "tests": {
       "bundle": {
-        "bytes": 13342220,
-        "lines": 365636,
+        "bytes": 13382630,
+        "lines": 366400,
         "path": "llm_support/llm_full_tests.txt",
-        "sha256": "760a50487d513f023b929df4905add11367367639ab78af30ce6ce135df35b41"
+        "sha256": "0d4e8157b191d038beabeda8af899a3baeed01ea2da56718b62025965d08ffb8"
       },
-      "content_bytes": 12655758,
-      "content_lines": 356630,
-      "file_count": 1125,
+      "content_bytes": 12694292,
+      "content_lines": 357370,
+      "file_count": 1128,
       "files": {
         "tests/_annotation_audit_support.py": {
           "content_bytes": 29598,
@@ -6094,15 +6094,15 @@
           "source_encoding": "utf-8"
         },
         "tests/component/melder/aether/conduit/test_conduit_component_lock_gaps.py": {
-          "content_bytes": 13858,
+          "content_bytes": 13900,
           "content_lines": 330,
-          "content_sha256": "8b3e90e2181f8a717d2de89f026f6822a9494e2727e6ecc29ec99b91c6fde53f",
+          "content_sha256": "2279d1b948d4e6f06ab9d908397c6b362cc649312c7ae6ef685c7cfeaa8689d6",
           "source_encoding": "utf-8"
         },
         "tests/component/melder/aether/conduit/test_conduit_component_lock_residuals.py": {
-          "content_bytes": 15875,
+          "content_bytes": 15923,
           "content_lines": 373,
-          "content_sha256": "6dee768853be4f5012b3f984d2ff70308779b62bd87ba6b2a1dd7a0b128f0294",
+          "content_sha256": "7ac0b03c82347d6a6f951a264a273b7cc0a57d59fb1c40b5daef91750c9b888f",
           "source_encoding": "utf-8"
         },
         "tests/component/melder/aether/conduit/test_conduit_component_managed_spell_quantity.py": {
@@ -6118,9 +6118,9 @@
           "source_encoding": "utf-8"
         },
         "tests/component/melder/aether/conduit/test_conduit_component_many_registration_trim.py": {
-          "content_bytes": 7358,
+          "content_bytes": 7364,
           "content_lines": 189,
-          "content_sha256": "1a1a349daac7d29e04cca3cda8d93fb140038fe4247c48ea16a1855efb3fc478",
+          "content_sha256": "5f92f6aab9b0070ea08d6b22940528700486b9613e6ee0e71f2d33359a3632af",
           "source_encoding": "utf-8"
         },
         "tests/component/melder/aether/conduit/test_conduit_component_meld_gating.py": {
@@ -6220,9 +6220,9 @@
           "source_encoding": "utf-8"
         },
         "tests/component/melder/aether/conduit/test_conduit_graduation_configuration.py": {
-          "content_bytes": 13099,
+          "content_bytes": 13105,
           "content_lines": 298,
-          "content_sha256": "83d60bf8e5134a446afad4aa7791b64acee8f69efaedbff13bf8e6473a0e371e",
+          "content_sha256": "dc8122b086180a8a7762b9445d254d312c8f229d39f76931fb77bc359d11d840",
           "source_encoding": "utf-8"
         },
         "tests/component/melder/aether/conduit/test_conduit_graduation_hook_isolation.py": {
@@ -6232,15 +6232,15 @@
           "source_encoding": "utf-8"
         },
         "tests/component/melder/aether/conduit/test_conduit_graduation_lifecycle.py": {
-          "content_bytes": 9941,
+          "content_bytes": 9947,
           "content_lines": 225,
-          "content_sha256": "1cde7bc25acde56faf993a8be0ed971af6a7185fe0ed66cd512686096de89537",
+          "content_sha256": "4831379d30cf7537e312057469a8ee6cccec8ec4e7d2d5e100bc50b25a957408",
           "source_encoding": "utf-8"
         },
         "tests/component/melder/aether/conduit/test_conduit_graduation_ownership_regression.py": {
-          "content_bytes": 14585,
+          "content_bytes": 14615,
           "content_lines": 384,
-          "content_sha256": "0d2677ab7859e05937d06a804750380960851819bbda732a728c8a27e8fbd084",
+          "content_sha256": "8258dd31e3f42e6e561a35ae57e121b8e1ec1934c65ec5d14237458085844fc9",
           "source_encoding": "utf-8"
         },
         "tests/component/melder/aether/conduit/test_conduit_upgrade_validate_before_mutate_regression.py": {
@@ -6274,9 +6274,9 @@
           "source_encoding": "utf-8"
         },
         "tests/component/melder/aether/conduit/test_named_lesser_upgrade_to_normal.py": {
-          "content_bytes": 6400,
+          "content_bytes": 6406,
           "content_lines": 140,
-          "content_sha256": "aa7fd61a810cd0a9f7f03e7cf6e5c9bec4335cfb4760be3fcf1a29cb2f5aa0bc",
+          "content_sha256": "05eff0c538cc83c57d1e2054e7a0a9dbf08ca1d59b91d52d916f83da6c3201f6",
           "source_encoding": "utf-8"
         },
         "tests/component/melder/aether/conduit/test_pooled_hook_baselines.py": {
@@ -6316,9 +6316,9 @@
           "source_encoding": "utf-8"
         },
         "tests/component/melder/aether/dev_ops/change_control_manager/test_transaction_surface_component.py": {
-          "content_bytes": 34678,
+          "content_bytes": 34684,
           "content_lines": 1031,
-          "content_sha256": "d7caa0479024454299a0ed14ef83a0dfd8a264e303d2d4bf458476d2a6b778b6",
+          "content_sha256": "c9c649b766f1d9a410e3df6bf60edfb4a87a1089ad034747e0598e0d5ad5ef00",
           "source_encoding": "utf-8"
         },
         "tests/component/melder/aether/dev_ops/incident_manager/test_incident_manager_component.py": {
@@ -6328,15 +6328,15 @@
           "source_encoding": "utf-8"
         },
         "tests/component/melder/aether/dev_ops/spell_system_states/test_non_resolvable_validation_flag_component.py": {
-          "content_bytes": 20808,
+          "content_bytes": 20850,
           "content_lines": 456,
-          "content_sha256": "02836e71dc6bade336259ba34e79b37148f9227bcd34905a3c6a74a1ce237f24",
+          "content_sha256": "ccae6f5993394b21408dfb70afaec369abfeaccc21ffdb047d64e82ebfc7aa5b",
           "source_encoding": "utf-8"
         },
         "tests/component/melder/aether/dev_ops/spell_system_states/test_rebind_validation_flag_component.py": {
-          "content_bytes": 4296,
+          "content_bytes": 4314,
           "content_lines": 107,
-          "content_sha256": "657ca7df504bba5c90edad79d4586e6e18bb4c867500a34f41104e83ba5027cc",
+          "content_sha256": "ef1a8dbb323d5ae0478d55c296582dff465706aae4581c569dea3087052c7ccd",
           "source_encoding": "utf-8"
         },
         "tests/component/melder/aether/dev_ops/spell_system_states/test_spell_system_states_component.py": {
@@ -6358,9 +6358,9 @@
           "source_encoding": "utf-8"
         },
         "tests/component/melder/aether/test_aether_component_frame_sweep_races.py": {
-          "content_bytes": 6733,
+          "content_bytes": 6745,
           "content_lines": 183,
-          "content_sha256": "cf8ae756e1ce676c75229931c6143fb836a6df532d331b2701388085974baefe",
+          "content_sha256": "63789a42c9b1cbe05a12f0201a491da36169f7b03b0a1579775e8ad1efc5fe51",
           "source_encoding": "utf-8"
         },
         "tests/component/melder/aether/test_aether_component_process_wide_spell_id_regime.py": {
@@ -6742,9 +6742,9 @@
           "source_encoding": "utf-8"
         },
         "tests/component/melder/spellbook/test_bind_lifecycle_hooks.py": {
-          "content_bytes": 31600,
+          "content_bytes": 31714,
           "content_lines": 792,
-          "content_sha256": "dbf426b3de1523bd890b2e16378351ab1063519c25dbcd7ebbe22f3c60cdb484",
+          "content_sha256": "7669323d39f7d7c22d03f712271328ab2e2932eb025a197f27d1d048538d5973",
           "source_encoding": "utf-8"
         },
         "tests/component/melder/spellbook/test_codegen_signature_determinism.py": {
@@ -6772,15 +6772,15 @@
           "source_encoding": "utf-8"
         },
         "tests/component/melder/spellbook/test_inherited_disposal_binding.py": {
-          "content_bytes": 10152,
+          "content_bytes": 10182,
           "content_lines": 257,
-          "content_sha256": "33a6a24e99375c67b9c74d581371d771ea24ac6275040c13d8abd2807e54d7e5",
+          "content_sha256": "c75e006f05a8faa9895a09e0317eec9d305903a7b2c686322b3f385777bd6663",
           "source_encoding": "utf-8"
         },
         "tests/component/melder/spellbook/test_ordered_disposal_binding.py": {
-          "content_bytes": 16608,
+          "content_bytes": 16686,
           "content_lines": 392,
-          "content_sha256": "26f1b5aa986996646e6d432191d18d8bee7fc8d173d37c8008f6d6229512e566",
+          "content_sha256": "89cbce71b8c856f13ca3b2ecf50bcffd7093757e9da16fd4470071f7e66b16ec",
           "source_encoding": "utf-8"
         },
         "tests/component/melder/spellbook/test_phase_component_cprofile_harness.py": {
@@ -6790,9 +6790,9 @@
           "source_encoding": "utf-8"
         },
         "tests/component/melder/spellbook/test_scan_bind_parity_component.py": {
-          "content_bytes": 7493,
+          "content_bytes": 7505,
           "content_lines": 201,
-          "content_sha256": "eb7b64f8ff6c47391c9f3ea04625025a10b6e53a56bc250a507a63bd03bd8da8",
+          "content_sha256": "533ddac8b61a755bee6043aa3206c083059716742d1cd1dc48425365894a6a4d",
           "source_encoding": "utf-8"
         },
         "tests/component/melder/spellbook/test_spell_compiler_component_system.py": {
@@ -6862,9 +6862,9 @@
           "source_encoding": "utf-8"
         },
         "tests/component/melder/spellbook/test_spellbook_component_direct_spell_cleanup_lock_order.py": {
-          "content_bytes": 14458,
+          "content_bytes": 14512,
           "content_lines": 350,
-          "content_sha256": "d19b643f8d68dd94b75d82754722d3cf45164abda2ffc0fa4386bdd59dec7d86",
+          "content_sha256": "35cecfe2c3ff452727b77b9b329cbe6cc3a5ab20ba9674595b533e29a6765a18",
           "source_encoding": "utf-8"
         },
         "tests/component/melder/spellbook/test_spellbook_component_executor_cache_world_stamp.py": {
@@ -6873,10 +6873,10 @@
           "content_sha256": "ecf2549beda70e429caeca380c9066acdf404279215ca38f84cb8cad58150977",
           "source_encoding": "utf-8"
         },
-        "tests/component/melder/spellbook/test_spellbook_component_find_spell_by_id.py": {
-          "content_bytes": 12697,
-          "content_lines": 303,
-          "content_sha256": "19246d9ffe55b791030b16f6a168ed574ed405fdcfb269d6319bf62df64f690e",
+        "tests/component/melder/spellbook/test_spellbook_component_find_spell_by_spell_id.py": {
+          "content_bytes": 13838,
+          "content_lines": 315,
+          "content_sha256": "3f9ae5aba7da9c18bb29856b175eaa5609136f4ba253621b8e8a778140aa8a78",
           "source_encoding": "utf-8"
         },
         "tests/component/melder/spellbook/test_spellbook_component_local_phase_cancellation.py": {
@@ -6886,15 +6886,15 @@
           "source_encoding": "utf-8"
         },
         "tests/component/melder/spellbook/test_spellbook_component_override_key_set_plans.py": {
-          "content_bytes": 16585,
+          "content_bytes": 16591,
           "content_lines": 476,
-          "content_sha256": "55c6ee2de2edc8e687e6bfc1810700cea5371e8647cfffc03488c3b9a41af4fe",
+          "content_sha256": "043f730ca7dd2aa3e7aa10076e27fea22b2eb881610e2b8df7234f816545d7d0",
           "source_encoding": "utf-8"
         },
         "tests/component/melder/spellbook/test_spellbook_component_override_required.py": {
-          "content_bytes": 27182,
+          "content_bytes": 27188,
           "content_lines": 552,
-          "content_sha256": "e24d59dda9f86b12e7c259acf30cae8467824633aadd55736d2e7ffb60b62e02",
+          "content_sha256": "e01f891b9194b55d82cc69f3a35e9c4b1efde658cee9d66128f476e6b226b027",
           "source_encoding": "utf-8"
         },
         "tests/component/melder/spellbook/test_spellbook_component_positional_constructor_args.py": {
@@ -6904,9 +6904,9 @@
           "source_encoding": "utf-8"
         },
         "tests/component/melder/spellbook/test_spellbook_component_resolvable_registration.py": {
-          "content_bytes": 14003,
+          "content_bytes": 14026,
           "content_lines": 302,
-          "content_sha256": "1493076a81ed842f186a1efbd788de04de1b39e4b20147a6846634fd410e5322",
+          "content_sha256": "70d6a4053e320c2c954d41cf2dfcbc7ed670d53316950e39defb9f45df167ed4",
           "source_encoding": "utf-8"
         },
         "tests/component/melder/spellbook/test_spellbook_component_signature_release_on_removal.py": {
@@ -6940,9 +6940,9 @@
           "source_encoding": "utf-8"
         },
         "tests/component/melder/spellbook/test_spellbook_component_spell_map_races.py": {
-          "content_bytes": 13988,
+          "content_bytes": 14058,
           "content_lines": 317,
-          "content_sha256": "2431f51dfb77dd13f524c1251caac071dd7d9180e70b706bddb3707d6ae52f77",
+          "content_sha256": "1652164dc88f232a1f3fbc68cdecd252eac0e8042058882b2746563f8a055f19",
           "source_encoding": "utf-8"
         },
         "tests/component/melder/spellbook/test_spellbook_component_spellbook.py": {
@@ -6964,27 +6964,27 @@
           "source_encoding": "utf-8"
         },
         "tests/component/melder/spellbook/test_spellbook_component_structural_snapshot_parity.py": {
-          "content_bytes": 18280,
+          "content_bytes": 18316,
           "content_lines": 399,
-          "content_sha256": "51c846f57bff71a8ee708f171edfdff4e93daf117282af16b34c2dec5993fefb",
+          "content_sha256": "e3301c82794f3c396bbd1481abbcddfa5e724063a965a36104f8598b3302d9d7",
           "source_encoding": "utf-8"
         },
         "tests/component/melder/spellbook/test_spellbook_component_unresolved_input.py": {
-          "content_bytes": 17446,
+          "content_bytes": 17452,
           "content_lines": 391,
-          "content_sha256": "ed867688026e72f3fe68a43fea5567817db695c6ea97c77a08dc72a94ab65318",
+          "content_sha256": "3bfc25374f6677ec2c614820c465c8b512acebca7179cb59bedd4d1d46845d12",
           "source_encoding": "utf-8"
         },
         "tests/component/melder/spellbook/test_spellbook_conjure_existing_conduit.py": {
-          "content_bytes": 20240,
+          "content_bytes": 20270,
           "content_lines": 459,
-          "content_sha256": "274f6c334ddaf38c25c6a1ab219cc3819320a20a506cdad260635a7f2a082ab1",
+          "content_sha256": "2b87ae3feac342ddc30076837e27ce515a1f596255f1e182baa67dcee7151b8b",
           "source_encoding": "utf-8"
         },
         "tests/component/melder/spellbook/test_type_checking_annotation_introspection.py": {
-          "content_bytes": 9003,
+          "content_bytes": 9015,
           "content_lines": 223,
-          "content_sha256": "485282b39dd17d676886bf6b7e63f527002c25eeb359c22e4ef114ca5a79cff0",
+          "content_sha256": "49686ca89fc1a434f00fe63ef62f92080c8f42f150ba460ef0395934ed915add",
           "source_encoding": "utf-8"
         },
         "tests/component/melder/utilities/synchronization/test_creation_gate_component.py": {
@@ -8098,9 +8098,9 @@
           "source_encoding": "utf-8"
         },
         "tests/experimentation/test_existing_instance_gap_experiment.py": {
-          "content_bytes": 21994,
+          "content_bytes": 22000,
           "content_lines": 485,
-          "content_sha256": "e2a74bd3c98a2d83f6b06b6882108c31319023043d845d46b34181eb7e3680f7",
+          "content_sha256": "c6e0f569ed622a26b60d7bf2eef077b33398309f82977b76b82bb93e9b244c75",
           "source_encoding": "utf-8"
         },
         "tests/experimentation/test_existing_instance_injection_experiment.py": {
@@ -8182,9 +8182,9 @@
           "source_encoding": "utf-8"
         },
         "tests/experimentation/test_runtime_hook_discovery_experiment.py": {
-          "content_bytes": 18965,
+          "content_bytes": 18989,
           "content_lines": 477,
-          "content_sha256": "846f60c11d7c10c003971a1c1ff1403668bad118e1156900d3d01384aabda853",
+          "content_sha256": "50ce17aae6ac338c8fa68ce446bf1beca73d459988d11c4bae57a9f6a026c543",
           "source_encoding": "utf-8"
         },
         "tests/experimentation/test_self_vs_local_alias_access_experiment.py": {
@@ -8308,45 +8308,45 @@
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/aether/conduit/test_index_lifecycle_and_depth_integration.py": {
-          "content_bytes": 10176,
+          "content_bytes": 10212,
           "content_lines": 240,
-          "content_sha256": "ce280d97d3865bbe43eb69d8f3a4d1b25e5b96205493edcdcc7f055bb2644805",
+          "content_sha256": "cdb6bad7480a215650727197795eeff0b29d6b83adb29430e6c63aad153624e1",
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/aether/conduit/test_index_link_contract_integration.py": {
-          "content_bytes": 7966,
+          "content_bytes": 7972,
           "content_lines": 178,
-          "content_sha256": "e7ce9b60540a897b7b74dbddc9eefd61760ebf8eaa8c076569b18d0e244a1509",
+          "content_sha256": "176c3c4b3f0a4f92ef5524aba574224260f9fbb5f8707395b469e1fa729a05a1",
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/aether/conduit/test_index_link_meld_and_probes_integration.py": {
-          "content_bytes": 12060,
+          "content_bytes": 12108,
           "content_lines": 294,
-          "content_sha256": "0c522062c28682162f86cbcecac147e54c055cfea05b577346d84c4410e49b54",
+          "content_sha256": "d31bb4de5640f87be91a9e0fe0bae8056f197a55b0f60e9df5eca9b2870838ca",
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/aether/conduit/test_index_link_notch_follow_integration.py": {
-          "content_bytes": 9438,
+          "content_bytes": 9462,
           "content_lines": 228,
-          "content_sha256": "1fef38609e0d349811d83d06f63c6503b258ab29164ebe7aa11e62868d99e9f7",
+          "content_sha256": "84ce472d14d932e1170dd6b72f0448d2043519daf46f4e2623477d16071cdfe2",
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/aether/conduit/test_index_moves_by_spell_id_integration.py": {
-          "content_bytes": 9459,
+          "content_bytes": 9471,
           "content_lines": 226,
-          "content_sha256": "52936755407e82eb629f821219b2fd48624e7ac7372aed08fcdf3b8e5367a4ea",
+          "content_sha256": "ef7f186ba123850648d6eebcb65076471c8a3ddf2e66c7ca25d7096ac6969bcd",
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/aether/conduit/test_index_transfer_ownership_integration.py": {
-          "content_bytes": 7084,
+          "content_bytes": 7090,
           "content_lines": 177,
-          "content_sha256": "ce0e5a0fc5e473bb931a5b4c2f9fcf6998f3dce5f0ec9687585e5498b8323302",
+          "content_sha256": "64349c348e612fb86d12f4871fb5b56c9a56ee5b85e4776c3bd9c4b33dfc0ee8",
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/aether/conduit/test_lineage_remediation_notch_race.py": {
-          "content_bytes": 13421,
+          "content_bytes": 13427,
           "content_lines": 317,
-          "content_sha256": "8c844cd5f0345a29802a30fdf258fb1ba6a392750b73b55ae90125e09b4e6455",
+          "content_sha256": "eed4a3dc03a0bb96c0d96efa78ae7712ec80f1d82a15af9d447a9628f533df13",
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/aether/conduit/test_meld_unhashable_input_cache_aliasing.py": {
@@ -8356,39 +8356,45 @@
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/aether/conduit/test_notch_spell_by_id_integration.py": {
-          "content_bytes": 11151,
+          "content_bytes": 11169,
           "content_lines": 271,
-          "content_sha256": "039e1c73e31a1e67083adefdff0a75a8ebb32992fd9070753aa05db6dbefb6f5",
+          "content_sha256": "18fa4e145522ace46e76980f50de3ea7002d8769f8bfd54f3fb7c1416f9d6c70",
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/aether/conduit/test_rebind_after_first_meld_integration.py": {
-          "content_bytes": 15295,
+          "content_bytes": 15343,
           "content_lines": 339,
-          "content_sha256": "fbea3961e3eaf5ca98d82d7727d07e995b772e209835ec27915d8e07f1934671",
+          "content_sha256": "79862f0513af749bf083fd3605618807a655256013a126c813ff9c9cd845a92e",
+          "source_encoding": "utf-8"
+        },
+        "tests/integration/melder/aether/conduit/test_spell_id_lookup_returns_that_spell_integration.py": {
+          "content_bytes": 11606,
+          "content_lines": 235,
+          "content_sha256": "07d392139c8600a73588a9c84036505c5d53bd09dd19ff31e488540813f7f971",
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/aether/conduit/test_spell_index_meld_and_contract_lifecycle.py": {
-          "content_bytes": 13033,
+          "content_bytes": 13045,
           "content_lines": 271,
-          "content_sha256": "01c0c85e074d88f80e56e3f09649c4f9f14bb707c4ca42d660651796c1e5a945",
+          "content_sha256": "949c6be5f6d1da46f7d89331514cc43c756608d12cc1d72196b92fab290001d4",
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/aether/conduit/test_spell_index_notch_lifecycle.py": {
-          "content_bytes": 7011,
+          "content_bytes": 7076,
           "content_lines": 168,
-          "content_sha256": "4976f8bb6a7d072e84e14189f0193430dde64e262334c240aacd280a9ebe1aaa",
+          "content_sha256": "3c772f230157081a6eee6aa5bc7c21b40995904fc048023ec561aafd6c01353e",
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/aether/conduit/test_spell_index_op_guards.py": {
-          "content_bytes": 6771,
+          "content_bytes": 6813,
           "content_lines": 170,
-          "content_sha256": "a04e9426ee0b2294a7c7f6e8beefd20f0d007ebfdfe75a2f4f48eb21a92931fe",
+          "content_sha256": "bb794d782c53f75a41e24ff6c0a17575b9e9630cd531d9662975b92d422b8097",
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/aether/rift/capability_rift_json_testbench_support.py": {
-          "content_bytes": 16596,
+          "content_bytes": 16602,
           "content_lines": 487,
-          "content_sha256": "59449b94522ab3fd2ce78228fc2b76c21ea949b9ab8dc2edf96b080113e0bba7",
+          "content_sha256": "eff8a68400f1d462558688abdc8dad1e1494574e59e9d827e25735b6360a2c49",
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/aether/rift/codegen_rift_json_testbench_support.py": {
@@ -8398,9 +8404,9 @@
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/aether/rift/static_rift_json_testbench_support.py": {
-          "content_bytes": 20263,
+          "content_bytes": 20269,
           "content_lines": 606,
-          "content_sha256": "aeaa753d452d66820395f25c2a5b196d8d66c315523125f0523ffb7ec697f8cb",
+          "content_sha256": "2ea55ae9b976832c49759a255028e59223eaf56e5135f51615d19124ed950e84",
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/aether/rift/test_capability_rift_json_testbench_integration.py": {
@@ -8415,10 +8421,16 @@
           "content_sha256": "6739a0029bab4d3d74abccb5710e95b141a40b9f531dd2ffb2dafb3087fb70a1",
           "source_encoding": "utf-8"
         },
+        "tests/integration/melder/aether/rift/test_rift_spell_id_lookups_return_that_spell_integration.py": {
+          "content_bytes": 7354,
+          "content_lines": 152,
+          "content_sha256": "2b4a6fb763b517912131c7a73100dea824c22f4d7ef9dcd36ee82419a80cf5bc",
+          "source_encoding": "utf-8"
+        },
         "tests/integration/melder/aether/rift/test_static_rift_json_testbench_integration.py": {
-          "content_bytes": 32013,
+          "content_bytes": 32019,
           "content_lines": 935,
-          "content_sha256": "1fd7d1f4bf4dbc69c033d438cd50ba6d27b3ddac2e31cc8158ca8a6ec29a01c0",
+          "content_sha256": "e24a3d2b21db3bc17440e02b153b8bae7a79e0da7ee67fe014baa8e3a4fe299a",
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/aether/test_aether_frame_lookups.py": {
@@ -8518,9 +8530,9 @@
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/aether/test_capability_space_frame_and_workstation_integration.py": {
-          "content_bytes": 48111,
+          "content_bytes": 48135,
           "content_lines": 1329,
-          "content_sha256": "10547bf81e4853d56e652a8282a1d089b41802713b22b5faa82008c8be7e8ab9",
+          "content_sha256": "39827a5ddc34db7f630d91d5965cd2d34ce3a8b6c62a4cef76442101ff85ccaf",
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/aether/test_codegen_core_boundary_integration.py": {
@@ -8530,9 +8542,9 @@
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/aether/test_codegen_system_integration_matrix.py": {
-          "content_bytes": 9188,
+          "content_bytes": 9194,
           "content_lines": 257,
-          "content_sha256": "62e0158c5625240d25db85197a6ee296d49d27b31e31d169aabb804d7f1e095a",
+          "content_sha256": "042d283db34e98fad685abd83cb8c517ec969b0b8f52ecc8509faadb3baa1530",
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/aether/test_frame_acl_chain_integration.py": {
@@ -8680,9 +8692,9 @@
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/conduit/test_conduit_integration_existence.py": {
-          "content_bytes": 15119,
+          "content_bytes": 15137,
           "content_lines": 406,
-          "content_sha256": "d7a2d498f2ac9e5f9208bda622b64f56fe401c74521143c3120b68d2822c1664",
+          "content_sha256": "a27d190ba1d9b840cb60f8181d68b7286def5ecb5bfe365d307d4c60af667329",
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/conduit/test_conduit_integration_guardrails.py": {
@@ -8722,27 +8734,27 @@
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/conduit/test_conduit_integration_lookup_helpers.py": {
-          "content_bytes": 8020,
+          "content_bytes": 8026,
           "content_lines": 243,
-          "content_sha256": "9545a4dedd7b425005af0af058338264846ac8275ec187485ce1ed47d8258d74",
+          "content_sha256": "85b94bf23f9e7e55334cbc982e777eb728e0cb45f0b11a64fccca3c8519b46bc",
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/conduit/test_conduit_integration_managed_quantity_pool.py": {
-          "content_bytes": 10023,
+          "content_bytes": 10041,
           "content_lines": 261,
-          "content_sha256": "7da6325c434c1e31af65b1dd9639390242955dfb6b6828f47a08aeb646a384cf",
+          "content_sha256": "e1f4f7ef8fdacf6b1316563cc4ee81e93d82913290ddcb4afaa7bb0fe3798f9e",
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/conduit/test_conduit_integration_managed_spell_quantity.py": {
-          "content_bytes": 11875,
+          "content_bytes": 11881,
           "content_lines": 282,
-          "content_sha256": "3bad82ae6c6e9290833b400119ef73b006d338ae84ac51c10a8a1b7f70b19f29",
+          "content_sha256": "e018eec75dbb25ba830977a5d37812888094af97c426e1c2897b5adad8fa08f2",
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/conduit/test_conduit_integration_managed_transfer.py": {
-          "content_bytes": 16014,
+          "content_bytes": 16020,
           "content_lines": 346,
-          "content_sha256": "d2b671fbf61e21fd4458e5d6401d02c2f506cd034921918704310ca06d5a2a94",
+          "content_sha256": "c7e41fa7ecf0e87bf3120f916d25d58393abcd2f426a6cf25f835e8a441053e6",
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/conduit/test_conduit_integration_many_child_disposed_with_its_holder.py": {
@@ -8752,21 +8764,21 @@
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py": {
-          "content_bytes": 26898,
-          "content_lines": 672,
-          "content_sha256": "90e9213eccabc4d832eb76d711908166f8ddc78a82734f60de7261bd3d019caf",
+          "content_bytes": 26953,
+          "content_lines": 673,
+          "content_sha256": "ff5ed6490f2461b5282861776fe12ccdabc874e18e072c6e58f9654f27fe6606",
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/conduit/test_conduit_integration_public_api.py": {
-          "content_bytes": 16829,
+          "content_bytes": 16853,
           "content_lines": 497,
-          "content_sha256": "80b8dc54a628c0611d3d39df431e8ab88d95b9c4577f7e0317947e6bac29fef2",
+          "content_sha256": "905b361d9705a491d954aa7f22c49c3bfe934eeeeec11fff14107c2694cf4652",
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/conduit/test_conduit_integration_release_managed_spell.py": {
-          "content_bytes": 12062,
-          "content_lines": 309,
-          "content_sha256": "266738a1fc11a367271217f666a95a9803bdc111f4489d89b27423feee8962ae",
+          "content_bytes": 12138,
+          "content_lines": 310,
+          "content_sha256": "cd815c294da9d9b383570546206ae0d025a2928c6704cbcee1d1ea7210ef2952",
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/conduit/test_conduit_integration_resolution_validation.py": {
@@ -8842,15 +8854,15 @@
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/conduit/test_ordered_disposal_runtime.py": {
-          "content_bytes": 5343,
+          "content_bytes": 5355,
           "content_lines": 132,
-          "content_sha256": "ea3124627d356ca42f90042e8937ec2094d85a61383ce935ebd99b338151f756",
+          "content_sha256": "cfbcb4740089938786e16fafa9133f7de02e2abba119ae91d76191ffa69d2390",
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/crystallizer/test_bind_hook_recording.py": {
-          "content_bytes": 14059,
+          "content_bytes": 14065,
           "content_lines": 312,
-          "content_sha256": "21173d79205001e285a3d745d8bae95b37d6fccb0ee2ee4fed9939a93fb77862",
+          "content_sha256": "8f03e5e3d3f1d88cd8a3034c17935d32ec98f073f53c6b7dfa4224181faaf1e8",
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/crystallizer/test_crystallizer_aether_twin_integration.py": {
@@ -8890,15 +8902,15 @@
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py": {
-          "content_bytes": 115916,
+          "content_bytes": 115946,
           "content_lines": 3139,
-          "content_sha256": "53797f876e10088ad613df57e673cbdee669477121d214a3d74419df911c959e",
+          "content_sha256": "7f8281ba3b3a1dabb7a93afc1670fc4e25be3e9b5ac3c17d9e907cd7cb1fc474",
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/crystallizer/test_managed_spell_options_record_integration.py": {
-          "content_bytes": 7837,
+          "content_bytes": 7861,
           "content_lines": 177,
-          "content_sha256": "bffcda585e7aaa4b1ffc2cc31e64e18c256c63cd843bf45eb8bf818837ec896b",
+          "content_sha256": "45d8164fc4c9a054724d854cfe7f835f56cab79960e72d00855ce862bf2be1fd",
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/crystallizer/test_named_lesser_persistence.py": {
@@ -8908,9 +8920,9 @@
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/crystallizer/test_ordered_disposal_replay.py": {
-          "content_bytes": 16093,
+          "content_bytes": 16111,
           "content_lines": 317,
-          "content_sha256": "ea89498f90dc63d0b8506a9749aedda946ea03d68723553c8bb81bef9cde80d1",
+          "content_sha256": "1beaeb360f560076800b1bd608a4d6bf76e241981f7d9825311bb9ab52378b8f",
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/crystallizer/test_recorded_leaf_source_read_integration.py": {
@@ -8926,9 +8938,9 @@
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/crystallizer/test_restore_per_frame_spell_worlds_integration.py": {
-          "content_bytes": 12922,
+          "content_bytes": 12946,
           "content_lines": 295,
-          "content_sha256": "1bfe089f7569ecd162984a3021ec801ebc450d82e95fcc445f3f9fdbadf23c46",
+          "content_sha256": "66faa15ef3ede6c4f8d806b88def36beabb56a96710d740f7a369c16efde3c85",
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/crystallizer/test_restore_sealed_aether_regime_integration.py": {
@@ -8938,9 +8950,9 @@
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/crystallizer/test_restore_spellframe_kind_integration.py": {
-          "content_bytes": 11933,
+          "content_bytes": 11957,
           "content_lines": 283,
-          "content_sha256": "989ab871ecc4c2e12370b20a8829df181feb46ae3d01ce0e1beeea2e234a005b",
+          "content_sha256": "70f71232019132e27b71d62fd35e9a68d3cdaab7bef1adb51bfffd2499550e84",
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/crystallizer/test_spell_crystal_integration.py": {
@@ -9046,9 +9058,9 @@
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/spellbook/test_binding_name_case_parity_integration.py": {
-          "content_bytes": 8409,
+          "content_bytes": 8415,
           "content_lines": 168,
-          "content_sha256": "d824b0bb2ab0befc35f92f5694910f296a65fc1c2465f3adfbbe1989105c7d77",
+          "content_sha256": "1a93561961694cb0fef5d04cc12de76e23e14bae7b208cda4f2cce2bab0192f5",
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/spellbook/test_cache_runtime_integration.py": {
@@ -9088,15 +9100,15 @@
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/spellbook/test_managed_bind_options_integration.py": {
-          "content_bytes": 6746,
+          "content_bytes": 6770,
           "content_lines": 169,
-          "content_sha256": "920a0c64f4cda4859847e9d3af94c0a1e6fb38db92192fbfa96dfbced5e3f32e",
+          "content_sha256": "e2d63f9ef4103b01c8d544b0469cdc7f29750c83b7e31ed2623e8e11bcbf302c",
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/spellbook/test_provider_artifact_ownership.py": {
-          "content_bytes": 9323,
+          "content_bytes": 9335,
           "content_lines": 235,
-          "content_sha256": "797148bfa791c3356b702e53093a8509b709db12ba458a3c6e4916f6207cf0c1",
+          "content_sha256": "640b8bad76e49e1f26740c4081e6461c2a36fc90563d91823a97b09c5e0dbdfe",
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/spellbook/test_spell_compiler_system_integration.py": {
@@ -9106,9 +9118,9 @@
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/spellbook/test_spellbook_integration.py": {
-          "content_bytes": 2789,
+          "content_bytes": 2795,
           "content_lines": 90,
-          "content_sha256": "c08c338811ddb9f2db2517a826584185e31a6dee741440c7d120937a28695634",
+          "content_sha256": "18de8b328edc5d05fa1939bf02e4e4c5ce1f20227b476476a36cc4409903284e",
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/spellbook/test_spellbook_integration_binding.py": {
@@ -9130,9 +9142,9 @@
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/spellbook/test_spellbook_integration_core.py": {
-          "content_bytes": 51138,
+          "content_bytes": 51144,
           "content_lines": 1459,
-          "content_sha256": "7595ce6ba58b0e1afcb4205ec681a44630e735303d659c4bd1be29f3b88f79d9",
+          "content_sha256": "9e5d730d27dc6db8e021d828a13e8d2a671b78894e4044f3f6747a937d53caac",
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/spellbook/test_spellbook_integration_deep_graph.py": {
@@ -9238,15 +9250,15 @@
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/spellbook/test_spellbook_integration_parked_before_conjure.py": {
-          "content_bytes": 10100,
+          "content_bytes": 10106,
           "content_lines": 250,
-          "content_sha256": "bccd81ab69e20ee6876f1e786712f0cf784a5682a0d30fe8a9def4e01c8047a8",
+          "content_sha256": "2763d041c23af3c571cf95dd6c1bd718bfe48869c73c4cf20322daa61d36bea9",
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/spellbook/test_spellbook_integration_post_conjure_bind_snapshot.py": {
-          "content_bytes": 15647,
+          "content_bytes": 15677,
           "content_lines": 472,
-          "content_sha256": "af5484efc008df199f90fe644174127c06e39b949b3f5399cff129809e5a47ef",
+          "content_sha256": "52b93aa3b0f62c7ed74b70e567c38a049d34576464ecbe1e9c3ced6ef4675704",
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/spellbook/test_spellbook_integration_public_api.py": {
@@ -9310,9 +9322,9 @@
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/spellbook/test_spellbook_integration_scan_bind.py": {
-          "content_bytes": 16619,
+          "content_bytes": 16625,
           "content_lines": 522,
-          "content_sha256": "476c3a629cd6d9928dea8f6fd7d83c0aadb6b9d845a9ccfcf9efbee7a7cf8f0f",
+          "content_sha256": "c286b13a37af4e6b96ae90a27eb249994ea940a090768d378dd987ae3ebecb59",
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/spellbook/test_spellbook_integration_self_dependency.py": {
@@ -9322,9 +9334,9 @@
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/spellbook/test_spellbook_integration_spell_crafter.py": {
-          "content_bytes": 30488,
+          "content_bytes": 30536,
           "content_lines": 970,
-          "content_sha256": "862da5b13e7389acc8e108fb2e01b8e6421ee61c0859b26ca568f47d37eeffb8",
+          "content_sha256": "1211f5d3a5cafa62608dd4649e8fb70be6bee718b054a2906021db89ed95e332",
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/spellbook/test_spellbook_integration_spell_name.py": {
@@ -9772,15 +9784,15 @@
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/aether/conduit/conduit_ward/test_conduit_ward.py": {
-          "content_bytes": 91372,
-          "content_lines": 2679,
-          "content_sha256": "48e7a7c41db8b9081b644a0c25cd176a295438e470277e6e5bfe4c33ac8ce616",
+          "content_bytes": 91770,
+          "content_lines": 2685,
+          "content_sha256": "4b526b7f738d80c5539d9bea6ee94fbfa51a5b5930f1de1d1432e987ed35f7ad",
           "source_encoding": "utf-8-bom"
         },
         "tests/unit/melder/aether/conduit/conduit_ward/test_conduit_ward_contracts.py": {
-          "content_bytes": 129078,
-          "content_lines": 3332,
-          "content_sha256": "5450f87ce8e4a134b8c852e0a91a8b869e3282c7811084af1e2fb943ae761191",
+          "content_bytes": 130237,
+          "content_lines": 3356,
+          "content_sha256": "de71d1049f87a110cd2273349fce0d62724ff1654e0987837ae2cde536034b88",
           "source_encoding": "utf-8-bom"
         },
         "tests/unit/melder/aether/conduit/conduit_ward/test_conduit_ward_link_failure_atomicity_regression.py": {
@@ -9796,15 +9808,15 @@
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/aether/conduit/conduit_ward/transfer/test_transfer_of_ownership.py": {
-          "content_bytes": 145350,
-          "content_lines": 4494,
-          "content_sha256": "6645d387f578cff991560038ba46aac743805594384fd703fc3f447536ba8acd",
+          "content_bytes": 145767,
+          "content_lines": 4504,
+          "content_sha256": "efa608f218f46eea621ca84f2fbf14b87f72771cd3b5ae78929c5e00b2feda00",
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/aether/conduit/conduit_ward/transfer/test_transfer_of_ownership_contracts.py": {
-          "content_bytes": 52904,
-          "content_lines": 1606,
-          "content_sha256": "66de1e9fbb45328693d4949edca5573059abccdfd5120d4b6998ec9bc582d4cd",
+          "content_bytes": 53297,
+          "content_lines": 1616,
+          "content_sha256": "89d1162b7730436b1206782506aca01d540701cf4e0a96fc7591619adf677a11",
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/aether/conduit/conduit_ward/transfer/test_transfer_of_ownership_owner_stamps.py": {
@@ -10048,9 +10060,9 @@
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/aether/conduit/test_conduit_facade.py": {
-          "content_bytes": 31098,
+          "content_bytes": 31152,
           "content_lines": 1015,
-          "content_sha256": "d9679346fc79c4738ecc81e2a72ef4fa7b1d0f1b6ac60608753c628b64af2835",
+          "content_sha256": "711e2ce715d12d602599edc1ff7804a4f4af0ae7ddd1a8e11985b33b229e5265",
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/aether/conduit/test_conduit_index_move_target.py": {
@@ -10354,9 +10366,9 @@
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/aether/spellbook/test_bind_kwargs_metadata.py": {
-          "content_bytes": 1736,
+          "content_bytes": 1748,
           "content_lines": 57,
-          "content_sha256": "5880b3385e4bfab47431207c553891adf4846d052204537a68033b515ccf7007",
+          "content_sha256": "96e213a7c227a0f86930a55e048bc3cae84ffa217ec553bade01ab685a3177c0",
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/aether/spellbook/test_conjure_settle_or_inherit.py": {
@@ -10468,9 +10480,15 @@
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/aether/test_command_system_direct.py": {
-          "content_bytes": 16792,
+          "content_bytes": 16810,
           "content_lines": 477,
-          "content_sha256": "2c8c4c8b9cc1fa1d9775373531b9281ad82e50b76ce6a3eb0eef464492d594d8",
+          "content_sha256": "9fed5bb0132a98dddcaff3428c588c94232686090c0aefc87ab29db9497c6cad",
+          "source_encoding": "utf-8"
+        },
+        "tests/unit/melder/aether/test_command_system_spell_id_lookups.py": {
+          "content_bytes": 14094,
+          "content_lines": 287,
+          "content_sha256": "25de07ef152c9cbb27a2e15cb5bdd1b9e86bc74c14081eddb021567e73292d85",
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/aether/test_conduit_cloud.py": {
@@ -10726,9 +10744,9 @@
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/aether/test_nexus.py": {
-          "content_bytes": 209507,
+          "content_bytes": 209554,
           "content_lines": 6374,
-          "content_sha256": "80641d0d820e87362bbf1726fc13dcc4768cc14120b03203d1951a0eb7461820",
+          "content_sha256": "dbac9b4370b93b338c56a755a80bd14ec8ae38199eb1c2a7503618b5d684fb4c",
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/aether/test_nexus_configuration.py": {
@@ -11374,9 +11392,9 @@
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/spellbook/bind/test_internal_registration_identity.py": {
-          "content_bytes": 5328,
+          "content_bytes": 5340,
           "content_lines": 141,
-          "content_sha256": "8694a433583448c1d8e31fb8d85f1b6c37096be9eec33891d43c6ebb644e90bf",
+          "content_sha256": "05b4f2e1ea6274bebc1cdb011a5132e9021e97d256c0edd35a0016a6f67762e2",
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/spellbook/bind/test_spell_index.py": {
@@ -12076,9 +12094,9 @@
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/spellbook/spell_crafter/validation/strategies/test_ambiguous_provider_strategy.py": {
-          "content_bytes": 9026,
+          "content_bytes": 9038,
           "content_lines": 189,
-          "content_sha256": "ef453e29ba41806585ca535c49845cef2251a781141348f2457fc25087675a01",
+          "content_sha256": "5defb136ba03194a601bc8f09759d57d7b9f8c96b041d43d401cec35e8d5d692",
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/spellbook/spell_crafter/validation/strategies/test_annotation_shape_guard_strategy.py": {
@@ -12220,21 +12238,21 @@
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/spellbook/test_scan_bind.py": {
-          "content_bytes": 9810,
+          "content_bytes": 9816,
           "content_lines": 334,
-          "content_sha256": "f6e5fb790989010444acd4a7ea52aadf4e4ef6a06e3775e82c93bf68da9e45b6",
+          "content_sha256": "089a523bb761ce43a301d47242e02fd47ba950c3101ef0e9953b189633c8675d",
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/spellbook/test_scan_bind_managed_options.py": {
-          "content_bytes": 8755,
+          "content_bytes": 8761,
           "content_lines": 205,
-          "content_sha256": "8e0dbe1b75be106c76a66c6093ede3c05b0831fb77df207657144825602c93ab",
+          "content_sha256": "d639440a9d4fb3f20399d01766669b7182069e09dd0477fe0da4e7fb654313f3",
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/spellbook/test_scan_bind_option_parity.py": {
-          "content_bytes": 31779,
+          "content_bytes": 31785,
           "content_lines": 770,
-          "content_sha256": "f4007ca0d90bc4291207df8907073dd386293a780ed5c55942aba9058a42327e",
+          "content_sha256": "46ca5cc4cffa52972eeaa2a5e3c8a7ae0f58de7247ca0b4bf576c903ca3e1cde",
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/spellbook/test_spell.py": {
@@ -12244,9 +12262,9 @@
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/spellbook/test_spell_cleanup_safe_index_read.py": {
-          "content_bytes": 5375,
-          "content_lines": 145,
-          "content_sha256": "4f9fc21eb8610bb2eb1bec24da3b68d33baa6694476011baa9e3b2cc93cd2662",
+          "content_bytes": 5577,
+          "content_lines": 147,
+          "content_sha256": "736e9896131d5c6847cb07900176169b97e4d661670b95cc9641ef833529fc53",
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/spellbook/test_spell_compiler_foundation.py": {
@@ -12346,9 +12364,9 @@
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/test_package_public_surface.py": {
-          "content_bytes": 15429,
+          "content_bytes": 15435,
           "content_lines": 386,
-          "content_sha256": "35a0a19e047eef21a9dd99cce60c624a8938f1e41d4f6212711da111f167b285",
+          "content_sha256": "79c228896cf8440be21082711118519ec36f306aa087dcefe8c20bdcb4733d9f",
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/test_package_version_metadata.py": {
@@ -12725,12 +12743,12 @@
         }
       },
       "index": {
-        "bytes": 221312,
-        "lines": 1147,
+        "bytes": 221923,
+        "lines": 1150,
         "path": "llm_support/llm_full_tests_index.md",
-        "sha256": "963d49d2482bb46c6958fbbb57872c4d2364f2efa7f60e9508746cf9f0488e07"
+        "sha256": "29ef9ae9a0722b7bfa86f64bbd1800340a32f236bed1c154746d69f5995b6eb9"
       },
-      "source_fingerprint": "cbcd3ebfd7f3fab275f7553119d64e1ef62f430441226f866b5e78c4f0d871af"
+      "source_fingerprint": "8992b09c0ac28a8a90d315609a209d3e63c3470c53cfcc3b352185f2bd57008e"
     }
   },
   "generator_sha256": "d75f1de961817875c099e1b3bc6eaa3a6c670dc89752cd94864d977e452b88e3",

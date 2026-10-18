@@ -343,7 +343,7 @@ def test_pass_four_domain_nouns_are_loaded():
     Purpose:
         Workflow iteration (owner: think how a user/agent uses this):
         the public read surfaces hand out the system's two domain nouns -
-        spells (find_spell_by_id -> Spell) and the index keys of the
+        spells (find_spell_by_spell_id -> Spell) and the index keys of the
         spells mapping (SpellIndex) - so both types reach the root.
     Contract:
         Identity with the concrete-path classes; the init docstring

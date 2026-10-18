@@ -4,9 +4,9 @@ Component tests - Spellbook spell-map walks and the Conduit spell lookups under 
 Every writer of `Spellbook._spells` now holds the Book lock, bind's publication included, so a walk that
 holds that lock never meets an insert mid-walk; walks that cannot hold it (another Book's map, the book-wide
 phase factories `Conduit.validate_resolution` runs) iterate a one-call snapshot; and the two lineage lookups
-that walked the map (`Conduit.get_spell_permissions`, `CommandSystem.get_spell_by_id`) answer from the
+that walked the map (`Conduit.get_spell_permissions`, `CommandSystem.get_spell_by_spell_id`) answer from the
 Book's id maps. Each race is forced with events, not sleeps: a thread is parked inside the walk while the
-test thread binds. The last test locks the miss contract `Conduit.get_spell_by_id` and
+test thread binds. The last test locks the miss contract `Conduit.get_spell_by_spell_id` and
 `get_conduit_by_spell_id` now document: an id no conduit claims raises ValueError, as it always did.
 """
 
@@ -187,7 +187,7 @@ def test_bind_publishes_only_after_a_book_locked_walk_finishes(monkeypatch: pyte
         assert published_mid_walk is False
         assert outcome["index"] is index_b
         assert len(book._spells) == size_in_walk + 1
-        assert book.find_spell_by_id(outcome["id_c"]) is not None
+        assert book.find_spell_by_spell_id(outcome["id_c"]) is not None
     finally:
         book.cleanup()
 
@@ -246,7 +246,7 @@ def test_validate_resolution_cleanup_pass_survives_a_concurrent_bind(monkeypatch
         assert not validator.is_alive()
         assert "validate_error" not in outcome, outcome.get("validate_error")
         assert outcome["state"] is not None
-        assert book.find_spell_by_id(id_c) is not None
+        assert book.find_spell_by_spell_id(id_c) is not None
     finally:
         conduit.permanent_cleanup()
 
@@ -256,10 +256,10 @@ def test_get_spell_permissions_answers_from_the_id_maps_without_walking() -> Non
     Purpose:
         Pin `Conduit.get_spell_permissions` to the Book's id-map lookup.
     Contract:
-        The permissions of a current id, and of a parked id (the lineage's CURRENT permissions, not the
-        version's own), resolve without iterating the live active-index map; an id the Book does not know
-        raises RuntimeError. Before 0.2.8230 the method walked that map under the conduit lock, which a
-        concurrent bind or removal could resize mid-walk.
+        The permissions of a current id, and of a parked id (the version's own permissions since 0.2.8253;
+        before, the lineage's CURRENT ones), resolve without iterating the live active-index map; an id the
+        Book does not know raises RuntimeError. Before 0.2.8230 the method walked that map under the conduit
+        lock, which a concurrent bind or removal could resize mid-walk.
     Raises:
         AssertionError: If the lookup walks the map or answers the wrong permissions.
     """
@@ -276,7 +276,7 @@ def test_get_spell_permissions_answers_from_the_id_maps_without_walking() -> Non
         book._spells = _NoIterationDict(live_map)
         try:
             assert conduit.get_spell_permissions(id_a) == "create"
-            assert conduit.get_spell_permissions(id_b) == "create"
+            assert conduit.get_spell_permissions(id_b) == "read"
             with pytest.raises(RuntimeError, match="not found"):
                 conduit.get_spell_permissions("0" * 64)
         finally:
@@ -288,7 +288,7 @@ def test_get_spell_permissions_answers_from_the_id_maps_without_walking() -> Non
 def test_conduit_spell_lookups_raise_for_an_id_no_conduit_claims() -> None:
     """
     Purpose:
-        Lock the miss contract of `Conduit.get_spell_by_id` and `Conduit.get_conduit_by_spell_id`.
+        Lock the miss contract of `Conduit.get_spell_by_spell_id` and `Conduit.get_conduit_by_spell_id`.
     Contract:
         An id no conduit claims raises ValueError naming the id from both lookups - the `get_*` lookups raise
         on a miss (owner decision 2026-10-11; until 0.2.8230 their docstrings promised None, which they never
@@ -304,13 +304,13 @@ def test_conduit_spell_lookups_raise_for_an_id_no_conduit_claims() -> None:
     try:
         unclaimed = "0" * 64
         with pytest.raises(ValueError, match=f"Spell version {unclaimed} not found in any conduit"):
-            conduit.get_spell_by_id(unclaimed)
+            conduit.get_spell_by_spell_id(unclaimed)
         with pytest.raises(ValueError, match=f"Spell version {unclaimed} not found in any conduit"):
             conduit.get_conduit_by_spell_id(unclaimed)
-        assert conduit.get_spell_by_id(id_a) is book._spells_by_id[id_a]
+        assert conduit.get_spell_by_spell_id(id_a) is book._spells_by_id[id_a]
         assert conduit.get_conduit_by_spell_id(id_a) is conduit
         with pytest.raises(ValueError, match="does not exist"):
-            conduit.get_spell_by_id(id_a, aetheric_frame_name="no-such-frame")
+            conduit.get_spell_by_spell_id(id_a, aetheric_frame_name="no-such-frame")
         with pytest.raises(ValueError, match="does not exist"):
             conduit.get_conduit_by_spell_id(id_a, aetheric_frame_name="no-such-frame")
     finally:

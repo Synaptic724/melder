@@ -159,7 +159,7 @@ def test_cleanup_spell_destroy_emission_holds_off_a_concurrent_link_and_drops_ev
     first, borrower, newcomer = _conduit("first"), _conduit("borrower"), _conduit("newcomer")
     owner.link(first)
     owner.link(borrower)
-    index = owner_book.find_spell_by_id(id_a).spell_index
+    index = owner_book.find_spell_by_spell_id(id_a).spell_index
     index_id = index.id
     _link_index(borrower, owner, index)
     first_contract = owner._conduit_ward._find_contract(first)
@@ -176,13 +176,13 @@ def test_cleanup_spell_destroy_emission_holds_off_a_concurrent_link_and_drops_ev
 
     outcome, link_finished_mid_walk = _run_with_other_side_mid_walk(
         park_here,
-        lambda: owner.cleanup_spell(spell=owner_book.find_spell_by_id(id_a)),
+        lambda: owner.cleanup_spell(spell=owner_book.find_spell_by_spell_id(id_a)),
         lambda: owner.link(newcomer),
     )
 
     assert "error" not in outcome, outcome.get("error")
     assert link_finished_mid_walk is False
-    assert owner_book.find_spell_by_id(id_a) is None
+    assert owner_book.find_spell_by_spell_id(id_a) is None
     assert index_id not in borrower._spellbook._contracted_indexes
     contract = borrower._conduit_ward._find_contract_by_id(owner._id)
     assert contract._check_index_exists(owner._conduit_ward, index_id) is False
@@ -202,7 +202,7 @@ def test_notch_emission_holds_off_a_concurrent_link_and_every_borrower_follows_t
     b1, b2, newcomer = _conduit("b1"), _conduit("b2"), _conduit("newcomer")
     owner.link(b1)
     owner.link(b2)
-    index = owner_book.find_spell_by_id(id_a).spell_index
+    index = owner_book.find_spell_by_spell_id(id_a).spell_index
     id_b = owner.bind_inactive(spell=_MemberB, spell_index=index, existence=Existence.unique,
                                permissions="create", binding_name="b")
     spell_b = owner_book._get_owned_spell(id_b)
@@ -243,7 +243,7 @@ def test_contract_inspection_holds_off_a_concurrent_member_stage(monkeypatch: py
     owner = owner_book.conjure(dynamic=True, name="owner")
     borrower = _conduit("borrower")
     owner.link(borrower)
-    index = owner_book.find_spell_by_id(id_a).spell_index
+    index = owner_book.find_spell_by_spell_id(id_a).spell_index
     owner.bind_inactive(spell=_MemberB, spell_index=index, existence=Existence.unique,
                         permissions="create", binding_name="b")
     _link_index(borrower, owner, index)
@@ -286,7 +286,7 @@ def test_contract_listing_does_not_deadlock_with_a_concurrent_sever(monkeypatch:
     owner = owner_book.conjure(dynamic=True, name="owner")
     borrower = _conduit("borrower")
     owner.link(borrower)
-    _link_index(borrower, owner, owner_book.find_spell_by_id(lent_id).spell_index)
+    _link_index(borrower, owner, owner_book.find_spell_by_spell_id(lent_id).spell_index)
     severed: Dict[str, object] = {}
     real_get_detail_map = Contract._get_detail_map
 
@@ -321,7 +321,7 @@ def test_cleanup_spell_of_a_disposed_spell_raises_runtime_error() -> None:
     owner_book = _make_book()
     id_a = owner_book.bind(spell=_HeadA, existence=Existence.unique, permissions="create", binding_name="a")
     owner = owner_book.conjure(dynamic=True, name="owner")
-    spell = owner_book.find_spell_by_id(id_a)
+    spell = owner_book.find_spell_by_spell_id(id_a)
     owner.cleanup_spell(spell=spell)
 
     with pytest.raises(RuntimeError, match=f"spell {id_a} has already been disposed"):

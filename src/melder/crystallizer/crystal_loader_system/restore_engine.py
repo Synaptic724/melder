@@ -2191,7 +2191,7 @@ class RestoreEngine(Cleanable):
         )
         self._report.record_built("spell_active")
         self._map_spell_identity(spellbook_id, spell_id, new_spell_id)
-        live_spell = spellbook.find_spell_by_id(new_spell_id)
+        live_spell = spellbook.find_spell_by_spell_id(new_spell_id)
         recorded_index_id = self._index_id_for_member(spellbook_id, spell_id)
         if recorded_index_id is not None and live_spell is not None:
             self._report.map_identity(
@@ -2433,7 +2433,7 @@ class RestoreEngine(Cleanable):
             candidates.insert(0, selected)
         for member_id in candidates:
             live_member_id = self._translate_spell(book_id, str(member_id))
-            live_spell = spellbook.find_spell_by_id(live_member_id)
+            live_spell = spellbook.find_spell_by_spell_id(live_member_id)
             if live_spell is not None:
                 if live_spell.spell_index.id == live_index_id:
                     return live_spell.spell_index

@@ -146,8 +146,8 @@ def test_find_contracted_spell_finds_a_later_lender_while_a_peer_links_mid_walk(
                                  binding_name="second")
     first_lender = first_book.conjure(dynamic=True, name="first")
     second_lender = second_book.conjure(dynamic=True, name="second")
-    _lend(borrower, first_lender, first_book.find_spell_by_id(first_id).spell_index)
-    _lend(borrower, second_lender, second_book.find_spell_by_id(second_id).spell_index)
+    _lend(borrower, first_lender, first_book.find_spell_by_spell_id(first_id).spell_index)
+    _lend(borrower, second_lender, second_book.find_spell_by_spell_id(second_id).spell_index)
     newcomer = _conduit("newcomer")
     assert list(borrower_book._contracted_spells) == [first_lender._id, second_lender._id]
     real_find_by_id = Spellbook._find_contracted_spell_by_id
@@ -313,7 +313,7 @@ def test_second_cleanup_spell_of_an_active_spell_refuses_while_the_first_runs(
     id_a = owner_book.bind(spell=_HeadA, existence=Existence.unique, permissions="create", binding_name="a")
     owner = owner_book.conjure(dynamic=True, name="owner")
     borrower = _conduit("borrower")
-    spell_a = owner_book.find_spell_by_id(id_a)
+    spell_a = owner_book.find_spell_by_spell_id(id_a)
     index_id = spell_a.spell_index.id
     _lend(borrower, owner, spell_a.spell_index)
     destroys: List[str] = []
@@ -329,12 +329,12 @@ def test_second_cleanup_spell_of_an_active_spell_refuses_while_the_first_runs(
 
     with pytest.raises(RuntimeError, match=f"spell {id_a} is already being disposed by another call"):
         owner.cleanup_spell(spell=spell_a)
-    assert owner_book.find_spell_by_id(id_a) is spell_a
+    assert owner_book.find_spell_by_spell_id(id_a) is spell_a
 
     outcome = finish()
 
     assert "error" not in outcome, outcome.get("error")
-    assert owner_book.find_spell_by_id(id_a) is None
+    assert owner_book.find_spell_by_spell_id(id_a) is None
     assert destroys == [index_id]
     assert index_id not in borrower._spellbook._contracted_indexes
     with pytest.raises(RuntimeError, match=f"spell {id_a} has already been disposed"):
@@ -352,7 +352,7 @@ def test_second_cleanup_spell_of_a_parked_member_refuses_while_the_first_runs(
     owner_book = _make_book()
     id_a = owner_book.bind(spell=_HeadA, existence=Existence.unique, permissions="create", binding_name="a")
     owner = owner_book.conjure(dynamic=True, name="owner")
-    index = owner_book.find_spell_by_id(id_a).spell_index
+    index = owner_book.find_spell_by_spell_id(id_a).spell_index
     id_b = owner.bind_inactive(spell=_MemberB, spell_index=index, existence=Existence.unique,
                                permissions="create", binding_name="b")
     spell_b = owner_book._get_owned_spell(id_b)
@@ -366,8 +366,8 @@ def test_second_cleanup_spell_of_a_parked_member_refuses_while_the_first_runs(
     outcome = finish()
 
     assert "error" not in outcome, outcome.get("error")
-    assert owner_book.find_spell_by_id(id_b) is None
-    assert owner_book.find_spell_by_id(id_a).spell_index is index
+    assert owner_book.find_spell_by_spell_id(id_b) is None
+    assert owner_book.find_spell_by_spell_id(id_a).spell_index is index
     assert index.is_sole_member(id_a)
     with pytest.raises(RuntimeError, match=f"spell {id_b} has already been disposed"):
         owner_book.cleanup_spell(spell=spell_b)

@@ -13,7 +13,7 @@ Regenerate with:
     python src/melder/_build_assets/_build_asset_runner.py
 """
 
-BUILT_FOR_VERSION = "0.2.8252"
+BUILT_FOR_VERSION = "0.2.8253"
 NODE_COUNT = 1227
 EDGE_COUNT = 1415
 WHY_COUNT = 956
@@ -1079,7 +1079,7 @@ NODES = {
     'melder.nexus.rift.command_system.codegen_command_system': ('src/melder/nexus/rift/command_system/codegen_command_system.py', 'codegen_command_system', 'module', 1, False),
     'melder.nexus.rift.command_system.codegen_command_system.CodegenCommandSystem': ('src/melder/nexus/rift/command_system/codegen_command_system.py', 'CodegenCommandSystem', 'class', 25, False),
     'melder.nexus.rift.command_system.command_system': ('src/melder/nexus/rift/command_system/command_system.py', 'command_system', 'module', 1, False),
-    'melder.nexus.rift.command_system.command_system.CommandSystem': ('src/melder/nexus/rift/command_system/command_system.py', 'CommandSystem', 'class', 18, False),
+    'melder.nexus.rift.command_system.command_system.CommandSystem': ('src/melder/nexus/rift/command_system/command_system.py', 'CommandSystem', 'class', 20, False),
     'melder.nexus.rift.command_system.static_command_system': ('src/melder/nexus/rift/command_system/static_command_system.py', 'static_command_system', 'module', 1, False),
     'melder.nexus.rift.command_system.static_command_system.StaticCommandSystem': ('src/melder/nexus/rift/command_system/static_command_system.py', 'StaticCommandSystem', 'class', 12, False),
     'melder.nexus.rift.frame_link.frame_link': ('src/melder/nexus/rift/frame_link/frame_link.py', 'frame_link', 'module', 1, False),

@@ -8,6 +8,7 @@ Scope:
     reusable clears that root stores never run (pools untouched). Since S4 (STORY-2026-10-15-release_managed_spell)
     the store registers every pool it takes with `ReleaseManagedSpell` and unregisters every pool it gives up.
 """
+import threading
 from collections.abc import Iterator
 from threading import RLock
 from typing import Any, List, Optional, Tuple
@@ -391,3 +392,42 @@ def test_a_store_cleaned_after_the_registry_is_gone_still_cleans(store: ConduitC
     ReleaseManagedSpell._reset_singleton_for_tests()
     store.cleanup()
     assert pool.cleaned is True
+
+
+def test_ensure_with_new_settings_keeps_the_pool_and_takes_the_settings(store: ConduitCreations) -> None:
+    """A rebind under the same spell_id with other settings meets the pool, which takes them (0.2.8254)."""
+    first = store.ensure_managed_quantity(_SpellStub(mode=ManagedSpellMode.limited_quantity, limit=1))
+    rebound = _SpellStub(mode=ManagedSpellMode.limited_quantity, limit=2)
+    second = store.ensure_managed_quantity(rebound)
+    assert second is first
+    assert (second.limit, second.spell) == (2, rebound)
+    assert [entry["spell_id"] for entry in ReleaseManagedSpell().describe(_Probe)] == ["managed-sid"]
+
+
+def test_ensure_rebinds_an_existing_pool_after_releasing_the_store_lock(
+        store: ConduitCreations,
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The rebind takes the pool's lock, so it runs with the store lock free: the store lock stays a leaf."""
+    store.ensure_managed_quantity(_SpellStub())
+    store_lock_free: List[bool] = []
+    original = ManagedSpellQuantity._rebind_spell
+
+    def _spy(pool: ManagedSpellQuantity, spell: Any) -> None:
+        probe: List[bool] = []
+
+        def _try_store_lock() -> None:
+            acquired = store._lock.acquire(timeout=1.0)
+            probe.append(acquired)
+            if acquired:
+                store._lock.release()
+
+        prober = threading.Thread(target=_try_store_lock)
+        prober.start()
+        prober.join()
+        store_lock_free.append(probe[0])
+        original(pool, spell)
+
+    monkeypatch.setattr(ManagedSpellQuantity, "_rebind_spell", _spy, raising=True)
+    store.ensure_managed_quantity(_SpellStub())
+    assert store_lock_free == [True]

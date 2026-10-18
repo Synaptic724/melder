@@ -3,9 +3,11 @@ from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple
 if TYPE_CHECKING:
     from melder.aether.conduit.conduit import Conduit
+    from melder.aether.spellbook.spell import Spell
     from melder.nexus.acl.frame_acl_compiled_access_surface import (
         CompiledFrameACLAccessSurface,
     )
+    from melder.nexus.frame_descriptor.spell_record import SpellRecord
     from melder.nexus.rift.rift import Rift
     from melder.nexus.rift.rift_space.rift_space import RiftSpace
     from melder.nexus.rift.rift_space.workstation import Workstation
@@ -363,6 +365,84 @@ class CommandSystem(Cleanable):
             )
         )
 
+    def _get_spell_by_record_locked(
+            self,
+            spell_record: SpellRecord,
+            *,
+            frame_name: str,
+    ) -> Spell:
+        """
+        Resolve the Spell one published record names while the command lock is
+        already held.
+
+        Purpose:
+            The exact counterpart of `_get_spell_by_index_id_locked`: a record
+            names one spell by its spell_id, and this returns that spell - active
+            or parked - from the Spellbook of the record's owner conduit, never
+            the spell the record's SpellIndex has active.
+
+        Contract:
+            - Enforces the frame command gate and the spell-index ACL of the
+              record's index before touching runtime state, then resolves the
+              owner conduit through `_get_conduit_by_id_locked`, which applies the
+              conduit ACL.
+            - Reads the owner's Spellbook with `find_spell_by_spell_id`, a
+              lock-free read of its two id maps; the Spell returned is borrowed.
+            - Requires the caller to hold `self._lock`.
+
+        Args:
+            spell_record:
+                Published spell record whose spell should be returned.
+            frame_name:
+                Resolved hosted frame name.
+
+        Returns:
+            Spell: The spell the record's spell_id names.
+
+        Raises:
+            ValueError:
+                If command ACL denies frame, spell or conduit access, if the record
+                has no owner conduit, if the owner conduit has no Spellbook, or if
+                that Spellbook no longer holds the spell_id.
+        """
+        source_id = "{0}:{1}".format(
+            spell_record.origin_spellbook_id,
+            spell_record.spell_id,
+        )
+        self._assert_frame_command_enabled(frame_name)
+        self._assert_spell_command_enabled(
+            spell_record.spell_index_id,
+            frame_name=frame_name,
+        )
+        owner_conduit_id = spell_record.owner_conduit_id
+        if not owner_conduit_id:
+            raise ValueError(
+                "Spell '{0}' has no owner conduit in frame '{1}'.".format(
+                    source_id,
+                    frame_name,
+                )
+            )
+        owner_conduit = self._get_conduit_by_id_locked(
+            owner_conduit_id,
+            frame_name=frame_name,
+        )
+        spellbook = owner_conduit._spellbook
+        if spellbook is None:
+            raise ValueError(
+                "Owner conduit for spell '{0}' has no spellbook.".format(
+                    spell_record.spell_id
+                )
+            )
+        spell = spellbook.find_spell_by_spell_id(spell_record.spell_id)
+        if spell is not None:
+            return spell
+        raise ValueError(
+            "Spell '{0}' was not found in the owner spellbook for frame '{1}'.".format(
+                source_id,
+                frame_name,
+            )
+        )
+
     def _get_target_method_locked(
             self,
             method_name: str,
@@ -427,7 +507,7 @@ class CommandSystem(Cleanable):
             "snapshot_state",
             "get_spell_by_source_id",
             "get_spell_by_index_id",
-            "get_spell_by_id",
+            "get_spell_by_spell_id",
             "get_target_attribute",
             "get_target_method",
             "execute_target_method",
@@ -762,7 +842,25 @@ class CommandSystem(Cleanable):
             frame_name: Optional[str] = None,
     ) -> object:
         """
-        Return one live spell object using a published spell source id.
+        Return the Spell a published spell source id names.
+
+        Purpose:
+            Hand out the runtime Spell behind one published record, addressed the
+            way the frame viewer addresses it: `spellbook_id:spell_id`.
+
+        Contract:
+            - Answers exactly the spell the source id names, from its owner's
+              Spellbook (`find_spell_by_spell_id`), never another version of its
+              SpellIndex; the version an index has active is
+              `get_spell_by_index_id`'s answer. Nexus publishes the version an
+              index has active, so a published record names that version. Until
+              0.2.8253 this method resolved the record's index and returned the
+              spell the index had active.
+            - Enforces raw-runtime access, the frame command gate, the record's
+              spell-index ACL and the owner conduit's ACL before touching runtime
+              state (`_get_spell_by_record_locked`).
+            - Uses one top-level command action boundary for gate admission and
+              memory emission.
 
         Args:
             spell_source_id:
@@ -772,12 +870,14 @@ class CommandSystem(Cleanable):
                 used.
 
         Returns:
-            object: Live spell object.
+            object: The live `Spell` the source id names.
 
         Raises:
             ValueError:
-                If the spell source id is not published in the selected frame
-                or command ACL denies spell access.
+                If the spell source id is empty, malformed, not published or
+                ambiguous in the selected frame, if command ACL denies frame,
+                spell or conduit access, if the record has no owner conduit, or
+                if the owner's Spellbook no longer holds the spell_id.
         """
         self.check_cleaned()
         with self._entered_command_action(
@@ -792,8 +892,8 @@ class CommandSystem(Cleanable):
             self._assert_raw_runtime_object_access_allowed(
                 "get_spell_by_source_id"
             )
-            return self._get_spell_by_index_id_locked(
-                spell_record.spell_index_id,
+            return self._get_spell_by_record_locked(
+                spell_record,
                 frame_name=resolved_frame_name,
             )
 
@@ -832,37 +932,61 @@ class CommandSystem(Cleanable):
                 frame_name=resolved_frame_name,
             )
 
-    def get_spell_by_id(
+    def get_spell_by_spell_id(
             self,
             spell_id: str,
             *,
             frame_name: Optional[str] = None,
     ) -> object:
         """
-        Return one live spell object by current spell id.
+        Return the Spell that owns a spell_id.
+
+        Purpose:
+            Hand out the runtime Spell behind one spell_id - the SHA256 `bind`
+            and `bind_inactive` return - through the shared command surface.
+
+        Contract:
+            - Answers exactly the spell that owns the spell_id, never another
+              version of its SpellIndex; the version an index has active is
+              `get_spell_by_index_id`'s answer. The spell_id must be published in
+              the room's projection of the frame, and Nexus publishes the version
+              an index has active, so a parked version's spell_id is refused
+              (ValueError), not answered with the active one. Renamed from
+              `get_spell_by_id` in 0.2.8253, whose owner-Book lookup answered a
+              parked spell_id with the spell its index had active.
+            - Enforces raw-runtime access, the frame command gate and the
+              spell-index ACL of the published record before touching runtime
+              state, then reads the owner Spellbook's id maps
+              (`Spellbook.find_spell_by_spell_id`) without walking its live index
+              map.
+            - Uses one top-level command action boundary for gate admission and
+              memory emission.
 
         Args:
             spell_id:
-                Current spell id to resolve.
+                The spell_id to resolve.
             frame_name:
                 Optional frame name. When omitted, the room default frame is
                 used.
 
         Returns:
-            object: Live spell object.
+            object: The live `Spell` that owns the spell_id.
 
         Raises:
             ValueError:
-                If the spell is not published in the selected frame or command
-                ACL denies spell access.
+                If the spell_id is empty, not published or published under more
+                than one index in the selected frame, if command ACL denies frame
+                or spell access, if no conduit of the frame claims the spell_id,
+                if the owner conduit has no Spellbook, or if that Spellbook no
+                longer holds the spell_id.
         """
         self.check_cleaned()
         with self._entered_command_action(
-                action_name="get_spell_by_id",
+                action_name="get_spell_by_spell_id",
                 frame_name=frame_name,
         ), self._lock:
             resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
-            self._assert_raw_runtime_object_access_allowed("get_spell_by_id")
+            self._assert_raw_runtime_object_access_allowed("get_spell_by_spell_id")
             self._assert_frame_command_enabled(resolved_frame_name)
             spell_index_id = self._get_required_published_spell_index_id_by_spell_id(
                 spell_id,
@@ -881,9 +1005,10 @@ class CommandSystem(Cleanable):
                 raise ValueError(
                     "Owner conduit for spell '{0}' has no spellbook.".format(spell_id)
                 )
-            # The owner Book's id maps answer the lineage lookup in O(1), without walking its
-            # live index map, which a concurrent bind or removal could resize mid-walk.
-            spell = spellbook.find_spell_by_id(spell_id)
+            # The owner Book's id maps answer the spell_id lookup in O(1) - the spell that owns the
+            # spell_id, active or parked - without walking its live index map, which a concurrent
+            # bind or removal could resize mid-walk.
+            spell = spellbook.find_spell_by_spell_id(spell_id)
             if spell is not None:
                 return spell
             raise ValueError(

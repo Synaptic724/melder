@@ -641,8 +641,10 @@ class Bind(Cleanable):
         * Resolves disposal names once in group priority order, hashes the resolved
           list, and passes that same list to Spell without another conversion.
         * Validates and normalizes the four managed options once
-          (`_normalize_managed_options`), after the profile and before the fingerprint;
-          a managed binding hashes them as one extra part and the Spell keeps them.
+          (`_normalize_managed_options`), after the profile; the Spell keeps them. They are
+          settings of the one spell, not its identity: the fingerprint never reads them
+          (owner ruling 2026-10-17), so a managed class bound with other settings at the same
+          address, existence and disposal list gets the same spell_id.
         * Determines the canonical SpellType.
         * Constructs the final `Spell` instance.
         * Replaces the initial raw binding artifact with the combined
@@ -772,8 +774,9 @@ class Bind(Cleanable):
                             resolved_disposal_method_names.insert(spell_position, method_name)
                             spell_position += 1
             # Managed options (Existence.managed_spell_quantity): validated and normalized here, once,
-            # because they are hashed into a managed spell's id and kept by its Spell; any other
-            # existence must leave all four unset. Refusals happen before a Spell or index exists.
+            # and kept by the Spell. They are settings, not identity: the fingerprint below never reads
+            # them (owner ruling 2026-10-17). Any other existence must leave all four unset. Refusals
+            # happen before a Spell or index exists.
             (
                 normalized_managed_mode,
                 normalized_managed_limit,
@@ -797,10 +800,6 @@ class Bind(Cleanable):
                 existence=existence,
                 disposal_method_names=resolved_disposal_method_names,
                 resolvable=resolvable,
-                managed_spell_mode=normalized_managed_mode,
-                managed_spell_limit=normalized_managed_limit,
-                managed_spell_timeout_seconds=normalized_managed_timeout,
-                managed_spell_reset_methods=normalized_managed_reset_methods,
             )
             spell_index = SpellIndex(initial_id=fingerprint)
 
@@ -970,8 +969,9 @@ class Bind(Cleanable):
               disposal list. This helper does not apply book priority or match names.
             - Does not register anything into a spellbook or mutate runtime
               binding state.
-            - Normalizes and checks the managed options with bind's own
-              `_normalize_managed_options`, so a managed fingerprint matches bind's.
+            - Checks the managed options with bind's own `_normalize_managed_options`,
+              so it refuses exactly what bind refuses; like bind, it never hashes them
+              (a managed spell_id does not depend on its settings).
 
         Returns:
             str: A unique identifier string (SHA256 hash) for the spell.
@@ -986,12 +986,8 @@ class Bind(Cleanable):
         # Error messages name the target; the inspector hashes `spell_name` only when given, as bind would.
         # The target is caller-supplied, so `getattr` with a default is the external-object exception.
         display_name = spell_name if spell_name is not None else getattr(spell, "__name__", type(spell).__name__)
-        (
-            normalized_managed_mode,
-            normalized_managed_limit,
-            normalized_managed_timeout,
-            normalized_managed_reset_methods,
-        ) = Bind._normalize_managed_options(
+        # Checked as bind checks them, never hashed: a managed spell's settings are not part of its spell_id.
+        Bind._normalize_managed_options(
             spell,
             profile.binding_profile,
             str(display_name),
@@ -1009,10 +1005,6 @@ class Bind(Cleanable):
             existence=existence,
             disposal_method_names=tuple(disposal_method_names),
             resolvable=resolvable,
-            managed_spell_mode=normalized_managed_mode,
-            managed_spell_limit=normalized_managed_limit,
-            managed_spell_timeout_seconds=normalized_managed_timeout,
-            managed_spell_reset_methods=normalized_managed_reset_methods,
         )
 
     @staticmethod
@@ -1025,10 +1017,6 @@ class Bind(Cleanable):
             existence: Optional[Existence] = None,
             disposal_method_names: Sequence[str] = (),
             resolvable: bool = True,
-            managed_spell_mode: Optional[ManagedSpellMode] = None,
-            managed_spell_limit: Optional[int] = None,
-            managed_spell_timeout_seconds: Optional[float] = None,
-            managed_spell_reset_methods: Sequence[str] = (),
     ) -> str:
         """
         Computes the SHA256 hash of a spell's binding profile metadata.
@@ -1061,11 +1049,13 @@ class Bind(Cleanable):
             - Includes the direct bind-time parameters that shape later
               compiler/runtime behavior: spell_name, spellframe, binding_name,
               existence, resolvable, and resolved disposal metadata in execution order.
-            - A managed binding (a `managed_spell_mode` is given) appends one last part,
-              `managed:<mode>:<limit>:<timeout>:<reset names>` (`_managed_fingerprint_part`).
-              Callers pass normalized values (`_normalize_managed_options`). Without a mode
-              nothing is appended, so every other binding hashes exactly as before (S2,
-              2026-10-15).
+            - Never hashes a managed binding's settings (mode, limit, queue timeout, reset
+              names): they are settings of the one spell, not its identity (owner ruling
+              2026-10-17: "the bind call itself shouldn't impact the actual SHA256"), so a
+              managed binding hashes exactly the inputs above. From 0.2.8242 to 0.2.8253 a
+              managed binding appended a `managed:<mode>:<limit>:<timeout>:<reset names>`
+              part; every managed spell_id moved once when it left (0.2.8254), and no other
+              spell_id ever had it.
             - Equal bind signatures produce equal hashes; materially different
               signatures should produce different hashes.
         Returns:
@@ -1135,17 +1125,6 @@ class Bind(Cleanable):
 
         parts.extend(tuple(disposal_method_names))
 
-        # Managed bindings only: one part carrying the normalized options closes the key.
-        if managed_spell_mode is not None:
-            parts.append(
-                Bind._managed_fingerprint_part(
-                    managed_spell_mode,
-                    managed_spell_limit,
-                    managed_spell_timeout_seconds,
-                    managed_spell_reset_methods,
-                )
-            )
-
         key = "::".join(parts)
         return hashlib.sha256(key.encode("utf-8")).hexdigest()
 
@@ -1212,41 +1191,6 @@ class Bind(Cleanable):
                 f"resolvable must be a bool (True or False), got {type(resolvable).__name__}. "
                 "Pass resolvable=False to register a non-resolvable definition."
             )
-
-    @staticmethod
-    def _managed_fingerprint_part(
-            managed_spell_mode: ManagedSpellMode,
-            managed_spell_limit: Optional[int],
-            managed_spell_timeout_seconds: Optional[float],
-            managed_spell_reset_methods: Sequence[str],
-    ) -> str:
-        """
-        Render the fingerprint part of a managed binding's normalized options.
-
-        Contract:
-            - `managed:<mode>:<limit>:<timeout>:<reset names>`: the mode's name, the limit as an int, the
-              timeout as the repr of its float, the reset names joined by "," in their order; an absent limit
-              or timeout renders as empty text.
-            - Pure: equal normalized options always render equal text, so `2` and `2.0` seconds hash alike
-              (bind stores both as `2.0`).
-
-        Args:
-            managed_spell_mode: The normalized mode.
-            managed_spell_limit: The normalized limit, or None.
-            managed_spell_timeout_seconds: The normalized timeout in seconds, or None.
-            managed_spell_reset_methods: The normalized reset names, in order.
-
-        Returns:
-            str: The part `sha256_profile` appends to a managed binding's key.
-        """
-        limit_text = "" if managed_spell_limit is None else str(managed_spell_limit)
-        timeout_text = "" if managed_spell_timeout_seconds is None else repr(float(managed_spell_timeout_seconds))
-        return "managed:{0}:{1}:{2}:{3}".format(
-            managed_spell_mode.name,
-            limit_text,
-            timeout_text,
-            ",".join(managed_spell_reset_methods),
-        )
 
     @staticmethod
     def _normalize_managed_options(

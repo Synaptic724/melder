@@ -84,7 +84,7 @@ class ProviderRuntime:
         self.provider = book.conjure(dynamic=True, name="provider")
         self.original = self.provider.meld(spellframe="providers", binding_name="retained")
         self.original.entries.append("provider-owned")
-        self.provider_spell = self.provider.get_spell_by_id(self.provider_id, self.frame_name)
+        self.provider_spell = self.provider.get_spell_by_spell_id(self.provider_id, self.frame_name)
 
     def create_borrower(self, name: str) -> Conduit:
         """Link and import read access, then bind the required consumer locally."""
@@ -105,7 +105,7 @@ class ProviderRuntime:
 
     def assert_provider_usable(self) -> None:
         """Perform the final provider meld and verify original definition and data."""
-        assert self.provider.get_spell_by_id(self.provider_id, self.frame_name) is self.provider_spell
+        assert self.provider.get_spell_by_spell_id(self.provider_id, self.frame_name) is self.provider_spell
         assert self.provider.meld(spellframe="providers", binding_name="retained") is self.original
         assert self.original.entries == ["provider-owned"]
 

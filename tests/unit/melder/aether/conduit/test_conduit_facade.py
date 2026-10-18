@@ -406,12 +406,12 @@ def test_get_spell_permissions_returns_name(
     """
     spell = _make_spell("sha-1", permissions=Permissions.create)
     # The lineage lookup is the Book's id-map lookup (0.2.8230), not a walk of its index map.
-    spellbook_stub.find_spell_by_id.side_effect = {"sha-1": spell}.get
+    spellbook_stub.find_spell_by_spell_id.side_effect = {"sha-1": spell}.get
 
     result = conduit_lesser.get_spell_permissions("sha-1")
 
     assert result == "create"
-    spellbook_stub.find_spell_by_id.assert_called_once_with("sha-1")
+    spellbook_stub.find_spell_by_spell_id.assert_called_once_with("sha-1")
 
 
 def test_get_spell_permissions_raises_when_missing(
@@ -432,7 +432,7 @@ def test_get_spell_permissions_raises_when_missing(
         AssertionError: If missing spell id does not raise.
     """
     # The Book knows only "sha-2", so its id-map lookup misses "sha-1" (0.2.8230).
-    spellbook_stub.find_spell_by_id.side_effect = {
+    spellbook_stub.find_spell_by_spell_id.side_effect = {
         "sha-2": _make_spell("sha-2", permissions=Permissions.read),
     }.get
 
@@ -491,12 +491,12 @@ def test_check_spell_id_returns_bool(
     assert result is True
 
 
-def test_get_spell_by_id_returns_none_when_owner_missing(
+def test_get_spell_by_spell_id_returns_none_when_owner_missing(
     conduit_normal: Conduit,
     spellbook_stub: MagicMock,
 ) -> None:
     """
-    Verify get_spell_by_id returns None when no owner conduit is found.
+    Verify get_spell_by_spell_id returns None when no owner conduit is found.
 
     Contract:
         - Absence of an owner returns None without raising.
@@ -510,7 +510,7 @@ def test_get_spell_by_id_returns_none_when_owner_missing(
     """
     spellbook_stub._get_spell_by_id_via_aether.return_value = None
 
-    result = conduit_normal.get_spell_by_id("sha-1")
+    result = conduit_normal.get_spell_by_spell_id("sha-1")
 
     spellbook_stub._get_spell_by_id_via_aether.assert_called_once_with(
         "sha-1",
@@ -519,12 +519,12 @@ def test_get_spell_by_id_returns_none_when_owner_missing(
     assert result is None
 
 
-def test_get_spell_by_id_returns_owner_spell(
+def test_get_spell_by_spell_id_returns_owner_spell(
     conduit_normal: Conduit,
     spellbook_stub: MagicMock,
 ) -> None:
     """
-    Verify get_spell_by_id delegates through the Spellbook-owned helper.
+    Verify get_spell_by_spell_id delegates through the Spellbook-owned helper.
 
     Contract:
         - The Spellbook helper result is returned to the caller.
@@ -539,7 +539,7 @@ def test_get_spell_by_id_returns_owner_spell(
     spell = _make_spell("sha-1")
     spellbook_stub._get_spell_by_id_via_aether.return_value = spell
 
-    result = conduit_normal.get_spell_by_id("sha-1")
+    result = conduit_normal.get_spell_by_spell_id("sha-1")
 
     assert result is spell
     spellbook_stub._get_spell_by_id_via_aether.assert_called_once_with(

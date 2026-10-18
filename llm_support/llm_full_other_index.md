@@ -10,9 +10,9 @@ Line numbers are 1-based and inclusive.
 | bundle | llm_full_other.txt |
 | schema_version | 1.0.0 |
 | generator_sha256 | d75f1de961817875c099e1b3bc6eaa3a6c670dc89752cd94864d977e452b88e3 |
-| source_fingerprint | 9ec928567deddc9ac2f07460bd9213fe962a8070543677ae51bf33e5b47ad365 |
-| bundle_sha256 | 710028c93b2481f174ab5034cf67897b91eba7cf2d654657638172daec8fc83e |
-| bundle_line_count | 77718 |
+| source_fingerprint | 04242556482fd78620d1bf1c5f21c09cca6b933451185bb6576acb4c679ed7de |
+| bundle_sha256 | bf8b27a5f8f5a3892242e6b6efa9e513cd1cb29fae44835849f5f58dad591111 |
+| bundle_line_count | 77794 |
 | bundle_line_ending | lf |
 | files | 404 |
 
@@ -121,14 +121,14 @@ Line numbers are 1-based and inclusive.
 | 9794-9844 | 9799-9841 | 1162 | utf-8 | cdb4442a767935ca41a3b6d9535575c3257a176e1d86b2d3d95605ad85469eb7 | UX_and_AIX_experiences/02_intermediate/03_registration_hooks.py |
 | 9845-9885 | 9850-9882 | 948 | utf-8 | d66bbcd0467cc0a0d47867d21d7ffc751bce0585d87217d190b9415fe33730c2 | UX_and_AIX_experiences/02_intermediate/04_spellspace_scoped_resolution.py |
 | 9886-9931 | 9891-9928 | 1187 | utf-8 | cadae7d732d0dc5bdd039d45ed5b6009caaf4f7aa5281f56d76e779f601121b6 | UX_and_AIX_experiences/02_intermediate/05_existence_unique_per_conduit_lineage.py |
-| 9932-9976 | 9937-9973 | 1189 | utf-8 | 934c0eb0c82b7d0bdd0d9dd7045627e917cbcb5bb57034c01f0d6c4ab727ef74 | UX_and_AIX_experiences/02_intermediate/06_spell_metadata_kwargs.py |
+| 9932-9976 | 9937-9973 | 1201 | utf-8 | 49f236ee7902ce382e6b64d9241ae9c41ff78df1c6aa967b69bd02f7bac8b187 | UX_and_AIX_experiences/02_intermediate/06_spell_metadata_kwargs.py |
 | 9977-10031 | 9982-10028 | 1621 | utf-8 | 627700c6e10ff5531478e520c5796f95c1a2c4428a144db51e69d49104afc83b | UX_and_AIX_experiences/02_intermediate/07_lesser_conduits_child_scopes.py |
 | 10032-10085 | 10037-10082 | 1609 | utf-8 | 6a227de7f7c1782e1cc8beedb155fc8ddfec092c24480fe2e249efc01b81dda2 | UX_and_AIX_experiences/02_intermediate/08_spell_override_construction.py |
 | 10086-10120 | 10091-10117 | 803 | utf-8 | 6c9f7340cf0e7c96201a1c19c817d1bc73c472dea2634be2aa3a111c7dabfabe | UX_and_AIX_experiences/02_intermediate/09_permissions_block_sharing.py |
 | 10121-10166 | 10126-10163 | 1164 | utf-8 | d9d3d306966efc3192f937cd46b43b8bca5f2fd3bb24d5b634883f10fb1f64e3 | UX_and_AIX_experiences/02_intermediate/10_spellbinder_fluent_basics.py |
 | 10167-10205 | 10172-10202 | 905 | utf-8 | 7f4c09eb78398131cf2202a8e342a6eb1dafc85c4e43dbbe10cfff5ffd7c2e68 | UX_and_AIX_experiences/02_intermediate/11_permissions_linking_vocabulary.py |
 | 10206-10266 | 10211-10263 | 2303 | utf-8 | ab224730dd246ffa812c9368b9ade1711d39f496e9d6d5de12032634c4de6b52 | UX_and_AIX_experiences/02_intermediate/12_bind_lambda_spells.py |
-| 10267-10302 | 10272-10299 | 823 | utf-8 | 0059acb5a20c3d96418ae9e552016423f791c605b2f4920e39af1e15e4c77f46 | UX_and_AIX_experiences/02_intermediate/13_spell_ids_and_lookup.py |
+| 10267-10302 | 10272-10299 | 841 | utf-8 | 369dac8c3b9e2073b3f8bd7661b9c0436bfbbf9fe29d44447c0f52827beba250 | UX_and_AIX_experiences/02_intermediate/13_spell_ids_and_lookup.py |
 | 10303-10343 | 10308-10340 | 793 | utf-8 | fe8964b9fe7bb144d0113af9a48390803549e0f1c845b8d4f6ddaf3d50716bb7 | UX_and_AIX_experiences/02_intermediate/14_introspect_the_book.py |
 | 10344-10388 | 10349-10385 | 970 | utf-8 | 4c4d76e275b3458ae6e5e22c76a6c82c41518781443c6deb211bd8e74a32ddfe | UX_and_AIX_experiences/02_intermediate/15_constructor_di_by_annotation.py |
 | 10389-10429 | 10394-10426 | 904 | utf-8 | c64c13d2d4f8dbcbc5435ff1039772dc1aaf797663e51ce9c6389f900b79feb1 | UX_and_AIX_experiences/02_intermediate/16_spellmap_defaults.py |
@@ -154,7 +154,7 @@ Line numbers are 1-based and inclusive.
 | 11763-11877 | 11768-11874 | 3849 | utf-8 | a70ce7d51b7281bfeb295720234b2b2bb105f73fb5a2b2e78ebec0d98033b37a | UX_and_AIX_experiences/02_intermediate/36_late_binding_with_spellcontract.py |
 | 11878-12049 | 11883-12046 | 7705 | utf-8 | 0820ec761928a46eb2c1123eafef26ee6eb753c26a15ee0b7d4a3e0f9da02d41 | UX_and_AIX_experiences/02_intermediate/37_the_frame_conduit_cloud.py |
 | 12050-12173 | 12055-12170 | 5261 | utf-8 | f58966c91b80400c760b84b142d964883a50cc1c2942531211fdc562b4e23a8a | UX_and_AIX_experiences/02_intermediate/39_purge_unneeded_objects.py |
-| 12174-12286 | 12179-12283 | 4434 | utf-8 | e42a74aeb3faddce693ba1e54e1e7123d9c3a53722002ab711414f48dad0bb0c | UX_and_AIX_experiences/02_intermediate/40_bind_lifecycle_hooks.py |
+| 12174-12286 | 12179-12283 | 4464 | utf-8 | 70e54b96c09cdbeb3d604b863c2396d7c9fa8434e088b42672afb059e7a244ac | UX_and_AIX_experiences/02_intermediate/40_bind_lifecycle_hooks.py |
 | 12287-12378 | 12292-12375 | 3625 | utf-8 | e207c13275a9adb02cf2d86f517c3cab402e0fde3d54dc086dd5ab01ae53c29b | UX_and_AIX_experiences/02_intermediate/41_named_lesser_conduits.py |
 | 12379-12579 | 12384-12576 | 11401 | utf-8 | c0a900d37450ce51bfe0da0f4e3b86e12a06794ac6809b5a89019e2539a03bf3 | UX_and_AIX_experiences/02_intermediate/_concept_map.txt |
 | 12580-12601 | 12585-12598 | 585 | utf-8 | 421022cc352b9caedacda00cbd87c3519b8c251a81ca5a017fd4df83afffb360 | UX_and_AIX_experiences/02_intermediate/_dynamic_world.py |
@@ -194,27 +194,27 @@ Line numbers are 1-based and inclusive.
 | 18056-18373 | 18061-18370 | 13987 | utf-8 | e9f31038b106e29ccc3758ccd8661ff20dc6c36efa456787d40d463f3c9d00e3 | UX_and_AIX_experiences/04_expert/14_compositions_a_subsystem_as_one_unit.py |
 | 18374-18642 | 18379-18639 | 11767 | utf-8 | 3951f90f445519d40b9f4e9ef2a88488bce1a06be63e6bdd0b9c5ac2485ce476 | UX_and_AIX_experiences/04_expert/15_campaigns_the_why_that_rides_along.py |
 | 18643-18831 | 18648-18828 | 7699 | utf-8 | d0113e8342e468d873843571e94430038712482d3f2aeac7a9f913cf992f670f | UX_and_AIX_experiences/04_expert/16_rewiring_a_running_world.py |
-| 18832-19010 | 18837-19007 | 7586 | utf-8 | e59e30c8811c0564afb36e08c9edee93b2b71ccdf07d4a575174cadccac3cf1c | UX_and_AIX_experiences/04_expert/17_notch_swapping_a_live_object.py |
-| 19011-19198 | 19016-19195 | 7560 | utf-8 | 40fe7bae5ab06e97a5939d9528c3ccd139f17972491d7134a104e3513c816cec | UX_and_AIX_experiences/04_expert/18_the_package_reads_itself_to_you.py |
-| 19199-19375 | 19204-19372 | 7492 | utf-8 | f7406f4ebb2cecd9f681e2b7531cc3c8f38eeda2912d00a2e056f04f1edabe43 | UX_and_AIX_experiences/04_expert/19_the_codebase_as_a_walkable_graph.py |
-| 19376-19598 | 19381-19595 | 9658 | utf-8 | 9719a1508591ccdbefebdac331330b1955cdad989607b78fb0d18cd9a71351af | UX_and_AIX_experiences/04_expert/20_the_workstation_an_agents_workbench.py |
-| 19599-19835 | 19604-19832 | 8568 | utf-8 | 796881865251d291f90d5667832876ae27d3e92f9bc779f8c6210f5b4e0f15dd | UX_and_AIX_experiences/04_expert/21_many_agents_writing_code_at_once.py |
-| 19836-20086 | 19841-20083 | 10792 | utf-8 | 46f751e35cc3498fabdb2f0f96c29eead424f4bf160dd21fcebd468825485be5 | UX_and_AIX_experiences/04_expert/22_asking_what_code_would_do_before_running_it.py |
-| 20087-20313 | 20092-20310 | 9559 | utf-8 | fa6c0c2ca7d4ed7c200c928a5962270b32e66d6e04c529ab64c4824fcdd510f8 | UX_and_AIX_experiences/04_expert/23_branching_the_record_and_joining_back.py |
-| 20314-20550 | 20319-20547 | 10450 | utf-8 | 35b0458aca1c530b97144241713b4d28e73b6ae6c23f0879f410ceae579f8f0d | UX_and_AIX_experiences/04_expert/24_loading_a_whole_world_back.py |
-| 20551-20741 | 20556-20738 | 7983 | utf-8 | d46cbb2a2e53f5a989ba26a612509e45c137c92ba4fd4cfc42c58cc99cf5bb88 | UX_and_AIX_experiences/04_expert/25_many_research_sets_one_world.py |
-| 20742-20993 | 20747-20990 | 11042 | utf-8 | 4c559e9058bcf03c54457c05fa1c32ce9edbb5030f591d9edeb90b50a5fda4d6 | UX_and_AIX_experiences/04_expert/26_codegen_create_modify_iterate.py |
+| 18832-19009 | 18837-19006 | 7550 | utf-8 | 33f6cf979ed059c88f915cfb8938a12287b3a4a6e25e6ebf8c6aae19f4ffda52 | UX_and_AIX_experiences/04_expert/17_notch_swapping_a_live_object.py |
+| 19010-19197 | 19015-19194 | 7560 | utf-8 | 40fe7bae5ab06e97a5939d9528c3ccd139f17972491d7134a104e3513c816cec | UX_and_AIX_experiences/04_expert/18_the_package_reads_itself_to_you.py |
+| 19198-19374 | 19203-19371 | 7492 | utf-8 | f7406f4ebb2cecd9f681e2b7531cc3c8f38eeda2912d00a2e056f04f1edabe43 | UX_and_AIX_experiences/04_expert/19_the_codebase_as_a_walkable_graph.py |
+| 19375-19597 | 19380-19594 | 9658 | utf-8 | 9719a1508591ccdbefebdac331330b1955cdad989607b78fb0d18cd9a71351af | UX_and_AIX_experiences/04_expert/20_the_workstation_an_agents_workbench.py |
+| 19598-19834 | 19603-19831 | 8568 | utf-8 | 796881865251d291f90d5667832876ae27d3e92f9bc779f8c6210f5b4e0f15dd | UX_and_AIX_experiences/04_expert/21_many_agents_writing_code_at_once.py |
+| 19835-20085 | 19840-20082 | 10792 | utf-8 | 46f751e35cc3498fabdb2f0f96c29eead424f4bf160dd21fcebd468825485be5 | UX_and_AIX_experiences/04_expert/22_asking_what_code_would_do_before_running_it.py |
+| 20086-20312 | 20091-20309 | 9565 | utf-8 | ce0941bf3d4767dcce053bb38759bceee15434f553485d00e064bffd51b4ae0c | UX_and_AIX_experiences/04_expert/23_branching_the_record_and_joining_back.py |
+| 20313-20549 | 20318-20546 | 10450 | utf-8 | 35b0458aca1c530b97144241713b4d28e73b6ae6c23f0879f410ceae579f8f0d | UX_and_AIX_experiences/04_expert/24_loading_a_whole_world_back.py |
+| 20550-20740 | 20555-20737 | 7983 | utf-8 | d46cbb2a2e53f5a989ba26a612509e45c137c92ba4fd4cfc42c58cc99cf5bb88 | UX_and_AIX_experiences/04_expert/25_many_research_sets_one_world.py |
+| 20741-20993 | 20746-20990 | 11108 | utf-8 | 01217780021744920e90d029c2ab61c9481901e5f0dcb910930dbf78e273383d | UX_and_AIX_experiences/04_expert/26_codegen_create_modify_iterate.py |
 | 20994-21211 | 20999-21208 | 8809 | utf-8 | 2f5139d8f25612f27c9f3425bb739e6dc126747e43511cfb02c6fd62e685edf4 | UX_and_AIX_experiences/04_expert/27_a_world_that_outlives_its_own_runtime.py |
-| 21212-21437 | 21217-21434 | 8940 | utf-8 | d0636ec07b23ea707c1e378a4a09534fa762dd69dc8e52ee8161a5af554d07bd | UX_and_AIX_experiences/04_expert/28_the_record_crosses_as_a_json_string.py |
-| 21438-21689 | 21443-21686 | 10700 | utf-8 | 3f566b93f15f071a29de4bd3e760708f244a1c15b8b1624e7d13f96a1ae249f1 | UX_and_AIX_experiences/04_expert/29_reading_your_own_recorded_code.py |
+| 21212-21437 | 21217-21434 | 8946 | utf-8 | 9b7ce20c8971b35661f51d8c2ef6544badb18697314a68dfb34ee93c87fa28c7 | UX_and_AIX_experiences/04_expert/28_the_record_crosses_as_a_json_string.py |
+| 21438-21689 | 21443-21686 | 10706 | utf-8 | 175c2ad6ca7daeabe07b6420c15f22abbf64a17718296c976f8ae7ab866a1aea | UX_and_AIX_experiences/04_expert/29_reading_your_own_recorded_code.py |
 | 21690-21999 | 21695-21996 | 13376 | utf-8 | 3a8f3b6eead8425811753e7de98a1044b4b1c8188c341e47216d4545f5b9000a | UX_and_AIX_experiences/04_expert/30_composing_a_version_in_the_workshop.py |
-| 22000-22216 | 22005-22213 | 9014 | utf-8 | 466685cb15a616f3b2fda7b323dfaca13a54b57f573ced85dcf677cd4001b9ad | UX_and_AIX_experiences/04_expert/31_organising_lanes_after_the_fact.py |
+| 22000-22216 | 22005-22213 | 9020 | utf-8 | f6854d2e34fb40aba3b83f1f4662b0d7e2f81940208beeb6f5c9d8c52bc157f5 | UX_and_AIX_experiences/04_expert/31_organising_lanes_after_the_fact.py |
 | 22217-22472 | 22222-22469 | 11679 | utf-8 | a022fed6c5778a569184db5bedefafbf81247c35b88a4185fc565c845890f644 | UX_and_AIX_experiences/04_expert/32_a_subsystems_blast_radius.py |
 | 22473-22722 | 22478-22719 | 11199 | utf-8 | 05d11bf122b968e1c8c3b5868da1c3b0375d0192a3cf19772d1af4664ef807c1 | UX_and_AIX_experiences/04_expert/33_what_a_synthetic_module_actually_is.py |
 | 22723-22958 | 22728-22955 | 10504 | utf-8 | a663ccacc5a074885b9f90a11476c972670d2d0cd9c12dc0a1618cc478e235e1 | UX_and_AIX_experiences/04_expert/34_several_worlds_of_record_in_one_process.py |
 | 22959-23171 | 22964-23168 | 9409 | utf-8 | 9e6f82563fab98a51f91e39460d75da6f5587ad9ae63f89b70ee1a6d7487bbb1 | UX_and_AIX_experiences/04_expert/35_the_gate_that_waits_for_readers.py |
 | 23172-23426 | 23177-23423 | 9314 | utf-8 | 5f4e3d19246c5759534a1e2c2341797e5c431529a37d376b8d36a483176f856b | UX_and_AIX_experiences/04_expert/36_an_agent_builds_a_working_system.py |
-| 23427-23614 | 23432-23611 | 7998 | utf-8 | b41ed7164d697403ba259347060e05423acc5ef6a5f529155220a698110d9551 | UX_and_AIX_experiences/04_expert/37_review_agent_bindings.py |
+| 23427-23614 | 23432-23611 | 8028 | utf-8 | 6a73b7f3f37ea4e5cb4f1ba30fbdd539868ffd21f34f943232e330288131cb88 | UX_and_AIX_experiences/04_expert/37_review_agent_bindings.py |
 | 23615-23743 | 23620-23740 | 5717 | utf-8 | c5530147ed0b3235c40512d6fcdc6c84447092f3d804f33c16cc23d3dde6f162 | UX_and_AIX_experiences/04_expert/38_named_scopes_in_nexus_and_restore.py |
 | 23744-25043 | 23749-25040 | 79379 | utf-8 | 4e80580cebb129c0155b95b9cacde787ba7989d3195d6526616836f18e1582b3 | UX_and_AIX_experiences/04_expert/_concept_map.txt |
 | 25044-25166 | 25049-25163 | 6982 | utf-8 | e373cfcec8261e19179d2567b63994c698af4d8111b41798a11062731db3620a | UX_and_AIX_experiences/AGENTS.md |
@@ -230,7 +230,7 @@ Line numbers are 1-based and inclusive.
 | 28494-28537 | 28499-28534 | 1091 | utf-8 | 77039885685b204d8272103a3f8ec9c577c1e9d32be2bcdc55da70268c26298b | UX_and_AIX_experiences/pytest_examples/test_intermediate_examples.py |
 | 28538-29473 | 28543-29470 | 39914 | utf-8 | b095af695ae1888163e61273825ce488fa0b914d4fb3534b064f4a94bd145892 | UX_and_AIX_experiences/pytest_examples/test_intermediate_probes.py |
 | 29474-29483 | 29479-29480 | 276 | utf-8 | 772064ce4cbeedce0dda17910ba66d7552d0f5855ed8dc938ccbd922725d283d | agents.md |
-| 29484-30159 | 29489-30156 | 51981 | utf-8 | 9ac23bc211dbe7dfa1bd9452a80fc1e57e3c68f3b1de0286332ff52e6eb73b23 | agents/MELDER_AGENT_OPERATIONS.md |
+| 29484-30159 | 29489-30156 | 52255 | utf-8 | 4a1d8516c2496c43b7089c723bc236f290a19d407d9f7b7c80022ae5ddcb3761 | agents/MELDER_AGENT_OPERATIONS.md |
 | 30160-30220 | 30165-30217 | 2181 | utf-8 | d9e0df434d4b6ef86b60c48c36f691fec3f6b41fb49e025d181c71b4fc8942e4 | architecture_and_design/01_overview/capability_ladder.md |
 | 30221-30297 | 30226-30294 | 2739 | utf-8 | 2941d571b271f00491d3037a4b88dd76d274202a85993ac78095aa7a46996558 | architecture_and_design/01_overview/what_melder_is.md |
 | 30298-30380 | 30303-30377 | 3212 | utf-8 | e1988097e6d6a1235f9e37c00ec3d20258c2252139f905365d679db0cebfcec4 | architecture_and_design/02_architecture/continuity_and_evolution.md |
@@ -360,7 +360,7 @@ Line numbers are 1-based and inclusive.
 | 67994-68382 | 67999-68379 | 10916 | utf-8 | 796fe3fb148b290e58fed9fee4560a6c127dc49b1e583cdd85a78e6e36c53d7d | docs/curriculum.toml |
 | 68383-68412 | 68388-68409 | 948 | utf-8 | 6870c782ba2f8d344a7be3e7eaa6a5b185dcb8b483e06c2cc2c58e1f7568cc55 | docs/examples/index.md |
 | 68413-68482 | 68418-68479 | 3160 | utf-8 | 6693e0374099c2c6145745d23f1471a82be716caafaa7f4e8782ad1144861faf | docs/expert/agent-rooms.md |
-| 68483-68579 | 68488-68576 | 4480 | utf-8 | 513e1e35c1a974de8a9c6daac09f1925ba537b8e5a21ed4c7db9b449c1cfb05a | docs/expert/bind-hooks.md |
+| 68483-68579 | 68488-68576 | 4486 | utf-8 | e5697107b42c57fecdda11257c278781727689a5a346fe7a1108382bcbd651db | docs/expert/bind-hooks.md |
 | 68580-68633 | 68585-68630 | 2183 | utf-8 | 15862032033ce406ddec9ef1d0aa9cb2ce479511dce74277d2a52e4c11aad3cd | docs/expert/codegen.md |
 | 68634-68668 | 68639-68665 | 1427 | utf-8 | c5508ffc37f6f82e7446992345921592e48cf48ce8479a446fc328ac8fdeb9bd | docs/expert/compositions.md |
 | 68669-68699 | 68674-68696 | 1171 | utf-8 | 46b53aa3d6d07ded650b3a0fe326a76864a5f9a17e9a112c74e05ef6f8131127 | docs/expert/concurrency.md |
@@ -419,8 +419,8 @@ Line numbers are 1-based and inclusive.
 | 74433-75041 | 74438-75038 | 41553 | utf-8 | f9f4960cbdb865f03a17d87d0bb81d0c630d745ac9128bc61e03e47733e6a068 | release_docs/0.2.77.md |
 | 75042-75124 | 75047-75121 | 4947 | utf-8 | 18956953a24a740fcba9c3b4e02a43941d8106b8ee2c74d16bac07d5875d7abe | release_docs/0.2.82.md |
 | 75125-75737 | 75130-75734 | 41777 | utf-8 | 6646878d3aebed185dead51cc1b2bb7f935906dc74e6ffa74cb7625b0177af79 | release_docs/0.2.8227.md |
-| 75738-76635 | 75743-76632 | 62587 | utf-8 | ef35fb84d673f8acb84339f8ec66460501747c2317d155ac311e5ea88f594ade | release_docs/next_version_release.md |
-| 76636-76704 | 76641-76701 | 2442 | utf-8 | 45f6cd2e3085d0fb0116dd67ce8d3ac1dfe2f4a32007841ef5e571baa874f7f0 | requirements.txt |
-| 76705-76731 | 76710-76728 | 1035 | utf-8 | f2d8050c4a7c4e4ee7cd5067e7d71636969e0387f7a8dd6b7e9c3fbbc1d5cc52 | roadmap.md |
-| 76732-77232 | 76737-77229 | 26171 | utf-8 | c88d2075a3fdea71e193bb3a1082ce0fba894e11d2259b283940453c0cc7ed23 | roadmap/melder-roadmap-expanded.md |
-| 77233-77718 | 77238-77715 | 22675 | utf-8 | 83f37b9881d1f47c25415e94e5b018b5c130677d8adc59e587456ca1d104e32f | roadmap/melder-roadmap-source-notes.md |
+| 75738-76711 | 75743-76708 | 68186 | utf-8 | 61df1bf0cb080e911f2604affde22d2a4544f2f282fe6f60f0ac92657cbeba0e | release_docs/next_version_release.md |
+| 76712-76780 | 76717-76777 | 2442 | utf-8 | 45f6cd2e3085d0fb0116dd67ce8d3ac1dfe2f4a32007841ef5e571baa874f7f0 | requirements.txt |
+| 76781-76807 | 76786-76804 | 1035 | utf-8 | f2d8050c4a7c4e4ee7cd5067e7d71636969e0387f7a8dd6b7e9c3fbbc1d5cc52 | roadmap.md |
+| 76808-77308 | 76813-77305 | 26171 | utf-8 | c88d2075a3fdea71e193bb3a1082ce0fba894e11d2259b283940453c0cc7ed23 | roadmap/melder-roadmap-expanded.md |
+| 77309-77794 | 77314-77791 | 22675 | utf-8 | 83f37b9881d1f47c25415e94e5b018b5c130677d8adc59e587456ca1d104e32f | roadmap/melder-roadmap-source-notes.md |

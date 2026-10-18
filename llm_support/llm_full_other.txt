@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: other
-SOURCE FINGERPRINT: 9ec928567deddc9ac2f07460bd9213fe962a8070543677ae51bf33e5b47ad365
+SOURCE FINGERPRINT: 04242556482fd78620d1bf1c5f21c09cca6b933451185bb6576acb4c679ed7de
 FILE COUNT: 404
 
 ================================================================================
@@ -9931,7 +9931,7 @@ END FILE: UX_and_AIX_experiences/02_intermediate/05_existence_unique_per_conduit
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/02_intermediate/06_spell_metadata_kwargs.py
-CONTENT SHA256: 934c0eb0c82b7d0bdd0d9dd7045627e917cbcb5bb57034c01f0d6c4ab727ef74
+CONTENT SHA256: 49f236ee7902ce382e6b64d9241ae9c41ff78df1c6aa967b69bd02f7bac8b187
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -9941,7 +9941,7 @@ GOAL: Spell metadata via bind kwargs (landed 2026-07-19): any extra
       lands on spell.metadata - tag your registrations with ownership,
       tiers, or agent breadcrumbs. Native bind values are unstealable:
       declared parameters capture their names before **kwargs collects.
-SURFACE EXERCISED: bind(**extras) -> Spell.metadata, find_spell_by_id
+SURFACE EXERCISED: bind(**extras) -> Spell.metadata, find_spell_by_spell_id
 """
 import melder as md
 
@@ -9956,7 +9956,7 @@ def main() -> None:
         spell=PaymentsApi, existence="unique",
         owner_team="payments", tier="gold", reviewed="2026-07-19",
     )
-    spell = book.find_spell_by_id(spell_id)
+    spell = book.find_spell_by_spell_id(spell_id)
     assert spell.metadata == {
         "owner_team": "payments", "tier": "gold", "reviewed": "2026-07-19",
     }
@@ -10266,14 +10266,14 @@ END FILE: UX_and_AIX_experiences/02_intermediate/12_bind_lambda_spells.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/02_intermediate/13_spell_ids_and_lookup.py
-CONTENT SHA256: 0059acb5a20c3d96418ae9e552016423f791c605b2f4920e39af1e15e4c77f46
+CONTENT SHA256: 369dac8c3b9e2073b3f8bd7661b9c0436bfbbf9fe29d44447c0f52827beba250
 SOURCE ENCODING: utf-8
 ================================================================================
 """
 TIER: intermediate (13)
 GOAL: bind() answers with the spell's id string - keep it, and the book
       will hand the living Spell record back on request.
-SURFACE EXERCISED: bind() -> str, md.Spellbook.find_spell_by_id, md.Spell
+SURFACE EXERCISED: bind() -> str, md.Spellbook.find_spell_by_spell_id, md.Spell
 """
 import melder as md
 
@@ -10288,10 +10288,10 @@ def main() -> None:
     assert isinstance(spell_id, str) and spell_id
     print("bind returned id:", spell_id[:12], "...")
 
-    record = book.find_spell_by_id(spell_id)
+    record = book.find_spell_by_spell_id(spell_id)
     assert record is not None and isinstance(record, md.Spell)
     print("book answered with a living record:", type(record).__name__)
-    missing = book.find_spell_by_id("no-such-spell")
+    missing = book.find_spell_by_spell_id("no-such-spell")
     print("unknown id answers honestly:", missing)
 
 
@@ -12173,7 +12173,7 @@ END FILE: UX_and_AIX_experiences/02_intermediate/39_purge_unneeded_objects.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/02_intermediate/40_bind_lifecycle_hooks.py
-CONTENT SHA256: e42a74aeb3faddce693ba1e54e1e7123d9c3a53722002ab711414f48dad0bb0c
+CONTENT SHA256: 70e54b96c09cdbeb3d604b863c2396d7c9fa8434e088b42672afb059e7a244ac
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -12183,7 +12183,7 @@ GOAL: Observe pre-bind, configure the actual Spell during bind activation,
       through configuration, add stages on the Book, then clear and re-add
       through its normal Conduit. These hooks run at bind time, not meld time.
 SURFACE EXERCISED: md.SpellbookConfiguration.with_bind_hooks,
-                  md.Spellbook.add_bind_hooks / find_spell_by_id,
+                  md.Spellbook.add_bind_hooks / find_spell_by_spell_id,
                   md.Conduit.clear_bind_hooks / add_bind_hooks / bind / meld,
                   md.Spell.metadata / tags
 """
@@ -12226,14 +12226,14 @@ def main() -> None:
     def configure_spell(spell: md.Spell) -> None:
         """Annotate the actual new Spell before it becomes publicly discoverable."""
         assert isinstance(spell, md.Spell)
-        assert book.find_spell_by_id(spell.spell_id) is None
+        assert book.find_spell_by_spell_id(spell.spell_id) is None
         spell.metadata["reviewed_by"] = "application-bind-policy"
         spell.tags.append("reviewed")
         events.append(f"activation:{spell.spell_name}")
 
     def observe_registration(spell: md.Spell) -> None:
         """Verify the registered Spell is the same object activation annotated."""
-        assert book.find_spell_by_id(spell.spell_id) is spell
+        assert book.find_spell_by_spell_id(spell.spell_id) is spell
         assert spell.metadata["reviewed_by"] == "application-bind-policy"
         events.append(f"post:{spell.spell_name}")
 
@@ -12247,7 +12247,7 @@ def main() -> None:
         book.add_bind_hooks(activation=[configure_spell], post=[observe_registration])
         report_id = book.bind(spell=Report, existence="unique")
         assert events == ["pre:Report", "activation:Report", "post:Report"]
-        registered = book.find_spell_by_id(report_id)
+        registered = book.find_spell_by_spell_id(report_id)
         assert registered is not None
         assert "reviewed" in registered.tags
         print("bind order:", " -> ".join(events))
@@ -12260,7 +12260,7 @@ def main() -> None:
         # The normal Conduit facades the same Book-owned bind-hook registry.
         conduit.clear_bind_hooks()
         metrics_id = conduit.bind(spell=Metrics, existence="unique")
-        metrics_spell = book.find_spell_by_id(metrics_id)
+        metrics_spell = book.find_spell_by_spell_id(metrics_id)
         assert metrics_spell is not None
         assert metrics_spell.metadata == {}
         assert len(events) == 3
@@ -18831,7 +18831,7 @@ END FILE: UX_and_AIX_experiences/04_expert/16_rewiring_a_running_world.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/04_expert/17_notch_swapping_a_live_object.py
-CONTENT SHA256: e59e30c8811c0564afb36e08c9edee93b2b71ccdf07d4a575174cadccac3cf1c
+CONTENT SHA256: 33f6cf979ed059c88f915cfb8938a12287b3a4a6e25e6ebf8c6aae19f4ffda52
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -18851,13 +18851,13 @@ GOAL: LINEAGES, AND A HOT SWAP TAKEN END TO END. An index is a
         conduit.notch_spell(          v2 becomes the active member
             spell_index=index, spell_id=v2_id)
 
-      NAME THE VERSION BY ITS SPELL_ID. Every public spell_id->object
-      lookup (`get_spell_by_id`, `find_spell_by_id`) resolves any
-      lineage spell_id to the spell AS IT EXISTS NOW - the currently
-      ACTIVE member - which is documented and correct for what those
-      verbs are for. So a parked version is never fetched as an
-      object: `notch_spell` takes its spell_id and resolves the exact
-      version inside the call. The Spellbook is still not the surface
+      NAME THE VERSION BY ITS SPELL_ID. A spell_id names one version,
+      and the public spell_id->object lookups (`get_spell_by_spell_id`,
+      `find_spell_by_spell_id`) answer exactly that version, active or
+      parked (owner ruling 2026-10-17; until 0.2.8253 they answered a
+      parked spell_id with the ACTIVE member). `notch_spell` takes the
+      spell_id too and resolves the exact version inside the call. The
+      Spellbook is still not the surface
       you notch from - the conduit's verb does the resolving (owner
       ruling 2026-10-16; until then the verb took only the parked
       OBJECT, no public door handed one out, and this lesson stopped
@@ -18901,8 +18901,8 @@ GOAL: LINEAGES, AND A HOT SWAP TAKEN END TO END. An index is a
       statement read out of its scope becomes a false one.
 SURFACE EXERCISED: Conduit.bind_inactive, Conduit.notch_spell(spell_id=...),
                    Conduit.meld, SpellIndex.selected_spell_id /
-                   spells_in_index, Conduit.get_spell_by_id
-VERIFY: RUN GREEN 2026-10-16 on 3.14t, GIL off and on.
+                   spells_in_index, Conduit.get_spell_by_spell_id
+VERIFY: RUN GREEN 2026-10-17 on 3.14t, GIL off and on.
 """
 import melder as md
 
@@ -18927,7 +18927,7 @@ def main() -> None:
 
     # THE INDEX IS PUBLICLY REACHABLE from the active spell, and it is a
     # LINEAGE: a set of member ids plus exactly one selection.
-    active = conduit.get_spell_by_id(v1_id)
+    active = conduit.get_spell_by_spell_id(v1_id)
     assert active is not None
     index = active.spell_index
     assert index.selected_spell_id == v1_id
@@ -18963,16 +18963,15 @@ def main() -> None:
     print("meld -> rate", still.rate, " (v2 is parked, not resolvable)")
     print("  the costly half of a swap is done while v1 still serves")
 
-    # WHY THE NOTCH IS GIVEN A SPELL_ID. A parked spell_id resolves to
-    # the CURRENT member, because that is what the lookups are for: they
-    # answer "what is live for this lineage", not "give me the object
-    # behind this exact version".
-    resolved_from_parked_id = conduit.get_spell_by_id(v2_id)
+    # A SPELL_ID NAMES ONE VERSION. Looking up the parked spell_id answers
+    # the parked version itself - not the member live for this lineage -
+    # and the notch below is given that same spell_id.
+    resolved_from_parked_id = conduit.get_spell_by_spell_id(v2_id)
     assert resolved_from_parked_id is not None
-    assert resolved_from_parked_id.spell_id == v1_id
+    assert resolved_from_parked_id.spell_id == v2_id
     print()
-    print("looking up the PARKED spell_id returned the ACTIVE spell")
-    print("  so the notch is told the version by its spell_id instead")
+    print("looking up the PARKED spell_id returned the PARKED spell")
+    print("  and the notch is told the same version by the same spell_id")
 
     # TAKE THE SWAP. The spell_id bind_inactive returned names the version;
     # the notch resolves it inside the call and checks that it belongs to
@@ -20086,7 +20085,7 @@ END FILE: UX_and_AIX_experiences/04_expert/22_asking_what_code_would_do_before_r
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/04_expert/23_branching_the_record_and_joining_back.py
-CONTENT SHA256: fa6c0c2ca7d4ed7c200c928a5962270b32e66d6e04c529ab64c4824fcdd510f8
+CONTENT SHA256: ce0941bf3d4767dcce053bb38759bceee15434f553485d00e064bffd51b4ae0c
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -20265,7 +20264,7 @@ def main() -> None:
     # 'stale-branch' is anchored at a point the receiver has left.
     v2 = conduit.bind_inactive(
         spell=RuleV2,
-        spell_index=conduit.get_spell_by_id(v1).spell_index,
+        spell_index=conduit.get_spell_by_spell_id(v1).spell_index,
         existence="unique",
         permissions="create",
     )
@@ -20741,7 +20740,7 @@ END FILE: UX_and_AIX_experiences/04_expert/25_many_research_sets_one_world.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/04_expert/26_codegen_create_modify_iterate.py
-CONTENT SHA256: 4c559e9058bcf03c54457c05fa1c32ce9edbb5030f591d9edeb90b50a5fda4d6
+CONTENT SHA256: 01217780021744920e90d029c2ab61c9481901e5f0dcb910930dbf78e273383d
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -20922,7 +20921,7 @@ def main() -> None:
           "nodes, and correctly so")
 
     # Now mint versions the only way that works: bind / bind_inactive.
-    index = conduit.get_spell_by_id(v1).spell_index
+    index = conduit.get_spell_by_spell_id(v1).spell_index
     assert index.spells_in_index() == {v1}
     assert conduit.meld("Rate", binding_name="iterate-rate").value == 1
 
@@ -20975,9 +20974,10 @@ def main() -> None:
 
     # Promotion is expert 17's lesson: notch_spell(spell_index=...,
     # spell_id=staged) makes the staged version active. This lesson keeps
-    # it parked, and a lookup by its spell_id still answers with the ACTIVE
-    # member - which is why the notch is given the spell_id itself.
-    assert conduit.get_spell_by_id(staged).spell_id == v1
+    # it parked: a lookup by its spell_id answers the staged version itself
+    # (until 0.2.8253 it answered the ACTIVE member), and v1 stays selected.
+    assert conduit.get_spell_by_spell_id(staged).spell_id == staged
+    assert index.selected_spell_id == v1
     assert hasattr(conduit, "notch_spell")
 
     print()
@@ -21211,7 +21211,7 @@ END FILE: UX_and_AIX_experiences/04_expert/27_a_world_that_outlives_its_own_runt
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/04_expert/28_the_record_crosses_as_a_json_string.py
-CONTENT SHA256: d0636ec07b23ea707c1e378a4a09534fa762dd69dc8e52ee8161a5af554d07bd
+CONTENT SHA256: 9b7ce20c8971b35661f51d8c2ef6544badb18697314a68dfb34ee93c87fa28c7
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -21359,7 +21359,7 @@ def main() -> None:
     # Now move the receiver, so the second branch is provably stale.
     v2 = conduit.bind_inactive(
         spell=PolicyV2,
-        spell_index=conduit.get_spell_by_id(v1).spell_index,
+        spell_index=conduit.get_spell_by_spell_id(v1).spell_index,
         existence="unique", permissions="create",
     )
     print("v2 staged; the default lane moved on:", v2[:12], "...")
@@ -21437,7 +21437,7 @@ END FILE: UX_and_AIX_experiences/04_expert/28_the_record_crosses_as_a_json_strin
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/04_expert/29_reading_your_own_recorded_code.py
-CONTENT SHA256: 3f566b93f15f071a29de4bd3e760708f244a1c15b8b1624e7d13f96a1ae249f1
+CONTENT SHA256: 175c2ad6ca7daeabe07b6420c15f22abbf64a17718296c976f8ae7ab866a1aea
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -21607,7 +21607,7 @@ def main() -> None:
                    permissions="create", binding_name="well-pricing")
     v2 = conduit.bind_inactive(
         spell=second.Pricing,
-        spell_index=conduit.get_spell_by_id(v1).spell_index,
+        spell_index=conduit.get_spell_by_spell_id(v1).spell_index,
         existence="unique", permissions="create",
     )
     module_name = MODULE_V1
@@ -21999,7 +21999,7 @@ END FILE: UX_and_AIX_experiences/04_expert/30_composing_a_version_in_the_worksho
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/04_expert/31_organising_lanes_after_the_fact.py
-CONTENT SHA256: 466685cb15a616f3b2fda7b323dfaca13a54b57f573ced85dcf677cd4001b9ad
+CONTENT SHA256: f6854d2e34fb40aba3b83f1f4662b0d7e2f81940208beeb6f5c9d8c52bc157f5
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -22144,7 +22144,7 @@ def main() -> None:
     # detached lane joins only as an explicit supersede.
     v2 = conduit.bind_inactive(
         spell=RuleV2,
-        spell_index=conduit.get_spell_by_id(v1).spell_index,
+        spell_index=conduit.get_spell_by_spell_id(v1).spell_index,
         existence="unique", permissions="create",
     )
     print("default moved on:", v2[:12], "...")
@@ -23426,7 +23426,7 @@ END FILE: UX_and_AIX_experiences/04_expert/36_an_agent_builds_a_working_system.p
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/04_expert/37_review_agent_bindings.py
-CONTENT SHA256: b41ed7164d697403ba259347060e05423acc5ef6a5f529155220a698110d9551
+CONTENT SHA256: 6a73b7f3f37ea4e5cb4f1ba30fbdd539868ffd21f34f943232e330288131cb88
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -23435,7 +23435,7 @@ GOAL: Gate agent-supplied existing objects with ordered pre-bind checks,
       verify agent metadata and annotate the new Spell during activation,
       then update and audit the published Spell in post-bind. Demonstrate
       rejection phases and why a post-bind failure does not undo registration.
-SURFACE EXERCISED: md.Spellbook / find_spell_by_id / describe_spells_in_spellbook,
+SURFACE EXERCISED: md.Spellbook / find_spell_by_spell_id / describe_spells_in_spellbook,
                   md.Conduit.add_bind_hooks / clear_bind_hooks / bind / meld,
                   md.Spell.metadata / tags, md.HookExecutionError
 """
@@ -23497,7 +23497,7 @@ class BindingReview:
         """
         if spell.metadata.get("submitted_by") != "report-agent":
             raise PermissionError("This Book accepts submissions from report-agent only.")
-        assert self.book.find_spell_by_id(spell.spell_id) is None
+        assert self.book.find_spell_by_spell_id(spell.spell_id) is None
         spell.metadata["review_policy"] = "report-schema-v1"
         spell.tags.append("agent-reviewed")
 
@@ -23508,7 +23508,7 @@ class BindingReview:
             The post_checked annotation is live metadata. Post is not a
             transaction-commit or durable-record refresh callback.
         """
-        assert self.book.find_spell_by_id(spell.spell_id) is spell
+        assert self.book.find_spell_by_spell_id(spell.spell_id) is spell
         assert spell.metadata["review_policy"] == "report-schema-v1"
         spell.metadata["post_checked"] = True
         self.published_ids.append(spell.spell_id)
@@ -23566,7 +23566,7 @@ def main() -> None:
         spell_id = conduit.bind(
             spell=supplied, existence="unique", submitted_by="report-agent",
         )
-        registered = book.find_spell_by_id(spell_id)
+        registered = book.find_spell_by_spell_id(spell_id)
         assert registered is not None
         assert registered.metadata == {
             "submitted_by": "report-agent",
@@ -23591,7 +23591,7 @@ def main() -> None:
         else:
             raise AssertionError("The audit failure was not propagated.")
         assert len(review.published_ids) == 2
-        published_backup = book.find_spell_by_id(review.published_ids[-1])
+        published_backup = book.find_spell_by_spell_id(review.published_ids[-1])
         assert published_backup is not None
         assert published_backup.spell_name == "BackupReport"
         assert published_backup.metadata["post_checked"] is True
@@ -29483,7 +29483,7 @@ END FILE: agents.md
 ================================================================================
 ================================================================================
 BEGIN FILE: agents/MELDER_AGENT_OPERATIONS.md
-CONTENT SHA256: 9ac23bc211dbe7dfa1bd9452a80fc1e57e3c68f3b1de0286332ff52e6eb73b23
+CONTENT SHA256: 4a1d8516c2496c43b7089c723bc236f290a19d407d9f7b7c80022ae5ddcb3761
 SOURCE ENCODING: utf-8
 ================================================================================
 # Melder — Agent Operating Cheat Sheet
@@ -29939,7 +29939,7 @@ Campaigns (`set_active_campaign` / `clear_active_campaign`) and staged ancestry 
 
 **Public verbs:** `root.bind_inactive(...)`, `root.notch_spell(spell_index=..., spell=...)`, `root.add_to_spell_index(...)`, `root.remove_from_spell_index(...)`. The Conduit owns admission; do not call private Book mutation seams. [CONDUIT]
 
-**Critical lookup trap:** `get_spell_by_id()` / `find_spell_by_id()` can resolve a parked lineage ID to the **currently selected** member. They are not a reliable exact parked-object lookup. `notch_spell` requires the actual candidate `Spell`, not its ID or the application class. Never fabricate it or read `_inactive_spells` to obtain it. [NOTCH]
+**Exact lookup by spell_id:** `get_spell_by_spell_id()` / `find_spell_by_spell_id()` return the version a spell_id names, active or parked, or nothing - never the **currently selected** member in its place (since 0.2.8253; the former `get_spell_by_id()` / `find_spell_by_id()` answered a parked lineage ID with the selected member and are gone). A lookup by the index's id (`get_spell_by_index_id`) is the one that answers the selected member. `notch_spell` takes the candidate's spell_id (`spell_id=`) or its `Spell` (`spell=`) (since 0.2.8249). Never fabricate a `Spell` or read `_inactive_spells` to obtain one. [NOTCH]
 
 ### Host-controlled exact-handle pattern
 
@@ -68482,7 +68482,7 @@ END FILE: docs/expert/agent-rooms.md
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/expert/bind-hooks.md
-CONTENT SHA256: 513e1e35c1a974de8a9c6daac09f1925ba537b8e5a21ed4c7db9b449c1cfb05a
+CONTENT SHA256: e5697107b42c57fecdda11257c278781727689a5a346fe7a1108382bcbd651db
 SOURCE ENCODING: utf-8
 ================================================================================
 # Review agent proposals with bind hooks
@@ -68533,7 +68533,7 @@ The label is application-provided metadata; trusted caller identity must come fr
 the application's own authenticated context if that distinction is required.
 
 Post-bind receives the same Spell after registration. The example verifies that
-`book.find_spell_by_id(spell.spell_id)` returns it, sets
+`book.find_spell_by_spell_id(spell.spell_id)` returns it, sets
 `spell.metadata["post_checked"] = True`, and records its ID in the application's audit.
 The caller then inspects those changes through the public lookup.
 
@@ -75737,10 +75737,10 @@ END FILE: release_docs/0.2.8227.md
 ================================================================================
 ================================================================================
 BEGIN FILE: release_docs/next_version_release.md
-CONTENT SHA256: ef35fb84d673f8acb84339f8ec66460501747c2317d155ac311e5ea88f594ade
+CONTENT SHA256: 61df1bf0cb080e911f2604affde22d2a4544f2f282fe6f60f0ac92657cbeba0e
 SOURCE ENCODING: utf-8
 ================================================================================
-# Melder 0.2.8252
+# Melder 0.2.8253
 
 **Unreleased**
 
@@ -75781,19 +75781,20 @@ scan rolled back with its transaction window; it never did, and the docstring no
 
 ## Spell lookups and validation no longer fail while other spells change
 
-`Spellbook.find_spell_by_id`, and `Conduit.get_spell_by_id` on top of it, used to walk the Book's index map while
-other threads bound, removed or parked spells. On the free-threaded build a lookup of a spell nobody was touching
-could then raise `RuntimeError: dictionary changed size during iteration`, raise
+`Spellbook.find_spell_by_id`, and `Conduit.get_spell_by_id` on top of it (`find_spell_by_spell_id` and
+`get_spell_by_spell_id` since 0.2.8253, next section), used to walk the Book's index map while other threads bound,
+removed or parked spells. On the free-threaded build a lookup of a spell nobody was touching could then raise
+`RuntimeError: dictionary changed size during iteration`, raise
 `AttributeError: 'SpellIndex' object has no attribute '_spells_in_index'`, or return `None` for a spell that was
-still registered. The lookup now answers from the Book's id maps: one read for a current version id, three for a
-superseded or parked one, the same cost at any Book size, and no lock taken.
+still registered. The lookup now answers from the Book's id maps: one read for an active version's spell_id, two
+for a parked one, the same cost at any Book size, and no lock taken.
 
-What stays the same: any id in a spell's version lineage resolves to the live spell that represents it now -
-after a notch, an index move or an ownership transfer too - and an id the Book does not own still returns `None`,
-as does a parked version moved out into an index of its own. Two answers sharpen: a parked version disposed while
-a lookup runs returns `None` instead of raising, and a lookup that lands inside a notch or an ownership transfer
-of that same lineage can return `None` for that instant, as a lookup inside a notch already could. The returned
-spell is a reference you borrow, not a lease: a later removal, notch or transfer can retire or move it.
+What stays the same: a spell_id the Book does not own still returns `None`. Two answers sharpen: a parked version
+disposed while a lookup runs no longer makes it raise - the lookup returns the spell it read, or `None` once the
+spell_id has left the Book - and a lookup that lands inside a notch or an ownership transfer of that same spell can
+return `None` for that instant, as a lookup inside a notch already could. The returned spell is a reference you
+borrow, not a lease: a later removal, notch or transfer can retire or move it. What a spell_id answers changed at
+0.2.8253 (next section).
 
 The same fix reaches the other places that walked a Book's spells while other threads changed them (0.2.8230).
 `Conduit.get_spell_permissions` and the Rift command surface's spell lookup now answer from the id maps too;
@@ -75805,9 +75806,75 @@ cleanup raises its documented `RuntimeError: SpellIndex has already been cleaned
 a contract lookup that meets an index its owner has cleaned treats it as holding nothing instead of raising.
 Answers on a quiet Book are unchanged.
 
-`Conduit.get_spell_by_id` and `Conduit.get_conduit_by_spell_id` keep raising `ValueError` for an id no conduit in
-the frame claims, as `get_*` lookups do (a `find_*` lookup returns `None`); their docstrings said they return
-`None`, and now document the raise. `get_conduit_by_spell_id` is annotated as returning a `Conduit`.
+`Conduit.get_spell_by_spell_id` (`get_spell_by_id` until 0.2.8253) and `Conduit.get_conduit_by_spell_id` keep
+raising `ValueError` for an id no conduit in the frame claims, as `get_*` lookups do (a `find_*` lookup returns
+`None`); their docstrings said they return `None`, and now document the raise. `get_conduit_by_spell_id` is
+annotated as returning a `Conduit`.
+
+## A spell_id lookup answers the spell it names: `find_spell_by_spell_id` and `get_spell_by_spell_id`
+
+**Breaking change:** `Spellbook.find_spell_by_id` and `Conduit.get_spell_by_id` are renamed `find_spell_by_spell_id`
+and `get_spell_by_spell_id`, with no alias - the old names raise `AttributeError`; the arguments are the same - and
+they answer exactly the spell a spell_id names. A spell_id, the id `bind` and `bind_inactive` return, names one
+version, and the lookups return that version, active or parked. Until 0.2.8253 a parked spell_id - a version staged
+with `bind_inactive`, or one a notch moved away from - answered with the version its spell index had active in its
+place. What an index has active is a lookup by the index:
+
+```python
+class ReportService:
+    def render(self) -> str:
+        return "v1"
+
+
+class ReportServiceV2:
+    def render(self) -> str:
+        return "v2"
+
+
+book = md.Spellbook()
+v1 = book.bind(spell=ReportService, existence="unique")
+reports = book.conjure(dynamic=True, name="reports")
+index = reports.get_spell_by_spell_id(v1).spell_index
+v2 = reports.bind_inactive(spell=ReportServiceV2, spell_index=index, existence="unique")
+
+assert reports.get_spell_by_spell_id(v2).spell_id == v2        # the parked version; the old lookup answered v1
+assert book.find_spell_by_spell_id(v2).spell_id == v2
+assert reports.get_spell_by_index_id(index.id).spell_id == v1  # the version the index has active
+
+reports.notch_spell(spell_index=index, spell=reports.get_spell_by_spell_id(v2))   # a no-op with the old lookup
+assert reports.meld(spell_id=v2).render() == "v2"
+```
+
+- Code that passed a parked spell_id to reach the current version asks the index instead:
+  `conduit.get_spell_by_index_id(conduit.get_spell_by_spell_id(spell_id).spell_index.id)`.
+- `Conduit.get_spell_permissions(spell_id)` answers the permissions that version was bound with (for a parked
+  spell_id it answered the active version's).
+- `find_spell_by_spell_id` also answers a version moved out with `remove_from_spell_index` into an index of its own
+  (it returned `None`). `get_spell_by_spell_id` still raises `ValueError` ("Spell version <id> not found in any
+  conduit.") for such a version, because the index the move creates is missing from the frame's registry - a
+  separate defect, with its own fix pending.
+- `add_spell_to_contract(spell_id=...)` and `remove_spell_from_contract(spell_id=...)` take a parked spell_id. They
+  raised `RuntimeError` "Provided spell_id '<parked>' does not match inspected ID '<active>'."; a grant now parks
+  the copy on the borrower, as a grant of the parked `Spell` does. `get_spells_in_contract_by_conduit` lists each
+  version this conduit granted with that version's own `Spell` (a parked grant was listed with the active one's).
+- `transfer_spell_ownership(spell_id=...)` still moves the spell index the spell_id belongs to, with the version
+  that index has active on this conduit. A spell_id this conduit cannot resolve to an active version of its index -
+  another conduit's spell whose index this conduit neither owns nor borrows - is refused up front with
+  `RuntimeError` "[CONDUIT] Transfer-ownership could not resolve the source spell on this conduit.", where the
+  transfer failed later with "Source conduit does not own the spell.".
+- In Rift rooms the command `get_spell_by_id` is now `get_spell_by_spell_id`, listed under that name by
+  `list_supported_command_methods`, and both it and `get_spell_by_source_id` answer the spell their argument names:
+  a capability or codegen room returns the `Spell`, a static room its live object. Nexus publishes the version each
+  index has active, so a room refuses a parked version's spell_id or source id instead of answering another
+  version. A static room's refusals name what was asked - "Spell id '<id>' is not live in frame '<frame>'." and
+  "Spell '<source_id>' ..." where they said "Spell index '<index id>' ..."; a lookup by index id keeps that wording.
+
+What stays the same: an active version's spell_id answers as before; a spell_id the Book does not own returns `None`
+from `find_spell_by_spell_id`, and `get_spell_by_spell_id` raises `ValueError` for one no conduit of the frame
+claims; neither takes a lock. `get_spell_by_index_id`, ownership transfers and dependency grants answer as before.
+The contract lookups that resolve a granted spell_id through its index - `get_spell_in_contracts` and the versions
+a conduit was granted in `get_spells_in_contract_by_conduit` - are unchanged. Nothing recorded, cached or persisted
+changes.
 
 ## Index links, contract reads and binds across frames hold up under concurrent changes
 
@@ -76297,7 +76364,7 @@ owner = md.Spellbook().conjure(dynamic=True, name="owner")   # settles the world
 
 book = md.Spellbook()                       # joins the dynamic world
 v1 = book.bind(spell=ReportService, existence="unique", binding_name="v1")
-index = book.find_spell_by_id(v1).spell_index
+index = book.find_spell_by_spell_id(v1).spell_index
 v2 = book.bind_inactive(spell=ReportServiceV2, spell_index=index, existence="unique", binding_name="v2")
 reports = book.conjure(name="reports")      # inherits dynamic; wires v2 as well as v1
 
@@ -76322,11 +76389,11 @@ before.
 ## `notch_spell`, `add_to_spell_index` and `remove_from_spell_index` take a `spell_id`; a notch checks its target
 
 `Conduit.notch_spell` makes one version of a spell index the active one - the notch in stage -> notch -> meld. Until
-0.2.8249 it took only the version's `Spell`, and no public call returns the `Spell` of a staged version:
-`bind_inactive` returns a spell_id, and `get_spell_by_id` / `find_spell_by_id` answer a staged (parked) spell_id
-with the index's active version, so a notch to what they return changed nothing. `add_to_spell_index` and
-`remove_from_spell_index` had the same gap, since they move only a parked version. From 0.2.8249 all three take the
-spell_id `bind` or `bind_inactive` returned:
+0.2.8249 it took only the version's `Spell`, and no public call returned the `Spell` of a staged version:
+`bind_inactive` returns a spell_id, and until 0.2.8253 `get_spell_by_id` / `find_spell_by_id` answered a staged
+(parked) spell_id with the index's active version, so a notch to what they returned changed nothing.
+`add_to_spell_index` and `remove_from_spell_index` had the same gap, since they move only a parked version. From
+0.2.8249 all three take the spell_id `bind` or `bind_inactive` returned:
 
 ```python
 class ReportService:
@@ -76342,7 +76409,7 @@ class ReportServiceV2:
 book = md.Spellbook()
 v1 = book.bind(spell=ReportService, existence="unique")
 reports = book.conjure(dynamic=True, name="reports")
-index = reports.get_spell_by_id(v1).spell_index
+index = reports.get_spell_by_spell_id(v1).spell_index
 
 v2 = reports.bind_inactive(spell=ReportServiceV2, spell_index=index, existence="unique")
 reports.notch_spell(spell_index=index, spell_id=v2)    # v2 is the active version now
@@ -76364,8 +76431,8 @@ assert index.spells_in_index() == {v1, v2}
   "notch_spell: spell_id '<id>' is not owned by this conduit's Spellbook. Notch it through the conduit of the
   Spellbook that owns it, or stage the class on this index with bind_inactive(spell_index=...), which returns the
   spell_id to pass." or "notch_spell: spell_id '<id>' belongs to another SpellIndex, not the one passed. Pass its
-  own index - conduit.get_spell_by_id('<id>').spell_index - or move it onto this index with add_to_spell_index
-  first." A refused notch changes nothing.
+  own index - conduit.get_spell_by_spell_id('<id>').spell_index - or move it onto this index with
+  add_to_spell_index first." A refused notch changes nothing.
 - The index moves refuse a `spell_id` the conduit's Spellbook does not own before anything starts, for example
   "add_to_spell_index: spell_id '<id>' is not owned by this conduit's Spellbook. Call add_to_spell_index through the
   conduit of the Spellbook that owns it." Past that, the Spellbook refuses as before (`RuntimeError`): an active
@@ -76378,15 +76445,16 @@ assert index.spells_in_index() == {v1, v2}
   `RuntimeError` ("Owned spell_id not parked for reactivation") after this index's active version had already been
   parked, so the index had no active version until a notch back. Each now raises the `ValueError` above and leaves
   both indexes as they were.
-- A notch to the `Spell` that `get_spell_by_id` or `find_spell_by_id` returns for a parked spell_id is still a
-  no-op: it is the active version. Name a parked version by its spell_id.
+- A notch to the `Spell` that `get_spell_by_id` or `find_spell_by_id` returned for a parked spell_id stayed a
+  no-op: it was the active version. Since 0.2.8253 `get_spell_by_spell_id` and `find_spell_by_spell_id` return the
+  parked version itself, so a notch to it moves the index ("A spell_id lookup answers the spell it names", above).
 - The docstrings of the three verbs say the conduit admits their transaction (the two index moves said the
   Spellbook did), and `remove_from_spell_index`'s no longer says that removing the active version leaves the index
   selecting a non-member: the Spellbook refuses an active version, and always did.
 
 What stays the same: `spell=` on all three (a notch's target is now checked the same way), a notch to the active
-version (it changes nothing), what the three verbs return, the answers of `get_spell_by_id` and `find_spell_by_id`,
-borrowers following a notch, and what the index moves do.
+version (it changes nothing), what the three verbs return, borrowers following a notch, and what the index moves
+do.
 
 ## A satisfied `SpellContract` is not checked on every meld; a notch reaches every spell that depends on the notched one
 
@@ -76428,7 +76496,7 @@ borrower_book.bind(spell=Banner, existence="many", permissions="create")
 lender = lender_book.conjure(dynamic=True, name="lender")
 borrower = borrower_book.conjure(dynamic=True, name="borrower")
 lender.link(borrower)
-index = lender.get_spell_by_id(english).spell_index
+index = lender.get_spell_by_spell_id(english).spell_index
 borrower.add_index_to_contract(index=index, conduit=lender, permissions="create")
 assert borrower.meld(spell=Banner).text == "HELLO"
 
@@ -76476,7 +76544,7 @@ book.bind(spell=Report, existence="many")
 reports = book.conjure(dynamic=True, name="reports")
 assert reports.meld(spell=Report).stamp.clock.now() == "utc"
 
-clock_index = reports.get_spell_by_id(utc).spell_index
+clock_index = reports.get_spell_by_spell_id(utc).spell_index
 local = reports.bind_inactive(spell=Local, spell_index=clock_index, spellframe=Clock, binding_name="clock",
                               existence="many")
 reports.notch_spell(spell_index=clock_index, spell_id=local)
@@ -76552,8 +76620,8 @@ missing-provider report. No public signature changes.
   instances of a decorated class.
 - The packaged system documents (`melder.__components__`, `melder.__architecture__`) describe the scan
   declaration contract, the eligibility change and a scan flow; the scan code-map extent is remeasured.
-- The packaged system documents describe how `find_spell_by_id` resolves version ids from the Book's id maps
-  and why it takes no lock.
+- The packaged system documents describe how the spell_id lookup (`find_spell_by_spell_id` since 0.2.8253)
+  answers from the Book's id maps and why it takes no lock.
 - The packaged system documents describe the Book-lock rule for the spell maps' writers, the snapshot rule for
   walks that cannot hold that lock, the cleanup-safe membership probe and the documented ValueError of the
   Conduit spell lookups.
@@ -76629,7 +76697,15 @@ missing-provider report. No public signature changes.
 - Docstrings and comments that called a spell's id a "version id" now name it the `spell_id` (the id `bind`
   and `bind_inactive` return); the Phase 6 diagnostic `identity_mixing_detected` ends "instead of a
   spell_id." where it said "instead of a version id."
-- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8252.
+- The packaged system documents (`melder.__architecture__`, `melder.__components__`) and the packaged graph
+  describe the exact spell_id lookups: the renames, per-version permissions, the explicit index step of ownership
+  transfer and the contract dependency walks, the exact grant check and the Rift rooms' lookups; the code-map
+  extents of the changed files are remeasured, and their line citations remapped.
+- The expert guide on bind hooks (`docs/expert/bind-hooks.md`) and the agent operations guide
+  (`agents/MELDER_AGENT_OPERATIONS.md`) use the new names, and the guide's lookup trap now describes the exact
+  lookup; the walkthroughs that call the lookups use the new names, and lessons 17 (notch-swapping a live object)
+  and 26 (codegen create, modify, iterate) show a parked spell_id answering its own version.
+- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8253.
 ================================================================================
 END FILE: release_docs/next_version_release.md
 ================================================================================

@@ -309,7 +309,7 @@ def test_command_system_spell_lookup_guardrails_and_fallbacks(
         ),
     )
     with pytest.raises(ValueError, match="has no spellbook"):
-        command_system.get_spell_by_id("sha-1")
+        command_system.get_spell_by_spell_id("sha-1")
 
     monkeypatch.setattr(
         type(command_system),
@@ -318,13 +318,13 @@ def test_command_system_spell_lookup_guardrails_and_fallbacks(
             _get_conduit_by_spell_id=lambda spell_id, frame_name: SimpleNamespace(
                 _spellbook=SimpleNamespace(
                     # The owner Book's id-map lookup knows another version only (0.2.8230).
-                    find_spell_by_id={"other-version": object()}.get,
+                    find_spell_by_spell_id={"other-version": object()}.get,
                 )
             )
         ),
     )
     with pytest.raises(ValueError, match="was not found in the owner spellbook"):
-        command_system.get_spell_by_id("sha-1")
+        command_system.get_spell_by_spell_id("sha-1")
 
 
 def test_command_system_internal_helper_validation_paths(

@@ -14,8 +14,8 @@ MULTI-MEMBER SETUP (the part to validate first -- it encodes these assumptions):
      and folds it onto I_A as an inactive member in one call (bind_inactive requires an existing
      target index; it cannot stand alone). I_A = {A, B}; no frame-signature claim for B.
   3. notch_spell(spell_index=I_A, spell=B) -> B becomes active, A is parked.
-The parked B object is fetched with `book._get_owned_spell(id_b)` because `find_spell_by_id`
-only scans the ACTIVE map.
+The parked B object is fetched with `book._get_owned_spell(id_b)`, the exact owned lookup (until 0.2.8253
+`find_spell_by_id` answered a parked id with the index's active member).
 
 Transactions are OUT OF SCOPE (another agent); the facades manage their own windows.
 Runtime: Python 3.14t. The 3.10 sandbox cannot execute these -> user runs on 3.14t.
@@ -77,7 +77,7 @@ def _two_member_index() -> Iterator[tuple]:
     book = _make_spellbook()
     id_a = book.bind(spell=_ServiceA, existence=Existence.unique, permissions="create", binding_name="a")
     conduit = book.conjure(dynamic=True, name="root")
-    index = book.find_spell_by_id(id_a).spell_index
+    index = book.find_spell_by_spell_id(id_a).spell_index
     id_b = conduit.bind_inactive(
         spell=_ServiceB, spell_index=index, existence=Existence.unique,
         permissions="create", binding_name="b",

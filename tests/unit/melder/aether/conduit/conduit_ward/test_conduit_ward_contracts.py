@@ -141,6 +141,13 @@ class FakeSpell:
         self.spell_index.update(version_id)
         self.spell_id = version_id
 
+    def _spell_index_unless_cleaned(self) -> Optional[SpellIndex]:
+        """Return this spell's index, or None once cleaned, as `Spell._spell_index_unless_cleaned` does."""
+        with self._lock:
+            if self._cleaned:
+                return None
+            return self.spell_index
+
 
 
 class FakeSpellbook:
@@ -163,12 +170,17 @@ class FakeSpellbook:
         self._reattach_link_calls: list[str] = []
         self._destroy_detached_calls: list[str] = []
 
-    def find_spell_by_id(self, spell_id: str) -> Optional[FakeSpell]:
-        """Resolve a locally owned spell by spell_id, as Spellbook.find_spell_by_id answers from its id maps."""
+    def find_spell_by_spell_id(self, spell_id: str) -> Optional[FakeSpell]:
+        """Resolve a locally owned spell by spell_id, as Spellbook.find_spell_by_spell_id answers from its id maps."""
         for spell in self._spells.values():
             if spell.spell_id == spell_id:
                 return spell
         return None
+
+    def _find_spell(self, spell_index: SpellIndex) -> Optional[FakeSpell]:
+        """Return the local spell an index has active, under the Book lock, as Spellbook._find_spell does."""
+        with self._lock:
+            return self._spells.get(spell_index)
 
     def add_local_spell(self, spell: FakeSpell) -> None:
         """Register a locally owned spell for lineage checks."""
@@ -576,7 +588,7 @@ class FakeConduit:
         """Return the known owner conduit for a spell id."""
         return self._spell_owners.get(spell_id)
 
-    def get_spell_by_id(self, spell_id: str, aetheric_frame: str = "default") -> FakeSpell | None:
+    def get_spell_by_spell_id(self, spell_id: str, aetheric_frame: str = "default") -> FakeSpell | None:
         """Resolve a spell id from local or known conduits."""
         if spell_id in self._spell_by_id:
             return self._spell_by_id[spell_id]
@@ -1809,7 +1821,7 @@ def test_preflight_contract_dependency_collisions_skips_owner_self_when_not_loca
         dependencies=["dep-self-preflight"],
     )
     borrower.register_spell_owner("dep-self-preflight", borrower)
-    borrower.get_spell_by_id = MagicMock(side_effect=RuntimeError("should not resolve spell"))
+    borrower.get_spell_by_spell_id = MagicMock(side_effect=RuntimeError("should not resolve spell"))
 
     borrower._conduit_ward._preflight_contract_dependency_collisions(
         root_spell=root_spell,
@@ -1992,6 +2004,12 @@ def test_link_spell_dependencies_handles_dependency_without_dependencies_attr(
         __name__="DepNoChildAttr",
         _owner_conduit_id=owner._id,
     )
+
+    def _spell_index_unless_cleaned() -> Optional[SpellIndex]:
+        """Return the dependency's index, as `Spell._spell_index_unless_cleaned` does for a live spell."""
+        return dep_spell.spell_index
+
+    dep_spell._spell_index_unless_cleaned = _spell_index_unless_cleaned
     owner._spell_by_id[dep_spell.spell_id] = dep_spell
     owner._spellbook._spells[dep_spell.spell_index] = dep_spell
     root_spell = _register_spell(
@@ -2566,7 +2584,7 @@ def test_get_spells_in_contract_by_conduit_resolves_outbound_through_the_book_no
         )
         contract._add(borrower._conduit_ward, detail)
 
-    borrower.get_spell_by_id = MagicMock(side_effect=RuntimeError("lookup boom"))
+    borrower.get_spell_by_spell_id = MagicMock(side_effect=RuntimeError("lookup boom"))
 
     result = borrower._conduit_ward._get_spells_in_contract_by_conduit(owner._id)
 
@@ -2574,7 +2592,7 @@ def test_get_spells_in_contract_by_conduit_resolves_outbound_through_the_book_no
     outbound = {sid: found for sid, found in result["outbound"]}
     assert inbound[inbound_spell.spell_id] is inbound_spell
     assert outbound[outbound_spell.spell_id] is outbound_spell
-    borrower.get_spell_by_id.assert_not_called()
+    borrower.get_spell_by_spell_id.assert_not_called()
 
 
 def test_describe_contract_raises_when_missing(
@@ -2706,6 +2724,12 @@ def test_preflight_contract_dependency_collisions_handles_child_without_dependen
         __name__="DepPreflightNoChildAttr",
         _owner_conduit_id=owner._id,
     )
+
+    def _spell_index_unless_cleaned() -> Optional[SpellIndex]:
+        """Return the dependency's index, as `Spell._spell_index_unless_cleaned` does for a live spell."""
+        return dep_spell.spell_index
+
+    dep_spell._spell_index_unless_cleaned = _spell_index_unless_cleaned
     owner._spell_by_id[dep_spell.spell_id] = dep_spell
     owner._spellbook._spells[dep_spell.spell_index] = dep_spell
     root_spell = _register_spell(
@@ -2817,7 +2841,7 @@ def test_preflight_contract_dependency_collisions_skips_owner_self_when_not_loca
         dependencies=["dep-self-preflight"],
     )
     borrower.register_spell_owner("dep-self-preflight", borrower)
-    borrower.get_spell_by_id = MagicMock(side_effect=RuntimeError("should not resolve spell"))
+    borrower.get_spell_by_spell_id = MagicMock(side_effect=RuntimeError("should not resolve spell"))
 
     borrower._conduit_ward._preflight_contract_dependency_collisions(
         root_spell=root_spell,

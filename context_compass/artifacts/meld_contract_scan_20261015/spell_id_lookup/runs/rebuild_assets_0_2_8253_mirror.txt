@@ -1,0 +1,7 @@
+WROTE  _agent_documentation agent_documentation_manifest.py (468 entries, v0.2.8253)
+WROTE  _bind_guard          bind_guard_manifest.py (628 entries, v0.2.8253)
+WROTE  _system_documents    system_documents_manifest.py (4 entries, v0.2.8253)
+
+real	0m1.185s
+user	0m1.121s
+sys	0m0.063s

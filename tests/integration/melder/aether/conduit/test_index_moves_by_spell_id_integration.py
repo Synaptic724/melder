@@ -92,8 +92,8 @@ def _two_indexes() -> Iterator[Tuple[Spellbook, Conduit, str, str, str, SpellInd
     id_a = book.bind(spell=_ServiceA, existence=Existence.unique, permissions="create", binding_name="a")
     id_y = book.bind(spell=_ServiceY, existence=Existence.unique, permissions="create", binding_name="y")
     root = book.conjure(dynamic=True, name="root")
-    index_x = book.find_spell_by_id(id_a).spell_index
-    index_y = book.find_spell_by_id(id_y).spell_index
+    index_x = book.find_spell_by_spell_id(id_a).spell_index
+    index_y = book.find_spell_by_spell_id(id_y).spell_index
     id_b = root.bind_inactive(
         spell=_ServiceB, spell_index=index_x, existence=Existence.unique, permissions="create", binding_name="b",
     )

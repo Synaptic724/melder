@@ -911,9 +911,13 @@ class Spell(Cleanable):
         Return this spell's SpellIndex, or None once the spell has been cleaned.
 
         Purpose:
-            Let a lock-free reader that already holds this Spell - the parked
-            branch of `Spellbook.find_spell_by_id` - read its index without
-            racing `cleanup()`, which deletes `spell_index`.
+            Let a reader that already holds this Spell read its index without
+            racing `cleanup()`, which deletes `spell_index` - the parked branch
+            of `Spellbook._find_contracted_spell_by_id`, and the explicit index
+            steps that turn a spell found by spell_id into the spell its index
+            has active (the ownership transfer's spell_id handles and the
+            contract dependency walks). Until 0.2.8253 its first reader was the
+            parked branch of `Spellbook.find_spell_by_id`.
 
         Contract:
             - Returns the index the spell belongs to while the spell is live, and

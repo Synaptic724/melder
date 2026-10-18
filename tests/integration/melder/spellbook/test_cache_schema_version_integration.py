@@ -31,6 +31,7 @@ EXPECTED_CACHE_VERSION_HISTORY = {
     19: "executor_world_stamp",
     20: "annotation_kind_matching",
     21: "managed_spell_lease_codegen",
+    22: "managed_settings_leave_spell_id",
 }
 
 

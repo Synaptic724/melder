@@ -176,7 +176,7 @@ def main() -> None:
           "nodes, and correctly so")
 
     # Now mint versions the only way that works: bind / bind_inactive.
-    index = conduit.get_spell_by_id(v1).spell_index
+    index = conduit.get_spell_by_spell_id(v1).spell_index
     assert index.spells_in_index() == {v1}
     assert conduit.meld("Rate", binding_name="iterate-rate").value == 1
 
@@ -229,9 +229,10 @@ def main() -> None:
 
     # Promotion is expert 17's lesson: notch_spell(spell_index=...,
     # spell_id=staged) makes the staged version active. This lesson keeps
-    # it parked, and a lookup by its spell_id still answers with the ACTIVE
-    # member - which is why the notch is given the spell_id itself.
-    assert conduit.get_spell_by_id(staged).spell_id == v1
+    # it parked: a lookup by its spell_id answers the staged version itself
+    # (until 0.2.8253 it answered the ACTIVE member), and v1 stays selected.
+    assert conduit.get_spell_by_spell_id(staged).spell_id == staged
+    assert index.selected_spell_id == v1
     assert hasattr(conduit, "notch_spell")
 
     print()

@@ -214,7 +214,7 @@ def _conjure(spellbook: Spellbook, bindings: List[Tuple[Any, Existence]], root: 
     }
     conduit = spellbook.conjure()
     if cached:
-        selected = spellbook.find_spell_by_id(ids[root])
+        selected = spellbook.find_spell_by_spell_id(ids[root])
         package = build_package(selected)
         selected._cleanup_creation_context()
         load_creation_context_lazy(selected, marshal.loads(marshal.dumps(package)), publish=True)

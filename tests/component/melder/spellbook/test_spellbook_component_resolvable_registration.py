@@ -65,7 +65,7 @@ def book() -> Iterator[Spellbook]:
 
 def active_spell(book: Spellbook, spell_id: str) -> Spell:
     """Return the selected local record and fail if registration did not publish it."""
-    spell = book.find_spell_by_id(spell_id)
+    spell = book.find_spell_by_spell_id(spell_id)
     assert spell is not None
     assert spell.spell_id == spell_id
     return spell
@@ -197,7 +197,7 @@ def test_parked_capability_is_per_version_and_does_not_change_selection(
     assert parked_id != active_id
     assert selected.resolvable is active_mode
     assert selected.spell_index.selected_spell_id == active_id
-    # Public find_spell_by_id follows the selected member; use the exact parked record here.
+    # Read the exact parked record (until 0.2.8253 the public find_spell_by_id answered the selected member).
     parked = book._inactive_spells[parked_id]
     assert parked.resolvable is (not active_mode)
     assert parked.metadata == {}

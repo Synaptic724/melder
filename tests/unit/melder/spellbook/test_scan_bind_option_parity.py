@@ -164,7 +164,7 @@ def _registration_facts(spell: Spell) -> dict[str, Any]:
 
 def _registered(book: Spellbook, spell_id: str) -> Spell:
     """Return the published Spell for `spell_id`, failing the test if it was not registered."""
-    spell = book.find_spell_by_id(spell_id)
+    spell = book.find_spell_by_spell_id(spell_id)
     assert spell is not None
     return spell
 

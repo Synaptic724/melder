@@ -180,9 +180,11 @@ class SpellIndex(Cleanable):
             - SELECTS a new current spell id AND adds it to the member set, so
               selection always implies membership.
             - DOES NOT RETIRE THE PREVIOUS ID. The superseded version stays a
-              MEMBER, which is exactly why `Spellbook.find_spell_by_id` still
-              resolves a parked id to the live spell. The member set is the
-              lineage; the selected id is only the current head.
+              MEMBER - parked in its Book - so the member set is the lineage
+              and the selected id only the current head. A lookup by spell_id
+              (`Spellbook.find_spell_by_spell_id`) answers the superseded spell
+              itself, never the head; the head is what `selected_spell_id` and a
+              lookup by index id name.
 
         Threading:
             Reads and writes under `self._lock`, so the result is a coherent
@@ -294,8 +296,9 @@ class SpellIndex(Cleanable):
 
         Contract:
             - Tests MEMBERSHIP OF THE LINEAGE, not equality with the selected id, so a
-              superseded or parked version still answers True. This is the check
-              spellbook lookups rely on to resolve old ids to the live spell.
+              superseded or parked version still answers True. A membership test only:
+              a spell_id names its own spell (`Spellbook.find_spell_by_spell_id`), not
+              the lineage's selected head.
 
         Threading:
             Reads and writes under `self._lock`, so the result is a coherent

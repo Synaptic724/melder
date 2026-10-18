@@ -40,6 +40,9 @@ class ManagedSpellQuantity(AbstractElasticPool[Any]):
 
     Contract:
         - Built only by `Creations.ensure_managed_quantity(spell)`: one pool per (root store, managed version).
+        - A managed spell's settings are not part of its spell_id (owner ruling 2026-10-17), so a definition bound
+          again under the spell_id with another mode, limit, timeout or reset names meets this pool, which takes
+          the new settings and keeps every object alive and counted (`_rebind_spell`).
         - The pool never constructs (`create_object` and `acquire` refuse): the plan builds, after `reserve()`.
         - `count` is the number of objects built and alive, idle plus out. Only `reserve()` raises it (under the
           lock, after the mode's check); a destroy or an abandoned build lowers it, never below 0.
@@ -58,8 +61,9 @@ class ManagedSpellQuantity(AbstractElasticPool[Any]):
         - `_children_by_object`: `id(obj)` -> `[(child, child_methods), ...]` in build order, for objects that had
           disposal-bearing `many` children; `_orphaned_children`: records whose object was dropped while out (its
           id was reused by a newer object), kept for teardown. Both written under `_lock`.
-        - Descriptive fields copied from the Spell at construction: spell id, name, binding name, frame, mode,
-          limit, timeout, reset names; the Spell's disposal list (borrowed, by reference); the owner root's id.
+        - Fields copied from the Spell at construction: spell id, name, binding name, frame; the policy - mode,
+          limit, timeout, reset names - which a rebind under the same spell_id replaces with the new Spell's
+          settings (`_rebind_spell`); the Spell's disposal list (borrowed, by reference); the owner root's id.
         - `_spell`: the Spell, borrowed (never cleaned here); `ReleaseManagedSpell`'s cold resolver reads it through
           `_spell_unless_cleaned` (S4).
         - `_managed_class`: the bound class (`spell.spell`), the key `ReleaseManagedSpell` routes releases by;
@@ -265,7 +269,8 @@ class ManagedSpellQuantity(AbstractElasticPool[Any]):
 
         Contract:
             The current Spell object of the spell_id: a rebind that meets this pool under the same id re-points
-            it (`Creations.ensure_managed_quantity`). It may be cleaned by its Book while the pool lives on.
+            it and gives the pool its settings (`Creations.ensure_managed_quantity`). It may be cleaned by its
+            Book while the pool lives on.
 
         Raises:
             RuntimeError: If the pool has been cleaned.
@@ -834,27 +839,79 @@ class ManagedSpellQuantity(AbstractElasticPool[Any]):
 
     def _rebind_spell(self, spell: Spell) -> None:
         """
-        Point the pool at the current Spell object of its spell_id.
+        Point the pool at the current Spell object of its spell_id and take that Spell's settings.
 
         Purpose:
             A definition removed and bound again under the same content-stable id meets its old pool (as a slotted
-            replacement meets its old slot, 0.2.8219); the pool then describes, and resolves releases against, the
-            live Spell rather than the cleaned one.
+            replacement meets its old slot, 0.2.8219). Its managed settings are not part of the spell_id (owner
+            ruling 2026-10-17: the bind call's settings must not change the SHA256), so the rebind may carry another
+            mode, limit, queue timeout or reset names; the pool then describes, resolves releases against and leases
+            under the live Spell and its settings rather than the cleaned one's.
 
         Contract:
-            Called only by `Creations.ensure_managed_quantity`, under the store lock, for a Spell with this pool's
-            spell id (hence the same options and disposal names). Re-captures the class key too: a redefined class is
-            a new class object under the same content-stable id, and the store re-registers the pool under it. Two
-            reference stores; no user code.
+            - Called only by `Creations.ensure_managed_quantity`, after it released the store lock, for a Spell
+              with this pool's spell_id - hence the same class profile, address, existence and disposal names.
+            - Always re-points `_spell`, `_managed_class` and `_disposal_method_names` (the new Spell's list, equal
+              in content). The class key is re-captured because a redefined class is a new class object under the
+              same content-stable id; the store re-registers the pool under it.
+            - Equal settings: nothing else changes - the elastic target, the decay clock and the count stay as they
+              were (an ownership transfer's restamp of the same Spell is such a rebind).
+            - Other settings: the mode, limit, timeout, reset names and `_notify_on_return` take the Spell's values,
+              and the retention sizes follow them exactly as `__init__` sizes them (elastic: baseline
+              min(20, limit), ceiling limit; limited_quantity and queue: baseline = ceiling = limit); the target
+              restarts at the new baseline and the decay step is recomputed from it. Every queue waiter is woken to
+              re-check under the new policy.
+            - Destroys nothing: objects alive stay alive and counted, idle ones included. A count above a smaller
+              new limit stays until destroys bring it down - limited_quantity and queue build again only below the
+              limit, and their fixed capacity evicts the oldest idle object on each release above it; elastic
+              trims through its band.
+            - A pool torn down meanwhile (its store cleaned after `ensure_managed_quantity` checked it) is left as
+              it is.
 
         Args:
             spell: The current Spell of this spell_id.
 
+        Threading:
+            Reads the Spell's settings before taking `_lock` (the caller holds the Spell's lock, as owner stamping
+            does), then writes under `_condition`, the pool's leaf lock; no user code runs under it and no store
+            lock is held. A lease or a release racing the rebind sees the old or the new policy for that one call:
+            `reserve()` reads the mode once before its lock and checks the limit in force under it, `put_back`
+            reads the reset names once, and a plan's lock-free idle pop serves an object built for this spell_id
+            under either policy.
+
         Returns:
             None.
         """
-        self._spell = spell
-        self._managed_class = spell.spell
+        mode = spell.managed_spell_mode
+        limit = spell.managed_spell_limit
+        timeout_seconds = spell.managed_spell_timeout_seconds
+        reset_method_names = spell.managed_spell_reset_methods
+        condition = self._condition
+        with condition:
+            if self._cleaned:
+                return
+            self._spell = spell
+            self._managed_class = spell.spell
+            self._disposal_method_names = spell.disposal_method_names
+            if (
+                    mode is self._mode
+                    and limit == self._limit
+                    and timeout_seconds == self._timeout_seconds
+                    and reset_method_names == self._reset_method_names
+            ):
+                return
+            baseline_idle = min(self._ELASTIC_BASELINE_IDLE, limit) if mode is ManagedSpellMode.elastic else limit
+            self._mode = mode
+            self._limit = limit
+            self._timeout_seconds = timeout_seconds
+            self._reset_method_names = reset_method_names
+            # Only queue leases wait, so only a queue release has a waiter to wake.
+            self._notify_on_return = mode is ManagedSpellMode.queue
+            self._baseline_idle = baseline_idle
+            self._max_idle = limit
+            self._target_idle = baseline_idle
+            self._decay_step = max(1, (max(baseline_idle, 1) * self._decay_percent_per_interval) // 100)
+            condition.notify_all()
 
     def _torn_down_error(self, consequence: str) -> RuntimeError:
         """

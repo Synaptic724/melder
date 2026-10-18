@@ -911,3 +911,130 @@ def test_a_rebind_moves_the_managed_class() -> None:
     pool._rebind_spell(rebound)
     assert pool.managed_class is _Redefined
     assert pool.spell is rebound
+
+
+# --- a rebind with other settings (STORY-2026-10-17-release_routes_parked_version_objects_to_active_pool) -----------
+
+def test_a_rebind_with_equal_settings_keeps_the_retention_state() -> None:
+    """Equal settings re-point the Spell and keep the stretched target, the count and every idle object."""
+    pool = _pool()
+    log: List[str] = []
+    objects = [_lease(pool, lambda label=f"o{n}": _Pooled(label, log)) for n in range(30)]
+    for obj in objects:
+        pool.put_back(obj)
+    stretched = pool.target_idle
+    assert stretched > pool.baseline_idle
+    rebound = _SpellStub()
+    pool._rebind_spell(rebound)
+    assert pool.spell is rebound
+    assert (pool.target_idle, pool.count, pool.idle_count, log) == (stretched, 30, 30, [])
+
+
+def test_a_rebind_with_a_higher_limit_lets_the_pool_build_again() -> None:
+    """limited_quantity 1 -> 2: the object out stays counted and one more can be built."""
+    pool = _pool(mode=ManagedSpellMode.limited_quantity, limit=1)
+    log: List[str] = []
+    first = _lease(pool, lambda: _Pooled("a", log))
+    with pytest.raises(ManagedSpellExhaustedError):
+        pool.reserve()
+    pool._rebind_spell(_SpellStub(mode=ManagedSpellMode.limited_quantity, limit=2))
+    assert (pool.limit, pool.count, pool.baseline_idle, pool.max_idle) == (2, 1, 2, 2)
+    second = _lease(pool, lambda: _Pooled("b", log))
+    assert second is not first
+    assert pool.count == 2
+    pool.put_back(first)
+    pool.put_back(second)
+    assert (pool.count, pool.idle_count, log) == (2, 2, [])
+
+
+def test_a_rebind_to_a_smaller_limit_keeps_every_object_alive_and_counted() -> None:
+    """limited_quantity 3 -> 1: nothing is destroyed at the rebind; releases above the new capacity evict."""
+    pool = _pool(mode=ManagedSpellMode.limited_quantity, limit=3)
+    log: List[str] = []
+    objects = [_lease(pool, lambda label=f"o{n}": _Pooled(label, log)) for n in range(3)]
+    pool._rebind_spell(_SpellStub(mode=ManagedSpellMode.limited_quantity, limit=1))
+    assert (pool.limit, pool.count, log) == (1, 3, [])
+    with pytest.raises(ManagedSpellExhaustedError):
+        pool.reserve()
+    for obj in objects:
+        pool.put_back(obj)
+    assert (pool.count, pool.idle_count) == (1, 1)
+    assert log == ["close:o0", "close:o1"]
+
+
+def test_a_rebind_from_elastic_to_limited_quantity_fixes_the_band_at_the_limit() -> None:
+    """elastic (limit 256) -> limited_quantity 4: baseline, ceiling and target all become 4."""
+    pool = _pool()
+    pool._rebind_spell(_SpellStub(mode=ManagedSpellMode.limited_quantity, limit=4))
+    assert (pool.mode, pool.limit, pool.baseline_idle, pool.max_idle, pool.target_idle) == (
+        ManagedSpellMode.limited_quantity, 4, 4, 4, 4,
+    )
+
+
+def test_a_rebind_to_elastic_sizes_the_band_like_a_new_elastic_pool() -> None:
+    """limited_quantity 2 -> elastic limit 100: the band a fresh elastic pool of limit 100 gets."""
+    pool = _pool(mode=ManagedSpellMode.limited_quantity, limit=2)
+    pool._rebind_spell(_SpellStub(mode=ManagedSpellMode.elastic, limit=100))
+    fresh = _pool(limit=100)
+    assert (pool.baseline_idle, pool.max_idle, pool.target_idle) == (
+        fresh.baseline_idle, fresh.max_idle, fresh.target_idle,
+    ) == (20, 100, 20)
+
+
+def test_a_rebind_that_raises_a_queue_limit_wakes_a_waiter_into_the_new_place() -> None:
+    """A queue lease waiting at limit 1 gets a place when a rebind raises the limit to 2."""
+    pool = _pool(mode=ManagedSpellMode.queue, limit=1, timeout=5.0)
+    log: List[str] = []
+    _lease(pool, lambda: _Pooled("a", log))
+    thread, outcome = _run_in_thread(pool.reserve)
+    _wait_for_waiter(pool)
+    assert thread.is_alive()
+    pool._rebind_spell(_SpellStub(mode=ManagedSpellMode.queue, limit=2, timeout=5.0))
+    thread.join(timeout=2.0)
+    assert not thread.is_alive()
+    assert outcome == {"result": None}
+    assert pool.count == 2
+
+
+def test_a_rebind_to_queue_makes_a_lease_at_the_limit_wait_for_a_release() -> None:
+    """limited_quantity -> queue: at the limit a lease waits for the next release instead of refusing."""
+    pool = _pool(mode=ManagedSpellMode.limited_quantity, limit=1)
+    log: List[str] = []
+    first = _lease(pool, lambda: _Pooled("a", log))
+    pool._rebind_spell(_SpellStub(mode=ManagedSpellMode.queue, limit=1, timeout=5.0))
+    thread, outcome = _run_in_thread(pool.reserve)
+    _wait_for_waiter(pool)
+    assert thread.is_alive()
+    pool.put_back(first)
+    thread.join(timeout=2.0)
+    assert not thread.is_alive()
+    assert outcome == {"result": first}
+
+
+def test_a_rebind_changes_the_reset_names_a_release_runs() -> None:
+    """A release after the rebind runs the new reset names."""
+    pool = _pool(resets=("reset",))
+    log: List[str] = []
+    obj = _lease(pool, lambda: _Pooled("a", log))
+    pool._rebind_spell(_SpellStub(resets=("flush",)))
+    pool.put_back(obj)
+    assert (pool.reset_method_names, log) == (("flush",), ["flush:a"])
+
+
+def test_describe_reports_the_settings_a_rebind_gave() -> None:
+    """The snapshot shows the current Spell's settings."""
+    pool = _pool(mode=ManagedSpellMode.limited_quantity, limit=1)
+    pool._rebind_spell(_SpellStub(mode=ManagedSpellMode.queue, limit=3, timeout=2.0, resets=("reset",)))
+    snapshot = pool.describe()
+    assert (snapshot["mode"], snapshot["limit"], snapshot["timeout_seconds"], snapshot["reset_method_names"]) == (
+        "queue", 3, 2.0, ["reset"],
+    )
+
+
+def test_a_rebind_of_a_torn_down_pool_changes_nothing() -> None:
+    """A pool torn down meanwhile keeps its tombstone settings and stays retired."""
+    pool = _pool(mode=ManagedSpellMode.limited_quantity, limit=1)
+    pool.cleanup()
+    pool._rebind_spell(_SpellStub(mode=ManagedSpellMode.limited_quantity, limit=5))
+    assert pool.limit == 1
+    assert pool._spell_unless_cleaned() is None

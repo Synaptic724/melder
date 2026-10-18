@@ -104,7 +104,7 @@ def test_binding_combines_groups_in_priority_order(priority: bool, expected: lis
             existence="many",
             disposal_method_names=["close", "stop", "absent", "close"],
         )
-        spell = book.find_spell_by_id(spell_id)
+        spell = book.find_spell_by_spell_id(spell_id)
         assert spell is not None
         assert spell.disposal_method_names == expected
         assert spell.has_disposal_methods is True
@@ -134,7 +134,7 @@ def test_empty_and_missing_groups_preserve_matching_contract(
         spell_id = book.bind(
             spell=OrderedDisposalService, existence="many", disposal_method_names=spell_names,
         )
-        spell = book.find_spell_by_id(spell_id)
+        spell = book.find_spell_by_spell_id(spell_id)
         assert spell is not None
         assert spell.disposal_method_names == expected
         assert spell.has_disposal_methods is bool(expected)
@@ -152,8 +152,8 @@ def test_each_binding_uses_its_own_explicit_names(priority: bool) -> None:
             spell=OrderedDisposalService, existence="many", binding_name="second",
             disposal_method_names=["stop"],
         )
-        first = book.find_spell_by_id(first_id)
-        second = book.find_spell_by_id(second_id)
+        first = book.find_spell_by_spell_id(first_id)
+        second = book.find_spell_by_spell_id(second_id)
         assert first is not None and second is not None
         assert first.disposal_method_names == (["flush", "close"] if priority else ["close", "flush"])
         assert second.disposal_method_names == (["flush", "stop"] if priority else ["stop", "flush"])
@@ -171,7 +171,7 @@ def test_staged_binding_preserves_its_own_order_and_index_selection(
         active_id = book.bind(
             spell=OrderedDisposalService, existence="many", disposal_method_names=["close"],
         )
-        active = book.find_spell_by_id(active_id)
+        active = book.find_spell_by_spell_id(active_id)
         assert active is not None
         if after_conjure:
             book.conjure(dynamic=True)
@@ -201,7 +201,7 @@ def test_fluent_binder_forwards_explicit_disposal_names(priority: bool) -> None:
             ).finalize()
         finally:
             binder.cleanup()
-        spell = book.find_spell_by_id(spell_id)
+        spell = book.find_spell_by_spell_id(spell_id)
         assert spell is not None
         assert spell.disposal_method_names == (["flush", "stop", "close"] if priority else ["stop", "close", "flush"])
 
@@ -211,7 +211,7 @@ def test_disposal_matching_stays_with_existing_class_profile(target: object) -> 
     """Factory and prebuilt-instance methods remain outside class binding disposal matching."""
     with configured_book(["flush", "close"], True) as book:
         spell_id = book.bind(spell=target, existence="unique", disposal_method_names=["stop"])
-        spell = book.find_spell_by_id(spell_id)
+        spell = book.find_spell_by_spell_id(spell_id)
         assert spell is not None
         assert spell.disposal_method_names == []
         assert spell.has_disposal_methods is False
@@ -223,7 +223,7 @@ def test_inherited_class_disposal_preserves_book_and_spell_order() -> None:
         spell_id = book.bind(
             spell=InheritedOnlyDisposal, existence="many", disposal_method_names=["stop"],
         )
-        spell = book.find_spell_by_id(spell_id)
+        spell = book.find_spell_by_spell_id(spell_id)
         assert spell is not None
         assert spell.disposal_method_names == ["flush", "close", "stop"]
         assert spell.has_disposal_methods is True
@@ -235,7 +235,7 @@ def test_raw_configuration_can_bind_without_disposal_name_property() -> None:
     book = Spellbook(aetheric_frame="raw-disposal-config", configuration=configuration)
     try:
         spell_id = book.bind(spell=OrderedDisposalService, existence="many", disposal_method_names=["close"])
-        spell = book.find_spell_by_id(spell_id)
+        spell = book.find_spell_by_spell_id(spell_id)
         assert spell is not None
         assert spell.disposal_method_names == ["close"]
     finally:
@@ -283,7 +283,7 @@ def test_book_owns_shared_name_order_and_fingerprint(
         spell_id = book.bind(
             spell=OrderedDisposalService, existence="many", disposal_method_names=spell_names,
         )
-        spell = book.find_spell_by_id(spell_id)
+        spell = book.find_spell_by_spell_id(spell_id)
         assert spell is not None
         assert spell.disposal_method_names == ["flush", "close"]
         assert spell_id == Bind.spell_id_inspector(
@@ -325,14 +325,14 @@ def test_rebinding_resolved_names_under_same_policy_is_idempotent(
         original_id = book.bind(
             spell=OrderedDisposalService, existence="many", disposal_method_names=["close", "stop"],
         )
-        original = book.find_spell_by_id(original_id)
+        original = book.find_spell_by_spell_id(original_id)
         assert original is not None
         with configured_book(["flush", "close"], priority, frame="replayed-order") as replayed:
             replayed_id = replayed.bind(
                 spell=OrderedDisposalService, existence="many",
                 disposal_method_names=original.disposal_method_names,
             )
-            restored = replayed.find_spell_by_id(replayed_id)
+            restored = replayed.find_spell_by_spell_id(replayed_id)
             assert restored is not None
             assert restored.disposal_method_names == expected
             assert original.disposal_method_names == expected
@@ -347,7 +347,7 @@ import json
 from tests.component.melder.spellbook.test_ordered_disposal_binding import OrderedDisposalService, configured_book
 with configured_book(["flush", "close"]) as book:
     spell_id = book.bind(spell=OrderedDisposalService, existence="many", disposal_method_names=["stop"])
-    spell = book.find_spell_by_id(spell_id)
+    spell = book.find_spell_by_spell_id(spell_id)
     print(json.dumps([spell_id, list(spell.disposal_method_names)]))
 """
     records = []

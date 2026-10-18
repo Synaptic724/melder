@@ -85,7 +85,7 @@ def test_bind_spellmap_spellcontract_and_meld_keep_the_name_and_share_one_addres
     book = _automatic_book("binding-name-case-address")
     try:
         spell_id = book.bind(spell=ScanProfile, existence="unique", spellframe="agents", binding_name="ScanProfile")
-        spell = book.find_spell_by_id(spell_id)
+        spell = book.find_spell_by_spell_id(spell_id)
         assert spell is not None
         spellmap = SpellMap(spellframe="agents", binding_name="ScanProfile")
         contract = SpellContract(spellframe="agents", binding_name="ScanProfile")

@@ -150,7 +150,7 @@ def test_conjure_gives_the_active_managed_version_a_pool_in_the_root_store() -> 
         pool = root._creations.get_managed_quantity(spell_id)
         assert isinstance(pool, ManagedSpellQuantity)
         assert (pool.mode, pool.limit, pool.owner_conduit_id) == (ManagedSpellMode.limited_quantity, 3, root._id)
-        assert pool.spell is book.find_spell_by_id(spell_id)
+        assert pool.spell is book.find_spell_by_spell_id(spell_id)
         assert root._creations.get_creation(spell_id) is None
     finally:
         root.cleanup()
@@ -178,10 +178,11 @@ def test_a_post_conjure_bind_and_bind_inactive_each_get_their_pool() -> None:
     try:
         active_id = _bind_managed(root, OtherPooled, managed_spell_limit=16)
         parked_id = root.bind_inactive(
-            spell=OtherPooled, spell_index=book.find_spell_by_id(active_id).spell_index,
-            existence=Existence.managed_spell_quantity, permissions="create", disposal_method_names=["close"],
+            spell=OtherPooled, spell_index=book.find_spell_by_spell_id(active_id).spell_index,
+            existence=Existence.managed_spell_quantity, permissions="create", disposal_method_names=[],
             managed_spell_limit=8,
         )
+        # No disposal names: a version of its own (0.2.8254: a managed spell's settings are not in its spell_id).
         active_pool = root._creations.get_managed_quantity(active_id)
         parked_pool = root._creations.get_managed_quantity(parked_id)
         assert (active_pool.limit, parked_pool.limit) == (16, 8)
@@ -252,7 +253,7 @@ def test_disposing_the_managed_spell_leaves_its_pool_in_place() -> None:
     pool = root._creations.get_managed_quantity(spell_id)
     pool.put_back(_lease(pool, "idle"))
     try:
-        root.cleanup_spell(spell=book.find_spell_by_id(spell_id))
+        root.cleanup_spell(spell=book.find_spell_by_spell_id(spell_id))
         assert root._creations.get_managed_quantity(spell_id) is pool
         assert (pool.idle_count, Pooled.log) == (1, [])
     finally:

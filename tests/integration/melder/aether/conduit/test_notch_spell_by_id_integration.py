@@ -105,7 +105,7 @@ def _staged(
     """
     book = _make_spellbook()
     id_a = book.bind(spell=_ServiceA, existence=Existence.unique, permissions="create", binding_name=f"a{tag}")
-    index = book.find_spell_by_id(id_a).spell_index
+    index = book.find_spell_by_spell_id(id_a).spell_index
     if before_conjure:
         id_b = book.bind_inactive(
             spell=_ServiceB, spell_index=index, existence=Existence.unique, permissions="create",
@@ -195,7 +195,7 @@ def test_notch_refuses_a_parked_version_of_another_index_and_leaves_both_intact(
     """
     with _staged() as (book, root, id_a, id_b, index):
         id_y1 = book.bind(spell=_ServiceY1, existence=Existence.unique, permissions="create", binding_name="y1")
-        other = book.find_spell_by_id(id_y1).spell_index
+        other = book.find_spell_by_spell_id(id_y1).spell_index
         id_y2 = root.bind_inactive(
             spell=_ServiceY2, spell_index=other, existence=Existence.unique, permissions="create", binding_name="y2",
         )
@@ -255,7 +255,7 @@ def test_index_link_borrower_follows_a_notch_made_by_id() -> None:
     borrower = borrower_book.conjure(dynamic=True, name="borrower")
     try:
         owner.link(borrower)
-        index = owner_book.find_spell_by_id(id_a).spell_index
+        index = owner_book.find_spell_by_spell_id(id_a).spell_index
         id_b = owner.bind_inactive(
             spell=_ServiceB, spell_index=index, existence=Existence.unique, permissions="create", binding_name="b",
         )

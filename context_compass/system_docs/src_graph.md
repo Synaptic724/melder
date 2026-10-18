@@ -228,7 +228,7 @@ descriptors and reassemble.
 
 ## src/melder/__version__.py
 
-- source_sha256: `3f5f0b7c9b658ac0c30524b3a5c004e8208f62f3112c82a94c9a8554d1003fd6`
+- source_sha256: `050126fe3a5c37157ef732e40e1671a6b7764451d089fc00d09145e0b340fa5d`
 - nodes: 1
 
 ### Nodes
@@ -4431,7 +4431,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/conduit.py
 
-- source_sha256: `b3c9d9f6ab123dfadbde190813b29c0f9bfa55bb5f07a31a75d83194ac219f0a`
+- source_sha256: `1b446d6efdf6bf7502ce02275ef0df7d4e4019e70d09a7e305fbc70aeee934f1`
 - nodes: 2
 
 ### Nodes
@@ -4483,6 +4483,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - names a notch's target by spell_id - the spell_id bind or bind_inactive returned - or by spell, exactly one; resolves a spell_id through the Book's _get_owned_spell to the exact owned version, active or parked; and refuses a version the Book does not own or one of another index before the notch transaction and again inside its seal, so a refused notch moves nothing (notch_spell, _resolve_notch_target, _owned_notch_target, 0.2.8249)
   - names the parked spell add_to_spell_index and remove_from_spell_index move by spell_id or by spell, exactly one, under the notch's argument rules; resolves a spell_id through the Book's _get_owned_spell and refuses one the Book does not own before the transaction, leaving the rest to the Spellbook seams (_resolve_spell_to_move, _check_spell_argument, _owned_spell_by_id, 0.2.8249)
   - after a notch's transaction, between the deactivate fan-out and the index emission, has every linked peer make its parked copy of the incoming version active again, so a version grant is active exactly while its version is (_activate_borrowed_spell, 0.2.8250)
+  - answers get_spell_by_spell_id (renamed from get_spell_by_id with no alias, 0.2.8253) with exactly the spell the owner Book holds under the spell_id, active or parked, and get_spell_permissions with that version's own permissions; resolves a transfer's spell_id in two explicit steps - the member, then the spell its index has active here (_resolve_transfer_spell) - so a transfer still moves the index with its active version
 - owns_state: `_meld`, `_creations`, `_conduit_ward`, `_creation_gate`, `_spellspace_stack`, `_spellspace_pool`, `_conduit_pool`, `_transaction_identity`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `add_bind_hooks`, `add_index_to_contract`, `add_spell_to_contract`, `add_spell_to_contract_with_dependencies`, `add_spells_to_contract`, `add_to_spell_index`, `begin_transaction`, `bind`, `bind_inactive`, `check_spell_id`, `cleanup`, `cleanup_lesser_conduits` (+67 more)
@@ -4696,7 +4697,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/conduit_ward/conduit_ward.py
 
-- source_sha256: `16de3e7d18f7b74871f878ba1f0de65785da1e17e91c6f68a705df4007f14869`
+- source_sha256: `81d96c19ee4dd35074f6fdd42a985f7b85db7b4d51dcfb25d350cd9a989274d2`
 - nodes: 2
 
 ### Nodes
@@ -4730,6 +4731,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - walks its contract registry under its own lock when it tells index-link borrowers about the owner's notch, member moves and index destroy, so a concurrent link or sever waits (0.2.8231)
   - reads and writes a contract's detail maps under that contract's lock, answers contract reads by key first and resolves contract listings through the Book's id maps without taking the conduit lock (0.2.8231)
   - grants one version per add_spell_to_contract - the borrower's copy active while that version is the lineage's active member, parked by a notch away and active again on a notch back - while an index link follows the lineage to every new version (_emit_index_notch); every change of a borrower's active copy ends in the borrower Book's marking mutators (0.2.8250)
+  - resolves a grant's or release's spell_id exactly (_check_spell_id_and_spell), so a parked spell_id is granted or released as itself, and names each granted version's own Spell in the outbound half of a contract listing; the contract dependency walk and its preflight (_link_spell_dependencies, _preflight_contract_dependency_collisions) and the transfer's spell_id handle (_transfer_spell_ownership) take an explicit index step - the spell that owns the spell_id, then the spell its index has active in the owner's Book (0.2.8253)
 - owns_state: `_contracts`, `_lesser_conduits`, `_parent_conduit`, `_root_conduit`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `cleanup_all_lesser_conduits`, `root_conduit`
@@ -5023,7 +5025,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py
 
-- source_sha256: `11aad5b7f51686309534e7bf8f391cffc24ab48047b7be8dcdce954341093a85`
+- source_sha256: `03c0cffd316a6fac7c3e199ff0c3e8c1c9f967b531ae29e4ea2413c5433d9808`
 - nodes: 2
 
 ### Nodes
@@ -5052,6 +5054,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - moves the source root store's entries of every index member to the target's store when move_creations is True (the public verbs' default since 0.2.8239; a holder's row carries its adopted children) or takes the active member's out when False; disposes nothing, and hands over stewardship, not a working setup
   - makes the owner stamp follow the lineage both ways (0.2.8246): the flip and _migrate_inactive_members stamp every member that carries a stamp onto the target through _restamp, which registers the stamp-back to the source first and, for a managed version whose pool the target store did not hold, the discard of the pool its stamp composed (_discard_composed_pool); a managed version's pool moves as a store row with its idle objects and count
   - moves a parked member that carries no owner stamp unstamped; since 0.2.8248 conjure stamps the versions staged before it, so that is only a member whose stamp raised at conjure (logged)
+  - resolves a spell_id in two explicit steps - the spell that owns it, then the spell its index has active in the source Book (in the member's own Book for the target-side dependency check) - for its own spell handle (_resolve_spell, RuntimeError when that index has no active spell), the target-side dependency check (_deps_resolvable_on_target) and the owned-dependency sub-transfers (_transfer_owned_dependencies), so a parked Spell object never reaches a transfer (0.2.8253)
 - owns_state: `source_conduit`, `target_conduit`, `spell`, `_preflight_summary`, `_change_control_manager`, `_incident_manager`, `_rollback_actions`
 - phases: `runtime`
 - public methods: `cleanup`, `execute`, `preflight`
@@ -6264,7 +6267,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/bind/spell_index.py
 
-- source_sha256: `b47ad32b2bc1b1fe524044b81af7952866c81324751bd5ef7d3cedc7fd85405c`
+- source_sha256: `1c1376fe544c3c957daec5a7fa1cc8642775f326f4b4f28964314f7a30099b44`
 - nodes: 2
 
 ### Nodes
@@ -6500,7 +6503,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell.py
 
-- source_sha256: `10162d70abc7843bcfc8bae2f77bb4cada0842fa40b19eae9664597b7e3f20d8`
+- source_sha256: `911901862888719a984a21d84729dff3845188a9466ad71c71a5581ec14e62bf`
 - nodes: 2
 
 ### Nodes
@@ -14899,7 +14902,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/validation/strategies/ambiguous_provider_strategy.py
 
-- source_sha256: `37d88be311c3aba244a8a81cd8089ca5828afd1041257b44b86ac0a29284fd5e`
+- source_sha256: `111a14a692ae19c5caf81b39f06e74302487799b70cd1bee1cc4c662937bd9bb`
 - nodes: 2
 
 ### Nodes
@@ -15737,7 +15740,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spellbook.py
 
-- source_sha256: `47eac897c84c8ac3066418791e02f1d4ccca366a96c4c7cbc76201df48ce3ea9`
+- source_sha256: `30d474731077ad9a85ce7b2734520592202849329e7f6594b3af65eb60d19c7b`
 - nodes: 2
 
 ### Nodes
@@ -15771,7 +15774,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - caches a creation only when it carries a manifest package (_emit_spell_cache)
   - refuses the recorded-world configuration discipline on the predicted conjure mode before settling the frame posture, and re-checks it on the settled mode inside the transaction window
   - disposes a spell under the Book lock and reports the index the disposal destroyed (_dispose_spell); a spell already disposed raises RuntimeError (0.2.8231), and a second disposal of a spell while one runs is refused through an id mark kept under the Book lock (0.2.8232)
-  - answers contracted-spell lookups by key - the active copy by version id, a parked copy through its index - before walking (0.2.8231)
+  - answers contracted-spell lookups by key - the active copy by spell_id, a parked copy through its index - before walking (0.2.8231)
   - inspects objects holding its lock only for its own spells and asks the frames with no lock held, over a one-call copy of the frame's conduits (inspect_spell, 0.2.8232)
   - re-checks under its lock a Book torn down while a removal waited for it (cleanup_and_remove_spell): a spell the teardown cleaned returns, anything else raises the cleaned-Book RuntimeError (0.2.8233)
   - forwards a managed binding's four options through bind and bind_inactive to Bind, where they are validated and become part of the spell id; a parked managed version keeps its own (0.2.8242)
@@ -15779,6 +15782,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - marks the SpellContract consumers of a changed active contracted copy's key once its Book lock is released - an add, park, reactivation, removal or clear of an active copy; never a parked copy or a change before conjure (_mark_contract_dependents_dirty in the five contracted-map mutators, 0.2.8250)
   - passes each selected version's binding key to register_index at bind and notch, and after a notch's registration marks everything downstream of the notched lineage (mark_dependents_for_revalidation, 0.2.8250)
   - removes a borrowed copy by the spell_id it is given: the active copy only when that copy's own spell_id is it, otherwise the parked copy, raising RuntimeError when it holds neither - never by index membership, so an index unlink after a notch completes in any member order (_remove_contracted_spell, 0.2.8251)
+  - answers a spell_id with exactly the Spell bound under it - one read of _spells_by_id (active), else one of _inactive_spells (parked), else None - with no lock and no index read; the spell an index has active is a lookup by the index (find_spell_by_spell_id, renamed from find_spell_by_id with no alias, 0.2.8253)
 - owns_state: `_bind`, `_spells`, `_spells_by_id`, `_lookup_spells`, `_contracted_spells`, `_configuration`, `_conduit`
 - phases: `init`, `validation`, `runtime`, `cleanup`
 - public methods: `add_bind_hooks`, `begin_transaction`, `bind`, `bind_inactive`, `cleanup`, `cleanup_and_remove_spell`, `cleanup_spell`, `clear_bind_hooks`, `conduit`, `configure_aether_frame`, `conjure`, `contracted_spells` (+17 more)
@@ -17574,7 +17578,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/crystallizer/crystal_loader_system/graft_runner.py
 
-- source_sha256: `a30e13be7e95bde23ec7d03432f4a59541ad6bc763837257abaabbf4fa89a309`
+- source_sha256: `f7e5bcf9af03e9385f86541f4efc6e9f0b783c6645c670120a6b0cb3f6f65a67`
 - nodes: 2
 
 ### Nodes
@@ -17740,7 +17744,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/crystallizer/crystal_loader_system/restore_engine.py
 
-- source_sha256: `36829dd899804709efd18079de7ff56816dacdc3e433b716b702e092f11d9352`
+- source_sha256: `f0ceace9f90bcdd931f5d223d62103c91a85c943ed4851691488218a1d22c75c`
 - nodes: 3
 
 ### Nodes
@@ -24364,7 +24368,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/command_system/command_system.py
 
-- source_sha256: `d5bc442f3e6e0f8925af0d602af96078a52c1ca65ac69e0cfce80b30acb0045a`
+- source_sha256: `914bff88f9eb6442c16ce753493502b1ff343d0852e91d6fda749856fa12b745`
 - nodes: 2
 
 ### Nodes
@@ -24378,7 +24382,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `CommandSystem` (class)
 
 - id: `melder.nexus.rift.command_system.command_system.CommandSystem`
-- defined at: `src/melder/nexus/rift/command_system/command_system.py:18`
+- defined at: `src/melder/nexus/rift/command_system/command_system.py:20`
 - extends: `Cleanable`
 - role: Room-local mediated command layer.
 - responsibilities:
@@ -24388,9 +24392,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - enforces room and ACL posture on command paths
   - resolves named access by the exact authorized published ID and rejects changed live names
   - resolves conduit ids through Aether's live-conduit lookup after its ACL gates, keeping its frame and not-found errors
+  - answers get_spell_by_spell_id (renamed from get_spell_by_id, with its command and advertised names, 0.2.8253) and get_spell_by_source_id with exactly the Spell the spell_id or the published record names, from the owner Book's find_spell_by_spell_id (_get_spell_by_record_locked for a source id, after the frame gate and the record's spell-index and owner-conduit ACLs); only get_spell_by_index_id answers the version an index has active, and a parked version, which Nexus does not publish, is refused
 - owns_state: `_id`, `_space`, `_workstation`
 - phases: `runtime`, `cleanup`
-- public methods: `cleanup`, `command_system_id`, `describe_spells_in_conduit`, `execute_target_method`, `find_spell_id`, `find_spell_key`, `get_active_spellspace`, `get_nexus_frame`, `get_resolution_state`, `get_spell_by_id`, `get_spell_by_index_id`, `get_spell_by_source_id` (+7 more)
+- public methods: `cleanup`, `command_system_id`, `describe_spells_in_conduit`, `execute_target_method`, `find_spell_id`, `find_spell_key`, `get_active_spellspace`, `get_nexus_frame`, `get_resolution_state`, `get_spell_by_index_id`, `get_spell_by_source_id`, `get_spell_by_spell_id` (+7 more)
 
 ### Edges out
 
@@ -24419,7 +24424,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/command_system/static_command_system.py
 
-- source_sha256: `a6c528c7110983fb7e29d92667cdd74c6b6860514661b64661a88a3b39c35be5`
+- source_sha256: `32512bd76e281a0e7fae716c721826a33f27341869cc5c70ed360a015fa86a47`
 - nodes: 2
 
 ### Nodes
@@ -24441,8 +24446,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - restricts spell retrieval to already-live static-compatible spell lifecycles
   - resolves spell owners through Aether's root lookup (owners are roots)
   - treats many, unique_per_spell_space and managed_spell_quantity spells as having no single stored object to hand out - a managed spell's objects are leased from a pool (0.2.8243)
+  - answers get_spell_by_spell_id (renamed from get_spell_by_id, 0.2.8253) and get_spell_by_source_id with the live object of only the version named - the records published for that spell_id, or the one record the source id names - each melded by its own spell_id through _meld_live_spell_from_records_locked, the reuse-only loop the index path shares, whose refusals name what was asked (Spell id '<id>', Spell '<source_id>', Spell index '<id>')
 - phases: `runtime`, `cleanup`
-- public methods: `describe_spell_status_by_id`, `describe_spell_status_by_index_id`, `describe_spell_status_by_source_id`, `get_conduit_by_id`, `get_conduit_by_name`, `get_conduit_cloud`, `get_spell_by_id`, `get_spell_by_index_id`, `get_spell_by_source_id`, `list_supported_command_methods`, `meld_existing_spell`
+- public methods: `describe_spell_status_by_id`, `describe_spell_status_by_index_id`, `describe_spell_status_by_source_id`, `get_conduit_by_id`, `get_conduit_by_name`, `get_conduit_cloud`, `get_spell_by_index_id`, `get_spell_by_source_id`, `get_spell_by_spell_id`, `list_supported_command_methods`, `meld_existing_spell`
 
 ### Edges out
 

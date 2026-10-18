@@ -897,7 +897,9 @@ class SpellCrystal(Cleanable):
 
         Purpose:
             The one reader of the four managed keys for the restore and graft lanes, so each
-            replayed bind passes a managed version's own options and gets its own spell id back.
+            replayed bind passes a managed version's own settings. The settings are not part of
+            the spell id (0.2.8254), so the replayed bind's spell id is the one its class,
+            address, existence and disposal names give.
 
         Contract:
             - Without a recorded `managed_spell_mode` (another existence, or a record older than

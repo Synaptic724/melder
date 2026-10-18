@@ -1,0 +1,6 @@
+PASS spell_id lookup (0.2.8253)
+PASS staged before conjure (0.2.8248)
+PASS notch by spell_id (0.2.8249)
+PASS contract recheck + unlink (0.2.8250-0.2.8251)
+PASS annotation dependents (0.2.8250)
+examples failed: 0

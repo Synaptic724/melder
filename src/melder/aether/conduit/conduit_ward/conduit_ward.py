@@ -1515,7 +1515,7 @@ class ConduitWard(Cleanable):
                     mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
                 )
                 raise TypeError(f"Expected spell_id as str, got {type(spell_id).__name__}")
-            spell = self._conduit.get_spell_by_id(spell_id, aetheric_frame)
+            spell = self._conduit.get_spell_by_spell_id(spell_id, aetheric_frame)
             if spell is None:
                 self._logger.error(
                     f"check_spell_id_and_spell: resolve by id failed ({spell_id})",
@@ -2953,7 +2953,18 @@ class ConduitWard(Cleanable):
             if contract is None:
                 raise RuntimeError(f"Failed to create contract to owner of dependency '{dep_id}'.")
 
-            dep_spell = owner_conduit.get_spell_by_id(dep_id, aetheric_frame)
+            # The root was compiled against `dep_id`; a notch may have parked that spell since. The
+            # dependency is granted at the version its index has active now, in two explicit steps:
+            # the spell that owns `dep_id` (the spell_id lookup answers that spell itself, a parked
+            # one included), then the spell its index has active in the owner's Book. Until 0.2.8253
+            # the spell_id lookup returned the active spell directly.
+            dep_member = owner_conduit.get_spell_by_spell_id(dep_id, aetheric_frame)
+            dep_index = (
+                dep_member._spell_index_unless_cleaned() if dep_member is not None else None
+            )
+            dep_spell = (
+                owner_conduit._spellbook._find_spell(dep_index) if dep_index is not None else None
+            )
             if dep_spell is None:
                 raise RuntimeError(f"Dependency '{dep_id}' not found in owner conduit '{owner_conduit._id}'.")
 
@@ -3101,7 +3112,16 @@ class ConduitWard(Cleanable):
             if owner_conduit._id == self._id:
                 return
 
-            dep_spell = owner_conduit.get_spell_by_id(dep_id, aetheric_frame)
+            # The same two explicit steps as `_link_spell_dependencies`' walk: the spell that owns
+            # `dep_id`, then the spell its index has active in the owner's Book - the version the link
+            # grants.
+            dep_member = owner_conduit.get_spell_by_spell_id(dep_id, aetheric_frame)
+            dep_index = (
+                dep_member._spell_index_unless_cleaned() if dep_member is not None else None
+            )
+            dep_spell = (
+                owner_conduit._spellbook._find_spell(dep_index) if dep_index is not None else None
+            )
             if dep_spell is None:
                 raise RuntimeError(
                     f"Dependency '{dep_id}' not found in owner conduit '{owner_conduit._id}'."
@@ -3693,10 +3713,10 @@ class ConduitWard(Cleanable):
                     if spell:
                         spells_result["inbound"].append((sid, spell))
 
-                # Outbound: spells we have granted to the peer (live in our detail map), answered from this
-                # Book's own id maps in O(1).
+                # Outbound: spells we have granted to the peer (live in our detail map), each the spell that
+                # owns the granted spell_id, answered from this Book's own id maps in O(1).
                 for sid in contract._get_detail_map(self):
-                    owned_spell = spellbook.find_spell_by_id(sid)
+                    owned_spell = spellbook.find_spell_by_spell_id(sid)
                     if owned_spell is not None:
                         spells_result["outbound"].append((sid, owned_spell))
 
@@ -3785,7 +3805,9 @@ class ConduitWard(Cleanable):
         the transfer according to the provided options.
 
         Args:
-            spell: Spell object, spell_id, or SpellIndex to transfer.
+            spell: Spell object, spell_id, or SpellIndex to transfer; a spell_id or
+                SpellIndex resolves to the spell its index has active (the whole
+                index moves).
             target_conduit: The conduit that will become the new steward.
             move_creations: True (the default since 0.2.8239, as on
                 `Conduit.transfer_spell_ownership`) moves this conduit's stored
@@ -3810,9 +3832,21 @@ class ConduitWard(Cleanable):
         elif isinstance(spell, SpellIndex):
             resolved_spell = self._conduit.get_spell_by_index_id(spell.id)
         else:
-            resolved_spell = self._conduit.get_spell_by_id(
+            # A spell_id names one member, and the transfer moves its whole index: resolve the spell
+            # that owns the spell_id (a parked one included), then the spell its index has active
+            # here - the SpellIndex branch above. Until 0.2.8253 the spell_id lookup returned the
+            # active spell directly.
+            member = self._conduit.get_spell_by_spell_id(
                 spell,
                 self._conduit._aetheric_frame_name,
+            )
+            member_index = (
+                member._spell_index_unless_cleaned() if member is not None else None
+            )
+            resolved_spell = (
+                self._conduit.get_spell_by_index_id(member_index.id)
+                if member_index is not None
+                else None
             )
 
         if resolved_spell is None:

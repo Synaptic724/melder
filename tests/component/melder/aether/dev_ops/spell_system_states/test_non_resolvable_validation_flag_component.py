@@ -168,7 +168,7 @@ def _book(frame: str, *, dynamic: bool, configure: bool = True) -> Spellbook:
 
 def _flagged(book: Spellbook, spell_id: str) -> bool:
     """Whether the lineage of `spell_id` carries `SpellState.non_resolvable`; the published set must agree."""
-    spell = book.find_spell_by_id(spell_id)
+    spell = book.find_spell_by_spell_id(spell_id)
     assert spell is not None
     states = book._spell_system_states
     flagged = states.index_has_flag(spell.spell_index.id, SpellState.non_resolvable)
@@ -247,7 +247,7 @@ def test_component_notch_to_a_definition_and_back_moves_the_flag(gate_entries: D
     try:
         assert root.meld(spell_id=widget_id).built is True
         assert book._spellbook_validation_required is False
-        index = book.find_spell_by_id(widget_id).spell_index
+        index = book.find_spell_by_spell_id(widget_id).spell_index
         definition_id = root.bind_inactive(spell=WidgetDefinition, spell_index=index, spellframe="widgets",
                                            binding_name="widget", existence="many", resolvable=False)
 
@@ -281,7 +281,7 @@ def test_component_borrower_revalidates_a_version_it_gets_back_after_a_repeat_no
     borrower = borrower_book.conjure(dynamic=True, name="borrower")
     try:
         lender.link(borrower)
-        index = lender_book.find_spell_by_id(widget_id).spell_index
+        index = lender_book.find_spell_by_spell_id(widget_id).spell_index
         with borrower.transaction("link", conduits=[borrower, lender]):
             assert borrower.add_index_to_contract(index=index, conduit=lender, permissions="create")
         borrower.validate_contracts_and_define()
@@ -324,7 +324,7 @@ def test_component_transferred_definition_keeps_the_exclusion_on_its_new_owner()
     try:
         assert owner_book._spellbook_validation_required is False
         owner.transfer_spell_ownership(spell=definition_id, target_conduit=target)
-        assert target_book.find_spell_by_id(definition_id) is not None
+        assert target_book.find_spell_by_spell_id(definition_id) is not None
         assert _flagged(target_book, definition_id) is True
         assert target_book._spellbook_validation_required is False
         assert owner_book._spellbook_validation_required is False
@@ -352,7 +352,7 @@ def test_component_rolled_back_transfer_keeps_the_exclusion_on_the_source(monkey
     try:
         with pytest.raises(Exception, match="forced failure after the flip"):
             owner.transfer_spell_ownership(spell=definition_id, target_conduit=target)
-        assert owner_book.find_spell_by_id(definition_id) is not None
+        assert owner_book.find_spell_by_spell_id(definition_id) is not None
         assert _flagged(owner_book, definition_id) is True
         assert owner_book._spellbook_validation_required is False
     finally:
@@ -372,7 +372,7 @@ def test_component_contract_consumer_still_follows_its_lenders_notch_beside_a_de
     borrower = borrower_book.conjure(dynamic=True, name="borrower")
     try:
         lender.link(borrower)
-        index = lender_book.find_spell_by_id(id_a).spell_index
+        index = lender_book.find_spell_by_spell_id(id_a).spell_index
         with borrower.transaction("link", conduits=[borrower, lender]):
             assert borrower.add_index_to_contract(index=index, conduit=lender, permissions="create")
         borrower.validate_contracts_and_define()
@@ -393,7 +393,7 @@ def test_component_melds_racing_notches_never_build_the_definition() -> None:
     book = _book("nonres-race", dynamic=True)
     widget_id = book.bind(spell=Widget, spellframe="widgets", binding_name="widget", existence="many")
     root = book.conjure(name="nonres-race-root", dynamic=True)
-    index = book.find_spell_by_id(widget_id).spell_index
+    index = book.find_spell_by_spell_id(widget_id).spell_index
     definition_id = root.bind_inactive(spell=WidgetDefinition, spell_index=index, spellframe="widgets",
                                        binding_name="widget", existence="many", resolvable=False)
     stop = threading.Event()

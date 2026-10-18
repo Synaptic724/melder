@@ -9,7 +9,7 @@
 - Agent Role: UNKNOWN
 - Priority: p2
 - Created: 2026-10-17T21:32:09Z
-- Updated: 2026-10-17T21:41:33Z
+- Updated: 2026-10-17T22:12:58Z
 
 ## User Narrative
 As an agent notching to a version I staged, I want a notch that raises to leave the structure the way the exception
@@ -24,36 +24,35 @@ the broken version, the borrowers keep the old one, and the lender can meld neit
 by its spell_id until someone notches back. The structure is wrong after an operation that reported failure.
 
 ## Ticket Contract
-- ENTRY_GATE: the owner's answer to the open question below; the owner schedules the story and assigns an agent;
+- ENTRY_GATE: the owner schedules the story and assigns an agent (the open question was answered on 2026-10-17);
   the holder of conduit.py and spellbook.py (melder_1, until its rule-2 closure) releases them or carries the fix;
   an active board row; patch docs for the notch's commit path (architecture, component and code-description: the
   change is in error and rollback semantics).
-- EXECUTION_BOUNDARY: `Conduit.notch_spell` (its commit and its fan-out) and whatever the answer needs around the
-  seam - a structural check of the incoming version before `_apply_notch` runs, rollback actions that undo the seam
-  when the commit fails, or a fan-out that runs whatever the commit raises; regression tests; the system documents
-  (the SpellIndex Mutation Entry sequence, a failure mode) with their indexes and the graph; the release note; one
-  notch; the rebuild last.
+- EXECUTION_BOUNDARY: `Conduit.notch_spell` (its commit) and what the refusal needs around the seam - a structural
+  check of the incoming version before `_apply_notch` runs, or rollback actions that undo the seam when the commit
+  fails (the patch picks); the stale docstring of `_stage_spell_for_structural_phases` (FACT note); regression
+  tests; the system documents (the SpellIndex Mutation Entry sequence, a failure mode) with their indexes and the
+  graph; the release note; one notch; the rebuild last.
 - DEPENDENCIES: EPIC-2026-10-17-correctness_defects; the probe and its runs (Artifact Links);
   TASK-2026-10-16-notch_seam_checks_incoming_before_parking (the seam's own failure, inside the window);
   STORY-2026-10-17-notch_moves_signature_by_incoming_key_only (the frame claim an undo must give back).
-- EXIT_GATE: probe N2 ends with the lender and its borrower on one version, as the answer says, and the exception
-  saying which; N1 and N3 unchanged; regression tests pass with the GIL off and on; docs, notch and the rebuild with
-  both checks OK.
-- FAILURE_ESCALATION: DECISION_REQUEST for the open question; CONFLICT while conduit.py or spellbook.py is held, or
-  if the seam task lands first with another order of checks.
+- EXIT_GATE: probe N2 ends with the lender and its borrower on English, the staged version still parked, and the
+  exception saying the notch did not happen; N1 unchanged and N3 ending as today, English on both sides; regression
+  tests pass with the GIL off and on; docs, notch and the rebuild with both checks OK.
+- FAILURE_ESCALATION: CONFLICT while conduit.py or spellbook.py is held, or if the seam task lands first with another
+  order of checks.
 
 ## Requirements (Functional)
-- A notch that raises from its commit leaves the lender and every linked borrower selecting the same version.
-- Answer (a): nothing moves - the index still selects the outgoing version, the incoming one stays parked, the frame
-  claim and the Nexus record name the outgoing version, the lender melds it by address and by spell_id, and the
-  borrowers are untouched; the error says the notch did not happen and names the broken version.
-- Answer (b): the switch stands and the borrower fan-out runs before the error propagates, so the borrowers follow
-  the lender; the error says the broken version is now active and that a notch back restores the previous one.
+- A notch whose incoming version fails its structural check is refused with nothing moved (owner, 2026-10-17): the
+  index still selects the outgoing version, the incoming one stays parked, the frame claim and the Nexus record name
+  the outgoing version, the lender melds it by address and by spell_id, and the borrowers are untouched.
+- The error says the notch did not happen, names the broken version with its validation errors, and says the
+  outgoing version is still active.
 
 ## Requirements (Non-Functional)
 - No new lock or lock-order edge; the warm meld path untouched. A notch whose commit succeeds pays nothing new
-  beyond what the answer needs (under (a), a check that runs only for a version never compiled - the case the
-  commit validator already compiles today).
+  beyond the refusal's check, which runs only for a version never compiled - the case the commit validator already
+  compiles today.
 
 ## Scope Boundaries
 - In scope: a notch whose transaction commit raises (phases 1-4 of a never-compiled incoming version failing in the
@@ -74,7 +73,7 @@ by its spell_id until someone notches back. The structure is wrong after an oper
 - STORY-2026-10-17-notch_moves_signature_by_incoming_key_only: the seam's frame-claim step, which an undo reverses.
 
 ## Tasks (Implementation Checklist)
-- [ ] Task: the owner's answer on the open question.
+- [x] Task: the owner's answer on the open question (2026-10-17: refuse with nothing moved; DECISION note).
 - [ ] Task: patch docs for the notch's commit path; the owner's approval.
 - [ ] Task: the fix with symptom-named regression tests, docs, notch and the rebuild last.
 - [ ] Enforce Ticket Microcycle across all linked tasks.
@@ -83,9 +82,9 @@ by its spell_id until someone notches back. The structure is wrong after an oper
 ## Acceptance Criteria
 - With English active, a borrower index-linked to its index and a staged version whose structure is broken (a
   constructor that takes its own class): `notch_spell` to it raises, and afterwards the lender's index and the
-  borrower select the same version - English under (a), the broken version under (b); under (a) the lender melds
-  English by address and by its spell_id.
-- A notch to a sound version (N1) and a notch back (N3) behave as today.
+  borrower both select English, the broken version is still parked, and the lender melds English by address and by
+  its spell_id.
+- A notch to a sound version (N1) behaves as today; after the refused notch a notch to English (N3) changes nothing.
 
 ## Validation / Test Plan
 - Regression tests named for the symptom, e.g. `test_a_notch_refused_at_commit_leaves_the_old_version_active` and
@@ -95,15 +94,16 @@ by its spell_id until someone notches back. The structure is wrong after an oper
 ## UX / API / Data Notes
 - Visible today: `notch_spell` raises SpellbookValidationError "Spellbook validation failed. Broken spells: <name>.",
   then the lender's `meld(spellframe=..., binding_name=...)` raises the same error and `meld(spell_id=<old>)` raises
-  KeyError "[MELD] No spell found with spell_id: ..." while the borrower holds the old version active. Under (a) the
-  exception keeps its meaning and the world keeps working; under (b) the exception reports a notch that happened.
+  KeyError "[MELD] No spell found with spell_id: ..." while the borrower holds the old version active. After the fix
+  the exception keeps its meaning - nothing moved - and the world keeps working.
 
 ## Risks / Mitigations
 - An undo after the seam must reverse every step `_apply_notch` takes (park, promote, index pointer, frame claim,
   lineage registration and verdicts, Nexus record); a check before the seam needs none, but must run phases 1-4 on a
   version that is still parked - UNKNOWN until the patch reads the phase runner for a parked spell.
-- The seam journals the promotion and emits the index crystal inside the window; whichever answer is chosen, the
-  research journal and the record should end up telling what happened.
+- The seam journals the promotion and emits the index crystal inside the window; under the refusal the research
+  journal and the record must not keep a promotion that did not happen (a check before the switch writes none; an
+  undo must reverse or supersede them).
 
 ## Applicable Anti-Patterns
 - [ ] No story-state transition without linked task-state evidence.
@@ -116,9 +116,13 @@ by its spell_id until someone notches back. The structure is wrong after an oper
   happen (recommended: the structural validator fails "instead of accepting a broken staged mutation", and
   notch_spell's other refusals change nothing), or (b) stand, with the borrowers moved to the broken version before
   the error propagates?
+  Answered (owner, 2026-10-17T22:12:58Z): (a) - "Yeah sure you can refuse it and throw and move on if you mean
+  it couldn't notch"; it is that case: the incoming version failed its check, so the notch could not happen
+  (DECISION note).
 
 ## Decision Log
 - 2026-10-17T21:32:09Z: filed under EPIC-2026-10-17-correctness_defects from sweep A9 (Notes).
+- 2026-10-17T22:12:58Z: the owner answered the open question - (a): refuse with nothing moved (DECISION note).
 
 ## Artifact Links (Optional)
 Qualified independent reviewer acceptance and direct closure follow shared `ticketing.md`;
@@ -212,6 +216,29 @@ this does not make independent review mandatory for every ticket.
   REREAD: HELPFUL
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-10-17T22:12:58Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: The open question is answered (owner, chat 2026-10-17): "notch fails its commit validation, not sure what
+    this means commit to the new spell? Yeah sure you can refuse it and throw and move on if you mean it couldn't
+    notch that makes sense". It is that case: when a notch's transaction ends, Melder checks the incoming version's
+    structure (phases 1-4, run only for a version never compiled), and a version that fails is broken, so the notch
+    could not happen. The story takes answer (a): the notch is refused with nothing moved - the lender and every
+    borrower stay on the outgoing version, the incoming one stays parked - and the error says so. Option (b) is out;
+    the patch picks the mechanism (a check before the switch, or an undo of the seam). melder_0 confirms that meaning
+    to the owner with probe N2 in the same reply; his word can still override.
+  EVIDENCE:
+  - context_compass/tickets/stories/2026-10-17_failed_notch_keeps_switch_without_borrowers_story.md:114-121
+  - src/melder/aether/conduit/conduit.py:5622-5759
+  - src/melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py:783-835
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_failed_notch_commit_gil0.txt:10-19
+  IMPACT: The ENTRY_GATE's question is met; the requirements, acceptance and exit gate narrow to the refusal.
+  NEXT: The owner's scheduling, after melder_1 releases conduit.py and spellbook.py; then patch docs for the notch's
+    commit path.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
@@ -226,11 +253,12 @@ this does not make independent review mandatory for every ticket.
   continuation. Current scope/state/decisions/handoff stay coherent at material transitions.
 
 ## Context / Handoff Summary
-- Scope: a notch whose commit fails leaves the lender and its borrowers on one version (Requirements). Defect proven
-  on 0.2.8252 (Notes); probe and runs in Artifact Links.
-- State: ready, unassigned; filed by melder_0 under EPIC-2026-10-17-correctness_defects; one open question for the
-  owner. The fix sits in conduit.py and spellbook.py, which melder_1 holds.
-- Next: (1) the owner's answer and scheduling; (2) patch docs; (3) the fix, its tests, docs, notch and the rebuild.
+- Scope: a notch whose incoming version fails its commit check is refused with nothing moved - the lender and its
+  borrowers stay on the outgoing version (Requirements; the owner's answer (a)). Defect proven on 0.2.8252 (Notes);
+  probe and runs in Artifact Links.
+- State: ready, unassigned; filed by melder_0 under EPIC-2026-10-17-correctness_defects; the owner answered its
+  question (refuse, nothing moved). The fix sits in conduit.py and spellbook.py, which melder_1 holds.
+- Next: (1) the owner's scheduling; (2) patch docs; (3) the fix, its tests, docs, notch and the rebuild.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

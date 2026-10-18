@@ -8,7 +8,7 @@
 - Agent Role: synaptic_python_developer
 - Priority: p1
 - Created: 2026-10-17T20:11:34Z
-- Updated: 2026-10-17T21:47:48Z
+- Updated: 2026-10-18T00:42:22Z
 - Target Window: 2026-Q4
 - Related Program/Initiative: Melder runtime correctness (the owner's direction, chat 2026-10-17)
 
@@ -103,15 +103,17 @@ those, and only those, keeps the core trustworthy without judging Melder by rule
 - [ ] Story: STORY-2026-10-17-restore_drops_separated_parked_version - a restore drops a parked version
   alone in its own index and still reports complete (sweep A5).
 - [ ] Story: STORY-2026-10-17-release_routes_parked_version_objects_to_active_pool - a release with no filter
-  sends a parked version's object to the active version's pool and strands its count (sweep A6).
+  sends a parked version's object to the active version's pool and strands its count (sweep A6). In progress:
+  the managed settings leave the spell_id (owner, 2026-10-17).
 - [ ] Story: STORY-2026-10-17-book_teardown_leaves_parked_versions_uncleaned - Book teardown leaves
   its parked versions and parked-only indexes uncleaned, beyond any cleanup (sweep A7).
 - [ ] Story: STORY-2026-10-17-failed_notch_keeps_switch_without_borrowers - a notch whose commit
   validation fails keeps its switch and leaves its borrowers behind (sweep A9).
 - [ ] Story: STORY-2026-10-17-direct_cleanup_of_active_member_orphans_parked_versions - a direct cleanup
   of an index's active member leaves its parked versions on a cleaned index (sweep A10).
-- [ ] Story: STORY-2026-10-17-minted_index_selects_its_parked_version - the index
-  remove_from_spell_index mints selects its parked version, so a graft activates it (sweep A12).
+- [x] Story: STORY-2026-10-17-minted_index_selects_its_parked_version - the index
+  remove_from_spell_index mints selects its parked version, so a graft activates it (sweep A12). Withdrawn on
+  the owner's ruling (2026-10-17): not a defect; in tickets/stories/completed/.
 
 ## Tasks (Cross-Cutting or Epic-Level)
 - [ ] Task: Verify Ticket Microcycle enforcement across active tickets/stories/tasks.
@@ -138,7 +140,9 @@ those, and only those, keeps the core trustworthy without judging Melder by rule
 - Stories go to the owner; each fix is its own lane with the patch gate, its notch and the rebuild.
 
 ## Open Questions
-- none yet.
+
+- None open on the stories: the owner confirmed S6's scope (2026-10-18: only the four managed settings leave the
+  spell_id). For the talk after S6's part A: its part B refusal, its legacy record, anything more of the bind call.
 
 ## Decision Log
 - 2026-10-17T20:11:34Z: opened on the owner's direction (DECISION note).
@@ -166,6 +170,16 @@ those, and only those, keeps the core trustworthy without judging Melder by rule
   STORY-2026-10-17-minted_index_selects_its_parked_version and widened
   STORY-2026-10-17-staged_version_releases_active_signature and
   STORY-2026-10-17-restore_drops_separated_parked_version (graft side; MEASURE note).
+- 2026-10-17T21:55:46Z: the owner answered S2 (one index may hold several signatures) and S5 (restore what should be
+  restored: rebuild parked); S1 follows from S2's answer (DECISION notes).
+- 2026-10-17T22:12:58Z: the owner answered S8 - (a): a notch whose incoming version fails its commit check is
+  refused with nothing moved (DECISION note).
+- 2026-10-17T23:25:30Z: the owner ruled S10 not a defect - moving a version is the agent's call and activation takes a
+  notch; S10 withdrawn, its graft side stays in S5; S6 reframed to options 1-4 (DECISION note).
+- 2026-10-17T23:50:39Z: the owner chose S6's direction - the bind call's settings must not change the
+  spell_id, notch for the cache; melder_0 takes S6's fix lane (DECISION note).
+- 2026-10-18T00:42:22Z: the owner confirmed S6's scope - the four managed settings only - and gave the go for
+  part A (DECISION note).
 
 ## Artifact Links (Optional)
 Qualified independent reviewer acceptance and direct closure follow shared `ticketing.md`;
@@ -728,6 +742,118 @@ this does not make independent review mandatory for every ticket.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-10-17T21:55:46Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: The owner answered two open questions (chat 2026-10-17). S2: "Yes 1 spellindex can hold versions with
+    different binding signatures, this is why revalidation happens" - a notch moves the frame claim with the active
+    version (the outgoing claim released, the incoming key claimed) and refuses a key another active spell holds;
+    staging stays open to any key. S5: "I'm not sure whats the most correct thing? I think we restore what should be
+    restored" - with melder_0's recommendation given in reply: a version separated into an index of its own is
+    structure an agent made with a public verb and the record already holds, so a restore and a graft rebuild it
+    parked, in a fresh index of its Book (his word can still override). Follow-ons: S1's side question takes its
+    minimal fix (a parked version claims no signature; the one-active-signature rule holds where a version becomes
+    active - bind, or S2's notch refusal); S10's graft criterion becomes "comes back parked". Still open: S6, S8, S10.
+  EVIDENCE:
+  - context_compass/tickets/stories/2026-10-17_notch_moves_signature_by_incoming_key_only_story.md:99-103
+  - context_compass/tickets/stories/2026-10-17_restore_drops_separated_parked_version_story.md:94-98
+  - context_compass/tickets/stories/2026-10-17_staged_version_releases_active_signature_story.md:97-101
+  - context_compass/system_docs/src_architecture.md:26-34
+  IMPACT: S2, S5 and S1 carry no open question now; S10's acceptance narrows; three questions remain with the owner.
+  NEXT: The owner's answers on S6, S8 and S10.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-17T22:12:58Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: The owner answered S8 (chat 2026-10-17): "Yeah sure you can refuse it and throw and move on if you mean it
+    couldn't notch that makes sense" - and it is that case: the incoming version failed the structural check the
+    notch's commit runs. S8 takes answer (a): a notch whose incoming version fails that check is refused with nothing
+    moved, the lender and every borrower stay on the outgoing version, and the error says so. The owner asked for
+    plain explanations of S6 and S10 with examples (given in the reply); both questions stay open with him.
+  EVIDENCE:
+  - context_compass/tickets/stories/2026-10-17_failed_notch_keeps_switch_without_borrowers_story.md:114-121
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_failed_notch_commit_gil0.txt:10-19
+  IMPACT: S8 carries no open question; two remain with the owner (S6, S10).
+  NEXT: The owner's answers on S6 and S10.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-17T23:25:30Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: The owner ruled S10 not a defect (chat 2026-10-17: moving a version is the agent's call - "you gotta use
+    notch"), so STORY-2026-10-17-minted_index_selects_its_parked_version is withdrawn and moved to completed; its
+    graft side stays in S5, whose lanes now decide from each member's recorded custody. On S6 the owner asked to see
+    the code and to talk it through properly: the two versions are one class object differing only in
+    `managed_spell_limit`, the earlier raise-on-ambiguity recommendation is withdrawn (it would fire on every release
+    of the class), and four options are with him, option 3 (one managed version per class per index) recommended.
+  EVIDENCE:
+  - context_compass/tickets/stories/completed/2026-10-17_minted_index_selects_its_parked_version_story.md:107-112
+  - context_compass/tickets/stories/2026-10-17_release_routes_parked_version_objects_to_active_pool_story.md:99-106
+  IMPACT: Nine stories remain; one open question (S6) is with the owner.
+  NEXT: The owner's choice on S6.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-17T23:27:04Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: melder_1's lookup fix is now in the tree (its board row: "Fix #1's code is in the repo"; the files were
+    written at 22:22:06Z, __version__ still 0.2.8252), so this epic's line citations into two of its files moved:
+    spellbook.py by +5 to +6 lines after `find_spell_by_spell_id` (`_notch_spell` 3856, `_apply_notch` 3911,
+    `_apply_add_to_index` 4101, `_destroy_spell_index` 4197, `_apply_remove_from_index` 4276, `_dispose_spell` 4427,
+    `transaction` 4794, `bind_inactive` 5248, `bind` 5574), conduit.py by +8 at `bind_inactive` (4018) and +28 to +30
+    from `managed_spell_meld` (5095) on (`notch_spell` 5650, `add_to_spell_index` 6009, `remove_from_spell_index`
+    6122, `cleanup_spell` 6212). spell.py, conduit_ward.py, restore_engine.py and graft_runner.py citations hold.
+    Notes keep the ranges of their DATETIME; a fix lane re-reads the code it changes.
+  EVIDENCE:
+  - context_compass/attention_board.md:186-186
+  - src/melder/aether/spellbook/spellbook.py:2052-2052
+  - src/melder/aether/spellbook/spellbook.py:3911-3911
+  - src/melder/aether/conduit/conduit.py:5650-5650
+  IMPACT: A reader following an older note into spellbook.py or conduit.py lands a few lines early; the method names
+    in each note stay the reliable key.
+  NEXT: The owner's choice on S6.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
+- DATETIME: 2026-10-17T23:50:39Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: The owner chose S6's direction (chat 2026-10-17): "the bind call itself shouldn't impact the actual SHA256
+    thats absurd" - a bug - and "you gotta notch the version for the cache". The managed settings leave the spell_id
+    (option 2); a same-spell_id rebind re-composes its pool's settings; the notch and a cache generation bump retire
+    every bundle. melder_0 takes S6's fix lane (free files) and starts with patch docs; the scope (address, existence,
+    disposal names and resolvable stay in the id; a staging refusal for the residual same-class case) is with the
+    owner for confirmation (S6's DECISION note).
+  EVIDENCE:
+  - context_compass/tickets/stories/2026-10-17_release_routes_parked_version_objects_to_active_pool_story.md:99-106
+  - src/melder/aether/spellbook/bind/bind.py:1019-1150
+  IMPACT: No open question remains on the stories except the scope confirmation; S6 moves from ready to in_progress.
+  NEXT: S6's patch docs and the owner's confirmation; then the fix after melder_1's notch.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-18T00:42:22Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: The owner confirmed S6's scope (chat 2026-10-18): only the four managed settings leave the spell_id, the
+    rest stays; part A lands now, and part B's refusal, the legacy record and anything more of the bind call are
+    talked through after it. melder_1's 0.2.8253 landed (M1-26), so part A notches above it.
+  EVIDENCE: context_compass/tickets/stories/2026-10-17_release_routes_parked_version_objects_to_active_pool_story.md:399-419
+  IMPACT: S6 moves to implementation; no other story changes.
+  NEXT: S6's part A; then report to the owner.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
@@ -744,27 +870,33 @@ this does not make independent review mandatory for every ticket.
 ## Context / Handoff Summary
 - Scope: correctness defects - structure Melder records wrong or leaves stuck - by the owner's rulings (DECISION
   note); read-only; one story per confirmed defect; melder_1's lane excluded.
-- State: in_progress (melder_0), discovery. A1-A12 are done; ten stories filed (ready, unassigned):
+- State: in_progress (melder_0), discovery. A1-A12 are done; ten stories filed - nine ready and unassigned, S10
+  withdrawn:
   STORY-2026-10-17-staged_version_releases_active_signature (p1),
-  STORY-2026-10-17-notch_moves_signature_by_incoming_key_only (p2, open question; its leaked claim
-  outlives the Book, A7),
+  STORY-2026-10-17-notch_moves_signature_by_incoming_key_only (p2; answered: the notch moves the claim; its
+  leaked claim outlives the Book, A7),
   STORY-2026-10-17-parked_cleanup_leaves_borrower_copies (p2),
   STORY-2026-10-17-minted_index_missing_from_frame_registry (p2; MutationResearch residency
   misses the version too, A8),
-  STORY-2026-10-17-restore_drops_separated_parked_version (p2, open question; a graft activates
-  the version instead, A12),
-  STORY-2026-10-17-release_routes_parked_version_objects_to_active_pool (p2, open question),
+  STORY-2026-10-17-restore_drops_separated_parked_version (p2; answered: restore and graft rebuild it
+  parked; a graft activates it today, A12),
+  STORY-2026-10-17-release_routes_parked_version_objects_to_active_pool (p2; in progress, melder_0: the managed
+  settings leave the spell_id),
   STORY-2026-10-17-book_teardown_leaves_parked_versions_uncleaned (p3),
-  STORY-2026-10-17-failed_notch_keeps_switch_without_borrowers (p2, open question),
+  STORY-2026-10-17-failed_notch_keeps_switch_without_borrowers (p2; answered: refused with nothing moved),
   STORY-2026-10-17-direct_cleanup_of_active_member_orphans_parked_versions (p2) and
-  STORY-2026-10-17-minted_index_selects_its_parked_version (p3, open question).
-  Fixes in spellbook.py and conduit.py (S1-S4, S7-S10) wait for melder_1's release; restore_engine.py
-  (S5) and release_managed_spell.py (S6) are free.
+  STORY-2026-10-17-minted_index_selects_its_parked_version (p3; withdrawn: not a defect, owner 2026-10-17).
+  Fixes in spellbook.py and conduit.py (S1-S4, S7-S9) wait for melder_1's release; restore_engine.py and
+  graft_runner.py (S5) and release_managed_spell.py (S6) are free.
 - Done since: the owner told of S1-S5, then S6-S8, then S9-S10 with their questions, the widenings and S8's
   bind precedent (chat); melder_1 told of the eight stories whose fixes sit in its files (M0-181, M0-182,
-  M0-184, M0-185).
-- Next: (1) the owner's answers on the open questions of S2, S5, S6, S8 and S10 (each story's Open Questions);
-  (2) a fourth tranche on the owner's word; (3) melder_1 carries S1-S4 and S7-S10 with its hand-back.
+  M0-184, M0-185). The owner answered S2 and S5 (DECISION note of 2026-10-17T21:55:46Z); melder_1 told (M0-186).
+  The owner answered S8 (DECISION note of 2026-10-17T22:12:58Z); melder_1 told (M0-187). The owner withdrew S10 as
+  not a defect (DECISION note of 2026-10-17T23:25:30Z); melder_1 told (M0-188). The owner chose S6's direction
+  (DECISION note of 2026-10-17T23:50:39Z): the managed settings leave the spell_id; melder_0 runs its fix lane.
+  The owner confirmed S6's scope (DECISION note of 2026-10-18T00:42:22Z); melder_1's 0.2.8253 landed (M1-26).
+- Next: (1) S6's part A (the owner's go, 2026-10-18; melder_1's 0.2.8253 landed), then the talk on its part B and
+  legacy record; (2) a fourth tranche on the owner's word; (3) melder_1 carries S1-S4 and S7-S9 with its hand-back.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

@@ -5,7 +5,7 @@
 - Status: in_progress
 - Owner:
 - Created: 2026-01-22
-- Updated: 2026-10-16
+- Updated: 2026-10-17
 
 ## Scope and Intent
 This document describes the tests architecture (C4) for `tests/` and how it
@@ -458,12 +458,12 @@ Direct evidence used in this pass:
 - direct filesystem inventory over `tests/`
 
 Current Python test inventory from direct filesystem count:
-- `unit/`: 511 `.py` files, 508 of them `test_*.py` (465 on 2026-09-26, 334 on 2026-06-13)
+- `unit/`: 512 `.py` files, 509 of them `test_*.py` (465 on 2026-09-26, 334 on 2026-06-13)
 - `component/`: 168 `.py` files, 166 of them `test_*.py` (143, 81)
-- `integration/`: 177 `.py` files, 170 of them `test_*.py` (149, 88)
+- `integration/`: 179 `.py` files, 172 of them `test_*.py` (149, 88)
 - `mocks/`: 44 `.py` files (44, 42)
 - `experimentation/`: 204 `.py` files, 33 of them `test_*.py` (196 on 2026-09-26)
-Recounted 2026-10-16 with `find tests/<tier> -name '*.py'` (pycache excluded); the three tiers' 844 `test_*.py`
+Recounted 2026-10-17 with `find tests/<tier> -name '*.py'` (pycache excluded); the three tiers' 847 `test_*.py`
 modules are the count `tests_components` states.
 
 ## Core Responsibilities
@@ -595,7 +595,7 @@ modules are the count `tests_components` states.
   meet the borrower's contracted copy parked by a notch, and the test xfails (2 of 5 GIL-off runs on
   2026-10-16); otherwise, and with the GIL on (5 of 5), it xpasses. Neither result fails the cell, any other
   exception still fails the test, and whoever closes that task deletes the marker.
-  EVIDENCE: tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py:623-672
+  EVIDENCE: tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py:624-673
 
 ## C1 Code Map (Core Only)
 Core here is the harness and entrypoint surfaces this document names - the runner configuration, the
@@ -888,6 +888,14 @@ graph TD
 - direct filesystem inventory of `tests/`
 
 ## Context / Handoff Summary
+
+2026-10-17 lookup by spell_id is exact (0.2.8253): the inventory is recounted from disk (unit 512 `.py`,
+component 168, integration 179, mocks 44, experimentation 204; 847 test modules in the three tiers) - the lane
+adds one unit module (the Rift rooms' lookups by spell_id over doubles) and two integration modules (a lender
+and borrower world; a capability room) and renames one component module, catalogued in `tests_components`.
+Its codemod renamed the lookups in 82 test files and rewrote a comment in the notch-revalidation module as two
+lines, so the race test's evidence under `## Failure Modes and Error Paths` moves one line (624-673). No tier,
+conftest, declared marker or shared support module changes, and no extent in this map moves.
 
 2026-10-16 contract recheck on notch (0.2.8250): the inventory is recounted from disk (unit 511 `.py`,
 component 168, integration 177, mocks 44, experimentation 204; 844 test modules in the three tiers) - the lane

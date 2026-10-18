@@ -3,8 +3,9 @@ Integration: a managed spell's options survive a crystallizer record and restore
 (STORY-2026-10-15-managed_bind_options, S2; record 4.2.0).
 
 The crystal records the four options of a managed spell; the restore engine and the graft runner replay them
-through bind, so each rebuilt version gets the same normalized options - and therefore the same spell id - as the
-recorded one. An active member and a parked member are covered on both lanes. Managed spells are not melded here:
+through bind, so each rebuilt version gets the same normalized options, and the same spell id, as the recorded one.
+An active member and a parked member are covered on both lanes; the parked member differs by its disposal names,
+since a managed spell's settings are not part of its spell_id (0.2.8254). Managed spells are not melded here:
 dispensing arrives with STORY-2026-10-15-managed_dispense_codegen (S5).
 
 Runs only on 3.14t (melder package root import chain).
@@ -111,8 +112,8 @@ def _record_world() -> tuple:
     active_id = book.bind(spell=RecordedPool, existence=Existence.managed_spell_quantity, **ACTIVE_OPTIONS)
     root = book.conjure(dynamic=True, name="root")
     parked_id = root.bind_inactive(
-        spell=RecordedPool, spell_index=book.find_spell_by_id(active_id).spell_index,
-        existence=Existence.managed_spell_quantity, **PARKED_OPTIONS,
+        spell=RecordedPool, spell_index=book.find_spell_by_spell_id(active_id).spell_index,
+        existence=Existence.managed_spell_quantity, disposal_method_names=["flush"], **PARKED_OPTIONS,
     )
     return book, root, active_id, parked_id
 
@@ -149,7 +150,7 @@ def test_a_restore_rebinds_both_versions_with_their_options(cache_root: Any) -> 
     assert report["status"] == "complete"
     assert [entry for entry in report["shortfalls"] if entry["kind"] == "spell_crystal"] == []
     book = Aether().get_root_conduit_by_name("root").spellbook
-    _assert_options(book.find_spell_by_id(active_id), ACTIVE_OPTIONS)
+    _assert_options(book.find_spell_by_spell_id(active_id), ACTIVE_OPTIONS)
     _assert_options(book._get_owned_spell(parked_id), PARKED_OPTIONS)
 
 
@@ -157,7 +158,7 @@ def test_a_graft_rebinds_the_selected_and_parked_versions_with_their_options(cac
     """The spell-index graft carries the options of both members into a host Book in another frame."""
     crystallizer = _activate_crystallizer()
     source_book, source_root, active_id, parked_id = _record_world()
-    record = crystallizer.capture_index_graft(source_book.find_spell_by_id(active_id).spell_index.id)
+    record = crystallizer.capture_index_graft(source_book.find_spell_by_spell_id(active_id).spell_index.id)
     assert record["members"][active_id]["payload"]["managed_spell_mode"] == "queue"
     assert record["members"][parked_id]["payload"]["managed_spell_mode"] == "limited_quantity"
     # Process-wide spell ids: release the source's claim before grafting the same ids into another frame.
@@ -173,5 +174,5 @@ def test_a_graft_rebinds_the_selected_and_parked_versions_with_their_options(cac
     assert report["members_bound"] == 1
     assert report["members_parked"] == 1
     assert report["shortfalls"] == []
-    _assert_options(host_book.find_spell_by_id(active_id), ACTIVE_OPTIONS)
+    _assert_options(host_book.find_spell_by_spell_id(active_id), ACTIVE_OPTIONS)
     _assert_options(host_book._get_owned_spell(parked_id), PARKED_OPTIONS)

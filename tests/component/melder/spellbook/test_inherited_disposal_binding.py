@@ -149,7 +149,7 @@ def test_requested_inherited_cleanup_is_retained(source: str, profile: str) -> N
             spell=InheritedCleanup, existence="many", profile=profile,
             disposal_method_names=["cleanup"] if source == "explicit" else [],
         )
-        spell = book.find_spell_by_id(spell_id)
+        spell = book.find_spell_by_spell_id(spell_id)
         assert spell is not None
         assert spell.disposal_method_names == ["cleanup"]
         assert spell.has_disposal_methods is True
@@ -185,7 +185,7 @@ def test_unavailable_or_unsupported_cleanup_stays_excluded(target: type) -> None
     """Do not revive shadowed methods, evaluate properties or admit metaclass-only callables."""
     with configured_book(["cleanup"]) as book:
         spell_id = book.bind(spell=target, existence="many", disposal_method_names=["cleanup"])
-        spell = book.find_spell_by_id(spell_id)
+        spell = book.find_spell_by_spell_id(spell_id)
         assert spell is not None
         assert spell.disposal_method_names == []
         assert spell.has_disposal_methods is False
@@ -197,7 +197,7 @@ def test_inherited_staticmethod_keeps_existing_callable_eligibility() -> None:
         spell_id = book.bind(
             spell=InheritedStaticCleanup, existence="many", disposal_method_names=["cleanup"],
         )
-        spell = book.find_spell_by_id(spell_id)
+        spell = book.find_spell_by_spell_id(spell_id)
         assert spell is not None
         assert spell.disposal_method_names == ["cleanup"]
 
@@ -214,7 +214,7 @@ def test_inherited_disposal_preserves_priority_overlap_and_deduplication(
             spell=OrderedCleanup, existence="many",
             disposal_method_names=["cleanup", "close", "close", "missing", "__str__"],
         )
-        spell = book.find_spell_by_id(spell_id)
+        spell = book.find_spell_by_spell_id(spell_id)
         assert spell is not None
         assert spell.disposal_method_names == expected
         conduit = book.conjure()
@@ -240,7 +240,7 @@ def test_inactive_binding_resolves_inherited_cleanup_before_fingerprinting() -> 
     """A staged member receives its own inherited disposal policy without changing the active one."""
     with configured_book([], dynamic=True) as book:
         active_id = book.bind(spell=InheritedCleanup, existence="many")
-        active = book.find_spell_by_id(active_id)
+        active = book.find_spell_by_spell_id(active_id)
         assert active is not None
         staged_id = book.bind_inactive(
             spell=InheritedCleanup, spell_index=active.spell_index, existence="many",

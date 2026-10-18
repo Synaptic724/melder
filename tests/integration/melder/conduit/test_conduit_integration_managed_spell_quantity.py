@@ -40,6 +40,13 @@ class Session:
         Session.built.append(self)
 
 
+class SessionNext(Session):
+    """
+    A second version's class: a managed spell's settings are not part of its spell_id (0.2.8254), so a version of
+    its own needs another class (or address, or disposal names).
+    """
+
+
 class Handler:
     """A `many` holder of one Session."""
 
@@ -193,14 +200,14 @@ def test_a_notch_dispenses_from_the_new_versions_pool() -> None:
     try:
         active_id = _bind_session(root, managed_spell_limit=16)
         parked_id = root.bind_inactive(
-            spell=Session, spell_index=book.find_spell_by_id(active_id).spell_index,
+            spell=SessionNext, spell_index=book.find_spell_by_spell_id(active_id).spell_index,
             existence=Existence.managed_spell_quantity, permissions="create", managed_spell_limit=8,
         )
         old = root.meld(spell_id=active_id)
         ReleaseManagedSpell().release(old)
         parked = book._get_owned_spell(parked_id)
         root.notch_spell(spell_index=parked.spell_index, spell=parked)
-        new = root.meld(spell=Session)
+        new = root.meld(spell=SessionNext)
         assert new is not old
         assert (_pool(root, active_id).idle_count, _pool(root, parked_id).count) == (1, 1)
     finally:

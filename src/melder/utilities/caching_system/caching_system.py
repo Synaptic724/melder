@@ -194,6 +194,13 @@ class CachingSystem(Cleanable):
     # and a release change already cold-starts every bundle (version 9); the
     # bump is the explicit retirement the owner asked for whenever codegen
     # changes (2026-10-16, landed with 0.2.8248).
+    # Version 22 retires bundles written while a managed spell's settings were
+    # part of its spell_id (0.2.8242-0.2.8253): the settings left the
+    # fingerprint (0.2.8254, owner ruling 2026-10-17), so every managed spell
+    # has a new spell_id and the ids those bundles were keyed by are gone. A
+    # release change already cold-starts every bundle (version 9); the bump
+    # records why, as the owner asked ("you gotta notch the version for the
+    # cache because this is a bug").
     CACHE_VERSION_HISTORY: ClassVar[Mapping[int, str]] = MappingProxyType({
         1: "legacy_executor_payloads",
         2: "decoded_manifest_package_payloads",
@@ -216,6 +223,7 @@ class CachingSystem(Cleanable):
         19: "executor_world_stamp",
         20: "annotation_kind_matching",
         21: "managed_spell_lease_codegen",
+        22: "managed_settings_leave_spell_id",
     })
     CURRENT_VERSION: ClassVar[int] = max(CACHE_VERSION_HISTORY)
 

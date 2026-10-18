@@ -1655,7 +1655,7 @@ def test_index_graft_round_trips_into_a_live_host_book(cache_root):
     )
     source_book.conjure(dynamic=True, name="graft-source")
 
-    live_spell = source_book.find_spell_by_id(spell_id)
+    live_spell = source_book.find_spell_by_spell_id(spell_id)
     recorded_index_id = live_spell.spell_index.id
     record = crystallizer.capture_index_graft(recorded_index_id)
     assert record["graft_kind"] == "spell_index"
@@ -1682,7 +1682,7 @@ def test_index_graft_round_trips_into_a_live_host_book(cache_root):
     assert report["members_bound"] == 1
     assert report["live_index_id"] is not None
     assert report["live_index_id"] != recorded_index_id
-    grafted = host_book.find_spell_by_id(spell_id)
+    grafted = host_book.find_spell_by_spell_id(spell_id)
     assert grafted is not None
 
     # Overlap rule: the SOURCE frame already holds the member - refuse
@@ -1779,7 +1779,7 @@ def test_multi_member_index_graft_parks_the_staged_members(cache_root):
     assert report["members_parked"] == 1
     assert report["shortfalls"] == []
 
-    grafted_anchor = host_book.find_spell_by_id(active_id)
+    grafted_anchor = host_book.find_spell_by_spell_id(active_id)
     assert grafted_anchor is not None
     live_index = grafted_anchor.spell_index
     assert live_index.selected_spell_id == active_id
@@ -1857,7 +1857,7 @@ def test_merge_graft_grows_an_existing_index_and_adopts_selection(
         spell=RestoreGamma, existence=Existence.unique, permissions="create"
     )
     host_book.conjure(dynamic=True, name="graft-merge-host")
-    target_index = host_book.find_spell_by_id(resident_id).spell_index
+    target_index = host_book.find_spell_by_spell_id(resident_id).spell_index
 
     report = crystallizer.graft_index(
         record,
@@ -1878,7 +1878,7 @@ def test_merge_graft_grows_an_existing_index_and_adopts_selection(
     assert target_index.has_spell(active_id)
     assert target_index.has_spell(staged_id)
     assert target_index.selected_spell_id == active_id
-    merged_member = host_book.find_spell_by_id(active_id)
+    merged_member = host_book.find_spell_by_spell_id(active_id)
     assert merged_member is not None
     assert merged_member.spell_index.id == target_index.id
 

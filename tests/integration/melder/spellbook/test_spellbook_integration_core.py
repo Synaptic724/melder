@@ -762,7 +762,7 @@ def test_spellbook_integration_post_conjure_bind_runs_structural_phases() -> Non
                 permissions="create",
             )
 
-        spell = conduit.get_spell_by_id(spell_id)
+        spell = conduit.get_spell_by_spell_id(spell_id)
         assert spell is not None
         assert spell.requirements is not None
         assert spell.symbolic_graph is not None

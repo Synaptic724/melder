@@ -259,7 +259,7 @@ def test_meld_activation_dispatch_exists_but_public_registration_rejects_its_nam
             root.register_conduit_hooks({"on_meld_activation": activation})
         root._meld.set_meld_hooks({"on_meld_activation": [activation]}, create_local_hooks=True)
         instance = root.meld(spell_id=spell_id)
-        assert events == [(book.find_spell_by_id(spell_id), instance)]
+        assert events == [(book.find_spell_by_spell_id(spell_id), instance)]
     finally:
         root.permanent_cleanup()
 
@@ -317,7 +317,7 @@ def test_internal_spell_hook_replacement_updates_warm_resolution_without_recompi
     try:
         original = caller.meld(spell_id=spell_id)
         assert caller.meld(spell_id=spell_id) is original
-        spell = book.find_spell_by_id(spell_id)
+        spell = book.find_spell_by_spell_id(spell_id)
         context = spell._creation_context
         spell._set_hooks(
             pre_hooks=[lambda: events.append("pre")],
@@ -377,7 +377,7 @@ def test_clearing_spell_hooks_during_pre_changes_the_same_calls_post_stage() -> 
     """
     book = _make_spellbook()
     spell_id = book.bind(spell=HookDependency, existence="unique")
-    spell = book.find_spell_by_id(spell_id)
+    spell = book.find_spell_by_spell_id(spell_id)
     events: list[str] = []
 
     def pre() -> None:
@@ -410,7 +410,7 @@ def test_spell_hooks_are_shared_by_version_across_direct_scope_requests() -> Non
         for caller in (root, lesser, space):
             assert caller.meld(spell_id=spell_id) is calls[-1]
         assert len(calls) == 3
-        book.find_spell_by_id(spell_id)._set_hooks(activation_hooks=[])
+        book.find_spell_by_spell_id(spell_id)._set_hooks(activation_hooks=[])
         for caller in (root, lesser, space):
             caller.meld(spell_id=spell_id)
         assert len(calls) == 3

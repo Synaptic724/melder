@@ -3190,20 +3190,27 @@ class Conduit(Cleanable):
             )
 
 
-    def get_spell_by_id(self, spell_id: str, aetheric_frame_name: str = "default") -> Optional[Spell]:
+    def get_spell_by_spell_id(self, spell_id: str, aetheric_frame_name: str = "default") -> Optional[Spell]:
         """
         Public API
 
-        Retrieves a spell object by its unique version identifier (spell_id) from the
-        spellbook of its owner.
+        Return the spell that owns `spell_id` - the spell_id `bind` or
+        `bind_inactive` returned - from the Spellbook of the conduit that owns it.
 
         The method:
-          1) Uses Aether to locate the owning conduit.
-          2) Resolves the id in that conduit's spellbook (`Spellbook.find_spell_by_id`):
-             the live spell of the lineage that contains this version ID.
+          1) Uses Aether to locate the conduit that owns the spell_id.
+          2) Looks the spell_id up in that conduit's Spellbook
+             (`Spellbook.find_spell_by_spell_id`): the spell bound under it, active or
+             parked.
           3) Returns that Spell instance.
 
         Contract:
+            - A lookup by spell_id returns the spell that owns the spell_id, never the
+              spell its SpellIndex has active in its place; that is a lookup by the
+              index's id (`get_spell_by_index_id`). A spell_id and a SpellIndex are
+              separate things (owner ruling, 2026-10-17). Until 0.2.8253 this method was
+              `get_spell_by_id`, and a parked spell_id answered with the spell its index
+              had active.
             - Resolves via the spellbook's Aether-wide lookup, so the returned spell may
               belong to a different conduit; ownership and permission are separate
               questions from resolvability.
@@ -3211,12 +3218,13 @@ class Conduit(Cleanable):
               lookup.
 
         Args:
-            spell_id (str): The unique version identifier of the spell (SHA256).
+            spell_id (str): The spell_id of the spell (SHA256), active or parked.
             aetheric_frame_name (str): The aetheric frame to check against. Defaults to "default".
 
         Returns:
-            Optional[Spell]: The spell object, or None when the owner's spellbook does not
-            resolve the id to a live spell.
+            Optional[Spell]: The spell that owns `spell_id`, or None when the owner's
+            Spellbook holds no spell under it (it moved or left between the frame lookup
+            and the Book's).
 
         Raises:
             RuntimeError: If the Conduit is cleaned, or the owning conduit has no spellbook.
@@ -4178,18 +4186,18 @@ class Conduit(Cleanable):
         """
         Public API
 
-        Get the permissions for a spell by its version spell_id, **within this
-        conduit**.
+        Get the permissions for a spell by its spell_id, **within this conduit**.
         This returns the access level ("read", "create", "block") defined when the
         spell was bound.
 
         Contract:
             - LOCAL ONLY. It resolves through THIS conduit's spellbook
-              (`Spellbook.find_spell_by_id`), so a spell reachable by contract from a
+              (`Spellbook.find_spell_by_spell_id`), so a spell reachable by contract from a
               peer conduit is NOT found here.
-            - Matches by LINEAGE, so a superseded or parked version id still resolves -
-              and it resolves to the CURRENT permissions, not the permissions that
-              version was bound with.
+            - EXACT: the spell_id names one spell, active or parked, and the answer is the
+              permissions THAT spell was bound with. Until 0.2.8253 it matched by lineage,
+              and a parked spell_id answered the permissions of the spell its index had
+              active.
             - Lock-free (0.2.8230): the lookup answers from the Book's id maps instead of
               walking its live index map under the conduit lock, which a concurrent bind
               or removal could resize mid-walk.
@@ -4199,17 +4207,18 @@ class Conduit(Cleanable):
             - Returns the permission enum's `.name` STRING, not the enum member.
 
         Args:
-            spell_id (str): Version SHA256 identifier of the spell.
+            spell_id (str): The spell_id (SHA256) of the spell, active or parked.
 
         Returns:
-            Optional[str]: The permissions associated with the spell's binding.
+            Optional[str]: The permissions the spell was bound with.
 
         Raises:
             RuntimeError: If the spell with the given ID is not found in the spellbook.
         """
         self.check_cleaned()
-        # Resolve the lineage from the Book's id maps: O(1) and no walk of the live index map.
-        target_spell: Optional[Spell] = self._spellbook.find_spell_by_id(spell_id)
+        # Look the spell_id up in the Book's id maps: O(1), the exact spell, and no walk of the live
+        # index map.
+        target_spell: Optional[Spell] = self._spellbook.find_spell_by_spell_id(spell_id)
 
         if target_spell is not None:
             perms = target_spell.permissions.name
@@ -4625,8 +4634,18 @@ class Conduit(Cleanable):
             owns the spell, so it is resolved directly here (domain side) rather
             than reached for by the DevOps strategy.
 
+        Contract:
+            - A transfer moves the whole index (`transfer_spell_ownership`), so the
+              live spell is the one the index has active. A `spell_index_id`
+              resolves through `get_spell_by_index_id`. A `spell_id` names one
+              member and resolves in two explicit steps: the spell that owns it
+              (`get_spell_by_spell_id`, active or parked), then the spell that
+              member's index has active here (`get_spell_by_index_id`). For a spell
+              this conduit owns that is the spell the spell_id lookup itself
+              returned until 0.2.8253.
+
         Args:
-            spell_id: Current spell id, if available.
+            spell_id: The spell_id of a member of the index, if available.
             spell_index_id: Stable spell-index id, if available.
 
         Returns:
@@ -4634,12 +4653,21 @@ class Conduit(Cleanable):
 
         Raises:
             RuntimeError: If neither identifier resolves a local spell.
+            ValueError: From `get_spell_by_spell_id`, when no conduit in the frame claims
+                the spell_id.
         """
         resolved: Optional[Spell] = None
         if isinstance(spell_index_id, str) and spell_index_id.strip():
             resolved = self.get_spell_by_index_id(spell_index_id)
         if resolved is None and isinstance(spell_id, str) and spell_id.strip():
-            resolved = self.get_spell_by_id(spell_id, self._aetheric_frame_name)
+            # The spell_id lookup answers the member itself, a parked one included; the transfer
+            # needs the spell its index has active, so ask the index, as the branch above does.
+            member = self.get_spell_by_spell_id(spell_id, self._aetheric_frame_name)
+            member_index = (
+                member._spell_index_unless_cleaned() if member is not None else None
+            )
+            if member_index is not None:
+                resolved = self.get_spell_by_index_id(member_index.id)
         if resolved is None:
             raise RuntimeError(
                 "[CONDUIT] Transfer-ownership could not resolve the source spell on this conduit."
@@ -5642,9 +5670,9 @@ class Conduit(Cleanable):
         Contract:
             - DYNAMIC MODE ONLY; refused on an automatic frame.
             - EXACTLY ONE TARGET: `spell_id` or `spell`. A `spell_id` is resolved inside
-              this call to the exact spell this conduit's Spellbook owns, active or parked.
-              `get_spell_by_id` / `find_spell_by_id` answer a parked spell_id with the
-              index's ACTIVE spell, so a parked spell is named by its spell_id here.
+              this call to the exact spell this conduit's Spellbook owns, active or parked -
+              the spell `get_spell_by_spell_id` returns for it (until 0.2.8253
+              `get_spell_by_id` answered a parked spell_id with the index's ACTIVE spell).
             - THE TARGET IS CHECKED before the transaction starts and again inside the
               held window: it must be a version this conduit's Spellbook owns and a member
               of `spell_index`. The second check runs under the notch seal (the Spellbook
@@ -5775,8 +5803,9 @@ class Conduit(Cleanable):
               `spell_id`; a `spell_id` is a str, and a str is never taken as `spell`.
             - The spell is resolved and checked by `_owned_notch_target`: through the
               owning Spellbook's `_get_owned_spell` - the exact owned spell, active or
-              parked - never through `find_spell_by_id`, which answers a parked spell_id
-              with the index's active spell.
+              parked, read under the Book lock; `find_spell_by_spell_id` gives the same
+              answer without the lock (until 0.2.8253 its predecessor `find_spell_by_id`
+              answered a parked spell_id with the index's active spell).
             - Reads only: nothing is started or changed, so a refusal leaves the world as
               it was.
 
@@ -5846,7 +5875,7 @@ class Conduit(Cleanable):
         if owned.spell_index is not spell_index:
             raise ValueError(
                 f"notch_spell: spell_id {spell_id!r} belongs to another SpellIndex, not the one "
-                f"passed. Pass its own index - conduit.get_spell_by_id({spell_id!r})"
+                f"passed. Pass its own index - conduit.get_spell_by_spell_id({spell_id!r})"
                 ".spell_index - or move it onto this index with add_to_spell_index first."
             )
         return owned
@@ -5909,9 +5938,10 @@ class Conduit(Cleanable):
         Return the spell this conduit's Spellbook owns under `spell_id`, active or parked.
 
         Contract:
-            - Resolves through the Spellbook's `_get_owned_spell` - the exact owned spell -
-              never through `find_spell_by_id`, which answers a parked spell_id with the
-              index's active spell.
+            - Resolves through the Spellbook's `_get_owned_spell` - the exact owned spell,
+              read under the Book lock; `find_spell_by_spell_id` gives the same answer
+              without the lock (until 0.2.8253 its predecessor `find_spell_by_id` answered a
+              parked spell_id with the index's active spell).
             - Reads only; a refusal starts nothing.
 
         Args:
@@ -5999,9 +6029,9 @@ class Conduit(Cleanable):
             - DYNAMIC MODE ONLY; refused on an automatic frame with a logged
               `RuntimeError`.
             - EXACTLY ONE SPELL: `spell_id` or `spell`. A `spell_id` is resolved inside
-              this call to the exact spell this conduit's Spellbook owns, active or parked;
-              `get_spell_by_id` / `find_spell_by_id` answer a parked spell_id with the
-              index's active spell, so a parked spell is named by its spell_id here.
+              this call to the exact spell this conduit's Spellbook owns, active or parked -
+              the spell `get_spell_by_spell_id` returns for it (until 0.2.8253
+              `get_spell_by_id` answered a parked spell_id with the index's active spell).
             - ONLY A PARKED SPELL MOVES: the Spellbook refuses an active spell (notch away
               from it first), a spell it does not own, and a `target_index` it does not own.
             - Adds a version to the lineage WITHOUT making it active - selection is a
