@@ -9,7 +9,7 @@
 - Agent Role: synaptic_python_developer
 - Priority: p2
 - Created: 2026-10-18T11:45:58Z
-- Updated: 2026-10-18T11:45:58Z
+- Updated: 2026-10-18T12:01:17Z
 
 ## User Narrative
 As a user upgrading Melder, I want the one-time move of every spell_id handled - caches, records, research history,
@@ -20,14 +20,13 @@ Every spell_id changes once with S1. The creation cache, the Crystallizer record
 suite all hold spell_ids; each needs a defined path, and the change is one Breaking release-note entry.
 
 ## Ticket Contract
-- ENTRY_GATE: S1-S4's patches approved; this story's component patch; melder_1's release of restore_engine.py and
-  graft_runner.py; the board row.
+- ENTRY_GATE: S1-S4's patches approved; this story's component patch approved; the board row.
 - EXECUTION_BOUNDARY: the cache generation, the record version and restore/graft mapping, research history, the
   tests that bind one object twice, the system documents, the graph, README and the release note.
-- DEPENDENCIES: S1-S4; melder_1's release; the owner's call on records holding one object twice.
+- DEPENDENCIES: S1-S4; the owner's call on records holding one object twice.
 - EXIT_GATE: an old cache is cold once; an old record restores with mapped ids or reports what it cannot rebuild;
   the suite is green with the GIL off and on; docs, notch and the rebuild with both checks OK.
-- FAILURE_ESCALATION: DECISION_REQUEST on the record policy; CONFLICT while a needed file is held.
+- FAILURE_ESCALATION: DECISION_REQUEST on the record policy; CONFLICT if another lane takes a needed file.
 
 ## Requirements (Functional)
 - A cache generation retires every bundle written under the old ids.
@@ -46,9 +45,10 @@ suite all hold spell_ids; each needs a defined path, and the change is one Break
 - Out of scope: the hashes (S1, S2), revalidation (S3), the refusals (S4).
 
 ## State Transition Event
-- from_state: draft
+- from_state: (new)
 - to_state: draft
-- transition_reason: filed under EPIC-2026-10-18-spell_identity_is_the_code on the owner's direction (chat 2026-10-18).
+- transition_reason: filed under EPIC-2026-10-18-spell_identity_is_the_code on the owner's direction (chat
+  2026-10-18); stays draft until S1-S4's patches are approved and the record policy is called.
 
 ## Dependencies / Related Work
 - EPIC-2026-10-18-spell_identity_is_the_code
@@ -85,6 +85,8 @@ suite all hold spell_ids; each needs a defined path, and the change is one Break
 
 ## Decision Log
 - 2026-10-18T11:45:58Z: filed under EPIC-2026-10-18-spell_identity_is_the_code (the epic's DECISION note).
+- 2026-10-18T12:01:17Z: melder_1's files are free (M1-28; the epic's FACT note of 2026-10-18T12:01:17Z); the entry gate
+  no longer waits on a release.
 
 ## Artifact Links (Optional)
 Qualified independent reviewer acceptance and direct closure follow shared `ticketing.md`;
@@ -114,9 +116,10 @@ this does not make independent review mandatory for every ticket.
   AUTHOR: melder_0
   AUTHOR_ROLE: synaptic_python_developer
   TYPE: PLAN
-  CLAIM: Filed from the owner's direction (the epic's DECISION note of 2026-10-18T11:45:58Z); the evidence it starts from is the
-    epic's FACT note and its probes. Nothing in src/ moves before this story's component patch is approved.
-  EVIDENCE: context_compass/tickets/epics/2026-10-18_spell_identity_is_the_code_epic.md
+  CLAIM: Filed from the owner's direction (the epic's DECISION note of 2026-10-18T11:45:58Z); the evidence it
+    starts from is the epic's FACT note and its probes. Nothing in src/ moves before this story's component patch is
+    approved.
+  EVIDENCE: context_compass/tickets/epics/2026-10-18_spell_identity_is_the_code_epic.md:220-270
   IMPACT: The scope, requirements and acceptance above are the plan the patch docs refine.
   NEXT: the component patch with the others'.
   REREAD: HELPFUL

@@ -10,7 +10,7 @@
 - Agent Role: synaptic_python_developer
 - Priority: p1
 - Created: 2026-10-16T09:46:14Z
-- Updated: 2026-10-18T11:51:16Z
+- Updated: 2026-10-18T12:10:15Z
 
 - Completed: 2026-10-18T11:45:18Z
 - Summary: Rule 2 with D1-D5 landed, notched 0.2.8250 (section "A satisfied `SpellContract` is not checked on
@@ -3542,6 +3542,25 @@ this does not make independent review mandatory for every ticket.
   - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/runs/rebuild_llm_0_2_8255_check.txt:1-7
   IMPACT: 0.2.8255 is landed whole; nothing is committed (the owner commits). The lane's held files are free.
   NEXT: Send NOTICE M1-28 to melder_0 (0.2.8255 taken; the lane's files released), then report to the owner.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-18T12:10:15Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: After turn-in, melder_0's M0-193 (NOTICE, 2026-10-18T12:06:53Z; consumed, ACK M1-29): M1-28 consumed; S6
+    is turned in on the owner's word, part B superseded by EPIC-2026-10-18-spell_identity_is_the_code (a spell_id
+    becomes the object's code, the bind signature a manifest with its own hash, every spell_id moves once). No src/
+    edit there until the owner's go; that epic will touch bind.py, spell.py, spellbook.py,
+    spellbook_creation_system.py, conduit.py, creations.py, the caches and the record, so melder_1 tells melder_0
+    before taking any of them, and he sends a NOTICE before each landing.
+  EVIDENCE:
+  - context_compass/tickets/epics/2026-10-18_spell_identity_is_the_code_epic.md:116-126
+  - context_compass/tickets/epics/2026-10-17_correctness_defects_epic.md:895-928
+  IMPACT: Whatever melder_1 takes next shares files with that epic: the correctness epic's eight ready stories (S1-S5,
+    S7-S9) sit in spellbook.py and conduit.py, so the owner's order between the two decides the writer per file.
+  NEXT: Ask the owner which comes first; claim files from melder_0 before any edit.
   REREAD: HELPFUL
   SCORE_0_TO_10: 8
 

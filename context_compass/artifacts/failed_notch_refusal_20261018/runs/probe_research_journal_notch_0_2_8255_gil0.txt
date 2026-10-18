@@ -1,0 +1,12 @@
+J1 sound version (French)
+  before: French acts ['staged']; English acts ['registered']
+  notch_spell(-> French) returned
+  index selects French
+  after: French acts ['staged', 'promoted']; English acts ['registered', 'promoted']
+
+J2 broken version (SelfMade)
+  before: SelfMade acts ['staged']; English acts ['registered']
+  notch_spell(-> SelfMade) raised SpellbookValidationError: Spellbook validation failed. Broken spells: SelfMade.
+  index selects SelfMade
+  after: SelfMade acts ['staged', 'promoted']; English acts ['registered', 'promoted']
+

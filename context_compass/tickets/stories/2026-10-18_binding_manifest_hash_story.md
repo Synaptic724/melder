@@ -3,13 +3,13 @@
 ## Metadata
 - Story ID: STORY-2026-10-18-binding_manifest_hash
 - Epic: EPIC-2026-10-18-spell_identity_is_the_code
-- Status: ready
+- Status: in_progress
 - Owner: user
 - Agent Name: melder_0
 - Agent Role: synaptic_python_developer
 - Priority: p1
 - Created: 2026-10-18T11:45:58Z
-- Updated: 2026-10-18T11:45:58Z
+- Updated: 2026-10-18T15:01:53Z
 
 ## User Narrative
 As an agent, I want how a spell is kept - its address, lifetime, teardown, capability and settings - recorded as a
@@ -22,15 +22,15 @@ the spell_id covering the binding today (`StructuralSnapshot.structural_key`: "t
 spell's own signature, names, existence and resolvability"). The owner's design keeps that structure as a manifest.
 
 ## Ticket Contract
-- ENTRY_GATE: S1's component patch approved; this story's component patch approved; melder_1's release of spell.py
-  (the Spell carries the manifest); the board row.
+- ENTRY_GATE: S1's component patch approved; this story's component patch approved; the board row.
 - EXECUTION_BOUNDARY: the binding manifest and its hash (Bind builds it, the Spell carries it, `describe` shows
   it), the SpellCrystal record, the creation cache's structural key and world stamp, the cache generation; tests
   and docs. Not revalidation (S3).
-- DEPENDENCIES: S1 (lands with it); melder_1's release of spell.py.
+- DEPENDENCIES: S1 (lands with it).
 - EXIT_GATE: a binding change without a code change misses both cache tiers; the record round-trips the manifest;
   byte-identical across processes; docs.
-- FAILURE_ESCALATION: CONFLICT while spell.py is held; DECISION_REQUEST on which fields the binding hash covers.
+- FAILURE_ESCALATION: CONFLICT if another lane takes spell.py; DECISION_REQUEST on which fields the binding
+  hash covers.
 
 ## Requirements (Functional)
 - The manifest holds the spellframe (with its kind and contract), the binding name, the existence, the resolved
@@ -50,9 +50,11 @@ spell's own signature, names, existence and resolvability"). The owner's design 
 - Out of scope: revalidation and the store (S3), the refusals (S4), the migration (S5).
 
 ## State Transition Event
-- from_state: draft
-- to_state: ready
-- transition_reason: filed under EPIC-2026-10-18-spell_identity_is_the_code on the owner's direction (chat 2026-10-18); scope and owner set, the open questions named.
+- from_state: ready
+- to_state: in_progress
+- transition_reason: the owner's word to land S1 now, which lands with this story's cache keys (the
+  epic's DECISION note of 2026-10-18T15:01:53Z); his confirmation of the conduit-manifest reading (DECISION note
+  of 2026-10-18T14:14:10Z).
 
 ## Dependencies / Related Work
 - EPIC-2026-10-18-spell_identity_is_the_code
@@ -88,9 +90,15 @@ spell's own signature, names, existence and resolvability"). The owner's design 
 
 ## Open Questions
 - Which managed settings belong to the binding hash, or to a pool-only setting (S3's question).
+- The owner's "conduit manifest" reading is confirmed (the epic's DECISION note of 2026-10-18T14:14:10Z): the
+  binding hash is recorded in what the conduit builds and caches the spell from.
 
 ## Decision Log
 - 2026-10-18T11:45:58Z: filed under EPIC-2026-10-18-spell_identity_is_the_code (the epic's DECISION note).
+- 2026-10-18T12:01:17Z: melder_1's files are free (M1-28; the epic's FACT note of 2026-10-18T12:01:17Z); the entry gate
+  no longer waits on a release.
+- 2026-10-18T14:14:10Z: the conduit-manifest reading confirmed by the owner (the epic's DECISION note).
+- 2026-10-18T15:01:53Z: in_progress on the owner's word to land S1 with this story (the epic's DECISION note).
 
 ## Artifact Links (Optional)
 Qualified independent reviewer acceptance and direct closure follow shared `ticketing.md`;
@@ -120,9 +128,10 @@ this does not make independent review mandatory for every ticket.
   AUTHOR: melder_0
   AUTHOR_ROLE: synaptic_python_developer
   TYPE: PLAN
-  CLAIM: Filed from the owner's direction (the epic's DECISION note of 2026-10-18T11:45:58Z); the evidence it starts from is the
-    epic's FACT note and its probes. Nothing in src/ moves before this story's component patch is approved.
-  EVIDENCE: context_compass/tickets/epics/2026-10-18_spell_identity_is_the_code_epic.md
+  CLAIM: Filed from the owner's direction (the epic's DECISION note of 2026-10-18T11:45:58Z); the evidence it
+    starts from is the epic's FACT note and its probes. Nothing in src/ moves before this story's component patch is
+    approved.
+  EVIDENCE: context_compass/tickets/epics/2026-10-18_spell_identity_is_the_code_epic.md:220-270
   IMPACT: The scope, requirements and acceptance above are the plan the patch docs refine.
   NEXT: the component patch with S1's.
   REREAD: HELPFUL
@@ -143,8 +152,9 @@ this does not make independent review mandatory for every ticket.
 
 ## Context / Handoff Summary
 - Scope: the binding becomes a manifest with its own SHA256, recorded and part of the caches' keys.
-- State: ready (melder_0); waiting on S1's patch and melder_1's release of spell.py.
-- Next: the component patch with S1's.
+- State: in_progress (melder_0), discovery: lands with S1 on the owner's word (the epic's DECISION note of
+  2026-10-18T15:01:53Z); spell.py is melder_1's for S9 and asked for (M0-196).
+- Next: the inventory of spell_id-keyed caches and stores; the component patch; then the landing with S1.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

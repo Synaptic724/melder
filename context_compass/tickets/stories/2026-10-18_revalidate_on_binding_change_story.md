@@ -9,7 +9,7 @@
 - Agent Role: synaptic_python_developer
 - Priority: p1
 - Created: 2026-10-18T11:45:58Z
-- Updated: 2026-10-18T11:45:58Z
+- Updated: 2026-10-18T12:01:17Z
 
 ## User Narrative
 As an agent changing how a spell is kept - its lifetime, teardown, address or capability - I want Melder to
@@ -22,15 +22,14 @@ spell is built as (existence), how it is torn down (disposal names), who resolve
 categories by spellframe) and whether it is built at all (resolvable).
 
 ## Ticket Contract
-- ENTRY_GATE: S1 and S2 landed; this story's component patch approved; melder_1's release of spellbook.py and
-  conduit.py; the board row.
+- ENTRY_GATE: S1 and S2 landed; this story's component patch approved; the board row.
 - EXECUTION_BOUNDARY: re-registration of a spell_id with another binding hash, the revalidation marks, Creations'
   entry for the spell_id, a binding-change verb; tests and docs.
-- DEPENDENCIES: S1, S2; melder_1's release; the notch's revalidation marks (0.2.8250).
+- DEPENDENCIES: S1, S2; the notch's revalidation marks (0.2.8250).
 - EXIT_GATE: every binding change revalidates the spell and its dependents; the store never hands the new binding
   an object built for the old one; the verb works on an active spell whose index holds parked versions.
-- FAILURE_ESCALATION: DECISION_REQUEST on the verb's shape and on what happens to the old objects; CONFLICT while
-  a needed file is held.
+- FAILURE_ESCALATION: DECISION_REQUEST on the verb's shape and on what happens to the old objects; CONFLICT if
+  another lane takes a needed file.
 
 ## Requirements (Functional)
 - Re-registering a spell_id with a different binding hash retires its verdicts (as `register_index` does), resets
@@ -50,9 +49,10 @@ categories by spellframe) and whether it is built at all (resolvable).
 - Out of scope: the hashes (S1, S2), the refusals (S4), the migration (S5), pool routing (set aside by the owner).
 
 ## State Transition Event
-- from_state: draft
+- from_state: (new)
 - to_state: draft
-- transition_reason: filed under EPIC-2026-10-18-spell_identity_is_the_code on the owner's direction (chat 2026-10-18).
+- transition_reason: filed under EPIC-2026-10-18-spell_identity_is_the_code on the owner's direction (chat
+  2026-10-18); stays draft until S1 and S2 land and its open questions are answered.
 
 ## Dependencies / Related Work
 - EPIC-2026-10-18-spell_identity_is_the_code
@@ -92,6 +92,8 @@ categories by spellframe) and whether it is built at all (resolvable).
 
 ## Decision Log
 - 2026-10-18T11:45:58Z: filed under EPIC-2026-10-18-spell_identity_is_the_code (the epic's DECISION note).
+- 2026-10-18T12:01:17Z: melder_1's files are free (M1-28; the epic's FACT note of 2026-10-18T12:01:17Z); the entry gate
+  no longer waits on a release.
 
 ## Artifact Links (Optional)
 Qualified independent reviewer acceptance and direct closure follow shared `ticketing.md`;
@@ -121,9 +123,10 @@ this does not make independent review mandatory for every ticket.
   AUTHOR: melder_0
   AUTHOR_ROLE: synaptic_python_developer
   TYPE: PLAN
-  CLAIM: Filed from the owner's direction (the epic's DECISION note of 2026-10-18T11:45:58Z); the evidence it starts from is the
-    epic's FACT note and its probes. Nothing in src/ moves before this story's component patch is approved.
-  EVIDENCE: context_compass/tickets/epics/2026-10-18_spell_identity_is_the_code_epic.md
+  CLAIM: Filed from the owner's direction (the epic's DECISION note of 2026-10-18T11:45:58Z); the evidence it
+    starts from is the epic's FACT note and its probes. Nothing in src/ moves before this story's component patch is
+    approved.
+  EVIDENCE: context_compass/tickets/epics/2026-10-18_spell_identity_is_the_code_epic.md:220-270
   IMPACT: The scope, requirements and acceptance above are the plan the patch docs refine.
   NEXT: the component patch once S1 and S2 land.
   REREAD: HELPFUL

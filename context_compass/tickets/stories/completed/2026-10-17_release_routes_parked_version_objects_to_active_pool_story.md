@@ -108,7 +108,8 @@ a release after a notch can leave a limited_quantity or queue pool counting an o
   linked below); the owner's go for part A (2026-10-18).
 - [x] Task: part A with symptom-named regression tests, docs, notch and the rebuild last (0.2.8254,
   2026-10-18; MEASURE notes).
-- [ ] Task: part B after melder_1 releases spellbook.py - not built here: superseded by EPIC-2026-10-18-spell_identity_is_the_code
+- [ ] Task: part B after melder_1 releases spellbook.py - not built here: superseded by
+  EPIC-2026-10-18-spell_identity_is_the_code
   (STORY-2026-10-18-one_registration_per_object).
 - [x] Enforce Ticket Microcycle across all linked tasks.
 - [x] Record meaningful attributed findings in supported Notes/comments or authorized linked evidence.
@@ -156,7 +157,8 @@ a release after a notch can leave a limited_quantity or queue pool counting an o
 
 - Answered (owner, chat 2026-10-18): only the four managed settings leave the spell_id; the address, existence,
   disposal names and resolvable stay (DECISION note).
-- Moved (owner, 2026-10-18) to EPIC-2026-10-18-spell_identity_is_the_code: part B's staging refusal (one registration per object), the legacy
+- Moved (owner, 2026-10-18) to EPIC-2026-10-18-spell_identity_is_the_code: part B's staging refusal (one
+  registration per object), the legacy
   record (its migration story) and the bind call (all of it leaves the spell_id as a binding manifest).
 - Answered (owner, 2026-10-17): the earlier options 1-4 - option 2, settings out of the spell_id, as a bug fix
   (DECISION note).
@@ -169,7 +171,8 @@ a release after a notch can leave a limited_quantity or queue pool counting an o
   the spell_id; notch the version for the cache; melder_0 takes the lane (DECISION note).
 - 2026-10-18T00:42:22Z: the owner confirmed the scope (the four settings only) and gave the go for part A;
   part B, the legacy record and anything more are for the talk after it (DECISION note).
-- 2026-10-18T11:45:58Z: the owner's identity direction moved part B and the open questions to EPIC-2026-10-18-spell_identity_is_the_code; turned in on
+- 2026-10-18T11:45:58Z: the owner's identity direction moved part B and the open questions to
+  EPIC-2026-10-18-spell_identity_is_the_code; turned in on
   his word (DECISION note).
 
 ## Artifact Links (Optional)
@@ -181,10 +184,12 @@ this does not make independent review mandatory for every ticket.
   - artifacts/correctness_defects_20261017/probes/probe_managed_release_routing.py (cases Q1-Q6)
   - artifacts/correctness_defects_20261017/runs/probe_managed_release_routing_gil0.txt
   - artifacts/correctness_defects_20261017/runs/probe_managed_release_routing_gil1.txt
-  - artifacts/correctness_defects_20261017/probes/probe_same_id_staging.py (cases S1, S2: the same spell_id staged; a settings change today)
+  - artifacts/correctness_defects_20261017/probes/probe_same_id_staging.py (cases S1, S2: the same spell_id staged;
+    a settings change today)
   - artifacts/correctness_defects_20261017/runs/probe_same_id_staging_gil0.txt
   - artifacts/correctness_defects_20261017/runs/probe_same_id_staging_gil1.txt
-  - artifacts/correctness_defects_20261017/probes/probe_settings_rebind.py (cases R1-R3: a settings change on the tree and on the prototype)
+  - artifacts/correctness_defects_20261017/probes/probe_settings_rebind.py (cases R1-R3: a settings change on the
+    tree and on the prototype)
   - artifacts/correctness_defects_20261017/runs/probe_settings_rebind_tree_gil0.txt
   - artifacts/correctness_defects_20261017/runs/probe_settings_rebind_tree_gil1.txt
   - artifacts/correctness_defects_20261017/runs/probe_settings_rebind_proto_gil0.txt
@@ -198,13 +203,16 @@ this does not make independent review mandatory for every ticket.
   - artifacts/correctness_defects_20261017/probes/probe_release_note_s6.py (cases E1, E2: the release note's example)
   - artifacts/correctness_defects_20261017/runs/probe_release_note_s6_gil0.txt
   - artifacts/correctness_defects_20261017/runs/probe_release_note_s6_gil1.txt
-  - artifacts/correctness_defects_20261017/probes/probe_cross_frame_same_id.py (cases C1-C4: one managed class in two frames)
+  - artifacts/correctness_defects_20261017/probes/probe_cross_frame_same_id.py (cases C1-C4: one managed class in
+    two frames)
   - artifacts/correctness_defects_20261017/runs/probe_cross_frame_same_id_gil0.txt
   - artifacts/correctness_defects_20261017/runs/probe_cross_frame_same_id_gil1.txt
-  - artifacts/correctness_defects_20261017/probes/probe_fingerprint_reads_code.py (cases F1-F5: what the spell_id reads from the code)
+  - artifacts/correctness_defects_20261017/probes/probe_fingerprint_reads_code.py (cases F1-F5: what the spell_id
+    reads from the code)
   - artifacts/correctness_defects_20261017/runs/probe_fingerprint_reads_code_gil0.txt
   - artifacts/correctness_defects_20261017/runs/probe_fingerprint_reads_code_gil1.txt
-  - artifacts/correctness_defects_20261017/probes/probe_code_hash_prototype.py (cases P1-P10: a code-only spell_id prototype against today's)
+  - artifacts/correctness_defects_20261017/probes/probe_code_hash_prototype.py (cases P1-P10: a code-only spell_id
+    prototype against today's)
   - artifacts/correctness_defects_20261017/runs/probe_code_hash_prototype_gil0_seed1.txt
   - artifacts/correctness_defects_20261017/runs/probe_code_hash_prototype_gil0_seed2.txt
   - artifacts/correctness_defects_20261017/runs/probe_code_hash_prototype_gil1_seed1.txt
@@ -216,9 +224,11 @@ this does not make independent review mandatory for every ticket.
   - system_docs/patches/completed/managed_settings_spell_id_2026_10_17/component_patch_creation_cache_generation.md
   - system_docs/patches/completed/managed_settings_spell_id_2026_10_17/component_patch_staging_refusal.md
 - DISPOSITION: retain_as_reference (probes and runs); promote_to_documentation (the patch docs)
-- CLEANUP_TRIGGER: applied at closure (2026-10-18T11:45:58Z): the probes and runs stay as the defect's reproducers, rowed
+- CLEANUP_TRIGGER: applied at closure (2026-10-18T11:45:58Z): the probes and runs stay as the defect's reproducers,
+  rowed
   under EPIC-2026-10-17-correctness_defects; the patch docs were promoted at 0.2.8254 and are archived under
-  system_docs/patches/completed/; the identity probes (fingerprint, prototype, internals) are rowed under EPIC-2026-10-18-spell_identity_is_the_code
+  system_docs/patches/completed/; the identity probes (fingerprint, prototype, internals) are rowed under
+  EPIC-2026-10-18-spell_identity_is_the_code
 
 ## Context Management
 - CONTEXT_MANAGEMENT_REQUIRED: false
@@ -229,7 +239,8 @@ this does not make independent review mandatory for every ticket.
 - IF_UNKNOWN: none
 
 ## Contribution Attribution
-- Ticket/Work Author(s): melder_0 (synaptic_python_developer); prose and evidence (the probe); filed 2026-10-17T21:07:53Z.
+- Ticket/Work Author(s): melder_0 (synaptic_python_developer); prose and evidence (the probe); filed
+  2026-10-17T21:07:53Z.
 - Published By: UNKNOWN (a local ticket file; not published)
 - Independent Review: none yet
 
@@ -978,7 +989,7 @@ this does not make independent review mandatory for every ticket.
     and this story closes with part A
     delivered and part B not built.
   EVIDENCE:
-  - context_compass/tickets/epics/2026-10-18_spell_identity_is_the_code_epic.md
+  - context_compass/tickets/epics/2026-10-18_spell_identity_is_the_code_epic.md:220-239
   IMPACT: Part B's staging refusal is superseded: under the new identity one object cannot be registered twice at all.
   NEXT: Turn this story in; open the epic and its stories.
   REREAD: REQUIRED
@@ -1002,8 +1013,8 @@ this does not make independent review mandatory for every ticket.
     another root (the epic's Open Questions; the owner set pool routing aside). The release resolver is unchanged.
     The patch docs are archived (part A's promoted at 0.2.8254; part B's not built).
   EVIDENCE:
-  - context_compass/tickets/epics/2026-10-18_spell_identity_is_the_code_epic.md
-  - src/melder/__version__.py:12-12
+  - context_compass/tickets/epics/2026-10-18_spell_identity_is_the_code_epic.md:116-126
+  - release_docs/next_version_release.md:434-442
   IMPACT: Nothing of this story stays active; its open items live in the epic's stories.
   NEXT: None here; EPIC-2026-10-18-spell_identity_is_the_code.
   REREAD: HELPFUL

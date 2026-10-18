@@ -8,7 +8,7 @@
 - Agent Role: synaptic_python_developer
 - Priority: p1
 - Created: 2026-10-17T20:11:34Z
-- Updated: 2026-10-18T02:15:32Z
+- Updated: 2026-10-18T14:14:10Z
 - Target Window: 2026-Q4
 - Related Program/Initiative: Melder runtime correctness (the owner's direction, chat 2026-10-17)
 
@@ -89,7 +89,7 @@ those, and only those, keeps the core trustworthy without judging Melder by rule
 ## Milestones (Track Progress)
 - [x] Milestone 1: sweep plan recorded - areas, order, exclusions (PLAN note).
 - [x] Milestone 2: areas swept - each recorded as a defect or as checked with its reason.
-- [ ] Milestone 3: a story per confirmed defect; the owner told what was found.
+- [x] Milestone 3: a story per confirmed defect; the owner told what was found.
 
 ## Stories (Required to Complete)
 - [ ] Story: STORY-2026-10-17-staged_version_releases_active_signature - staging, moving or
@@ -102,15 +102,19 @@ those, and only those, keeps the core trustworthy without judging Melder by rule
   mints is missing from the frame's spell registry, so its version is unknown by spell_id (sweep A3).
 - [ ] Story: STORY-2026-10-17-restore_drops_separated_parked_version - a restore drops a parked version
   alone in its own index and still reports complete (sweep A5).
-- [ ] Story: STORY-2026-10-17-release_routes_parked_version_objects_to_active_pool - a release with no filter
+- [x] Story: STORY-2026-10-17-release_routes_parked_version_objects_to_active_pool - a release with no filter
   sends a parked version's object to the active version's pool and strands its count (sweep A6). Part A landed
-  at 0.2.8254 (the managed settings left the spell_id; owner, 2026-10-17); part B waits for the owner's talk.
+  at 0.2.8254 (the managed settings left the spell_id; owner, 2026-10-17); turned in 2026-10-18 on the owner's
+  identity direction, part B superseded by EPIC-2026-10-18-spell_identity_is_the_code; in tickets/stories/completed/.
 - [ ] Story: STORY-2026-10-17-book_teardown_leaves_parked_versions_uncleaned - Book teardown leaves
   its parked versions and parked-only indexes uncleaned, beyond any cleanup (sweep A7).
 - [ ] Story: STORY-2026-10-17-failed_notch_keeps_switch_without_borrowers - a notch whose commit
-  validation fails keeps its switch and leaves its borrowers behind (sweep A9).
+  validation fails keeps its switch and leaves its borrowers behind (sweep A9). melder_1's (the owner-approved
+  patch failed_notch_refusal_2026_10_18; M1-30, M1-31); on hold by the owner since 2026-10-18T13:38:59Z, no src
+  edit made (M1-33).
 - [ ] Story: STORY-2026-10-17-direct_cleanup_of_active_member_orphans_parked_versions - a direct cleanup
-  of an index's active member leaves its parked versions on a cleaned index (sweep A10).
+  of an index's active member leaves its parked versions on a cleaned index (sweep A10). melder_1 is fixing it
+  (patch direct_cleanup_refusal_2026_10_18; M1-33); S4 and S7 follow with melder_1, one at a time (M1-32).
 - [x] Story: STORY-2026-10-17-minted_index_selects_its_parked_version - the index
   remove_from_spell_index mints selects its parked version, so a graft activates it (sweep A12). Withdrawn on
   the owner's ruling (2026-10-17): not a defect; in tickets/stories/completed/.
@@ -141,8 +145,8 @@ those, and only those, keeps the core trustworthy without judging Melder by rule
 
 ## Open Questions
 
-- None open on the stories: the owner confirmed S6's scope (2026-10-18: only the four managed settings leave the
-  spell_id). For the talk after S6's part A: its part B refusal, its legacy record, anything more of the bind call.
+- None open on the stories. S6's open items - part B's refusal, its legacy record and the rest of the bind call -
+  moved with its turn-in (2026-10-18) to EPIC-2026-10-18-spell_identity_is_the_code.
 
 ## Decision Log
 - 2026-10-17T20:11:34Z: opened on the owner's direction (DECISION note).
@@ -180,6 +184,14 @@ those, and only those, keeps the core trustworthy without judging Melder by rule
   spell_id, notch for the cache; melder_0 takes S6's fix lane (DECISION note).
 - 2026-10-18T00:42:22Z: the owner confirmed S6's scope - the four managed settings only - and gave the go for
   part A (DECISION note).
+- 2026-10-18T12:06:53Z: the owner's identity direction: S6 turned in (part A delivered, part B superseded); its open
+  items moved to EPIC-2026-10-18-spell_identity_is_the_code (DECISION note).
+- 2026-10-18T13:06:51Z: the owner's order (M1-30): parallel - melder_1 takes the stories he fully confirmed, one
+  at a time, S8 first; melder_0 runs EPIC-2026-10-18-spell_identity_is_the_code (FACT note).
+- 2026-10-18T13:11:35Z: the owner's order for the fixes (melder_1's DECISION note; M1-32): S8, then S4, S7 and S9
+  with melder_1; S3 waits for its open question; S1, S2 and S5 wait for EPIC-2026-10-18-spell_identity_is_the_code.
+- 2026-10-18T14:14:10Z: S8 on hold by the owner (13:38:59Z); melder_1 started S9 and holds spellbook.py and
+  spell.py for it (FACT note).
 
 ## Artifact Links (Optional)
 Qualified independent reviewer acceptance and direct closure follow shared `ticketing.md`;
@@ -854,6 +866,82 @@ this does not make independent review mandatory for every ticket.
   REREAD: HELPFUL
   SCORE_0_TO_10: 7
 
+- DATETIME: 2026-10-18T12:06:53Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: The owner's direction (chat 2026-10-18) took the spell's identity out of this epic: a spell_id is the
+    registered object's code and the bind signature a binding manifest with its own hash, built in a new epic ("if
+    your going to implement anything please make an epic, document your stories for it and lets hit that up next
+    turn in anything you completed and leave notes on things you left open"). So S6 is turned in - part A delivered
+    at 0.2.8254, part B superseded (one registration per object covers its case) - and its open items live in
+    EPIC-2026-10-18-spell_identity_is_the_code. Eight stories stay ready (S1-S5, S7-S9), S6 is done, S10 withdrawn.
+    melder_1 turned in its lane and handed back spellbook.py and conduit.py (M1-28), so the fixes that waited for
+    them (S1-S4, S7-S9) wait only for the owner's scheduling; the new epic touches the same files, and with one
+    writer per file the owner's order decides which lane goes first.
+  EVIDENCE:
+  - context_compass/tickets/stories/completed/2026-10-17_release_routes_parked_version_objects_to_active_pool_story.md:977-996
+  - context_compass/tickets/stories/completed/2026-10-17_release_routes_parked_version_objects_to_active_pool_story.md:998-1021
+  - context_compass/tickets/epics/2026-10-18_spell_identity_is_the_code_epic.md:116-126
+  IMPACT: This epic keeps its eight ready stories and its sweep record; the identity work runs in its own epic.
+  NEXT: The owner's order: the identity epic's calls first, or a correctness fix.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-18T13:06:51Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: The owner's order, relayed by melder_1 (M1-30, 2026-10-18T12:30:17Z; consumed): parallel - melder_0 keeps
+    EPIC-2026-10-18-spell_identity_is_the_code; melder_1 takes this epic's stories one at a time, only those the
+    owner fully confirmed, each re-verified on the current tree before any change. melder_1 started with
+    STORY-2026-10-17-failed_notch_keeps_switch_without_borrowers (S8; in_progress, its own board row); the owner
+    approved its patch (failed_notch_refusal_2026_10_18, M1-31), and spellbook.py, conduit.py,
+    spellbook_validation_error.py and change_control_manager.py are melder_1's until it lands (released, M0-194).
+  EVIDENCE:
+  - context_compass/tickets/stories/2026-10-17_failed_notch_keeps_switch_without_borrowers_story.md:1-12
+  - context_compass/system_docs/patches/active/failed_notch_refusal_2026_10_18/architecture_patch.md:1-62
+  IMPACT: The handoff's first open item (the owner's order) is answered; each remaining story waits for melder_1's
+    next pick or the owner's word.
+  NEXT: Keep this epic's record current as melder_1 lands and turns in each story.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
+- DATETIME: 2026-10-18T13:11:35Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: The owner's order for these fixes (chat 2026-10-18). Asked between EPIC-2026-10-18-spell_identity_is_the_code
+    and the ready stories, he chose "Parallel (Recommended)": melder_0 keeps the identity epic; melder_1 takes the
+    correctness fixes one at a time, S8 first, claiming each file from melder_0 by mailbox; S1, S2 and S5 wait for
+    the identity epic. Of the rest he said "do the ones without open questions please": S4, S7 and S9, which carry
+    none, are melder_1's after S8; S3 waits for its open question. Each story is re-verified on the current tree
+    before any change, and melder_0 is told (M1-30, M1-32).
+  EVIDENCE: context_compass/tickets/stories/2026-10-17_failed_notch_keeps_switch_without_borrowers_story.md:245-266
+  IMPACT: The Handoff's next step (1), the owner's order, is answered: S8 in progress (melder_1), then S4, S7 and S9;
+    S3 open; S1, S2 and S5 after the identity epic.
+  NEXT: S8's fix, then S4's re-verification.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-18T14:14:10Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: M1-33 and M1-34 from melder_1, consumed. The owner put S8 on hold (chat 2026-10-18; S8's DECISION note of
+    2026-10-18T13:38:59Z) with no src edit made: conduit.py, spellbook_validation_error.py and
+    change_control_manager.py are free while it waits, and melder_1 claims them again before S8 resumes. On the
+    owner's word melder_1 took S9 (STORY-2026-10-17-direct_cleanup_of_active_member_orphans_parked_versions, patch
+    direct_cleanup_refusal_2026_10_18) and holds spellbook.py (`cleanup_and_remove_spell`) and, released by
+    M0-195, spell.py (`Spell.cleanup`'s Raises entry) until S9 lands; no edit before the owner's word on S9's edits.
+  EVIDENCE:
+  - context_compass/tickets/stories/2026-10-17_failed_notch_keeps_switch_without_borrowers_story.md:437-452
+  - context_compass/tickets/stories/2026-10-17_direct_cleanup_of_active_member_orphans_parked_versions_story.md:1-40
+  IMPACT: S9 is the story in progress; S8 waits for the owner; S4 and S7 follow S9 with melder_1.
+  NEXT: Keep this record current as melder_1 lands S9.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
@@ -870,7 +958,9 @@ this does not make independent review mandatory for every ticket.
 ## Context / Handoff Summary
 - Scope: correctness defects - structure Melder records wrong or leaves stuck - by the owner's rulings (DECISION
   note); read-only; one story per confirmed defect; melder_1's lane excluded.
-- State: in_progress (melder_0), discovery. A1-A12 are done; ten stories filed - nine ready and unassigned, S10
+- State: in_progress (melder_0), handoff. A1-A12 are done; ten stories filed - S9 in_progress with melder_1
+  (M1-33); S8 blocked, on hold by the owner (M1-33); S4 and S7 next with melder_1; S3 waiting for its open
+  question; S1, S2 and S5 waiting for EPIC-2026-10-18-spell_identity_is_the_code (M1-32); S6 done; S10
   withdrawn:
   STORY-2026-10-17-staged_version_releases_active_signature (p1),
   STORY-2026-10-17-notch_moves_signature_by_incoming_key_only (p2; answered: the notch moves the claim; its
@@ -880,14 +970,15 @@ this does not make independent review mandatory for every ticket.
   misses the version too, A8),
   STORY-2026-10-17-restore_drops_separated_parked_version (p2; answered: restore and graft rebuild it
   parked; a graft activates it today, A12),
-  STORY-2026-10-17-release_routes_parked_version_objects_to_active_pool (p2; in progress, melder_0: part A
-  landed at 0.2.8254, part B open),
+  STORY-2026-10-17-release_routes_parked_version_objects_to_active_pool (p2; done: part A landed at 0.2.8254,
+  turned in 2026-10-18 with part B superseded by EPIC-2026-10-18-spell_identity_is_the_code),
   STORY-2026-10-17-book_teardown_leaves_parked_versions_uncleaned (p3),
   STORY-2026-10-17-failed_notch_keeps_switch_without_borrowers (p2; answered: refused with nothing moved),
   STORY-2026-10-17-direct_cleanup_of_active_member_orphans_parked_versions (p2) and
   STORY-2026-10-17-minted_index_selects_its_parked_version (p3; withdrawn: not a defect, owner 2026-10-17).
-  Fixes in spellbook.py and conduit.py (S1-S4, S7-S9) wait for melder_1's release; restore_engine.py and
-  graft_runner.py (S5) and release_managed_spell.py (S6) are free.
+  The owner's order is parallel (M1-30, M1-32): melder_1 holds spellbook.py and spell.py for S9 until it lands
+  (M1-33, M0-195); conduit.py, spellbook_validation_error.py and change_control_manager.py are back with
+  melder_0 while S8 is on hold; each lane claims a file from the other by mailbox before editing it.
 - Done since: the owner told of S1-S5, then S6-S8, then S9-S10 with their questions, the widenings and S8's
   bind precedent (chat); melder_1 told of the eight stories whose fixes sit in its files (M0-181, M0-182,
   M0-184, M0-185). The owner answered S2 and S5 (DECISION note of 2026-10-17T21:55:46Z); melder_1 told (M0-186).
@@ -895,9 +986,12 @@ this does not make independent review mandatory for every ticket.
   not a defect (DECISION note of 2026-10-17T23:25:30Z); melder_1 told (M0-188). The owner chose S6's direction
   (DECISION note of 2026-10-17T23:50:39Z): the managed settings leave the spell_id; melder_0 runs its fix lane.
   The owner confirmed S6's scope (DECISION note of 2026-10-18T00:42:22Z); melder_1's 0.2.8253 landed (M1-26).
-  S6's part A landed at 0.2.8254 and was rebuilt last; its files are released to melder_1 (M0-192).
-- Next: (1) the owner's talk on S6's part B, its legacy record and anything more of the bind call; (2) a fourth
-  tranche on the owner's word; (3) melder_1 carries S1-S4 and S7-S9 with its hand-back.
+  S6's part A landed at 0.2.8254 and was rebuilt last; its files are released to melder_1 (M0-192). S6 is
+  turned in on the owner's identity direction (DECISION note of 2026-10-18T12:06:53Z); its open items moved to
+  EPIC-2026-10-18-spell_identity_is_the_code; melder_1 handed every file back (M1-28) and is told (M0-193).
+- Next: (1) melder_1 fixes S9, then S4 and S7, one at a time, and S8 when the owner lifts its hold (M1-32,
+  M1-33); (2) S3 after the owner answers its open question, S1, S2 and S5 after the identity epic; (3) each fix
+  with the patch gate, its notch and the rebuild; (4) a fourth tranche on the owner's word.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->
