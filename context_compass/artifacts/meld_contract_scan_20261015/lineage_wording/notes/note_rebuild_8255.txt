@@ -1,0 +1,21 @@
+- DATETIME: {ts}
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: Rebuilt last at 0.2.8255, from the repository root on Python 3.14.7t, after the notch, the release-note line,
+    the Notes, the closure, the move to completed/ and the board and artifact sync. The asset runner ran whole in a
+    mirror under /tmp (src/ and the system docs copied byte-equal), because its system-documents writer unlinks its
+    payloads and the connected folder refuses deletes: all three assets at v0.2.8255 (468, 628 and 4 entries). It
+    changed five manifests and nothing else (no file added or missing); each was copied over its original and
+    compared byte-equal, and the asset --check on the repository printed only OK lines. The LLM bundles
+    (--include-untracked) rewrote src (583 files) and other (404) and the manifest, tests unchanged; their --check
+    printed only OK lines. No .git/index.lock; the mirror was removed.
+  EVIDENCE:
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/runs/rebuild_assets_0_2_8255_mirror.txt:1-12
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/runs/rebuild_assets_0_2_8255_check.txt:1-7
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/runs/rebuild_llm_0_2_8255.txt:1-8
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/runs/rebuild_llm_0_2_8255_check.txt:1-7
+  IMPACT: 0.2.8255 is landed whole; nothing is committed (the owner commits). The lane's held files are free.
+  NEXT: Send NOTICE M1-28 to melder_0 (0.2.8255 taken; the lane's files released), then report to the owner.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8

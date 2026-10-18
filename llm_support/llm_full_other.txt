@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: other
-SOURCE FINGERPRINT: 9ca563349b1ffb3d073f636029738db732a8842868ef0cec53118aa1fe3a0410
+SOURCE FINGERPRINT: 1906914a916df8d9f24a10dc3714a04994cb6a9d8958afe68727f044b2a4ef6d
 FILE COUNT: 404
 
 ================================================================================
@@ -75737,10 +75737,10 @@ END FILE: release_docs/0.2.8227.md
 ================================================================================
 ================================================================================
 BEGIN FILE: release_docs/next_version_release.md
-CONTENT SHA256: 2d9f8537f09fd1f6aaaa01bb8d4c7b8194d4dbebddbc1bde56e42f89faacd39e
+CONTENT SHA256: e8ff9350a7ceda6f684754cab68a3fad9646372582c269381d34254e5c5dd9ff
 SOURCE ENCODING: utf-8
 ================================================================================
-# Melder 0.2.8254
+# Melder 0.2.8255
 
 **Unreleased**
 
@@ -76738,7 +76738,10 @@ missing-provider report. No public signature changes.
   describe a managed spell's settings as settings of the one spell: the fingerprint without them, the pool taking
   new settings on a rebind under its spell_id, and the creation cache's generation 22; `ManagedSpellMode` and the
   bind fingerprint's docstrings say the same, and the code-map extents of the changed files are remeasured.
-- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8254.
+- Docstrings and comments that called a `SpellIndex` a lineage now call it a SpellIndex; "lineage" stays for the
+  conduit scope tree (`unique_per_conduit_lineage`, a root and its lesser conduits). Identifiers, diagnostic codes
+  and runtime messages are unchanged.
+- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8255.
 ================================================================================
 END FILE: release_docs/next_version_release.md
 ================================================================================

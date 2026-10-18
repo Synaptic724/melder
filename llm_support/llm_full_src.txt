@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: src
-SOURCE FINGERPRINT: ee2958a40a02b9a3e69974dfcbd2f4103f8611b670f18bbc614c5a5df358cb82
+SOURCE FINGERPRINT: 461a58a42f61bfd892a8850159f204ca0aa3e192d68d75a37f0d82d3e93fe41d
 FILE COUNT: 583
 
 ================================================================================
@@ -612,7 +612,7 @@ END FILE: src/melder/__melder_cache__/__melder_cache__.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/__version__.py
-CONTENT SHA256: c5217944ac31c0a985dc0e703242f98db64d329e71c18d2bb7a49a3972f13f2d
+CONTENT SHA256: 7d75720441d6ccb807ec5448b3f5069b1e96702b61d6c45cf5b1c4a19b1ea8e6
 SOURCE ENCODING: utf-8
 ================================================================================
 
@@ -626,7 +626,7 @@ Contract:
   negotiation or runtime compatibility checks by itself.
 """
 
-__version__ = "0.2.8254"
+__version__ = "0.2.8255"
 ================================================================================
 END FILE: src/melder/__version__.py
 ================================================================================
@@ -58966,7 +58966,7 @@ END FILE: src/melder/aether/conduit/conduit_ward/policies/policies.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py
-CONTENT SHA256: e04ea4cb3c5af687a92b8222a97580eb0a9da82c05de777621491366ed47f9d8
+CONTENT SHA256: 7b58a3933b6dccc1cb6a2e5f620647efaaa15fbc89655c50f284916a5270a66c
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -60099,7 +60099,7 @@ class TransferOfOwnership(Cleanable):
 
         Some transfer paths move creation state in batches rather than one
         object at a time. This rollback step first tries to drain any partial
-        target-side creations for the index's members, then restores the original
+        target-side creations for that spell_id, then restores the original
         extracted payload to the source so ownership and disposal state line up
         with the pre-transfer world again.
 
@@ -65402,7 +65402,7 @@ END FILE: src/melder/aether/conduit/creations/release_managed_spell.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/conduit/meld/conduit_meld.py
-CONTENT SHA256: f5fa81e8549453b2fd4ace5efbfa81749f428b0f5eb1aff9260d37e2d59aeebe
+CONTENT SHA256: b4b3f8ab45c2fcd6c22f92b8d194f77c4c81c7dcdeb1ccb25b243609664a4f27
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import TYPE_CHECKING, Optional, Dict, Any, Callable, ClassVar, Union
@@ -66159,7 +66159,7 @@ class ConduitMeld(Meld):
             - Returns one already-live object or raises.
             - Supports only lifecycles that can resolve to one deterministic
               existing object.
-            - Rejects spellspace-scoped spells on the conduit-facing door.
+            - Rejects `requires_spellspace_request` spells on the conduit-facing door.
             - Reads caller-local conduit storage for `unique_per_conduit`, the
               Spell owner's `owner_creations` for `unique`, the lineage root for
               `unique_per_conduit_lineage` and the cluster's team store for
@@ -66319,7 +66319,7 @@ class ConduitMeld(Meld):
             - Reports the query conduit context explicitly so callers know
               whether the answer came from this conduit's store or a shared
               store; `active_spellspace_id` is always None on this door.
-            - Rejects spellspace-scoped spells on the conduit-facing door
+            - Rejects `requires_spellspace_request` spells on the conduit-facing door
               instead of pretending conduit-local storage can answer them.
 
         Args:
@@ -108582,7 +108582,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_4.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py
-CONTENT SHA256: 27f5043a10c3bef25e774833039857cf56e28b6cc32d25079f04225bfd47925b
+CONTENT SHA256: 37c6f44896f302cfe51c224a91d292337dca85410ad25d253aa5f751adf4e843
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import TYPE_CHECKING, Collection, Dict, List, Mapping, Optional, Set
@@ -108864,7 +108864,7 @@ class CompilerPhase5:
             Share index construction between frame-wide and local Phase 5 paths.
         Contract:
             - Requires every snapshot spell id to be present in "spell_lookup".
-            - Resolves lineage ids from SpellSystemStates.
+            - Resolves each spell's SpellIndex id from SpellSystemStates.
             - Does not mutate snapshot or spell_lookup.
         Args:
             snapshot:
@@ -232611,7 +232611,7 @@ END FILE: src/melder/nexus/rift/frame_link/frame_link_contract.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/nexus/rift/frame_viewer/frame_viewer.py
-CONTENT SHA256: 716dbc505c538072fbd327ca99f205ecfcd8d40ad6aa399c1e276dbe42cd5884
+CONTENT SHA256: 1f90b2941db7f9b9a26ecf0a88060ef0a44e59338e65a016dc4c03a87d2ee318
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -236250,7 +236250,7 @@ class FrameViewer(Cleanable):
         Purpose:
             Make visible ambiguity explicit at the frame-local surface so the
             operator can see where multiple visible spells share the same
-            binding name, spell name, lineage, or spellframe.
+            binding name, spell name, spell index, or spellframe.
 
         Contract:
             - FACADE PASS-THROUGH to `ViewFrame.describe_visible_collisions(...)`. Filtering, ordering and raise
@@ -239099,7 +239099,7 @@ class FrameViewer(Cleanable):
 
         Purpose:
             Give the operator one direct spell crosswalk from the spell to its
-            conduit, root conduit, peer conduits, spellbook, lineage, and
+            conduit, root conduit, peer conduits, spellbook, spell index, and
             visible sibling spells.
 
         Contract:
@@ -247445,7 +247445,7 @@ END FILE: src/melder/nexus/rift/frame_viewer/view_multiframe.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/nexus/rift/frame_viewer/view_spell.py
-CONTENT SHA256: 99264e33e20300d80b6f31d7f3dca92e2051be1e38c89e734e79e8ac5be932fb
+CONTENT SHA256: b7798b21e8ca9e25261b7820dab40e8832742ad4722a2cf0abf9df6548a60f3b
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -248301,7 +248301,7 @@ class ViewSpell(Cleanable):
             index context inside the current frame.
 
         Contract:
-            - Describes the spell's INDEX, i.e. its version lineage, so it answers
+            - Describes the spell's INDEX, the SpellIndex organizing its versions, so it answers
               "what other versions exist" rather than "what is this version".
             - VISIBILITY-FILTERED PROJECTION: absence means "not visible to this rift"
               OR "not present", indistinguishable from outside.
@@ -249178,8 +249178,8 @@ class ViewSpell(Cleanable):
 
         Contract:
             - EXACT, CASE-SENSITIVE match on spell index id. Because an index tracks
-              a whole version lineage, this returns EVERY visible spell sharing that
-              lineage, not one spell.
+              every version it organizes, this returns EVERY visible spell in that
+              index, not one spell.
             - Empty `spell_index_id` is rejected up front.
             - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
               rift" OR "not present" - indistinguishable from outside. Never use an

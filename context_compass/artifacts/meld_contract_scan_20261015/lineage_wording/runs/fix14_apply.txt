@@ -1,0 +1,20 @@
+--- src/melder/aether/conduit/meld/conduit_meld.py
++++ src/melder/aether/conduit/meld/conduit_meld.py
+@@ -754,3 +754,3 @@
+               existing object.
+-            - Rejects spellspace-scoped spells on the conduit-facing door.
++            - Rejects `requires_spellspace_request` spells on the conduit-facing door.
+             - Reads caller-local conduit storage for `unique_per_conduit`, the
+@@ -914,3 +914,3 @@
+               store; `active_spellspace_id` is always None on this door.
+-            - Rejects spellspace-scoped spells on the conduit-facing door
++            - Rejects `requires_spellspace_request` spells on the conduit-facing door
+               instead of pretending conduit-local storage can answer them.
+--- src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py
++++ src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py
+@@ -1130,3 +1130,3 @@
+         object at a time. This rollback step first tries to drain any partial
+-        target-side creations for the index's members, then restores the original
++        target-side creations for that spell_id, then restores the original
+         extracted payload to the source so ownership and disposal state line up
+2 files, 3 edits applied and read back

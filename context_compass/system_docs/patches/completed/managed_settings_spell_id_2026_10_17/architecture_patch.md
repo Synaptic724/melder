@@ -2,11 +2,12 @@
 
 ## Metadata
 - Patch ID: managed_settings_spell_id_2026_10_17
-- Status: part A landed at 0.2.8254 and is promoted to the system documents and the graph; part B and the
-  legacy record are open, for the talk with the owner
+- Status: archived at the story's closure (2026-10-18T11:45:58Z): part A landed at 0.2.8254 and was promoted to the
+  system documents and the graph; part B was not built - superseded by EPIC-2026-10-18-spell_identity_is_the_code
+  (one object, one spell)
 - Owner: user (ruling, chat 2026-10-17); melder_0 (synaptic_python_developer) (patch)
 - Created: 2026-10-18T00:10:00Z
-- Updated: 2026-10-18T02:05:25Z
+- Updated: 2026-10-18T11:45:58Z
 - Ticket: STORY-2026-10-17-release_routes_parked_version_objects_to_active_pool (S6 of
   EPIC-2026-10-17-correctness_defects)
 

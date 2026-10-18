@@ -1128,7 +1128,7 @@ class TransferOfOwnership(Cleanable):
 
         Some transfer paths move creation state in batches rather than one
         object at a time. This rollback step first tries to drain any partial
-        target-side creations for the index's members, then restores the original
+        target-side creations for that spell_id, then restores the original
         extracted payload to the source so ownership and disposal state line up
         with the pre-transfer world again.
 

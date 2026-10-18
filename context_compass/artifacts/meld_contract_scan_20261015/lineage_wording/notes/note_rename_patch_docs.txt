@@ -1,0 +1,46 @@
+- DATETIME: {ts}
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION_REQUEST
+  CLAIM: The rename patch docs for the owner's "Messages and renames" are written, each candidate read in its method
+    first: system_docs/patches/active/spell_index_naming_2026_10_18/ - architecture_patch.md (the map, the codes,
+    keys and messages, invariants, migration order) and five component patches (Phase 6 validation, RiskManager, the
+    meld gate, the transfer, and tests/documents/graph/UX). The map: SpellSystemNode `lineage_id` and the
+    blueprint's `root_lineage_id` -> `spell_index_id`, `root_spell_index_id`; the three Phase 6 classes and modules
+    -> SpellIndexAlignmentStrategy, SpellIndexVersionConflictStrategy, RootSpellIndexConflictStrategy; codes
+    `root_lineage_mismatch`, `lineage_version_conflict`, `root_lineage_conflict`, `lineage_conduit_conflict` ->
+    `root_spell_index_mismatch`, `spell_index_version_conflict`, `root_spell_index_conflict`,
+    `spell_index_conduit_conflict`; detail keys -> `spell_index_id`, `node_spell_index_id`,
+    `known_spell_index_ids`; `Meld._ensure_lineage_resolvable` -> `_ensure_spell_index_resolvable`; RiskManager's
+    `lineages`, `_lineage_conduits` and resolvers -> `spell_index_ids`, `_spell_index_conduits`,
+    `_resolve_spell_index_id(...)`, its mixed key `lineage_key` -> `risk_key`; the transfer's four methods ->
+    `_mark_spell_index_dirty`, `_mark_spell_index_disabled`, `_conduit_has_impacted_index`, `impacted_index_ids`;
+    six messages reworded. Facts behind it: nothing is exported at the package root and nothing persisted reads a
+    renamed name (no cache generation or record change); the codes reach users only in SpellbookValidationError
+    text; both RootResolutionBlueprint builder sites pass a None SpellIndex id, so `root_lineage_mismatch` cannot
+    fire outside its unit tests (kept as is); the phase 2-5 IR capture has no production caller and hashes values;
+    RiskManager's one caller passes the id positionally; `_mark_lineage_dirty`'s Args names `spell_index` but the
+    parameter is `spell` (fixed with the rename). Plan: one landing for the wording pass and the renames, one notch.
+  EVIDENCE:
+  - context_compass/system_docs/patches/active/spell_index_naming_2026_10_18/architecture_patch.md:1-126
+  - context_compass/system_docs/patches/active/spell_index_naming_2026_10_18/component_patch_phase6_validation.md:1-71
+  - context_compass/system_docs/patches/active/spell_index_naming_2026_10_18/component_patch_risk_manager.md:1-39
+  - context_compass/system_docs/patches/active/spell_index_naming_2026_10_18/component_patch_meld_gate.md:1-28
+  - context_compass/system_docs/patches/active/spell_index_naming_2026_10_18/component_patch_transfer_of_ownership.md:1-33
+  - context_compass/system_docs/patches/active/spell_index_naming_2026_10_18/component_patch_tests_docs_graph.md:1-70
+  - src/melder/aether/spellbook/spell_compiler/system/spell_system_root_blueprint_builder.py:102-108
+  - src/melder/aether/spellbook/spell_compiler/system/spell_system_root_blueprint_builder.py:163-169
+  - src/melder/aether/spellbook/spell_compiler/system/validation/lineage_alignment_strategy.py:83-113
+  - src/melder/aether/spellbook/spell_compiler/phases/shared_compiler_executions.py:197-295
+  - src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_2.py:179-184
+  - src/melder/aether/aetheric_frame/dev_ops/risk_manager/risk_manager.py:400-427
+  - src/melder/aether/aetheric_frame/dev_ops/risk_manager/risk_manager.py:613-661
+  - src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_state.py:538-547
+  - src/melder/utilities/custom_exceptions/spellbook_validation_error.py:97-131
+  - src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py:739-760
+  IMPACT: No rename lands until the owner approves or edits the map (patch gate; synaptic approval loop). Two items
+    ride on his word: whether melder_0's M0-192 managed-settings text fixes (spell.py, restore_engine.py,
+    spellbook.py's collision message, two graph nodes) join this landing, and one notch for the whole naming change.
+  NEXT: Ask the owner to approve the rename map; after his word, red tests, then the src renames by hand.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9

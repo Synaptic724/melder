@@ -752,7 +752,7 @@ class ConduitMeld(Meld):
             - Returns one already-live object or raises.
             - Supports only lifecycles that can resolve to one deterministic
               existing object.
-            - Rejects spellspace-scoped spells on the conduit-facing door.
+            - Rejects `requires_spellspace_request` spells on the conduit-facing door.
             - Reads caller-local conduit storage for `unique_per_conduit`, the
               Spell owner's `owner_creations` for `unique`, the lineage root for
               `unique_per_conduit_lineage` and the cluster's team store for
@@ -912,7 +912,7 @@ class ConduitMeld(Meld):
             - Reports the query conduit context explicitly so callers know
               whether the answer came from this conduit's store or a shared
               store; `active_spellspace_id` is always None on this door.
-            - Rejects spellspace-scoped spells on the conduit-facing door
+            - Rejects `requires_spellspace_request` spells on the conduit-facing door
               instead of pretending conduit-local storage can answer them.
 
         Args:

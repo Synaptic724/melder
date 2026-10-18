@@ -4,10 +4,11 @@
 - Patch ID: managed_settings_spell_id_2026_10_17
 - Component: Spellbook Core (`bind_inactive`, `_apply_add_to_index`, the spell_id collision error) and
   ReleaseManagedSpell (`_resolve_pool`'s docstring)
-- Status: draft; for the talk after part A (owner, 2026-10-18); lands after melder_1 releases spellbook.py
+- Status: not built; superseded by EPIC-2026-10-18-spell_identity_is_the_code (one object, one spell; owner,
+  2026-10-18); archived with the story (2026-10-18T11:45:58Z)
 - Owner: user; melder_0 (synaptic_python_developer)
 - Created: 2026-10-18T00:10:00Z
-- Updated: 2026-10-18T00:42:22Z
+- Updated: 2026-10-18T11:45:58Z
 
 ## Component Purpose and Boundary
 - Current boundary: an index may hold versions under different binding signatures (owner, 2026-10-17); nothing stops

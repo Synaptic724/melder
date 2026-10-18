@@ -1,0 +1,26 @@
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/src/melder/__init__.py:199: UserWarning: Python 3.14+ detected, but running in GIL-enabled mode.
+melder is optimized for Python built with --disable-gil (PEP 703).
+Performance may be degraded.
+  warnings.warn(
+F1 same outline, different run body
+    v1: name=Worker qualname=Worker bases=['object'] mro=['Worker', 'object'] annotation_keys=[] method_names=['run'] init_signature='()'
+    v2: name=Worker qualname=Worker bases=['object'] mro=['Worker', 'object'] annotation_keys=[] method_names=['run'] init_signature='()'
+    spell_id v1=d557243d7e60 v2=d557243d7e60 equal=True
+    bind v1: bound d557243d7e60
+    bind v2: REFUSED RuntimeError: Spell ID collision detected. spell_id is computed from the spell's bind-time 
+F2 a parameter added to run
+    v3: name=Worker qualname=Worker bases=['object'] mro=['Worker', 'object'] annotation_keys=[] method_names=['run'] init_signature='()'
+    spell_id v1=d557243d7e60 v3=d557243d7e60 equal=True
+F3 an __init__ default changed
+    job1: name=Job qualname=Job bases=['object'] mro=['Job', 'object'] annotation_keys=[] method_names=[] init_signature='(retries: int = 1) -> None'
+    job2: name=Job qualname=Job bases=['object'] mro=['Job', 'object'] annotation_keys=[] method_names=[] init_signature='(retries: int = 5) -> None'
+    spell_id job1=ed3447fd4d65 job2=c8beb4afc6e7 equal=False
+F4 run renamed to execute
+    v4: name=Worker qualname=Worker bases=['object'] mro=['Worker', 'object'] annotation_keys=[] method_names=['execute'] init_signature='()'
+    spell_id v1=d557243d7e60 v4=49ed29407081 equal=False
+F5 two lambdas, one signature, different bodies
+    add_one: name=<lambda> qualname=<lambda> signature='(x)' params=[('x', 'POSITIONAL_OR_KEYWORD', None)] repr='<function <lambda>>' type=function lambda=True
+    times_hundred: name=<lambda> qualname=<lambda> signature='(x)' params=[('x', 'POSITIONAL_OR_KEYWORD', None)] repr='<function <lambda>>' type=function lambda=True
+    spell_id add_one=871c167f5763 times_hundred=871c167f5763 equal=True
+    bind add_one as 'op': bound 997b4fc8c321
+    bind times_hundred as 'op2': bound 5bd212bbc88d

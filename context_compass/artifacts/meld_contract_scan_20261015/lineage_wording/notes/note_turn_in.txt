@@ -1,0 +1,27 @@
+- DATETIME: {ts}
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: Turn-in on the owner's "Land + close". Notched 0.2.8255 (`__version__` read 0.2.8254 at landing) for the
+    SpellIndex wording edits - 552 docstring and comment lines, already in the owner's commit 80e4bdcca - and the
+    three audit corrections (uncommitted). The running release note's header reads 0.2.8255, "Packaging and
+    documentation" has one line for the change (docstrings and comments call a SpellIndex a SpellIndex; lineage
+    stays for the conduit scope tree; identifiers, diagnostic codes and runtime messages unchanged) and its rebuild
+    line names 0.2.8255. Tests for 0.2.8255: Not run (docstrings and comments only; every edited file parses with its
+    line count and line endings unchanged). The three patch folders are archived under system_docs/patches/completed/:
+    contracted_copy_removal_by_version_2026_10_16 (promoted at 0.2.8251), find_spell_by_spell_id_2026_10_17
+    (promoted at 0.2.8253) and spell_index_naming_2026_10_18 (withdrawn by the owner, unapplied).
+  EVIDENCE:
+  - src/melder/__version__.py:12-12
+  - release_docs/next_version_release.md:1-1
+  - release_docs/next_version_release.md:999-1002
+  - context_compass/system_docs/patches/completed/contracted_copy_removal_by_version_2026_10_16/architecture_patch.md:1-20
+  - context_compass/system_docs/patches/completed/find_spell_by_spell_id_2026_10_17/architecture_patch.md:1-20
+  - context_compass/system_docs/patches/completed/spell_index_naming_2026_10_18/architecture_patch.md:1-126
+  IMPACT: The ticket closes with four notches (0.2.8250, 0.2.8251, 0.2.8253, 0.2.8255). Left with the owner, unchanged:
+    the borrower-side version-row reads, what borrowers get after a transfer, the crystallizer cache retention order,
+    SpellIndex's two stale graph edges, `Contract`'s map-direction docstring, the stale stamp-test record, the flake,
+    melder_0's managed-settings text fixes (M0-192) and this lane's correctness-epic stories (S1-S4, S7-S9).
+  NEXT: Move this ticket to tickets/tasks/completed/, sync the boards, then rebuild last and send M1-28.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9

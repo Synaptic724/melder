@@ -10,8 +10,8 @@ Line numbers are 1-based and inclusive.
 | bundle | llm_full_src.txt |
 | schema_version | 1.0.0 |
 | generator_sha256 | d75f1de961817875c099e1b3bc6eaa3a6c670dc89752cd94864d977e452b88e3 |
-| source_fingerprint | ee2958a40a02b9a3e69974dfcbd2f4103f8611b670f18bbc614c5a5df358cb82 |
-| bundle_sha256 | e75fe85a0103f26896d6a2902582a85f11dd01e09b513726f2f568a500d6099a |
+| source_fingerprint | 461a58a42f61bfd892a8850159f204ca0aa3e192d68d75a37f0d82d3e93fe41d |
+| bundle_sha256 | e0ba8af1e7bcdcfc18fc288850295a020dcf4e39a9183c9fcbd4f2fc95da5dfa |
 | bundle_line_count | 283055 |
 | bundle_line_ending | lf |
 | files | 583 |
@@ -29,7 +29,7 @@ Line numbers are 1-based and inclusive.
 | 271-562 | 276-559 | 10926 | utf-8 | cd330fbbdd22e76f3402351efe8e8845f30f1771a3895e9b8af8863585f5e730 | src/melder/__init__.py |
 | 563-599 | 568-596 | 1254 | utf-8 | 9a0c67a1b8391ab86af1c4242de72b21d3c78abd513f9a5c36bae809bf39a314 | src/melder/__license__.py |
 | 600-612 | 605-609 | 241 | utf-8 | 805e6faacff6b558d223cb1773145cecce81a000d6f401baade5583d35e3fae5 | src/melder/__melder_cache__/__melder_cache__.py |
-| 613-632 | 618-629 | 316 | utf-8 | c5217944ac31c0a985dc0e703242f98db64d329e71c18d2bb7a49a3972f13f2d | src/melder/__version__.py |
+| 613-632 | 618-629 | 316 | utf-8 | 7d75720441d6ccb807ec5448b3f5069b1e96702b61d6c45cf5b1c4a19b1ea8e6 | src/melder/__version__.py |
 | 633-1344 | 638-1341 | 26236 | utf-8 | 1e610b6944779ebc963db6ea6b0f39a1cd8d6a717d6b54f63eb4e9191f89b6a1 | src/melder/_build_assets/_agent_documentation/_builder.py |
 | 1345-1481 | 1350-1478 | 4868 | utf-8 | 3c7f0f4319cf0c64444353f1e47ad9e3763f344713db264dcc72bfd55addb78b | src/melder/_build_assets/_agent_documentation/agent_documentation.py |
 | 1482-1876 | 1487-1873 | 13741 | utf-8 | 387d9da9ebf8811cd771d16f4171ca571ae53dbc7f105855ee3ec40303a171e2 | src/melder/_build_assets/_bind_guard/_builder.py |
@@ -129,14 +129,14 @@ Line numbers are 1-based and inclusive.
 | 58306-58810 | 58311-58807 | 19196 | utf-8 | 604ffa7ca39e183370ff6a2880d22b648368a53a03d72b25ffd7a2564da4abc0 | src/melder/aether/conduit/conduit_ward/contract/details.py |
 | 58811-58883 | 58816-58880 | 3039 | utf-8 | 3ae3d24126e3bb5b5e85623dfc2dd7091dfae0166f5f3fa75ba18210ff0bea5b | src/melder/aether/conduit/conduit_ward/permissions/permissions.py |
 | 58884-58966 | 58889-58963 | 3511 | utf-8 | 147b584c8ec17c2334decf89b1aaa9f52d2b81e1427bde2f3501aab7fcd8c18d | src/melder/aether/conduit/conduit_ward/policies/policies.py |
-| 58967-61197 | 58972-61194 | 103593 | utf-8 | e04ea4cb3c5af687a92b8222a97580eb0a9da82c05de777621491366ed47f9d8 | src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py |
+| 58967-61197 | 58972-61194 | 103587 | utf-8 | 7b58a3933b6dccc1cb6a2e5f620647efaaa15fbc89655c50f284916a5270a66c | src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py |
 | 61198-61506 | 61203-61503 | 11321 | utf-8 | b93a52524aa43e14adff1f45e8da316978080ced5dcfb0f6f58e485c1b4cd5cc | src/melder/aether/conduit/creations/cluster_creations.py |
 | 61507-61648 | 61512-61645 | 4840 | utf-8 | 838a49e0bc9e6007e7707c5047409a8d0f2d8f085f6fa4ed4ad16d0f1b00ff87 | src/melder/aether/conduit/creations/conduit_creations.py |
 | 61649-63536 | 61654-63533 | 86274 | utf-8 | e030e3c34c2ae9323ec8ec26256e2cb4ceb3323062f027d4c0bafb61970a9275 | src/melder/aether/conduit/creations/creations.py |
 | 63537-63705 | 63542-63702 | 6229 | utf-8 | 21bd12bf985b552b5474f927f0edfa881540dcdf6bba0114551632cd17d55e67 | src/melder/aether/conduit/creations/managed_spell_lease.py |
 | 63706-64708 | 63711-64705 | 45051 | utf-8 | 55ed82013f5a3893368e16f241359c02b0d8904e7bb97d95e72d2ac95346b0b7 | src/melder/aether/conduit/creations/managed_spell_quantity.py |
 | 64709-65402 | 64714-65399 | 31123 | utf-8 | ba1bc887f06b470ebee7dd4a07d0f02221d0fe0b8c85a0eb9440eb5fee81230a | src/melder/aether/conduit/creations/release_managed_spell.py |
-| 65403-66526 | 65408-66523 | 54777 | utf-8 | f5fa81e8549453b2fd4ace5efbfa81749f428b0f5eb1aff9260d37e2d59aeebe | src/melder/aether/conduit/meld/conduit_meld.py |
+| 65403-66526 | 65408-66523 | 54801 | utf-8 | b4b3f8ab45c2fcd6c22f92b8d194f77c4c81c7dcdeb1ccb25b243609664a4f27 | src/melder/aether/conduit/meld/conduit_meld.py |
 | 66527-66885 | 66532-66882 | 14413 | utf-8 | 78976958fbe82278c1c995d4d4556a5fa801b52787a8b7ae8c7849b375710e8c | src/melder/aether/conduit/meld/contracts/spell_contract.py |
 | 66886-67252 | 66891-67249 | 14563 | utf-8 | ba008e6488f23c8cc005c14895a94ae4b0f289d7d3bbd85b9f3552ab88d92062 | src/melder/aether/conduit/meld/contracts/spell_map.py |
 | 67253-67570 | 67258-67567 | 13418 | utf-8 | 23633afe6926d2630c4d9e943beca4cafb68c85666947e5e876a36192da32eb8 | src/melder/aether/conduit/meld/creation_context/creation_context.py |
@@ -258,7 +258,7 @@ Line numbers are 1-based and inclusive.
 | 106879-107070 | 106884-107067 | 7225 | utf-8 | fe35bec034ca053a9d04ab364f8e3d47eeaac1570a51c9ef3e890c4c55b0d384 | src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_2.py |
 | 107071-108396 | 107076-108393 | 58154 | utf-8 | 099fca9e81643cca743a85342e11a21a20ed780b63c8907bfc6ca07d42810215 | src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py |
 | 108397-108582 | 108402-108579 | 7411 | utf-8 | a244a783272b9fa95cf1e8c489bc87d4b80116a2951e056304ff2650ebfa7324 | src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_4.py |
-| 108583-109319 | 108588-109316 | 28614 | utf-8 | 27f5043a10c3bef25e774833039857cf56e28b6cc32d25079f04225bfd47925b | src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py |
+| 108583-109319 | 108588-109316 | 28629 | utf-8 | 37c6f44896f302cfe51c224a91d292337dca85410ad25d253aa5f751adf4e843 | src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py |
 | 109320-109839 | 109325-109836 | 21692 | utf-8 | a5586d37138a1452c966ff93044accf644e811fbb19e0c1d35f05c5c7d48df46 | src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_6.py |
 | 109840-110112 | 109845-110109 | 10116 | utf-8 | e309ceaec2c0cce92a1975bea2166f7a66f41ad289e5a9b92988a9b6871960fd | src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_7.py |
 | 110113-110243 | 110118-110240 | 4290 | utf-8 | 9c5d30fcb4863bf47bc727cd4b153518120422911a32c9942ec406b776866d2e | src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_8.py |
@@ -531,13 +531,13 @@ Line numbers are 1-based and inclusive.
 | 231330-232126 | 231335-232123 | 29676 | utf-8 | 32512bd76e281a0e7fae716c721826a33f27341869cc5c70ed360a015fa86a47 | src/melder/nexus/rift/command_system/static_command_system.py |
 | 232127-232365 | 232132-232362 | 7048 | utf-8 | 7b634da14715efec0208df456abf3f89156af75d104d0e9542f67dc5cce56230 | src/melder/nexus/rift/frame_link/frame_link.py |
 | 232366-232611 | 232371-232608 | 7686 | utf-8 | 35142a8091a49bae4719132a7a6b99c93f3e3bf8fe33e0df7fee4832a460303a | src/melder/nexus/rift/frame_link/frame_link_contract.py |
-| 232612-239292 | 232617-239289 | 287771 | utf-8 | 716dbc505c538072fbd327ca99f205ecfcd8d40ad6aa399c1e276dbe42cd5884 | src/melder/nexus/rift/frame_viewer/frame_viewer.py |
+| 232612-239292 | 232617-239289 | 287779 | utf-8 | 1f90b2941db7f9b9a26ecf0a88060ef0a44e59338e65a016dc4c03a87d2ee318 | src/melder/nexus/rift/frame_viewer/frame_viewer.py |
 | 239293-239636 | 239298-239633 | 13139 | utf-8 | dec73f9ca965776b6a71716f3bf9c7f61b484d5f8be84b3c43eff2312d8c0d3a | src/melder/nexus/rift/frame_viewer/static_frame_viewer.py |
 | 239637-239711 | 239642-239708 | 1839 | utf-8 | 3069a40c2faeb1ec27914e53cecee0cb1527fddd077972acdb9cc75881a93045 | src/melder/nexus/rift/frame_viewer/view_action_hooks.py |
 | 239712-241648 | 239717-241645 | 73481 | utf-8 | 943f47636d68b13e6529534f47135d40041a022b56d88e7197768c6ea891dd6f | src/melder/nexus/rift/frame_viewer/view_conduit.py |
 | 241649-244303 | 241654-244300 | 103050 | utf-8 | 56c93550b268ad0f9bee4746049159663f2c97e14250e3ea8fdbaf43e446f32c | src/melder/nexus/rift/frame_viewer/view_frame.py |
 | 244304-247445 | 244309-247442 | 127704 | utf-8 | 6a87d4f053088cff3ea449663804b70d494759998a099807a92e9686bc858cdf | src/melder/nexus/rift/frame_viewer/view_multiframe.py |
-| 247446-250598 | 247451-250595 | 123143 | utf-8 | 99264e33e20300d80b6f31d7f3dca92e2051be1e38c89e734e79e8ac5be932fb | src/melder/nexus/rift/frame_viewer/view_spell.py |
+| 247446-250598 | 247451-250595 | 123153 | utf-8 | b7798b21e8ca9e25261b7820dab40e8832742ad4722a2cf0abf9df6548a60f3b | src/melder/nexus/rift/frame_viewer/view_spell.py |
 | 250599-250769 | 250604-250766 | 6210 | utf-8 | 0e9b80352f92d1bb50f6199f99e35a5b0579eefbd156659ddba632abfb0eb4d1 | src/melder/nexus/rift/projection/codegen_projection.py |
 | 250770-250941 | 250775-250938 | 6152 | utf-8 | 4e0ed5c086be1b06473a2739455743aaa66ce3076a4a7b54d8abcdd905fa23fd | src/melder/nexus/rift/projection/command_projection.py |
 | 250942-251126 | 250947-251123 | 6252 | utf-8 | 921099cc10ca18db33cfb406a4b2ec91f9fd9938b68c599fcee4f8c033dfeb87 | src/melder/nexus/rift/projection/frame_projection_set.py |

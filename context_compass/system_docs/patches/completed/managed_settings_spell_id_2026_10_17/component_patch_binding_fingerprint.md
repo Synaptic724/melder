@@ -5,11 +5,11 @@
 - Component: Binding Pipeline (Bind, Spell, SpellIndex) - `Bind.sha256_profile`, `Bind.spell_id_inspector`,
   `Bind._bind_logic`, `Bind._managed_fingerprint_part`; docstrings of ManagedSpellMode, Spell, SpellCrystal and
   RestoreEngine that state the old rule
-- Status: landed at 0.2.8254 and promoted to the system documents and the graph; active with the story until
-  part B
+- Status: archived at the story's closure (2026-10-18T11:45:58Z): landed at 0.2.8254 and promoted to the system
+  documents and the graph
 - Owner: user; melder_0 (synaptic_python_developer)
 - Created: 2026-10-18T00:10:00Z
-- Updated: 2026-10-18T02:05:25Z
+- Updated: 2026-10-18T11:45:58Z
 
 ## Component Purpose and Boundary
 - Current boundary: `sha256_profile` hashes the binding profile, spell_name, spellframe, binding_name, existence, the

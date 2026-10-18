@@ -1,4 +1,4 @@
-# Melder 0.2.8254
+# Melder 0.2.8255
 
 **Unreleased**
 
@@ -996,4 +996,7 @@ missing-provider report. No public signature changes.
   describe a managed spell's settings as settings of the one spell: the fingerprint without them, the pool taking
   new settings on a rebind under its spell_id, and the creation cache's generation 22; `ManagedSpellMode` and the
   bind fingerprint's docstrings say the same, and the code-map extents of the changed files are remeasured.
-- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8254.
+- Docstrings and comments that called a `SpellIndex` a lineage now call it a SpellIndex; "lineage" stays for the
+  conduit scope tree (`unique_per_conduit_lineage`, a root and its lesser conduits). Identifiers, diagnostic codes
+  and runtime messages are unchanged.
+- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8255.

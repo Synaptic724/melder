@@ -3,11 +3,11 @@
 ## Metadata
 - Patch ID: managed_settings_spell_id_2026_10_17
 - Component: CachingSystem (`CACHE_VERSION_HISTORY`, `CURRENT_VERSION`, the generation comment block)
-- Status: landed at 0.2.8254 and promoted to the system documents and the graph; active with the story until
-  part B
+- Status: archived at the story's closure (2026-10-18T11:45:58Z): landed at 0.2.8254 and promoted to the system
+  documents and the graph
 - Owner: user; melder_0 (synaptic_python_developer)
 - Created: 2026-10-18T00:10:00Z
-- Updated: 2026-10-18T02:05:25Z
+- Updated: 2026-10-18T11:45:58Z
 
 ## Component Purpose and Boundary
 - Current boundary: a conduit bundle is admitted only at the current format generation (21), the running Melder

@@ -4,13 +4,21 @@
 - Task ID: TASK-2026-10-16-recheck_contract_consumers_when_provider_changes
 - Story: none - standalone; successor of TASK-2026-10-15-make_meld_state_checks_follow_spell_state (done, rule 1
   landed as 0.2.8247), carrying its rule 2 by the owner's direction of 2026-10-16
-- Status: in_progress
+- Status: done
 - Owner: user
 - Agent Name: melder_1
 - Agent Role: synaptic_python_developer
 - Priority: p1
 - Created: 2026-10-16T09:46:14Z
-- Updated: 2026-10-18T02:12:55Z
+- Updated: 2026-10-18T11:51:16Z
+
+- Completed: 2026-10-18T11:45:18Z
+- Summary: Rule 2 with D1-D5 landed, notched 0.2.8250 (section "A satisfied `SpellContract` is not checked on
+  every meld; a notch reaches every spell that depends on the notched one"); the removal fix, notched 0.2.8251
+  ("Unlinking an index after a notch removes every version's copy"); fix #1, notched 0.2.8253 ("A spell_id lookup
+  answers the spell it names", Breaking); the SpellIndex wording edits of docstrings and comments with three audit
+  corrections, notched 0.2.8255 (a line under "Packaging and documentation"); the rename map withdrawn by the
+  owner. Turned in on the owner's word ("Land + close", 2026-10-18); open items are listed in the handoff summary.
 
 ## Objective
 Rule 2 of the owner's 2026-10-15 direction, settled in principle on 2026-10-16: a spell's own state decides when the
@@ -53,11 +61,12 @@ docs for the owner's approval, and no `src/` edit before it.
   notch (owner: mark only); managed_spell_quantity work; MelderOps code.
 
 ## State Transition Event
-- from_state: draft
-- to_state: in_progress
-- transition_reason: the owner split rule 2 off TASK-2026-10-15-make_meld_state_checks_follow_spell_state and
-  directed this successor (chat 2026-10-16: "yees sure thats good" to opening it on the settled story, design docs
-  first).
+- from_state: in_progress
+- to_state: done
+- transition_reason: the owner chose "Land + close" (chat 2026-10-18) after the audit of the wording edits: notch
+  0.2.8255, the release-note line, the turn-in (patch folders archived, held files released to melder_0), the
+  rebuild last. Earlier, draft -> in_progress: the owner split rule 2 off
+  TASK-2026-10-15-make_meld_state_checks_follow_spell_state (chat 2026-10-16: "yees sure thats good").
 
 ## Steps / Checklist
 - [x] Re-read whole on today's tree: the meld gate's contract check, Phase 4's contract presence check, the contract
@@ -66,10 +75,10 @@ docs for the owner's approval, and no `src/` edit before it.
 - [x] Write the patch docs; get the owner's approval; get melder_0's handoff of spellbook.py.
 - [x] Red tests, the change, green suites (GIL off and on), measurement.
 - [x] Docs, release note, notch, rebuild last.
-- [ ] Run Ticket Microcycle during execution:
+- [x] Run Ticket Microcycle during execution:
       `Investigate -> Document -> Strategy/Plan -> Document -> Implement ->
       Document -> Validate -> Document`.
-- [ ] Record meaningful attributed findings in supported Notes/comments or authorized linked evidence
+- [x] Record meaningful attributed findings in supported Notes/comments or authorized linked evidence
       before dependent work; no forced body copy.
 
 ## Deliverables
@@ -82,7 +91,11 @@ docs for the owner's approval, and no `src/` edit before it.
 - after approval: the `src/` files the design names, their tests, system docs, release_docs/next_version_release.md
 
 ## Validation
-- Not run.
+- Run at each source landing, recorded in MEASURE Notes: 0.2.8250 (2026-10-16T16:39:05Z: every suite chunk with
+  the GIL off and on), 0.2.8251 (2026-10-16T21:48:34Z: the same, but one stale asset-stamp test the rebuild fixed),
+  0.2.8253 (2026-10-17T22:41:43Z).
+- 0.2.8255 (docstrings and comments only): tests Not run; every edited file parses with its line count and line
+  endings unchanged; the asset and LLM checks run at the rebuild (Notes).
 - Recommended commands:
   - artifacts/meld_contract_scan_20261015/probe_design_baseline.py (the borrower contract consumer: gate entries,
     scans and microseconds per meld) and a probe that notches the lender and melds the consumer
@@ -95,21 +108,21 @@ docs for the owner's approval, and no `src/` edit before it.
   path that changes the borrower's active copy must mark.
 
 ## Applicable Anti-Patterns
-- [ ] No status transition without evidence-backed transition reason.
-- [ ] No implementation/validation from `UNKNOWN` or `HYPOTHESIS`.
-- [ ] No closure without delegated acceptance or reserved-owner disposition and board-sync completion.
+- [x] No status transition without evidence-backed transition reason.
+- [x] No implementation/validation from `UNKNOWN` or `HYPOTHESIS`.
+- [x] No closure without delegated acceptance or reserved-owner disposition and board-sync completion.
 
 ## Done Checklist
-- [ ] Steps complete and checked off
-- [ ] Deliverables produced and linked
-- [ ] Documentation updated (if needed)
-- [ ] Validation status recorded
-- [ ] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
-- [ ] Notes quality maintained (`SCORE_0_TO_10` >=
+- [x] Steps complete and checked off
+- [x] Deliverables produced and linked
+- [x] Documentation updated (if needed)
+- [x] Validation status recorded
+- [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
+- [x] Notes quality maintained (`SCORE_0_TO_10` >=
       `workflow.ticket_microcycle.minimum_note_score`)
-- [ ] Applicable anti-pattern checks are clear or escalated with evidence.
-- [ ] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
-- [ ] Board sync completed for successor routing or closure anchor update.
+- [x] Applicable anti-pattern checks are clear or escalated with evidence.
+- [x] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
+- [x] Board sync completed for successor routing or closure anchor update.
 
 ## Artifact Links (Optional)
 Qualified independent reviewer acceptance and direct closure follow shared `ticketing.md`;
@@ -119,10 +132,15 @@ this does not make independent review mandatory for every ticket.
 - ARTIFACT_PATHS:
   - artifacts/meld_contract_scan_20261015/
   - system_docs/patches/completed/contract_recheck_on_notch_2026_10_16/ (the seven patch docs, archived at promotion)
-  - system_docs/patches/active/contracted_copy_removal_by_version_2026_10_16/ (the removal fix's three patch docs)
-  - system_docs/patches/active/find_spell_by_spell_id_2026_10_17/ (the exact spell_id lookup's seven patch docs)
-- DISPOSITION: retain_as_reference (the folder); promote_to_documentation (the patch docs)
-- CLEANUP_TRIGGER: at closure the patch docs are promoted into the system docs and archived under
+  - system_docs/patches/completed/contracted_copy_removal_by_version_2026_10_16/ (the removal fix's three patch docs,
+    promoted at 0.2.8251, archived at turn-in)
+  - system_docs/patches/completed/find_spell_by_spell_id_2026_10_17/ (the exact spell_id lookup's seven patch docs,
+    promoted at 0.2.8253, archived at turn-in)
+  - system_docs/patches/completed/spell_index_naming_2026_10_18/ (the rename map: architecture and five component
+    patches, withdrawn by the owner, archived unapplied at turn-in)
+- DISPOSITION: retain_as_reference (the folder and the withdrawn rename map); promote_to_documentation (the other
+  patch docs)
+- CLEANUP_TRIGGER: done at turn-in (2026-10-18): the promoted patch docs and the withdrawn map are archived under
   system_docs/patches/completed/; the folder stays as the lane's evidence
 
 ## Context Management
@@ -3278,9 +3296,259 @@ this does not make independent review mandatory for every ticket.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-10-18T10:36:13Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: melder_0's M0-192 (NOTICE, 2026-10-18T02:14:40Z; consumed from the mailbox): S6 part A landed and rebuilt
+    at 0.2.8254 (02:13Z; the asset and LLM --checks print only OK). Released to this lane: src bind.py,
+    managed_spell_quantity.py, creations.py, caching_system.py, managed_spell_mode.py and spell_crystal.py, then
+    __version__, the release note, the four system documents with their indexes and the graph (descriptors and the
+    assembled document). Notch above 0.2.8254. His bundles carry this lane's src wording edits as they stood at
+    02:12Z; this lane's landing rebuilds. He points at text in files this lane holds that still states the old rule
+    (a managed spell's settings are part of its spell_id), confirmed on today's tree: spell.py 429-430 and the four
+    managed properties' contracts (792, 812, 829, 848), restore_engine.py 2156-2157 ("rebinds with its own options
+    and spell id") and conjure's collision message in spellbook.py 2827-2830 ("the same bind parameters mint the
+    same id", which could say a managed spell's settings are not among them); not read yet: the graph's Spellbook
+    r19 and RestoreEngine r13. For the lineage sweep: bind.json's Bind -> SpellIndex edge says "a SpellIndex
+    lineage key".
+  EVIDENCE:
+  - src/melder/__version__.py:12-12
+  - context_compass/artifacts/correctness_defects_20261017/runs/s6_rebuild_assets_check.txt:1-7
+  - context_compass/artifacts/correctness_defects_20261017/runs/s6_rebuild_llm_check.txt:1-7
+  - src/melder/aether/spellbook/spell.py:429-431
+  - src/melder/aether/spellbook/spell.py:788-850
+  - src/melder/crystallizer/crystal_loader_system/restore_engine.py:2150-2159
+  - src/melder/aether/spellbook/spellbook.py:2822-2834
+  - context_compass/system_docs/graph/melder/aether/spellbook/bind/bind.json:201-201
+  IMPACT: Nothing this lane needs is held any more: the system documents, the graph and the six S6 files join the
+    wording sweep and the rename plan. The managed-settings text is outside the lineage sweep's subject; it goes to
+    the owner as an item to approve, not edited unasked.
+  NEXT: Record batch 13 and the rename inventory, then write the rename patch docs for the owner's approval.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-18T10:37:30Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: Lineage sweep batch 13 applied on the owner's "Yes, keep each ending": 6 hand edits in the three mixed-ending
+    files with apply_line_edits_keep_endings.py (one line for one line; each line keeps its own terminator and only
+    the edited lines change): compiler_phase_5.py 280 ("Resolves each spell's SpellIndex id from
+    SpellSystemStates."), frame_viewer.py 3637 and 6486 ("spell index"), view_spell.py 854 and 1731-1732 (the
+    SpellIndex organizing a spell's versions; every visible spell in that index). The src docstring and comment pass
+    is complete: 552 hand edits in 72 files since 01:29Z. Rename inventory, locate only (one rg call per tree, no
+    reading yet): src has 32 SpellIndex-meaning identifiers, codes and module names in 27 files (`lineage_id` 84
+    hits, `root_lineage_id` 15, `lineages` 15 - mostly prose and the RiskManager parameter -, `_lineage_conduits`
+    10, `impacted_lineages` 9, `phase5_root_lineage_id` 6, `lineage_to_spell_ids` 6, `_ensure_lineage_resolvable`
+    5, the four diagnostic codes, the three Phase 6 strategy classes and their modules); tests have 22 of them in 55
+    files (`lineage_id` 155, `lineages` 41, `root_lineage_id` 29, `_ensure_lineage_resolvable` 29, the strategy
+    classes 10, 7 and 7); system documents, graph descriptors and UX have 14 in 18 files (the three strategy
+    descriptors are named after the modules). A hit locates a name; each entry is read in its method before it
+    enters the rename map.
+  EVIDENCE:
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/edits/batch13_mixed_endings.py:1-32
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/apply_line_edits_keep_endings.py:1-82
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/runs/batch13_apply.txt:1-34
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/runs/rename_candidates_src_hits.txt:1-209
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/runs/rename_candidates_tests_hits.txt:1-324
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/runs/rename_candidates_docs_graph_hits.txt:1-121
+  - src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py:278-282
+  - src/melder/nexus/rift/frame_viewer/view_spell.py:852-856
+  - src/melder/nexus/rift/frame_viewer/view_spell.py:1729-1734
+  IMPACT: No src docstring or comment calls a SpellIndex a lineage any more. The inventory bounds the rename map the
+    owner asked for ("Messages and renames"); the map, its runtime-message rewordings and its compatibility notes go
+    to him as patch docs before any rename lands.
+  NEXT: Read each candidate in its method (Phase 6 nodes, blueprints and strategies, RiskManager, the meld gate,
+    the transfer), then write the patch docs under system_docs/patches/active/spell_index_naming_2026_10_18/.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-18T10:49:43Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION_REQUEST
+  CLAIM: The rename patch docs for the owner's "Messages and renames" are written, each candidate read in its method
+    first: system_docs/patches/active/spell_index_naming_2026_10_18/ - architecture_patch.md (the map, the codes,
+    keys and messages, invariants, migration order) and five component patches (Phase 6 validation, RiskManager, the
+    meld gate, the transfer, and tests/documents/graph/UX). The map: SpellSystemNode `lineage_id` and the
+    blueprint's `root_lineage_id` -> `spell_index_id`, `root_spell_index_id`; the three Phase 6 classes and modules
+    -> SpellIndexAlignmentStrategy, SpellIndexVersionConflictStrategy, RootSpellIndexConflictStrategy; codes
+    `root_lineage_mismatch`, `lineage_version_conflict`, `root_lineage_conflict`, `lineage_conduit_conflict` ->
+    `root_spell_index_mismatch`, `spell_index_version_conflict`, `root_spell_index_conflict`,
+    `spell_index_conduit_conflict`; detail keys -> `spell_index_id`, `node_spell_index_id`,
+    `known_spell_index_ids`; `Meld._ensure_lineage_resolvable` -> `_ensure_spell_index_resolvable`; RiskManager's
+    `lineages`, `_lineage_conduits` and resolvers -> `spell_index_ids`, `_spell_index_conduits`,
+    `_resolve_spell_index_id(...)`, its mixed key `lineage_key` -> `risk_key`; the transfer's four methods ->
+    `_mark_spell_index_dirty`, `_mark_spell_index_disabled`, `_conduit_has_impacted_index`, `impacted_index_ids`;
+    six messages reworded. Facts behind it: nothing is exported at the package root and nothing persisted reads a
+    renamed name (no cache generation or record change); the codes reach users only in SpellbookValidationError
+    text; both RootResolutionBlueprint builder sites pass a None SpellIndex id, so `root_lineage_mismatch` cannot
+    fire outside its unit tests (kept as is); the phase 2-5 IR capture has no production caller and hashes values;
+    RiskManager's one caller passes the id positionally; `_mark_lineage_dirty`'s Args names `spell_index` but the
+    parameter is `spell` (fixed with the rename). Plan: one landing for the wording pass and the renames, one notch.
+  EVIDENCE:
+  - context_compass/system_docs/patches/active/spell_index_naming_2026_10_18/architecture_patch.md:1-126
+  - context_compass/system_docs/patches/active/spell_index_naming_2026_10_18/component_patch_phase6_validation.md:1-71
+  - context_compass/system_docs/patches/active/spell_index_naming_2026_10_18/component_patch_risk_manager.md:1-39
+  - context_compass/system_docs/patches/active/spell_index_naming_2026_10_18/component_patch_meld_gate.md:1-28
+  - context_compass/system_docs/patches/active/spell_index_naming_2026_10_18/component_patch_transfer_of_ownership.md:1-33
+  - context_compass/system_docs/patches/active/spell_index_naming_2026_10_18/component_patch_tests_docs_graph.md:1-70
+  - src/melder/aether/spellbook/spell_compiler/system/spell_system_root_blueprint_builder.py:102-108
+  - src/melder/aether/spellbook/spell_compiler/system/spell_system_root_blueprint_builder.py:163-169
+  - src/melder/aether/spellbook/spell_compiler/system/validation/lineage_alignment_strategy.py:83-113
+  - src/melder/aether/spellbook/spell_compiler/phases/shared_compiler_executions.py:197-295
+  - src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_2.py:179-184
+  - src/melder/aether/aetheric_frame/dev_ops/risk_manager/risk_manager.py:400-427
+  - src/melder/aether/aetheric_frame/dev_ops/risk_manager/risk_manager.py:613-661
+  - src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_state.py:538-547
+  - src/melder/utilities/custom_exceptions/spellbook_validation_error.py:97-131
+  - src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py:739-760
+  IMPACT: No rename lands until the owner approves or edits the map (patch gate; synaptic approval loop). Two items
+    ride on his word: whether melder_0's M0-192 managed-settings text fixes (spell.py, restore_engine.py,
+    spellbook.py's collision message, two graph nodes) join this landing, and one notch for the whole naming change.
+  NEXT: Ask the owner to approve the rename map; after his word, red tests, then the src renames by hand.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-18T11:11:16Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: The owner withdrew the renames and ended the wording sweep (chat 2026-10-18, after the 10:49Z
+    DECISION_REQUEST; this supersedes "Messages and renames" and the "Approve as written" answer). "leave the
+    objects alone": no identifier, class, module, diagnostic code, detail key or runtime message is renamed or
+    reworded. "if their docstrings were adjusted make sure they are fine ... after that ... move on get off this
+    docstring crusade": the 552 applied docstring and comment edits are verified against their code, any wrong line
+    goes back to its original text, and then the sweep stops - no tests, UX, docs, system-docs or graph wording
+    pass. He then named the code that keeps `unique_per_conduit_lineage` correct as the place to check first. The
+    managed-settings text fixes melder_0 named (M0-192), approved before the stop, are on hold until he says
+    otherwise. Nothing was renamed: none of the map's new names exists in src or tests.
+  EVIDENCE:
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/runs/no_rename_check.txt:1-39
+  - context_compass/system_docs/patches/active/spell_index_naming_2026_10_18/architecture_patch.md:1-126
+  IMPACT: The rename patch docs are withdrawn; their files stay as they are until the owner's word on closure and
+    archive, and the artifact board row says withdrawn. What remains in the lane: this verification and its report,
+    then the landing of the docstring edits (one notch, a release-note line, the rebuild last) on the owner's word.
+  NEXT: Verify every applied edit, first those inside code that keeps unique_per_conduit_lineage correct, reading
+    each in its method; put back any wrong line; report to the owner.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-18T11:23:45Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: The audit of the 552 applied wording edits is done (owner's order, DECISION 11:11Z). Method, read-only: each
+    edit found in its file and its innermost def or class (audit_edits.py; the 200 flagged ones read in their
+    method); then every edit whose def or class also holds conduit-lineage code - `unique_per_conduit_lineage`, the
+    lineage-root store `_root_creations`, `_root_conduit_id`, `conduit_lineage_gate_ops`, the ward's lineage tree -
+    listed and read (audit_lineage_scopes.py: 17 edits in 6 files); then every old line with scope-tree words (20).
+    Result: no edit touches code that keeps unique_per_conduit_lineage correct. The lineage stores and their purge
+    (ConduitMeld, SpellSpaceMeld, Creations), the codegen routes, Phase 6's scope ranks (ScopeOrderingStrategy: only
+    its shared Args line for `spell_system_states` changed), the lineage skip in TransferOfOwnership.execute, the
+    conduit lineage gates and the ward's lineage tree are as they were. The Phase 6 checks named lineage
+    (`lineage_conduit_conflict`, `root_lineage_conflict`, `lineage_version_conflict`, `root_lineage_mismatch`) key
+    on SpellSystemNode.lineage_id, which Phase 5 fills with the SpellIndex id; RiskManager's `_lineage_conduits`
+    maps a SpellIndex id (`spell.spell_index.id`) to the conduits that see it. Three applied lines were wrong and
+    are corrected, one line for one line (fix14_audit_corrections.py): conduit_meld.py 755 and 915 said the conduit
+    door rejects "spellspace-scoped spells" - it rejects every `requires_spellspace_request` spell, a spell that
+    only depends on a spellspace-scoped one included; transfer_of_ownership.py 1131 said the rollback drains "the
+    index's members" - it handles one spell_id per call. They take the wording the code supports, not the original
+    text, which also called a spell a lineage. The 552 edits are already in the owner's commit 80e4bdcca (02:18Z);
+    the three corrections are not committed. Both files parse with their line counts unchanged.
+  EVIDENCE:
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/runs/audit_edits.txt:1-1730
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/runs/audit_lineage_scopes.txt:1-83
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/edits/fix14_audit_corrections.py:1-27
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/runs/fix14_apply.txt:1-20
+  - src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py:266-317
+  - src/melder/aether/spellbook/spell_compiler/system/validation/ownership_consistency_strategy.py:30-126
+  - src/melder/aether/spellbook/spell_compiler/system/validation/scope_ordering_strategy.py:43-149
+  - src/melder/aether/aetheric_frame/dev_ops/risk_manager/risk_manager.py:466-565
+  - src/melder/aether/conduit/meld/conduit_meld.py:733-890
+  - src/melder/aether/spellbook/spell_compiler/system/spell_system_root_blueprint_builder.py:274-296
+  - src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py:367-507
+  - src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py:1125-1151
+  IMPACT: The wording sweep ends here, on the owner's word. What remains in the lane is his: landing the wording
+    edits (one notch above 0.2.8254, a release-note line, the rebuild last), the open borrower-side items, closure.
+  NEXT: Report the audit result and the three corrections to the owner; wait for his word on the landing.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-18T11:42:15Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: The owner chose "Land + close" (chat 2026-10-18, after the audit report): notch 0.2.8255 for the wording
+    edits and the three audit corrections, one release-note line, turn in this ticket (archive its patch folders,
+    release spellbook.py, conduit.py and the lane's other held files to melder_0), rebuild last. `__version__` reads
+    0.2.8254 at landing and no message for this lane is waiting. Order (contribution guide): this Note, the notch,
+    the release-note line under "Packaging and documentation", the closure (summary, move to completed/, board and
+    artifact sync), the rebuild with both checks, then NOTICE M1-28 to melder_0.
+  EVIDENCE:
+  - src/melder/__version__.py:12-12
+  - context_compass/special_instructions/agent_contribution_guide.md:75-97
+  IMPACT: The lane ends with this landing; the open borrower-side items, melder_0's managed-settings text fixes
+    (M0-192) and the correctness-epic stories stay with the owner and are listed in the closure summary.
+  NEXT: Notch `__version__` to 0.2.8255.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-18T11:43:48Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: Turn-in on the owner's "Land + close". Notched 0.2.8255 (`__version__` read 0.2.8254 at landing) for the
+    SpellIndex wording edits - 552 docstring and comment lines, already in the owner's commit 80e4bdcca - and the
+    three audit corrections (uncommitted). The running release note's header reads 0.2.8255, "Packaging and
+    documentation" has one line for the change (docstrings and comments call a SpellIndex a SpellIndex; lineage
+    stays for the conduit scope tree; identifiers, diagnostic codes and runtime messages unchanged) and its rebuild
+    line names 0.2.8255. Tests for 0.2.8255: Not run (docstrings and comments only; every edited file parses with its
+    line count and line endings unchanged). The three patch folders are archived under system_docs/patches/completed/:
+    contracted_copy_removal_by_version_2026_10_16 (promoted at 0.2.8251), find_spell_by_spell_id_2026_10_17
+    (promoted at 0.2.8253) and spell_index_naming_2026_10_18 (withdrawn by the owner, unapplied).
+  EVIDENCE:
+  - src/melder/__version__.py:12-12
+  - release_docs/next_version_release.md:1-1
+  - release_docs/next_version_release.md:999-1002
+  - context_compass/system_docs/patches/completed/contracted_copy_removal_by_version_2026_10_16/architecture_patch.md:1-20
+  - context_compass/system_docs/patches/completed/find_spell_by_spell_id_2026_10_17/architecture_patch.md:1-20
+  - context_compass/system_docs/patches/completed/spell_index_naming_2026_10_18/architecture_patch.md:1-126
+  IMPACT: The ticket closes with four notches (0.2.8250, 0.2.8251, 0.2.8253, 0.2.8255). Left with the owner, unchanged:
+    the borrower-side version-row reads, what borrowers get after a transfer, the crystallizer cache retention order,
+    SpellIndex's two stale graph edges, `Contract`'s map-direction docstring, the stale stamp-test record, the flake,
+    melder_0's managed-settings text fixes (M0-192) and this lane's correctness-epic stories (S1-S4, S7-S9).
+  NEXT: Move this ticket to tickets/tasks/completed/, sync the boards, then rebuild last and send M1-28.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-18T11:51:16Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: Rebuilt last at 0.2.8255, from the repository root on Python 3.14.7t, after the notch, the release-note line,
+    the Notes, the closure, the move to completed/ and the board and artifact sync. The asset runner ran whole in a
+    mirror under /tmp (src/ and the system docs copied byte-equal), because its system-documents writer unlinks its
+    payloads and the connected folder refuses deletes: all three assets at v0.2.8255 (468, 628 and 4 entries). It
+    changed five manifests and nothing else (no file added or missing); each was copied over its original and
+    compared byte-equal, and the asset --check on the repository printed only OK lines. The LLM bundles
+    (--include-untracked) rewrote src (583 files) and other (404) and the manifest, tests unchanged; their --check
+    printed only OK lines. No .git/index.lock; the mirror was removed.
+  EVIDENCE:
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/runs/rebuild_assets_0_2_8255_mirror.txt:1-12
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/runs/rebuild_assets_0_2_8255_check.txt:1-7
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/runs/rebuild_llm_0_2_8255.txt:1-8
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/runs/rebuild_llm_0_2_8255_check.txt:1-7
+  IMPACT: 0.2.8255 is landed whole; nothing is committed (the owner commits). The lane's held files are free.
+  NEXT: Send NOTICE M1-28 to melder_0 (0.2.8255 taken; the lane's files released), then report to the owner.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
 ## Context / Handoff Summary
-Current state (2026-10-18T02:09:33Z): three source changes landed and rebuilt; the owner accepted fix #1 (Notes
-00:40Z); the lineage wording sweep the owner directed at 01:10Z has finished its src pass (Notes 01:29Z-02:09Z).
+Current state (2026-10-18T11:45:18Z): done - turned in on the owner's "Land + close" (Notes 11:42Z, 11:43Z). Four source
+changes landed: 0.2.8250, 0.2.8251 and 0.2.8253 (rebuilt at their landings) and 0.2.8255, the wording edits with
+the three audit corrections (rebuilt at turn-in, Notes). The renames were withdrawn by the owner (Note 11:11Z).
 - 0.2.8250, rule 2 with D1-D5 (owner-accepted, Notes 18:23Z; in the owner's commit 192482b4c): a satisfied
   SpellContract is not checked on every meld; a change of what a spell resolves marks it for revalidation; the meld
   refreshes stale dependencies before a plan compiles; a lost provider is named with its remedy; a notch back makes
@@ -3297,19 +3565,21 @@ Current state (2026-10-18T02:09:33Z): three source changes landed and rebuilt; t
   repo; the suites are green with the GIL off and on (22:41Z) and the release-note examples run in both modes.
   Section "A spell_id lookup answers the spell it names" (Breaking). Rubric 83 / 83 / 83 / 74 (00:16Z).
 - Lineage wording sweep (owner, 2026-10-18: a SpellIndex is not a lineage, lineage is the conduit scope tree; hand
-  edits, only the uses that mean the SpellIndex): 546 hand edits in 70 src files, docstrings and comments only,
-  one line for one line, each file parsed with its line count and line endings unchanged; uncommitted, not yet
-  notched. Not edited, mixed line endings: compiler_phase_5.py 280, frame_viewer.py 3637 and 6486, view_spell.py
-  854 and 1731-1732. Edits, runs and Notes drafts: artifacts/meld_contract_scan_20261015/lineage_wording/. Kept and
-  listed for the owner, unchanged: identifiers (`lineage_id`, `_mark_lineage_dirty`, `impacted_lineages`,
-  RiskManager's slots, `Meld._ensure_lineage_resolvable`, the three Phase 6 strategy classes and modules),
-  diagnostic codes and detail keys, runtime strings (transfer_of_ownership.py 921). Held until melder_0's M0-192:
-  his six S6 part A src files, `__version__`, the release note, the four system documents with their indexes
-  and those files' graph descriptors. At landing: notch above whatever `__version__` reads (0.2.8254 is
-  melder_0's), a release-note line under "Packaging and documentation", NOTICE M1-28, rebuild last.
-Patch docs: system_docs/patches/completed/contract_recheck_on_notch_2026_10_16/ (archived);
-system_docs/patches/active/contracted_copy_removal_by_version_2026_10_16/ and
-system_docs/patches/active/find_spell_by_spell_id_2026_10_17/ (promoted; archive at closure).
+  edits, only the uses that mean the SpellIndex): 552 hand edits in 72 src files, docstrings and comments only, one
+  line for one line, each file parsed with its line count and line endings unchanged (the three mixed-ending files
+  through the keep-endings applier, owner-approved); in the owner's commit 80e4bdcca (02:18Z), notched 0.2.8255.
+  The audit (MEASURE 11:23Z) found no edit in code that keeps unique_per_conduit_lineage correct and corrected three
+  wrong lines (fix14_audit_corrections.py; uncommitted). The owner's answers (DECISION
+  02:12Z): "Messages and renames", "Also tests, UX, docs", "Yes, keep each ending" - the first two withdrawn
+  (DECISION 11:11Z): "leave the objects alone", so nothing is renamed or reworded and the rename map
+  (DECISION_REQUEST 10:49Z) is withdrawn; the applied edits are verified, then the sweep stops (done 11:23Z).
+  melder_0's M0-192 (Note 10:36Z) released his S6 part A files, `__version__` (0.2.8254), the release note,
+  the four system documents and the graph. Landed at turn-in on the owner's word: 0.2.8255, one release-note
+  line under "Packaging and documentation", the rebuild last, then NOTICE M1-28. Edits, runs and Notes
+  drafts: artifacts/meld_contract_scan_20261015/lineage_wording/.
+Patch docs, all archived under system_docs/patches/completed/: contract_recheck_on_notch_2026_10_16,
+contracted_copy_removal_by_version_2026_10_16 and find_spell_by_spell_id_2026_10_17 (promoted), and
+spell_index_naming_2026_10_18 (the rename map, withdrawn by the owner, unapplied).
 Open, the owner's, re-examined id by id on 0.2.8253 (Notes 00:55Z-00:56Z): the version-row reads on the
 borrower side - `_find_contracted_spell_by_id` / `find_contracted_spell`, `get_spell_in_contracts` and the inbound
 listing answer a version's spell_id with its index's active copy; `_validate_contracts_and_define` reports a grant
@@ -3322,14 +3592,8 @@ stale graph edges (00:11Z); `Contract`'s inverted map-direction docstring (00:56
 tests_components (00:16Z); the flake `test_concurrent_adds_of_same_conduit_admit_exactly_one` (22:08Z). From
 melder_0's correctness epic this lane's set is S1-S4 and S7-S9, waiting for the owner; S6's fix runs in melder_0's
 lane, its Part B waits for spellbook.py (Notes 23:54Z).
-Next: (1) report the src pass to the owner with the kept lists (identifiers, codes, runtime messages, the three
-mixed-ending files) and ask the scope for tests, UX and docs; after M0-192 the system documents, the graph's
-authored prose and the agent guides (melder_0's held src files need none: their lineage text is the scope tree);
-(2) the owner's direction on the open items above, after the explanation sent 2026-10-18; (3) his word on
-closure - summary naming 0.2.8250, 0.2.8251, 0.2.8253 and the sweep's notch with their release-note sections,
-the two active patch folders archived, board and artifact sync, then a rebuild only if a closure step touches
-system_docs - and on releasing spellbook.py, conduit.py and fix #1's other files to melder_0 (M1-26 told him the
-shared documents are free).
+Next: none in this lane. The open items above are the owner's (melder_0's managed-settings text fixes, M0-192,
+on hold); the lane's held files go back to melder_0 with M1-28 after the rebuild.
 Evidence: the Notes from 09:57:21Z on; artifacts/meld_contract_scan_20261015/ (fix #1 under spell_id_lookup/,
 the sweep under lineage_wording/).
 
