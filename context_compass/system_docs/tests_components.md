@@ -927,6 +927,8 @@ Purpose:
 - cover AR-facing runtime contracts, descriptors, ACLs, room surfaces, and
   related manager classes
 Protects:
+- cluster admission callback progress (0.2.8265): a second thread can read Cloud during member recording
+  and during sharing; a failed registration before publication propagates its error and permits retry
 - Nexus singleton and cold-start rules (a Nexus needs an Aether and publishes no
   singleton before one), Rift creation gated on an enabled Nexus and creation
   permission, projection refresh through the Rift gate barrier
@@ -953,6 +955,7 @@ Protects:
   object; both rooms advertise `get_spell_by_spell_id` and keep no `get_spell_by_id`
 Key Files (C1):
 - `tests/unit/melder/aether/test_nexus.py`
+- `tests/unit/melder/aether/test_conduit_cloud.py` (callback lock boundaries and admission retry, 2026-10-19)
 - `tests/unit/melder/aether/test_root_configuration_value_snapshots.py` (root configuration snapshots, 2026-09-30)
 - `tests/unit/melder/aether/test_configuration_read_accessors.py` (configuration read accessors, 2026-09-29)
 - `tests/unit/melder/aether/test_rift_runtime_contracts.py`
@@ -1645,6 +1648,13 @@ Purpose:
 - validate real Nexus projection, viewer matrices, passive ingest, ACL chain,
   and AR integration behavior
 Protects:
+- exclusive cluster admission (0.2.8265): eight adds of one conduit produce one success and seven
+  exclusivity ValueErrors, with member sets, DevOps lookup and shared-root ownership agreeing. The
+  natural schedule remains; two forced schedules cover the same cluster and two competing clusters.
+  `_MembershipAdmissionGate` counts distinct threads at admission/write boundaries, holding the first
+  member write until all eight arrive. Real registration and sharing remain active; setup pre-resolves
+  discovery so unrelated lookup locking cannot release the gate. Before the fix all eight adds succeed,
+  and the two-cluster case retains two memberships. The coordinator is restored before teardown.
 - Rift frame viewers after passive publication; the extended viewer method matrix
   through both Nexus and Rift; the ACL chain provisioned on publish, advanced and
   rolled back after conjure, and removed on frame detach; Aether's conduit lookups over real
@@ -1670,6 +1680,7 @@ Protects:
   'default'") rather than answering the active one
 Key Files (C1):
 - `tests/integration/melder/aether/test_nexus_frame_surface_projection_integration.py`
+- `tests/integration/melder/aether/test_aether_integration_cluster_transactions_concurrency.py`
 - `tests/integration/melder/aether/test_nexus_viewer_extended_surface_integration_matrix.py`
 - `tests/integration/melder/aether/test_frame_acl_chain_integration.py`
 - `tests/integration/melder/aether/test_aether_named_lesser_lookup.py`
@@ -2111,6 +2122,18 @@ Key Files (C1):
    - tests/unit/melder/aether/conduit/creations/test_release_managed_spell_multithreaded.py:94-122
 
 ## C1 Code Map (Core)
+- path: `tests/unit/melder/aether/test_conduit_cloud.py`
+  start_line: 1
+  end_line: 667
+  loc: 667
+  verified_at: 2026-10-19T23:18:53Z
+  note: Cloud lifecycle/discovery and cluster admission, including callback progress and failed-registration retry.
+- path: `tests/integration/melder/aether/test_aether_integration_cluster_transactions_concurrency.py`
+  start_line: 1
+  end_line: 495
+  loc: 495
+  verified_at: 2026-10-19T23:18:53Z
+  note: ten cluster concurrency cases, including natural and forced same-conduit admission schedules.
 - path: `tests/unit/melder/aether/aetheric_mediator/test_aetheric_mediator_unit.py`
   start_line: 1
   end_line: 1147
@@ -2126,7 +2149,7 @@ Key Files (C1):
   note: frame-isolated automatic/dynamic qualified-name regressions and real collision controls.
 
 Core is the DEDUPLICATED UNION OF EVERY `Key Files (C1)` LIST in the catalogs
-above - 280 paths (recounted 2026-10-19) - and nothing else. Change a component's key files and this set
+above - 282 paths (recounted 2026-10-19) - and nothing else. Change a component's key files and this set
 follows; if the two ever disagree, this section is wrong, not the catalog.
 
 WHAT COUNTS AS A KEY FILE ON THIS SIDE. A test component's key files are its
@@ -3704,6 +3727,8 @@ graph TD
 ```
 
 ## Information Sources
+- `tests/unit/melder/aether/test_conduit_cloud.py`
+- `tests/integration/melder/aether/test_aether_integration_cluster_transactions_concurrency.py`
 - `tests/unit/melder/aether/aetheric_mediator/test_aetheric_mediator_unit.py`
 - `tests/integration/melder/spellbook/test_spellbook_qualified_same_name_regressions.py`
 - `tests/unit/melder/spellbook/spell_crafter/validation/strategies/test_duplicate_spell_name_strategy.py`
@@ -3851,6 +3876,11 @@ graph TD
   scan/bind coverage grows.
 
 ## Context / Handoff Summary
+
+2026-10-19 cluster admission (0.2.8265): the Aether unit and integration clusters describe callback progress,
+retry after failed registration, and deterministic same/two-cluster competition. The original natural
+schedule is retained and now requires exactly seven rejections. Both edited test modules are measured in
+the core map; the module inventory is unchanged because the tests extend existing files.
 
 2026-10-19 staging keeps the active signature (0.2.8263; STORY-2026-10-17-staged_version_releases_active_signature):
 the Spellbook Runtime And Binding Component Cluster gains

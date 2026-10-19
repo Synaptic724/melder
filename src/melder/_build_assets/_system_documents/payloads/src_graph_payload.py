@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_graph.md'
-LINE_COUNT = 28204
-CONTENT_SHA256 = '87ddacda01a5078c616e12bbd0e60083077ae11248d05a1bf1cfc0d8ac13d3b8'
+LINE_COUNT = 28205
+CONTENT_SHA256 = '0120445385d5301ccb180daedf09a13158b63f7aaf639b09b899b0982efbfd28'
 
 TEXT = """# src_graph
 
@@ -247,7 +247,7 @@ descriptors and reassemble.
 
 ## src/melder/__version__.py
 
-- source_sha256: `13a70d34a5b229eb3b4534df9595385e39ca4e761b306e8e557e717df401bdd1`
+- source_sha256: `ba41b2b7a30a68942c459d80a04f1130768dee4788ebc8b4afc296687289af2c`
 - nodes: 1
 
 ### Nodes
@@ -1011,7 +1011,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/conduit_cloud.py
 
-- source_sha256: `445492d504f2ab1c9fafb438b5cc95af35bfb0b50c26636ceb3bc75ad4ae284f`
+- source_sha256: `39343d50e25d250f11bd9f8a22407bbb1177dbfbe9491e4076acd3bce24a0009`
 - nodes: 2
 
 ### Nodes
@@ -1035,8 +1035,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - owns active named root/lesser discovery separately from borrowed normal-root maps
   - serializes frame-wide name admission, identity-safe retirement and temporary promotion claims
   - lists its named conduits as a tuple snapshot under its lock (list_conduits)
+  - reserves pending cluster admissions under the Cloud lock, rejects competing adds to the same or different clusters, releases reservations in finally, and runs registration/recording and sharing outside the Cloud lock (0.2.8265)
   - runs an explicit cluster leave through ConduitCluster.release_member and answers get_clusters_for_conduit from the frame's membership index through _cluster_names_by_id (0.2.8236); delete_cluster raises the deleted cluster's disposal failures after removing it (0.2.8237)
-- owns_state: `_named_conduits`, `_conduit_names_by_id`, `_reserved_conduit_names`, `_conduit_clusters`, `_devops_identity`, `_id`, `_name`, `_cluster_names_by_id`
+- owns_state: `_named_conduits`, `_conduit_names_by_id`, `_reserved_conduit_names`, `_conduit_clusters`, `_devops_identity`, `_id`, `_name`, `_cluster_names_by_id`, `_pending_cluster_admissions`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `add_conduit_to_cluster`, `cleanup`, `count_conduits`, `create_cluster`, `delete_cluster`, `find_conduit_id_by_name`, `frame_name`, `get_cluster`, `get_clusters_for_conduit`, `get_conduit`, `get_conduit_by_id`, `get_conduit_by_name` (+10 more)
 

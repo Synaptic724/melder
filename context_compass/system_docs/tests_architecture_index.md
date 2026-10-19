@@ -12,10 +12,10 @@ Line numbers are 1-based and inclusive on both ends.
 | --- | --- |
 | document | `tests_architecture.md` |
 | index_version | 1.1.0 |
-| generated_at | 2026-10-19T22:14:49Z |
-| line_count | 1073 |
+| generated_at | 2026-10-19T23:20:35Z |
+| line_count | 1085 |
 | line_ending | lf |
-| content_sha256 | `a13e9131e9e6e897e9d31969dc74e0f0e427f9d4e5f8cdd534b67846019695fc` |
+| content_sha256 | `cb42fcd4e289444b2e363a310e20109e157856a66b3579b6a42b78c41bd39ac0` |
 | sections | 32 |
 
 Recompute all three of `line_count`, `line_ending`, and `content_sha256`
@@ -46,16 +46,16 @@ which you did.
 | 386-397 | 3 | Data Flows and Sequences > Flow: Concurrent-Writer Stand-In |
 | 398-403 | 3 | Data Flows and Sequences > Flow: Viewer/ACL Matrix Fixture Path |
 | 404-417 | 3 | Data Flows and Sequences > Flow: Static/Capability Rift Bench Path |
-| 418-442 | 2 | Operational Invariants |
-| 443-476 | 2 | Source Coverage and Evidence |
-| 477-499 | 2 | Core Responsibilities |
-| 500-520 | 2 | C3 Components Overview |
-| 521-559 | 2 | C2 Subcomponents Overview |
-| 560-567 | 2 | Open Questions |
-| 568-613 | 2 | Failure Modes and Error Paths |
-| 614-814 | 2 | C1 Code Map (Core Only) |
-| 815-870 | 2 | Diagrams |
-| 816-842 | 3 | Diagrams > ASCII Diagram (C4) |
-| 843-870 | 3 | Diagrams > Mermaid Diagram (C4) |
-| 871-911 | 2 | Information Sources |
-| 912-1073 | 2 | Context / Handoff Summary |
+| 418-448 | 2 | Operational Invariants |
+| 449-482 | 2 | Source Coverage and Evidence |
+| 483-505 | 2 | Core Responsibilities |
+| 506-526 | 2 | C3 Components Overview |
+| 527-565 | 2 | C2 Subcomponents Overview |
+| 566-573 | 2 | Open Questions |
+| 574-619 | 2 | Failure Modes and Error Paths |
+| 620-820 | 2 | C1 Code Map (Core Only) |
+| 821-876 | 2 | Diagrams |
+| 822-848 | 3 | Diagrams > ASCII Diagram (C4) |
+| 849-876 | 3 | Diagrams > Mermaid Diagram (C4) |
+| 877-919 | 2 | Information Sources |
+| 920-1085 | 2 | Context / Handoff Summary |

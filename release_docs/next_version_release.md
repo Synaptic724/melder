@@ -1,4 +1,4 @@
-# Melder 0.2.8264
+# Melder 0.2.8265
 
 **Unreleased**
 
@@ -1267,6 +1267,14 @@ Reading `Spell`'s constructor with `inspect.signature`, or creating a `Mock(spec
 the annotation, preserving the optional enum type, keyword-only option and None default. Existing bind,
 managed-pool and cleanup behavior is unchanged.
 
+## Concurrent cluster adds admit one caller
+
+When threads add the same conduit to a cluster at the same time, exactly one call succeeds and the
+others raise the existing `ValueError` ("cluster membership is exclusive (one per conduit)"). This
+also holds when the calls target different clusters: the conduit joins only the winning cluster.
+Previously several calls could all succeed, and competing clusters could both retain the conduit.
+Membership checking and registration now finish together before sharing starts.
+
 ## Packaging and documentation
 
 - The README's "Declarative Binding by Module" example passes `permissions="create"`, without which it raised
@@ -1415,4 +1423,5 @@ managed-pool and cleanup behavior is unchanged.
   line citations remapped.
 - The component map documents Spell constructor reflection; the test map records its four signature/spec
   regressions and the current unit-file inventory.
-- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8264.
+- The component and test maps describe atomic cluster admission and its forced concurrency regressions.
+- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8265.

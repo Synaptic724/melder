@@ -416,6 +416,12 @@ The most important recent integration addition is the dedicated
    harness.
 
 ## Operational Invariants
+- Cluster admission regressions coordinate real threads at the admission/write boundaries (0.2.8265),
+  forcing competing empty reads on the old code while retaining real membership and share operations.
+  They require one success and seven exclusivity refusals across same-cluster and two-cluster races;
+  callback observers separately prove Cloud reads remain available during recording and sharing.
+  EVIDENCE: `tests/integration/melder/aether/test_aether_integration_cluster_transactions_concurrency.py`
+  and `tests/unit/melder/aether/test_conduit_cloud.py`.
 - The suite is source-tree first: tests run against `src/` from the local
   workspace.
 - The repo uses explicit tier directories instead of a single flat test bucket.
@@ -614,8 +620,8 @@ modules are the count `tests_components` states.
 ## C1 Code Map (Core Only)
 Core here is the harness and entrypoint surfaces this document names - the runner configuration, the
 conftests, the shared support modules, the benches, the mock corpus and the CI driver: 37 paths, every one of
-them in the core set of `tests_components` (the deduplicated union of its `Key Files (C1)` lists, 272 paths on
-2026-10-18; corrected 2026-10-15 - this paragraph called this map that union). Every range below was MEASURED
+them in the core set of `tests_components` (the deduplicated union of its `Key Files (C1)` lists, 282 paths on
+2026-10-19; corrected 2026-10-15 - this paragraph called this map that union). Every range below was MEASURED
 from disk on 2026-08-02, not carried
 forward - there is no graph on this side to join against, so nothing else would
 have caught a stale range.
@@ -869,6 +875,8 @@ graph TD
 ```
 
 ## Information Sources
+- `tests/unit/melder/aether/test_conduit_cloud.py`
+- `tests/integration/melder/aether/test_aether_integration_cluster_transactions_concurrency.py`
 - `pyproject.toml`
 - `tests/conftest.py`
 - `tests/_frame_posture_test_support.py`
@@ -910,6 +918,10 @@ graph TD
 - direct filesystem inventory of `tests/`
 
 ## Context / Handoff Summary
+
+2026-10-19 cluster admission (0.2.8265): the operational invariants identify the deterministic thread
+coordination used by the cluster race checks and the separate callback observers. The test component
+map carries their measured files and contracts; the CI module counts and runner are unchanged.
 
 2026-10-19 staging keeps the active signature (0.2.8263): the inventory is recounted from disk (component 171
 `.py`, 169 of them `test_*.py`; 861 test modules in the three tiers) - the lane adds one component module (staging,

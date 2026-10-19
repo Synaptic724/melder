@@ -2,13 +2,13 @@
   "corpora": {
     "other": {
       "bundle": {
-        "bytes": 3383698,
-        "lines": 79010,
+        "bytes": 3384321,
+        "lines": 79019,
         "path": "llm_support/llm_full_other.txt",
-        "sha256": "c7f994a61bcf17d6e0abf3402c0a97646348da52f13892738943d5d23dd4020b"
+        "sha256": "475b7355f5bd54a1960a60ca656b4442fc8f37dc40092e788aafe9c4ff634a5d"
       },
-      "content_bytes": 3156198,
-      "content_lines": 75732,
+      "content_bytes": 3156821,
+      "content_lines": 75741,
       "file_count": 409,
       "files": {
         ".gitattributes": {
@@ -2436,9 +2436,9 @@
           "source_encoding": "utf-8"
         },
         "release_docs/next_version_release.md": {
-          "content_bytes": 96143,
-          "content_lines": 1418,
-          "content_sha256": "8a341e0fe28fd747eed230beebc694bc1afee41cbcf7a4713c5c7cc5cd7cba75",
+          "content_bytes": 96766,
+          "content_lines": 1427,
+          "content_sha256": "6e9c1da079a7337a59de7a632d0c1f8bb50be078feea049e9c8e60f5b2666fbe",
           "source_encoding": "utf-8"
         },
         "requirements.txt": {
@@ -2470,19 +2470,19 @@
         "bytes": 68524,
         "lines": 431,
         "path": "llm_support/llm_full_other_index.md",
-        "sha256": "6b2ef1c08a518bef511ca072d235690e51387ff3142ee029747bf957cbd425d4"
+        "sha256": "407a8b4c46e2588534aa680ae76f2662b54b0c8d0ea657ff422fa761279d6f60"
       },
-      "source_fingerprint": "7dc2e6f6568801a1d09d464d7200663616ba0c30ab15021957d57578b1f0c7eb"
+      "source_fingerprint": "2f6e11be9dbf0d73713a5af2183c7db3e11b799f0a2e70b423aa2839f2d122a4"
     },
     "src": {
       "bundle": {
-        "bytes": 11426366,
-        "lines": 285560,
+        "bytes": 11427723,
+        "lines": 285583,
         "path": "llm_support/llm_full_src.txt",
-        "sha256": "7b31bc0461c7325b78769739006ba09faa515107e53b9187e544b65c0d81e8ac"
+        "sha256": "3792fea2e0623aa734f52089a7aced76a0a5c9fba31a0bba07f9cce48dabfced"
       },
-      "content_bytes": 11071958,
-      "content_lines": 280874,
+      "content_bytes": 11073315,
+      "content_lines": 280897,
       "file_count": 585,
       "files": {
         "src/melder/__architecture__.py": {
@@ -2542,7 +2542,7 @@
         "src/melder/__version__.py": {
           "content_bytes": 316,
           "content_lines": 12,
-          "content_sha256": "13a70d34a5b229eb3b4534df9595385e39ca4e761b306e8e557e717df401bdd1",
+          "content_sha256": "ba41b2b7a30a68942c459d80a04f1130768dee4788ebc8b4afc296687289af2c",
           "source_encoding": "utf-8"
         },
         "src/melder/_build_assets/_agent_documentation/_builder.py": {
@@ -2624,9 +2624,9 @@
           "source_encoding": "utf-8"
         },
         "src/melder/aether/aetheric_frame/conduit_cloud.py": {
-          "content_bytes": 42077,
-          "content_lines": 1103,
-          "content_sha256": "26bd4fda5fa9b3675e27eaefb043acd8dc7fd2d78791691c6d8701a1a984b8e6",
+          "content_bytes": 43434,
+          "content_lines": 1126,
+          "content_sha256": "def9b0ded939188d2f40c2eff541fd8f7d0c04ada795aa72ac9064a3368501ba",
           "source_encoding": "utf-8"
         },
         "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py": {
@@ -6000,19 +6000,19 @@
         "bytes": 114500,
         "lines": 607,
         "path": "llm_support/llm_full_src_index.md",
-        "sha256": "549600c95288789169ef2269afbed721f79030594e8d43822b4394c2b02c5c49"
+        "sha256": "d31f84ba77380897499f79a151081e6323522d7698f2674c8ec040fb27b36fba"
       },
-      "source_fingerprint": "72452161f11ea39af43d48fac7e6f5569faa73b392c4e2d474faee17a39a733d"
+      "source_fingerprint": "902c86c8e2b6d3721606f9055d0118fd4b3dc11ec2751ee52d28fbe88db84845"
     },
     "tests": {
       "bundle": {
-        "bytes": 13568297,
-        "lines": 370460,
+        "bytes": 13575517,
+        "lines": 370628,
         "path": "llm_support/llm_full_tests.txt",
-        "sha256": "80c29ff32b29f760b2a6c6933cfdba18847f721e41e24918412c60078d711ae7"
+        "sha256": "1797f9571643082884fa3850b8455e3bf6f9d80cf8f1c4dcab664f1a76ec5c58"
       },
-      "content_bytes": 12870201,
-      "content_lines": 361302,
+      "content_bytes": 12877421,
+      "content_lines": 361470,
       "file_count": 1144,
       "files": {
         "tests/_annotation_audit_support.py": {
@@ -8536,9 +8536,9 @@
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/aether/test_aether_integration_cluster_transactions_concurrency.py": {
-          "content_bytes": 14208,
-          "content_lines": 393,
-          "content_sha256": "a8074d6efe66b38c8229622868e6df04f849f5641bb213dac5520b1dd2580a35",
+          "content_bytes": 18793,
+          "content_lines": 495,
+          "content_sha256": "fd5f8bd7e35b1cc96f733716568691aade3d4af2dbfbfd329c264692933ae473",
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/aether/test_aether_integration_clusters_membership.py": {
@@ -10594,9 +10594,9 @@
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/aether/test_conduit_cloud.py": {
-          "content_bytes": 19159,
-          "content_lines": 601,
-          "content_sha256": "1af57747c855f57377ea2709a8893d15460adeac83948c6de146a2cc41fa33b6",
+          "content_bytes": 21794,
+          "content_lines": 667,
+          "content_sha256": "d6147f236db9802ad9388e7388849cdfce52edee2c464125c45de3eccb05a85b",
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/aether/test_conduit_descriptor_payload.py": {
@@ -12884,9 +12884,9 @@
         "bytes": 225090,
         "lines": 1166,
         "path": "llm_support/llm_full_tests_index.md",
-        "sha256": "b796691e4ee829574cf11c18939b806408a0bad6d78ed4327bdd591d0565ab74"
+        "sha256": "2867d487fb9e69a1b5e42afdf026c9a46f48f6635a7269168f2660952386aaac"
       },
-      "source_fingerprint": "f22042defe54d45bc438e718de41ea899175f43c27b1b8c2ef61b8081f205e9f"
+      "source_fingerprint": "1a17e3a177019761aa898766e9e084ecdfddb93dc1dc497a3436887477bf2d2f"
     }
   },
   "generator_sha256": "d75f1de961817875c099e1b3bc6eaa3a6c670dc89752cd94864d977e452b88e3",

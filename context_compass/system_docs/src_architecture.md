@@ -1173,6 +1173,13 @@ each entry in `src_components.md`; this list is the set that crosses components.
 - Validation strategies registered in `SpellValidationSystem`.
 
 ## Operational Invariants
+- Cluster admission reserves one conduit at a time (0.2.8265): ConduitCloud checks registered membership
+  and pending admissions under its own lock, reserves the conduit id, then registers it outside that lock.
+  The reservation is released in finally after registration; recording callbacks and the join's sharing
+  transaction run without the Cloud lock. Competing calls to the same or different clusters admit one
+  caller and reject the others with the existing exclusivity ValueError. A failure before registration
+  leaves admission available for retry; the existing share-failure behavior is unchanged.
+  EVIDENCE: `src/melder/aether/aetheric_frame/conduit_cloud.py:ConduitCloud.add_conduit_to_cluster`.
 - Staging, moving or disposing a parked version keeps every other spell's binding signature (2026-10-19,
   0.2.8263; STORY-2026-10-17-staged_version_releases_active_signature, on the owner's word, chat 2026-10-19: "try
   doing a few small ones"): `Spellbook._destroy_spell_index` destroys an index a PARKED member just left empty - the
@@ -4162,9 +4169,9 @@ Aetheric mediator plane (WIRED - FRAME_CREATE LIVE, held by Aether):
   note: room-event publisher for codegen lifecycle signals.
 - path: `src/melder/aether/aetheric_frame/conduit_cloud.py`
   start_line: 1
-  end_line: 1103
-  loc: 1103
-  verified_at: 2026-10-14T23:59:35Z
+  end_line: 1126
+  loc: 1126
+  verified_at: 2026-10-19T23:18:53Z
   note: dynamic conduit registry; explicit leaves take the cluster's ordered exit, cluster lookups read the
     membership index (0.2.8236), `delete_cluster` raises disposal failures after deleting (0.2.8237).
 - path: `src/melder/aether/conduit/conduit_cluster.py`
@@ -4991,6 +4998,10 @@ keeps the spell_id, moves the binding hash and is reported in the restore's `bin
 - `src/melder/utilities/ai_native_support_tools/protocol_crafter.py`
 
 ## Context / Handoff Summary
+
+2026-10-19 cluster admission (0.2.8265): the pending-id reservation makes competing admissions exclusive
+without holding the Cloud lock across registration/recording or sharing. The operational invariant and
+the Cloud code-map extent carry it; the component map describes the reservation and its release.
 
 2026-10-19 staging keeps the active signature (0.2.8263; STORY-2026-10-17-staged_version_releases_active_signature,
 on the owner's word "try doing a few small ones"): `_destroy_spell_index` drops a Book route only when it routes the

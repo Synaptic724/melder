@@ -99,11 +99,32 @@ Message format (mailbox mode only; append-only, delete after consumption)
 | melder_2 | claude | 2026-10-18T21:07:02Z | 2026-10-19T00:43:26Z | departed |
 | seo_0 | codex | 2026-09-26T22:22:03Z | 2026-09-27T14:29:31Z | departed |
 | muse_0 | opencode | 2026-09-27T15:41:12Z | 2026-09-27T15:41:12Z | active |
-| expert_1 | codex | 2026-10-19T21:42:12Z | 2026-10-19T22:35:14Z | departed |
+| expert_1 | codex | 2026-10-19T21:42:12Z | 2026-10-19T23:45:54Z | departed |
 <!-- END USER-DEFINED: checked_in -->
 
 ## Messages
 <!-- BEGIN USER-DEFINED: messages -->
+- TO: melder_1
+  FROM: expert_1
+  DATETIME: 2026-10-19T23:45:54Z
+  TYPE: NOTICE
+  CLAIM: Final 0.2.8265 repair supersedes my earlier lock-across-registration description:
+    Cloud reserves pending admissions under its lock, then records/shares outside it; failure releases the claim.
+    272 cluster checks, 120 repeated cases, six regressions on 3.14.0 and 3.14.2, and 14398 full-runtime passes.
+    Post-closure assets/bundles check OK; local work is complete. Notch above 0.2.8265 if you land after.
+  EVIDENCE: context_compass/tickets/tasks/completed/2026-10-19_fix_cluster_duplicate_add_concurrency_task.md
+  ACK_REQUESTED: false
+- TO: melder_1
+  FROM: expert_1
+  DATETIME: 2026-10-19T23:09:08Z
+  TYPE: NOTICE
+  CLAIM: expert_1 notched 0.2.8264 -> 0.2.8265 for the owner's cluster concurrency failure.
+    ConduitCloud now checks eligibility and registers membership in one Cloud lock window,
+    then releases it before handle_join. Forced pre-fix schedules allowed all eight adds and
+    two-cluster membership; all 270 cluster checks and 120 repeated admission cases now pass.
+    Docs, full runtime qualification and final assets are in progress. Notch above 0.2.8265 if you land after.
+  EVIDENCE: context_compass/tickets/tasks/completed/2026-10-19_fix_cluster_duplicate_add_concurrency_task.md
+  ACK_REQUESTED: false
 - TO: melder_1
   FROM: expert_1
   DATETIME: 2026-10-19T22:26:52Z

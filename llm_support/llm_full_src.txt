@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: src
-SOURCE FINGERPRINT: 72452161f11ea39af43d48fac7e6f5569faa73b392c4e2d474faee17a39a733d
+SOURCE FINGERPRINT: 902c86c8e2b6d3721606f9055d0118fd4b3dc11ec2751ee52d28fbe88db84845
 FILE COUNT: 585
 
 ================================================================================
@@ -612,7 +612,7 @@ END FILE: src/melder/__melder_cache__/__melder_cache__.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/__version__.py
-CONTENT SHA256: 13a70d34a5b229eb3b4534df9595385e39ca4e761b306e8e557e717df401bdd1
+CONTENT SHA256: ba41b2b7a30a68942c459d80a04f1130768dee4788ebc8b4afc296687289af2c
 SOURCE ENCODING: utf-8
 ================================================================================
 
@@ -626,7 +626,7 @@ Contract:
   negotiation or runtime compatibility checks by itself.
 """
 
-__version__ = "0.2.8264"
+__version__ = "0.2.8265"
 ================================================================================
 END FILE: src/melder/__version__.py
 ================================================================================
@@ -11844,11 +11844,11 @@ END FILE: src/melder/aether/aetheric_frame/aetheric_frame_configuration.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/aetheric_frame/conduit_cloud.py
-CONTENT SHA256: 26bd4fda5fa9b3675e27eaefb043acd8dc7fd2d78791691c6d8701a1a984b8e6
+CONTENT SHA256: def9b0ded939188d2f40c2eff541fd8f7d0c04ada795aa72ac9064a3368501ba
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
-from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, ClassVar
+from typing import TYPE_CHECKING, Dict, List, Optional, Set, Tuple, ClassVar
 
 if TYPE_CHECKING:
     from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
@@ -11890,8 +11890,8 @@ class ConduitCloud(Cleanable):
 
     Owned State:
         The cluster registry (by name, plus each cluster's name by its id for the
-        O(1) membership lookup), named directory and temporary promotion-name
-        claims.
+        O(1) membership lookup), named directory, temporary promotion-name claims
+        and pending conduit ids reserved for cluster admission.
         Directory values are borrowed live conduits, not owned lifecycle objects.
 
     Threading:
@@ -11955,6 +11955,7 @@ class ConduitCloud(Cleanable):
         "_reserved_conduit_names",
         "_conduit_clusters",
         "_cluster_names_by_id",
+        "_pending_cluster_admissions",
         "_id",
         "_devops_identity",
         "_devops_information_registry",
@@ -12004,6 +12005,7 @@ class ConduitCloud(Cleanable):
         self._reserved_conduit_names: Dict[str, str] = {}
         self._conduit_clusters: Dict[str, ConduitCluster] = {}
         self._cluster_names_by_id: Dict[str, str] = {}
+        self._pending_cluster_admissions: Set[str] = set()
         self._id: str = new_ulid()
         self._devops_information_registry: DevopsInformationRegistry = (
             devops_information_registry
@@ -12068,6 +12070,7 @@ class ConduitCloud(Cleanable):
                     continue
             self._conduit_clusters.clear()
             self._cluster_names_by_id.clear()
+            self._pending_cluster_admissions.clear()
             self._named_conduits.clear()
             self._conduit_names_by_id.clear()
             self._reserved_conduit_names.clear()
@@ -12081,6 +12084,7 @@ class ConduitCloud(Cleanable):
             del self._reserved_conduit_names
             del self._conduit_clusters
             del self._cluster_names_by_id
+            del self._pending_cluster_admissions
             del self._devops_information_registry
             del self._devops_identity
             del self._aetheric_frame
@@ -12730,36 +12734,55 @@ class ConduitCloud(Cleanable):
               one conduit maps to exactly one team store.
             - To move a conduit between clusters you must REMOVE IT FIRST; there is
               no reassignment path.
+            - Re-adding to the same cluster also raises `ValueError`. Concurrent
+              adds of one conduit admit exactly one caller, even when their
+              target clusters differ.
             - Refused by frame posture when cluster operations are disabled, and
               refused for any conduit that is not NORMAL - lesser and pooled conduits
               cannot join.
 
         Threading:
-            Reads and writes under `self._lock`, so the result is a coherent
-            snapshot rather than a torn read.
+            Reserves the conduit id under `self._lock` after checking pending
+            admissions and published membership. Registration, including record
+            emission, runs outside that lock; its finally releases the reservation
+            after the membership index is published or registration raises.
+            `handle_join` also runs outside the Cloud lock, so recording callbacks
+            and transaction waits do not block unrelated Cloud access.
 
         Lifecycle / Cleanup:
             Guarded by `check_cleaned()`.
 
         Raises:
-            RuntimeError: If the cloud has been cleaned.
+            RuntimeError: If the cloud has been cleaned, frame posture refuses
+                clusters, or the conduit is not normal.
+            ValueError: If the cluster does not exist or the conduit is already
+                in a cluster, including the target cluster.
 
         Returns:
             None.
         """
         self.check_cleaned()
         self._assert_cluster_operations_allowed()
-        cluster = self._get_cluster(cluster_name)
-        self._assert_normal_conduit(conduit)
-        # Exclusive membership: a conduit may belong to at most one cluster. This
-        # keeps `unique_per_conduit_cluster` resolution unambiguous -- one cluster
-        # per conduit is the single-store property the team-store design relies on.
-        if self.get_clusters_for_conduit(conduit.id):
-            raise ValueError(
-                f"Conduit {conduit.id} is already in a cluster; cluster "
-                f"membership is exclusive (one per conduit)."
-            )
-        cluster.add_member(conduit.id)
+        with self._lock:
+            cluster = self._get_cluster(cluster_name)
+            self._assert_normal_conduit(conduit)
+            # Exclusive membership: reserve before releasing the Cloud lock so
+            # competing adds cannot both observe an unclaimed conduit. The
+            # reservation covers add_member's publication and recording callback.
+            if (
+                    conduit.id in self._pending_cluster_admissions
+                    or self.get_clusters_for_conduit(conduit.id)
+            ):
+                raise ValueError(
+                    f"Conduit {conduit.id} is already in a cluster; cluster "
+                    f"membership is exclusive (one per conduit)."
+                )
+            self._pending_cluster_admissions.add(conduit.id)
+        try:
+            cluster.add_member(conduit.id)
+        finally:
+            with self._lock:
+                self._pending_cluster_admissions.discard(conduit.id)
         cluster.handle_join(conduit)
 
     def remove_conduit_from_cluster(

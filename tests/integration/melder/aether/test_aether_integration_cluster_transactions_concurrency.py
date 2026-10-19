@@ -1,10 +1,13 @@
 import threading
-from typing import Callable, List, Tuple
+from types import TracebackType
+from typing import Callable, List, Optional, Set, Tuple
 
 import pytest
 
 from melder.aether.aether import Aether
+from melder.aether.aetheric_frame.conduit_cloud import ConduitCloud
 from melder.aether.conduit.conduit import Conduit
+from melder.aether.conduit.conduit_cluster import ConduitCluster
 from melder.aether.spellbook.configuration.spellbook_configuration import (
     SpellbookConfiguration,
 )
@@ -116,6 +119,58 @@ def _run_in_parallel(workers: List[Callable[[], None]]) -> List[BaseException]:
     for thread in threads:
         thread.join()
     return errors
+
+
+class _MembershipAdmissionGate:
+    """Hold member writes until all competitors reach the admission boundary.
+
+    Contract:
+        Borrow the real Cloud RLock. Count distinct workers at lock attempts and
+        member writes. Without admission protection every worker reaches the write
+        after an empty read; with it the first write stays pending while the other
+        workers reach the admission guard. Neither schedule uses sleeps.
+        Install only after setup and restore before assertions or teardown.
+    """
+
+    def __init__(self, lock: threading.RLock, workers: int) -> None:
+        """Borrow the Cloud lock and own coordination state for one race."""
+        self._lock = lock
+        self._workers = workers
+        self._arrivals: Set[int] = set()
+        self._arrival_lock = threading.Lock()
+        self._release = threading.Event()
+
+    def _arrive(self) -> None:
+        """Release the first writer once every competitor can make progress."""
+        with self._arrival_lock:
+            self._arrivals.add(threading.get_ident())
+            if len(self._arrivals) >= self._workers:
+                self._release.set()
+
+    def before_member_add(self) -> None:
+        """Pause before a real member write; fail if coordination never completes.
+
+        Raises:
+            AssertionError: The other workers failed to reach admission within
+                the bounded wait. The timeout is a failure bound, not a schedule.
+        """
+        self._arrive()
+        assert self._release.wait(10), "Competing cluster admissions did not arrive."
+
+    def __enter__(self) -> "_MembershipAdmissionGate":
+        """Announce an admission attempt before waiting for the borrowed lock."""
+        self._arrive()
+        self._lock.acquire()
+        return self
+
+    def __exit__(
+            self,
+            exc_type: Optional[type[BaseException]],
+            exc_value: Optional[BaseException],
+            traceback: Optional[TracebackType],
+    ) -> None:
+        """Release the borrowed lock and propagate any exception unchanged."""
+        self._lock.release()
 
 
 # ---------------------------------------------------------------------------
@@ -283,17 +338,29 @@ def test_concurrent_mixed_join_and_leave_reach_consistent_state() -> None:
         _cleanup(books, conduits)
 
 
-def test_concurrent_adds_of_same_conduit_admit_exactly_one() -> None:
+@pytest.mark.parametrize(
+    ("cluster_names", "force_overlap"),
+    [
+        pytest.param(("cluster-a",), False, id="natural-same-cluster"),
+        pytest.param(("cluster-a",), True, id="forced-same-cluster"),
+        pytest.param(("cluster-a", "cluster-b"), True, id="forced-two-clusters"),
+    ],
+)
+def test_concurrent_adds_of_same_conduit_admit_exactly_one(
+        monkeypatch: pytest.MonkeyPatch,
+        cluster_names: Tuple[str, ...],
+        force_overlap: bool,
+) -> None:
     """
     Purpose:
         Verify the single-cluster exclusivity invariant holds atomically under contention:
-        when many threads race to add the SAME conduit, the conduit ends up a member exactly
-        once and every losing thread is rejected with the exclusivity error (no double-add,
-        no corruption, no unexpected error).
+        when eight threads race to add the SAME conduit to one or two clusters, exactly one
+        succeeds and every loser is rejected with the exclusivity error. Keep natural
+        contention and force the empty-read-before-add schedule that CI exposed.
     Contract:
-        - Final membership is exactly {conduit.id} (one membership, never two).
-        - At least one racing add is rejected, and every rejection is the exclusivity
-          ValueError ("exclusive (one per conduit)").
+        - One cluster holds exactly {conduit.id}; other targets stay empty.
+        - Exactly seven calls raise the exclusivity ValueError.
+        - The DevOps membership index and shared roots agree with the winning cluster.
     Returns:
         None.
     Raises:
@@ -304,16 +371,51 @@ def test_concurrent_adds_of_same_conduit_admit_exactly_one() -> None:
     book, conduit = _make_cluster_conduit(frame_name, name="root-0")
     try:
         cloud = aether._ensure_frame(frame_name)._conduit_cloud
-        cloud.create_cluster("cluster-a")
+        for cluster_name in cluster_names:
+            cloud.create_cluster(cluster_name)
+        clusters = {name: cloud.get_cluster(name) for name in cluster_names}
+        worker_count = 8
 
-        errors = _run_in_parallel(
-            [lambda: cloud.add_conduit_to_cluster(conduit, "cluster-a") for _ in range(8)]
-        )
+        with monkeypatch.context() as patches:
+            if force_overlap:
+                gate = _MembershipAdmissionGate(cloud._lock, worker_count)
+                add_member = ConduitCluster.add_member
 
-        assert set(cloud._get_cluster("cluster-a").get_members()) == {conduit.id}
-        assert len(errors) >= 1
+                def resolved_cluster(self: ConduitCloud, name: str) -> ConduitCluster:
+                    """Use the real, pre-resolved target without incidental lookup locking.
+
+                    Only discovery is replaced. Membership reads/writes, DevOps
+                    publication and the join/share transaction remain real.
+                    """
+                    return clusters[name]
+
+                def coordinated_add(self: ConduitCluster, conduit_id: str) -> None:
+                    """Hold the real write at the boundary of the disputed empty read."""
+                    gate.before_member_add()
+                    add_member(self, conduit_id)
+
+                patches.setattr(ConduitCloud, "_get_cluster", resolved_cluster)
+                patches.setattr(ConduitCluster, "add_member", coordinated_add)
+                patches.setattr(cloud, "_lock", gate)
+
+            errors = _run_in_parallel([
+                lambda name=cluster_names[index % len(cluster_names)]:
+                    cloud.add_conduit_to_cluster(conduit, name)
+                for index in range(worker_count)
+            ])
+
+        members = {name: cluster.get_members() for name, cluster in clusters.items()}
+        winners = [name for name, member_ids in members.items() if conduit.id in member_ids]
+        assert len(winners) == 1
+        assert members == {
+            name: {conduit.id} if name == winners[0] else set() for name in cluster_names
+        }
+        assert cloud.get_clusters_for_conduit(conduit.id) == winners
+        for name, cluster in clusters.items():
+            assert set(cluster.get_shared_spells()) == ({conduit.id} if name == winners[0] else set())
+        assert len(errors) == worker_count - 1
         assert all(isinstance(exc, ValueError) for exc in errors)
-        assert all("exclusive" in str(exc) for exc in errors)
+        assert all("exclusive (one per conduit)" in str(exc) for exc in errors)
     finally:
         _cleanup([book], [conduit])
 

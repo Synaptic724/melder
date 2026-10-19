@@ -441,6 +441,72 @@ def test_add_conduit_to_cluster_delegates_to_cluster(conduit_cloud, mock_conduit
     cluster.handle_join.assert_called_once_with(mock_conduit)
 
 
+@pytest.mark.parametrize("callback_stage", ["membership_record", "sharing"])
+def test_cluster_join_does_not_hold_cloud_lock_during_sharing(
+        conduit_cloud, mock_conduit, callback_stage: str,
+) -> None:
+    """Allow another thread's Cloud lookup during registration or sharing callbacks.
+
+    Contract:
+        add_member may emit a recording callback, and handle_join opens the share
+        transaction. Neither boundary may retain the Cloud lock and block readers.
+        The observer always joins before fixture teardown, including on failure.
+    """
+    cloud, _, _ = conduit_cloud
+    cluster = MagicMock()
+    cloud._conduit_clusters["cluster-1"] = cluster
+    observed = threading.Event()
+
+    def observe_cloud() -> None:
+        """Signal only after a real Cloud lookup obtains its lock and returns."""
+        if cloud.has_cluster_name("cluster-1"):
+            observed.set()
+
+    observer = threading.Thread(target=observe_cloud)
+
+    def callback_after_admission(target: object) -> None:
+        """Require the recording/sharing collaborator's observer to make progress."""
+        observer.start()
+        assert observed.wait(5), f"Cloud lock was held across {callback_stage}."
+
+    if callback_stage == "membership_record":
+        cluster.add_member.side_effect = callback_after_admission
+    else:
+        cluster.handle_join.side_effect = callback_after_admission
+    try:
+        cloud.add_conduit_to_cluster(mock_conduit, "cluster-1")
+    finally:
+        if observer.ident is not None:
+            observer.join(timeout=5)
+
+    assert not observer.is_alive()
+    assert observed.is_set()
+    cluster.add_member.assert_called_once_with("conduit-1")
+
+
+def test_failed_cluster_registration_releases_admission_for_retry(conduit_cloud, mock_conduit) -> None:
+    """A registration that fails before publishing membership must not strand admission.
+
+    Contract:
+        The original error propagates, no sharing begins, and a later call can
+        register the same conduit. This checks reservation cleanup through behavior.
+    """
+    cloud, _, _ = conduit_cloud
+    cluster = MagicMock()
+    cloud._conduit_clusters["cluster-1"] = cluster
+    cluster.add_member.side_effect = RuntimeError("registration refused")
+
+    with pytest.raises(RuntimeError, match="registration refused"):
+        cloud.add_conduit_to_cluster(mock_conduit, "cluster-1")
+    cluster.handle_join.assert_not_called()
+
+    cluster.add_member.side_effect = None
+    cloud.add_conduit_to_cluster(mock_conduit, "cluster-1")
+
+    assert cluster.add_member.call_count == 2
+    cluster.handle_join.assert_called_once_with(mock_conduit)
+
+
 def test_remove_conduit_from_cluster_delegates_to_cluster(conduit_cloud, mock_conduit) -> None:
     """
     Verify remove_conduit_from_cluster runs the cluster's ordered exit.

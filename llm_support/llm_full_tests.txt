@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: tests
-SOURCE FINGERPRINT: f22042defe54d45bc438e718de41ea899175f43c27b1b8c2ef61b8081f205e9f
+SOURCE FINGERPRINT: 1a17e3a177019761aa898766e9e084ecdfddb93dc1dc497a3436887477bf2d2f
 FILE COUNT: 1144
 
 ================================================================================
@@ -104252,16 +104252,19 @@ END FILE: tests/integration/melder/aether/test_aether_integration_cluster_sharin
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/aether/test_aether_integration_cluster_transactions_concurrency.py
-CONTENT SHA256: a8074d6efe66b38c8229622868e6df04f849f5641bb213dac5520b1dd2580a35
+CONTENT SHA256: fd5f8bd7e35b1cc96f733716568691aade3d4af2dbfbfd329c264692933ae473
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
-from typing import Callable, List, Tuple
+from types import TracebackType
+from typing import Callable, List, Optional, Set, Tuple
 
 import pytest
 
 from melder.aether.aether import Aether
+from melder.aether.aetheric_frame.conduit_cloud import ConduitCloud
 from melder.aether.conduit.conduit import Conduit
+from melder.aether.conduit.conduit_cluster import ConduitCluster
 from melder.aether.spellbook.configuration.spellbook_configuration import (
     SpellbookConfiguration,
 )
@@ -104373,6 +104376,58 @@ def _run_in_parallel(workers: List[Callable[[], None]]) -> List[BaseException]:
     for thread in threads:
         thread.join()
     return errors
+
+
+class _MembershipAdmissionGate:
+    """Hold member writes until all competitors reach the admission boundary.
+
+    Contract:
+        Borrow the real Cloud RLock. Count distinct workers at lock attempts and
+        member writes. Without admission protection every worker reaches the write
+        after an empty read; with it the first write stays pending while the other
+        workers reach the admission guard. Neither schedule uses sleeps.
+        Install only after setup and restore before assertions or teardown.
+    """
+
+    def __init__(self, lock: threading.RLock, workers: int) -> None:
+        """Borrow the Cloud lock and own coordination state for one race."""
+        self._lock = lock
+        self._workers = workers
+        self._arrivals: Set[int] = set()
+        self._arrival_lock = threading.Lock()
+        self._release = threading.Event()
+
+    def _arrive(self) -> None:
+        """Release the first writer once every competitor can make progress."""
+        with self._arrival_lock:
+            self._arrivals.add(threading.get_ident())
+            if len(self._arrivals) >= self._workers:
+                self._release.set()
+
+    def before_member_add(self) -> None:
+        """Pause before a real member write; fail if coordination never completes.
+
+        Raises:
+            AssertionError: The other workers failed to reach admission within
+                the bounded wait. The timeout is a failure bound, not a schedule.
+        """
+        self._arrive()
+        assert self._release.wait(10), "Competing cluster admissions did not arrive."
+
+    def __enter__(self) -> "_MembershipAdmissionGate":
+        """Announce an admission attempt before waiting for the borrowed lock."""
+        self._arrive()
+        self._lock.acquire()
+        return self
+
+    def __exit__(
+            self,
+            exc_type: Optional[type[BaseException]],
+            exc_value: Optional[BaseException],
+            traceback: Optional[TracebackType],
+    ) -> None:
+        """Release the borrowed lock and propagate any exception unchanged."""
+        self._lock.release()
 
 
 # ---------------------------------------------------------------------------
@@ -104540,17 +104595,29 @@ def test_concurrent_mixed_join_and_leave_reach_consistent_state() -> None:
         _cleanup(books, conduits)
 
 
-def test_concurrent_adds_of_same_conduit_admit_exactly_one() -> None:
+@pytest.mark.parametrize(
+    ("cluster_names", "force_overlap"),
+    [
+        pytest.param(("cluster-a",), False, id="natural-same-cluster"),
+        pytest.param(("cluster-a",), True, id="forced-same-cluster"),
+        pytest.param(("cluster-a", "cluster-b"), True, id="forced-two-clusters"),
+    ],
+)
+def test_concurrent_adds_of_same_conduit_admit_exactly_one(
+        monkeypatch: pytest.MonkeyPatch,
+        cluster_names: Tuple[str, ...],
+        force_overlap: bool,
+) -> None:
     """
     Purpose:
         Verify the single-cluster exclusivity invariant holds atomically under contention:
-        when many threads race to add the SAME conduit, the conduit ends up a member exactly
-        once and every losing thread is rejected with the exclusivity error (no double-add,
-        no corruption, no unexpected error).
+        when eight threads race to add the SAME conduit to one or two clusters, exactly one
+        succeeds and every loser is rejected with the exclusivity error. Keep natural
+        contention and force the empty-read-before-add schedule that CI exposed.
     Contract:
-        - Final membership is exactly {conduit.id} (one membership, never two).
-        - At least one racing add is rejected, and every rejection is the exclusivity
-          ValueError ("exclusive (one per conduit)").
+        - One cluster holds exactly {conduit.id}; other targets stay empty.
+        - Exactly seven calls raise the exclusivity ValueError.
+        - The DevOps membership index and shared roots agree with the winning cluster.
     Returns:
         None.
     Raises:
@@ -104561,16 +104628,51 @@ def test_concurrent_adds_of_same_conduit_admit_exactly_one() -> None:
     book, conduit = _make_cluster_conduit(frame_name, name="root-0")
     try:
         cloud = aether._ensure_frame(frame_name)._conduit_cloud
-        cloud.create_cluster("cluster-a")
+        for cluster_name in cluster_names:
+            cloud.create_cluster(cluster_name)
+        clusters = {name: cloud.get_cluster(name) for name in cluster_names}
+        worker_count = 8
 
-        errors = _run_in_parallel(
-            [lambda: cloud.add_conduit_to_cluster(conduit, "cluster-a") for _ in range(8)]
-        )
+        with monkeypatch.context() as patches:
+            if force_overlap:
+                gate = _MembershipAdmissionGate(cloud._lock, worker_count)
+                add_member = ConduitCluster.add_member
 
-        assert set(cloud._get_cluster("cluster-a").get_members()) == {conduit.id}
-        assert len(errors) >= 1
+                def resolved_cluster(self: ConduitCloud, name: str) -> ConduitCluster:
+                    """Use the real, pre-resolved target without incidental lookup locking.
+
+                    Only discovery is replaced. Membership reads/writes, DevOps
+                    publication and the join/share transaction remain real.
+                    """
+                    return clusters[name]
+
+                def coordinated_add(self: ConduitCluster, conduit_id: str) -> None:
+                    """Hold the real write at the boundary of the disputed empty read."""
+                    gate.before_member_add()
+                    add_member(self, conduit_id)
+
+                patches.setattr(ConduitCloud, "_get_cluster", resolved_cluster)
+                patches.setattr(ConduitCluster, "add_member", coordinated_add)
+                patches.setattr(cloud, "_lock", gate)
+
+            errors = _run_in_parallel([
+                lambda name=cluster_names[index % len(cluster_names)]:
+                    cloud.add_conduit_to_cluster(conduit, name)
+                for index in range(worker_count)
+            ])
+
+        members = {name: cluster.get_members() for name, cluster in clusters.items()}
+        winners = [name for name, member_ids in members.items() if conduit.id in member_ids]
+        assert len(winners) == 1
+        assert members == {
+            name: {conduit.id} if name == winners[0] else set() for name in cluster_names
+        }
+        assert cloud.get_clusters_for_conduit(conduit.id) == winners
+        for name, cluster in clusters.items():
+            assert set(cluster.get_shared_spells()) == ({conduit.id} if name == winners[0] else set())
+        assert len(errors) == worker_count - 1
         assert all(isinstance(exc, ValueError) for exc in errors)
-        assert all("exclusive" in str(exc) for exc in errors)
+        assert all("exclusive (one per conduit)" in str(exc) for exc in errors)
     finally:
         _cleanup([book], [conduit])
 
@@ -244471,7 +244573,7 @@ END FILE: tests/unit/melder/aether/test_command_system_spell_id_lookups.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/test_conduit_cloud.py
-CONTENT SHA256: 1af57747c855f57377ea2709a8893d15460adeac83948c6de146a2cc41fa33b6
+CONTENT SHA256: d6147f236db9802ad9388e7388849cdfce52edee2c464125c45de3eccb05a85b
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -244914,6 +245016,72 @@ def test_add_conduit_to_cluster_delegates_to_cluster(conduit_cloud, mock_conduit
     cloud.add_conduit_to_cluster(mock_conduit, "cluster-1")
 
     cluster.add_member.assert_called_once_with("conduit-1")
+    cluster.handle_join.assert_called_once_with(mock_conduit)
+
+
+@pytest.mark.parametrize("callback_stage", ["membership_record", "sharing"])
+def test_cluster_join_does_not_hold_cloud_lock_during_sharing(
+        conduit_cloud, mock_conduit, callback_stage: str,
+) -> None:
+    """Allow another thread's Cloud lookup during registration or sharing callbacks.
+
+    Contract:
+        add_member may emit a recording callback, and handle_join opens the share
+        transaction. Neither boundary may retain the Cloud lock and block readers.
+        The observer always joins before fixture teardown, including on failure.
+    """
+    cloud, _, _ = conduit_cloud
+    cluster = MagicMock()
+    cloud._conduit_clusters["cluster-1"] = cluster
+    observed = threading.Event()
+
+    def observe_cloud() -> None:
+        """Signal only after a real Cloud lookup obtains its lock and returns."""
+        if cloud.has_cluster_name("cluster-1"):
+            observed.set()
+
+    observer = threading.Thread(target=observe_cloud)
+
+    def callback_after_admission(target: object) -> None:
+        """Require the recording/sharing collaborator's observer to make progress."""
+        observer.start()
+        assert observed.wait(5), f"Cloud lock was held across {callback_stage}."
+
+    if callback_stage == "membership_record":
+        cluster.add_member.side_effect = callback_after_admission
+    else:
+        cluster.handle_join.side_effect = callback_after_admission
+    try:
+        cloud.add_conduit_to_cluster(mock_conduit, "cluster-1")
+    finally:
+        if observer.ident is not None:
+            observer.join(timeout=5)
+
+    assert not observer.is_alive()
+    assert observed.is_set()
+    cluster.add_member.assert_called_once_with("conduit-1")
+
+
+def test_failed_cluster_registration_releases_admission_for_retry(conduit_cloud, mock_conduit) -> None:
+    """A registration that fails before publishing membership must not strand admission.
+
+    Contract:
+        The original error propagates, no sharing begins, and a later call can
+        register the same conduit. This checks reservation cleanup through behavior.
+    """
+    cloud, _, _ = conduit_cloud
+    cluster = MagicMock()
+    cloud._conduit_clusters["cluster-1"] = cluster
+    cluster.add_member.side_effect = RuntimeError("registration refused")
+
+    with pytest.raises(RuntimeError, match="registration refused"):
+        cloud.add_conduit_to_cluster(mock_conduit, "cluster-1")
+    cluster.handle_join.assert_not_called()
+
+    cluster.add_member.side_effect = None
+    cloud.add_conduit_to_cluster(mock_conduit, "cluster-1")
+
+    assert cluster.add_member.call_count == 2
     cluster.handle_join.assert_called_once_with(mock_conduit)
 
 

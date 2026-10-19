@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_components.md'
-LINE_COUNT = 12492
-CONTENT_SHA256 = 'f3df8f1cbed2ca59cb0d0f93c90ee436fb77b576954c195790046af1bd04b70a'
+LINE_COUNT = 12508
+CONTENT_SHA256 = '03c25cd009c1c62c4b8835dd44786a2e2cd1a374a370c2ff3e32094a66d05aec'
 
 TEXT = """# Src Components (C3/C2/C1)
 
@@ -1715,6 +1715,8 @@ Responsibilities:
   `ConduitCloud.list_conduits()` returns those scopes as a tuple snapshot of borrowed conduits, and
   `Aether.get_conduit_by_name` reads the same directory (0.2.79).
 - Provide ConduitCluster for auto-sharing roots.
+- Admit a normal root to at most one cluster even under contention (0.2.8265): the Cloud reserves a
+  pending conduit id before registration, refusing both repeated and competing-cluster admissions.
 - Expose the frame-wide shared rich Spellbook configuration as `shared_spellbook_configuration` (0.2.8208): the
   configuration the first conjuring Book bound, while the posture's `shared_framewide_spellbook_configuration`
   is True; None when sharing is off or before a Book binds one. It is the gate a Spellbook applies before
@@ -1756,6 +1758,11 @@ Concurrency/Threading:
 - One frame-level `RLock` guarding the frame's own registry and services.
 - Root registration enters Cloud's leaf directory lock under frame -> Cloud ordering. Names share
   one collision authority; root/cluster ownership maps remain normal-only.
+- Cluster admission checks the membership index and `_pending_cluster_admissions` under the Cloud lock,
+  then reserves the id. `ConduitCluster.add_member` runs outside the Cloud lock because its record emission
+  can call a user persistence handler. A finally discards the reservation after registration or failure;
+  `handle_join` then runs its existing transaction outside the Cloud lock too (0.2.8265).
+  EVIDENCE: `src/melder/aether/aetheric_frame/conduit_cloud.py:ConduitCloud.add_conduit_to_cluster`.
 - CORRECTED 2026-08-03: this document previously claimed the frame is the
   arbitration point between conduits, so that two-conduit operations "serialise
   here rather than needing a lock ordering between the two conduit locks". THAT
@@ -7162,12 +7169,16 @@ Contract/Interface:
   `_release_conduit_name`.
 - Names are exact/nonempty and shared with roots. Unnamed scopes never enter the directory.
 - Cluster operations still use borrowed normal-root maps and retain dynamic admission.
+- Admission reserves one conduit id under the Cloud RLock after checking pending and published
+  membership (0.2.8265). `add_member`, its recording callbacks and `handle_join` execute outside that
+  lock. Registration's finally discards the pending id, so failure before publication permits retry.
 - `remove_conduit_from_cluster` runs `ConduitCluster.release_member` (0.2.8236); `get_clusters_for_conduit` reads
   the frame's membership index and names clusters through `_cluster_names_by_id`; `delete_cluster` raises the
   deleted cluster's disposal failures after it is gone (0.2.8237).
 Data Structures:
 - Owned `_named_conduits`, `_conduit_names_by_id`, `_reserved_conduit_names`, clusters and
   `_cluster_names_by_id` (0.2.8236).
+- Owned `_pending_cluster_admissions` (0.2.8265), cleared and deleted at Cloud teardown.
 - Borrowed frame root `_conduits` map; directory references never own conduit teardown.
 Concurrency/Threading:
 - Existing leaf RLock protects coherent name/id/claim transitions. No callbacks or outward locks
@@ -8878,9 +8889,10 @@ expanded into its real modules rather than given a plausible number.
   note: frame posture; `frozen` reports settlement (0.2.8208).
 - path: `src/melder/aether/aetheric_frame/conduit_cloud.py`
   start_line: 1
-  end_line: 1103
-  loc: 1103
-  verified_at: 2026-10-14T23:59:35Z
+  end_line: 1126
+  loc: 1126
+  verified_at: 2026-10-19T23:18:53Z
+  note: pending-id reservations make cluster admission exclusive; recording and sharing hold no Cloud lock.
 - path: `src/melder/aether/conduit/conduit_cluster.py`
   start_line: 1
   end_line: 1516
@@ -11868,6 +11880,10 @@ Companion documents:
   component and code-description patches are inputs to this document while a lane is open.
 
 ## Context / Handoff Summary
+
+2026-10-19 cluster admission (0.2.8265): AethericFrame Services and ConduitCloud Registry describe the
+pending-id reservation, the rejection of competing admissions, callback lock boundaries and retry after
+failed registration. The Cloud extent is remeasured; no public signature or registry API changed.
 
 2026-10-19 staging keeps the active signature (0.2.8263; STORY-2026-10-17-staged_version_releases_active_signature):
 Spellbook Core gains an invariant (`_destroy_spell_index` drops only its own route and releases only the departing
