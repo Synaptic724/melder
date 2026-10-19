@@ -1,4 +1,4 @@
-# Melder 0.2.8258
+# Melder 0.2.8259
 
 **Unreleased**
 
@@ -987,9 +987,8 @@ spell_id and maps the old ones; a record that holds one object twice fails at it
 Known limits: `-O` changes the spell_id of code that holds an `assert`, including every `typing.NamedTuple` class,
 whose base reads a standard-library function that asserts; whether two patch releases of one Python version give one
 spell_id is not yet measured; a namespace package that several distributions install is named by the first in sorted
-order; a bind costs 37-55 us more (conjure and melds are unchanged); a definition rebound under another slotted
-existence can meet the removed definition's object at its first meld; and a version alone in an index that
-`remove_from_spell_index` minted is missed by the collision check until that index is registered with its frame.
+order; a bind costs 37-55 us more (conjure and melds are unchanged); and a definition rebound under another
+slotted existence can meet the removed definition's object at its first meld.
 
 ## A spell's binding is a manifest with its own hash
 
@@ -1000,6 +999,52 @@ spell_id, so a spell bound another way never replays a plan built for its old bi
 binding hash (record 4.3.0; 4.x records still read), and a restore reports each binding it rebuilt differently -
 under another receiving Spellbook's disposal order, say - in `RestoreReport.describe()["binding_changes"]`, where
 the spell_id used to move.
+
+## A version moved into an index of its own is found by its spell_id
+
+`Conduit.remove_from_spell_index` moves a parked version out of its spell index into a fresh index of its own, where
+it stays parked until you notch to it. Until 0.2.8259 the frame never learned about that index, so the version - parked
+there or notched active there - could not be found by its spell_id from a conduit:
+
+```python
+class English:
+    def greet(self) -> str:
+        return "hello"
+
+
+class French:
+    def greet(self) -> str:
+        return "bonjour"
+
+
+book = md.Spellbook()
+english = book.bind(spell=English, existence="many", binding_name="english")
+world = book.conjure(dynamic=True, name="world")
+index = world.get_spell_by_spell_id(english).spell_index
+french = world.bind_inactive(spell=French, spell_index=index, existence="many", binding_name="french")
+
+world.remove_from_spell_index(spell_id=french, source_index=index)  # French gets an index of its own, parked
+own_index = world.get_spell_by_spell_id(french).spell_index  # raised "not found in any conduit" until 0.2.8259
+world.notch_spell(spell_index=own_index, spell_id=french)
+assert world.get_conduit_by_spell_id(french) is world
+assert world.meld(spell_id=french).greet() == "bonjour"
+assert world.meld(spell_id=english).greet() == "hello"
+```
+
+- `get_spell_by_spell_id` and `get_conduit_by_spell_id` answer for such a version, parked or active; they raised
+  `ValueError` "Spell version <spell_id> not found in any conduit.".
+- A linked conduit's `add_spell_to_contract(spell_id=...)` and `transfer_spell_ownership` by spell_id proceed for
+  it; both raised that `ValueError`. The borrower's copy is parked or active as the version is.
+- Another Spellbook can no longer bind the same spell_id while the version sits in its own index: the bind raises the
+  usual `RuntimeError` "Spell ID collision detected: this object is already registered as spell_id <id>. ...", in
+  the same frame and, under process-wide spell ids (the default), in another frame. The bind used to be accepted,
+  so two Spellbooks held one spell_id.
+- `MutationResearch.residency_view(spell_id)` reads the version `parked` in its own index and `active` there once a
+  notch makes it active; it read `declared_only`.
+
+What stays the same: what `remove_from_spell_index` moves and refuses, the version staying parked until a notch,
+moving it back with `add_to_spell_index` (its emptied index goes), and every lookup of a version in any other index.
+No public signature changes.
 
 ## Packaging and documentation
 
@@ -1093,7 +1138,9 @@ the spell_id used to move.
 - The expert guide on bind hooks (`docs/expert/bind-hooks.md`) and the agent operations guide
   (`agents/MELDER_AGENT_OPERATIONS.md`) use the new names, and the guide's lookup trap now describes the exact
   lookup; the walkthroughs that call the lookups use the new names, and lessons 17 (notch-swapping a live object)
-  and 26 (codegen create, modify, iterate) show a parked spell_id answering its own version.
+  and 26 (codegen create, modify, iterate) show a parked spell_id answering its own version. The expert guide on
+  governed change (`docs/expert/governed-change.md`) says the same: a lookup by spell_id is exact, and the version
+  an index has active is a lookup by the index (it said a parked spell_id answered the active version).
 - The packaged system documents (`melder.__architecture__`, `melder.__components__`) and the packaged graph
   describe a managed spell's settings as settings of the one spell: the fingerprint without them, the pool taking
   new settings on a rebind under its spell_id, and the creation cache's generation 22; `ManagedSpellMode` and the
@@ -1108,7 +1155,9 @@ the spell_id used to move.
   spell identity: the spell_id as the SHA256 of the object's code (what counts, installed code named by version, the
   parity across builds and GIL modes, `-O`), the binding manifest and its hash in both cache tiers and the record,
   and the one-object refusals; the packaged test documents describe the new tests; the code-map extents of the
-  changed files are remeasured. The managed release's failure is corrected there:
+  changed files are remeasured, and the packaged graph's binding profiles and their builder, the examiner's repr
+  helpers and the signature reader no longer describe the retired fingerprint. The managed release's failure is
+  corrected there:
   `ReleaseManagedSpell().release(obj)` after the root's teardown raises the not-managed ValueError, and the
   torn-down RuntimeError comes from a lease or a release that raced the teardown.
 - The examples teach one object, one spell: the lessons and probes in `UX_and_AIX_experiences/` that bound one class
@@ -1124,4 +1173,8 @@ the spell_id used to move.
   `UX_and_AIX_experiences/02_intermediate/`), with 34 contract probes in
   `UX_and_AIX_experiences/pytest_examples/test_managed_spell_probes.py`; the scopes guide links the chapter
   from its purge table.
-- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8258.
+- The packaged system documents (`melder.__architecture__`, `melder.__components__`) and the packaged graph
+  describe the registration of the index `remove_from_spell_index` mints, its removal at the root's teardown and
+  residency's parked verdict; the code-map extents of `spellbook.py`, `spell.py` and `mutation_research.py` are
+  remeasured, and their line citations remapped.
+- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8259.

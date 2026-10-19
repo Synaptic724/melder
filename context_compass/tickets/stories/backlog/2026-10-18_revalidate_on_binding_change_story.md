@@ -9,7 +9,7 @@
 - Agent Role: synaptic_python_developer
 - Priority: p1
 - Created: 2026-10-18T11:45:58Z
-- Updated: 2026-10-18T16:24:12Z
+- Updated: 2026-10-19T00:49:20Z
 
 ## User Narrative
 As an agent changing how a spell is kept - its lifetime, teardown, address or capability - I want Melder to
@@ -49,10 +49,10 @@ categories by spellframe) and whether it is built at all (resolvable).
 - Out of scope: the hashes (S1, S2), the refusals (S4), the migration (S5), pool routing (set aside by the owner).
 
 ## State Transition Event
-- from_state: (new)
+- from_state: draft
 - to_state: draft
-- transition_reason: filed under EPIC-2026-10-18-spell_identity_is_the_code on the owner's direction (chat
-  2026-10-18); stays draft until S1 and S2 land and its open questions are answered.
+- transition_reason: parked in the backlog by the owner (the epic's DECISION note of the turn-in,
+  2026-10-19T00:49:20Z): the epic turned in after S1 and S2 landed.
 
 ## Dependencies / Related Work
 - EPIC-2026-10-18-spell_identity_is_the_code
@@ -94,6 +94,8 @@ categories by spellframe) and whether it is built at all (resolvable).
 - 2026-10-18T11:45:58Z: filed under EPIC-2026-10-18-spell_identity_is_the_code (the epic's DECISION note).
 - 2026-10-18T12:01:17Z: melder_1's files are free (M1-28; the epic's FACT note of 2026-10-18T12:01:17Z); the entry gate
   no longer waits on a release.
+- 2026-10-19T00:49:20Z: parked in tickets/stories/backlog/ on the owner's word; the epic turned in after S1 and
+  S2 landed (the epic's DECISION note).
 
 ## Artifact Links (Optional)
 Qualified independent reviewer acceptance and direct closure follow shared `ticketing.md`;
@@ -157,6 +159,23 @@ this does not make independent review mandatory for every ticket.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-10-19T00:49:20Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: Parked in tickets/stories/backlog/ on the owner's word (S3): the identity epic turned in after S1
+    (0.2.8257) and S2 (0.2.8258) landed; this story waits there, with S6 and the configurables epic, for the
+    owner to take the identity work up again. Status stays draft.
+    The risk of its FACT note of 2026-10-18T16:24:12Z stands: under S1 and S2 a rebind under another
+    slotted existence can meet the removed definition's object.
+  EVIDENCE:
+  - context_compass/tickets/epics/completed/2026-10-18_spell_identity_is_the_code_epic.md:1037-1055
+  - context_compass/tickets/stories/backlog/2026-10-18_revalidate_on_binding_change_story.md:137-160
+  IMPACT: Nothing in this story is started; its scope, requirements and acceptance stand as written.
+  NEXT: the owner's word; then the component patch (which binding fields revalidate and which only rebind).
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
@@ -172,8 +191,9 @@ this does not make independent review mandatory for every ticket.
 
 ## Context / Handoff Summary
 - Scope: a binding change revalidates the spell and its dependents; the store and a verb follow it.
-- State: draft (melder_0); after S1 and S2.
-- Next: the component patch once S1 and S2 land.
+- State: draft, parked in the backlog (the owner, 2026-10-19): the identity epic turned in after
+  S1 (0.2.8257) and S2 (0.2.8258) landed.
+- Next: the owner's word; then the component patch (which binding fields revalidate and which only rebind).
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

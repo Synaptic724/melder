@@ -6,13 +6,18 @@
 - Task ID: TASK-2026-10-18-document_root_teardown_cleans_only_what_it_holds
 - Story: none (standalone; follows the open teardown item of EPIC-2026-10-18-managed_spell_examples_and_docs,
   closed)
-- Status: in_progress
+- Status: done
 - Owner: user
 - Agent Name: melder_2
 - Agent Role: synaptic_python_developer
 - Priority: p1
 - Created: 2026-10-18T23:49:36Z
-- Updated: 2026-10-18T23:49:36Z
+- Updated: 2026-10-19T00:14:39Z
+- Completed: 2026-10-19T00:14:39Z
+- Summary: src_architecture and src_components state the owner's rule that a root's teardown cleans only what
+  the root holds, today's teardown order from source and two places open with the owner (a root-held
+  consumer's release raises at teardown; a pool disposes an out object's children), measured on 0.2.8258;
+  both indexes regenerated, --check OK; no src change, no notch, no release-note entry.
 
 ## Objective
 The two source system documents, src_architecture and src_components, state the owner's ruling (chat,
@@ -48,10 +53,13 @@ with the owner. Nothing in either document keeps claiming a teardown behaviour t
   lane ("other agents are working") and which melder_0's next rebuild carries.
 
 ## State Transition Event
-- from_state: ready
-- to_state: in_progress
-- transition_reason: the owner asked for the update in chat ("update the system docs please"); the row routes
-  here and the ruling is recorded below.
+- from_state: in_progress
+- to_state: done
+- transition_reason: exit gate met - both documents state the rule and today's behaviour with source evidence
+  and the two gaps open with the owner; both indexes regenerated, --check OK; the leak, absolute-path and
+  preservation checks clean (MEASURE note); routine closure by the assigned agent on the owner's request, the
+  two code decisions staying with the owner outside this task. Earlier: ready -> in_progress at
+  2026-10-18T23:49:36Z on the owner's request in chat.
 
 ## Steps / Checklist
 - [x] Consume M0-205 into Notes.
@@ -60,13 +68,13 @@ with the owner. Nothing in either document keeps claiming a teardown behaviour t
 - [x] Read the authoring instructions for the two documents (on demand: writing a system document).
 - [x] Slice the current teardown text of both documents and record what each says.
 - [x] NOTICE melder_0 (M2-20) and melder_1 (M2-21) naming the sections.
-- [ ] Edit src_architecture and regenerate its index; edit src_components and regenerate its index.
-- [ ] Validate: `--check` on both indexes, the tooling-path leak check, the citation bounds check, re-read the
+- [x] Edit src_architecture and regenerate its index; edit src_components and regenerate its index.
+- [x] Validate: `--check` on both indexes, the tooling-path leak check, the citation bounds check, re-read the
       touched sections.
-- [ ] Run Ticket Microcycle during execution:
+- [x] Run Ticket Microcycle during execution:
       `Investigate -> Document -> Strategy/Plan -> Document -> Implement ->
       Document -> Validate -> Document`.
-- [ ] Record meaningful attributed findings in supported Notes/comments or authorized linked evidence
+- [x] Record meaningful attributed findings in supported Notes/comments or authorized linked evidence
       before dependent work; no forced body copy.
 
 ## Deliverables
@@ -79,7 +87,10 @@ with the owner. Nothing in either document keeps claiming a teardown behaviour t
 - context_compass/system_docs/src_components_index.md
 
 ## Validation
-- Not run.
+- Run: both index `--check` OK (62 sections over 5418 lines; 155 over 12324); tooling-path leak and absolute-path
+  checks 0 hits; Content Preservation Gate: 6 replaced lines in src_architecture, all accounted, none in
+  src_components; citation bounds: 2 pre-existing MISSING, none from this task (MEASURE note).
+- Not run: tests (documentation only) and the quality rubric (a targeted edit, outside its scope).
 - Recommended commands:
   - `python context_compass/tools/system_documents/index_document.py --doc context_compass/system_docs/src_architecture.md --check`
   - `python context_compass/tools/system_documents/index_document.py --doc context_compass/system_docs/src_components.md --check`
@@ -89,23 +100,23 @@ with the owner. Nothing in either document keeps claiming a teardown behaviour t
 - Rollback: the apply scripts keep the before-copies in the lane folder; the indexes regenerate from the text.
 
 ## Applicable Anti-Patterns
-- [ ] No status transition without evidence-backed transition reason.
-- [ ] No implementation/validation from `UNKNOWN` or `HYPOTHESIS`.
-- [ ] No closure without delegated acceptance or reserved-owner disposition and board-sync completion.
-- [ ] No behaviour claim in a system document without the source read behind it.
-- [ ] No hand-edited index; no path into the documentation tooling in a produced document.
+- [x] No status transition without evidence-backed transition reason.
+- [x] No implementation/validation from `UNKNOWN` or `HYPOTHESIS`.
+- [x] No closure without delegated acceptance or reserved-owner disposition and board-sync completion.
+- [x] No behaviour claim in a system document without the source read behind it.
+- [x] No hand-edited index; no path into the documentation tooling in a produced document.
 
 ## Done Checklist
-- [ ] Steps complete and checked off
-- [ ] Deliverables produced and linked
-- [ ] Documentation updated (if needed)
-- [ ] Validation status recorded
-- [ ] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
-- [ ] Notes quality maintained (`SCORE_0_TO_10` >=
+- [x] Steps complete and checked off
+- [x] Deliverables produced and linked
+- [x] Documentation updated (if needed)
+- [x] Validation status recorded
+- [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
+- [x] Notes quality maintained (`SCORE_0_TO_10` >=
       `workflow.ticket_microcycle.minimum_note_score`)
-- [ ] Applicable anti-pattern checks are clear or escalated with evidence.
-- [ ] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
-- [ ] Board sync completed for successor routing or closure anchor update.
+- [x] Applicable anti-pattern checks are clear or escalated with evidence.
+- [x] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
+- [x] Board sync completed for successor routing or closure anchor update.
 
 ## Artifact Links (Optional)
 Qualified independent reviewer acceptance and direct closure follow shared `ticketing.md`;
@@ -135,7 +146,7 @@ this does not make independent review mandatory for every ticket.
 
 ## Contribution Attribution
 - Ticket/Work Author(s): melder_2; prose and evidence; this ticket and the two documents' teardown text;
-  revision in progress; Notes below.
+  revision src_architecture 2051a4516565..., src_components 51f5174a8650... (2026-10-19T00:10Z); Notes below.
 - Published By: UNKNOWN before publication (the owner commits).
 - Independent Review: none requested.
 
@@ -313,10 +324,99 @@ this does not make independent review mandatory for every ticket.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-10-19T00:09:00Z
+  AUTHOR: melder_2
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: Apply now rather than wait for melder_1's NOTICE. melder_1's docs pass is visibly complete and it has moved
+    on: the two documents were last written at 00:01:12Z (land_s4_docs.py) and 00:02:45Z (the citation remap), both
+    indexes regenerated at 00:03:15Z and agree with their documents (line counts and hashes), and since 00:08Z the
+    graph descriptors are being re-extracted - the step its NEXT names after the documents; close_s4.py, its last
+    script, writes no system document. M2-21 and M2-22 are still unread. The apply script refuses unless each
+    document's hash equals its index's, so a pass resumed in between stops it with nothing written. M2-23 tells
+    melder_1 at once, with the new index hashes, so its S4 rebuild carries these edits and any later edit re-reads.
+  EVIDENCE:
+  - context_compass/system_docs/src_architecture_index.md:9-19
+  - context_compass/system_docs/src_components_index.md:9-19
+  - context_compass/artifacts/minted_index_registry_20261018/scripts/close_s4.py:1-25
+  - context_compass/artifacts/root_teardown_docs_20261018/scripts/apply_root_teardown_docs.py:1-229
+  IMPACT: The owner's update lands now; melder_1 keeps its own order and is told before its rebuild.
+  NEXT: Run the apply script, regenerate both indexes, run the checks.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-19T00:12:26Z
+  AUTHOR: melder_2
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: M0-206 consumed (melder_0, 2026-10-19T00:09:00Z, re M2-20): melder_0's next rebuild - the last step of
+    EPIC-2026-10-18-spell_identity_is_the_code's turn-in, after its graph descriptors, a docs page, a release-note
+    bullet and the whole-tree run - carries this task's edits, and it waits for this task's NOTICE that the edits
+    and both regenerated indexes are on the tree; melder_0 edits neither document. M2-24 sends that NOTICE now
+    (src_architecture 2051a4516565..., src_components 51f5174a8650..., both indexes --check OK); M2-25 corrects M2-23's hashes
+    for melder_1 after the re-date.
+  EVIDENCE: context_compass/tickets/epics/2026-10-18_spell_identity_is_the_code_epic.md:939-953
+  IMPACT: The packaged system documents are rebuilt with these edits by melder_0's (or melder_1's) next rebuild; this
+    task runs none, as the owner waived for this session.
+  NEXT: Record the validation, then close.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
+- DATETIME: 2026-10-19T00:13:10Z
+  AUTHOR: melder_2
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: Applied and checked. `apply_root_teardown_docs.py` (00:09Z) wrote the PLAN's edits on melder_1's text after
+    confirming each document's hash equal to its index's, and `redate_root_teardown_entries.py` (00:10Z) moved this
+    task's invariant and two handoff entries to the UTC day they landed (2026-10-19), keeping the ruling's date.
+    Both indexes regenerated: `--check` OK - src_architecture 62 sections over 5418 lines, src_components 155 over
+    12324. Content Preservation Gate against the before-copies: src_architecture lost exactly 6 baseline lines, each
+    replaced by this task's text (the Runtime Model line split around the new sentence, step 7's three managed lines
+    rewritten with the unregister-first order, the diagram's two teardown lines put in the code's order); every other
+    line of both documents is present; src_components lost none. Tooling-path leak check: 0 hits in both; absolute
+    paths: 0; no heading with an unclosed bracket. The citation bounds recipe reports two MISSING, both bare file
+    names in a pre-existing src_components handoff entry that lists known-stale citations - none from this task,
+    whose citations are symbols. The quality rubric: Not run (its scope is a document created, recomposed or
+    reviewed; this is a targeted edit). Tests: Not run - documentation only; the probe is evidence, not a test.
+  EVIDENCE:
+  - context_compass/artifacts/root_teardown_docs_20261018/runs/index_checks.txt:1-2
+  - context_compass/artifacts/root_teardown_docs_20261018/runs/preservation_final.txt:1-8
+  - context_compass/artifacts/root_teardown_docs_20261018/runs/citation_recipe_after.txt:1-3
+  - context_compass/artifacts/root_teardown_docs_20261018/scripts/redate_root_teardown_entries.py:1-101
+  - context_compass/system_docs/src_architecture.md:36-45
+  - context_compass/system_docs/src_components.md:3596-3615
+  IMPACT: The exit gate's document criteria are met; what remains is the closure.
+  NEXT: Close the task and sync the boards.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-19T00:14:39Z
+  AUTHOR: melder_2
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: Closed. Completion: both source system documents carry the owner's rule, today's teardown order and the two
+    places open with the owner; indexes current. Acceptance: routine closure by the assigned agent on the owner's
+    request (no reserved decision inside the scope; the two code changes are the owner's, outside it). Validation:
+    recorded in the MEASURE notes. Children: none. Routing: the board row and its detail removed, a closed anchor
+    added; the lane folder retained as reference on the artifact board; the rebuild with melder_0 (M2-24).
+  EVIDENCE:
+  - context_compass/system_docs/src_architecture_index.md:9-19
+  - context_compass/system_docs/src_components_index.md:9-19
+  IMPACT: The owner's ruling is durable in the documents that ship with the package.
+  NEXT: None in this task; the owner's call on the two code changes.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
 ## Context / Handoff Summary
-Scope: write the owner's teardown ruling into src_architecture and src_components with today's behaviour and the
-two gaps marked open. State: ticket opened 2026-10-18T23:49:36Z; nothing edited yet. Next: the board row, M0-205,
-then the source re-read.
+Scope: the owner's teardown rule written into src_architecture and src_components with today's behaviour and the
+two gaps marked open. State: done 2026-10-19 - both documents edited on melder_1's S4 text (00:09Z, re-dated
+00:10Z: src_architecture 5418 lines, 2051a4516565...; src_components 12324 lines, 51f5174a8650...), indexes --check OK.
+Evidence: the source read (FACT note), the probe R1-R3 on 0.2.8258 (MEASURE note), the checks (MEASURE note).
+Open with the owner, outside this task: (1) accept a root-held consumer's release at teardown instead of
+raising; (2) leave the children recorded for an out object to its holder - each a src change with its own
+ticket, notch and docs if the owner wants it. Rebuild: melder_0's next rebuild carries these edits (M0-206,
+M2-24). Seen, not changed: src_components cites `creations.py:376-468` for the reverse-creation-order walk, now
+`Creations._dispose_disposable_registry` at 525-578.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

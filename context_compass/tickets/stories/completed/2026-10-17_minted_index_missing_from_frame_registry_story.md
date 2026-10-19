@@ -1,15 +1,23 @@
 # Story: minted_index_missing_from_frame_registry - the index remove_from_spell_index mints is known to the frame
 
+- Completed: 2026-10-19T00:21:48Z
+- Summary: landed and notched 0.2.8259 - the index `remove_from_spell_index` mints is registered in the frame's
+  spell registry as `bind` registers the index it creates, the root's teardown unregisters it with the rest,
+  and residency reads its version parked until a notch. S4 tests green with the GIL off and on, the whole tree
+  as the MEASURE note records; release note section "A version moved into an index of its own is found by its
+  spell_id"; system documents and graph; rebuilt last. Turned in after the landing, on the owner's word on the
+  edits (2026-10-18).
+
 ## Metadata
 - Story ID: STORY-2026-10-17-minted_index_missing_from_frame_registry
 - Epic: EPIC-2026-10-17-correctness_defects
-- Status: in_progress
+- Status: done
 - Owner: user
 - Agent Name: melder_1
 - Agent Role: synaptic_python_developer
 - Priority: p2
 - Created: 2026-10-17T20:32:42Z
-- Updated: 2026-10-19T00:00:59Z
+- Updated: 2026-10-19T00:25:06Z
 
 ## User Narrative
 As an agent who separates a version into its own index with `remove_from_spell_index` - to keep it, try it on its
@@ -73,10 +81,11 @@ unshareable by spell_id, while the Book itself melds it.
   ALIGNMENT_CHECK note).
 
 ## State Transition Event
-- from_state: ready
-- to_state: in_progress
-- transition_reason: the owner scheduled the story for melder_1 (chat 2026-10-18; DECISION note); the defect
-  is re-verified on the current tree before any change.
+- from_state: in_progress
+- to_state: done
+- transition_reason: landed at 0.2.8259 and turned in after the landing (the owner's word on the edits, DECISION
+  note of 2026-10-18T18:00:11Z; closure is routine once criteria and tests are met). Before that: ready ->
+  in_progress when the owner scheduled the story for melder_1 (chat 2026-10-18; DECISION note).
 
 ## Dependencies / Related Work
 - melder_1's spell_id lookup fix (the owner's rule: a lookup by spell_id returns that spell or nothing).
@@ -85,10 +94,10 @@ unshareable by spell_id, while the Book itself melds it.
 ## Tasks (Implementation Checklist)
 - [x] Task: the owner's word on the edits (2026-10-18; DECISION note).
 - [x] Task: patch docs for the seam, the teardown and residency (linked; PLAN note).
-- [ ] Task: the fix with symptom-named regression tests (written: red on 0.2.8256, green with A-D; MEASURE
-  note), docs, notch and the rebuild last.
-- [ ] Enforce Ticket Microcycle across all linked tasks.
-- [ ] Record meaningful attributed findings in supported Notes/comments or authorized linked evidence.
+- [x] Task: the fix with symptom-named regression tests (red on 0.2.8256, green at 0.2.8259; MEASURE notes),
+  docs, notch and the rebuild last (the rebuild follows this closure, as the contribution guide orders).
+- [x] Enforce Ticket Microcycle across all linked tasks.
+- [x] Record meaningful attributed findings in supported Notes/comments or authorized linked evidence.
 
 ## Acceptance Criteria
 - After `remove_from_spell_index(spell_id=X)`: `frame.find_index_for_spell(X)` returns the minted index,
@@ -118,9 +127,9 @@ unshareable by spell_id, while the Book itself melds it.
 - A walk over the frame registry now sees one more index per separated version; the walks are the existing ones.
 
 ## Applicable Anti-Patterns
-- [ ] No story-state transition without linked task-state evidence.
-- [ ] No closure while required tasks remain active or un-routed.
-- [ ] No cross-task synthesis claims without ticket-note evidence pointers.
+- [x] No story-state transition without linked task-state evidence.
+- [x] No closure while required tasks remain active or un-routed.
+- [x] No cross-task synthesis claims without ticket-note evidence pointers.
 
 ## Open Questions
 - none.
@@ -131,6 +140,7 @@ unshareable by spell_id, while the Book itself melds it.
   (DECISION_REQUEST note).
 - 2026-10-18T18:00:11Z: the owner's word - A registers the minted index as `bind` registers the index it creates,
   with B and C; no new index state (DECISION and ALIGNMENT_CHECK notes).
+- 2026-10-19T00:21:48Z: landed at 0.2.8259 and turned in (FACT notes).
 
 ## Artifact Links (Optional)
 Qualified independent reviewer acceptance and direct closure follow shared `ticketing.md`;
@@ -145,11 +155,13 @@ this does not make independent review mandatory for every ticket.
   - artifacts/correctness_defects_20261017/runs/probe_research_residency_moves_gil0.txt
   - artifacts/correctness_defects_20261017/runs/probe_research_residency_moves_gil1.txt
   - artifacts/minted_index_registry_20261018/ (melder_1's lane: re-runs, scripts, notes)
-  - system_docs/patches/active/minted_index_registry_2026_10_18/ (the three patch docs)
+  - system_docs/patches/completed/minted_index_registry_2026_10_18/ (the three patch docs; promoted at landing,
+    archived at turn-in)
   - artifacts/minted_index_registry_20261018/probes/probe_minted_index_fix_cases.py (cases M4-M7)
   - artifacts/minted_index_registry_20261018/runs/s4_preview_0_2_8256_abcd.diff (edits A-D to land)
-- DISPOSITION: retain_as_reference
-- CLEANUP_TRIGGER: the probe is re-run at the fix and kept as the defect's reproducer
+- DISPOSITION: retain_as_reference (the probes, their runs and the lane folder); promote_to_documentation (the
+  patch)
+- CLEANUP_TRIGGER: the probes were re-run at the fix and are kept as the defect's reproducers
 
 ## Context Management
 - CONTEXT_MANAGEMENT_REQUIRED: false
@@ -161,8 +173,12 @@ this does not make independent review mandatory for every ticket.
 
 ## Contribution Attribution
 - Ticket/Work Author(s): melder_0 (synaptic_python_developer); prose and evidence (the probe); filed 2026-10-17T20:32:42Z.
+- Contributions: melder_1 (synaptic_python_developer) - the re-verification on 0.2.8256, probes M4-M7 and
+  G1-G3, edits A-D and their prototypes, the patch docs minted_index_registry_2026_10_18, the regression tests,
+  the system documents, the graph prose and the release note (2026-10-18; Notes).
 - Published By: UNKNOWN (a local ticket file; not published)
-- Independent Review: none yet
+- Independent Review: none (self-checks only; closure on the owner's word on the edits, DECISION note of
+  2026-10-18T18:00:11Z)
 
 ## Notes
 - DATETIME: 2026-10-17T20:32:42Z
@@ -833,10 +849,82 @@ this does not make independent review mandatory for every ticket.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-10-19T00:20:04Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: M2-21 (2026-10-18T23:59:55Z), M2-22 (2026-10-19T00:02:13Z, ACK requested), M2-23 (00:09:31Z) and M2-25
+    (00:12:26Z) from melder_2, consumed after the re-onboarding; M2-22 acknowledged (M1-41). melder_2's
+    TASK-2026-10-18-document_root_teardown_cleans_only_what_it_holds (the owner's rule: a root's teardown cleans
+    only what the root holds; documentation only) applied its edits to src_architecture and src_components on top
+    of S4's docs pass at 00:09Z, re-dated them at 00:10Z and regenerated both indexes; it is done with both
+    documents. Checked: both documents match their indexes (line_count, content_sha256), and every line S4's docs
+    pass added to the four system documents is still there, but the one collision-message line S4 itself corrected
+    to S1's wording. Two sentences S1 and S2 wrote before S4 landed still call the collision-check gap open - the
+    identity invariant's Open list and the identity release-note section's Known limits; S4 marks both fixed.
+  EVIDENCE:
+  - context_compass/system_docs/src_architecture.md:1158-1206
+  - context_compass/system_docs/src_architecture.md:1249-1252
+  - release_docs/next_version_release.md:987-992
+  - context_compass/tickets/tasks/completed/2026-10-18_document_root_teardown_cleans_only_what_it_holds_task.md:1-433
+  IMPACT: S4's further edits start from melder_2's text; the rebuild at the end carries both lanes.
+  NEXT: Accept the Spellbook and Spell graph nodes and assemble the graph; then mark the two sentences fixed.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
+- DATETIME: 2026-10-19T00:21:36Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: The documents and the graph carry S4 at 0.2.8259. land_s4_docs.py wrote the four system documents (a new
+    operational invariant, a fixed failure mode, the index mutation sequence, the code map remeasured, the
+    handoff entries; the component, tests-architecture and tests-components entries); remap_s4_citations.py
+    moved 9 citation lines in src_architecture and 14 in src_components across A-D; the citation check finds only
+    the two bare file names of handoff history it found at 0.2.8256. mark_gap_fixed_s4.py marked fixed the
+    collision-check gap S1 and S2's text still called open (the identity invariant's Open list, the identity
+    release-note section's Known limits). All four indexes --check OK. The graph: extract_graph.py --strict
+    exit 0 (593 descriptors, none skipped); graph_prose_s4.py added the Spellbook's registration responsibility and
+    the lineage condition to MutationResearch's residency one; the Spellbook and Spell nodes, read against S1 and
+    S2's changes and A-D, accepted; MutationResearch stays SEMANTICS_STALE (its prose was authored against an
+    older span before S4 and needs a full re-read); assemble_graph.py --check OK (593 sections, 28190 lines).
+  EVIDENCE:
+  - context_compass/artifacts/minted_index_registry_20261018/runs/land_s4_docs_apply_0_2_8259.txt:1-7
+  - context_compass/artifacts/minted_index_registry_20261018/runs/remap_s4_citations_apply_0_2_8259.txt:1-75
+  - context_compass/artifacts/minted_index_registry_20261018/runs/citation_check_0_2_8259.txt:1-3
+  - context_compass/artifacts/minted_index_registry_20261018/scripts/mark_gap_fixed_s4.py:1-50
+  - context_compass/artifacts/minted_index_registry_20261018/runs/graph_extract_0_2_8259.txt:1-46
+  - context_compass/artifacts/minted_index_registry_20261018/runs/graph_accept_0_2_8259.txt:1-6
+  - context_compass/artifacts/minted_index_registry_20261018/runs/graph_assemble_check_0_2_8259.txt:1-4
+  IMPACT: Only the notch, the release note, the closure and the rebuild remain.
+  NEXT: Notch to 0.2.8259, then release_note_s4.py and close_s4.py, then the rebuild last.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-19T00:25:06Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: Rebuilt last for 0.2.8259. rebuild_s4_assets.py ran the asset runner in a /tmp mirror (the agent
+    documentation, bind-guard and system-documents manifests at v0.2.8259, 630 bind-guard entries) and copied the
+    eight changed files back byte-equal; the mirror's src/ and documents equal the repository's. In the repository:
+    the runner's --check OK for all three assets; llm_support/_builder.py --include-untracked rewrote src (585
+    files) and other (409), tests unchanged, and its --check OK for all three; the runner's --check OK again. No
+    .git/index.lock. M1-42 sent to melder_0 (the notch, the files back, what S4 changed outside src).
+  EVIDENCE:
+  - context_compass/artifacts/minted_index_registry_20261018/runs/rebuild_assets_0_2_8259_mirror.txt
+  - context_compass/artifacts/minted_index_registry_20261018/runs/rebuild_asset_check_0_2_8259.txt
+  - context_compass/artifacts/minted_index_registry_20261018/runs/rebuild_llm_0_2_8259.txt
+  - context_compass/artifacts/minted_index_registry_20261018/runs/rebuild_llm_check_0_2_8259.txt
+  - context_compass/artifacts/minted_index_registry_20261018/runs/rebuild_asset_check_after_llm_0_2_8259.txt
+  IMPACT: S4 is landed, documented, notched and rebuilt; nothing is owed.
+  NEXT: none for S4; melder_1 takes S7 next.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
 ## Closure Confirmation
-- [ ] Work walkthrough shared with user
-- [ ] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
-- [ ] Applicable anti-pattern checks are clear or escalated with evidence.
+- [x] Work walkthrough shared with user (the landing report, chat 2026-10-19, sent with this turn-in)
+- [x] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
+- [x] Applicable anti-pattern checks are clear or escalated with evidence.
 
 ## Noting Behavior
 - Note focus: cross-task synthesis, dependency flow, and state-transition logic.
@@ -849,22 +937,18 @@ this does not make independent review mandatory for every ticket.
 ## Context / Handoff Summary
 - Scope: the index `remove_from_spell_index` mints is registered in the frame's spell registry as `bind` registers
   the index it creates, unregistered at the root's teardown with the rest, and residency reads its version parked
-  (Requirements; widened on the owner's word). Defect proven on 0.2.8251 and re-verified on 0.2.8256 (Notes);
-  probes and runs in Artifact Links.
-- State: in_progress (melder_1), implementation. The owner's word is given (DECISION note of
-  2026-10-18T18:00:11Z): A follows bind's registration (guard and call), with B and C, and D a docstring; no new
-  index state (ALIGNMENT_CHECK notes). The patch docs are linked (Artifact Links) and mapped to steps and tests
-  (PLAN note). The regression tests are in the repository: red on 0.2.8256, green with A-D in a /tmp mirror whose
-  whole tree passes but for S8's 18 held red tests, GIL off and on (MEASURE note); the edits to land are
-  runs/s4_preview_0_2_8256_abcd.diff in the lane folder. No src edit yet: spellbook.py and spell.py come back
-  from melder_0 when S1 and S2 of EPIC-2026-10-18-spell_identity_is_the_code land (M0-199, M1-40);
-  mutation_research.py is held.
-- Next: (1) melder_0's handover; then re-check A-D's anchors and the tests on the landed tree and apply A-D;
-  (2) the tests green in the repository, the whole tree in a mirror and the probes, GIL off and on; (3) system
-  documents with their indexes and the graph, the release note, the next free notch, closure, the rebuild last,
-  the files handed back. Steps (1) and (3) are scripted in the lane folder (apply_s4.py, land_s4_docs.py,
-  graph_prose_s4.py, release_note_s4.py, remap_s4_citations.py, close_s4.py, rebuild_s4_assets.py; FACT notes
-  of the landing scripts, the remap's notch and the rebuild script).
+  until a notch (Requirements; widened on the owner's word). Defect proven on 0.2.8251 and re-verified on
+  0.2.8256 (Notes); probes and runs in Artifact Links.
+- State: done (melder_1; turned in 2026-10-19T00:21:48Z). Landed at 0.2.8259: edits A-D in spellbook.py, spell.py and
+  mutation_research.py (FACT note); the S4 tests green with the GIL off and on and the whole tree as the MEASURE
+  note records; the system documents with their indexes and the graph, the notch and the release-note section
+  (FACT notes); the rebuild follows this closure.
+- Open elsewhere: the binding signature an active version in a minted index takes
+  (STORY-2026-10-17-notch_moves_signature_by_incoming_key_only); Book teardown's parked versions
+  (STORY-2026-10-17-book_teardown_leaves_parked_versions_uncleaned, S7, next with melder_1); a restore or graft
+  of a separated version (STORY-2026-10-17-restore_drops_separated_parked_version).
+- Next: none here; spellbook.py and spell.py go back to melder_0 and mutation_research.py is released (M1-42);
+  melder_1 takes S7 next.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

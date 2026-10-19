@@ -1,0 +1,27 @@
+context_compass/system_docs/src_components.md: lines 12298 -> 12323
+removed (count fell): 0
+added (count rose): 24
+  +1 - A root's teardown cleans only what the root holds (the owner's rule, 2026-10-18): its stores' records and its
+  +1 - Known, not fixed (open with the owner, 2026-10-18): a consumer the root's own store holds whose disposal method
+  +1 0.2.8258) - and a consumer the root's own store holds whose disposal method gives its object back meets the
+  +1 2026-10-18 a root's teardown cleans only what the root holds (documentation only; the owner's rule, in chat):
+  +1 A root's teardown cleans only what the root holds (owner, 2026-10-18); the two places where this cleanup is open
+  +1 Creations and SpellSpace points at it; Managed Spell Pools carries the rule, today's teardown order and the two
+  +1 Spell Pools).
+  +1 The root's ward and SpellSpaces end before its store, so their consumers give objects back first; a consumer
+  +1 `Creations.cleanup` unregisters the pools, cleans them newest first and disposes its registry. Two places are
+  +1 collected as RuntimeError "Failed to dispose object ... using method '<name>': ..." chained from it, and the
+  +1 failure mode; the managed lease flow's teardown step names the ward and SpellSpaces ending first. Open with the
+  +1 failures.": the release meets the unregistered pool and raises the not-managed ValueError inside that method,
+  +1 gives its leased object back makes the root's teardown raise ExceptionGroup "Conduit torn down with disposal
+  +1 object is left undisposed. The same consumer in a lesser conduit or a spellspace gives it back cleanly (measured
+  +1 objects still out - an out session's `many` cursor closes at teardown while the session stays open (measured on
+  +1 on 0.2.8258, the GIL off and on).
+  +1 open with the owner (the code is unchanged): `ManagedSpellQuantity.cleanup` disposes the children recorded for
+  +1 owner: the root-held consumer's release at teardown, and the children recorded for an object still out.
+  +1 places open with the owner in Lifecycle/Cleanup, and the root-held consumer's ExceptionGroup as a Known-not-fixed
+  +1 pools' idle objects with the children recorded for them; an object out is its holder's, with the children
+  +1 recorded for it. Today the root's ward and SpellSpaces end first (`Conduit._cleanup_normal_conduit`), then
+  +1 the root's own store holds meets the unregistered pool (open with the owner, 2026-10-18; Component: Managed
+  +1 unregistered pool (Failure Modes).
+  +1 with the owner are under Component: Managed Spell Pools (Lifecycle/Cleanup).

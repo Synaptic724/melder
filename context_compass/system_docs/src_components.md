@@ -584,10 +584,10 @@ Responsibilities:
   `mediator.start_transaction(...)` itself and calling in here inside the
   held window.
   EVIDENCE:
-  - src/melder/aether/spellbook/spellbook.py:3902, 3957 (`_notch_spell` -> `_apply_notch`)
-  - src/melder/aether/spellbook/spellbook.py:4114, 4147 (`_add_to_spell_index` -> `_apply_add_to_index`)
-  - src/melder/aether/spellbook/spellbook.py:4290, 4324 (`_remove_from_spell_index` -> `_apply_remove_from_index`)
-  - src/melder/aether/spellbook/spellbook.py:3942-3944 (states the Conduit admits it)
+  - src/melder/aether/spellbook/spellbook.py:3947, 4002 (`_notch_spell` -> `_apply_notch`)
+  - src/melder/aether/spellbook/spellbook.py:4159, 4192 (`_add_to_spell_index` -> `_apply_add_to_index`)
+  - src/melder/aether/spellbook/spellbook.py:4335, 4369 (`_remove_from_spell_index` -> `_apply_remove_from_index`)
+  - src/melder/aether/spellbook/spellbook.py:3987-3989 (states the Conduit admits it)
   - src/melder/aether/conduit/conduit.py:5739, 6079, 6186 (notch/add/remove
     acquire `_get_required_transaction_mediator()`)
 - Run phase pipelines before conjure.
@@ -656,7 +656,7 @@ Concurrency/Threading:
     ordering on each other". They do. That wording invited exactly the inversion
     described above.
   EVIDENCE:
-  - src/melder/aether/spellbook/spellbook.py:7652-7673 (`_run_structural_phases`; the caller-held-lock
+  - src/melder/aether/spellbook/spellbook.py:7697-7718 (`_run_structural_phases`; the caller-held-lock
     precondition is stated at :7423; remeasured 2026-10-16 at 0.2.8248)
   - src/melder/aether/spellbook/spellbook_creation_system.py:2157 (the only
     `_phase_run_lock` acquisition, reached from that path)
@@ -668,7 +668,7 @@ Concurrency/Threading:
   - src/melder/aether/spellbook/spellbook.py:288 (`_phase_run_lock` created)
   - src/melder/aether/spellbook/spellbook_creation_system.py:2129-2157
     (`_run_scheduler_with_phases` - the only acquisition, with its rationale)
-  - src/melder/aether/spellbook/spellbook.py:1119-1130 (the cache-emit flag re-checked and set under `_lock`)
+  - src/melder/aether/spellbook/spellbook.py:1164-1175 (the cache-emit flag re-checked and set under `_lock`)
 - `find_spell_by_spell_id` (`find_spell_by_id` until 0.2.8253) is lock-free on purpose (0.2.8229): it reads
   `_spells_by_id`, then `_inactive_spells` (until 0.2.8253 a parked hit also read
   `Spell._spell_index_unless_cleaned`, then `_spells.get(index)`) - single-key reads, never an iteration - so a
@@ -802,9 +802,9 @@ Failure Modes:
   separating a spell that is the SOLE member of its source index (use
   `cleanup_spell` to dispose it instead).
   EVIDENCE:
-  - src/melder/aether/spellbook/spellbook.py:3957-4112 (`_apply_notch`)
-  - src/melder/aether/spellbook/spellbook.py:4147-4241 (`_apply_add_to_index`)
-  - src/melder/aether/spellbook/spellbook.py:4324-4434 (`_apply_remove_from_index`)
+  - src/melder/aether/spellbook/spellbook.py:4002-4157 (`_apply_notch`)
+  - src/melder/aether/spellbook/spellbook.py:4192-4286 (`_apply_add_to_index`)
+  - src/melder/aether/spellbook/spellbook.py:4369-4479 (`_apply_remove_from_index`)
 
 Observability:
 - `SafeLogger` on the Spellbook instance, used at `error` level on the failure
@@ -814,7 +814,7 @@ Observability:
   There is no info/debug narration of the happy path; absence of log output is
   the normal state, not a sign that nothing ran.
   EVIDENCE:
-  - src/melder/aether/spellbook/spellbook.py:6133-6138 (`Spellbook._initialize_configuration`, the
+  - src/melder/aether/spellbook/spellbook.py:6178-6183 (`Spellbook._initialize_configuration`, the
     configuration-mismatch branch; remeasured 2026-10-16 at 0.2.8248)
 
 Extension Points:
@@ -1069,7 +1069,7 @@ Outputs:
   EVIDENCE:
   - src/melder/aether/spellbook/bind/bind.py:474-611 (`bind`, decorator,
     `_bind_logic -> Spell`)
-  - src/melder/aether/spellbook/spellbook.py:5656-5672 (`Spellbook.bind
+  - src/melder/aether/spellbook/spellbook.py:5701-5717 (`Spellbook.bind
     -> str`)
   - src/melder/aether/spellbook/bind/bind.py:65-109 (`assert_allowed`)
 
@@ -3604,6 +3604,8 @@ a lock-free read; `discard_managed_quantity(spell_id, pool)` removes that pool o
 unregisters it after the lock and never cleans it (a failed transfer's rollback, 0.2.8246). `cleanup()` detaches the
 pools with the other maps, unregisters them and cleans them FIRST, newest first, then the disposable registry, the
 pools' failures joining the store's ExceptionGroup: a pool is composed at conjure, before the uniques its objects hold.
+The cleanup follows the owner's rule that a root's teardown cleans only what the root holds (2026-10-18; see
+Component: Managed Spell Pools, Lifecycle/Cleanup).
 `extract_spell_creations` adds a `{"scope": "managed", "disposable": False, "stored": pool}` row and unregisters the
 pool; `restore_spell_creations` installs a managed row, registers it under the receiving root and cleans the pool it
 replaced after the store lock. `purge` returns 0 for a managed spell before any lock; `reset_for_pool` and `clear_all`
@@ -3940,6 +3942,14 @@ Lifecycle/Cleanup:
 - Objects that are out are their holders': no reference to them is kept, so root teardown disposes only idle
   objects and recorded children. Nothing returns an object automatically, except the emitted plan returning the
   leases it took for a holder that is never built.
+- A root's teardown cleans only what the root holds (the owner's rule, 2026-10-18): its stores' records and what its
+  pools keep - their idle objects and the children recorded with their objects, objects still out included (an out
+  session's `many` cursor closes at teardown while the session stays open, measured on 0.2.8258); an object out is
+  its holder's. Today the root's ward and SpellSpaces end first (`Conduit._cleanup_normal_conduit`), then
+  `Creations.cleanup` unregisters the pools, cleans them newest first and disposes its registry, so a consumer the
+  root's own store holds whose disposal method gives its object back meets the unregistered pool and the teardown
+  reports the release's error like any disposal failure (Failure Modes). Both are cleanup working as intended (the
+  owner's review, chat 2026-10-19).
 
 Concurrency/Threading:
 - The warm lease (`deque.pop`) and a resetless release below the baseline take no lock; `deque.pop` and `append` are
@@ -3974,6 +3984,12 @@ Failure Modes:
   the pool before the teardown cleaned it, or a woken queue waiter. A `ReleaseManagedSpell().release(obj)` after the
   teardown raises the not-managed ValueError instead: the root's store unregisters its pools before it cleans
   them (corrected 2026-10-18: this named a release among the RuntimeError's sources).
+- A consumer the root's own store holds whose disposal method gives its leased object back makes the root's
+  teardown raise ExceptionGroup "Conduit torn down with disposal failures." (documented 2026-10-19): the release
+  meets the unregistered pool and raises the not-managed ValueError inside that method, collected as RuntimeError
+  "Failed to dispose object ... using method '<name>': ..." chained from it - reported like any disposal method
+  that raises; the leased object, which the root does not hold, is not disposed. The same consumer in a lesser
+  conduit or a spellspace gives it back cleanly (measured on 0.2.8258, the GIL off and on).
 - ValueError from a release: not managed, ambiguous, no match; TypeError for filters of the wrong type.
 - A raising reset destroys the object, frees its place and propagates (an ExceptionGroup when its disposal failed
   too).
@@ -6531,14 +6547,14 @@ Contract/Interface:
   THE ADD AND REMOVE DOCSTRINGS WERE WRONG UNTIL 0.2.8249. Both said "Delegates to
   the owning Spellbook, WHICH ADMITS the [...] change-control transaction", while
   both methods call `mediator.start_transaction(...)` a few lines further down;
-  `src/melder/aether/spellbook/spellbook.py:3942-3944` states it correctly.
+  `src/melder/aether/spellbook/spellbook.py:3987-3989` states it correctly.
   `notch_spell`'s docstring said the same. Since 0.2.8249 all three say the conduit
   admits the transaction (raised on TASK-2026-08-02-stale-source-docstrings).
   EVIDENCE:
   - src/melder/aether/conduit/conduit.py:5650, 6009, 6122 (public verbs)
   - src/melder/aether/conduit/conduit.py:5789, 5828, 5883, 5934, 5970 (`_resolve_notch_target`,
     `_owned_notch_target`, `_check_spell_argument`, `_owned_spell_by_id`, `_resolve_spell_to_move`)
-  - src/melder/aether/spellbook/spellbook.py:3957, 4147, 4324 (applied seams)
+  - src/melder/aether/spellbook/spellbook.py:4002, 4192, 4369 (applied seams)
 Data Structures:
 - Transaction metadata carrying spellbook/conduit ids, binding key, member id,
   and source/target SpellIndex ids.
@@ -8301,6 +8317,9 @@ These flows describe concrete method sequences for core behaviors.
    in order outside every lock, the append, then an elastic trim above the baseline or a queue notify.
 5. Root teardown: `Creations.cleanup` unregisters and cleans the root's pools first (idle objects and every recorded
    child), then its disposable registry.
+   The root's ward and SpellSpaces end before its store, so their consumers give objects back first; a consumer
+   the root's own store holds meets the unregistered pool, and the teardown reports the release's error like any
+   disposal failure (Component: Managed Spell Pools).
 
 ### Flow: Conduit.has_live_creation -> Meld Probe
 1. `Conduit.has_live_creation(...)` or `describe_live_creation_status(...)`
@@ -11273,7 +11292,7 @@ completed epics/stories of 2026-07-11/12).
 - Restore: crystal_loader_system/graft_runner.py - GraftRunner
   (single-use, Cleanable): RecordVersion gate + graft_kind refusal ->
   unconjured-host refusal (public `Spellbook.conduit` accessor,
-  `src/melder/aether/spellbook/spellbook.py:6965`; the patch-lane copy cited
+  `src/melder/aether/spellbook/spellbook.py:7010`; the patch-lane copy cited
   :5412) -> per-member overlap rule via
   `host_frame.find_index_for_spell`
   (`src/melder/aether/aetheric_frame/aetheric_frame.py:902`; resident member
@@ -11694,6 +11713,14 @@ Companion documents:
   component and code-description patches are inputs to this document while a lane is open.
 
 ## Context / Handoff Summary
+
+2026-10-19 a root's teardown cleans only what the root holds (documentation only; the owner's rule, in chat on
+2026-10-18): Creations and SpellSpace points at it; Managed Spell Pools carries the rule, what the root holds and
+today's teardown order in Lifecycle/Cleanup, and the root-held consumer's reported ExceptionGroup as a failure
+mode; the managed lease flow's teardown step names the ward and SpellSpaces ending first. Corrected after the
+owner's review (chat 2026-10-19): the first wording left the children a pool keeps for objects still out, and the
+root-held consumer's release error, as questions for the owner; neither is a defect - the pool holds those
+children, and a disposal method that raises is reported like any other.
 
 2026-10-19 the minted index is registered (0.2.8259; STORY-2026-10-17-minted_index_missing_from_frame_registry, on
 the owner's word): the SpellIndex Mutation Surface and the index-move flow say `remove_from_spell_index` registers

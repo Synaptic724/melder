@@ -117,7 +117,7 @@ HANDOFF_NEW = (
     "  (STORY-2026-10-17-notch_moves_signature_by_incoming_key_only); Book teardown's parked versions\n"
     "  (STORY-2026-10-17-book_teardown_leaves_parked_versions_uncleaned, S7, next with melder_1); a restore or graft\n"
     "  of a separated version (STORY-2026-10-17-restore_drops_separated_parked_version).\n"
-    "- Next: none here; spellbook.py and spell.py go back to melder_0 and mutation_research.py is released (M1-41);\n"
+    "- Next: none here; spellbook.py and spell.py go back to melder_0 and mutation_research.py is released (M1-42);\n"
     "  melder_1 takes S7 next.\n"
 )
 
@@ -135,7 +135,7 @@ NEW_ANCHOR = (
     "| minted_index_registry | done | melder_1 | " + DONE_REF + " | Landed {N} (S4 of "
     "EPIC-2026-10-17-correctness_defects: the index remove_from_spell_index mints is registered with the frame as bind "
     "registers its new one, unregistered at the root's teardown; residency reads its version parked). Next: S7 with "
-    "melder_1; spellbook.py and spell.py back to melder_0 (M1-41). | {TS} |\n"
+    "melder_1; spellbook.py and spell.py back to melder_0 (M1-42). | {TS} |\n"
 )
 NOTCH_AFTER = (
     "  STORY-2026-10-17-direct_cleanup_of_active_member_orphans_parked_versions). Notch above it if you land after.\n"

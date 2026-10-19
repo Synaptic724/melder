@@ -1,65 +1,65 @@
 {
- "schema_version": 1,
- "source": "src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/inspector_utility.py",
- "source_sha256": "0b8d098c29f5d1d56ad22a81aa4f9347fc52dd7bd49bc9385b02c5548e05feec",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.inspector_utility": {
-   "id": "melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.inspector_utility",
-   "label": "inspector_utility",
-   "kind": "module",
-   "file": "src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/inspector_utility.py",
-   "lineno": 1,
-   "include": true,
-   "role": "Shared low-level helpers for the examiner inspectors.",
-   "semantics_authored_against": ""
+  "schema_version": 1,
+  "source": "src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/inspector_utility.py",
+  "source_sha256": "0b8d098c29f5d1d56ad22a81aa4f9347fc52dd7bd49bc9385b02c5548e05feec",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.inspector_utility": {
+      "id": "melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.inspector_utility",
+      "label": "inspector_utility",
+      "kind": "module",
+      "file": "src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/inspector_utility.py",
+      "lineno": 1,
+      "include": true,
+      "role": "Shared low-level helpers for the examiner inspectors.",
+      "semantics_authored_against": ""
+    },
+    "melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.inspector_utility.InspectorUtility": {
+      "id": "melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.inspector_utility.InspectorUtility",
+      "label": "InspectorUtility",
+      "kind": "class",
+      "file": "src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/inspector_utility.py",
+      "lineno": 11,
+      "bases": [],
+      "markers": [],
+      "public_methods": [
+        "is_extension_module",
+        "safe_repr",
+        "stable_repr",
+        "strip_memory_addresses",
+        "unwrap_callable"
+      ],
+      "shape": {
+        "method_count": 5,
+        "has_bases": false,
+        "trivial": false
+      },
+      "span_sha256": "b74316f10ad25ca041b4d48acba7e68270754bfe55f99e418f5022142a3c4b50",
+      "role": "Shared low-level helper surface for the spell examiner inspectors.",
+      "responsibilities": [
+        "provides safe repr, extension-module detection, and best-effort callable unwrapping",
+        "provides stable_repr and strip_memory_addresses: the full repr text with CPython ' at 0x<hex>' fragments removed, which SpellCodeDigest encodes for a target with no readable state, a value type's object, an installed third-party object, a typing object and a constant it cannot otherwise name (0.2.8257)"
+      ],
+      "phases": [
+        "validation",
+        "runtime"
+      ],
+      "semantics_authored_against": "b74316f10ad25ca041b4d48acba7e68270754bfe55f99e418f5022142a3c4b50"
+    }
   },
-  "melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.inspector_utility.InspectorUtility": {
-   "id": "melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.inspector_utility.InspectorUtility",
-   "label": "InspectorUtility",
-   "kind": "class",
-   "file": "src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/inspector_utility.py",
-   "lineno": 11,
-   "bases": [],
-   "markers": [],
-   "public_methods": [
-    "is_extension_module",
-    "safe_repr",
-    "stable_repr",
-    "strip_memory_addresses",
-    "unwrap_callable"
-   ],
-   "shape": {
-    "method_count": 5,
-    "has_bases": false,
-    "trivial": false
-   },
-   "span_sha256": "b74316f10ad25ca041b4d48acba7e68270754bfe55f99e418f5022142a3c4b50",
-   "role": "Shared low-level helper surface for the spell examiner inspectors.",
-   "responsibilities": [
-    "provides safe repr, extension-module detection, and best-effort callable unwrapping",
-    "provides stable_repr and strip_memory_addresses: the full repr text with CPython ' at 0x<hex>' fragments removed, hashed by the bind fingerprint"
-   ],
-   "phases": [
-    "validation",
-    "runtime"
-   ],
-   "semantics_authored_against": "698f431657877794dacbef3c89c15cdffd54a2cf46ac8ff6aec5ca8a8d050963"
+  "edges_out": [],
+  "edge_candidates": [],
+  "published_aliases": [],
+  "imports": {
+    "inspect": "inspect",
+    "re": "re",
+    "Any": "typing.Any",
+    "Optional": "typing.Optional",
+    "ClassVar": "typing.ClassVar"
+  },
+  "collapse_candidate": {
+    "module": "melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.inspector_utility",
+    "class": "melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.inspector_utility.InspectorUtility",
+    "label": "InspectorUtility"
   }
- },
- "edges_out": [],
- "edge_candidates": [],
- "published_aliases": [],
- "imports": {
-  "inspect": "inspect",
-  "re": "re",
-  "Any": "typing.Any",
-  "Optional": "typing.Optional",
-  "ClassVar": "typing.ClassVar"
- },
- "collapse_candidate": {
-  "module": "melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.inspector_utility",
-  "class": "melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.inspector_utility.InspectorUtility",
-  "label": "InspectorUtility"
- }
 }

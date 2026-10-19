@@ -9,7 +9,7 @@
 - Agent Role: synaptic_python_developer
 - Priority: p1
 - Created: 2026-10-18T11:45:58Z
-- Updated: 2026-10-18T12:15:14Z
+- Updated: 2026-10-19T00:49:20Z
 
 ## User Narrative
 As an agent, I want Melder to refuse registering an object it already holds - under any name, existence or as a
@@ -45,10 +45,10 @@ refusal complete across every registration path and makes its message say what h
 - Out of scope: the hashes (S1, S2), revalidation (S3), the migration (S5).
 
 ## State Transition Event
-- from_state: (new)
+- from_state: draft
 - to_state: draft
-- transition_reason: filed under EPIC-2026-10-18-spell_identity_is_the_code on the owner's direction (chat
-  2026-10-18); stays draft until S1 lands.
+- transition_reason: parked in the backlog by the owner (the epic's DECISION note of the turn-in,
+  2026-10-19T00:49:20Z): the epic turned in after S1 and S2 landed.
 
 ## Dependencies / Related Work
 - EPIC-2026-10-18-spell_identity_is_the_code
@@ -65,6 +65,9 @@ refusal complete across every registration path and makes its message say what h
 - Binding a class under a second name, binding it with another existence and staging it as a version are each
   refused with the new message, and nothing is registered.
 - A class bound in a second frame is refused under process-wide ids and accepted under per-frame ids.
+- A second registration of an object whose version sits alone in an index `remove_from_spell_index`
+  minted is refused - in another Book of its frame (M4b) and in another frame under process-wide ids
+  (M5b) - as 0.2.8259 made it (STORY-2026-10-17-minted_index_missing_from_frame_registry; M1-42).
 
 ## Validation / Test Plan
 - `test_registering_the_same_class_twice_is_refused_whatever_the_binding`; per path; GIL off and on.
@@ -89,6 +92,8 @@ refusal complete across every registration path and makes its message say what h
   no longer waits on a release.
 - 2026-10-18T12:15:14Z: the scope question withdrawn - the existing spell-id regime stands (owner; the epic's
   DECISION note).
+- 2026-10-19T00:49:20Z: parked in tickets/stories/backlog/ on the owner's word; the epic turned in after S1 and
+  S2 landed (the epic's DECISION note).
 
 ## Artifact Links (Optional)
 Qualified independent reviewer acceptance and direct closure follow shared `ticketing.md`;
@@ -127,6 +132,23 @@ this does not make independent review mandatory for every ticket.
   REREAD: HELPFUL
   SCORE_0_TO_10: 7
 
+- DATETIME: 2026-10-19T00:49:20Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: Parked in tickets/stories/backlog/ on the owner's word (S4): the identity epic turned in after S1
+    (0.2.8257) and S2 (0.2.8258) landed; this story waits there, with S6 and the configurables epic, for the
+    owner to take the identity work up again. Status stays draft.
+    M1-42: melder_1's 0.2.8259 fixed the minted-index gap, so a second registration of a version alone
+    in a minted index is refused (M4b, M5b); both join its acceptance criteria.
+  EVIDENCE:
+  - context_compass/tickets/epics/completed/2026-10-18_spell_identity_is_the_code_epic.md:1037-1055
+  - context_compass/tickets/stories/completed/2026-10-17_minted_index_missing_from_frame_registry_story.md:3-9
+  IMPACT: Nothing in this story is started; its scope, requirements and acceptance stand as written.
+  NEXT: the owner's word; then the component patch (the refusal naming the existing registration).
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
@@ -142,8 +164,9 @@ this does not make independent review mandatory for every ticket.
 
 ## Context / Handoff Summary
 - Scope: one object, one registration, on every path, with a clear refusal.
-- State: draft (melder_0); after S1.
-- Next: the component patch once S1 lands.
+- State: draft, parked in the backlog (the owner, 2026-10-19): the identity epic turned in after
+  S1 (0.2.8257) and S2 (0.2.8258) landed.
+- Next: the owner's word; then the component patch (the refusal naming the existing registration).
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

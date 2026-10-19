@@ -10,9 +10,9 @@ Line numbers are 1-based and inclusive.
 | bundle | llm_full_other.txt |
 | schema_version | 1.0.0 |
 | generator_sha256 | d75f1de961817875c099e1b3bc6eaa3a6c670dc89752cd94864d977e452b88e3 |
-| source_fingerprint | cb25cfee626218adcf53eff6f385ee0e17015ca92dfc434e08b406170ac25dc5 |
-| bundle_sha256 | 15eaee379a7999c24660dd19aa830c80a011e53e8b40f01642593fdb6a4f7ca0 |
-| bundle_line_count | 78718 |
+| source_fingerprint | cdbadd9665325ea7c14e18e3a9374638367e3400739a43386ef51ab6c9d54f0a |
+| bundle_sha256 | c172ef1c43eb7cc0f6f78d84941d4555520dfa3daf4215e7a18a8933cc56285e |
+| bundle_line_count | 78772 |
 | bundle_line_ending | lf |
 | files | 409 |
 
@@ -373,59 +373,59 @@ Line numbers are 1-based and inclusive.
 | 70333-70367 | 70338-70364 | 1427 | utf-8 | c5508ffc37f6f82e7446992345921592e48cf48ce8479a446fc328ac8fdeb9bd | docs/expert/compositions.md |
 | 70368-70398 | 70373-70395 | 1171 | utf-8 | 46b53aa3d6d07ded650b3a0fe326a76864a5f9a17e9a112c74e05ef6f8131127 | docs/expert/concurrency.md |
 | 70399-70434 | 70404-70431 | 1429 | utf-8 | 75256ee0ee813505fb24d7dd6692b2dc12cd42757fe79205073316a91d1632ac | docs/expert/external-storage.md |
-| 70435-70482 | 70440-70479 | 2283 | utf-8 | 8fc27a5a313809d1c1caca388fc24e76f2c0aa942bd55a3f4c9b30848ac5bebb | docs/expert/governed-change.md |
-| 70483-70517 | 70488-70514 | 1291 | utf-8 | 220ae5a44e83e95d5843062714164c4a57c6a2b126aebee4aaf7d4180c4402be | docs/expert/index.md |
-| 70518-70562 | 70523-70559 | 1818 | utf-8 | a8f70f2edbf87e4f9fb8f4a991961db5aea2b1902bdbcb122f930d0da5b2f303 | docs/expert/persistence.md |
-| 70563-70606 | 70568-70603 | 1794 | utf-8 | b42fa8bf1670c230c992b9f36db28ed1b08e91b597e512bdba030a430274be17 | docs/expert/research.md |
-| 70607-70667 | 70612-70664 | 2951 | utf-8 | 663c9760dab1d9a224431d74b351ff038f232d967896c13ff5581e46a7d6bbf8 | docs/expert/restore.md |
-| 70668-70703 | 70673-70700 | 1390 | utf-8 | 3512ead1b82c52726b2ff71b25353d32423422377ac98567bf31b243a7a2884e | docs/expert/self-documents.md |
-| 70704-70740 | 70709-70737 | 1539 | utf-8 | b0959b3d5130aa546acd0f070794f5047d3a4c19caea54b196187091a5e7a709 | docs/expert/transactions.md |
-| 70741-70766 | 70746-70763 | 1479 | utf-8 | 90754188e1c27678c522af7a1a98780f33c2d0ab65d5af744f2bd9a26af1634c | docs/expert/walkthroughs.md |
-| 70767-70784 | 70772-70781 | 350 | utf-8 | dd95f77f6acfecbcc444b1287d251657d7b2674502f3afc204c6c66bf9aed9dd | docs/handbook.toml |
-| 70785-70944 | 70790-70941 | 3855 | utf-8 | 5a4245eaa1a3eb4f7f6bde94d5b07831d691bf3f6e1939bd43e587a6e950146e | docs/index.md |
-| 70945-71041 | 70950-71038 | 4241 | utf-8 | f2471626dcf4887f2b19579f48f1fe5fcbf023358c3c3fad3b6bde8c712fafe9 | docs/intermediate/configuration.md |
-| 71042-71078 | 71047-71075 | 1437 | utf-8 | 31f3d930c2f97b16d2b49dab4a0bcf4b9f467b34ce071e64dc3610e8dadb4bfe | docs/intermediate/connected-subsystems.md |
-| 71079-71165 | 71084-71162 | 4214 | utf-8 | 3c9e3dc42708cb0f4602ef3bed5afa1ead516b2f90dce440366fdc899f931073 | docs/intermediate/hooks.md |
-| 71166-71199 | 71171-71196 | 1250 | utf-8 | 48bbfd50cf5f8c136ae76c843dd9d6b0cf6c425233de607389c5fc9edcdbd536 | docs/intermediate/index.md |
-| 71200-71419 | 71205-71416 | 10348 | utf-8 | 856dc010f4c95554fabfc838f7645bbd12637eecf69ac4a34cd8f5ef64a4fe9a | docs/intermediate/managed-spells.md |
-| 71420-71459 | 71425-71456 | 1859 | utf-8 | 27926214cd2755f20b0c62c5dde3a0c6487d71a7919f030613d7cea3771f1a7b | docs/intermediate/overrides.md |
-| 71460-71512 | 71465-71509 | 2415 | utf-8 | 14b05e7ba414db38a1766f9655b862d925ad4ad7f106e3e4795f4391abfa337b | docs/intermediate/ownership.md |
-| 71513-71549 | 71518-71546 | 1320 | utf-8 | d6474f9c89da214decbc3776d9ff4323d2000b72569ad367c9b0a68029d4668a | docs/intermediate/permissions.md |
-| 71550-71633 | 71555-71630 | 3912 | utf-8 | 4f94ddeb7320af564ae3a65de9add910248a4898adf309850ba72c5cdcd7d976 | docs/intermediate/registration.md |
-| 71634-71794 | 71639-71791 | 7799 | utf-8 | b84d8941496dcca8a5f3651c48e6bceab835a0a5b95ffb9e32bbec5bbd5f9119 | docs/intermediate/scopes.md |
-| 71795-72029 | 71800-72026 | 11998 | utf-8 | 93bf8d9ff941417e5594e0ac88370aa77121a872c2a5be199d2163ae38fef635 | docs/maintaining.md |
-| 72030-72132 | 72035-72129 | 1645 | utf-8 | 0023e672162c7d558eee38de8581c01af3feeb0cbfd218e98e46a0936f037b07 | docs/navigation.toml |
-| 72133-72154 | 72138-72151 | 709 | utf-8 | 8482b9e2f40e18690b0bb09cf45f4ba63fcb986ede7ef8931b4fca92347c0a68 | docs/reference/api.md |
-| 72155-72183 | 72160-72180 | 1084 | utf-8 | eacb6a494239da3f30f87f0e9347e9702b87475a1a94d63505189e06d4a542c4 | docs/reference/downloads.md |
-| 72184-72313 | 72189-72310 | 4729 | utf-8 | da21e33eabd163373c44118dbcda79e5789048e1fd3952381adfdc0cafca0d36 | docs/reference/glossary.md |
-| 72314-72354 | 72319-72351 | 1473 | utf-8 | 8b0f1aa93d1e72849f899313b36dc30957a17b59384a9aacd732d879726ef294 | docs/reference/releases.md |
-| 72355-72392 | 72360-72389 | 3266 | utf-8 | 57224d6373d3f355776a24688ac7503a586dc2c4cf883b8d22914a623c76996a | docs/reference/troubleshooting.md |
-| 72393-72402 | 72398-72399 | 98 | utf-8 | 0b8400cd23255199095b7fc5ffbe4caa6c59b6534f1536765d751525d53d6a74 | docs/requirements.txt |
-| 72403-72425 | 72408-72422 | 473 | utf-8 | f107182a3b8f3d969879589302d26fcdc6339cacb61699287deba43b6215d7f6 | docs/seo.toml |
-| 72426-72663 | 72431-72660 | 12754 | utf-8 | 7e2f41a419965899a1af28083177609d2e5ffd0fd8b821f9cef121d12b545e24 | docs/tests/test_build_docs.py |
-| 72664-72883 | 72669-72880 | 12517 | utf-8 | 7691f98e4cf048456c788792da2e5de20d49ee3a97196b3cca8ad3f1fe689f61 | docs/tests/test_check_seo.py |
-| 72884-72966 | 72889-72963 | 3744 | utf-8 | ec003cc135676ad6e61742bb4da649c0d7255c7ca67e3a881922d51b0f7aa79a | docs/tests/test_curriculum.py |
-| 72967-73100 | 72972-73097 | 6986 | utf-8 | ea570a5a5b6d5c2c3a1170e5f798d56e1eac287f313333621db12ade86b5178e | docs/tests/test_example_catalog.py |
-| 73101-73276 | 73106-73273 | 9041 | utf-8 | 43758423d8212f0acb5f51cc75752d254924a265d10bc7d99540959c4acdb69f | docs/tests/test_page_metadata.py |
-| 73277-73409 | 73282-73406 | 6577 | utf-8 | 66d54409fc72b1653d53c7695c38cdd837a1bbb7022665a773bf00de8d6a210f | docs/tests/test_references.py |
-| 73410-73458 | 73415-73455 | 1971 | utf-8 | b9eda9c7b69635d59cdd585b5dffbd76b5427ea67b6b3d833574b2faaee7b724 | docs/tests/test_site_check.py |
-| 73459-73527 | 73464-73524 | 2946 | utf-8 | ed3beb9b231fc6096dc6ecd10df674850a7a955973190befe3650780ed316348 | docs/tools/api_aliases.py |
-| 73528-73706 | 73533-73703 | 9602 | utf-8 | 602471f7ff85fd830ae834115615cad98e21f3498642ebb5911ce9d1f36943ea | docs/tools/api_reference.py |
-| 73707-73850 | 73712-73847 | 7372 | utf-8 | 1ae71034eb85357f051bd6177731b4fc6a84a2cc57cdba8a83efc7547e457fb4 | docs/tools/architecture_reference.py |
-| 73851-74211 | 73856-74208 | 19325 | utf-8 | 5b3c5f530247f131840f7d60b360e4810bef5db2da6b9c6d16cb6abc9c1c8e17 | docs/tools/build_docs.py |
-| 74212-74534 | 74217-74531 | 15248 | utf-8 | febf18865fc8efc6bab9ed509e84bf7d1e5fffafa52afb9aa868ffcbcd568f6e | docs/tools/check_seo.py |
-| 74535-74684 | 74540-74681 | 6880 | utf-8 | 7e4d5a36d954bebbadcfee7c178de8f6b55821888138385ff6f5e54909feff3e | docs/tools/check_site.py |
-| 74685-74869 | 74690-74866 | 9484 | utf-8 | 9958ee0ff7a61676e42b744e395164e072a8691a05a11eada901a7290b97eb5b | docs/tools/curriculum.py |
-| 74870-75018 | 74875-75015 | 6272 | utf-8 | eb8a0d4ef63cd56e45ccdfe2a3280c724b877c6d78ad39fe349accb7438af283 | docs/tools/docstring_format.py |
-| 75019-75294 | 75024-75291 | 16515 | utf-8 | 3f330a4dc4f4f3cdb5eaec7f42b93d4c7880708b8989a7bd1ccad58588e43e8b | docs/tools/example_catalog.py |
-| 75295-75478 | 75300-75475 | 9795 | utf-8 | b34ca95947e7bc5ff483013d3f629909ee621688689baec0d5debfb8f577c85d | docs/tools/handbook.py |
-| 75479-75558 | 75484-75555 | 3510 | utf-8 | 9c406c13a3d2fe9700bc9d18cd96a4ccf0c1977224e7b597a079e2f66e000050 | docs/tools/install_tectonic.py |
-| 75559-75604 | 75564-75601 | 1595 | utf-8 | 455b2395dc270ae50b546d78518a8110b4f9dc09f35bbc96a4ded2cec87464d6 | docs/tools/page_metadata.py |
-| 75605-75633 | 75610-75630 | 464 | utf-8 | 8c616af406d11267294c71aa8814e29115fa1956d3e9f8c1085b4cf42707429d | docs/tools/site_model.py |
-| 75634-75887 | 75639-75884 | 7799 | utf-8 | 896ce27dbaa92f1719d4a70b324c77f6b68f9a2d4d6e8bf73e3c6fbe87e216a1 | pyproject.toml |
-| 75888-76500 | 75893-76497 | 41777 | utf-8 | 6646878d3aebed185dead51cc1b2bb7f935906dc74e6ffa74cb7625b0177af79 | release_docs/0.2.8227.md |
-| 76501-77635 | 76506-77632 | 80795 | utf-8 | 7affdc80a5dcf2736f70eb2af81669f6e0ceefac5e58e308921cfca57b821a70 | release_docs/next_version_release.md |
-| 77636-77704 | 77641-77701 | 2442 | utf-8 | 45f6cd2e3085d0fb0116dd67ce8d3ac1dfe2f4a32007841ef5e571baa874f7f0 | requirements.txt |
-| 77705-77731 | 77710-77728 | 1035 | utf-8 | f2d8050c4a7c4e4ee7cd5067e7d71636969e0387f7a8dd6b7e9c3fbbc1d5cc52 | roadmap.md |
-| 77732-78232 | 77737-78229 | 26171 | utf-8 | c88d2075a3fdea71e193bb3a1082ce0fba894e11d2259b283940453c0cc7ed23 | roadmap/melder-roadmap-expanded.md |
-| 78233-78718 | 78238-78715 | 22675 | utf-8 | 83f37b9881d1f47c25415e94e5b018b5c130677d8adc59e587456ca1d104e32f | roadmap/melder-roadmap-source-notes.md |
+| 70435-70483 | 70440-70480 | 2378 | utf-8 | f0ed52cb15c7511c26a79c6a70528f797d36d92303d50fc04e82d8b7ffb5a1ea | docs/expert/governed-change.md |
+| 70484-70518 | 70489-70515 | 1291 | utf-8 | 220ae5a44e83e95d5843062714164c4a57c6a2b126aebee4aaf7d4180c4402be | docs/expert/index.md |
+| 70519-70563 | 70524-70560 | 1818 | utf-8 | a8f70f2edbf87e4f9fb8f4a991961db5aea2b1902bdbcb122f930d0da5b2f303 | docs/expert/persistence.md |
+| 70564-70607 | 70569-70604 | 1794 | utf-8 | b42fa8bf1670c230c992b9f36db28ed1b08e91b597e512bdba030a430274be17 | docs/expert/research.md |
+| 70608-70668 | 70613-70665 | 2951 | utf-8 | 663c9760dab1d9a224431d74b351ff038f232d967896c13ff5581e46a7d6bbf8 | docs/expert/restore.md |
+| 70669-70704 | 70674-70701 | 1390 | utf-8 | 3512ead1b82c52726b2ff71b25353d32423422377ac98567bf31b243a7a2884e | docs/expert/self-documents.md |
+| 70705-70741 | 70710-70738 | 1539 | utf-8 | b0959b3d5130aa546acd0f070794f5047d3a4c19caea54b196187091a5e7a709 | docs/expert/transactions.md |
+| 70742-70767 | 70747-70764 | 1479 | utf-8 | 90754188e1c27678c522af7a1a98780f33c2d0ab65d5af744f2bd9a26af1634c | docs/expert/walkthroughs.md |
+| 70768-70785 | 70773-70782 | 350 | utf-8 | dd95f77f6acfecbcc444b1287d251657d7b2674502f3afc204c6c66bf9aed9dd | docs/handbook.toml |
+| 70786-70945 | 70791-70942 | 3855 | utf-8 | 5a4245eaa1a3eb4f7f6bde94d5b07831d691bf3f6e1939bd43e587a6e950146e | docs/index.md |
+| 70946-71042 | 70951-71039 | 4241 | utf-8 | f2471626dcf4887f2b19579f48f1fe5fcbf023358c3c3fad3b6bde8c712fafe9 | docs/intermediate/configuration.md |
+| 71043-71079 | 71048-71076 | 1437 | utf-8 | 31f3d930c2f97b16d2b49dab4a0bcf4b9f467b34ce071e64dc3610e8dadb4bfe | docs/intermediate/connected-subsystems.md |
+| 71080-71166 | 71085-71163 | 4214 | utf-8 | 3c9e3dc42708cb0f4602ef3bed5afa1ead516b2f90dce440366fdc899f931073 | docs/intermediate/hooks.md |
+| 71167-71200 | 71172-71197 | 1250 | utf-8 | 48bbfd50cf5f8c136ae76c843dd9d6b0cf6c425233de607389c5fc9edcdbd536 | docs/intermediate/index.md |
+| 71201-71420 | 71206-71417 | 10348 | utf-8 | 856dc010f4c95554fabfc838f7645bbd12637eecf69ac4a34cd8f5ef64a4fe9a | docs/intermediate/managed-spells.md |
+| 71421-71460 | 71426-71457 | 1859 | utf-8 | 27926214cd2755f20b0c62c5dde3a0c6487d71a7919f030613d7cea3771f1a7b | docs/intermediate/overrides.md |
+| 71461-71513 | 71466-71510 | 2415 | utf-8 | 14b05e7ba414db38a1766f9655b862d925ad4ad7f106e3e4795f4391abfa337b | docs/intermediate/ownership.md |
+| 71514-71550 | 71519-71547 | 1320 | utf-8 | d6474f9c89da214decbc3776d9ff4323d2000b72569ad367c9b0a68029d4668a | docs/intermediate/permissions.md |
+| 71551-71634 | 71556-71631 | 3912 | utf-8 | 4f94ddeb7320af564ae3a65de9add910248a4898adf309850ba72c5cdcd7d976 | docs/intermediate/registration.md |
+| 71635-71795 | 71640-71792 | 7799 | utf-8 | b84d8941496dcca8a5f3651c48e6bceab835a0a5b95ffb9e32bbec5bbd5f9119 | docs/intermediate/scopes.md |
+| 71796-72030 | 71801-72027 | 11998 | utf-8 | 93bf8d9ff941417e5594e0ac88370aa77121a872c2a5be199d2163ae38fef635 | docs/maintaining.md |
+| 72031-72133 | 72036-72130 | 1645 | utf-8 | 0023e672162c7d558eee38de8581c01af3feeb0cbfd218e98e46a0936f037b07 | docs/navigation.toml |
+| 72134-72155 | 72139-72152 | 709 | utf-8 | 8482b9e2f40e18690b0bb09cf45f4ba63fcb986ede7ef8931b4fca92347c0a68 | docs/reference/api.md |
+| 72156-72184 | 72161-72181 | 1084 | utf-8 | eacb6a494239da3f30f87f0e9347e9702b87475a1a94d63505189e06d4a542c4 | docs/reference/downloads.md |
+| 72185-72314 | 72190-72311 | 4729 | utf-8 | da21e33eabd163373c44118dbcda79e5789048e1fd3952381adfdc0cafca0d36 | docs/reference/glossary.md |
+| 72315-72355 | 72320-72352 | 1473 | utf-8 | 8b0f1aa93d1e72849f899313b36dc30957a17b59384a9aacd732d879726ef294 | docs/reference/releases.md |
+| 72356-72393 | 72361-72390 | 3266 | utf-8 | 57224d6373d3f355776a24688ac7503a586dc2c4cf883b8d22914a623c76996a | docs/reference/troubleshooting.md |
+| 72394-72403 | 72399-72400 | 98 | utf-8 | 0b8400cd23255199095b7fc5ffbe4caa6c59b6534f1536765d751525d53d6a74 | docs/requirements.txt |
+| 72404-72426 | 72409-72423 | 473 | utf-8 | f107182a3b8f3d969879589302d26fcdc6339cacb61699287deba43b6215d7f6 | docs/seo.toml |
+| 72427-72664 | 72432-72661 | 12754 | utf-8 | 7e2f41a419965899a1af28083177609d2e5ffd0fd8b821f9cef121d12b545e24 | docs/tests/test_build_docs.py |
+| 72665-72884 | 72670-72881 | 12517 | utf-8 | 7691f98e4cf048456c788792da2e5de20d49ee3a97196b3cca8ad3f1fe689f61 | docs/tests/test_check_seo.py |
+| 72885-72967 | 72890-72964 | 3744 | utf-8 | ec003cc135676ad6e61742bb4da649c0d7255c7ca67e3a881922d51b0f7aa79a | docs/tests/test_curriculum.py |
+| 72968-73101 | 72973-73098 | 6986 | utf-8 | ea570a5a5b6d5c2c3a1170e5f798d56e1eac287f313333621db12ade86b5178e | docs/tests/test_example_catalog.py |
+| 73102-73277 | 73107-73274 | 9041 | utf-8 | 43758423d8212f0acb5f51cc75752d254924a265d10bc7d99540959c4acdb69f | docs/tests/test_page_metadata.py |
+| 73278-73410 | 73283-73407 | 6577 | utf-8 | 66d54409fc72b1653d53c7695c38cdd837a1bbb7022665a773bf00de8d6a210f | docs/tests/test_references.py |
+| 73411-73459 | 73416-73456 | 1971 | utf-8 | b9eda9c7b69635d59cdd585b5dffbd76b5427ea67b6b3d833574b2faaee7b724 | docs/tests/test_site_check.py |
+| 73460-73528 | 73465-73525 | 2946 | utf-8 | ed3beb9b231fc6096dc6ecd10df674850a7a955973190befe3650780ed316348 | docs/tools/api_aliases.py |
+| 73529-73707 | 73534-73704 | 9602 | utf-8 | 602471f7ff85fd830ae834115615cad98e21f3498642ebb5911ce9d1f36943ea | docs/tools/api_reference.py |
+| 73708-73851 | 73713-73848 | 7372 | utf-8 | 1ae71034eb85357f051bd6177731b4fc6a84a2cc57cdba8a83efc7547e457fb4 | docs/tools/architecture_reference.py |
+| 73852-74212 | 73857-74209 | 19325 | utf-8 | 5b3c5f530247f131840f7d60b360e4810bef5db2da6b9c6d16cb6abc9c1c8e17 | docs/tools/build_docs.py |
+| 74213-74535 | 74218-74532 | 15248 | utf-8 | febf18865fc8efc6bab9ed509e84bf7d1e5fffafa52afb9aa868ffcbcd568f6e | docs/tools/check_seo.py |
+| 74536-74685 | 74541-74682 | 6880 | utf-8 | 7e4d5a36d954bebbadcfee7c178de8f6b55821888138385ff6f5e54909feff3e | docs/tools/check_site.py |
+| 74686-74870 | 74691-74867 | 9484 | utf-8 | 9958ee0ff7a61676e42b744e395164e072a8691a05a11eada901a7290b97eb5b | docs/tools/curriculum.py |
+| 74871-75019 | 74876-75016 | 6272 | utf-8 | eb8a0d4ef63cd56e45ccdfe2a3280c724b877c6d78ad39fe349accb7438af283 | docs/tools/docstring_format.py |
+| 75020-75295 | 75025-75292 | 16515 | utf-8 | 3f330a4dc4f4f3cdb5eaec7f42b93d4c7880708b8989a7bd1ccad58588e43e8b | docs/tools/example_catalog.py |
+| 75296-75479 | 75301-75476 | 9795 | utf-8 | b34ca95947e7bc5ff483013d3f629909ee621688689baec0d5debfb8f577c85d | docs/tools/handbook.py |
+| 75480-75559 | 75485-75556 | 3510 | utf-8 | 9c406c13a3d2fe9700bc9d18cd96a4ccf0c1977224e7b597a079e2f66e000050 | docs/tools/install_tectonic.py |
+| 75560-75605 | 75565-75602 | 1595 | utf-8 | 455b2395dc270ae50b546d78518a8110b4f9dc09f35bbc96a4ded2cec87464d6 | docs/tools/page_metadata.py |
+| 75606-75634 | 75611-75631 | 464 | utf-8 | 8c616af406d11267294c71aa8814e29115fa1956d3e9f8c1085b4cf42707429d | docs/tools/site_model.py |
+| 75635-75888 | 75640-75885 | 7799 | utf-8 | 896ce27dbaa92f1719d4a70b324c77f6b68f9a2d4d6e8bf73e3c6fbe87e216a1 | pyproject.toml |
+| 75889-76501 | 75894-76498 | 41777 | utf-8 | 6646878d3aebed185dead51cc1b2bb7f935906dc74e6ffa74cb7625b0177af79 | release_docs/0.2.8227.md |
+| 76502-77689 | 76507-77686 | 83933 | utf-8 | 1e64d7c715728379f63e9b647af996c9b68691e96564fb3ef7b5f3d9b17c6418 | release_docs/next_version_release.md |
+| 77690-77758 | 77695-77755 | 2442 | utf-8 | 45f6cd2e3085d0fb0116dd67ce8d3ac1dfe2f4a32007841ef5e571baa874f7f0 | requirements.txt |
+| 77759-77785 | 77764-77782 | 1035 | utf-8 | f2d8050c4a7c4e4ee7cd5067e7d71636969e0387f7a8dd6b7e9c3fbbc1d5cc52 | roadmap.md |
+| 77786-78286 | 77791-78283 | 26171 | utf-8 | c88d2075a3fdea71e193bb3a1082ce0fba894e11d2259b283940453c0cc7ed23 | roadmap/melder-roadmap-expanded.md |
+| 78287-78772 | 78292-78769 | 22675 | utf-8 | 83f37b9881d1f47c25415e94e5b018b5c130677d8adc59e587456ca1d104e32f | roadmap/melder-roadmap-source-notes.md |

@@ -1,14 +1,19 @@
 # Epic: spell_identity_is_the_code - a spell_id names the registered object's code; its binding is a manifest
 
+- Completed: 2026-10-19T00:49:20Z
+- Summary: turned in on the owner's word: S1 notched 0.2.8257 (a spell_id is the SHA256 of the object's
+  code; one object is one spell) and S2 notched 0.2.8258 (the binding manifest and its hash); rebuilt for
+  0.2.8258, the leftovers packaged by melder_1's 0.2.8259 rebuild; S3-S5 parked in the backlog with S6.
+
 ## Metadata
 - Epic ID: EPIC-2026-10-18-spell_identity_is_the_code
-- Status: in_progress
+- Status: done
 - Owner: user
 - Agent Name: melder_0
 - Agent Role: synaptic_python_developer
 - Priority: p1
 - Created: 2026-10-18T11:45:58Z
-- Updated: 2026-10-19T00:00:36Z
+- Updated: 2026-10-19T00:49:20Z
 - Target Window: 2026-Q4
 - Related Program/Initiative: Melder runtime correctness (the owner's direction, chat 2026-10-18); follows
   STORY-2026-10-17-release_routes_parked_version_objects_to_active_pool
@@ -79,10 +84,10 @@ consumer.
 - Out of scope: everything under Non-Goals.
 
 ## State Transition Event
-- from_state: ready
-- to_state: in_progress
-- transition_reason: the owner made calls 1-3 and 5 (chat 2026-10-18; DECISION note), so S1's design docs
-  start; call 4 and the "conduit manifest" reading wait for his word.
+- from_state: in_progress
+- to_state: done
+- transition_reason: turned in on the owner's word (chat; the DECISION note of the turn-in): S1 and S2
+  landed (0.2.8257, 0.2.8258), S3-S5 parked in the backlog with S6, the rebuild left to the next agent's.
 
 ## Success Metrics
 - The prototype's cases (P1-P10, I1-I9) hold in src/: real code changes move the spell_id; docstrings, comments and
@@ -122,21 +127,25 @@ consumer.
 
 ## Milestones (Track Progress)
 - [x] Milestone 1: the owner's calls on the edges; the architecture patch and the first component patches approved.
-- [ ] Milestone 2: the code hash and the binding manifest landed (S1, S2).
-- [ ] Milestone 3: revalidation on binding change and one registration per object landed (S3, S4).
-- [ ] Milestone 4: the migration, docs, notches and rebuild (S5); the owner's disposition.
+- [x] Milestone 2: the code hash and the binding manifest landed (S1, S2).
+- [ ] Milestone 3: revalidation on binding change and one registration per object landed (S3, S4) - parked
+  with them in the backlog (2026-10-19).
+- [ ] Milestone 4: the migration, docs, notches and rebuild (S5); the owner's disposition - S5 parked in the
+  backlog; the owner turned the epic in (2026-10-19).
 
 ## Stories (Required to Complete)
-- [ ] Story: STORY-2026-10-18-spell_id_hashes_the_object_code - the spell_id hashes the registered object's code
-  (methods and constructor, bodies included; no docstrings or comments) and nothing from the bind call (S1).
-- [ ] Story: STORY-2026-10-18-binding_manifest_hash - the bind signature becomes a binding manifest on the spell with
-  its own SHA256, recorded, and part of the caches' keys beside the spell_id (S2).
+- [x] Story: STORY-2026-10-18-spell_id_hashes_the_object_code - the spell_id hashes the registered object's code
+  (methods and constructor, bodies included; no docstrings or comments) and nothing from the bind call (S1;
+  done, notched 0.2.8257).
+- [x] Story: STORY-2026-10-18-binding_manifest_hash - the bind signature becomes a binding manifest on the spell with
+  its own SHA256, recorded, and part of the caches' keys beside the spell_id (S2; done, notched 0.2.8258).
 - [ ] Story: STORY-2026-10-18-revalidate_on_binding_change - a changed binding hash revalidates the spell and its
-  dependents; the store's entry follows the new binding; a verb changes a spell's binding in place (S3).
+  dependents; the store's entry follows the new binding; a verb changes a spell's binding in place (S3;
+  parked in the backlog, 2026-10-19).
 - [ ] Story: STORY-2026-10-18-one_registration_per_object - bind, bind_inactive and add_to_spell_index refuse an object
-  already registered in scope, naming its registration (S4).
+  already registered in scope, naming its registration (S4; parked in the backlog, 2026-10-19).
 - [ ] Story: STORY-2026-10-18-spell_id_migration - every spell_id moves once: cache generation, record and restore,
-  research history, tests, docs and the release note (S5).
+  research history, tests, docs and the release note (S5; parked in the backlog, 2026-10-19).
 - [ ] Story: STORY-2026-10-18-explicit_duplicate_binding - a bind that says so registers one object more than once,
   its scope recorded (S6; parked in the backlog by the owner, 2026-10-18).
 
@@ -162,12 +171,13 @@ consumer.
 - Overlap with another lane's files: one writer per file; a mailbox NOTICE before each landing (M0-193).
 - One object bound twice through a minted index, until melder_1's S4 lands: bind's collision
   guard misses a version alone in an index `remove_from_spell_index` minted (M4b, M5b); S4's
-  edit A closes it, and this epic's S4 takes M4b and M5b as acceptance cases.
+  edit A closes it, and this epic's S4 takes M4b and M5b as acceptance cases. Closed at 0.2.8259 (M1-42).
 
 ## Applicable Anti-Patterns
-- [ ] No epic-state transition without story-level evidence.
-- [ ] No closure while required stories are incomplete or unaccepted.
-- [ ] No program claims without source evidence from story/task notes.
+- [x] No epic-state transition without story-level evidence.
+- [x] No closure while required stories are incomplete or unaccepted - escalated and decided: the owner
+  turned the epic in with S3-S5 parked in the backlog (DECISION note of the turn-in).
+- [x] No program claims without source evidence from story/task notes.
 
 ## Validation / Test Approach
 - Each story: symptom-named regression tests, GIL off and on, the whole tree in a /tmp mirror before landing.
@@ -224,6 +234,10 @@ consumer.
   moving (DECISION note).
 - 2026-10-18T17:23:22Z: M1-38 consumed - S9 landed as 0.2.8256 with the refusal; spellbook.py and spell.py are back
   (FACT note).
+- 2026-10-18T23:31:15Z: S1 (0.2.8257) and S2 (0.2.8258) turned in; rebuilt for 0.2.8258 at 23:43:33Z (FACT
+  notes).
+- 2026-10-19T00:49:20Z: the owner's word - turn the epic in, S3-S5 to the backlog, no rebuild by this lane
+  (DECISION note); M2-24, M2-26, M2-27 and M1-42 consumed and the epic turned in (FACT notes).
 
 ## Artifact Links (Optional)
 Qualified independent reviewer acceptance and direct closure follow shared `ticketing.md`;
@@ -245,7 +259,8 @@ this does not make independent review mandatory for every ticket.
   - artifacts/correctness_defects_20261017/runs/probe_code_hash_internals_gil1_seed1.txt
   - artifacts/correctness_defects_20261017/runs/probe_code_hash_internals_gil1_seed2.txt
   - artifacts/spell_identity_20261018/ (the epic's scripts)
-  - system_docs/patches/active/spell_identity_is_the_code_2026_10_18/ (the epic's and S1's patch docs)
+  - system_docs/patches/completed/spell_identity_is_the_code_2026_10_18/ (the epic's, S1's and S2's patch docs,
+    archived at S1 and S2's turn-in)
 - DISPOSITION: retain_as_reference (the probes and scripts); promote_to_documentation (the patch docs, at landing)
 - CLEANUP_TRIGGER: at closure the probes stay as the design's evidence; each case becomes a regression test in its
   story
@@ -936,10 +951,141 @@ this does not make independent review mandatory for every ticket.
   REREAD: HELPFUL
   SCORE_0_TO_10: 7
 
+- DATETIME: 2026-10-19T00:08:45Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: M2-20 consumed (melder_2, 2026-10-18T23:59:55Z): on the owner's ruling in melder_2's chat ("if the root
+    cleans up it only cleans up whats held by the root, update the system docs please") melder_2's
+    TASK-2026-10-18-document_root_teardown_cleans_only_what_it_holds edits the managed-teardown text of
+    src_architecture and src_components and regenerates both indexes; this lane's corrected release failure
+    modes stay as written; no src, notch or release-note change. The packaged system documents go stale
+    until this lane's next rebuild, which melder_2 asks to carry them.
+  EVIDENCE: context_compass/tickets/tasks/2026-10-18_document_root_teardown_cleans_only_what_it_holds_task.md:1-333
+  IMPACT: The epic's last-step rebuild runs after melder_2's edits and index regeneration are on the tree, so it
+    packages both lanes' documents; this lane edits neither source document in its leftovers.
+  NEXT: The graph leftovers; before the rebuild, confirm melder_2's edits are done (its task or a NOTICE).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-19T00:18:40Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: The landing's graph and docs leftovers are done; no notch (docs and graph only). Thirteen descriptors
+    rewritten (land_graph_leftovers.py, 31 operations): the five binding profiles, their builder and
+    InspectorUtility no longer describe the retired fingerprint, SignatureReflection's statement names display
+    text, Bind gains its SpellCodeDigest (owns_state and an owns_lifecycle_of edge) and loses the old
+    inspector rule, SpellCodeDigest and BindingManifest gain their remaining contract lines, and
+    SpellbookCreationSystem, RestoreReport, GraftRunner, SpellCrystal, RecordVersion and CachingSystem name
+    the binding hash. Each node was re-read against its source - whole files for the new modules and the four
+    fingerprint descriptors, the landing's diff for nodes accepted at 0.2.8256 - and the eighteen were
+    accepted. extract --strict: 593 descriptors, 0 skipped, 0 new, 0 orphaned; assemble: 593 sections, 1231
+    nodes, 1419 edges, check OK; the walker: AUTHORED 1001, stale 221 (was 983 and 239). extract --check
+    exits 1 on the census alone (stale > 0; 0 skipped). Spellbook and Spell stay stale for melder_1's S4
+    landing, whose change to both files (f86f84231) its own re-read covers. docs/expert/governed-change.md
+    said a lookup by a parked spell_id returns the active member; it now says the lookup is exact and the
+    index's active version is a lookup by the index (checked against Conduit.get_spell_by_spell_id and
+    Spellbook.find_spell_by_spell_id). The release note's 0.2.8253 lookup bullet and the identity bullet
+    carry the two corrections.
+  EVIDENCE:
+  - context_compass/artifacts/spell_identity_20261018/runs/graph_leftovers/extract.txt:1-6
+  - context_compass/artifacts/spell_identity_20261018/runs/graph_leftovers/assemble_check.txt:1-4
+  - context_compass/artifacts/spell_identity_20261018/runs/graph_leftovers/walker_report_by_file.txt:1-8
+  - context_compass/artifacts/spell_identity_20261018/runs/graph_leftovers/accept.txt
+  - docs/expert/governed-change.md:25-27
+  - release_docs/next_version_release.md:1097-1098
+  - release_docs/next_version_release.md:1113-1114
+  IMPACT: The graph and the expert guide describe the landed identity; the rebuild will package them.
+  NEXT: The whole-tree run on HEAD, GIL off and on.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-19T00:49:20Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: M2-24, M2-26, M2-27 and M1-42 consumed. melder_2 (M2-24 at 2026-10-19T00:12:26Z, M2-26 at 00:35:22Z, M2-27
+    at 00:43:26Z): its root-teardown wording in src_architecture and src_components, corrected again after the
+    owner's review (TASK-2026-10-19-correct_root_teardown_docs_wording, closed), is on the tree with both indexes
+    --check OK and touches no file of this lane; it asked this lane to hold its rebuild until M2-27, then said
+    it may run, and checked out. M1-42 (melder_1, 00:25:06Z) reports S4 of EPIC-2026-10-17-correctness_defects
+    landed at 0.2.8259 and turned in, which fixes the risk this epic carried (one object bound twice through a
+    minted index, M4b and M5b) and drops the release note's known-limits clause on it; the graph's Spellbook
+    and Spell accepted with S4 (the leftover of the FACT note of 2026-10-19T00:18:40Z); spellbook.py and
+    spell.py are melder_0's again. Read here: melder_1's 0.2.8259 rebuild ran at 00:22-00:24Z, after this
+    lane's last edits (descriptors 00:11-00:14Z, src_graph.md 00:14:36Z, governed-change.md 00:16:22Z), with
+    asset --check OK x3 and LLM --check OK x3; melder_2's correction came after it, and the checks run now say
+    `_system_documents` STALE, the other two assets and the three LLM bundles OK.
+  EVIDENCE:
+  - context_compass/tickets/tasks/completed/2026-10-18_document_root_teardown_cleans_only_what_it_holds_task.md:16-20
+  - context_compass/tickets/tasks/completed/2026-10-19_correct_root_teardown_docs_wording_task.md:15-19
+  - context_compass/tickets/stories/completed/2026-10-17_minted_index_missing_from_frame_registry_story.md:3-9
+  - context_compass/artifacts/minted_index_registry_20261018/runs/rebuild_asset_check_after_llm_0_2_8259.txt:1-3
+  - context_compass/artifacts/minted_index_registry_20261018/runs/rebuild_llm_check_0_2_8259.txt:1-3
+  - context_compass/artifacts/spell_identity_20261018/runs/turn_in/mtimes.txt:1-22
+  - context_compass/artifacts/spell_identity_20261018/runs/turn_in/asset_check_after_wording.txt:1-8
+  - context_compass/artifacts/spell_identity_20261018/runs/turn_in/llm_check_after_wording.txt:1-4
+  IMPACT: No rebuild is owed for this lane's leftovers: melder_1's packaged them. The packaged system documents are
+    stale for melder_2's correction until the next rebuild, which the owner left to the next agent in the
+    runtime (DECISION note); M0-207 tells melder_1 and the turn-in report tells the owner. The turn-in edits
+    only tickets, boards and the mailbox, which the contribution guide's rebuild rule does not cover.
+  NEXT: The turn-in.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-19T00:49:20Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: The owner's word (chat): "sorry finish up those last things then turn in the epic and then we'll move
+    on", then "ok cool finish your shit and call it then" and "don't rebuild let the next agent in the
+    runtime rebuild the assets you can call it after your done". So the leftovers finish (the staged copies,
+    the graph, the expert guide, the release note), the epic is turned in with S1 and S2 landed, S3-S5 park in
+    the backlog beside S6 for his later word, and this lane runs no rebuild: the next agent's rebuild in the
+    runtime - melder_1's for 0.2.8259, which ran after the leftovers (M1-42) - packages them. The owner may
+    close any ticket by directive (the contribution guide); this closes the epic with S3-S5 open, as he said.
+  EVIDENCE:
+  - context_compass/special_instructions/agent_contribution_guide.md:96-97
+  - context_compass/tickets/stories/backlog/2026-10-18_explicit_duplicate_binding_story.md:61-65
+  IMPACT: The epic's exit gate is met but for S3-S5 (parked, not dropped); their acceptance criteria stay open in
+    those three stories for the owner to take up.
+  NEXT: The closure: notes, the stories parked, the boards, the move to completed/.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-19T00:49:20Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: EPIC-2026-10-18-spell_identity_is_the_code turned in. Landed: S1, notched 0.2.8257 (release-note section
+    "A spell_id is the SHA256 of the object's code, and one object is one spell"), and S2, notched 0.2.8258
+    ("A spell's binding is a manifest with its own hash"), both completed 2026-10-18T23:31:15Z and rebuilt
+    for 0.2.8258 (FACT note of 2026-10-18T23:43:33Z); the leftovers - no source, no notch - packaged by
+    melder_1's 0.2.8259 rebuild (the FACT note above). Parked in tickets/stories/backlog/ beside S6 and
+    EPIC-2026-10-18-identity_and_caching_configurables: S3 (a changed binding revalidates), S4 (the refusal
+    names the existing registration; M4b and M5b its acceptance cases) and S5 (records holding one object
+    twice). Whole tree: this lane's own run on the final source Not run (the owner called the turn-in first);
+    melder_1's run of S4's source (S1, S2 and S4 in src; its MEASURE note of 2026-10-19T00:00:59Z), the GIL
+    off and on, was green but for the 18 red tests held for S8 (7 unit, 11 integration), on the owner's hold.
+    This lane's edits since S1 and S2 landed touch no src or tests.
+  EVIDENCE:
+  - context_compass/tickets/stories/completed/2026-10-18_spell_id_hashes_the_object_code_story.md:3-4
+  - context_compass/tickets/stories/completed/2026-10-18_binding_manifest_hash_story.md:3-4
+  - release_docs/next_version_release.md:961-991
+  - release_docs/next_version_release.md:993-1001
+  - context_compass/tickets/stories/completed/2026-10-17_minted_index_missing_from_frame_registry_story.md:819-850
+  IMPACT: Identity is the code and the binding a manifest, in src, docs, graph and record; one object is one spell.
+    The rest of the identity work - revalidation on a binding change, the refusal's message, old records -
+    waits in the backlog for the owner.
+  NEXT: None in this epic; S3-S6 and the configurables epic on the owner's word.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
 ## Closure Confirmation
-- [ ] Work walkthrough shared with user
-- [ ] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
-- [ ] Applicable anti-pattern checks are clear or escalated with evidence.
+- [x] Work walkthrough shared with user
+- [x] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
+- [x] Applicable anti-pattern checks are clear or escalated with evidence.
 
 ## Noting Behavior
 - Note focus: program-level direction, cross-story tradeoffs, and tranche order.
@@ -953,14 +1099,10 @@ this does not make independent review mandatory for every ticket.
 - Scope: a spell_id becomes the SHA256 of the registered object's code (methods and constructor, bodies included; no
   docstrings, comments or line numbers); the bind signature becomes a binding manifest with its own SHA256 that
   revalidates the spell when it changes; one object is one spell; every spell_id moves once.
-- State: in_progress (melder_0), implementation. The owner's word (DECISION note of 2026-10-18T15:01:53Z): land S1
-  with S2's cache keys now, duplicates strictly refused (S6 parked in the backlog), binding and caching
-  patterns later (EPIC-2026-10-18-identity_and_caching_configurables); and (DECISION note of
-  2026-10-18T16:18:35Z) the binding hash goes into the SpellCrystal in this landing and the third-party reading
-  is accepted as written. His earlier calls and decisions stand (DECISION notes of 2026-10-18T12:15:14Z,
-  13:06:51Z, 14:14:10Z). S1 and S2 in_progress; S3-S5 draft, each after its own patch; nothing in src/ yet.
-  S9 of EPIC-2026-10-17-correctness_defects took the refusal and landed first as 0.2.8256 (M1-37, M1-38);
-  spellbook.py, spell.py, spell_index.py and conduit.py are melder_0's, and S1 and S2 notch above 0.2.8256.
+- State: done (melder_0), turned in on the owner's word (2026-10-19): S1 (0.2.8257) and S2 (0.2.8258)
+  landed and were rebuilt for 0.2.8258; S3-S5 parked in the backlog with S6 and the configurables epic;
+  the leftovers (graph, expert guide, release-note sentences) packaged by melder_1's 0.2.8259 rebuild;
+  this lane runs no rebuild (the owner's word).
 - Done since: M1-37 consumed and the owner's crystallizer call recorded (FACT and DECISION notes of
   2026-10-18T16:18:35Z).
 - Done since: the blast radius recorded (MEASURE note of 2026-10-18T16:24:12Z).
@@ -999,9 +1141,13 @@ this does not make independent review mandatory for every ticket.
 - Done since: S1 and S2 turned in (FACT note of 2026-10-18T23:31:15Z).
 - Done since: rebuilt for 0.2.8258 (FACT note of 2026-10-18T23:43:33Z); M0-204 hands spellbook.py
   and spell.py back to melder_1 and M0-205 tells melder_2 the rebuild carried its lane.
-- Next: S3 (a changed binding revalidates), S4 (the refusal names the existing
-  registration) and S5 (records holding one object twice), each after its own patch, on
-  the owner's word.
+- Done since: the staged copies cleaned - the cited run logs restored, the two modules and six tests
+  deleted with the owner's permission; M2-20 consumed, M0-206 sent; the graph leftovers and the expert
+  guide (FACT notes of 2026-10-19T00:00:36Z, 00:08:45Z and 00:18:40Z).
+- Done since: M2-24, M2-26, M2-27 and M1-42 consumed; turned in on the owner's word (DECISION and FACT
+  notes of the turn-in); M0-207 sent to melder_1 (melder_2 checked out).
+- Next: none in this epic. S3-S6 and EPIC-2026-10-18-identity_and_caching_configurables wait in the
+  backlog for the owner's word.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

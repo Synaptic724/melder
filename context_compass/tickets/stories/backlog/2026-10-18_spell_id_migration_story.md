@@ -9,7 +9,7 @@
 - Agent Role: synaptic_python_developer
 - Priority: p2
 - Created: 2026-10-18T11:45:58Z
-- Updated: 2026-10-18T12:01:17Z
+- Updated: 2026-10-19T00:49:20Z
 
 ## User Narrative
 As a user upgrading Melder, I want the one-time move of every spell_id handled - caches, records, research history,
@@ -45,10 +45,10 @@ suite all hold spell_ids; each needs a defined path, and the change is one Break
 - Out of scope: the hashes (S1, S2), revalidation (S3), the refusals (S4).
 
 ## State Transition Event
-- from_state: (new)
+- from_state: draft
 - to_state: draft
-- transition_reason: filed under EPIC-2026-10-18-spell_identity_is_the_code on the owner's direction (chat
-  2026-10-18); stays draft until S1-S4's patches are approved and the record policy is called.
+- transition_reason: parked in the backlog by the owner (the epic's DECISION note of the turn-in,
+  2026-10-19T00:49:20Z): the epic turned in after S1 and S2 landed.
 
 ## Dependencies / Related Work
 - EPIC-2026-10-18-spell_identity_is_the_code
@@ -81,12 +81,15 @@ suite all hold spell_ids; each needs a defined path, and the change is one Break
 - [ ] No cross-task synthesis claims without ticket-note evidence pointers.
 
 ## Open Questions
-- The record policy for one object registered twice (rebuild the first and report, or refuse).
+- None open: the record policy for one object registered twice is the owner's call - restore the first
+  and file a shortfall per dropped duplicate (the epic's DECISION note of 2026-10-18T14:14:10Z).
 
 ## Decision Log
 - 2026-10-18T11:45:58Z: filed under EPIC-2026-10-18-spell_identity_is_the_code (the epic's DECISION note).
 - 2026-10-18T12:01:17Z: melder_1's files are free (M1-28; the epic's FACT note of 2026-10-18T12:01:17Z); the entry gate
   no longer waits on a release.
+- 2026-10-19T00:49:20Z: parked in tickets/stories/backlog/ on the owner's word; the epic turned in after S1 and
+  S2 landed (the epic's DECISION note).
 
 ## Artifact Links (Optional)
 Qualified independent reviewer acceptance and direct closure follow shared `ticketing.md`;
@@ -125,6 +128,23 @@ this does not make independent review mandatory for every ticket.
   REREAD: HELPFUL
   SCORE_0_TO_10: 7
 
+- DATETIME: 2026-10-19T00:49:20Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: Parked in tickets/stories/backlog/ on the owner's word (S5): the identity epic turned in after S1
+    (0.2.8257) and S2 (0.2.8258) landed; this story waits there, with S6 and the configurables epic, for the
+    owner to take the identity work up again. Status stays draft.
+    Its open question is answered (the owner, the epic's DECISION note of 2026-10-18T14:14:10Z: restore
+    the first, a shortfall per dropped duplicate), so Open Questions says so.
+  EVIDENCE:
+  - context_compass/tickets/epics/completed/2026-10-18_spell_identity_is_the_code_epic.md:1037-1055
+  - context_compass/tickets/epics/completed/2026-10-18_spell_identity_is_the_code_epic.md:465-490
+  IMPACT: Nothing in this story is started; its scope, requirements and acceptance stand as written.
+  NEXT: the owner's word; then the component patch (records holding one object twice restore the first).
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
@@ -140,8 +160,9 @@ this does not make independent review mandatory for every ticket.
 
 ## Context / Handoff Summary
 - Scope: the one-time move of every spell_id.
-- State: draft (melder_0); after S1-S4's patches.
-- Next: the component patch with the others'.
+- State: draft, parked in the backlog (the owner, 2026-10-19): the identity epic turned in after
+  S1 (0.2.8257) and S2 (0.2.8258) landed.
+- Next: the owner's word; then the component patch (records holding one object twice restore the first).
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

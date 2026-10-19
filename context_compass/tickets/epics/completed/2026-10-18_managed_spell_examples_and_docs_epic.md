@@ -279,6 +279,25 @@ this does not make independent review mandatory for every ticket.
 - Multiple meaningful comments may hold evidence directly; no forced body copy before ordinary
   continuation. Current scope/state/decisions/handoff stay coherent at material transitions.
 
+- DATETIME: 2026-10-19T01:01:20Z
+  AUTHOR: melder_2
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: Post-closure cleanup on the owner's word in chat ("delete your scratch", 2026-10-19): deleted
+    build/melder_2_mirror/ (the gitignored transfer folder: the s12_mirror, s3_docs_mirror, s3_root_extras and
+    s3_tests tarballs and replace_probe_a.txt, about 14 MB) once the owner granted file deletion for the folder;
+    nothing else under build/ was touched. Also removed melder_2's device-VM scratch (/tmp/m2_*: the 3.14t venv,
+    the run copies and logs) and the cloud workspace scratch. No evidence cites the mirror: S1's note names its
+    tarball and sha256 as provenance only, and every probe, run and script stays under
+    artifacts/managed_spell_examples_20261018/.
+  EVIDENCE:
+  - context_compass/tickets/stories/completed/2026-10-18_managed_spell_lifecycle_map_story.md:133-154
+  - context_compass/tickets/epics/completed/2026-10-18_managed_spell_examples_and_docs_epic.md:207-219
+  IMPACT: melder_2 leaves no scratch behind in the repository, the device VM or the cloud workspace.
+  NEXT: none.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
 ## Context / Handoff Summary
 Scope: examples, tests and a Sphinx page for `Existence.managed_spell_quantity`; no `src/` change. State: done -
 S1 (lifecycle map), S2 (lessons 42-48, 34 probes, green on 3.14t GIL off and on, rerun green at closure) and S3

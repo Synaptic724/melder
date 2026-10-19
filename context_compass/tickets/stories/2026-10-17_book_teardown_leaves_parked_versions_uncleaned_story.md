@@ -3,13 +3,13 @@
 ## Metadata
 - Story ID: STORY-2026-10-17-book_teardown_leaves_parked_versions_uncleaned
 - Epic: EPIC-2026-10-17-correctness_defects
-- Status: ready
+- Status: in_progress
 - Owner: user
-- Agent Name: unassigned
-- Agent Role: UNKNOWN
+- Agent Name: melder_1
+- Agent Role: synaptic_python_developer
 - Priority: p3
 - Created: 2026-10-17T21:13:35Z
-- Updated: 2026-10-17T21:13:35Z
+- Updated: 2026-10-19T01:17:45Z
 
 ## User Narrative
 As an agent who staged and separated versions in a Book and then tore the Book down, I want every version the Book
@@ -55,16 +55,17 @@ retired.
   already evicts the Book's custody in both locations and its index crystals).
 
 ## State Transition Event
-- from_state: draft
-- to_state: ready
-- transition_reason: the defect is proven on 0.2.8252 by a probe with the GIL off and on (Notes).
+- from_state: ready
+- to_state: in_progress
+- transition_reason: the owner scheduled the story for melder_1 (chat 2026-10-18 and 2026-10-19; DECISION
+  note); the defect is re-verified on the current tree before any change.
 
 ## Dependencies / Related Work
 - STORY-2026-10-17-notch_moves_signature_by_incoming_key_only: the same probe's case T4 (a claim that outlives the
   Book) belongs there.
 
 ## Tasks (Implementation Checklist)
-- [ ] Task: patch docs for the Book teardown; the owner's approval.
+- [x] Task: patch docs for the Book teardown (linked; PLAN note); the owner's approval (DECISION note).
 - [ ] Task: the fix with symptom-named regression tests, docs, notch and the rebuild last.
 - [ ] Enforce Ticket Microcycle across all linked tasks.
 - [ ] Record meaningful attributed findings in supported Notes/comments or authorized linked evidence.
@@ -96,6 +97,7 @@ retired.
 
 ## Decision Log
 - 2026-10-17T21:13:35Z: filed under EPIC-2026-10-17-correctness_defects from sweep A7 (Notes).
+- 2026-10-19T00:51:08Z: scheduled for melder_1 on the owner's order, after S4 (DECISION note).
 
 ## Artifact Links (Optional)
 Qualified independent reviewer acceptance and direct closure follow shared `ticketing.md`;
@@ -106,6 +108,8 @@ this does not make independent review mandatory for every ticket.
   - artifacts/correctness_defects_20261017/probes/probe_book_teardown_parked.py (cases T1-T3, T5)
   - artifacts/correctness_defects_20261017/runs/probe_book_teardown_parked_gil0.txt
   - artifacts/correctness_defects_20261017/runs/probe_book_teardown_parked_gil1.txt
+  - artifacts/book_teardown_parked_20261019/ (melder_1's lane: re-runs, scripts, notes)
+  - system_docs/patches/active/book_teardown_parked_2026_10_19/ (architecture and Spellbook component patch)
 - DISPOSITION: retain_as_reference
 - CLEANUP_TRIGGER: the probe is re-run at the fix and kept as the defect's reproducer
 
@@ -151,6 +155,182 @@ this does not make independent review mandatory for every ticket.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-10-19T00:51:08Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: The owner's order puts this story with melder_1 now. Of the correctness fixes he gave melder_1 (chat
+    2026-10-18: "do the ones without open questions please" - S9, S4 and S7 - with "go over them again before you
+    make changes and let him know"), S9 landed at 0.2.8256 and S4 at 0.2.8259; on S4's report he said "lets move on"
+    (chat 2026-10-19). S8 stays on his hold. So S7 is re-verified on 0.2.8259 and its teardown path re-read whole
+    before any change; the patch (a component patch for the Book teardown) and the exact edits go to the owner
+    before the first src edit; spellbook.py is claimed from melder_0 by message (M1-43), nothing edited before his
+    answer. S4 touched the same teardown (the root's teardown now unregisters parked versions' indexes), so the
+    probe is re-read against it.
+  EVIDENCE:
+  - context_compass/tickets/epics/2026-10-17_correctness_defects_epic.md:908-928
+  - context_compass/tickets/stories/completed/2026-10-17_minted_index_missing_from_frame_registry_story.md:1-12
+  - src/melder/aether/spellbook/spellbook.py:2695-2736
+  IMPACT: The ENTRY_GATE's scheduling and assignment are met; the board row exists; the patch, the owner's word
+    on the edits and the file claim remain before any src edit.
+  NEXT: Re-run probe T1-T5 on 0.2.8259 with the GIL off and on; re-read Spellbook teardown whole.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-19T00:58:59Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: The defect holds on 0.2.8259, re-verified before any change as the owner asked. melder_0's probe, copied
+    with the 0.2.8253 rename (`find_spell_by_id` -> `find_spell_by_spell_id`) and T5's parked version made its own
+    class (one object is one spell since 0.2.8257), ran on Python 3.14.7t; with the GIL on the output equals the
+    GIL-off run apart from the GIL-mode warning. T2: after the root's teardown English and the shared index are
+    cleaned, French (parked on it) is not, and `French.cleanup()` raises "Spellbook has already been cleaned.". T3:
+    French alone in the index `remove_from_spell_index` minted - neither French nor that index is cleaned. T1
+    (active only) and T5 (both managed versions' pools unregistered) are right; T4 belongs to the notch-signature
+    story and is unchanged. S4's teardown edit (0.2.8259) changed none of it.
+  EVIDENCE:
+  - context_compass/artifacts/book_teardown_parked_20261019/probes/probe_book_teardown_parked_0_2_8259.py:1-242
+  - context_compass/artifacts/book_teardown_parked_20261019/runs/probe_book_teardown_parked_0_2_8259_gil0.txt:1-30
+  - context_compass/artifacts/book_teardown_parked_20261019/runs/probe_book_teardown_parked_0_2_8259_gil1.txt:1-34
+  IMPACT: The acceptance criteria stand as written.
+  NEXT: Read the Book teardown whole (FACT note).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-19T00:58:59Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: The Book teardown, read whole on 0.2.8259. `Spellbook.cleanup` runs `_cleanup_components` under the Book
+    lock: Bind's retirement, the risk-manager entry, the phase scheduler, the record's eviction of the whole Book,
+    Nexus, then `_cleanup_spells`, which walks `_spells` (index -> active Spell) - unregister the index from
+    SpellSystemStates, set `_spellbook_cleanup`, `Spell.cleanup()`, `SpellIndex.cleanup()` - and then
+    `_inactive_spells` is cleared, never cleaned. A parked version's retirement is local, as the parked branch of
+    `_dispose_spell` shows (`_spellbook_cleanup` set, then `Spell.cleanup()`): `Spell.cleanup` with that flag set skips
+    `_direct_removal_route` and tears down only the spell's own fields (it never touches the index object), and
+    `SpellIndex.cleanup` is idempotent and lock-guarded. A parked version holds no lineage registration (only active
+    selections are registered), no resolution-map entry and no frame lookup of its own, and since 0.2.8259 the root's
+    teardown unregisters its index from the frame before the Book is cleaned. So the fix is one loop after the
+    active one: retire each parked version locally and clean each index no active member holds.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spellbook.py:370-397
+  - src/melder/aether/spellbook/spellbook.py:405-555
+  - src/melder/aether/spellbook/spellbook.py:557-600
+  - src/melder/aether/spellbook/spellbook.py:4503-4651
+  - src/melder/aether/spellbook/spellbook.py:2695-2736
+  - src/melder/aether/spellbook/spell.py:614-762
+  - src/melder/aether/spellbook/spell.py:764-801
+  - src/melder/aether/spellbook/bind/spell_index.py:118-137
+  IMPACT: The change is one module (spellbook.py), no new lock edge (spell and index locks under the Book lock, as the
+    active loop takes them), no persisted or cached shape.
+  NEXT: The patch docs, the red tests and a prototype in a /tmp mirror (MEASURE note).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-19T00:58:59Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: PLAN
+  CLAIM: Patch book_teardown_parked_2026_10_19 (architecture and a Spellbook component patch; no code-description
+    patch - no state machine, gate or rollback semantics change) mapped to steps and tests. Edit (apply_s7.py, one
+    module): (A) `_cleanup_spells`' docstring names the parked loop and its threading; (B) after the active loop,
+    each parked version's index is read while the version is live and noted when no active member holds it, the
+    version is retired locally (`_spellbook_cleanup`, `Spell.cleanup()`), then each noted index is cleaned - every
+    step best-effort and logged; (C) `_cleanup_components`' docstring names them. Tests (new integration file, 8
+    cases): six regressions red on 0.2.8259 - a parked version on a shared index and alone in its own index, with the
+    frame kept and collapsed, a version parked before conjure under a direct `Spellbook.cleanup()`, a parked managed
+    version's Spell - and two controls (active only; a parked version disposed first). In a /tmp mirror with the
+    edit (preview 72 lines): 8 passed, the GIL off and on; probe T2 and T3 fixed, T1, T4 and T5 unchanged. Then the
+    whole tree, docs, graph, the release note, the next notch (0.2.8260 unless someone notches first), closure and
+    the rebuild last. No src edit before the owner's word.
+  EVIDENCE:
+  - context_compass/system_docs/patches/active/book_teardown_parked_2026_10_19/architecture_patch.md:1-44
+  - context_compass/system_docs/patches/active/book_teardown_parked_2026_10_19/component_patch_spellbook_book_teardown.md:1-30
+  - context_compass/artifacts/book_teardown_parked_20261019/scripts/apply_s7.py:1-141
+  - context_compass/artifacts/book_teardown_parked_20261019/runs/s7_preview_0_2_8259.diff:1-72
+  - tests/integration/melder/spellbook/test_book_teardown_retires_parked_versions_integration.py:1-330
+  - context_compass/artifacts/book_teardown_parked_20261019/runs/red_s7_0_2_8259_gil0.txt:1-32
+  - context_compass/artifacts/book_teardown_parked_20261019/runs/green_s7_mirror_gil0.txt:1-2
+  - context_compass/artifacts/book_teardown_parked_20261019/runs/green_s7_mirror_gil1.txt:1-10
+  - context_compass/artifacts/book_teardown_parked_20261019/runs/prototype_s7_probe_book_teardown_parked_gil0.txt:1-30
+  IMPACT: The patch gate's mapping is recorded; the edit waits for the owner's word only (melder_0 holds no src file,
+    M0-207).
+  NEXT: The owner's word on the edit.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-19T00:58:59Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: M0-207 from melder_0 (2026-10-19T00:49:20Z, re M1-42), consumed. EPIC-2026-10-18-spell_identity_is_the_code
+    is turned in on the owner's word (S1 and S2 landed; S3-S5 parked in the backlog beside S6, its S4 taking M4b and
+    M5b); melder_0 edits neither spellbook.py nor spell.py and names S7 as melder_1's next, so S7's file claim (M1-43)
+    is met. Its note that `_system_documents` was stale after melder_2's wording fix (M2-27) is settled: melder_1
+    rebuilt in the repository before staging the commit, and both checks read OK.
+  EVIDENCE: context_compass/artifacts/spell_identity_20261018/runs/turn_in/asset_check_after_wording.txt:1-8
+  IMPACT: Nothing but the owner's word stands between the patch and the edit.
+  NEXT: The owner's word on the edit.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
+- DATETIME: 2026-10-19T01:00:17Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: The owner's word (chat 2026-10-19): asked "Go ahead with S7's fix as described (one extra cleanup loop at
+    the end of a Spellbook's teardown, in spellbook.py)?", he chose "Go ahead". The edit lands as the PLAN note maps
+    it (apply_s7.py, edits A-C) at the next notch, 0.2.8260, then the whole tree, the documents, the graph, the
+    release note, the notch, the closure and the rebuild last.
+  EVIDENCE: context_compass/artifacts/book_teardown_parked_20261019/runs/s7_preview_0_2_8259.diff:1-72
+  IMPACT: The ENTRY_GATE is met in full; the src edit is authorized.
+  NEXT: Apply A-C to the repository and run the S7 tests there, the GIL off and on.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-19T01:16:57Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: M0-208 from melder_0 (2026-10-19T01:07:36Z, ACK of M1-43), consumed. spellbook.py and spell.py are
+    melder_1's for S7; melder_0 holds no edit in either and has no src/ lane open. conduit.py,
+    spellbook_validation_error.py and change_control_manager.py stay with melder_0 while S8 is on hold (a claim by
+    mailbox first if S7 needed one; it needs none). spellbook.py and spell.py go back to melder_0 when S7 turns in.
+  EVIDENCE: context_compass/tickets/epics/2026-10-17_correctness_defects_epic.md:1053-1071
+  IMPACT: The file claim behind the 0.2.8260 edit is confirmed in writing; S7's closure hands both files back.
+  NEXT: Record the landing's validation (MEASURE note), then the system documents.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
+- DATETIME: 2026-10-19T01:17:45Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: The edit is in the repository as the PLAN note maps it (apply_s7.py, edits A-C, notch text 0.2.8260;
+    spellbook.py 7858 -> 7903 lines; `__version__` stays 0.2.8259 until the turn-in's notch). The S7 tests pass there,
+    8 passed with the GIL off and on. The whole tree in the VM mirror, seven shards with the GIL off and on: every
+    test passes except S8's 18 red tests, held with the story (7 in test_spellbook_validation_error_preface.py, 11 in
+    test_notch_refused_at_commit_integration.py), failing as on 0.2.8259; integration/spellbook reads 678 passed.
+    Probe T1-T5 on the landed tree is byte-equal to the prototype's run: T2 and T3 fixed (French, the shared index
+    and the minted index cleaned; `French.cleanup()` returns), T1, T4 and T5 unchanged.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spellbook.py:405-422
+  - src/melder/aether/spellbook/spellbook.py:559-645
+  - context_compass/artifacts/book_teardown_parked_20261019/runs/apply_s7_repo_0_2_8260.txt:1-2
+  - context_compass/artifacts/book_teardown_parked_20261019/runs/green_s7_repo_0_2_8260_gil0.txt:1-2
+  - context_compass/artifacts/book_teardown_parked_20261019/runs/green_s7_repo_0_2_8260_gil1.txt:1-10
+  - context_compass/artifacts/book_teardown_parked_20261019/runs/full_tree_0_2_8260/unit_gil0.txt:1-168
+  - context_compass/artifacts/book_teardown_parked_20261019/runs/full_tree_0_2_8260/integ_aether_gil0.txt:1-71
+  - context_compass/artifacts/book_teardown_parked_20261019/runs/full_tree_0_2_8260/integ_spellbook_gil0.txt:1-11
+  - context_compass/artifacts/book_teardown_parked_20261019/runs/landed_0_2_8260_probe_book_teardown_parked_gil0.txt:1-30
+  - context_compass/artifacts/book_teardown_parked_20261019/runs/landed_0_2_8260_probe_book_teardown_parked_gil1.txt:1-34
+  IMPACT: The EXIT_GATE's probe and test conditions are met; the documents, the graph, the notch, the release note,
+    the closure and the rebuild remain.
+  NEXT: The system documents (citation remap first, then the anchored edits and the indexes).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
@@ -167,9 +347,12 @@ this does not make independent review mandatory for every ticket.
 ## Context / Handoff Summary
 - Scope: Book teardown retires parked versions and parked-only indexes (Requirements). Defect proven on 0.2.8252
   (Notes); probe and runs in Artifact Links.
-- State: ready, unassigned; filed by melder_0 under EPIC-2026-10-17-correctness_defects. The fix sits in
-  spellbook.py, which melder_1 holds.
-- Next: (1) the owner's scheduling; (2) patch docs; (3) the fix, its tests, docs, notch and the rebuild.
+- State: in_progress (melder_1), implementation: the owner said "Go ahead" (DECISION note); the edit is in
+  spellbook.py (0.2.8260 text; `__version__` still 0.2.8259), green with the GIL off and on, the whole tree
+  green but S8's held red tests, the probe fixed (MEASURE note). spellbook.py and spell.py are melder_1's for
+  S7 (M0-208); filed by melder_0 under EPIC-2026-10-17-correctness_defects.
+- Next: (1) the documents (citation remap; src and tests architecture and components; their indexes); (2) the
+  graph; (3) notch 0.2.8260, the release note, the closure (files back to melder_0), the rebuild last.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

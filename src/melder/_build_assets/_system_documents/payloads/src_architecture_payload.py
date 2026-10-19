@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_architecture.md'
-LINE_COUNT = 5306
-CONTENT_SHA256 = '44e02e45dbad65f9684f9fc211b514a09d997f5673f5524fa87bd10264b5566e'
+LINE_COUNT = 5422
+CONTENT_SHA256 = 'b9309496bd4850b25f4a65c87883d17aaf3947c92a1eb0e0d9f431fa262a8a2a'
 
 TEXT = """# Src Architecture (C4)
 
@@ -55,7 +55,10 @@ application objects.
 Generated objects are working material. An object may be superseded by a newer version, left pending after a
 transfer or a contract change, or kept by application code after Melder lets go of it, and agents clean such objects
 up when they choose. Melder's infrastructure cleans up its own state: a store disposes what it records when it ends,
-a scope teardown ends its stores, and a purge disposes what it retires. It does not police userland objects: it does
+a scope teardown ends its stores, and a purge disposes what it retires. A root's teardown cleans only what the root
+holds (owner, 2026-10-18): what its stores record and what its managed pools keep - their idle objects and the
+children recorded with their objects, out ones included; an object a holder leased from a pool stays that holder's
+(Operational Invariants). It does not police userland objects: it does
 not dispose an object because something else changed (a transfer, a contract change, a removed definition), and an
 object it lets go of is not a leak. A transfer hands over stewardship, not a working setup (Sequence: Transfer Spell
 Ownership).
@@ -535,7 +538,7 @@ External interfaces are Python APIs:
   CORRECTED 2026-08-02: this document previously said the Conduit "delegates to
   the owning Spellbook, WHICH ADMITS the change-control transaction". It does
   not. That wording was inherited from the Conduit docstrings, which say the
-  same thing and are also wrong - see `src/melder/aether/spellbook/spellbook.py:3923-3925`, which states the
+  same thing and are also wrong - see `src/melder/aether/spellbook/spellbook.py:3942-3944`, which states the
   opposite correctly. The code settles it, and since 0.2.8249 all three Conduit docstrings say so.
   All three name the spell they act on by `spell_id=` - the spell_id `bind` or `bind_inactive` returned - or by
   `spell=`, exactly one, and resolve a spell_id inside the call to the exact spell the conduit's Spellbook owns,
@@ -552,8 +555,8 @@ External interfaces are Python APIs:
     `_check_spell_argument`, `_owned_spell_by_id`, `_resolve_spell_to_move`)
   - src/melder/aether/conduit/conduit.py:6009, 6099 (`add_to_spell_index`; starts it)
   - src/melder/aether/conduit/conduit.py:6122, 6197 (`remove_from_spell_index`; starts it)
-  - src/melder/aether/spellbook/spellbook.py:4095 (`_add_to_spell_index` entry)
-  - src/melder/aether/spellbook/spellbook.py:4128 (`_apply_add_to_index` seam)
+  - src/melder/aether/spellbook/spellbook.py:4114 (`_add_to_spell_index` entry)
+  - src/melder/aether/spellbook/spellbook.py:4147 (`_apply_add_to_index` seam)
 - `Spellbook.find_spell_by_spell_id(spell_id)` and `Conduit.get_spell_by_spell_id(spell_id,
   aetheric_frame_name="default")` (0.2.8253; renamed from `find_spell_by_id` and `get_spell_by_id`, with no
   alias): the spell a spell_id names - the active version, else the parked one - or None from the Book, and
@@ -664,7 +667,7 @@ so a `unique` can have one live object per version while agents iterate on one o
 on the version they want (corrected 2026-10-15: this paragraph called the borrower update a missing
 fan-out). A notch names its target by spell_id or by Spell and checks that it is the Book's version of that
 index before anything moves; the two index moves take a spell_id the same way (0.2.8249).
-EVIDENCE: src/melder/aether/spellbook/spellbook.py:3938-4388 (the three seams, remeasured 2026-10-16 at 0.2.8251);
+EVIDENCE: src/melder/aether/spellbook/spellbook.py:3957-4434 (the three seams, remeasured 2026-10-16 at 0.2.8251);
 `src/melder/aether/conduit/conduit.py:Conduit.notch_spell`, `Conduit._owned_notch_target` (the target check),
 `Conduit._resolve_spell_to_move` (the index moves' spell_id), `Conduit._deactivate_borrowed_spell`,
 `Conduit._activate_borrowed_spell` and
@@ -1049,7 +1052,8 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:3938-4388 (the three seams, r
      (`SpellSystemStates.mark_dependents_for_revalidation`, 0.2.8250);
    - add/remove are membership-only moves that leave the spell owned and
      inactive with its id-keyed state untouched; add destroys an emptied source
-     index, remove mints a fresh inactive index instead of destroying anything;
+     index, remove mints a fresh inactive index instead of destroying anything
+     and registers it with the frame as `bind` registers the index it creates (0.2.8259);
    - before moving, the add and remove seams refuse (RuntimeError) a spell the
      Spellbook does not own and an active one; add also a target index it does not
      own, remove a spell outside the source index or its only member.
@@ -1063,9 +1067,9 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:3938-4388 (the three seams, r
    borrowers build the new version at their next meld; objects built from older versions stay alive, so
    agents iterating on one object keep their work while it converges.
    EVIDENCE:
-   - src/melder/aether/spellbook/spellbook.py:3938-4093
-   - src/melder/aether/spellbook/spellbook.py:4128-4222
-   - src/melder/aether/spellbook/spellbook.py:4303-4388
+   - src/melder/aether/spellbook/spellbook.py:3957-4112
+   - src/melder/aether/spellbook/spellbook.py:4147-4241
+   - src/melder/aether/spellbook/spellbook.py:4324-4434
    - src/melder/aether/conduit/conduit.py:5650-5787
    - src/melder/aether/conduit/conduit.py:5789-6007
    - src/melder/aether/conduit/conduit.py:6009-6210
@@ -1124,9 +1128,13 @@ types to seven; each `cleanup()` was verified present on the class named.
    method too: every declared method runs even after one fails, and each failure is
    chained from what the method raised. Since 0.2.8203 the Conduit, ConduitWard and
    SpellSpace teardowns above it finish the same way and raise its groups last.
-   A root store cleans its managed pools first, newest first - their idle objects and the `many` children
-   recorded with every pooled object, out ones included - before its disposable registry, because a pool is
-   composed at conjure, before the uniques its objects hold; their failures join the same group (0.2.8243).
+   A root store unregisters its managed pools from `ReleaseManagedSpell`, then cleans them first, newest first -
+   their idle objects and the `many` children recorded with every pooled object, out ones included - before its
+   disposable registry, because a pool is composed at conjure, before the uniques its objects hold; their failures
+   join the same group (0.2.8243). The root's ward (its lesser lineage) and SpellSpaces end before its store, so a
+   consumer held there gives a leased object back while the pools still take it; a consumer the root's own store
+   holds meets an unregistered pool, and the teardown reports that release's error like any disposal method that
+   raises. This follows the owner's rule that a root's teardown cleans only what it holds (Operational Invariants).
 
 ## Runtime Type Names (Concrete, No Interface Layer)
 Re-absorbed 2026-08-02 from the patch lane; every class below was verified to
@@ -1167,6 +1175,66 @@ each entry in `src_components.md`; this list is the set that crosses components.
 - Validation strategies registered in `SpellValidationSystem`.
 
 ## Operational Invariants
+- A root's teardown cleans only what the root holds (2026-10-19; the owner's rule, chat 2026-10-18: "if the root
+  cleans up it only cleans up whats held by the root"; documentation only - the code is unchanged): what its stores
+  record and what its managed pools keep - their idle objects and the `many` children recorded with their objects,
+  objects still out included, since the pool holds those children (`_children_by_object`). An object a holder
+  leased from a pool is the holder's: Melder keeps no reference to it, never disposes it at teardown, and a release
+  of it after the teardown no longer reaches that root's pool (Failure Modes and Error Paths). Today's order:
+  `Conduit._cleanup_normal_conduit` tears down the cluster facade, the Meld, the ward (the lesser lineage) and the
+  SpellSpaces before the root's own store, so a consumer held by a lesser conduit or a spellspace gives its leased
+  object back while the root's pools still take it; then `Creations.cleanup` detaches its maps under the store
+  lock, unregisters every pool from `ReleaseManagedSpell`, cleans the pools newest first and disposes its registry
+  newest first, raising one group; `ManagedSpellQuantity.cleanup` disposes each idle object, newest first, with its
+  recorded children, then the children recorded for objects still out, then the orphaned records. A consumer the
+  root's own store holds whose disposal method gives its leased object back therefore meets a pool already
+  unregistered: the release raises the not-managed ValueError inside that method, the store collects it as that
+  method's failure, and once everything else is disposed the teardown raises ExceptionGroup "Conduit torn down
+  with disposal failures."; the leased object, which the root does not hold, is not disposed. Neither is a defect
+  (the owner's review, chat 2026-10-19): the pool holds the children of its objects, so the root disposes them;
+  resets run only when an object is given back and teardown runs only disposal methods; a disposal method that
+  raises is reported. Measured on 0.2.8258 (3.14t, the GIL off and on): a root-held `many` handler whose `finish`
+  releases its pooled connection makes the teardown raise and leaves the connection open, the same handler in a
+  lesser conduit gives it back cleanly, and an out session's `many` cursor closes at teardown while the session
+  stays open.
+  EVIDENCE: `src/melder/aether/conduit/conduit.py:Conduit._cleanup_normal_conduit`, `Conduit._permanent_cleanup`,
+  `src/melder/aether/conduit/creations/creations.py:Creations.cleanup`, `Creations._unregister_managed_quantities`,
+  `Creations._cleanup_managed_quantities`, `Creations._dispose_disposable_registry`,
+  `src/melder/aether/conduit/creations/managed_spell_quantity.py:ManagedSpellQuantity.cleanup`,
+  `ManagedSpellQuantity.put_back` and
+  `src/melder/aether/conduit/creations/release_managed_spell.py:ReleaseManagedSpell.release`,
+  `ReleaseManagedSpell._resolve_pool`.
+- A version moved into an index of its own is known to its frame (2026-10-19, 0.2.8259; the owner's word, chat
+  2026-10-18: "it should properly follow the general spell index creation and registry binding processes the
+  same way it does during bind"): `Spellbook._apply_remove_from_index` mints the fresh index as Bind creates one
+  (`SpellIndex(initial_id=spell_id)`) and, right after its Book-locked move, registers it in the frame's spell
+  registry the way a post-conjure `bind` registers the index it creates - bind's guard (the Book is conjured)
+  and call (`Aether._register_single_spell_index` under the Book's root conduit). Every walk of that registry
+  then finds the version, parked there or notched active: `find_index_for_spell` and
+  `find_conduit_id_for_spell`, and through them the Conduit's spell_id lookups, a grant and an ownership
+  transfer by spell_id, bind's collision guard (`Aether._check_for_spell`, in the frame and across frames under
+  process-wide spell ids) and MutationResearch residency. The index leaves the registry when it empties
+  (`_destroy_spell_index`, as an index bind created does) or with its root:
+  `_unregister_conduit_spells_from_aether`, which only the root's teardown calls, unregisters the index of every
+  parked version beside the active versions' indexes, so the frame keeps no entry for a torn-down root.
+  Residency calls a version active only when its index selects it and the frame's lineage registry tracks it as
+  that index's current version (`SpellSystemStates.get_by_index_id(...).current_spell_id`): the minted index
+  selects its parked member (activation takes a notch; the owner's ruling, 2026-10-17) and no lineage tracks
+  that member until a notch registers it, so it reads parked; members of every other index read as before. No
+  new index state, and nothing persisted, cached or emitted changes. Locks: the registration takes the frame
+  lock alone after the Book lock is released (bind's order); the teardown reads each parked version's index
+  under the Book lock through the spell's own lock (Book -> spell, Book teardown's order) and unregisters with
+  the frame lock alone; residency takes the lineage registry's lock, then the state's, each alone. Until 0.2.8259
+  the minted index was never registered, so the version was unknown to its frame by spell_id - the Conduit
+  lookups raised "not found in any conduit", a grant and a transfer by spell_id were refused, and another Book
+  could bind its spell_id - and residency read it `declared_only`.
+  EVIDENCE: `src/melder/aether/spellbook/spellbook.py:Spellbook._apply_remove_from_index`,
+  `Spellbook._unregister_conduit_spells_from_aether`, `Spellbook._destroy_spell_index`,
+  `src/melder/aether/aether.py:Aether._register_single_spell_index`, `Aether._check_for_spell`,
+  `src/melder/aether/aetheric_frame/aetheric_frame.py:AethericFrame.find_index_for_spell`,
+  `AethericFrame.unregister_conduit_spells`, `src/melder/aether/conduit/conduit.py:Conduit._cleanup_normal_conduit`,
+  `src/melder/mutation_research/mutation_research.py:MutationResearch._locate_live_membership` and
+  `src/melder/aether/spellbook/spell.py:Spell._spell_index_unless_cleaned`.
 - A spell_id is the object's code; its binding is a manifest (2026-10-18, 0.2.8257-0.2.8258;
   EPIC-2026-10-18-spell_identity_is_the_code, S1 and S2, on the owner's direction - "a change anywhere is a change"
   - and his calls 1-5): `Bind._bind_logic` takes the spell_id from `SpellCodeDigest.spell_id(target)`, the SHA256 of
@@ -1200,9 +1268,9 @@ each entry in `src_components.md`; this list is the set that crosses components.
   `assert` - `Nexus.__new__`, and the standard library's `typing._namedtuple_mro_entries`, which every
   `typing.NamedTuple` class holds through `__orig_bases__` - and two patch releases are UNKNOWN (see Unknowns).
   Open: a rebind under another slotted existence keeps its spell_id, so its first meld can return the removed
-  definition's slotted object (S3); a record made before 0.2.8257 that holds one object twice fails at its second
-  replayed bind (S5); and until STORY-2026-10-17-minted_index_missing_from_frame_registry lands, bind's collision
-  check misses a version alone in an index `remove_from_spell_index` minted.
+  definition's slotted object (S3); and a record made before 0.2.8257 that holds one object twice fails at its
+  second replayed bind (S5). Fixed in 0.2.8259: bind's collision check missed a version alone in an index
+  `remove_from_spell_index` minted (STORY-2026-10-17-minted_index_missing_from_frame_registry).
   EVIDENCE: `src/melder/aether/spellbook/bind/spell_code_digest.py:SpellCodeDigest.spell_id`,
   `SpellCodeDigest._target_encoding`, `SpellCodeDigest._class_digest`, `SpellCodeDigest._code_digest`,
   `src/melder/aether/spellbook/bind/binding_manifest.py:BindingManifest.build`,
@@ -1222,8 +1290,8 @@ each entry in `src_components.md`; this list is the set that crosses components.
   alone, and its index goes; (c) `remove_from_spell_index` each parked version (each move mints an index of
   its own, the version parked in it), then the active one. Known gaps on those paths, filed: a parked
   `cleanup_spell` leaves index-link borrowers a copy (STORY-2026-10-17-parked_cleanup_leaves_borrower_copies)
-  and a minted index is missing from the frame registry
-  (STORY-2026-10-17-minted_index_missing_from_frame_registry). The check is `SpellIndex.is_sole_member`, read
+  and a minted index was missing from the frame registry (fixed in 0.2.8259;
+  STORY-2026-10-17-minted_index_missing_from_frame_registry). The check is `SpellIndex.is_sole_member`, read
   under the index lock in `cleanup_and_remove_spell`'s first Book-locked section (Spellbook -> index, the
   order `_dispose_spell` already took), so no lock or lock-order edge is added. Book teardown never meets it:
   `_cleanup_spells` and the parked disposal set `_spellbook_cleanup` before they clean a spell, so its
@@ -2289,10 +2357,10 @@ each entry in `src_components.md`; this list is the set that crosses components.
     gone, because the `dynamic` argument reaching it is now the EFFECTIVE mode
     resolved from the posture, which makes a mismatch structurally impossible.
   EVIDENCE:
-  - src/melder/aether/spellbook/spellbook.py:6987-7030
+  - src/melder/aether/spellbook/spellbook.py:7033-7076
     (`Spellbook._settle_or_inherit_conjure_mode`; in-place settle :6971-6983,
     effective-mode return :6984; remeasured 2026-10-16 at 0.2.8251)
-  - src/melder/aether/spellbook/spellbook.py:7243
+  - src/melder/aether/spellbook/spellbook.py:7289
     (`conjure` resolves the effective mode as it enters the transaction window,
     passing `dynamic=self._settle_or_inherit_conjure_mode(dynamic)`)
   - src/melder/aether/aetheric_frame/aetheric_frame.py:726-787
@@ -2341,6 +2409,16 @@ each entry in `src_components.md`; this list is the set that crosses components.
   not the same thing as a Rift-level event orchestrator.
 
 ## Failure Modes and Error Paths
+- Fixed in 0.2.8259: a version moved into an index of its own with `remove_from_spell_index` is found by its
+  spell_id. The frame never listed that index, so `Conduit.get_spell_by_spell_id` and `get_conduit_by_spell_id`
+  raised ValueError "Spell version <id> not found in any conduit." for a version the conduit's own Book owns,
+  parked there or notched active; a grant (`add_spell_to_contract(spell_id=...)`) and an ownership transfer by
+  spell_id raised the same; another Book bound its spell_id - of the frame, or of another frame under
+  process-wide spell ids - so two Books held one spell_id, and a Book not yet conjured then had its conjure
+  refused; and `residency_view` read it `declared_only`. A second bind now raises the existing RuntimeError
+  "Spell ID collision detected: this object is already registered as spell_id <id>. ...".
+  EVIDENCE: `src/melder/aether/spellbook/spellbook.py:Spellbook._apply_remove_from_index` and
+  `src/melder/aether/aether.py:Aether._check_for_spell`.
 - Breaking (0.2.8257-0.2.8258): every spell_id moves once, and from then on it moves with the object's code and with
   nothing from the bind call. A second registration of one object is refused: `bind` and `bind_inactive` raise
   RuntimeError "Spell ID collision detected: this object is already registered as spell_id <id>. A spell_id is the
@@ -2401,9 +2479,9 @@ each entry in `src_components.md`; this list is the set that crosses components.
   raises AttributeError); `find_spell_by_spell_id` and `get_spell_by_spell_id` take the same arguments. Their
   answer for a parked spell_id changed: the parked spell itself, where the old pair answered the spell its index
   had active (English for French's spell_id). `find_spell_by_spell_id` also answers a version split off by
-  `remove_from_spell_index` into an index with no active spell (it was None); the Conduit lookup still raises "not
-  found in any conduit" for such a version, because the index the move mints is missing from the frame registry
-  (pre-existing; STORY-2026-10-17-minted_index_missing_from_frame_registry). `Conduit.get_spell_permissions`
+  `remove_from_spell_index` into an index with no active spell (it was None); the Conduit lookup still raised "not
+  found in any conduit" for such a version until 0.2.8259, because the index the move mints was missing from the
+  frame registry (STORY-2026-10-17-minted_index_missing_from_frame_registry). `Conduit.get_spell_permissions`
   answers that version's own permissions (it was the active version's). The Rift rooms' command
   `get_spell_by_id` is `get_spell_by_spell_id`, advertised under that name, and `get_spell_by_source_id` answers
   the spell its source id names. To reach the version an index has active, ask the index:
@@ -2572,6 +2650,19 @@ each entry in `src_components.md`; this list is the set that crosses components.
   `src/melder/aether/conduit/creations/managed_spell_quantity.py:ManagedSpellQuantity.put_back`,
   `src/melder/aether/conduit/creations/creations.py:Creations.cleanup` and
   `src/melder/aether/conduit/creations/managed_spell_lease.py:ManagedSpellLease.release`.
+- A root's teardown raises ExceptionGroup "Conduit torn down with disposal failures." when a consumer its own store
+  holds gives a leased object back in its disposal method (documented 2026-10-19). The store has already
+  unregistered and cleaned its pools, so the release raises ValueError "<Type> is not a managed spell class in any
+  live root: ..." inside that method (when no other live root pools the class), collected as RuntimeError "Failed
+  to dispose object ... using method '<name>': ..." chained from it. It is reported like any disposal method that
+  raises, after the teardown has disposed everything the root holds; the leased object, which the root does not
+  hold, is not disposed. A consumer held by a lesser conduit or a spellspace gives the object back cleanly, because
+  those scopes end before the root's store. To keep the teardown quiet, give such objects back before the root
+  ends, or hold their consumers in a lesser conduit (Operational Invariants: a root's teardown cleans only what it
+  holds).
+  EVIDENCE: `src/melder/aether/conduit/creations/creations.py:Creations.cleanup`,
+  `src/melder/aether/conduit/conduit.py:Conduit._cleanup_normal_conduit` and
+  `src/melder/aether/conduit/creations/release_managed_spell.py:ReleaseManagedSpell._resolve_pool`.
 - Bind refuses a managed binding before any registry change (0.2.8242): a `managed_spell_*` option on another
   existence (ValueError); a function, method, lambda or existing object (TypeError: classes only); an unknown mode; a
   limit that is not an int >= 1, or missing for limited_quantity or queue; a timeout given for elastic or
@@ -3196,9 +3287,9 @@ Spellbook and binding:
 
 - path: `src/melder/aether/spellbook/spellbook.py`
   start_line: 1
-  end_line: 7812
-  loc: 7812
-  verified_at: 2026-10-18T20:24:47Z
+  end_line: 7858
+  loc: 7858
+  verified_at: 2026-10-19T00:01:11Z
   note: Spellbook core and conjure pipeline; `find_spell_by_id` answers from the id maps (0.2.8229); bind publishes
     its spell maps under the Book lock (0.2.8230); `cleanup_spell` decides through `_dispose_spell` and contracted
     lookups answer by key (0.2.8231); overlapping disposals refuse and `inspect_spell` asks the frames with no lock
@@ -3212,7 +3303,9 @@ Spellbook and binding:
     spell_id (0.2.8251); `find_spell_by_id` renamed `find_spell_by_spell_id` and exact - a parked spell_id
     answers its own spell, no index read (0.2.8253); `cleanup_and_remove_spell` refuses the active member of an
     index that holds parked versions and `_dispose_spell`'s refusal names the same remedies (0.2.8256).
-    The duplicate-id refusals name the one-object rule and `inspect_spell`'s stage 3 is an exact lookup (0.2.8257).
+    The duplicate-id refusals name the one-object rule and `inspect_spell`'s stage 3 is an exact lookup (0.2.8257);
+    `_apply_remove_from_index` registers the index it mints with the frame as `bind` registers its new one, and the
+    root's teardown unregisters the indexes that hold only parked versions (0.2.8259).
 - path: `src/melder/aether/spellbook/spellbook_creation_system.py`
   start_line: 1
   end_line: 3551
@@ -3275,9 +3368,9 @@ Spellbook and binding:
     `has_spell` say a spell_id names its own spell, not the head (0.2.8253).
 - path: `src/melder/aether/spellbook/spell.py`
   start_line: 1
-  end_line: 2024
-  loc: 2024
-  verified_at: 2026-10-18T20:24:47Z
+  end_line: 2027
+  loc: 2027
+  verified_at: 2026-10-19T00:01:11Z
   note: spell metadata and hooks; carries `spellframe_kind` and `implemented_protocols` (0.2.8222);
     `_spell_index_unless_cleaned`, the cleanup-safe index read (0.2.8229); a direct `cleanup()` removes the spell
     outside the spell lock, under its removal lock (0.2.8233); the four managed fields; `_add_owned_conduit` ensures a
@@ -3285,7 +3378,7 @@ Spellbook and binding:
     index steps among them (0.2.8253); `cleanup`'s Raises names the multi-member refusal and its remedies
     (0.2.8256).
     Builds and carries the binding manifest and `binding_hash` (0.2.8258); its spell_id docstrings say code digest
-    (0.2.8257).
+    (0.2.8257); `_spell_index_unless_cleaned` lists the root's teardown among its readers (0.2.8259).
 - path: `src/melder/aether/spellbook/existence/existence.py`
   start_line: 1
   end_line: 165
@@ -3507,11 +3600,12 @@ Aether and frames:
   note: live in-memory module embodiment for crystallized code.
 - path: `src/melder/mutation_research/mutation_research.py`
   start_line: 1
-  end_line: 3990
-  loc: 3990
-  verified_at: 2026-09-26T20:10:34Z
+  end_line: 4005
+  loc: 4005
+  verified_at: 2026-10-19T00:01:11Z
   note: hosted mutation-research root owned by Aether (ResearchSet registry +
-    composition emission; the old conduit/frame facades are GONE, 2026-07-11).
+    composition emission; the old conduit/frame facades are GONE, 2026-07-11); residency calls a version
+    active only while the frame's lineage registry tracks it as its index's current version (0.2.8259).
   (directory description carried forward) the formal research record: ResearchSet facade, ResearchLane, ResearchNode, TransitionEntry, ResearchJournal, ResidenceRegistry, NetworkVersioner. NOTE: this text described the DIRECTORY entry `src/melder/mutation_research/research_set/`, which was expanded into the eight modules below because a directory cannot carry a line range.
 - path: `src/melder/mutation_research/research_set/grouped_research_node.py`
   start_line: 1
@@ -4443,7 +4537,8 @@ meld or injection -> plan: pop the pool's idle deque -> hit: the object (no lock
                                                      -> empty: miss: reserve -> children -> object -> adopt children
                                                         (refused: ManagedSpellExhaustedError; raised: abandon)
 holder -> ReleaseManagedSpell().release(obj) -> type(obj) -> pool.put_back: resets -> append (-> trim, notify)
-root teardown -> Creations.cleanup: pools first (idle objects + recorded children) -> unregistered
+root teardown -> ward, SpellSpaces -> Creations.cleanup: unregister the pools -> clean them (idle objects, every
+                 recorded child, out objects' included) -> the store's registry
 ownership transfer -> rows carry the pool; the owner stamp follows; a failed one stamps back, discards composed pools
 rebind under the same spell_id (cleanup_spell, bind) -> ensure_managed_quantity -> the same pool, new settings
 ```
@@ -4461,7 +4556,7 @@ flowchart LR
   H --> L[ReleaseManagedSpell.release]
   L --> S[Resets, then back to the idle deque]
   S --> P
-  T[Root teardown] --> C[Pools cleaned before the store's registry]
+  T[Root teardown] --> C[Pools unregistered, then cleaned before the store's registry]
   N[Rebind under the same spell_id] -->|the pool takes the new settings| P
 ```
 
@@ -4576,6 +4671,7 @@ keeps the spell_id, moves the binding hash and is reported in the restore's `bin
 (0.2.8258).
 
 ## Information Sources
+- `src/melder/mutation_research/mutation_research.py`
 - `src/melder/aether/spellbook/spell_compiler/structural_snapshot/structural_snapshot.py`
 - `src/melder/aether/spellbook/spell_compiler/validation/strategies/spellmap_shape_validation_strategy.py`
 - `src/melder/utilities/caching_system/caching_system.py`
@@ -4737,6 +4833,26 @@ keeps the spell_id, moves the binding hash and is reported in the restore's `bin
 - `src/melder/utilities/ai_native_support_tools/protocol_crafter.py`
 
 ## Context / Handoff Summary
+
+2026-10-19 a root's teardown cleans only what the root holds (documentation only; the owner's rule, in chat on
+2026-10-18): a sentence in the Runtime Model, the cleanup sequence (the unregister-first order, the ward and
+SpellSpaces ending before the store), a new operational invariant (the rule, what the root holds, today's order,
+measured on 0.2.8258), a failure mode (a consumer the root's own store holds that gives its object back in its
+disposal method makes the teardown report that release's error) and the managed lease diagram's teardown order (it
+read "pools first ... -> unregistered"; the code unregisters first) carry it; the component map carries the
+per-component text. Corrected after the owner's review (chat 2026-10-19): the first wording left two behaviours
+as questions for the owner - a pool disposing the children it keeps for objects still out, and the reported
+release error - and neither is a defect: the pool holds those children, so the root disposes them, and a
+disposal method that raises is reported like any other. Checked against `Conduit._cleanup_normal_conduit`,
+`Creations.cleanup`, `ManagedSpellQuantity.cleanup` and `ReleaseManagedSpell._resolve_pool`.
+
+2026-10-19 the minted index is registered (0.2.8259; STORY-2026-10-17-minted_index_missing_from_frame_registry, on
+the owner's word "it should properly follow the general spell index creation and registry binding processes the same
+way it does during bind"): the index `remove_from_spell_index` mints is registered with the frame as a post-conjure
+`bind` registers the index it creates, the root's teardown unregisters it with the rest, and residency reads its
+version parked until a notch. A new operational invariant, a fixed failure mode, the index mutation sequence and the
+code map carry it; the 0.2.8256 invariant's and the 0.2.8253 failure mode's filed gap is marked fixed; the component
+map carries the per-component contracts. No new index state (the owner withdrew it).
 
 2026-10-18 follow-ups to the identity landing (documentation only): the identity invariant records the build parity
 and the -O rule; the Unknowns gain the patch-release question; the managed release's failure mode is corrected - a

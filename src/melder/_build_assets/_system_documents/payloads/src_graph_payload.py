@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_graph.md'
-LINE_COUNT = 28169
-CONTENT_SHA256 = '5cab642ea6c267640dd72450a9a9d0b586ffb0b275ea2e5a8c759bd30800a697'
+LINE_COUNT = 28190
+CONTENT_SHA256 = 'a1bcc4566bd23a841a332ca8cdf4c6e7d9e7a0aeb393551abd05acfa7e21770e'
 
 TEXT = """# src_graph
 
@@ -247,7 +247,7 @@ descriptors and reassemble.
 
 ## src/melder/__version__.py
 
-- source_sha256: `c71a4a8becf5c91de7117a86eda22ea75841059485469fdcad407647e7db24c0`
+- source_sha256: `3f0af8bf85a6531e094341742c886c664ced0989bbf0c458a33bcbc03471e28e`
 - nodes: 1
 
 ### Nodes
@@ -336,7 +336,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_agent_documentation/manifest/agent_documentation_manifest.py
 
-- source_sha256: `2ad260fa0355fa2bbdd54c2197c028f23e7928c9c73249d778809e482146a5ae`
+- source_sha256: `e672350815d10fd4487844a9be9e04f40e135c001258154f9fd4af01f8868aff`
 - nodes: 1
 
 ### Nodes
@@ -415,7 +415,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py
 
-- source_sha256: `ee456c210764b0f512e48ab92769d7251ce22637979517c39edeca00e6cbc860`
+- source_sha256: `154e727979f5671fb93baf35c6d1399fc5c6f2964019ab255334250a52d4c761`
 - nodes: 1
 
 ### Nodes
@@ -493,7 +493,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/graph_adjacency_manifest.py
 
-- source_sha256: `be1148fc37b54193265ea386f9d6ff2003cffb6c02022063c6c919cfe372643c`
+- source_sha256: `b10a433edfb7664a0d8ca9889b77d77856a948608406f74c2e218330c8f04087`
 - nodes: 1
 
 ### Nodes
@@ -510,7 +510,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_index.py
 
-- source_sha256: `28be630ebc0f91751545500e845b767e165681aa2adff9afc80d03d511adf7a2`
+- source_sha256: `946be577a11a6fc777d6a1ffde038efed7cd42d61dfaf73f51ba18e6311bbfd4`
 - nodes: 1
 
 ### Nodes
@@ -527,7 +527,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_manifest.py
 
-- source_sha256: `f05acf27154a31057a888aecc98f68491a7f49313b9b916d7344a2c9e7ce7596`
+- source_sha256: `c280b11a71d26051f0eea76e5b0d65bf8eff087894c91ecac99fc57e723a160d`
 - nodes: 1
 
 ### Nodes
@@ -547,7 +547,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_architecture_payload.py
 
-- source_sha256: `efaf81dc2e3b6f175c15ca934c57a4a3a53c9e5fa196f5500489a034f2bf5397`
+- source_sha256: `7cb0c4ce5c410fb8e58e478fe3c6992a447a54245fa5217d9ea707a621ad400b`
 - nodes: 1
 
 ### Nodes
@@ -564,7 +564,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_components_payload.py
 
-- source_sha256: `7225beeb9da6a2c62c415fe3269b7e2c2a00f7d8682fe3b78a176e874ff22e63`
+- source_sha256: `3a50924f3bc32eb4febf0f00b809c8a95340deb8cd689afc6d0e81a2594cacd6`
 - nodes: 1
 
 ### Nodes
@@ -581,7 +581,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_graph_payload.py
 
-- source_sha256: `4cc37d2a3cb5e168123a2906dae560733cf2f261790477c88b91a048933f0308`
+- source_sha256: `e6de718baaa5f8d002ad999de477763a4d0b3250939b4a0f36efe4c36cf2497e`
 - nodes: 1
 
 ### Nodes
@@ -6162,11 +6162,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - role: Spell registration gateway for one Spellbook.
 - responsibilities:
   - examines binding targets into canonical binding profiles
-  - takes each spell_id from SpellCodeDigest.spell_id(target) - the SHA256 of the target's code and, for an existing object, its data - and nothing from the bind call; spell_id_inspector(spell) answers the same id
+  - takes each spell_id from SpellCodeDigest.spell_id(target) - the SHA256 of the target's code and, for an existing object, its data - and nothing from the bind call; spell_id_inspector(spell) answers the same id from the target alone, through a fresh SpellCodeDigest per call, and checks no binding rule
   - validates native resolvable bool before reflection; resolvable is a binding-manifest field, no part of the spell_id
   - admits Protocol definitions only with resolvable=False without relaxing other binding rules
   - resolves ordered disposal once at bind; book names own overlaps and priority selects front or back placement
-  - matches requested inherited disposal through first-definition MRO namespaces without invoking descriptors or expanding fingerprinted profile members
+  - matches requested inherited disposal through first-definition MRO namespaces without invoking descriptors or expanding the shallow profile
   - checks direct public Protocol members on classes and actual supplied objects before Spell creation
   - creates canonical Spell records for Spellbook registration
   - captures immutable configuration seeds once and owns subsequent Book-local registration hook changes
@@ -6176,8 +6176,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - classifies the spellframe before the structural check (_classify_spellframe): None -> SpellframeKind.none, str -> category, a typing.Protocol -> contract with the Protocol recorded; any other class or object is refused with a TypeError naming the two valid forms (0.2.8222, Breaking)
   - validates binding policy and spellframe semantics, running the direct-public-member Protocol check only for a contract frame
   - hands the Spell its spellframe_kind and implemented_protocols; the spell_id does not read the kind, a binding-manifest field
-  - validates and normalizes a managed binding's four options once (_normalize_managed_options: classes only, the mode defaulting to elastic, the limit, the queue-only timeout and callable reset names; every refusal before a Spell or index exists) and hands the normalized values to the Spell as its settings (0.2.8242); the fingerprint never reads them, so one class bound managed at one address with one disposal list has one spell_id whatever its settings, and spell_id_inspector checks them as bind does and hashes without them (0.2.8254; 0.2.8242-0.2.8253 appended a managed:<mode>:<limit>:<timeout>:<reset names> part)
-- owns_state: `_spellbook`, `_spell_examiner`, `_lifecycle_hooks`
+  - validates and normalizes a managed binding's four options once (_normalize_managed_options: classes only, the mode defaulting to elastic, the limit, the queue-only timeout and callable reset names; every refusal before a Spell or index exists) and hands the normalized values to the Spell as its settings, binding-manifest fields (0.2.8242, 0.2.8258); the spell_id never reads them (0.2.8254, and since 0.2.8257 nothing from the bind call does)
+- owns_state: `_spellbook`, `_spell_examiner`, `_lifecycle_hooks`, `_spell_code_digest`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `add_hooks`, `bind`, `capture_hooks`, `cleanup`, `clear_hooks`, `execute_post_hooks`, `get_hook_names`, `spell_id_inspector`
 
@@ -6194,6 +6194,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 | `melder.aether.spellbook.bind.bind.Bind` | owns_lifecycle_of | `melder.aether.spellbook.spell_compiler.spell_examiner.spell_examiner.SpellExaminer` | one_to_one | init,runtime,cleanup | authored |
 | `melder.aether.spellbook.bind.bind.Bind` | uses | `melder.aether.spellbook.spell_types.spell_types.SpellType` | many_to_one | init,runtime | authored |
 | `melder.aether.spellbook.bind.bind.Bind` | uses | `melder.aether.spellbook.existence.managed_spell_mode.ManagedSpellMode` | many_to_one | runtime | authored |
+| `melder.aether.spellbook.bind.bind.Bind` | owns_lifecycle_of | `melder.aether.spellbook.bind.spell_code_digest.SpellCodeDigest` | one_to_one | init,runtime,cleanup | authored |
 
 - `melder.aether.spellbook.bind.bind.Bind` -> `melder._build_assets._bind_guard.bind_guard`: Bind.bind calls the module-level assert_allowed() before constructing a Spell, and that check refuses registration when the candidate's exact (module, qualname) pair is present in INTERNAL_MANIFEST - the frozenset this hand-written loader publishes. Membership is an exact match and does NOT walk the MRO, so a user subclass of an internal class carries its own qualname, misses the manifest, and binds normally.
 - `melder.aether.spellbook.bind.bind.Bind` -> `melder.aether.conduit.conduit_ward.permissions.permissions.Permissions`: Bind accepts and carries Permissions as the access policy for newly registered spells.
@@ -6202,7 +6203,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - `melder.aether.spellbook.bind.bind.Bind` -> `melder.aether.spellbook.spell.Spell`: Bind turns one examined binding target into the canonical Spell runtime record for Spellbook registration.
 - `melder.aether.spellbook.bind.bind.Bind` -> `melder.aether.spellbook.spell_compiler.spell_examiner.spell_examiner.SpellExaminer`: Bind owns the SpellExaminer used to build registration profiles.
 - `melder.aether.spellbook.bind.bind.Bind` -> `melder.aether.spellbook.spell_types.spell_types.SpellType`: Bind resolves and stores SpellType to classify each registered spell family.
-- `melder.aether.spellbook.bind.bind.Bind` -> `melder.aether.spellbook.existence.managed_spell_mode.ManagedSpellMode`: Bind normalizes a managed binding's mode to a ManagedSpellMode member and hands it to the Spell as a setting; the spell_id does not hash it (0.2.8254).
+- `melder.aether.spellbook.bind.bind.Bind` -> `melder.aether.spellbook.existence.managed_spell_mode.ManagedSpellMode`: Bind normalizes a managed binding's mode to a ManagedSpellMode member and hands it to the Spell as a setting, a binding-manifest field; the spell_id never reads it (0.2.8254, 0.2.8257).
+- `melder.aether.spellbook.bind.bind.Bind` -> `melder.aether.spellbook.bind.spell_code_digest.SpellCodeDigest`: Bind builds one SpellCodeDigest at init, asks it for every spell_id under its own lock (the code-object memo lives as long as Bind) and cleans it in cleanup; spell_id_inspector builds and cleans its own per call.
 
 ### Edge candidates (8, unconfirmed)
 
@@ -6243,8 +6245,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/bind/binding_manifest.py:14`
 - role: Value record of a spell's binding - the bind call - whose SHA256 is the binding hash.
 - responsibilities:
-  - build(...) records the spellframe and its kind, the address (frame and binding keys), existence, the ordered disposal names, resolvable and the managed settings, equal settings written alike
-  - binding_hash: the SHA256 of a tag and the field lines; it keys the creation caches beside the spell_id and rides the SpellCrystal (record 4.3.0)
+  - build(...) records the address (frame and binding keys), the spellframe as text and its kind, the binding name as written, existence, the ordered disposal names, resolvable and the managed settings, equal settings written alike (enum names, tuples, a float timeout)
+  - binding_hash: the SHA256 of 'v1-binding' and one <field>=<repr> line per field in order; it keys the creation caches beside the spell_id and rides the SpellCrystal (record 4.3.0)
+  - leaves out permissions, hooks, application metadata, the aetheric frame and the object's code (the spell_id)
+  - is an immutable value record: hashed once at construction, read-only properties, owning nothing and needing no cleanup
   - describe() gives the hash and the fields as plain data
 - phases: `init`, `runtime`
 - public methods: `binding_hash`, `binding_key`, `binding_name`, `build`, `describe`, `disposal_method_names`, `existence`, `fields`, `frame_key`, `managed_spell_limit`, `managed_spell_mode`, `managed_spell_reset_methods` (+5 more)
@@ -6347,7 +6351,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - encodes an existing object as its class's code plus its slots and __dict__ by value
   - names installed third-party code (a module file under a site-packages root) by qualified name and distribution version instead of digesting it (decision B), and names standard-library classes
   - takes nothing from the bind call: spellframe, binding name, existence, disposal names, resolvable and the managed settings belong to the binding manifest
-- owns_state: `_code_memo`, `_third_party_memo`, `_version_memo`, `_distributions`
+  - runs no target code but repr() of a target with no readable state, of a value type's object and of an installed third-party object, reading through type and object __getattribute__ and builtin container bases; never raises for a target (opaque:<type>, a repr placeholder, a type-and-repr fallback for data nested past the recursion limit)
+  - holds no lock: its memos serve one caller at a time (Bind calls it under its lock; spell_id_inspector builds a fresh one), and cleanup clears and deletes them
+- owns_state: `_code_memo`, `_third_party_memo`, `_version_memo`, `_distributions`, `_site_roots`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `cleanup`, `spell_id`, `target_encoding`
 
@@ -6356,6 +6362,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 | from | relation | to | cardinality | phase | origin |
 | --- | --- | --- | --- | --- | --- |
 | `melder.aether.spellbook.bind.spell_code_digest.SpellCodeDigest` | specializes | `melder.utilities.general_base.cleanable.Cleanable` | - | - | derived |
+| `melder.aether.spellbook.bind.spell_code_digest.SpellCodeDigest` | uses | `melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.inspector_utility.InspectorUtility` | many_to_one | runtime | authored |
+
+- `melder.aether.spellbook.bind.spell_code_digest.SpellCodeDigest` -> `melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.inspector_utility.InspectorUtility`: SpellCodeDigest encodes a target with no readable state, a value type's object, an installed third-party object, a typing object and an otherwise unnamed constant through InspectorUtility.stable_repr, the address-free full repr.
 
 ### Edge candidates (2, unconfirmed)
 
@@ -6606,7 +6615,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell.py
 
-- source_sha256: `bcd93c2157f15658c05b6c01a983dc8507008a8f3b24dbfc2ffc90dbb433a892`
+- source_sha256: `8cbfef07dc1b4895bdbc03ce307924be4e1caeb3657211e72eaba64b3c8d85ae`
 - nodes: 2
 
 ### Nodes
@@ -12659,7 +12668,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - role: Shared low-level helper surface for the spell examiner inspectors.
 - responsibilities:
   - provides safe repr, extension-module detection, and best-effort callable unwrapping
-  - provides stable_repr and strip_memory_addresses: the full repr text with CPython ' at 0x<hex>' fragments removed, hashed by the bind fingerprint
+  - provides stable_repr and strip_memory_addresses: the full repr text with CPython ' at 0x<hex>' fragments removed, which SpellCodeDigest encodes for a target with no readable state, a value type's object, an installed third-party object, a typing object and a constant it cannot otherwise name (0.2.8257)
 - phases: `validation`, `runtime`
 - public methods: `is_extension_module`, `safe_repr`, `stable_repr`, `strip_memory_addresses`, `unwrap_callable`
 
@@ -12827,23 +12836,26 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.ClassBindingProfile`
 - defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py:67`
 - extends: `SpellBindingProfile`
-- role: Binding-time view of a class candidate - enough to fingerprint it, reason about protocol compatibility, and produce diagnostics.
+- role: Binding-time view of a class candidate - enough to reason about protocol compatibility and produce diagnostics; the spell_id is the class's code digest (SpellCodeDigest), never read from it.
 - responsibilities:
-  - record name, qualname, module, bases, MRO, annotations and origin file
+  - record name, qualname, module, bases, MRO, annotations, origin file and line, the dataclass and decorated flags, and the method names
+  - keep the address-free constructor signature text (init_signature) for descriptors and diagnostics beside the live inspect.Signature the requirements finder reuses
   - keep the per-method view shallow (names only); deep inspection belongs to later phases
-- owns_state: `name`, `qualname`, `module`, `bases`, `mro`, `annotations`, `origin_file`
-- phases: `bind`
+  - read the source preview lazily on first access, so the bind path never reads a source file
+  - feed nothing to the spell_id (0.2.8257): the code digest reads the class's code itself
+- owns_state: `name`, `qualname`, `module`, `bases`, `mro`, `annotations`, `origin_file`, `origin_line`, `init_signature`, `init_signature_object`, `method_names`
+- phases: `bind`, `cleanup`
 - public methods: `cleanup`, `source_preview`
 
 #### `CallableParameterBindingSummary` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.CallableParameterBindingSummary`
 - defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py:235`
-- role: The minimal binding-time view of one callable parameter, for fingerprinting and diagnostics.
+- role: The minimal binding-time view of one callable parameter, for diagnostics.
 - responsibilities:
-  - record the parameter's name, kind, default repr and annotation repr
-  - carry default_fingerprint_repr, the address-free untruncated default repr the bind fingerprint hashes
-- owns_state: `name`, `kind`, `default_repr`, `annotation_repr`, `default_fingerprint_repr`
+  - record the parameter's name, kind, default repr and annotation repr (truncated display text)
+  - feed nothing to the spell_id (0.2.8257; default_fingerprint_repr is gone): the code digest reads a function's defaults itself
+- owns_state: `name`, `kind`, `default_repr`, `annotation_repr`
 - phases: `bind`
 
 #### `CallableBindingProfile` (class)
@@ -12855,8 +12867,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - responsibilities:
   - store callable identity, signature and the shallow parameter summaries
   - avoid deeper runtime-resolution detail, which belongs to later profile phases
-  - carry fingerprint_repr, the address-free untruncated repr the bind fingerprint hashes; repr_string stays truncated display text
-- owns_state: `name`, `qualname`, `module`, `object_id`, `type_name`, `repr_string`, `signature`, `fingerprint_repr`
+  - keep repr_string as truncated display text; nothing here feeds the spell_id, which the code digest takes from the callable's code (0.2.8257; fingerprint_repr is gone)
+- owns_state: `name`, `qualname`, `module`, `object_id`, `type_name`, `repr_string`, `signature`, `parameters`
 - phases: `bind`
 - public methods: `cleanup`
 
@@ -12867,9 +12879,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - extends: `SpellBindingProfile`
 - role: Binding-time view of an already-constructed object bound as an EXISTING_CREATION spell.
 - responsibilities:
-  - record the instance's type name, module and repr
-  - carry fingerprint_repr, the address-free untruncated repr the bind fingerprint hashes, so a default-repr object keeps one spell id across processes
-- owns_state: `type_name`, `module`, `repr_string`, `fingerprint_repr`
+  - record the instance's type name, module and truncated repr
+  - feed nothing to the spell_id (0.2.8257; fingerprint_repr is gone): an existing object's spell_id is its class's code plus its data, encoded by SpellCodeDigest
+- owns_state: `type_name`, `module`, `repr_string`
 - phases: `bind`
 - public methods: `cleanup`
 
@@ -12881,8 +12893,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - role: Fallback profile for candidates that fit none of the normal shapes.
 - responsibilities:
   - store only the minimum detached identity and representation surface
-  - carry the same address-free fingerprint_repr as the instance profile
-- owns_state: `type_name`, `module`, `repr_string`, `fingerprint_repr`
+  - feed nothing to the spell_id, as the instance profile (0.2.8257)
+- owns_state: `type_name`, `module`, `repr_string`
 - phases: `bind`
 - public methods: `cleanup`
 
@@ -13070,11 +13082,12 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/strategies/binding_profile_strategy.py:19`
 - role: Strategy building binding profiles from raw candidates.
 - responsibilities:
-  - builds the correct binding-profile variant from a raw candidate surface
+  - builds the correct binding-profile variant from a raw candidate surface: class, callable, instance or other
   - captures Python 3.14 signatures with unresolved annotation names retained as ForwardRefs
-  - renders init_signature and callable signature fingerprint text with unresolved names as source text, keeping spell ids stable across processes
-  - fills fingerprint_repr and each parameter's default_fingerprint_repr with InspectorUtility.stable_repr beside the truncated display reprs
-  - reads class-level annotations evaluated where every name resolves, otherwise without evaluating the unavailable names (kept as source text, the ClassInspector read), so the fingerprint's sorted annotation keys cover every annotated field; any other read failure yields an empty mapping
+  - renders init_signature and callable signature text with unresolved names as source text (SignatureReflection.stabilize_signature), so descriptor and diagnostic text carries no ForwardRef owner or memory address
+  - keeps only truncated display reprs (InspectorUtility.safe_repr); no profile text feeds the spell_id, which SpellCodeDigest takes from the target's code (0.2.8257)
+  - reads class-level annotations evaluated where every name resolves, otherwise without evaluating the unavailable names (kept as source text, the ClassInspector read), so every annotated field reaches the published descriptor; any other read failure yields an empty mapping
+  - reads no source file at bind: the origin line comes from __firstlineno__ and the class profile reads its source preview lazily
 - phases: `validation`, `runtime`
 - public methods: `build_profile`
 
@@ -13084,9 +13097,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 | --- | --- | --- | --- | --- | --- |
 | `melder.aether.spellbook.spell_compiler.spell_examiner.strategies.binding_profile_strategy.BindingProfileStrategy` | creates | `melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.SpellBindingProfile` | one_to_many | validation | authored |
 | `melder.aether.spellbook.spell_compiler.spell_examiner.strategies.binding_profile_strategy.BindingProfileStrategy` | uses | `melder.utilities.helpers.signature_reflection.SignatureReflection` | many_to_one | validation | authored |
+| `melder.aether.spellbook.spell_compiler.spell_examiner.strategies.binding_profile_strategy.BindingProfileStrategy` | uses | `melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.inspector_utility.InspectorUtility` | many_to_one | validation | authored |
 
 - `melder.aether.spellbook.spell_compiler.spell_examiner.strategies.binding_profile_strategy.BindingProfileStrategy` -> `melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.SpellBindingProfile`: BindingProfileStrategy builds binding-profile variants from raw candidates.
-- `melder.aether.spellbook.spell_compiler.spell_examiner.strategies.binding_profile_strategy.BindingProfileStrategy` -> `melder.utilities.helpers.signature_reflection.SignatureReflection`: BindingProfileStrategy stabilizes init_signature and callable signature text through SignatureReflection, so the bind fingerprint carries no ForwardRef owner or memory address.
+- `melder.aether.spellbook.spell_compiler.spell_examiner.strategies.binding_profile_strategy.BindingProfileStrategy` -> `melder.utilities.helpers.signature_reflection.SignatureReflection`: BindingProfileStrategy stabilizes init_signature and callable signature text through SignatureReflection, so descriptor and diagnostic text carries no ForwardRef owner or memory address.
+- `melder.aether.spellbook.spell_compiler.spell_examiner.strategies.binding_profile_strategy.BindingProfileStrategy` -> `melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.inspector_utility.InspectorUtility`: BindingProfileStrategy takes truncated display reprs, callable unwrapping and extension-module detection from InspectorUtility's static helpers.
 
 ### Edge candidates (5, unconfirmed)
 
@@ -15844,7 +15859,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spellbook.py
 
-- source_sha256: `ceaf3e5c1f60e8b8632000b9c5dbde4521749cd425beba98bd38667ac4ab3afe`
+- source_sha256: `486faf4fdeb22dc41f7e7f4db8bee0c25747ffa62125ad102f3dd92879b9c718`
 - nodes: 2
 
 ### Nodes
@@ -15888,6 +15903,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - removes a borrowed copy by the spell_id it is given: the active copy only when that copy's own spell_id is it, otherwise the parked copy, raising RuntimeError when it holds neither - never by index membership, so an index unlink after a notch completes in any member order (_remove_contracted_spell, 0.2.8251)
   - answers a spell_id with exactly the Spell bound under it - one read of _spells_by_id (active), else one of _inactive_spells (parked), else None - with no lock and no index read; the spell an index has active is a lookup by the index (find_spell_by_spell_id, renamed from find_spell_by_id with no alias, 0.2.8253)
   - refuses the active member of an index that also holds parked versions in cleanup_and_remove_spell - and so a direct Spell.cleanup() - before anything is unregistered, as _dispose_spell refuses it for cleanup_spell, every message naming the remedies (notch the index to a parked version, dispose the parked versions, or move them out with remove_from_spell_index); a sole member is removed with its index, and Book teardown never meets the check (0.2.8256)
+  - registers the index remove_from_spell_index mints in the frame's spell registry as a post-conjure bind registers the index it creates (bind's guard and call, under the Book's root conduit), and the root's teardown (_unregister_conduit_spells_from_aether) unregisters the indexes that hold only parked versions with the rest, so the frame's lookups by spell_id find a version moved into an index of its own (0.2.8259)
 - owns_state: `_bind`, `_spells`, `_spells_by_id`, `_lookup_spells`, `_contracted_spells`, `_configuration`, `_conduit`
 - phases: `init`, `validation`, `runtime`, `cleanup`
 - public methods: `add_bind_hooks`, `begin_transaction`, `bind`, `bind_inactive`, `cleanup`, `cleanup_and_remove_spell`, `cleanup_spell`, `clear_bind_hooks`, `conduit`, `configure_aether_frame`, `conjure`, `contracted_spells` (+17 more)
@@ -15986,7 +16002,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - hands the conduit resolution diagnostics to SpellbookValidationError at the conjure gate and the local-rerun gate, so a conduit-verdict refusal states its reasons (the phase artifacts are already cleaned)
   - publishes cached creation contexts from manifest packages only; any other payload is a cache miss
   - after a successful target-local pass, flags each owned, resolvable, non-existing-creation dependency in its scope that has no phase-11 plan, no published context and no flag yet with resolution_required and a door-epoch bump, under that dependency's spell lock (flag_dependencies_without_own_plan)
-  - admits an executor-cache full hit only when the bundle's recorded world stamp equals the live structural world stamp (generation 19); a world that differs by an existing creation or a non-resolvable definition recompiles phases 8-11 and re-stages the bundle under the new stamp
+  - admits an executor-cache full hit only when the bundle's recorded world stamp equals the live structural world stamp (generation 19); a world that differs by an existing creation or a non-resolvable definition recompiles phases 8-11 and re-stages the bundle under the new stamp; since generation 23 the stamp carries each pool and borrowed spell's binding hash beside its spell_id, so a binding changed under one spell_id is another world (0.2.8258)
   - walks the Book's spells in its book-wide phase factories and resolution cleanup pass through one-call snapshots, because Conduit.validate_resolution reaches them without the Book lock
 - owns_state: `_spellbook`, `_policy`, `_dynamic`, `_name`, `_conduit_logger`, `_phase_scheduler_cls`, `_validation_warnings`, `_lock`
 - phases: `runtime`, `cleanup`
@@ -17717,6 +17733,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - preserves each member resolution capability through selected, parked and merged graft bindings
   - hydrates each member's spellframe through the same rule as the restore engine (_hydrate_spellframe) at the selected, parked and merged bind sites, appending a shortfall when the recorded Protocol cannot be imported (0.2.8222)
   - replays a managed member's recorded options (record 4.2.0, SpellCrystal.managed_bind_options) at the selected, parked and merged bind sites (0.2.8242)
+  - lets receiving-Book policy decide each member's binding, never its spell_id: a live spell_id differs from the recorded one only when the member's code moved since the record (0.2.8257)
 - owns_state: `_record`, `_host_book (borrowed)`, `_skip_resident`, `_merge_into_index (borrowed)`, `_adopt_recorded_selection`, `_consumed`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `run`
@@ -17875,8 +17892,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - responsibilities:
   - carry built counts by kind
   - carry named shortfalls for everything unreplayable
-  - carry structural identity translations and changed bind-SHA translations in one locked report map
-- owns_state: `_lock`, `_profile_name`, `_checkpoint_ids`, `_built_counts`, `_shortfalls`, `_identity_map`, `_status`, `_failed_stage`, `_preflight`, `_plan_summary`
+  - carry structural identity translations and changed spell_id translations (a replayed bind whose target's code moved since the record) in one locked report map
+  - carry binding changes by custody key - the recorded and live binding hashes of each binding the receiving Book rebuilt differently - as information, never a shortfall (record 4.3.0)
+- owns_state: `_lock`, `_profile_name`, `_checkpoint_ids`, `_built_counts`, `_shortfalls`, `_identity_map`, `_status`, `_failed_stage`, `_preflight`, `_plan_summary`, `_binding_changes`
 - phases: `runtime`
 - public methods: `add_shortfall`, `cleanup`, `describe`, `map_identity`, `mark_complete`, `mark_failed`, `record_binding_change`, `record_built`, `set_plan_summary`, `set_preflight`, `translate`
 
@@ -18438,7 +18456,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - keys its record entry: custody_key is the spell id, or "<spell_id>@<frame>" when built with per_frame_custody (the frame read from spell.aetheric_frame)
   - records the frame kind (spellframe_kind) and, for a contract, the Protocol's module and qualname (spellframe_module, spellframe_qualname) so restore and graft rebind the Protocol rather than a same-named category (0.2.8222, record 4.1.0)
   - records a managed spell's options as plain values - the mode by name, the limit, the queue timeout and the reset names - only for managed_spell_quantity, so every other payload is unchanged (record 4.2.0, 0.2.8242); managed_spell_options returns them, and the static managed_bind_options(payload) is the one reader the restore and graft lanes replay them through, as settings: the replayed bind's spell_id does not depend on them (0.2.8254)
-- owns_state: `_analysis (one carried CrystalAnalysisResult)`, `_disposal_method_names (ordered recorded values)`, `_frame_name, _custody_key (the record key)`, `_spellframe_kind, _spellframe_module, _spellframe_qualname (recorded frame kind)`, `_managed_spell_mode_name, _managed_spell_limit, _managed_spell_timeout_seconds, _managed_spell_reset_methods (recorded managed options)`
+  - records the spell's binding hash (record 4.3.0) - the SHA256 of its binding manifest, written for every spell - which a restore compares with the binding it rebuilds
+- owns_state: `_analysis (one carried CrystalAnalysisResult)`, `_disposal_method_names (ordered recorded values)`, `_frame_name, _custody_key (the record key)`, `_spellframe_kind, _spellframe_module, _spellframe_qualname (recorded frame kind)`, `_managed_spell_mode_name, _managed_spell_limit, _managed_spell_timeout_seconds, _managed_spell_reset_methods (recorded managed options)`, `_binding_hash (record 4.3.0)`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `binding_hash`, `binding_name`, `cleanup`, `compose_custody_key`, `custody_key`, `describe`, `disposal_method_names`, `existence_name`, `frame_name`, `id`, `managed_bind_options`, `managed_spell_options` (+30 more)
 
@@ -18743,7 +18762,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.crystallizer.persistence.record_version.RecordVersion`
 - defined at: `src/melder/crystallizer/persistence/record_version.py:17`
-- role: Static record-schema version authority (stamp 4.2.0; readers gate on MAJOR; absent stamps read 0.0.0).
+- role: Static record-schema version authority (stamp 4.3.0; readers gate on MAJOR; absent stamps read 0.0.0).
 - responsibilities:
   - stamps cached items, formation records, and emission-tap envelopes
   - refuses newer-major payloads at the read gates
@@ -18752,6 +18771,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - uses major 4 to fence older readers from frame-scoped custody keys (per-frame spell ids)
   - uses minor 4.1.0 for the additive spellframe-kind keys on spell crystals (0.2.8222); 4.0.0 records stay readable and hydrate frames by name
   - uses minor 4.2.0 for a managed spell's recorded options on its spell crystal (0.2.8242); 4.1 readers ignore them and a 4.1 record holds none
+  - uses minor 4.3.0 for the spell crystal's binding_hash, written for every spell (0.2.8258); 4.2 readers ignore it and a 4.2 record compares no binding
 - phases: `runtime`
 - public methods: `check_readable`, `of`, `parse`, `stamp`
 
@@ -19322,7 +19342,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/mutation_research/mutation_research.py
 
-- source_sha256: `37b37cb10e0ae1d9d8e231e091082dec0d69d33e7c67548276720f53e4a55f36`
+- source_sha256: `5bee6950e19b25fe715620300ad20e71e6cc92804286cecc78fa94e2c693cb71`
 - nodes: 2
 
 ### Nodes
@@ -19348,7 +19368,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - carries the mutation-research configuration lifecycle
   - is the package's ONLY crystallizer touchpoint: re-emits the MutationResearchCrystal composition twin after every set mutation and flips RecordedUnitState
   - rebuilds the registry from recorded compositions (load_recorded_composition hydration seam)
-  - residency_view = the query-time active/parked/stored join (frame scan + custody probe; total read)
+  - residency_view = the query-time active/parked/stored join (frame scan + custody probe; total read); a version is active only when its index selects it and the frame's lineage registry tracks it as that index's current version, so a version moved into an index of its own reads parked until a notch (0.2.8259)
   - ambient campaign context (set/clear/active_campaign) stamps every runtime auto-record
   - diff_research/create_diff_engine = derived diff reads over custody material through the owned strategy-dispatched DiffEngine (source + structural defaults)
   - foresight reads = source_view (recorded-first module text, live-disk fallback w/ drift marker), impact_view (blast radius JOINED with research residency), module_graph_view (walkable module world), source_drift_view (full drift report), preview_candidate (read-only candidate mock: AST analysis + would-be diff + would-be radius)
@@ -26128,6 +26148,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - cache generation 20 retires bundles whose phase 3-4 rows were captured under the name matcher (annotation matching by kind, 0.2.8222)
   - cache generation 21 retires bundles written before the managed lease codegen (0.2.8245), the explicit retirement the owner asked for whenever codegen changes (0.2.8248)
   - cache generation 22 retires bundles written while a managed spell's settings were part of its spell_id (managed_settings_leave_spell_id, 0.2.8254): every managed spell_id moved once, so the ids those bundles were keyed by are gone
+  - cache generation 23 retires bundles keyed by the spell_id before it became the code digest; the structural key (payload format 2) and the world stamp carry each spell's binding hash beside its spell_id, so a binding changed under one spell_id misses both tiers (binding_manifest_keys, 0.2.8258)
 - owns_state: `_id`, `_lock`, `_frame_name`, `_conduit_name`, `_cache_root_path`, `_bundle_path`, `_cache_data`, `_logger`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `bundle_path`, `cached_spell_ids`, `cached_structural_spell_ids`, `cleanup`, `conduit_name`, `emit`, `get_spell_payload`, `get_structural_payload`, `has_spell_payload`, `has_structural_payload`, `remove_spell_payload`, `remove_structural_payload` (+7 more)
@@ -27361,7 +27382,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - role: Stateless reader/renderer for signatures and annotations that name types unbound at runtime.
 - responsibilities:
   - returns the default VALUE-format signature when it evaluates, otherwise a FORWARDREF signature whose owner-bearing ForwardRefs are replaced by source text
-  - stabilizes an existing FORWARDREF signature for fingerprint text: no ForwardRef owner or memory address, unchanged when nothing is unresolved
+  - stabilizes an existing FORWARDREF signature for display and descriptor text (the binding profiles' signature text): no ForwardRef owner or memory address, unchanged when nothing is unresolved
   - reads class annotations in FORWARDREF, rendering unresolved names as their source text
   - recognizes owner-bearing ForwardRefs inside nested typing constructs
 - phases: `validation`, `runtime`
