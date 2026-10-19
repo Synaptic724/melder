@@ -584,10 +584,10 @@ Responsibilities:
   `mediator.start_transaction(...)` itself and calling in here inside the
   held window.
   EVIDENCE:
-  - src/melder/aether/spellbook/spellbook.py:3883, 3938 (`_notch_spell` -> `_apply_notch`)
-  - src/melder/aether/spellbook/spellbook.py:4095, 4128 (`_add_to_spell_index` -> `_apply_add_to_index`)
-  - src/melder/aether/spellbook/spellbook.py:4271, 4303 (`_remove_from_spell_index` -> `_apply_remove_from_index`)
-  - src/melder/aether/spellbook/spellbook.py:3923-3925 (states the Conduit admits it)
+  - src/melder/aether/spellbook/spellbook.py:3902, 3957 (`_notch_spell` -> `_apply_notch`)
+  - src/melder/aether/spellbook/spellbook.py:4114, 4147 (`_add_to_spell_index` -> `_apply_add_to_index`)
+  - src/melder/aether/spellbook/spellbook.py:4290, 4324 (`_remove_from_spell_index` -> `_apply_remove_from_index`)
+  - src/melder/aether/spellbook/spellbook.py:3942-3944 (states the Conduit admits it)
   - src/melder/aether/conduit/conduit.py:5739, 6079, 6186 (notch/add/remove
     acquire `_get_required_transaction_mediator()`)
 - Run phase pipelines before conjure.
@@ -656,7 +656,7 @@ Concurrency/Threading:
     ordering on each other". They do. That wording invited exactly the inversion
     described above.
   EVIDENCE:
-  - src/melder/aether/spellbook/spellbook.py:7606-7627 (`_run_structural_phases`; the caller-held-lock
+  - src/melder/aether/spellbook/spellbook.py:7652-7673 (`_run_structural_phases`; the caller-held-lock
     precondition is stated at :7423; remeasured 2026-10-16 at 0.2.8248)
   - src/melder/aether/spellbook/spellbook_creation_system.py:2157 (the only
     `_phase_run_lock` acquisition, reached from that path)
@@ -802,9 +802,9 @@ Failure Modes:
   separating a spell that is the SOLE member of its source index (use
   `cleanup_spell` to dispose it instead).
   EVIDENCE:
-  - src/melder/aether/spellbook/spellbook.py:3938-4093 (`_apply_notch`)
-  - src/melder/aether/spellbook/spellbook.py:4128-4222 (`_apply_add_to_index`)
-  - src/melder/aether/spellbook/spellbook.py:4303-4388 (`_apply_remove_from_index`)
+  - src/melder/aether/spellbook/spellbook.py:3957-4112 (`_apply_notch`)
+  - src/melder/aether/spellbook/spellbook.py:4147-4241 (`_apply_add_to_index`)
+  - src/melder/aether/spellbook/spellbook.py:4324-4434 (`_apply_remove_from_index`)
 
 Observability:
 - `SafeLogger` on the Spellbook instance, used at `error` level on the failure
@@ -814,7 +814,7 @@ Observability:
   There is no info/debug narration of the happy path; absence of log output is
   the normal state, not a sign that nothing ran.
   EVIDENCE:
-  - src/melder/aether/spellbook/spellbook.py:6087-6092 (`Spellbook._initialize_configuration`, the
+  - src/melder/aether/spellbook/spellbook.py:6133-6138 (`Spellbook._initialize_configuration`, the
     configuration-mismatch branch; remeasured 2026-10-16 at 0.2.8248)
 
 Extension Points:
@@ -1069,7 +1069,7 @@ Outputs:
   EVIDENCE:
   - src/melder/aether/spellbook/bind/bind.py:474-611 (`bind`, decorator,
     `_bind_logic -> Spell`)
-  - src/melder/aether/spellbook/spellbook.py:5610-5626 (`Spellbook.bind
+  - src/melder/aether/spellbook/spellbook.py:5656-5672 (`Spellbook.bind
     -> str`)
   - src/melder/aether/spellbook/bind/bind.py:65-109 (`assert_allowed`)
 
@@ -1616,6 +1616,11 @@ Purpose:
 Responsibilities:
 - Track conduits and spell registries.
 - Maintain selected-spell registry.
+- List every index a conjured Book owns in the spell registry under the Book's root conduit (0.2.8259): conjure
+  registers the indexes with an active version, a post-conjure `bind` the index it creates and
+  `remove_from_spell_index` the index it mints; `_destroy_spell_index` unregisters an emptied index and the
+  root's teardown every index the root registered, the parked-only ones included. `find_index_for_spell`,
+  `find_conduit_id_for_spell` and the cleanup-safe probes walk it.
 - Own the frame-local DevopsInformationRegistry that mirrors topology and
   transaction state for reporting and strategy resolution.
 - Provide ConduitCloud for active named root/lesser lookup in automatic and dynamic mode.
@@ -6526,14 +6531,14 @@ Contract/Interface:
   THE ADD AND REMOVE DOCSTRINGS WERE WRONG UNTIL 0.2.8249. Both said "Delegates to
   the owning Spellbook, WHICH ADMITS the [...] change-control transaction", while
   both methods call `mediator.start_transaction(...)` a few lines further down;
-  `src/melder/aether/spellbook/spellbook.py:3923-3925` states it correctly.
+  `src/melder/aether/spellbook/spellbook.py:3942-3944` states it correctly.
   `notch_spell`'s docstring said the same. Since 0.2.8249 all three say the conduit
   admits the transaction (raised on TASK-2026-08-02-stale-source-docstrings).
   EVIDENCE:
   - src/melder/aether/conduit/conduit.py:5650, 6009, 6122 (public verbs)
   - src/melder/aether/conduit/conduit.py:5789, 5828, 5883, 5934, 5970 (`_resolve_notch_target`,
     `_owned_notch_target`, `_check_spell_argument`, `_owned_spell_by_id`, `_resolve_spell_to_move`)
-  - src/melder/aether/spellbook/spellbook.py:3938, 4128, 4303 (applied seams)
+  - src/melder/aether/spellbook/spellbook.py:3957, 4147, 4324 (applied seams)
 Data Structures:
 - Transaction metadata carrying spellbook/conduit ids, binding key, member id,
   and source/target SpellIndex ids.
@@ -6551,7 +6556,14 @@ Behavior:
   state (`_inactive_spells`, `_spell_ids`, id pools, Nexus record, fast-door,
   Creations) travels untouched. Add destroys the source index when it empties;
   remove never destroys - it mints a fresh inactive index for the separated
-  spell and leaves the source with its remaining members.
+  spell and leaves the source with its remaining members. Remove then registers
+  the fresh index in the frame's spell registry the way a post-conjure `bind`
+  registers the index it creates - bind's guard (the Book is conjured) and call
+  (`Aether._register_single_spell_index` under the Book's root conduit; 0.2.8259) -
+  so the lookups by spell_id, a grant or transfer by spell_id and bind's
+  collision guard find the separated version, parked or notched active there;
+  the index leaves the registry when it empties (`_destroy_spell_index`) or with
+  its root (`_unregister_conduit_spells_from_aether`, the root's teardown).
 - Borrowers follow a notch, by design (corrected 2026-10-15; this line called it a
   missing fan-out). After the notch transaction ends, `Conduit.notch_spell` has every
   linked peer park its contracted copy of the outgoing version
@@ -7160,7 +7172,7 @@ Concurrency/Threading:
   - src/melder/mutation_research/mutation_research.py:893-896 (the `on_mutation` wiring)
   - src/melder/mutation_research/mutation_research.py:901 (emitter called under both)
   - src/melder/mutation_research/mutation_research.py:1000-1001 (same order on the load path)
-  - src/melder/mutation_research/mutation_research.py:3956 (`_emission_lock` re-entered)
+  - src/melder/mutation_research/mutation_research.py:3971 (`_emission_lock` re-entered)
 Key Files (C1):
 - `src/melder/mutation_research/mutation_research.py`
 - `src/melder/mutation_research/mutation_configuration.py`
@@ -7278,8 +7290,10 @@ Contract/Interface:
   Aether-hosted root WITHOUT constructing it and no-op unless it is live.
 - Residency + campaign (2026-07-11): root `residency_view(spell_id)` performs
   the query-time join the model promises - declared truth (residence + lane),
-  runtime truth (frame scan via `find_index_for_spell`; selected member ->
-  `active`, unselected member -> `parked`), custody probe (`stored`;
+  runtime truth (frame scan via `find_index_for_spell`; a member its index
+  selects and its lineage tracks as current -> `active`, any other member ->
+  `parked` - a version moved into an index of its own reads parked until a
+  notch, 0.2.8259), custody probe (`stored`;
   dead/inactive crystallizer -> honest None) - a TOTAL read (only an empty id
   refuses). Root `set_active_campaign`/`clear_active_campaign`/
   `active_campaign` stamp every runtime auto-record until cleared (explicit
@@ -8476,8 +8490,9 @@ These flows describe concrete method sequences for core behaviors.
 4. Inside the window: `Spellbook._add_to_spell_index` -> `Spellbook._apply_add_to_index`, or
    `Spellbook._remove_from_spell_index` -> `Spellbook._apply_remove_from_index`; each seam refuses first
    (RuntimeError: another Book's spell, an active spell; add: a target index the Book does not own; remove: a spell
-   outside the source index, or its only member). Any raise -> `end_transaction(success=False)` and the raise
-   propagates.
+   outside the source index, or its only member). After its Book-locked move, remove registers the index it
+   minted with the frame (`Aether._register_single_spell_index`, the Book's root conduit, the frame lock
+   alone; 0.2.8259). Any raise -> `end_transaction(success=False)` and the raise propagates.
 5. `end_transaction(success=True)`; the index-link fan-out - add: `ConduitWard._emit_index_member_added` on the
    target, then `_emit_index_destroy` (the move emptied the source) or `_emit_index_member_removed` on the source;
    remove: `_emit_index_member_removed` - and the moved Spell is returned.
@@ -8586,9 +8601,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-09-26T20:10:34Z
 - path: `src/melder/aether/spellbook/spellbook.py`
   start_line: 1
-  end_line: 7812
-  loc: 7812
-  verified_at: 2026-10-18T20:32:16Z
+  end_line: 7858
+  loc: 7858
+  verified_at: 2026-10-19T00:01:11Z
 - path: `src/melder/aether/spellbook/spellbinder.py`
   start_line: 1
   end_line: 928
@@ -8623,9 +8638,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-10-18T20:32:16Z
 - path: `src/melder/aether/spellbook/spell.py`
   start_line: 1
-  end_line: 2024
-  loc: 2024
-  verified_at: 2026-10-18T20:32:16Z
+  end_line: 2027
+  loc: 2027
+  verified_at: 2026-10-19T00:01:11Z
 - path: `src/melder/aether/spellbook/spell_types/spell_types.py`
   start_line: 1
   end_line: 101
@@ -8673,9 +8688,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-09-30T18:30:47Z
 - path: `src/melder/mutation_research/mutation_research.py`
   start_line: 1
-  end_line: 3990
-  loc: 3990
-  verified_at: 2026-09-26T20:10:34Z
+  end_line: 4005
+  loc: 4005
+  verified_at: 2026-10-19T00:01:11Z
 - path: `src/melder/aether/aetheric_frame/aetheric_frame.py`
   start_line: 1
   end_line: 1307
@@ -11258,7 +11273,7 @@ completed epics/stories of 2026-07-11/12).
 - Restore: crystal_loader_system/graft_runner.py - GraftRunner
   (single-use, Cleanable): RecordVersion gate + graft_kind refusal ->
   unconjured-host refusal (public `Spellbook.conduit` accessor,
-  `src/melder/aether/spellbook/spellbook.py:6919`; the patch-lane copy cited
+  `src/melder/aether/spellbook/spellbook.py:6965`; the patch-lane copy cited
   :5412) -> per-member overlap rule via
   `host_frame.find_index_for_spell`
   (`src/melder/aether/aetheric_frame/aetheric_frame.py:902`; resident member
@@ -11679,6 +11694,14 @@ Companion documents:
   component and code-description patches are inputs to this document while a lane is open.
 
 ## Context / Handoff Summary
+
+2026-10-19 the minted index is registered (0.2.8259; STORY-2026-10-17-minted_index_missing_from_frame_registry, on
+the owner's word): the SpellIndex Mutation Surface and the index-move flow say `remove_from_spell_index` registers
+the index it mints in the frame's spell registry as a post-conjure `bind` registers the index it creates, and that
+the index leaves with its root; AethericFrame Services names every writer and reader of the registry; the
+ResearchSet package's residency bullet calls a version active only while its lineage tracks it; the code map
+remeasures spellbook.py, spell.py and mutation_research.py, and the numeric citations into them were remapped line
+by line.
 
 2026-10-18 follow-ups to the identity landing (documentation only): the Binding Pipeline records decision B's lookup
 rule - what counts as installed third-party code, how it is named by distribution version, and what an editable

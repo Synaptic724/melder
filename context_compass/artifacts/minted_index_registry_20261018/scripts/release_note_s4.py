@@ -47,8 +47,9 @@ assert world.meld(spell_id=english).greet() == "hello"
 - A linked conduit's `add_spell_to_contract(spell_id=...)` and `transfer_spell_ownership` by spell_id proceed for
   it; both raised that `ValueError`. The borrower's copy is parked or active as the version is.
 - Another Spellbook can no longer bind the same spell_id while the version sits in its own index: the bind raises the
-  usual `RuntimeError` "Spell ID collision detected. ...", in the same frame and, under process-wide spell ids (the
-  default), in another frame. The bind used to be accepted, so two Spellbooks held one spell_id.
+  usual `RuntimeError` "Spell ID collision detected: this object is already registered as spell_id <id>. ...", in
+  the same frame and, under process-wide spell ids (the default), in another frame. The bind used to be accepted,
+  so two Spellbooks held one spell_id.
 - `MutationResearch.residency_view(spell_id)` reads the version `parked` in its own index and `active` there once a
   notch makes it active; it read `declared_only`.
 

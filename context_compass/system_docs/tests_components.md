@@ -613,7 +613,7 @@ Concurrency/Threading:
 
 Invariants/Guarantees:
 - integration tests use real runtime stacks rather than hand-built shallow mocks
-- 176 `test_*.py` modules among 183 `.py` files (recounted 2026-10-18); the others are benches and the
+- 176 `test_*.py` modules among 183 `.py` files (recounted 2026-10-19); the others are benches and the
   live-sim application
 
 Failure Modes:
@@ -1781,6 +1781,15 @@ Protects:
   `cleanup_spell(French)` and then `English.cleanup()`, `remove_from_spell_index(French)` and then
   `English.cleanup()` (French stays parked, alone in a fresh index); and English alone on its index is still
   removed by either door, its index cleaned and gone from the frame
+- a version moved into an index of its own is known to its frame (0.2.8259;
+  `test_separated_version_is_known_to_its_frame_integration.py`, 12 tests): in a dynamic world with English
+  active and French parked on English's index under its own binding name, after
+  `remove_from_spell_index(French)` the frame finds French's index under the lender and both Conduit lookups
+  answer, parked and notched active; a linked borrower's grant by spell_id gives a parked or an active copy as
+  French is; a transfer by spell_id moves French to the target root; a second bind of French's spell_id is
+  refused by another Book of the frame and of another frame, conjured or not; the lender's teardown takes
+  French's index out of the frame and a new Book may bind French; moving French back leaves no registered
+  index behind; and residency reads French parked in its own index, then active after a notch
 Key Files (C1):
 - `tests/integration/melder/spellbook/test_spellbook_integration_core.py`
 - `tests/integration/melder/spellbook/test_spellbook_integration_scan_bind.py`
@@ -1793,6 +1802,7 @@ Key Files (C1):
 - `tests/integration/melder/spellbook/test_managed_bind_options_integration.py` (2026-10-15)
 - `tests/integration/melder/spellbook/test_spellbook_integration_parked_before_conjure.py` (2026-10-16)
 - `tests/integration/melder/spellbook/test_direct_cleanup_refuses_active_member_with_parked_versions_integration.py` (2026-10-18)
+- `tests/integration/melder/spellbook/test_separated_version_is_known_to_its_frame_integration.py` (2026-10-19)
 - `tests/integration/melder/aether/conduit/test_notch_spell_by_id_integration.py` (2026-10-16)
 - `tests/integration/melder/aether/conduit/test_index_moves_by_spell_id_integration.py` (2026-10-16)
 - `tests/integration/melder/aether/conduit/test_spell_index_meld_and_contract_lifecycle.py` (2026-10-16)
@@ -2066,7 +2076,7 @@ Key Files (C1):
   note: frame-isolated automatic/dynamic qualified-name regressions and real collision controls.
 
 Core is the DEDUPLICATED UNION OF EVERY `Key Files (C1)` LIST in the catalogs
-above - 272 paths (recounted 2026-10-18) - and nothing else. Change a component's key files and this set
+above - 273 paths (recounted 2026-10-19) - and nothing else. Change a component's key files and this set
 follows; if the two ever disagree, this section is wrong, not the catalog.
 
 WHAT COUNTS AS A KEY FILE ON THIS SIDE. A test component's key files are its
@@ -2482,7 +2492,7 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   start_line: 1
   end_line: 994
   loc: 994
-  verified_at: 2026-10-18T23:13:06Z
+  verified_at: 2026-10-19T00:01:11Z
   note: Remeasured (it had drifted).
 - path: `tests/unit/melder/mutation_research/test_mutation_research_root_matrix.py`
   start_line: 1
@@ -3488,6 +3498,13 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-10-18T16:37:15Z
   note: the three cleanup doors refuse an index's active version while parked versions remain; the
     remedies; a sole member still removed (0.2.8256).
+- path: `tests/integration/melder/spellbook/test_separated_version_is_known_to_its_frame_integration.py`
+  start_line: 1
+  end_line: 411
+  loc: 411
+  verified_at: 2026-10-19T00:01:11Z
+  note: a version moved into an index of its own is found by spell_id, granted, transferred and guarded
+    against a second bind; the root's teardown takes its index; residency reads it parked (0.2.8259).
 - path: `tests/integration/melder/aether/conduit/test_notch_spell_by_id_integration.py`
   start_line: 1
   end_line: 276
@@ -3710,6 +3727,7 @@ graph TD
 - `tests/integration/melder/aether/conduit/test_spell_id_lookup_returns_that_spell_integration.py`
 - `tests/integration/melder/aether/rift/test_rift_spell_id_lookups_return_that_spell_integration.py`
 - `tests/integration/melder/spellbook/test_direct_cleanup_refuses_active_member_with_parked_versions_integration.py`
+- `tests/integration/melder/spellbook/test_separated_version_is_known_to_its_frame_integration.py`
 - direct filesystem inventory of `tests/`
 - `tests/_spell_identity_test_support.py`
 - `tests/unit/melder/spellbook/bind/test_spell_code_digest.py`
@@ -3730,6 +3748,15 @@ graph TD
   scan/bind coverage grows.
 
 ## Context / Handoff Summary
+
+2026-10-19 the minted index is registered (0.2.8259; STORY-2026-10-17-minted_index_missing_from_frame_registry): the
+Spellbook Integration Cluster gains `test_separated_version_is_known_to_its_frame_integration.py` (12 tests: the
+version found, granted and transferred by spell_id, parked and notched active; a second bind refused in the frame
+and across frames; the root's teardown; the move back; residency), a key file with a code-map record; the residency
+unit file's record is remeasured (a selected version no lineage tracks reads parked). Counts are recounted from disk
+(unit 514 of 517 `.py`, component 167 of 169, integration 176 of 183, spellbook tree 53; 857 test modules in the
+three tiers); the core key-file union is recounted from the catalogs (273 paths; it read one short since 0.2.8256's
+key file).
 
 2026-10-18 spell identity is the code (0.2.8257-0.2.8258; S1 and S2 of EPIC-2026-10-18-spell_identity_is_the_code):
 the Spellbook Runtime And Binding Unit Cluster gains `test_spell_code_digest.py` (35 tests, 69 cases),

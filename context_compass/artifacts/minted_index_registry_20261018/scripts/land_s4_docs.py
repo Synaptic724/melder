@@ -76,7 +76,7 @@ ARCH_FAILURE = (
     "  spell_id raised the same; another Book bound its spell_id - of the frame, or of another frame under\n"
     "  process-wide spell ids - so two Books held one spell_id, and a Book not yet conjured then had its conjure\n"
     "  refused; and `residency_view` read it `declared_only`. A second bind now raises the existing RuntimeError\n"
-    "  \"Spell ID collision detected. ...\".\n"
+    "  \"Spell ID collision detected: this object is already registered as spell_id <id>. ...\".\n"
     "  EVIDENCE: `src/melder/aether/spellbook/spellbook.py:Spellbook._apply_remove_from_index` and\n"
     "  `src/melder/aether/aether.py:Aether._check_for_spell`.\n"
 )

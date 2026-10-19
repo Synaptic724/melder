@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spellbook.py",
- "source_sha256": "ceaf3e5c1f60e8b8632000b9c5dbde4521749cd425beba98bd38667ac4ab3afe",
+ "source_sha256": "486faf4fdeb22dc41f7e7f4db8bee0c25747ffa62125ad102f3dd92879b9c718",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spellbook": {
@@ -60,7 +60,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "f3ff5cfeea05dfa9df06ffdd56a5f5e35ec635a50d491427f2b4f4b44344939f",
+   "span_sha256": "f3bbd13426db3ddd421b84c31628fb2d02d9a9973cf7c2288ac52a76b3d7503f",
    "role": "Public binding, validation, and conjure surface.",
    "responsibilities": [
     "binds and scans spells into local and contracted lookup surfaces",
@@ -88,7 +88,8 @@
     "passes each selected version's binding key to register_index at bind and notch, and after a notch's registration marks everything downstream of the notched lineage (mark_dependents_for_revalidation, 0.2.8250)",
     "removes a borrowed copy by the spell_id it is given: the active copy only when that copy's own spell_id is it, otherwise the parked copy, raising RuntimeError when it holds neither - never by index membership, so an index unlink after a notch completes in any member order (_remove_contracted_spell, 0.2.8251)",
     "answers a spell_id with exactly the Spell bound under it - one read of _spells_by_id (active), else one of _inactive_spells (parked), else None - with no lock and no index read; the spell an index has active is a lookup by the index (find_spell_by_spell_id, renamed from find_spell_by_id with no alias, 0.2.8253)",
-    "refuses the active member of an index that also holds parked versions in cleanup_and_remove_spell - and so a direct Spell.cleanup() - before anything is unregistered, as _dispose_spell refuses it for cleanup_spell, every message naming the remedies (notch the index to a parked version, dispose the parked versions, or move them out with remove_from_spell_index); a sole member is removed with its index, and Book teardown never meets the check (0.2.8256)"
+    "refuses the active member of an index that also holds parked versions in cleanup_and_remove_spell - and so a direct Spell.cleanup() - before anything is unregistered, as _dispose_spell refuses it for cleanup_spell, every message naming the remedies (notch the index to a parked version, dispose the parked versions, or move them out with remove_from_spell_index); a sole member is removed with its index, and Book teardown never meets the check (0.2.8256)",
+    "registers the index remove_from_spell_index mints in the frame's spell registry as a post-conjure bind registers the index it creates (bind's guard and call, under the Book's root conduit), and the root's teardown (_unregister_conduit_spells_from_aether) unregisters the indexes that hold only parked versions with the rest, so the frame's lookups by spell_id find a version moved into an index of its own (0.2.8259)"
    ],
    "owns_state": [
     "_bind",

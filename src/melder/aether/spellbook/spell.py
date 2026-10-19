@@ -969,11 +969,14 @@ class Spell(Cleanable):
         Purpose:
             Let a reader that already holds this Spell read its index without
             racing `cleanup()`, which deletes `spell_index` - the parked branch
-            of `Spellbook._find_contracted_spell_by_id`, and the explicit index
+            of `Spellbook._find_contracted_spell_by_id`, the explicit index
             steps that turn a spell found by spell_id into the spell its index
             has active (the ownership transfer's spell_id handles and the
-            contract dependency walks). Until 0.2.8253 its first reader was the
-            parked branch of `Spellbook.find_spell_by_id`.
+            contract dependency walks), and the root's teardown, which
+            unregisters each parked version's index from the frame
+            (`Spellbook._unregister_conduit_spells_from_aether`,
+            minted_index_registry, 0.2.8259). Until 0.2.8253 its first reader
+            was the parked branch of `Spellbook.find_spell_by_id`.
 
         Contract:
             - Returns the index the spell belongs to while the spell is live, and

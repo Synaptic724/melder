@@ -1,0 +1,10 @@
+src/melder/__init__.py:199: UserWarning: Python 3.14+ detected, but running in GIL-enabled mode.
+melder is optimized for Python built with --disable-gil (PEP 703).
+Performance may be degraded.
+  warnings.warn(
+G1 control: French parked in English's index: French parked on the lender; its index selects it: False
+    grant -> True; the borrower's copy: active False, parked True
+G2 French parked alone in the minted index: French parked on the lender; its index selects it: True
+    grant -> True; the borrower's copy: active False, parked True
+G3 French notched active in the minted index: French active on the lender; its index selects it: True
+    grant -> True; the borrower's copy: active True, parked False

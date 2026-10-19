@@ -911,6 +911,12 @@ graph TD
 
 ## Context / Handoff Summary
 
+2026-10-19 the minted index is registered (0.2.8259): the inventory is recounted from disk (unit 517 `.py`,
+component 169, integration 183; 857 test modules in the three tiers) - the lane adds one integration module (a
+version moved into an index of its own, known to its frame), catalogued in `tests_components`, and changes one unit
+module (the residency join's frame doubles). No tier, conftest, declared marker or shared support module changes,
+and no extent in this map moves.
+
 2026-10-18 spell identity is the code (0.2.8257-0.2.8258): the inventory is recounted from disk (unit 517 `.py`,
 component 169, integration 183, mocks 44, experimentation 204; 857 test modules in the three tiers) - the lane adds
 four unit modules (the digest's, the libraries', the manifest's and the crystal's binding hash) and one component

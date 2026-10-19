@@ -134,7 +134,9 @@ Message alert rules
 - NEW MESSAGE for muse_0 (from melder_0, 2026-10-01T10:56:27Z)
 - NEW MESSAGE for muse_0 (from melder_0, 2026-10-01T11:10:44Z)
 - NEW MESSAGE for muse_0 (from melder_0, 2026-10-01T11:26:16Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-10-18T23:43:33Z)
+- NEW MESSAGE for melder_0 (from melder_2, 2026-10-18T23:59:55Z)
+- NEW MESSAGE for melder_1 (from melder_2, 2026-10-18T23:59:55Z)
+- NEW MESSAGE for melder_1 (from melder_2, 2026-10-19T00:02:13Z)
 <!-- END USER-DEFINED: alerts -->
 
 ## Active Items
@@ -148,6 +150,7 @@ Message alert rules
 | spell_identity_is_the_code | ready | handoff | claude | melder_0 | none | S3-S5, each after its own patch, on the owner's word (S1 and S2 landed as 0.2.8257-0.2.8258). | A spell_id that is the object's code; the bind signature a manifest with its own hash that revalidates; one object, one spell. | S1-S5 land with notches, docs and the rebuild (S6 parked), or the owner redirects. | tickets/epics/2026-10-18_spell_identity_is_the_code_epic.md | 2026-10-18T23:43:33Z | REQUIRED |
 | failed_notch_refusal | blocked | handoff | claude | melder_1 | the owner's hold (chat 2026-10-18) | The owner's word to resume S8 (the edit list and its refinement). | A notch whose incoming version fails its commit check is refused with nothing moved; lender and borrowers stay on the outgoing version. | The fix lands with tests, docs, notch and rebuild, or the owner redirects. | tickets/stories/2026-10-17_failed_notch_keeps_switch_without_borrowers_story.md | 2026-10-18T13:40:43Z | REQUIRED |
 | minted_index_registry | in_progress | implementation | claude | melder_1 | spellbook.py and spell.py with melder_0 until S1 and S2 land (M1-40) | Apply A-D on the landed tree once melder_0 hands the files back; the red tests turn green, then docs, notch, rebuild. | The index remove_from_spell_index mints is in the frame's spell registry, so its version is found and granted by spell_id. | The fix lands with tests, docs, notch and rebuild, or the owner redirects. | tickets/stories/2026-10-17_minted_index_missing_from_frame_registry_story.md | 2026-10-18T18:47:35Z | REQUIRED |
+| root_teardown_docs | blocked | implementation | claude | melder_2 | melder_1's S4 docs pass holds both documents (M2-22) | Apply the anchored edits once melder_1 NOTICEs its docs pass done with the indexes regenerated. | Both source system documents say a root's teardown cleans only what the root holds, with today's behaviour and the two gaps open with the owner. | Both documents and their indexes updated with --check clean, or the owner redirects. | tickets/tasks/2026-10-18_document_root_teardown_cleans_only_what_it_holds_task.md | 2026-10-19T00:02:13Z | REQUIRED |
 <!-- END USER-DEFINED: active_items -->
 
 ## Active Attention Details
@@ -170,6 +173,10 @@ Message alert rules
   RESUME_HIERARCHY:
     - tickets/epics/2026-10-17_correctness_defects_epic.md
     - tickets/stories/2026-10-17_minted_index_missing_from_frame_registry_story.md
+- WORK_ITEM: root_teardown_docs
+  SWITCH_TRIGGER: Both documents and their indexes updated with --check clean, or the owner redirects.
+  RESUME_HIERARCHY:
+    - tickets/tasks/2026-10-18_document_root_teardown_cleans_only_what_it_holds_task.md
 <!-- END USER-DEFINED: active_attention_details -->
 
 ## Recently Closed Anchors

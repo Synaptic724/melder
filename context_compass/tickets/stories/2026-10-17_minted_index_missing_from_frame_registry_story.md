@@ -9,7 +9,7 @@
 - Agent Role: synaptic_python_developer
 - Priority: p2
 - Created: 2026-10-17T20:32:42Z
-- Updated: 2026-10-18T23:45:34Z
+- Updated: 2026-10-19T00:00:59Z
 
 ## User Narrative
 As an agent who separates a version into its own index with `remove_from_spell_index` - to keep it, try it on its
@@ -768,6 +768,70 @@ this does not make independent review mandatory for every ticket.
   NEXT: Re-sync the /tmp mirror to 0.2.8258, re-check the landing scripts and run the S4 tests on the tree (red).
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-18T23:50:10Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: Edits A-D are in the repository, on the 0.2.8258 tree melder_0 handed back (M0-204), as the owner approved
+    them (owner told first, chat): apply_s4.py with the notch S4 takes, 0.2.8259, written beside the patch id in the
+    comments and docstrings; every anchor found once; spellbook.py and spell.py LF, mutation_research.py CRLF kept
+    (4005 lines, all CRLF); the three files byte-equal to the /tmp mirror's. The landed diff is 182 lines. Before it,
+    every landing script was re-checked on 0.2.8258: apply_s4.py, land_s4_docs.py (counts from disk: integration 176
+    of 183, the spellbook tree 53, the three tiers 857), release_note_s4.py, graph_prose_s4.py and close_s4.py
+    --check, and remap_s4_citations.py on a /tmp root (9 and 14 citation lines). The S4 tests on the 0.2.8258 tree
+    before A-D: 12 failed, 38 passed, GIL off and on - the same cases and reasons as on 0.2.8256; in the mirror with
+    A-D: 50 passed, GIL off and on.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spellbook.py:2695-2736
+  - src/melder/aether/spellbook/spellbook.py:4290-4435
+  - src/melder/aether/spellbook/spell.py:963-1004
+  - src/melder/mutation_research/mutation_research.py:1374-1541
+  - context_compass/artifacts/minted_index_registry_20261018/runs/apply_s4_repo_0_2_8259.txt:1-4
+  - context_compass/artifacts/minted_index_registry_20261018/runs/s4_landed_0_2_8258_abcd.diff:1-182
+  - context_compass/artifacts/minted_index_registry_20261018/runs/red_s4_0_2_8258_gil0.txt:1-54
+  - context_compass/artifacts/minted_index_registry_20261018/runs/red_s4_0_2_8258_gil1.txt:1-62
+  - context_compass/artifacts/minted_index_registry_20261018/runs/green_s4_mirror_0_2_8259_gil0.txt:1-2
+  - context_compass/artifacts/minted_index_registry_20261018/runs/green_s4_mirror_0_2_8259_gil1.txt:1-10
+  IMPACT: The fix is in src; the version is still 0.2.8258 until the notch, which follows the validation and the
+    documents in the contribution guide's turn-in order.
+  NEXT: The whole tree by shards in the mirror, GIL off and on; then the probes M1-M7, V1-V4, G1-G3 and the release
+    note's block.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-19T00:00:59Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: Validated with A-D on the 0.2.8258 tree (Python 3.14.7t; the /tmp mirror byte-equal to the repository's
+    src/ and tests/; the same counts with the GIL off and on). The S4 tests: 50 passed. The whole tree by shards:
+    unit 9691 passed, 3 skipped, 7 xfailed; component 2403 passed, 23 skipped, 1 xfailed; integration spellbook 670
+    passed, 2 skipped, 2 xpassed; aether 823 passed, 5 xfailed; conduit 353 passed (its open notch-race test,
+    marked intermittent, xfailed in one run and xpassed in the others); crystallizer, multithreading,
+    mutation_research and live_sim 398 passed, 4 xfailed; experimentation, experiments, tests and mocks 250 passed,
+    4 skipped - the only failures the 18 red tests held for
+    STORY-2026-10-17-failed_notch_keeps_switch_without_borrowers (7 unit, 11 integration), as at 0.2.8256. Probes on
+    the repository: M1-M3, V1-V4 and G1-G3 byte-equal to the A-D runs at 0.2.8256; M4-M7 equal but for its eight
+    refusals, which now carry S1's wording ("Spell ID collision detected: this object is already registered as
+    spell_id ...") and are refused all the same. The release note's example: every assert holds, GIL off and on.
+  EVIDENCE:
+  - context_compass/artifacts/minted_index_registry_20261018/runs/full_tree_0_2_8259/unit_gil0.txt:1-168
+  - context_compass/artifacts/minted_index_registry_20261018/runs/full_tree_0_2_8259/unit_gil1.txt:1-176
+  - context_compass/artifacts/minted_index_registry_20261018/runs/full_tree_0_2_8259/integ_aether_gil0.txt:1-71
+  - context_compass/artifacts/minted_index_registry_20261018/runs/full_tree_0_2_8259/integ_aether_gil1.txt:1-79
+  - context_compass/artifacts/minted_index_registry_20261018/runs/full_tree_0_2_8259/integ_conduit_gil0.txt:1-6
+  - context_compass/artifacts/minted_index_registry_20261018/runs/full_tree_0_2_8259/integ_rest_gil1.txt:1-15
+  - context_compass/artifacts/minted_index_registry_20261018/runs/landed_0_2_8259_probe_minted_index_fix_cases_gil0.txt:1-30
+  - context_compass/artifacts/minted_index_registry_20261018/runs/landed_0_2_8259_probe_minted_index_registry_0_2_8256_gil0.txt:1-26
+  - context_compass/artifacts/minted_index_registry_20261018/runs/landed_0_2_8259_probe_research_residency_moves_0_2_8256_gil0.txt:1-13
+  - context_compass/artifacts/minted_index_registry_20261018/runs/landed_0_2_8259_probe_minted_index_grants_gil0.txt:1-6
+  - context_compass/artifacts/minted_index_registry_20261018/runs/release_note_block_s4_landed_0_2_8259.txt:1-2
+  IMPACT: The exit gate's tests and probes hold on the landed tree; what remains is documentation, the notch, the
+    closure and the rebuild.
+  NEXT: The system documents (land_s4_docs.py, the citation remap, the four indexes), then the graph.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
 
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user

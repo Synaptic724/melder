@@ -2698,6 +2698,12 @@ class Spellbook(Cleanable):
 
         Remove this Spellbook's local spell indices from Aether for one conduit.
 
+        Contract:
+            - Removes every index this Book has registered: the indexes of its
+              active spells and, since 0.2.8259 (minted_index_registry), an index
+              that holds only parked versions (the one `remove_from_spell_index`
+              mints), so the frame keeps no entry for the torn-down root.
+
         Args:
             conduit_id:
                 Conduit id whose local spell indices should be removed from the
@@ -2705,9 +2711,22 @@ class Spellbook(Cleanable):
 
         Returns:
             None.
+
+        Threading:
+            Collects the indexes under the Book lock, reading each parked
+            version's index through its cleanup-safe read (Book -> spell, the
+            order Book teardown takes), and removes them with the frame lock
+            alone after the Book lock is released.
         """
         with self._lock:
             spell_set = set(self._spells.keys())
+            # A parked version's index joins the set: an index that holds only parked versions - the one
+            # remove_from_spell_index mints - is registered too (minted_index_registry, 0.2.8259). An index
+            # shared with an active version is already in it; a version cleaned meanwhile is skipped.
+            for parked_spell in self._inactive_spells.values():
+                parked_index = parked_spell._spell_index_unless_cleaned()
+                if parked_index is not None:
+                    spell_set.add(parked_index)
         if spell_set:
             self._aether._remove_spells_from_aether(
                 conduit_id,
@@ -4281,8 +4300,10 @@ class Spellbook(Cleanable):
             - If the spell is the sole member of `source_index` this raises;
               use `cleanup_spell` to dispose it instead.
             - Otherwise the spell leaves `source_index` (which keeps its remaining
-              members) and becomes the sole member of a fresh inactive index. No
-              index is destroyed.
+              members) and becomes the sole member of a fresh inactive index, which
+              is registered with the frame as `bind` registers the index it creates,
+              so the frame's lookups by spell_id find the spell there. No index is
+              destroyed.
 
         Args:
             spell: The owned, inactive spell to separate.
@@ -4308,7 +4329,8 @@ class Spellbook(Cleanable):
         only: the spell stays owned and inactive, so its id-keyed state
         (`_inactive_spells`, `_spell_ids`, id pools, Nexus, fast-door, Creations)
         is untouched. No index is destroyed -- the source keeps its remaining
-        members; the separated spell gets a fresh inactive index.
+        members; the separated spell gets a fresh inactive index, registered with
+        the frame as `bind` registers the index it creates.
 
         Steps:
             1. Enforce ownership (`spell._spellbook is self`) + inactive + that the
@@ -4317,6 +4339,14 @@ class Spellbook(Cleanable):
                `cleanup_spell` to dispose it instead).
             3. Otherwise mint a fresh `SpellIndex` seeded with this spell id, remove
                the spell from `source_index`, and repoint `spell.spell_index`.
+            4. Register the fresh index in the frame's spell registry the way a
+               post-conjure `bind` registers the index it creates: the same guard
+               (the Book is conjured) and the same call, under the Book's root
+               conduit. The frame's lookups by spell_id (the Aether conduit lookup,
+               a grant or transfer by spell_id, bind's collision guard,
+               MutationResearch residency) walk that registry. Until 0.2.8259
+               (minted_index_registry) the index was never registered, so they all
+               missed the version, parked or later notched active there.
 
         Args:
             spell: The owned, inactive spell to separate.
@@ -4328,6 +4358,11 @@ class Spellbook(Cleanable):
         Raises:
             RuntimeError: If `spell` is not owned here, is active, or is not a
                 member of `source_index`.
+
+        Threading:
+            The move runs under the Book lock; the registration takes the frame
+            lock alone, after the Book lock is released, as bind's registration
+            and `_destroy_spell_index`'s unregistration do. No lock-order edge.
         """
         self.check_cleaned()
         if spell._spellbook is not self:
@@ -4373,6 +4408,17 @@ class Spellbook(Cleanable):
             new_index = SpellIndex(initial_id=spell_id)
             source_index.remove_member(spell_id)
             spell.spell_index = new_index
+        # Register the fresh index with the frame the way a post-conjure bind registers the index it creates: the
+        # same guard and the same call, under the Book's root conduit, so every lookup that walks the frame's
+        # spell registry finds the spell. Frame lock alone, after the Book lock. `_destroy_spell_index`
+        # unregisters the index when it empties, and the root's teardown with the rest
+        # (`_unregister_conduit_spells_from_aether`) (minted_index_registry, 0.2.8259).
+        if self._conjured and self._conduit is not None:
+            Spellbook._aether._register_single_spell_index(
+                self._get_required_conduit_surface()._id,
+                new_index,
+                self._aetheric_frame_name,
+            )
         if self._crystallizer.activated:
             # The member split onto a FRESH index: snapshot both sides.
             self._crystallizer.emit(

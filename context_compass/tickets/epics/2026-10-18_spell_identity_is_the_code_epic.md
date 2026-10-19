@@ -8,7 +8,7 @@
 - Agent Role: synaptic_python_developer
 - Priority: p1
 - Created: 2026-10-18T11:45:58Z
-- Updated: 2026-10-18T23:43:33Z
+- Updated: 2026-10-19T00:00:36Z
 - Target Window: 2026-Q4
 - Related Program/Initiative: Melder runtime correctness (the owner's direction, chat 2026-10-18); follows
   STORY-2026-10-17-release_routes_parked_version_objects_to_active_pool
@@ -914,6 +914,27 @@ this does not make independent review mandatory for every ticket.
   NEXT: Report to the owner; then S3-S5, each after its own patch.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-19T00:00:36Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: The staged copies are cleaned, and the run logs the turn-in parked with them are back where they are
+    cited. S1 and S2's turn-in moved all of staged/ into _to_delete/, but staged/runs/ holds 25 files - run
+    logs, the mirror diff and two run scripts - and S1's, S2's and melder_1's minted-index story Notes cite
+    17 of them at staged/runs/, all missing after the move. runs/ went back with mv -n and every cited path
+    resolves again. The two modules and six tests, compared byte for byte with the files committed in
+    5e3800c7a (all identical), were deleted with the owner's permission, with the empty _to_delete/
+    folders; a citation into staged/src/ or staged/tests/ resolves at the same relative path from the
+    repository root (src/..., tests/...), and git keeps the copies at 5e3800c7a.
+  EVIDENCE:
+  - context_compass/artifact_board.md:130-131
+  - context_compass/artifacts/spell_identity_20261018/staged/runs/
+  IMPACT: The turn-in's cleanup no longer breaks evidence pointers in closed stories; nothing that was only in
+    the staged copies is lost.
+  NEXT: The graph leftovers: the four descriptors that still describe the retired fingerprint.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
 
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
