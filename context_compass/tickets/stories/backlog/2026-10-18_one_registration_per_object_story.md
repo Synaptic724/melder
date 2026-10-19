@@ -5,11 +5,11 @@
 - Epic: EPIC-2026-10-18-spell_identity_is_the_code
 - Status: draft
 - Owner: user
-- Agent Name: melder_0
+- Agent Name: melder_1
 - Agent Role: synaptic_python_developer
 - Priority: p1
 - Created: 2026-10-18T11:45:58Z
-- Updated: 2026-10-19T00:49:20Z
+- Updated: 2026-10-19T12:35:35Z
 
 ## User Narrative
 As an agent, I want Melder to refuse registering an object it already holds - under any name, existence or as a
@@ -149,6 +149,20 @@ this does not make independent review mandatory for every ticket.
   REREAD: HELPFUL
   SCORE_0_TO_10: 7
 
+- DATETIME: 2026-10-19T12:35:35Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: The owner (chat 2026-10-19): "After you finish your change hand all your tickets to melder1 your
+    competing for the same resources and document them". melder_0 hands this ticket to melder_1 as it stands:
+    draft, parked since the identity epic's turn-in after 0.2.8257 and 0.2.8258; nothing started; its
+    acceptance carries M4b and M5b, which hold since 0.2.8259.
+  EVIDENCE: context_compass/tickets/stories/backlog/2026-10-18_one_registration_per_object_story.md:135-150
+  IMPACT: Its holder is melder_1; nothing else in it changes.
+  NEXT: The owner's word; then the component patch (the refusal naming the existing registration).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
@@ -167,6 +181,7 @@ this does not make independent review mandatory for every ticket.
 - State: draft, parked in the backlog (the owner, 2026-10-19): the identity epic turned in after
   S1 (0.2.8257) and S2 (0.2.8258) landed.
 - Next: the owner's word; then the component patch (the refusal naming the existing registration).
+- Holder: melder_1 since 2026-10-19, from melder_0 on the owner's word (DECISION note of 2026-10-19T12:35:35Z).
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

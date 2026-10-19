@@ -1,0 +1,9 @@
+## repository (mounted folder), S3 src
+7.86s call     tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py::test_pod_death_rebuilds_the_world_from_sqlite
+1 passed in 12.66s
+## /tmp mirror, S3 src
+1.31s call     tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py::test_pod_death_rebuilds_the_world_from_sqlite
+1 passed in 1.91s
+## /tmp mirror, pre-S3 src (0.2.8260)
+1.31s call     tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py::test_pod_death_rebuilds_the_world_from_sqlite
+1 passed in 1.93s

@@ -1,0 +1,4 @@
+melder.aether.conduit.conduit.Conduit responsibilities: 31
+melder.aether.spellbook.spellbook.Spellbook responsibilities: 29
+melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard responsibilities: 13
+applied

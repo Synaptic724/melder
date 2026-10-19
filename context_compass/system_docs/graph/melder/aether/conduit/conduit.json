@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/conduit.py",
- "source_sha256": "0a2d1e89a4112dd4878e653ca76c7da2339cfc46c6e15f5c07ed216fe174ba2d",
+ "source_sha256": "7cfae3cd4b07d97ac10b97d22076366ff18b13711a7e9b130df80bacb66ab400",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.conduit": {
@@ -120,7 +120,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "b643d57f8756234780a9fb9d39adae5f3d9edfaad75556cb6e7b2ef92d8057e3",
+   "span_sha256": "dbc0666ba5375687ec371570a3dafdd5e22e24e4f18cac353a29716428a45f6e",
    "role": "Runtime execution scope for spell resolution.",
    "responsibilities": [
     "hosts meld execution",
@@ -152,7 +152,8 @@
     "names a notch's target by spell_id - the spell_id bind or bind_inactive returned - or by spell, exactly one; resolves a spell_id through the Book's _get_owned_spell to the exact owned version, active or parked; and refuses a version the Book does not own or one of another index before the notch transaction and again inside its seal, so a refused notch moves nothing (notch_spell, _resolve_notch_target, _owned_notch_target, 0.2.8249)",
     "names the parked spell add_to_spell_index and remove_from_spell_index move by spell_id or by spell, exactly one, under the notch's argument rules; resolves a spell_id through the Book's _get_owned_spell and refuses one the Book does not own before the transaction, leaving the rest to the Spellbook seams (_resolve_spell_to_move, _check_spell_argument, _owned_spell_by_id, 0.2.8249)",
     "after a notch's transaction, between the deactivate fan-out and the index emission, has every linked peer make its parked copy of the incoming version active again, so a version grant is active exactly while its version is (_activate_borrowed_spell, 0.2.8250)",
-    "answers get_spell_by_spell_id (renamed from get_spell_by_id with no alias, 0.2.8253) with exactly the spell the owner Book holds under the spell_id, active or parked, and get_spell_permissions with that version's own permissions; resolves a transfer's spell_id in two explicit steps - the member, then the spell its index has active here (_resolve_transfer_spell) - so a transfer still moves the index with its active version"
+    "answers get_spell_by_spell_id (renamed from get_spell_by_id with no alias, 0.2.8253) with exactly the spell the owner Book holds under the spell_id, active or parked, and get_spell_permissions with that version's own permissions; resolves a transfer's spell_id in two explicit steps - the member, then the spell its index has active here (_resolve_transfer_spell) - so a transfer still moves the index with its active version",
+    "takes a version out of every contract of its Book's root conduit before the Book disposes it: hands the root ward's _emit_spell_disposed to Spellbook._dispose_spell as release_contracts, from the root or a lesser of its lineage, and emits an index destroy with no member id when the index went too; the Spellbook's own cleanup_spell comes here once conjured (cleanup_spell, 0.2.8261)"
    ],
    "owns_state": [
     "_meld",

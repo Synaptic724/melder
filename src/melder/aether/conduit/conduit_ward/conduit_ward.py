@@ -2398,8 +2398,11 @@ class ConduitWard(Cleanable):
 
         Args:
             index_id: Stable id of the destroyed index.
-            member_ids: The index's member version ids, captured by the caller BEFORE
-                teardown (the live index is already cleaned when this runs).
+            member_ids: The index's member version ids still contracted under it,
+                captured by the caller BEFORE teardown (the live index is already
+                cleaned when this runs); empty from `Conduit.cleanup_spell`, whose
+                version left every contract before the disposal
+                (`_emit_spell_disposed`; cleanup_releases_contracts_2026_10_19, 0.2.8261).
 
         Threading:
             Walks this ward's contract registry under the ward lock, the lock link
@@ -2499,7 +2502,10 @@ class ConduitWard(Cleanable):
 
         Remove ONE per-member spell contract for an index-link: drop (and clean) the
         spell Detail on the owner side and untrack the borrower's contracted copy.
-        Idempotent.
+        Also the per-contract removal of a disposed version, a version grant included
+        (`_emit_spell_disposed`; cleanup_releases_contracts_2026_10_19, 0.2.8261).
+        Idempotent on the owner side; the borrower's removal raises when its Book holds
+        no entry for the version (`Spellbook._remove_contracted_spell`).
 
         Args:
             contract: The contract carrying the index link.
@@ -2587,6 +2593,63 @@ class ConduitWard(Cleanable):
                 # The index dropped this member; eagerly remove its per-member contract
                 # (and the borrower's copy). Idempotent -- a no-op if it was never mapped.
                 self._uncontract_member_spell(contract, self, member_id)
+
+    def _emit_spell_disposed(self, spell_id: str) -> None:
+        """
+        Internal
+
+        Owner-side emission when this conduit's Book disposes a version (`cleanup_spell`): every
+        contract whose owner side holds a Detail for the version - an index link's member Detail
+        or a version grant - drops it, with the borrower's entry, active or parked, and its
+        borrowed id, through the per-contract removal the index emissions use
+        (`_uncontract_member_spell`). The Book calls it after deciding the disposal and before it
+        disposes anything, so no borrower is left holding the version, nor a cleaned Spell.
+        (cleanup_releases_contracts_2026_10_19, 0.2.8261)
+
+        Contract:
+            - A contract that holds no Detail for the version is untouched; no contract is
+              severed here (an empty contract is a live link with nothing shared).
+            - An active borrower entry going marks the borrower's SpellContract consumers of its
+              key for revalidation (`Spellbook._remove_contracted_spell`, rule 2).
+            - Each contract it changed is re-emitted into the record after the ward lock is
+              released, as `_emit_index_destroy` does; a no-op while the crystallizer is inactive.
+            - The index links of an index that dies with the version are dropped after the
+              disposal, by `_emit_index_destroy`, not here.
+
+        Args:
+            spell_id: The spell_id of the version being disposed.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError: If this ward is cleaned; from the borrower's Book, if it holds no entry
+                for the version under a lender-side Detail (the cleanup then disposes nothing).
+
+        Threading:
+            Walks this ward's contract registry under the ward lock, the lock link
+            (`_create_new_contract`) and sever (`_remove_contract`) write it under, reads each
+            contract's Detail map under the contract lock and reaches the borrower's Book inside
+            `_uncontract_member_spell`: ward -> contract -> Book, the order sever and the index
+            emissions take. The caller holds no Book lock (`Spellbook._dispose_spell` runs it
+            between its two locked sections) and runs outside any transaction.
+        """
+        self.check_cleaned()
+        record_affected_contracts = []
+        # Under this ward's lock: link and sever write _contracts under it, and this emission runs outside any
+        # transaction window, so the mediator does not order it against them (cross_object_lock_gaps, 0.2.8231).
+        with self._lock:
+            for contract in self._contracts.values():
+                with contract._lock:
+                    held = contract._get_detail_map(self).get(spell_id) is not None
+                if not held:
+                    continue
+                record_affected_contracts.append(contract)
+                # The version leaves this contract: its Detail, and the borrower's entry and borrowed id.
+                self._uncontract_member_spell(contract, self, spell_id)
+        # Record: the disposed version left these contracts.
+        for record_contract in record_affected_contracts:
+            self._emit_contract_record(record_contract)
 
     def _find_governing_index_link(self, contract: Contract, spell_id: str) -> Optional[IndexDetail]:
         """

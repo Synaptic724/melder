@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py",
- "source_sha256": "32274aa21c2c093ad29cf0ece27343d520c6ca535b6010a124b48bda731791c9",
+ "source_sha256": "a0a542f56f33ae893596b63b344ecc91207119cfb3073c50795c3694792ba01e",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager": {
@@ -65,7 +65,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "22d465c31810ed76bdb618f9fee84b4ab34ece971bd678413e7d660019c3096a",
+   "span_sha256": "8e2b235f317bc66e9408c7729849bb960c4e70cb9d7373582c600ea9ddd20d87",
    "role": "Frame-level change-control registry and admission surface.",
    "responsibilities": [
     "tracks pending changes and dirty roots by conduit",

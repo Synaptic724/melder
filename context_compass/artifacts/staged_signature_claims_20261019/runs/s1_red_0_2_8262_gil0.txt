@@ -1,0 +1,12 @@
+E        +    where get_lookup = <melder.aether.aetheric_frame.aetheric_frame.AethericFrame object at 0x2f030369b40>.get_lookup
+E        +      where <melder.aether.aetheric_frame.aetheric_frame.AethericFrame object at 0x2f030369b40> = <melder.aether.spellbook.spellbook.Spellbook object at 0x2f02fc91510>._aetheric_frame
+E        +    and   ('greeter', 'spanish') = Spell(name=SpanishGreeter, binding=spanish, frame=Greeter, SHA256=230b5e1bec99f49833ea70f9e919f8be426821fe4081ae200a6a680c0edf2088)._key
+
+tests/component/melder/spellbook/test_spellbook_component_staged_version_keeps_active_signature.py:355: AssertionError
+=========================== short test summary info ============================
+FAILED tests/component/melder/spellbook/test_spellbook_component_staged_version_keeps_active_signature.py::test_bind_inactive_keeps_the_active_versions_binding_signature
+FAILED tests/component/melder/spellbook/test_spellbook_component_staged_version_keeps_active_signature.py::test_bind_inactive_before_conjure_keeps_the_active_versions_binding_signature
+FAILED tests/component/melder/spellbook/test_spellbook_component_staged_version_keeps_active_signature.py::test_index_move_back_keeps_the_active_versions_binding_signature
+FAILED tests/component/melder/spellbook/test_spellbook_component_staged_version_keeps_active_signature.py::test_cleanup_of_a_lone_parked_version_keeps_the_siblings_binding_signature
+FAILED tests/component/melder/spellbook/test_spellbook_component_staged_version_keeps_active_signature.py::test_staging_does_not_release_another_books_binding_signature
+5 failed, 1 passed in 5.89s

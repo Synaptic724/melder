@@ -54,6 +54,10 @@ class SpellbookValidationError(RuntimeError):
           warning as its reason, "  - <message> [CODE]", instead of saying no
           error was recorded (D1-B, 2026-10-16).
         - Footers count the hidden warnings and explain `[internal]`.
+        - With `preface` (2026-10-19) that one line comes first and the message
+          above follows it unchanged; a refused notch passes one, saying the
+          notch did not happen (`Spellbook._notch_spell`, which
+          `Conduit.notch_spell` calls inside its transaction).
 
     Contract:
         - Always names the broken spells when spells are supplied.
@@ -149,6 +153,7 @@ class SpellbookValidationError(RuntimeError):
             broken_spells: list[Spell],
             *,
             system_diagnostics: Optional[Sequence[SystemDiagnostic]] = None,
+            preface: Optional[str] = None,
     ) -> None:
         """
         Purpose:
@@ -159,18 +164,61 @@ class SpellbookValidationError(RuntimeError):
               ERROR entries of `system_diagnostics`; WARNING diagnostics are ignored.
             - Remains resilient when spell or diagnostic attributes are missing or
               cleaned; a failed read degrades that field only.
+            - `preface`, when given, is the message's first line and the message
+              above follows it unchanged; without it the message is byte-identical.
+              It is checked before anything is rendered (2026-10-19).
         Args:
             broken_spells: Spells refused by validation (may be empty).
             system_diagnostics: Optional conduit resolution diagnostics that explain
                 the refusal (the conjure and local-rerun gates pass them).
+            preface: One line of text to put before the message, or None (the
+                default). A refused notch passes one (`Spellbook._notch_spell`).
         Returns:
             None.
+        Raises:
+            TypeError: When `preface` is not one line of text: not a str, empty, or
+                holding a line break (`_check_preface`).
         """
+        if preface is not None:
+            self._check_preface(preface)
         self.broken_spells = broken_spells
         if not broken_spells and not system_diagnostics:
-            super().__init__("SpellbookValidationError raised with no broken spells.")
+            message = "SpellbookValidationError raised with no broken spells."
+        else:
+            message = self._render(broken_spells, system_diagnostics or ())
+        if preface is not None:
+            message = preface + "\n" + message
+        super().__init__(message)
+
+    @staticmethod
+    def _check_preface(preface: object) -> None:
+        """
+        Purpose:
+            Refuse a preface that is not one line of text.
+        Contract:
+            - Accepts a non-empty str with no line break - none of the boundaries
+              `str.splitlines` splits on - so the preface is exactly the message's
+              first line.
+        Args:
+            preface: The value passed as `preface` (not None).
+        Returns:
+            None.
+        Raises:
+            TypeError: When it is not a str, is empty, or holds a line break; the
+                message names what it got.
+        """
+        if not isinstance(preface, str):
+            received = type(preface).__name__
+        elif not preface:
+            received = "an empty str"
+        elif preface.splitlines() != [preface]:
+            received = "a str with a line break"
+        else:
             return
-        super().__init__(self._render(broken_spells, system_diagnostics or ()))
+        raise TypeError(
+            "SpellbookValidationError(preface=...) takes one line of text, a non-empty str; got "
+            f"{received}. Pass the one line to put before the report, or leave preface out."
+        )
 
     @classmethod
     def _render(

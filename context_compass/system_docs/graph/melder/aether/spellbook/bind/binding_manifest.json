@@ -1,93 +1,93 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/aether/spellbook/bind/binding_manifest.py",
-  "source_sha256": "31e27f12430622ce8f9a23ed6f359c77387c850761b648e91e99779c6db855b6",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.aether.spellbook.bind.binding_manifest": {
-      "id": "melder.aether.spellbook.bind.binding_manifest",
-      "label": "binding_manifest",
-      "kind": "module",
-      "file": "src/melder/aether/spellbook/bind/binding_manifest.py",
-      "lineno": 1,
-      "role": "Module holding BindingManifest, how a spell is kept, and its SHA256 (0.2.8258).",
-      "responsibilities": [
-        "defines BindingManifest and nothing at module scope but imports"
-      ],
-      "owns_state": [],
-      "phases": [
-        "init"
-      ],
-      "semantics_authored_against": ""
-    },
-    "melder.aether.spellbook.bind.binding_manifest.BindingManifest": {
-      "id": "melder.aether.spellbook.bind.binding_manifest.BindingManifest",
-      "label": "BindingManifest",
-      "kind": "class",
-      "file": "src/melder/aether/spellbook/bind/binding_manifest.py",
-      "lineno": 14,
-      "bases": [],
-      "markers": [],
-      "public_methods": [
-        "binding_hash",
-        "binding_key",
-        "binding_name",
-        "build",
-        "describe",
-        "disposal_method_names",
-        "existence",
-        "fields",
-        "frame_key",
-        "managed_spell_limit",
-        "managed_spell_mode",
-        "managed_spell_reset_methods",
-        "managed_spell_timeout_seconds",
-        "resolvable",
-        "spellframe",
-        "spellframe_kind",
-        "spellframe_text"
-      ],
-      "shape": {
-        "method_count": 18,
-        "has_bases": false,
-        "trivial": false
-      },
-      "span_sha256": "47a1d0c6190884e259ba5892547579fa4ba2b33bea29a5f4210c534a8d5f6990",
-      "role": "Value record of a spell's binding - the bind call - whose SHA256 is the binding hash.",
-      "responsibilities": [
-        "build(...) records the address (frame and binding keys), the spellframe as text and its kind, the binding name as written, existence, the ordered disposal names, resolvable and the managed settings, equal settings written alike (enum names, tuples, a float timeout)",
-        "binding_hash: the SHA256 of 'v1-binding' and one <field>=<repr> line per field in order; it keys the creation caches beside the spell_id and rides the SpellCrystal (record 4.3.0)",
-        "leaves out permissions, hooks, application metadata, the aetheric frame and the object's code (the spell_id)",
-        "is an immutable value record: hashed once at construction, read-only properties, owning nothing and needing no cleanup",
-        "describe() gives the hash and the fields as plain data"
-      ],
-      "owns_state": [],
-      "phases": [
-        "init",
-        "runtime"
-      ],
-      "semantics_authored_against": "47a1d0c6190884e259ba5892547579fa4ba2b33bea29a5f4210c534a8d5f6990"
-    }
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/bind/binding_manifest.py",
+ "source_sha256": "31e27f12430622ce8f9a23ed6f359c77387c850761b648e91e99779c6db855b6",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.bind.binding_manifest": {
+   "id": "melder.aether.spellbook.bind.binding_manifest",
+   "label": "binding_manifest",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/bind/binding_manifest.py",
+   "lineno": 1,
+   "role": "Module holding BindingManifest, how a spell is kept, and its SHA256 (0.2.8258).",
+   "responsibilities": [
+    "defines BindingManifest and nothing at module scope but imports"
+   ],
+   "owns_state": [],
+   "phases": [
+    "init"
+   ],
+   "semantics_authored_against": ""
   },
-  "edges_out": [],
-  "edge_candidates": [],
-  "published_aliases": [],
-  "imports": {
-    "hashlib": "hashlib",
-    "Sequence": "collections.abc.Sequence",
-    "TYPE_CHECKING": "typing.TYPE_CHECKING",
-    "Any": "typing.Any",
-    "ClassVar": "typing.ClassVar",
-    "Dict": "typing.Dict",
-    "Optional": "typing.Optional",
-    "Tuple": "typing.Tuple",
-    "Existence": "melder.aether.spellbook.existence.existence.Existence",
-    "ManagedSpellMode": "melder.aether.spellbook.existence.managed_spell_mode.ManagedSpellMode",
-    "SpellframeKind": "melder.aether.spellbook.spellframe_kind.spellframe_kind.SpellframeKind"
-  },
-  "collapse_candidate": {
-    "module": "melder.aether.spellbook.bind.binding_manifest",
-    "class": "melder.aether.spellbook.bind.binding_manifest.BindingManifest",
-    "label": "BindingManifest"
+  "melder.aether.spellbook.bind.binding_manifest.BindingManifest": {
+   "id": "melder.aether.spellbook.bind.binding_manifest.BindingManifest",
+   "label": "BindingManifest",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/bind/binding_manifest.py",
+   "lineno": 14,
+   "bases": [],
+   "markers": [],
+   "public_methods": [
+    "binding_hash",
+    "binding_key",
+    "binding_name",
+    "build",
+    "describe",
+    "disposal_method_names",
+    "existence",
+    "fields",
+    "frame_key",
+    "managed_spell_limit",
+    "managed_spell_mode",
+    "managed_spell_reset_methods",
+    "managed_spell_timeout_seconds",
+    "resolvable",
+    "spellframe",
+    "spellframe_kind",
+    "spellframe_text"
+   ],
+   "shape": {
+    "method_count": 18,
+    "has_bases": false,
+    "trivial": false
+   },
+   "span_sha256": "47a1d0c6190884e259ba5892547579fa4ba2b33bea29a5f4210c534a8d5f6990",
+   "role": "Value record of a spell's binding - the bind call - whose SHA256 is the binding hash.",
+   "responsibilities": [
+    "build(...) records the address (frame and binding keys), the spellframe as text and its kind, the binding name as written, existence, the ordered disposal names, resolvable and the managed settings, equal settings written alike (enum names, tuples, a float timeout)",
+    "binding_hash: the SHA256 of 'v1-binding' and one <field>=<repr> line per field in order; it keys the creation caches beside the spell_id and rides the SpellCrystal (record 4.3.0)",
+    "leaves out permissions, hooks, application metadata, the aetheric frame and the object's code (the spell_id)",
+    "is an immutable value record: hashed once at construction, read-only properties, owning nothing and needing no cleanup",
+    "describe() gives the hash and the fields as plain data"
+   ],
+   "owns_state": [],
+   "phases": [
+    "init",
+    "runtime"
+   ],
+   "semantics_authored_against": "47a1d0c6190884e259ba5892547579fa4ba2b33bea29a5f4210c534a8d5f6990"
   }
+ },
+ "edges_out": [],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {
+  "hashlib": "hashlib",
+  "Sequence": "collections.abc.Sequence",
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "Any": "typing.Any",
+  "ClassVar": "typing.ClassVar",
+  "Dict": "typing.Dict",
+  "Optional": "typing.Optional",
+  "Tuple": "typing.Tuple",
+  "Existence": "melder.aether.spellbook.existence.existence.Existence",
+  "ManagedSpellMode": "melder.aether.spellbook.existence.managed_spell_mode.ManagedSpellMode",
+  "SpellframeKind": "melder.aether.spellbook.spellframe_kind.spellframe_kind.SpellframeKind"
+ },
+ "collapse_candidate": {
+  "module": "melder.aether.spellbook.bind.binding_manifest",
+  "class": "melder.aether.spellbook.bind.binding_manifest.BindingManifest",
+  "label": "BindingManifest"
+ }
 }

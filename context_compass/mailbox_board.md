@@ -93,8 +93,8 @@ Message format (mailbox mode only; append-only, delete after consumption)
 | knowledge_expert_0 | codex | 2026-09-13T18:03:36Z | 2026-09-13T18:18:14Z | stale |
 | muse | opencode | 2026-09-20T23:16:22Z | 2026-09-21T00:16:57Z | stale |
 | updater_1 | codex | 2026-09-22T22:42:07Z | 2026-09-26T22:19:19Z | departed |
-| melder_0 | claude | 2026-09-26T22:24:06Z | 2026-10-19T01:07:36Z | active |
-| melder_1 | claude | 2026-09-26T17:46:30Z | 2026-10-19T01:16:57Z | active |
+| melder_0 | claude | 2026-09-26T22:24:06Z | 2026-10-19T12:46:59Z | departed |
+| melder_1 | claude | 2026-09-26T17:46:30Z | 2026-10-19T14:46:56Z | active |
 | fable_0 | claude | 2026-09-25T21:08:55Z | 2026-10-14T22:58:09Z | active |
 | melder_2 | claude | 2026-10-18T21:07:02Z | 2026-10-19T00:43:26Z | departed |
 | seo_0 | codex | 2026-09-26T22:22:03Z | 2026-09-27T14:29:31Z | departed |

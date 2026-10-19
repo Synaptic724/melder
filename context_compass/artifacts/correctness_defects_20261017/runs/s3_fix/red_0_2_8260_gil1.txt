@@ -1,0 +1,269 @@
+FFFFFFFFF.FFF                                                            [100%]
+=================================== FAILURES ===================================
+______ test_cleanup_of_a_parked_member_drops_it_from_index_link_borrowers ______
+
+    def test_cleanup_of_a_parked_member_drops_it_from_index_link_borrowers() -> None:
+        owner_book, borrower_book, owner, borrower, id_a, id_b, _id_solo = _world()
+        index_id = _link_index_of(owner_book, owner, borrower, id_a)
+        try:
+            owner.cleanup_spell(spell=owner_book._get_owned_spell(id_b))
+>           assert _borrowed(borrower_book, owner) == ([id_a], [], [id_a])
+E           AssertionError: assert (['9d31996cf0...016d86ee176']) == (['9d31996cf0...1ca50eb3571'])
+E             
+E             At index 1 diff: ['b275d52690890a8bd69c669fab40940dcee0893d3b844261464e5016d86ee176'] != []
+E             Use -v to get more diff
+
+tests/integration/melder/aether/conduit/test_cleanup_releases_contracts_integration.py:162: AssertionError
+__________ test_unlink_after_a_parked_cleanup_leaves_no_borrowed_ids ___________
+
+    def test_unlink_after_a_parked_cleanup_leaves_no_borrowed_ids() -> None:
+        owner_book, borrower_book, owner, borrower, id_a, id_b, _id_solo = _world()
+        index_id = _link_index_of(owner_book, owner, borrower, id_a)
+        try:
+            owner.cleanup_spell(spell=owner_book._get_owned_spell(id_b))
+            with borrower.transaction("link", conduits=[borrower, owner]):
+                borrower.remove_index_from_contract(index_id=index_id, conduit=owner)
+>           assert _borrowed(borrower_book, owner) == ([], [], [])
+E           AssertionError: assert ([], ['b275d5...016d86ee176']) == ([], [], [])
+E             
+E             At index 1 diff: ['b275d52690890a8bd69c669fab40940dcee0893d3b844261464e5016d86ee176'] != []
+E             Use -v to get more diff
+
+tests/integration/melder/aether/conduit/test_cleanup_releases_contracts_integration.py:177: AssertionError
+_ test_notch_to_a_restaged_version_after_its_cleanup_reaches_index_link_borrowers _
+
+    def test_notch_to_a_restaged_version_after_its_cleanup_reaches_index_link_borrowers() -> None:
+        owner_book, borrower_book, owner, borrower, id_a, id_b, _id_solo = _world()
+        _link_index_of(owner_book, owner, borrower, id_a)
+        index = owner_book.find_spell_by_spell_id(id_a).spell_index
+        try:
+            owner.cleanup_spell(spell=owner_book._get_owned_spell(id_b))
+            again = owner.bind_inactive(spell=_ServiceB, spell_index=index, existence=Existence.unique,
+                                        permissions="create", binding_name="b")
+            assert again == id_b
+>           owner.notch_spell(spell_index=index, spell_id=id_b)
+
+tests/integration/melder/aether/conduit/test_cleanup_releases_contracts_integration.py:193: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/melder/aether/conduit/conduit.py:5783: in notch_spell
+    self._activate_borrowed_spell(spell.spell_id)
+src/melder/aether/conduit/conduit.py:6340: in _activate_borrowed_spell
+    peer._spellbook._activate_contract_spell(owner_id, spell_id)
+src/melder/aether/spellbook/spellbook.py:1902: in _activate_contract_spell
+    self._reactivate_contracted_spell(conduit_id, spell)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <melder.aether.spellbook.spellbook.Spellbook object at 0x586b3f40f10>
+conduit_id = '01M59XB3E0VT229SE8ME1D4HB1'
+spell = <[AttributeError("'melder.aether.spellbook.spell.Spell' object has no attribute 'spell'") raised in repr()] Spell object at 0x586b428ed80>
+
+    def _reactivate_contracted_spell(self, conduit_id: str, spell: Spell) -> None:
+        """
+        Internal
+    
+        Restore a parked contracted (borrowed) spell for one peer conduit.
+    
+        Contract:
+            - The spell must be parked for its id under `conduit_id` (present in
+              `_inactive_contracted_spells[conduit_id]`); otherwise raises.
+            - Removes the spell from `_inactive_contracted_spells` and
+              repopulates the three active contracted maps for the conduit plus
+              the shared `_spell_id_pool`.
+            - `_contracted_spell_ids[conduit_id]` already carries the id
+              (existence was kept on park).
+            - Assumes the conduit's contract maps are live (park never drops the
+              conduit sub-dicts); does not touch the SpellIndex or framewide
+              lookup.
+            - Once the Book has conjured, marks the Book's SpellContract
+              consumers of the copy's key for revalidation after releasing the
+              lock (`_mark_contract_dependents_dirty`; rule 2): their next meld
+              builds against the copy now active. Mark only.
+    
+        Args:
+            conduit_id (str): Peer conduit id that owns the contract.
+            spell (Spell): The parked borrowed spell to reactivate.
+    
+        Returns:
+            None.
+    
+        Raises:
+            RuntimeError: If the spell is not the parked contracted spell for
+                its id under `conduit_id`.
+            Exception: Whatever the registry's mark raises, logged; the
+                reactivation stays published.
+    
+        Threading:
+            - Acquires the Spellbook lock; the admitting transaction serializes
+              the wider operation. The consumer mark runs after the lock is
+              released and takes only the registry lock.
+        """
+        spell_id = spell.spell_id
+>       spell_index = spell.spell_index
+                      ^^^^^^^^^^^^^^^^^
+E       AttributeError: 'melder.aether.spellbook.spell.Spell' object has no attribute 'spell_index'. Did you mean: 'spell_id'?
+
+src/melder/aether/spellbook/spellbook.py:1815: AttributeError
+___________ test_cleanup_of_a_parked_granted_version_drops_the_grant ___________
+
+    def test_cleanup_of_a_parked_granted_version_drops_the_grant() -> None:
+        owner_book, borrower_book, owner, borrower, _id_a, id_b, _id_solo = _world()
+        _grant(owner_book, owner, borrower, id_b)
+        try:
+            assert id_b in _borrowed(borrower_book, owner)[1]
+            owner.cleanup_spell(spell=owner_book._get_owned_spell(id_b))
+            active, parked, ids = _borrowed(borrower_book, owner)
+>           assert id_b not in active + parked + ids
+E           AssertionError: assert 'b275d52690890a8bd69c669fab40940dcee0893d3b844261464e5016d86ee176' not in (([] + ['b275d52690890a8bd69c669fab40940dcee0893d3b844261464e5016d86ee176']) + ['9d31996cf029f77415666d8e9f66d69ffdf3e05116938f91fe0c91ca50eb3571', 'b275d52690890a8bd69c669fab40940dcee0893d3b844261464e5016d86ee176'])
+
+tests/integration/melder/aether/conduit/test_cleanup_releases_contracts_integration.py:208: AssertionError
+__ test_cleanup_of_a_granted_sole_member_leaves_the_borrower_no_cleaned_copy ___
+
+    def test_cleanup_of_a_granted_sole_member_leaves_the_borrower_no_cleaned_copy() -> None:
+        owner_book, borrower_book, owner, borrower, _id_a, _id_b, id_solo = _world()
+        _grant(owner_book, owner, borrower, id_solo)
+        try:
+            assert _borrowed(borrower_book, owner)[0] == [id_solo]
+            owner.cleanup_spell(spell=owner_book.find_spell_by_spell_id(id_solo))
+>           assert _borrowed(borrower_book, owner) == ([], [], [])
+E           AssertionError: assert (['4198157323...fcb757dffa3']) == ([], [], [])
+E             
+E             At index 0 diff: ['4198157323c2d49714aee989c1500da19f323d5412a2fee6eb627fcb757dffa3'] != []
+E             Use -v to get more diff
+
+tests/integration/melder/aether/conduit/test_cleanup_releases_contracts_integration.py:221: AssertionError
+_ test_direct_spellbook_cleanup_of_a_parked_member_updates_index_link_borrowers _
+
+    def test_direct_spellbook_cleanup_of_a_parked_member_updates_index_link_borrowers() -> None:
+        owner_book, borrower_book, owner, borrower, id_a, id_b, _id_solo = _world()
+        _link_index_of(owner_book, owner, borrower, id_a)
+        try:
+            owner_book.cleanup_spell(spell=owner_book._get_owned_spell(id_b))
+>           assert _borrowed(borrower_book, owner) == ([id_a], [], [id_a])
+E           AssertionError: assert (['9d31996cf0...016d86ee176']) == (['9d31996cf0...1ca50eb3571'])
+E             
+E             At index 1 diff: ['b275d52690890a8bd69c669fab40940dcee0893d3b844261464e5016d86ee176'] != []
+E             Use -v to get more diff
+
+tests/integration/melder/aether/conduit/test_cleanup_releases_contracts_integration.py:236: AssertionError
+_____ test_direct_spellbook_cleanup_of_a_sole_member_drops_the_index_link ______
+
+    def test_direct_spellbook_cleanup_of_a_sole_member_drops_the_index_link() -> None:
+        owner_book, borrower_book, owner, borrower, _id_a, _id_b, id_solo = _world()
+        index_id = _link_index_of(owner_book, owner, borrower, id_solo)
+        try:
+            owner_book.cleanup_spell(spell=owner_book.find_spell_by_spell_id(id_solo))
+>           assert _borrowed(borrower_book, owner) == ([], [], [])
+E           AssertionError: assert (['4198157323...fcb757dffa3']) == ([], [], [])
+E             
+E             At index 0 diff: ['4198157323c2d49714aee989c1500da19f323d5412a2fee6eb627fcb757dffa3'] != []
+E             Use -v to get more diff
+
+tests/integration/melder/aether/conduit/test_cleanup_releases_contracts_integration.py:248: AssertionError
+________ test_lesser_conduit_cleanup_spell_releases_the_root_contracts _________
+
+    def test_lesser_conduit_cleanup_spell_releases_the_root_contracts() -> None:
+        owner_book, borrower_book, owner, borrower, id_a, id_b, _id_solo = _world()
+        _link_index_of(owner_book, owner, borrower, id_a)
+        lesser = owner.create_lesser_conduit()
+        try:
+            lesser.cleanup_spell(spell=owner_book._get_owned_spell(id_b))
+>           assert _borrowed(borrower_book, owner) == ([id_a], [], [id_a])
+E           AssertionError: assert (['9d31996cf0...016d86ee176']) == (['9d31996cf0...1ca50eb3571'])
+E             
+E             At index 1 diff: ['b275d52690890a8bd69c669fab40940dcee0893d3b844261464e5016d86ee176'] != []
+E             Use -v to get more diff
+
+tests/integration/melder/aether/conduit/test_cleanup_releases_contracts_integration.py:264: AssertionError
+____________ test_borrowers_drop_the_version_while_it_is_still_live ____________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x586b3b66550>
+
+    def test_borrowers_drop_the_version_while_it_is_still_live(monkeypatch: pytest.MonkeyPatch) -> None:
+        owner_book, borrower_book, owner, borrower, id_a, id_b, _id_solo = _world()
+        _link_index_of(owner_book, owner, borrower, id_a)
+        spell_b: Spell = owner_book._get_owned_spell(id_b)
+        seen: List[Tuple[str, bool]] = []
+        original = Spellbook._remove_contracted_spell
+    
+        def recording(self: Spellbook, spell_id: str, conduit_id: str) -> None:
+            """Record whether the owner's version is already cleaned when the borrower drops it."""
+            if self is borrower_book:
+                seen.append((spell_id, spell_b._cleaned))
+            original(self, spell_id, conduit_id)
+    
+        monkeypatch.setattr(Spellbook, "_remove_contracted_spell", recording)
+        try:
+            owner.cleanup_spell(spell=spell_b)
+>           assert seen == [(id_b, False)]
+E           AssertionError: assert [] == [('b275d52690...e176', False)]
+E             
+E             Right contains one more item: ('b275d52690890a8bd69c669fab40940dcee0893d3b844261464e5016d86ee176', False)
+E             Use -v to get more diff
+
+tests/integration/melder/aether/conduit/test_cleanup_releases_contracts_integration.py:288: AssertionError
+______ test_release_contracts_runs_between_the_decision_and_the_disposal _______
+
+    def test_release_contracts_runs_between_the_decision_and_the_disposal() -> None:
+        book, _active_id, parked_id = _book_with_parked_version()
+        parked = book._get_owned_spell(parked_id)
+        seen: List[Tuple[str, bool, bool]] = []
+    
+        def release(spell_id: str) -> None:
+            """Record the spell_id, whether the version is still live and still owned."""
+            seen.append((spell_id, parked._cleaned, book._get_owned_spell(spell_id) is parked))
+    
+        try:
+>           assert book._dispose_spell(parked, release_contracts=release) is None
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           TypeError: Spellbook._dispose_spell() got an unexpected keyword argument 'release_contracts'
+
+tests/component/melder/spellbook/test_spellbook_component_dispose_spell_releases_contracts_first.py:80: TypeError
+_________ test_release_contracts_is_not_called_for_a_refused_disposal __________
+
+    def test_release_contracts_is_not_called_for_a_refused_disposal() -> None:
+        book, active_id, _parked_id = _book_with_parked_version()
+        calls: List[str] = []
+        try:
+            with pytest.raises(RuntimeError, match="active member of a multi-member index"):
+>               book._dispose_spell(book.find_spell_by_spell_id(active_id), release_contracts=calls.append)
+E               TypeError: Spellbook._dispose_spell() got an unexpected keyword argument 'release_contracts'
+
+tests/component/melder/spellbook/test_spellbook_component_dispose_spell_releases_contracts_first.py:93: TypeError
+___ test_a_raising_release_contracts_disposes_nothing_and_a_retry_completes ____
+
+    def test_a_raising_release_contracts_disposes_nothing_and_a_retry_completes() -> None:
+        book, _active_id, parked_id = _book_with_parked_version()
+        parked = book._get_owned_spell(parked_id)
+    
+        def failing(spell_id: str) -> None:
+            """Fail the release."""
+            raise RuntimeError(f"release failed for {spell_id}")
+    
+        try:
+            with pytest.raises(RuntimeError, match="release failed"):
+>               book._dispose_spell(parked, release_contracts=failing)
+E               TypeError: Spellbook._dispose_spell() got an unexpected keyword argument 'release_contracts'
+
+tests/component/melder/spellbook/test_spellbook_component_dispose_spell_releases_contracts_first.py:109: TypeError
+=============================== warnings summary ===============================
+src/melder/__init__.py:199
+  /sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/src/melder/__init__.py:199: UserWarning: Python 3.14+ detected, but running in GIL-enabled mode.
+  melder is optimized for Python built with --disable-gil (PEP 703).
+  Performance may be degraded.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/integration/melder/aether/conduit/test_cleanup_releases_contracts_integration.py::test_cleanup_of_a_parked_member_drops_it_from_index_link_borrowers
+FAILED tests/integration/melder/aether/conduit/test_cleanup_releases_contracts_integration.py::test_unlink_after_a_parked_cleanup_leaves_no_borrowed_ids
+FAILED tests/integration/melder/aether/conduit/test_cleanup_releases_contracts_integration.py::test_notch_to_a_restaged_version_after_its_cleanup_reaches_index_link_borrowers
+FAILED tests/integration/melder/aether/conduit/test_cleanup_releases_contracts_integration.py::test_cleanup_of_a_parked_granted_version_drops_the_grant
+FAILED tests/integration/melder/aether/conduit/test_cleanup_releases_contracts_integration.py::test_cleanup_of_a_granted_sole_member_leaves_the_borrower_no_cleaned_copy
+FAILED tests/integration/melder/aether/conduit/test_cleanup_releases_contracts_integration.py::test_direct_spellbook_cleanup_of_a_parked_member_updates_index_link_borrowers
+FAILED tests/integration/melder/aether/conduit/test_cleanup_releases_contracts_integration.py::test_direct_spellbook_cleanup_of_a_sole_member_drops_the_index_link
+FAILED tests/integration/melder/aether/conduit/test_cleanup_releases_contracts_integration.py::test_lesser_conduit_cleanup_spell_releases_the_root_contracts
+FAILED tests/integration/melder/aether/conduit/test_cleanup_releases_contracts_integration.py::test_borrowers_drop_the_version_while_it_is_still_live
+FAILED tests/component/melder/spellbook/test_spellbook_component_dispose_spell_releases_contracts_first.py::test_release_contracts_runs_between_the_decision_and_the_disposal
+FAILED tests/component/melder/spellbook/test_spellbook_component_dispose_spell_releases_contracts_first.py::test_release_contracts_is_not_called_for_a_refused_disposal
+FAILED tests/component/melder/spellbook/test_spellbook_component_dispose_spell_releases_contracts_first.py::test_a_raising_release_contracts_disposes_nothing_and_a_retry_completes
+12 failed, 1 passed, 1 warning in 7.00s

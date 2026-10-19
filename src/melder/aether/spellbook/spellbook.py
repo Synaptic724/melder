@@ -46,6 +46,7 @@ from melder.aether.spellbook.spell import Spell
 from melder.aether.spellbook.spellbook_creation_system import SpellbookCreationSystem
 from melder.nexus.nexus import Nexus
 from melder.utilities.caching_system.caching_system import CachingSystem
+from melder.utilities.custom_exceptions.spellbook_validation_error import SpellbookValidationError
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.general_helpers import EnumHelpers, SpellInputUtils
 from melder.utilities.helpers.id_builder import IDBuilder
@@ -61,6 +62,7 @@ if TYPE_CHECKING:
     )
     from melder.aether.conduit.conduit import Conduit
     from melder.aether.spellbook.existence.managed_spell_mode import ManagedSpellMode
+    from melder.aether.spellbook.spell_compiler.topology.spell_local_topology import SpellLocalTopology
     from melder.crystallizer.crystallizer import Crystallizer
     from melder.mutation_research.mutation_research import MutationResearch
     from melder.utilities.logger.safe_logger import SafeLogger
@@ -3955,7 +3957,8 @@ class Spellbook(Cleanable):
         Internal -- called by the owning Conduit (Conduit.notch_spell is the public surface).
 
         Notch a SpellIndex so `spell` becomes its selected (resolvable) spell,
-        admitted as a `notch` change-control transaction through the mediator.
+        admitted as a `notch` change-control transaction through the mediator. A
+        version that fails its structural check is refused with nothing moved.
 
         `change_reason` records WHY the active member was repointed; it defaults
         to `selected_different_spell` (a general selection, not a mutation) and is
@@ -3972,32 +3975,114 @@ class Spellbook(Cleanable):
               performs the selected-spell switch inside the held window.
             - The actual switch (a SpellIndex repoint via `SpellIndex.update`) is
               the SpellIndex-model seam `_apply_notch`.
+            - A NOTCH EITHER STANDS OR LEAVES THE STRUCTURE AS IT WAS (2026-10-19;
+              STORY-2026-10-17-failed_notch_keeps_switch_without_borrowers, the
+              owner's answer: refuse it and throw). The entry records the
+              before-state, runs the seam, then checks the incoming version
+              (`_check_notched_version`: phases 1-4 for a version never compiled,
+              while it is active and so in the pool Phase 3 resolves against).
+            - A version that passes, or needs no check, is journaled to the
+              research record and returned; the commit's structural validator
+              then finds its Phase-4 result and skips it.
+            - A version that fails is refused: `_revert_refused_notch` puts the
+              before-state back and resets the refused version's Phase 1-4
+              artifacts, nothing is journaled, and the error is raised before the
+              Conduit fans out to its borrowers, so they are untouched. A retry is
+              checked, and refused, again.
+            - A notch to the index's active version is a no-op and journals
+              nothing.
 
         Args:
             spell_index: The SpellIndex whose selected spell is switched.
             spell: The already-bound spell to make selected.
+            change_reason: Why the active member is repointed; threaded into the
+                seam's invalidation.
 
         Returns:
             Spell: The now-selected `spell`.
 
         Raises:
-            RuntimeError: If the Spellbook is cleaned.
+            SpellbookValidationError: When `spell` fails its structural check. The
+                message's first line says the notch did not happen and names the
+                version still active (`_notch_refusal_line`), the validation report
+                follows, and the error is chained from the check's own. Nothing has
+                moved.
+            RuntimeError: If the Spellbook is cleaned or the seam refuses `spell`;
+                or when the reversal of a refused notch fails, a Melder bug whose
+                message names both versions.
+            Exception: Any other error the check raises, as it is, after the
+                reversal has run.
+
+        Threading:
+            Runs on the notch thread inside the held window. Takes the Book lock to
+            read the before-state and adds no lock: the seam and the phase runner
+            take the locks they take at a notch commit today.
         """
         self.check_cleaned()
         # The owning Conduit admits the `notch` transaction (it owns the
-        # change-control envelope and the conduit-link surface); this seam performs
-        # the local selected-spell switch inside that held window.
-        notched_spell = self._apply_notch(
-            spell_index=spell_index, spell=spell, change_reason=change_reason
+        # change-control envelope and the conduit-link surface); this entry
+        # performs the local selected-spell switch inside that held window. The
+        # before-state is read first, while the seal keeps every other operation
+        # off this Book, its conduits and the binding key.
+        with self._lock:
+            restored = self._spells.get(spell_index)
+            before_selected = spell_index.selected_spell_id
+            before_lookup = self._lookup_spells.get(spell._key)
+            before_claim = self._aetheric_frame.get_lookup(spell._key)
+        if restored is spell:
+            # Already the active member: the seam's no-op, nothing to check or journal.
+            return spell
+        # The lineage's registration before the switch: whether it is tracked, the
+        # dependencies its active version registered, and that version's topology -
+        # the check's Phase 3 overwrites both on the lineage.
+        tracked_state = self._spell_system_states.get_by_index_id(spell_index.id)
+        before_dependencies = tuple(tracked_state.direct_dependencies) if tracked_state is not None else ()
+        before_topology = (
+            self._spell_system_states.get_local_topology_by_id(restored.spell_id) if restored is not None else None
         )
-        # The promoted member's phases 1-4 now run at the NOTCH transaction
-        # commit through the generalized staged-binding-key structural validator
-        # (the same commit path bind uses), which delegates back to this
-        # spellbook's own phase runner. Phase-4/phase-6 results are transient
-        # (nulled at conjure end), so they must never be used as a compile
-        # signal here; the duplicate rerun previously keyed on them fired on
-        # every notch, including no-op notches.
-        return notched_spell
+        self._apply_notch(spell_index=spell_index, spell=spell, change_reason=change_reason)
+        # The promoted member's phases 1-4 run HERE, inside the held window, for a
+        # member never compiled - the commit validator's own test (no Phase-4
+        # result and no Phase-5 root blueprint; `_check_notched_version`), not the
+        # Phase-4 result alone: Phase-4/phase-6 results are transient (nulled at
+        # conjure end), so they must never be the only compile signal; a rerun
+        # once keyed on them fired on every notch, including no-op notches.
+        # Running here, not at the transaction commit, lets a failing check undo
+        # the switch while the seal still holds (corrected 2026-10-19: the check
+        # ran at the NOTCH commit, after the switch, and nothing undid it).
+        try:
+            self._check_notched_version(spell)
+        except Exception as error:
+            # A failing check undoes the switch. A validation verdict is raised as the
+            # refusal, built first because its report renders from the Phase-4 result
+            # still on the spell, which the reversal resets; any other error is
+            # re-raised as it is.
+            refusal = (
+                SpellbookValidationError(error.broken_spells, preface=self._notch_refusal_line(spell, restored))
+                if isinstance(error, SpellbookValidationError) else None
+            )
+            self._revert_refused_notch(
+                spell_index=spell_index,
+                refused=spell,
+                restored=restored,
+                before_selected=before_selected,
+                before_lookup=before_lookup,
+                before_claim=before_claim,
+                before_dependencies=before_dependencies,
+                before_topology=before_topology,
+                tracked=tracked_state is not None,
+            )
+            if refusal is None:
+                raise
+            raise refusal from error
+        # Research record: the notch stands - journal the promotion
+        # (forward-only; None on a first selection; the root declares an
+        # unknown incoming id before journaling).
+        self._record_research_promotion(
+            restored.spell_id if restored is not None else None,
+            spell.spell_id,
+        )
+        return spell
 
     def _apply_notch(
             self,
@@ -4041,6 +4126,12 @@ class Spellbook(Cleanable):
         subscriptions to the incoming one; the borrower Book's contracted-map mutators
         mark its consumers (rule 2).
 
+        The seam journals nothing to the research record: its entry
+        (`_notch_spell`) journals the promotion once the notch stands, after the
+        incoming version's structural check. When that check fails, the entry runs
+        this seam back toward the outgoing version (`_revert_refused_notch`, change
+        reason `mutation_rolled_back`), as a notch back does (2026-10-19).
+
         Args:
             spell_index: The SpellIndex whose active member is switched.
             spell: The already-staged (inactive) spell to make active.
@@ -4080,13 +4171,10 @@ class Spellbook(Cleanable):
                         spell_index, self._id
                     )
                 )
-        # Research record: the selection moved - journal the promotion
-        # (forward-only; None on a first selection; the root declares an
-        # unknown incoming id before journaling).
-        self._record_research_promotion(
-            outgoing.spell_id if outgoing is not None else None,
-            new_id,
-        )
+        # Research record: the entry (`_notch_spell`) journals the promotion once
+        # the notch stands - after the incoming version's structural check - so a
+        # refused notch, and this seam run back to undo it, journal nothing
+        # (2026-10-19; the promotion was journaled here until then).
         # Structural gate: re-register marks the index gated + dirty so meld-time
         # revalidation recompiles on next resolve (lazy).
         self._spell_system_states.register_index(
@@ -4129,11 +4217,14 @@ class Spellbook(Cleanable):
         # this recompile.)
         spell.invalidate_spell(change_reason=change_reason)
         spell.resolution_required = False
-        # Phases 1-4 for the promoted member now run at the NOTCH transaction
-        # commit: the strategy stages this binding key and the generalized
-        # structural commit validator delegates back to this spellbook's own
-        # phase runner, exactly like a bind commit. No hand-rolled structural
-        # run here -- the seam owns the swap, the commit owns the checks.
+        # Phases 1-4 for the promoted member run in the entry (`_notch_spell`),
+        # after this seam returns and still inside the held window, for a member
+        # never compiled; when they fail, the entry runs this seam back toward the
+        # outgoing version. The strategy still stages this binding key, so the
+        # structural commit validator meets the member and skips it (its Phase-4
+        # result is present). No structural run here -- the seam owns the swap,
+        # the entry owns the check (corrected 2026-10-19: the check ran at the
+        # NOTCH commit, after the switch, and nothing undid it).
         #
         # Bind gets its meld revalidation for free because a freshly bound id has
         # never been validated in this conduit (UNKNOWN verdict). A notched member
@@ -4155,6 +4246,281 @@ class Spellbook(Cleanable):
                 change_reason=change_reason,
             )
         return spell
+
+    def _check_notched_version(self, spell: Spell) -> None:
+        """
+        Internal
+
+        Run phases 1-4 for a version a notch just made active, when it was never compiled.
+
+        Contract:
+            - The test is the commit structural validator's own
+              (`ChangeControlManager._default_structural_validator`): a conjured
+              Book, and a version with no Phase-4 result and no Phase-5 root
+              blueprint. Phase-4 results are transient (nulled at conjure end), so
+              the blueprint is what tells a compiled version - a notch back - from
+              one never compiled; a compiled version recompiles through its gated
+              verdicts at its next meld.
+            - Runs while `spell` is active, so it is in the pool Phase 3 resolves
+              against (parked, it is not, and a self-dependency could not resolve
+              to itself).
+            - A version that passes keeps its Phase 1-4 results; the commit
+              validator finds them and skips it.
+
+        Args:
+            spell (Spell): The version the seam just promoted.
+
+        Returns:
+            None.
+
+        Raises:
+            SpellbookValidationError: When the version validates as broken.
+            Exception: Any phase execution failure, as the phase runner raises it.
+
+        Threading:
+            Called by `_notch_spell` on the notch thread inside the held window,
+            without the Book lock, as the commit validator calls the phase runner.
+        """
+        if not self._conjured:
+            return
+        if spell.validation_result_phase4 is not None:
+            return
+        if spell._compiler_artifact._root_blueprint_phase5 is not None:
+            return
+        self._run_post_conjure_structural_phases([spell])
+
+    @staticmethod
+    def _notch_refusal_line(refused: Spell, restored: Optional[Spell]) -> str:
+        """
+        Internal
+
+        The first line of a refused notch's SpellbookValidationError.
+
+        Contract:
+            - One line: the notch did not happen; the refused version and the
+              version still active (or that the index still has none), each by
+              name and spell_id.
+
+        Args:
+            refused (Spell): The version that failed its structural check.
+            restored (Optional[Spell]): The version active before the notch, or
+                None for an index with no active version.
+
+        Returns:
+            str: The refusal line.
+        """
+        line = (
+            f"notch_spell refused: '{refused.spell_name}' (spell_id {refused.spell_id}) failed its structural "
+            "check, so the notch did not happen; "
+        )
+        if restored is None:
+            return line + "the index still has no active version."
+        return line + (
+            f"'{restored.spell_name}' (spell_id {restored.spell_id}) is still the active version of the index."
+        )
+
+    def _revert_refused_notch(
+            self,
+            *,
+            spell_index: SpellIndex,
+            refused: Spell,
+            restored: Optional[Spell],
+            before_selected: Optional[str],
+            before_lookup: Optional[SpellIndex],
+            before_claim: Optional[str],
+            before_dependencies: tuple[str, ...],
+            before_topology: Optional[SpellLocalTopology],
+            tracked: bool,
+    ) -> None:
+        """
+        Internal
+
+        Undo a notch whose incoming version failed its structural check, inside the held window.
+
+        Contract:
+            - With an outgoing version (`restored`): the seam runs back toward it
+              (`_apply_notch`, change reason `mutation_rolled_back`), as a notch
+              back does - `restored` active, selected, claimed and routed by its
+              key, registered with SpellSystemStates and the RiskManager, published
+              to Nexus; `refused` parked with its creation context cleaned. The
+              lineage's dependencies and the topology-derived indexes are then put
+              back (`update_dependencies` with `before_dependencies`,
+              `register_local_topology` with `before_topology`): the check's Phase 3
+              registered `refused`'s on the lineage, and another Book's resolution
+              would otherwise read `restored` as depending on them (a self-dependent
+              `refused` made `restored` depend on `refused` itself). When
+              `refused` is keyed elsewhere, that key's Book lookup and frame claim
+              are then set back to their before-values (`_restore_binding_key`),
+              since the seam repoints only the key it promotes. A key the two share
+              is left as the promotion set it: setting it back would release the
+              claim and the lookup wherever staging `refused` dropped them
+              (STORY-2026-10-17-staged_version_releases_active_signature), and
+              `restored` could not be melded by address.
+            - With none (an index `remove_from_spell_index` minted):
+              `_revert_refused_activation` parks `refused` again and puts the
+              selection, the lineage registration, the RiskManager entry and the
+              Nexus record back; then the key is set back.
+            - Then `refused`'s Phase 1-4 artifacts are reset, so a retry checks it
+              again instead of reading a verdict computed while it was active.
+            - Not restored, by design: `restored`'s creation context (the switch
+              cleaned it) and its per-conduit verdicts (gated, as after any notch),
+              the marks the switch left on dependents (mark only), the Crystallizer's
+              twins, which take the switch and then this reversal, and `refused`'s
+              own topology under its spell_id (nothing reads it while it is parked;
+              its next check replaces it).
+
+        Args:
+            spell_index (SpellIndex): The notched index.
+            refused (Spell): The version that failed its check, active now.
+            restored (Optional[Spell]): The version active before the notch, or None.
+            before_selected (Optional[str]): The index's selected spell_id before the notch.
+            before_lookup (Optional[SpellIndex]): The Book's address lookup for `refused`'s key before the notch.
+            before_claim (Optional[str]): The spell_id holding the frame claim for `refused`'s key before the notch.
+            before_dependencies (tuple[str, ...]): The lineage's direct dependencies before the notch.
+            before_topology (Optional[SpellLocalTopology]): `restored`'s registered topology, or None.
+            tracked (bool): Whether SpellSystemStates tracked the index before the notch.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError: When any step fails - a Melder bug; the message names both
+                versions and the error is chained from the failing step's.
+
+        Threading:
+            Called by `_notch_spell` inside the held window. The seam and the helpers
+            take the locks a notch takes: the Book lock with the frame lookup's leaf
+            lock inside it, then the registry and the RiskManager outside the Book lock.
+        """
+        try:
+            if restored is not None:
+                self._apply_notch(
+                    spell_index=spell_index,
+                    spell=restored,
+                    change_reason=SpellStateChangeReason.mutation_rolled_back,
+                )
+                self._spell_system_states.update_dependencies(spell_index, before_dependencies)
+                if before_topology is not None:
+                    self._spell_system_states.register_local_topology(spell_index, before_topology)
+                if refused._key != restored._key:
+                    self._restore_binding_key(refused._key, before_lookup, before_claim)
+            else:
+                self._revert_refused_activation(
+                    spell_index=spell_index, refused=refused, before_selected=before_selected, tracked=tracked,
+                )
+                self._restore_binding_key(refused._key, before_lookup, before_claim)
+            refused._compiler_artifact.reset_phase_artifacts()
+        except Exception as error:
+            active = (
+                f"'{restored.spell_name}' (spell_id {restored.spell_id})" if restored is not None
+                else "no active version"
+            )
+            self._logger.error(
+                f"Reversal of the refused notch to spell_id={refused.spell_id} failed: {error}",
+                "_revert_refused_notch",
+                exc_info=True,
+            )
+            raise RuntimeError(
+                f"notch_spell refused '{refused.spell_name}' (spell_id {refused.spell_id}) but could not put the "
+                f"index back to {active}: {error}. The index may be left switched to the refused version. This is "
+                "a Melder bug; please report it with this message."
+            ) from error
+
+    def _revert_refused_activation(
+            self,
+            *,
+            spell_index: SpellIndex,
+            refused: Spell,
+            before_selected: Optional[str],
+            tracked: bool,
+    ) -> None:
+        """
+        Internal
+
+        Undo a refused notch on an index that had no active version (one `remove_from_spell_index` minted).
+
+        Contract:
+            - Parks `refused` again (`_deactivate_owned_spell`) and cleans its
+              creation context, sets the selection back to `before_selected` when
+              it moved, and emits the index crystal while the Crystallizer
+              records - all under the Book lock, as the seam does.
+            - SpellSystemStates forgets the index when it did not track it before
+              the notch (`unregister_index`), else re-registers it to follow the
+              selection; the RiskManager entry the seam added for an untracked
+              index is removed, and the Nexus record the seam published is removed.
+            - Leaves the binding key to the caller (`_restore_binding_key`).
+
+        Args:
+            spell_index (SpellIndex): The notched index.
+            refused (Spell): The version that failed its check, active now.
+            before_selected (Optional[str]): The index's selected spell_id before the notch.
+            tracked (bool): Whether SpellSystemStates tracked the index before the notch.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError: As the steps raise them (the caller reports a Melder bug).
+
+        Threading:
+            The Book lock for the park and the selection (the seam's order); the
+            registry, the RiskManager and Nexus outside it.
+        """
+        with self._lock:
+            self._deactivate_owned_spell(refused)
+            refused._cleanup_creation_context()
+            if before_selected is not None and spell_index.selected_spell_id != before_selected:
+                spell_index.update(before_selected)
+            if self._crystallizer.activated:
+                self._crystallizer.emit(
+                    self._crystallizer.create_spell_index_crystal(spell_index, self._id)
+                )
+        if tracked:
+            self._spell_system_states.register_index(spell_index=spell_index, owner_spellbook_id=self._id)
+        else:
+            self._spell_system_states.unregister_index(spell_index)
+        if self._conjured and self._conduit is not None:
+            if not tracked:
+                self._unregister_spell_with_risk_manager(self._get_required_conduit_surface()._id, refused)
+            self._remove_spell_record_from_nexus(refused.spell_id)
+
+    def _restore_binding_key(
+            self,
+            key: tuple[str, str],
+            lookup: Optional[SpellIndex],
+            claim: Optional[str],
+    ) -> None:
+        """
+        Internal
+
+        Set one binding key's Book address lookup and frame claim back to the values a refused notch recorded.
+
+        Contract:
+            - The Book lookup is set to `lookup`, or removed when it was None.
+            - The frame claim is re-pointed to `claim` (`update_lookup`, which sets
+              unconditionally), or released when it was None.
+
+        Args:
+            key (tuple[str, str]): The `(frame_key, binding_key)` to restore.
+            lookup (Optional[SpellIndex]): The index the Book routed the key to, or None.
+            claim (Optional[str]): The spell_id that held the frame claim, or None.
+
+        Returns:
+            None.
+
+        Threading:
+            Under the Book lock, taking the frame lookup's leaf lock inside it as
+            the seam does.
+        """
+        with self._lock:
+            if lookup is None:
+                self._lookup_spells.pop(key, None)
+            else:
+                self._lookup_spells[key] = lookup
+            if claim is None:
+                self._aetheric_frame.release_lookup(key)
+            else:
+                self._aetheric_frame.update_lookup(key, claim)
 
     def _add_to_spell_index(self, *, spell: Spell, target_index: SpellIndex) -> Spell:
         """
@@ -4265,6 +4631,7 @@ class Spellbook(Cleanable):
         if source_emptied:
             self._destroy_spell_index(
                 source_index,
+                spell_id=spell_id,
                 binding_key=binding_key,
                 owner_conduit_id=owner_conduit_id,
             )
@@ -4289,6 +4656,7 @@ class Spellbook(Cleanable):
             self,
             spell_index: SpellIndex,
             *,
+            spell_id: str,
             binding_key: tuple[str, str],
             owner_conduit_id: str | None,
     ) -> None:
@@ -4303,22 +4671,53 @@ class Spellbook(Cleanable):
         NOTE: contracted/borrower fan-out for a SHARED index is intentionally NOT
         handled here -- this covers the local (un-shared) case only.
 
+        Contract:
+            - Every caller hands it an index a PARKED member just left empty: the
+              index Bind mints for a `bind_inactive` (folded off by
+              `_apply_add_to_index`), a source index an index move emptied, or the
+              index a lone parked version is disposed out of (`_dispose_spell`).
+            - It touches no other spell's binding signature: the Book route for
+              `binding_key` goes only when it routes the key to THIS index, and the
+              frame claim is released only when the departing member `spell_id`
+              holds it. A parked member shares its key with the active version it
+              was staged beside - or with an active spell of another Book of the
+              frame - so releasing by key took that version's claim and route while
+              it still served (staged_signature_claims_2026_10_19, 0.2.8263;
+              STORY-2026-10-17-staged_version_releases_active_signature).
+
         Steps:
-            1. Spellbook: drop the active-map entry + the binding-key lookup.
-            2. Frame: release the binding signature + unregister from the spell
-               registry.
+            1. Spellbook: drop the active-map entry, and the binding-key route only
+               when it routes the key to this index.
+            2. Frame: release the claim the departing member holds (by spell_id; a
+               no-op when it holds none, as a parked version claims no signature)
+               + unregister from the spell registry.
             3. SpellSystemStates: `unregister_index` (states, closure, risk).
             4. The index object: `cleanup()`.
 
         Args:
             spell_index: The emptied index to destroy.
-            binding_key: The `(frame_key, bind_key)` signature the index held.
+            spell_id: The departing member's spell_id - the last member the index
+                held, moved out or being disposed.
+            binding_key: The `(frame_key, bind_key)` key of the departing member.
             owner_conduit_id: The owning conduit id, or None when unconjured.
+
+        Threading:
+            The route check and pops run under the Book lock; the claim release is
+            the frame lookup's leaf call, taken after the Book lock is released, as
+            before. No lock or lock-order edge is added.
         """
         with self._lock:
             self._spells.pop(spell_index, None)
-            self._lookup_spells.pop(binding_key, None)
-        self._aetheric_frame.release_lookup(binding_key)
+            # The route goes only when it routes the key to THIS index: the departing
+            # parked member shares its key with the active version it was staged
+            # beside, and the route is that version's (0.2.8263).
+            if self._lookup_spells.get(binding_key) is spell_index:
+                self._lookup_spells.pop(binding_key, None)
+        # BY SPELL_ID, NOT BY KEY: `release_lookup` pops whoever holds the key - the
+        # active version keyed like the departing member, in this Book or another of
+        # the frame - while `release_lookup_by_spell_id` releases only a claim the
+        # departing member holds, as `cleanup_and_remove_spell` releases (0.2.8263).
+        self._aetheric_frame.release_lookup_by_spell_id(spell_id)
         if owner_conduit_id is not None:
             Spellbook._aether._remove_single_spell_index(
                 owner_conduit_id,
@@ -4482,10 +4881,12 @@ class Spellbook(Cleanable):
         """
         Public API
 
-        Fully dispose an owned spell. Invalidate it FIRST so the spell and its
-        SpellIndex are flagged dirty (and dependents are rechecked) while the index
-        and dependency edges still exist, then take it off every resolution
-        surface, destroying its index when the spell was that index's only member.
+        Fully dispose an owned spell. On a conjured Book every contract that holds
+        the version drops it first, through the root conduit's `cleanup_spell`.
+        Then invalidate it so the spell and its SpellIndex are flagged dirty (and
+        dependents are rechecked) while the index and dependency edges still exist,
+        then take it off every resolution surface, destroying its index when the
+        spell was that index's only member.
         This is the disposal path `remove_from_spell_index` points at for a
         sole-member index.
 
@@ -4498,7 +4899,7 @@ class Spellbook(Cleanable):
               first. `cleanup_and_remove_spell`, and so a direct
               `Spell.cleanup()`, refuses it the same way. The sole member of an
               index may always be disposed -- the index is destroyed with it.
-            - Invalidation happens FIRST (`spell.invalidate_spell()`): the creation
+            - Invalidation happens before any teardown (`spell.invalidate_spell()`): the creation
               context is cleared and its SpellIndex is marked structurally changed so
               dependents are rechecked, while the index and dependency edges still
               exist. Teardown only runs afterwards.
@@ -4511,6 +4912,14 @@ class Spellbook(Cleanable):
             - Conduit Creations persist in this model and are left alone here.
             - NOTE: not yet sealed by a mediator transaction (no cleanup strategy
               exists); the map mutations run under the Spellbook lock.
+            - On a conjured Book the call goes through its root conduit's
+              `cleanup_spell`: after this Book's decision and before its
+              disposal, every contract that holds the version drops it - an
+              index link's member Detail or a version grant, with the borrower's
+              entry and borrowed id - and an index that dies with it leaves its
+              index links (cleanup_releases_contracts_2026_10_19, 0.2.8261).
+              Before conjure no contract exists and the Book disposes it
+              directly.
 
         Args:
             spell: The owned spell to dispose.
@@ -4543,9 +4952,21 @@ class Spellbook(Cleanable):
         Returns:
             None.
         """
+        self.check_cleaned()
+        if self._conduit is not None:
+            # Conjured: the root conduit's cleanup_spell runs this Book's disposal with the contract release
+            # first, so no borrower keeps the version (cleanup_releases_contracts_2026_10_19, 0.2.8261). Before
+            # conjure no conduit and no contract exist.
+            self._conduit.cleanup_spell(spell=spell)
+            return
         self._dispose_spell(spell)
 
-    def _dispose_spell(self, spell: Spell) -> Optional[str]:
+    def _dispose_spell(
+            self,
+            spell: Spell,
+            *,
+            release_contracts: Optional[Callable[[str], None]] = None,
+    ) -> Optional[str]:
         """
         Internal
 
@@ -4562,19 +4983,33 @@ class Spellbook(Cleanable):
               Book-locked section, and clears it under the Book lock when the
               disposal ends (finished or failed), so a second call for the same
               spell that starts meanwhile refuses before it touches anything.
+            - `release_contracts`, when given, is called once with the spell_id
+              after the decision and the refusals and before anything is
+              invalidated or disposed: `Conduit.cleanup_spell` passes the root
+              ward's `_emit_spell_disposed`, so every contract drops the version
+              while it is still live. A refused call never reaches it; a raise
+              from it ends the call with nothing disposed, and the finally
+              clears the in-flight mark. (cleanup_releases_contracts_2026_10_19,
+              0.2.8261)
 
         Args:
             spell: The owned spell to dispose.
+            release_contracts: Optional hook taking the spell_id, run between the
+                decision and the disposal; None disposes with no contract release
+                (an unconjured Book holds no contract).
 
         Returns:
             Optional[str]: The destroyed index's id, or None.
 
         Raises:
             RuntimeError: As `cleanup_spell`.
+            Exception: Whatever `release_contracts` raises; nothing is disposed.
 
         Threading:
             As `cleanup_spell`. (cross_object_lock_gaps, 0.2.8231; the in-flight
-            mark, lock_residuals, 0.2.8232)
+            mark, lock_residuals, 0.2.8232) `release_contracts` runs with no Book
+            lock held: the decision's section is released before it and the
+            disposal's sections are taken after it.
         """
         self.check_cleaned()
         spell_id = spell.spell_id
@@ -4634,6 +5069,12 @@ class Spellbook(Cleanable):
                 )
         # Reached only when this call marked the spell above: nothing between the mark and here can raise.
         try:
+            # CONTRACTS FIRST (the owner's order, 2026-10-19): the caller's hook takes the version out of every
+            # contract that holds it while it is still live, before anything below invalidates or disposes it;
+            # a raise here leaves it undisposed and the finally clears the mark
+            # (cleanup_releases_contracts_2026_10_19, 0.2.8261).
+            if release_contracts is not None:
+                release_contracts(spell_id)
             # CLEAN UP. Only an ACTIVE spell is invalidated first: flag it + its SpellIndex
             # dirty (clear the creation context, force a next-meld rebuild) while the index
             # and dependency edges still exist, so dependents can be rechecked before
@@ -4667,6 +5108,7 @@ class Spellbook(Cleanable):
                 if index_emptied:
                     self._destroy_spell_index(
                         index,
+                        spell_id=spell_id,
                         binding_key=binding_key,
                         owner_conduit_id=owner_conduit_id,
                     )
@@ -5071,9 +5513,13 @@ class Spellbook(Cleanable):
         the session, which the change-control commit consumes to run the phases.
 
         Used by the active bind path. Notch does NOT stage -- it promotes an
-        existing member under a NOTCH transaction, whose commit never fires the
-        bind structural validator, so it runs the structural phases directly via
-        `_run_post_conjure_structural_phases`.
+        existing member under a NOTCH transaction, and its entry (`_notch_spell`)
+        runs the structural phases for a never-compiled member directly via
+        `_run_post_conjure_structural_phases`, inside the held window, refusing
+        the notch when they fail. The NOTCH commit does fire the structural
+        validator (it resolves the strategy's staged binding key), which then
+        finds the Phase-4 result and skips (corrected 2026-10-19: this said the
+        commit never fires it).
 
         Args:
             spell (Spell): The spell to stage.
@@ -6717,6 +7163,35 @@ class Spellbook(Cleanable):
             self._aetheric_frame_name,
         )
         self._nexus._publish_spell_record(self, spell, spell._owner_conduit_id)
+
+    def _remove_spell_record_from_nexus(self, spell_id: str) -> None:
+        """
+        Internal
+
+        Remove one published SpellRecord of this Spellbook from Nexus.
+
+        Contract:
+            - The gates of `_publish_spell_record_to_nexus`: a publishing frame and
+              a conjured Book with a root conduit; otherwise nothing happens.
+            - Used when a refused notch takes back the record its switch published
+              for a version that is parked again (`_revert_refused_activation`).
+
+        Args:
+            spell_id:
+                The spell_id whose record is removed.
+
+        Returns:
+            None.
+        """
+        if not self._nexus_publish_enabled:
+            return
+        if not self._conjured or self._conduit is None:
+            return
+        self._nexus._remove_spell_record(
+            self._id,
+            spell_id,
+            self._aetheric_frame_name,
+        )
 
     def _remove_spells_from_nexus(self) -> None:
         """

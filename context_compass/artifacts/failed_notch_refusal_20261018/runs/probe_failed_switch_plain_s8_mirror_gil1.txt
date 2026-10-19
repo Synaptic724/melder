@@ -1,0 +1,17 @@
+<mirror>/src/melder/__init__.py:199: UserWarning: Python 3.14+ detected, but running in GIL-enabled mode.
+melder is optimized for Python built with --disable-gil (PEP 703).
+Performance may be degraded.
+  warnings.warn(
+before the switch:
+  world: greeter by name -> hello
+  borrower: speaker's greeter -> hello
+staged TimedGreeter (needs a Clock; UtcClock and LocalClock are both registered): accepted
+switch the index to TimedGreeter:
+  world.notch_spell(...) -> raises SpellbookValidationError: notch_spell refused: 'TimedGreeter' (spell_id df1a0bfcf4fc451e7cd991ad2fad6a28294b66e643bcaecd7586f7f9b2ae71e2
+  the reason Melder gives: MELD
+after the failed switch:
+  the index now selects: English
+  world: English by its spell_id -> hello
+  world: greeter by name -> hello
+  world: the broken version by name -> raises KeyError: "[MELD] No spell found for frame='greeter', binding='timed'."
+  borrower: speaker's greeter -> hello

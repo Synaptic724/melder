@@ -13,7 +13,7 @@ Regenerate with:
     python src/melder/_build_assets/_build_asset_runner.py
 """
 
-BUILT_FOR_VERSION = "0.2.8259"
+BUILT_FOR_VERSION = "0.2.8263"
 NODE_COUNT = 1231
 EDGE_COUNT = 1419
 WHY_COUNT = 959
@@ -724,7 +724,7 @@ NODES = {
     'melder.aether.spellbook.spellbinder': ('src/melder/aether/spellbook/spellbinder.py', 'spellbinder', 'module', 1, False),
     'melder.aether.spellbook.spellbinder.SpellBinder': ('src/melder/aether/spellbook/spellbinder.py', 'SpellBinder', 'class', 16, False),
     'melder.aether.spellbook.spellbook': ('src/melder/aether/spellbook/spellbook.py', 'spellbook', 'module', 1, False),
-    'melder.aether.spellbook.spellbook.Spellbook': ('src/melder/aether/spellbook/spellbook.py', 'Spellbook', 'class', 71, False),
+    'melder.aether.spellbook.spellbook.Spellbook': ('src/melder/aether/spellbook/spellbook.py', 'Spellbook', 'class', 73, False),
     'melder.aether.spellbook.spellbook_creation_system': ('src/melder/aether/spellbook/spellbook_creation_system.py', 'spellbook_creation_system', 'module', 1, False),
     'melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem': ('src/melder/aether/spellbook/spellbook_creation_system.py', 'SpellbookCreationSystem', 'class', 54, False),
     'melder.aether.spellbook.spellframe_kind.spellframe_kind': ('src/melder/aether/spellbook/spellframe_kind/spellframe_kind.py', 'spellframe_kind', 'module', 1, False),
@@ -4260,7 +4260,7 @@ WHY = {
     ('melder.aether.spellbook.spellbook.Spellbook', 'melder.aether.spellbook.spell.Spell'): 'Spellbook owns the lifecycle of locally registered Spell records and cleans them during Spellbook teardown.',
     ('melder.aether.spellbook.spellbook.Spellbook', 'melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem'): 'Spellbook owns the spell-level validation system used by SpellCompiler validation passes.',
     ('melder.aether.spellbook.spellbook.Spellbook', 'melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem'): 'Spellbook creates a conjure-only SpellbookCreationSystem helper to orchestrate one root-conduit build.',
-    ('melder.aether.spellbook.spellbook.Spellbook', 'melder.mutation_research.mutation_research.MutationResearch'): 'The bind, bind_inactive, and notch confirmation seams auto-record world-entry/staged/promoted research events through a non-constructing peek at the Aether-hosted root (quiet no-op while research is inactive).',
+    ('melder.aether.spellbook.spellbook.Spellbook', 'melder.mutation_research.mutation_research.MutationResearch'): "The bind, bind_inactive, and notch confirmation seams auto-record world-entry/staged/promoted research events through a non-constructing peek at the Aether-hosted root (quiet no-op while research is inactive); a notch's promotion is recorded by its entry once the notch stands, so a refused notch records nothing (0.2.8262).",
     ('melder.aether.spellbook.spellbook.Spellbook', 'melder.nexus.nexus.Nexus'): 'Spellbook keeps a Nexus handle for frame and spell publication when the frame posture is Rift-enabled.',
     ('melder.aether.spellbook.spellbook.Spellbook', 'melder.utilities.caching_system.caching_system.CachingSystem'): 'Spellbook owns the optional CachingSystem used for rooted-conduit spell payload persistence.',
     ('melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem', 'melder.aether.conduit.conduit.Conduit'): 'SpellbookCreationSystem builds and activates the root Conduit during conjure.',

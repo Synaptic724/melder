@@ -1,0 +1,622 @@
+........................................................................ [  8%]
+......................FFFFFFFFFFFFF..................................... [ 16%]
+........................................................................ [ 25%]
+........................................................................ [ 33%]
+........................................................................ [ 42%]
+........................................................................ [ 50%]
+........................................................................ [ 59%]
+....F................................................................... [ 67%]
+........................................................................ [ 76%]
+....xxxxx............................................................... [ 84%]
+........................................................................ [ 93%]
+...........................................................              [100%]
+=================================== FAILURES ===================================
+_________ test_a_notch_refused_at_commit_leaves_the_old_version_active _________
+
+    def test_a_notch_refused_at_commit_leaves_the_old_version_active() -> None:
+        """
+        Regression (probe N2): the lender used to select the broken version after the error.
+    
+        Contract:
+            - The index selects English, English is active and holds its claim and address, SelfMade is parked with no
+              Phase-4 result, and English melds by address and by spell_id.
+        """
+        with _world("refused_old_version") as world:
+            broken_id = world.stage(SelfMade)
+    
+            _refused_notch(world, broken_id)
+    
+>           _assert_english_stands(world, broken_id)
+
+tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py:352: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+world = <test_notch_refused_at_commit_integration._World object at 0x4562810b110>
+broken_id = 'dc4950f1aa7452981a01fef24e89695c404ed5797b1bf0c6d46fb1cec7c688ac'
+
+    def _assert_english_stands(world: _World, broken_id: str) -> None:
+        """
+        Assert the lender is as before the refused notch: English selected, active, claimed and routed; the broken
+        version parked and unchecked.
+    
+        Args:
+            world: The handles.
+            broken_id: The refused version's spell_id.
+        """
+        english = world.book.find_spell_by_spell_id(world.english_id)
+>       assert world.index.selected_spell_id == world.english_id
+E       AssertionError: assert 'dc4950f1aa74...fb1cec7c688ac' == 'fc8f52672d7a...e401bf4c636c5'
+E         
+E         - fc8f52672d7aa99a1f35d0cfa6f894790558b93d06cf9267198e401bf4c636c5
+E         + dc4950f1aa7452981a01fef24e89695c404ed5797b1bf0c6d46fb1cec7c688ac
+
+tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py:325: AssertionError
+____________ test_a_notch_refused_at_commit_says_it_did_not_happen _____________
+
+    def test_a_notch_refused_at_commit_says_it_did_not_happen() -> None:
+        """The error's first line says the notch did not happen and names the version still active; the report follows."""
+        with _world("refused_message") as world:
+            broken_id = world.stage(SelfMade)
+    
+            error = _refused_notch(world, broken_id)
+    
+            lines = str(error).splitlines()
+>           assert lines[0] == (
+                f"notch_spell refused: 'SelfMade' (spell_id {broken_id}) failed its structural check, so the notch did "
+                f"not happen; 'English' (spell_id {world.english_id}) is still the active version of the index."
+            )
+E           AssertionError: assert 'Spellbook va...ls: SelfMade.' == 'notch_spell ...of the index.'
+E             
+E             - notch_spell refused: 'SelfMade' (spell_id dc4950f1aa7452981a01fef24e89695c404ed5797b1bf0c6d46fb1cec7c688ac) failed its structural check, so the notch did not happen; 'English' (spell_id fc8f52672d7aa99a1f35d0cfa6f894790558b93d06cf9267198e401bf4c636c5) is still the active version of the index.
+E             + Spellbook validation failed. Broken spells: SelfMade.
+
+tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py:363: AssertionError
+______________ test_a_refused_notch_is_checked_again_when_retried ______________
+
+    def test_a_refused_notch_is_checked_again_when_retried() -> None:
+        """A retry of the refused notch runs the check again and is refused again; the lender stays on English."""
+        with _world("refused_retry") as world:
+            broken_id = world.stage(SelfMade)
+    
+            _refused_notch(world, broken_id)
+>           _refused_notch(world, broken_id)
+
+tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py:378: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+world = <test_notch_refused_at_commit_integration._World object at 0x45629671410>
+spell_id = 'dc4950f1aa7452981a01fef24e89695c404ed5797b1bf0c6d46fb1cec7c688ac'
+index = None
+
+    def _refused_notch(world: _World, spell_id: str, index: Optional[SpellIndex] = None) -> SpellbookValidationError:
+        """
+        Notch to `spell_id` and return the SpellbookValidationError it must raise.
+    
+        Args:
+            world: The handles.
+            spell_id: The broken version's spell_id.
+            index: The index to notch; the world's index when None.
+    
+        Returns:
+            SpellbookValidationError: The refusal.
+        """
+>       with pytest.raises(SpellbookValidationError) as refused:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE SpellbookValidationError
+
+tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py:310: Failed
+_ test_a_refused_notch_releases_the_claim_it_took_for_the_broken_versions_address _
+
+    def test_a_refused_notch_releases_the_claim_it_took_for_the_broken_versions_address() -> None:
+        """
+        Regression: a version staged at another address of the index took that address's frame claim with the switch.
+    
+        Contract:
+            - After the refusal that address is unclaimed and unrouted, as before the notch, and English keeps its own.
+        """
+        with _world("refused_other_address") as world:
+            broken_id = world.stage(SelfMade, binding_name="greeter_v2")
+            broken_key = world.book.find_spell_by_spell_id(broken_id).key
+            assert world.frame_claim(broken_key) is None
+    
+            _refused_notch(world, broken_id)
+    
+>           assert world.frame_claim(broken_key) is None
+E           AssertionError: assert 'dc4950f1aa7452981a01fef24e89695c404ed5797b1bf0c6d46fb1cec7c688ac' is None
+E            +  where 'dc4950f1aa7452981a01fef24e89695c404ed5797b1bf0c6d46fb1cec7c688ac' = frame_claim(('greeter', 'greeter_v2'))
+E            +    where frame_claim = <test_notch_refused_at_commit_integration._World object at 0x45629674610>.frame_claim
+
+tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py:397: AssertionError
+____ test_a_notch_refused_at_commit_leaves_borrowers_on_the_lenders_version ____
+
+    def test_a_notch_refused_at_commit_leaves_borrowers_on_the_lenders_version() -> None:
+        """
+        Regression (probe N2): the borrower kept English while the lender selected SelfMade.
+    
+        Contract:
+            - The borrower's copies are as before (English active, SelfMade parked), its consumer melds English, and the
+              lender is on English too.
+        """
+        with _world("refused_borrower", borrower=True) as world:
+            broken_id = world.stage(SelfMade)
+            before = world.borrower_copies()
+    
+            _refused_notch(world, broken_id)
+    
+            assert world.borrower_copies() == before == ({world.english_id}, {broken_id})
+            assert world.borrower is not None
+>           assert isinstance(world.borrower.meld(spell_id=world.speaker_id).greeter, English)
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py:418: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/melder/aether/conduit/conduit.py:5072: in meld
+    return meld_component.meld(
+src/melder/aether/conduit/meld/conduit_meld.py:578: in meld
+    self._ensure_lineage_resolvable(target_spell)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <melder.aether.conduit.meld.conduit_meld.ConduitMeld object at 0x4562aa85e00>
+spell = <[AttributeError("'melder.aether.spellbook.spell.Spell' object has no attribute 'spell'") raised in repr()] Spell object at 0x4562aac2080>
+
+    def _ensure_lineage_resolvable(self, spell: Spell) -> None:
+        """
+        Ensure the spell is structurally valid enough to continue toward
+        resolution.
+    
+        This is the main pre-resolution validity gate. It combines four
+        responsibilities:
+    
+        - when the spell will compile at this meld (`_may_compile`), first
+          refresh the structure of every stale dependency its plan expands
+          (`_refresh_stale_dependencies`, D2 of 2026-10-16); a valid spell with
+          a valid verdict reads no topology
+        - rerun structural phases when its SpellIndex is unknown or gated; for a
+          SpellContract consumer that rerun is the contract recheck: a change
+          of its provider marked it `gated`, Phase 4 checks the provider is
+          present, and a consumer whose provider is gone stays `gated`, so the
+          gate raises the first meld's SpellbookValidationError
+        - gate the prior conduit-local resolution verdict after a structural
+          rerun so changed dependency selection cannot retain an old executor
+        - hand off to per-conduit resolution gating when structural validity is
+          no longer the blocking issue; a `resolution_required` spell is left to
+          the deferred lane, which every door runs right after this gate
+    
+        A satisfied SpellContract is not rechecked on every meld (rule 2,
+        2026-10-16): the per-meld contract scan and its forced 5-11 rebuild are
+        retired. The borrower Book's contracted-map mutators and the registry's
+        downstream walk mark a consumer `gated` when the provider it resolves
+        changes, and that state brings the consumer here.
+    
+        Threading:
+            The catch-up runs first and holds no lock while it walks; it takes
+            one stale dependency's rebuild window, then that dependency's lock,
+            only while refreshing it. Structural reruns are serialized under
+            `spell._lock` so concurrent meld calls do not race duplicate
+            validation work. Under dynamic ownership the rerun first enters the
+            spell's rebuild window (see `_rebuild_window`): the index gate is
+            frozen and drained before the spell lock is taken, because Phase 3
+            resets the shared context.
+    
+        Args:
+            spell: The spell being melded.
+    
+        Raises:
+            SpellbookValidationError: If structural or conduit-local validity
+                cannot be promoted into a runnable state, or if a stale
+                dependency comes out of its refresh broken or still not valid
+                (the error then lists that dependency).
+            MeldExecutionError: If change-control reports the root as dirty for
+                the active resolution conduit.
+        """
+        if self._may_compile(spell):
+            self._refresh_stale_dependencies(spell)
+    
+        # Structural gating
+        if self._gated_validation_required(spell):
+            with self._rebuild_window(spell), spell._lock:
+                if self._gated_validation_required(spell):
+                    self._get_spell_compiler_system().run_structural_phases(
+                        self._spellbook,
+                        spell,
+                    )
+                    # If structural validation produced errors, hard-pin to invalid and bail.
+                    if spell.is_broken:
+                        state = spell.system_state
+                        if state is not None:
+                            state.set_validity(SpellValidity.invalid)
+>                       raise SpellbookValidationError([spell])
+E                       melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed. Broken spells: Speaker.
+E                       Speaker:
+E                         - Spell 'Speaker' depends on spell id dc4950f1aa74, which this Spellbook does not hold. Bind that dependency in this Spellbook, or remove the parameter that needs it. [DANGLING_DEPENDENCY]
+
+src/melder/aether/conduit/meld/meld.py:1010: SpellbookValidationError
+_ test_a_notch_refused_for_an_ambiguous_provider_leaves_the_old_version_active _
+
+    def test_a_notch_refused_for_an_ambiguous_provider_leaves_the_old_version_active() -> None:
+        """
+        Regression: the half-switch is not about recursion. TimedGreeter needs a Clock and two are registered, so its
+        check fails with AMBIGUOUS_PROVIDER, and the lender then selected TimedGreeter and could not meld English.
+    
+        Contract:
+            - The refusal names the real reason ([AMBIGUOUS_PROVIDER]); afterwards the index selects English, English
+              is active and holds its claim and address, TimedGreeter is parked with no Phase-4 result, and English
+              melds by address and by spell_id.
+        """
+        with _world("refused_ambiguous", clocks=True) as world:
+            broken_id = world.stage(TimedGreeter)
+    
+            error = _refused_notch(world, broken_id)
+    
+            assert "[AMBIGUOUS_PROVIDER]" in str(error)
+>           _assert_english_stands(world, broken_id)
+
+tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py:438: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+world = <test_notch_refused_at_commit_integration._World object at 0x45629674110>
+broken_id = 'c0d574b09164b02aa3757024c6e3a6a389cd5f4be765349a9a1d51ceaeb3a7cc'
+
+    def _assert_english_stands(world: _World, broken_id: str) -> None:
+        """
+        Assert the lender is as before the refused notch: English selected, active, claimed and routed; the broken
+        version parked and unchecked.
+    
+        Args:
+            world: The handles.
+            broken_id: The refused version's spell_id.
+        """
+        english = world.book.find_spell_by_spell_id(world.english_id)
+>       assert world.index.selected_spell_id == world.english_id
+E       AssertionError: assert 'c0d574b09164...d51ceaeb3a7cc' == 'fc8f52672d7a...e401bf4c636c5'
+E         
+E         - fc8f52672d7aa99a1f35d0cfa6f894790558b93d06cf9267198e401bf4c636c5
+E         + c0d574b09164b02aa3757024c6e3a6a389cd5f4be765349a9a1d51ceaeb3a7cc
+
+tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py:325: AssertionError
+_ test_a_notch_refused_for_an_ambiguous_provider_leaves_borrowers_on_the_lenders_version _
+
+    def test_a_notch_refused_for_an_ambiguous_provider_leaves_borrowers_on_the_lenders_version() -> None:
+        """
+        Regression: the borrower's consumer of the index (`Speaker`) was refused at its meld after the refused notch,
+        while the borrower still held English active.
+    
+        Contract:
+            - The borrower's copies are as before (English active, TimedGreeter parked), its consumer melds English and
+              greets "hello", and the lender is on English too.
+        """
+        with _world("refused_ambiguous_borrower", borrower=True, clocks=True) as world:
+            broken_id = world.stage(TimedGreeter)
+            before = world.borrower_copies()
+    
+            _refused_notch(world, broken_id)
+    
+            assert world.borrower_copies() == before == ({world.english_id}, {broken_id})
+            assert world.borrower is not None
+>           assert world.borrower.meld(spell_id=world.speaker_id).greeter.greet() == "hello"
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py:458: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/melder/aether/conduit/conduit.py:5072: in meld
+    return meld_component.meld(
+src/melder/aether/conduit/meld/conduit_meld.py:578: in meld
+    self._ensure_lineage_resolvable(target_spell)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <melder.aether.conduit.meld.conduit_meld.ConduitMeld object at 0x4562aa8c100>
+spell = <[AttributeError("'melder.aether.spellbook.spell.Spell' object has no attribute 'spell'") raised in repr()] Spell object at 0x4562aac1400>
+
+    def _ensure_lineage_resolvable(self, spell: Spell) -> None:
+        """
+        Ensure the spell is structurally valid enough to continue toward
+        resolution.
+    
+        This is the main pre-resolution validity gate. It combines four
+        responsibilities:
+    
+        - when the spell will compile at this meld (`_may_compile`), first
+          refresh the structure of every stale dependency its plan expands
+          (`_refresh_stale_dependencies`, D2 of 2026-10-16); a valid spell with
+          a valid verdict reads no topology
+        - rerun structural phases when its SpellIndex is unknown or gated; for a
+          SpellContract consumer that rerun is the contract recheck: a change
+          of its provider marked it `gated`, Phase 4 checks the provider is
+          present, and a consumer whose provider is gone stays `gated`, so the
+          gate raises the first meld's SpellbookValidationError
+        - gate the prior conduit-local resolution verdict after a structural
+          rerun so changed dependency selection cannot retain an old executor
+        - hand off to per-conduit resolution gating when structural validity is
+          no longer the blocking issue; a `resolution_required` spell is left to
+          the deferred lane, which every door runs right after this gate
+    
+        A satisfied SpellContract is not rechecked on every meld (rule 2,
+        2026-10-16): the per-meld contract scan and its forced 5-11 rebuild are
+        retired. The borrower Book's contracted-map mutators and the registry's
+        downstream walk mark a consumer `gated` when the provider it resolves
+        changes, and that state brings the consumer here.
+    
+        Threading:
+            The catch-up runs first and holds no lock while it walks; it takes
+            one stale dependency's rebuild window, then that dependency's lock,
+            only while refreshing it. Structural reruns are serialized under
+            `spell._lock` so concurrent meld calls do not race duplicate
+            validation work. Under dynamic ownership the rerun first enters the
+            spell's rebuild window (see `_rebuild_window`): the index gate is
+            frozen and drained before the spell lock is taken, because Phase 3
+            resets the shared context.
+    
+        Args:
+            spell: The spell being melded.
+    
+        Raises:
+            SpellbookValidationError: If structural or conduit-local validity
+                cannot be promoted into a runnable state, or if a stale
+                dependency comes out of its refresh broken or still not valid
+                (the error then lists that dependency).
+            MeldExecutionError: If change-control reports the root as dirty for
+                the active resolution conduit.
+        """
+        if self._may_compile(spell):
+            self._refresh_stale_dependencies(spell)
+    
+        # Structural gating
+        if self._gated_validation_required(spell):
+            with self._rebuild_window(spell), spell._lock:
+                if self._gated_validation_required(spell):
+                    self._get_spell_compiler_system().run_structural_phases(
+                        self._spellbook,
+                        spell,
+                    )
+                    # If structural validation produced errors, hard-pin to invalid and bail.
+                    if spell.is_broken:
+                        state = spell.system_state
+                        if state is not None:
+                            state.set_validity(SpellValidity.invalid)
+>                       raise SpellbookValidationError([spell])
+E                       melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed. Broken spells: Speaker.
+E                       Speaker:
+E                         - Spell 'Speaker' depends on spell id c0d574b09164, which this Spellbook does not hold. Bind that dependency in this Spellbook, or remove the parameter that needs it. [DANGLING_DEPENDENCY]
+
+src/melder/aether/conduit/meld/meld.py:1010: SpellbookValidationError
+______________ test_a_notch_back_after_a_refusal_changes_nothing _______________
+
+    def test_a_notch_back_after_a_refusal_changes_nothing() -> None:
+        """Probe N3: after the refusal English is active, so a notch to it is a no-op on both sides."""
+        with _world("refused_notch_back", borrower=True) as world:
+            broken_id = world.stage(SelfMade)
+            _refused_notch(world, broken_id)
+    
+            result = world.lender.notch_spell(spell_index=world.index, spell_id=world.english_id)
+    
+            assert result.spell_id == world.english_id
+            assert world.borrower_copies() == ({world.english_id}, {broken_id})
+>           _assert_english_stands(world, broken_id)
+
+tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py:472: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+world = <test_notch_refused_at_commit_integration._World object at 0x45629676e10>
+broken_id = 'dc4950f1aa7452981a01fef24e89695c404ed5797b1bf0c6d46fb1cec7c688ac'
+
+    def _assert_english_stands(world: _World, broken_id: str) -> None:
+        """
+        Assert the lender is as before the refused notch: English selected, active, claimed and routed; the broken
+        version parked and unchecked.
+    
+        Args:
+            world: The handles.
+            broken_id: The refused version's spell_id.
+        """
+        english = world.book.find_spell_by_spell_id(world.english_id)
+        assert world.index.selected_spell_id == world.english_id
+        assert world.index.spells_in_index() >= {world.english_id, broken_id}
+        assert world.frame_claim(english.key) == world.english_id
+        # The Book's address lookup and active map are the structure a meld by address reads.
+        assert world.book._lookup_spells[english.key] is world.index
+        assert world.english_id in world.book._spells_by_id
+        assert broken_id in world.book._inactive_spells
+>       assert world.book.find_spell_by_spell_id(broken_id).validation_result_phase4 is None
+E       AssertionError: assert <melder.aether.spellbook.spell_compiler.validation.spell_validation_result.SpellValidationResult object at 0x4562aab48d0> is None
+E        +  where <melder.aether.spellbook.spell_compiler.validation.spell_validation_result.SpellValidationResult object at 0x4562aab48d0> = Spell(name=SelfMade, binding=greeter, frame=Greeter, SHA256=dc4950f1aa7452981a01fef24e89695c404ed5797b1bf0c6d46fb1cec7c688ac).validation_result_phase4
+E        +    where Spell(name=SelfMade, binding=greeter, frame=Greeter, SHA256=dc4950f1aa7452981a01fef24e89695c404ed5797b1bf0c6d46fb1cec7c688ac) = find_spell_by_spell_id('dc4950f1aa7452981a01fef24e89695c404ed5797b1bf0c6d46fb1cec7c688ac')
+E        +      where find_spell_by_spell_id = <melder.aether.spellbook.spellbook.Spellbook object at 0x4562a7c0310>.find_spell_by_spell_id
+E        +        where <melder.aether.spellbook.spellbook.Spellbook object at 0x4562a7c0310> = <test_notch_refused_at_commit_integration._World object at 0x45629676e10>.book
+
+tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py:332: AssertionError
+_________ test_a_sound_notch_after_a_refusal_moves_owner_and_borrower __________
+
+    def test_a_sound_notch_after_a_refusal_moves_owner_and_borrower() -> None:
+        """Probe N1 after a refusal: a sound version notched in is followed by the borrower, as always."""
+        with _world("refused_then_sound", borrower=True) as world:
+            broken_id = world.stage(SelfMade)
+            french_id = world.stage(French)
+            _refused_notch(world, broken_id)
+    
+            world.lender.notch_spell(spell_index=world.index, spell_id=french_id)
+    
+            assert world.index.selected_spell_id == french_id
+            assert isinstance(world.lender.meld(spellframe=Greeter, binding_name="greeter"), French)
+            active, parked = world.borrower_copies()
+>           assert active == {french_id}
+E           AssertionError: assert {'7a18363d2ed...401bf4c636c5'} == {'7a18363d2ed...b2b28a4e6feb'}
+E             
+E             Extra items in the left set:
+E             'fc8f52672d7aa99a1f35d0cfa6f894790558b93d06cf9267198e401bf4c636c5'
+E             Use -v to get more diff
+
+tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py:487: AssertionError
+_______ test_a_refused_notch_leaves_the_nexus_record_on_the_old_version ________
+
+    def test_a_refused_notch_leaves_the_nexus_record_on_the_old_version() -> None:
+        """On a frame that publishes into Nexus, the refusal leaves English's record published and none for SelfMade."""
+        with _world("refused_nexus", rift_enabled=True) as world:
+            broken_id = world.stage(SelfMade)
+            assert (world.book.id, world.english_id) in world.nexus_spell_records()
+    
+            _refused_notch(world, broken_id)
+    
+            records = world.nexus_spell_records()
+>           assert (world.book.id, world.english_id) in records
+E           AssertionError: assert ('01M59Y4VW7H34HD2XWM57HBME1', 'fc8f52672d7aa99a1f35d0cfa6f894790558b93d06cf9267198e401bf4c636c5') in {('01M59Y4VW7H34HD2XWM57HBME1', 'dc4950f1aa7452981a01fef24e89695c404ed5797b1bf0c6d46fb1cec7c688ac')}
+
+tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py:500: AssertionError
+_ test_a_refused_activation_of_a_minted_index_leaves_it_parked_and_unregistered _
+
+    def test_a_refused_activation_of_a_minted_index_leaves_it_parked_and_unregistered() -> None:
+        """
+        A version split into its own index (`remove_from_spell_index`) has no active version; activating it takes a
+        notch. Refused, it stays parked, its index is not tracked, published or claimed, and English is untouched.
+        """
+        with _world("refused_minted", rift_enabled=True) as world:
+            broken_id = world.stage(SelfMade, binding_name="greeter_v2")
+            world.lender.remove_from_spell_index(spell_id=broken_id, source_index=world.index)
+            minted = world.book.find_spell_by_spell_id(broken_id).spell_index
+            broken_key = world.book.find_spell_by_spell_id(broken_id).key
+            assert minted is not world.index
+            assert world.book._spell_system_states.get_by_index_id(minted.id) is None
+    
+            _refused_notch(world, broken_id, index=minted)
+    
+            assert minted.selected_spell_id == broken_id
+>           assert minted not in world.book._spells
+E           assert <SpellIndex id=01M59Y4VWT1JZH73B4YYTW7W9Q current=dc4950f1aa7452981a01fef24e89695c404ed5797b1bf0c6d46fb1cec7c688ac> not in {<SpellIndex id=01M59Y4VWQN0Z4W40E90JKW918 current=fc8f52672d7aa99a1f35d0cfa6f894790558b93d06cf9267198e401bf4c636c5>: ...=SelfMade, binding=greeter_v2, frame=Greeter, SHA256=dc4950f1aa7452981a01fef24e89695c404ed5797b1bf0c6d46fb1cec7c688ac)}
+E            +  where {<SpellIndex id=01M59Y4VWQN0Z4W40E90JKW918 current=fc8f52672d7aa99a1f35d0cfa6f894790558b93d06cf9267198e401bf4c636c5>: ...=SelfMade, binding=greeter_v2, frame=Greeter, SHA256=dc4950f1aa7452981a01fef24e89695c404ed5797b1bf0c6d46fb1cec7c688ac)} = <melder.aether.spellbook.spellbook.Spellbook object at 0x4562a7c2710>._spells
+E            +    where <melder.aether.spellbook.spellbook.Spellbook object at 0x4562a7c2710> = <test_notch_refused_at_commit_integration._World object at 0x4562a630810>.book
+
+tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py:520: AssertionError
+_________ test_after_a_refusal_the_book_flag_falls_once_english_melds __________
+
+    def test_after_a_refusal_the_book_flag_falls_once_english_melds() -> None:
+        """The refusal leaves English gated like any notch back; one meld recompiles it and the Book flag falls."""
+        with _world("refused_flag") as world:
+            broken_id = world.stage(SelfMade)
+            _refused_notch(world, broken_id)
+    
+>           world.lender.meld(spell_id=world.english_id)
+
+tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py:539: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/melder/aether/conduit/conduit.py:5072: in meld
+    return meld_component.meld(
+src/melder/aether/conduit/meld/conduit_meld.py:513: in meld
+    target_spell = self._resolve_spell_by_id(spell)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <melder.aether.conduit.meld.conduit_meld.ConduitMeld object at 0x4562a42ca00>
+spell_id = 'fc8f52672d7aa99a1f35d0cfa6f894790558b93d06cf9267198e401bf4c636c5'
+
+    def _resolve_spell_by_id(self, spell_id: str) -> Spell:
+        """
+        Resolve a spell by its current canonical spell id.
+    
+        This is the direct-id lookup path for callers that already know the
+        exact current spell_id and do not need logical frame/binding
+        normalization.
+    
+        Args:
+            spell_id:
+                The spell's spell_id - the SHA256 of the registered object's code.
+    
+        Returns:
+            Spell:
+                The resolved spell configuration object.
+    
+        Raises:
+            KeyError:
+                If no spell with the given spell_id exists in either
+                the local or contracted spell maps.
+        """
+        # Local spells
+        pooled_spell = self._spell_id_pool.get(spell_id)
+        if pooled_spell is not None:
+            return pooled_spell
+    
+        # Local spells
+        if spell_id in self._spells_by_id:
+            return self._spells_by_id[spell_id]
+    
+        # Contracted spells (per-conduit maps)
+        for spell_map in self._contracted_spells_by_id.values():
+            if spell_id in spell_map:
+                return spell_map[spell_id]
+    
+>       raise KeyError(f"[MELD] No spell found with spell_id: {spell_id}")
+E       KeyError: '[MELD] No spell found with spell_id: fc8f52672d7aa99a1f35d0cfa6f894790558b93d06cf9267198e401bf4c636c5'
+
+src/melder/aether/conduit/meld/meld.py:2186: KeyError
+__________________ test_a_refused_notch_journals_no_promotion __________________
+
+    def test_a_refused_notch_journals_no_promotion() -> None:
+        """
+        Regression: the research journal kept a promotion of SelfMade although the notch raised.
+    
+        Contract:
+            - With MutationResearch active, neither version's history gains an act from the refused notch.
+        """
+        with _research_active():
+            with _world("refused_journal") as world:
+                broken_id = world.stage(SelfMade)
+                before = (_research_acts(broken_id), _research_acts(world.english_id))
+    
+                _refused_notch(world, broken_id)
+    
+>               assert (_research_acts(broken_id), _research_acts(world.english_id)) == before
+E               AssertionError: assert (['staged', '..., 'promoted']) == (['staged'], ['registered'])
+E                 
+E                 At index 0 diff: ['staged', 'promoted'] != ['staged']
+E                 Use -v to get more diff
+
+tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py:589: AssertionError
+____________ test_concurrent_adds_of_same_conduit_admit_exactly_one ____________
+
+    def test_concurrent_adds_of_same_conduit_admit_exactly_one() -> None:
+        """
+        Purpose:
+            Verify the single-cluster exclusivity invariant holds atomically under contention:
+            when many threads race to add the SAME conduit, the conduit ends up a member exactly
+            once and every losing thread is rejected with the exclusivity error (no double-add,
+            no corruption, no unexpected error).
+        Contract:
+            - Final membership is exactly {conduit.id} (one membership, never two).
+            - At least one racing add is rejected, and every rejection is the exclusivity
+              ValueError ("exclusive (one per conduit)").
+        Returns:
+            None.
+        Raises:
+            AssertionError: If exclusivity is not enforced atomically under contention.
+        """
+        aether = Aether()
+        frame_name = "frame-cc-same"
+        book, conduit = _make_cluster_conduit(frame_name, name="root-0")
+        try:
+            cloud = aether._ensure_frame(frame_name)._conduit_cloud
+            cloud.create_cluster("cluster-a")
+    
+            errors = _run_in_parallel(
+                [lambda: cloud.add_conduit_to_cluster(conduit, "cluster-a") for _ in range(8)]
+            )
+    
+            assert set(cloud._get_cluster("cluster-a").get_members()) == {conduit.id}
+>           assert len(errors) >= 1
+E           assert 0 >= 1
+E            +  where 0 = len([])
+
+tests/integration/melder/aether/test_aether_integration_cluster_transactions_concurrency.py:314: AssertionError
+=========================== short test summary info ============================
+FAILED tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py::test_a_notch_refused_at_commit_leaves_the_old_version_active
+FAILED tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py::test_a_notch_refused_at_commit_says_it_did_not_happen
+FAILED tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py::test_a_refused_notch_is_checked_again_when_retried
+FAILED tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py::test_a_refused_notch_releases_the_claim_it_took_for_the_broken_versions_address
+FAILED tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py::test_a_notch_refused_at_commit_leaves_borrowers_on_the_lenders_version
+FAILED tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py::test_a_notch_refused_for_an_ambiguous_provider_leaves_the_old_version_active
+FAILED tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py::test_a_notch_refused_for_an_ambiguous_provider_leaves_borrowers_on_the_lenders_version
+FAILED tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py::test_a_notch_back_after_a_refusal_changes_nothing
+FAILED tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py::test_a_sound_notch_after_a_refusal_moves_owner_and_borrower
+FAILED tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py::test_a_refused_notch_leaves_the_nexus_record_on_the_old_version
+FAILED tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py::test_a_refused_activation_of_a_minted_index_leaves_it_parked_and_unregistered
+FAILED tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py::test_after_a_refusal_the_book_flag_falls_once_english_melds
+FAILED tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py::test_a_refused_notch_journals_no_promotion
+FAILED tests/integration/melder/aether/test_aether_integration_cluster_transactions_concurrency.py::test_concurrent_adds_of_same_conduit_admit_exactly_one
+14 failed, 832 passed, 5 xfailed in 61.23s (0:01:01)

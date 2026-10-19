@@ -5,11 +5,11 @@
 - Epic: EPIC-2026-10-18-spell_identity_is_the_code
 - Status: draft
 - Owner: user
-- Agent Name: melder_0
+- Agent Name: melder_1
 - Agent Role: synaptic_python_developer
 - Priority: p2
 - Created: 2026-10-18T11:45:58Z
-- Updated: 2026-10-19T00:49:20Z
+- Updated: 2026-10-19T12:35:35Z
 
 ## User Narrative
 As a user upgrading Melder, I want the one-time move of every spell_id handled - caches, records, research history,
@@ -145,6 +145,20 @@ this does not make independent review mandatory for every ticket.
   REREAD: HELPFUL
   SCORE_0_TO_10: 7
 
+- DATETIME: 2026-10-19T12:35:35Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: The owner (chat 2026-10-19): "After you finish your change hand all your tickets to melder1 your
+    competing for the same resources and document them". melder_0 hands this ticket to melder_1 as it stands:
+    draft, parked since the identity epic's turn-in; nothing started; its open question is answered
+    (restore the first registration, a shortfall per dropped duplicate).
+  EVIDENCE: context_compass/tickets/stories/backlog/2026-10-18_spell_id_migration_story.md:131-146
+  IMPACT: Its holder is melder_1; nothing else in it changes.
+  NEXT: The owner's word; then the component patch (records holding one object twice restore the first).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
@@ -163,6 +177,7 @@ this does not make independent review mandatory for every ticket.
 - State: draft, parked in the backlog (the owner, 2026-10-19): the identity epic turned in after
   S1 (0.2.8257) and S2 (0.2.8258) landed.
 - Next: the owner's word; then the component patch (records holding one object twice restore the first).
+- Holder: melder_1 since 2026-10-19, from melder_0 on the owner's word (DECISION note of 2026-10-19T12:35:35Z).
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

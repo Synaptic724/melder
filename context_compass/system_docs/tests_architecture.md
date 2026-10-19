@@ -5,7 +5,7 @@
 - Status: in_progress
 - Owner:
 - Created: 2026-01-22
-- Updated: 2026-10-18
+- Updated: 2026-10-19
 
 ## Scope and Intent
 This document describes the tests architecture (C4) for `tests/` and how it
@@ -467,11 +467,11 @@ Direct evidence used in this pass:
 
 Current Python test inventory from direct filesystem count:
 - `unit/`: 517 `.py` files, 514 of them `test_*.py` (465 on 2026-09-26, 334 on 2026-06-13)
-- `component/`: 169 `.py` files, 167 of them `test_*.py` (143, 81)
-- `integration/`: 183 `.py` files, 176 of them `test_*.py` (149, 88)
+- `component/`: 171 `.py` files, 169 of them `test_*.py` (143, 81)
+- `integration/`: 185 `.py` files, 178 of them `test_*.py` (149, 88)
 - `mocks/`: 44 `.py` files (44, 42)
 - `experimentation/`: 204 `.py` files, 33 of them `test_*.py` (196 on 2026-09-26)
-Recounted 2026-10-18 with `find tests/<tier> -name '*.py'` (pycache excluded); the three tiers' 857 `test_*.py`
+Recounted 2026-10-19 with `find tests/<tier> -name '*.py'` (pycache excluded); the three tiers' 861 `test_*.py`
 modules are the count `tests_components` states.
 
 ## Core Responsibilities
@@ -910,6 +910,28 @@ graph TD
 - direct filesystem inventory of `tests/`
 
 ## Context / Handoff Summary
+
+2026-10-19 staging keeps the active signature (0.2.8263): the inventory is recounted from disk (component 171
+`.py`, 169 of them `test_*.py`; 861 test modules in the three tiers) - the lane adds one component module (staging,
+an index move back and a lone parked disposal keep the active spell's signature), catalogued in `tests_components`.
+No tier, conftest, declared marker or shared support module changes, and no extent in this map moves.
+
+2026-10-19 a refused notch moves nothing (0.2.8262): the inventory is unchanged (unit 517 `.py`, 514 of them
+`test_*.py`; integration 185, 178; 860 test modules in the three tiers) - the lane's two modules, the refused
+notch's integration module and the validation error's preface unit module, were on disk and counted before this
+landing and are catalogued in `tests_components` now. No tier, conftest, declared marker or shared support
+module changes, and no extent in this map moves.
+
+2026-10-19 cleanup releases the contracts (0.2.8261): the inventory is recounted from disk (component 170
+`.py`, 168 of them `test_*.py`; integration 185, 178; 860 test modules in the three tiers) - the lane
+adds one component module (the contracts-first order of a disposal) and one integration module (a disposed
+version leaving every contract), catalogued in `tests_components`. No tier, conftest, declared marker or
+shared support module changes, and no extent in this map moves.
+
+2026-10-19 a Book's teardown retires its parked versions (0.2.8260): the inventory is recounted from disk
+(integration 184 `.py`, 177 of them `test_*.py`; 858 test modules in the three tiers) - the lane adds one
+integration module (a Book's teardown retiring its parked versions), catalogued in `tests_components`. No tier,
+conftest, declared marker or shared support module changes, and no extent in this map moves.
 
 2026-10-19 the minted index is registered (0.2.8259): the inventory is recounted from disk (unit 517 `.py`,
 component 169, integration 183; 857 test modules in the three tiers) - the lane adds one integration module (a

@@ -1,0 +1,26 @@
+C1 bind_inactive after conjure; same key
+  [before] frame claim: English; book route to the index: True
+    find_spell_index is the index: True
+  [after bind_inactive(French)] frame claim: English; book route to the index: True
+    meld by address -> English
+    find_spell_index is the index: True
+    another Book's bind of (Greeter, 'greeter') refused: Binding signature already active in this frame: frame_key='greeter', binding_nam
+C2 bind_inactive before conjure; same key
+  [after bind_inactive(French), then conjure] frame claim: English; book route to the index: True
+    meld by address -> English
+    find_spell_index is the index: True
+C3 remove French into its own index, then add it back
+  [after the notch to French and back] frame claim: English; book route to the index: True
+    find_spell_index is the index: True
+  [after remove_from_spell_index, add_to_spell_index back] frame claim: English; book route to the index: True
+    meld by address -> English
+    find_spell_index is the index: True
+    another Book's bind of (Greeter, 'greeter') refused: Binding signature already active in this frame: frame_key='greeter', binding_nam
+C4 cleanup_spell of French alone in the minted index
+  [after cleanup_spell(French)] frame claim: English; book route to the index: True
+    meld by address -> English
+    find_spell_index is the index: True
+    another Book's bind of (Greeter, 'greeter') refused: Binding signature already active in this frame: frame_key='greeter', binding_nam
+C6 Book L stages French keyed like Book O's active Spanish
+  frame claim ('greeter', 'spanish'): Spanish (Book O, active)
+    another Book's bind of (Greeter, 'spanish') refused: Binding signature already active in this frame: frame_key='greeter', binding_nam

@@ -5683,6 +5683,14 @@ class Conduit(Cleanable):
               notch back by its spell_id restores it.
             - Notching to the index's active version is a no-op: nothing moves and no
               borrower is touched.
+            - A VERSION THAT FAILS ITS STRUCTURAL CHECK IS REFUSED WITH NOTHING MOVED
+              (2026-10-19): a version never compiled is checked (phases 1-4) inside the
+              held window once it is active, and when the check fails the Spellbook
+              puts the structure back before this call raises - the index selects the
+              version it selected, that version stays active, claimed and routed, the
+              refused one is parked again with no verdict kept, nothing is journaled or
+              published for it, and no borrower is touched. A retry is checked, and
+              refused, again.
             - After the window, every linked peer parks its copy of the outgoing version, a
               peer holding a parked copy of the incoming version (a grant of that version) has
               it made active again, and index-link borrowers move to the new one. The consumers
@@ -5707,6 +5715,9 @@ class Conduit(Cleanable):
             Any: The now-active Spell (the owning Spellbook's notch result).
 
         Raises:
+            SpellbookValidationError: When the version fails its structural check. Its first
+                line says the notch did not happen and names the version still active; the
+                validation report follows. Nothing has moved.
             ValueError: When both or neither of `spell` and `spell_id` are given; when the
                 spell is not owned by this conduit's Spellbook (a spell_id nothing here
                 bound, a disposed spell, another Book's spell); when it belongs to another
@@ -5714,7 +5725,8 @@ class Conduit(Cleanable):
             TypeError: When `spell_id` is not a string, or a string is given as `spell`.
             RuntimeError: If the Conduit is cleaned, the frame is not dynamic, or the
                 Conduit has no owning Spellbook; and whatever the transaction or the
-                switch raises.
+                switch raises, including a reversal of a refused notch that fails (a
+                Melder bug; the message names both versions).
 
         Example:
             id_v2 = conduit.bind_inactive(spell=ReportV2, spell_index=index, existence="unique")
@@ -5770,6 +5782,9 @@ class Conduit(Cleanable):
             # between the check above and admission may have moved it, and none can run
             # from here to the switch.
             self._owned_notch_target(spell_index=spell_index, spell_id=spell.spell_id, spell=spell)
+            # A version that fails its structural check raises here with the switch already
+            # undone by the Spellbook; the transaction then ends as failed and no borrower is
+            # touched (2026-10-19).
             result = self._spellbook._notch_spell(spell_index=spell_index, spell=spell, change_reason=change_reason)
         except Exception:
             mediator.end_transaction(expected_type="notch", success=False)
@@ -6213,20 +6228,36 @@ class Conduit(Cleanable):
         """
         Public API
 
-        Conduit facade for fully disposing an owned spell. Delegates to the
-        owning Spellbook, which removes the spell from every resolution surface,
-        destroys its index if it was the sole member, and tears the spell object
-        down; when the index was destroyed, its index-link borrowers drop their
-        subscription to it.
+        Conduit facade for fully disposing an owned spell. The owning Spellbook
+        decides the disposal, every contract that holds the version drops it,
+        then the Spellbook disposes it: it removes the spell from every
+        resolution surface, destroys its index if it was the sole member, and
+        tears the spell object down; when the index was destroyed, its
+        index-link borrowers drop their subscription to it.
 
         Contract:
+            - CONTRACTS FIRST, THEN THE DISPOSAL (the owner's order, 2026-10-19):
+              after the Spellbook's locked decision and before it disposes
+              anything, every contract of the Book's root conduit that holds the
+              version - an index link's member Detail or a version grant - drops
+              it, with the borrower's entry, active or parked, and its borrowed
+              id (`ConduitWard._emit_spell_disposed`). No borrower is left
+              holding a version its lender disposed, nor a cleaned Spell.
+              (cleanup_releases_contracts_2026_10_19, 0.2.8261)
+            - The contracts live on the Book's root conduit, so a call through a
+              lesser conduit of its lineage reaches them too; the Spellbook's own
+              `cleanup_spell` comes here once the Book has conjured.
             - The Spellbook decides, under its own lock, whether the disposal
               destroys the spell's index, and reports the destroyed index's id;
-              the destroy is emitted to index-link borrowers exactly then, with
-              the disposed spell as the index's one member (an index is destroyed
-              only when the spell was its sole member). Nothing about the spell or
-              its index is read here before that decision.
-            - Not admitted through a transaction (no cleanup strategy exists).
+              the destroy is emitted to index-link borrowers exactly then, after
+              the disposal and with no member id, the version having left every
+              contract already (an index is destroyed only when the spell was its
+              sole member). Nothing about the spell or its index is read here
+              before that decision.
+            - A refused call (see Raises) changes no contract.
+            - Not admitted through a transaction (no cleanup strategy exists), so
+              a link or grant of the same version that lands between the release
+              and the disposal is not ordered against it.
 
         Args:
             spell: The owned spell to dispose.
@@ -6236,16 +6267,21 @@ class Conduit(Cleanable):
             RuntimeError: If the spell has already been disposed, is being disposed
                 by another call, is not owned by the owning Spellbook, or is the
                 active member of a multi-member index (raised by
-                `Spellbook.cleanup_spell`).
+                `Spellbook._dispose_spell` before any contract changes).
+            RuntimeError: From the release, if a borrower's Book holds no entry
+                for the version under a lender-side Detail; nothing is disposed,
+                and a retry repeats the release.
 
         Threading:
             Takes no lock of its own. The Spellbook takes the Book lock and the
-            spell's own lock (never nested); the destroy emission walks the
-            ward's contracts under the ward lock, so a concurrent link or sever
-            of this conduit waits for it. (cross_object_lock_gaps, 0.2.8231)
+            spell's own lock (never nested) and runs the release with neither
+            held; the release and the destroy emission walk the root ward's
+            contracts under the ward lock (ward -> contract -> borrower Book), so
+            a concurrent link or sever of the root waits for them.
+            (cross_object_lock_gaps, 0.2.8231)
             Of two calls for one spell that overlap, the Spellbook lets the first
-            dispose it and refuses the second, so the destroy is emitted once.
-            (lock_residuals, 0.2.8232)
+            dispose it and refuses the second, so each contract drops the version
+            once and the destroy is emitted once. (lock_residuals, 0.2.8232)
 
         Returns:
             None.
@@ -6253,15 +6289,19 @@ class Conduit(Cleanable):
         self.check_cleaned()
         if self._spellbook is None:
             raise RuntimeError("[CONDUIT] No owning Spellbook for cleanup_spell.")
-        spell_id = spell.spell_id
+        # The Book's root conduit holds the contracts; a lesser conduit's own ward holds none
+        # (cleanup_releases_contracts_2026_10_19, 0.2.8261).
+        ward = self._spellbook._conduit._conduit_ward
         # The Spellbook's own locked decision says whether the index went with the spell; the old unlocked
         # pre-read of spell.spell_index here raised AttributeError for a disposed spell and could disagree with
-        # what the Spellbook then did (cross_object_lock_gaps, 0.2.8231).
-        destroyed_index_id = self._spellbook._dispose_spell(spell)
+        # what the Spellbook then did (cross_object_lock_gaps, 0.2.8231). Between that decision and the
+        # disposal the Book hands the version to `release_contracts`, so every contract drops it while it is
+        # still live (the owner's order, 2026-10-19: contracts first, then the cleanup).
+        destroyed_index_id = self._spellbook._dispose_spell(spell, release_contracts=ward._emit_spell_disposed)
         # A destroyed SpellIndex shared by index link must be dropped on its receivers so they
-        # do not keep a subscription to a dead index.
+        # do not keep a subscription to a dead index. Its member already left every contract, so no member id.
         if destroyed_index_id is not None:
-            self._conduit_ward._emit_index_destroy(destroyed_index_id, (spell_id,))
+            ward._emit_index_destroy(destroyed_index_id, ())
 
     def _deactivate_borrowed_spell(self, spell_id: str) -> None:
         """

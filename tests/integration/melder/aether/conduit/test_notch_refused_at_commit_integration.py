@@ -2,14 +2,17 @@
 Integration: a notch whose incoming version fails its structural check is refused with nothing moved
 (STORY-2026-10-17-failed_notch_keeps_switch_without_borrowers; patch failed_notch_refusal_2026_10_18).
 
-Phases 1-4 of a version that was never compiled run when it is notched in. Until 0.2.8256 they ran at the
+Phases 1-4 of a version that was never compiled run when it is notched in. Until the story's fix they ran at the
 transaction's commit, after the switch, and nothing undid the switch: `notch_spell` raised SpellbookValidationError
 while the lender's index selected the broken version, its borrowers kept the old one, and the lender could not meld
-the index by address. The notch now runs the check inside its window and, when the check fails, puts the structure
-back before it raises: the owner's answer (a), "refuse it and throw and move on".
+the index by address (measured on 0.2.8255, and on 0.2.8260, where a spell_id is the hash of the object's code).
+With the fix the notch runs the check inside its window and, when the check fails, puts the structure back before
+it raises: the owner's answer (a), "refuse it and throw and move on". Until it lands these tests fail.
 
-The broken version is `SelfMade`, whose constructor takes its own class (SELF_DEPENDENCY at Phase 4): it is only
-checked once it is active, because a parked version is not in the pool Phase 3 resolves against.
+Two broken versions are used. `SelfMade`'s constructor takes its own class (SELF_DEPENDENCY at Phase 4).
+`TimedGreeter`'s constructor needs a `Clock` while two are registered (AMBIGUOUS_PROVIDER): nothing in it loops, so
+it shows the half-switch follows any failing check, not recursion. Each is only checked once it is active, because
+a parked version is not in the pool Phase 3 resolves against.
 
 Worlds follow probe N1-N3 (artifacts/correctness_defects_20261017/probes/probe_failed_notch_commit.py): a dynamic
 frame with caching off, English active on the lender's index and, when a borrower is asked for, a second Book that
@@ -85,6 +88,50 @@ class Speaker:
             greeter: The version the borrower's contracted copy of the index makes active.
         """
         self.greeter = greeter
+
+
+class Clock(Protocol):
+    """What `TimedGreeter` needs; a world built with `clocks=True` registers two providers of it."""
+
+    def now(self) -> str:
+        """Return the time of day."""
+        ...
+
+
+class UtcClock:
+    """One registered provider of `Clock`."""
+
+    def now(self) -> str:
+        """Return the time in UTC."""
+        return "12:00 UTC"
+
+
+class LocalClock:
+    """A second registered provider of `Clock`, so a single `Clock` parameter has two candidates."""
+
+    def now(self) -> str:
+        """Return the local time."""
+        return "06:00 local"
+
+
+class TimedGreeter:
+    """
+    A broken version with no recursion: its constructor needs a `Clock` and two are registered
+    (AMBIGUOUS_PROVIDER once it is active).
+    """
+
+    def __init__(self, clock: Clock) -> None:
+        """
+        Keep the clock.
+
+        Args:
+            clock: The clock to read; with `UtcClock` and `LocalClock` both registered no meld can pick one.
+        """
+        self.clock = clock
+
+    def greet(self) -> str:
+        """Return a greeting with the time."""
+        return "hello at " + self.clock.now()
 
 
 def _reset_world() -> None:
@@ -200,7 +247,9 @@ class _World:
 
 
 @contextlib.contextmanager
-def _world(frame: str, *, borrower: bool = False, rift_enabled: bool = False) -> Iterator[_World]:
+def _world(
+    frame: str, *, borrower: bool = False, rift_enabled: bool = False, clocks: bool = False,
+) -> Iterator[_World]:
     """
     English active on the lender's index; optionally a borrower that contracts the whole index.
 
@@ -208,6 +257,8 @@ def _world(frame: str, *, borrower: bool = False, rift_enabled: bool = False) ->
         frame: The frame for both Books.
         borrower: Build an index-linked borrower Book with a consumer (`Speaker`) of the index.
         rift_enabled: Make the frame publish passive Nexus records.
+        clocks: Register `UtcClock` and `LocalClock` as `Clock` providers in the lender's Book, so `TimedGreeter`'s
+            `clock` parameter has two candidates.
 
     Yields:
         _World: The handles; both roots are torn down on exit.
@@ -217,6 +268,13 @@ def _world(frame: str, *, borrower: bool = False, rift_enabled: bool = False) ->
     english_id = book.bind(
         spell=English, spellframe=Greeter, binding_name="greeter", existence=Existence.many, permissions="create",
     )
+    if clocks:
+        book.bind(
+            spell=UtcClock, spellframe=Clock, binding_name="utc", existence=Existence.many, permissions="create",
+        )
+        book.bind(
+            spell=LocalClock, spellframe=Clock, binding_name="local", existence=Existence.many, permissions="create",
+        )
     speaker_id = None
     if borrower_book is not None:
         speaker_id = borrower_book.bind(spell=Speaker, existence=Existence.many, permissions="create")
@@ -358,6 +416,46 @@ def test_a_notch_refused_at_commit_leaves_borrowers_on_the_lenders_version() -> 
         assert world.borrower_copies() == before == ({world.english_id}, {broken_id})
         assert world.borrower is not None
         assert isinstance(world.borrower.meld(spell_id=world.speaker_id).greeter, English)
+        _assert_english_stands(world, broken_id)
+
+
+def test_a_notch_refused_for_an_ambiguous_provider_leaves_the_old_version_active() -> None:
+    """
+    Regression: the half-switch is not about recursion. TimedGreeter needs a Clock and two are registered, so its
+    check fails with AMBIGUOUS_PROVIDER, and the lender then selected TimedGreeter and could not meld English.
+
+    Contract:
+        - The refusal names the real reason ([AMBIGUOUS_PROVIDER]); afterwards the index selects English, English
+          is active and holds its claim and address, TimedGreeter is parked with no Phase-4 result, and English
+          melds by address and by spell_id.
+    """
+    with _world("refused_ambiguous", clocks=True) as world:
+        broken_id = world.stage(TimedGreeter)
+
+        error = _refused_notch(world, broken_id)
+
+        assert "[AMBIGUOUS_PROVIDER]" in str(error)
+        _assert_english_stands(world, broken_id)
+
+
+def test_a_notch_refused_for_an_ambiguous_provider_leaves_borrowers_on_the_lenders_version() -> None:
+    """
+    Regression: the borrower's consumer of the index (`Speaker`) was refused at its meld after the refused notch,
+    while the borrower still held English active.
+
+    Contract:
+        - The borrower's copies are as before (English active, TimedGreeter parked), its consumer melds English and
+          greets "hello", and the lender is on English too.
+    """
+    with _world("refused_ambiguous_borrower", borrower=True, clocks=True) as world:
+        broken_id = world.stage(TimedGreeter)
+        before = world.borrower_copies()
+
+        _refused_notch(world, broken_id)
+
+        assert world.borrower_copies() == before == ({world.english_id}, {broken_id})
+        assert world.borrower is not None
+        assert world.borrower.meld(spell_id=world.speaker_id).greeter.greet() == "hello"
         _assert_english_stands(world, broken_id)
 
 

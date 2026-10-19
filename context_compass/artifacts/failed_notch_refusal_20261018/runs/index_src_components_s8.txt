@@ -1,0 +1,8 @@
+WROTE: src_components_index.md
+  156 sections over 12468 document lines
+  index 186 lines (1% of document)
+  sectioned by: headings (level <= 3)
+  deepest level indexed: 3
+  largest section: 6123 lines (C3 Components Catalog)
+  all 156 ranges validated against their own headings
+  the document was NOT modified: context_compass/system_docs/src_components.md

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/utilities/custom_exceptions/spellbook_validation_error.py",
- "source_sha256": "2da4d132ca589a5a28253b147dbca5cc8c39ac1c1a7e95552cfad0be569c430e",
+ "source_sha256": "5c95e0bd1e2e2f6a6a5957301b6836d755e2226b858705e91e5fb427f1931167",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.utilities.custom_exceptions.spellbook_validation_error": {
@@ -33,18 +33,19 @@
    ],
    "public_methods": [],
    "shape": {
-    "method_count": 11,
+    "method_count": 12,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "a96e94a7a566b451c2e2b4d7912a905612f31855b9ab0e76a4f8d0e1e97f638f",
+   "span_sha256": "e8a6661bf32b235d8612413b72ca875fc8fb572f5984e63069edd1df8646e583",
    "role": "Exception for refused spells whose message lists each broken spell's errors by name, whole-graph errors, a warning count and internal-error marking.",
    "responsibilities": [
     "render the message once at construction from the spells' Phase 4/6 results and the conduit diagnostics handed in through system_diagnostics",
     "show errors, and a spell's gating warnings (GATING_WARNING_CODES: SPELL_CONTRACT_MISSING_PROVIDER, the one Phase 4 gates a lineage on) as its reason when it shows no error; every other warning, and a gating one beside errors, is counted; strategy sources, details payloads and spell ids are never printed (gating reasons, 0.2.8250)",
     "drop exact repeats, a binding-key cycle already reported as CIRCULAR_DEPENDENCY, a CIRCULAR_DEPENDENCY on a spell that reports SELF_DEPENDENCY, and restating codes (root_not_viable, broken_spell_in_dag) when another error is shown",
     "mark INTERNAL_CODES (Melder bookkeeping checks) as internal errors to report",
-    "never raise while rendering; keep broken_spells exactly as supplied"
+    "never raise while rendering; keep broken_spells exactly as supplied",
+    "puts an optional one-line preface before the message (keyword-only preface=), checked before anything renders - a non-str, empty or multi-line preface raises TypeError; a refused notch passes the refusal line (0.2.8262)"
    ],
    "owns_state": [
     "broken_spells"
@@ -53,11 +54,18 @@
     "validation",
     "runtime"
    ],
-   "semantics_authored_against": "2f4a8621332a30e606e6dcf958df2e2fa4f55027874703097e0db058e2d00c95"
+   "semantics_authored_against": "e8a6661bf32b235d8612413b72ca875fc8fb572f5984e63069edd1df8646e583"
   }
  },
  "edges_out": [],
- "edge_candidates": [],
+ "edge_candidates": [
+  {
+   "from": "melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError",
+   "to_label": "TypeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
  "published_aliases": [],
  "imports": {
   "TYPE_CHECKING": "typing.TYPE_CHECKING",

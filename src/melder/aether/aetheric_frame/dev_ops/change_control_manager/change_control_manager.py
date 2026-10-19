@@ -797,6 +797,10 @@ class ChangeControlManager(Cleanable):
           only the durable blueprint distinguishes an already-compiled member
           (notch-back / no-op notch) from a never-compiled bind_inactive one;
           compiled members recompile through meld's gated validation lane
+        - for a notch the entry (`Spellbook._notch_spell`) runs this same check
+          itself, inside the held window, and refuses the notch with nothing
+          moved when it fails, so a notched member that reaches this validator
+          has been checked or compiled already and is skipped (2026-10-19)
 
         Execution stays spellbook-owned: this hook only resolves the staged
         keys and delegates to the owning Spellbook's own phase runner.

@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: other
-SOURCE FINGERPRINT: cdbadd9665325ea7c14e18e3a9374638367e3400739a43386ef51ab6c9d54f0a
+SOURCE FINGERPRINT: 46a30f0ea0b37134173d508876c771e68a1952a1f12b4f7740332cfdf00ea491
 FILE COUNT: 409
 
 ================================================================================
@@ -76501,10 +76501,10 @@ END FILE: release_docs/0.2.8227.md
 ================================================================================
 ================================================================================
 BEGIN FILE: release_docs/next_version_release.md
-CONTENT SHA256: 1e64d7c715728379f63e9b647af996c9b68691e96564fb3ef7b5f3d9b17c6418
+CONTENT SHA256: c80177de2b4dbacca52e61ab91a96a5f4600f293a27ad55378fb5767c766918f
 SOURCE ENCODING: utf-8
 ================================================================================
-# Melder 0.2.8259
+# Melder 0.2.8263
 
 **Unreleased**
 
@@ -77552,6 +77552,219 @@ What stays the same: what `remove_from_spell_index` moves and refuses, the versi
 moving it back with `add_to_spell_index` (its emptied index goes), and every lookup of a version in any other index.
 No public signature changes.
 
+## A Spellbook's teardown cleans its parked versions too
+
+When a Spellbook is torn down - with its root conduit, or by `Spellbook.cleanup()` - it now cleans every version it
+holds, parked ones included, and every spell index that only parked versions hold (one `remove_from_spell_index`
+made). Until 0.2.8260 the teardown cleaned only the active versions and their indexes: a parked version stayed
+uncleaned, an index of its own with it, and the version's own `cleanup()` raised "Spellbook has already been
+cleaned.":
+
+```python
+class English:
+    def greet(self) -> str:
+        return "hello"
+
+
+class French:
+    def greet(self) -> str:
+        return "bonjour"
+
+
+book = md.Spellbook()
+english = book.bind(spell=English, existence="many", binding_name="english")
+world = book.conjure(dynamic=True, name="world")
+index = world.get_spell_by_spell_id(english).spell_index
+french = world.bind_inactive(spell=French, spell_index=index, existence="many", binding_name="french")
+parked = world.get_spell_by_spell_id(french)
+
+world.cleanup()                 # the root's teardown tears the Spellbook down
+assert parked.cleaned           # False until 0.2.8260
+parked.cleanup()                # returns; raised "Spellbook has already been cleaned." until 0.2.8260
+```
+
+What stays the same: the teardown of a Spellbook whose versions are all active, the managed pools a root's teardown
+cleans, and every cleanup call on a live Spellbook. No public signature changes.
+
+## Cleaning up a spell takes it out of every contract first
+
+When a lender cleans up a version with `cleanup_spell`, every conduit it shares that version with now lets it go
+before it is disposed: a borrower that contracts the version's index with `add_index_to_contract`, and one granted
+the version with `add_spell_to_contract`. Until 0.2.8261 the borrower kept its record of the version. An index link
+kept a parked version the lender cleaned up, even past the borrower's own `remove_index_from_contract`; a grant kept
+the version, parked or active; and a later notch to the same class, staged again, raised `AttributeError` in the
+borrower update after the lender had switched, leaving the borrower with no active version:
+
+```python
+class Greeter(Protocol):
+    def greet(self) -> str: ...
+
+
+class English:
+    def greet(self) -> str:
+        return "hello"
+
+
+class French:
+    def greet(self) -> str:
+        return "bonjour"
+
+
+class Banner:
+    def __init__(self, greeter: Greeter = md.SpellContract(spellframe=Greeter, binding_name="greeter")) -> None:
+        self.text = greeter.greet().upper()
+
+
+lender_book = md.Spellbook()
+borrower_book = md.Spellbook()
+english = lender_book.bind(spell=English, spellframe=Greeter, binding_name="greeter", existence="many",
+                           permissions="create")
+borrower_book.bind(spell=Banner, existence="many", permissions="create")
+lender = lender_book.conjure(dynamic=True, name="lender")
+borrower = borrower_book.conjure(dynamic=True, name="borrower")
+lender.link(borrower)
+index = lender.get_spell_by_spell_id(english).spell_index
+french = lender.bind_inactive(spell=French, spell_index=index, spellframe=Greeter, binding_name="greeter",
+                              existence="many", permissions="create")
+borrower.add_index_to_contract(index=index, conduit=lender, permissions="create")
+assert borrower.meld(spell=Banner).text == "HELLO"
+
+lender.cleanup_spell(spell=lender.get_spell_by_spell_id(french))  # the borrower lets French go as well
+french = lender.bind_inactive(spell=French, spell_index=index, spellframe=Greeter, binding_name="greeter",
+                              existence="many", permissions="create")  # staged again: the same spell_id
+lender.notch_spell(spell_index=index, spell_id=french)  # raised AttributeError until 0.2.8261
+assert borrower.meld(spell=Banner).text == "BONJOUR"
+```
+
+- A borrower's meld of a granted version the lender cleaned up raises `KeyError` "[MELD] No spell found with
+  spell_id: <spell_id>", as for a version it was never granted; it raised `AttributeError` "... object has no
+  attribute '_resolvable'".
+- `Spellbook.cleanup_spell` on a conjured Spellbook goes through its root conduit, and `cleanup_spell` through a
+  lesser conduit releases the root conduit's contracts: until 0.2.8261 neither reached a borrower, and the
+  Spellbook's own call did not tell index-link borrowers when the index went with its last version.
+- After such a cleanup the borrower's `remove_index_from_contract` leaves nothing of the lender's versions behind.
+
+What stays the same: what `cleanup_spell` refuses - the active version of an index that holds parked versions -
+and a refused cleanup touches no contract; `cleanup_spell` disposes no object a version built; and
+`Spellbook.cleanup_and_remove_spell` and a spell's own `cleanup()` release no contract. No public signature changes.
+
+## A notch whose new version fails its check is refused, and nothing moves
+
+`notch_spell` checks a version the first time it makes it active - its structure: what its constructor needs and
+whether each need resolves to one provider. Until 0.2.8262 the check ran after the switch, and nothing undid the switch
+when it failed: `notch_spell` raised `SpellbookValidationError`, yet the index stayed on the broken version, its
+borrowers stayed on the old one, and neither the old version (by its spell_id) nor the index (by address) could be
+melded until a notch back. Now a failing check puts everything back before the error is raised:
+
+```python
+class Greeter(Protocol):
+    def greet(self) -> str: ...
+
+
+class Clock(Protocol):
+    def now(self) -> str: ...
+
+
+class English:
+    def greet(self) -> str:
+        return "hello"
+
+
+class UtcClock:
+    def now(self) -> str:
+        return "12:00 UTC"
+
+
+class LocalClock:
+    def now(self) -> str:
+        return "06:00 local"
+
+
+class TimedGreeter:                    # needs a Clock - and two are registered
+    def __init__(self, clock: Clock) -> None:
+        self.clock = clock
+
+    def greet(self) -> str:
+        return "hello at " + self.clock.now()
+
+
+book = md.Spellbook()
+english = book.bind(spell=English, spellframe=Greeter, binding_name="greeter", existence="many")
+book.bind(spell=UtcClock, spellframe=Clock, binding_name="utc", existence="many")
+book.bind(spell=LocalClock, spellframe=Clock, binding_name="local", existence="many")
+world = book.conjure(dynamic=True, name="world")
+index = world.get_spell_by_spell_id(english).spell_index
+timed = world.bind_inactive(spell=TimedGreeter, spell_index=index, spellframe=Greeter, binding_name="greeter",
+                            existence="many")
+
+try:
+    world.notch_spell(spell_index=index, spell_id=timed)
+except md.SpellbookValidationError as error:
+    print(str(error).splitlines()[0])
+    # notch_spell refused: 'TimedGreeter' (spell_id ...) failed its structural check, so the notch did not
+    # happen; 'English' (spell_id ...) is still the active version of the index.
+
+assert index.selected_spell_id == english      # it selected TimedGreeter until 0.2.8262
+assert world.meld(spellframe=Greeter, binding_name="greeter").greet() == "hello"   # raised until 0.2.8262
+```
+
+- The error is still `SpellbookValidationError` with the same validation report; its first line now says the notch
+  did not happen and names the version still active (or says the index still has none).
+- After the refusal the index selects the version it selected, that version is active and melds by spell_id and by
+  address, the refused version is parked again, borrowers never moved, MutationResearch records no promotion for
+  it, and Nexus publishes the old version. A retry is checked, and refused, again.
+- Any failing check is refused the same way: a constructor that takes its own class (`SELF_DEPENDENCY`) as well as
+  an ambiguous provider (`AMBIGUOUS_PROVIDER`, above).
+- `SpellbookValidationError` takes an optional keyword `preface`: one line of text put before the report, as the
+  refusal does. Anything but a non-empty, single-line `str` raises `TypeError`; without it the message is unchanged.
+
+What stays the same: a notch to a sound version, a notch to the active version (it changes nothing), a notch back to
+a version used before, the error's type, and borrowers following a notch that stands.
+
+## Staging a version keeps the active version's name
+
+Staging a version with `bind_inactive` under the name the active version holds - the usual way to try a new version
+before a notch - took that name from the active version until 0.2.8263: Melder released the active version's binding
+signature and dropped its address, so a meld by name raised `KeyError`, `find_spell_index` raised, and another
+Spellbook of the frame could bind the name while the active version still served. Moving a parked version out of the
+index and back, and `cleanup_spell` of a parked version alone in its index, did the same. Now the active version keeps
+its name through all three:
+
+```python
+class Greeter(Protocol):
+    def greet(self) -> str: ...
+
+
+class English:
+    def greet(self) -> str:
+        return "hello"
+
+
+class French:
+    def greet(self) -> str:
+        return "bonjour"
+
+
+book = md.Spellbook()
+english = book.bind(spell=English, spellframe=Greeter, binding_name="greeter", existence="many")
+world = book.conjure(dynamic=True, name="world")
+index = world.get_spell_by_spell_id(english).spell_index
+french = world.bind_inactive(spell=French, spell_index=index, spellframe=Greeter, binding_name="greeter",
+                             existence="many")
+
+assert world.meld(spellframe=Greeter, binding_name="greeter").greet() == "hello"   # raised KeyError until 0.2.8263
+
+world.notch_spell(spell_index=index, spell_id=french)
+assert world.meld(spellframe=Greeter, binding_name="greeter").greet() == "bonjour"
+```
+
+- Staging under a name another Spellbook's active spell holds no longer releases that spell's name either; staging
+  stays open to any name, and a parked version holds no name until a notch makes it active.
+- Restores and grafts stage parked versions the same way, so a restored or grafted world keeps its active versions'
+  names too.
+
+What stays the same: what a notch does with names, staging under any name, and every public signature.
+
 ## Packaging and documentation
 
 - The README's "Declarative Binding by Module" example passes `permissions="create"`, without which it raised
@@ -77683,7 +77896,22 @@ No public signature changes.
   describe the registration of the index `remove_from_spell_index` mints, its removal at the root's teardown and
   residency's parked verdict; the code-map extents of `spellbook.py`, `spell.py` and `mutation_research.py` are
   remeasured, and their line citations remapped.
-- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8259.
+- The packaged system documents (`melder.__architecture__`, `melder.__components__`) and the packaged graph
+  describe the teardown's retirement of parked versions and of the indexes only they hold; the `spellbook.py`
+  code-map extent is remeasured, and its line citations remapped.
+- The packaged system documents (`melder.__architecture__`, `melder.__components__`) and the packaged graph
+  describe the release of a version from every contract before `cleanup_spell` disposes it, and the packaged test
+  documents describe the new tests; the code-map extents of `conduit.py`, `spellbook.py` and `conduit_ward.py` are
+  remeasured, and their line citations remapped.
+- The packaged system documents (`melder.__architecture__`, `melder.__components__`) and the packaged graph
+  describe the refused notch - the check inside the notch window, what the reversal puts back, the refusal line
+  and the error's `preface`; the code-map extents of the changed files are remeasured, and their line citations
+  remapped.
+- The packaged system documents (`melder.__architecture__`, `melder.__components__`) and the packaged graph
+  describe how destroying an index a parked version left empty keeps every other spell's name, and the
+  packaged test documents describe the new tests; the `spellbook.py` code-map extent is remeasured, and its
+  line citations remapped.
+- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8263.
 ================================================================================
 END FILE: release_docs/next_version_release.md
 ================================================================================

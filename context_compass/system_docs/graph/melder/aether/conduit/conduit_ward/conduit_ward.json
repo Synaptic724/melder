@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/conduit_ward/conduit_ward.py",
- "source_sha256": "8f4aeb403874c959e2b656bfdccbf71ea1b0fee2526cda9ed6bdc13c185895b2",
+ "source_sha256": "71b5c1e3674d29a6e2f011ba063c89771b94ec0e66404a2dfdc12349181f41f0",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.conduit_ward.conduit_ward": {
@@ -39,11 +39,11 @@
     "root_conduit"
    ],
    "shape": {
-    "method_count": 65,
+    "method_count": 66,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "a97897dfe2845fa8c67de60c5dcffc8b1ebfe7b566838ccd6f377a1251d7173e",
+   "span_sha256": "8a0fe00d372017b9372989c04f07fe6adb0835bea9144dc280f448eafd35e33f",
    "role": "Contract and lineage graph manager for a conduit.",
    "responsibilities": [
     "manages peer contracts",
@@ -57,7 +57,8 @@
     "walks its contract registry under its own lock when it tells index-link borrowers about the owner's notch, member moves and index destroy, so a concurrent link or sever waits (0.2.8231)",
     "reads and writes a contract's detail maps under that contract's lock, answers contract reads by key first and resolves contract listings through the Book's id maps without taking the conduit lock (0.2.8231)",
     "grants one version per add_spell_to_contract - the borrower's copy active while that version is the lineage's active member, parked by a notch away and active again on a notch back - while an index link follows the lineage to every new version (_emit_index_notch); every change of a borrower's active copy ends in the borrower Book's marking mutators (0.2.8250)",
-    "resolves a grant's or release's spell_id exactly (_check_spell_id_and_spell), so a parked spell_id is granted or released as itself, and names each granted version's own Spell in the outbound half of a contract listing; the contract dependency walk and its preflight (_link_spell_dependencies, _preflight_contract_dependency_collisions) and the transfer's spell_id handle (_transfer_spell_ownership) take an explicit index step - the spell that owns the spell_id, then the spell its index has active in the owner's Book (0.2.8253)"
+    "resolves a grant's or release's spell_id exactly (_check_spell_id_and_spell), so a parked spell_id is granted or released as itself, and names each granted version's own Spell in the outbound half of a contract listing; the contract dependency walk and its preflight (_link_spell_dependencies, _preflight_contract_dependency_collisions) and the transfer's spell_id handle (_transfer_spell_ownership) take an explicit index step - the spell that owns the spell_id, then the spell its index has active in the owner's Book (0.2.8253)",
+    "releases a disposed version from every contract whose owner side holds its Detail - an index link's member Detail or a version grant, with the borrower's entry, active or parked, and its borrowed id - under its own lock, before the Book disposes it, and emits each changed contract's record afterwards (_emit_spell_disposed, 0.2.8261)"
    ],
    "owns_state": [
     "_contracts",

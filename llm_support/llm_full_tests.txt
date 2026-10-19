@@ -1,8 +1,8 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: tests
-SOURCE FINGERPRINT: e9b78314dcbeb27211bd8a21391dfebdecf118f4a9235dd417504e3c4eb06d0d
-FILE COUNT: 1139
+SOURCE FINGERPRINT: 174198bf835aa0b75a6e0ebc945face0f6c6c495a284905720cac1f1d2f17c7f
+FILE COUNT: 1143
 
 ================================================================================
 BEGIN FILE: tests/_annotation_audit_support.py
@@ -56386,6 +56386,129 @@ def test_cleanup_and_remove_spell_by_id_that_waited_through_a_book_teardown_rais
 END FILE: tests/component/melder/spellbook/test_spellbook_component_direct_spell_cleanup_lock_order.py
 ================================================================================
 ================================================================================
+BEGIN FILE: tests/component/melder/spellbook/test_spellbook_component_dispose_spell_releases_contracts_first.py
+CONTENT SHA256: 9fbec4b079977ed36a22eab0759fc7cfb6c9c5e6e7eedf682d01c290520caada
+SOURCE ENCODING: utf-8
+================================================================================
+"""
+Component tests: `Spellbook._dispose_spell` hands its `release_contracts` hook the version after its decision and
+before its disposal (cleanup_releases_contracts_2026_10_19, 0.2.8261).
+
+The hook is how `Conduit.cleanup_spell` takes a version out of every contract before the Book disposes it: it runs
+once the Book has decided to dispose the version and marked it in flight, with no Book lock held, and never for a
+refused call; a raise from it ends the call with nothing disposed and the in-flight mark cleared.
+"""
+
+from typing import Iterator, List, Tuple
+
+import pytest
+
+from melder.aether.aether import Aether
+from melder.aether.conduit.conduit import Conduit
+from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spellbook import Spellbook
+
+from tests._frame_posture_test_support import (
+    apply_dynamic_defaults_for_spellbook_configuration,
+)
+
+
+class _Active:
+    """The index's active version."""
+
+
+class _Parked:
+    """A version parked on the active one's index."""
+
+
+@pytest.fixture(autouse=True)
+def reset_aether_singleton_for_dispose_hook() -> Iterator[None]:
+    """
+    Purpose:
+        Give each test a clean Aether singleton and frame registry.
+    Returns:
+        Iterator[None]: Control returns to the test between the two resets.
+    """
+    Aether._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+    yield
+    Aether._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+
+
+def _book_with_parked_version() -> Tuple[Spellbook, str, str]:
+    """
+    Purpose:
+        An unconjured Book with one index: `_Active` active, `_Parked` parked on it.
+    Returns:
+        Tuple[Spellbook, str, str]: The Book, the active spell_id and the parked spell_id.
+    """
+    configuration = SpellbookConfiguration()
+    apply_dynamic_defaults_for_spellbook_configuration(configuration)
+    configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
+    book = Spellbook(configuration=configuration)
+    active_id = book.bind(spell=_Active, existence=Existence.unique, permissions="create", binding_name="active")
+    index = book.find_spell_by_spell_id(active_id).spell_index
+    parked_id = book.bind_inactive(spell=_Parked, spell_index=index, existence=Existence.unique,
+                                   permissions="create", binding_name="parked")
+    return book, active_id, parked_id
+
+
+def test_release_contracts_runs_between_the_decision_and_the_disposal() -> None:
+    book, _active_id, parked_id = _book_with_parked_version()
+    parked = book._get_owned_spell(parked_id)
+    seen: List[Tuple[str, bool, bool]] = []
+
+    def release(spell_id: str) -> None:
+        """Record the spell_id, whether the version is still live and still owned."""
+        seen.append((spell_id, parked._cleaned, book._get_owned_spell(spell_id) is parked))
+
+    try:
+        assert book._dispose_spell(parked, release_contracts=release) is None
+        assert seen == [(parked_id, False, True)]
+        assert parked._cleaned
+        assert book._get_owned_spell(parked_id) is None
+    finally:
+        book.cleanup()
+
+
+def test_release_contracts_is_not_called_for_a_refused_disposal() -> None:
+    book, active_id, _parked_id = _book_with_parked_version()
+    calls: List[str] = []
+    try:
+        with pytest.raises(RuntimeError, match="active member of a multi-member index"):
+            book._dispose_spell(book.find_spell_by_spell_id(active_id), release_contracts=calls.append)
+        assert calls == []
+    finally:
+        book.cleanup()
+
+
+def test_a_raising_release_contracts_disposes_nothing_and_a_retry_completes() -> None:
+    book, _active_id, parked_id = _book_with_parked_version()
+    parked = book._get_owned_spell(parked_id)
+
+    def failing(spell_id: str) -> None:
+        """Fail the release."""
+        raise RuntimeError(f"release failed for {spell_id}")
+
+    try:
+        with pytest.raises(RuntimeError, match="release failed"):
+            book._dispose_spell(parked, release_contracts=failing)
+        assert not parked._cleaned
+        assert book._get_owned_spell(parked_id) is parked
+        assert book._dispose_spell(parked) is None
+        assert parked._cleaned
+    finally:
+        book.cleanup()
+================================================================================
+END FILE: tests/component/melder/spellbook/test_spellbook_component_dispose_spell_releases_contracts_first.py
+================================================================================
+================================================================================
 BEGIN FILE: tests/component/melder/spellbook/test_spellbook_component_executor_cache_world_stamp.py
 CONTENT SHA256: ecf2549beda70e429caeca380c9066acdf404279215ca38f84cb8cad58150977
 SOURCE ENCODING: utf-8
@@ -63482,6 +63605,394 @@ def test_component_spellbook_remove_contracted_spell_raises_when_missing_version
         spellbook.cleanup()
 ================================================================================
 END FILE: tests/component/melder/spellbook/test_spellbook_component_spellbook.py
+================================================================================
+================================================================================
+BEGIN FILE: tests/component/melder/spellbook/test_spellbook_component_staged_version_keeps_active_signature.py
+CONTENT SHA256: 2d122e90f88e58bdc34a22b7a80fcf15c6b9c172f17a7a5a27403a7729dc2848
+SOURCE ENCODING: utf-8
+================================================================================
+"""
+Component tests: staging, moving or disposing a parked version keeps every other spell's binding signature.
+
+WHY THIS EXISTS. STORY-2026-10-17-staged_version_releases_active_signature (EPIC-2026-10-17-correctness_defects,
+sweep A1). `Spellbook._destroy_spell_index` destroys an index that a parked version left empty - the throwaway index
+Bind mints for every `bind_inactive`, a source index `add_to_spell_index` empties, or the index a lone parked
+version is disposed out of. Until 0.2.8263 it popped the Book's address route for the parked version's binding key
+and released the frame's claim on that key by key, whoever held them. A parked version shares its key with the
+active version it was staged beside, so the active version lost its claim and its route while it still served:
+a meld by address raised KeyError, `find_spell_index` raised, and another Book could bind the signature. The seam
+now drops the route only when it routes the key to the destroyed index and releases only the claim the departing
+version holds (by spell_id), as `cleanup_and_remove_spell` already did.
+
+Each test runs in a fresh Aether with its own dynamic frame and caching off, and asserts through the frame's claim
+surface, the Book's address lookups and a meld by address - the answers an agent's calls get.
+"""
+
+from typing import Any, Optional, Protocol, Tuple
+
+import pytest
+
+from melder.aether.aether import Aether
+from melder.aether.conduit.conduit import Conduit
+from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spell import Spell
+from melder.aether.spellbook.spellbook import Spellbook
+
+
+class Greeter(Protocol):
+    """The contract every greeter version implements."""
+
+    def greet(self) -> str:
+        """Return a greeting."""
+        ...
+
+
+class EnglishGreeter:
+    """Version 1, bound active."""
+
+    def greet(self) -> str:
+        """Return the English greeting."""
+        return "hello"
+
+
+class FrenchGreeter:
+    """Version 2, staged parked on the English version's index."""
+
+    def greet(self) -> str:
+        """Return the French greeting."""
+        return "bonjour"
+
+
+class SpanishGreeter:
+    """Another Book's spell, bound active."""
+
+    def greet(self) -> str:
+        """Return the Spanish greeting."""
+        return "hola"
+
+
+class ItalianGreeter:
+    """A third party trying to take a signature."""
+
+    def greet(self) -> str:
+        """Return the Italian greeting."""
+        return "ciao"
+
+
+@pytest.fixture(autouse=True)
+def reset_aether_for_signature_claims() -> Any:
+    """
+    Purpose:
+        Give each test a clean Aether singleton and frame registry.
+
+    Contract:
+        - Resets before and after, so no frame claim or Book leaks between tests.
+
+    Returns:
+        Any: The generator pytest drives (yields None).
+    """
+    Aether._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+    yield
+    Aether._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+
+
+def _book(frame_name: str) -> Spellbook:
+    """
+    Purpose:
+        Build a Spellbook on `frame_name` with its own default configuration.
+
+    Args:
+        frame_name (str): The aetheric frame the Spellbook belongs to.
+
+    Returns:
+        Spellbook: An unconjured Spellbook.
+    """
+    return Spellbook(aetheric_frame=frame_name, configuration=SpellbookConfiguration(frame_name).with_defaults())
+
+
+def _settle_dynamic(spellbook: Spellbook) -> None:
+    """
+    Purpose:
+        Settle the Spellbook's frame dynamic with caching off, so staging and index moves are allowed.
+
+    Args:
+        spellbook (Spellbook): A Spellbook whose frame is not yet settled.
+
+    Returns:
+        None.
+    """
+    spellbook.configure_aether_frame(
+        system_state="dynamic",
+        disposal=None,
+        disposal_method_names=None,
+        system_caching_enabled=False,
+    )
+
+
+def _bind(spellbook: Spellbook, cls: type, binding_name: str) -> str:
+    """
+    Purpose:
+        Bind `cls` active under (Greeter, `binding_name`) as `many`.
+
+    Args:
+        spellbook (Spellbook): The Book to bind into.
+        cls (type): The class to bind.
+        binding_name (str): The binding name of the signature.
+
+    Returns:
+        str: The spell_id `bind` returned.
+    """
+    return spellbook.bind(
+        spell=cls,
+        spellframe=Greeter,
+        binding_name=binding_name,
+        existence=Existence.many,
+        permissions="create",
+    )
+
+
+def _stage(owner: Any, cls: type, binding_name: str, spell_index: Any) -> str:
+    """
+    Purpose:
+        Stage `cls` parked under (Greeter, `binding_name`) on `spell_index` through `owner`.
+
+    Args:
+        owner (Any): A Conduit or a Spellbook; both expose `bind_inactive`.
+        cls (type): The class to stage.
+        binding_name (str): The binding name of the signature.
+        spell_index (Any): The owned SpellIndex the version joins.
+
+    Returns:
+        str: The spell_id `bind_inactive` returned.
+    """
+    return owner.bind_inactive(
+        spell=cls,
+        spell_index=spell_index,
+        spellframe=Greeter,
+        binding_name=binding_name,
+        existence=Existence.many,
+        permissions="create",
+    )
+
+
+def _english_world(frame_name: str) -> Tuple[Spellbook, Spellbook, Conduit, Spell]:
+    """
+    Purpose:
+        English active on its index in a conjured dynamic Book, plus a second, unconjured Book on the same frame.
+
+    Args:
+        frame_name (str): The frame both Books live on.
+
+    Returns:
+        Tuple[Spellbook, Spellbook, Conduit, Spell]: The lender Book, the other Book, the lender's root conduit and
+            the active English version.
+    """
+    lender_book = _book(frame_name)
+    _settle_dynamic(lender_book)
+    other_book = _book(frame_name)
+    english_id = _bind(lender_book, EnglishGreeter, "greeter")
+    lender = lender_book.conjure(dynamic=True, name=f"{frame_name}-lender")
+    english = lender_book.find_spell_by_spell_id(english_id)
+    assert english is not None
+    return lender_book, other_book, lender, english
+
+
+def _assert_english_keeps_its_signature(lender_book: Spellbook, lender: Conduit, english: Spell) -> None:
+    """
+    Purpose:
+        Assert the active English version still holds its frame claim and its Book route, and that the agent's
+        address lookups answer it.
+
+    Args:
+        lender_book (Spellbook): The Book that owns English.
+        lender (Conduit): The Book's root conduit.
+        english (Spell): The active English version.
+
+    Returns:
+        None.
+
+    Raises:
+        AssertionError: If the claim, the route, a meld by address or `find_spell_index` no longer answers English.
+    """
+    key = english._key
+    assert lender_book._aetheric_frame.get_lookup(key) == english.spell_id
+    assert lender_book.find_spell_index(Greeter, "EnglishGreeter", "greeter") is english.spell_index
+    melded = lender.meld(spellframe=Greeter, binding_name="greeter")
+    assert isinstance(melded, EnglishGreeter)
+
+
+def _assert_bind_of_signature_refused(other_book: Spellbook, cls: type, binding_name: str) -> None:
+    """
+    Purpose:
+        Assert another Book of the frame cannot bind a signature an active spell holds.
+
+    Args:
+        other_book (Spellbook): A second Book on the same frame.
+        cls (type): The class it tries to bind.
+        binding_name (str): The binding name of the held signature.
+
+    Returns:
+        None.
+
+    Raises:
+        AssertionError: If the bind is accepted.
+    """
+    with pytest.raises(RuntimeError, match="Binding signature already active in this frame"):
+        _bind(other_book, cls, binding_name)
+
+
+def test_bind_inactive_keeps_the_active_versions_binding_signature() -> None:
+    """
+    Purpose:
+        Staging a version keyed like the active version leaves the active version's claim and route in place.
+
+    Contract:
+        - After `Conduit.bind_inactive(FrenchGreeter)` on English's index under English's key, English still holds
+          the frame claim, `find_spell_index` returns its index, a meld by address builds English, and another Book's
+          bind of the signature is refused. Until 0.2.8263 the claim and the route were gone, the meld raised
+          KeyError and the other Book's bind was accepted.
+
+    Returns:
+        None.
+    """
+    lender_book, other_book, lender, english = _english_world("s1-stage-after-conjure")
+
+    _stage(lender, FrenchGreeter, "greeter", english.spell_index)
+
+    _assert_english_keeps_its_signature(lender_book, lender, english)
+    _assert_bind_of_signature_refused(other_book, SpanishGreeter, "greeter")
+
+
+def test_bind_inactive_before_conjure_keeps_the_active_versions_binding_signature() -> None:
+    """
+    Purpose:
+        Staging before conjure leaves the active version addressable after conjure.
+
+    Contract:
+        - `Spellbook.bind_inactive(FrenchGreeter)` before `conjure`, under English's key: after conjure English holds
+          the claim and a meld by address builds it. Until 0.2.8263 the first meld by address raised KeyError.
+
+    Returns:
+        None.
+    """
+    lender_book = _book("s1-stage-before-conjure")
+    _settle_dynamic(lender_book)
+    english_id = _bind(lender_book, EnglishGreeter, "greeter")
+    english: Optional[Spell] = lender_book.find_spell_by_spell_id(english_id)
+    assert english is not None
+
+    _stage(lender_book, FrenchGreeter, "greeter", english.spell_index)
+    lender = lender_book.conjure(dynamic=True, name="s1-stage-before-conjure-lender")
+
+    _assert_english_keeps_its_signature(lender_book, lender, english)
+
+
+def test_index_move_back_keeps_the_active_versions_binding_signature() -> None:
+    """
+    Purpose:
+        Moving a parked version out of the index and back leaves the active version's claim and route in place.
+
+    Contract:
+        - With French parked beside English (under English's key), `remove_from_spell_index(French)` then
+          `add_to_spell_index(French)` back - which empties and destroys the index the move minted - leaves English
+          holding its claim and addressable, and another Book's bind of the signature refused. Until 0.2.8263 the
+          destroy released English's claim and route.
+
+    Returns:
+        None.
+    """
+    lender_book, other_book, lender, english = _english_world("s1-move-back")
+    index = english.spell_index
+    french_id = _stage(lender, FrenchGreeter, "greeter", index)
+
+    lender.remove_from_spell_index(spell_id=french_id, source_index=index)
+    lender.add_to_spell_index(spell_id=french_id, target_index=index)
+
+    _assert_english_keeps_its_signature(lender_book, lender, english)
+    _assert_bind_of_signature_refused(other_book, SpanishGreeter, "greeter")
+    assert lender_book.find_spell_by_spell_id(french_id).spell_index is index
+
+
+def test_cleanup_of_a_lone_parked_version_keeps_the_siblings_binding_signature() -> None:
+    """
+    Purpose:
+        Disposing a parked version alone in its own index leaves its former sibling's claim and route in place.
+
+    Contract:
+        - French, keyed like English, is moved into an index of its own and disposed with `cleanup_spell`, which
+          destroys that index: English still holds its claim, is addressable, and another Book's bind of the
+          signature is refused. Until 0.2.8263 the destroy released English's claim and route.
+
+    Returns:
+        None.
+    """
+    lender_book, other_book, lender, english = _english_world("s1-lone-cleanup")
+    index = english.spell_index
+    french_id = _stage(lender, FrenchGreeter, "greeter", index)
+    lender.remove_from_spell_index(spell_id=french_id, source_index=index)
+
+    lender.cleanup_spell(spell=lender_book.find_spell_by_spell_id(french_id))
+
+    _assert_english_keeps_its_signature(lender_book, lender, english)
+    _assert_bind_of_signature_refused(other_book, SpanishGreeter, "greeter")
+    assert lender_book.find_spell_by_spell_id(french_id) is None
+
+
+def test_staging_does_not_release_another_books_binding_signature() -> None:
+    """
+    Purpose:
+        Staging in one Book a version keyed like another Book's active spell leaves that spell's claim in place.
+
+    Contract:
+        - Book O binds SpanishGreeter active as (Greeter, 'spanish'); Book L stages FrenchGreeter under the same
+          signature on its own index. Book O's spell still holds the claim and a third Book's bind of the signature
+          is refused. Until 0.2.8263 Book L's staging released Book O's claim.
+
+    Returns:
+        None.
+    """
+    lender_book, other_book, lender, english = _english_world("s1-other-book")
+    spanish_id = _bind(other_book, SpanishGreeter, "spanish")
+    spanish = other_book.find_spell_by_spell_id(spanish_id)
+    assert spanish is not None
+
+    _stage(lender, FrenchGreeter, "spanish", english.spell_index)
+
+    assert lender_book._aetheric_frame.get_lookup(spanish._key) == spanish_id
+    _assert_bind_of_signature_refused(_book("s1-other-book"), ItalianGreeter, "spanish")
+    _assert_english_keeps_its_signature(lender_book, lender, english)
+
+
+def test_parked_version_staged_under_its_own_key_claims_nothing() -> None:
+    """
+    Purpose:
+        A version staged under a key no active spell holds claims nothing, before and after the throwaway index
+        Bind minted for it is destroyed.
+
+    Contract:
+        - Staging FrenchGreeter as (Greeter, 'french') on English's index leaves ('greeter', 'french') unclaimed in
+          the frame and unrouted in the Book, and English's own claim in place: a parked version holds no signature.
+
+    Returns:
+        None.
+    """
+    lender_book, _other_book, lender, english = _english_world("s1-own-key")
+
+    french_id = _stage(lender, FrenchGreeter, "french", english.spell_index)
+    french = lender_book.find_spell_by_spell_id(french_id)
+    assert french is not None
+    assert lender_book._aetheric_frame.get_lookup(french._key) is None
+    assert french._key not in lender_book._lookup_spells
+    _assert_english_keeps_its_signature(lender_book, lender, english)
+================================================================================
+END FILE: tests/component/melder/spellbook/test_spellbook_component_staged_version_keeps_active_signature.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/spellbook/test_spellbook_component_structural_snapshot_capture.py
@@ -91463,6 +91974,321 @@ def test_many_category_members_never_become_providers_for_the_type() -> None:
 END FILE: tests/integration/melder/aether/conduit/test_annotation_category_collision_integration.py
 ================================================================================
 ================================================================================
+BEGIN FILE: tests/integration/melder/aether/conduit/test_cleanup_releases_contracts_integration.py
+CONTENT SHA256: c1c6b2be40f64b4d6435992ea7ea0c6efe697472b00923dbc34825e7c7c29bdc
+SOURCE ENCODING: utf-8
+================================================================================
+"""
+Integration tests: cleaning up a spell takes the version out of every contract that holds it, then disposes it
+(STORY-2026-10-17-parked_cleanup_leaves_borrower_copies, cleanup_releases_contracts_2026_10_19, 0.2.8261).
+
+Through 0.2.8260 `Conduit.cleanup_spell` told a lender's borrowers only when the version's index died with it: a
+parked version whose index survived kept its entry, borrowed id and lender-side Detail on every index-link borrower,
+past the borrower's own unlink, and a later notch to the class staged again raised in the borrower fan-out; a version
+grant was never touched; and the direct `Spellbook.cleanup_spell` and a lesser conduit's `cleanup_spell` reached no
+contract at all. Every `cleanup_spell` door now releases the version from every contract of the Book's root conduit
+before the Book disposes it, and drops the index links when the index goes with it.
+
+Each test runs in a fresh Aether: the owner binds A active (B parked on A's index where the test needs a parked
+version), the borrower links to it.
+"""
+
+from typing import Iterator, List, Tuple
+
+import pytest
+
+from melder.aether.aether import Aether
+from melder.aether.conduit.conduit import Conduit
+from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spell import Spell
+from melder.aether.spellbook.spellbook import Spellbook
+
+from tests._frame_posture_test_support import (
+    apply_dynamic_defaults_for_spellbook_configuration,
+)
+
+pytestmark = pytest.mark.integration
+
+
+class _ServiceA:
+    """The owner's active version."""
+
+    def __init__(self) -> None:
+        self.tag = "A"
+
+
+class _ServiceB:
+    """The owner's parked version on A's index."""
+
+    def __init__(self) -> None:
+        self.tag = "B"
+
+
+class _Solo:
+    """The sole member of its own index."""
+
+    def __init__(self) -> None:
+        self.tag = "solo"
+
+
+@pytest.fixture(autouse=True)
+def reset_aether_singleton_for_cleanup_contracts() -> Iterator[None]:
+    """
+    Purpose:
+        Give each test a clean Aether singleton and frame registry.
+    Returns:
+        Iterator[None]: Control returns to the test between the two resets.
+    """
+    Aether._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+    yield
+    Aether._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+
+
+def _make_book() -> Spellbook:
+    """
+    Purpose:
+        A Spellbook in the dynamic posture, with one phase worker.
+    Returns:
+        Spellbook: The new Book.
+    """
+    configuration = SpellbookConfiguration()
+    apply_dynamic_defaults_for_spellbook_configuration(configuration)
+    configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
+    return Spellbook(configuration=configuration)
+
+
+def _world() -> Tuple[Spellbook, Spellbook, Conduit, Conduit, str, str, str]:
+    """
+    Purpose:
+        The owner with A active and B parked on A's index and Solo alone in its own index; the borrower linked to
+        the owner, nothing contracted yet.
+    Returns:
+        Tuple: (owner_book, borrower_book, owner, borrower, id_a, id_b, id_solo).
+    """
+    owner_book = _make_book()
+    borrower_book = _make_book()
+    id_a = owner_book.bind(spell=_ServiceA, existence=Existence.unique, permissions="create", binding_name="a")
+    id_solo = owner_book.bind(spell=_Solo, existence=Existence.unique, permissions="create", binding_name="solo")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
+    index = owner_book.find_spell_by_spell_id(id_a).spell_index
+    id_b = owner.bind_inactive(spell=_ServiceB, spell_index=index, existence=Existence.unique,
+                               permissions="create", binding_name="b")
+    owner.link(borrower)
+    return owner_book, borrower_book, owner, borrower, id_a, id_b, id_solo
+
+
+def _link_index_of(owner_book: Spellbook, owner: Conduit, borrower: Conduit, spell_id: str) -> str:
+    """
+    Purpose:
+        The borrower contracts the whole index of `spell_id`.
+    Returns:
+        str: The index's id.
+    """
+    index = owner_book.find_spell_by_spell_id(spell_id).spell_index
+    with borrower.transaction("link", conduits=[borrower, owner]):
+        assert borrower.add_index_to_contract(index=index, conduit=owner, permissions="create")
+    return index.id
+
+
+def _grant(owner_book: Spellbook, owner: Conduit, borrower: Conduit, spell_id: str) -> None:
+    """
+    Purpose:
+        The borrower contracts one version by its Spell (a version grant).
+    Returns:
+        None.
+    """
+    spell = owner_book.find_spell_by_spell_id(spell_id)
+    with borrower.transaction("link", conduits=[borrower, owner]):
+        assert borrower.add_spell_to_contract(spell=spell, conduit=owner, permissions="create")
+
+
+def _borrowed(borrower_book: Spellbook, owner: Conduit) -> Tuple[List[str], List[str], List[str]]:
+    """
+    Purpose:
+        What the borrower Book holds for the owner: active entries, parked entries and borrowed ids, by spell_id.
+    Returns:
+        Tuple[List[str], List[str], List[str]]: The three sorted id lists.
+    """
+    active = sorted(borrower_book._contracted_spells_by_id.get(owner._id, {}))
+    parked = sorted(borrower_book._inactive_contracted_spells.get(owner._id, {}))
+    ids = sorted(borrower_book._contracted_spell_ids.get(owner._id, set()))
+    return active, parked, ids
+
+
+def _owner_details(borrower: Conduit, owner: Conduit, *spell_ids: str) -> List[bool]:
+    """
+    Purpose:
+        Whether the contract holds an owner-side Detail for each spell_id.
+    Returns:
+        List[bool]: One flag per spell_id, in order.
+    """
+    contract = borrower._conduit_ward._find_contract_by_id(owner._id)
+    return [contract._check_if_exists(owner._conduit_ward, spell_id) for spell_id in spell_ids]
+
+
+def test_cleanup_of_a_parked_member_drops_it_from_index_link_borrowers() -> None:
+    owner_book, borrower_book, owner, borrower, id_a, id_b, _id_solo = _world()
+    index_id = _link_index_of(owner_book, owner, borrower, id_a)
+    try:
+        owner.cleanup_spell(spell=owner_book._get_owned_spell(id_b))
+        assert _borrowed(borrower_book, owner) == ([id_a], [], [id_a])
+        assert _owner_details(borrower, owner, id_a, id_b) == [True, False]
+        assert index_id in borrower_book._contracted_indexes
+    finally:
+        borrower.cleanup()
+        owner.cleanup()
+
+
+def test_unlink_after_a_parked_cleanup_leaves_no_borrowed_ids() -> None:
+    owner_book, borrower_book, owner, borrower, id_a, id_b, _id_solo = _world()
+    index_id = _link_index_of(owner_book, owner, borrower, id_a)
+    try:
+        owner.cleanup_spell(spell=owner_book._get_owned_spell(id_b))
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            borrower.remove_index_from_contract(index_id=index_id, conduit=owner)
+        assert _borrowed(borrower_book, owner) == ([], [], [])
+        assert index_id not in borrower_book._contracted_indexes
+    finally:
+        borrower.cleanup()
+        owner.cleanup()
+
+
+def test_notch_to_a_restaged_version_after_its_cleanup_reaches_index_link_borrowers() -> None:
+    owner_book, borrower_book, owner, borrower, id_a, id_b, _id_solo = _world()
+    _link_index_of(owner_book, owner, borrower, id_a)
+    index = owner_book.find_spell_by_spell_id(id_a).spell_index
+    try:
+        owner.cleanup_spell(spell=owner_book._get_owned_spell(id_b))
+        again = owner.bind_inactive(spell=_ServiceB, spell_index=index, existence=Existence.unique,
+                                    permissions="create", binding_name="b")
+        assert again == id_b
+        owner.notch_spell(spell_index=index, spell_id=id_b)
+        assert _borrowed(borrower_book, owner)[0] == [id_b]
+        assert borrower.meld(spell_id=id_b).tag == "B"
+    finally:
+        borrower.cleanup()
+        owner.cleanup()
+
+
+def test_cleanup_of_a_parked_granted_version_drops_the_grant() -> None:
+    owner_book, borrower_book, owner, borrower, _id_a, id_b, _id_solo = _world()
+    _grant(owner_book, owner, borrower, id_b)
+    try:
+        assert id_b in _borrowed(borrower_book, owner)[1]
+        owner.cleanup_spell(spell=owner_book._get_owned_spell(id_b))
+        active, parked, ids = _borrowed(borrower_book, owner)
+        assert id_b not in active + parked + ids
+        assert _owner_details(borrower, owner, id_b) == [False]
+    finally:
+        borrower.cleanup()
+        owner.cleanup()
+
+
+def test_cleanup_of_a_granted_sole_member_leaves_the_borrower_no_cleaned_copy() -> None:
+    owner_book, borrower_book, owner, borrower, _id_a, _id_b, id_solo = _world()
+    _grant(owner_book, owner, borrower, id_solo)
+    try:
+        assert _borrowed(borrower_book, owner)[0] == [id_solo]
+        owner.cleanup_spell(spell=owner_book.find_spell_by_spell_id(id_solo))
+        assert _borrowed(borrower_book, owner) == ([], [], [])
+        assert _owner_details(borrower, owner, id_solo) == [False]
+        # As for a version the borrower never held; through 0.2.8260 it raised AttributeError on the cleaned Spell.
+        with pytest.raises(KeyError, match="No spell found with spell_id"):
+            borrower.meld(spell_id=id_solo)
+    finally:
+        borrower.cleanup()
+        owner.cleanup()
+
+
+def test_direct_spellbook_cleanup_of_a_parked_member_updates_index_link_borrowers() -> None:
+    owner_book, borrower_book, owner, borrower, id_a, id_b, _id_solo = _world()
+    _link_index_of(owner_book, owner, borrower, id_a)
+    try:
+        owner_book.cleanup_spell(spell=owner_book._get_owned_spell(id_b))
+        assert _borrowed(borrower_book, owner) == ([id_a], [], [id_a])
+        assert _owner_details(borrower, owner, id_b) == [False]
+    finally:
+        borrower.cleanup()
+        owner.cleanup()
+
+
+def test_direct_spellbook_cleanup_of_a_sole_member_drops_the_index_link() -> None:
+    owner_book, borrower_book, owner, borrower, _id_a, _id_b, id_solo = _world()
+    index_id = _link_index_of(owner_book, owner, borrower, id_solo)
+    try:
+        owner_book.cleanup_spell(spell=owner_book.find_spell_by_spell_id(id_solo))
+        assert _borrowed(borrower_book, owner) == ([], [], [])
+        assert index_id not in borrower_book._contracted_indexes
+        contract = borrower._conduit_ward._find_contract_by_id(owner._id)
+        assert contract._check_index_exists(owner._conduit_ward, index_id) is False
+        assert _owner_details(borrower, owner, id_solo) == [False]
+    finally:
+        borrower.cleanup()
+        owner.cleanup()
+
+
+def test_lesser_conduit_cleanup_spell_releases_the_root_contracts() -> None:
+    owner_book, borrower_book, owner, borrower, id_a, id_b, _id_solo = _world()
+    _link_index_of(owner_book, owner, borrower, id_a)
+    lesser = owner.create_lesser_conduit()
+    try:
+        lesser.cleanup_spell(spell=owner_book._get_owned_spell(id_b))
+        assert _borrowed(borrower_book, owner) == ([id_a], [], [id_a])
+        assert _owner_details(borrower, owner, id_b) == [False]
+    finally:
+        lesser.cleanup()
+        borrower.cleanup()
+        owner.cleanup()
+
+
+def test_borrowers_drop_the_version_while_it_is_still_live(monkeypatch: pytest.MonkeyPatch) -> None:
+    owner_book, borrower_book, owner, borrower, id_a, id_b, _id_solo = _world()
+    _link_index_of(owner_book, owner, borrower, id_a)
+    spell_b: Spell = owner_book._get_owned_spell(id_b)
+    seen: List[Tuple[str, bool]] = []
+    original = Spellbook._remove_contracted_spell
+
+    def recording(self: Spellbook, spell_id: str, conduit_id: str) -> None:
+        """Record whether the owner's version is already cleaned when the borrower drops it."""
+        if self is borrower_book:
+            seen.append((spell_id, spell_b._cleaned))
+        original(self, spell_id, conduit_id)
+
+    monkeypatch.setattr(Spellbook, "_remove_contracted_spell", recording)
+    try:
+        owner.cleanup_spell(spell=spell_b)
+        assert seen == [(id_b, False)]
+        assert spell_b._cleaned
+    finally:
+        monkeypatch.undo()
+        borrower.cleanup()
+        owner.cleanup()
+
+
+def test_refused_cleanup_of_an_active_member_leaves_borrower_contracts_intact() -> None:
+    owner_book, borrower_book, owner, borrower, id_a, id_b, _id_solo = _world()
+    _link_index_of(owner_book, owner, borrower, id_a)
+    try:
+        before = _borrowed(borrower_book, owner)
+        with pytest.raises(RuntimeError, match="active member of a multi-member index"):
+            owner.cleanup_spell(spell=owner_book.find_spell_by_spell_id(id_a))
+        assert _borrowed(borrower_book, owner) == before
+        assert _owner_details(borrower, owner, id_a, id_b) == [True, True]
+    finally:
+        borrower.cleanup()
+        owner.cleanup()
+================================================================================
+END FILE: tests/integration/melder/aether/conduit/test_cleanup_releases_contracts_integration.py
+================================================================================
+================================================================================
 BEGIN FILE: tests/integration/melder/aether/conduit/test_human_spell_name_resolution.py
 CONTENT SHA256: 8461c31b505464032761e40faad722d75a38bef8e57c81dfcd700b7e5e9ce50a
 SOURCE ENCODING: utf-8
@@ -93574,21 +94400,24 @@ END FILE: tests/integration/melder/aether/conduit/test_meld_unhashable_input_cac
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py
-CONTENT SHA256: 91a2888902267fb5b8a94ea3d38ed6e8e72210afc9c1125350f7dd471d84be1c
+CONTENT SHA256: 0130084a69969600074d071e2988562b10b22b9eee702c70f013c8a73382f302
 SOURCE ENCODING: utf-8
 ================================================================================
 """
 Integration: a notch whose incoming version fails its structural check is refused with nothing moved
 (STORY-2026-10-17-failed_notch_keeps_switch_without_borrowers; patch failed_notch_refusal_2026_10_18).
 
-Phases 1-4 of a version that was never compiled run when it is notched in. Until 0.2.8256 they ran at the
+Phases 1-4 of a version that was never compiled run when it is notched in. Until the story's fix they ran at the
 transaction's commit, after the switch, and nothing undid the switch: `notch_spell` raised SpellbookValidationError
 while the lender's index selected the broken version, its borrowers kept the old one, and the lender could not meld
-the index by address. The notch now runs the check inside its window and, when the check fails, puts the structure
-back before it raises: the owner's answer (a), "refuse it and throw and move on".
+the index by address (measured on 0.2.8255, and on 0.2.8260, where a spell_id is the hash of the object's code).
+With the fix the notch runs the check inside its window and, when the check fails, puts the structure back before
+it raises: the owner's answer (a), "refuse it and throw and move on". Until it lands these tests fail.
 
-The broken version is `SelfMade`, whose constructor takes its own class (SELF_DEPENDENCY at Phase 4): it is only
-checked once it is active, because a parked version is not in the pool Phase 3 resolves against.
+Two broken versions are used. `SelfMade`'s constructor takes its own class (SELF_DEPENDENCY at Phase 4).
+`TimedGreeter`'s constructor needs a `Clock` while two are registered (AMBIGUOUS_PROVIDER): nothing in it loops, so
+it shows the half-switch follows any failing check, not recursion. Each is only checked once it is active, because
+a parked version is not in the pool Phase 3 resolves against.
 
 Worlds follow probe N1-N3 (artifacts/correctness_defects_20261017/probes/probe_failed_notch_commit.py): a dynamic
 frame with caching off, English active on the lender's index and, when a borrower is asked for, a second Book that
@@ -93664,6 +94493,50 @@ class Speaker:
             greeter: The version the borrower's contracted copy of the index makes active.
         """
         self.greeter = greeter
+
+
+class Clock(Protocol):
+    """What `TimedGreeter` needs; a world built with `clocks=True` registers two providers of it."""
+
+    def now(self) -> str:
+        """Return the time of day."""
+        ...
+
+
+class UtcClock:
+    """One registered provider of `Clock`."""
+
+    def now(self) -> str:
+        """Return the time in UTC."""
+        return "12:00 UTC"
+
+
+class LocalClock:
+    """A second registered provider of `Clock`, so a single `Clock` parameter has two candidates."""
+
+    def now(self) -> str:
+        """Return the local time."""
+        return "06:00 local"
+
+
+class TimedGreeter:
+    """
+    A broken version with no recursion: its constructor needs a `Clock` and two are registered
+    (AMBIGUOUS_PROVIDER once it is active).
+    """
+
+    def __init__(self, clock: Clock) -> None:
+        """
+        Keep the clock.
+
+        Args:
+            clock: The clock to read; with `UtcClock` and `LocalClock` both registered no meld can pick one.
+        """
+        self.clock = clock
+
+    def greet(self) -> str:
+        """Return a greeting with the time."""
+        return "hello at " + self.clock.now()
 
 
 def _reset_world() -> None:
@@ -93779,7 +94652,9 @@ class _World:
 
 
 @contextlib.contextmanager
-def _world(frame: str, *, borrower: bool = False, rift_enabled: bool = False) -> Iterator[_World]:
+def _world(
+    frame: str, *, borrower: bool = False, rift_enabled: bool = False, clocks: bool = False,
+) -> Iterator[_World]:
     """
     English active on the lender's index; optionally a borrower that contracts the whole index.
 
@@ -93787,6 +94662,8 @@ def _world(frame: str, *, borrower: bool = False, rift_enabled: bool = False) ->
         frame: The frame for both Books.
         borrower: Build an index-linked borrower Book with a consumer (`Speaker`) of the index.
         rift_enabled: Make the frame publish passive Nexus records.
+        clocks: Register `UtcClock` and `LocalClock` as `Clock` providers in the lender's Book, so `TimedGreeter`'s
+            `clock` parameter has two candidates.
 
     Yields:
         _World: The handles; both roots are torn down on exit.
@@ -93796,6 +94673,13 @@ def _world(frame: str, *, borrower: bool = False, rift_enabled: bool = False) ->
     english_id = book.bind(
         spell=English, spellframe=Greeter, binding_name="greeter", existence=Existence.many, permissions="create",
     )
+    if clocks:
+        book.bind(
+            spell=UtcClock, spellframe=Clock, binding_name="utc", existence=Existence.many, permissions="create",
+        )
+        book.bind(
+            spell=LocalClock, spellframe=Clock, binding_name="local", existence=Existence.many, permissions="create",
+        )
     speaker_id = None
     if borrower_book is not None:
         speaker_id = borrower_book.bind(spell=Speaker, existence=Existence.many, permissions="create")
@@ -93937,6 +94821,46 @@ def test_a_notch_refused_at_commit_leaves_borrowers_on_the_lenders_version() -> 
         assert world.borrower_copies() == before == ({world.english_id}, {broken_id})
         assert world.borrower is not None
         assert isinstance(world.borrower.meld(spell_id=world.speaker_id).greeter, English)
+        _assert_english_stands(world, broken_id)
+
+
+def test_a_notch_refused_for_an_ambiguous_provider_leaves_the_old_version_active() -> None:
+    """
+    Regression: the half-switch is not about recursion. TimedGreeter needs a Clock and two are registered, so its
+    check fails with AMBIGUOUS_PROVIDER, and the lender then selected TimedGreeter and could not meld English.
+
+    Contract:
+        - The refusal names the real reason ([AMBIGUOUS_PROVIDER]); afterwards the index selects English, English
+          is active and holds its claim and address, TimedGreeter is parked with no Phase-4 result, and English
+          melds by address and by spell_id.
+    """
+    with _world("refused_ambiguous", clocks=True) as world:
+        broken_id = world.stage(TimedGreeter)
+
+        error = _refused_notch(world, broken_id)
+
+        assert "[AMBIGUOUS_PROVIDER]" in str(error)
+        _assert_english_stands(world, broken_id)
+
+
+def test_a_notch_refused_for_an_ambiguous_provider_leaves_borrowers_on_the_lenders_version() -> None:
+    """
+    Regression: the borrower's consumer of the index (`Speaker`) was refused at its meld after the refused notch,
+    while the borrower still held English active.
+
+    Contract:
+        - The borrower's copies are as before (English active, TimedGreeter parked), its consumer melds English and
+          greets "hello", and the lender is on English too.
+    """
+    with _world("refused_ambiguous_borrower", borrower=True, clocks=True) as world:
+        broken_id = world.stage(TimedGreeter)
+        before = world.borrower_copies()
+
+        _refused_notch(world, broken_id)
+
+        assert world.borrower_copies() == before == ({world.english_id}, {broken_id})
+        assert world.borrower is not None
+        assert world.borrower.meld(spell_id=world.speaker_id).greeter.greet() == "hello"
         _assert_english_stands(world, broken_id)
 
 
@@ -140785,6 +141709,344 @@ def test_capitalized_spellcontract_binding_name_is_satisfied_by_its_provider(wri
         owner.cleanup()
 ================================================================================
 END FILE: tests/integration/melder/spellbook/test_binding_name_case_parity_integration.py
+================================================================================
+================================================================================
+BEGIN FILE: tests/integration/melder/spellbook/test_book_teardown_retires_parked_versions_integration.py
+CONTENT SHA256: b033e523c7f418693e806ef76958e9396597f5952a55a27ec3532c09456ba7aa
+SOURCE ENCODING: utf-8
+================================================================================
+"""
+Integration: a Book's teardown retires its parked versions and the indexes only they hold
+(STORY-2026-10-17-book_teardown_leaves_parked_versions_uncleaned; patch book_teardown_parked_2026_10_19).
+
+`Spellbook._cleanup_spells` cleaned each index through its active member and nothing else, so a parked version - on a
+shared index, or alone in one `remove_from_spell_index` minted - stayed uncleaned when its Book was torn down, the
+minted index with it, and the version's own `cleanup()` then raised "Spellbook has already been cleaned." (probe
+T2-T3, artifacts/correctness_defects_20261017/probes/probe_book_teardown_parked.py). The teardown now retires every
+parked version locally, as `cleanup_spell` retires one, and cleans the indexes only parked versions hold.
+"""
+import contextlib
+from typing import Iterator, Optional, Protocol
+
+import pytest
+
+from melder.aether.aether import Aether
+from melder.aether.aether_utility_system import AetherUtilitySystem
+from melder.aether.conduit.conduit import Conduit
+from melder.aether.conduit.creations.release_managed_spell import ReleaseManagedSpell
+from melder.aether.spellbook.bind.spell_index import SpellIndex
+from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spell import Spell
+from melder.aether.spellbook.spellbook import Spellbook
+from melder.nexus.nexus import Nexus
+
+pytestmark = pytest.mark.integration
+
+
+class Greeter(Protocol):
+    """The contract every version implements."""
+
+    def greet(self) -> str:
+        """Return a greeting."""
+        ...
+
+
+class English:
+    """The version bound active."""
+
+    def greet(self) -> str:
+        """Return the English greeting."""
+        return "hello"
+
+
+class French:
+    """The version staged on English's index under its own binding name."""
+
+    def greet(self) -> str:
+        """Return the French greeting."""
+        return "bonjour"
+
+
+class Keeper:
+    """The keeper Book's one spell: its root keeps the frame alive after the probed root is torn down."""
+
+
+class Pooled:
+    """A managed class, bound active."""
+
+
+class PooledV2:
+    """The managed class's next version: its own code, so its own spell_id (one object is one spell)."""
+
+    def reset(self) -> None:
+        """Return to the idle state before the next lease."""
+
+
+def _reset_world() -> None:
+    """Fresh utility, Nexus and Aether singletons, rebound on Spellbook and Conduit."""
+    AetherUtilitySystem._reset_singleton_for_tests()
+    Nexus._reset_singleton_for_tests()
+    Aether._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+
+
+@pytest.fixture(autouse=True)
+def fresh_world() -> Iterator[None]:
+    """Isolate each test behind fresh singletons."""
+    _reset_world()
+    yield
+    _reset_world()
+
+
+def _book(frame: str, *, settle: bool) -> Spellbook:
+    """
+    A Book in `frame`.
+
+    Args:
+        frame: The frame the Book binds in.
+        settle: Make the frame dynamic with caching off - for the frame's first Book only.
+
+    Returns:
+        Spellbook: The Book, not conjured.
+    """
+    book = Spellbook(aetheric_frame=frame, configuration=SpellbookConfiguration(frame).with_defaults())
+    if settle:
+        book.configure_aether_frame(
+            system_state="dynamic", disposal=None, disposal_method_names=None, system_caching_enabled=False,
+        )
+    return book
+
+
+def _owned(book: Spellbook, spell_id: str) -> Spell:
+    """
+    The Spell `book` holds under `spell_id`, active or parked.
+
+    Args:
+        book: The owning Book.
+        spell_id: The spell_id `bind` or `bind_inactive` returned.
+
+    Returns:
+        Spell: The Spell.
+    """
+    spell = book.find_spell_by_spell_id(spell_id)
+    assert spell is not None
+    return spell
+
+
+class _World:
+    """Handles of the probed Book: English active on its index, French parked on it, the root and the keeper."""
+
+    def __init__(self, root: Conduit, english: Spell, french: Spell, keeper: Optional[Conduit]) -> None:
+        """
+        Keep the handles.
+
+        Args:
+            root: The probed Book's root conduit, 'lender'.
+            english: The active English Spell.
+            french: The parked French Spell.
+            keeper: The keeper's root when the frame is kept alive, else None.
+        """
+        self.root = root
+        self.english = english
+        self.french = french
+        self.index: SpellIndex = english.spell_index
+        self.keeper = keeper
+
+
+@contextlib.contextmanager
+def _world(frame: str, *, keep_frame: bool) -> Iterator[_World]:
+    """
+    English active and French parked on English's index in a dynamic frame with caching off.
+
+    Args:
+        frame: The frame.
+        keep_frame: Conjure a keeper root first, so the frame outlives the probed root; otherwise the probed root is
+            the frame's only conduit.
+
+    Yields:
+        _World: The handles; the roots are torn down on exit (a teardown already done is a no-op).
+    """
+    keeper: Optional[Conduit] = None
+    if keep_frame:
+        keeper_book = _book(frame, settle=True)
+        keeper_book.bind(spell=Keeper, existence=Existence.many, permissions="create")
+        keeper = keeper_book.conjure(dynamic=True, name="keeper")
+    book = _book(frame, settle=not keep_frame)
+    english_id = book.bind(
+        spell=English, spellframe=Greeter, binding_name="english", existence=Existence.many, permissions="create",
+    )
+    root = book.conjure(dynamic=True, name="lender")
+    english = _owned(book, english_id)
+    french_id = root.bind_inactive(
+        spell=French, spell_index=english.spell_index, spellframe=Greeter, binding_name="french",
+        existence=Existence.many, permissions="create",
+    )
+    world = _World(root, english, _owned(book, french_id), keeper)
+    try:
+        yield world
+    finally:
+        root.cleanup()
+        if keeper is not None:
+            keeper.cleanup()
+
+
+@pytest.mark.parametrize("keep_frame", [True, False])
+def test_book_teardown_cleans_a_parked_version_on_a_shared_index(keep_frame: bool) -> None:
+    """
+    Regression (probe T2): after its root's teardown a Book's parked version stayed uncleaned, and its `cleanup()`
+    raised "Spellbook has already been cleaned.".
+
+    Contract:
+        - The root's teardown cleans English, the index and French, parked on it.
+        - French's own `cleanup()` afterwards returns: the version is already retired.
+    """
+    with _world("shared_%s" % keep_frame, keep_frame=keep_frame) as world:
+        assert not world.french.cleaned
+
+        world.root.cleanup()
+
+        assert world.english.cleaned
+        assert world.index.cleaned
+        assert world.french.cleaned
+        world.french.cleanup()
+        assert world.french.cleaned
+
+
+@pytest.mark.parametrize("keep_frame", [True, False])
+def test_book_teardown_cleans_a_parked_version_alone_in_its_own_index(keep_frame: bool) -> None:
+    """
+    Regression (probe T3): a version moved into an index of its own with `remove_from_spell_index` stayed uncleaned
+    at its Book's teardown, and so did that index.
+
+    Contract:
+        - After the move French is the only member of a new index.
+        - The root's teardown cleans French, its index and English's index.
+    """
+    with _world("minted_%s" % keep_frame, keep_frame=keep_frame) as world:
+        world.root.remove_from_spell_index(spell_id=world.french.spell_id, source_index=world.index)
+        minted = world.french.spell_index
+        assert minted is not world.index
+        assert minted.spells_in_index() == {world.french.spell_id}
+
+        world.root.cleanup()
+
+        assert world.french.cleaned
+        assert minted.cleaned
+        assert world.index.cleaned
+        world.french.cleanup()
+
+
+def test_book_teardown_with_only_active_versions_cleans_them_as_before() -> None:
+    """
+    Control (probe T1): a Book whose versions are all active tears down as it did.
+
+    Contract:
+        - The root's teardown cleans the active version and its index.
+    """
+    keeper_book = _book("active_only", settle=True)
+    keeper_book.bind(spell=Keeper, existence=Existence.many, permissions="create")
+    keeper = keeper_book.conjure(dynamic=True, name="keeper")
+    book = _book("active_only", settle=False)
+    english_id = book.bind(
+        spell=English, spellframe=Greeter, binding_name="english", existence=Existence.many, permissions="create",
+    )
+    root = book.conjure(dynamic=True, name="lender")
+    english = _owned(book, english_id)
+    index = english.spell_index
+
+    root.cleanup()
+
+    assert english.cleaned
+    assert index.cleaned
+    keeper.cleanup()
+
+
+def test_spellbook_cleanup_before_conjure_cleans_a_version_parked_before_conjure() -> None:
+    """
+    Regression (the Book's own cleanup, no root): a version staged with `bind_inactive` before conjure stayed
+    uncleaned when its unconjured Book was cleaned.
+
+    Contract:
+        - `Spellbook.cleanup()` cleans English, its index and French, parked on it.
+    """
+    book = _book("unconjured", settle=True)
+    english_id = book.bind(
+        spell=English, spellframe=Greeter, binding_name="english", existence=Existence.many, permissions="create",
+    )
+    english = _owned(book, english_id)
+    index = english.spell_index
+    french_id = book.bind_inactive(
+        spell=French, spell_index=index, spellframe=Greeter, binding_name="french", existence=Existence.many,
+        permissions="create",
+    )
+    french = _owned(book, french_id)
+
+    book.cleanup()
+
+    assert english.cleaned
+    assert index.cleaned
+    assert french.cleaned
+
+
+def test_a_parked_version_disposed_before_the_teardown_is_not_retired_twice() -> None:
+    """
+    Control: a parked version disposed with `cleanup_spell` leaves the Book's maps, so the teardown does not meet it.
+
+    Contract:
+        - `cleanup_spell` of French cleans it and keeps English's index; the root's teardown then cleans English and
+          the index and raises nothing.
+    """
+    with _world("disposed_first", keep_frame=True) as world:
+        world.root.cleanup_spell(spell=world.french)
+        assert world.french.cleaned
+        assert not world.index.cleaned
+
+        world.root.cleanup()
+
+        assert world.english.cleaned
+        assert world.index.cleaned
+
+
+def test_book_teardown_unregisters_the_pools_of_an_active_and_a_parked_managed_version() -> None:
+    """
+    Control (probe T5): the root store's teardown unregisters the pool of every managed version it holds, the parked
+    version's included; the parked version itself is now cleaned too.
+
+    Contract:
+        - Before the teardown each version's pool is registered once; after it neither is, and both Spells read
+          cleaned.
+    """
+    keeper_book = _book("managed", settle=True)
+    keeper_book.bind(spell=Keeper, existence=Existence.many, permissions="create")
+    keeper = keeper_book.conjure(dynamic=True, name="keeper")
+    book = _book("managed", settle=False)
+    active_id = book.bind(
+        spell=Pooled, spellframe="pools", binding_name="pooled", existence=Existence.managed_spell_quantity,
+        permissions="create", managed_spell_mode="limited_quantity", managed_spell_limit=1,
+    )
+    root = book.conjure(dynamic=True, name="lender")
+    active = _owned(book, active_id)
+    parked_id = root.bind_inactive(
+        spell=PooledV2, spell_index=active.spell_index, spellframe="pools", binding_name="pooled",
+        existence=Existence.managed_spell_quantity, permissions="create", managed_spell_mode="limited_quantity",
+        managed_spell_limit=2,
+    )
+    parked = _owned(book, parked_id)
+    assert len(ReleaseManagedSpell().describe(Pooled)) == 1
+    assert len(ReleaseManagedSpell().describe(PooledV2)) == 1
+
+    root.cleanup()
+
+    assert len(ReleaseManagedSpell().describe(Pooled)) == 0
+    assert len(ReleaseManagedSpell().describe(PooledV2)) == 0
+    assert active.cleaned
+    assert parked.cleaned
+    keeper.cleanup()
+================================================================================
+END FILE: tests/integration/melder/spellbook/test_book_teardown_retires_parked_versions_integration.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/spellbook/test_cache_runtime_integration.py
@@ -357668,7 +358930,7 @@ END FILE: tests/unit/melder/utilities/custom_exceptions/test_spellbook_validatio
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/utilities/custom_exceptions/test_spellbook_validation_error_preface.py
-CONTENT SHA256: 4815f668b06896f855d6ac5f143a4006f52f22882c7f7b22186c338c498e83e9
+CONTENT SHA256: 5febc88f5cc05917cdb603db419c1620c0dcf96206ee49d7433f114427180247
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -357761,6 +359023,13 @@ def test_an_empty_preface_is_refused() -> None:
     """An empty preface would add a blank first line, so it is refused like a non-str one."""
     with pytest.raises(TypeError, match=r"takes one line of text, a non-empty str; got an empty str"):
         SpellbookValidationError(_broken_spell(), preface="")
+
+
+@pytest.mark.parametrize("preface", ["first\nsecond", "first\r\nsecond", "ends with a break\n", "first\u2028second"])
+def test_a_preface_with_a_line_break_is_refused(preface: str) -> None:
+    """A preface with a line break would put a second line before the report, so it is refused too."""
+    with pytest.raises(TypeError, match=r"takes one line of text, a non-empty str; got a str with a line break"):
+        SpellbookValidationError(_broken_spell(), preface=preface)
 ================================================================================
 END FILE: tests/unit/melder/utilities/custom_exceptions/test_spellbook_validation_error_preface.py
 ================================================================================

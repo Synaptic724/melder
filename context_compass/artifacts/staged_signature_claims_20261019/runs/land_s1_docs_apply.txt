@@ -1,0 +1,6 @@
+src_architecture.md lines: 5634
+src_components.md lines: 12485
+tests_components.md lines: 4171
+tests_architecture.md lines: 1073
+spellbook.py loc 8378 test loc 380 ts 2026-10-19T14:19:12Z
+applied

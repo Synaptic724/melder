@@ -88,3 +88,10 @@ def test_an_empty_preface_is_refused() -> None:
     """An empty preface would add a blank first line, so it is refused like a non-str one."""
     with pytest.raises(TypeError, match=r"takes one line of text, a non-empty str; got an empty str"):
         SpellbookValidationError(_broken_spell(), preface="")
+
+
+@pytest.mark.parametrize("preface", ["first\nsecond", "first\r\nsecond", "ends with a break\n", "first\u2028second"])
+def test_a_preface_with_a_line_break_is_refused(preface: str) -> None:
+    """A preface with a line break would put a second line before the report, so it is refused too."""
+    with pytest.raises(TypeError, match=r"takes one line of text, a non-empty str; got a str with a line break"):
+        SpellbookValidationError(_broken_spell(), preface=preface)

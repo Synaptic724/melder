@@ -6,11 +6,11 @@
   owner's word, chat 2026-10-17)
 - Status: blocked
 - Owner: user
-- Agent Name: melder_0
+- Agent Name: melder_1
 - Agent Role: synaptic_python_developer
 - Priority: p3
 - Created: 2026-10-17T20:49:39Z
-- Updated: 2026-10-17T20:49:39Z
+- Updated: 2026-10-19T12:35:35Z
 
 ## Objective
 Finish the owner's 2026-10-16 direction - where "version id" relates to a spell index, name the id it means
@@ -147,12 +147,34 @@ this does not make independent review mandatory for every ticket.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-10-19T12:35:35Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: The owner (chat 2026-10-19): "After you finish your change hand all your tickets to melder1 your
+    competing for the same resources and document them". melder_0 hands this ticket to melder_1 as it stands:
+    blocked in the backlog since 2026-10-17. The release its ENTRY_GATE waited for came -
+    TASK-2026-10-16-recheck_contract_consumers_when_provider_changes is done and its files went back (M1-28,
+    2026-10-18) - but 0.2.8253 to 0.2.8261 rewrote many lines its 132 decisions point at, so the inventory is
+    re-run against the current text before any decision is applied; it waits for the owner's scheduling, and
+    its status is the new holder's to set.
+  EVIDENCE:
+  - context_compass/tickets/tasks/completed/2026-10-16_recheck_contract_consumers_when_provider_changes_task.md:3-21
+  - context_compass/tickets/epics/2026-10-17_correctness_defects_epic.md:907-927
+  - context_compass/tickets/tasks/backlog/2026-10-17_spell_id_wording_in_held_files_task.md:132-148
+  IMPACT: Its holder is melder_1; nothing else in it changes.
+  NEXT: The owner's scheduling; then re-run the inventory over the held files.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
 ## Context / Handoff Summary
 - Scope: the rest of the spell_id wording, in the files melder_1 held; wording only.
-- State: blocked (backlog) - waits for melder_1's release NOTICE (rule 2's closure and its rebuild).
+- State: blocked (backlog) - the release it waited for came (M1-28, 2026-10-18); it waits for the owner's
+  scheduling and a fresh inventory (DECISION note of 2026-10-19T12:35:35Z).
 - Evidence: the predecessor's Notes and artifacts/spell_id_wording_20261016/.
 - Next: re-inventory, recheck and apply; the tests_components entry; indexes and graph; notch, bullet, closure;
   the rebuild last.
+- Holder: melder_1 since 2026-10-19, from melder_0 on the owner's word (DECISION note of 2026-10-19T12:35:35Z).
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

@@ -1,0 +1,31 @@
+notch raised; traceback (innermost frames):
+  Traceback (most recent call last):
+    File "/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/context_compass/artifacts/correctness_defects_20261017/probes/probe_index_unlink_leftovers_u3_trace.py", line 23, in main
+      lender.notch_spell(spell_index=index, spell_id=french_id)
+      ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/src/melder/aether/conduit/conduit.py", line 5783, in notch_spell
+      self._activate_borrowed_spell(spell.spell_id)
+      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+    File "/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/src/melder/aether/conduit/conduit.py", line 6340, in _activate_borrowed_spell
+      peer._spellbook._activate_contract_spell(owner_id, spell_id)
+      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+    File "/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/src/melder/aether/spellbook/spellbook.py", line 1902, in _activate_contract_spell
+      self._reactivate_contracted_spell(conduit_id, spell)
+      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+    File "/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/src/melder/aether/spellbook/spellbook.py", line 1815, in _reactivate_contracted_spell
+      spell_index = spell.spell_index
+                    ^^^^^^^^^^^^^^^^^
+  AttributeError: 'melder.aether.spellbook.spell.Spell' object has no attribute 'spell_index'. Did you mean: 'spell_id'?
+lender index selects: French
+lender active versions: ['French']
+lender parked versions: ['English']
+lender.meld(selected) -> French.greet() = 'bonjour'
+  [borrower after the notch]
+    Spellbook._contracted_spells_by_id[lender]: []
+    Spellbook._inactive_contracted_spells[lender]: [('English', 'live'), ('French', 'cleaned')]
+    Spellbook._contracted_spell_ids[lender]: ['English', 'French']
+    Spellbook._contracted_indexes holds the index: True
+    ward contract: index detail True, member details {'English': True, 'French': True}
+    public get_spells_in_contract_by_conduit(lender): {'inbound': [], 'outbound': []}
+    public find_contracted_spell(English): None
+    public find_contracted_spell(French): None

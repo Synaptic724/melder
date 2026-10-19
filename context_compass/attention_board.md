@@ -143,9 +143,7 @@ Message alert rules
 | gauntlet_runtime_speed | in_progress | discovery | claude | melder_2 | none | Owner decides whether an open lever (thread-affine pools, one-lock anonymous link, single-check fast door) is worth a task. | Per-scope-cycle cost map vs dishka and dependency-injector, with ranked and prototyped candidates. | Next lever validated and its task opened, or the owner redirects. | tickets/tasks/2026-09-26_measure_gauntlet_scope_cycle_costs_task.md | 2026-09-26T23:01:16Z | REQUIRED |
 | defect_hunting_spellbook | in_progress | discovery | opencode | muse_0 | none | Slice spellbook component sections then read the surface behind each claim. | Contradiction list with evidence; meaty issues flagged apart from polish. | Sweep list triaged or owner redirects to conduit/meld or arch diffs. | tickets/tasks/2026-09-27_spellbook_sweep_task.md | 2026-09-27T15:56:49Z | REQUIRED |
 | defect_hunting_fixes_1 | in_progress | implementation | opencode | muse_0 | none | Re-slice each target fresh then repair findings 1-8 in order. | Corrected blocks with verified ranges; index check clean. | Batch repaired with gates passing or owner redirects scope. | tickets/tasks/2026-09-27_sweep_fixes_batch_1_task.md | 2026-09-27T16:07:16Z | REQUIRED |
-| correctness_defects | in_progress | handoff | claude | melder_0 | none | Keep the record current as melder_1 fixes S7; S8 waits for the owner (M1-33). | Defects where Melder's structure is wrong or stuck, a story each with a reproducer; the rest recorded as checked. | Every planned area swept and its defects filed as stories, or the owner redirects. | tickets/epics/2026-10-17_correctness_defects_epic.md | 2026-10-19T00:49:20Z | REQUIRED |
-| failed_notch_refusal | blocked | handoff | claude | melder_1 | the owner's hold (chat 2026-10-18) | The owner's word to resume S8 (the edit list and its refinement). | A notch whose incoming version fails its commit check is refused with nothing moved; lender and borrowers stay on the outgoing version. | The fix lands with tests, docs, notch and rebuild, or the owner redirects. | tickets/stories/2026-10-17_failed_notch_keeps_switch_without_borrowers_story.md | 2026-10-18T13:40:43Z | REQUIRED |
-| book_teardown_parked | in_progress | implementation | claude | melder_1 | none | Land the documents (citation remap, the four system documents, their indexes), the graph, notch 0.2.8260, the release note and the closure; rebuild last. | A Book's teardown retires its parked versions and the indexes only they hold. | The fix lands with tests, docs, notch and rebuild, or the owner redirects. | tickets/stories/2026-10-17_book_teardown_leaves_parked_versions_uncleaned_story.md | 2026-10-19T01:18:05Z | REQUIRED |
+| correctness_defects | in_progress | handoff | claude | melder_1 | none | S1, S8 and S3 are turned in and the pass is rebuilt for 0.2.8263; S2 and S5 follow on the owner's word; S11 waits for the owner. | Defects where Melder's structure is wrong or stuck, a story each with a reproducer; the rest recorded as checked. | Every planned area swept and its defects filed as stories, or the owner redirects. | tickets/epics/2026-10-17_correctness_defects_epic.md | 2026-10-19T14:25:39Z | REQUIRED |
 <!-- END USER-DEFINED: active_items -->
 
 ## Active Attention Details
@@ -154,16 +152,6 @@ Message alert rules
   SWITCH_TRIGGER: Every planned area swept and its defects filed as stories, or the owner redirects.
   RESUME_HIERARCHY:
     - tickets/epics/2026-10-17_correctness_defects_epic.md
-- WORK_ITEM: failed_notch_refusal
-  SWITCH_TRIGGER: The fix lands with tests, docs, notch and rebuild, or the owner redirects.
-  RESUME_HIERARCHY:
-    - tickets/epics/2026-10-17_correctness_defects_epic.md
-    - tickets/stories/2026-10-17_failed_notch_keeps_switch_without_borrowers_story.md
-- WORK_ITEM: book_teardown_parked
-  SWITCH_TRIGGER: The fix lands with tests, docs, notch and rebuild, or the owner redirects.
-  RESUME_HIERARCHY:
-    - tickets/epics/2026-10-17_correctness_defects_epic.md
-    - tickets/stories/2026-10-17_book_teardown_leaves_parked_versions_uncleaned_story.md
 <!-- END USER-DEFINED: active_attention_details -->
 
 ## Recently Closed Anchors
@@ -172,16 +160,16 @@ Message alert rules
 <!-- BEGIN USER-DEFINED: closed_anchors -->
 | spell_identity_is_the_code | done | melder_0 | tickets/epics/completed/2026-10-18_spell_identity_is_the_code_epic.md | Turned in on the owner's word: S1 (0.2.8257) and S2 (0.2.8258) landed; S3-S5 parked in the backlog with S6; the leftovers packaged by melder_1's 0.2.8259 rebuild. Next: S3-S6 on the owner's word. | 2026-10-19T00:49:20Z |
 | binding_manifest_hash | done | melder_0 | tickets/stories/completed/2026-10-18_binding_manifest_hash_story.md | Landed 0.2.8258 (S2: the binding manifest and its hash in the caches and the record). Next: S3-S5 under the epic. | 2026-10-18T23:31:15Z |
-| meld_contract_scan | done | melder_1 | tickets/tasks/completed/2026-10-16_recheck_contract_consumers_when_provider_changes_task.md | Landed 0.2.8250 (rule 2), 0.2.8251 (removal fix), 0.2.8253 (exact spell_id lookups) and 0.2.8255 (docstrings and comments call a SpellIndex a SpellIndex; renames withdrawn by the owner); turned in on the owner's "Land + close". Next: none; held files back to melder_0 (M1-28). | 2026-10-18T11:45:56Z |
-| managed_settings_spell_id | done | melder_0 | tickets/stories/completed/2026-10-17_release_routes_parked_version_objects_to_active_pool_story.md | Landed 0.2.8254 (part A: the four managed settings left the spell_id); turned in on the owner's identity direction, part B superseded. Next: EPIC-2026-10-18-spell_identity_is_the_code. | 2026-10-18T11:45:58Z |
-| direct_cleanup_refusal | done | melder_1 | tickets/stories/completed/2026-10-17_direct_cleanup_of_active_member_orphans_parked_versions_story.md | Landed 0.2.8256 (S9 of EPIC-2026-10-17-correctness_defects: the three cleanup calls refuse an index's active version while parked versions remain, naming the remedies); turned in on the owner's word. Next: S4 with melder_1; spellbook.py and spell.py back to melder_0 (M1-38). | 2026-10-18T16:49:55Z |
-| managed_spell_lifecycle_map | done | melder_2 | tickets/stories/completed/2026-10-18_managed_spell_lifecycle_map_story.md | S1 of EPIC-2026-10-18-managed_spell_examples_and_docs: lifecycle map from source plus a 19-case probe (81 rows, GIL off and on); no src change. Next: S2 lessons 42-47. | 2026-10-18T21:33:11Z |
 | managed_spell_ux_examples | done | melder_2 | tickets/stories/completed/2026-10-18_managed_spell_ux_examples_story.md | S2 of EPIC-2026-10-18-managed_spell_examples_and_docs: intermediate lessons 42-48 and 34 contract probes, green on 3.14t GIL off and on; owner walkthrough given; no src change. Next: S3 Sphinx page. | 2026-10-18T22:07:58Z |
 | managed_spell_sphinx_docs | done | melder_2 | tickets/stories/completed/2026-10-18_managed_spell_sphinx_docs_story.md | S3 of EPIC-2026-10-18-managed_spell_examples_and_docs: Sphinx chapter docs/intermediate/managed-spells.md (docs checks green, 313 pages) and one release-note bullet; no src change; the lane's rebuild waived by the owner. Next: none. | 2026-10-18T23:08:20Z |
 | managed_spell_examples_and_docs | done | melder_2 | tickets/epics/completed/2026-10-18_managed_spell_examples_and_docs_epic.md | Epic closed on the owner's directive: S1 lifecycle map, S2 lessons 42-48 and 34 probes (green on 3.14t), S3 chapter and release note; no src change, no notch; rebuild waived (melder_0's rebuild carries it). Next: none (the owner answered: a root's teardown cleans only what it holds). | 2026-10-18T23:08:20Z |
 | root_teardown_docs | done | melder_2 | tickets/tasks/completed/2026-10-18_document_root_teardown_cleans_only_what_it_holds_task.md | Documentation only, no src change: src_architecture and src_components state the owner's rule that a root's teardown cleans only what it holds and today's order (its "open with the owner" framing corrected by TASK-2026-10-19-correct_root_teardown_docs_wording). Next: none. | 2026-10-19T00:15:30Z |
 | minted_index_registry | done | melder_1 | tickets/stories/completed/2026-10-17_minted_index_missing_from_frame_registry_story.md | Landed 0.2.8259 (S4 of EPIC-2026-10-17-correctness_defects: the index remove_from_spell_index mints is registered with the frame as bind registers its new one, unregistered at the root's teardown; residency reads its version parked). Next: S7 with melder_1; spellbook.py and spell.py back to melder_0 (M1-42). | 2026-10-19T00:21:48Z |
 | root_teardown_wording | done | melder_2 | tickets/tasks/completed/2026-10-19_correct_root_teardown_docs_wording_task.md | Documentation only, no src change: after the owner's review both documents say a root's teardown cleans what it holds (the children of out objects included) and that a raising disposal method is reported; the "open with the owner" framing is gone. Next: none. | 2026-10-19T00:43:26Z |
+| book_teardown_parked | done | melder_1 | tickets/stories/completed/2026-10-17_book_teardown_leaves_parked_versions_uncleaned_story.md | Landed 0.2.8260 (S7 of EPIC-2026-10-17-correctness_defects: a Spellbook's teardown retires its parked versions and cleans the indexes only they hold). Next: S8 on the owner's word; spellbook.py and spell.py back to melder_0 (M1-44). | 2026-10-19T01:32:05Z |
+| failed_notch_refusal | done | melder_1 | tickets/stories/completed/2026-10-17_failed_notch_keeps_switch_without_borrowers_story.md | Landed 0.2.8262 (S8 of EPIC-2026-10-17-correctness_defects: a notch whose incoming version fails its structural check is refused with nothing moved, its borrowers untouched). Next: S3's turn-in, then small fixes; the rebuild last. | 2026-10-19T13:24:30Z |
+| parked_cleanup_contracts | done | melder_0, melder_1 | tickets/stories/completed/2026-10-17_parked_cleanup_leaves_borrower_copies_story.md | Landed 0.2.8261 by melder_0 (S3 of EPIC-2026-10-17-correctness_defects: every cleanup_spell door takes a version out of every contract first); turned in by melder_1 on the owner's word. Next: small fixes; the rebuild last. | 2026-10-19T13:26:06Z |
+| staged_signature_claims | done | melder_1 | tickets/stories/completed/2026-10-17_staged_version_releases_active_signature_story.md | Landed 0.2.8263 (S1 of EPIC-2026-10-17-correctness_defects: staging, an index move back and a lone parked disposal keep the active spell's binding signature). Next: S2 and S5 on the owner's word. | 2026-10-19T14:25:39Z |
 <!-- END USER-DEFINED: closed_anchors -->
 
 ## Notes
@@ -298,6 +286,22 @@ Message alert rules
 - melder_1 landed 0.2.8259 (the index `remove_from_spell_index` mints is registered with the frame as `bind` registers
   the index it creates and leaves with its root; residency reads its version parked until a notch;
   STORY-2026-10-17-minted_index_missing_from_frame_registry). Notch above it if you land after.
+### Notch notice (melder_1, 2026-10-19)
+- melder_1 landed 0.2.8260 (a Spellbook's teardown retires its parked versions and cleans the indexes only they hold;
+  STORY-2026-10-17-book_teardown_leaves_parked_versions_uncleaned). Notch above it if you land after.
+### Notch notice (melder_0, 2026-10-19)
+- melder_0 landed 0.2.8261 (`cleanup_spell` takes a version out of every contract of its Book's root conduit
+  - index links and version grants - before it disposes it, and the Spellbook's own door goes through the
+  root conduit; STORY-2026-10-17-parked_cleanup_leaves_borrower_copies). No rebuild, on the owner's word:
+  melder_1's S8 landing rebuilds for both. Notch above it if you land after.
+### Notch notice (melder_1, 2026-10-19, S8)
+- melder_1 landed 0.2.8262 (a notch whose incoming version fails its structural check is refused with nothing moved
+  and its borrowers untouched; `SpellbookValidationError` takes a one-line `preface`;
+  STORY-2026-10-17-failed_notch_keeps_switch_without_borrowers). Notch above it if you land after.
+### Notch notice (melder_1, 2026-10-19, S1)
+- melder_1 landed 0.2.8263 (staging, an index move back and a lone parked disposal keep the active spell's
+  binding signature: `_destroy_spell_index` drops only its own route and releases only the departing member's
+  claim; STORY-2026-10-17-staged_version_releases_active_signature). Notch above it if you land after.
 ### Device VM git hazard (melder_2, 2026-09-26)
 - The connected folder refuses deletes, so any git command that refreshes the index from the device VM
   (plain `git status`, `git diff`) can leave an empty .git/index.lock that blocks the owner's commits.

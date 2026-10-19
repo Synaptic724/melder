@@ -1,0 +1,86 @@
+melder 0.2.8260
+K1 index link, lender.cleanup_spell(French parked)
+  [index link]
+    borrower active entries: [('English', 'live')]
+    borrower parked entries: [('French', 'live')]
+    borrower borrowed ids: ['English', 'French']
+    borrower tracked indexes: 1
+    lender-side details: ['English', 'French']; index details: 1
+  [after lender.cleanup_spell(French)]
+    borrower active entries: [('English', 'live')]
+    borrower parked entries: []
+    borrower borrowed ids: ['English']
+    borrower tracked indexes: 1
+    lender-side details: ['English']; index details: 1
+
+K2 version grant of French (parked), lender.cleanup_spell(French)
+    borrower.add_spell_to_contract(French) -> True
+  [grant of French]
+    borrower active entries: []
+    borrower parked entries: [('French', 'live')]
+    borrower borrowed ids: ['English', 'French']
+    borrower tracked indexes: 0
+    lender-side details: ['French']; index details: 0
+  [after lender.cleanup_spell(French)]
+    borrower active entries: []
+    borrower parked entries: []
+    borrower borrowed ids: ['English']
+    borrower tracked indexes: 0
+    lender-side details: []; index details: 0
+
+K3 version grant of Solo (sole active member), lender.cleanup_spell(Solo)
+    borrower.add_spell_to_contract(Solo) -> True
+  [grant of Solo]
+    borrower active entries: [('Solo', 'live')]
+    borrower parked entries: []
+    borrower borrowed ids: ['Solo']
+    borrower tracked indexes: 0
+    lender-side details: ['Solo']; index details: 0
+  [after lender.cleanup_spell(Solo)]
+    borrower active entries: []
+    borrower parked entries: []
+    borrower borrowed ids: []
+    borrower tracked indexes: 0
+    lender-side details: []; index details: 0
+    borrower.meld(Solo) raised KeyError: '[MELD] No spell found with spell_id: 83ccd9e9d33ddf0c217969c1dcb686b620788cdefac06b7d5cbb9bd8678d4b43'
+
+K4 index link, direct lender_book.cleanup_spell(French)
+  [after lender_book.cleanup_spell(French)]
+    borrower active entries: [('English', 'live')]
+    borrower parked entries: []
+    borrower borrowed ids: ['English']
+    borrower tracked indexes: 1
+    lender-side details: ['English']; index details: 1
+
+K5 index link on Solo's index, direct lender_book.cleanup_spell(Solo)
+  [index link on Solo's index]
+    borrower active entries: [('Solo', 'live')]
+    borrower parked entries: []
+    borrower borrowed ids: ['Solo']
+    borrower tracked indexes: 1
+    lender-side details: ['Solo']; index details: 1
+  [after lender_book.cleanup_spell(Solo)]
+    borrower active entries: []
+    borrower parked entries: []
+    borrower borrowed ids: []
+    borrower tracked indexes: 0
+    lender-side details: []; index details: 0
+
+K6 index link, direct French.cleanup()
+    French.cleanup() raised RuntimeError: Spellbook could not resolve the requested local spell.
+  [after French.cleanup()]
+    borrower active entries: [('English', 'live')]
+    borrower parked entries: [('French', 'live')]
+    borrower borrowed ids: ['English', 'French']
+    borrower tracked indexes: 1
+    lender-side details: ['English', 'French']; index details: 1
+
+K7 index link, lesser.cleanup_spell(French)
+    lesser.cleanup_spell(French) -> done
+  [after lesser.cleanup_spell(French)]
+    borrower active entries: [('English', 'live')]
+    borrower parked entries: []
+    borrower borrowed ids: ['English']
+    borrower tracked indexes: 1
+    lender-side details: ['English']; index details: 1
+

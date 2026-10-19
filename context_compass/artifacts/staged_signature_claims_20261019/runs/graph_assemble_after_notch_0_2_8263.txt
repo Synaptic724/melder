@@ -1,0 +1,4 @@
+WROTE: src_graph.md + src_graph_index.md in ~/mnt/melder_private/context_compass/system_docs
+  sections=593  nodes=1231  edges=1419
+  document=28204 lines  index=620 lines (2% of document)
+  all 593 ranges verified against their own headers
