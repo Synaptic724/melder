@@ -1,0 +1,57 @@
+Failed to find real location of C:\Users\Mark\AppData\Roaming\uv\python\cpython-3.14.2+freethreaded-windows-x86_64-none\python.exe
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+    import sys; from unittest.mock import MagicMock; from melder.aether.spellbook.spell import Spell; print(sys.version); MagicMock(spec=Spell)
+                                                                                                                          ~~~~~~~~~^^^^^^^^^^^^
+  File "C:\Users\Mark\AppData\Roaming\uv\python\cpython-3.14.2+freethreaded-windows-x86_64-none\Lib\unittest\mock.py", line 2176, in __init__
+    _safe_super(MagicMixin, self).__init__(*args, **kw)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "C:\Users\Mark\AppData\Roaming\uv\python\cpython-3.14.2+freethreaded-windows-x86_64-none\Lib\unittest\mock.py", line 1157, in __init__
+    _safe_super(CallableMixin, self).__init__(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        spec, wraps, name, spec_set, parent,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        _spec_state, _new_name, _new_parent, **kwargs
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Mark\AppData\Roaming\uv\python\cpython-3.14.2+freethreaded-windows-x86_64-none\Lib\unittest\mock.py", line 485, in __init__
+    self._mock_add_spec(spec, spec_set, _spec_as_instance, _eat_self)
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Mark\AppData\Roaming\uv\python\cpython-3.14.2+freethreaded-windows-x86_64-none\Lib\unittest\mock.py", line 547, in _mock_add_spec
+    res = _get_signature_object(spec,
+                                _spec_as_instance, _eat_self)
+  File "C:\Users\Mark\AppData\Roaming\uv\python\cpython-3.14.2+freethreaded-windows-x86_64-none\Lib\unittest\mock.py", line 122, in _get_signature_object
+    return func, inspect.signature(sig_func)
+                 ~~~~~~~~~~~~~~~~~^^^^^^^^^^
+  File "C:\Users\Mark\AppData\Roaming\uv\python\cpython-3.14.2+freethreaded-windows-x86_64-none\Lib\inspect.py", line 3321, in signature
+    return Signature.from_callable(obj, follow_wrapped=follow_wrapped,
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                                   globals=globals, locals=locals, eval_str=eval_str,
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                                   annotation_format=annotation_format)
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Mark\AppData\Roaming\uv\python\cpython-3.14.2+freethreaded-windows-x86_64-none\Lib\inspect.py", line 3036, in from_callable
+    return _signature_from_callable(obj, sigcls=cls,
+                                    follow_wrapper_chains=follow_wrapped,
+                                    globals=globals, locals=locals, eval_str=eval_str,
+                                    annotation_format=annotation_format)
+  File "C:\Users\Mark\AppData\Roaming\uv\python\cpython-3.14.2+freethreaded-windows-x86_64-none\Lib\inspect.py", line 2505, in _signature_from_callable
+    wrapped_sig = _get_signature_of(obj.func)
+  File "C:\Users\Mark\AppData\Roaming\uv\python\cpython-3.14.2+freethreaded-windows-x86_64-none\Lib\inspect.py", line 2511, in _signature_from_callable
+    return _signature_from_function(sigcls, obj,
+                                    skip_bound_arg=skip_bound_arg,
+                                    globals=globals, locals=locals, eval_str=eval_str,
+                                    annotation_format=annotation_format)
+  File "C:\Users\Mark\AppData\Roaming\uv\python\cpython-3.14.2+freethreaded-windows-x86_64-none\Lib\inspect.py", line 2334, in _signature_from_function
+    annotations = get_annotations(func, globals=globals, locals=locals, eval_str=eval_str,
+                                  format=annotation_format)
+  File "C:\Users\Mark\AppData\Roaming\uv\python\cpython-3.14.2+freethreaded-windows-x86_64-none\Lib\annotationlib.py", line 957, in get_annotations
+    ann = _get_dunder_annotations(obj)
+  File "C:\Users\Mark\AppData\Roaming\uv\python\cpython-3.14.2+freethreaded-windows-x86_64-none\Lib\annotationlib.py", line 1137, in _get_dunder_annotations
+    ann = getattr(obj, "__annotations__", None)
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\aether\spellbook\spell.py", line 342, in __annotate__
+    managed_spell_mode: Optional[ManagedSpellMode] = None,
+                                 ^^^^^^^^^^^^^^^^
+NameError: name 'ManagedSpellMode' is not defined
+3.14.2 free-threading build (main, Dec 17 2025, 21:11:55) [MSC v.1944 64 bit (AMD64)]

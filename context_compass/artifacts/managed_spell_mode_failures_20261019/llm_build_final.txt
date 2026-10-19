@@ -1,0 +1,5 @@
+Failed to find real location of C:\Users\Mark\AppData\Roaming\uv\python\cpython-3.14.7+freethreaded-windows-x86_64-none\python.exe
+UNCHANGED src   fingerprint and output proofs match
+UNCHANGED tests fingerprint and output proofs match
+UNCHANGED other fingerprint and output proofs match
+UNCHANGED manifest.json

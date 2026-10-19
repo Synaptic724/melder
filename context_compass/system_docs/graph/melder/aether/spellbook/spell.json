@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell.py",
- "source_sha256": "8cbfef07dc1b4895bdbc03ce307924be4e1caeb3657211e72eaba64b3c8d85ae",
+ "source_sha256": "1ed5801af785e9d54c7c2e275e19a97b3e902f8835e3502b1c504cd8adf6834f",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell": {
@@ -171,6 +171,7 @@
   "BindingManifest": "melder.aether.spellbook.bind.binding_manifest.BindingManifest",
   "SpellIndex": "melder.aether.spellbook.bind.spell_index.SpellIndex",
   "Existence": "melder.aether.spellbook.existence.existence.Existence",
+  "ManagedSpellMode": "melder.aether.spellbook.existence.managed_spell_mode.ManagedSpellMode",
   "SpellCompilerArtifact": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact",
   "SpellSymbolicGraph": "melder.aether.spellbook.spell_compiler.symbolic_graph.spell_symbolic_graph.SpellSymbolicGraph",
   "SpellType": "melder.aether.spellbook.spell_types.spell_types.SpellType",
@@ -185,7 +186,6 @@
   "SpellRequirements": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements.SpellRequirements",
   "SpellSystemValidationState": "melder.aether.spellbook.spell_compiler.system.spell_system_validation_state.SpellSystemValidationState",
   "SpellValidationResult": "melder.aether.spellbook.spell_compiler.validation.spell_validation_result.SpellValidationResult",
-  "ManagedSpellMode": "melder.aether.spellbook.existence.managed_spell_mode.ManagedSpellMode",
   "Spellbook": "melder.aether.spellbook.spellbook.Spellbook",
   "CreationGate": "melder.utilities.synchronization.creation_gate.CreationGate",
   "CreationGateController": "melder.utilities.synchronization.creation_gate_controller.CreationGateController"

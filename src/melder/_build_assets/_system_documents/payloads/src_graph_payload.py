@@ -15,7 +15,7 @@ Regenerate with:
 
 DOCUMENT_FILE = 'src_graph.md'
 LINE_COUNT = 28204
-CONTENT_SHA256 = '24dfcf7092543a614e65744cbaeac7d5b1c1c33d329f8f6cbf99bf28314df284'
+CONTENT_SHA256 = '87ddacda01a5078c616e12bbd0e60083077ae11248d05a1bf1cfc0d8ac13d3b8'
 
 TEXT = """# src_graph
 
@@ -247,7 +247,7 @@ descriptors and reassemble.
 
 ## src/melder/__version__.py
 
-- source_sha256: `01f5b8b6f896fd9d49098645dc3d92cd50064ce370f517885203c8eb0945db81`
+- source_sha256: `13a70d34a5b229eb3b4534df9595385e39ca4e761b306e8e557e717df401bdd1`
 - nodes: 1
 
 ### Nodes
@@ -6617,7 +6617,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell.py
 
-- source_sha256: `8cbfef07dc1b4895bdbc03ce307924be4e1caeb3657211e72eaba64b3c8d85ae`
+- source_sha256: `1ed5801af785e9d54c7c2e275e19a97b3e902f8835e3502b1c504cd8adf6834f`
 - nodes: 2
 
 ### Nodes

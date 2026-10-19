@@ -1002,6 +1002,13 @@ EVIDENCE: `src/melder/aether/spellbook/bind/bind.py:Bind._normalize_managed_opti
 `src/melder/aether/spellbook/spellbinder.py:SpellBinder.as_managed_spell_quantity` and
 `src/melder/aether/spellbook/bind/spell_index.py:SpellIndex._is_selected_unless_cleaned`.
 
+Constructor reflection (2026-10-19): `Spell` imports the value enum `ManagedSpellMode` at runtime beside
+`Existence`, so default VALUE-format reads of `Spell` and `Spell.__init__` resolve the optional managed-mode
+annotation. Early Python 3.14 `Mock(spec=Spell)` and `MagicMock(spec=Spell)` read that constructor in VALUE
+format; the enum no longer raises NameError before the test body. The parameter stays keyword-only with a
+None default, and bind validation, stored policy, ownership and cleanup are unchanged.
+EVIDENCE: `src/melder/aether/spellbook/spell.py:1-61`, `Spell.__init__`.
+
 Spellframe kind (2026-10-04, 0.2.8222):
 - `Bind._classify_spellframe(spellframe)` runs before the structural Protocol check and decides what the frame
   IS: `None` -> `SpellframeKind.none`; a `str` -> `category`; a `typing.Protocol` class

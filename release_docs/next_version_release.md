@@ -1,4 +1,4 @@
-# Melder 0.2.8263
+# Melder 0.2.8264
 
 **Unreleased**
 
@@ -1259,6 +1259,14 @@ assert world.meld(spellframe=Greeter, binding_name="greeter").greet() == "bonjou
 
 What stays the same: what a notch does with names, staging under any name, and every public signature.
 
+## Spell constructor reflection works on early Python 3.14 releases
+
+Reading `Spell`'s constructor with `inspect.signature`, or creating a `Mock(spec=Spell)` or
+`MagicMock(spec=Spell)` on early Python 3.14 releases, no longer raises
+`NameError: name 'ManagedSpellMode' is not defined`. The managed-mode enum is available when Python reads
+the annotation, preserving the optional enum type, keyword-only option and None default. Existing bind,
+managed-pool and cleanup behavior is unchanged.
+
 ## Packaging and documentation
 
 - The README's "Declarative Binding by Module" example passes `permissions="create"`, without which it raised
@@ -1405,4 +1413,6 @@ What stays the same: what a notch does with names, staging under any name, and e
   describe how destroying an index a parked version left empty keeps every other spell's name, and the
   packaged test documents describe the new tests; the `spellbook.py` code-map extent is remeasured, and its
   line citations remapped.
-- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8263.
+- The component map documents Spell constructor reflection; the test map records its four signature/spec
+  regressions and the current unit-file inventory.
+- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8264.

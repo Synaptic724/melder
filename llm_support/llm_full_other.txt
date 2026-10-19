@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: other
-SOURCE FINGERPRINT: 46a30f0ea0b37134173d508876c771e68a1952a1f12b4f7740332cfdf00ea491
+SOURCE FINGERPRINT: 7dc2e6f6568801a1d09d464d7200663616ba0c30ab15021957d57578b1f0c7eb
 FILE COUNT: 409
 
 ================================================================================
@@ -76501,10 +76501,10 @@ END FILE: release_docs/0.2.8227.md
 ================================================================================
 ================================================================================
 BEGIN FILE: release_docs/next_version_release.md
-CONTENT SHA256: c80177de2b4dbacca52e61ab91a96a5f4600f293a27ad55378fb5767c766918f
+CONTENT SHA256: 8a341e0fe28fd747eed230beebc694bc1afee41cbcf7a4713c5c7cc5cd7cba75
 SOURCE ENCODING: utf-8
 ================================================================================
-# Melder 0.2.8263
+# Melder 0.2.8264
 
 **Unreleased**
 
@@ -77765,6 +77765,14 @@ assert world.meld(spellframe=Greeter, binding_name="greeter").greet() == "bonjou
 
 What stays the same: what a notch does with names, staging under any name, and every public signature.
 
+## Spell constructor reflection works on early Python 3.14 releases
+
+Reading `Spell`'s constructor with `inspect.signature`, or creating a `Mock(spec=Spell)` or
+`MagicMock(spec=Spell)` on early Python 3.14 releases, no longer raises
+`NameError: name 'ManagedSpellMode' is not defined`. The managed-mode enum is available when Python reads
+the annotation, preserving the optional enum type, keyword-only option and None default. Existing bind,
+managed-pool and cleanup behavior is unchanged.
+
 ## Packaging and documentation
 
 - The README's "Declarative Binding by Module" example passes `permissions="create"`, without which it raised
@@ -77911,7 +77919,9 @@ What stays the same: what a notch does with names, staging under any name, and e
   describe how destroying an index a parked version left empty keeps every other spell's name, and the
   packaged test documents describe the new tests; the `spellbook.py` code-map extent is remeasured, and its
   line citations remapped.
-- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8263.
+- The component map documents Spell constructor reflection; the test map records its four signature/spec
+  regressions and the current unit-file inventory.
+- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8264.
 ================================================================================
 END FILE: release_docs/next_version_release.md
 ================================================================================

@@ -228,7 +228,7 @@ descriptors and reassemble.
 
 ## src/melder/__version__.py
 
-- source_sha256: `01f5b8b6f896fd9d49098645dc3d92cd50064ce370f517885203c8eb0945db81`
+- source_sha256: `13a70d34a5b229eb3b4534df9595385e39ca4e761b306e8e557e717df401bdd1`
 - nodes: 1
 
 ### Nodes
@@ -6598,7 +6598,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell.py
 
-- source_sha256: `8cbfef07dc1b4895bdbc03ce307924be4e1caeb3657211e72eaba64b3c8d85ae`
+- source_sha256: `1ed5801af785e9d54c7c2e275e19a97b3e902f8835e3502b1c504cd8adf6834f`
 - nodes: 2
 
 ### Nodes

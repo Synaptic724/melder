@@ -2,13 +2,13 @@
   "corpora": {
     "other": {
       "bundle": {
-        "bytes": 3383050,
-        "lines": 79000,
+        "bytes": 3383698,
+        "lines": 79010,
         "path": "llm_support/llm_full_other.txt",
-        "sha256": "f83c9bfe5dac404e3dfe47b6c861428c105ba40ae23e43aa2dfbd8e84923c639"
+        "sha256": "c7f994a61bcf17d6e0abf3402c0a97646348da52f13892738943d5d23dd4020b"
       },
-      "content_bytes": 3155550,
-      "content_lines": 75722,
+      "content_bytes": 3156198,
+      "content_lines": 75732,
       "file_count": 409,
       "files": {
         ".gitattributes": {
@@ -2436,9 +2436,9 @@
           "source_encoding": "utf-8"
         },
         "release_docs/next_version_release.md": {
-          "content_bytes": 95495,
-          "content_lines": 1408,
-          "content_sha256": "c80177de2b4dbacca52e61ab91a96a5f4600f293a27ad55378fb5767c766918f",
+          "content_bytes": 96143,
+          "content_lines": 1418,
+          "content_sha256": "8a341e0fe28fd747eed230beebc694bc1afee41cbcf7a4713c5c7cc5cd7cba75",
           "source_encoding": "utf-8"
         },
         "requirements.txt": {
@@ -2470,18 +2470,18 @@
         "bytes": 68524,
         "lines": 431,
         "path": "llm_support/llm_full_other_index.md",
-        "sha256": "6968439675140f3abd1b75c38a554ce2bc5d1f9311412c0e22ddc594c180b467"
+        "sha256": "6b2ef1c08a518bef511ca072d235690e51387ff3142ee029747bf957cbd425d4"
       },
-      "source_fingerprint": "46a30f0ea0b37134173d508876c771e68a1952a1f12b4f7740332cfdf00ea491"
+      "source_fingerprint": "7dc2e6f6568801a1d09d464d7200663616ba0c30ab15021957d57578b1f0c7eb"
     },
     "src": {
       "bundle": {
-        "bytes": 11426370,
+        "bytes": 11426366,
         "lines": 285560,
         "path": "llm_support/llm_full_src.txt",
-        "sha256": "bd177e61d17b89d7afe989066d4f93027f13e3c537a069d525b75d37662580ab"
+        "sha256": "7b31bc0461c7325b78769739006ba09faa515107e53b9187e544b65c0d81e8ac"
       },
-      "content_bytes": 11071962,
+      "content_bytes": 11071958,
       "content_lines": 280874,
       "file_count": 585,
       "files": {
@@ -2542,7 +2542,7 @@
         "src/melder/__version__.py": {
           "content_bytes": 316,
           "content_lines": 12,
-          "content_sha256": "01f5b8b6f896fd9d49098645dc3d92cd50064ce370f517885203c8eb0945db81",
+          "content_sha256": "13a70d34a5b229eb3b4534df9595385e39ca4e761b306e8e557e717df401bdd1",
           "source_encoding": "utf-8"
         },
         "src/melder/_build_assets/_agent_documentation/_builder.py": {
@@ -3314,9 +3314,9 @@
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/spell.py": {
-          "content_bytes": 88673,
+          "content_bytes": 88669,
           "content_lines": 2027,
-          "content_sha256": "8cbfef07dc1b4895bdbc03ce307924be4e1caeb3657211e72eaba64b3c8d85ae",
+          "content_sha256": "1ed5801af785e9d54c7c2e275e19a97b3e902f8835e3502b1c504cd8adf6834f",
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_injection_analysis.py": {
@@ -6000,20 +6000,20 @@
         "bytes": 114500,
         "lines": 607,
         "path": "llm_support/llm_full_src_index.md",
-        "sha256": "9b1a1276d0c8759a491dca5557996b8b15d66800c8acea0d1e575e12b70ce1f8"
+        "sha256": "549600c95288789169ef2269afbed721f79030594e8d43822b4394c2b02c5c49"
       },
-      "source_fingerprint": "8612d9be5c60f51c1e900a83ebaf3289bd93c010d5e2afdf1e5cf76cbf39c063"
+      "source_fingerprint": "72452161f11ea39af43d48fac7e6f5569faa73b392c4e2d474faee17a39a733d"
     },
     "tests": {
       "bundle": {
-        "bytes": 13565797,
-        "lines": 370399,
+        "bytes": 13568297,
+        "lines": 370460,
         "path": "llm_support/llm_full_tests.txt",
-        "sha256": "49b11f2475daa375fdf04debcbb14cba2056eedbd05f9c59d9bfd760774bfa87"
+        "sha256": "80c29ff32b29f760b2a6c6933cfdba18847f721e41e24918412c60078d711ae7"
       },
-      "content_bytes": 12868287,
-      "content_lines": 361249,
-      "file_count": 1143,
+      "content_bytes": 12870201,
+      "content_lines": 361302,
+      "file_count": 1144,
       "files": {
         "tests/_annotation_audit_support.py": {
           "content_bytes": 29598,
@@ -12399,6 +12399,12 @@
           "content_sha256": "821f0907294154e179e47b4499b8d86eb561b7e0e919f039b4aded23d7b96dc4",
           "source_encoding": "utf-8"
         },
+        "tests/unit/melder/spellbook/test_spell_constructor_introspection.py": {
+          "content_bytes": 1914,
+          "content_lines": 53,
+          "content_sha256": "732b517e4953eff22e974a44d38d9122ae2b967d51778c3d082c8d826c47ae62",
+          "source_encoding": "utf-8"
+        },
         "tests/unit/melder/spellbook/test_spell_managed_quantity_stamp.py": {
           "content_bytes": 6387,
           "content_lines": 185,
@@ -12875,12 +12881,12 @@
         }
       },
       "index": {
-        "bytes": 224904,
-        "lines": 1165,
+        "bytes": 225090,
+        "lines": 1166,
         "path": "llm_support/llm_full_tests_index.md",
-        "sha256": "6908742e30f378881d5595b720859d9a379051bd8b184897e6cea6a4aa376cbe"
+        "sha256": "b796691e4ee829574cf11c18939b806408a0bad6d78ed4327bdd591d0565ab74"
       },
-      "source_fingerprint": "174198bf835aa0b75a6e0ebc945face0f6c6c495a284905720cac1f1d2f17c7f"
+      "source_fingerprint": "f22042defe54d45bc438e718de41ea899175f43c27b1b8c2ef61b8081f205e9f"
     }
   },
   "generator_sha256": "d75f1de961817875c099e1b3bc6eaa3a6c670dc89752cd94864d977e452b88e3",

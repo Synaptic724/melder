@@ -152,7 +152,7 @@ Everything outside them is STRICT: an upgrade sweeps what is not listed here.
 | `agent_onboarding/default/general/skills/agent_session_state.md` | PACKAGE | `3124dbfdadb14cdf55a42790a16aafe7b926f6078cf3490e2b83affc50b68046` |
 | `agent_onboarding/default/general/skills/agent_stance.md` | PACKAGE | `6d259f4e79ff30b12af0914319b85206e13a273f4b741db2760f1a4447f48344` |
 | `agent_onboarding/default/general/skills/career_selection.md` | PACKAGE | `f6848776d7fdf1082f0b3da66cf781f0bede746b181c8006214106d718c153fe` |
-| `agent_onboarding/default/general/skills/codex_mcp.md` | PACKAGE | `8ef7f5975922bd59b438376ee21f0c7ce49fe9e4e9f13ce821d71d837dd02fb5` |
+| `agent_onboarding/default/general/skills/codex_mcp.md` | PACKAGE | `310707dafc126d4778ac0765e5789a29b249414eaff555ab7bc9bddb45208689` |
 | `agent_onboarding/default/general/skills/compaction_requirements.md` | PACKAGE | `ec65f1f98b0292b154e57ce1e379b950143320420701945631228853c2108506` |
 | `agent_onboarding/default/general/skills/configuration_standards.md` | PACKAGE | `abf610ca6633c14d309fe088dd1e6da793d7a8c8c2afd72b5a66c26a826b1276` |
 | `agent_onboarding/default/general/skills/context_compaction.md` | PACKAGE | `2d1b72abad44a3cbae80a06e61932fdcf3b5d780660b0b943de27106ec683889` |
@@ -457,7 +457,7 @@ Everything outside them is STRICT: an upgrade sweeps what is not listed here.
 | `examples/security_review_flow.md` | PACKAGE | `4f4a79abcc9130062637bcd9b6133e59c1d397bab483a8262ec91e72816b1cfb` |
 | `examples/story_designer_task_flow.md` | PACKAGE | `75def243d169840f744772b92088ee5547f7f683f54e7f09c3bf684faa63f864` |
 | `examples/story_novel_artist_task_flow.md` | PACKAGE | `7c1d156952c223002f13573f81765e543a284ce97ba4f8cfeb0cdc20fb10ccd1` |
-| `issue_board.md` | LIVE | `acfd4d5ce81dd375efd55f19f2104d64af938b3dec538e98c94b5932e25466e1` |
+| `issue_board.md` | LIVE | `573c3ed51ab3691341b590ae172a3a75760a078dd1d7a9e7f234395f21ad828f` |
 | `LICENSE` | PACKAGE | `88c41276167ae0f03b2f0dc743040a783b52d4374e75269bce3c3a9c0b5b0b33` |
 | `mailbox_board.md` | LIVE | `03ff6176b1cbdf00fbfe1671b17f0d4efe5be0dfd66bd4234e89fd68672d19d5` |
 | `NOTICE` | PACKAGE | `8f903e125dc5d0d04da8a086f3501255a4aa7c7430c7b826ba6a5f9a7e0c696a` |

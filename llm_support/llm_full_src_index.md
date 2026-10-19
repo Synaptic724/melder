@@ -10,8 +10,8 @@ Line numbers are 1-based and inclusive.
 | bundle | llm_full_src.txt |
 | schema_version | 1.0.0 |
 | generator_sha256 | d75f1de961817875c099e1b3bc6eaa3a6c670dc89752cd94864d977e452b88e3 |
-| source_fingerprint | 8612d9be5c60f51c1e900a83ebaf3289bd93c010d5e2afdf1e5cf76cbf39c063 |
-| bundle_sha256 | bd177e61d17b89d7afe989066d4f93027f13e3c537a069d525b75d37662580ab |
+| source_fingerprint | 72452161f11ea39af43d48fac7e6f5569faa73b392c4e2d474faee17a39a733d |
+| bundle_sha256 | 7b31bc0461c7325b78769739006ba09faa515107e53b9187e544b65c0d81e8ac |
 | bundle_line_count | 285560 |
 | bundle_line_ending | lf |
 | files | 585 |
@@ -29,7 +29,7 @@ Line numbers are 1-based and inclusive.
 | 271-562 | 276-559 | 10926 | utf-8 | cd330fbbdd22e76f3402351efe8e8845f30f1771a3895e9b8af8863585f5e730 | src/melder/__init__.py |
 | 563-599 | 568-596 | 1254 | utf-8 | 9a0c67a1b8391ab86af1c4242de72b21d3c78abd513f9a5c36bae809bf39a314 | src/melder/__license__.py |
 | 600-612 | 605-609 | 241 | utf-8 | 805e6faacff6b558d223cb1773145cecce81a000d6f401baade5583d35e3fae5 | src/melder/__melder_cache__/__melder_cache__.py |
-| 613-632 | 618-629 | 316 | utf-8 | 01f5b8b6f896fd9d49098645dc3d92cd50064ce370f517885203c8eb0945db81 | src/melder/__version__.py |
+| 613-632 | 618-629 | 316 | utf-8 | 13a70d34a5b229eb3b4534df9595385e39ca4e761b306e8e557e717df401bdd1 | src/melder/__version__.py |
 | 633-1344 | 638-1341 | 26236 | utf-8 | 1e610b6944779ebc963db6ea6b0f39a1cd8d6a717d6b54f63eb4e9191f89b6a1 | src/melder/_build_assets/_agent_documentation/_builder.py |
 | 1345-1481 | 1350-1478 | 4868 | utf-8 | 3c7f0f4319cf0c64444353f1e47ad9e3763f344713db264dcc72bfd55addb78b | src/melder/_build_assets/_agent_documentation/agent_documentation.py |
 | 1482-1876 | 1487-1873 | 13741 | utf-8 | 387d9da9ebf8811cd771d16f4171ca571ae53dbc7f105855ee3ec40303a171e2 | src/melder/_build_assets/_bind_guard/_builder.py |
@@ -158,7 +158,7 @@ Line numbers are 1-based and inclusive.
 | 79731-79903 | 79736-79900 | 7233 | utf-8 | e7857a53637d5bde2e51d5fba11341163adc12c86768c8b79a5b0eb585b8a14c | src/melder/aether/spellbook/existence/existence.py |
 | 79904-80002 | 79909-79999 | 4316 | utf-8 | 565aaa0bb67eb46571a2bfec118638c31a8d60e61993113089f469cf2d257137 | src/melder/aether/spellbook/existence/managed_spell_mode.py |
 | 80003-80503 | 80008-80500 | 18318 | utf-8 | 1f44aadb25bd855b2581b379379f1b5a4914f25aea92bdf25c55884d08094467 | src/melder/aether/spellbook/resolution_style_matrix.py |
-| 80504-82538 | 80509-82535 | 88673 | utf-8 | 8cbfef07dc1b4895bdbc03ce307924be4e1caeb3657211e72eaba64b3c8d85ae | src/melder/aether/spellbook/spell.py |
+| 80504-82538 | 80509-82535 | 88669 | utf-8 | 1ed5801af785e9d54c7c2e275e19a97b3e902f8835e3502b1c504cd8adf6834f | src/melder/aether/spellbook/spell.py |
 | 82539-82834 | 82544-82831 | 12038 | utf-8 | b6732a8bc1970e7b97fbb72951c7a4e5e98b4bc8c9334fbc148f17c5106d7126 | src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_injection_analysis.py |
 | 82835-82930 | 82840-82927 | 3686 | utf-8 | 71e8ba6e9fedc73288fe570a01f9d2e7afa9ea65daf4191e6486e7b0b79c09a7 | src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_occurrence_contract_analysis.py |
 | 82931-83023 | 82936-83020 | 2942 | utf-8 | 448c603aec651a593657fe72e2b63ccbda452ce9eddc44b1216badc6789e8d3e | src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_occurrence_instance_analysis.py |

@@ -19,8 +19,8 @@ Regenerate with:
 """
 
 MANIFEST_VERSION = "2.0.0"
-BUILT_FOR_VERSION = "0.2.8263"
-SOURCE_SHA256 = "e240ba3d800fe3d75810ee87d81fa15ddfc6f57b231b660cf7aa77e1147d79a5"
+BUILT_FOR_VERSION = "0.2.8264"
+SOURCE_SHA256 = "f93f95e2aa712b2436f83253de0bfbec94b773e5565dfdd89f072deaf7b7280d"
 DOCUMENT_COUNT = 4
 
 READ_ORDER = (
@@ -52,8 +52,8 @@ DOCUMENTS = {
         'addressing': 'section',
         'document_file': 'src_components.md',
         'payload_module': 'src_components_payload',
-        'line_count': 12485,
-        'content_sha256': '92684f545e63203e0b5eab1b53684003e35bf5f82f66e3d33de0d69d28288411',
+        'line_count': 12492,
+        'content_sha256': 'f3df8f1cbed2ca59cb0d0f93c90ee436fb77b576954c195790046af1bd04b70a',
     },
     '__graph_network__': {
         'name': '__graph_network__',
@@ -65,7 +65,7 @@ DOCUMENTS = {
         'document_file': 'src_graph.md',
         'payload_module': 'src_graph_payload',
         'line_count': 28204,
-        'content_sha256': '24dfcf7092543a614e65744cbaeac7d5b1c1c33d329f8f6cbf99bf28314df284',
+        'content_sha256': '87ddacda01a5078c616e12bbd0e60083077ae11248d05a1bf1cfc0d8ac13d3b8',
     },
     '__graph_details__': {
         'name': '__graph_details__',
@@ -77,6 +77,6 @@ DOCUMENTS = {
         'document_file': 'src_graph.md',
         'payload_module': 'src_graph_payload',
         'line_count': 28204,
-        'content_sha256': '24dfcf7092543a614e65744cbaeac7d5b1c1c33d329f8f6cbf99bf28314df284',
+        'content_sha256': '87ddacda01a5078c616e12bbd0e60083077ae11248d05a1bf1cfc0d8ac13d3b8',
     },
 }

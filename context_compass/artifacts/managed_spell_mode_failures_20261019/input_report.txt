@@ -1,0 +1,58 @@
+looks like a lot of tests failed 41 failed, 14338 passed, 28 skipped, 17 xfailed, 3 xpassed, 10 errors in 692.81s (0:11:32)
+
+
+they were all below 3.14.4 and above 3.14.0
+
+document:
+
+FAILED tests/unit/melder/aether/conduit/conduit_ward/test_conduit_ward.py::test_check_spell_eligible_success - NameError: name 'ManagedSpellMode' is not defined
+FAILED tests/unit/melder/aether/conduit/conduit_ward/test_conduit_ward.py::test_check_spell_eligible_not_owner - NameError: name 'ManagedSpellMode' is not defined
+FAILED tests/unit/melder/aether/conduit/conduit_ward/test_conduit_ward.py::test_check_spell_eligible_permission_mismatch - NameError: name 'ManagedSpellMode' is not defined
+FAILED tests/unit/melder/aether/conduit/conduit_ward/test_conduit_ward.py::test_add_spell_to_contract_flow - NameError: name 'ManagedSpellMode' is not defined
+FAILED tests/unit/melder/aether/conduit/conduit_ward/test_conduit_ward.py::test_add_spell_no_contract_raises - NameError: name 'ManagedSpellMode' is not defined
+FAILED tests/unit/melder/aether/conduit/conduit_ward/test_conduit_ward.py::test_check_spell_id_and_spell_raises_on_id_mismatch - NameError: name 'ManagedSpellMode' is not defined
+FAILED tests/unit/melder/aether/conduit/conduit_ward/test_conduit_ward.py::test_check_spell_id_and_spell_success - NameError: name 'ManagedSpellMode' is not defined
+FAILED tests/unit/melder/aether/conduit/conduit_ward/test_conduit_ward.py::test_check_spell_id_and_spell_raises_when_spell_id_missing - NameError: name 'ManagedSpellMode' is not defined
+FAILED tests/unit/melder/aether/conduit/conduit_ward/test_conduit_ward.py::test_check_spell_id_and_spell_with_spell_and_id_success - NameError: name 'ManagedSpellMode' is not defined
+FAILED tests/unit/melder/aether/conduit/conduit_ward/test_conduit_ward.py::test_check_spell_id_and_spell_with_explicit_spell_rejects_missing_inspected_id - NameError: name 'ManagedSpellMode' is not defined
+FAILED tests/unit/melder/aether/conduit/conduit_ward/test_conduit_ward.py::test_check_spell_id_and_spell_with_spell_and_id_mismatch - NameError: name 'ManagedSpellMode' is not defined
+FAILED tests/unit/melder/aether/conduit/conduit_ward/test_conduit_ward.py::test_check_spell_eligible_rejects_block_all_policy - NameError: name 'ManagedSpellMode' is not defined
+FAILED tests/unit/melder/aether/conduit/conduit_ward/test_conduit_ward.py::test_check_spell_eligible_rejects_block_permissions_without_whitelist - NameError: name 'ManagedSpellMode' is not defined
+FAILED tests/unit/melder/aether/conduit/conduit_ward/test_conduit_ward.py::test_check_spell_eligible_allows_block_permissions_with_whitelist - NameError: name 'ManagedSpellMode' is not defined
+FAILED tests/unit/melder/aether/conduit/conduit_ward/test_conduit_ward.py::test_check_spell_eligible_rejects_read_permission_mismatch - NameError: name 'ManagedSpellMode' is not defined
+FAILED tests/unit/melder/aether/conduit/conduit_ward/test_conduit_ward.py::test_check_spell_id_and_spell_success_with_spell_only - NameError: name 'ManagedSpellMode' is not defined
+FAILED tests/unit/melder/aether/conduit/conduit_ward/test_conduit_ward.py::test_create_detail_sets_sources_and_fields - NameError: name 'ManagedSpellMode' is not defined
+FAILED tests/unit/melder/aether/conduit/conduit_ward/test_conduit_ward.py::test_create_detail_rejects_invalid_permissions - NameError: name 'ManagedSpellMode' is not defined
+FAILED tests/unit/melder/aether/conduit/conduit_ward/test_conduit_ward.py::test_create_detail_rejects_invalid_contract_type - NameError: name 'ManagedSpellMode' is not defined
+FAILED tests/unit/melder/aether/conduit/conduit_ward/test_conduit_ward.py::test_create_detail_rejects_invalid_reason - NameError: name 'ManagedSpellMode' is not defined
+FAILED tests/unit/melder/aether/conduit/conduit_ward/test_conduit_ward.py::test_get_spell_permissions_reads_permissions_attr - NameError: name 'ManagedSpellMode' is not defined
+FAILED tests/unit/melder/aether/conduit/conduit_ward/test_conduit_ward.py::test_get_spell_permissions_raises_when_missing - NameError: name 'ManagedSpellMode' is not defined
+FAILED tests/unit/melder/aether/conduit/conduit_ward/test_conduit_ward.py::test_is_contract_empty_false_after_detail_added - NameError: name 'ManagedSpellMode' is not defined
+FAILED tests/unit/melder/aether/conduit/conduit_ward/test_conduit_ward.py::test_validate_contracts_and_define_returns_false_when_missing_spells - NameError: name 'ManagedSpellMode' is not defined
+FAILED tests/unit/melder/aether/conduit/conduit_ward/test_conduit_ward.py::test_validate_contracts_and_define_returns_true_when_all_present - NameError: name 'ManagedSpellMode' is not defined
+FAILED tests/unit/melder/aether/conduit/conduit_ward/test_conduit_ward.py::test_validate_received_contracts_returns_true_when_valid - NameError: name 'ManagedSpellMode' is not defined
+FAILED tests/unit/melder/aether/conduit/conduit_ward/test_conduit_ward.py::test_check_spell_id_and_spell_passes_aetheric_frame - NameError: name 'ManagedSpellMode' is not defined
+FAILED tests/unit/melder/aether/conduit/conduit_ward/test_conduit_ward.py::test_describe_contract_returns_spell_metadata - NameError: name 'ManagedSpellMode' is not defined
+FAILED tests/unit/melder/aether/conduit/conduit_ward/test_conduit_ward.py::test_get_spell_contract_keys_collects_contract_defaults - NameError: name 'ManagedSpellMode' is not defined
+FAILED tests/unit/melder/aether/conduit/conduit_ward/test_conduit_ward.py::test_get_spell_contract_keys_returns_empty_on_signature_error - NameError: name 'ManagedSpellMode' is not defined
+FAILED tests/unit/melder/aether/conduit/conduit_ward/test_conduit_ward.py::test_get_spell_contract_keys_ignores_required_parameters - NameError: name 'ManagedSpellMode' is not defined
+FAILED tests/unit/melder/aether/conduit/conduit_ward/test_conduit_ward.py::test_invalidate_contract_consumers_filters_by_contract_key - NameError: name 'ManagedSpellMode' is not defined
+FAILED tests/unit/melder/aether/conduit/conduit_ward/test_conduit_ward.py::test_invalidate_contract_consumers_invalidates_all_and_swallows_errors - NameError: name 'ManagedSpellMode' is not defined
+FAILED tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system_states.py::test_register_local_topology_builds_collection_and_contract_indexes - NameError: name 'ManagedSpellMode' is not defined
+FAILED tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system_states.py::test_register_local_topology_replaces_stale_collection_and_contract_keys - NameError: name 'ManagedSpellMode' is not defined
+FAILED tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system_states.py::test_mark_contract_dependents_dirty_marks_all_keys_when_unspecified - NameError: name 'ManagedSpellMode' is not defined
+FAILED tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system_states.py::test_cleanup_cascades_to_resolution_states_topologies_and_indexes - NameError: name 'ManagedSpellMode' is not defined
+FAILED tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system_states.py::test_register_index_owner_change_rebuilds_topology_indexes_under_new_book - NameError: name 'ManagedSpellMode' is not defined
+FAILED tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system_states.py::test_unregister_index_removes_topology_indexes_and_reverse_edges - NameError: name 'ManagedSpellMode' is not defined
+FAILED tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system_states.py::test_register_local_topology_ignores_irrelevant_socket_shapes - NameError: name 'ManagedSpellMode' is not defined
+FAILED tests/component/melder/spellbook/test_type_checking_annotation_introspection.py::test_conduit_ward_contract_keys_read_through_type_checking_annotations - NameError: name 'ManagedSpellMode' is not defined
+ERROR tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system_states.py::test_register_index_creates_new - NameError: name 'ManagedSpellMode' is not defined
+ERROR tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system_states.py::test_register_index_updates_existing - NameError: name 'ManagedSpellMode' is not defined
+ERROR tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system_states.py::test_register_validation - NameError: name 'ManagedSpellMode' is not defined
+ERROR tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system_states.py::test_unregister_index_triggers_risk_manager - NameError: name 'ManagedSpellMode' is not defined
+ERROR tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system_states.py::test_unregister_index_marks_dependents_gated - NameError: name 'ManagedSpellMode' is not defined
+ERROR tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system_states.py::test_update_dependencies - NameError: name 'ManagedSpellMode' is not defined
+ERROR tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system_states.py::test_update_dependencies_removes_old - NameError: name 'ManagedSpellMode' is not defined
+ERROR tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system_states.py::test_compute_impact_closure - NameError: name 'ManagedSpellMode' is not defined
+ERROR tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system_states.py::test_cleanup - NameError: name 'ManagedSpellMode' is not defined
+ERROR tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system_states.py::test_iter_states - NameError: name 'ManagedSpellMode' is not defined

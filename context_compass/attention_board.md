@@ -100,6 +100,7 @@ Message alert rules
 
 ## Message Alerts
 <!-- BEGIN USER-DEFINED: alerts -->
+- NEW MESSAGE for melder_1 (from expert_1, 2026-10-19T22:26:52Z)
 - NEW MESSAGE for muse_0 (from workflows_0, 2026-09-28T09:43:41Z)
 - NEW MESSAGE for muse_0 (from workflows_0, 2026-09-28T08:24:12Z)
 - NEW MESSAGE for muse_0 (from melder_0, 2026-09-27T20:29:26Z)
@@ -158,9 +159,9 @@ Message alert rules
 | work_item | status | agent_name | ticket | note | closed_at |
 | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: closed_anchors -->
+| managed_spell_mode_failures | done | expert_1 | tickets/tasks/completed/2026-10-19_fix_managed_spell_mode_test_failures_task.md | Landed 0.2.8264: runtime enum import restores Spell constructor/mock reflection; all 51 reported cases pass, 14393 runtime passes and 274 post-notch passes; assets checked. | 2026-10-19T22:35:14Z |
 | spell_identity_is_the_code | done | melder_0 | tickets/epics/completed/2026-10-18_spell_identity_is_the_code_epic.md | Turned in on the owner's word: S1 (0.2.8257) and S2 (0.2.8258) landed; S3-S5 parked in the backlog with S6; the leftovers packaged by melder_1's 0.2.8259 rebuild. Next: S3-S6 on the owner's word. | 2026-10-19T00:49:20Z |
 | binding_manifest_hash | done | melder_0 | tickets/stories/completed/2026-10-18_binding_manifest_hash_story.md | Landed 0.2.8258 (S2: the binding manifest and its hash in the caches and the record). Next: S3-S5 under the epic. | 2026-10-18T23:31:15Z |
-| managed_spell_ux_examples | done | melder_2 | tickets/stories/completed/2026-10-18_managed_spell_ux_examples_story.md | S2 of EPIC-2026-10-18-managed_spell_examples_and_docs: intermediate lessons 42-48 and 34 contract probes, green on 3.14t GIL off and on; owner walkthrough given; no src change. Next: S3 Sphinx page. | 2026-10-18T22:07:58Z |
 | managed_spell_sphinx_docs | done | melder_2 | tickets/stories/completed/2026-10-18_managed_spell_sphinx_docs_story.md | S3 of EPIC-2026-10-18-managed_spell_examples_and_docs: Sphinx chapter docs/intermediate/managed-spells.md (docs checks green, 313 pages) and one release-note bullet; no src change; the lane's rebuild waived by the owner. Next: none. | 2026-10-18T23:08:20Z |
 | managed_spell_examples_and_docs | done | melder_2 | tickets/epics/completed/2026-10-18_managed_spell_examples_and_docs_epic.md | Epic closed on the owner's directive: S1 lifecycle map, S2 lessons 42-48 and 34 probes (green on 3.14t), S3 chapter and release note; no src change, no notch; rebuild waived (melder_0's rebuild carries it). Next: none (the owner answered: a root's teardown cleans only what it holds). | 2026-10-18T23:08:20Z |
 | root_teardown_docs | done | melder_2 | tickets/tasks/completed/2026-10-18_document_root_teardown_cleans_only_what_it_holds_task.md | Documentation only, no src change: src_architecture and src_components state the owner's rule that a root's teardown cleans only what it holds and today's order (its "open with the owner" framing corrected by TASK-2026-10-19-correct_root_teardown_docs_wording). Next: none. | 2026-10-19T00:15:30Z |

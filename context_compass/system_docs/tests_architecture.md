@@ -466,12 +466,12 @@ Direct evidence used in this pass:
 - direct filesystem inventory over `tests/`
 
 Current Python test inventory from direct filesystem count:
-- `unit/`: 517 `.py` files, 514 of them `test_*.py` (465 on 2026-09-26, 334 on 2026-06-13)
+- `unit/`: 518 `.py` files, 515 of them `test_*.py` (465 on 2026-09-26, 334 on 2026-06-13)
 - `component/`: 171 `.py` files, 169 of them `test_*.py` (143, 81)
 - `integration/`: 185 `.py` files, 178 of them `test_*.py` (149, 88)
 - `mocks/`: 44 `.py` files (44, 42)
 - `experimentation/`: 204 `.py` files, 33 of them `test_*.py` (196 on 2026-09-26)
-Recounted 2026-10-19 with `find tests/<tier> -name '*.py'` (pycache excluded); the three tiers' 861 `test_*.py`
+Recounted 2026-10-19 with `rg --files tests/<tier> -g '*.py'` (pycache excluded); the three tiers' 862 `test_*.py`
 modules are the count `tests_components` states.
 
 ## Core Responsibilities

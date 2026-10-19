@@ -18,6 +18,7 @@ from melder.aether.conduit.meld.creation_context.creation_context_factory import
 from melder.aether.spellbook.bind.binding_manifest import BindingManifest
 from melder.aether.spellbook.bind.spell_index import SpellIndex
 from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.existence.managed_spell_mode import ManagedSpellMode
 from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
     SpellCompilerArtifact,
 )
@@ -50,7 +51,6 @@ if TYPE_CHECKING:
     from melder.aether.spellbook.spell_compiler.validation.spell_validation_result import (
         SpellValidationResult,
     )
-    from melder.aether.spellbook.existence.managed_spell_mode import ManagedSpellMode
     from melder.aether.spellbook.spellbook import Spellbook
     from melder.utilities.synchronization.creation_gate import CreationGate
     from melder.utilities.synchronization.creation_gate_controller import (

@@ -1,8 +1,8 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: tests
-SOURCE FINGERPRINT: 174198bf835aa0b75a6e0ebc945face0f6c6c495a284905720cac1f1d2f17c7f
-FILE COUNT: 1143
+SOURCE FINGERPRINT: f22042defe54d45bc438e718de41ea899175f43c27b1b8c2ef61b8081f205e9f
+FILE COUNT: 1144
 
 ================================================================================
 BEGIN FILE: tests/_annotation_audit_support.py
@@ -345998,6 +345998,67 @@ def test_meld_creates_spell_compiler_system_on_first_demand() -> None:
 
 ================================================================================
 END FILE: tests/unit/melder/spellbook/test_spell_compiler_foundation.py
+================================================================================
+================================================================================
+BEGIN FILE: tests/unit/melder/spellbook/test_spell_constructor_introspection.py
+CONTENT SHA256: 732b517e4953eff22e974a44d38d9122ae2b967d51778c3d082c8d826c47ae62
+SOURCE ENCODING: utf-8
+================================================================================
+"""Keep Spell constructor reflection usable by early Python 3.14 mock specifications."""
+
+import inspect
+from collections.abc import Callable
+from typing import Optional
+from unittest.mock import MagicMock, Mock
+
+import pytest
+
+from melder.aether.spellbook.existence.managed_spell_mode import ManagedSpellMode
+from melder.aether.spellbook.spell import Spell
+
+
+@pytest.mark.parametrize("target", [Spell, Spell.__init__], ids=["class", "constructor"])
+def test_spell_constructor_signature_resolves_managed_mode(
+        target: Callable[..., object],
+) -> None:
+    """
+    Read the managed-mode option without evaluating an unavailable annotation name.
+
+    Contract:
+        Default VALUE-format reflection keeps the concrete optional enum, its None
+        default and keyword-only calling convention on the class and constructor.
+    """
+    signature = inspect.signature(target)
+    parameter = signature.parameters["managed_spell_mode"]
+
+    assert parameter.annotation == Optional[ManagedSpellMode]
+    assert parameter.default is None
+    assert parameter.kind is inspect.Parameter.KEYWORD_ONLY
+    assert signature.bind_partial(managed_spell_mode=ManagedSpellMode.queue).arguments == {
+        "managed_spell_mode": ManagedSpellMode.queue,
+    }
+
+
+@pytest.mark.parametrize("mock_type", [Mock, MagicMock], ids=["mock", "magic-mock"])
+def test_spell_mock_spec_retains_method_calls_and_rejects_unknown_members(
+        mock_type: type[Mock],
+) -> None:
+    """
+    Build the real Spell specification used by ward and state-registry fixtures.
+
+    Contract:
+        The mock records a declared method call and refuses an undeclared member.
+        Python 3.14.0-3.14.3 reads the constructor's VALUE annotations at creation.
+    """
+    spell = mock_type(spec=Spell)
+
+    spell.cleanup()
+
+    spell.cleanup.assert_called_once_with()
+    with pytest.raises(AttributeError):
+        spell.undefined_spell_member()
+================================================================================
+END FILE: tests/unit/melder/spellbook/test_spell_constructor_introspection.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/spellbook/test_spell_managed_quantity_stamp.py

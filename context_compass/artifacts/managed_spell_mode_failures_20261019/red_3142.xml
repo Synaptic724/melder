@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="4" skipped="0" tests="4" time="2.870" timestamp="2026-10-19T15:47:42.740631-06:00" hostname="DESKTOP-HCNUTDQ"><testcase classname="tests.unit.melder.spellbook.test_spell_constructor_introspection" name="test_spell_constructor_signature_resolves_managed_mode[class]" time="0.001"><failure message="NameError: name 'ManagedSpellMode' is not defined">tests\unit\melder\spellbook\test_spell_constructor_introspection.py:25: in test_spell_constructor_signature_resolves_managed_mode
+    signature = inspect.signature(target)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Roaming\uv\python\cpython-3.14.2+freethreaded-windows-x86_64-none\Lib\inspect.py:3321: in signature
+    return Signature.from_callable(obj, follow_wrapped=follow_wrapped,
+..\..\AppData\Roaming\uv\python\cpython-3.14.2+freethreaded-windows-x86_64-none\Lib\inspect.py:3036: in from_callable
+    return _signature_from_callable(obj, sigcls=cls,
+..\..\AppData\Roaming\uv\python\cpython-3.14.2+freethreaded-windows-x86_64-none\Lib\inspect.py:2557: in _signature_from_callable
+    return _get_signature_of(init)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Roaming\uv\python\cpython-3.14.2+freethreaded-windows-x86_64-none\Lib\inspect.py:2440: in _signature_from_callable
+    sig = _get_signature_of(obj.__func__)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Roaming\uv\python\cpython-3.14.2+freethreaded-windows-x86_64-none\Lib\inspect.py:2511: in _signature_from_callable
+    return _signature_from_function(sigcls, obj,
+..\..\AppData\Roaming\uv\python\cpython-3.14.2+freethreaded-windows-x86_64-none\Lib\inspect.py:2334: in _signature_from_function
+    annotations = get_annotations(func, globals=globals, locals=locals, eval_str=eval_str,
+..\..\AppData\Roaming\uv\python\cpython-3.14.2+freethreaded-windows-x86_64-none\Lib\annotationlib.py:957: in get_annotations
+    ann = _get_dunder_annotations(obj)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Roaming\uv\python\cpython-3.14.2+freethreaded-windows-x86_64-none\Lib\annotationlib.py:1137: in _get_dunder_annotations
+    ann = getattr(obj, "__annotations__", None)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spell.py:342: in __annotate__
+    managed_spell_mode: Optional[ManagedSpellMode] = None,
+                                 ^^^^^^^^^^^^^^^^
+E   NameError: name 'ManagedSpellMode' is not defined</failure></testcase><testcase classname="tests.unit.melder.spellbook.test_spell_constructor_introspection" name="test_spell_constructor_signature_resolves_managed_mode[constructor]" time="0.001"><failure message="NameError: name 'ManagedSpellMode' is not defined">tests\unit\melder\spellbook\test_spell_constructor_introspection.py:25: in test_spell_constructor_signature_resolves_managed_mode
+    signature = inspect.signature(target)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Roaming\uv\python\cpython-3.14.2+freethreaded-windows-x86_64-none\Lib\inspect.py:3321: in signature
+    return Signature.from_callable(obj, follow_wrapped=follow_wrapped,
+..\..\AppData\Roaming\uv\python\cpython-3.14.2+freethreaded-windows-x86_64-none\Lib\inspect.py:3036: in from_callable
+    return _signature_from_callable(obj, sigcls=cls,
+..\..\AppData\Roaming\uv\python\cpython-3.14.2+freethreaded-windows-x86_64-none\Lib\inspect.py:2511: in _signature_from_callable
+    return _signature_from_function(sigcls, obj,
+..\..\AppData\Roaming\uv\python\cpython-3.14.2+freethreaded-windows-x86_64-none\Lib\inspect.py:2334: in _signature_from_function
+    annotations = get_annotations(func, globals=globals, locals=locals, eval_str=eval_str,
+..\..\AppData\Roaming\uv\python\cpython-3.14.2+freethreaded-windows-x86_64-none\Lib\annotationlib.py:957: in get_annotations
+    ann = _get_dunder_annotations(obj)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Roaming\uv\python\cpython-3.14.2+freethreaded-windows-x86_64-none\Lib\annotationlib.py:1137: in _get_dunder_annotations
+    ann = getattr(obj, "__annotations__", None)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spell.py:342: in __annotate__
+    managed_spell_mode: Optional[ManagedSpellMode] = None,
+                                 ^^^^^^^^^^^^^^^^
+E   NameError: name 'ManagedSpellMode' is not defined</failure></testcase><testcase classname="tests.unit.melder.spellbook.test_spell_constructor_introspection" name="test_spell_mock_spec_retains_method_calls_and_rejects_unknown_members[mock]" time="0.001"><failure message="NameError: name 'ManagedSpellMode' is not defined">tests\unit\melder\spellbook\test_spell_constructor_introspection.py:47: in test_spell_mock_spec_retains_method_calls_and_rejects_unknown_members
+    spell = mock_type(spec=Spell)
+            ^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Roaming\uv\python\cpython-3.14.2+freethreaded-windows-x86_64-none\Lib\unittest\mock.py:1157: in __init__
+    _safe_super(CallableMixin, self).__init__(
+..\..\AppData\Roaming\uv\python\cpython-3.14.2+freethreaded-windows-x86_64-none\Lib\unittest\mock.py:485: in __init__
+    self._mock_add_spec(spec, spec_set, _spec_as_instance, _eat_self)
+..\..\AppData\Roaming\uv\python\cpython-3.14.2+freethreaded-windows-x86_64-none\Lib\unittest\mock.py:547: in _mock_add_spec
+    res = _get_signature_object(spec,
+..\..\AppData\Roaming\uv\python\cpython-3.14.2+freethreaded-windows-x86_64-none\Lib\unittest\mock.py:122: in _get_signature_object
+    return func, inspect.signature(sig_func)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Roaming\uv\python\cpython-3.14.2+freethreaded-windows-x86_64-none\Lib\inspect.py:3321: in signature
+    return Signature.from_callable(obj, follow_wrapped=follow_wrapped,
+..\..\AppData\Roaming\uv\python\cpython-3.14.2+freethreaded-windows-x86_64-none\Lib\inspect.py:3036: in from_callable
+    return _signature_from_callable(obj, sigcls=cls,
+..\..\AppData\Roaming\uv\python\cpython-3.14.2+freethreaded-windows-x86_64-none\Lib\inspect.py:2505: in _signature_from_callable
+    wrapped_sig = _get_signature_of(obj.func)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Roaming\uv\python\cpython-3.14.2+freethreaded-windows-x86_64-none\Lib\inspect.py:2511: in _signature_from_callable
+    return _signature_from_function(sigcls, obj,
+..\..\AppData\Roaming\uv\python\cpython-3.14.2+freethreaded-windows-x86_64-none\Lib\inspect.py:2334: in _signature_from_function
+    annotations = get_annotations(func, globals=globals, locals=locals, eval_str=eval_str,
+..\..\AppData\Roaming\uv\python\cpython-3.14.2+freethreaded-windows-x86_64-none\Lib\annotationlib.py:957: in get_annotations
+    ann = _get_dunder_annotations(obj)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Roaming\uv\python\cpython-3.14.2+freethreaded-windows-x86_64-none\Lib\annotationlib.py:1137: in _get_dunder_annotations
+    ann = getattr(obj, "__annotations__", None)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spell.py:342: in __annotate__
+    managed_spell_mode: Optional[ManagedSpellMode] = None,
+                                 ^^^^^^^^^^^^^^^^
+E   NameError: name 'ManagedSpellMode' is not defined</failure></testcase><testcase classname="tests.unit.melder.spellbook.test_spell_constructor_introspection" name="test_spell_mock_spec_retains_method_calls_and_rejects_unknown_members[magic-mock]" time="0.001"><failure message="NameError: name 'ManagedSpellMode' is not defined">tests\unit\melder\spellbook\test_spell_constructor_introspection.py:47: in test_spell_mock_spec_retains_method_calls_and_rejects_unknown_members
+    spell = mock_type(spec=Spell)
+            ^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Roaming\uv\python\cpython-3.14.2+freethreaded-windows-x86_64-none\Lib\unittest\mock.py:2176: in __init__
+    _safe_super(MagicMixin, self).__init__(*args, **kw)
+..\..\AppData\Roaming\uv\python\cpython-3.14.2+freethreaded-windows-x86_64-none\Lib\unittest\mock.py:1157: in __init__
+    _safe_super(CallableMixin, self).__init__(
+..\..\AppData\Roaming\uv\python\cpython-3.14.2+freethreaded-windows-x86_64-none\Lib\unittest\mock.py:485: in __init__
+    self._mock_add_spec(spec, spec_set, _spec_as_instance, _eat_self)
+..\..\AppData\Roaming\uv\python\cpython-3.14.2+freethreaded-windows-x86_64-none\Lib\unittest\mock.py:547: in _mock_add_spec
+    res = _get_signature_object(spec,
+..\..\AppData\Roaming\uv\python\cpython-3.14.2+freethreaded-windows-x86_64-none\Lib\unittest\mock.py:122: in _get_signature_object
+    return func, inspect.signature(sig_func)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Roaming\uv\python\cpython-3.14.2+freethreaded-windows-x86_64-none\Lib\inspect.py:3321: in signature
+    return Signature.from_callable(obj, follow_wrapped=follow_wrapped,
+..\..\AppData\Roaming\uv\python\cpython-3.14.2+freethreaded-windows-x86_64-none\Lib\inspect.py:3036: in from_callable
+    return _signature_from_callable(obj, sigcls=cls,
+..\..\AppData\Roaming\uv\python\cpython-3.14.2+freethreaded-windows-x86_64-none\Lib\inspect.py:2505: in _signature_from_callable
+    wrapped_sig = _get_signature_of(obj.func)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Roaming\uv\python\cpython-3.14.2+freethreaded-windows-x86_64-none\Lib\inspect.py:2511: in _signature_from_callable
+    return _signature_from_function(sigcls, obj,
+..\..\AppData\Roaming\uv\python\cpython-3.14.2+freethreaded-windows-x86_64-none\Lib\inspect.py:2334: in _signature_from_function
+    annotations = get_annotations(func, globals=globals, locals=locals, eval_str=eval_str,
+..\..\AppData\Roaming\uv\python\cpython-3.14.2+freethreaded-windows-x86_64-none\Lib\annotationlib.py:957: in get_annotations
+    ann = _get_dunder_annotations(obj)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Roaming\uv\python\cpython-3.14.2+freethreaded-windows-x86_64-none\Lib\annotationlib.py:1137: in _get_dunder_annotations
+    ann = getattr(obj, "__annotations__", None)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spell.py:342: in __annotate__
+    managed_spell_mode: Optional[ManagedSpellMode] = None,
+                                 ^^^^^^^^^^^^^^^^
+E   NameError: name 'ManagedSpellMode' is not defined</failure></testcase></testsuite></testsuites>

@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: src
-SOURCE FINGERPRINT: 8612d9be5c60f51c1e900a83ebaf3289bd93c010d5e2afdf1e5cf76cbf39c063
+SOURCE FINGERPRINT: 72452161f11ea39af43d48fac7e6f5569faa73b392c4e2d474faee17a39a733d
 FILE COUNT: 585
 
 ================================================================================
@@ -612,7 +612,7 @@ END FILE: src/melder/__melder_cache__/__melder_cache__.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/__version__.py
-CONTENT SHA256: 01f5b8b6f896fd9d49098645dc3d92cd50064ce370f517885203c8eb0945db81
+CONTENT SHA256: 13a70d34a5b229eb3b4534df9595385e39ca4e761b306e8e557e717df401bdd1
 SOURCE ENCODING: utf-8
 ================================================================================
 
@@ -626,7 +626,7 @@ Contract:
   negotiation or runtime compatibility checks by itself.
 """
 
-__version__ = "0.2.8263"
+__version__ = "0.2.8264"
 ================================================================================
 END FILE: src/melder/__version__.py
 ================================================================================
@@ -80503,7 +80503,7 @@ END FILE: src/melder/aether/spellbook/resolution_style_matrix.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell.py
-CONTENT SHA256: 8cbfef07dc1b4895bdbc03ce307924be4e1caeb3657211e72eaba64b3c8d85ae
+CONTENT SHA256: 1ed5801af785e9d54c7c2e275e19a97b3e902f8835e3502b1c504cd8adf6834f
 SOURCE ENCODING: utf-8
 ================================================================================
 from collections.abc import Callable, Sequence
@@ -80526,6 +80526,7 @@ from melder.aether.conduit.meld.creation_context.creation_context_factory import
 from melder.aether.spellbook.bind.binding_manifest import BindingManifest
 from melder.aether.spellbook.bind.spell_index import SpellIndex
 from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.existence.managed_spell_mode import ManagedSpellMode
 from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
     SpellCompilerArtifact,
 )
@@ -80558,7 +80559,6 @@ if TYPE_CHECKING:
     from melder.aether.spellbook.spell_compiler.validation.spell_validation_result import (
         SpellValidationResult,
     )
-    from melder.aether.spellbook.existence.managed_spell_mode import ManagedSpellMode
     from melder.aether.spellbook.spellbook import Spellbook
     from melder.utilities.synchronization.creation_gate import CreationGate
     from melder.utilities.synchronization.creation_gate_controller import (

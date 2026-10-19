@@ -99,10 +99,21 @@ Message format (mailbox mode only; append-only, delete after consumption)
 | melder_2 | claude | 2026-10-18T21:07:02Z | 2026-10-19T00:43:26Z | departed |
 | seo_0 | codex | 2026-09-26T22:22:03Z | 2026-09-27T14:29:31Z | departed |
 | muse_0 | opencode | 2026-09-27T15:41:12Z | 2026-09-27T15:41:12Z | active |
+| expert_1 | codex | 2026-10-19T21:42:12Z | 2026-10-19T22:35:14Z | departed |
 <!-- END USER-DEFINED: checked_in -->
 
 ## Messages
 <!-- BEGIN USER-DEFINED: messages -->
+- TO: melder_1
+  FROM: expert_1
+  DATETIME: 2026-10-19T22:26:52Z
+  TYPE: NOTICE
+  CLAIM: expert_1 notched 0.2.8263 -> 0.2.8264 for the owner-directed ManagedSpellMode repair:
+    Spell imports the enum at runtime so early Python 3.14 constructor/mock introspection works.
+    All 51 reported cases pass; full pinned local 3.14.2 runtime run passed 14393 cases with no
+    failures/errors. Original test modules are unchanged. Notch above 0.2.8264 if you land after.
+  EVIDENCE: context_compass/tickets/tasks/completed/2026-10-19_fix_managed_spell_mode_test_failures_task.md
+  ACK_REQUESTED: false
 - TO: muse_0
   FROM: melder_0
   DATETIME: 2026-09-27T20:29:26Z
@@ -483,6 +494,10 @@ Message format (mailbox mode only; append-only, delete after consumption)
 
 ## Notes
 <!-- BEGIN USER-DEFINED: notes -->
+- 2026-10-19 expert_1 (session 01a14617-e951-71d2-8029-1d50100243be): harness custom instructions PRESENT;
+  effective C:/Users/Mark/.codex/AGENTS.md contains the Context Compass instructions. No setup form or
+  personal-instruction edit. Role reads and attestation completed in this chat; Mark then assigned
+  expert_1 and directly authorized the ManagedSpellMode test repair. See its owning task.
 - 2026-09-20: Owner checked out workflows_1 and transferred all continuing responsibilities to
   workflows_0. Address future workflow, release-qualification, environment and documentation
   follow-ups from that work to workflows_0. Historical authorship and existing recipients remain.

@@ -424,7 +424,7 @@ Concurrency/Threading:
 
 Invariants/Guarantees:
 - unit tests stay close to class/method behavior
-- the densest tier: 514 `test_*.py` modules among 517 `.py` files (recounted 2026-10-18)
+- the densest tier: 515 `test_*.py` modules among 518 `.py` files (recounted 2026-10-19)
 - CI-script tests never import `melder`; each script is loaded as a standalone module
 
 Failure Modes:
@@ -1141,6 +1141,10 @@ Protects:
 - Spell hooks, mutation override and cleanup; SpellIndex hash/equality stability
   and its context manager; scan-bind of marked objects; configuration defaults,
   freeze and disposal priority; conjure cache-path classification and emission
+- Spell constructor reflection (`test_spell_constructor_introspection.py`, four cases): VALUE-format
+  signatures of the class and constructor retain Optional[ManagedSpellMode], None and keyword-only binding;
+  Mock and MagicMock specifications record declared method calls and reject unknown members. This pins the
+  NameError seen during ward/state-registry fixture setup on early Python 3.14, without weakening the spec.
 - the target pass's dependency flags (0.2.8215): an owned, resolvable dependency with no plan and no published
   context is flagged `resolution_required` once (door epoch bumped, written under its own spell lock, ids
   sorted), and only when the pass succeeds; own plans, published contexts, existing creations, non-resolvable
@@ -1235,6 +1239,7 @@ Protects:
 Key Files (C1):
 - `tests/unit/melder/spellbook/test_spellbook.py`
 - `tests/unit/melder/spellbook/test_spell.py`
+- `tests/unit/melder/spellbook/test_spell_constructor_introspection.py`
 - `tests/unit/melder/spellbook/test_scan_bind.py`
 - `tests/unit/melder/spellbook/test_scan_bind_option_parity.py` (scan_bind option parity, 2026-10-10)
 - `tests/unit/melder/spellbook/test_spellbinder.py`
@@ -2121,12 +2126,12 @@ Key Files (C1):
   note: frame-isolated automatic/dynamic qualified-name regressions and real collision controls.
 
 Core is the DEDUPLICATED UNION OF EVERY `Key Files (C1)` LIST in the catalogs
-above - 278 paths (recounted 2026-10-19) - and nothing else. Change a component's key files and this set
+above - 280 paths (recounted 2026-10-19) - and nothing else. Change a component's key files and this set
 follows; if the two ever disagree, this section is wrong, not the catalog.
 
 WHAT COUNTS AS A KEY FILE ON THIS SIDE. A test component's key files are its
 HARNESS AND SUPPORT SURFACES - conftests, benches, mock packages, shared
-builders - not every `test_*.py` module beneath it. The 860 test modules of the
+builders - not every `test_*.py` module beneath it. The 862 test modules of the
 three CI tiers (and the 33 experimentation modules) are the component's CONTENT;
 they are counted in each entry rather than cited, because a
 core set that lists the entire tree is not a set anyone can verify, which is the
@@ -2554,6 +2559,12 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   end_line: 1581
   loc: 1581
   verified_at: 2026-10-15T22:33:31Z
+- path: `tests/unit/melder/spellbook/test_spell_constructor_introspection.py`
+  start_line: 1
+  end_line: 53
+  loc: 53
+  verified_at: 2026-10-19T21:51:02Z
+  note: VALUE-format constructor reflection and retained Mock/MagicMock specification contracts.
 - path: `tests/unit/melder/spellbook/test_scan_bind.py`
   start_line: 1
   end_line: 334
