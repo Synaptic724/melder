@@ -1313,8 +1313,10 @@ Membership checking and registration now finish together before sharing starts.
 - The packaged system documents describe a root leaving its cluster at teardown, the team store a cluster owns,
   the record that carries a slotted object's `many` children through purge, transfer and disposal, and the
   transfer default and handover; the code-map extents of the files these changes touched are remeasured.
-- The README's lifetimes section is "Seven Lifetimes, Not Three": it adds `managed_spell_quantity` with an example
-  of a lease and its release, and the docs chapter built from that section follows the new heading. The teardown
+- The README's lifetimes section is "Seven Lifetimes, Not Three": it lists `managed_spell_quantity` and links to
+  its dedicated intermediate section. That section has a complete runnable example of request-scoped injection,
+  explicit release, reset, lease-block reuse and root teardown, plus the three pool modes and links to lessons
+  43 and 45-47. The docs chapter built from the lifetime table keeps its existing heading selector. The teardown
   section no longer says that a failing disposal method stops that object's remaining methods: every declared
   method runs, and the failures are raised together once the scope has ended (the behaviour since 0.2.80 and
   0.2.8203).

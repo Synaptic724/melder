@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: other
-SOURCE FINGERPRINT: 2f6e11be9dbf0d73713a5af2183c7db3e11b799f0a2e70b423aa2839f2d122a4
+SOURCE FINGERPRINT: 0761bccbd3e476cf8c4d05363897b6fc85116cea2648f2d3adbfce0431f2d59d
 FILE COUNT: 409
 
 ================================================================================
@@ -6365,7 +6365,7 @@ END FILE: NOTICE
 ================================================================================
 ================================================================================
 BEGIN FILE: README.md
-CONTENT SHA256: bb95a65fdf993abe87166765cb7b0d37ae6bc119c0537952f08558b460b0881a
+CONTENT SHA256: c1ad60d0476ff540339babe22afc54fb82e7e528ce99cd2f12e228f79efea797
 SOURCE ENCODING: utf-8
 ================================================================================
 <div align="center">
@@ -6646,7 +6646,7 @@ anything earlier.
 | | Level | What it means | Who it's for | Runnable examples |
 |:--|:---|:---|:---|:---|
 | 🟢 | **Beginner** | The core runtime. Bind, resolve, categorize, scope, clean up. | Everyone. Start here. | [`01_beginner/`](https://github.com/Synaptic724/melder/tree/prod/UX_and_AIX_experiences/01_beginner) |
-| 🟡 | **Intermediate** | Connection — module registration, dynamic linking, late binding across subsystems. | When one scope isn't enough. | [`02_intermediate/`](https://github.com/Synaptic724/melder/tree/prod/UX_and_AIX_experiences/02_intermediate) |
+| 🟡 | **Intermediate** | Pooled resources, module registration, dynamic linking, late binding across subsystems. | When objects need reuse or subsystems need to connect. | [`02_intermediate/`](https://github.com/Synaptic724/melder/tree/prod/UX_and_AIX_experiences/02_intermediate) |
 | 🟠 | **Advanced** | Frame isolation, read-only introspection rooms, clusters, deep overrides. | Multi-tenant or multi-world systems. | [`03_advanced/`](https://github.com/Synaptic724/melder/tree/prod/UX_and_AIX_experiences/03_advanced) |
 | 🔵 | **Expert** | Agent rooms, transactions, checkpoints, governed mutation. Mostly machine-facing. | Building on Melder, or handing it to an AI. | [`04_expert/`](https://github.com/Synaptic724/melder/tree/prod/UX_and_AIX_experiences/04_expert) |
 
@@ -6853,7 +6853,7 @@ book.bind(spell=SmsHandler, existence="unique",
 | 🟢 | `many` | Nothing — new every meld | Stateless workers, DTOs |
 | 🟡 | `unique_per_conduit_lineage` | A scope **and its children** | Shared context down a tree |
 | 🟡 | `unique_per_spell_space` | A request-local space | Ephemeral request scoping |
-| 🟡 | `managed_spell_quantity` | Nothing — leased from a pool the root keeps | Costly objects reused across holders |
+| 🟡 | [`managed_spell_quantity`](https://github.com/Synaptic724/melder/blob/prod/README.md#-managed-spell-quantities) | Nothing — leased from a pool the root keeps | Costly objects reused across holders |
 | 🟠 | `unique_per_conduit_cluster` | A named group of scopes | Cross-scope coordination |
 
 **The first three are the beginner set** — they cover most systems and need
@@ -6862,35 +6862,8 @@ meaning: lineage and spell spaces once you have nested scopes, managed pools
 once an object costs more to build than to lend, clusters once conduits link
 into groups.
 
-A managed spell's objects are **leased**. A meld, or an injection into a
-constructor, takes an idle object from the pool the owning root keeps, or
-builds one; the holder gives it back when it is done:
-
-```python
-book = md.Spellbook()
-book.bind(
-    spell=ChannelLogger,
-    existence="managed_spell_quantity",
-    managed_spell_mode="limited_quantity",   # elastic (default) | limited_quantity | queue
-    managed_spell_limit=8,                   # at most 8 alive at once
-    managed_spell_reset_methods=["flush"],   # run on every release, in order
-    disposal_method_names=["close"],         # run only when the pool destroys one
-)
-conduit = book.conjure()
-
-logger = conduit.meld(ChannelLogger)         # an idle logger, or a new one
-md.ReleaseManagedSpell().release(logger)     # flushed, then back in the pool
-
-with conduit.managed_spell_meld(ChannelLogger) as logger:   # the same logger, leased again
-    logger.write("ready")                                   # and given back when the block ends
-```
-
-`elastic` never refuses: it keeps up to `managed_spell_limit` idle objects (256
-by default) and lets a burst's extras go once demand falls, like Melder's own
-pools. `limited_quantity` raises `ManagedSpellExhaustedError` when every object
-is out, and `queue` first waits up to `managed_spell_timeout_seconds` for a
-release. A holder keeps what it leased until it releases it; the root's teardown
-disposes the idle objects, never one that is still out.
+For the intermediate leasing and release example, see
+[Managed Spell Quantities](https://github.com/Synaptic724/melder/blob/prod/README.md#-managed-spell-quantities).
 
 > Callables are always `unique`. Want a fresh object every time? Bind a **class**
 > as `many`.
@@ -6939,8 +6912,9 @@ Within each store, objects are disposed newest first, so a dependency outlives t
 objects built on it. A failing method does not stop the others: every declared
 method of every object runs, each failure is chained from what the method raised,
 and they are raised together as one `ExceptionGroup` once the scope has ended.
-A `managed_spell_quantity` object is disposed only when its pool destroys it — an
-`elastic` trim, a reset that raises, or the root's teardown — never on release.
+A `managed_spell_quantity` return normally resets the object for reuse. Its
+disposal methods run when the pool destroys it — an `elastic` trim, a reset
+that raises, or the root's teardown.
 
 ## 🟢 Scopes That Nest
 <sub>**Beginner.** Child scopes, no configuration.</sub>
@@ -6952,6 +6926,119 @@ child = root.create_lesser_conduit()
 assert root.meld("Config") is child.meld("Config")      # shared
 assert root.meld("Session") is not child.meld("Session") # per-scope
 ```
+
+## 🟡 Managed Spell Quantities
+<sub>**Intermediate.** Lease, reset, and reuse objects across requests.</sub>
+
+Bind a class with `existence="managed_spell_quantity"` when its objects cost
+more to build than to lend. Each meld or constructor injection **leases** an
+idle object from the owning root's pool, or builds one when the mode allows.
+The holder returns it with `md.ReleaseManagedSpell().release(obj)`, or uses
+`managed_spell_meld(...)` to return it when a `with` block ends, even if the
+block raises.
+
+This complete example combines the intermediate lessons on reset methods,
+leases, and request-scoped injection:
+
+```python
+import melder as md
+
+
+class ReportBuffer:
+    """Reusable report state; reset on release, closed only when disposed."""
+
+    def __init__(self) -> None:
+        """Start empty and open; closed is a diagnostic flag for this example."""
+        self.lines: list[str] = []
+        self.closed: bool = False
+
+    def reset(self) -> None:
+        """Remove the previous request's data before the next lease."""
+        self.lines.clear()
+
+    def close(self) -> None:
+        """Dispose the buffer; retain closed so the example can check teardown."""
+        self.lines.clear()
+        self.closed = True
+
+
+class ReportJob:
+    """Hold one injected buffer until the request scope disposes this job."""
+
+    def __init__(self, buffer: ReportBuffer) -> None:
+        """Borrow one pooled buffer; this job must release it exactly once."""
+        self.buffer: ReportBuffer = buffer
+        self.finished: bool = False
+
+    def finish(self) -> None:
+        """Give the buffer back once; the job must stop using it afterwards."""
+        if self.finished:
+            return
+        self.finished = True
+        md.ReleaseManagedSpell().release(self.buffer)
+
+
+def main() -> None:
+    """Return a request's buffer, reuse it reset, then dispose the idle buffer."""
+    book = md.Spellbook()
+    try:
+        book.bind(
+            spell=ReportBuffer,
+            existence="managed_spell_quantity",
+            managed_spell_mode="limited_quantity",
+            managed_spell_limit=2,                  # at most two alive: idle + leased
+            managed_spell_reset_methods=["reset"],  # every return, before reuse
+            disposal_method_names=["close"],        # only when the pool destroys one
+        )
+        book.bind(spell=ReportJob, existence="many", disposal_method_names=["finish"])
+
+        with book.conjure() as root:
+            with root.enter_lesser_conduit() as request:
+                job: ReportJob = request.meld("ReportJob")
+                job.buffer.lines.append("Sales: 120")
+                previous = job.buffer  # retain identity only to demonstrate reuse
+            # Request exit called job.finish(): the buffer is reset and pooled.
+
+            with root.managed_spell_meld("ReportBuffer") as reused:
+                assert reused is previous
+                assert reused.lines == [] and not reused.closed
+                reused.lines.append("Sales: 240")
+            # The lease block returns and resets the buffer again.
+
+        assert previous.closed  # root exit disposed the idle buffer
+    finally:
+        book.cleanup()
+
+
+if __name__ == "__main__":
+    main()
+```
+
+Choose the mode at bind:
+
+| `managed_spell_mode` | What `managed_spell_limit` caps | When nothing is idle |
+|:---|:---|:---|
+| `elastic` (default) | Idle objects kept, 256 by default | Builds another; trims extras on return as demand falls |
+| `limited_quantity` | All objects alive, idle plus leased; required | Builds below the limit, otherwise raises `md.ManagedSpellExhaustedError` |
+| `queue` | All objects alive, idle plus leased; required | Builds below the limit, otherwise waits up to the required `managed_spell_timeout_seconds`, then raises `md.ManagedSpellExhaustedError` |
+
+Reset methods run in the declared order on every return. Disposal methods run
+when the pool destroys an object: an elastic trim, a reset that raises, or root
+teardown. Return each lease exactly once and stop using the object afterwards.
+Each injected parameter takes its own lease, so two live jobs hold two buffers.
+
+**End request scopes before the root.** The root owns the pool and disposes
+its idle objects at teardown; an object still leased stays its holder's to
+dispose. A job that releases from its disposal method belongs in a lesser
+scope, as above: the root's own disposal methods run after its pools are gone.
+
+Continue with the [managed spell guide](https://github.com/Synaptic724/melder/blob/prod/docs/intermediate/managed-spells.md)
+or run the intermediate examples:
+[limited quantity](https://github.com/Synaptic724/melder/blob/prod/UX_and_AIX_experiences/02_intermediate/43_managed_spell_limited_quantity.py),
+[reset methods](https://github.com/Synaptic724/melder/blob/prod/UX_and_AIX_experiences/02_intermediate/45_managed_spell_reset_methods.py),
+[leases](https://github.com/Synaptic724/melder/blob/prod/UX_and_AIX_experiences/02_intermediate/46_managed_spell_leases.py),
+and [injection and request scopes](https://github.com/Synaptic724/melder/blob/prod/UX_and_AIX_experiences/02_intermediate/47_managed_spell_injection_and_request_scopes.py).
+
 ## 🟡 Declarative Binding by Module
 <sub>**Intermediate.** Register where the class lives.</sub>
 
@@ -76501,7 +76588,7 @@ END FILE: release_docs/0.2.8227.md
 ================================================================================
 ================================================================================
 BEGIN FILE: release_docs/next_version_release.md
-CONTENT SHA256: 6e9c1da079a7337a59de7a632d0c1f8bb50be078feea049e9c8e60f5b2666fbe
+CONTENT SHA256: 07277834260d8ce49a7976478d04528ac858cfda9d2a2e6fce23c4c58889ff61
 SOURCE ENCODING: utf-8
 ================================================================================
 # Melder 0.2.8265
@@ -77819,8 +77906,10 @@ Membership checking and registration now finish together before sharing starts.
 - The packaged system documents describe a root leaving its cluster at teardown, the team store a cluster owns,
   the record that carries a slotted object's `many` children through purge, transfer and disposal, and the
   transfer default and handover; the code-map extents of the files these changes touched are remeasured.
-- The README's lifetimes section is "Seven Lifetimes, Not Three": it adds `managed_spell_quantity` with an example
-  of a lease and its release, and the docs chapter built from that section follows the new heading. The teardown
+- The README's lifetimes section is "Seven Lifetimes, Not Three": it lists `managed_spell_quantity` and links to
+  its dedicated intermediate section. That section has a complete runnable example of request-scoped injection,
+  explicit release, reset, lease-block reuse and root teardown, plus the three pool modes and links to lessons
+  43 and 45-47. The docs chapter built from the lifetime table keeps its existing heading selector. The teardown
   section no longer says that a failing disposal method stops that object's remaining methods: every declared
   method runs, and the failures are raised together once the scope has ended (the behaviour since 0.2.80 and
   0.2.8203).
