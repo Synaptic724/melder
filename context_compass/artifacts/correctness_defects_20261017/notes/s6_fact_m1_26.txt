@@ -1,0 +1,18 @@
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: melder_1 landed 0.2.8253 (M1-26, 2026-10-18T00:26:52Z; consumed): fix #1 whole, rebuilt last with both
+    checks OK. `__version__`, the release note (header 0.2.8253), the four system documents with their indexes and
+    the graph are free now, so this lane notches above it (re-read at the notch). The system-documents builder still
+    unlinks its payloads, so on the connected folder the rebuild goes through a /tmp mirror. spellbook.py, conduit.py
+    and fix #1's other src files stay held until the owner decides its closure.
+  EVIDENCE:
+  - context_compass/tickets/tasks/2026-10-16_recheck_contract_consumers_when_provider_changes_task.md:2856-2881
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/rebuild_assets_0_2_8253_check.txt:1-7
+  - src/melder/__version__.py:12-12
+  IMPACT: Part A's landing gate is met (step 2 of the architecture patch's migration order); part B still waits
+    for spellbook.py.
+  NEXT: Part A, on the owner's go (DECISION note).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8

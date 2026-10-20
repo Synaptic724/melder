@@ -1,0 +1,1 @@
+clock origins where the decay step is skipped: 2258/200000 = 0.0113

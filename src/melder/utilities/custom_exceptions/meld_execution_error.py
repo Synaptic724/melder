@@ -114,7 +114,7 @@ class MeldExecutionError(RuntimeError):
 
         Args:
             spell_id:
-                The root spell's version identifier (typically SHA256).
+                The root spell's spell_id (typically SHA256).
             spell_name:
                 Human-readable name of the root spell.
             message:

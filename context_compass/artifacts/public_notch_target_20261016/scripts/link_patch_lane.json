@@ -1,0 +1,12 @@
+[
+  {
+    "path": "tickets/tasks/2026-10-16_public_notch_target_for_staged_versions_task.md",
+    "old": "  - artifacts/public_notch_target_20261016/ (scripts, probes, runs, notes)\n",
+    "new": "  - artifacts/public_notch_target_20261016/ (scripts, probes, runs, notes)\n  - system_docs/patches/active/public_notch_target_2026_10_16/architecture_patch.md\n  - system_docs/patches/active/public_notch_target_2026_10_16/component_patch_conduit_notch_target.md\n  - system_docs/patches/active/public_notch_target_2026_10_16/code_description_patch_conduit_notch_target.md\n"
+  },
+  {
+    "path": "tickets/tasks/2026-10-16_public_notch_target_for_staged_versions_task.md",
+    "old": "- DISPOSITION: retain_as_reference (the folder); promote_to_documentation (the patch docs, once written)\n",
+    "new": "- DISPOSITION: retain_as_reference (the folder); promote_to_documentation (the patch docs)\n"
+  }
+]

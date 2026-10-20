@@ -1,0 +1,26 @@
+C1 bind_inactive after conjure; same key
+  [before] frame claim: English; book route to the index: True
+    find_spell_index is the index: True
+  [after bind_inactive(French)] frame claim: none; book route to the index: False
+    meld by address raised KeyError: "[MELD] No spell found for frame='greeter', binding='greeter'."
+    find_spell_index raised RuntimeError: Spell not found in the spellbook.
+    another Book's bind of (Greeter, 'greeter') ACCEPTED; frame claim now: Spanish
+C2 bind_inactive before conjure; same key
+  [after bind_inactive(French), then conjure] frame claim: none; book route to the index: False
+    meld by address raised KeyError: "[MELD] No spell found for frame='greeter', binding='greeter'."
+    find_spell_index raised RuntimeError: Spell not found in the spellbook.
+C3 remove French into its own index, then add it back
+  [after the notch to French and back] frame claim: English; book route to the index: True
+    find_spell_index is the index: True
+  [after remove_from_spell_index, add_to_spell_index back] frame claim: none; book route to the index: False
+    meld by address raised KeyError: "[MELD] No spell found for frame='greeter', binding='greeter'."
+    find_spell_index raised RuntimeError: Spell not found in the spellbook.
+    another Book's bind of (Greeter, 'greeter') ACCEPTED; frame claim now: Spanish
+C4 cleanup_spell of French alone in the minted index
+  [after cleanup_spell(French)] frame claim: none; book route to the index: False
+    meld by address raised KeyError: "[MELD] No spell found for frame='greeter', binding='greeter'."
+    find_spell_index raised RuntimeError: Spell not found in the spellbook.
+    another Book's bind of (Greeter, 'greeter') ACCEPTED; frame claim now: Spanish
+C6 Book L stages French keyed like Book O's active Spanish
+  frame claim ('greeter', 'spanish'): none
+    another Book's bind of (Greeter, 'spanish') ACCEPTED; frame claim now: Italian

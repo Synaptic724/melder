@@ -1,4 +1,5 @@
 import contextlib
+import time
 import types
 import threading
 from types import MappingProxyType
@@ -13,12 +14,21 @@ import melder.aether.spellbook.spellbook as spellbook_module
 from melder.aether.aether import Aether
 from melder.aether.aether_utility_system import AetherUtilitySystem
 from melder.aether.aetheric_frame.aetheric_frame_configuration import AethericFrameConfiguration
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state import SpellState
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_state import SpellSystemState
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
+from melder.aether.spellbook.bind.spell_index import SpellIndex
 from melder.aether.spellbook.configuration.system_state import SystemState
 from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
 from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
     SpellCompilerArtifact,
+)
+from melder.aether.spellbook.spell_compiler.topology.spell_local_topology import (
+    SpellLocalTopology,
+    SpellSocketDescriptor,
 )
 from melder.aether.spellbook.spell_compiler.spell_compiler_system import (
     SpellCompilerSystem,
@@ -329,7 +339,7 @@ class DummySpellIndex:
     Purpose:
         Provide a minimal SpellIndex stub with version tracking.
     Contract:
-        Exposes has_spell and cleanup for Spellbook internals.
+        Exposes has_spell, the cleanup-safe membership probe and cleanup for Spellbook internals.
     """
     def __init__(self, versions=None, sid="sid", current="sid"):
         """
@@ -376,6 +386,21 @@ class DummySpellIndex:
             bool: True when version_id is registered.
         """
         return version_id in self._spells_in_index
+
+    def _has_spell_unless_cleaned(self, version_id):
+        """
+        Purpose:
+            Mirror SpellIndex._has_spell_unless_cleaned for walks over indexes the caller does not own.
+        Contract:
+            Returns False once the stub is cleaned; otherwise the has_spell answer.
+        Args:
+            version_id: Version id to check.
+        Returns:
+            bool: True when the live stub registers version_id.
+        """
+        if self._cleaned:
+            return False
+        return self.has_spell(version_id)
 
     def _set_owner_conduit_id(self, conduit_id):
         """
@@ -2058,6 +2083,314 @@ def test_remove_contracted_spell_missing_maps_and_missing_version_raise() -> Non
         sb._remove_contracted_spell("sid-1", "peer")
 
 
+_COPY_KEY = ("frame", "binding")
+
+
+def _contracted_book(*, conjured: bool = True) -> Spellbook:
+    """
+    Purpose:
+        Build a Spellbook whose contracted maps start empty, with its collaborators beside the maps stubbed.
+    Contract:
+        - The Book keeps its real SpellSystemStates (the frame's registry), so a contract mark is observable on a
+          consumer lineage registered there.
+        - Collection marks, staged-key refreshes and RiskManager calls are recorded no-ops.
+    Args:
+        conjured: The Book's `_conjured` flag.
+    Returns:
+        Spellbook: The Book under test.
+    """
+    sb = Spellbook()
+    sb._logger = DummySafeLogger()
+    sb._contracted_spells = {}
+    sb._lookup_contracted_spells = {}
+    sb._contracted_spell_ids = {}
+    sb._contracted_spells_by_id = {}
+    sb._inactive_contracted_spells = {}
+    sb._conjured = conjured
+    sb._conduit = DummyConduit("borrower", "borrower")
+    sb._mark_collection_dependents_dirty = lambda frame_keys: None
+    sb._try_update_staged_contract_keys = lambda conduit_id: None
+    sb._register_spell_with_risk_manager = lambda conduit_id, spell: None
+    sb._unregister_spell_with_risk_manager = lambda conduit_id, spell: None
+    return sb
+
+
+def _contracted_copy(spell_id: str = "sid-1") -> DummySpell:
+    """
+    Purpose:
+        Build a borrowed copy under the frame "Frame" and the binding "binding" (key ("frame", "binding")).
+    Returns:
+        DummySpell: The copy, with its index, its `key` and its `_key` set as a live Spell carries them.
+    """
+    index = DummySpellIndex(versions={spell_id}, sid=f"lineage-{spell_id}", current=spell_id)
+    spell = DummySpell(
+        spell_id=spell_id,
+        versions={spell_id},
+        spell_name="SpellName",
+        binding_name="binding",
+        spellframe="Frame",
+    )
+    spell.spell_index = index
+    spell.key = _COPY_KEY
+    spell._key = _COPY_KEY
+    return spell
+
+
+def _consumer_of_copy_key(sb: Spellbook) -> SpellSystemState:
+    """
+    Purpose:
+        Register, in the Book's registry, a lineage the Book owns whose topology consumes the copy's key, and leave
+        it `valid`.
+    Returns:
+        SpellSystemState: The consumer lineage's state.
+    """
+    states = sb._spell_system_states
+    index = SpellIndex("consumer-v1")
+    states.register_index(index, owner_spellbook_id=sb._id)
+    states.register_local_topology(
+        index,
+        SpellLocalTopology(
+            spell_id="consumer-v1",
+            sockets=(
+                SpellSocketDescriptor(
+                    spell_id="consumer-v1",
+                    param_name="service",
+                    position=0,
+                    socket_kind=SocketKind.SPELL_CONTRACT,
+                    is_collection=False,
+                    is_optional=False,
+                    target_spell_ids=(),
+                    contract_key=_COPY_KEY,
+                ),
+            ),
+        ),
+    )
+    state = states.get_by_index_id(index.id)
+    assert state is not None
+    state.clear_dirty(time.time())
+    return state
+
+
+def _assert_marked_then_reset(state: SpellSystemState) -> None:
+    """Assert rule 2's contract mark on the consumer, then make it `valid` again for the next step."""
+    assert state.validity is SpellValidity.gated
+    assert state.has_flag(SpellState.contract_unvalidated)
+    state.set_validity(SpellValidity.valid, flags_to_remove=[SpellState.contract_unvalidated])
+
+
+def test_every_change_of_an_active_contracted_copy_marks_the_consumers_of_its_key() -> None:
+    """
+    Purpose:
+        Prove rule 2's marking: an add, a park, a reactivation and a removal of an active contracted copy each gate
+        the Book's consumers of the copy's key with `contract_unvalidated` (mark only).
+    """
+    sb = _contracted_book()
+    state = _consumer_of_copy_key(sb)
+    spell = _contracted_copy()
+
+    sb._add_contracted_spell(spell, "peer")
+    _assert_marked_then_reset(state)
+
+    sb._deactivate_contracted_spell("peer", spell)
+    _assert_marked_then_reset(state)
+
+    sb._reactivate_contracted_spell("peer", spell)
+    _assert_marked_then_reset(state)
+
+    sb._remove_contracted_spell("sid-1", "peer")
+    _assert_marked_then_reset(state)
+    assert sb._contracted_spells["peer"] == {}
+
+
+def test_clearing_a_peers_copies_marks_the_keys_of_the_active_copies() -> None:
+    """A clear of one peer's copies gates the consumers of every active copy's key it removed."""
+    sb = _contracted_book()
+    state = _consumer_of_copy_key(sb)
+    sb._add_contracted_spell(_contracted_copy(), "peer")
+    state.set_validity(SpellValidity.valid, flags_to_remove=[SpellState.contract_unvalidated])
+
+    sb._clear_contracted_spells_for_conduit("peer")
+
+    _assert_marked_then_reset(state)
+
+
+def test_contracted_copy_changes_mark_nothing_before_conjure() -> None:
+    """Before conjure nothing is marked: conjure runs phases 1-4 for every spell."""
+    sb = _contracted_book(conjured=False)
+    state = _consumer_of_copy_key(sb)
+    spell = _contracted_copy()
+
+    sb._add_contracted_spell(spell, "peer")
+    sb._deactivate_contracted_spell("peer", spell)
+    sb._reactivate_contracted_spell("peer", spell)
+    sb._remove_contracted_spell("sid-1", "peer")
+
+    assert state.validity is SpellValidity.valid
+    assert not state.has_flag(SpellState.contract_unvalidated)
+
+
+def test_parked_contracted_copy_changes_mark_nothing() -> None:
+    """Adding or removing a parked copy marks nothing: no consumer resolves a parked copy."""
+    sb = _contracted_book()
+    state = _consumer_of_copy_key(sb)
+
+    sb._add_inactive_contracted_spell(_contracted_copy("sid-parked"), "peer")
+    sb._remove_contracted_spell("sid-parked", "peer")
+
+    assert state.validity is SpellValidity.valid
+    assert not state.has_flag(SpellState.contract_unvalidated)
+
+
+def _two_versions_of_one_index() -> tuple[DummySpellIndex, DummySpell, DummySpell]:
+    """
+    Purpose:
+        Build the two borrowed copies a borrower holds after its lender notched one index from "sid-1" to "sid-2":
+        the "sid-1" copy (to be parked) and the "sid-2" copy (active), of one index and under the key
+        ("frame", "binding").
+    Returns:
+        tuple[DummySpellIndex, DummySpell, DummySpell]: The shared index, the sid-1 copy and the sid-2 copy.
+    """
+    index = DummySpellIndex(versions={"sid-1", "sid-2"}, sid="lineage", current="sid-2")
+    copies: list[DummySpell] = []
+    for spell_id in ("sid-1", "sid-2"):
+        spell = DummySpell(
+            spell_id=spell_id,
+            versions={"sid-1", "sid-2"},
+            spell_name="SpellName",
+            binding_name="binding",
+            spellframe="Frame",
+        )
+        spell.spell_index = index
+        spell.key = _COPY_KEY
+        spell._key = _COPY_KEY
+        copies.append(spell)
+    return index, copies[0], copies[1]
+
+
+def test_removing_a_parked_version_keeps_the_active_copy_of_its_index() -> None:
+    """
+    Purpose:
+        Regression for the unlink after a notch (contracted_copy_removal_by_version_2026_10_16): removing a parked
+        version removes that version's parked copy, leaves the active copy of the same index - another version - in
+        place and marks nothing; removing the active version then removes its copy and marks the consumers.
+    Contract:
+        - A removal takes the copy of exactly the version it names: the active copy only when it is that version.
+    """
+    sb = _contracted_book()
+    state = _consumer_of_copy_key(sb)
+    index, parked, active = _two_versions_of_one_index()
+    sb._add_contracted_spell(active, "peer")
+    sb._add_inactive_contracted_spell(parked, "peer")
+    _assert_marked_then_reset(state)
+
+    sb._remove_contracted_spell("sid-1", "peer")
+
+    assert sb._contracted_spells["peer"] == {index: active}
+    assert sb._contracted_spells_by_id["peer"] == {"sid-2": active}
+    assert sb._inactive_contracted_spells["peer"] == {}
+    assert state.validity is SpellValidity.valid
+    assert not state.has_flag(SpellState.contract_unvalidated)
+
+    sb._remove_contracted_spell("sid-2", "peer")
+
+    assert sb._contracted_spells["peer"] == {}
+    _assert_marked_then_reset(state)
+
+
+def test_removing_a_version_the_book_holds_no_copy_of_raises_and_keeps_the_active_copy() -> None:
+    """
+    Purpose:
+        A member id of a borrowed index that the Book holds no copy of is refused with the not-found RuntimeError,
+        and the index's active copy - another version - stays (before 0.2.8251 it was removed under that id).
+    """
+    sb = _contracted_book()
+    index, _, active = _two_versions_of_one_index()
+    sb._add_contracted_spell(active, "peer")
+
+    with pytest.raises(RuntimeError, match="Spell version sid-1 not found for conduit ID peer."):
+        sb._remove_contracted_spell("sid-1", "peer")
+
+    assert sb._contracted_spells["peer"] == {index: active}
+    assert sb._contracted_spells_by_id["peer"] == {"sid-2": active}
+
+
+@pytest.mark.parametrize("order", [("sid-1", "sid-2"), ("sid-2", "sid-1")], ids=["parked_first", "active_first"])
+def test_removing_both_versions_of_an_index_in_either_order_leaves_no_copy(order: tuple[str, str]) -> None:
+    """
+    Purpose:
+        An index unlink removes each member's copy in its member set's order, which follows the hash seed: either
+        order leaves no copy, active or parked, and an empty set of borrowed version ids.
+    """
+    sb = _contracted_book()
+    _, parked, active = _two_versions_of_one_index()
+    sb._add_contracted_spell(active, "peer")
+    sb._add_inactive_contracted_spell(parked, "peer")
+
+    for spell_id in order:
+        sb._remove_contracted_spell(spell_id, "peer")
+
+    assert sb._contracted_spells["peer"] == {}
+    assert sb._contracted_spells_by_id["peer"] == {}
+    assert sb._inactive_contracted_spells["peer"] == {}
+    assert sb._contracted_spell_ids["peer"] == set()
+
+
+class _RecordingContractRegistry:
+    """
+    Purpose:
+        Registry double for the Book's contract mark: records each call's Book id, keys and whether the Book lock
+        is held at the call, and optionally raises.
+    """
+
+    def __init__(self, book: Spellbook, *, error: Optional[Exception] = None) -> None:
+        """Bind the Book whose lock is checked; `error` is raised from every mark when given."""
+        self.book = book
+        self.error = error
+        self.calls: list[tuple[str, frozenset[tuple[str, str]], bool]] = []
+
+    def mark_contract_dependents_dirty(
+            self,
+            *,
+            spellbook_id: str,
+            contract_keys: Any = None,
+    ) -> set[str]:
+        """Record the call; raise the configured error when there is one."""
+        self.calls.append((spellbook_id, frozenset(contract_keys), self.book._lock._is_owned()))
+        if self.error is not None:
+            raise self.error
+        return set()
+
+
+def test_contract_marks_run_with_the_book_lock_free() -> None:
+    """Each mutator marks once, with the copy's key, after it releases the Book lock."""
+    sb = _contracted_book()
+    registry = _RecordingContractRegistry(sb)
+    sb._spell_system_states = cast(Any, registry)
+    spell = _contracted_copy()
+
+    sb._add_contracted_spell(spell, "peer")
+    sb._deactivate_contracted_spell("peer", spell)
+    sb._reactivate_contracted_spell("peer", spell)
+    sb._remove_contracted_spell("sid-1", "peer")
+    sb._add_contracted_spell(_contracted_copy("sid-2"), "peer")
+    sb._clear_contracted_spells_for_conduit("peer")
+
+    assert registry.calls == [(sb._id, frozenset({_COPY_KEY}), False)] * 6
+
+
+def test_contract_mark_failure_is_logged_and_propagates_after_the_map_change() -> None:
+    """A registry failure is logged and raised; the map change it followed stays published."""
+    sb = _contracted_book()
+    sb._spell_system_states = cast(Any, _RecordingContractRegistry(sb, error=RuntimeError("registry gone")))
+    spell = _contracted_copy()
+
+    with pytest.raises(RuntimeError, match="registry gone"):
+        sb._add_contracted_spell(spell, "peer")
+
+    assert sb._contracted_spells["peer"][spell.spell_index] is spell
+    assert any("Failed to mark contract dependents dirty" in str(message) for message, _ in sb._logger.error_calls)
+
+
 def test_cleanup_components_swallows_clear_and_cleanup_failures() -> None:
     class _BadMap(dict):
         def clear(self):
@@ -2416,7 +2749,9 @@ def test_bind_after_conjure_preserves_ownership_and_registrations(monkeypatch):
     risk_calls = []
     register_single_calls = []
     sb._spell_system_states = types.SimpleNamespace(
-        register_index=lambda spell_index, owner_spellbook_id=None: lineage_calls.append((spell_index, new_spell))
+        register_index=lambda spell_index, owner_spellbook_id=None, resolvable=None, binding_key=None: (
+            lineage_calls.append((spell_index, new_spell, resolvable))
+        )
     )
     sb._register_spell_with_risk_manager = (
         lambda conduit_id, spell: risk_calls.append((conduit_id, spell))
@@ -2452,6 +2787,7 @@ def test_bind_after_conjure_preserves_ownership_and_registrations(monkeypatch):
     assert sb._conduit.registered == [(new_spell, "existing")]
     assert len(lineage_calls) == 1
     assert lineage_calls[0][1] is new_spell
+    assert lineage_calls[0][2] is True  # bind passes the bound version's Spell.resolvable
     assert risk_calls == [("jit-cid", new_spell)]
     assert register_single_calls == [("jit-cid", idx, frame_name)]
 
@@ -2484,7 +2820,7 @@ def test_bind_after_conjure_stamps_resolution_required_false(monkeypatch):
     sb._assert_lookup_key_available = lambda **kwargs: None
     sb._add_hooks_to_spell = lambda spell, **kwargs: None
     sb._spell_system_states = types.SimpleNamespace(
-        register_index=lambda spell_index, owner_spellbook_id=None: None
+        register_index=lambda spell_index, owner_spellbook_id=None, resolvable=None, binding_key=None: None
     )
     sb._register_spell_with_risk_manager = lambda conduit_id, spell: None
 
@@ -4303,6 +4639,26 @@ def test_find_contracted_spell_by_id_returns_none_when_missing():
     sb = Spellbook()
     sb._contracted_spells = {"c": {DummySpellIndex(versions={"v1"}): DummySpell()}}
     assert sb._find_contracted_spell_by_id("v2", "c") is None
+
+
+def test_find_contracted_spell_by_id_skips_an_index_its_owner_cleaned():
+    """
+    Purpose:
+        Ensure a contracted lookup treats an index its owner cleaned as holding nothing.
+    Contract:
+        _find_contracted_spell_by_id returns None instead of raising when the only index that held
+        the version was cleaned while the contracted map still referenced it (0.2.8230; before, the
+        index's has_spell raised RuntimeError or AttributeError).
+    Returns:
+        None.
+    Raises:
+        AssertionError: If a spell is returned or the cleaned index raises.
+    """
+    sb = Spellbook()
+    idx = SpellIndex("v1")
+    idx.cleanup()
+    sb._contracted_spells = {"c": {idx: DummySpell()}}
+    assert sb._find_contracted_spell_by_id("v1", "c") is None
 
 
 def test_find_contracted_spell_by_id_returns_none_for_unknown_conduit():

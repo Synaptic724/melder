@@ -1,0 +1,24 @@
+tree=/tmp/cc_res/rule2/tree runs=20 gil_enabled=True
+run  1: {'A': 19943} unexpected=0 final=A 0.17s
+run  2: {'A': 20002} unexpected=0 final=A 0.10s
+run  3: {'A': 10579} unexpected=0 final=A 0.06s
+run  4: {'A': 20206} unexpected=0 final=A 0.10s
+run  5: {'A': 7955} unexpected=0 final=A 0.05s
+run  6: {'A': 11806} unexpected=0 final=A 0.07s
+run  7: {'A': 18455} unexpected=0 final=A 0.10s
+run  8: {'A': 13239} unexpected=0 final=A 0.08s
+run  9: {'A': 13027} unexpected=0 final=A 0.08s
+run 10: {'A': 10492} unexpected=0 final=A 0.07s
+run 11: {'A': 10439} unexpected=0 final=A 0.07s
+run 12: {'A': 10766} unexpected=0 final=A 0.07s
+run 13: {'A': 10958} unexpected=0 final=A 0.08s
+run 14: {'A': 9725} unexpected=0 final=A 0.07s
+run 15: {'A': 12490} unexpected=0 final=A 0.08s
+run 16: {'A': 9701} unexpected=0 final=A 0.07s
+run 17: {'A': 14404} unexpected=0 final=A 0.09s
+run 18: {'A': 13526} unexpected=0 final=A 0.08s
+run 19: {'A': 17056} unexpected=0 final=A 0.10s
+run 20: {'A': 10213} unexpected=0 final=A 0.09s
+runs with an unexpected exception: 0 of 20
+melds: {'A': 264982}
+first meld after the race: {'A': 20}

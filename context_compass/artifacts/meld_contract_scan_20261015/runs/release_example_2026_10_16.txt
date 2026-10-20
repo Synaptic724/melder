@@ -1,0 +1,12 @@
+== tree=base gil=0
+melder 0.2.8246: warm override meld best of 5 x 50000: 12.92 us
+meld(Clock): MeldExecutionError: [MELD] Execution failed for spell 'Clock' (f356b366b5150656959010b6b617fc7a2fb3bd40a7c4f0e7081e9928e079dbc7
+== tree=landed gil=0
+melder 0.2.8246: warm override meld best of 5 x 50000: 0.39 us
+meld(Clock): MeldExecutionError: [MELD] Execution failed for spell 'Clock' (f356b366b5150656959010b6b617fc7a2fb3bd40a7c4f0e7081e9928e079dbc7
+== tree=base gil=1
+melder 0.2.8246: warm override meld best of 5 x 50000: 13.15 us
+meld(Clock): MeldExecutionError: [MELD] Execution failed for spell 'Clock' (f356b366b5150656959010b6b617fc7a2fb3bd40a7c4f0e7081e9928e079dbc7
+== tree=landed gil=1
+melder 0.2.8246: warm override meld best of 5 x 50000: 0.40 us
+meld(Clock): MeldExecutionError: [MELD] Execution failed for spell 'Clock' (f356b366b5150656959010b6b617fc7a2fb3bd40a7c4f0e7081e9928e079dbc7

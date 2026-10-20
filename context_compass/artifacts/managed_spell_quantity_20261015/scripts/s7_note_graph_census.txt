@@ -1,0 +1,34 @@
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: The graph after `extract_graph.py --strict` on 0.2.8246 (591 descriptors written, 1227 nodes, nothing
+    skipped): the walker, the report of record, counts 1233 nodes in 592 descriptors - AUTHORED 1042,
+    SEMANTICS_STALE 166, UNSEMANTIC 20, RETIRED 5 - the extra descriptor being the stranded
+    `spellframe_kind/__init__.py` (its source is gone; no authored content). Measured against the same descriptors
+    extracted from the 0.2.8240 export (scripts/s7_graph_census.py): the 10 new unsemantic nodes are the five new
+    modules (a module and a class node each); 22 stale nodes were AUTHORED against 0.2.8240 and moved only by this
+    lane's diff; 8 more in files this lane changed (Conduit, TransferOfOwnership, Creations, ConduitMeld, Meld,
+    SpellSpaceMeld, SitePlanEmission, SpellBinder) were already stale at 0.2.8240 - prose earlier lanes wrote and
+    never re-stamped; 84 moved and 60 never-stamped stale nodes, 9 unsemantic ones and the 5 retired ones
+    (dag_index, ManyOnlyCodegenPlanTargetKind) sit in files this lane did not change. The extractor's census line
+    (238 stale, 132 unverified) overstates: it tests the stamp's truthiness, so the 72 module nodes accepted with
+    an empty stamp count as unverified there, while the walker tests the key and counts them AUTHORED, as its own
+    comment says it should.
+  EVIDENCE:
+  - context_compass/artifacts/managed_spell_quantity_20261015/runs/s7_graph_extract.txt:1-46
+  - context_compass/artifacts/managed_spell_quantity_20261015/runs/s7_graph_walker_after_extract.txt:1-123
+  - context_compass/artifacts/managed_spell_quantity_20261015/runs/s7_graph_census_before.txt:1-201
+  - context_compass/artifacts/managed_spell_quantity_20261015/scripts/s7_graph_census.py:1-72
+  - context_compass/tools/system_documents/python/graph_walker.py:91-117
+  - context_compass/tools/system_documents/python/extract_graph.py:490-517
+  IMPACT: The plan for the graph: author the 10 new nodes from the five modules read whole; extend the 22
+    lane-moved nodes' prose with the lane's facts after reading every changed hunk of their spans
+    (runs/s7_graph_prose_by_lane.txt) and accept them - their prose was verified against 0.2.8240 and the hunks are
+    the only change; add the lane's facts to the 8 nodes already stale before the lane
+    (runs/s7_graph_prose_pre_lane.txt) without accepting them, because their older claims were never verified;
+    leave the other 144 stale, 9 unsemantic and 5 retired nodes as the backlog they were; delete the stranded
+    descriptor (nothing to keep).
+  NEXT: Write and run scripts/s7_graph_semantics.py, accept the 32 nodes, re-extract and assemble.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8

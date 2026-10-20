@@ -1,0 +1,28 @@
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: Sweep A5, read whole and proven (each case records with the Crystallizer active, seals and flushes a
+    checkpoint into a scratch cache, boots fresh and restores; identical with the GIL off and on, ids masked). R1:
+    a world with French staged under English's signature restores "complete" with English active, French parked -
+    and the frame claim for the signature released: the restore replays staging through `Conduit.bind_inactive`, so
+    STORY-2026-10-17-staged_version_releases_active_signature hits every such restore. R2: French parked alone in
+    the index `remove_from_spell_index` minted is not rebuilt - `_bind_one_staged` finds no live anchor, because
+    `_live_index_for` translates an index only after one of its members was bound active, and a parked-only index
+    has none - so the report says "complete" with the shortfall "staged_member_anchor_index_not_rebuilt: <index>"
+    and the rebuilt Book has no French, although the record captured the minted index (`_apply_remove_from_index`
+    emits both snapshots). R3: the same world after French was notched active in its index restores whole.
+  EVIDENCE:
+  - src/melder/crystallizer/crystal_loader_system/restore_engine.py:1915-2003
+  - src/melder/crystallizer/crystal_loader_system/restore_engine.py:2201-2269
+  - src/melder/crystallizer/crystal_loader_system/restore_engine.py:2400-2441
+  - src/melder/aether/spellbook/spellbook.py:4271-4356
+  - context_compass/artifacts/correctness_defects_20261017/probes/probe_restore_staged_structure.py:1-160
+  - context_compass/artifacts/correctness_defects_20261017/probes/restore_targets.py:1-24
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_restore_staged_structure_gil0.txt:1-18
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_restore_staged_structure_gil1.txt:1-18
+  IMPACT: One more defect: the record keeps a separated parked version that the restore drops while reporting the
+    restore complete - structure wrong after a restore. R1 widens the first story's impact to restores.
+  NEXT: File the restore story; add R1 to the first story's Notes.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9

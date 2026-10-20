@@ -53,12 +53,12 @@ def _make_spellbook() -> Spellbook:
 def _get_spell_by_version_id(spellbook: Spellbook, spell_id: str):
     """
     Purpose:
-        Retrieve a local Spell by its version id.
+        Retrieve a local Spell by its spell_id.
     Contract:
         - Returns the first spell whose SpellIndex.selected_spell_id matches spell_id.
     Args:
         spellbook: Spellbook to search.
-        spell_id: Version id to match.
+        spell_id: The spell_id to match.
     Returns:
         Spell or None: Matching spell instance or None if not found.
     """
@@ -73,7 +73,7 @@ def test_component_requirements_finder_uses_current_spell_index() -> None:
     Purpose:
         Validate requirements spell_id follows SpellIndex.selected_spell_id updates.
     Contract:
-        - SpellRequirements uses the current version id, not the original id.
+        - SpellRequirements uses the current spell_id, not the original id.
     Returns:
         None.
     """
@@ -87,7 +87,7 @@ def test_component_requirements_finder_uses_current_spell_index() -> None:
         spell = _get_spell_by_version_id(spellbook, spell_id)
         assert spell is not None
 
-        new_version = "updated-version-id"
+        new_version = "updated-spell-id"
         spell.spell_index.update(new_version)
 
         requirements = SpellRequirementsFinder(spell).build_requirements()

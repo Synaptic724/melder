@@ -72,6 +72,10 @@ def build_generalized_manifest(
 def _resolve_route_key_from_model(spell_codegen_model: Any) -> str:
     """
     Resolve the runtime route key from processor-owned model truth.
+
+    Contract:
+        Route family "managed" (managed_spell_quantity S5, 2026-10-15) is a
+        route key of its own; its doors are the `many` doors.
     """
     if spell_codegen_model.build_kind == "existing_creation":
         return "existing_creation"
@@ -83,6 +87,7 @@ def _resolve_route_key_from_model(spell_codegen_model: Any) -> str:
             "unique",
             "lineage",
             "cluster",
+            "managed",
     ):
         return route_family
     raise RuntimeError(
@@ -183,9 +188,9 @@ def _enrich_phase11_row(
           emitter make the inlinable-common-shape decision from row data
           alone, so source emission never consults live spells.
         - `spell_has_disposal_methods` is the authoritative emit-time disposal
-          fact, read from bind-time spell truth (which composes into the spell
-          fingerprint alongside existence) rather than trusting plan-step
-          plumbing for disposal data.
+          fact, read from bind-time spell truth (which composes into the spell's
+          binding hash alongside existence; the creation cache keys on it) rather
+          than trusting plan-step plumbing for disposal data.
         - Additive only; shared row fields are never mutated.
     """
     # Copy before stamping: the contract line below ("never mutated") was

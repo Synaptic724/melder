@@ -1,0 +1,25 @@
+# started 2026-10-11T18:29:27Z tree=cand (0.2.8231 cut v3: O(1) frame probes, spells_in_index one update per Book) gil=0
+cand | unit_arch | rc=0 | secs=0 | 18 passed in 0.08s
+cand | unit_gh | rc=0 | secs=2 | 491 passed in 1.83s
+cand | unit_llm | rc=0 | secs=1 | 28 passed in 0.06s
+cand | unit_build | rc=0 | secs=2 | 116 passed in 1.96s
+cand | unit_top | rc=0 | secs=3 | 145 passed in 2.96s
+cand | unit_aether | rc=0 | secs=14 | 4200 passed in 13.61s
+cand | unit_sb | rc=0 | secs=3 | 2351 passed in 3.33s
+cand | unit_util | rc=0 | secs=8 | 812 passed, 2 skipped, 7 xfailed in 7.18s
+cand | unit_mr | rc=0 | secs=1 | 277 passed in 1.26s
+cand | unit_cryst | rc=0 | secs=4 | 599 passed in 3.33s
+cand | comp_aether | rc=0 | secs=12 | 1318 passed, 1 xfailed in 12.17s
+cand | comp_sb | rc=0 | secs=9 | 813 passed in 7.90s
+cand | comp_util | rc=0 | secs=1 | 41 passed, 23 skipped in 1.19s
+cand | comp_mr | rc=0 | secs=0 | 40 passed in 0.31s
+cand | comp_cryst | rc=0 | secs=1 | 110 passed in 0.38s
+cand | int_aether | rc=0 | secs=16 | 785 passed, 5 xfailed in 16.14s
+cand | int_conduit | rc=0 | secs=4 | 275 passed in 3.21s
+cand | int_sb | rc=0 | secs=5 | 613 passed, 2 skipped, 2 xpassed in 4.65s
+cand | int_mr | rc=0 | secs=1 | 67 passed in 0.57s
+cand | int_mt | rc=0 | secs=4 | 54 passed in 4.04s
+cand | int_live | rc=0 | secs=0 | 1 passed, 1 xfailed in 0.20s
+cand | exper | rc=0 | secs=9 | 250 passed, 4 skipped in 8.49s
+cand | int_cryst | rc=0 | secs=56 | 273 passed, 3 xfailed in 55.15s
+# finished 2026-10-11T18:32:12Z (TMPDIR=/tmp/cc_lock/tmp; benchmarks and docs linked, not copied)

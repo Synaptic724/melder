@@ -1,0 +1,28 @@
+Spellbook._spells walkers on the 0.2.8229 working tree (melder_1, 2026-10-11). Lock context from the AST of each
+enclosing function and its callers (lockctx.py); every site in group C was opened and read. Line numbers are the
+working tree's.
+
+WRITERS: as in r4/spells_access_inventory.txt, shifted; bind's publication insert (spellbook.py:5386) is the only
+writer without the Book lock (its next statement, _register_owned_spell_id, takes it).
+
+A. Book lock held across the walk - safe once bind publishes under the lock:
+   spellbook.py 560 (_cleanup_spells, from cleanup under the lock), 1954 snapshot_state (dict copy), 2134 _find_spell,
+   2177 _find_spell_index_by_index_id, 2255 _find_spell_count, 2522 inspect_spell (own Book), 2581/2604
+   (_register/_unregister_conduit_spells...), 2926 _check_all_spells, 3775 _apply_notch;
+   spellbook_creation_system.py 1356 define_conduit_into_spells; change_control_manager.py 766;
+   conduit_cluster.py 1253/1273; conduit_ward.py 2691; transfer_of_ownership.py 545, 1168, 1445-1446.
+B. Conjure and teardown only (the Book lock is held by the conjure window or by cleanup):
+   spellbook_creation_system.py 466; structural_snapshot.py 602, 666, 740; spellbook.py 6133, 6201.
+C. Reachable without the Book lock:
+   conduit.py:4047 Conduit.get_spell_permissions - live items() walk + has_spell, conduit._lock only
+   command_system.py:884 CommandSystem.get_spell_by_id - live items() walk + has_spell, command guard only
+   spellbook.py:2546 inspect_spell over another conduit's Book - live values() walk, own Book lock only
+   transfer_of_ownership.py:837-845 _conduit_has_impacted_lineage - live keys() walks of _spells and the
+     contracted maps, no Book lock in the chain
+   spellbook_creation_system.py via Conduit.validate_resolution (public; runs _run_structural_phases and
+     _run_resolution_phases_for_conduit with no Book lock):
+     1534 _collect_broken_spells over a live values() view; 2643 cleanup loop (spell_ids=None);
+     3108, 3429, 3470 next(iter(values())) for the lead spell; 3147, 3203, 3253, 3303, 3368 comprehensions over
+     values(). 2697 and 2982 already take list(values()) in one call.
+   risk_manager.py:487 list.extend(values()) - one call, exact (snap_probe).
+SAFE BY FORM: single-key reads (meld.py _owned_spells.get, conduit_ward.py 2143/2362 spells.get).

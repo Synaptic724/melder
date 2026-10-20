@@ -1,0 +1,76 @@
+===== GIL=0 case=recursion
+case 'recursion': SelfMade staged on the greeter index - staging raised nothing
+  meld English -> 'hello'
+notch the index to SelfMade:
+  notch_spell -> raises SpellbookValidationError:
+      Spellbook validation failed. Broken spells: SelfMade.
+      SelfMade (frame Greeter):
+        - Spell 'SelfMade' depends on itself: its constructor parameter 'other' resolves to this same spell. Remove that parameter or give it a default. [SELF_DEPENDENCY]
+after the failed notch the index selects: SelfMade
+  meld SelfMade, 1st time -> raises SpellbookValidationError:
+      Spellbook validation failed. Broken spells: SelfMade.
+      SelfMade (frame Greeter):
+        - Spell 'SelfMade' depends on itself: its constructor parameter 'other' resolves to this same spell. Remove that parameter or give it a default. [SELF_DEPENDENCY]
+  meld SelfMade, 2nd time -> raises SpellbookValidationError:
+      Spellbook validation failed. Broken spells: SelfMade.
+      SelfMade (frame Greeter):
+        - Spell 'SelfMade' depends on itself: its constructor parameter 'other' resolves to this same spell. Remove that parameter or give it a default. [SELF_DEPENDENCY]
+  meld English -> raises KeyError:
+      '[MELD] No spell found with spell_id: 677a47a3c52107a430b423e6676496133f62651ff4bf99c6491383fe22ecfb1f'
+===== GIL=0 case=ambiguous
+case 'ambiguous': TimedGreeter staged on the greeter index - staging raised nothing
+  meld English -> 'hello'
+notch the index to TimedGreeter:
+  notch_spell -> raises SpellbookValidationError:
+      Spellbook validation failed. Broken spells: TimedGreeter.
+      TimedGreeter (frame Greeter):
+        - Parameter 'clock' on spell 'TimedGreeter' expects Clock, but 2 registered spells provide it: LocalClock at (spellframe='Clock', binding_name='local'); UtcClock at (spellframe='Clock', binding_name='utc'). Select one with a SpellMap default on the parameter (SpellMap(spellframe=..., binding_name=...)), supply it at meld with override={'clock': ...}, or bind only one provider of this type. [AMBIGUOUS_PROVIDER]
+after the failed notch the index selects: TimedGreeter
+  meld TimedGreeter, 1st time -> raises SpellbookValidationError:
+      Spellbook validation failed. Broken spells: TimedGreeter.
+      TimedGreeter (frame Greeter):
+        - Parameter 'clock' on spell 'TimedGreeter' expects Clock, but 2 registered spells provide it: LocalClock at (spellframe='Clock', binding_name='local'); UtcClock at (spellframe='Clock', binding_name='utc'). Select one with a SpellMap default on the parameter (SpellMap(spellframe=..., binding_name=...)), supply it at meld with override={'clock': ...}, or bind only one provider of this type. [AMBIGUOUS_PROVIDER]
+  meld TimedGreeter, 2nd time -> raises SpellbookValidationError:
+      Spellbook validation failed. Broken spells: TimedGreeter.
+      TimedGreeter (frame Greeter):
+        - Parameter 'clock' on spell 'TimedGreeter' expects Clock, but 2 registered spells provide it: LocalClock at (spellframe='Clock', binding_name='local'); UtcClock at (spellframe='Clock', binding_name='utc'). Select one with a SpellMap default on the parameter (SpellMap(spellframe=..., binding_name=...)), supply it at meld with override={'clock': ...}, or bind only one provider of this type. [AMBIGUOUS_PROVIDER]
+  meld English -> raises KeyError:
+      '[MELD] No spell found with spell_id: 677a47a3c52107a430b423e6676496133f62651ff4bf99c6491383fe22ecfb1f'
+===== GIL=1 case=recursion
+case 'recursion': SelfMade staged on the greeter index - staging raised nothing
+  meld English -> 'hello'
+notch the index to SelfMade:
+  notch_spell -> raises SpellbookValidationError:
+      Spellbook validation failed. Broken spells: SelfMade.
+      SelfMade (frame Greeter):
+        - Spell 'SelfMade' depends on itself: its constructor parameter 'other' resolves to this same spell. Remove that parameter or give it a default. [SELF_DEPENDENCY]
+after the failed notch the index selects: SelfMade
+  meld SelfMade, 1st time -> raises SpellbookValidationError:
+      Spellbook validation failed. Broken spells: SelfMade.
+      SelfMade (frame Greeter):
+        - Spell 'SelfMade' depends on itself: its constructor parameter 'other' resolves to this same spell. Remove that parameter or give it a default. [SELF_DEPENDENCY]
+  meld SelfMade, 2nd time -> raises SpellbookValidationError:
+      Spellbook validation failed. Broken spells: SelfMade.
+      SelfMade (frame Greeter):
+        - Spell 'SelfMade' depends on itself: its constructor parameter 'other' resolves to this same spell. Remove that parameter or give it a default. [SELF_DEPENDENCY]
+  meld English -> raises KeyError:
+      '[MELD] No spell found with spell_id: 677a47a3c52107a430b423e6676496133f62651ff4bf99c6491383fe22ecfb1f'
+===== GIL=1 case=ambiguous
+case 'ambiguous': TimedGreeter staged on the greeter index - staging raised nothing
+  meld English -> 'hello'
+notch the index to TimedGreeter:
+  notch_spell -> raises SpellbookValidationError:
+      Spellbook validation failed. Broken spells: TimedGreeter.
+      TimedGreeter (frame Greeter):
+        - Parameter 'clock' on spell 'TimedGreeter' expects Clock, but 2 registered spells provide it: LocalClock at (spellframe='Clock', binding_name='local'); UtcClock at (spellframe='Clock', binding_name='utc'). Select one with a SpellMap default on the parameter (SpellMap(spellframe=..., binding_name=...)), supply it at meld with override={'clock': ...}, or bind only one provider of this type. [AMBIGUOUS_PROVIDER]
+after the failed notch the index selects: TimedGreeter
+  meld TimedGreeter, 1st time -> raises SpellbookValidationError:
+      Spellbook validation failed. Broken spells: TimedGreeter.
+      TimedGreeter (frame Greeter):
+        - Parameter 'clock' on spell 'TimedGreeter' expects Clock, but 2 registered spells provide it: LocalClock at (spellframe='Clock', binding_name='local'); UtcClock at (spellframe='Clock', binding_name='utc'). Select one with a SpellMap default on the parameter (SpellMap(spellframe=..., binding_name=...)), supply it at meld with override={'clock': ...}, or bind only one provider of this type. [AMBIGUOUS_PROVIDER]
+  meld TimedGreeter, 2nd time -> raises SpellbookValidationError:
+      Spellbook validation failed. Broken spells: TimedGreeter.
+      TimedGreeter (frame Greeter):
+        - Parameter 'clock' on spell 'TimedGreeter' expects Clock, but 2 registered spells provide it: LocalClock at (spellframe='Clock', binding_name='local'); UtcClock at (spellframe='Clock', binding_name='utc'). Select one with a SpellMap default on the parameter (SpellMap(spellframe=..., binding_name=...)), supply it at meld with override={'clock': ...}, or bind only one provider of this type. [AMBIGUOUS_PROVIDER]
+  meld English -> raises KeyError:
+      '[MELD] No spell found with spell_id: 677a47a3c52107a430b423e6676496133f62651ff4bf99c6491383fe22ecfb1f'

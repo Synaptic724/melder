@@ -1,6 +1,6 @@
 name: Persistent runtime gauntlet (three OSes)
 
-# ci.yml invokes this only for dev-to-preprod promotion PRs.
+# speed-tests.yml calls this on dev-to-preprod pull requests, beside CI; nothing waits for it.
 # This benchmark has its own runners and runs alongside the real-world gauntlet.
 on:
   workflow_call:

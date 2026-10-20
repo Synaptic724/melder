@@ -10,6 +10,9 @@ Certification is denied unless the resolved SKILLS chain is satisfied exactly.
   skills**, **Required baseline skills**, **Baseline system orientation** - and a
   role may add another. Match on the baseline label, not on a fixed list of
   headings: a baseline section you do not recognise is still mandatory.
+- Backend baseline sections apply only to the backend selected by config;
+  shared baseline sections apply in both modes. Do not apply file-ticket
+  storage instructions in plugin mode.
 - Sections NOT marked baseline sit outside certification, and there are two kinds.
   **On-demand** states a trigger and becomes mandatory once it fires - read it before
   any work in that scope. **Self-directed** carries no trigger at all: read it on your
@@ -32,6 +35,9 @@ This general-layer policy inherits root policy from:
 
 Within the general layer, this `AGENTS.MD` and the general-layer policy docs
 (skills, policies, and behavioral guidelines) are mandatory operating policy.
+Project replacements/waivers resolved in the Project Instructions Bootstrap
+(`context_compass/AGENTS.MD`) outrank this baseline within their stated
+scope; later baseline MUST statements do not reinstate overridden requirements.
 They are not optional references or soft suggestions.
 
 ## Non-Negotiables
@@ -86,7 +92,7 @@ Ask the user for **guidance** when you cannot tell where to look. Never for
 
 ## Operating Protocol (How You Should Work)
 
-### 2) Propose -> Confirm -> Implement
+### 2) Plan -> Implement Within Authority
 
 Before making non-trivial edits:
 
@@ -94,13 +100,16 @@ Before making non-trivial edits:
 2. List the constraints you will obey.
 3. List the **exact files / symbols** you will modify.
 
-If any of the above is uncertain, **stop and ask** before editing.
-For this repo, treat **all** edits as requiring explicit confirmation, even if they seem trivial.
+Investigate uncertain implementation details within authorized scope. There is no per-step approval
+for ordinary edits, tests, peer coordination or ticket maintenance already covered by that scope.
+Escalate a genuinely missing decision, material scope expansion, reserved acceptance or security/
+action permission. Planning and ticket creation do not grant authority for new consequential actions.
 
 ### 3) Scope Control
 
 * Stay within the declared files/symbols.
-* If you believe the change requires touching more than the declared scope, **ask first**.
+* Select and record related files needed for the complete authorized outcome; ordinary in-scope
+  file selection and focused repair need no new coordinator admission. Escalate material expansion.
 
 ### 4) Documentation Ritual
 
@@ -118,36 +127,48 @@ As a ritual, after implementing a change:
 
 ### 6) context_compass Ticket Planning (Required)
 
-* Before starting any planned work beyond answering questions, create a structured ticket (epic/story/task) in `tickets/epics/`, `tickets/stories/`, or `tickets/tasks/` using `templates/`.
-* Treat `attention_board.md` as routing-only state and the active ticket `## Notes` section as canonical durable execution memory.
+* Before starting any planned work beyond answering questions, search/reuse or create a structured
+  Epic/Story/Task ticket in the selected backend. Local mode uses the `tickets/`
+  lanes; plugin mode uses an Issue body in the configured repository.
+* Document useful discoveries, including outside the currently managed workstream, in an authorized
+  repository/audience. Self-accept eligible work within actual authority, tools, capacity and custody,
+  or return its ticket with an exact help request. Ticket creation does not grant new access.
+* Own the complete authorized outcome, including coordination, tests, applicable review, records
+  and routine closure. Do not wait for approval between ordinary included steps.
+* Treat `attention_board.md` as routing-only state and the selected ticket as the durable record.
+  Multiple meaningful comments or authorized linked documents may hold attributed findings directly.
+  No forced body copy is required before ordinary continuation. Preserve historical Notes/comments.
 * Hard execution gate (mandatory):
   - Do not implement or validate unless an active ticket exists for the work.
   - Do not implement or validate unless `attention_board.md` has an active row routing to that ticket.
   - If the active ticket sets `CONTEXT_MANAGEMENT_REQUIRED: true`, do not
     implement or validate until every linked context artifact has been read.
-  - Do not start a new investigation tranche, code edit tranche, or validation tranche until the current meaningful finding is written in ticket `## Notes` with evidence.
+  - Record meaningful findings with evidence before work that depends on them, using Notes,
+    supported attributed comments or authorized linked evidence under `skills/ticketing.md`.
   - If any gate above is missing, stop and repair ticket/board/notes state before continuing.
 * Default every new claim to `UNKNOWN` until source evidence proves otherwise.
 * Ticket Microcycle enforcement defaults to strict and is configurable in `config/context_compass_config.yaml`.
 * Follow a strict Ticket Microcycle while working:
   1. Route from `attention_board.md` to one active ticket.
   2. Investigate until one meaningful finding (fact, blocker, decision, measure, or hypothesis worth testing).
-  3. Immediately append a `## Notes` entry before any further investigation.
-  4. Continue only after the note includes evidence and a concrete next step.
+  3. Record the finding once in a supported durable contribution, not a duplicate body report.
+  4. Continue under the existing scope after evidence and the next action are clear.
 * If `workflow.ticket_microcycle.enabled` is `false`, use relaxed mode:
   - still document each meaningful finding,
-  - still update notes before implementation and validation,
+  - still record evidence before dependent implementation and validation,
   - still require evidence for `FACT` and `DECISION` claims.
-* No second investigation tranche is allowed before documenting the current meaningful finding in the ticket.
+* Evidence timing is not a body-writer permission gate on another agent's independent contribution.
 * Do not implement from `UNKNOWN` or `HYPOTHESIS`; promote to `FACT` or `DECISION` with evidence first.
 * If investigation must expand beyond the current subsystem or exceed
   `workflow.ticket_microcycle.expansion_gate_max_files` in one pass, append a
   `DECISION` note and ask the user for scope confirmation before continuing.
-* Follow `SKILLS.MD` and
-  `agent_onboarding/default/general/skills/workflow.md` for the deep
-  descriptive format and tracking model.
-* The ticket must define scope, steps, and intended deliverables; share it and wait for approval.
-* Maintain a `## Notes` section in active tickets and append in-flight findings with `path:start_line-end_line` evidence pointers as they occur, not in end-of-pass batches.
+* Follow `SKILLS.MD`, shared `ticketing.md`, and the selected backend's
+  workflow for the deep descriptive format and tracking model.
+* The ticket defines scope, deliverables, actual authority and observable completion. Reuse existing
+  authorization; ask only for a genuinely missing decision or action permission.
+* Maintain the required `## Notes` section and preserve history. Findings may be in supported
+  comments/documents with exact evidence pointers; current state/decisions/handoff stay coherent
+  at material transitions. Do not copy every report into Notes.
 * Evidence ranges in notes must include both start and end lines. If the evidence is one line, repeat it (`path:42-42`).
 * Context management is optional:
   - use it only when the ticket explicitly opts in
@@ -160,10 +181,21 @@ As a ritual, after implementing a change:
   (`SCORE_0_TO_10`); if score is below
   `workflow.ticket_microcycle.minimum_note_score`, improve the note before
   proceeding.
-* Before closing any ticket, walk through what was achieved and ask if the acceptance criteria are met.
-* Only after explicit confirmation, move the ticket(s) to the matching completed folder
-  (`tickets/epics/completed/`, `tickets/stories/completed/`, `tickets/tasks/completed/`) with a short summary and date (per `README.md`).
-* Immediately after moving any ticket to a completed folder, run deterministic `attention_board.md` sync:
+* The assigned agent owns current status, evidence, requested scoped review and final closure.
+  Review is proportionate to actual consequence, uncertainty and the contract, not an automatic
+  full-code-review parking state. Self-checks are not independent review.
+* Authorized agents close routine completed work after criteria, required tests and required reviews
+  are satisfied, without another owner ping. Reserved owner decisions still wait for explicit acceptance.
+  Missing authority or an unmet gate is a concrete blocker, not inferred approval.
+* Record delegated acceptance or reserved-owner disposition, then complete the selected backend:
+  move local tickets to matching completed folders, or verify the Issue body
+  has `Status: done`, completion summary, and reason, then close through the plugin.
+* Record each meaningful changed finding once at appropriate task/story/epic depth. Keep concise claim,
+  impact, material limits and next action inline with exact retrievable supporting links; do not copy
+  full linked reports or create substantive Notes for unchanged checks/ACKs. Preserve required in-body
+  state/evidence, prior Notes and custom regions. Parent owners reconcile child outcomes and remaining
+  work; child completion does not accept the parent.
+* Immediately after completing any ticket, run deterministic `attention_board.md` sync:
   - remove/replace active rows that reference the closed ticket,
   - prune stale attention details tied only to the closed ticket,
   - add one compact closed-anchor row,
@@ -191,7 +223,7 @@ As a ritual, after implementing a change:
 
 ## Stop Conditions (Ask Before Proceeding)
 
-Ask for explicit confirmation if any of these are true:
+Ask for a missing decision/permission when these actions are outside current authorization:
 
 * You want to touch **many files** (repo-wide sweeps) and no codemod approach was approved.
 * You want to rename/move files or symbols.
@@ -212,7 +244,9 @@ resolved role `SKILLS.MD` files.
 - It enforces evidence-first reasoning and blocks assumption-driven claims.
 - It defines ticket-first execution so work is durable and resumable.
 - It preserves context through active notes, board routing, and compaction flow.
-- It enforces explicit approval gates before meaningful execution.
+- It enforces actual scope/action authority and reserved acceptance without serial routine approval.
+- Qualified independent reviewers may accept and close through shared `ticketing.md` when
+  all current ticket criteria are met; this does not require a reviewer on every task.
 - It sets escalation discipline for scope/risk changes.
 - It keeps security posture strict, especially around secret handling.
 - It preserves process quality across handoffs and context resets.
@@ -257,15 +291,17 @@ explicitly instead of bypassing general rules.
 
 ### 13) Expected Operator Discipline
 
-- Keep one active problem boundary at a time.
+- Keep the current authorized outcome and actual source/resource boundaries clear.
 - Make each transition explicit (investigate, decide, implement, validate).
 - Keep uncertainty visible until it is resolved with evidence.
 - Surface blockers early with concrete impact and next-step asks.
 - Preserve a clean audit trail through notes and state transitions.
-- Every assistant response must include one unique `prompt_id`.
-  - `prompt_id` is a per-response identifier, not a per-conversation constant.
-  - Use a fresh random lowercase hex/string value every response.
-  - Do not intentionally repeat a `prompt_id` within the same conversation.
+- Identify ticket bodies, Notes and ticket comments using the assigned name
+  and actual role/function under `skills/agent_identity.md`. Ordinary chat
+  messages do not require a name/role prefix.
+- At onboarding, check the effective personal custom instructions using
+  `skills/harness_custom_instructions.md`. Only offer its setup form when the
+  Context Compass integration is absent. Preserve existing user preferences.
 
 ### 14) Continuity Standard
 
@@ -273,7 +309,6 @@ General policy is designed so another reader can restart execution from files
 without replaying prior chat history.
 If a future reader cannot resume safely from ticket + board + notes, the
 current state is incomplete and must be repaired before continuing.
-
 
 
 

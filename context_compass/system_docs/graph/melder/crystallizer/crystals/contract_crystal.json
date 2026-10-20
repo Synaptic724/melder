@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/crystals/contract_crystal.py",
- "source_sha256": "f2580fa98427009bb17ce90b9de226723dd1e47f34d00f6cbcc0c864814a24bd",
+ "source_sha256": "91b40bb03d765b11fb97e94d4bf12d0dfa98cc5f1e6c2b2a75213f5cdccb5963",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.crystals.contract_crystal": {
@@ -42,7 +42,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "99aba51429c4719cc1070e7c5e09c22e40d7edd9a83bb4c5148d52b9dc60cdbe",
+   "span_sha256": "3b7ac7b7ca1726edd66f2dc77fab32cec81bc1876cc3fc96ba7803b7266a0a00",
    "include": true,
    "role": "Digital twin of one Contract, carrying both endpoints and each side's own projection.",
    "responsibilities": [

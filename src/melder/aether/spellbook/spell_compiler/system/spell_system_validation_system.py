@@ -52,7 +52,7 @@ class SpellSystemValidationSystem(Cleanable):
     Orchestrates system-level validation strategies over Phase 5 artifacts and Phase 4 outcomes.
 
     Purpose:
-        Aggregate system-level validation diagnostics and update lineage validity
+        Aggregate system-level validation diagnostics and update per-conduit resolution validity
         for all spells in the current frame.
 
     Contract:
@@ -115,7 +115,7 @@ class SpellSystemValidationSystem(Cleanable):
             cancel_event: Optional[CancellationEvent] = None,
     ) -> SpellSystemValidationState:
         """
-        Run system-level validation and update per-lineage validity.
+        Run system-level validation and record per-conduit resolution validity.
 
         Purpose:
             Validate the system-level DAG artifacts produced in Phase 5 and
@@ -138,7 +138,7 @@ class SpellSystemValidationSystem(Cleanable):
                 per-conduit resolution validity are recorded in
                 ConduitResolutionState. Global structural validity is not
                 modified here.
-            spell_lookup: Optional mapping of visible spell version ids to spell objects.
+            spell_lookup: Optional mapping of visible spell_ids to spell objects.
             cancel_event: Optional cancellation signal for long-running validation.
         Returns:
             SpellSystemValidationState: Aggregated diagnostics and validity.

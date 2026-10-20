@@ -1,0 +1,297 @@
+FF.FFFFFFFFFFFFF                                                         [100%]
+=================================== FAILURES ===================================
+_______ test_notch_by_spell_id_resolves_the_owned_version_and_notches_it _______
+
+lineage = <test_conduit_notch_target._Lineage object at 0x3ca41e20610>
+
+    def test_notch_by_spell_id_resolves_the_owned_version_and_notches_it(lineage: _Lineage) -> None:
+        """
+        `spell_id=` names the version: the Book resolves it and the seam receives that Spell.
+    
+        Contract:
+            - `_get_owned_spell` is asked for the id; the resolved Spell reaches `_notch_spell` and is returned.
+            - The transaction metadata names the resolved version (`spell_id`, `binding_key`).
+        """
+>       result = lineage.conduit.notch_spell(spell_index=lineage.index, spell_id="v2")
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: Conduit.notch_spell() got an unexpected keyword argument 'spell_id'. Did you mean 'spell_index'?
+
+tests/unit/melder/aether/conduit/test_conduit_notch_target.py:80: TypeError
+__________ test_notch_by_spell_id_fans_out_with_the_resolved_version ___________
+
+lineage = <test_conduit_notch_target._Lineage object at 0x3ca42284ed0>
+
+    def test_notch_by_spell_id_fans_out_with_the_resolved_version(lineage: _Lineage) -> None:
+        """
+        After the window, the borrowers are moved from the outgoing id to the resolved version's id.
+    
+        Contract:
+            - The outgoing copy is parked on the peers and the index-link receivers move from "v1" to "v2".
+        """
+>       lineage.conduit.notch_spell(spell_index=lineage.index, spell_id="v2")
+E       TypeError: Conduit.notch_spell() got an unexpected keyword argument 'spell_id'. Did you mean 'spell_index'?
+
+tests/unit/melder/aether/conduit/test_conduit_notch_target.py:102: TypeError
+_________________ test_notch_passes_the_change_reason_through __________________
+
+lineage = <test_conduit_notch_target._Lineage object at 0x3ca42284b10>
+
+    def test_notch_passes_the_change_reason_through(lineage: _Lineage) -> None:
+        """A notch by id keeps the caller's `change_reason`."""
+>       lineage.conduit.notch_spell(
+            spell_index=lineage.index,
+            spell_id="v2",
+            change_reason=SpellStateChangeReason.mutation_contract_set,
+        )
+E       TypeError: Conduit.notch_spell() got an unexpected keyword argument 'spell_id'. Did you mean 'spell_index'?
+
+tests/unit/melder/aether/conduit/test_conduit_notch_target.py:124: TypeError
+___________ test_notch_to_the_active_version_by_id_does_not_fan_out ____________
+
+lineage = <test_conduit_notch_target._Lineage object at 0x3ca42286050>
+
+    def test_notch_to_the_active_version_by_id_does_not_fan_out(lineage: _Lineage) -> None:
+        """
+        Naming the index's active version is a no-op for the borrowers: the outgoing id equals the target's.
+        """
+>       lineage.conduit.notch_spell(spell_index=lineage.index, spell_id="v1")
+E       TypeError: Conduit.notch_spell() got an unexpected keyword argument 'spell_id'. Did you mean 'spell_index'?
+
+tests/unit/melder/aether/conduit/test_conduit_notch_target.py:137: TypeError
+__________________ test_notch_refuses_both_spell_and_spell_id __________________
+
+lineage = <test_conduit_notch_target._Lineage object at 0x3ca42281cd0>
+
+    def test_notch_refuses_both_spell_and_spell_id(lineage: _Lineage) -> None:
+        """Both forms at once are refused before the Book is asked or a transaction starts."""
+        with pytest.raises(ValueError, match="either `spell` or `spell_id`, not both"):
+>           lineage.conduit.notch_spell(spell_index=lineage.index, spell=lineage.v2, spell_id="v2")
+E           TypeError: Conduit.notch_spell() got an unexpected keyword argument 'spell_id'. Did you mean 'spell_index'?
+
+tests/unit/melder/aether/conduit/test_conduit_notch_target.py:147: TypeError
+__________________ test_notch_refuses_a_call_without_a_target __________________
+
+lineage = <test_conduit_notch_target._Lineage object at 0x3ca42281b90>
+
+    def test_notch_refuses_a_call_without_a_target(lineage: _Lineage) -> None:
+        """Neither form is refused, and the message says where an id comes from."""
+        with pytest.raises(ValueError, match="bind_inactive"):
+>           lineage.conduit.notch_spell(spell_index=lineage.index)
+E           TypeError: Conduit.notch_spell() missing 1 required keyword-only argument: 'spell'
+
+tests/unit/melder/aether/conduit/test_conduit_notch_target.py:156: TypeError
+______________ test_notch_refuses_a_spell_id_that_is_not_a_string ______________
+
+lineage = <test_conduit_notch_target._Lineage object at 0x3ca422821d0>
+
+    def test_notch_refuses_a_spell_id_that_is_not_a_string(lineage: _Lineage) -> None:
+        """A non-str `spell_id` raises TypeError naming its type."""
+>       with pytest.raises(TypeError, match="must be a string; got int"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'must be a string; got int'
+E         Actual message: "Conduit.notch_spell() got an unexpected keyword argument 'spell_id'. Did you mean 'spell_index'?"
+
+tests/unit/melder/aether/conduit/test_conduit_notch_target.py:163: AssertionError
+___________________ test_notch_refuses_an_id_passed_as_spell ___________________
+
+lineage = <test_conduit_notch_target._Lineage object at 0x3ca3e728e10>
+
+    def test_notch_refuses_an_id_passed_as_spell(lineage: _Lineage) -> None:
+        """A str given as `spell` is refused with the remedy: an id goes in `spell_id=`."""
+        with pytest.raises(TypeError, match="spell_id="):
+>           lineage.conduit.notch_spell(spell_index=lineage.index, spell="v2")
+
+tests/unit/melder/aether/conduit/test_conduit_notch_target.py:172: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <Conduit name=None id=01M52C1706YEA5XDE9F9H7QXXM>
+spell_index = namespace(_id='index-x', id='index-x', selected_spell_id='v1')
+spell = 'v2'
+change_reason = <SpellStateChangeReason.selected_different_spell: 11>
+
+    def notch_spell(
+            self,
+            *,
+            spell_index: Any,
+            spell: Any,
+            change_reason: SpellStateChangeReason = SpellStateChangeReason.selected_different_spell,
+    ) -> Any:
+        """
+        Public API
+    
+        Conduit facade for a SpellIndex notch: make `spell` the active
+        (resolvable) spell in its index. Delegates to the owning Spellbook,
+        which admits the `notch` change-control transaction.
+    
+        Contract:
+            - DYNAMIC MODE ONLY; refused on an automatic frame.
+            - REPOINTS THE ACTIVE MEMBER of an existing index - it does not create,
+              bind or remove anything. The previous member stays in the lineage and
+              remains resolvable by id.
+            - The default `change_reason` is `selected_different_spell`, which records
+              an ordinary selection rather than a mutation. Pass a mutation reason
+              explicitly when that is what happened, because this default will
+              otherwise misattribute the change in the state history.
+            - Admitted as a `notch` change-control transaction by the owning
+              spellbook, so it participates in change control rather than bypassing it.
+    
+        Args:
+            spell_index: The SpellIndex whose active spell is switched.
+            spell: The already-identified spell to make active.
+            change_reason: Why the active member was repointed; defaults to
+                `selected_different_spell` (general selection, not a mutation).
+    
+        Returns:
+            Any: The owning Spellbook notch result.
+    
+        Raises:
+            RuntimeError: If the Conduit is cleaned or has no owning Spellbook.
+        """
+        self.check_cleaned()
+        if not self.__dynamic_environment__:
+            self._logger.error(
+                "notch_spell called in non-dynamic env",
+                "notch_spell",
+            )
+            raise RuntimeError(
+                "Dynamic environment is not enabled. SpellIndex notch requires dynamic mode."
+            )
+        if self._spellbook is None:
+            raise RuntimeError("[CONDUIT] No owning Spellbook for notch_spell.")
+        mediator = self._get_required_transaction_mediator()
+        metadata: Dict[str, Any] = {
+            "origin_surface": "conduit.notch_spell",
+            "spellbook_id": self._spellbook._id,
+            "owner_conduit_id": self._id,
+            "spell_index_id": spell_index._id,
+>           "spell_id": spell.spell_id,
+                        ^^^^^^^^^^^^^^
+            "binding_key": spell._key,
+            # Runtime-freeze facade (patch notch_conduit_gate_freeze_2026_07_12,
+            # unelect precedent): the notch strategy's on_start quiesces the
+            # sealed conduits' CreationGates through this DevOps facade so no
+            # in-flight meld/validator can straddle the active-member repoint;
+            # on_end reopens on every exit path via root finalize.
+            "conduit_lineage_gate_ops": (
+                self._aetheric_frame.dev_ops_manager.conduit_lineage_gate_ops
+            ),
+        }
+E       AttributeError: 'str' object has no attribute 'spell_id'
+
+src/melder/aether/conduit/conduit.py:5677: AttributeError
+________________ test_notch_refuses_an_id_the_book_does_not_own ________________
+
+lineage = <test_conduit_notch_target._Lineage object at 0x3ca3e726a10>
+
+    def test_notch_refuses_an_id_the_book_does_not_own(lineage: _Lineage) -> None:
+        """An unknown id is refused with the id in the message; nothing is started."""
+        with pytest.raises(ValueError, match="'nope' is not owned by this conduit's Spellbook"):
+>           lineage.conduit.notch_spell(spell_index=lineage.index, spell_id="nope")
+E           TypeError: Conduit.notch_spell() got an unexpected keyword argument 'spell_id'. Did you mean 'spell_index'?
+
+tests/unit/melder/aether/conduit/test_conduit_notch_target.py:180: TypeError
+_____________ test_notch_refuses_a_version_of_another_index_by_id ______________
+
+lineage = <test_conduit_notch_target._Lineage object at 0x3ca3e727310>
+
+    def test_notch_refuses_a_version_of_another_index_by_id(lineage: _Lineage) -> None:
+        """An owned version of another index, named by id, is refused before anything moves."""
+        with pytest.raises(ValueError, match="'y2' belongs to another SpellIndex"):
+>           lineage.conduit.notch_spell(spell_index=lineage.index, spell_id="y2")
+E           TypeError: Conduit.notch_spell() got an unexpected keyword argument 'spell_id'. Did you mean 'spell_index'?
+
+tests/unit/melder/aether/conduit/test_conduit_notch_target.py:188: TypeError
+___________ test_notch_refuses_a_version_of_another_index_by_object ____________
+
+lineage = <test_conduit_notch_target._Lineage object at 0x3ca3e726c10>
+
+    def test_notch_refuses_a_version_of_another_index_by_object(lineage: _Lineage) -> None:
+        """The same refusal for `spell=`: a version of another index used to corrupt both indexes."""
+>       with pytest.raises(ValueError, match="belongs to another SpellIndex"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ValueError
+
+tests/unit/melder/aether/conduit/test_conduit_notch_target.py:195: Failed
+_______________ test_notch_refuses_a_spell_the_book_does_not_own _______________
+
+lineage = <test_conduit_notch_target._Lineage object at 0x3ca3e7a5b10>
+
+    def test_notch_refuses_a_spell_the_book_does_not_own(lineage: _Lineage) -> None:
+        """A Spell of another Book is refused as not owned, before its index is read."""
+        foreign = SimpleNamespace(spell_id="f1", _key=("default", "k-f1"))
+    
+>       with pytest.raises(ValueError, match="'f1' is not owned by this conduit's Spellbook"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ValueError
+
+tests/unit/melder/aether/conduit/test_conduit_notch_target.py:205: Failed
+______ test_notch_refuses_a_stale_spell_whose_id_now_names_another_object ______
+
+lineage = <test_conduit_notch_target._Lineage object at 0x3ca3e7a5a30>
+
+    def test_notch_refuses_a_stale_spell_whose_id_now_names_another_object(lineage: _Lineage) -> None:
+        """A Spell object the Book no longer holds under its id (disposed, rebound) is refused as not owned."""
+        stale = SimpleNamespace(spell_id="v2", _key=("default", "k-v2"), spell_index=lineage.index)
+    
+>       with pytest.raises(ValueError, match="not owned"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ValueError
+
+tests/unit/melder/aether/conduit/test_conduit_notch_target.py:215: Failed
+_____ test_notch_refuses_a_target_moved_to_another_index_inside_the_window _____
+
+lineage = <test_conduit_notch_target._Lineage object at 0x3ca3e7a4df0>
+
+    def test_notch_refuses_a_target_moved_to_another_index_inside_the_window(lineage: _Lineage) -> None:
+        """
+        The check runs again under the transaction's seal: a target moved after the first check is refused there.
+    
+        Contract:
+            - The transaction ends as failed and the seam is never called.
+        """
+        def move_target(**_kwargs: object) -> None:
+            """Simulate an index move that lands between the first check and admission."""
+            lineage.v2.spell_index = lineage.other_index
+    
+        lineage.mediator.start_transaction.side_effect = move_target
+    
+        with pytest.raises(ValueError, match="'v2' belongs to another SpellIndex"):
+>           lineage.conduit.notch_spell(spell_index=lineage.index, spell_id="v2")
+E           TypeError: Conduit.notch_spell() got an unexpected keyword argument 'spell_id'. Did you mean 'spell_index'?
+
+tests/unit/melder/aether/conduit/test_conduit_notch_target.py:235: TypeError
+____ test_notch_by_id_on_an_automatic_conduit_raises_the_dynamic_mode_error ____
+
+spellbook_stub = <MagicMock id='4167248885904'>
+conduit_normal = <Conduit name=None id=01M52C1747JFDMZQDPX55501XD>
+
+    def test_notch_by_id_on_an_automatic_conduit_raises_the_dynamic_mode_error(
+        spellbook_stub: MagicMock,
+        conduit_normal: Conduit,
+    ) -> None:
+        """The dynamic gate still comes first: an automatic conduit refuses a notch by id with RuntimeError."""
+        spellbook_stub._get_owned_spell = MagicMock()
+    
+        with pytest.raises(RuntimeError, match="Dynamic environment is not enabled"):
+>           conduit_normal.notch_spell(spell_index=SimpleNamespace(_id="i", selected_spell_id="a"), spell_id="v2")
+E           TypeError: Conduit.notch_spell() got an unexpected keyword argument 'spell_id'. Did you mean 'spell_index'?
+
+tests/unit/melder/aether/conduit/test_conduit_notch_target.py:250: TypeError
+=========================== short test summary info ============================
+FAILED tests/unit/melder/aether/conduit/test_conduit_notch_target.py::test_notch_by_spell_id_resolves_the_owned_version_and_notches_it
+FAILED tests/unit/melder/aether/conduit/test_conduit_notch_target.py::test_notch_by_spell_id_fans_out_with_the_resolved_version
+FAILED tests/unit/melder/aether/conduit/test_conduit_notch_target.py::test_notch_passes_the_change_reason_through
+FAILED tests/unit/melder/aether/conduit/test_conduit_notch_target.py::test_notch_to_the_active_version_by_id_does_not_fan_out
+FAILED tests/unit/melder/aether/conduit/test_conduit_notch_target.py::test_notch_refuses_both_spell_and_spell_id
+FAILED tests/unit/melder/aether/conduit/test_conduit_notch_target.py::test_notch_refuses_a_call_without_a_target
+FAILED tests/unit/melder/aether/conduit/test_conduit_notch_target.py::test_notch_refuses_a_spell_id_that_is_not_a_string
+FAILED tests/unit/melder/aether/conduit/test_conduit_notch_target.py::test_notch_refuses_an_id_passed_as_spell
+FAILED tests/unit/melder/aether/conduit/test_conduit_notch_target.py::test_notch_refuses_an_id_the_book_does_not_own
+FAILED tests/unit/melder/aether/conduit/test_conduit_notch_target.py::test_notch_refuses_a_version_of_another_index_by_id
+FAILED tests/unit/melder/aether/conduit/test_conduit_notch_target.py::test_notch_refuses_a_version_of_another_index_by_object
+FAILED tests/unit/melder/aether/conduit/test_conduit_notch_target.py::test_notch_refuses_a_spell_the_book_does_not_own
+FAILED tests/unit/melder/aether/conduit/test_conduit_notch_target.py::test_notch_refuses_a_stale_spell_whose_id_now_names_another_object
+FAILED tests/unit/melder/aether/conduit/test_conduit_notch_target.py::test_notch_refuses_a_target_moved_to_another_index_inside_the_window
+FAILED tests/unit/melder/aether/conduit/test_conduit_notch_target.py::test_notch_by_id_on_an_automatic_conduit_raises_the_dynamic_mode_error
+15 failed, 1 passed in 1.68s

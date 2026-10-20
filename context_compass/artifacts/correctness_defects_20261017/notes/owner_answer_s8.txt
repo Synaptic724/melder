@@ -1,0 +1,16 @@
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: The owner answered S8 (chat 2026-10-17): "Yeah sure you can refuse it and throw and move on if you mean it
+    couldn't notch that makes sense" - and it is that case: the incoming version failed the structural check the
+    notch's commit runs. S8 takes answer (a): a notch whose incoming version fails that check is refused with nothing
+    moved, the lender and every borrower stay on the outgoing version, and the error says so. The owner asked for
+    plain explanations of S6 and S10 with examples (given in the reply); both questions stay open with him.
+  EVIDENCE:
+  - context_compass/tickets/stories/2026-10-17_failed_notch_keeps_switch_without_borrowers_story.md:114-121
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_failed_notch_commit_gil0.txt:10-19
+  IMPACT: S8 carries no open question; two remain with the owner (S6, S10).
+  NEXT: The owner's answers on S6 and S10.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9

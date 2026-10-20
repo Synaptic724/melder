@@ -226,7 +226,8 @@ def test_cleanup_nulls_properties(frame):
     Contract:
     - All manager references are nulled.
     - Configuration and identity fields are nulled.
-    - Lock is nulled.
+    - The lock is kept: the cleanup-safe frame probes take it on a cleaned frame
+      (cross_object_lock_gaps, 0.2.8231).
     """
     frame.cleanup()
     assert not hasattr(frame, '_conduit_cloud')
@@ -235,7 +236,7 @@ def test_cleanup_nulls_properties(frame):
     assert not hasattr(frame, '_configuration')
     assert not hasattr(frame, 'name')
     assert not hasattr(frame, '_id')
-    assert not hasattr(frame, '_lock')
+    assert isinstance(frame._lock, type(threading.RLock()))
 
 
 def test_cleanup_cleans_frame_configuration(frame):
@@ -350,7 +351,7 @@ def test_find_index_for_spell_found(frame):
 
     Contract:
     - Scans all registered SpellIndexes.
-    - Returns the first instance that contains the requested version ID.
+    - Returns the first instance that contains the requested spell_id.
     """
     si = MagicMock(spec=SpellIndex)
     si.spells_in_index.return_value = {"target_v"}

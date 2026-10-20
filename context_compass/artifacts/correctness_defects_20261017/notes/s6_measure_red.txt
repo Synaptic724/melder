@@ -1,0 +1,20 @@
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: Part A's tests are written and red on 0.2.8253 (15 failed, 167 passed, identical with the GIL off and on):
+    the bind fingerprint (settings give one spell_id; the inspector, like bind, hashes none), the pool's rebind (a
+    new limit, a smaller limit with nothing destroyed, elastic <-> limited_quantity sizes, a queue waiter woken into
+    a raised limit, limited -> queue waits, new reset names, describe), the store's rebind (same pool, new settings;
+    the store lock free during the rebind) and three integration cases on a real dynamic root (a settings-only
+    re-stage refused with nothing changed; `cleanup_spell` + `bind` with limit 2 keeps the spell_id and pool and
+    the first object goes back; elastic -> limited_quantity 1 keeps three objects alive and counted). The equal-
+    settings rebind, the torn-down rebind and a racing-rebind stress (8 leasers, 1 rebinder) pass already.
+  EVIDENCE:
+  - context_compass/artifacts/correctness_defects_20261017/runs/s6_red_gil0.txt:1-312
+  - context_compass/artifacts/correctness_defects_20261017/runs/s6_red_gil1.txt:1-312
+  - tests/integration/melder/conduit/test_conduit_integration_managed_settings_rebind.py:1-184
+  IMPACT: The tests encode the acceptance criteria before the fix; the src change is next.
+  NEXT: Apply part A to src/ (scripts/s6_part_a_src.py) and re-run green, GIL off and on.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8

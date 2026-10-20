@@ -1,0 +1,14 @@
+UX harness (pytest UX_and_AIX_experiences/pytest_examples), untouched copy (base) vs fix #1 work tree with apply_ux_examples.py, 2026-10-17T22:17:37Z, melder_1.
+base gil0: 7 failed, 564 passed in 13.97s
+work gil0: 7 failed, 564 passed in 14.59s
+base gil1: 7 failed, 564 passed in 14.05s
+work gil1: 7 failed, 564 passed in 13.85s
+Failing ids (identical on both trees, GIL off and on; none is an example fix #1 edits):
+FAILED UX_and_AIX_experiences/pytest_examples/test_beginner_examples.py::test_beginner_example_runs_green[39_agent_inventory_pattern]
+FAILED UX_and_AIX_experiences/pytest_examples/test_contract_probes.py::test_probe_same_name_different_internals_currently_refused
+FAILED UX_and_AIX_experiences/pytest_examples/test_contract_probes.py::test_probe_same_class_rebind_without_frames_fails_conjure
+FAILED UX_and_AIX_experiences/pytest_examples/test_contract_probes.py::test_probe_same_class_rebind_with_distinct_frames
+FAILED UX_and_AIX_experiences/pytest_examples/test_example_contract.py::test_example_declares_its_surface[37_review_agent_bindings]
+FAILED UX_and_AIX_experiences/pytest_examples/test_expert_probes.py::test_probe_two_visible_spells_may_not_share_a_name
+FAILED UX_and_AIX_experiences/pytest_examples/test_intermediate_probes.py::test_probe_upgrade_to_normal_keeps_creations_and_registers
+The ten edited examples' rows pass on the work tree (GIL off): 06, 13, 40 (intermediate); 17, 23, 26, 28, 29, 31, 37 (expert).

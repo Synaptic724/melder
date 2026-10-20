@@ -24,7 +24,7 @@ class Incident(Cleanable):
     - `id`: stable incident identifier allocated by the manager
     - `kind`: free-form incident kind code such as `"validation_failed"`
     - `severity`: structured severity level
-    - `spell_index_id`: optional lineage id primarily associated with the
+    - `spell_index_id`: optional SpellIndex id primarily associated with the
       incident
     - `root_ids`: optional impacted root spell ids
 
@@ -121,7 +121,7 @@ class Incident(Cleanable):
             kind: Free-form incident kind code.
             severity: Severity classification for the incident.
             summary: Short human/AI-readable description.
-            spell_index_id: Optional lineage id primarily associated with the
+            spell_index_id: Optional SpellIndex id primarily associated with the
                 incident.
             root_ids: Optional impacted root spell ids.
             details: Optional structured diagnostic payload.
@@ -227,9 +227,9 @@ class Incident(Cleanable):
     @property
     def spell_index_id(self) -> Optional[str]:
         """
-        Return the lineage id primarily associated with the incident, if any.
+        Return the SpellIndex id primarily associated with the incident, if any.
 
-        This is the incident's main lineage anchor, not a derived search over
+        This is the incident's main SpellIndex anchor, not a derived search over
         every impacted root.
         """
         

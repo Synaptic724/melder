@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/system/validation/lineage_alignment_strategy.py",
- "source_sha256": "9826ccc3262b4f4b0aa76fb129be56481373db64e02f22d4101f921c63338c62",
+ "source_sha256": "ea6778d2e22bc697c714788f07d09a1f8d48e49dcb785b706f7f01f2164cfac6",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.system.validation.lineage_alignment_strategy": {
@@ -39,7 +39,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "811ef5af27c6f03191ff01e21f6162e442c9fa3a75ebc02ceebba21d1d81339e",
+   "span_sha256": "7ba0e6417168956474f99bd393bc81f66d48b05fcbdde9cdaaa1dc0a7cc62454",
    "include": true,
    "role": "Guard that the optional root-lineage metadata carried on version-id blueprints agrees with the index.",
    "responsibilities": [

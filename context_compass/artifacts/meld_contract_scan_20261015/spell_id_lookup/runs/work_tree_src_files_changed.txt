@@ -1,0 +1,11 @@
+Files base/src/melder/aether/conduit/conduit.py and work/src/melder/aether/conduit/conduit.py differ
+Files base/src/melder/aether/conduit/conduit_ward/conduit_ward.py and work/src/melder/aether/conduit/conduit_ward/conduit_ward.py differ
+Files base/src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py and work/src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py differ
+Files base/src/melder/aether/spellbook/bind/spell_index.py and work/src/melder/aether/spellbook/bind/spell_index.py differ
+Files base/src/melder/aether/spellbook/spell.py and work/src/melder/aether/spellbook/spell.py differ
+Files base/src/melder/aether/spellbook/spell_compiler/validation/strategies/ambiguous_provider_strategy.py and work/src/melder/aether/spellbook/spell_compiler/validation/strategies/ambiguous_provider_strategy.py differ
+Files base/src/melder/aether/spellbook/spellbook.py and work/src/melder/aether/spellbook/spellbook.py differ
+Files base/src/melder/crystallizer/crystal_loader_system/graft_runner.py and work/src/melder/crystallizer/crystal_loader_system/graft_runner.py differ
+Files base/src/melder/crystallizer/crystal_loader_system/restore_engine.py and work/src/melder/crystallizer/crystal_loader_system/restore_engine.py differ
+Files base/src/melder/nexus/rift/command_system/command_system.py and work/src/melder/nexus/rift/command_system/command_system.py differ
+Files base/src/melder/nexus/rift/command_system/static_command_system.py and work/src/melder/nexus/rift/command_system/static_command_system.py differ

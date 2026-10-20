@@ -11,15 +11,15 @@ class SpellSystemNode(Cleanable):
     """
     Internal
 
-    Version-id keyed system view of a single spell for Phases 5–7.
+    spell_id-keyed system view of a single spell for Phases 5–7.
 
-    This does *not* replace SpellSystemStates (which are lineage/ DevOps-centric).
+    This does *not* replace SpellSystemStates (which hold DevOps state per SpellIndex).
     Instead, it gives Phase 5+ a small, version-centric node type to hang
     structural metadata on:
 
-        * spell_id – version id (SpellIndex.selected_spell_id).
-        * lineage_id – lineage ULID (SpellIndex.id).
-        * dependencies – direct dependency spell_ids (version ids).
+        * spell_id – the selected spell_id of its index (SpellIndex.selected_spell_id).
+        * lineage_id – the ULID of its SpellIndex (SpellIndex.id).
+        * dependencies – direct dependency spell_ids.
         * existence – lifecycle / policy hint (optional).
         * spell_type – logical spell role (optional).
         * conduit_id – owning conduit (optional).
@@ -108,20 +108,20 @@ class SpellSystemNode(Cleanable):
 
     @property
     def spell_id(self) -> str:
-        """Return the version-id identity for this system node."""
+        """Return this system node's spell_id."""
         self.check_cleaned()
         return self._spell_id
 
     @property
     def lineage_id(self) -> str:
-        """Return the lineage ULID associated with this system node."""
+        """Return the ULID of the SpellIndex this system node's spell sits in."""
         self.check_cleaned()
         return self._lineage_id
 
     @property
     def dependencies(self) -> set[str]:
         """
-        Snapshot of direct dependency version ids for this spell.
+        Snapshot of direct dependency spell_ids for this spell.
         """
         self.check_cleaned()
         return set(self._dependencies)

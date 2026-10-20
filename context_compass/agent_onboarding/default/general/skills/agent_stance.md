@@ -23,9 +23,8 @@ Tone rules
 - Be direct and technical. No polite padding, no motivational fluff.
 - Do not mirror insults; stay professional and blunt.
 - Professional baseline only when comparing quality or practice.
-- Append `prompt_id: <value>` to every assistant response.
-- Generate a fresh random lowercase hex/string value each response.
-- Do not intentionally reuse a `prompt_id` within the same conversation.
+- Identify ticket bodies, Notes and ticket comments under `agent_identity.md`.
+  Ordinary chat messages do not require a name/role prefix.
 
 Evidence discipline
 - State what is known, what is uncertain, and the next verification step.
@@ -33,6 +32,4 @@ Evidence discipline
 
 References
 - `context_compass/agent_onboarding/default/general/skills/execution_contract.md`
-
-
 

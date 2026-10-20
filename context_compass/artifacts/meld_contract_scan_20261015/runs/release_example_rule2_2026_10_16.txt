@@ -1,0 +1,14 @@
+== tree=landed gil=0 script=release_example_rule2_2026_10_16.py
+melder 0.2.8250: warm meld of Banner, best of 5 x 20000: 2.81 us
+after sever_link: SpellbookValidationError: Spellbook validation failed. Broken spells: Banner.
+Banner:
+  - Spell 'Banner' parameter 'greeter' has no provider for its SpellContract (frame_key='greeter', binding_key='greeter'): no active spell with that frame and binding name is contracted to this Spellbook. Contract one from a linked conduit (add_index_to_contract, or add_spell_to_contract for one version) and meld again. [SPELL_CONTRACT_MISSING_PROVIDER]
+release examples OK
+rc=0
+== tree=landed gil=1 script=release_example_rule2_2026_10_16.py
+melder 0.2.8250: warm meld of Banner, best of 5 x 20000: 2.79 us
+after sever_link: SpellbookValidationError: Spellbook validation failed. Broken spells: Banner.
+Banner:
+  - Spell 'Banner' parameter 'greeter' has no provider for its SpellContract (frame_key='greeter', binding_key='greeter'): no active spell with that frame and binding name is contracted to this Spellbook. Contract one from a linked conduit (add_index_to_contract, or add_spell_to_contract for one version) and meld again. [SPELL_CONTRACT_MISSING_PROVIDER]
+release examples OK
+rc=0

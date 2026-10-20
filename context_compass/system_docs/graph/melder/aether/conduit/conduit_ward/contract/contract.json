@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/conduit_ward/contract/contract.py",
- "source_sha256": "35d3f7c16b891197c513a41cff1c23f49eb3ba69c716ab0648596c1e848e934b",
+ "source_sha256": "1f094f18e9b9c75ecfa5f3b955a4059a9008b1b4316dd120ca74f833c6becb8e",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.conduit_ward.contract.contract": {
@@ -39,7 +39,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "5afdde6dd84254f8bf8f3352774443a5068804cf4cdf8f3535f7feb59a46f5cf",
+   "span_sha256": "a3393913c5c7a8e3ba77f8e75d44f72c65236d0bbdc2736ffce28ebe9cb7eab9",
    "role": "Bidirectional contract between two conduit wards.",
    "responsibilities": [
     "stores symmetric spell detail maps for both wards",

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/artifact_processor/spell_artifact_processor.py",
- "source_sha256": "b0e2fb287d76d8d796f85ee88cba3a7c13938e5cbeb6b9b2555d9395c3e1611e",
+ "source_sha256": "afdaa161f9e358c259855dc1b38d74304aa7d2d37fc6979247f3f09c8f21b306",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor": {
@@ -33,12 +33,13 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "302dce211fccd5bba139d955bc00f50e56e41f65aea1e7c57b61bae5b94c356d",
+   "span_sha256": "2564b4a67f53ad0496f437adce82e91b973b3807b09d32c05ed00c6490298e90",
    "role": "Processor facade over compiler artifact truth for Phase 9 model fitting.",
    "responsibilities": [
     "builds the shell SpellCodegenModel from spell-static and analyzer-owned truth",
     "runs registered processor strategies in deterministic order against that model",
-    "publishes the fitted codegen model back onto SpellCompilerArtifact"
+    "publishes the fitted codegen model back onto SpellCompilerArtifact",
+    "maps each spell's existence to its door route family and raises for an unknown member; managed_spell_quantity maps to \"managed\" (0.2.8241)"
    ],
    "owns_state": [
     "_strategy_builder"
@@ -47,7 +48,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "302dce211fccd5bba139d955bc00f50e56e41f65aea1e7c57b61bae5b94c356d"
+   "semantics_authored_against": "2564b4a67f53ad0496f437adce82e91b973b3807b09d32c05ed00c6490298e90"
   }
  },
  "edges_out": [

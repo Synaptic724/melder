@@ -1,0 +1,346 @@
+--- src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py
++++ src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py
+@@ -41,3 +41,3 @@
+     """
+-    Control-plane helper that migrates a spell lineage between conduit owners.
++    Control-plane helper that migrates a spell's SpellIndex between conduit owners.
+ 
+@@ -50,3 +50,3 @@
+ 
+-    - `preflight()` performs a read-only inventory of the lineage, its
++    - `preflight()` performs a read-only inventory of the SpellIndex, its
+       borrowers, its dependent spell ids, and any creation/existence state that
+@@ -54,3 +54,3 @@
+     - `execute()` performs the actual migration by temporarily disabling the
+-      lineage, flipping the canonical registry/spellbook ownership under lock,
++      SpellIndex, flipping the canonical registry/spellbook ownership under lock,
+       reconciling contracts/clusters, and then leaving the impacted state
+@@ -60,6 +60,6 @@
+     Accepted spellspace boundary:
+-    - Transfer moves canonical lineage ownership plus conduit-owned runtime
++    - Transfer moves canonical SpellIndex ownership plus conduit-owned runtime
+       state only.
+     - Live spellspace-local request objects are intentionally excluded.
+-    - If a spellspace-scoped lineage is transferred while an old source
++    - If the SpellIndex of a spellspace-scoped spell is transferred while an old source
+       `SpellSpace` still exists, that old request object may become stale and
+@@ -96,3 +96,3 @@
+         only one that rewrites OWNERSHIP rather than relationships.
+-        `ConduitWard` grants and revokes access to a lineage someone else owns;
++        `ConduitWard` grants and revokes access to a spell or SpellIndex someone else owns;
+         this class changes who the owner IS. That is why it reconciles wards,
+@@ -104,3 +104,3 @@
+         spell ids, affected creations - is known BEFORE anything mutates. Only
+-        then does `execute()` disable the lineage, flip ownership under guard,
++        then does `execute()` disable the SpellIndex, flip ownership under guard,
+         and leave the impacted state gated/dirty so later validation phases
+@@ -122,3 +122,3 @@
+     AGENT_PURPOSE:
+-        access: internal. Control-plane helper that migrates a spell lineage between conduit
++        access: internal. Control-plane helper that migrates a spell's SpellIndex between conduit
+         owners. Melder kernel machinery: read it to understand the runtime, do not drive it
+@@ -166,4 +166,4 @@
+         left out of the transfer (taken out of the source store, not disposed),
+-        whether owned dependencies move with the root lineage, whether existing
+-        shares are force-unshared or repointed, and whether impacted lineages
++        whether owned dependencies move with the root spell, whether existing
++        shares are force-unshared or repointed, and whether impacted indexes
+         should remain gated after the move so validation reruns before normal
+@@ -172,7 +172,7 @@
+         Args:
+-            source_conduit: Conduit that currently owns the root lineage.
++            source_conduit: Conduit that currently owns the spell's SpellIndex.
+             target_conduit: Conduit that should become the new owner.
+             spell: Spell object, spell id, or `SpellIndex` identifying the
+-                lineage to move.
+-            move_creations: When true, move the lineage's instances from the
++                SpellIndex to move.
++            move_creations: When true, move the index members' instances from the
+                 source conduit's store into the target's (`_move_creations`);
+@@ -183,3 +183,3 @@
+                 False as its own default for direct construction.
+-            include_dependencies: When true, transfer owned dependency lineages
++            include_dependencies: When true, transfer the owned dependencies' indexes
+                 with the root instead of requiring the target side to resolve
+@@ -188,3 +188,3 @@
+                 trying to repoint them at the new owner.
+-            invalidate_after_transfer: When true, leave the moved lineage and
++            invalidate_after_transfer: When true, leave the moved SpellIndex and
+                 impacted conduits gated/dirty so the runtime revalidates phases
+@@ -192,3 +192,3 @@
+             mark_dependencies_dirty: If dependencies are not moved, mark their
+-                lineages dirty so stale downstream state is not reused.
++                indexes dirty so stale downstream state is not reused.
+ 
+@@ -289,3 +289,3 @@
+         """
+-        Build a read-only transfer plan for the requested lineage.
++        Build a read-only transfer plan for the requested SpellIndex.
+ 
+@@ -373,3 +373,3 @@
+ 
+-        1. disable the lineage so callers cannot resolve it mid-transfer
++        1. disable the SpellIndex so callers cannot resolve it mid-transfer
+         2. pre-clean contract state if `force_unshare` requires it
+@@ -378,3 +378,3 @@
+            handling
+-        5. leave the lineage gated/dirty or simply re-enable it according to
++        5. leave the SpellIndex gated/dirty or simply re-enable it according to
+            the constructor options
+@@ -387,3 +387,3 @@
+         If any step fails, rollback handlers attempt to restore a coherent
+-        runtime view, the lineage is lifted back to a safe gated state, and the
++        runtime view, the SpellIndex is lifted back to a safe gated state, and the
+         incident/change-control systems are notified.
+@@ -442,3 +442,3 @@
+ 
+-            # After successful transfer, move lineage back to gated/dirty so validation can clear it.
++            # After successful transfer, move the SpellIndex back to gated/dirty so validation can clear it.
+             if self.invalidate_after_transfer:
+@@ -516,3 +516,3 @@
+         Ownership transfer is only supported in the dynamic environment because
+-        the move depends on runtime contract teardown/repointing and lineage
++        the move depends on runtime contract teardown/repointing and SpellIndex
+         invalidation flows that do not exist in the static model.
+@@ -533,3 +533,3 @@
+         but the transfer machinery itself operates on the concrete spell object
+-        so it can inspect ownership, dependencies, creations, and lineage
++        so it can inspect ownership, dependencies, creations, and SpellIndex
+         state.
+@@ -595,3 +595,3 @@
+         """
+-        Enumerate downstream runtime surfaces currently borrowing this lineage.
++        Enumerate downstream runtime surfaces currently borrowing this spell or its SpellIndex.
+ 
+@@ -701,3 +701,3 @@
+         dependencies. If the target side cannot already resolve the dependency
+-        ids, the root lineage would arrive in a knowingly broken state.
++        ids, the moved SpellIndex would arrive in a knowingly broken state.
+ 
+@@ -740,7 +740,7 @@
+         """
+-        Record a structural-change gate for one lineage in `SpellSystemStates`.
++        Record a structural-change gate for one SpellIndex in `SpellSystemStates`.
+ 
+         This is the lighter-weight post-transfer invalidation path. Instead of
+-        hard-disabling the lineage, it marks the lineage as structurally changed
+-        so later spell-crafter phases rerun before callers trust the lineage
++        hard-disabling the SpellIndex, it marks the SpellIndex as structurally changed
++        so later spell-crafter phases rerun before callers trust the SpellIndex
+         again.
+@@ -748,3 +748,3 @@
+         Args:
+-            spell_index: Lineage whose spell-system state should be marked dirty.
++            spell_index: SpellIndex whose spell-system state should be marked dirty.
+         """
+@@ -771,9 +771,9 @@
+         """
+-        Dirty the moved lineage and every conduit that may now see changed
++        Dirty the moved SpellIndex and every conduit that may now see changed
+         transfer fallout.
+ 
+-        The root lineage itself is structurally changed by the ownership flip,
++        The moved SpellIndex itself is structurally changed by the ownership flip,
+         but the runtime impact is wider than that one spell. Borrowers,
+         peers, cluster members, and any conduit currently holding an impacted
+-        lineage may all need to rerun later spell-crafter phases before their
++        SpellIndex may all need to rerun later spell-crafter phases before their
+         local view is trustworthy again.
+@@ -819,3 +819,3 @@
+         - any conduit whose owned or contracted spellbook already contains one
+-          of the impacted lineages
++          of the impacted indexes
+ 
+@@ -851,3 +851,3 @@
+         # Roots only, by design: a lesser scope owns nothing but the lifecycle of what it creates, so the
+-        # lineage sweep never needs the lesser lineage (owner ruling, 2026-09-27).
++        # impacted-index sweep never needs the lesser lineage (owner ruling, 2026-09-27).
+         for conduit_id in self._aether.list_root_conduit_ids(self._frame_name):
+@@ -875,3 +875,3 @@
+         """
+-        Check whether a conduit currently holds any lineage in the impacted
++        Check whether a conduit currently holds any SpellIndex in the impacted
+         closure.
+@@ -902,6 +902,6 @@
+         """
+-        Hard-disable the lineage while the ownership flip is actively in flight.
++        Hard-disable the SpellIndex while the ownership flip is actively in flight.
+ 
+         This is stronger than the later dirty/gated state used after a
+-        successful move. During the critical transfer window the lineage should
++        successful move. During the critical transfer window the SpellIndex should
+         not resolve at all, because ownership, contract state, and creation
+@@ -911,3 +911,3 @@
+         Args:
+-            spell_index: Lineage being moved between conduit owners.
++            spell_index: SpellIndex being moved between conduit owners.
+         """
+@@ -988,3 +988,3 @@
+         moves the spell record back into the source spellbook, removes the
+-        partially moved target-side entries, restores lineage ownership pointers
++        partially moved target-side entries, restores the index's ownership pointers
+         on the spell and `SpellIndex`, and re-registers the spell with the
+@@ -995,3 +995,3 @@
+         risk-management, and resolution logic all agree on which conduit owns
+-        the lineage after the failed move.
++        the SpellIndex after the failed move.
+ 
+@@ -999,5 +999,5 @@
+             spell_obj: Live spell object whose ownership flip is being undone.
+-            src_book: Original owner spellbook that should regain the lineage.
++            src_book: Original owner spellbook that should regain the SpellIndex.
+             tgt_book: Partially updated target spellbook that must release the
+-                lineage.
++                SpellIndex.
+         """
+@@ -1130,3 +1130,3 @@
+         object at a time. This rollback step first tries to drain any partial
+-        target-side creations for the lineage, then restores the original
++        target-side creations for the index's members, then restores the original
+         extracted payload to the source so ownership and disposal state line up
+@@ -1153,3 +1153,3 @@
+         """
+-        Capture the minimal transfer-recovery snapshot for this lineage.
++        Capture the minimal transfer-recovery snapshot for this SpellIndex.
+ 
+@@ -1174,3 +1174,3 @@
+         """
+-        Check whether Aether already records this lineage under the conduit.
++        Check whether Aether already records this SpellIndex under the conduit.
+ 
+@@ -1183,5 +1183,5 @@
+             conduit: Conduit whose frame-level Aether registry is being checked.
+-            spell_index: Lineage key to look for in that registry.
++            spell_index: SpellIndex key to look for in that registry.
+         Returns:
+-            bool: `True` when the lineage is already registered for the conduit.
++            bool: `True` when the SpellIndex is already registered for the conduit.
+         """
+@@ -1214,3 +1214,3 @@
+         Returns:
+-            bool: `True` when the spellbook currently contains the lineage.
++            bool: `True` when the spellbook currently contains the SpellIndex.
+         """
+@@ -1327,3 +1327,3 @@
+         rollback needs a small side snapshot to know whether the source-owned
+-        lineage was exposed through any conduit clusters before transfer began.
++        SpellIndex was exposed through any conduit clusters before transfer began.
+ 
+@@ -1389,3 +1389,3 @@
+ 
+-        The method does not "return to normal" blindly. It converts the lineage
++        The method does not "return to normal" blindly. It converts the SpellIndex
+         from the temporary transfer-in-progress state into either:
+@@ -1393,3 +1393,3 @@
+         - `gated`, when the runtime should force later validation before the
+-          lineage is trusted again, or
++          SpellIndex is trusted again, or
+         - `unknown`, when the caller wants the disable removed without
+@@ -1398,7 +1398,7 @@
+         In both cases the explicit `transfer_in_progress` flag is removed so the
+-        lineage no longer looks mid-flight to downstream readers.
+-
+-        Args:
+-            spell_index: Lineage leaving the hard-disabled transfer state.
+-            gated: Whether the lineage should remain blocked behind validation
++        SpellIndex no longer looks mid-flight to downstream readers.
++
++        Args:
++            spell_index: SpellIndex leaving the hard-disabled transfer state.
++            gated: Whether the SpellIndex should remain blocked behind validation
+                 (`True`) or return to the weaker unknown state (`False`).
+@@ -1436,3 +1436,3 @@
+         spell-system/risk registrations all need to agree that the target owns
+-        the lineage.
++        the SpellIndex.
+ 
+@@ -1442,3 +1442,3 @@
+         - frame-level Aether registry membership for the `SpellIndex`
+-        - spellbook-local ownership maps and lineage/risk registrations
++        - spellbook-local ownership maps and SpellIndex/risk registrations
+ 
+@@ -1561,3 +1561,3 @@
+         0.2.8239). Instead of leaving the existing instances behind and having
+-        the new owner build its own, it extracts the lineage's creation payload
++        the new owner build its own, it extracts the index members' creation payload
+         from the source and restores that payload into the target conduit's
+@@ -1580,3 +1580,3 @@
+         tgt_creations = self.target_conduit._creations
+-        # Migrate creations for every member of the lineage (active + inactive),
++        # Migrate creations for every member of the SpellIndex (active + inactive),
+         # best-effort and per-member: a member with no extractable creations is
+@@ -1636,5 +1636,5 @@
+         """
+-        Carry the lineage's INACTIVE members to the target spellbook.
+-
+-        Transfer of ownership moves an index (lineage). `_flip_registry_and_spellbooks`
++        Carry the SpellIndex's INACTIVE members to the target spellbook.
++
++        Transfer of ownership moves a whole SpellIndex. `_flip_registry_and_spellbooks`
+         moves only the active/selected member through the active maps; this helper
+@@ -1781,3 +1781,3 @@
+         Purpose:
+-            Make the owner stamp follow the lineage both ways (2026-10-15): the
++            Make the owner stamp follow the SpellIndex both ways (2026-10-15): the
+             flip stamps the active member through this, and
+@@ -1837,3 +1837,3 @@
+               already took back to the source - nothing happens.
+-            - A removed pool is cleaned. It is empty: the lineage is disabled for
++            - A removed pool is cleaned. It is empty: the SpellIndex is disabled for
+               the whole transfer, so nothing was ever leased from it, and the
+@@ -1858,3 +1858,3 @@
+         This is the conservative borrower strategy used when `force_unshare`
+-        is enabled. After the root lineage changes owners, peers that used to
++        is enabled. After the moved SpellIndex changes owners, peers that used to
+         borrow it from the source should stop resolving it entirely until they
+@@ -2027,3 +2027,3 @@
+         """
+-        Transfer source-owned dependency lineages alongside the root lineage.
++        Transfer the source-owned dependencies' indexes alongside the root spell's SpellIndex.
+ 
+@@ -2076,3 +2076,3 @@
+                 sub_transfer.execute()
+-                # Mark dependency lineage dirty if requested
++                # Mark the dependency's SpellIndex dirty if requested
+                 if self.invalidate_after_transfer:
+@@ -2085,3 +2085,3 @@
+         """
+-        Leave dependencies in place but force their lineages back through
++        Leave dependencies in place but force their indexes back through
+         validation.
+@@ -2090,3 +2090,3 @@
+         should not migrate dependency ownership. Rather than moving those
+-        lineages, it marks them dirty so downstream runtime state is not
++        indexes, it marks them dirty so downstream runtime state is not
+         trusted blindly after the root transfer changes ownership/topology.
+@@ -2094,3 +2094,3 @@
+         Args:
+-            deps: Dependency spell ids whose lineages should be marked dirty.
++            deps: Dependency spell ids whose indexes should be marked dirty.
+         """
+@@ -2115,3 +2115,3 @@
+         This is the change-control breadcrumb for the operation. It tells the
+-        surrounding governance layer that a lineage is about to undergo an
++        surrounding governance layer that a SpellIndex is about to undergo an
+         ownership rewrite and records enough metadata for later diagnostics or
+@@ -2124,3 +2124,3 @@
+         Args:
+-            summary: Preflight payload that describes the lineage, endpoints,
++            summary: Preflight payload that describes the SpellIndex, endpoints,
+                 borrowers, dependencies, creations, and transfer options.
+@@ -2160,3 +2160,3 @@
+         Args:
+-            spell_index: Lineage whose pending transfer record should be
++            spell_index: SpellIndex whose pending transfer record should be
+                 cleared.
+@@ -2175,3 +2175,3 @@
+         Incident emission is deliberately secondary to runtime recovery. The
+-        transfer first tries to restore a coherent lineage state; this helper
++        transfer first tries to restore a coherent SpellIndex state; this helper
+         then records what failed so operators or future automation can inspect
+@@ -2182,3 +2182,3 @@
+             summary: Preflight/transfer summary payload describing the affected
+-                lineage and participants.
++                SpellIndex and participants.
+             exc: Exception that triggered the failure path.
+1 files, 73 edits applied and read back

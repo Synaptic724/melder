@@ -4,8 +4,8 @@ GOAL: The composition root - ONE function that binds the whole world
       and hands back the conduit. Configured things are BUILT there and
       bound as instances; everything else in the app just melds. Note:
       melder worlds do not "switch environments" - the same objects
-      cannot register twice (spells are content-fingerprinted), so your
-      MODULE decides what to build, once, at the root.
+      cannot register twice (a spell_id is the SHA256 of an object's code
+      and data), so your MODULE decides what to build, once, at the root.
 SURFACE EXERCISED: the build_world() pattern, instance spells
 """
 import melder as md

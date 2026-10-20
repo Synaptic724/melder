@@ -287,9 +287,12 @@ class StaticFrameViewer(FrameViewer):
         Returns:
             bool: True when the spell is currently live.
         """
+        # Only a spell with one stored object can be live statically; a managed spell's objects are leased from
+        # a pool (2026-10-15), like `many`'s fresh builds and a spellspace's request-local objects.
         if spell_record.existence in {
                 Existence.many,
                 Existence.unique_per_spell_space,
+                Existence.managed_spell_quantity,
         }:
             return False
         owner_conduit_id = spell_record.owner_conduit_id

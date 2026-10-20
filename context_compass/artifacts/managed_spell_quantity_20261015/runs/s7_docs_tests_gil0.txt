@@ -1,0 +1,15 @@
+        catalog = ExampleCatalog(self.root, self.catalog_path)
+        curriculum = Curriculum(self.root, self.curriculum_path, catalog)
+>       output = self._render(catalog, curriculum)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+docs/tests/test_page_metadata.py:146: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+docs/tests/test_page_metadata.py:105: in _render
+    self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+E   AssertionError: 1 != 0 : /sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/.venv314t/bin/python: No module named sphinx
+=========================== short test summary info ============================
+FAILED docs/tests/test_example_catalog.py::CatalogContractTests::test_multiline_goals_survive_real_sphinx_html_rendering
+FAILED docs/tests/test_page_metadata.py::PageMetadataTests::test_descriptions_survive_real_html_rendering_without_changing_prose
+FAILED docs/tests/test_page_metadata.py::PageMetadataTests::test_editorial_title_preserves_the_published_heading_fragment
+3 failed, 41 passed, 18 subtests passed in 13.17s

@@ -1,0 +1,12 @@
+        )
+E       AttributeError: type object 'Existence' has no attribute 'managed_spell_quantity'
+
+tests/unit/melder/spellbook/spell_compiler/test_spell_artifact_processor_core.py:199: AttributeError
+=========================== short test summary info ============================
+FAILED tests/unit/melder/spellbook/test_existence_managed_spell_quantity.py::test_managed_spell_quantity_is_a_member_named_by_its_bare_name
+FAILED tests/unit/melder/spellbook/test_existence_managed_spell_quantity.py::test_managed_spell_quantity_is_appended_after_the_six_existing_members
+FAILED tests/unit/melder/spellbook/test_existence_managed_spell_quantity.py::test_existing_member_values_are_unchanged_by_the_seventh_member
+FAILED tests/unit/melder/spellbook/test_resolution_style_matrix.py::test_resolution_style_matrix_classifies_managed_spell_quantity_for_class_spells_only
+FAILED tests/unit/melder/spellbook/test_resolution_style_matrix.py::test_resolution_style_matrix_spell_type_rows_place_managed_spell_quantity_by_family
+FAILED tests/unit/melder/spellbook/spell_compiler/test_spell_artifact_processor_core.py::test_build_model_shell_maps_managed_spell_quantity_to_managed_route_family
+6 failed, 16 passed in 9.14s

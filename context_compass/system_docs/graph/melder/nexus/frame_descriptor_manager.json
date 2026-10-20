@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/frame_descriptor_manager.py",
- "source_sha256": "121a53f0c53d064fe345b61f99f1af4d653ebc1638fbf15fdac3616bdca31a00",
+ "source_sha256": "dee0dbd5ee6f56f5c0588f4282d4e45d1114badfcd8b0f715a4a9eb0b0fdcd31",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.frame_descriptor_manager": {
@@ -42,7 +42,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "5fb2c165271c84b9028e9724eab6a3a160b0b951df2330c036c430bf8f557a16",
+   "span_sha256": "589b359d33b11fb87d95d23052a6564dba49b20664d7cf03b994b7a04b964ba6",
    "role": "Nexus-owned frame descriptor and canonical record manager.",
    "responsibilities": [
     "owns frame descriptors by frame name",

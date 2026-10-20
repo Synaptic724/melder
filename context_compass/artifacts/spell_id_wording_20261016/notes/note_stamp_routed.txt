@@ -1,0 +1,17 @@
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: PLAN
+  CLAIM: Routed on the owner's go-ahead (chat 2026-10-16: asked whether to fix the stamp test while the wording lane
+    waits, he answered "please go ahead and do your thing"). Plan: rerun the reproducer on the current tree (the
+    frame file, then the stamp file, GIL off and on); add an autouse fixture to the stamp file that installs a fresh
+    Aether around each test and re-points `Spellbook._aether` and `Conduit._aether`, as `_reset_world` does in the
+    managed store tests; rerun the reproducer, the stamp file alone and the unit tree in both modes; close (tests
+    only: no notch, no release-note entry, no rebuild).
+  EVIDENCE:
+  - tests/unit/melder/aether/conduit/creations/test_creations_managed_quantities.py:112-125
+  - tests/unit/melder/spellbook/test_spell_managed_quantity_stamp.py:1-152
+  IMPACT: The stamp test's result stops depending on which test module ran before it.
+  NEXT: Rerun the reproducer on the current tree.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7

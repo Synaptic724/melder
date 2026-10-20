@@ -1,0 +1,20 @@
+- DATETIME: {ts}
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: The owner's answers on the lineage wording fix (chat 2026-10-18, after the src-pass report): (1) "Messages and
+    renames" - reword the runtime messages that call a SpellIndex a lineage AND rename the identifiers, diagnostic
+    codes and keys that do (Breaking where public, in the release note); (2) "Also tests, UX, docs" - test docstrings
+    and comments, the UX examples, docs pages and the README lines are in scope, SpellIndex uses only; (3) "Yes, keep
+    each ending" - the six SpellIndex lines in compiler_phase_5.py, frame_viewer.py and view_spell.py are edited with
+    each line keeping its own line ending. Scope-tree uses of lineage stay everywhere (`unique_per_conduit_lineage`,
+    the conduit lineage gates, lesser lineage, lineage roots, `lineage_ancestors`, `lineage_depth`).
+  EVIDENCE: context_compass/tickets/tasks/2026-10-16_recheck_contract_consumers_when_provider_changes_task.md:3165-3215
+  IMPACT: The renames change public names (Phase 6 diagnostic codes and detail keys, three strategy classes and their
+    modules) and touch src, tests, system documents, the graph and possibly recorded or cached data keys; the exact
+    rename map and its compatibility notes go to the owner as patch docs before any rename lands. Wording edits in
+    tests, UX and docs follow the src method: read in context, one line for one line.
+  NEXT: Edit the six mixed-ending lines; inventory every SpellIndex-meaning identifier with its references, then
+    write the rename patch docs for the owner's approval.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9

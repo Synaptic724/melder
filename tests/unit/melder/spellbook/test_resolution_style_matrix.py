@@ -190,3 +190,35 @@ def test_resolution_style_matrix_validate_reports_matrix_and_contract_row_drift(
     assert any("Contract status map missing items: A1." == error for error in errors)
     assert any("Contract status map contains unknown items: ZZ." == error for error in errors)
     assert any("Contract status map has invalid status for ZZ: wrong." == error for error in errors)
+
+
+def test_resolution_style_matrix_classifies_managed_spell_quantity_for_class_spells_only() -> None:
+    """
+    Purpose:
+        `managed_spell_quantity` is a class-spell lifetime (STORY-2026-10-15-managed_existence_member).
+    Contract:
+        - The class family supports it.
+        - The callable and existing-object families list it unsupported.
+        - The expected Existence count is seven.
+    """
+    assert ResolutionStyleMatrix.EXPECTED_EXISTENCE_COUNT == 7
+    assert "managed_spell_quantity" in ResolutionStyleMatrix.ALL_EXISTENCE_NAMES
+    assert "managed_spell_quantity" in ResolutionStyleMatrix.NON_UNIQUE_EXISTENCE_NAMES
+    class_policy = ResolutionStyleMatrix.get_family_policy("class_based")
+    callable_policy = ResolutionStyleMatrix.get_family_policy("callable_based")
+    existing_policy = ResolutionStyleMatrix.get_family_policy("existing_object_based")
+    assert "managed_spell_quantity" in class_policy["supported"]
+    assert "managed_spell_quantity" in callable_policy["unsupported"]
+    assert "managed_spell_quantity" in existing_policy["unsupported"]
+
+
+def test_resolution_style_matrix_spell_type_rows_place_managed_spell_quantity_by_family() -> None:
+    """
+    Purpose:
+        The SpellType projection carries the family decision for the managed member.
+    Contract:
+        SPELL supports it; METHOD and EXISTING_CREATION list it unsupported.
+    """
+    assert "managed_spell_quantity" in ResolutionStyleMatrix.get_entry(SpellType.SPELL)["supported"]
+    assert "managed_spell_quantity" in ResolutionStyleMatrix.get_entry(SpellType.METHOD)["unsupported"]
+    assert "managed_spell_quantity" in ResolutionStyleMatrix.get_entry(SpellType.EXISTING_CREATION)["unsupported"]

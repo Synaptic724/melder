@@ -1,0 +1,2 @@
+notch_spell refused: 'TimedGreeter' (spell_id df1a0bfcf4fc451e7cd991ad2fad6a28294b66e643bcaecd7586f7f9b2ae71e2) failed its structural check, so the notch did not happen; 'English' (spell_id 677a47a3c52107a430b423e6676496133f62651ff4bf99c6491383fe22ecfb1f) is still the active version of the index.
+release-note example: OK

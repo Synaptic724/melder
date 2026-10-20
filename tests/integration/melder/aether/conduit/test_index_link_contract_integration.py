@@ -81,7 +81,7 @@ def _linked_pair() -> Iterator[tuple]:
     owner = owner_book.conjure(dynamic=True, name="owner")
     borrower = borrower_book.conjure(dynamic=True, name="borrower")
     owner.link(borrower)
-    index = owner_book.find_spell_by_id(service_id).spell_index
+    index = owner_book.find_spell_by_spell_id(service_id).spell_index
     try:
         yield (owner_book, borrower_book, owner, borrower, service_id, index)
     finally:

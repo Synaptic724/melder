@@ -1,0 +1,8 @@
+STALE  _system_documents    source key or version moved (expected v0.2.8259)
+
+1 stale asset(s): _system_documents
+Regenerate with:
+    python src/melder/_build_assets/_build_asset_runner.py
+OK     _agent_documentation current (v0.2.8259, schema 2.0.0, key match)
+OK     _bind_guard          current (v0.2.8259, schema 2.0.0, key match)
+exit 1

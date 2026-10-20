@@ -15,8 +15,10 @@ from melder.aether.conduit.conduit_ward.permissions.permissions import Permissio
 from melder.aether.conduit.meld.creation_context.creation_context_factory import (
     CreationContextFactory,
 )
+from melder.aether.spellbook.bind.binding_manifest import BindingManifest
 from melder.aether.spellbook.bind.spell_index import SpellIndex
 from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.existence.managed_spell_mode import ManagedSpellMode
 from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
     SpellCompilerArtifact,
 )
@@ -73,8 +75,8 @@ class Spell(Cleanable):
     of a loose bundle of values.
 
     Contract:
-    - Wraps exactly one registered spell target plus its `SpellIndex`
-      lineage/version record.
+    - Wraps exactly one registered spell target plus its `SpellIndex`, the
+      index that organizes this spell with the other members and selects one.
     - Owns spell-local mutable runtime state such as hooks, dependency/build
       artifacts, the spell-owned `CreationContextFactory`, the spell-owned
       `CreationContext`, execution-plan dispatch-route metadata, and mutation
@@ -86,10 +88,19 @@ class Spell(Cleanable):
     - Becomes unusable after `cleanup()` completes; later live-object methods
       are expected to fail through `check_cleaned()`.
     - Disposal metadata is established once at bind. The ordered list, presence
-      flag, and bind-time SHA describe that same policy. Post-creation mutation
+      flag, and binding hash describe that same policy. Post-creation mutation
       is unsupported; this class adds no copying or mutation guards.
     - Resolution capability is fixed per bound version and exposed by the
       read-only resolvable property, independently of activity and compilation state.
+    - The managed options of an `Existence.managed_spell_quantity` binding (mode, limit,
+      queue timeout, reset method names) are fixed per bound version the same way, as
+      Bind normalized them, and exposed by read-only properties; they are part of the
+      binding manifest, never of the spell_id.
+    - `binding_manifest` records how this version is bound - its address, spellframe and
+      kind, existence, disposal order, resolvable and managed settings - with its own
+      SHA256, `binding_hash`. Built once at construction from the same arguments and kept
+      after cleanup, like `spell_id`: what a spell IS is its spell_id, how it is kept is
+      its binding (EPIC-2026-10-18-spell_identity_is_the_code).
 
     Core Responsibilities:
     - Holds an immutable reference to the object (function/class/instance) it represents.
@@ -114,7 +125,9 @@ class Spell(Cleanable):
           still allowed.
 
     Key Concepts:
-        - Each spell has a unique SHA256 `spell_id`, generated from its bind-time fingerprint.
+        - Each spell has a SHA256 `spell_id`: the digest of the registered object's code
+          (`SpellCodeDigest`) and nothing from the bind call. How it is bound is its
+          `binding_manifest`, hashed apart as `binding_hash`.
         - `spellframe` is the category half of the address: a string category or a
           Protocol contract. `spellframe_kind` records which (or `none` for a bare
           binding) and `implemented_protocols` the Protocol bind checked the spell
@@ -129,7 +142,8 @@ class Spell(Cleanable):
             The actual object to register (function, class, lambda, or existing instance).
 
         spell_index (SpellIndex):
-            Versioned identity for this spell (current + historical fingerprints).
+            The SpellIndex this spell is organized under; the index selects one member
+            version as active.
 
         spellframe (Optional[Any]):
             Frame context (usually a Protocol, class, or string) to scope the spell's identity.
@@ -150,7 +164,8 @@ class Spell(Cleanable):
             whether it participates in spellframes and/or binding names.
 
         spell_id (str):
-            Unique identifier derived from object fingerprinting (SHA256).
+            The SHA256 of the registered object's code (`SpellCodeDigest`); nothing from
+            the bind call enters it.
 
         permissions (Permissions):
             Defines access control level for borrowing, invoking, or recreating this spell.
@@ -208,9 +223,9 @@ class Spell(Cleanable):
 
     Subsystem Context:
         The unit of currency of the spellbook subsystem. `Bind` produces one `Spell`
-        (paired with its `SpellIndex` lineage/version record) from a user target;
+        (paired with the `SpellIndex` that organizes it) from a user target;
         `Spellbook` registers it into its owned/contracted maps and spell-id caches and
-        registers the lineage into `SpellSystemStates`. Downstream, the SpellCompiler
+        registers its SpellIndex into `SpellSystemStates`. Downstream, the SpellCompiler
         keys every phase artifact on this spell (by `spell_index.selected_spell_id`) and
         `Meld` reads it to choose reuse-vs-construct. It hands structural identity to
         `SpellIndex`, build/plan artifacts to the SpellCompiler, and its `Permissions`
@@ -297,6 +312,12 @@ class Spell(Cleanable):
         "_creation_gate",
         "spellframe_kind",
         "implemented_protocols",
+        "_removal_lock",
+        "_managed_spell_mode",
+        "_managed_spell_limit",
+        "_managed_spell_timeout_seconds",
+        "_managed_spell_reset_methods",
+        "binding_manifest",
     ]
     def __init__(
             self,
@@ -318,6 +339,10 @@ class Spell(Cleanable):
             resolvable: bool = True,
             spellframe_kind: SpellframeKind = SpellframeKind.none,
             implemented_protocols: tuple[type, ...] = (),
+            managed_spell_mode: Optional[ManagedSpellMode] = None,
+            managed_spell_limit: Optional[int] = None,
+            managed_spell_timeout_seconds: Optional[float] = None,
+            managed_spell_reset_methods: tuple[str, ...] = (),
             **kwargs: Any,
     ) -> None:
         """
@@ -325,13 +350,13 @@ class Spell(Cleanable):
 
         Args:
             spell (Any): The underlying callable/class/instance being registered.
-            spell_index (SpellIndex): Lineage/version tracker for this spell.
+            spell_index (SpellIndex): The SpellIndex this spell is organized under (it selects one member).
             spellframe (Optional[Any]): Logical frame/contract used to scope the spell.
             binding_name (Optional[str]): Optional binding key is used to disambiguate spells under the same frame.
             spell_name (str): Resolved name for the spell (qualname or type name).
             existence (Existence): Lifecycle policy for instantiation/sharing semantics.
             spell_type (SpellType): Classification of the spell (class/method/lambda/existing-creation variants).
-            spell_id (str): SHA256 fingerprint for this spell's structural identity.
+            spell_id (str): The SHA256 of the registered object's code (`SpellCodeDigest`).
             permissions (Permissions): Access policy for other conduits.
             aetheric_frame (str): Aether frame identifier this spell belongs to.
             spellbook (Spellbook): Back-reference to the owning spellbook for coordination.
@@ -348,6 +373,13 @@ class Spell(Cleanable):
                 (a string) or `contract` (a Protocol) - as Bind classified it. Phase 3 reads it.
             implemented_protocols (tuple[type, ...]): The Protocol(s) Bind structurally checked
                 this spell against: `(spellframe,)` for a contract frame, else empty.
+            managed_spell_mode (Optional[ManagedSpellMode]): The pool policy of a managed binding,
+                as Bind normalized it; None on any other existence.
+            managed_spell_limit (Optional[int]): Elastic idle cap, or the most objects alive for
+                limited_quantity and queue; None on any other existence.
+            managed_spell_timeout_seconds (Optional[float]): Queue wait in seconds; None otherwise.
+            managed_spell_reset_methods (tuple[str, ...]): Reset method names, run in order on every
+                release; empty when none were named or the spell is not managed.
             **kwargs: Optional keyword metadata map, collected into `metadata`.
 
         Contract:
@@ -359,10 +391,13 @@ class Spell(Cleanable):
               metadata bag, so a misspelled parameter name lands in `metadata`
               rather than raising `TypeError`.
             - TWO DISTINCT IDENTITIES are established. `spell_id` is the
-              caller-supplied structural fingerprint; `_id` is a fresh ULID
+              caller-supplied code digest of the target; `_id` is a fresh ULID
               minted here that identifies THIS record. They are not
-              interchangeable - the fingerprint describes what the spell IS,
+              interchangeable - the digest describes what the spell IS,
               the ULID describes which object you are holding.
+            - The binding manifest (`binding_manifest`, `binding_hash`) is built
+              last, from these same arguments: how this version is bound, hashed
+              apart from what it is. A value record, kept after cleanup.
             - The four `is_*` family flags are computed ONCE from `spell_type`
               and cover all 14 `SpellType` members with no overlap, so exactly
               one is True for the object's whole life.
@@ -383,7 +418,8 @@ class Spell(Cleanable):
             Creates the reentrant `_lock` that guards later configuration and
             cleanup; construction itself is unsynchronized because the object
             is not yet reachable by other threads. `_door_epoch` starts at 0 and
-            its bump sites assume per-spell serialization.
+            its bump sites assume per-spell serialization. `_removal_lock` starts
+            as None; the first direct `cleanup()` creates it under `_lock`.
 
         Lifecycle / Cleanup:
             Born unowned and uncompiled. Ownership fields, the creation-context
@@ -400,14 +436,25 @@ class Spell(Cleanable):
         """
         super().__init__()
         self._lock = RLock()
+        # Serializes direct cleanup() removals of this spell, which run outside `_lock`; created by the first direct
+        # cleanup (`_direct_removal_route`) and taken by nothing else (direct_spell_cleanup_lock_order, 0.2.8233).
+        self._removal_lock: Optional[RLock] = None
         self._active = True  # active in its index; flipped by notch/disable
         self._resolvable: bool = resolvable
+        # Managed options (Existence.managed_spell_quantity): normalized by Bind, part of the binding manifest
+        # and never of the spell_id (since 0.2.8254); read-only per-version policy like `_resolvable`;
+        # None / None / None / () on any other existence.
+        # The spell's pool is composed from them when its owner store is stamped (S3).
+        self._managed_spell_mode: Optional[ManagedSpellMode] = managed_spell_mode
+        self._managed_spell_limit: Optional[int] = managed_spell_limit
+        self._managed_spell_timeout_seconds: Optional[float] = managed_spell_timeout_seconds
+        self._managed_spell_reset_methods: tuple[str, ...] = managed_spell_reset_methods
         self._id: str = new_ulid()  # Unique internal ID for tracking
 
         # Spell Data
         self.spell_index: SpellIndex = spell_index
         self.spell: Any = spell  # Object reference
-        self.spell_id: str = spell_id  # SHA256 unique identifier
+        self.spell_id: str = spell_id  # SHA256 of the target's code (SpellCodeDigest)
         self.spellframe: Any | None = spellframe
         # Frame kind recorded by Bind (none / category / contract) and the
         # Protocol this spell was structurally checked against. Identity data
@@ -545,6 +592,23 @@ class Spell(Cleanable):
         )
         self._key = (frame_key, bind_key)
 
+        # How this version is bound, as a value record with its own SHA256 (S2 of
+        # EPIC-2026-10-18-spell_identity_is_the_code): built last, from the arguments above, so a
+        # bound, staged, restored or grafted Spell carries one. Kept after cleanup, like `spell_id`.
+        self.binding_manifest: BindingManifest = BindingManifest.build(
+            key=self._key,
+            spellframe=self.spellframe,
+            spellframe_kind=self.spellframe_kind,
+            binding_name=self.binding_name,
+            existence=self.existence,
+            disposal_method_names=self.disposal_method_names,
+            resolvable=resolvable,
+            managed_spell_mode=managed_spell_mode,
+            managed_spell_limit=managed_spell_limit,
+            managed_spell_timeout_seconds=managed_spell_timeout_seconds,
+            managed_spell_reset_methods=managed_spell_reset_methods,
+        )
+
 
     #region Disposal
     def cleanup(self) -> None:
@@ -560,15 +624,42 @@ class Spell(Cleanable):
             - Idempotent: repeated calls become no-ops after `_cleaned` flips.
             - Thread-safe: acquires `_lock`, re-checks `_cleaned`, and then
               performs teardown under the guarded section.
+            - A direct call on a live spell - one its Spellbook is not driving
+              (`_spellbook_cleanup` unset) - removes the spell through
+              `Spellbook.cleanup_and_remove_spell`, which takes it off every
+              registry and then calls back here for the local teardown. That
+              removal runs outside `_lock`, under this spell's `_removal_lock`
+              (created by the first direct call), so a second direct call waits
+              for it and then returns.
             - Best-effort child cleanup: owned child cleanup failures are
               swallowed so teardown still reaches the final cleared state.
             - Clears hooks, metadata, dependency/build artifacts, execution-plan
               metrics, spell-owned factory/context state, conduit ownership
               state, spellbook references, and reflective profile state.
-            - Sets `_cleaned` before the guarded section exits, then drops the
-              `_lock` reference itself after the teardown completes.
+            - Sets `_cleaned` before the guarded section exits. `_lock` is kept,
+              not deleted with the other fields, so a lock-guarded reader such as
+              `_spell_index_unless_cleaned` can still take it on a cleaned spell.
+              `_removal_lock` is deleted with the other fields; a direct call
+              waiting on it holds its own reference.
             - Deletes the disposal-name reference without clearing its list;
               creation entries may still retain that established metadata.
+            - Keeps the identity data readable: `spell_id`, the address (`key`),
+              the spellframe and its kind, and `binding_manifest` / `binding_hash`.
+
+        Threading:
+            The Book removal takes the Spellbook lock, frame locks and the Nexus
+            record, while Book teardown (`Spellbook._cleanup_spells`, also
+            reached from root and frame teardown) and conjure's ownership
+            stamping (`define_conduit_into_spells`) take this spell's `_lock`
+            under the Spellbook lock. Holding `_lock` across the removal hung both
+            threads when they met (before 0.2.8233); now `_lock` covers only the
+            decision (`_direct_removal_route`) and the local teardown. Nothing
+            else in Melder takes `_removal_lock`, so it closes no lock-order
+            cycle; a caller holding this spell's lock (`with spell:`) or another
+            Melder lock around a direct call brings the old order back. A direct
+            call racing its Book's teardown returns when the teardown cleaned the
+            spell first, or raises the Book's cleaned RuntimeError; it does not
+            hang. (direct_spell_cleanup_lock_order, 0.2.8233)
 
         Runtime resolution and instance lifecycle remain owned by the Resolution
         / Meld layer, not by this class.
@@ -576,14 +667,32 @@ class Spell(Cleanable):
         Returns:
             None.
 
+        Raises:
+            RuntimeError: On a direct call, from
+                `Spellbook.cleanup_and_remove_spell`: the spell is not its Book's
+                current active version (a parked version, for one); it is the
+                active version of an index that also holds parked versions
+                (nothing changes: notch the index to one of them, dispose them
+                with `cleanup_spell`, or move them out with
+                `remove_from_spell_index` first); or the Book has been cleaned
+                and did not clean this spell.
+
         """
         if self._cleaned:
             return
+        direct_removal = self._direct_removal_route()
+        if direct_removal is not None:
+            # A direct call on a live spell: the Book takes it off its registries and calls back here with
+            # `_spellbook_cleanup` set. Run that outside `_lock` - Book and frame teardown and conjure take `_lock`
+            # under the Book lock - and serialize it per spell on the removal lock
+            # (direct_spell_cleanup_lock_order, 0.2.8233).
+            spellbook, removal_lock = direct_removal
+            with removal_lock:
+                if not self._cleaned:
+                    spellbook.cleanup_and_remove_spell(self)
+            return
         with self._lock:
             if self._cleaned:
-                return
-            if not self._spellbook_cleanup:
-                self._spellbook.cleanup_and_remove_spell(self)
                 return
 
             if self.profile is not None and isinstance(self.profile, Cleanable):
@@ -624,6 +733,7 @@ class Spell(Cleanable):
             del self._owner_creations
             del self.user_created_object
             del self._spellbook_cleanup
+            del self._removal_lock
             del self._spell_system_states
             del self._spellbook
             del self._pre_hooks
@@ -632,6 +742,10 @@ class Spell(Cleanable):
             del self.tags
             del self.metadata
             del self._resolvable
+            del self._managed_spell_mode
+            del self._managed_spell_limit
+            del self._managed_spell_timeout_seconds
+            del self._managed_spell_reset_methods
             del self._mutation_override
             del self.dependencies
             del self.disposal_method_names
@@ -646,6 +760,46 @@ class Spell(Cleanable):
             del self._caching_enabled
             del self._compiler_artifact
             del self.spell_index
+
+    def _direct_removal_route(self) -> Optional[tuple[Spellbook, RLock]]:
+        """
+        Internal
+
+        Decide under `_lock` whether `cleanup()` must remove this spell through
+        its Spellbook, and hand back what that removal runs with.
+
+        Purpose:
+            Let `cleanup()` take its decision under the spell lock and run the
+            Book removal after leaving it, so the spell lock is never held while
+            the Spellbook, frame and Nexus locks are taken
+            (direct_spell_cleanup_lock_order, 0.2.8233).
+
+        Contract:
+            - Returns None for a cleaned spell, and for a cleanup its Spellbook
+              drives (`_spellbook_cleanup` set: Book teardown,
+              `cleanup_and_remove_spell`, the parked disposal, Bind's retirement
+              of an unpublished spell); `cleanup()` then runs the local teardown.
+            - Otherwise returns the owning Spellbook and this spell's removal
+              lock, creating the lock into `_removal_lock` on first use, so every
+              direct cleanup of this spell meets the same lock.
+
+        Threading:
+            Reads and creates under `_lock` - the lock the teardown deletes the
+            fields under - and calls nothing while holding it. The returned lock
+            is taken by `cleanup()` alone, after this returns.
+
+        Returns:
+            Optional[tuple[Spellbook, RLock]]:
+                The Book and the removal lock for a direct cleanup, or None.
+        """
+        with self._lock:
+            if self._cleaned or self._spellbook_cleanup:
+                return None
+            removal_lock = self._removal_lock
+            if removal_lock is None:
+                removal_lock = RLock()
+                self._removal_lock = removal_lock
+            return self._spellbook, removal_lock
 
 
     #endregion Disposal
@@ -667,6 +821,96 @@ class Spell(Cleanable):
         """
         self.check_cleaned()
         return self._resolvable
+
+    @property
+    def managed_spell_mode(self) -> Optional[ManagedSpellMode]:
+        """
+        Return the pool policy of this managed version.
+
+        Contract:
+            Set once at bind (default elastic for a managed binding) and part of the binding manifest,
+            not the spell_id. No live setter; changing it takes another binding.
+
+        Returns:
+            Optional[ManagedSpellMode]: The mode, or None when the spell is not
+            `Existence.managed_spell_quantity`.
+
+        Raises:
+            RuntimeError: If this Spell has been cleaned.
+        """
+        self.check_cleaned()
+        return self._managed_spell_mode
+
+    @property
+    def managed_spell_limit(self) -> Optional[int]:
+        """
+        Return the limit of this managed version.
+
+        Contract:
+            elastic: the most idle objects its pool keeps (default 256). limited_quantity and queue: the
+            most objects alive at once, idle plus out. Set once at bind and part of the binding
+            manifest, not the spell_id.
+
+        Returns:
+            Optional[int]: The limit, or None when the spell is not managed.
+
+        Raises:
+            RuntimeError: If this Spell has been cleaned.
+        """
+        self.check_cleaned()
+        return self._managed_spell_limit
+
+    @property
+    def managed_spell_timeout_seconds(self) -> Optional[float]:
+        """
+        Return how long a queue lease of this version waits for a release.
+
+        Contract:
+            Set once at bind for the queue mode and part of the binding manifest, not the spell_id;
+            always None for elastic and limited_quantity, which never wait.
+
+        Returns:
+            Optional[float]: Seconds, or None.
+
+        Raises:
+            RuntimeError: If this Spell has been cleaned.
+        """
+        self.check_cleaned()
+        return self._managed_spell_timeout_seconds
+
+    @property
+    def managed_spell_reset_methods(self) -> tuple[str, ...]:
+        """
+        Return the reset method names of this managed version.
+
+        Contract:
+            Zero-argument methods of the class, run in this order on every release before the object
+            is leased again. Set once at bind and part of the binding manifest, not the spell_id.
+
+        Returns:
+            tuple[str, ...]: The names; empty when none were named or the spell is not managed.
+
+        Raises:
+            RuntimeError: If this Spell has been cleaned.
+        """
+        self.check_cleaned()
+        return self._managed_spell_reset_methods
+
+    @property
+    def binding_hash(self) -> str:
+        """
+        Return the SHA256 of this version's binding manifest.
+
+        Contract:
+            How this version is bound - address, spellframe and kind, existence, disposal order,
+            resolvable and managed settings - hashed apart from its code (`spell_id`). Equal bind
+            arguments give equal hashes in every process; a change of any of them gives another.
+            Readable after cleanup, like `spell_id` (`binding_manifest` is a value record).
+
+        Returns:
+            str: 64 hex characters (`binding_manifest.binding_hash`).
+        """
+        return self.binding_manifest.binding_hash
 
     def _set_hooks(
             self,
@@ -715,6 +959,48 @@ class Spell(Cleanable):
             )
             # Invalidate fast-meld-door entries: the hook gate changed.
             self._door_epoch += 1
+
+    def _spell_index_unless_cleaned(self) -> Optional[SpellIndex]:
+        """
+        Internal
+
+        Return this spell's SpellIndex, or None once the spell has been cleaned.
+
+        Purpose:
+            Let a reader that already holds this Spell read its index without
+            racing `cleanup()`, which deletes `spell_index` - the parked branch
+            of `Spellbook._find_contracted_spell_by_id`, the explicit index
+            steps that turn a spell found by spell_id into the spell its index
+            has active (the ownership transfer's spell_id handles and the
+            contract dependency walks), and the root's teardown, which
+            unregisters each parked version's index from the frame
+            (`Spellbook._unregister_conduit_spells_from_aether`,
+            minted_index_registry, 0.2.8259). Until 0.2.8253 its first reader
+            was the parked branch of `Spellbook.find_spell_by_id`.
+
+        Contract:
+            - Returns the index the spell belongs to while the spell is live, and
+              None after `cleanup()` has run. Never raises for a cleaned spell,
+              unlike a direct `spell_index` read.
+            - Pure read: creates, registers, and mutates nothing.
+
+        Threading:
+            Takes `self._lock`, the lock `cleanup()` sets `_cleaned` and deletes
+            `spell_index` under, so the check and the read cannot interleave with
+            a concurrent cleanup; `cleanup()` keeps `_lock`, so the read works on
+            a cleaned spell too. Holds no other lock and calls nothing while it
+            holds this one. Index moves repoint `spell_index` under the Spellbook
+            lock, not this one; a read racing a move returns the old or the new
+            index.
+
+        Returns:
+            Optional[SpellIndex]:
+                The spell's index, or None when the spell is cleaned.
+        """
+        with self._lock:
+            if self._cleaned:
+                return None
+            return self.spell_index
 
     def _cleanup_creation_context(self) -> None:
         """
@@ -797,7 +1083,7 @@ class Spell(Cleanable):
                 True when the owning conduit runs in dynamic mode.
             creation_gate_controller:
                 Frame-owned CreationGateController used by the factory for
-                spell-lineage gate operations.
+                spell-index gate operations.
 
         Returns:
             None.
@@ -1383,8 +1669,8 @@ class Spell(Cleanable):
             1. spell-local runtime invalidation
                - clear the cached `CreationContext`
                - force deferred runtime resolution to run again
-            2. lineage/control-plane invalidation
-               - mark the lineage structurally gated in `SpellSystemStates`
+            2. control-plane invalidation of its SpellIndex
+               - mark its SpellIndex structurally gated in `SpellSystemStates`
 
         Contract:
             - Safe to call multiple times on a live spell.
@@ -1404,7 +1690,7 @@ class Spell(Cleanable):
 
         Args:
             change_reason:
-                Optional structural change reason to record in the lineage
+                Optional structural change reason to record in its SpellIndex's
                 state. When omitted, the helper uses
                 `SpellStateChangeReason.structure_changed`.
 
@@ -1455,6 +1741,10 @@ class Spell(Cleanable):
         - Provide a handle to the Conduit's creation scope (e.g., for singletons tied to that conduit).
         - Reconfigure CreationContextFactory dependencies for the new owner.
         - Invalidate the spell-owned CreationContext because ownership/scoping changed.
+        - Give an `Existence.managed_spell_quantity` version its pool in the owner's store
+          (`creations.ensure_managed_quantity(self)`, idempotent; 2026-10-15): every stamp - conjure, a
+          post-conjure bind or bind_inactive, the transfer flip - ends with the version's pool in the store it
+          was stamped with. No pool is composed when the stamp carries no store.
 
         Args:
             conduit_id (str):
@@ -1485,6 +1775,9 @@ class Spell(Cleanable):
             self._owner_conduit_name = conduit_name
             self._owner_creations = creations
             self._caching_enabled = caching_enabled
+            # Spell lock, then the store's leaf lock: the established build-lock-first order.
+            if self.existence is Existence.managed_spell_quantity and creations is not None:
+                creations.ensure_managed_quantity(self)
 
     def _add_build_details(
             self,
@@ -1510,7 +1803,7 @@ class Spell(Cleanable):
 
         Args:
             dependencies:
-                A list of spell_ids (SHA256 fingerprints) that this spell depends on.
+                A list of spell_ids (SHA256 code digests) that this spell depends on.
 
         Raises:
             ValueError:
@@ -1529,21 +1822,21 @@ class Spell(Cleanable):
     @property
     def system_state(self) -> SpellSystemState | None:
         """
-        Return the SpellSystemState instance associated with this spell's lineage.
+        Return the SpellSystemState instance associated with this spell's SpellIndex.
 
         This is a read-mostly view into the change-control and validation state
         tracked by SpellSystemStates.
 
         Contract:
-            - Mutation and contract operations can ask for the current lineage state.
+            - Mutation and contract operations can ask for the current state of its SpellIndex.
             - Higher-level dev-ops and validation pipelines can inspect this value
               while orchestrating Phase 1-7 revalidation.
-            - Returns `None` when SpellSystemStates are unavailable or the lineage is
+            - Returns `None` when SpellSystemStates are unavailable or the SpellIndex is
               not currently tracked.
 
         Returns:
             Optional[SpellSystemState]:
-                The state object for this spell's lineage, if available.
+                The state object for this spell's SpellIndex, if available.
 
         """
         self.check_cleaned()

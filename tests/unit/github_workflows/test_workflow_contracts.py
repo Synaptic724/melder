@@ -43,9 +43,12 @@ def test_every_pr_reports_a_fail_closed_required_status(policy: ModuleType) -> N
     assert aggregate["env"]["CI_PACKAGE_REQUIRED"] == "${{ needs.branch-policy.outputs.package-required }}"
     assert aggregate["env"]["CI_RUNTIME_REQUIRED"] == "${{ needs.branch-policy.outputs.runtime-required }}"
     assert aggregate["env"]["CI_SOURCE_REQUIRED"] == "${{ needs.branch-policy.outputs.source-required }}"
-    assert aggregate["env"]["CI_GAUNTLET_REQUIRED"] == "${{ needs.branch-policy.outputs.gauntlet-required }}"
-    assert jobs["branch-policy"]["outputs"]["gauntlet-required"] == "${{ steps.route.outputs.gauntlet-required }}"
-    assert jobs["real-world-gauntlet"]["if"] == "needs.branch-policy.outputs.gauntlet-required == 'true'"
+    assert set(aggregate["env"]) == {"CI_JOB_RESULTS", "CI_PACKAGE_REQUIRED", "CI_RUNTIME_REQUIRED", "CI_SOURCE_REQUIRED"}
+    assert set(jobs["branch-policy"]["outputs"]) == {"runtime-required", "package-required", "source-required"}
+    # The speed tests run in speed-tests.yml: a CI run that later promotions reuse never waits for them.
+    speed = {f"./.github/workflows/{name}.yml" for name in
+             ("real-world-gauntlet", "persistent-runtime-gauntlet", "shallow-all-thread-scaling")}
+    assert not [name for name, job in jobs.items() if job.get("uses") in speed]
     assert jobs["packages"]["if"] == "needs.branch-policy.outputs.package-required == 'true'"
     for name in policy.CIPolicy.FULL_JOBS:
         assert jobs[name]["needs"] == "branch-policy"
@@ -57,7 +60,7 @@ def test_every_pr_reports_a_fail_closed_required_status(policy: ModuleType) -> N
     assert jobs["source-qualification"]["if"] == "needs.branch-policy.outputs.source-required == 'true'"
 
 
-@pytest.mark.parametrize("name", ["build-src-assets.yml", "build-repo-assets.yml", "test-runtime.yml", "real-world-gauntlet.yml", "persistent-runtime-gauntlet.yml", "shallow-all-thread-scaling.yml", "docs.yml"])
+@pytest.mark.parametrize("name", ["build-src-assets.yml", "build-repo-assets.yml", "test-runtime.yml", "docs.yml"])
 def test_reusable_mandatory_jobs_cannot_be_disabled(name: str) -> None:
     """Callers own triggers/concurrency; no helper silently skips a mandatory validation job."""
     document = workflow(name)
@@ -72,6 +75,61 @@ def test_reusable_mandatory_jobs_cannot_be_disabled(name: str) -> None:
         assert "continue-on-error" not in job
         assert "environment" not in job
         assert "timeout-minutes" in job
+
+
+@pytest.mark.parametrize("name", ["real-world-gauntlet.yml", "persistent-runtime-gauntlet.yml",
+                                  "shallow-all-thread-scaling.yml"])
+def test_speed_workflows_measure_everything_once_started(name: str) -> None:
+    """A speed test gates nothing (owner, 2026-10-06), but once started no job skips itself or hides a failure.
+
+    Its caller owns the trigger and the concurrency, and a red result stays red on the pull request.
+    """
+    document = workflow(name)
+    assert set(document["on"]) == {"workflow_call", "workflow_dispatch"}
+    assert document["permissions"] == {"contents": "read"}
+    assert "concurrency" not in document
+    for job in document["jobs"].values():
+        assert "if" not in job
+        assert "continue-on-error" not in job
+        assert "environment" not in job
+        assert "timeout-minutes" in job
+
+
+def test_speed_tests_start_beside_ci_and_block_nothing() -> None:
+    """The three speed tests start on every dev-to-preprod pull request in their own workflow (owner, 2026-10-06).
+
+    Promotions reuse a CI run only when the whole run finished green (`ci_qualification.select_run`), so a speed
+    test inside ci.yml would hold that run open for hours and fail it when it failed. Their own workflow takes its
+    route from `ci_policy.py speed-route`, keeps a failure red on the pull request without any required status, and
+    is cancelled only by a newer commit: not by a merge, and not by a title or description edit.
+    """
+    document = workflow("speed-tests.yml")
+    assert document["name"] == "Speed"
+    assert set(document["on"]) == {"pull_request"}
+    trigger = document["on"]["pull_request"]
+    assert trigger["branches"] == ["preprod"]
+    assert trigger["types"] == ["opened", "synchronize", "reopened", "ready_for_review"]
+    assert "paths" not in trigger and "paths-ignore" not in trigger
+    assert document["permissions"] == {"contents": "read"}
+    assert document["concurrency"] == {"group": "speed-${{ github.event.pull_request.number }}",
+                                       "cancel-in-progress": "true"}
+    jobs = document["jobs"]
+    speed = ("real-world-gauntlet", "persistent-runtime-gauntlet", "shallow-all-thread-scaling")
+    assert set(jobs) == {"route", *speed}
+    route = jobs["route"]
+    assert route["name"] == "Speed / route"
+    assert "if" not in route and "continue-on-error" not in route
+    assert route["outputs"] == {"speed-required": "${{ steps.route.outputs.speed-required }}"}
+    step = next(step for step in route["steps"] if step.get("id") == "route")
+    assert step["run"] == "python .github/scripts/ci_policy.py speed-route"
+    for name in speed:
+        assert jobs[name] == {"needs": "route", "if": "needs.route.outputs.speed-required == 'true'",
+                              "uses": f"./.github/workflows/{name}.yml"}
+    root = pathlib.Path(__file__).resolve().parents[3]
+    targets = {f"./.github/workflows/{name}.yml" for name in speed}
+    callers = [(path.name, job_name) for path in sorted((root / ".github/workflows").glob("*.yml"))
+               for job_name, job in workflow(path.name)["jobs"].items() if job.get("uses") in targets]
+    assert sorted(callers) == sorted(("speed-tests.yml", name) for name in speed)
 
 
 def test_docs_metadata_validation_precedes_artifact_upload_and_rtd_staging() -> None:
@@ -359,6 +417,30 @@ def test_runtime_callers_forward_only_the_coverage_secret(name: str) -> None:
     assert caller["secrets"] == {"CODECOV_TOKEN": "${{ secrets.CODECOV_TOKEN }}"}
     assert caller["permissions"] == {"contents": "read", "actions": "read"}
     assert caller.get("permissions", {}).get("id-token") != "write"
+
+
+def test_linux_jobs_pin_ubuntu_24_04(runtime_matrix: ModuleType) -> None:
+    """No job follows the moving ubuntu-latest label: Linux runs on ubuntu-24.04 until a commit moves it.
+
+    GitHub moves ubuntu-latest from Ubuntu 24.04 to 26.04 between 2026-10-19 and 2026-11-19, and setup-python's
+    Linux builds are made per Ubuntu release, so a moved label could fail manifest releases that pass today. The
+    parsed workflows are searched, so a comment may name the label but no runner, matrix or input may.
+    """
+    def strings(value: object) -> list[str]:
+        """Collect every string key and value of one parsed workflow."""
+        if isinstance(value, dict):
+            return [text for key, item in value.items() for text in strings(key) + strings(item)]
+        if isinstance(value, list):
+            return [text for item in value for text in strings(item)]
+        return [value] if isinstance(value, str) else []
+
+    root = pathlib.Path(__file__).resolve().parents[3]
+    for path in sorted((root / ".github" / "workflows").glob("*.yml")):
+        floating = [text for text in strings(workflow(path.name)) if "ubuntu-latest" in text]
+        assert not floating, f"{path.name} names ubuntu-latest: {floating}"
+    linux = [runner for runner, platform, _ in runtime_matrix.RuntimeMatrixPolicy.TARGETS if platform == "linux"]
+    assert linux == ["ubuntu-24.04"]
+
 
 
 def test_codecov_does_not_create_extra_required_coverage_statuses() -> None:
@@ -699,7 +781,7 @@ def test_gauntlet_reports_all_counts_and_keeps_setup_outside_gil_override() -> N
     assert retained["if"] == "always()"
     assert retained["with"]["path"] == "gauntlet-results/"
     assert retained["with"]["retention-days"] == "30"
-    caller = workflow("ci.yml")["jobs"]["real-world-gauntlet"]
+    caller = workflow("speed-tests.yml")["jobs"]["real-world-gauntlet"]
     assert caller["uses"] == "./.github/workflows/real-world-gauntlet.yml"
     assert "secrets" not in caller
 
@@ -714,11 +796,9 @@ def test_gauntlet_inline_python_parses_after_yaml_indentation() -> None:
 
 def test_persistent_gauntlet_runs_in_parallel_on_independent_promotion_runners() -> None:
     """Neither benchmark waits for the other; each owns its OS jobs and result artifacts."""
-    jobs = workflow("ci.yml")["jobs"]
+    jobs = workflow("speed-tests.yml")["jobs"]
     for name in ("real-world-gauntlet", "persistent-runtime-gauntlet", "shallow-all-thread-scaling"):
-        assert jobs[name]["needs"] == "branch-policy"
-        assert jobs[name]["if"] == "needs.branch-policy.outputs.gauntlet-required == 'true'"
-        assert name in jobs["merge-ready"]["needs"]
+        assert jobs[name]["needs"] == "route"
     assert jobs["persistent-runtime-gauntlet"]["uses"] == "./.github/workflows/persistent-runtime-gauntlet.yml"
     document = workflow("persistent-runtime-gauntlet.yml")
     for event in document["on"].values():
@@ -747,7 +827,7 @@ def test_persistent_gauntlet_runs_in_parallel_on_independent_promotion_runners()
 
 def test_shallow_thread_scaling_measures_each_library_in_its_own_gil_off_process() -> None:
     """The scaling benchmark is a parallel promotion job that isolates every library in a fresh interpreter."""
-    caller = workflow("ci.yml")["jobs"]["shallow-all-thread-scaling"]
+    caller = workflow("speed-tests.yml")["jobs"]["shallow-all-thread-scaling"]
     assert caller["uses"] == "./.github/workflows/shallow-all-thread-scaling.yml"
     assert "secrets" not in caller
     document = workflow("shallow-all-thread-scaling.yml")

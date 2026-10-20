@@ -1,0 +1,21 @@
+/tmp/m0_mq/mirror_pre_s3/src/melder/__init__.py:199: UserWarning: Python 3.14+ detected, but running in GIL-enabled mode.
+melder is optimized for Python built with --disable-gil (PEP 703).
+Performance may be degraded.
+  warnings.warn(
+Traceback (most recent call last):
+  File "/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/context_compass/artifacts/correctness_defects_20261017/probes/probe_release_note_s3.py", line 49, in <module>
+    lender.notch_spell(spell_index=index, spell_id=french)  # raised AttributeError until 0.2.8261
+    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/m0_mq/mirror_pre_s3/src/melder/aether/conduit/conduit.py", line 5783, in notch_spell
+    self._activate_borrowed_spell(spell.spell_id)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "/tmp/m0_mq/mirror_pre_s3/src/melder/aether/conduit/conduit.py", line 6340, in _activate_borrowed_spell
+    peer._spellbook._activate_contract_spell(owner_id, spell_id)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/m0_mq/mirror_pre_s3/src/melder/aether/spellbook/spellbook.py", line 1902, in _activate_contract_spell
+    self._reactivate_contracted_spell(conduit_id, spell)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "/tmp/m0_mq/mirror_pre_s3/src/melder/aether/spellbook/spellbook.py", line 1815, in _reactivate_contracted_spell
+    spell_index = spell.spell_index
+                  ^^^^^^^^^^^^^^^^^
+AttributeError: 'melder.aether.spellbook.spell.Spell' object has no attribute 'spell_index'. Did you mean: 'spell_id'?

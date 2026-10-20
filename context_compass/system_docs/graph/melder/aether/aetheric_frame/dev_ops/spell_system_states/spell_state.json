@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_state.py",
- "source_sha256": "00caa7e1b1834ca150a794a999d59b7f17736aab1c0b6e1e4092ce3dc8973336",
+ "source_sha256": "b1d65c14117e13587113e8d9ed161aa9993156b4e24d9afe4d49d53546e8d630",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state": {
@@ -30,13 +30,14 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "94398de5ff59c1cb3ee1862b1b7aef3d6648afe2ab99fad7cae16cee5f9feaba",
+   "span_sha256": "5b7fbd6916d099673347ada28f3783109ea3074cc38ccf1be9aadf94aeb6325d",
    "role": "Fine-grained state-flag enum for one spell lineage.",
    "responsibilities": [
-    "labels topology, contract, mutation, and ops state flags for a lineage"
+    "labels topology, contract, mutation, ops and capability state flags for a lineage",
+    "non_resolvable marks a lineage whose selected version was bound resolvable=False: it owes no resolution verdict, validation never clears it, and RiskManager leaves its risk out of the Book flag (0.2.8247)"
    ],
    "owns_state": [
-    "new_lineage",
+    "new_index",
     "structure_changed",
     "dependencies_changed",
     "impacted_by_dependency",
@@ -48,13 +49,14 @@
     "has_open_incident",
     "anchored_component",
     "config_missing",
-    "transfer_in_progress"
+    "transfer_in_progress",
+    "non_resolvable"
    ],
    "phases": [
     "validation",
     "runtime"
    ],
-   "semantics_authored_against": "94398de5ff59c1cb3ee1862b1b7aef3d6648afe2ab99fad7cae16cee5f9feaba"
+   "semantics_authored_against": "6d892780b13060cbb75e56182c345e4ec5665a150157ec2edd4420cdcc733e0b"
   }
  },
  "edges_out": [],

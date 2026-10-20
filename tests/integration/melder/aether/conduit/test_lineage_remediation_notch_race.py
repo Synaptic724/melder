@@ -74,7 +74,7 @@ def _two_member_index() -> Iterator[tuple]:
         permissions="create", binding_name="a",
     )
     conduit = book.conjure(dynamic=True, name="race-root")
-    index = book.find_spell_by_id(id_a).spell_index
+    index = book.find_spell_by_spell_id(id_a).spell_index
     id_b = conduit.bind_inactive(
         spell=_RaceBeta, spell_index=index, existence=Existence.unique,
         permissions="create", binding_name="b",

@@ -188,7 +188,7 @@ def _read_signatures(spell: Any, spell_id: str) -> Dict[str, Any]:
         spell:
             Live `Spell` whose compiler artifact holds a `SpellCodegenCreation`.
         spell_id:
-            The spell's version id, echoed so id drift is visible in a mismatch.
+            The spell's spell_id, echoed so id drift is visible in a mismatch.
 
     Returns:
         Dict[str, Any]:

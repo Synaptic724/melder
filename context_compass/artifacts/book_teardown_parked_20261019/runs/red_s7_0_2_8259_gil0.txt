@@ -1,0 +1,32 @@
+FFFF.F.F                                                                 [100%]
+=================================== FAILURES ===================================
+E   assert False
+     +  where False = Spell(name=French, binding=french, frame=Greeter, SHA256=9c1003fb1ef42a465d431ef0d6f4666a1aa9c0f8c86efa16cad1190763550cc7).cleaned
+     +    where Spell(name=French, binding=french, frame=Greeter, SHA256=9c1003fb1ef42a465d431ef0d6f4666a1aa9c0f8c86efa16cad1190763550cc7) = <test_book_teardown_retires_parked_versions_integration._World object at 0x30a6c1a8d10>.french
+tests/integration/melder/spellbook/test_book_teardown_retires_parked_versions_integration.py:196: assert False
+E   assert False
+     +  where False = Spell(name=French, binding=french, frame=Greeter, SHA256=9c1003fb1ef42a465d431ef0d6f4666a1aa9c0f8c86efa16cad1190763550cc7).cleaned
+     +    where Spell(name=French, binding=french, frame=Greeter, SHA256=9c1003fb1ef42a465d431ef0d6f4666a1aa9c0f8c86efa16cad1190763550cc7) = <test_book_teardown_retires_parked_versions_integration._World object at 0x30a6d254ed0>.french
+tests/integration/melder/spellbook/test_book_teardown_retires_parked_versions_integration.py:196: assert False
+E   assert False
+     +  where False = Spell(name=French, binding=french, frame=Greeter, SHA256=9c1003fb1ef42a465d431ef0d6f4666a1aa9c0f8c86efa16cad1190763550cc7).cleaned
+     +    where Spell(name=French, binding=french, frame=Greeter, SHA256=9c1003fb1ef42a465d431ef0d6f4666a1aa9c0f8c86efa16cad1190763550cc7) = <test_book_teardown_retires_parked_versions_integration._World object at 0x30a6d255650>.french
+tests/integration/melder/spellbook/test_book_teardown_retires_parked_versions_integration.py:219: assert False
+E   assert False
+     +  where False = Spell(name=French, binding=french, frame=Greeter, SHA256=9c1003fb1ef42a465d431ef0d6f4666a1aa9c0f8c86efa16cad1190763550cc7).cleaned
+     +    where Spell(name=French, binding=french, frame=Greeter, SHA256=9c1003fb1ef42a465d431ef0d6f4666a1aa9c0f8c86efa16cad1190763550cc7) = <test_book_teardown_retires_parked_versions_integration._World object at 0x30a6d252950>.french
+tests/integration/melder/spellbook/test_book_teardown_retires_parked_versions_integration.py:219: assert False
+E   assert False
+     +  where False = Spell(name=French, binding=french, frame=Greeter, SHA256=9c1003fb1ef42a465d431ef0d6f4666a1aa9c0f8c86efa16cad1190763550cc7).cleaned
+tests/integration/melder/spellbook/test_book_teardown_retires_parked_versions_integration.py:274: assert False
+E   assert False
+     +  where False = Spell(name=PooledV2, binding=pooled, frame=pools, SHA256=7f1e6516b2e1fa165f83d41326db43a2b7b2ae4c6bc915355b619b21207e0848).cleaned
+tests/integration/melder/spellbook/test_book_teardown_retires_parked_versions_integration.py:329: assert False
+=========================== short test summary info ============================
+FAILED tests/integration/melder/spellbook/test_book_teardown_retires_parked_versions_integration.py::test_book_teardown_cleans_a_parked_version_on_a_shared_index[True]
+FAILED tests/integration/melder/spellbook/test_book_teardown_retires_parked_versions_integration.py::test_book_teardown_cleans_a_parked_version_on_a_shared_index[False]
+FAILED tests/integration/melder/spellbook/test_book_teardown_retires_parked_versions_integration.py::test_book_teardown_cleans_a_parked_version_alone_in_its_own_index[True]
+FAILED tests/integration/melder/spellbook/test_book_teardown_retires_parked_versions_integration.py::test_book_teardown_cleans_a_parked_version_alone_in_its_own_index[False]
+FAILED tests/integration/melder/spellbook/test_book_teardown_retires_parked_versions_integration.py::test_spellbook_cleanup_before_conjure_cleans_a_version_parked_before_conjure
+FAILED tests/integration/melder/spellbook/test_book_teardown_retires_parked_versions_integration.py::test_book_teardown_unregisters_the_pools_of_an_active_and_a_parked_managed_version
+6 failed, 2 passed in 3.99s

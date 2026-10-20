@@ -1,0 +1,24 @@
+== mode normal (gil=0)
+after first borrower meld: borrower flag False validity valid
+notch to definition: ['structural lineage=F0PXE4 gated', 'register_spell conduit=JFR2PK spell=f6fa326d', 'structural lineage=F0PXE4 valid', 'reactivate book=4CJXCA spell=f6fa326d']
+  borrower flag False validity valid
+notch back: ['structural lineage=F0PXE4 gated', 'register_spell conduit=JFR2PK spell=53311c79', 'reactivate book=4CJXCA spell=53311c79']
+  borrower flag True validity gated
+after borrower meld of v1: borrower flag False validity valid
+second notch to definition: ['structural lineage=F0PXE4 gated', 'register_spell conduit=JFR2PK spell=f6fa326d', 'reactivate book=4CJXCA spell=f6fa326d']
+  borrower flag False validity gated
+second notch back: ['structural lineage=F0PXE4 gated', 'register_spell conduit=JFR2PK spell=53311c79', 'reactivate book=4CJXCA spell=53311c79']
+  borrower flag True validity gated borrower verdict v1 unknown
+after borrower meld: verdict v1 valid
+== mode --mutate (gil=0)
+after first borrower meld: borrower flag False validity valid
+notch to definition: ['structural lineage=XHVVSF gated', 'register_spell conduit=1521EP spell=f6fa326d', 'structural lineage=XHVVSF valid', 'reactivate book=4AKGKN spell=f6fa326d']
+  borrower flag False validity valid
+notch back: ['structural lineage=XHVVSF gated', 'register_spell conduit=1521EP spell=53311c79', 'reactivate book=4AKGKN spell=53311c79']
+  borrower flag True validity gated
+after borrower meld of v1: borrower flag False validity valid
+second notch to definition: ['structural lineage=XHVVSF gated', 'register_spell conduit=1521EP spell=f6fa326d', 'reactivate book=4AKGKN spell=f6fa326d']
+  borrower flag False validity gated
+second notch back: ['register_spell conduit=1521EP spell=53311c79', 'reactivate book=4AKGKN spell=53311c79']
+  borrower flag False validity gated borrower verdict v1 unknown
+after borrower meld: verdict v1 unknown

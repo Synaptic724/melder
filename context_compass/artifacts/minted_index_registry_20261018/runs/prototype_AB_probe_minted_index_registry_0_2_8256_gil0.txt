@@ -1,0 +1,26 @@
+M1 control: French parked in English's index
+  [French parked in English's index]
+    Book _get_owned_spell(French) -> French (parked)
+    frame.find_index_for_spell(French) -> an index
+    frame.find_conduit_id_for_spell(French) is the lender: True
+    lender.get_spell_by_spell_id(French) -> French
+    lender.get_conduit_by_spell_id(French) -> Conduit
+
+M2 remove_from_spell_index(French): French alone and parked in the minted index
+  [after remove_from_spell_index(French)]
+    Book _get_owned_spell(French) -> French (parked)
+    frame.find_index_for_spell(French) -> an index
+    frame.find_conduit_id_for_spell(French) is the lender: True
+    lender.get_spell_by_spell_id(French) -> French
+    lender.get_conduit_by_spell_id(French) -> Conduit
+
+M3 notch French active inside the minted index
+  [after the notch inside the minted index]
+    Book _get_owned_spell(French) -> French (active)
+    frame.find_index_for_spell(French) -> an index
+    frame.find_conduit_id_for_spell(French) is the lender: True
+    lender.get_spell_by_spell_id(French) -> French
+    lender.get_conduit_by_spell_id(French) -> Conduit
+    lender.meld(spell_id=French) -> French
+    borrower.add_spell_to_contract(spell_id=French) -> True
+

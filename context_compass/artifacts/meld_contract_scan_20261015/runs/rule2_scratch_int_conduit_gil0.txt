@@ -1,0 +1,52 @@
+........................................................................ [ 20%]
+........................................................................ [ 41%]
+.................................................F...................... [ 61%]
+........................................................................ [ 82%]
+.............................................................            [100%]
+=================================== FAILURES ===================================
+_ test_melds_racing_notches_get_a_version_or_the_lost_provider_refusal_and_end_on_the_last_version _
+
+    def test_melds_racing_notches_get_a_version_or_the_lost_provider_refusal_and_end_on_the_last_version() -> None:
+        """
+        Melds of the consumer on four threads race 20 notches between A and B (GIL off on 3.14t): each meld returns
+        a version, or the lost-provider refusal while a notch has the copy parked; nothing else is raised, and the
+        first meld after the race builds the version the last notch selected.
+        """
+        world = _lend("race", ImplA)
+        stop = threading.Event()
+        unexpected: List[BaseException] = []
+    
+        def _meld_until_stopped() -> None:
+            while not stop.is_set():
+                try:
+                    world.meld_ping()
+                except SpellbookValidationError:
+                    continue
+                except BaseException as exc:
+                    unexpected.append(exc)
+                    return
+    
+        threads = [threading.Thread(target=_meld_until_stopped) for _ in range(4)]
+        try:
+            assert world.meld_ping() == "A"
+            for thread in threads:
+                thread.start()
+            b_id = world.notch_to(ImplB)
+            versions = [b_id, world.provider_id] * 10
+            for version_id in versions[1:]:
+                world.notch_back(version_id)
+        finally:
+            stop.set()
+            for thread in threads:
+                thread.join(timeout=60)
+        try:
+>           assert unexpected == []
+E           assert [AttributeErr...bute 'ping'")] == []
+E             
+E             Left contains 2 more items, first extra item: AttributeError("'SpellContract' object has no attribute 'ping'")
+E             Use -v to get more diff
+
+tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py:586: AssertionError
+=========================== short test summary info ============================
+FAILED tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py::test_melds_racing_notches_get_a_version_or_the_lost_provider_refusal_and_end_on_the_last_version
+1 failed, 348 passed in 6.52s

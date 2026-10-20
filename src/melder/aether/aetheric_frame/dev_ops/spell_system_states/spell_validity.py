@@ -63,7 +63,7 @@ class SpellValidity(Enum):
         "never validated", not "invalid", and how it is treated is MODE
         DEPENDENT - implicitly valid in basic mode, gated in advanced modes.
         That is what makes lazy validation possible at all. A newly registered
-        lineage starts `unknown`, and `Meld._ensure_lineage_resolvable` reruns
+        SpellIndex starts `unknown`, and `Meld._ensure_lineage_resolvable` reruns
         the structural phases on first resolution rather than requiring an
         eager frame-wide validation pass at bind time.
         `disabled` and `cleaned` are both hard refusals but for different

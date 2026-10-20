@@ -175,7 +175,7 @@ def _build_spell_case_matrix() -> List[Dict[str, object]]:
             "name": "command_get_by_id",
             "request": {
                 "surface": "command",
-                "method": "get_spell_by_id",
+                "method": "get_spell_by_spell_id",
                 "args": ["@manifest.spells.__CASE__.spell_id"],
                 "kwargs": {"frame_name": "@manifest.frame_name"},
             },

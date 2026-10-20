@@ -1,0 +1,39 @@
+============================= test session starts ==============================
+platform linux -- Python 3.14.7, pytest-9.1.1, pluggy-1.6.0 -- /sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/.venv314t/bin/python
+rootdir: /sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private
+configfile: pyproject.toml
+collecting ... collected 971 items
+
+tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py::test_post_notch_selection_restores_without_an_extra_notch PASSED [  0%]
+tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py::test_profile_cache_round_trip_reloads_and_unfolds PASSED [  0%]
+tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py::test_pod_bootstrap_rebuilds_the_world_from_the_remote PASSED [  0%]
+tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py::test_saved_conduit_formation_restores_directly_after_reboot PASSED [  0%]
+tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py::test_auto_flush_cadence_ships_the_automatic_seal PASSED [  0%]
+tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py::test_synthetic_rooted_spell_restores_across_the_boot_boundary PASSED [  0%]
+tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py::test_mutation_research_round_trips_through_checkpoints PASSED [  0%]
+tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py::test_mutation_research_disabled_worlds_restore_deactivated PASSED [  0%]
+tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py::test_user_source_retention_rebuilds_deleted_files PASSED [  0%]
+tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py::test_flush_pushes_checkpoints_into_sqlite PASSED [  1%]
+tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py::test_pod_death_rebuilds_the_world_from_sqlite PASSED [  1%]
+tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py::test_broken_upload_handler_is_lenient_and_counted PASSED [  1%]
+tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py::test_inconsistent_remote_refuses_loudly PASSED [  1%]
+tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py::test_generic_mesh_handlers_carry_checkpoints_via_the_bridge PASSED [  1%]
+tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py::test_formations_ship_remote_and_reload PASSED [  1%]
+tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py::test_emission_tap_streams_delta_rows PASSED [  1%]
+tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py::test_external_retention_trims_oldest_checkpoints PASSED [  1%]
+tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py::test_index_graft_round_trips_into_a_live_host_book XFAIL [  1%]
+tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py::test_multi_member_index_graft_parks_the_staged_members XFAIL [  1%]
+tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py::test_merge_graft_grows_an_existing_index_and_adopts_selection XFAIL [  2%]
+tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py::test_restored_link_maps_recorded_contract_ulid_to_fresh_contract PASSED [  2%]
+tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py::test_legacy_chain_link_without_contract_twin_restores_without_mapping PASSED [  2%]
+tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py::test_parallel_and_sequential_drivers_restore_identical_outcomes PASSED [  2%]
+tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py::test_parallel_driver_failure_tears_the_partial_world_down PASSED [  2%]
+tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py::test_roots_only_configuration_parallel_restores_a_sealed_world PASSED [  2%]
+tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py::test_unknown_checkpoint_refusal_releases_load_authority PASSED [  2%]
+tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py::test_reload_over_live_world_fails_atomically_and_releases_authority PASSED [  2%]
+tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py::test_single_worker_parallel_restore_completes_without_deadlock PASSED [  2%]
+tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py::test_restored_world_recheckpoints_and_restores_again PASSED [  2%]
+tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py::test_cluster_world_parallel_restore_rebuilds_membership PASSED [  3%]
+tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py::test_staged_member_world_restores_identically_on_both_drivers PASSED [  3%]
+tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py::test_recorded_policy_twin_drives_driver_selection_on_reload PASSED [  3%]
+tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py::test_formation_restore_under_the_pool_carries_a_plan 

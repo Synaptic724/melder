@@ -159,7 +159,7 @@ def test_rebind_after_first_meld_melds_again(linked: bool, first_meld: bool) -> 
             peer.add_spell_to_contract(spell_id=identifier, conduit=root,
                                         aetheric_frame=frame, permissions="create")
         original = scope.meld(spellframe="actions", binding_name="probe") if first_meld else None
-        definition = root.get_spell_by_id(identifier, frame)
+        definition = root.get_spell_by_spell_id(identifier, frame)
         if linked:
             with peer.transaction("link", conduits=[peer, root]):
                 peer.remove_spell_from_contract(spell=definition, conduit=root, aetheric_frame=frame)
@@ -191,12 +191,12 @@ def test_replacement_is_resolved_again_and_the_old_product_survives() -> None:
         root_state = states.get_conduit_resolution_state(root._id)
         assert root_state is not None
         assert root_state.get_root_validity(identifier) is SpellValidity.valid
-        definition = root.get_spell_by_id(identifier, frame)
+        definition = root.get_spell_by_spell_id(identifier, frame)
         root.cleanup_spell(spell=definition)
         assert root_state.get_root_validity(identifier) is SpellValidity.unknown
         assert root_state.get_spell_validity(identifier) is SpellValidity.unknown
         replacement_id = _bind_probe(root)
-        replacement_spell = root.get_spell_by_id(replacement_id, frame)
+        replacement_spell = root.get_spell_by_spell_id(replacement_id, frame)
         assert replacement_spell is not definition
         assert replacement_spell._compiler_artifact._spell_codegen_creation is None
         product = scope.meld(spellframe="actions", binding_name="probe", override={"value": 2})
@@ -226,7 +226,7 @@ def test_dependent_consumer_is_rebuilt_against_the_replacement_class() -> None:
                   binding_name="consumer", disposal_method_names=["cleanup"])
         first = scope.meld(spellframe="consumers", binding_name="consumer")
         assert first.p.generation == 1
-        definition = root.get_spell_by_id(provider_id, frame)
+        definition = root.get_spell_by_spell_id(provider_id, frame)
         root.cleanup_spell(spell=definition)
         root.bind(spell=ProviderV2, existence="many", spellframe=IProvider,
                   disposal_method_names=["cleanup"])
@@ -248,7 +248,7 @@ def test_dependent_consumer_survives_a_same_class_rebind_of_its_dependency() -> 
         root.bind(spell=Consumer, existence="many", spellframe="consumers",
                   binding_name="consumer", disposal_method_names=["cleanup"])
         first = scope.meld(spellframe="consumers", binding_name="consumer")
-        definition = root.get_spell_by_id(provider_id, frame)
+        definition = root.get_spell_by_spell_id(provider_id, frame)
         root.cleanup_spell(spell=definition)
         again = root.bind(spell=Provider, existence="many", spellframe="provider",
                           disposal_method_names=["cleanup"])
@@ -277,7 +277,7 @@ def test_peer_conduit_that_resolved_the_old_definition_revalidates_the_replaceme
         peer_state = book._spell_system_states.get_conduit_resolution_state(peer._id)
         assert peer_state is not None
         assert peer_state.get_root_validity(identifier) is SpellValidity.valid
-        definition = root.get_spell_by_id(identifier, frame)
+        definition = root.get_spell_by_spell_id(identifier, frame)
         with peer.transaction("link", conduits=[peer, root]):
             peer.remove_spell_from_contract(spell=definition, conduit=root, aetheric_frame=frame)
         root.cleanup_spell(spell=definition)
@@ -302,7 +302,7 @@ def test_both_products_are_disposed_by_the_scope_that_built_them() -> None:
     try:
         identifier = _bind_probe(root)
         original = scope.meld(spellframe="actions", binding_name="probe")
-        definition = root.get_spell_by_id(identifier, frame)
+        definition = root.get_spell_by_spell_id(identifier, frame)
         root.cleanup_spell(spell=definition)
         _bind_probe(root)
         product = scope.meld(spellframe="actions", binding_name="probe", override={"value": 2})
@@ -325,7 +325,7 @@ def test_slotted_replacement_meets_the_surviving_singleton_in_its_slot() -> None
         identifier = root.bind(spell=RebindProbe, existence="unique_per_conduit", spellframe="actions",
                                binding_name="probe", disposal_method_names=["cleanup"])
         original = root.meld(spellframe="actions", binding_name="probe")
-        definition = root.get_spell_by_id(identifier, frame)
+        definition = root.get_spell_by_spell_id(identifier, frame)
         root.cleanup_spell(spell=definition)
         assert not original.cleaned
         assert root.bind(spell=RebindProbe, existence="unique_per_conduit", spellframe="actions",

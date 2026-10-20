@@ -1,0 +1,29 @@
+P1 control: lender.remove_from_spell_index(French) with English active
+  [after the index link]
+    borrower active copies: ['English']
+    borrower parked copies: [('French', 'live')]
+    borrower borrowed ids: ['English', 'French']
+  [after remove_from_spell_index(French)]
+    borrower active copies: ['English']
+    borrower parked copies: []
+    borrower borrowed ids: ['English']
+    borrower.get_spells_in_contract_by_conduit(lender) -> {'inbound': ['English'], 'outbound': []}
+
+P2 lender.cleanup_spell(French) with English keeping the index alive
+  [after the index link]
+    borrower active copies: ['English']
+    borrower parked copies: [('French', 'live')]
+    borrower borrowed ids: ['English', 'French']
+    lender still owns French: False; French cleaned: True
+  [after cleanup_spell(French)]
+    borrower active copies: ['English']
+    borrower parked copies: [('French', 'cleaned')]
+    borrower borrowed ids: ['English', 'French']
+    borrower.get_spells_in_contract_by_conduit(lender) -> {'inbound': ['English'], 'outbound': []}
+    borrower.find_contracted_spell(French's id) -> None
+    borrower.remove_index_from_contract(index_id=...) -> None
+  [after the unlink]
+    borrower active copies: []
+    borrower parked copies: [('French', 'cleaned')]
+    borrower borrowed ids: ['French']
+

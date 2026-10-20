@@ -1,0 +1,9 @@
+command: <project>/.venv/bin/python -X gil=0 d3_probe.py (cwd: <project>, a scratch dir holding a .venv; PYTHONPATH=<copy>/src:<project>/src)
+ran_at: 2026-10-10T13:33:48Z
+python: 3.14.7 prefix inside cwd: True
+site roots: ['~/cc_work/d3probe/.venv/lib/python3.14t/site-packages', '~/.local/lib/python3.14t/site-packages']
+roots=cwd      descent=False probe_pkg=user_source/descends=True | walked: {'app_mod': 'user_source', 'probe_pkg': 'user_source', 'probe_dep': 'user_source'} | fingerprinted: ['probe_dep', 'probe_pkg']
+roots=cwd      descent=True  probe_pkg=user_source/descends=True | walked: {'app_mod': 'user_source', 'probe_pkg': 'user_source', 'probe_dep': 'user_source'} | fingerprinted: ['probe_dep', 'probe_pkg']
+roots=cwd/src  descent=False probe_pkg=site_package/descends=False | walked: {'probe_pkg': 'site_package', 'app_mod': 'user_source'} | fingerprinted: []
+roots=cwd/src  descent=True  probe_pkg=site_package/descends=True | walked: {'app_mod': 'user_source', 'probe_pkg': 'site_package', 'probe_dep': 'site_package'} | fingerprinted: []
+exit: 0

@@ -1,0 +1,7 @@
+command: python -X gil=0 -m pytest -q -p no:cacheprovider -rsxX tests/integration/melder/live_sim tests/integration/melder/multithreading
+started: 2026-10-10T13:22:21Z
+x.......................................................                 [100%]
+=========================== short test summary info ============================
+XFAIL tests/integration/melder/live_sim/test_live_sim_automatic.py::test_live_sim_automatic_bootstrap_melds_application - This should fail as SpellContracts are not eligible in automatic.
+55 passed, 1 xfailed in 44.09s
+exit: 0 finished: 2026-10-10T13:23:07Z

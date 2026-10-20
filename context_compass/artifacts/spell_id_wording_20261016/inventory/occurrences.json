@@ -1,0 +1,2312 @@
+[
+ {
+  "id": "V001",
+  "path": "context_compass/system_docs/graph/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.json",
+  "line": 76,
+  "text": "        \"retires a spell id's per-conduit resolution verdicts in every live conduit state when its lineage is unregistered and when a version id is registered, so a content-stable id re-entering the frame is resolved again per conduit (0.2.8219)\",",
+  "held": true
+ },
+ {
+  "id": "V002",
+  "path": "context_compass/system_docs/graph/melder/aether/spellbook/spell_compiler/system/spell_system_index.json",
+  "line": 14,
+  "text": "   \"role\": \"The frame-level Phase 5+ system index keyed by spell version id.\",",
+  "held": true
+ },
+ {
+  "id": "V003",
+  "path": "context_compass/system_docs/graph/melder/aether/spellbook/spell_compiler/system/spell_system_index.json",
+  "line": 41,
+  "text": "   \"role\": \"Frame-level Phase 5+ system index keyed by spell version id.\",",
+  "held": true
+ },
+ {
+  "id": "V004",
+  "path": "context_compass/system_docs/graph/melder/aether/spellbook/spell_compiler/system/spell_system_node.json",
+  "line": 14,
+  "text": "   \"role\": \"One version-id keyed node of the Phase 5-7 system view.\",",
+  "held": true
+ },
+ {
+  "id": "V005",
+  "path": "context_compass/system_docs/graph/melder/aether/spellbook/spell_compiler/system/spell_system_node.json",
+  "line": 41,
+  "text": "   \"role\": \"Version-id keyed Phase 5-7 system node.\",",
+  "held": true
+ },
+ {
+  "id": "V006",
+  "path": "context_compass/system_docs/graph/melder/aether/spellbook/spell_compiler/system/spell_system_node.json",
+  "line": 43,
+  "text": "    \"stores one spell version id plus its lineage id\",",
+  "held": true
+ },
+ {
+  "id": "V007",
+  "path": "context_compass/system_docs/graph/melder/aether/spellbook/spell_compiler/system/validation/contracted_version_drift_strategy.json",
+  "line": 46,
+  "text": "    \"compare version ids stored on SpellSystemIndex nodes against the currently visible version for each lineage\",",
+  "held": true
+ },
+ {
+  "id": "V008",
+  "path": "context_compass/system_docs/graph/melder/aether/spellbook/spell_compiler/system/validation/identity_mixing_strategy.json",
+  "line": 14,
+  "text": "   \"role\": \"Phase 6 check: dependency edges use version ids, not lineage ids.\",",
+  "held": true
+ },
+ {
+  "id": "V009",
+  "path": "context_compass/system_docs/graph/melder/aether/spellbook/spell_compiler/system/validation/identity_mixing_strategy.json",
+  "line": 44,
+  "text": "   \"role\": \"Guard the version-id/lineage-id boundary: the system graph routes concrete VERSIONS, lineage ids are DevOps control-plane identity.\",",
+  "held": true
+ },
+ {
+  "id": "V010",
+  "path": "context_compass/system_docs/graph/melder/aether/spellbook/spell_compiler/system/validation/identity_mixing_strategy.json",
+  "line": 46,
+  "text": "    \"report dependency edges that point at lineage ids instead of version ids\",",
+  "held": true
+ },
+ {
+  "id": "V011",
+  "path": "context_compass/system_docs/graph/melder/aether/spellbook/spell_compiler/system/validation/lineage_alignment_strategy.json",
+  "line": 44,
+  "text": "   \"role\": \"Guard that the optional root-lineage metadata carried on version-id blueprints agrees with the index.\",",
+  "held": true
+ },
+ {
+  "id": "V012",
+  "path": "context_compass/system_docs/graph/melder/aether/spellbook/spell_compiler/validation/strategies/circular_dependency_strategy.json",
+  "line": 14,
+  "text": "   \"role\": \"Phase 4 check: multi-hop cycles by spell/version id.\",",
+  "held": true
+ },
+ {
+  "id": "V013",
+  "path": "context_compass/system_docs/graph/melder/aether/spellbook/spell_compiler/validation/strategies/circular_dependency_strategy.json",
+  "line": 44,
+  "text": "   \"role\": \"The multi-hop cycle check at spell/version-id level; counterpart to SelfDependencyStrategy and to the binding-key cycle strategy.\",",
+  "held": true
+ },
+ {
+  "id": "V014",
+  "path": "context_compass/system_docs/graph/melder/aether/spellbook/spell_compiler/validation/strategies/circular_dependency_strategy.json",
+  "line": 46,
+  "text": "    \"traverse the spellbook-wide dependency graph by spell/version id\",",
+  "held": true
+ },
+ {
+  "id": "V015",
+  "path": "context_compass/system_docs/graph/melder/aether/spellbook/spellbook.json",
+  "line": 82,
+  "text": "        \"answers contracted-spell lookups by key - the active copy by version id, a parked copy through its index - before walking (0.2.8231)\",",
+  "held": true
+ },
+ {
+  "id": "V016",
+  "path": "context_compass/system_docs/graph/melder/utilities/helpers/general_helpers.json",
+  "line": 79,
+  "text": "    \"names spell version ids for user-facing messages (describe_spell_id: the quoted spell name, or a 12-character id when the lookup cannot name it)\",",
+  "held": true
+ },
+ {
+  "id": "V017",
+  "path": "context_compass/system_docs/src_architecture.md",
+  "line": 21,
+  "text": "  together, and the creation stores key objects by version id, so a `unique` spell can have one live object per",
+  "held": true
+ },
+ {
+  "id": "V018",
+  "path": "context_compass/system_docs/src_architecture.md",
+  "line": 599,
+  "text": "the versions, compositions pin specific ones, and the creation stores key objects by version id,",
+  "held": true
+ },
+ {
+  "id": "V019",
+  "path": "context_compass/system_docs/src_architecture.md",
+  "line": 859,
+  "text": "   `register_index` retires any verdict already held for the version id it publishes, so a definition bound",
+  "held": true
+ },
+ {
+  "id": "V020",
+  "path": "context_compass/system_docs/src_architecture.md",
+  "line": 886,
+  "text": "   instead of a version id the notch parked.",
+  "held": true
+ },
+ {
+  "id": "V021",
+  "path": "context_compass/system_docs/src_architecture.md",
+  "line": 1468,
+  "text": "- Lookup by version id (2026-10-11, 0.2.8229): `Spellbook.find_spell_by_id` answers from the Book's id maps and",
+  "held": true
+ },
+ {
+  "id": "V022",
+  "path": "context_compass/system_docs/src_architecture.md",
+  "line": 1469,
+  "text": "  never iterates a live map. A current version id is one read of `_spells_by_id`; a superseded or parked id is a",
+  "held": true
+ },
+ {
+  "id": "V023",
+  "path": "context_compass/system_docs/src_architecture.md",
+  "line": 2128,
+  "text": "  never built raised RuntimeError \"many_only manifest references unknown spell_id '<the old version id>'\" on",
+  "held": true
+ },
+ {
+  "id": "V024",
+  "path": "context_compass/system_docs/src_architecture.md",
+  "line": 4357,
+  "text": "remeasured (the file grew 172 lines), and this lane's text says spell_id, as the owner asked, not \"version id\".",
+  "held": true
+ },
+ {
+  "id": "V025",
+  "path": "context_compass/system_docs/src_architecture.md",
+  "line": 4459,
+  "text": "2026-10-11 lookup by version id (0.2.8229): `Spellbook.find_spell_by_id` answers from the Book's id maps",
+  "held": true
+ },
+ {
+  "id": "V026",
+  "path": "context_compass/system_docs/src_components.md",
+  "line": 9897,
+  "text": "  Internal Version-id keyed system index for a frame (Phase 5+)",
+  "held": true
+ },
+ {
+  "id": "V027",
+  "path": "context_compass/system_docs/src_components.md",
+  "line": 9899,
+  "text": "  Internal Version-id keyed system view of a single spell for Phases 5\u20137",
+  "held": true
+ },
+ {
+  "id": "V028",
+  "path": "context_compass/system_docs/src_components.md",
+  "line": 9923,
+  "text": "  Guard that dependency edges stay on version ids rather than lineage ids",
+  "held": true
+ },
+ {
+  "id": "V029",
+  "path": "context_compass/system_docs/src_components.md",
+  "line": 11336,
+  "text": "spell_id, as the owner asked, not \"version id\".",
+  "held": true
+ },
+ {
+  "id": "V030",
+  "path": "context_compass/system_docs/src_components.md",
+  "line": 11419,
+  "text": "2026-10-11 lookup by version id (0.2.8229): Spellbook Core carries why `find_spell_by_id` reads the id maps",
+  "held": true
+ },
+ {
+  "id": "V031",
+  "path": "context_compass/system_docs/tests_components.md",
+  "line": 376,
+  "text": "- the public notch target (0.2.8249): `notch_spell` resolving a version id through the Book, passing an owned",
+  "held": true
+ },
+ {
+  "id": "V032",
+  "path": "context_compass/system_docs/tests_components.md",
+  "line": 567,
+  "text": "- the public notch target (0.2.8249): the stage -> notch -> meld loop and its revert by version id in real worlds,",
+  "held": true
+ },
+ {
+  "id": "V033",
+  "path": "release_docs/next_version_release.md",
+  "line": 46,
+  "text": "still registered. The lookup now answers from the Book's id maps: one read for a current version id, three for a",
+  "held": true
+ },
+ {
+  "id": "V034",
+  "path": "release_docs/next_version_release.md",
+  "line": 759,
+  "text": "  meld (for example \"many_only manifest references unknown spell_id '<the old version id>'\").",
+  "held": true
+ },
+ {
+  "id": "V035",
+  "path": "release_docs/next_version_release.md",
+  "line": 786,
+  "text": "- The packaged system documents describe how `find_spell_by_id` resolves version ids from the Book's id maps",
+  "held": true
+ },
+ {
+  "id": "V036",
+  "path": "src/melder/aether/aether.py",
+  "line": 2804,
+  "text": "        Return a flat set of all spell version ids known for one frame.",
+  "held": false
+ },
+ {
+  "id": "V037",
+  "path": "src/melder/aether/aether.py",
+  "line": 2816,
+  "text": "                All cached spell version ids for the frame.",
+  "held": false
+ },
+ {
+  "id": "V038",
+  "path": "src/melder/aether/aetheric_frame/aetheric_frame.py",
+  "line": 908,
+  "text": "        Return a flat set of all cached SHA256 version ids in this frame.",
+  "held": false
+ },
+ {
+  "id": "V039",
+  "path": "src/melder/aether/aetheric_frame/aetheric_frame.py",
+  "line": 916,
+  "text": "                All cached version ids across every conduit in the frame.",
+  "held": false
+ },
+ {
+  "id": "V040",
+  "path": "src/melder/aether/aetheric_frame/aetheric_frame.py",
+  "line": 945,
+  "text": "        Find and return the `SpellIndex` that contains the given version id.",
+  "held": false
+ },
+ {
+  "id": "V041",
+  "path": "src/melder/aether/aetheric_frame/aetheric_frame.py",
+  "line": 952,
+  "text": "            spell_id: SHA256 version id to search for.",
+  "held": false
+ },
+ {
+  "id": "V042",
+  "path": "src/melder/aether/aetheric_frame/aetheric_frame.py",
+  "line": 1048,
+  "text": "            set[str]: The frame's cached version ids while it is live; empty when",
+  "held": false
+ },
+ {
+  "id": "V043",
+  "path": "src/melder/aether/aetheric_frame/dev_ops/risk_manager/risk_manager.py",
+  "line": 340,
+  "text": "        - Clears any stale resolution key for the spell's current version id",
+  "held": false
+ },
+ {
+  "id": "V044",
+  "path": "src/melder/aether/aetheric_frame/dev_ops/risk_manager/risk_manager.py",
+  "line": 549,
+  "text": "        Resolve a lineage id from a current spell version id.",
+  "held": false
+ },
+ {
+  "id": "V045",
+  "path": "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/conduit_resolution_state.py",
+  "line": 60,
+  "text": "        Per-spell resolution verdicts keyed by spell_id (version id).",
+  "held": false
+ },
+ {
+  "id": "V046",
+  "path": "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/conduit_resolution_state.py",
+  "line": 62,
+  "text": "        Per-root resolution verdicts keyed by root_id (version id).",
+  "held": false
+ },
+ {
+  "id": "V047",
+  "path": "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/conduit_resolution_state.py",
+  "line": 82,
+  "text": "        - Verdicts are keyed by VERSION id (spell_id / root_id), not by index",
+  "held": false
+ },
+ {
+  "id": "V048",
+  "path": "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/conduit_resolution_state.py",
+  "line": 110,
+  "text": "        The keying follows from that: verdicts are per version id because a",
+  "held": false
+ },
+ {
+  "id": "V049",
+  "path": "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_state.py",
+  "line": 23,
+  "text": "        Currently promoted version id for this index (e.g., SpellIndex.selected_spell_id; typically a SHA).",
+  "held": false
+ },
+ {
+  "id": "V050",
+  "path": "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_state.py",
+  "line": 28,
+  "text": "        Set of dependency ids for this index. Caller decides whether ids are index or version ids.",
+  "held": false
+ },
+ {
+  "id": "V051",
+  "path": "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_state.py",
+  "line": 120,
+  "text": "                Currently promoted spell version id for the index.",
+  "held": false
+ },
+ {
+  "id": "V052",
+  "path": "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_state.py",
+  "line": 233,
+  "text": "        Currently promoted version id for this index (e.g., SpellIndex.selected_spell_id).",
+  "held": false
+ },
+ {
+  "id": "V053",
+  "path": "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_state.py",
+  "line": 554,
+  "text": "        Update the currently promoted version id for this index.",
+  "held": false
+ },
+ {
+  "id": "V054",
+  "path": "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_state.py",
+  "line": 559,
+  "text": "            spell_id: New current spell version id (non-empty).",
+  "held": false
+ },
+ {
+  "id": "V055",
+  "path": "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py",
+  "line": 50,
+  "text": "      (for convenience when you only know the version id).",
+  "held": true
+ },
+ {
+  "id": "V056",
+  "path": "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py",
+  "line": 192,
+  "text": "        # Version-id keyed topologies captured during Phase 3.",
+  "held": true
+ },
+ {
+  "id": "V057",
+  "path": "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py",
+  "line": 353,
+  "text": "          by current version id.",
+  "held": true
+ },
+ {
+  "id": "V058",
+  "path": "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py",
+  "line": 360,
+  "text": "          so a version id that re-enters the frame - a rebind of the same",
+  "held": true
+ },
+ {
+  "id": "V059",
+  "path": "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py",
+  "line": 458,
+  "text": "                # Keep current version id in sync",
+  "held": true
+ },
+ {
+  "id": "V060",
+  "path": "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py",
+  "line": 464,
+  "text": "            # The version id is (re)entering the frame: no conduit may keep a",
+  "held": true
+ },
+ {
+  "id": "V061",
+  "path": "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py",
+  "line": 580,
+  "text": "        Lookup a SpellSystemState by current spell version id.",
+  "held": true
+ },
+ {
+  "id": "V062",
+  "path": "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py",
+  "line": 582,
+  "text": "        This is a convenience when the caller only knows the version id",
+  "held": true
+ },
+ {
+  "id": "V063",
+  "path": "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py",
+  "line": 1329,
+  "text": "            public form serves callers that retire or re-gate a version id",
+  "held": true
+ },
+ {
+  "id": "V064",
+  "path": "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py",
+  "line": 1875,
+  "text": "        Return the local constructor topology using a version-id key.",
+  "held": true
+ },
+ {
+  "id": "V065",
+  "path": "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py",
+  "line": 1878,
+  "text": "        spell version id.",
+  "held": true
+ },
+ {
+  "id": "V066",
+  "path": "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py",
+  "line": 1883,
+  "text": "              version id.",
+  "held": true
+ },
+ {
+  "id": "V067",
+  "path": "src/melder/aether/conduit/conduit.py",
+  "line": 3115,
+  "text": "        Aether is responsible for mapping individual version IDs inside each",
+  "held": true
+ },
+ {
+  "id": "V068",
+  "path": "src/melder/aether/conduit/conduit.py",
+  "line": 3203,
+  "text": "             the live spell of the lineage that contains this version ID.",
+  "held": true
+ },
+ {
+  "id": "V069",
+  "path": "src/melder/aether/conduit/conduit.py",
+  "line": 3288,
+  "text": "            spell_id (str): The unique version ID (SHA) of the spell to find.",
+  "held": true
+ },
+ {
+  "id": "V070",
+  "path": "src/melder/aether/conduit/conduit.py",
+  "line": 3341,
+  "text": "        Finds a spell's current version ID (SHA256 spell_id) using its logical identifiers.",
+  "held": true
+ },
+ {
+  "id": "V071",
+  "path": "src/melder/aether/conduit/conduit.py",
+  "line": 4190,
+  "text": "            - Matches by LINEAGE, so a superseded or parked version id still resolves -",
+  "held": true
+ },
+ {
+  "id": "V072",
+  "path": "src/melder/aether/conduit/conduit.py",
+  "line": 5112,
+  "text": "                The managed version id; exclusive with `spell`.",
+  "held": true
+ },
+ {
+  "id": "V073",
+  "path": "src/melder/aether/conduit/conduit.py",
+  "line": 6251,
+  "text": "            spell_id (str): Version id of the spell whose borrowed copies to park.",
+  "held": true
+ },
+ {
+  "id": "V074",
+  "path": "src/melder/aether/conduit/conduit.py",
+  "line": 6298,
+  "text": "            spell_id (str): Version id of the spell whose parked borrowed copies to make",
+  "held": true
+ },
+ {
+  "id": "V075",
+  "path": "src/melder/aether/conduit/conduit_cluster.py",
+  "line": 1487,
+  "text": "            spell_id: Spell version id for the shared root.",
+  "held": false
+ },
+ {
+  "id": "V076",
+  "path": "src/melder/aether/conduit/conduit_ward/conduit_ward.py",
+  "line": 1877,
+  "text": "            spell_id (str, optional): The unique version ID of the spell.",
+  "held": true
+ },
+ {
+  "id": "V077",
+  "path": "src/melder/aether/conduit/conduit_ward/conduit_ward.py",
+  "line": 2401,
+  "text": "            member_ids: The index's member version ids, captured by the caller BEFORE",
+  "held": true
+ },
+ {
+  "id": "V078",
+  "path": "src/melder/aether/conduit/conduit_ward/conduit_ward.py",
+  "line": 2507,
+  "text": "            member_id: Version id of the member to uncontract.",
+  "held": true
+ },
+ {
+  "id": "V079",
+  "path": "src/melder/aether/conduit/conduit_ward/conduit_ward.py",
+  "line": 2529,
+  "text": "            member_id: Version id of the newly added member.",
+  "held": true
+ },
+ {
+  "id": "V080",
+  "path": "src/melder/aether/conduit/conduit_ward/conduit_ward.py",
+  "line": 2567,
+  "text": "            member_id: Version id of the removed member.",
+  "held": true
+ },
+ {
+  "id": "V081",
+  "path": "src/melder/aether/conduit/conduit_ward/conduit_ward.py",
+  "line": 2606,
+  "text": "            spell_id: Version id of the spell being added or removed.",
+  "held": true
+ },
+ {
+  "id": "V082",
+  "path": "src/melder/aether/conduit/conduit_ward/conduit_ward.py",
+  "line": 3479,
+  "text": "            * The version ID returned in the tuple is spell.spell_id (head).",
+  "held": true
+ },
+ {
+  "id": "V083",
+  "path": "src/melder/aether/conduit/conduit_ward/conduit_ward.py",
+  "line": 3539,
+  "text": "                        # Expose the CURRENT version id, not the historical one.",
+  "held": true
+ },
+ {
+  "id": "V084",
+  "path": "src/melder/aether/conduit/conduit_ward/conduit_ward.py",
+  "line": 3585,
+  "text": "            spell_id (str): The version ID (SHA) to search for.",
+  "held": true
+ },
+ {
+  "id": "V085",
+  "path": "src/melder/aether/conduit/conduit_ward/contract/contract.py",
+  "line": 295,
+  "text": "            spell_id: Version ID key to remove.",
+  "held": false
+ },
+ {
+  "id": "V086",
+  "path": "src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py",
+  "line": 1798,
+  "text": "            spell_id: The managed version id.",
+  "held": false
+ },
+ {
+  "id": "V087",
+  "path": "src/melder/aether/conduit/creations/creations.py",
+  "line": 1188,
+  "text": "                The managed version id.",
+  "held": false
+ },
+ {
+  "id": "V088",
+  "path": "src/melder/aether/conduit/creations/creations.py",
+  "line": 1224,
+  "text": "                The managed version id the pool is held under.",
+  "held": false
+ },
+ {
+  "id": "V089",
+  "path": "src/melder/aether/conduit/creations/managed_spell_quantity.py",
+  "line": 267,
+  "text": "            The current Spell object of the version id: a rebind that meets this pool under the same id re-points",
+  "held": false
+ },
+ {
+  "id": "V090",
+  "path": "src/melder/aether/conduit/creations/managed_spell_quantity.py",
+  "line": 318,
+  "text": "        Return the version id the pool is stored under.",
+  "held": false
+ },
+ {
+  "id": "V091",
+  "path": "src/melder/aether/conduit/creations/managed_spell_quantity.py",
+  "line": 321,
+  "text": "            str: The managed spell's version id (readable after cleanup).",
+  "held": false
+ },
+ {
+  "id": "V092",
+  "path": "src/melder/aether/conduit/creations/managed_spell_quantity.py",
+  "line": 837,
+  "text": "        Point the pool at the current Spell object of its version id.",
+  "held": false
+ },
+ {
+  "id": "V093",
+  "path": "src/melder/aether/conduit/creations/managed_spell_quantity.py",
+  "line": 851,
+  "text": "            spell: The current Spell of this version id.",
+  "held": false
+ },
+ {
+  "id": "V094",
+  "path": "src/melder/aether/conduit/creations/release_managed_spell.py",
+  "line": 377,
+  "text": "                Optional version id picking one pool.",
+  "held": false
+ },
+ {
+  "id": "V095",
+  "path": "src/melder/aether/conduit/creations/release_managed_spell.py",
+  "line": 420,
+  "text": "                Optional version id picking one pool.",
+  "held": false
+ },
+ {
+  "id": "V096",
+  "path": "src/melder/aether/conduit/creations/release_managed_spell.py",
+  "line": 454,
+  "text": "                Optional version id picking one pool for every object.",
+  "held": false
+ },
+ {
+  "id": "V097",
+  "path": "src/melder/aether/conduit/meld/meld.py",
+  "line": 1562,
+  "text": "        Return the active Spell of the lineage a version id belongs to, from the",
+  "held": true
+ },
+ {
+  "id": "V098",
+  "path": "src/melder/aether/conduit/meld/meld.py",
+  "line": 1566,
+  "text": "            - The registry maps every version id an index has selected to its",
+  "held": true
+ },
+ {
+  "id": "V099",
+  "path": "src/melder/aether/conduit/meld/meld.py",
+  "line": 1569,
+  "text": "              version id; an id the registry does not know is looked up as is.",
+  "held": true
+ },
+ {
+  "id": "V100",
+  "path": "src/melder/aether/conduit/meld/meld.py",
+  "line": 1577,
+  "text": "            spell_id: A version id a topology or a contracted map recorded.",
+  "held": true
+ },
+ {
+  "id": "V101",
+  "path": "src/melder/aether/spellbook/bind/spell_index.py",
+  "line": 380,
+  "text": "            spell_id (str): The version id to test.",
+  "held": false
+ },
+ {
+  "id": "V102",
+  "path": "src/melder/aether/spellbook/spell_compiler/blueprints/root_resolution_blueprint.py",
+  "line": 28,
+  "text": "          control use; graph semantics remain version-id-based.",
+  "held": false
+ },
+ {
+  "id": "V103",
+  "path": "src/melder/aether/spellbook/spell_compiler/blueprints/root_resolution_blueprint.py",
+  "line": 161,
+  "text": "        The DAG nodes are keyed by spell version id and represent the full",
+  "held": false
+ },
+ {
+  "id": "V104",
+  "path": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py",
+  "line": 1880,
+  "text": "        Bind one leasing site's version id, and its pool and pop when they are plan constants.",
+  "held": false
+ },
+ {
+  "id": "V105",
+  "path": "src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py",
+  "line": 95,
+  "text": "        Return the current bound spell version id or raise.",
+  "held": false
+ },
+ {
+  "id": "V106",
+  "path": "src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py",
+  "line": 102,
+  "text": "            str: Current spell version id.",
+  "held": false
+ },
+ {
+  "id": "V107",
+  "path": "src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py",
+  "line": 96,
+  "text": "        Resolve the current spell version id for the bound spell.",
+  "held": false
+ },
+ {
+  "id": "V108",
+  "path": "src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py",
+  "line": 100,
+  "text": "                Spell expected to have a current version id.",
+  "held": false
+ },
+ {
+  "id": "V109",
+  "path": "src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py",
+  "line": 107,
+  "text": "                If the spell has no current version id.",
+  "held": false
+ },
+ {
+  "id": "V110",
+  "path": "src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py",
+  "line": 406,
+  "text": "                    Version ids are visible to this Spellbook. This collection is treated",
+  "held": false
+ },
+ {
+  "id": "V111",
+  "path": "src/melder/aether/spellbook/spell_compiler/spell_compiler.py",
+  "line": 221,
+  "text": "                      - the root node is this Spell's version id, and",
+  "held": false
+ },
+ {
+  "id": "V112",
+  "path": "src/melder/aether/spellbook/spell_compiler/spell_compiler_system.py",
+  "line": 169,
+  "text": "                      - the root node is this Spell's version id, and",
+  "held": false
+ },
+ {
+  "id": "V113",
+  "path": "src/melder/aether/spellbook/spell_compiler/symbolic_graph/spell_symbolic_dependency.py",
+  "line": 129,
+  "text": "        # the *version id* (SpellIndex.selected_spell_id).",
+  "held": false
+ },
+ {
+  "id": "V114",
+  "path": "src/melder/aether/spellbook/spell_compiler/symbolic_graph/spell_symbolic_graph.py",
+  "line": 22,
+  "text": "    \"spell_id\" is again the spell's **version ID**:",
+  "held": false
+ },
+ {
+  "id": "V115",
+  "path": "src/melder/aether/spellbook/spell_compiler/symbolic_graph/spell_symbolic_graph.py",
+  "line": 87,
+  "text": "        # Same story: stored as _spell_id, semantics = version id.",
+  "held": false
+ },
+ {
+  "id": "V116",
+  "path": "src/melder/aether/spellbook/spell_compiler/system/spell_system_adjacency_builder.py",
+  "line": 21,
+  "text": "          direct_dependencies at the **version-id** level.",
+  "held": false
+ },
+ {
+  "id": "V117",
+  "path": "src/melder/aether/spellbook/spell_compiler/system/spell_system_adjacency_builder.py",
+  "line": 62,
+  "text": "        # Optional per-spell constructor topologies keyed by version-id.",
+  "held": false
+ },
+ {
+  "id": "V118",
+  "path": "src/melder/aether/spellbook/spell_compiler/system/spell_system_adjacency_snapshot.py",
+  "line": 13,
+  "text": "    This Phase 5 helper exposes the version-id level adjacency:",
+  "held": false
+ },
+ {
+  "id": "V119",
+  "path": "src/melder/aether/spellbook/spell_compiler/system/spell_system_adjacency_snapshot.py",
+  "line": 22,
+  "text": "    * All spell_ids are **version IDs** (spell.spell_index.selected_spell_id).",
+  "held": false
+ },
+ {
+  "id": "V120",
+  "path": "src/melder/aether/spellbook/spell_compiler/system/spell_system_index.py",
+  "line": 15,
+  "text": "    Version-id keyed system index for a frame (Phase 5+).",
+  "held": false
+ },
+ {
+  "id": "V121",
+  "path": "src/melder/aether/spellbook/spell_compiler/system/spell_system_index.py",
+  "line": 77,
+  "text": "        Retrieve an existing node by version id, if present.",
+  "held": false
+ },
+ {
+  "id": "V122",
+  "path": "src/melder/aether/spellbook/spell_compiler/system/spell_system_index.py",
+  "line": 80,
+  "text": "            spell_id: Version id to look up; must not be None.",
+  "held": false
+ },
+ {
+  "id": "V123",
+  "path": "src/melder/aether/spellbook/spell_compiler/system/spell_system_node.py",
+  "line": 14,
+  "text": "    Version-id keyed system view of a single spell for Phases 5\u20137.",
+  "held": false
+ },
+ {
+  "id": "V124",
+  "path": "src/melder/aether/spellbook/spell_compiler/system/spell_system_node.py",
+  "line": 20,
+  "text": "        * spell_id \u2013 version id (SpellIndex.selected_spell_id).",
+  "held": false
+ },
+ {
+  "id": "V125",
+  "path": "src/melder/aether/spellbook/spell_compiler/system/spell_system_node.py",
+  "line": 22,
+  "text": "        * dependencies \u2013 direct dependency spell_ids (version ids).",
+  "held": false
+ },
+ {
+  "id": "V126",
+  "path": "src/melder/aether/spellbook/spell_compiler/system/spell_system_node.py",
+  "line": 111,
+  "text": "        \"\"\"Return the version-id identity for this system node.\"\"\"",
+  "held": false
+ },
+ {
+  "id": "V127",
+  "path": "src/melder/aether/spellbook/spell_compiler/system/spell_system_node.py",
+  "line": 124,
+  "text": "        Snapshot of direct dependency version ids for this spell.",
+  "held": false
+ },
+ {
+  "id": "V128",
+  "path": "src/melder/aether/spellbook/spell_compiler/system/spell_system_root_blueprint_builder.py",
+  "line": 30,
+  "text": "    Given a SpellSystemAdjacencySnapshot (version-id graph for the *frame*),",
+  "held": false
+ },
+ {
+  "id": "V129",
+  "path": "src/melder/aether/spellbook/spell_compiler/system/spell_system_root_blueprint_builder.py",
+  "line": 35,
+  "text": "        * Each RootResolutionBlueprint is anchored at a **root version-id**,",
+  "held": false
+ },
+ {
+  "id": "V130",
+  "path": "src/melder/aether/spellbook/spell_compiler/system/spell_system_root_blueprint_builder.py",
+  "line": 36,
+  "text": "          but its DAG contains **all reachable version-ids** for that root.",
+  "held": false
+ },
+ {
+  "id": "V131",
+  "path": "src/melder/aether/spellbook/spell_compiler/system/spell_system_root_blueprint_builder.py",
+  "line": 140,
+  "text": "                Version-id of the spell to treat as the blueprint root.",
+  "held": false
+ },
+ {
+  "id": "V132",
+  "path": "src/melder/aether/spellbook/spell_compiler/system/spell_system_root_blueprint_builder.py",
+  "line": 227,
+  "text": "        ``reachable(X)`` is ``{X}`` plus every version-id reachable by following",
+  "held": false
+ },
+ {
+  "id": "V133",
+  "path": "src/melder/aether/spellbook/spell_compiler/system/spell_system_root_blueprint_builder.py",
+  "line": 340,
+  "text": "                Version-id of the root spell for this blueprint.",
+  "held": false
+ },
+ {
+  "id": "V134",
+  "path": "src/melder/aether/spellbook/spell_compiler/system/spell_system_root_blueprint_builder.py",
+  "line": 388,
+  "text": "        # 2. Build the DAG nodes (one per reachable version-id).",
+  "held": false
+ },
+ {
+  "id": "V135",
+  "path": "src/melder/aether/spellbook/spell_compiler/system/spell_system_validation_system.py",
+  "line": 141,
+  "text": "            spell_lookup: Optional mapping of visible spell version ids to spell objects.",
+  "held": false
+ },
+ {
+  "id": "V136",
+  "path": "src/melder/aether/spellbook/spell_compiler/system/validation/broken_spell_in_dag_strategy.py",
+  "line": 70,
+  "text": "            spell_lookup: Mapping of visible spell version ids to spell objects.",
+  "held": false
+ },
+ {
+  "id": "V137",
+  "path": "src/melder/aether/spellbook/spell_compiler/system/validation/contract_graph_cycle_strategy.py",
+  "line": 70,
+  "text": "            spell_lookup: Mapping of visible spell version ids to spell objects.",
+  "held": false
+ },
+ {
+  "id": "V138",
+  "path": "src/melder/aether/spellbook/spell_compiler/system/validation/contracted_version_drift_strategy.py",
+  "line": 33,
+  "text": "    This strategy compares the version ids stored on `SpellSystemIndex` nodes",
+  "held": false
+ },
+ {
+  "id": "V139",
+  "path": "src/melder/aether/spellbook/spell_compiler/system/validation/contracted_version_drift_strategy.py",
+  "line": 58,
+  "text": "            version ids for a lineage visible in the spellbook.",
+  "held": false
+ },
+ {
+  "id": "V140",
+  "path": "src/melder/aether/spellbook/spell_compiler/system/validation/contracted_version_drift_strategy.py",
+  "line": 69,
+  "text": "            spell_lookup: Mapping of visible spell version ids to spell objects.",
+  "held": false
+ },
+ {
+  "id": "V141",
+  "path": "src/melder/aether/spellbook/spell_compiler/system/validation/cycle_detection_strategy.py",
+  "line": 73,
+  "text": "            spell_lookup: Mapping of visible spell version ids, used to name the spells",
+  "held": false
+ },
+ {
+  "id": "V142",
+  "path": "src/melder/aether/spellbook/spell_compiler/system/validation/dependency_type_sanity_strategy.py",
+  "line": 76,
+  "text": "            spell_lookup: Mapping of visible spell version ids to spell objects.",
+  "held": false
+ },
+ {
+  "id": "V143",
+  "path": "src/melder/aether/spellbook/spell_compiler/system/validation/empty_collection_strategy.py",
+  "line": 119,
+  "text": "                Visible spell version ids to spell objects for this scope.",
+  "held": false
+ },
+ {
+  "id": "V144",
+  "path": "src/melder/aether/spellbook/spell_compiler/system/validation/graph_consistency_strategy.py",
+  "line": 74,
+  "text": "            spell_lookup: Mapping of visible spell version ids to spell objects.",
+  "held": false
+ },
+ {
+  "id": "V145",
+  "path": "src/melder/aether/spellbook/spell_compiler/system/validation/identity_mixing_strategy.py",
+  "line": 31,
+  "text": "    Guard that dependency edges stay on version ids rather than lineage ids.",
+  "held": false
+ },
+ {
+  "id": "V146",
+  "path": "src/melder/aether/spellbook/spell_compiler/system/validation/identity_mixing_strategy.py",
+  "line": 54,
+  "text": "        Validate that dependency ids are version ids, not lineage ids.",
+  "held": false
+ },
+ {
+  "id": "V147",
+  "path": "src/melder/aether/spellbook/spell_compiler/system/validation/identity_mixing_strategy.py",
+  "line": 68,
+  "text": "            spell_lookup: Mapping of visible spell version ids to spell objects.",
+  "held": false
+ },
+ {
+  "id": "V148",
+  "path": "src/melder/aether/spellbook/spell_compiler/system/validation/identity_mixing_strategy.py",
+  "line": 97,
+  "text": "                            \"instead of a version id.\"",
+  "held": false
+ },
+ {
+  "id": "V149",
+  "path": "src/melder/aether/spellbook/spell_compiler/system/validation/index_coverage_strategy.py",
+  "line": 70,
+  "text": "            spell_lookup: Mapping of visible spell version ids to spell objects.",
+  "held": false
+ },
+ {
+  "id": "V150",
+  "path": "src/melder/aether/spellbook/spell_compiler/system/validation/index_dependency_sanity_strategy.py",
+  "line": 72,
+  "text": "            spell_lookup: Mapping of visible spell version ids to spell objects.",
+  "held": false
+ },
+ {
+  "id": "V151",
+  "path": "src/melder/aether/spellbook/spell_compiler/system/validation/lineage_alignment_strategy.py",
+  "line": 34,
+  "text": "    Root blueprints are version-id rooted, but they can still carry lineage",
+  "held": false
+ },
+ {
+  "id": "V152",
+  "path": "src/melder/aether/spellbook/spell_compiler/system/validation/lineage_alignment_strategy.py",
+  "line": 74,
+  "text": "            spell_lookup: Mapping of visible spell version ids to spell objects.",
+  "held": false
+ },
+ {
+  "id": "V153",
+  "path": "src/melder/aether/spellbook/spell_compiler/system/validation/lineage_version_conflict_strategy.py",
+  "line": 34,
+  "text": "    Root blueprints are version-id graphs, but they still represent one",
+  "held": false
+ },
+ {
+  "id": "V154",
+  "path": "src/melder/aether/spellbook/spell_compiler/system/validation/lineage_version_conflict_strategy.py",
+  "line": 36,
+  "text": "    single root as different version ids, the root is effectively depending on",
+  "held": false
+ },
+ {
+  "id": "V155",
+  "path": "src/melder/aether/spellbook/spell_compiler/system/validation/lineage_version_conflict_strategy.py",
+  "line": 78,
+  "text": "            spell_lookup: Mapping of visible spell version ids to spell objects.",
+  "held": false
+ },
+ {
+  "id": "V156",
+  "path": "src/melder/aether/spellbook/spell_compiler/system/validation/missing_phase4_strategy.py",
+  "line": 72,
+  "text": "            spell_lookup: Mapping of visible spell version ids to spell objects.",
+  "held": false
+ },
+ {
+  "id": "V157",
+  "path": "src/melder/aether/spellbook/spell_compiler/system/validation/ownership_consistency_strategy.py",
+  "line": 79,
+  "text": "            spell_lookup: Mapping of visible spell version ids to spell objects.",
+  "held": false
+ },
+ {
+  "id": "V158",
+  "path": "src/melder/aether/spellbook/spell_compiler/system/validation/root_coverage_strategy.py",
+  "line": 73,
+  "text": "            spell_lookup: Mapping of visible spell version ids to spell objects.",
+  "held": false
+ },
+ {
+  "id": "V159",
+  "path": "src/melder/aether/spellbook/spell_compiler/system/validation/root_lineage_conflict_strategy.py",
+  "line": 76,
+  "text": "            spell_lookup: Mapping of visible spell version ids to spell objects.",
+  "held": false
+ },
+ {
+  "id": "V160",
+  "path": "src/melder/aether/spellbook/spell_compiler/system/validation/root_reachability_strategy.py",
+  "line": 69,
+  "text": "            spell_lookup: Mapping of visible spell version ids to spell objects.",
+  "held": false
+ },
+ {
+  "id": "V161",
+  "path": "src/melder/aether/spellbook/spell_compiler/system/validation/root_scale_limit_strategy.py",
+  "line": 104,
+  "text": "            spell_lookup: Mapping of visible spell version ids to spell objects.",
+  "held": false
+ },
+ {
+  "id": "V162",
+  "path": "src/melder/aether/spellbook/spell_compiler/system/validation/root_viability_strategy.py",
+  "line": 72,
+  "text": "            spell_lookup: Mapping of visible spell version ids to spell objects.",
+  "held": false
+ },
+ {
+  "id": "V163",
+  "path": "src/melder/aether/spellbook/spell_compiler/system/validation/scope_ordering_strategy.py",
+  "line": 71,
+  "text": "            spell_lookup: Mapping of visible spell version ids to spell objects.",
+  "held": false
+ },
+ {
+  "id": "V164",
+  "path": "src/melder/aether/spellbook/spell_compiler/system/validation/strategy_base.py",
+  "line": 69,
+  "text": "                Visible spell version ids to spell objects for the current",
+  "held": false
+ },
+ {
+  "id": "V165",
+  "path": "src/melder/aether/spellbook/spell_compiler/system/validation/topology_dependency_mismatch_strategy.py",
+  "line": 68,
+  "text": "            spell_lookup: Mapping of visible spell version ids to spell objects.",
+  "held": false
+ },
+ {
+  "id": "V166",
+  "path": "src/melder/aether/spellbook/spell_compiler/system/validation/visibility_gap_strategy.py",
+  "line": 71,
+  "text": "            spell_lookup: Mapping of visible spell version ids to spell objects.",
+  "held": false
+ },
+ {
+  "id": "V167",
+  "path": "src/melder/aether/spellbook/spell_compiler/topology/spell_local_topology.py",
+  "line": 23,
+  "text": "            The version ID of the spell that owns this socket",
+  "held": false
+ },
+ {
+  "id": "V168",
+  "path": "src/melder/aether/spellbook/spell_compiler/topology/spell_local_topology.py",
+  "line": 46,
+  "text": "            The direct dependency spells version IDs that this socket *actually*",
+  "held": false
+ },
+ {
+  "id": "V169",
+  "path": "src/melder/aether/spellbook/spell_compiler/topology/spell_local_topology.py",
+  "line": 53,
+  "text": "            Selected non-resolvable version IDs retained for graph navigation.",
+  "held": false
+ },
+ {
+  "id": "V170",
+  "path": "src/melder/aether/spellbook/spell_compiler/topology/spell_local_topology.py",
+  "line": 147,
+  "text": "            spell_id: Spell/version id this topology belongs to.",
+  "held": false
+ },
+ {
+  "id": "V171",
+  "path": "src/melder/aether/spellbook/spell_compiler/topology/spell_local_topology.py",
+  "line": 202,
+  "text": "        Return the spell/version id this topology belongs to.",
+  "held": false
+ },
+ {
+  "id": "V172",
+  "path": "src/melder/aether/spellbook/spell_compiler/validation/spell_validation_result.py",
+  "line": 73,
+  "text": "            spell_id: Validated spell/version id.",
+  "held": false
+ },
+ {
+  "id": "V173",
+  "path": "src/melder/aether/spellbook/spell_compiler/validation/strategies/circular_dependency_strategy.py",
+  "line": 26,
+  "text": "    - Traverses the spellbook-wide dependency graph by spell/version id.",
+  "held": false
+ },
+ {
+  "id": "V174",
+  "path": "src/melder/aether/spellbook/spell_compiler/validation/strategies/self_validation_strategy.py",
+  "line": 125,
+  "text": "            root_id: The spell's selected version id.",
+  "held": false
+ },
+ {
+  "id": "V175",
+  "path": "src/melder/aether/spellbook/spellbook.py",
+  "line": 236,
+  "text": "            - Initializes spell_id maps for O(1) resolution by current version id.",
+  "held": true
+ },
+ {
+  "id": "V176",
+  "path": "src/melder/aether/spellbook/spellbook.py",
+  "line": 867,
+  "text": "              version IDs (SHA256) for that conduit\u2019s spells.",
+  "held": true
+ },
+ {
+  "id": "V177",
+  "path": "src/melder/aether/spellbook/spellbook.py",
+  "line": 1146,
+  "text": "            Provide O(1) lookup by the current version id for owned spells.",
+  "held": true
+ },
+ {
+  "id": "V178",
+  "path": "src/melder/aether/spellbook/spellbook.py",
+  "line": 1149,
+  "text": "            - Only the current version id is stored in the map.",
+  "held": true
+ },
+ {
+  "id": "V179",
+  "path": "src/melder/aether/spellbook/spellbook.py",
+  "line": 1153,
+  "text": "            spell_id (str): Current version id for the spell.",
+  "held": true
+ },
+ {
+  "id": "V180",
+  "path": "src/melder/aether/spellbook/spellbook.py",
+  "line": 1194,
+  "text": "            old_id (str): Previous version id for the spell index.",
+  "held": true
+ },
+ {
+  "id": "V181",
+  "path": "src/melder/aether/spellbook/spellbook.py",
+  "line": 1195,
+  "text": "            new_id (str): New version id for the spell index.",
+  "held": true
+ },
+ {
+  "id": "V182",
+  "path": "src/melder/aether/spellbook/spellbook.py",
+  "line": 1265,
+  "text": "            spell_id (str): Current version id for the spell.",
+  "held": true
+ },
+ {
+  "id": "V183",
+  "path": "src/melder/aether/spellbook/spellbook.py",
+  "line": 1312,
+  "text": "            Provide O(1) lookup by the current version id for contracted spells.",
+  "held": true
+ },
+ {
+  "id": "V184",
+  "path": "src/melder/aether/spellbook/spellbook.py",
+  "line": 1320,
+  "text": "            spell_id (str): Current version id for the spell.",
+  "held": true
+ },
+ {
+  "id": "V185",
+  "path": "src/melder/aether/spellbook/spellbook.py",
+  "line": 1381,
+  "text": "            old_id (str): The previous version id for the spell index.",
+  "held": true
+ },
+ {
+  "id": "V186",
+  "path": "src/melder/aether/spellbook/spellbook.py",
+  "line": 1382,
+  "text": "            new_id (str): New version id for the spell index.",
+  "held": true
+ },
+ {
+  "id": "V187",
+  "path": "src/melder/aether/spellbook/spellbook.py",
+  "line": 1461,
+  "text": "            spell_id (str): Current version id for the spell.",
+  "held": true
+ },
+ {
+  "id": "V188",
+  "path": "src/melder/aether/spellbook/spellbook.py",
+  "line": 1792,
+  "text": "            spell_id (str): Version id of the borrowed spell to deactivate.",
+  "held": true
+ },
+ {
+  "id": "V189",
+  "path": "src/melder/aether/spellbook/spellbook.py",
+  "line": 1819,
+  "text": "            spell_id (str): Version id of the borrowed spell to reactivate.",
+  "held": true
+ },
+ {
+  "id": "V190",
+  "path": "src/melder/aether/spellbook/spellbook.py",
+  "line": 2067,
+  "text": "              current version id of every owned lineage is a key of",
+  "held": true
+ },
+ {
+  "id": "V191",
+  "path": "src/melder/aether/spellbook/spellbook.py",
+  "line": 2279,
+  "text": "            (`spell_index_id`) rather than the current version id (`spell_id`).",
+  "held": true
+ },
+ {
+  "id": "V192",
+  "path": "src/melder/aether/spellbook/spellbook.py",
+  "line": 2706,
+  "text": "                Version id / spell id to resolve.",
+  "held": true
+ },
+ {
+  "id": "V193",
+  "path": "src/melder/aether/spellbook/spellbook.py",
+  "line": 2740,
+  "text": "                Version id / spell id to check.",
+  "held": true
+ },
+ {
+  "id": "V194",
+  "path": "src/melder/aether/spellbook/spellbook.py",
+  "line": 2906,
+  "text": "                Version id / spell id to resolve.",
+  "held": true
+ },
+ {
+  "id": "V195",
+  "path": "src/melder/aether/spellbook/spellbook.py",
+  "line": 3040,
+  "text": "        Resolves a contracted spell by its SHA256 version id using the Spellbook's",
+  "held": true
+ },
+ {
+  "id": "V196",
+  "path": "src/melder/aether/spellbook/spellbook.py",
+  "line": 3053,
+  "text": "            `_contracted_spells_by_id` under its own version id, and a parked one in",
+  "held": true
+ },
+ {
+  "id": "V197",
+  "path": "src/melder/aether/spellbook/spellbook.py",
+  "line": 3062,
+  "text": "        # O(1) first: the active borrowed copy under its own version id.",
+  "held": true
+ },
+ {
+  "id": "V198",
+  "path": "src/melder/aether/spellbook/spellbook.py",
+  "line": 3264,
+  "text": "        keyed under the wrong (selected) version id.",
+  "held": true
+ },
+ {
+  "id": "V199",
+  "path": "src/melder/aether/spellbook/spellbook.py",
+  "line": 3332,
+  "text": "            spell_id (str): Version id of the owned spell to resolve.",
+  "held": true
+ },
+ {
+  "id": "V200",
+  "path": "src/melder/aether/spellbook/spellbook.py",
+  "line": 6556,
+  "text": "        Replace one published SpellRecord after the active version id changes.",
+  "held": true
+ },
+ {
+  "id": "V201",
+  "path": "src/melder/aether/spellbook/spellbook.py",
+  "line": 6560,
+  "text": "                Previous current spell/version id.",
+  "held": true
+ },
+ {
+  "id": "V202",
+  "path": "src/melder/aether/spellbook/spellbook.py",
+  "line": 6562,
+  "text": "                Spell whose `spell_id` now reflects the new current version id.",
+  "held": true
+ },
+ {
+  "id": "V203",
+  "path": "src/melder/nexus/frame_descriptor/spell_record.py",
+  "line": 104,
+  "text": "                Current spell/version id.",
+  "held": false
+ },
+ {
+  "id": "V204",
+  "path": "src/melder/nexus/frame_descriptor/spell_record.py",
+  "line": 171,
+  "text": "            - Uses the published spell/version id, not the stable SpellIndex id.",
+  "held": false
+ },
+ {
+  "id": "V205",
+  "path": "src/melder/nexus/frame_descriptor_manager.py",
+  "line": 649,
+  "text": "                Current spell/version id.",
+  "held": false
+ },
+ {
+  "id": "V206",
+  "path": "src/melder/nexus/nexus.py",
+  "line": 1435,
+  "text": "                Current spell/version id.",
+  "held": false
+ },
+ {
+  "id": "V207",
+  "path": "src/melder/utilities/custom_exceptions/managed_spell_exhausted_error.py",
+  "line": 79,
+  "text": "                Version id of the managed spell.",
+  "held": false
+ },
+ {
+  "id": "V208",
+  "path": "src/melder/utilities/custom_exceptions/managed_spell_exhausted_error.py",
+  "line": 117,
+  "text": "            spell_id: Version id of the managed spell.",
+  "held": false
+ },
+ {
+  "id": "V209",
+  "path": "src/melder/utilities/custom_exceptions/managed_spell_exhausted_error.py",
+  "line": 155,
+  "text": "            spell_id: Version id of the managed spell.",
+  "held": false
+ },
+ {
+  "id": "V210",
+  "path": "src/melder/utilities/helpers/general_helpers.py",
+  "line": 460,
+  "text": "        Name a spell version id for a user-facing message.",
+  "held": false
+ },
+ {
+  "id": "V211",
+  "path": "src/melder/utilities/helpers/general_helpers.py",
+  "line": 463,
+  "text": "            Validation and resolution run on spell version ids; users know spells",
+  "held": false
+ },
+ {
+  "id": "V212",
+  "path": "src/melder/utilities/helpers/general_helpers.py",
+  "line": 474,
+  "text": "            spell_id: Spell version id, or None.",
+  "held": false
+ },
+ {
+  "id": "V213",
+  "path": "tests/component/melder/aether/conduit/test_conduit_component_transactions.py",
+  "line": 72,
+  "text": "        Resolve one locally owned spell by its current version id.",
+  "held": false
+ },
+ {
+  "id": "V214",
+  "path": "tests/component/melder/aether/conduit/test_conduit_component_transactions.py",
+  "line": 75,
+  "text": "          supplied version id.",
+  "held": false
+ },
+ {
+  "id": "V215",
+  "path": "tests/component/melder/aether/conduit/test_conduit_component_transactions.py",
+  "line": 79,
+  "text": "        spell_id: Current version id to resolve.",
+  "held": false
+ },
+ {
+  "id": "V216",
+  "path": "tests/component/melder/aether/conduit/test_conduit_component_transfer_footprint.py",
+  "line": 49,
+  "text": "    \"\"\"Resolve a locally owned spell by its current version id.\"\"\"",
+  "held": false
+ },
+ {
+  "id": "V217",
+  "path": "tests/component/melder/aether/dev_ops/change_control_manager/test_change_control_manager_component.py",
+  "line": 41,
+  "text": "        spell_id: Version id to register as current.",
+  "held": false
+ },
+ {
+  "id": "V218",
+  "path": "tests/component/melder/aether/dev_ops/spell_system_states/test_spell_system_states_component.py",
+  "line": 25,
+  "text": "        spell_id: Version id to register as current.",
+  "held": false
+ },
+ {
+  "id": "V219",
+  "path": "tests/component/melder/aether/dev_ops/spell_system_states/test_spell_system_states_component.py",
+  "line": 476,
+  "text": "        - get_by_spell_id resolves both the old and new version ids.",
+  "held": false
+ },
+ {
+  "id": "V220",
+  "path": "tests/component/melder/aether/dev_ops/test_dev_ops_manager_component.py",
+  "line": 23,
+  "text": "        spell_id: Version id to register as current.",
+  "held": false
+ },
+ {
+  "id": "V221",
+  "path": "tests/component/melder/aether/test_conduit_cloud_component.py",
+  "line": 78,
+  "text": "        Resolve one locally owned spell by its current version id.",
+  "held": false
+ },
+ {
+  "id": "V222",
+  "path": "tests/component/melder/aether/test_conduit_cloud_component.py",
+  "line": 81,
+  "text": "          supplied version id.",
+  "held": false
+ },
+ {
+  "id": "V223",
+  "path": "tests/component/melder/aether/test_conduit_cloud_component.py",
+  "line": 85,
+  "text": "        spell_id: Current version id to resolve.",
+  "held": false
+ },
+ {
+  "id": "V224",
+  "path": "tests/component/melder/spellbook/spell_compiler_runtime_test_support.py",
+  "line": 32,
+  "text": "    \"\"\"Resolve a live local spell by its current version id.\"\"\"",
+  "held": false
+ },
+ {
+  "id": "V225",
+  "path": "tests/component/melder/spellbook/spell_crafter/dag/test_spellbook_component_dag_local_frame.py",
+  "line": 54,
+  "text": "        Retrieve a local Spell by its version id.",
+  "held": false
+ },
+ {
+  "id": "V226",
+  "path": "tests/component/melder/spellbook/spell_crafter/dag/test_spellbook_component_dag_local_frame.py",
+  "line": 59,
+  "text": "        spell_id: Version id to match.",
+  "held": false
+ },
+ {
+  "id": "V227",
+  "path": "tests/component/melder/spellbook/spell_crafter/phases/test_spellbook_component_spell_crafter_phase5.py",
+  "line": 68,
+  "text": "        Retrieve a local Spell by its version id.",
+  "held": false
+ },
+ {
+  "id": "V228",
+  "path": "tests/component/melder/spellbook/spell_crafter/phases/test_spellbook_component_spell_crafter_phase5.py",
+  "line": 73,
+  "text": "        spell_id: Version id to match.",
+  "held": false
+ },
+ {
+  "id": "V229",
+  "path": "tests/component/melder/spellbook/spell_crafter/spell_examiner/test_spellbook_component_spell_examiner.py",
+  "line": 60,
+  "text": "        Retrieve a local Spell by its version id.",
+  "held": false
+ },
+ {
+  "id": "V230",
+  "path": "tests/component/melder/spellbook/spell_crafter/spell_examiner/test_spellbook_component_spell_examiner.py",
+  "line": 65,
+  "text": "        spell_id: Version id to match.",
+  "held": false
+ },
+ {
+  "id": "V231",
+  "path": "tests/component/melder/spellbook/spell_crafter/spell_examiner/test_spellbook_component_spell_examiner_inspection.py",
+  "line": 55,
+  "text": "        Retrieve a local Spell by its version id.",
+  "held": false
+ },
+ {
+  "id": "V232",
+  "path": "tests/component/melder/spellbook/spell_crafter/spell_examiner/test_spellbook_component_spell_examiner_inspection.py",
+  "line": 60,
+  "text": "        spell_id: Version id to match.",
+  "held": false
+ },
+ {
+  "id": "V233",
+  "path": "tests/component/melder/spellbook/spell_crafter/spell_examiner/test_spellbook_component_spell_examiner_profiles.py",
+  "line": 55,
+  "text": "        Retrieve a local Spell by its version id.",
+  "held": false
+ },
+ {
+  "id": "V234",
+  "path": "tests/component/melder/spellbook/spell_crafter/spell_examiner/test_spellbook_component_spell_examiner_profiles.py",
+  "line": 60,
+  "text": "        spell_id: Version id to match.",
+  "held": false
+ },
+ {
+  "id": "V235",
+  "path": "tests/component/melder/spellbook/spell_crafter/spell_examiner/test_spellbook_component_spell_examiner_strategies.py",
+  "line": 66,
+  "text": "        Retrieve a local Spell by its version id.",
+  "held": false
+ },
+ {
+  "id": "V236",
+  "path": "tests/component/melder/spellbook/spell_crafter/spell_examiner/test_spellbook_component_spell_examiner_strategies.py",
+  "line": 71,
+  "text": "        spell_id: Version id to match.",
+  "held": false
+ },
+ {
+  "id": "V237",
+  "path": "tests/component/melder/spellbook/spell_crafter/spell_requirements_finder/test_spellbook_component_spell_requirements_finder.py",
+  "line": 56,
+  "text": "        Retrieve a local Spell by its version id.",
+  "held": false
+ },
+ {
+  "id": "V238",
+  "path": "tests/component/melder/spellbook/spell_crafter/spell_requirements_finder/test_spellbook_component_spell_requirements_finder.py",
+  "line": 61,
+  "text": "        spell_id: Version id to match.",
+  "held": false
+ },
+ {
+  "id": "V239",
+  "path": "tests/component/melder/spellbook/spell_crafter/spell_requirements_finder/test_spellbook_component_spell_requirements_finder.py",
+  "line": 76,
+  "text": "        - SpellRequirements uses the current version id, not the original id.",
+  "held": false
+ },
+ {
+  "id": "V240",
+  "path": "tests/component/melder/spellbook/spell_crafter/spell_requirements_finder/test_spellbook_component_spell_requirements_finder.py",
+  "line": 90,
+  "text": "        new_version = \"updated-version-id\"",
+  "held": false
+ },
+ {
+  "id": "V241",
+  "path": "tests/component/melder/spellbook/spell_crafter/symbolic_graph/test_spellbook_component_symbolic_graph.py",
+  "line": 51,
+  "text": "        Retrieve a local Spell by its version id.",
+  "held": false
+ },
+ {
+  "id": "V242",
+  "path": "tests/component/melder/spellbook/spell_crafter/symbolic_graph/test_spellbook_component_symbolic_graph.py",
+  "line": 56,
+  "text": "        spell_id: Version id to match.",
+  "held": false
+ },
+ {
+  "id": "V243",
+  "path": "tests/component/melder/spellbook/spell_crafter/system/test_spellbook_component_spell_system_adjacency_builder.py",
+  "line": 25,
+  "text": "        spell_id: Version id to register.",
+  "held": false
+ },
+ {
+  "id": "V244",
+  "path": "tests/component/melder/spellbook/spell_crafter/system/test_spellbook_component_spell_system_adjacency_snapshot.py",
+  "line": 28,
+  "text": "        spell_id: Version id to register.",
+  "held": false
+ },
+ {
+  "id": "V245",
+  "path": "tests/component/melder/spellbook/spell_crafter/system/test_spellbook_component_spell_system_index.py",
+  "line": 34,
+  "text": "        spell_id: Version id to register.",
+  "held": false
+ },
+ {
+  "id": "V246",
+  "path": "tests/component/melder/spellbook/spell_crafter/system/test_spellbook_component_spell_system_node.py",
+  "line": 37,
+  "text": "        spell_id: Version id to register.",
+  "held": false
+ },
+ {
+  "id": "V247",
+  "path": "tests/component/melder/spellbook/spell_crafter/system/test_spellbook_component_spell_system_root_blueprint_builder.py",
+  "line": 28,
+  "text": "        spell_id: Version id to register.",
+  "held": false
+ },
+ {
+  "id": "V248",
+  "path": "tests/component/melder/spellbook/spell_crafter/system/test_spellbook_component_spell_system_validation_state.py",
+  "line": 34,
+  "text": "        spell_id: Version id to register.",
+  "held": false
+ },
+ {
+  "id": "V249",
+  "path": "tests/component/melder/spellbook/spell_crafter/system/test_spellbook_component_system_diagnostic.py",
+  "line": 30,
+  "text": "        spell_id: Version id to register.",
+  "held": false
+ },
+ {
+  "id": "V250",
+  "path": "tests/component/melder/spellbook/spell_crafter/system/validation/test_spellbook_component_system_validation_graph_consistency.py",
+  "line": 35,
+  "text": "        spell_id: Version id to register.",
+  "held": false
+ },
+ {
+  "id": "V251",
+  "path": "tests/component/melder/spellbook/spell_crafter/system/validation/test_spellbook_component_system_validation_system.py",
+  "line": 76,
+  "text": "        spell_id: Version id to register.",
+  "held": false
+ },
+ {
+  "id": "V252",
+  "path": "tests/component/melder/spellbook/spell_crafter/topology/test_spellbook_component_spell_local_topology.py",
+  "line": 55,
+  "text": "        Retrieve a local Spell by its version id.",
+  "held": false
+ },
+ {
+  "id": "V253",
+  "path": "tests/component/melder/spellbook/spell_crafter/topology/test_spellbook_component_spell_local_topology.py",
+  "line": 60,
+  "text": "        spell_id: Version id to match.",
+  "held": false
+ },
+ {
+  "id": "V254",
+  "path": "tests/component/melder/spellbook/test_codegen_signature_determinism.py",
+  "line": 191,
+  "text": "            The spell's version id, echoed so id drift is visible in a mismatch.",
+  "held": false
+ },
+ {
+  "id": "V255",
+  "path": "tests/component/melder/spellbook/test_phase_component_cprofile_harness.py",
+  "line": 99,
+  "text": "        - Returns the version id of `Depth9Root` as the default local target spell.",
+  "held": false
+ },
+ {
+  "id": "V256",
+  "path": "tests/component/melder/spellbook/test_spellbook_component_conduit_definition.py",
+  "line": 261,
+  "text": "                version_id: Spell version id being checked.",
+  "held": false
+ },
+ {
+  "id": "V257",
+  "path": "tests/component/melder/spellbook/test_spellbook_component_conduit_definition.py",
+  "line": 310,
+  "text": "                _version_id: Spell version id being checked.",
+  "held": false
+ },
+ {
+  "id": "V258",
+  "path": "tests/component/melder/spellbook/test_spellbook_component_find_spell_by_id.py",
+  "line": 5,
+  "text": "lineage now: a current version id through the active-id map, a superseded or parked id through the parked",
+  "held": false
+ },
+ {
+  "id": "V259",
+  "path": "tests/component/melder/spellbook/test_spellbook_component_find_spell_by_id.py",
+  "line": 153,
+  "text": "    \"\"\"A current version id answers the active Spell itself.\"\"\"",
+  "held": false
+ },
+ {
+  "id": "V260",
+  "path": "tests/component/melder/spellbook/test_spellbook_component_find_spell_by_id.py",
+  "line": 162,
+  "text": "    \"\"\"A parked version id answers the live spell of the index that holds it, not the parked version.\"\"\"",
+  "held": false
+ },
+ {
+  "id": "V261",
+  "path": "tests/component/melder/spellbook/test_spellbook_component_spell_crafter.py",
+  "line": 360,
+  "text": "        - Exposes a `current` version id.",
+  "held": false
+ },
+ {
+  "id": "V262",
+  "path": "tests/component/melder/spellbook/test_spellbook_component_spell_crafter.py",
+  "line": 366,
+  "text": "            Store a version id for the stub index.",
+  "held": false
+ },
+ {
+  "id": "V263",
+  "path": "tests/component/melder/spellbook/test_spellbook_component_spell_crafter.py",
+  "line": 370,
+  "text": "            current: Version id to expose via the `current` property.",
+  "held": false
+ },
+ {
+  "id": "V264",
+  "path": "tests/component/melder/spellbook/test_spellbook_component_spell_crafter.py",
+  "line": 380,
+  "text": "            Expose the version id for this stub.",
+  "held": false
+ },
+ {
+  "id": "V265",
+  "path": "tests/component/melder/spellbook/test_spellbook_component_spell_crafter.py",
+  "line": 384,
+  "text": "            str: The current version id.",
+  "held": false
+ },
+ {
+  "id": "V266",
+  "path": "tests/component/melder/spellbook/test_spellbook_component_spellbook.py",
+  "line": 1690,
+  "text": "        Validate removal raises when the version id is not present.",
+  "held": false
+ },
+ {
+  "id": "V267",
+  "path": "tests/component/melder/spellbook/test_spellbook_component_spellbook.py",
+  "line": 1692,
+  "text": "        - _remove_contracted_spell raises RuntimeError for unknown version ids.",
+  "held": false
+ },
+ {
+  "id": "V268",
+  "path": "tests/component/melder/spellbook/test_spellbook_component_spellbook.py",
+  "line": 1696,
+  "text": "        AssertionError: If removal does not raise for missing version ids.",
+  "held": false
+ },
+ {
+  "id": "V269",
+  "path": "tests/integration/melder/aether/test_aether_integration_change_control_transactions.py",
+  "line": 82,
+  "text": "        Resolve one locally owned spell by its current version id.",
+  "held": false
+ },
+ {
+  "id": "V270",
+  "path": "tests/integration/melder/aether/test_aether_integration_change_control_transactions.py",
+  "line": 85,
+  "text": "          supplied version id.",
+  "held": false
+ },
+ {
+  "id": "V271",
+  "path": "tests/integration/melder/aether/test_aether_integration_change_control_transactions.py",
+  "line": 89,
+  "text": "        spell_id: Current version id to resolve.",
+  "held": false
+ },
+ {
+  "id": "V272",
+  "path": "tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py",
+  "line": 204,
+  "text": "        \"\"\"Stage `impl` in the provider's index and notch to it; return its version id.\"\"\"",
+  "held": false
+ },
+ {
+  "id": "V273",
+  "path": "tests/integration/melder/conduit/test_conduit_integration_release_managed_spell.py",
+  "line": 162,
+  "text": "        spell_id: The managed version id.",
+  "held": false
+ },
+ {
+  "id": "V274",
+  "path": "tests/integration/melder/spellbook/test_spellbook_integration_core.py",
+  "line": 242,
+  "text": "        - The frame version registry contains the bound spell version id.",
+  "held": false
+ },
+ {
+  "id": "V275",
+  "path": "tests/integration/melder/spellbook/test_spellbook_integration_core.py",
+  "line": 243,
+  "text": "        - Conduit cleanup removes the version id from the frame registry.",
+  "held": false
+ },
+ {
+  "id": "V276",
+  "path": "tests/unit/melder/aether/conduit/conduit_ward/contract/test_details.py",
+  "line": 380,
+  "text": "        has_spell returns False when the version id is absent.",
+  "held": false
+ },
+ {
+  "id": "V277",
+  "path": "tests/unit/melder/aether/conduit/conduit_ward/test_conduit_ward_contracts.py",
+  "line": 167,
+  "text": "        \"\"\"Resolve a locally owned spell by version id, as Spellbook.find_spell_by_id answers from its id maps.\"\"\"",
+  "held": false
+ },
+ {
+  "id": "V278",
+  "path": "tests/unit/melder/aether/conduit/conduit_ward/test_conduit_ward_contracts.py",
+  "line": 281,
+  "text": "        \"\"\"Locate a contracted spell by SpellIndex or version id across all peers.\"\"\"",
+  "held": false
+ },
+ {
+  "id": "V279",
+  "path": "tests/unit/melder/aether/conduit/conduit_ward/test_conduit_ward_contracts.py",
+  "line": 294,
+  "text": "        \"\"\"Locate a contracted spell by version id within a peer conduit.\"\"\"",
+  "held": false
+ },
+ {
+  "id": "V280",
+  "path": "tests/unit/melder/aether/conduit/conduit_ward/test_conduit_ward_contracts.py",
+  "line": 305,
+  "text": "        \"\"\"Remove a contracted spell by version id for a peer conduit.\"\"\"",
+  "held": false
+ },
+ {
+  "id": "V281",
+  "path": "tests/unit/melder/aether/conduit/conduit_ward/test_conduit_ward_contracts.py",
+  "line": 595,
+  "text": "        \"\"\"Find a contracted spell by version id across all peers.\"\"\"",
+  "held": false
+ },
+ {
+  "id": "V282",
+  "path": "tests/unit/melder/aether/conduit/conduit_ward/test_conduit_ward_contracts.py",
+  "line": 1350,
+  "text": "    \"\"\"Verify spell lookup honors lineage history. A previous version id should resolve to the current spell.\"\"\"",
+  "held": false
+ },
+ {
+  "id": "V283",
+  "path": "tests/unit/melder/aether/conduit/conduit_ward/test_conduit_ward_sever_failure_atomicity_regression.py",
+  "line": 69,
+  "text": "        \"\"\"Record the one selected version id the destroy seam reads.\"\"\"",
+  "held": false
+ },
+ {
+  "id": "V284",
+  "path": "tests/unit/melder/aether/conduit/conduit_ward/transfer/test_transfer_of_ownership.py",
+  "line": 794,
+  "text": "            spell_id: Current version id for the spell.",
+  "held": false
+ },
+ {
+  "id": "V285",
+  "path": "tests/unit/melder/aether/conduit/conduit_ward/transfer/test_transfer_of_ownership_contracts.py",
+  "line": 769,
+  "text": "            spell_id: Current version id for the spell.",
+  "held": false
+ },
+ {
+  "id": "V286",
+  "path": "tests/unit/melder/aether/conduit/conduit_ward/transfer/test_transfer_of_ownership_owner_stamps.py",
+  "line": 178,
+  "text": "        target_holds: Version ids the target store already holds a pool for.",
+  "held": false
+ },
+ {
+  "id": "V287",
+  "path": "tests/unit/melder/aether/conduit/creations/test_creations_managed_quantities.py",
+  "line": 46,
+  "text": "            spell_id: The version id.",
+  "held": false
+ },
+ {
+  "id": "V288",
+  "path": "tests/unit/melder/aether/conduit/creations/test_managed_spell_quantity.py",
+  "line": 67,
+  "text": "            spell_id: The version id.",
+  "held": false
+ },
+ {
+  "id": "V289",
+  "path": "tests/unit/melder/aether/conduit/creations/test_release_managed_spell.py",
+  "line": 82,
+  "text": "            spell_id: The version id.",
+  "held": false
+ },
+ {
+  "id": "V290",
+  "path": "tests/unit/melder/aether/conduit/creations/test_release_managed_spell.py",
+  "line": 395,
+  "text": "    \"\"\"The filter must be a version id.\"\"\"",
+  "held": false
+ },
+ {
+  "id": "V291",
+  "path": "tests/unit/melder/aether/conduit/creations/test_release_managed_spell_multithreaded.py",
+  "line": 41,
+  "text": "            spell_id: The version id.",
+  "held": false
+ },
+ {
+  "id": "V292",
+  "path": "tests/unit/melder/aether/conduit/creations/test_release_managed_spell_multithreaded.py",
+  "line": 83,
+  "text": "        spell_id: The version id.",
+  "held": false
+ },
+ {
+  "id": "V293",
+  "path": "tests/unit/melder/aether/conduit/meld/test_meld.py",
+  "line": 67,
+  "text": "            current: The current version id for the spell.",
+  "held": false
+ },
+ {
+  "id": "V294",
+  "path": "tests/unit/melder/aether/conduit/meld/test_meld.py",
+  "line": 167,
+  "text": "            topologies: Version id -> local topology (`get_local_topology_by_id`); none recorded by default.",
+  "held": false
+ },
+ {
+  "id": "V295",
+  "path": "tests/unit/melder/aether/conduit/meld/test_meld.py",
+  "line": 168,
+  "text": "            states_by_spell_id: Version id -> lineage state exposing `current_spell_id` (`get_by_spell_id`).",
+  "held": false
+ },
+ {
+  "id": "V296",
+  "path": "tests/unit/melder/aether/conduit/meld/test_meld.py",
+  "line": 184,
+  "text": "        Return the topology recorded for a version id, or None; record the read and run the read hooks.",
+  "held": false
+ },
+ {
+  "id": "V297",
+  "path": "tests/unit/melder/aether/conduit/meld/test_meld.py",
+  "line": 193,
+  "text": "        Return the lineage state recorded under a version id (old version ids included), or None.",
+  "held": false
+ },
+ {
+  "id": "V298",
+  "path": "tests/unit/melder/aether/conduit/meld/test_meld.py",
+  "line": 1872,
+  "text": "        Each dependency is a stub spell in the consumer Book's pool, registered under its version id with its own",
+  "held": false
+ },
+ {
+  "id": "V299",
+  "path": "tests/unit/melder/aether/conduit/meld/test_meld.py",
+  "line": 2089,
+  "text": "        - The registry maps the old version id to the lineage; the pool supplies the current version, which is",
+  "held": false
+ },
+ {
+  "id": "V300",
+  "path": "tests/unit/melder/aether/conduit/meld/test_meld_2.py",
+  "line": 34,
+  "text": "            current: Spell version id used by error messages.",
+  "held": false
+ },
+ {
+  "id": "V301",
+  "path": "tests/unit/melder/aether/conduit/test_conduit_facade.py",
+  "line": 296,
+  "text": "    Verify find_spell_id returns the spell's current version id.",
+  "held": false
+ },
+ {
+  "id": "V302",
+  "path": "tests/unit/melder/aether/conduit/test_conduit_facade.py",
+  "line": 398,
+  "text": "        - The permissions enum name is returned for a matching version id.",
+  "held": false
+ },
+ {
+  "id": "V303",
+  "path": "tests/unit/melder/aether/dev_ops/risk_manager/test_risk_manager.py",
+  "line": 137,
+  "text": "            current_id: Current version id for the spell.",
+  "held": false
+ },
+ {
+  "id": "V304",
+  "path": "tests/unit/melder/aether/dev_ops/risk_manager/test_risk_manager.py",
+  "line": 593,
+  "text": "    \"\"\"Verify version-id lookup returns the stored lineage id when present.\"\"\"",
+  "held": false
+ },
+ {
+  "id": "V305",
+  "path": "tests/unit/melder/aether/dev_ops/risk_manager/test_risk_manager_non_resolvable.py",
+  "line": 29,
+  "text": "        A real SpellIndex (lineage id and selected version id) and the lineage's state read from the registry, as",
+  "held": false
+ },
+ {
+  "id": "V306",
+  "path": "tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system_states.py",
+  "line": 141,
+  "text": "    - The state is indexed by lineage ID and current spell version ID.",
+  "held": false
+ },
+ {
+  "id": "V307",
+  "path": "tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system_states_dependent_walk.py",
+  "line": 123,
+  "text": "        - `update_dependencies` with the dependencies' current version ids (the reverse edges).",
+  "held": false
+ },
+ {
+  "id": "V308",
+  "path": "tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system_states_verdict_retirement.py",
+  "line": 4,
+  "text": "`register_index` retires any verdict already held for the version id it publishes, so a definition bound",
+  "held": false
+ },
+ {
+  "id": "V309",
+  "path": "tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system_states_verdict_retirement.py",
+  "line": 173,
+  "text": "    \"\"\"A version id that re-enters the frame starts with no verdict in any conduit (the rebind case).\"\"\"",
+  "held": false
+ },
+ {
+  "id": "V310",
+  "path": "tests/unit/melder/aether/test_aetheric_frame.py",
+  "line": 354,
+  "text": "    - Returns the first instance that contains the requested version ID.",
+  "held": false
+ },
+ {
+  "id": "V311",
+  "path": "tests/unit/melder/aether/test_aetheric_frame_cleanup_race.py",
+  "line": 82,
+  "text": "            ids: The initial version ids.",
+  "held": false
+ },
+ {
+  "id": "V312",
+  "path": "tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py",
+  "line": 69,
+  "text": "        \"\"\"Return the pool held under one version id, as `Creations.get_managed_quantity` does.\"\"\"",
+  "held": false
+ },
+ {
+  "id": "V313",
+  "path": "tests/unit/melder/spellbook/spell_crafter/spell_examiner/spell_requirements_finder/test_spell_requirements_finder_future_strings.py",
+  "line": 64,
+  "text": "        version: Version id to store in the SpellIndex.",
+  "held": false
+ },
+ {
+  "id": "V314",
+  "path": "tests/unit/melder/spellbook/spell_crafter/system/validation/test_identity_mixing_strategy.py",
+  "line": 57,
+  "text": "        Verify version id dependencies do not emit diagnostics.",
+  "held": false
+ },
+ {
+  "id": "V315",
+  "path": "tests/unit/melder/spellbook/spell_crafter/system/validation/test_identity_mixing_strategy.py",
+  "line": 59,
+  "text": "        Leaves diagnostics empty when dependencies reference version ids.",
+  "held": false
+ },
+ {
+  "id": "V316",
+  "path": "tests/unit/melder/spellbook/test_spell_managed_quantity_stamp.py",
+  "line": 118,
+  "text": "    \"\"\"The pool lands in the owner root's store under the version id, composed from the Spell.\"\"\"",
+  "held": false
+ },
+ {
+  "id": "V317",
+  "path": "tests/unit/melder/spellbook/test_spellbook.py",
+  "line": 76,
+  "text": "            versions: Optional iterable of version ids associated with the spell.",
+  "held": false
+ },
+ {
+  "id": "V318",
+  "path": "tests/unit/melder/spellbook/test_spellbook.py",
+  "line": 349,
+  "text": "            Stores version ids and identifiers for later checks.",
+  "held": false
+ },
+ {
+  "id": "V319",
+  "path": "tests/unit/melder/spellbook/test_spellbook.py",
+  "line": 351,
+  "text": "            versions: Optional iterable of version ids.",
+  "held": false
+ },
+ {
+  "id": "V320",
+  "path": "tests/unit/melder/spellbook/test_spellbook.py",
+  "line": 353,
+  "text": "            current: Current version id for the index.",
+  "held": false
+ },
+ {
+  "id": "V321",
+  "path": "tests/unit/melder/spellbook/test_spellbook.py",
+  "line": 380,
+  "text": "            Report whether the index includes the given version id.",
+  "held": false
+ },
+ {
+  "id": "V322",
+  "path": "tests/unit/melder/spellbook/test_spellbook.py",
+  "line": 384,
+  "text": "            version_id: Version id to check.",
+  "held": false
+ },
+ {
+  "id": "V323",
+  "path": "tests/unit/melder/spellbook/test_spellbook.py",
+  "line": 397,
+  "text": "            version_id: Version id to check.",
+  "held": false
+ },
+ {
+  "id": "V324",
+  "path": "tests/unit/melder/spellbook/test_spellbook.py",
+  "line": 1471,
+  "text": "        _refresh_local_spell_ids aggregates version ids across spells.",
+  "held": false
+ },
+ {
+  "id": "V325",
+  "path": "tests/unit/melder/spellbook/test_spellbook.py",
+  "line": 4089,
+  "text": "        spell_versions: Version ids attached to the contracted index.",
+  "held": false
+ },
+ {
+  "id": "V326",
+  "path": "tests/unit/melder/spellbook/test_spellbook.py",
+  "line": 4468,
+  "text": "            version_id: Version id to check.",
+  "held": false
+ },
+ {
+  "id": "V327",
+  "path": "tests/unit/melder/spellbook/test_spellbook.py",
+  "line": 4505,
+  "text": "            version_id: Version id to check.",
+  "held": false
+ },
+ {
+  "id": "V328",
+  "path": "tests/unit/melder/spellbook/test_spellbook.py",
+  "line": 4519,
+  "text": "        Verify contracted spell lookup by version id finds a match.",
+  "held": false
+ },
+ {
+  "id": "V329",
+  "path": "tests/unit/melder/spellbook/test_spellbook.py",
+  "line": 4537,
+  "text": "        Ensure contracted lookup returns None when version id is missing.",
+  "held": false
+ },
+ {
+  "id": "V330",
+  "path": "tests/unit/melder/spellbook/test_spellbook_creation_system_parked_versions.py",
+  "line": 86,
+  "text": "            spell_id: The version id.",
+  "held": false
+ }
+]

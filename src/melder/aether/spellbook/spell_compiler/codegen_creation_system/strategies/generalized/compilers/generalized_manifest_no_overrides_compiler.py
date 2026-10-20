@@ -98,8 +98,9 @@ def _append_step_resolution_source(
     existence = Existence[row["existence"]]
     inlinable_params = row_inlinable_common_shape(row)
     # Bind-time spell truth stamped by the manifest builder; disposal facts
-    # compose into the spell fingerprint, so this can never go stale without
-    # rolling the spell version (and with it, this manifest).
+    # compose into the spell's binding hash, which the creation cache keys on
+    # beside the spell_id, so this can never go stale without rebuilding this
+    # manifest (EPIC-2026-10-18-spell_identity_is_the_code).
     has_disposal_methods = bool(row["spell_has_disposal_methods"])
     needs_register_block = not (
         existence is Existence.many and not has_disposal_methods
@@ -1155,6 +1156,86 @@ def select_specializable_step_indexes(
     )
 
 
+def rows_feed_many_into_non_many_step(
+        rows: Sequence[Dict[str, Any]],
+) -> bool:
+    """
+    Return True when a `many` row is a direct dependency of a non-`many` row.
+
+    Purpose:
+        Decide whether the singleton warm-tail specializer can express a graph.
+        Its body is straight-line: it emits every non-captured step, in order,
+        on every warm call. A `many` step whose consumer is a shared (slotted)
+        step would therefore be built on every call even when that consumer is
+        captured or already stored, and recorded in the meld's innermost scope
+        rather than with the holder's owner. The site plan builds such a child
+        only inside its holder's first build and records it with the holder's
+        owner (many_child_follows_holder, 2026-10-14), so these graphs keep the
+        plain door.
+
+    Contract:
+        - Pure function of manifest row data; no live spells consulted.
+        - Only direct edges count: a `many` step that feeds only `many` steps
+          (a transient root's own children) does not make the graph ineligible,
+          and a chain `many -> many -> holder` is caught at its last edge.
+        - Instance keys compare as `(spell_id, occurrence)` pairs, so list- and
+          tuple-shaped keys from a decoded package compare equal.
+
+    Args:
+        rows:
+            Manifest step rows for the no-overrides lane.
+
+    Returns:
+        bool: True when some non-`many` row lists a `many` row's instance key
+        among its dependency keys; False otherwise, including for a graph with
+        no `many` rows.
+    """
+    many_name = Existence.many.name
+    many_keys = {
+        (row["instance_key"][0], row["instance_key"][1])
+        for row in rows
+        if row["existence"] == many_name
+    }
+    if not many_keys:
+        return False
+    for row in rows:
+        if row["existence"] == many_name:
+            continue
+        for _param_name, dependency_keys in row["dependency_resolution_order"]:
+            for dependency_key in dependency_keys:
+                if (dependency_key[0], dependency_key[1]) in many_keys:
+                    return True
+    return False
+
+
+def rows_contain_managed_step(
+        rows: Sequence[Dict[str, Any]],
+) -> bool:
+    """
+    Return True when any manifest row is an `Existence.managed_spell_quantity` step.
+
+    Purpose:
+        Decide whether the singleton warm-tail specializer can express a graph.
+        A managed step is leased from its pool through the site plan (an inline
+        pop, a reserve-first miss, children recorded with the object, leases
+        returned when their holder is never built); the straight-line body has
+        no such lowering, so a graph with a managed row keeps the plain door
+        (managed_spell_quantity S5, 2026-10-15).
+
+    Contract:
+        - Pure function of manifest row data; no live spells consulted.
+
+    Args:
+        rows:
+            Manifest step rows for the no-overrides lane.
+
+    Returns:
+        bool: True when some row's `existence` is `managed_spell_quantity`.
+    """
+    managed_name = Existence.managed_spell_quantity.name
+    return any(row["existence"] == managed_name for row in rows)
+
+
 def emit_specialized_step_plan_source(
         *,
         rows: Sequence[Dict[str, Any]],
@@ -1195,7 +1276,7 @@ def emit_specialized_step_plan_source(
         - Root-is-captured collapses the tail to `return cap_inst_K` with no
           alias emission for the root slot.
         - Store-clear soundness is NOT guarded here by design: owner stores
-          clear only on teardown paths already blocked by lineage/validity
+          clear only on teardown paths already blocked by SpellIndex-unregister/validity
           gating before any executor runs (see patch lane architecture doc,
           Guard Policy).
 

@@ -1,0 +1,40 @@
+B1 control: late bind of a sound class (Spanish) under (Greeter, 'spanish')
+    bind(Spanish) -> spell_id
+  [after]
+    Spanish active in the Book: True
+    frame claim for its address held by it: True
+    lineage registered: ['valid']
+    meld(spellframe=Greeter, binding_name='spanish') -> Spanish
+
+B2 late bind of a broken class (SelfMade) under (Greeter, 'broken')
+    bind(SelfMade) raised SpellbookValidationError: Spellbook validation failed. Broken spells: SelfMade.
+  [after the failed bind]
+    SelfMade active in the Book: True
+    frame claim for its address held by it: True
+    lineage registered: ['invalid']
+    meld(spellframe=Greeter, binding_name='broken') raised SpellbookValidationError: Spellbook validation failed. Broken spells: SelfMade.
+    bind(FixedMade) at (Greeter, 'broken') raised RuntimeError: Binding signature already active in this frame: frame_key='greeter', binding_name='broken' is held by spell_id='a41b2d43d7cc67f141e6c6428218f01545b808
+    find_spell_index(Greeter, 'SelfMade', 'broken') -> SpellIndex
+    conduit.bind_inactive(FixedMade, spell_index=that index) -> str
+    notch_spell(-> FixedMade) -> Spell
+  [after the notch]
+    FixedMade active in the Book: True
+    frame claim for its address held by it: True
+    lineage registered: ['valid']
+    meld(spellframe=Greeter, binding_name='broken') -> FixedMade
+
+B3 B2's failed bind, then cleanup_spell of SelfMade and bind(FixedMade) at the address
+    bind(SelfMade) raised SpellbookValidationError: Spellbook validation failed. Broken spells: SelfMade.
+  [after the failed bind]
+    SelfMade active in the Book: True
+    frame claim for its address held by it: True
+    lineage registered: ['invalid']
+    meld(spellframe=Greeter, binding_name='broken') raised SpellbookValidationError: Spellbook validation failed. Broken spells: SelfMade.
+    conduit.cleanup_spell(SelfMade) -> NoneType
+    bind(FixedMade) at (Greeter, 'broken') -> spell_id
+  [after]
+    FixedMade active in the Book: True
+    frame claim for its address held by it: True
+    lineage registered: ['valid']
+    meld(spellframe=Greeter, binding_name='broken') -> FixedMade
+

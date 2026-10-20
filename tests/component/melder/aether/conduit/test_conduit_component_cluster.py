@@ -808,7 +808,10 @@ def test_component_join_into_live_cluster_binds_joiner_facade() -> None:
 
         cluster = cloud.get_cluster("cluster-a")
         assert borrower._cluster_creations.is_active() is True
-        assert borrower._cluster_creations.resolved_store() is owner._creations
+        # 0.2.8237: the facade fronts the cluster's own team store (it was the
+        # leader conduit's `_creations`) and records the elected leader.
+        assert borrower._cluster_creations.resolved_store() is cluster._team_store
+        assert borrower._cluster_creations.leader_conduit_id == owner.id
         assert cluster.master_conduit_id == owner.id
     finally:
         borrower.cleanup()

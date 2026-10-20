@@ -1,0 +1,137 @@
+--- src/melder/aether/conduit/meld/meld.py
++++ src/melder/aether/conduit/meld/meld.py
+@@ -175,3 +175,3 @@
+         dirty-root state BEFORE any instance is handed back, and re-runs the
+-        lazy phases when a lineage's validity is UNKNOWN or GATED. Contract
++        lazy phases when a SpellIndex's validity is UNKNOWN or GATED. Contract
+         validity is part of structural validity: a change of the provider a
+@@ -955,3 +955,3 @@
+           a valid verdict reads no topology
+-        - rerun structural phases when the lineage is unknown or gated; for a
++        - rerun structural phases when its SpellIndex is unknown or gated; for a
+           SpellContract consumer that rerun is the contract recheck: a change
+@@ -1223,3 +1223,3 @@
+ 
+-        "Is this lineage eligible to continue as-is, or must meld force a
++        "Is this SpellIndex eligible to continue as-is, or must meld force a
+         structural validation pass first?"
+@@ -1234,3 +1234,3 @@
+         Raises:
+-            SpellbookValidationError: If the lineage is already in a hard-fail
++            SpellbookValidationError: If the SpellIndex is already in a hard-fail
+                 state.
+@@ -1362,9 +1362,9 @@
+               so the gate does not walk for it twice.
+-            - True when the lineage has no registered state, or is `unknown` or
++            - True when its SpellIndex has no registered state, or is `unknown` or
+               `gated`: the structural branch reruns it and gates its verdict,
+               so a 5-11 pass follows.
+-            - For a `valid` lineage, True exactly when its effective verdict for
++            - For a `valid` SpellIndex, True exactly when its effective verdict for
+               the resolution conduit (`_get_resolution_validity`) is `unknown`
+               or `gated`, the verdicts `_ensure_resolution_resolvable` rebuilds.
+-            - False otherwise: an `invalid`, `disabled` or `cleaned` lineage or
++            - False otherwise: an `invalid`, `disabled` or `cleaned` SpellIndex or
+               verdict fails without compiling, and a valid spell with a valid
+@@ -1399,3 +1399,3 @@
+         """
+-        Report whether a dependency's structure is stale: its lineage is
++        Report whether a dependency's structure is stale: its SpellIndex is
+         registered and `gated` or `unknown`.
+@@ -1403,3 +1403,3 @@
+         Contract:
+-            - A registered lineage that is `gated` or `unknown` needs phases 1-4
++            - A registered SpellIndex that is `gated` or `unknown` needs phases 1-4
+               before a plan that expands it compiles: a notch, a provider change
+@@ -1427,3 +1427,3 @@
+         """
+-        Refresh the structure of every stale lineage the spell's plan expands,
++        Refresh the structure of every stale dependency the spell's plan expands,
+         before the plan compiles (D2, 2026-10-16).
+@@ -1437,4 +1437,4 @@
+             version and records a visibility failure that keeps the spell
+-            refused. The catch-up reruns phases 1-4 of each stale lineage first
+-            and resets that lineage's own plan, so it rebuilds at its own next
++            refused. The catch-up reruns phases 1-4 of each stale dependency first
++            and resets that dependency's own plan, so it rebuilds at its own next
+             meld too.
+@@ -1448,3 +1448,3 @@
+               the walk follows what the rerun Phase 3 recorded. A valid
+-              dependency is walked through, not refreshed: a stale lineage
++              dependency is walked through, not refreshed: a stale dependency
+               further down is still reached, once.
+@@ -1491,3 +1491,3 @@
+         Return the dependencies a plan of `spell` expands, at the versions their
+-        lineages select now, as Phase 8 expands them.
++        indexes select now, as Phase 8 expands them.
+ 
+@@ -1502,3 +1502,3 @@
+               index, then copy - the path Phase 8 resolves a contract through).
+-            - Each dependency is taken to the version its lineage selects now
++            - Each dependency is taken to the version its SpellIndex selects now
+               (`_current_in_pool`): a recorded id a notch superseded leads to
+@@ -1506,3 +1506,3 @@
+               skipped, as Phase 5 drops it.
+-            - May return one lineage twice (two sockets naming it); the caller's
++            - May return one dependency twice (two sockets naming it); the caller's
+               visited set keeps one.
+@@ -1515,3 +1515,3 @@
+                 contracted maps the plan resolves through.
+-            spell_system_states: The frame's lineage registry.
++            spell_system_states: The frame's SpellIndex state registry.
+ 
+@@ -1561,3 +1561,3 @@
+         """
+-        Return the active Spell of the lineage a version id belongs to, from the
++        Return the active Spell of the SpellIndex a version id belongs to, from the
+         compiling Book's pool, or None.
+@@ -1566,4 +1566,4 @@
+             - The registry maps every version id an index has selected to its
+-              lineage (`get_by_spell_id`; a notch adds the incoming id and keeps
+-              the old one), so a superseded id leads to the lineage's current
++              SpellIndex (`get_by_spell_id`; a notch adds the incoming id and keeps
++              the old one), so a superseded id leads to the index's current
+               version id; an id the registry does not know is looked up as is.
+@@ -1574,3 +1574,3 @@
+         Args:
+-            spell_system_states: The frame's lineage registry.
++            spell_system_states: The frame's SpellIndex state registry.
+             spell_id_pool: The compiling Book's active pool (`_spell_id_pool`).
+@@ -1579,3 +1579,3 @@
+         Returns:
+-            Optional[Spell]: The lineage's active Spell in the Book, or None.
++            Optional[Spell]: The SpellIndex's active Spell in the Book, or None.
+         """
+@@ -1589,3 +1589,3 @@
+         its own plan, so neither the compile that found it nor its own next meld
+-        uses a plan built before its lineage went stale.
++        uses a plan built before its SpellIndex went stale.
+ 
+@@ -1598,3 +1598,3 @@
+               lender's Book, which owns its compiler state.
+-            - Broken after the rerun: pins the lineage `invalid`, as the gate
++            - Broken after the rerun: pins its SpellIndex `invalid`, as the gate
+               pins a broken melded spell, and raises SpellbookValidationError
+@@ -1621,3 +1621,3 @@
+         Args:
+-            dependency: A stale lineage's active Spell, found by the walk.
++            dependency: The active Spell of a stale SpellIndex, found by the walk.
+ 
+@@ -2155,3 +2155,3 @@
+         This is the direct-id lookup path for callers that already know the
+-        exact current lineage id and do not need logical frame/binding
++        exact current spell_id and do not need logical frame/binding
+         normalization.
+--- src/melder/aether/conduit/meld/conduit_meld.py
++++ src/melder/aether/conduit/meld/conduit_meld.py
+@@ -754,3 +754,3 @@
+               existing object.
+-            - Rejects spellspace-request lineages on the conduit-facing door.
++            - Rejects spellspace-scoped spells on the conduit-facing door.
+             - Reads caller-local conduit storage for `unique_per_conduit`, the
+@@ -914,3 +914,3 @@
+               store; `active_spellspace_id` is always None on this door.
+-            - Rejects spellspace-request lineages on the conduit-facing door
++            - Rejects spellspace-scoped spells on the conduit-facing door
+               instead of pretending conduit-local storage can answer them.
+2 files, 28 edits applied and read back

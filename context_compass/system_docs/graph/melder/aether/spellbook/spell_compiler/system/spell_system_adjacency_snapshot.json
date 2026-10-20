@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/system/spell_system_adjacency_snapshot.py",
- "source_sha256": "a7baa638a95a7120c81a719082e0dd45f38a80cea6cddcbfade265aedc914a84",
+ "source_sha256": "d366c9979055e2dbb632a4697a941437c484692e3ddbb3d6e11be2757b037577",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.system.spell_system_adjacency_snapshot": {
@@ -39,7 +39,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "1d0cfe2ffac8936fc26142381093cdb5acd814706ac05c45ee539d25a5ec12ce",
+   "span_sha256": "b42997d3a19213daa84b91047c336260ba8d2a5f53a12fe4d9357c4da867c25b",
    "role": "Frame-wide structural adjacency snapshot over SpellSystemStates.",
    "responsibilities": [
     "exposes spell-id dependencies and reverse dependencies for the frame",

@@ -96,7 +96,7 @@ def _register_conduit_identity(
     conduit._id = conduit_id
     conduit._spellbook = MagicMock()
     conduit._spellbook._id = spellbook_id
-    conduit.get_spell_by_id = MagicMock()
+    conduit.get_spell_by_spell_id = MagicMock()
     conduit.get_spell_by_index_id = MagicMock()
     identity.attach_registry(frame.devops_information_registry, object_ref=conduit)
     return identity, conduit

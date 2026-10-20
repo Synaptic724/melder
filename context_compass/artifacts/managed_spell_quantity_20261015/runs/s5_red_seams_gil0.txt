@@ -1,0 +1,59 @@
+
+==================================== ERRORS ====================================
+_ ERROR collecting tests/unit/melder/spellbook/spell_compiler/test_managed_dispense_seams.py _
+ImportError while importing test module '/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/unit/melder/spellbook/spell_compiler/test_managed_dispense_seams.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/unit/melder/spellbook/spell_compiler/test_managed_dispense_seams.py:17: in <module>
+    from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_manifest_no_overrides_compiler import (
+E   ImportError: cannot import name 'rows_contain_managed_step' from 'melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_manifest_no_overrides_compiler' (/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_no_overrides_compiler.py)
+=========================== short test summary info ============================
+ERROR tests/unit/melder/spellbook/spell_compiler/test_managed_dispense_seams.py
+!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
+1 error in 9.90s
+.........F............F                                                  [100%]
+=================================== FAILURES ===================================
+______ test_solo_codegen_plan_discovery_strategy_declines_a_managed_spell ______
+
+    def test_solo_codegen_plan_discovery_strategy_declines_a_managed_spell() -> None:
+        """A lone managed spell is left to the generalized family, whose site plan dispenses leases."""
+        model = _ModelProbe("model")
+        model.existence_occurrence_shape = _managed_shape(Existence.managed_spell_quantity)
+    
+>       assert SoloCodegenPlanDiscoveryStrategy().discover(model) is None
+E       AssertionError: assert CodegenPlanDiscovery(selected_strategy_id='generalized_solo_codegen_plan', discovery_reason='solo_visible_spell_count_eq_1', plan_family_id='solo', candidate_codegen_style_ids=('generalized_solo',)) is None
+E        +  where CodegenPlanDiscovery(selected_strategy_id='generalized_solo_codegen_plan', discovery_reason='solo_visible_spell_count_eq_1', plan_family_id='solo', candidate_codegen_style_ids=('generalized_solo',)) = discover(<test_codegen_plan_discovery_core._ModelProbe object at 0x413f02c3850>)
+E        +    where discover = <melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.solo_codegen_plan_discovery_strategy.SoloCodegenPlanDiscoveryStrategy object at 0x413ec840520>.discover
+E        +      where <melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.solo_codegen_plan_discovery_strategy.SoloCodegenPlanDiscoveryStrategy object at 0x413ec840520> = SoloCodegenPlanDiscoveryStrategy()
+
+tests/unit/melder/spellbook/spell_compiler/test_codegen_plan_discovery_core.py:308: AssertionError
+____________________ test_managed_row_keeps_the_plain_door _____________________
+
+    def test_managed_row_keeps_the_plain_door() -> None:
+        """A graph with a managed row is served by the site plan: the specializer keeps the plain door (S5)."""
+        def plain_door(caller: Any) -> Any:
+            return ("plain", caller)
+    
+        rows = (
+            _row("u1", "unique"),
+            _row("m1", "managed_spell_quantity"),
+            _row("root", "many", [("dep", ["u1"]), ("pooled", ["m1"])]),
+        )
+        result = _install(
+            rows=rows,
+            route_key="many",
+            plain_door=plain_door,
+            spell_lookup={"u1": _stub_spell()},
+            root_spell=_stub_root_spell(),
+        )
+>       assert result is plain_door
+E       assert <function _install_specializing_door.<locals>._specializing_no_overrides_door at 0x413f0623600> is <function test_managed_row_keeps_the_plain_door.<locals>.plain_door at 0x413f0623f00>
+
+tests/unit/melder/spellbook/spell_compiler/test_generalized_specializer_wrapper.py:394: AssertionError
+=========================== short test summary info ============================
+FAILED tests/unit/melder/spellbook/spell_compiler/test_codegen_plan_discovery_core.py::test_solo_codegen_plan_discovery_strategy_declines_a_managed_spell
+FAILED tests/unit/melder/spellbook/spell_compiler/test_generalized_specializer_wrapper.py::test_managed_row_keeps_the_plain_door
+2 failed, 21 passed in 10.98s

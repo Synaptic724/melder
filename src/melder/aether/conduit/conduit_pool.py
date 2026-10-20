@@ -42,7 +42,9 @@ class ConduitPool(AbstractElasticPool[Any]):
     System Context:
         Pooling lesser conduits per root exists so repeated sub-conduit creation
         inside one root does not churn allocation - the same deque-first
-        fixed-capacity policy the SpellSpace pool uses. Scoping the pool to the
+        elastic retention the SpellSpace pool uses: keep what demand needed, up
+        to `max_idle`, and decay toward `baseline_idle` once it is quiet
+        (through 0.2.8233 the target stayed fixed at 20). Scoping the pool to the
         OWNING root rather than a global pool keeps a root's reused conduits
         inside its own lifecycle and cleanup boundary, so tearing down a root
         reclaims exactly its pooled lessers and nothing shared.
@@ -114,10 +116,13 @@ class ConduitPool(AbstractElasticPool[Any]):
               creation, hook order, and lineage-link timing.
             - Uses one direct deque pop miss path instead of pre-checking idle
               state under an outer Python lock.
+            - A miss records pressure for the elastic retention target
+              (`_note_miss`) before the caller builds the new lesser.
         """
         try:
             return self._idle.pop()
         except IndexError:
+            self._note_miss()
             return None
 
     def destroy_object(self, obj: Conduit) -> None:
@@ -142,20 +147,19 @@ class ConduitPool(AbstractElasticPool[Any]):
 
         Contract:
             - Assumes trusted private callers return each conduit at most once.
-            - Appends the returned conduit first.
-            - Retains the conduit while idle capacity remains at or below the
-              current target.
-            - Evicts one cold idle conduit with `popleft()` when retained
-              capacity is exceeded.
+            - Appends the returned conduit first; when at most `baseline_idle`
+              lessers are idle, the return ends there.
+            - Above `baseline_idle`, `_rebalance_after_return()` keeps it while
+              the idle set is within the elastic target, stretches the target
+              under recent pressure, applies a due decay step, and destroys
+              the oldest surplus lessers (through 0.2.8233: one overflow eviction
+              against a target fixed at 20).
 
         Returns:
             None.
         """
-        self._idle.append(conduit)
-        if len(self._idle) <= self._target_idle:
+        idle = self._idle
+        idle.append(conduit)
+        if len(idle) <= self._baseline_idle:
             return
-        try:
-            overflow_conduit = self._idle.popleft()
-        except IndexError:
-            return
-        self.destroy_object(overflow_conduit)
+        self._rebalance_after_return()

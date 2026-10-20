@@ -11,7 +11,7 @@ exports = ["Spellbook", "SpellBinder", "scan_bind", "Spell", "SpellIndex"]
 id = "resolution"
 title = "Resolution, scopes, and lifetimes"
 guide = "beginner/lifetimes"
-exports = ["Conduit", "SpellSpace", "SpellMap", "SpellContract", "Existence"]
+exports = ["Conduit", "SpellSpace", "SpellMap", "SpellContract", "Existence", "ManagedSpellMode", "ReleaseManagedSpell", "ManagedSpellLease"]
 
 [[group]]
 id = "configuration"
@@ -53,7 +53,7 @@ exports = ["ProtocolCrafter", "Cleanable", "Pack", "Package", "ULID_Factory", "n
 id = "errors"
 title = "Public errors"
 guide = "reference/troubleshooting"
-exports = ["SpellbookValidationError", "MeldExecutionError", "UnresolvedInputError", "SpellSpaceScopeError", "HookExecutionError", "InternalRegistrationError", "PhaseSchedulerError", "PhaseExecutionError", "PhaseTimeoutError", "DeadReferenceError"]
+exports = ["SpellbookValidationError", "MeldExecutionError", "UnresolvedInputError", "ManagedSpellExhaustedError", "SpellSpaceScopeError", "HookExecutionError", "InternalRegistrationError", "PhaseSchedulerError", "PhaseExecutionError", "PhaseTimeoutError", "DeadReferenceError"]
 
 [[group]]
 id = "metadata"

@@ -1,0 +1,30 @@
+Q1  version parked with bind_inactive, notched in, then melded (dynamic world)
+  unique                   parked BEFORE conjure: stamped before notch=True; meld works -> ServiceB
+  unique                   parked AFTER conjure:  stamped before notch=True; meld works -> ServiceB
+  unique_per_conduit       parked BEFORE conjure: stamped before notch=True; meld works -> ServiceB
+  unique_per_conduit       parked AFTER conjure:  stamped before notch=True; meld works -> ServiceB
+  many                     parked BEFORE conjure: stamped before notch=True; meld works -> ServiceB
+  many                     parked AFTER conjure:  stamped before notch=True; meld works -> ServiceB
+  managed_spell_quantity   parked BEFORE conjure: stamped before notch=True; meld works -> ServiceB
+  managed_spell_quantity   parked AFTER conjure:  stamped before notch=True; meld works -> ServiceB
+  unique                   parked BEFORE conjure, conjure stamps parked (probe-only patch): stamped before notch=True; meld works -> ServiceB
+  unique_per_conduit       parked BEFORE conjure, conjure stamps parked (probe-only patch): stamped before notch=True; meld works -> ServiceB
+  many                     parked BEFORE conjure, conjure stamps parked (probe-only patch): stamped before notch=True; meld works -> ServiceB
+  managed_spell_quantity   parked BEFORE conjure, conjure stamps parked (probe-only patch): stamped before notch=True; meld works -> ServiceB
+Q2  activation hook on a managed spell, lease -> release -> lease again
+  same object both times: True; objects built: 1; hook ran for serials [1, 1]
+Q4  a meld whose construction fails: what happens to the managed object leased for it
+  meld(Consumer) [sibling dependency raises] -> MeldExecutionError; Channel pool: count=0 idle=0 (Channel built 0, closed 0)
+  meld(FailingConsumer) [its own constructor raises] -> MeldExecutionError; Channel pool: count=1 idle=1 (Channel built 1, closed 0)
+Q5  limited_quantity, limit 2; managed_spell_meld with an override on Pipe's own parameter
+  two leased                                                 count=2 idle=0 built=2 closed=0 alive=2
+  third plain meld refused: ManagedSpellExhaustedError
+  override meld (fresh object, not counted)                  count=2 idle=0 built=3 closed=0 alive=3
+  all three released                                         count=1 idle=2 built=3 closed=1 alive=2
+  meld #4 refused: ManagedSpellExhaustedError
+  after leasing again (3 out)                                count=2 idle=0 built=4 closed=1 alive=3
+  all released                                               count=1 idle=2 built=4 closed=2 alive=2
+  override meld + release, cycle 2                           count=0 idle=2 built=5 closed=3 alive=2
+  override meld + release, cycle 3                           count=0 idle=2 built=6 closed=4 alive=2
+  meld #5 refused: ManagedSpellExhaustedError
+  after leasing again (4 out)                                count=2 idle=0 built=8 closed=4 alive=4

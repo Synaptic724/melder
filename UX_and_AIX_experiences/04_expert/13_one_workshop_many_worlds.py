@@ -83,9 +83,10 @@ class AuditTrail:
 def _workshop_frame(frame_name: str, spell: type):
     """One AI-native, rift-visible world holding its own object."""
     book = md.Spellbook(aetheric_frame=frame_name)
-    # A distinct binding_name per frame: spell_id is process-wide and the
-    # frame is NOT in the fingerprint (advanced 02), so identical bindings
-    # across worlds would collide.
+    # A distinct class per frame: a spell_id is the SHA256 of the class's
+    # code, process-wide by default, with neither the frame nor the
+    # binding_name in it (advanced 02), so one class bound in two worlds
+    # would be refused. The binding_name only names each world's address.
     book.bind(spell=spell, existence="unique", binding_name=frame_name)
     book.configure_aether_frame(
         system_state="dynamic",

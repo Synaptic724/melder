@@ -9,7 +9,7 @@ class ContractCrystal(Cleanable):
 
     Purpose:
         Links and contracts are the world's inter-conduit relationships -
-        which conduits are linked, which spells/lineages are shared into
+        which conduits are linked, which spells and spell indexes are shared into
         which peer, with what permissions and direction. This twin records
         the WHOLE contract (both sides' detail views) so restore can
         re-establish relationships after owner worlds rebuild (link edges
@@ -18,7 +18,7 @@ class ContractCrystal(Cleanable):
     Guidance:
         Use this twin after endpoint conduits and their link relationship are
         understood. `details_a`/`details_b` describe what each ward borrows from
-        its peer; index-detail rows describe lineage subscriptions. The two
+        its peer; index-detail rows describe SpellIndex subscriptions. The two
         projections are intentionally retained together so inspection does not
         mistake one side's view for the complete contract. Runtime endpoint and
         index ids must be translated during restore; spell SHA coordinates do
@@ -47,7 +47,7 @@ class ContractCrystal(Cleanable):
 
     Subsystem Context:
         One member of the crystal-twin family, capturing an inter-conduit
-        RELATIONSHIP: which conduits are linked and which spells/lineages are
+        RELATIONSHIP: which conduits are linked and which spells and spell indexes are
         shared into which peer, with what permissions and direction. Unlike the
         per-object twins, it records the WHOLE contract (both sides' details plus
         index-detail subscriptions) so restore can re-establish the relationship
@@ -109,9 +109,9 @@ class ContractCrystal(Cleanable):
                 Plain-dict projections of ward B's spell Details
                 (what B borrows from A).
             index_details_a:
-                Plain-dict projections of ward A's lineage subscriptions.
+                Plain-dict projections of ward A's SpellIndex subscriptions.
             index_details_b:
-                Plain-dict projections of ward B's lineage subscriptions.
+                Plain-dict projections of ward B's SpellIndex subscriptions.
 
         Returns:
             None.

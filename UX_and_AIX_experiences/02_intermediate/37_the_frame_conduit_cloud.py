@@ -74,6 +74,10 @@ class Ledger:
     """Something to bind so the frame has real work in it."""
 
 
+class OtherLedger(Ledger):
+    """The other frame's own Ledger - a new class, so its own spell_id."""
+
+
 def main() -> None:
     book = md.Spellbook(aetheric_frame="cloud-demo")
     book.bind(spell=Ledger, existence="unique", binding_name="demo")
@@ -101,11 +105,12 @@ def main() -> None:
     assert root.get_conduit_cloud() is cloud
 
     # A DIFFERENT FRAME IS A DIFFERENT WORLD, and so a different cloud.
-    # A DIFFERENT binding_name, because a spell_id does not carry the
-    # frame - the same class bound identically in two frames collides
-    # process-wide. The CLOUD is still per-frame; identity is not.
+    # It binds its OWN class: a spell_id is the SHA256 of the class's
+    # code and carries neither the frame nor the binding_name, so Ledger
+    # bound here as well would be refused process-wide. The CLOUD is
+    # still per-frame; identity is not.
     other_book = md.Spellbook(aetheric_frame="cloud-other")
-    other_book.bind(spell=Ledger, existence="unique", binding_name="other")
+    other_book.bind(spell=OtherLedger, existence="unique", binding_name="other")
     other_root = other_book.conjure(name="other-root")
     other_cloud = other_root.get_conduit_cloud()
     assert other_cloud is not cloud

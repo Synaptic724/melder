@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/conduit_ward/contract/details.py",
- "source_sha256": "d54ab07715f910d8acde02ad5305cd12248cd372db60529b7d4f71a4f429beeb",
+ "source_sha256": "7f2ec85d0b66408b62990fc9a740d5fec972462bc51c17ae75e89d564df1edec",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.conduit_ward.contract.details": {
@@ -41,11 +41,12 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "82cf4e223006ca7bed7260988a15954f525fe396cbadeb7853e4019ba725f909",
+   "span_sha256": "d9e931fdd62237dd7ecd1e353075330cf74d4944fc21ce8a16f81e1115d9129d",
    "role": "Spell-level permission entry stored inside a contract.",
    "responsibilities": [
     "stores lineage identity, version-at-contract time, permission, and direction metadata",
-    "tracks source root spell ids for reversible dependency-linked sharing"
+    "tracks source root spell ids for reversible dependency-linked sharing",
+    "answers lineage membership through SpellIndex._has_spell_unless_cleaned, so an index its owner cleaned answers False instead of raising"
    ],
    "owns_state": [
     "spell_index",
@@ -59,14 +60,14 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "82cf4e223006ca7bed7260988a15954f525fe396cbadeb7853e4019ba725f909"
+   "semantics_authored_against": "aa78e4c5676a96152fa062e1ce3549c075f83e5011a7c3b4183b80d1c3c9c88d"
   },
   "melder.aether.conduit.conduit_ward.contract.details.IndexDetail": {
    "id": "melder.aether.conduit.conduit_ward.contract.details.IndexDetail",
    "label": "IndexDetail",
    "kind": "class",
    "file": "src/melder/aether/conduit/conduit_ward/contract/details.py",
-   "lineno": 245,
+   "lineno": 249,
    "bases": [
     "Cleanable"
    ],
@@ -84,16 +85,25 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "ce2525588f17310b95165dc579747557b1959e830c1643b8ada718e89b7b2d66",
+   "span_sha256": "00f86d40b748ee367fa9ab0674dbe13461429e221e3cd568d4c894e268a6f258",
    "include": true,
    "role": "Index-level entry subscribing a peer to a whole SpellIndex rather than one version.",
    "responsibilities": [
-    "follow the index's selected member rather than pinning a version"
+    "follow the index's selected member rather than pinning a version",
+    "answers lineage membership through SpellIndex._has_spell_unless_cleaned, so an index its owner cleaned answers False instead of raising"
+   ],
+   "owns_state": [
+    "spell_index",
+    "selected_spell_id",
+    "permissions",
+    "contract_type",
+    "reason",
+    "sources"
    ],
    "phases": [
     "runtime"
    ],
-   "semantics_authored_against": "ce2525588f17310b95165dc579747557b1959e830c1643b8ada718e89b7b2d66"
+   "semantics_authored_against": "8b9089f17f6717ceec20cb9d3cb1c8056291301b74af5ce4d65e1117feb12c8e"
   }
  },
  "edges_out": [

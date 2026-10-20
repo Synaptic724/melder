@@ -1,0 +1,19 @@
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: STORY-2026-10-17-minted_index_selects_its_parked_version is withdrawn (owner, chat 2026-10-17: not a defect -
+    moving a version is the agent's call and making it active takes a notch), so the selection of a parked-only index
+    keeps naming its parked member. Both lanes of this story therefore decide from each member's recorded custody,
+    which the graft record carries per member (`custody_state`), not from the recorded selection: today the graft's
+    fresh-index lane binds the selected member active, and the restore's selection stage notches any rebuilt index
+    whose live selection differs from the record, so a rebuilt parked-only index must not reach that notch.
+  EVIDENCE:
+  - src/melder/crystallizer/persistence/persistence_profile.py:900-969
+  - src/melder/crystallizer/crystal_loader_system/graft_runner.py:230-330
+  - src/melder/crystallizer/crystal_loader_system/restore_engine.py:2271-2321
+  IMPACT: This story enforces the owner's rule on the graft and restore side: a parked member comes back parked, and
+    only a notch makes it active.
+  NEXT: The owner's scheduling; the patch docs for both lanes key on the members' recorded custody.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8

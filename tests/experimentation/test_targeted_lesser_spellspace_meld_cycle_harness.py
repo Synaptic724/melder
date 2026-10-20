@@ -274,18 +274,19 @@ def _measure_average_ns(
     return (end_ns - start_ns) / float(iterations)
 
 
-def _snapshot_pool_policy(pool: Any) -> Tuple[int, int]:
+def _snapshot_pool_policy(pool: Any) -> Tuple[int, int, int]:
     """
     Snapshot the elastic-pool retention policy fields for later restore.
 
     Contract:
-        Pools are elastic now (`AbstractElasticPool`); there is no boolean
-        enabled flag. Retention is governed by `_target_idle` (release keeps
-        while `len(_idle) <= _target_idle` after append-then-trim) and
-        `_max_idle` (stretch ceiling), so those two fields ARE the policy
-        this harness toggles.
+        Pools are elastic (`AbstractElasticPool`); there is no boolean
+        enabled flag. Retention is governed by `_baseline_idle` (a return
+        that leaves at most this many idle is kept on the fast path),
+        `_target_idle` (the elastic target above it) and `_max_idle` (the
+        ceiling), so those three fields ARE the policy this harness toggles
+        (0.2.8234; through 0.2.8233 the harness toggled target and max only).
     """
-    return (pool._target_idle, pool._max_idle)
+    return (pool._baseline_idle, pool._target_idle, pool._max_idle)
 
 
 def _set_pool_pooled(pool: Any) -> None:
@@ -297,8 +298,9 @@ def _set_pool_pooled(pool: Any) -> None:
         regardless of the configured baseline; existing larger policies are
         left untouched.
     """
-    pool._target_idle = max(pool._target_idle, 8)
-    pool._max_idle = max(pool._max_idle, 8)
+    pool._baseline_idle = max(pool._baseline_idle, 8)
+    pool._target_idle = max(pool._target_idle, pool._baseline_idle)
+    pool._max_idle = max(pool._max_idle, pool._baseline_idle)
 
 
 def _set_pool_unpooled(pool: Any) -> None:
@@ -306,21 +308,22 @@ def _set_pool_unpooled(pool: Any) -> None:
     Force the elastic pool into a non-retaining posture for cold measurement.
 
     Contract:
-        With `_target_idle == 0` release's append-then-trim destroys every
-        returned object, and with `_max_idle == 0` the post-miss stretch path
-        returns immediately, so retention cannot re-enable mid-measurement.
+        With `_baseline_idle == _max_idle == 0` the pool is fixed-capacity at
+        zero: every return destroys the returned object and nothing can
+        stretch, so retention cannot re-enable mid-measurement.
     """
     with pool._lock:
         pool._idle.clear()
+    pool._baseline_idle = 0
     pool._target_idle = 0
     pool._max_idle = 0
 
 
-def _restore_pool_policy(pool: Any, policy: Tuple[int, int]) -> None:
+def _restore_pool_policy(pool: Any, policy: Tuple[int, int, int]) -> None:
     """
     Restore a previously snapshotted elastic-pool retention policy.
     """
-    pool._target_idle, pool._max_idle = policy
+    pool._baseline_idle, pool._target_idle, pool._max_idle = policy
 
 
 def _measure_lesser_cycle_components(

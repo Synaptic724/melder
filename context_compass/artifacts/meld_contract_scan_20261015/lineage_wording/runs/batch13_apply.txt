@@ -1,0 +1,34 @@
+--- src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py
++++ src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py
+@@ -279,3 +279,3 @@
+             - Requires every snapshot spell id to be present in "spell_lookup".
+-            - Resolves lineage ids from SpellSystemStates.
++            - Resolves each spell's SpellIndex id from SpellSystemStates.
+             - Does not mutate snapshot or spell_lookup.
+--- src/melder/nexus/rift/frame_viewer/frame_viewer.py
++++ src/melder/nexus/rift/frame_viewer/frame_viewer.py
+@@ -3636,3 +3636,3 @@
+             operator can see where multiple visible spells share the same
+-            binding name, spell name, lineage, or spellframe.
++            binding name, spell name, spell index, or spellframe.
+ 
+@@ -6485,3 +6485,3 @@
+             Give the operator one direct spell crosswalk from the spell to its
+-            conduit, root conduit, peer conduits, spellbook, lineage, and
++            conduit, root conduit, peer conduits, spellbook, spell index, and
+             visible sibling spells.
+--- src/melder/nexus/rift/frame_viewer/view_spell.py
++++ src/melder/nexus/rift/frame_viewer/view_spell.py
+@@ -853,3 +853,3 @@
+         Contract:
+-            - Describes the spell's INDEX, i.e. its version lineage, so it answers
++            - Describes the spell's INDEX, the SpellIndex organizing its versions, so it answers
+               "what other versions exist" rather than "what is this version".
+@@ -1730,4 +1730,4 @@
+             - EXACT, CASE-SENSITIVE match on spell index id. Because an index tracks
+-              a whole version lineage, this returns EVERY visible spell sharing that
+-              lineage, not one spell.
++              every version it organizes, this returns EVERY visible spell in that
++              index, not one spell.
+             - Empty `spell_index_id` is rejected up front.
+3 files, 6 edits applied and read back

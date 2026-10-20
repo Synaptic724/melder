@@ -12,7 +12,7 @@ class SpellSystemIndex(Cleanable):
     """
     Internal
 
-    Version-id keyed system index for a frame (Phase 5+).
+    spell_id-keyed system index for a frame (Phase 5+).
 
     This is the system-level mirror of the deep DAG structure described by
     RootResolutionBlueprints. It is intentionally small:
@@ -74,10 +74,10 @@ class SpellSystemIndex(Cleanable):
 
     def get_node(self, spell_id: str) -> Optional[SpellSystemNode]:
         """
-        Retrieve an existing node by version id, if present.
+        Retrieve an existing node by spell_id, if present.
 
         Args:
-            spell_id: Version id to look up; must not be None.
+            spell_id: The spell_id to look up; must not be None.
 
         Returns:
             Optional[SpellSystemNode]: The node, or None when absent.

@@ -1,8 +1,9 @@
 import inspect
-from typing import Protocol
+from typing import Any, Protocol
 import pytest
 
 from melder.aether.spellbook.bind.bind import Bind
+from melder.aether.spellbook.bind.spell_code_digest import SpellCodeDigest
 from melder.aether.spellbook.bind.spell_index import SpellIndex
 from melder.aether.spellbook.spell_types.spell_types import SpellType
 from melder.aether.spellbook.existence.existence import Existence
@@ -365,38 +366,26 @@ def test_callable_under_protocol_frame_allows(monkeypatch):
 
 
 # Tests: Fingerprint/determinism ---------------------------------------
+# The tests of `Bind.sha256_profile` were retired with it (S1 of EPIC-2026-10-18-spell_identity_is_the_code):
+# the spell_id is the registered object's code, tested in test_spell_code_digest.py, and how a spell is bound is
+# its binding manifest, tested in test_binding_manifest.py. What stays here is bind's own contract around the id.
 
 
-def test_sha256_profile_deterministic_class():
-    p1 = class_profile(method_names=["a", "b"])
-    p2 = class_profile(method_names=["b", "a"])
-    assert Bind.sha256_profile(p1) == Bind.sha256_profile(p2)
+def test_spell_id_inspector_is_the_code_digest(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The inspector answers its target's code digest, the same on every call, and builds no binding profile."""
 
+    def _refuse(*args: Any, **kwargs: Any) -> None:
+        raise AssertionError("spell_id_inspector built a binding profile")
 
-def test_sha256_profile_different_profiles_yield_different_hashes():
-    p1 = class_profile(name="A")
-    p2 = callable_profile(name="B")
-    assert Bind.sha256_profile(p1) != Bind.sha256_profile(p2)
-
-
-def test_spell_id_inspector_uses_examiner(monkeypatch):
-    prof = class_profile()
-    calls = {"count": 0}
-
-    def _build_profile(self, target):
-        calls["count"] += 1
-        return StubGeneralProfile(binding_profile=prof, resolution_profile=None)
-
-    monkeypatch.setattr(
-        SpellGeneralProfile,
-        "create_from_target",
-        classmethod(lambda cls, target, show_dunders=False, max_repr=120: _build_profile(cls, target)),
-        raising=True,
-    )
-    sid1 = Bind.spell_id_inspector(RealClassImplementingProto)
-    sid2 = Bind.spell_id_inspector(RealClassImplementingProto)
-    assert sid1 == sid2
-    assert calls["count"] == 2
+    monkeypatch.setattr(SpellGeneralProfile, "create_from_target", classmethod(_refuse), raising=True)
+    digest = SpellCodeDigest()
+    try:
+        expected = digest.spell_id(RealClassImplementingProto)
+    finally:
+        digest.cleanup()
+    first = Bind.spell_id_inspector(RealClassImplementingProto)
+    assert first == Bind.spell_id_inspector(RealClassImplementingProto) == expected
+    assert Bind.spell_id_inspector(ProtoWithFoo) != first
 
 
 # Tests: cleanup/idempotence -------------------------------------------
@@ -472,23 +461,6 @@ def test_structural_check_rejects_non_callable_attribute():
 def test_determine_spell_type_fallback_on_unknown_profile():
     wp = SpellBindingProfile(kind=SpellBindingKind.OTHER, original_object=None)
     assert Bind._determine_spell_type(wp, None, None) == SpellType.EXISTING_CREATION
-
-
-def test_sha256_profile_includes_parameters():
-    p1 = callable_profile(
-        parameters=[
-            CallableParameterBindingSummary("x", "positional", None, None),
-            CallableParameterBindingSummary("y", "kwonly", "1", "int"),
-        ],
-        signature="(x, y=1)",
-    )
-    p2 = callable_profile(
-        parameters=[
-            CallableParameterBindingSummary("x", "positional", None, None),
-        ],
-        signature="(x)",
-    )
-    assert Bind.sha256_profile(p1) != Bind.sha256_profile(p2)
 
 
 # Validation matrix ----------------------------------------------------
@@ -637,101 +609,24 @@ def test_registration_guard_rejection(monkeypatch):
 
 
 # Fingerprints: parameter kinds affect hash ---------------------------
+# (Retired with `Bind.sha256_profile`; see the note under "Tests: Fingerprint/determinism".)
 
-def test_sha256_parameters_kind_affects_hash():
-    p1 = callable_profile(
-        parameters=[CallableParameterBindingSummary("x", "positional", None, None)],
-        signature="(x)",
-    )
-    p2 = callable_profile(
-        parameters=[CallableParameterBindingSummary("x", "varargs", None, None)],
-        signature="(*x)",
-    )
-    assert Bind.sha256_profile(p1) != Bind.sha256_profile(p2)
-
-
-# Additional SHA stability/diff cases ----------------------------------
-
-def test_sha256_class_init_signature_changes_hash():
-    """v4 contract: constructor-shape changes must change the fingerprint."""
-    p1 = class_profile(init_signature="(a: int)")
-    p2 = class_profile(init_signature="(a: int, b: str)")
-    assert Bind.sha256_profile(p1) != Bind.sha256_profile(p2)
-
-
-def test_sha256_class_source_preview_no_longer_affects_hash():
-    """v4 contract: docstring/source-text edits must NOT churn the cache."""
-    p1 = class_profile(source_preview="one", init_signature="(a: int)")
-    p2 = class_profile(source_preview="two", init_signature="(a: int)")
-    assert Bind.sha256_profile(p1) == Bind.sha256_profile(p2)
-
-
-def test_sha256_resolvable_preserves_the_fixed_legacy_fingerprint() -> None:
-    """Omitted and explicit True keep the pre-capability v4 class fingerprint exactly."""
-    profile = class_profile(init_signature="(a: int)")
-    try:
-        expected = "1c8bf684fde3e93aea94e418fff2674cff9bbbb572b3024efebb223633eb4848"
-        assert Bind.sha256_profile(profile, spell_name="C", existence=Existence.unique) == expected
-        assert Bind.sha256_profile(
-            profile, spell_name="C", existence=Existence.unique, resolvable=True,
-        ) == expected
-        assert Bind.sha256_profile(
-            profile, spell_name="C", existence=Existence.unique, resolvable=False,
-        ) != expected
-    finally:
-        profile.cleanup()
-
+# Bind admission: a resolvable that is not a bool (the SHA cases here retired with
+# `Bind.sha256_profile`) -----------------------------------------------
 
 @pytest.mark.parametrize("invalid", [None, 0, 1, "false"])
-def test_sha256_resolvable_rejects_non_bool_policy(invalid: object) -> None:
-    """Independent fingerprint callers cannot silently coerce a capability value."""
-    profile = class_profile()
-    try:
-        with pytest.raises(TypeError, match="resolvable.*bool"):
-            Bind.sha256_profile(profile, resolvable=invalid)
-    finally:
-        profile.cleanup()
-
-
-def test_sha256_non_resolvable_keeps_existing_shape_version_rules() -> None:
-    """False changes the domain, while constructor shape and source-preview rules stay intact."""
-    first = class_profile(init_signature="(a: int)", source_preview="original body")
-    body_edit = class_profile(init_signature="(a: int)", source_preview="revised body")
-    signature_edit = class_profile(init_signature="(a: int, b: str)")
-    try:
-        baseline = Bind.sha256_profile(first, resolvable=False)
-        assert Bind.sha256_profile(body_edit, resolvable=False) == baseline
-        assert Bind.sha256_profile(signature_edit, resolvable=False) != baseline
-    finally:
-        first.cleanup()
-        body_edit.cleanup()
-        signature_edit.cleanup()
-
-
-def test_sha256_class_annotations_order_irrelevant():
-    p1 = class_profile(annotations={"b": int, "a": str})
-    p2 = class_profile(annotations={"a": str, "b": int})
-    assert Bind.sha256_profile(p1) == Bind.sha256_profile(p2)
-
-
-def test_sha256_callable_repr_changes_hash():
-    p1 = callable_profile(repr_string="foo")
-    p2 = callable_profile(repr_string="bar")
-    assert Bind.sha256_profile(p1) != Bind.sha256_profile(p2)
-
-
-def test_sha256_callable_builtin_flag_changes_hash():
-    p1 = callable_profile(name="f")
-    p2 = callable_profile(name="f")
-    p2.builtin_module = True
-    assert Bind.sha256_profile(p1) != Bind.sha256_profile(p2)
-
-
-def test_sha256_fallback_profile_has_hash_length():
-    class Weird(SpellBindingProfile):
-        pass
-    w = Weird(kind=SpellBindingKind.OTHER, original_object=None)
-    assert len(Bind.sha256_profile(w)) == 64
+def test_bind_refuses_a_non_bool_resolvable_before_reflecting_the_target(
+        monkeypatch: pytest.MonkeyPatch, invalid: object) -> None:
+    """A capability that is not exactly True or False is refused at admission, before the target is examined."""
+    examiner = StubExaminer(class_profile())
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: examiner)
+    binder = Bind(StubSpellbook())
+    with pytest.raises(TypeError, match="resolvable must be a bool"):
+        binder.bind(
+            Permissions.read, Existence.unique, aetheric_frame="f", spell=RealClassImplementingProto,
+            resolvable=invalid,
+        )
+    assert examiner.calls == 0
 
 
 # Binding names / spellframe permutations ------------------------------
@@ -935,37 +830,6 @@ def test_bind_rejects_protocol_as_spellframe_for_non_class(monkeypatch):
     assert isinstance(spell, StubSpell)  # allowed for callables
 
 
-def test_sha256_annotation_content_changes_hash():
-    p1 = class_profile(annotations={"a": "one"})
-    p2 = class_profile(annotations={"a": "two"})
-    assert Bind.sha256_profile(p1) == Bind.sha256_profile(p2)  # values ignored; keys drive hash
-
-
-def test_sha256_callable_signature_changes_hash():
-    p1 = callable_profile(signature="(x)")
-    p2 = callable_profile(signature="(x, y)")
-    assert Bind.sha256_profile(p1) != Bind.sha256_profile(p2)
-
-
-def test_sha256_callable_param_default_changes_hash():
-    p1 = callable_profile(parameters=[CallableParameterBindingSummary("x", "positional", None, None)], signature="(x)")
-    p2 = callable_profile(parameters=[CallableParameterBindingSummary("x", "positional", "1", None)], signature="(x=1)")
-    assert Bind.sha256_profile(p1) != Bind.sha256_profile(p2)
-
-
-def test_sha256_callable_lambda_flag_changes_hash():
-    p1 = callable_profile(lambda_function=False)
-    p2 = callable_profile(lambda_function=True, name="lf")
-    assert Bind.sha256_profile(p1) != Bind.sha256_profile(p2)
-
-
-def test_sha256_instance_repr_changes_hash():
-    p1 = instance_profile(type_name="T")
-    p2 = instance_profile(type_name="T")
-    p2.repr_string = "different"
-    assert Bind.sha256_profile(p1) != Bind.sha256_profile(p2)
-
-
 def test_hash_stability_across_reuse(monkeypatch):
     profile = class_profile()
     monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(profile))
@@ -1002,20 +866,7 @@ def test_bind_twice_same_class_same_fingerprint(monkeypatch):
 
 
 # Fingerprint unicode / length ----------------------------------------
-
-def test_sha256_handles_unicode_identifiers():
-    name = "ΔSpell"
-    p = class_profile(name=name, method_names=["α", "β"])
-    digest = Bind.sha256_profile(p)
-    assert isinstance(digest, str) and len(digest) == 64
-
-
-def test_sha256_long_strings_stable_length():
-    long_name = "x" * 200
-    p = callable_profile(name=long_name, signature="(" + ",".join("a" * 10 for _ in range(5)) + ")")
-    digest = Bind.sha256_profile(p)
-    assert len(digest) == 64
-
+# (Retired with `Bind.sha256_profile`; see the note under "Tests: Fingerprint/determinism".)
 
 # Lock/error propagation -----------------------------------------------
 
@@ -1191,18 +1042,7 @@ def test_spelltype_other_variants(profile_factory, name, frame, expected):
 
 
 # Fingerprint bases/mro/methods permutations ----------------------------
-
-def test_sha_changes_with_mro_diff():
-    p1 = class_profile(mro=["A", "B"])
-    p2 = class_profile(mro=["A", "C"])
-    assert Bind.sha256_profile(p1) != Bind.sha256_profile(p2)
-
-
-def test_sha_changes_with_method_names_diff():
-    p1 = class_profile(method_names=["a"])
-    p2 = class_profile(method_names=["b"])
-    assert Bind.sha256_profile(p1) != Bind.sha256_profile(p2)
-
+# (Retired with `Bind.sha256_profile`; see the note under "Tests: Fingerprint/determinism".)
 
 # Registration guard context propagation --------------------------------
 
@@ -1267,20 +1107,10 @@ def test_determine_spell_type_full_matrix(profile, name, frame, expected):
 
 
 # Fingerprint: bases permutations --------------------------------------
-
-def test_sha_changes_with_bases_diff():
-    p1 = class_profile(bases=["A"])
-    p2 = class_profile(bases=["B"])
-    assert Bind.sha256_profile(p1) != Bind.sha256_profile(p2)
-
+# (Retired with `Bind.sha256_profile`; see the note under "Tests: Fingerprint/determinism".)
 
 # Callables with annotation differences --------------------------------
-
-def test_sha_changes_with_parameter_annotation():
-    p1 = callable_profile(parameters=[CallableParameterBindingSummary("x", "positional", None, "int")], signature="(x)")
-    p2 = callable_profile(parameters=[CallableParameterBindingSummary("x", "positional", None, "str")], signature="(x)")
-    assert Bind.sha256_profile(p1) == Bind.sha256_profile(p2)  # annotation repr not included
-
+# (Retired with `Bind.sha256_profile`; see the note under "Tests: Fingerprint/determinism".)
 
 # Guard isolation between tests ---------------------------------------
 
@@ -1423,38 +1253,9 @@ def test_classify_spellframe_table():
 
 
 # Fingerprints: dataclass/decorated/origin -----------------------------
-
-def test_sha_changes_with_dataclass_flag():
-    p1 = class_profile(is_dataclass=False)
-    p2 = class_profile(is_dataclass=True)
-    assert Bind.sha256_profile(p1) == Bind.sha256_profile(p2)  # flag not used in hash
-
-
-def test_sha_changes_with_decorated_flag():
-    p1 = class_profile(decorated=False)
-    p2 = class_profile(decorated=True)
-    assert Bind.sha256_profile(p1) == Bind.sha256_profile(p2)  # flag not used in hash
-
-
-def test_sha_changes_with_origin_file():
-    p1 = class_profile(origin_file="a.py", origin_line=10)
-    p2 = class_profile(origin_file="b.py", origin_line=10)
-    assert Bind.sha256_profile(p1) == Bind.sha256_profile(p2)  # origin info not hashed
-
+# (Retired with `Bind.sha256_profile`; see the note under "Tests: Fingerprint/determinism".)
 
 # More angles ----------------------------------------------------------
-
-def test_callable_repr_and_lambda_flag_combo_changes_hash():
-    p1 = callable_profile(repr_string="r1", lambda_function=False)
-    p2 = callable_profile(repr_string="r2", lambda_function=True, name="lam")
-    assert Bind.sha256_profile(p1) != Bind.sha256_profile(p2)
-
-
-def test_callable_param_default_repr_changes_hash():
-    p1 = callable_profile(parameters=[CallableParameterBindingSummary("x", "positional", None, None)], signature="(x)")
-    p2 = callable_profile(parameters=[CallableParameterBindingSummary("x", "positional", "0", None)], signature="(x=0)")
-    assert Bind.sha256_profile(p1) != Bind.sha256_profile(p2)
-
 
 def test_callable_varargs_only_spell_type(monkeypatch):
     prof = callable_profile(parameters=[CallableParameterBindingSummary("args", "varargs", None, None)], signature="(*args)")
@@ -1604,62 +1405,6 @@ def test_module_error_mentions_module_name(monkeypatch):
     assert inspect.__name__ in str(excinfo.value)
 
 
-def test_callable_parameters_default_repr_affects_hash():
-    p1 = callable_profile(parameters=[CallableParameterBindingSummary("x", "positional", None, None)], signature="(x)")
-    p2 = callable_profile(parameters=[CallableParameterBindingSummary("x", "positional", "d", None)], signature="(x=d)")
-    assert Bind.sha256_profile(p1) != Bind.sha256_profile(p2)
-
-
-def test_callable_lambda_flag_affects_hash_even_with_same_signature():
-    p1 = callable_profile(name="f", lambda_function=False, signature="(x)")
-    p2 = callable_profile(name="f", lambda_function=True, signature="(x)", parameters=[CallableParameterBindingSummary("x", "positional", None, None)])
-    assert Bind.sha256_profile(p1) != Bind.sha256_profile(p2)
-
-
-def test_callable_builtin_flag_changes_hash():
-    p1 = callable_profile(name="f")
-    p2 = callable_profile(name="f")
-    p2.builtin_module = True
-    assert Bind.sha256_profile(p1) != Bind.sha256_profile(p2)
-
-
-def test_callable_extension_flag_changes_hash():
-    p1 = callable_profile(name="f")
-    p2 = callable_profile(name="f")
-    p2.extension_module = True
-    assert Bind.sha256_profile(p1) != Bind.sha256_profile(p2)
-
-
-def test_class_method_names_order_stable_hash():
-    p1 = class_profile(method_names=["a", "b", "c"])
-    p2 = class_profile(method_names=["c", "b", "a"])
-    assert Bind.sha256_profile(p1) == Bind.sha256_profile(p2)
-
-
-def test_class_annotations_keys_change_hash():
-    p1 = class_profile(annotations={"a": int})
-    p2 = class_profile(annotations={"b": int})
-    assert Bind.sha256_profile(p1) != Bind.sha256_profile(p2)
-
-
-def test_instance_profile_module_changes_hash():
-    p1 = InstanceBindingProfile(kind=SpellBindingKind.INSTANCE, original_object=object(), type_name="T", module="m1", repr_string="r")
-    p2 = InstanceBindingProfile(kind=SpellBindingKind.INSTANCE, original_object=object(), type_name="T", module="m2", repr_string="r")
-    assert Bind.sha256_profile(p1) != Bind.sha256_profile(p2)
-
-
-def test_other_profile_module_changes_hash():
-    p1 = OtherBindingProfile(kind=SpellBindingKind.OTHER, original_object=object(), type_name="T", module="m1", repr_string="r")
-    p2 = OtherBindingProfile(kind=SpellBindingKind.OTHER, original_object=object(), type_name="T", module="m2", repr_string="r")
-    assert Bind.sha256_profile(p1) != Bind.sha256_profile(p2)
-
-
-def test_callable_qualname_vs_name_changes_hash():
-    p1 = callable_profile(name="f", signature="(x)")
-    p2 = callable_profile(name="g", signature="(x)")
-    assert Bind.sha256_profile(p1) != Bind.sha256_profile(p2)
-
-
 # Permissions variants -------------------------------------------------
 
 @pytest.mark.parametrize("perm", [Permissions.read, Permissions.create, Permissions.block])
@@ -1713,20 +1458,7 @@ def test_callable_under_protocol_missing_members_allowed(monkeypatch):
 
 
 # Callable fingerprint combos -----------------------------------------
-
-def test_sha_changes_with_extension_and_builtin_flags():
-    p1 = callable_profile()
-    p2 = callable_profile()
-    p2.extension_module = True
-    p2.builtin_module = True
-    assert Bind.sha256_profile(p1) != Bind.sha256_profile(p2)
-
-
-def test_sha_changes_with_empty_vs_varargs_only():
-    p1 = callable_profile(parameters=[], signature="()")
-    p2 = callable_profile(parameters=[CallableParameterBindingSummary("args", "varargs", None, None)], signature="(*args)")
-    assert Bind.sha256_profile(p1) != Bind.sha256_profile(p2)
-
+# (Retired with `Bind.sha256_profile`; see the note under "Tests: Fingerprint/determinism".)
 
 # SpellIndex inequality ------------------------------------------------
 
@@ -1762,69 +1494,6 @@ def test_registration_guard_error_leaves_lock_usable(monkeypatch):
 
 
 # Fingerprint stability ------------------------------------------------
-
-def test_sha256_class_reordering_stable():
-    p1 = class_profile(bases=["B", "A"], mro=["X", "Y"], annotations={"z": int}, method_names=["b", "a"])
-    p2 = class_profile(bases=["A", "B"], mro=["Y", "X"], annotations={"z": int}, method_names=["a", "b"])
-    assert Bind.sha256_profile(p1) == Bind.sha256_profile(p2)
-
-
-def test_sha256_callable_flags_change_hash():
-    base = callable_profile(name="f")
-    lambda_var = callable_profile(name="f", lambda_function=True, signature="()")
-    ext = callable_profile(name="f", lambda_function=False, signature="()", parameters=[], repr_string="repr")
-    ext.extension_module = True
-    assert Bind.sha256_profile(base) != Bind.sha256_profile(lambda_var)
-    assert Bind.sha256_profile(base) != Bind.sha256_profile(ext)
-
-
-def test_sha256_instance_vs_other_profiles():
-    ip = instance_profile(type_name="T")
-    op = other_profile(type_name="T")
-    assert Bind.sha256_profile(ip) == Bind.sha256_profile(op)
-
-
-def test_sha256_profile_changes_with_binding_signature_existence_and_disposal():
-    profile = class_profile(method_names=["cleanup"])
-    base = Bind.sha256_profile(
-        profile,
-        existence=Existence.unique,
-        disposal_method_names=(),
-    )
-    with_spell_name = Bind.sha256_profile(
-        profile,
-        spell_name="NamedService",
-        existence=Existence.unique,
-        disposal_method_names=(),
-    )
-    with_binding_name = Bind.sha256_profile(
-        profile,
-        binding_name="primary",
-        existence=Existence.unique,
-        disposal_method_names=(),
-    )
-    with_frame = Bind.sha256_profile(
-        profile,
-        spellframe="Frame",
-        existence=Existence.unique,
-        disposal_method_names=(),
-    )
-    with_existence = Bind.sha256_profile(
-        profile,
-        existence=Existence.many,
-        disposal_method_names=(),
-    )
-    with_disposal = Bind.sha256_profile(
-        profile,
-        existence=Existence.unique,
-        disposal_method_names=("cleanup",),
-    )
-    assert base != with_spell_name
-    assert base != with_binding_name
-    assert base != with_frame
-    assert base != with_existence
-    assert base != with_disposal
-
 
 def test_bind_resolves_disposal_metadata_during_bind(monkeypatch: pytest.MonkeyPatch) -> None:
     """Match configured candidates during bind and pass the resolved ordered list to Spell."""

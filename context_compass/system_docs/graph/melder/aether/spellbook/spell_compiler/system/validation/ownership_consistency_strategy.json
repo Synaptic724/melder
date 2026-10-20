@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/system/validation/ownership_consistency_strategy.py",
- "source_sha256": "7f91af59088de7dd4910a983e14b30d8ed706925ca176c22184a971f774dae2f",
+ "source_sha256": "feba98c4c0116e2de3bb87d12bddde0218c64b3741e18215621e713b99e80aa9",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.system.validation.ownership_consistency_strategy": {
@@ -39,7 +39,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "171ba8af81494ddda4ccb26d1876c78d044d074cf96af2217900ce2cba963504",
+   "span_sha256": "4e00e843d88d80c2ad06724b36a2af5dbf006c00e3efb0446243fc3bb44e5d46",
    "include": true,
    "role": "Guard that a lineage does not claim conflicting conduit ownership - the premise contracted spells, transfer-of-ownership and conduit-scoped validation all rest on.",
    "responsibilities": [

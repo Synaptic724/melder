@@ -1,0 +1,5 @@
+process-wide spell ids: True
+E1 same spell_id: True; second is a new object: True ; describe: {'limit': 2, 'count': 2, 'idle_count': 1, 'out_count': 1}
+E2 refused: Spell ID collision detected. ; members unchanged: True
+X1 (another limit) NOT refused; same spell_id: True
+X2 (equal settings) NOT refused; same spell_id: True

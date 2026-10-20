@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/system/validation/index_coverage_strategy.py",
- "source_sha256": "e1a3726875de7487b6bfc83139c96ec46091e4d8daec45156023bcca79d846d8",
+ "source_sha256": "7eadb97914a27cf2a260e8c64cbc123b78bb9eb8a4b25f2df7dc2a9f0885ccaf",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.system.validation.index_coverage_strategy": {
@@ -39,7 +39,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "72aa55dafdc6ac45d3ea5254b9892c7b41b87306949ea71377db1cd85837645b",
+   "span_sha256": "e383c7f06df4f3ed96bfd7b492d7166c6771dbc44f125a0f46ad408632f3f0cd",
    "include": true,
    "role": "Guard that the Phase 5 index and the rooted blueprints describe the same NODE SET, not just the same edges.",
    "responsibilities": [

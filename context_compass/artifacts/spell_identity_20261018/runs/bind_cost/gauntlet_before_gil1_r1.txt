@@ -1,0 +1,9 @@
+/tmp/m0_mq/bench_before/src/melder/__init__.py:199: UserWarning: Python 3.14+ detected, but running in GIL-enabled mode.
+melder is optimized for Python built with --disable-gil (PEP 703).
+Performance may be degraded.
+  warnings.warn(
+python 3.14.7 gil_enabled=True melder=0.2.8256
+tree /tmp/m0_mq/bench_before; classes 29; repeats 20
+bind lane: median 6.284 ms, mean 6.165 ms, min 5.490 ms (20 cycles)
+conjure lane: median 12.432 ms, mean 12.500 ms, min 12.044 ms (20 cycles)
+one bind: median 194.7 us over 580 binds

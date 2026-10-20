@@ -1,0 +1,38 @@
+- DATETIME: {ts}
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: Where a spell_id is meant as a lineage handle, read the same way, and withdrawn from the findings. (a)
+    `Meld._current_in_pool`: the id is a version a plan's recorded topology names, and the question is which version
+    of that lineage the plan will expand now (Phase 8 builds the version its lineage selects, so rule 2's catch-up
+    must refresh that one); answering through the registry's lineage of the id is the design. (b)
+    `_find_governing_index_link`: "is this version governed by an index link" is lineage membership, so
+    `IndexDetail.has_spell` is right there. (c) Phase 8's SpellContract resolution, mirrored in
+    `_iter_planned_dependencies`, goes binding key -> index -> active copy - the provider a consumer meets is the
+    active copy by design, and no meld path goes through the reads of the MEASURE above. (d) The three paths that
+    file or unfile a borrowed copy under `spell.spell_index.selected_spell_id` (`_add_contracted_spell`,
+    `_clear_contracted_spells_for_conduit`, `_destroy_detached_link_contract`): that id is the lender index's
+    selected version and the maps are keyed by the copy's own spell_id, but the three only handle active copies,
+    and an active copy is its index's selected version in every settled state, so the two ids are equal; they could
+    differ only if the lender's index moved between a notch's commit and its fan-out reaching this borrower, which
+    I did not reproduce - not a defect I can show. Side finding, documentation only: `Contract`'s class docstring
+    and field comments say a ward's detail map holds what that ward BORROWED; the code writes a row into the
+    LENDER's map (`_add_spell_to_contract` adds to `conduit._conduit_ward`, whose ownership
+    `_check_spell_if_eligible` requires; `_contract_member_spell` adds to `owner_ward`), and every reader treats a
+    ward's map as what it granted.
+  EVIDENCE:
+  - src/melder/aether/conduit/meld/meld.py:1484-1584
+  - src/melder/aether/conduit/conduit_ward/conduit_ward.py:2591-2618
+  - src/melder/aether/spellbook/spellbook.py:3183-3252
+  - src/melder/aether/spellbook/spellbook.py:3478-3550
+  - src/melder/aether/spellbook/spellbook.py:3698-3749
+  - src/melder/aether/conduit/conduit_ward/contract/contract.py:19-124
+  - src/melder/aether/conduit/conduit_ward/conduit_ward.py:1779-1842
+  - src/melder/aether/conduit/conduit_ward/conduit_ward.py:1844-2091
+  - src/melder/aether/conduit/conduit_ward/conduit_ward.py:2440-2489
+  IMPACT: The 19:49:27Z list shrinks: `Meld._current_in_pool` is by design and the selected-id filing is not a
+    defect I can show; what stands is the version-row reads of the MEASURE above. The map-direction docstring is a
+    one-file documentation fix for the owner to schedule.
+  NEXT: Re-check the other open findings on 0.2.8253.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9

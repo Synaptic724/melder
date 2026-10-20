@@ -1,0 +1,23 @@
+key files union: 219; C1 records: 219 (219 distinct)
+STALE RANGE tests_components.md 1845 tests/mocks/crystallizer/spell_crystal_harness.py 771 -> 775
+STALE RANGE tests_components.md 1930 tests/unit/melder/aether/test_nexus.py 6377 -> 6374
+STALE RANGE tests_components.md 1955 tests/unit/melder/aether/test_command_system_direct.py 483 -> 477
+STALE RANGE tests_components.md 1960 tests/unit/melder/crystallizer/test_crystallizer.py 198 -> 202
+STALE RANGE tests_components.md 1970 tests/unit/melder/crystallizer/test_spell_crystal.py 438 -> 484
+STALE RANGE tests_components.md 2001 tests/unit/melder/spellbook/test_spellbook.py 5249 -> 5285
+STALE RANGE tests_components.md 2006 tests/unit/melder/spellbook/test_spell.py 1505 -> 1581
+STALE RANGE tests_components.md 2016 tests/unit/melder/spellbook/test_scan_bind_option_parity.py 768 -> 770
+STALE RANGE tests_components.md 2027 tests/unit/melder/spellbook/test_cache_runtime_verification.py 608 -> 696
+STALE RANGE tests_components.md 2037 tests/unit/melder/spellbook/bind/test_bind.py 1879 -> 1939
+STALE RANGE tests_components.md 2132 tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py 513 -> 535
+STALE RANGE tests_components.md 2305 tests/integration/melder/spellbook/test_spellbook_integration_resolution_contract.py 1968 -> 1970
+STALE RANGE tests_components.md 2326 tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering.py 1390 -> 1475
+STALE RANGE tests_components.md 2382 tests/unit/melder/test_package_public_surface.py 352 -> 386
+STALE RANGE tests_components.md 2467 tests/unit/melder/utilities/test_caching_system.py 662 -> 742
+STALE RANGE tests_components.md 2537 tests/component/melder/spellbook/test_conjure_cache_restage.py 204 -> 212
+STALE RANGE tests_components.md 2598 tests/integration/melder/conduit/test_conduit_integration_scope_resolution_alignment.py 709 -> 718
+STALE RANGE tests_components.md 2623 tests/integration/melder/conduit/test_ordered_disposal_runtime.py 129 -> 132
+STALE RANGE tests_components.md 2671 tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_door_held_root.py 357 -> 403
+STALE RANGE tests_components.md 2681 tests/integration/melder/conduit/test_conduit_integration_many_child_disposed_with_its_holder.py 186 -> 218
+STALE RANGE tests_architecture.md 666 tests/unit/melder/aether/test_nexus.py 6377 -> 6374
+STALE RANGE tests_architecture.md 681 tests/unit/melder/aether/test_command_system_direct.py 483 -> 477

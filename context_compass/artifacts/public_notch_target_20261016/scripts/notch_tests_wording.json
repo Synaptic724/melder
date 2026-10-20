@@ -1,0 +1,18 @@
+[
+  {"path": "tests/unit/melder/aether/conduit/test_conduit_notch_target.py",
+   "old": "    \"\"\"Neither form is refused, and the message says where an id comes from.\"\"\"\n    with pytest.raises(ValueError, match=\"bind_inactive\"):\n",
+   "new": "    \"\"\"Neither form is refused, and the message says where a spell_id comes from.\"\"\"\n    with pytest.raises(ValueError, match=\"notch_spell needs a spell: pass spell_id=<the spell_id bind or bind_inactive\"):\n",
+   "count": 1},
+  {"path": "tests/unit/melder/aether/conduit/test_conduit_notch_target.py",
+   "old": "    \"\"\"A str given as `spell` is refused with the remedy: an id goes in `spell_id=`.\"\"\"\n    with pytest.raises(TypeError, match=\"spell_id=\"):\n",
+   "new": "    \"\"\"A str given as `spell` is refused with the remedy: a spell_id goes in `spell_id=`.\"\"\"\n    with pytest.raises(TypeError, match=\"to name a spell by its spell_id, pass spell_id='v2'\"):\n",
+   "count": 1},
+  {"path": "tests/unit/melder/aether/conduit/test_conduit_notch_target.py",
+   "old": "    \"\"\"An unknown id is refused with the id in the message; nothing is started.\"\"\"\n    with pytest.raises(ValueError, match=\"'nope' is not owned by this conduit's Spellbook\"):\n",
+   "new": "    \"\"\"An unknown spell_id is refused with the spell_id in the message; nothing is started.\"\"\"\n    with pytest.raises(ValueError, match=\"notch_spell: spell_id 'nope' is not owned by this conduit's Spellbook\"):\n",
+   "count": 1},
+  {"path": "tests/unit/melder/aether/conduit/test_conduit_notch_target.py",
+   "old": "    \"\"\"An owned version of another index, named by id, is refused before anything moves.\"\"\"\n    with pytest.raises(ValueError, match=\"'y2' belongs to another SpellIndex\"):\n",
+   "new": "    \"\"\"An owned version of another index, named by spell_id, is refused before anything moves.\"\"\"\n    with pytest.raises(ValueError, match=\"notch_spell: spell_id 'y2' belongs to another SpellIndex\"):\n",
+   "count": 1}
+]

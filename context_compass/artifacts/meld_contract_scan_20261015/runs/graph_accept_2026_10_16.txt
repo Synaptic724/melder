@@ -1,0 +1,7 @@
+  ACCEPT melder.aether.aetheric_frame.dev_ops.risk_manager.risk_manager.RiskManager  (was SEMANTICS_STALE)
+  ACCEPT melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state.SpellState  (was SEMANTICS_STALE)
+  ACCEPT melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_state.SpellSystemState  (was SEMANTICS_STALE)
+  ACCEPT melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates  (was SEMANTICS_STALE)
+  ACCEPT melder.aether.spellbook.spellbook.Spellbook  (was SEMANTICS_STALE)
+
+  ACCEPTED into 5 descriptor(s). Reassemble to refresh the document.

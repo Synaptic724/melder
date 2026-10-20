@@ -1,0 +1,18 @@
+== mode trace; melder 0.2.8251; gil_enabled=False
+hop 1 - Aether asks the frame which conduit owns the id: frame._spell_registry (conduit -> its SpellIndexes)
+     lender: ['Greeter-index', 'Mark-index']
+     borrower: ['Banner-index']
+     Greeter-index members (_spells_in_index)=['English', 'French'] selected_spell_id=English
+     frame.find_conduit_id_for_spell(French) -> lender
+hop 2 - the owner Book's find_spell_by_id(French), line by line
+     _spells_by_id (active versions by id) = ['Bang', 'English']
+     _spells_by_id.get(French) -> None
+     _inactive_spells (parked versions by id) = ['French']
+     _inactive_spells.get(French) -> the Spell whose spell_id is French
+     that Spell's spell_index -> Greeter-index
+     _spells (each index -> its ACTIVE Spell) = [('Mark-index', 'Bang'), ('Greeter-index', 'English')]
+     _spells.get(Greeter-index) -> the Spell whose spell_id is English
+     find_spell_by_id(French) returns the Spell whose spell_id is English
+hop 3 - the grant compares: asked French, got English -> refuses
+     _get_owned_spell(French) returns the Spell whose spell_id is French
+rc=0

@@ -62,13 +62,20 @@ class _Service:
         pass
 
 
-def _book(frame_name: str) -> Spellbook:
+class _SecondService:
+    """The class a second Book binds while the first is conjured: one class is one spell."""
+
+    def __init__(self) -> None:
+        pass
+
+
+def _book(frame_name: str, spell: type = _Service) -> Spellbook:
     """Build a bound spellbook on its own frame, so postures stay isolated."""
     book = Spellbook(frame_name)
-    # binding_name keeps each frame's spell_id distinct - the frame itself is not
-    # in the bind-time fingerprint, so it cannot separate them under process-wide
-    # uniqueness.
-    book.bind(spell=_Service, existence="unique", binding_name=frame_name)
+    # A spell_id is the SHA256 of the class's code (S1 of EPIC-2026-10-18-spell_identity_is_the_code): under
+    # process-wide uniqueness a class bound in a conjured frame is refused in another whatever its binding
+    # name, so a test that conjures two frames binds `_SecondService` in the second.
+    book.bind(spell=spell, existence="unique", binding_name=frame_name)
     return book
 
 
@@ -387,7 +394,7 @@ def test_codegen_rooms_need_both_knobs_and_the_door_now_supplies_both() -> None:
     )
     rift_only.conjure(name="codegen-partial-conduit")
 
-    full = _book("codegen-full")
+    full = _book("codegen-full", _SecondService)
     full.configure_aether_frame(
         system_state="dynamic",
         disposal=None,

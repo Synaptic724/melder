@@ -1,0 +1,18 @@
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: Sweep A4 is done with no story beyond STORY-2026-10-17-notch_moves_signature_by_incoming_key_only (its
+    step 4). The notch's other records follow the active version: the parked and promoted versions' custody moves
+    through `emit_spell_activity` in the park and promote tails, the index crystal is emitted after the repoint (the
+    one truthful selection snapshot), MutationResearch journals the promotion, and Nexus replaces the outgoing
+    version's record with the incoming one's (a plain publish when the index had no active version); a world notched
+    inside a minted index restores with both versions active (probe R3, sweep A5).
+  EVIDENCE:
+  - src/melder/aether/spellbook/spellbook.py:3906-4061
+  - src/melder/aether/spellbook/spellbook.py:1500-1621
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_restore_staged_structure_gil0.txt:13-17
+  IMPACT: A4 adds no story.
+  NEXT: Record sweep A5's restore results.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7

@@ -70,7 +70,7 @@ def _single_linked(permission: str = "create") -> Iterator[tuple]:
     owner = owner_book.conjure(dynamic=True, name="owner")
     borrower = borrower_book.conjure(dynamic=True, name="borrower")
     owner.link(borrower)
-    index = owner_book.find_spell_by_id(id_a).spell_index
+    index = owner_book.find_spell_by_spell_id(id_a).spell_index
     with borrower.transaction("link", conduits=[borrower, owner]):
         borrower.add_index_to_contract(index=index, conduit=owner, permissions=permission)
     try:
@@ -88,7 +88,7 @@ def _two_member_linked() -> Iterator[tuple]:
     owner = owner_book.conjure(dynamic=True, name="owner")
     borrower = borrower_book.conjure(dynamic=True, name="borrower")
     owner.link(borrower)
-    index = owner_book.find_spell_by_id(id_a).spell_index
+    index = owner_book.find_spell_by_spell_id(id_a).spell_index
     id_b = owner.bind_inactive(
         spell=_ServiceB, spell_index=index, existence=Existence.unique,
         permissions="create", binding_name="b",
@@ -179,7 +179,7 @@ def test_add_index_to_contract_rejects_index_not_owned_by_target():
     borrower = borrower_book.conjure(dynamic=True, name="borrower")
     foreign_book.conjure(dynamic=True, name="foreign")
     owner.link(borrower)
-    foreign_index = foreign_book.find_spell_by_id(foreign_id).spell_index
+    foreign_index = foreign_book.find_spell_by_spell_id(foreign_id).spell_index
     try:
         with pytest.raises(RuntimeError):
             with borrower.transaction("link", conduits=[borrower, owner]):
@@ -193,7 +193,7 @@ def test_bind_inactive_spell_is_not_meldable_until_notched():
     book = _make_spellbook()
     id_a = book.bind(spell=_ServiceA, existence=Existence.unique, permissions="create", binding_name="a")
     conduit = book.conjure(dynamic=True, name="root")
-    index = book.find_spell_by_id(id_a).spell_index
+    index = book.find_spell_by_spell_id(id_a).spell_index
     id_b = conduit.bind_inactive(
         spell=_ServiceB, spell_index=index, existence=Existence.unique,
         permissions="create", binding_name="b",
@@ -211,7 +211,7 @@ def test_notch_to_already_active_is_noop():
     id_a = book.bind(spell=_ServiceA, existence=Existence.unique, permissions="create", binding_name="a")
     conduit = book.conjure(dynamic=True, name="root")
     try:
-        spell_a = book.find_spell_by_id(id_a)
+        spell_a = book.find_spell_by_spell_id(id_a)
         conduit.notch_spell(spell_index=spell_a.spell_index, spell=spell_a)  # already active
         assert spell_a.spell_index.selected_spell_id == id_a
         assert isinstance(conduit.meld(spell_id=id_a), _ServiceA)
@@ -230,7 +230,7 @@ def test_transfer_multi_member_target_melds_active():
     target_book = Spellbook(configuration=config)
     owner = owner_book.conjure(dynamic=True, name="owner")
     target = target_book.conjure(dynamic=True, name="target")
-    index = owner_book.find_spell_by_id(id_a).spell_index
+    index = owner_book.find_spell_by_spell_id(id_a).spell_index
     id_b = owner.bind_inactive(
         spell=_ServiceB, spell_index=index, existence=Existence.unique,
         permissions="create", binding_name="b",
@@ -254,7 +254,7 @@ def test_two_borrowers_unlink_one_leaves_other_linked():
     b2 = b2_book.conjure(dynamic=True, name="b2")
     owner.link(b1)
     owner.link(b2)
-    index = owner_book.find_spell_by_id(id_a).spell_index
+    index = owner_book.find_spell_by_spell_id(id_a).spell_index
     for b in (b1, b2):
         with b.transaction("link", conduits=[b, owner]):
             b.add_index_to_contract(index=index, conduit=owner, permissions="create")
@@ -279,7 +279,7 @@ def test_notched_away_id_is_evicted_from_resolution():
     book = _make_spellbook()
     id_a = book.bind(spell=_ServiceA, existence=Existence.unique, permissions="create", binding_name="a")
     conduit = book.conjure(dynamic=True, name="root")
-    index = book.find_spell_by_id(id_a).spell_index
+    index = book.find_spell_by_spell_id(id_a).spell_index
     id_b = conduit.bind_inactive(
         spell=_ServiceB, spell_index=index, existence=Existence.unique,
         permissions="create", binding_name="b",

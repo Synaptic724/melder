@@ -1,0 +1,33 @@
+Current state ({ts}): this ticket has landed three source changes; fix #1 lacks only the rebuild.
+- 0.2.8250, rule 2 with D1-D5 (owner-accepted, Notes 18:23Z; in the owner's commit 192482b4c): a satisfied
+  SpellContract is not checked on every meld; a change of what a spell resolves marks it for revalidation; the meld
+  refreshes stale dependencies before a plan compiles; a lost provider is named with its remedy; a notch back makes
+  a parked version grant active again. Release-note section "A satisfied `SpellContract` is not checked on every
+  meld; a notch reaches every spell that depends on the notched one".
+- 0.2.8251, the removal fix (owner-approved, Notes 21:22Z): `Spellbook._remove_contracted_spell` removes exactly
+  the copy of the spell_id it is given. Section "Unlinking an index after a notch removes every version's copy".
+- 0.2.8253, fix #1 (the owner's direction of 2026-10-17, PLAN 20:22Z): `find_spell_by_spell_id` and
+  `get_spell_by_spell_id` (renamed, no alias) answer exactly the spell a spell_id names, active or parked;
+  per-version permissions; the transfer and contract-dependency paths take an explicit index step; the grant check
+  is exact; the Rift rooms' command is renamed and their lookups exact. Code, four new test modules and a renamed
+  one, the codemod over 82 test files, ten UX examples, the expert and agent guides, the four system documents with
+  their indexes (Notes 23:07Z-23:35Z), the graph (Notes 00:14Z) and the release note (Notes 00:04Z) are in the
+  repo; the suites are green with the GIL off and on (22:41Z) and the release-note examples run in both modes.
+  Section "A spell_id lookup answers the spell it names" (Breaking). Rubric 83 / 83 / 83 / 74 (00:16Z).
+Patch docs: system_docs/patches/completed/contract_recheck_on_notch_2026_10_16/ (archived);
+system_docs/patches/active/contracted_copy_removal_by_version_2026_10_16/ and
+system_docs/patches/active/find_spell_by_spell_id_2026_10_17/ (promoted; archive at closure).
+Open, the owner's: origins 2-6 - the contract-side lookups that still resolve a spell_id through its index
+(`_find_contracted_spell_by_id`, the row `Detail`, three ConduitWard contract reads and checks),
+`Meld._current_in_pool` and the three paths that file a borrowed copy under `selected_spell_id` (Notes 19:49Z);
+what borrowers get after an ownership transfer (18:23Z); rule 2's binding-key gap on the transfer flip (18:23Z);
+SpellIndex's two authored graph edges that describe nothing it keeps (00:11Z); the stamp test's stale record in
+tests_components (00:16Z); the crystallizer cache at its 100-file cap missing a fresh checkpoint (22:41Z); the
+flake `test_concurrent_adds_of_same_conduit_admit_exactly_one` (22:08Z). From melder_0's correctness epic this
+lane's set is S1-S4 and S7-S9, waiting for the owner; S6's fix runs in melder_0's lane, its Part B waits for
+spellbook.py (Notes 23:54Z).
+Next: (1) the rebuild last, both checks OK; (2) M1-26 to melder_0: 0.2.8253 taken, `__version__`, the release
+note, the system documents and the graph free; (3) the owner's word on closure - summary naming 0.2.8250, 0.2.8251
+and 0.2.8253 with their release-note sections, the two active patch folders archived, board and artifact sync -
+and on releasing spellbook.py, conduit.py and fix #1's other files to melder_0.
+Evidence: the Notes from 09:57:21Z on; artifacts/meld_contract_scan_20261015/ (fix #1 under spell_id_lookup/).

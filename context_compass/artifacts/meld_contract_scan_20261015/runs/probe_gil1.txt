@@ -1,0 +1,25 @@
+python 3.14.7 gil_enabled=True rounds=2000
+inspect.signature(Task, FORWARDREF): 14.1 us per call
+[auto_plain] dynamic=False protocol_def=False late_bind=False lesser=False
+  after conjure: flag=False; risky_structural=[] risky_resolution=[]
+  after first meld: flag=False; risky_structural=[] risky_resolution=[]
+  root.meld(Task): per meld gate=0.0 scan=0.0 signature=0.0; 0.3 us live, 0.3 us with the scan stubbed
+  end: flag=False
+[dyn_plain] dynamic=True protocol_def=False late_bind=False lesser=True
+  after conjure: flag=False; risky_structural=[] risky_resolution=[]
+  after first meld: flag=False; risky_structural=[] risky_resolution=[]
+  root.meld(Task): per meld gate=0.0 scan=0.0 signature=0.0; 0.7 us live, 0.7 us with the scan stubbed
+  lesser.meld(Task): per meld gate=0.0 scan=0.0 signature=0.0; 0.7 us live, 0.7 us with the scan stubbed
+  end: flag=False
+[dyn_protocol] dynamic=True protocol_def=True late_bind=False lesser=False
+  after conjure: flag=True; risky_structural=[] risky_resolution=['IThing']
+  after first meld: flag=True; risky_structural=[] risky_resolution=['IThing']
+  root.meld(Task): per meld gate=1.0 scan=1.0 signature=1.0; 20.9 us live, 2.0 us with the scan stubbed
+  end: flag=True
+[dyn_late_bind] dynamic=True protocol_def=False late_bind=True lesser=False
+  after conjure: flag=False; risky_structural=[] risky_resolution=[]
+  after first meld: flag=False; risky_structural=[] risky_resolution=[]
+  after late bind: flag=True; risky_structural=[] risky_resolution=['Other']
+  root.meld(Task): per meld gate=1.0 scan=1.0 signature=1.0; 18.7 us live, 1.9 us with the scan stubbed
+  end: flag=True
+total 1.0 s

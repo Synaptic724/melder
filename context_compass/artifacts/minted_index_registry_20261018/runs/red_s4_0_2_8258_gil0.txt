@@ -1,0 +1,54 @@
+FFFFFFFFFF.F......................F...............                       [100%]
+=================================== FAILURES ===================================
+E   AssertionError: assert None is <SpellIndex id=01M58PN0FR23ZWGT4W0N49CBSG current=db93199181b1f0a824d980afdfa6b9ce4052d1cd5d1144dc0001aab2a0181b42>
+     +  where None = find_index_for_spell('db93199181b1f0a824d980afdfa6b9ce4052d1cd5d1144dc0001aab2a0181b42')
+     +    where find_index_for_spell = <melder.aether.aetheric_frame.aetheric_frame.AethericFrame object at 0x3c721f887c0>.find_index_for_spell
+     +      where <melder.aether.aetheric_frame.aetheric_frame.AethericFrame object at 0x3c721f887c0> = <test_separated_version_is_known_to_its_frame_integration._Lender object at 0x3c71fe78e90>.frame
+tests/integration/melder/spellbook/test_separated_version_is_known_to_its_frame_integration.py:236: AssertionError: assert None is <SpellIndex id=01M58PN0FR23ZWGT4W0N49CBSG current=db93199181b1f0a824d980afdfa6b9ce4052d1cd5d1144dc0001aab2a0181b42>
+E   AssertionError: assert None is <SpellIndex id=01M58PN0G31P4B4QTN87SFC13V current=db93199181b1f0a824d980afdfa6b9ce4052d1cd5d1144dc0001aab2a0181b42>
+     +  where None = find_index_for_spell('db93199181b1f0a824d980afdfa6b9ce4052d1cd5d1144dc0001aab2a0181b42')
+     +    where find_index_for_spell = <melder.aether.aetheric_frame.aetheric_frame.AethericFrame object at 0x3c721f896c0>.find_index_for_spell
+     +      where <melder.aether.aetheric_frame.aetheric_frame.AethericFrame object at 0x3c721f896c0> = <test_separated_version_is_known_to_its_frame_integration._Lender object at 0x3c721d549d0>.frame
+tests/integration/melder/spellbook/test_separated_version_is_known_to_its_frame_integration.py:258: AssertionError: assert None is <SpellIndex id=01M58PN0G31P4B4QTN87SFC13V current=db93199181b1f0a824d980afdfa6b9ce4052d1cd5d1144dc0001aab2a0181b42>
+E   ValueError: Spell version db93199181b1f0a824d980afdfa6b9ce4052d1cd5d1144dc0001aab2a0181b42 not found in any conduit.
+src/melder/aether/aether.py:2544: ValueError: Spell version db93199181b1f0a824d980afdfa6b9ce4052d1cd5d1144dc0001aab2a0181b42 not found in any conduit.
+E   ValueError: Spell version db93199181b1f0a824d980afdfa6b9ce4052d1cd5d1144dc0001aab2a0181b42 not found in any conduit.
+src/melder/aether/aether.py:2544: ValueError: Spell version db93199181b1f0a824d980afdfa6b9ce4052d1cd5d1144dc0001aab2a0181b42 not found in any conduit.
+E   ValueError: Spell version db93199181b1f0a824d980afdfa6b9ce4052d1cd5d1144dc0001aab2a0181b42 not found in any conduit.
+src/melder/aether/aether.py:2544: ValueError: Spell version db93199181b1f0a824d980afdfa6b9ce4052d1cd5d1144dc0001aab2a0181b42 not found in any conduit.
+E   Failed: DID NOT RAISE RuntimeError
+tests/integration/melder/spellbook/test_separated_version_is_known_to_its_frame_integration.py:333: Failed: DID NOT RAISE RuntimeError
+E   Failed: DID NOT RAISE RuntimeError
+tests/integration/melder/spellbook/test_separated_version_is_known_to_its_frame_integration.py:333: Failed: DID NOT RAISE RuntimeError
+E   Failed: DID NOT RAISE RuntimeError
+tests/integration/melder/spellbook/test_separated_version_is_known_to_its_frame_integration.py:333: Failed: DID NOT RAISE RuntimeError
+E   Failed: DID NOT RAISE RuntimeError
+tests/integration/melder/spellbook/test_separated_version_is_known_to_its_frame_integration.py:333: Failed: DID NOT RAISE RuntimeError
+E   AssertionError: assert None is <SpellIndex id=01M58PN0KB0ZCA7V479GK77RHS current=db93199181b1f0a824d980afdfa6b9ce4052d1cd5d1144dc0001aab2a0181b42>
+     +  where None = find_index_for_spell('db93199181b1f0a824d980afdfa6b9ce4052d1cd5d1144dc0001aab2a0181b42')
+     +    where find_index_for_spell = <melder.aether.aetheric_frame.aetheric_frame.AethericFrame object at 0x3c7227d4740>.find_index_for_spell
+tests/integration/melder/spellbook/test_separated_version_is_known_to_its_frame_integration.py:352: AssertionError: assert None is <SpellIndex id=01M58PN0KB0ZCA7V479GK77RHS current=db93199181b1f0a824d980afdfa6b9ce4052d1cd5d1144dc0001aab2a0181b42>
+E   AssertionError: assert ('unknown', None, None) == ('parked', 'r...HAMGFAQJXEXS')
+      
+      At index 0 diff: 'unknown' != 'parked'
+      Use -v to get more diff
+tests/integration/melder/spellbook/test_separated_version_is_known_to_its_frame_integration.py:409: AssertionError: assert ('unknown', None, None) == ('parked', 'r...HAMGFAQJXEXS')
+E   AssertionError: assert 'active' == 'parked'
+      
+      - parked
+      + active
+tests/unit/melder/mutation_research/test_mutation_research_root.py:551: AssertionError: assert 'active' == 'parked'
+=========================== short test summary info ============================
+FAILED tests/integration/melder/spellbook/test_separated_version_is_known_to_its_frame_integration.py::test_a_version_separated_into_its_own_index_is_found_by_spell_id
+FAILED tests/integration/melder/spellbook/test_separated_version_is_known_to_its_frame_integration.py::test_a_version_notched_active_in_its_own_index_is_found_by_spell_id
+FAILED tests/integration/melder/spellbook/test_separated_version_is_known_to_its_frame_integration.py::test_a_version_in_its_own_index_can_be_granted_by_spell_id[parked]
+FAILED tests/integration/melder/spellbook/test_separated_version_is_known_to_its_frame_integration.py::test_a_version_in_its_own_index_can_be_granted_by_spell_id[notched_active]
+FAILED tests/integration/melder/spellbook/test_separated_version_is_known_to_its_frame_integration.py::test_a_version_notched_active_in_its_own_index_can_be_transferred_by_spell_id
+FAILED tests/integration/melder/spellbook/test_separated_version_is_known_to_its_frame_integration.py::test_a_version_in_its_own_index_cannot_be_bound_again_by_another_book[same_frame-unconjured_book]
+FAILED tests/integration/melder/spellbook/test_separated_version_is_known_to_its_frame_integration.py::test_a_version_in_its_own_index_cannot_be_bound_again_by_another_book[same_frame-conjured_book]
+FAILED tests/integration/melder/spellbook/test_separated_version_is_known_to_its_frame_integration.py::test_a_version_in_its_own_index_cannot_be_bound_again_by_another_book[other_frame-unconjured_book]
+FAILED tests/integration/melder/spellbook/test_separated_version_is_known_to_its_frame_integration.py::test_a_version_in_its_own_index_cannot_be_bound_again_by_another_book[other_frame-conjured_book]
+FAILED tests/integration/melder/spellbook/test_separated_version_is_known_to_its_frame_integration.py::test_a_separated_version_is_registered_under_its_root_until_the_root_is_torn_down
+FAILED tests/integration/melder/spellbook/test_separated_version_is_known_to_its_frame_integration.py::test_residency_reads_a_separated_version_parked_then_active_after_a_notch
+FAILED tests/unit/melder/mutation_research/test_mutation_research_root.py::test_residency_view_reads_a_selected_version_no_lineage_tracks_as_parked
+12 failed, 38 passed in 1.44s

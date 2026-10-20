@@ -1,0 +1,15 @@
+settle=1800.0s decay=10%/600.0s max=20
+burst of 50, all returned                    target= 20 idle= 20 built= 50 destroyed= 30
+second burst of 50 (t=0)                     target= 20 idle= 20 built= 80 destroyed= 60
+t=+29 min, one scope cycle                   target= 20 idle= 20 built= 80 destroyed= 60
+t=+31 min, one scope cycle                   target= 20 idle= 20 built= 80 destroyed= 60
+t=+41 min, one scope cycle                   target= 20 idle= 20 built= 80 destroyed= 60
+t=+51 min, one scope cycle                   target= 20 idle= 20 built= 80 destroyed= 60
+t=+3h51m, scope cycle 1                      target= 20 idle= 20 built= 80 destroyed= 60
+t=+3h51m, scope cycle 2                      target= 20 idle= 20 built= 80 destroyed= 60
+t=+3h51m, scope cycle 3                      target= 20 idle= 20 built= 80 destroyed= 60
+t=+3h51m, scope cycle 4                      target= 20 idle= 20 built= 80 destroyed= 60
+t=+3h51m, scope cycle 5                      target= 20 idle= 20 built= 80 destroyed= 60
+t=+3h51m, scope cycle 6                      target= 20 idle= 20 built= 80 destroyed= 60
+t=+3h51m, scope cycle 7                      target= 20 idle= 20 built= 80 destroyed= 60
+burst of 50 after the decay                  target= 20 idle= 20 built=110 destroyed= 90

@@ -1,0 +1,34 @@
+src/melder/__init__.py:199: UserWarning: Python 3.14+ detected, but running in GIL-enabled mode.
+melder is optimized for Python built with --disable-gil (PEP 703).
+Performance may be degraded.
+  warnings.warn(
+T1 control: English active alone
+    root conduit torn down
+    English (active) cleaned: True
+    English's index cleaned: True
+
+T2 English active, French parked on English's index
+    root conduit torn down
+    English (active) cleaned: True
+    French (parked) cleaned: False
+    the shared index cleaned: True
+    French.cleanup() raised RuntimeError: Spellbook has already been cleaned. 
+
+T3 French separated into the index remove_from_spell_index mints
+    French's index is a new one: True
+    root conduit torn down
+    French (parked) cleaned: False
+    the minted index cleaned: False
+    English's index cleaned: True
+
+T4 notch English ('greeter') -> Spanish ('spanish'), then teardown
+    before teardown, ('greeter') held by English: True
+    root conduit torn down
+    after teardown, ('greeter') held by English (its Book gone): True
+    another Book's bind of (Greeter, 'greeter') refused: Binding signature already active in this frame: frame_key='greeter', binding_name='greeter' is held by spell_id='677a47a3c52107a430b423e6676496133f626
+
+T5 a managed class with one version active and one parked, then teardown
+    pools of Pooled and PooledV2 before teardown: 1 + 1
+    root conduit torn down
+    pools of Pooled and PooledV2 after teardown: 0 + 0
+

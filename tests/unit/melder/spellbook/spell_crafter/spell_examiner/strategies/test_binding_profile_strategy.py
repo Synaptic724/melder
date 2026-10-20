@@ -532,21 +532,21 @@ def test_binding_profile_class_annotations_fallback_failure_binds_with_none(monk
     assert profile.annotations == {}
 
 
-def test_bind_fingerprint_counts_fields_typed_with_type_checking_names() -> None:
+def test_the_spell_id_counts_fields_typed_with_type_checking_names() -> None:
     """
     Purpose:
-        Verify the bind fingerprint changes when a TYPE_CHECKING-typed field is added.
+        Verify the spell_id changes when a TYPE_CHECKING-typed field is added.
     Contract:
-        - Before 2026-09-26 both classes profiled with no annotations and hashed equal.
-        - Equal classes still hash equal.
+        - Before 2026-09-26 both classes profiled with no annotations and hashed equal; since S1 of
+          EPIC-2026-10-18-spell_identity_is_the_code the spell_id is the class's code, which counts the
+          field without evaluating its annotation.
+        - Equal classes still get equal ids.
     Returns:
         None.
     """
-    strategy = BindingProfileStrategy()
-
-    plain = Bind.sha256_profile(strategy._build_class_profile(_priced_class(False)))
-    again = Bind.sha256_profile(strategy._build_class_profile(_priced_class(False)))
-    extended = Bind.sha256_profile(strategy._build_class_profile(_priced_class(True)))
+    plain = Bind.spell_id_inspector(_priced_class(False))
+    again = Bind.spell_id_inspector(_priced_class(False))
+    extended = Bind.spell_id_inspector(_priced_class(True))
 
     assert plain == again
     assert plain != extended

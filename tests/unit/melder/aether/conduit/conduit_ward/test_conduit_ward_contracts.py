@@ -2,6 +2,7 @@
 
 import threading
 from types import SimpleNamespace
+from typing import Optional
 
 import pytest
 from unittest.mock import MagicMock, patch
@@ -140,6 +141,13 @@ class FakeSpell:
         self.spell_index.update(version_id)
         self.spell_id = version_id
 
+    def _spell_index_unless_cleaned(self) -> Optional[SpellIndex]:
+        """Return this spell's index, or None once cleaned, as `Spell._spell_index_unless_cleaned` does."""
+        with self._lock:
+            if self._cleaned:
+                return None
+            return self.spell_index
+
 
 
 class FakeSpellbook:
@@ -161,6 +169,18 @@ class FakeSpellbook:
         self._detach_link_calls: list[str] = []
         self._reattach_link_calls: list[str] = []
         self._destroy_detached_calls: list[str] = []
+
+    def find_spell_by_spell_id(self, spell_id: str) -> Optional[FakeSpell]:
+        """Resolve a locally owned spell by spell_id, as Spellbook.find_spell_by_spell_id answers from its id maps."""
+        for spell in self._spells.values():
+            if spell.spell_id == spell_id:
+                return spell
+        return None
+
+    def _find_spell(self, spell_index: SpellIndex) -> Optional[FakeSpell]:
+        """Return the local spell an index has active, under the Book lock, as Spellbook._find_spell does."""
+        with self._lock:
+            return self._spells.get(spell_index)
 
     def add_local_spell(self, spell: FakeSpell) -> None:
         """Register a locally owned spell for lineage checks."""
@@ -270,7 +290,7 @@ class FakeSpellbook:
                 versions_set.add(version_id)
 
     def _find_contracted_spell(self, spell_index: SpellIndex | str) -> FakeSpell:
-        """Locate a contracted spell by SpellIndex or version id across all peers."""
+        """Locate a contracted spell by SpellIndex or spell_id across all peers."""
         for spell_map in self._contracted_spells.values():
             if isinstance(spell_index, SpellIndex):
                 if spell_index in spell_map:
@@ -283,7 +303,7 @@ class FakeSpellbook:
         raise RuntimeError("Contracted spell not found.")
 
     def _find_contracted_spell_by_id(self, spell_id: str, conduit_id: str) -> FakeSpell | None:
-        """Locate a contracted spell by version id within a peer conduit."""
+        """Locate a contracted spell by spell_id within a peer conduit."""
         spell_map = self._contracted_spells.get(conduit_id)
         if spell_map is None:
             return None
@@ -294,7 +314,7 @@ class FakeSpellbook:
         return None
 
     def _remove_contracted_spell(self, spell_id: str, conduit_id: str) -> None:
-        """Remove a contracted spell by version id for a peer conduit."""
+        """Remove a contracted spell by spell_id for a peer conduit."""
         self._remove_contracted_calls.append((conduit_id, spell_id))
         spell_map = self._contracted_spells.get(conduit_id)
         lookup_map = self._lookup_contracted_spells.get(conduit_id)
@@ -568,7 +588,7 @@ class FakeConduit:
         """Return the known owner conduit for a spell id."""
         return self._spell_owners.get(spell_id)
 
-    def get_spell_by_id(self, spell_id: str, aetheric_frame: str = "default") -> FakeSpell | None:
+    def get_spell_by_spell_id(self, spell_id: str, aetheric_frame: str = "default") -> FakeSpell | None:
         """Resolve a spell id from local or known conduits."""
         if spell_id in self._spell_by_id:
             return self._spell_by_id[spell_id]
@@ -584,7 +604,7 @@ class FakeConduit:
         return spell.spell_id
 
     def find_contracted_spell(self, spell_id: str) -> FakeSpell | None:
-        """Find a contracted spell by version id across all peers."""
+        """Find a contracted spell by spell_id across all peers."""
         for conduit_id in self._spellbook._contracted_spells.keys():
             spell = self._spellbook._find_contracted_spell_by_id(spell_id, conduit_id)
             if spell is not None:
@@ -1339,7 +1359,7 @@ def test_get_all_spells_in_contracts_returns_current_versions(
 def test_get_spell_in_contracts_matches_lineage_versions(
     linked_pair: tuple[FakeConduit, FakeConduit],
 ) -> None:
-    """Verify spell lookup honors lineage history. A previous version id should resolve to the current spell."""
+    """Verify spell lookup honors lineage history. A previous spell_id should resolve to the current spell."""
     owner, borrower = linked_pair
     spell = _register_spell(owner, "spell-14", permissions=Permissions.create)
 
@@ -1801,7 +1821,7 @@ def test_preflight_contract_dependency_collisions_skips_owner_self_when_not_loca
         dependencies=["dep-self-preflight"],
     )
     borrower.register_spell_owner("dep-self-preflight", borrower)
-    borrower.get_spell_by_id = MagicMock(side_effect=RuntimeError("should not resolve spell"))
+    borrower.get_spell_by_spell_id = MagicMock(side_effect=RuntimeError("should not resolve spell"))
 
     borrower._conduit_ward._preflight_contract_dependency_collisions(
         root_spell=root_spell,
@@ -1984,6 +2004,12 @@ def test_link_spell_dependencies_handles_dependency_without_dependencies_attr(
         __name__="DepNoChildAttr",
         _owner_conduit_id=owner._id,
     )
+
+    def _spell_index_unless_cleaned() -> Optional[SpellIndex]:
+        """Return the dependency's index, as `Spell._spell_index_unless_cleaned` does for a live spell."""
+        return dep_spell.spell_index
+
+    dep_spell._spell_index_unless_cleaned = _spell_index_unless_cleaned
     owner._spell_by_id[dep_spell.spell_id] = dep_spell
     owner._spellbook._spells[dep_spell.spell_index] = dep_spell
     root_spell = _register_spell(
@@ -2527,10 +2553,16 @@ def test_get_spell_in_contracts_returns_none_when_contracts_exist_but_no_detail_
     assert borrower._conduit_ward._get_spell_in_contracts("spell-missing") is None
 
 
-def test_get_spells_in_contract_by_conduit_skips_outbound_resolution_exception(
+def test_get_spells_in_contract_by_conduit_resolves_outbound_through_the_book_not_the_conduit_lookup(
     linked_pair: tuple[FakeConduit, FakeConduit],
 ) -> None:
-    """Verify outbound spell resolution exceptions are skipped instead of propagating."""
+    """
+    Verify outbound spells are answered from this conduit's Book, never through the Conduit lookup.
+
+    The listing holds the ward lock; the Conduit lookups take the conduit lock, which link and sever take before
+    the ward lock, so calling them here deadlocked with a concurrent sever (cross_object_lock_gaps, 0.2.8231).
+    A failing Conduit lookup therefore no longer matters: it is not called.
+    """
     owner, borrower = linked_pair
     inbound_spell = _register_spell(owner, "spell-outbound-skip", permissions=Permissions.create)
     outbound_spell = _register_spell(borrower, "spell-outbound-local", permissions=Permissions.create)
@@ -2552,13 +2584,15 @@ def test_get_spells_in_contract_by_conduit_skips_outbound_resolution_exception(
         )
         contract._add(borrower._conduit_ward, detail)
 
-    borrower.get_spell_by_id = MagicMock(side_effect=RuntimeError("lookup boom"))
+    borrower.get_spell_by_spell_id = MagicMock(side_effect=RuntimeError("lookup boom"))
 
     result = borrower._conduit_ward._get_spells_in_contract_by_conduit(owner._id)
 
     inbound = {sid: found for sid, found in result["inbound"]}
+    outbound = {sid: found for sid, found in result["outbound"]}
     assert inbound[inbound_spell.spell_id] is inbound_spell
-    assert result["outbound"] == []
+    assert outbound[outbound_spell.spell_id] is outbound_spell
+    borrower.get_spell_by_spell_id.assert_not_called()
 
 
 def test_describe_contract_raises_when_missing(
@@ -2690,6 +2724,12 @@ def test_preflight_contract_dependency_collisions_handles_child_without_dependen
         __name__="DepPreflightNoChildAttr",
         _owner_conduit_id=owner._id,
     )
+
+    def _spell_index_unless_cleaned() -> Optional[SpellIndex]:
+        """Return the dependency's index, as `Spell._spell_index_unless_cleaned` does for a live spell."""
+        return dep_spell.spell_index
+
+    dep_spell._spell_index_unless_cleaned = _spell_index_unless_cleaned
     owner._spell_by_id[dep_spell.spell_id] = dep_spell
     owner._spellbook._spells[dep_spell.spell_index] = dep_spell
     root_spell = _register_spell(
@@ -2801,7 +2841,7 @@ def test_preflight_contract_dependency_collisions_skips_owner_self_when_not_loca
         dependencies=["dep-self-preflight"],
     )
     borrower.register_spell_owner("dep-self-preflight", borrower)
-    borrower.get_spell_by_id = MagicMock(side_effect=RuntimeError("should not resolve spell"))
+    borrower.get_spell_by_spell_id = MagicMock(side_effect=RuntimeError("should not resolve spell"))
 
     borrower._conduit_ward._preflight_contract_dependency_collisions(
         root_spell=root_spell,

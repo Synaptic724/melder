@@ -2,8 +2,10 @@
 Unit contracts for the structural snapshot capture seam.
 
 Every value the seam writes is address-free: type references are (module, qualname) rows, the world
-stamp is a digest over sorted ids and the posture name, and the payload rows hold spell ids and enum
-names only. The stubs here mirror the shapes the seam borrows (requirements, profile, registry).
+stamp is a digest over the sorted `<spell_id>=<binding_hash>` entries and the posture name, and the
+payload rows hold spell ids and enum names only. A spell's binding hash (S2) sits in its key beside its
+spell_id (payload format 2), so a payload captured for one binding is never replayed for another. The
+stubs here mirror the shapes the seam borrows (requirements, profile, registry).
 """
 
 import hashlib
@@ -118,7 +120,7 @@ class _Spell:
 
     __slots__ = (
         "spell_id", "profile", "spell_index", "dependencies", "spell", "spellframe", "_caching_enabled",
-        "build_details",
+        "build_details", "binding_hash",
     )
 
     def __init__(
@@ -131,8 +133,12 @@ class _Spell:
             bound: Any = _Alpha,
             spellframe: Any = None,
             caching_enabled: bool = True,
+            binding_hash: Optional[str] = None,
     ) -> None:
         self.spell_id = spell_id
+        # The spell's binding hash (S2): how the version is bound, apart from its code. A stub derives one
+        # per spell_id unless a test binds the same spell_id another way.
+        self.binding_hash = _binding_hash(spell_id) if binding_hash is None else binding_hash
         self.profile = None if requirements is None else _Profile(_ResolutionProfile(requirements))
         self.spell_index = None if index_id is None else _Index(index_id)
         self.dependencies = [] if dependencies is None else dependencies
@@ -238,6 +244,11 @@ def _sid(label: str) -> str:
     return hashlib.sha256(label.encode("utf-8")).hexdigest()
 
 
+def _binding_hash(spell_id: str) -> str:
+    """Deterministic 64-hex binding hash a stub spell carries by default."""
+    return _sid("binding:" + spell_id)
+
+
 # --------------------------------------------------------------------------- #
 # type_refs / annotation_refs
 # --------------------------------------------------------------------------- #
@@ -315,15 +326,28 @@ def test_bind_time_requirements_tolerates_missing_profile_links() -> None:
 
 
 def test_structural_key_holds_format_id_and_sorted_refs() -> None:
-    """The key is value-only: format, the spell id and the sorted annotation refs."""
+    """The key is value-only: format 2, the spell id, its binding hash and the sorted annotation refs."""
     requirements = _Requirements([_Parameter(ParameterDIShape.SINGLE_BY_ANNOTATION, annotation=_Alpha)], _sid("s"))
     spell = _Spell(_sid("s"), requirements=requirements)
     assert StructuralSnapshot.bind_time_requirements(spell) is requirements
+    assert StructuralSnapshot.PAYLOAD_FORMAT == 2
     assert StructuralSnapshot.structural_key(spell) == {
         "format": StructuralSnapshot.PAYLOAD_FORMAT,
         "spell_id": _sid("s"),
+        "binding_hash": _binding_hash(_sid("s")),
         "annotation_refs": [(__name__, "_Alpha")],
     }
+
+
+def test_structural_key_follows_the_binding_hash_under_one_spell_id() -> None:
+    """One spell_id bound two ways keys two payloads, so neither is replayed for the other binding."""
+    requirements = _Requirements([], _sid("s"))
+    first = _Spell(_sid("s"), requirements=requirements, binding_hash=_sid("unique binding"))
+    second = _Spell(_sid("s"), requirements=requirements, binding_hash=_sid("many binding"))
+    first_key = StructuralSnapshot.structural_key(first)
+    second_key = StructuralSnapshot.structural_key(second)
+    assert first_key["spell_id"] == second_key["spell_id"]
+    assert first_key != second_key
 
 
 # --------------------------------------------------------------------------- #
@@ -331,16 +355,17 @@ def test_structural_key_holds_format_id_and_sorted_refs() -> None:
 # --------------------------------------------------------------------------- #
 
 def _expected_stamp(pool_ids: List[str], posture: str, borrowed: List[str]) -> str:
+    """The stamp of stub spells with their default binding hashes: `<spell_id>=<binding_hash>` entries."""
     text = "\n".join((
-        "pool:" + ",".join(sorted(pool_ids)),
+        "pool:" + ",".join(sorted(f"{spell_id}={_binding_hash(spell_id)}" for spell_id in pool_ids)),
         "posture:" + posture,
-        "borrowed:" + ",".join(sorted(borrowed)),
+        "borrowed:" + ",".join(sorted(f"{spell_id}={_binding_hash(spell_id)}" for spell_id in borrowed)),
     ))
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
 def test_world_stamp_digests_sorted_pool_posture_and_borrowed_ids() -> None:
-    """The stamp is order-independent over the pool and borrowed ids and carries the posture name."""
+    """The stamp is order-independent over the pool and borrowed entries and carries the posture name."""
     a, b, c = _sid("a"), _sid("b"), _sid("c")
     forward = _Spellbook({a: _Spell(a), b: _Spell(b)}, _Posture.strict)
     reverse = _Spellbook({b: _Spell(b), a: _Spell(a)}, _Posture.strict)
@@ -363,6 +388,19 @@ def test_world_stamp_changes_with_pool_posture_or_borrowed_set() -> None:
     borrowed._contracted_spells = {"conduit": {"idx": _Spell(b)}}
     assert StructuralSnapshot.world_stamp(borrowed) != stamp
     assert StructuralSnapshot.world_stamp(_Spellbook({a: _Spell(a)}, None)) == _expected_stamp([a], "", [])
+
+
+def test_world_stamp_moves_with_a_binding_change_under_one_spell_id() -> None:
+    """One spell_id bound another way is another world, in the Book's pool and among its borrowed spells."""
+    a, b = _sid("a"), _sid("b")
+    other = _sid("another binding")
+    stamp = StructuralSnapshot.world_stamp(_Spellbook({a: _Spell(a)}))
+    assert StructuralSnapshot.world_stamp(_Spellbook({a: _Spell(a, binding_hash=other)})) != stamp
+    lent = _Spellbook({a: _Spell(a)})
+    lent._contracted_spells = {"conduit": {"idx": _Spell(b)}}
+    relent = _Spellbook({a: _Spell(a)})
+    relent._contracted_spells = {"conduit": {"idx": _Spell(b, binding_hash=other)}}
+    assert StructuralSnapshot.world_stamp(relent) != StructuralSnapshot.world_stamp(lent)
 
 
 def test_pool_replayable_follows_the_phase3_eq_safety_rule() -> None:
@@ -410,7 +448,10 @@ def test_build_payload_renders_phase3_and_phase4_rows_from_durable_state() -> No
     book, consumer, provider_id, consumer_id = _consumer_world()
     payload = StructuralSnapshot.build_payload(consumer, book._spell_system_states, world_stamp="stamp", replayable=True)
     assert payload == {
-        "key": {"format": 1, "spell_id": consumer_id, "annotation_refs": [(__name__, "_Alpha")]},
+        "key": {
+            "format": 2, "spell_id": consumer_id, "binding_hash": _binding_hash(consumer_id),
+            "annotation_refs": [(__name__, "_Alpha")],
+        },
         "world_stamp": "stamp",
         "replayable": True,
         "phase3": {
@@ -538,7 +579,10 @@ def test_capture_marks_every_payload_non_replayable_for_an_eq_risky_pool(tmp_pat
 
 def _good_payload(spell_id: str) -> Dict[str, Any]:
     return {
-        "key": {"format": 1, "spell_id": spell_id, "annotation_refs": [("m", "T")]},
+        "key": {
+            "format": 2, "spell_id": spell_id, "binding_hash": _binding_hash(spell_id),
+            "annotation_refs": [("m", "T")],
+        },
         "world_stamp": "stamp",
         "replayable": True,
         "phase3": {
@@ -563,7 +607,7 @@ def _mutate(payload: Dict[str, Any], path: Tuple[Any, ...], value: Any) -> Dict[
 @pytest.mark.parametrize(
     "path, value",
     [
-        pytest.param(("key", "format"), 2, id="format"),
+        pytest.param(("key", "format"), 1, id="format"),
         pytest.param(("key", "spell_id"), _sid("other"), id="foreign-id"),
         pytest.param(("key", "annotation_refs"), None, id="refs-not-list"),
         pytest.param(("world_stamp",), 7, id="stamp-not-str"),
@@ -594,8 +638,11 @@ def test_payload_well_formed_rejects_non_dict_shapes() -> None:
     assert StructuralSnapshot.payload_well_formed(None, spell_id) is False
     assert StructuralSnapshot.payload_well_formed([], spell_id) is False
     assert StructuralSnapshot.payload_well_formed({"key": None}, spell_id) is False
-    assert StructuralSnapshot.payload_well_formed({"key": {"format": 1, "spell_id": spell_id, "annotation_refs": []},
-                                                  "world_stamp": "s", "replayable": True, "phase3": None, "phase4": {}}, spell_id) is False
+    no_sections = {
+        "key": {"format": 2, "spell_id": spell_id, "binding_hash": _binding_hash(spell_id), "annotation_refs": []},
+        "world_stamp": "s", "replayable": True, "phase3": None, "phase4": {},
+    }
+    assert StructuralSnapshot.payload_well_formed(no_sections, spell_id) is False
 
 
 def test_rebuild_topology_round_trips_the_captured_socket_rows() -> None:
@@ -638,7 +685,7 @@ def test_classify_reports_full_hit_after_a_capture_of_the_same_world(tmp_path: P
 
 
 def test_classify_misses_on_stamp_key_replayability_or_index(tmp_path: Path) -> None:
-    """Each hit condition is necessary: world stamp, key, replayable flag, live key and a bound index."""
+    """Each hit condition is necessary: world stamp, key (its binding hash too), replayable, live key, index."""
     book, consumer, provider_id, consumer_id = _consumer_world()
     caching_system = _make_caching_system(tmp_path)
     try:
@@ -653,6 +700,10 @@ def test_classify_misses_on_stamp_key_replayability_or_index(tmp_path: Path) -> 
         assert StructuralSnapshot.classify(book, caching_system)["misses"] == {consumer_id}
 
         caching_system.upsert_structural_payload(consumer_id, _mutate(consumer_payload, ("key", "annotation_refs"), [("m", "Other")]))
+        assert StructuralSnapshot.classify(book, caching_system)["misses"] == {consumer_id}
+
+        rebound = _mutate(consumer_payload, ("key", "binding_hash"), _sid("another binding"))
+        caching_system.upsert_structural_payload(consumer_id, rebound)
         assert StructuralSnapshot.classify(book, caching_system)["misses"] == {consumer_id}
 
         caching_system.upsert_structural_payload(consumer_id, consumer_payload)

@@ -82,12 +82,31 @@ class Ledger:
     pass
 
 
-def _postured_frame(frame_name: str, *, dynamic: bool = False) -> None:
-    """Build one frame with the posture AR needs, then settle it."""
+class ClosedLedger(Ledger):
+    """closed-world's own Ledger - a new class, so its own spell_id."""
+
+
+class ObservableLedger(Ledger):
+    """observable's own Ledger - a new class, so its own spell_id."""
+
+
+class UnlistedLedger(Ledger):
+    """unlisted's own Ledger - a new class, so its own spell_id."""
+
+
+class WorkshopLedger(Ledger):
+    """workshop's own Ledger - a new class, so its own spell_id."""
+
+
+def _postured_frame(frame_name: str, spell: type[Ledger], *,
+                    dynamic: bool = False) -> None:
+    """Build one frame with the posture AR needs, bind that frame's own
+    Ledger class in it, then settle it."""
     book = md.Spellbook(aetheric_frame=frame_name)
-    # binding_name keeps the spell_id distinct per frame - identity is
-    # process-wide and the frame is not in the fingerprint (advanced 02).
-    book.bind(spell=Ledger, existence="unique", binding_name=frame_name)
+    # Each frame binds its OWN Ledger class: a spell_id is the SHA256 of
+    # the class's code, with neither the frame nor the binding_name in
+    # it, so one class bound in two frames is refused (advanced 02).
+    book.bind(spell=spell, existence="unique", binding_name=frame_name)
     if dynamic:
         book.configure_aether_frame(
             system_state="dynamic",
@@ -111,15 +130,16 @@ def _postured_frame(frame_name: str, *, dynamic: bool = False) -> None:
 def main() -> None:
     # A frame that never opted in. This is the default, on purpose.
     closed = md.Spellbook(aetheric_frame="closed-world")
-    closed.bind(spell=Ledger, existence="unique", binding_name="closed-world")
+    closed.bind(spell=ClosedLedger, existence="unique",
+                binding_name="closed-world")
     closed.conjure(name="closed-root")
 
     # ...and three that did. 'unlisted' is postured EXACTLY like
     # 'observable' - the only thing that will differ is the Nexus's own
     # policy, which is how we isolate gate A from gate B.
-    _postured_frame("observable")
-    _postured_frame("unlisted")
-    _postured_frame("workshop", dynamic=True)
+    _postured_frame("observable", ObservableLedger)
+    _postured_frame("unlisted", UnlistedLedger)
+    _postured_frame("workshop", WorkshopLedger, dynamic=True)
     print("four frames: one default, two rift-enabled, one AI-native")
 
     # The Rift domain has to be live before any of this matters - and the

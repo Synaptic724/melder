@@ -1,0 +1,144 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/bind/spell_code_digest.py",
+ "source_sha256": "5175774c60332bddf5eab6417553464f8e7091db6c099fdadc77499316ecd8b6",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.bind.spell_code_digest": {
+   "id": "melder.aether.spellbook.bind.spell_code_digest",
+   "label": "spell_code_digest",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/bind/spell_code_digest.py",
+   "lineno": 1,
+   "role": "Module holding SpellCodeDigest, the encoder whose SHA256 is a spell_id (0.2.8257).",
+   "responsibilities": [
+    "defines SpellCodeDigest and nothing at module scope but imports"
+   ],
+   "owns_state": [],
+   "phases": [
+    "init"
+   ],
+   "semantics_authored_against": ""
+  },
+  "melder.aether.spellbook.bind.spell_code_digest.SpellCodeDigest": {
+   "id": "melder.aether.spellbook.bind.spell_code_digest.SpellCodeDigest",
+   "label": "SpellCodeDigest",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/bind/spell_code_digest.py",
+   "lineno": 33,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "cleanup",
+    "spell_id",
+    "target_encoding"
+   ],
+   "shape": {
+    "method_count": 44,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "1227331dbb0bf3623515a9a596418fbc1116945499804549f43f92c5c6e44ea4",
+   "role": "Encodes a registration target's code and data into the text whose SHA256 is its spell_id.",
+   "responsibilities": [
+    "spell_id(target): the SHA256 of 'v5-code', the interpreter's cache tag and the target's encoding",
+    "encodes a class as its module, qualname, metaclass and bases and, for it and every MRO class outside the standard library, its namespace: functions by code, defaults, annotations, closures, class values",
+    "encodes a function by its code object: instructions, loaded constants, argument counts, flags, name tables and exception table - never line numbers, docstrings or comments",
+    "encodes an existing object as its class's code plus its slots and __dict__ by value",
+    "names installed third-party code (a module file under a site-packages root) by qualified name and distribution version instead of digesting it (decision B), and names standard-library classes",
+    "takes nothing from the bind call: spellframe, binding name, existence, disposal names, resolvable and the managed settings belong to the binding manifest",
+    "runs no target code but repr() of a target with no readable state, of a value type's object and of an installed third-party object, reading through type and object __getattribute__ and builtin container bases; never raises for a target (opaque:<type>, a repr placeholder, a type-and-repr fallback for data nested past the recursion limit)",
+    "holds no lock: its memos serve one caller at a time (Bind calls it under its lock; spell_id_inspector builds a fresh one), and cleanup clears and deletes them"
+   ],
+   "owns_state": [
+    "_code_memo",
+    "_third_party_memo",
+    "_version_memo",
+    "_distributions",
+    "_site_roots"
+   ],
+   "phases": [
+    "init",
+    "runtime",
+    "cleanup"
+   ],
+   "semantics_authored_against": "1227331dbb0bf3623515a9a596418fbc1116945499804549f43f92c5c6e44ea4"
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.aether.spellbook.bind.spell_code_digest.SpellCodeDigest",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.spellbook.bind.spell_code_digest.SpellCodeDigest",
+   "to_label": "WeakKeyDictionary",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.bind.spell_code_digest.SpellCodeDigest",
+   "to_label": "Path",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "annotationlib": "annotationlib",
+  "datetime": "datetime",
+  "decimal": "decimal",
+  "dis": "dis",
+  "enum": "enum",
+  "fractions": "fractions",
+  "functools": "functools",
+  "hashlib": "hashlib",
+  "importlib": "importlib",
+  "inspect": "inspect",
+  "ipaddress": "ipaddress",
+  "os": "os",
+  "pathlib": "pathlib",
+  "re": "re",
+  "site": "site",
+  "struct": "struct",
+  "sys": "sys",
+  "sysconfig": "sysconfig",
+  "types": "types",
+  "typing": "typing",
+  "uuid": "uuid",
+  "weakref": "weakref",
+  "Any": "typing.Any",
+  "ClassVar": "typing.ClassVar",
+  "Dict": "typing.Dict",
+  "FrozenSet": "typing.FrozenSet",
+  "List": "typing.List",
+  "Optional": "typing.Optional",
+  "Tuple": "typing.Tuple",
+  "InspectorUtility": "melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.inspector_utility.InspectorUtility",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable"
+ },
+ "collapse_candidate": {
+  "module": "melder.aether.spellbook.bind.spell_code_digest",
+  "class": "melder.aether.spellbook.bind.spell_code_digest.SpellCodeDigest",
+  "label": "SpellCodeDigest"
+ },
+ "edges_authored": [
+  {
+   "from": "melder.aether.spellbook.bind.spell_code_digest.SpellCodeDigest",
+   "to": "melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.inspector_utility.InspectorUtility",
+   "relation": "uses",
+   "why": "SpellCodeDigest encodes a target with no readable state, a value type's object, an installed third-party object, a typing object and an otherwise unnamed constant through InspectorUtility.stable_repr, the address-free full repr.",
+   "cardinality": "many_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "borrowed"
+  }
+ ]
+}

@@ -1,0 +1,8 @@
+edits 15; lines 966; old names left on 6 lines:
+   `Spellbook.find_spell_by_id`, and `Conduit.get_spell_by_id` on top of it (`find_spell_by_spell_id` and
+   `Conduit.get_spell_by_spell_id` (`get_spell_by_id` until 0.2.8253) and `Conduit.get_conduit_by_spell_id` keep
+   **Breaking change:** `Spellbook.find_spell_by_id` and `Conduit.get_spell_by_id` are renamed `find_spell_by_spell_id`
+   - In Rift rooms the command `get_spell_by_id` is now `get_spell_by_spell_id`, listed under that name by
+   `bind_inactive` returns a spell_id, and until 0.2.8253 `get_spell_by_id` / `find_spell_by_id` answered a staged
+   - A notch to the `Spell` that `get_spell_by_id` or `find_spell_by_id` returned for a parked spell_id stayed a
+written release_docs/next_version_release.md

@@ -1,0 +1,25 @@
+REMEASURED tests_components: tests/mocks/crystallizer/spell_crystal_harness.py 771 -> 775
+REMEASURED tests_components: tests/unit/melder/aether/test_nexus.py 6377 -> 6374
+REMEASURED tests_components: tests/unit/melder/aether/test_command_system_direct.py 483 -> 477
+REMEASURED tests_components: tests/unit/melder/crystallizer/test_crystallizer.py 198 -> 202
+REMEASURED tests_components: tests/unit/melder/crystallizer/test_spell_crystal.py 438 -> 484
+REMEASURED tests_components: tests/unit/melder/spellbook/test_spellbook.py 5249 -> 5285
+REMEASURED tests_components: tests/unit/melder/spellbook/test_spell.py 1505 -> 1581
+REMEASURED tests_components: tests/unit/melder/spellbook/test_scan_bind_option_parity.py 768 -> 770
+REMEASURED tests_components: tests/unit/melder/spellbook/test_cache_runtime_verification.py 608 -> 696
+REMEASURED tests_components: tests/unit/melder/spellbook/bind/test_bind.py 1879 -> 1939
+REMEASURED tests_components: tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py 513 -> 535
+REMEASURED tests_components: tests/integration/melder/spellbook/test_spellbook_integration_resolution_contract.py 1968 -> 1970
+REMEASURED tests_components: tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering.py 1390 -> 1475
+REMEASURED tests_components: tests/unit/melder/test_package_public_surface.py 352 -> 386
+REMEASURED tests_components: tests/unit/melder/utilities/test_caching_system.py 662 -> 742
+REMEASURED tests_components: tests/component/melder/spellbook/test_conjure_cache_restage.py 204 -> 212
+REMEASURED tests_components: tests/integration/melder/conduit/test_conduit_integration_scope_resolution_alignment.py 709 -> 718
+REMEASURED tests_components: tests/integration/melder/conduit/test_ordered_disposal_runtime.py 129 -> 132
+REMEASURED tests_components: tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_door_held_root.py 357 -> 403
+REMEASURED tests_components: tests/integration/melder/conduit/test_conduit_integration_many_child_disposed_with_its_holder.py 186 -> 218
+REMEASURED tests_architecture: tests/unit/melder/aether/test_nexus.py 6377 -> 6374
+REMEASURED tests_architecture: tests/unit/melder/aether/test_command_system_direct.py 483 -> 477
+tests_components lines 2998 -> 3395
+tests_architecture lines 939 -> 957
+written

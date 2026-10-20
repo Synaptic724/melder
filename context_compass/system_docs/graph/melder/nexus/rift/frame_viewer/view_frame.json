@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/rift/frame_viewer/view_frame.py",
- "source_sha256": "2947fe5ea6f89fce5911f1d802e6733dac2ecf3e5b6ec79103c4e512d319755f",
+ "source_sha256": "f718a1702e5d3a879d94c425663c13a605f9a6b9467bc5db2f738c32d3f0fd7e",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.rift.frame_viewer.view_frame": {
@@ -64,7 +64,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "41e7d58d4f9c5279a3564eb286d8bed005867efdf3c5a3466ce3f7929c37e993",
+   "span_sha256": "acd62f1accaacb2d4503d0a502a62d57ae348df13fbaa551f9473661acf45684",
    "role": "Frame-scoped helper surface for one selected view projection.",
    "responsibilities": [
     "converts one descriptor and compiled ACL surface into visible target links and frame summaries",

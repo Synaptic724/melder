@@ -30,7 +30,7 @@ permissions:
 jobs:
   build:
     name: Distributions / build-and-verify
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     outputs:
       # A failed-jobs re-run does not repeat a successful build, and keeps this output from the attempt that built.

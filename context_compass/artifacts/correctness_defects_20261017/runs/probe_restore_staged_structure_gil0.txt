@@ -1,0 +1,18 @@
+R1 English active and French staged under the same signature (Greeter, 'greeter')
+    restore status: complete; built: {'frame': 1, 'spellbook': 1, 'spell_active': 1, 'conduit': 1, 'spell_staged': 1}
+    shortfall: {'kind': 'crystallizer', 'key': 'root', 'reason': 'crystallizer_policy_recorded_reload_is_boot_time_act'}
+    rebuilt Book: active=['English'] parked=['French']; frame claim ('greeter', 'greeter'): None
+
+R2 French staged under (Greeter, 'french'), then separated into its own index
+    recorded Book: active=['English'] parked=['French']
+    restore status: complete; built: {'frame': 1, 'spellbook': 1, 'spell_active': 1, 'conduit': 1}
+    shortfall: {'kind': 'crystallizer', 'key': 'root', 'reason': 'crystallizer_policy_recorded_reload_is_boot_time_act'}
+    shortfall: {'kind': 'spell_crystal', 'key': '0d0c0aaf862575ec69e29ff94fcdf5a39cda7b826ea1893e7929c24db87543c6', 'reason': 'staged_member_anchor_index_not_rebuilt: 01M55S5VZ5PKTVM61FRZKP78WE'}
+    rebuilt Book: active=['English'] parked=[]
+
+R3 as R2, then French notched active inside its own index
+    recorded Book: active=['English', 'French'] parked=[]
+    restore status: complete; built: {'frame': 1, 'spellbook': 1, 'spell_active': 2, 'conduit': 1}
+    shortfall: {'kind': 'crystallizer', 'key': 'root', 'reason': 'crystallizer_policy_recorded_reload_is_boot_time_act'}
+    rebuilt Book: active=['English', 'French'] parked=[]
+

@@ -1,5 +1,5 @@
 import threading
-from typing import Optional
+from typing import FrozenSet, Optional
 
 from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
     DevopsInformationRegistry,
@@ -51,6 +51,8 @@ class _SpellSystemStatesStub:
     Contract:
         - get_conduit_resolution_state returns the configured stub.
         - get_by_spell_id returns None (lineage lookup not needed here).
+        - non_resolvable_index_ids is empty: no lineage is flagged, so every risky
+          lineage counts toward the Book flag, as before `SpellState.non_resolvable`.
     """
 
     def __init__(self, resolution_state: _ResolutionStateStub) -> None:
@@ -83,6 +85,16 @@ class _SpellSystemStatesStub:
             None.
         """
         return None
+
+    @property
+    def non_resolvable_index_ids(self) -> FrozenSet[str]:
+        """
+        Report that no lineage is flagged `SpellState.non_resolvable`.
+
+        Returns:
+            FrozenSet[str]: Always empty.
+        """
+        return frozenset()
 
 
 class _SpellSystemStateStub:
@@ -122,7 +134,7 @@ class _SpellIndexStub:
 
         Args:
             lineage_id: Lineage identifier for the spell.
-            current_id: Current version id for the spell.
+            current_id: The spell's current spell_id.
         """
         self.id: str = lineage_id
         self._current: str = current_id
@@ -578,7 +590,7 @@ def test_iter_spellbook_spells_swallows_lookup_errors() -> None:
 
 
 def test_resolve_lineage_id_from_spell_id_returns_lineage_when_present() -> None:
-    """Verify version-id lookup returns the stored lineage id when present."""
+    """Verify spell_id lookup returns the stored lineage id when present."""
 
     class _State:
         def __init__(self, spell_index_id: str) -> None:

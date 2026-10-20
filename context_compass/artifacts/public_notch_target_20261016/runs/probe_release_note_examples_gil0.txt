@@ -1,0 +1,11 @@
+Python 3.14.7, GIL enabled: False
+S8 example: OK ReportServiceV2 v2
+0.2.8249 example: OK True ReportService
+refusals: OK
+other index -> ValueError notch_spell: version '<id>' belongs to another SpellIndex, not the one passed. Pass that version's own index -
+unknown id -> ValueError notch_spell: version 'no-such-id' is not owned by this conduit's Spellbook. Notch it through the conduit of th
+both -> ValueError notch_spell accepts either `spell` or `spell_id`, not both.
+neither -> ValueError notch_spell needs the version to make active: pass spell_id=<the id bind or bind_inactive returned>, or spell=
+non-str id -> TypeError notch_spell `spell_id` must be a string; got int.
+x still selects a: True | y still selects y1: True
+melds: A Y1

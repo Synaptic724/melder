@@ -1,0 +1,18 @@
+v1 bound and active
+index: 1 member, selected = e865fa95e59b ...
+meld -> rate 100
+
+v2 staged: 2 members, selection UNCHANGED
+meld -> rate 100  (v2 is parked, not resolvable)
+  the costly half of a swap is done while v1 still serves
+
+looking up the PARKED spell_id returned the ACTIVE spell
+  so the notch is told the version by its spell_id instead
+
+notch by spell_id: v2 selected, meld -> rate 250
+notch back by spell_id: v1 selected, meld -> rate 100
+
+an index is a lineage with one selection
+staging adds a member; only a notch moves the selection
+nothing is destroyed by a notch, which is why rolling back
+is the same act and not a restore

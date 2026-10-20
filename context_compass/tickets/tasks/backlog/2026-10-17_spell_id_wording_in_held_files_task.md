@@ -1,0 +1,191 @@
+# Task: spell_id_wording_in_held_files - finish the spell_id wording in the files melder_1 held
+
+## Metadata
+- Task ID: TASK-2026-10-17-spell_id_wording_in_held_files
+- Story: none (standalone; successor of TASK-2026-10-16-spell_id_wording_near_spell_index, turned in on the
+  owner's word, chat 2026-10-17)
+- Status: blocked
+- Owner: user
+- Agent Name: melder_1
+- Agent Role: synaptic_python_developer
+- Priority: p3
+- Created: 2026-10-17T20:49:39Z
+- Updated: 2026-10-19T12:35:35Z
+
+## Objective
+Finish the owner's 2026-10-16 direction - where "version id" relates to a spell index, name the id it means
+(`spell_id`, or the spell index id), by hand - in the 25 files melder_1 held for its rule-2 lane: its src
+(spellbook.py, spell_system_states.py, conduit_ward.py, conduit.py, meld.py, transfer_of_ownership.py,
+contract_provider_presence_strategy.py, spellbook_validation_error.py) and tests, the four system documents with
+their indexes, the graph descriptors and the running release note. The predecessor decided 127 rewrites and 5 kept
+lines for them; it also hands over one system-doc edit: tests_components.md's code-map entry for
+`tests/unit/melder/spellbook/test_spell_managed_quantity_stamp.py` (185 lines since its fresh-Aether fixture).
+
+## Ticket Contract
+- ENTRY_GATE: melder_1's release NOTICE for the held files (after rule 2's closure and its rebuild); the held
+  files re-inventoried against their current text, because melder_1's lookup fix (the owner's rule of 2026-10-17: a
+  lookup by spell_id returns that spell or nothing) rewrites docstrings these decisions reword and 19 of the
+  inventoried lines had already moved; every decision rechecked by hand; an active board row.
+- EXECUTION_BOUNDARY: wording only - docstrings, comments and prose in those files, the system docs' indexes, the
+  graph descriptors' authored prose with the reassembled graph, one release-note bullet; one notch; the rebuild
+  last. No code identifier is renamed (the owner's ruling) and no behaviour changes.
+- DEPENDENCIES: TASK-2026-10-16-recheck_contract_consumers_when_provider_changes (melder_1) - its closure, its
+  lookup fix and its rebuild.
+- EXIT_GATE: no live "version id" relating to a spell index left in those files; the kept lines listed with their
+  reasons; the touched files compile and their tests pass with the GIL off and on; the indexes and the graph
+  regenerated with their checks OK; notch, release-note bullet, closure; the rebuild last with both checks OK.
+- FAILURE_ESCALATION: DECISION_REQUEST when the code cannot settle which id an occurrence names, or when a line
+  would need an identifier renamed; CONFLICT when another lane holds a file this one must edit.
+
+## Scope Boundaries
+- In scope: the 132 held records of the predecessor (re-inventoried), any new occurrence the re-inventory finds in
+  those files, and the tests_components code-map entry above.
+- Out of scope: "version identity" (the owner has not ruled; the predecessor's DECISION of 2026-10-16T20:03:17Z
+  lists where it means the spell_id and where it means another id); code identifiers; history.
+
+## State Transition Event
+- from_state: draft
+- to_state: blocked
+- transition_reason: created at the predecessor's turn-in; the files it edits stay melder_1's until rule 2's
+  closure and rebuild (M1-22, M1-23).
+
+## Steps / Checklist
+- [ ] On melder_1's release NOTICE: re-run the inventory over the held files and remap or redo each decision.
+- [ ] Apply them; compile; run the touched tests with the GIL off and on.
+- [ ] tests_components' code-map entry for the stamp test; the system doc indexes; the graph descriptors and
+      reassembly; each with its check.
+- [ ] Notch, release-note bullet, closure; the rebuild last.
+- [ ] Run Ticket Microcycle during execution:
+      `Investigate -> Document -> Strategy/Plan -> Document -> Implement ->
+      Document -> Validate -> Document`.
+- [ ] Record meaningful attributed findings in supported Notes/comments or authorized linked evidence
+      before dependent work; no forced body copy.
+
+## Deliverables
+- The reworded lines in the held files; the refreshed inventory and decisions; the tests_components entry.
+
+## Files / Paths Impacted
+- The 25 held files (listed in artifacts/spell_id_wording_20261016/inventory/held_files.json) and the graph
+  descriptors; system_docs indexes and src_graph.md (generated); src/melder/__version__.py; the release note.
+
+## Validation
+- Not run (blocked).
+- Recommended commands:
+  - from the repository root: python context_compass/artifacts/spell_id_wording_20261016/scripts/inventory.py
+    <a new out_dir> (the re-inventory), then apply_decisions.py <that inventory dir> --scope held --check before any
+    write
+  - python -m py_compile <every touched .py>; pytest on the touched tests with -X gil=0 and -X gil=1
+
+## Risks / Rollback Notes
+- Decisions made against an older text can reword a line melder_1 has since rewritten; the apply script refuses a
+  moved or changed line, and the re-inventory comes first.
+- Rollback: the edits are wording only; reverting the touched lines restores the old text.
+
+## Applicable Anti-Patterns
+- [ ] No status transition without evidence-backed transition reason.
+- [ ] No implementation/validation from `UNKNOWN` or `HYPOTHESIS`.
+- [ ] No closure without delegated acceptance or reserved-owner disposition and board-sync completion.
+
+## Done Checklist
+- [ ] Steps complete and checked off
+- [ ] Deliverables produced and linked
+- [ ] Documentation updated (if needed)
+- [ ] Validation status recorded
+- [ ] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
+- [ ] Notes quality maintained (`SCORE_0_TO_10` >=
+      `workflow.ticket_microcycle.minimum_note_score`)
+- [ ] Applicable anti-pattern checks are clear or escalated with evidence.
+- [ ] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
+- [ ] Board sync completed for successor routing or closure anchor update.
+
+## Artifact Links (Optional)
+Qualified independent reviewer acceptance and direct closure follow shared `ticketing.md`;
+this does not make independent review mandatory for every ticket.
+
+- ARTIFACTS_REQUIRED: true
+- ARTIFACT_PATHS:
+  - artifacts/spell_id_wording_20261016/ (inventory with its supplement, decisions, audit, scripts, runs, notes)
+- DISPOSITION: retain_as_reference
+- CLEANUP_TRIGGER: at closure the folder stays as the evidence of both tickets
+
+## Context Management
+- CONTEXT_MANAGEMENT_REQUIRED: false
+- CONTEXT_IDS:
+  - none
+- CONTEXT_TOPICS:
+  - which id "version id" names in the files melder_1 held
+- IF_UNKNOWN: none
+
+## Noting Behavior
+- Note focus: tactical findings, concrete impacts, and single-step continuation.
+- Multiple meaningful comments or authorized documents may hold findings directly; no forced
+  body copy of every finding is required before ordinary continuation.
+- Keep notes append-only; correct history only for factual errors.
+- Promote `UNKNOWN` to `FACT` only with direct evidence pointers.
+
+## Contribution Attribution
+- Ticket/Work Author(s): melder_0 (synaptic_python_developer); prose; created 2026-10-17T20:49:39Z; evidence in Notes.
+- Published By: UNKNOWN (a local ticket file; not published)
+- Independent Review: none yet
+
+## Notes
+- DATETIME: 2026-10-17T20:49:39Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: Handed over at the predecessor's turn-in: 132 held records (127 rewrites, 5 kept) in 25 files, decided by
+    hand in artifacts/spell_id_wording_20261016/inventory/ (decisions_*.json) and its supplement_after_audit/; on
+    2026-10-17 113 still sat where inventoried, 19 had moved with their text intact, none was gone. Also handed
+    over: tests_components.md's code-map entry for the stamp test (TASK-2026-10-16-stamp_test_boots_its_own_aether,
+    closed). The owner's double check of 2026-10-16 found no "version id" in the code that means another id.
+  EVIDENCE:
+  - context_compass/tickets/tasks/completed/2026-10-16_spell_id_wording_near_spell_index_task.md:1-12
+  - context_compass/artifacts/spell_id_wording_20261016/inventory/held_files.json:1-27
+  IMPACT: Nothing here can start before melder_1 releases the files; the decisions are a starting point, not a
+    script to replay blind.
+  NEXT: On melder_1's release NOTICE, re-run the inventory over the held files.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-19T12:35:35Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: The owner (chat 2026-10-19): "After you finish your change hand all your tickets to melder1 your
+    competing for the same resources and document them". melder_0 hands this ticket to melder_1 as it stands:
+    blocked in the backlog since 2026-10-17. The release its ENTRY_GATE waited for came -
+    TASK-2026-10-16-recheck_contract_consumers_when_provider_changes is done and its files went back (M1-28,
+    2026-10-18) - but 0.2.8253 to 0.2.8261 rewrote many lines its 132 decisions point at, so the inventory is
+    re-run against the current text before any decision is applied; it waits for the owner's scheduling, and
+    its status is the new holder's to set.
+  EVIDENCE:
+  - context_compass/tickets/tasks/completed/2026-10-16_recheck_contract_consumers_when_provider_changes_task.md:3-21
+  - context_compass/tickets/epics/2026-10-17_correctness_defects_epic.md:907-927
+  - context_compass/tickets/tasks/backlog/2026-10-17_spell_id_wording_in_held_files_task.md:132-148
+  IMPACT: Its holder is melder_1; nothing else in it changes.
+  NEXT: The owner's scheduling; then re-run the inventory over the held files.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+## Context / Handoff Summary
+- Scope: the rest of the spell_id wording, in the files melder_1 held; wording only.
+- State: blocked (backlog) - the release it waited for came (M1-28, 2026-10-18); it waits for the owner's
+  scheduling and a fresh inventory (DECISION note of 2026-10-19T12:35:35Z).
+- Evidence: the predecessor's Notes and artifacts/spell_id_wording_20261016/.
+- Next: re-inventory, recheck and apply; the tests_components entry; indexes and graph; notch, bullet, closure;
+  the rebuild last.
+- Holder: melder_1 since 2026-10-19, from melder_0 on the owner's word (DECISION note of 2026-10-19T12:35:35Z).
+
+## Project-Specific Additions
+<!-- BEGIN USER-DEFINED: project_fields -->
+<!-- END USER-DEFINED: project_fields -->
+
+<!--
+Anything this project needs on every ticket of this kind goes in the region
+above: extra fields, a compliance checklist, a link to a local convention.
+
+The region is yours. An upgrade replaces every other line of this template with
+the new version's text and carries this region across untouched, so a local
+addition here is not a divergence you re-resolve on every upgrade - which is
+what editing the rest of the template would cost you.
+-->

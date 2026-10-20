@@ -1,0 +1,6 @@
+S5 emission diff: before = 0.2.8244 tree (s5_emission_before_0_2_8244.json.gz), after = working tree with S5
+entries before=4461 after=4461
+only before=0 only after=0 changed=0
+error entries before=30 after=30 same keys=True
+entries by family: {'door': 42, 'harness': 5, 't1': 3456, 't2': 750, 't3': 120, 't4': 72, 't5': 16}
+RESULT: IDENTICAL

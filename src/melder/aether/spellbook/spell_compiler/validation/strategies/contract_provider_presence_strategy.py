@@ -32,7 +32,14 @@ class ContractProviderPresenceStrategy(SpellValidationStrategy):
     Contract:
         - Emits errors when contract descriptors are malformed.
         - Emits errors when more than one provider matches a contract key.
-        - Emits warnings for missing SpellContract providers in dynamic mode.
+        - Emits warnings for missing SpellContract providers in dynamic mode. The
+          warning names the contract and the remedy (D1-B, 2026-10-16): it is the
+          one warning Phase 4 gates a SpellIndex on, so SpellbookValidationError
+          lists it as the reason a consumer is refused.
+        - Walks one-call snapshots of the Book's contracted maps, built once per
+          validation pass. Under rule 2 (2026-10-16) this check is the recheck a
+          consumer's next meld runs after its provider changed, so it can meet
+          the rest of that change still writing the maps under the Book lock.
         - Emits errors for contract sockets in automatic system state.
         - A unique non-resolvable provider is incompatible with a live contract.
         - Non-resolvable consumers retain descriptor checks without provider or mode obligations.
@@ -76,7 +83,9 @@ class ContractProviderPresenceStrategy(SpellValidationStrategy):
         Purpose:
             Detect contract sockets that cannot be resolved or are ambiguous.
         Contract:
-            - Uses the Spellbook's contracted spell maps when available to enumerate providers.
+            - Uses the Spellbook's contracted spell maps when available to enumerate providers,
+              walking one-call snapshots of them (no Book lock is held here; a provider
+              change writes them under it).
             - Respects system_state to distinguish automatic vs dynamic behavior.
             - Appends one issue per contract socket mismatch.
         Args:
@@ -120,8 +129,11 @@ class ContractProviderPresenceStrategy(SpellValidationStrategy):
         if provider_map is None:
             provider_map = {}
             if spellbook is not None:
-                for contracted in spellbook._contracted_spells.values():
-                    for index, provider_spell in contracted.items():
+                # One-call snapshots (exact under concurrent writers on 3.14t): the
+                # mutators write these maps under the Book lock, which this pass does
+                # not hold, and a recheck can run while a notch is still writing them.
+                for contracted in list(spellbook._contracted_spells.values()):
+                    for index, provider_spell in list(contracted.items()):
                         if cancel_event is not None and cancel_event.is_set:
                             cancel_event.throw_if_set()
                         key = SpellInputUtils.make_spell_key_from_parts(
@@ -212,13 +224,17 @@ class ContractProviderPresenceStrategy(SpellValidationStrategy):
                     continue
 
                 if not providers:
+                    frame_key, binding_key = contract_key
                     context.issues.append(
                         SpellValidationIssue(
                             severity="warning",
                             code="SPELL_CONTRACT_MISSING_PROVIDER",
                             message=(
-                                f"Spell {spell.spell_name!r} parameter {param.name!r} "
-                                f"has no provider for contract key {contract_key}."
+                                f"Spell {spell.spell_name!r} parameter {param.name!r} has no provider "
+                                f"for its SpellContract (frame_key={frame_key!r}, binding_key={binding_key!r}): "
+                                "no active spell with that frame and binding name is contracted to this "
+                                "Spellbook. Contract one from a linked conduit (add_index_to_contract, or "
+                                "add_spell_to_contract for one version) and meld again."
                             ),
                             details={
                                 "parameter_name": param.name,

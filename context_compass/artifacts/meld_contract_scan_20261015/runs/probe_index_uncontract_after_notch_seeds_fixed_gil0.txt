@@ -1,0 +1,11 @@
+probe_index_uncontract_after_notch.py on the fixed scratch tree /tmp/cc_res/removal/tree (melder_1, 2026-10-16T21:46:49Z), GIL off, PYTHONHASHSEED 0-9
+seed 0: after remove_index_from_contract: index members=['English', 'French'] active=[] parked=[] existence=[] 
+seed 1: after remove_index_from_contract: index members=['English', 'French'] active=[] parked=[] existence=[] 
+seed 2: after remove_index_from_contract: index members=['English', 'French'] active=[] parked=[] existence=[] 
+seed 3: after remove_index_from_contract: index members=['English', 'French'] active=[] parked=[] existence=[] 
+seed 4: after remove_index_from_contract: index members=['English', 'French'] active=[] parked=[] existence=[] 
+seed 5: after remove_index_from_contract: index members=['English', 'French'] active=[] parked=[] existence=[] 
+seed 6: after remove_index_from_contract: index members=['English', 'French'] active=[] parked=[] existence=[] 
+seed 7: after remove_index_from_contract: index members=['English', 'French'] active=[] parked=[] existence=[] 
+seed 8: after remove_index_from_contract: index members=['English', 'French'] active=[] parked=[] existence=[] 
+seed 9: after remove_index_from_contract: index members=['English', 'French'] active=[] parked=[] existence=[] 

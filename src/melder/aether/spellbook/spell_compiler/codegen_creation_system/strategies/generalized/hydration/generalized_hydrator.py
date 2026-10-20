@@ -33,6 +33,8 @@ from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_asset
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_manifest_no_overrides_compiler import (
     build_specialized_no_overrides_executor,
     resolve_root_instance_key_from_rows,
+    rows_contain_managed_step,
+    rows_feed_many_into_non_many_step,
     select_specializable_step_indexes,
 )
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.hydration.generalized_binding_resolver import (
@@ -586,6 +588,12 @@ def _install_specializing_door(
         - Zero-capture graphs never install the wrapper: this function
           returns `plain_instance_door` unchanged when no `unique` step
           exists.
+        - Graphs in which a `many` step feeds a non-`many` step never install
+          the wrapper either (many_child_follows_holder, 2026-10-14): the
+          straight-line specialized body would build a holder's `many`
+          children on every warm call and record them in the meld's innermost
+          scope, while the plain door's site plan builds them only in the
+          holder's first build and records them with the holder's owner.
         - The wrapper's steady state is self-erasing: once a final door is
           resolved (specialized or declined-to-plain), every wrapper call
           re-publishes the final door(s) into the CURRENT published context
@@ -611,10 +619,21 @@ def _install_specializing_door(
 
     Returns:
         Callable[..., Any]: The specializing wrapper door, or
-        `plain_instance_door` when the graph has no capturable steps.
+        `plain_instance_door` when the graph has no capturable steps, captures
+        only its root on a short-circuiting route, feeds a `many` step into
+        a non-`many` step, or holds a `managed_spell_quantity` step.
     """
     captured_step_indexes = select_specializable_step_indexes(rows)
     if not captured_step_indexes:
+        return plain_instance_door
+    if rows_feed_many_into_non_many_step(rows):
+        # A holder's `many` children must be built only in the holder's first
+        # build and recorded with the holder's owner; a straight-line body
+        # cannot do that, so the plain door (site plan) keeps serving.
+        return plain_instance_door
+    if rows_contain_managed_step(rows):
+        # A managed step is leased through the site plan (pop, reserve-first
+        # miss, returns); the straight-line body has no lease lowering.
         return plain_instance_door
     if route_key != "many" and len(captured_step_indexes) == 1:
         captured_row = rows[captured_step_indexes[0]]

@@ -1,0 +1,43 @@
+== melder/__version__.json: 1 diffs; lineno moves 0; authored-field diffs 0
+   ('CHG', '/source_sha256', '"3f5f0b7c9b658ac0c30524b3a5c004e8208f62f3112c82a94c9a8554d1003fd6"', '"050126fe3a5c37157ef732e40e1671a6b7764451d089fc00d09145e0b340fa5d"')
+== melder/aether/spellbook/spellbook.json: 3 diffs; lineno moves 0; authored-field diffs 0
+   ('LIST', '/nodes/melder.aether.spellbook.spellbook.Spellbook/public_methods', '-find_spell_by_id', '+find_spell_by_spell_id')
+   ('CHG', '/nodes/melder.aether.spellbook.spellbook.Spellbook/span_sha256', '"2fda12a959459e6c997a7e6f15743d84ea92b16864b0adf74aefb523fa1ba6ea"', '"0a4bd8bc21e27169ab38c8062f8384dd59f829ba33738d0d816f5232954215b6"')
+   ('CHG', '/source_sha256', '"47eac897c84c8ac3066418791e02f1d4ccca366a96c4c7cbc76201df48ce3ea9"', '"30d474731077ad9a85ce7b2734520592202849329e7f6594b3af65eb60d19c7b"')
+== melder/aether/conduit/conduit.json: 3 diffs; lineno moves 0; authored-field diffs 0
+   ('LIST', '/nodes/melder.aether.conduit.conduit.Conduit/public_methods', '-get_spell_by_id', '+get_spell_by_spell_id')
+   ('CHG', '/nodes/melder.aether.conduit.conduit.Conduit/span_sha256', '"c8714c65e50b585e8e7c4fd6cd72365ad1599ca358f2f954a6a9ae4902681583"', '"dea791cc56036fb2102b77939be3e7726adbb1488a2c3f44cd7bf2b190b18b3c"')
+   ('CHG', '/source_sha256', '"b3c9d9f6ab123dfadbde190813b29c0f9bfa55bb5f07a31a75d83194ac219f0a"', '"1b446d6efdf6bf7502ce02275ef0df7d4e4019e70d09a7e305fbc70aeee934f1"')
+== melder/aether/conduit/conduit_ward/conduit_ward.json: 2 diffs; lineno moves 0; authored-field diffs 0
+   ('CHG', '/nodes/melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard/span_sha256', '"3649af06493bd6313e4cc9e8b27f5ad2a40c7e1dd03ff8ee8211baf6aba5aca3"', '"d0d4802ae5f1e496935718dabb4861b01b34fb9e8145d53fa43d40ced1df3f9e"')
+   ('CHG', '/source_sha256', '"16de3e7d18f7b74871f878ba1f0de65785da1e17e91c6f68a705df4007f14869"', '"81d96c19ee4dd35074f6fdd42a985f7b85db7b4d51dcfb25d350cd9a989274d2"')
+== melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.json: 2 diffs; lineno moves 0; authored-field diffs 0
+   ('CHG', '/nodes/melder.aether.conduit.conduit_ward.transfer.transfer_of_ownership.TransferOfOwnership/span_sha256', '"1251da524e8ffdb11a5b93c73fa3cc79f5f50f9ee278ab44f13b520bbda9e36f"', '"15f211fbc42bfdd111d25df331aba9a2e82d2dda7b740884af1635e85e57d7fa"')
+   ('CHG', '/source_sha256', '"11aad5b7f51686309534e7bf8f391cffc24ab48047b7be8dcdce954341093a85"', '"03c0cffd316a6fac7c3e199ff0c3e8c1c9f967b531ae29e4ea2413c5433d9808"')
+== melder/aether/spellbook/bind/spell_index.json: 2 diffs; lineno moves 0; authored-field diffs 0
+   ('CHG', '/nodes/melder.aether.spellbook.bind.spell_index.SpellIndex/span_sha256', '"c03e0ce1aad455ae6e5f30382be9887b79017052dad7ac8cfde07116943e3a1a"', '"9b25b03fef8e5290a69fdb9190c2d6f68b80f2e0853855a6f11d095b0505cde5"')
+   ('CHG', '/source_sha256', '"b47ad32b2bc1b1fe524044b81af7952866c81324751bd5ef7d3cedc7fd85405c"', '"1c1376fe544c3c957daec5a7fa1cc8642775f326f4b4f28964314f7a30099b44"')
+== melder/aether/spellbook/spell.json: 2 diffs; lineno moves 0; authored-field diffs 0
+   ('CHG', '/nodes/melder.aether.spellbook.spell.Spell/span_sha256', '"b37282ffe0384709b3022d2995630ee9817af8f3aadaafb53c1e58b1bae96561"', '"3f11c51a6354f9d88b9afa7af5a9e2be1cdee64dd9677167688548e426de260c"')
+   ('CHG', '/source_sha256', '"10162d70abc7843bcfc8bae2f77bb4cada0842fa40b19eae9664597b7e3f20d8"', '"911901862888719a984a21d84729dff3845188a9466ad71c71a5581ec14e62bf"')
+== melder/crystallizer/crystal_loader_system/graft_runner.json: 2 diffs; lineno moves 0; authored-field diffs 0
+   ('CHG', '/nodes/melder.crystallizer.crystal_loader_system.graft_runner.GraftRunner/span_sha256', '"a4c59869680f8cec5c59a293af46817ffa1cd4fc274afe37740262d0d3ade699"', '"3d79277ea9adf212de0d175947687a75b84fcf182465be0c1b277aea513162d9"')
+   ('CHG', '/source_sha256', '"a30e13be7e95bde23ec7d03432f4a59541ad6bc763837257abaabbf4fa89a309"', '"f7e5bcf9af03e9385f86541f4efc6e9f0b783c6645c670120a6b0cb3f6f65a67"')
+== melder/crystallizer/crystal_loader_system/restore_engine.json: 2 diffs; lineno moves 0; authored-field diffs 0
+   ('CHG', '/nodes/melder.crystallizer.crystal_loader_system.restore_engine.RestoreEngine/span_sha256', '"cc16ed080c33b8a49c80b3535ba11e29178dafdd827a26b6fe5ada1842844316"', '"6a24fbc60557be28ebdbeb6e189b3deef113abd814145b527f10953abacf8bcd"')
+   ('CHG', '/source_sha256', '"36829dd899804709efd18079de7ff56816dacdc3e433b716b702e092f11d9352"', '"f0ceace9f90bcdd931f5d223d62103c91a85c943ed4851691488218a1d22c75c"')
+== melder/nexus/rift/command_system/command_system.json: 7 diffs; lineno moves 1; authored-field diffs 0
+   ('ADD', '/imports/Spell', '', '"melder.aether.spellbook.spell.Spell"')
+   ('ADD', '/imports/SpellRecord', '', '"melder.nexus.frame_descriptor.spell_record.SpellRecord"')
+   ('LIST', '/nodes/melder.nexus.rift.command_system.command_system.CommandSystem/public_methods', '-get_spell_by_id', '+get_spell_by_spell_id')
+   ('CHG', '/nodes/melder.nexus.rift.command_system.command_system.CommandSystem/shape/method_count', '44', '45')
+   ('CHG', '/nodes/melder.nexus.rift.command_system.command_system.CommandSystem/span_sha256', '"d6c58ad48221474959185d5975927812e1ff6f56b538c6e2e4ea2c60f72b30bc"', '"32a28f2ca44565fdb76f430467f89431d108e17f81757b8588e82cc667db5de9"')
+   ('CHG', '/source_sha256', '"d5bc442f3e6e0f8925af0d602af96078a52c1ca65ac69e0cfce80b30acb0045a"', '"914bff88f9eb6442c16ce753493502b1ff343d0852e91d6fda749856fa12b745"')
+== melder/nexus/rift/command_system/static_command_system.json: 4 diffs; lineno moves 0; authored-field diffs 0
+   ('LIST', '/nodes/melder.nexus.rift.command_system.static_command_system.StaticCommandSystem/public_methods', '-get_spell_by_id', '+get_spell_by_spell_id')
+   ('CHG', '/nodes/melder.nexus.rift.command_system.static_command_system.StaticCommandSystem/shape/method_count', '14', '15')
+   ('CHG', '/nodes/melder.nexus.rift.command_system.static_command_system.StaticCommandSystem/span_sha256', '"c13d44e6fbbc441dbad261dbf9db9e4a840db32ebee3f7afe4b9bb57584bfa09"', '"889f90cf26f7ea32f87e74a41fe623004c30765ce054820f0767fa8faaac3d2c"')
+   ('CHG', '/source_sha256', '"a6c528c7110983fb7e29d92667cdd74c6b6860514661b64661a88a3b39c35be5"', '"32512bd76e281a0e7fae716c721826a33f27341869cc5c70ed360a015fa86a47"')
+== melder/aether/spellbook/spell_compiler/validation/strategies/ambiguous_provider_strategy.json: 2 diffs; lineno moves 0; authored-field diffs 0
+   ('CHG', '/nodes/melder.aether.spellbook.spell_compiler.validation.strategies.ambiguous_provider_strategy.AmbiguousProviderStrategy/span_sha256', '"43bf23d0c404c5de50e4630f6e60a6a724e72a4cf56849ff426f4f69b4f225a8"', '"51b7ed46226c68855ba3b4766b3f91990ef416210ca31240b779e7943dbb20c7"')
+   ('CHG', '/source_sha256', '"37d88be311c3aba244a8a81cd8089ca5828afd1041257b44b86ac0a29284fd5e"', '"111a14a692ae19c5caf81b39f06e74302487799b70cd1bee1cc4c662937bd9bb"')

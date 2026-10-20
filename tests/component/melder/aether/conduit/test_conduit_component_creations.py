@@ -333,8 +333,9 @@ def test_component_conduit_meld_unique_per_conduit_cluster_registers_in_cluster_
     conduit = spellbook.conjure(dynamic=True, name="root")
     try:
         # unique_per_conduit_cluster requires dynamic mode and an elected leader.
-        # Electing this conduit binds its own creation store as the cluster team
-        # store, so the meld registers the instance into conduit._creations.
+        # The instance registers into the cluster's own team store (0.2.8237;
+        # until then electing this conduit bound its own creation store, and the
+        # instance landed in conduit._creations).
         cloud = conduit._spellbook._aether.get_conduit_cloud(
             conduit._aetheric_frame_name,
         )
@@ -343,11 +344,12 @@ def test_component_conduit_meld_unique_per_conduit_cluster_registers_in_cluster_
         cloud.refresh_cluster_shares_for_conduit(conduit)
         cloud.get_cluster("cluster-a").elect_leader(conduit.id)
 
-        creations = conduit._creations
+        creations = cloud.get_cluster("cluster-a")._team_store
         instance = conduit.meld(spell_id=spell_id)
         entry = creations._creations.get(spell_id)
         assert entry is not None
         assert entry is instance
+        assert conduit._creations._creations.get(spell_id) is None
     finally:
         conduit.permanent_cleanup()
 

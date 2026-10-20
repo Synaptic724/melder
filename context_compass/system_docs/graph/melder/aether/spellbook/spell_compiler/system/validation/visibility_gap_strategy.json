@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/system/validation/visibility_gap_strategy.py",
- "source_sha256": "df38dd3e5b820ad60ecbca5b6a4c98b0f652dc78b270d9a70dc5524f5cabf702",
+ "source_sha256": "d8138948be6028223e4a9116fc257d883619c996a051284e23c106e9a4cbfb9e",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.system.validation.visibility_gap_strategy": {
@@ -39,7 +39,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "859e9c89b1b1f2e8d4ee8303aba1cb56e960399a785b016b65f44a02f369f6f5",
+   "span_sha256": "aa82258ff17b6ce55505a07b48e12ca117bf44953654b2c8a94613a7e0063afb",
    "include": true,
    "role": "Guard that spellbook visibility filtering has not silently amputated dependencies a visible spell still needs.",
    "responsibilities": [

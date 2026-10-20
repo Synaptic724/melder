@@ -1,0 +1,31 @@
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: Sweep A12, read whole and proven (each case records with the Crystallizer active, captures one index,
+    boots fresh and grafts it into a new host Book; identical with the GIL off and on). One new defect, two wider
+    impacts. New: the index `remove_from_spell_index` mints selects the parked version it holds -
+    `SpellIndex(initial_id=...)` makes its one member the selection, and `_apply_remove_from_index` leaves it so -
+    although `selected_spell_id` is documented as "the active spell's id" and `_is_selected_unless_cleaned` as
+    answering False for a parked member. The record captures that selection, and a graft (fresh-index mode) binds the
+    selected member ACTIVE: G2, French parked alone in the minted index, comes back active in the host. Wider: G4,
+    a graft parks members through `Conduit.bind_inactive`, so a parked member under the active member's signature
+    releases the host's claim for it (S1, as the restore did in R1); and the graft side of S5's gap is G2 - the
+    graft activates the separated version instead of dropping it. G1 and G3 (members of a registered index) graft
+    right: English active, French parked.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spellbook.py:4271-4356
+  - src/melder/aether/spellbook/bind/spell_index.py:83-116
+  - src/melder/aether/spellbook/bind/spell_index.py:143-164
+  - src/melder/aether/spellbook/bind/spell_index.py:358-388
+  - src/melder/crystallizer/persistence/persistence_profile.py:900-969
+  - src/melder/crystallizer/crystal_loader_system/graft_runner.py:230-330
+  - src/melder/crystallizer/crystal_loader_system/graft_runner.py:375-489
+  - context_compass/artifacts/correctness_defects_20261017/probes/probe_graft_parked_members.py:1-152
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_graft_parked_members_gil0.txt:1-26
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_graft_parked_members_gil1.txt:1-26
+  IMPACT: Structure wrong: the index and the Book disagree on whether its version is active, and the record and
+    every graft carry the index's answer. The seam is S4's (`_apply_remove_from_index`, spellbook.py, melder_1's).
+  NEXT: File the story; add G2 to S5's Notes and G4 to S1's; then NOTICE melder_1 and tell the owner.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9

@@ -1,0 +1,14 @@
+Opposite-direction transfers, 3 rounds per row (6 movers each way, 2 readers), watchdog 60 s: no DEADLOCK in any row.
+tree      gil fail transfers_ok forced_failed stable_ok stable_bad                          moving_calls dict_size_err not_found(frame) ownership locks_free
+head        0    2           18            18      3079 {'RuntimeError: dictionary changed          6134            10               16 True      True
+cand_r5     0    2           18            18      2018 {}                                          4022             0               14 True      True
+cand_r4p    0    2           18            18      1850 {}                                          3687             0               13 True      True
+head        0    0           36             0      1937 {'RuntimeError: dictionary changed          3846             4               26 True      True
+cand_r5     0    0           36             0      2660 {}                                          5307             0               13 True      True
+cand_r4p    0    0           36             0      2116 {}                                          4188             0               44 True      True
+head        1    0           36             0      7812 {}                                         15624             0                0 True      True
+cand_r5     1    0           36             0     11784 {}                                         23258             0              310 True      True
+cand_r4p    1    0           36             0     18842 {}                                         36937             0              747 True      True
+head        1    2           18            18     13116 {}                                         25446             0              786 True      True
+cand_r5     1    2           18            18     13822 {}                                         27330             0              314 True      True
+cand_r4p    1    2           18            18     23388 {}                                         45821             0              955 True      True

@@ -1,0 +1,373 @@
+"""
+Component tests: contracted lookup, object inspection and spell disposal against concurrent link, root registration,
+frame-lock nesting and a second disposal of the same spell (lock_residuals, 0.2.8232).
+
+- `Conduit.find_contracted_spell` walked the Book's live contracted-peer map while a link the peer starts writes it
+  under the Book lock: "dictionary changed size during iteration". It now walks a one-call copy and takes no lock.
+- `Spellbook.inspect_spell` walked the frame's live conduit map while a root registers under the frame lock, and
+  turned the error into None for a registered spell. It now walks a one-call copy.
+- `Spellbook.inspect_spell` held its Book lock, and `Conduit.inspect_spell` the conduit lock, while asking the frames
+  (`Aether._check_for_spell` takes frame locks), against frame teardown's frame -> conduit -> Book. Neither is held
+  there now.
+- Two `cleanup_spell` calls for one spell both passed the locked decision and both ran the disposal. The second now
+  refuses while the first runs.
+
+Each interleaving is forced through a public operation run from inside the walk or the disposal (after a real read;
+nothing is skipped), with daemon threads and timeouts so a regression fails instead of hanging the run.
+"""
+
+import threading
+from typing import Callable, Dict, Iterator, List, Optional, ValuesView
+
+import pytest
+
+from melder.aether.aether import Aether
+from melder.aether.conduit.conduit import Conduit
+from melder.aether.conduit.conduit_ward.conduit_ward import ConduitWard
+from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spell import Spell
+from melder.aether.spellbook.spellbook import Spellbook
+
+from tests._frame_posture_test_support import (
+    apply_dynamic_defaults_for_spellbook_configuration,
+)
+
+
+class _LentFirst:
+    """Spell the first lender contracts to the borrower."""
+
+
+class _LentSecond:
+    """Spell the second lender contracts to the borrower; the lookup must walk past the first lender to find it."""
+
+
+class _Inspected:
+    """Provider bound in its own Book, found by inspect_spell's frame-wide walk."""
+
+
+class _HeadA:
+    """Active head of the owner's index."""
+
+
+class _MemberB:
+    """Parked member of the owner's index."""
+
+
+@pytest.fixture(autouse=True)
+def reset_aether_singleton_for_lock_residuals() -> Iterator[None]:
+    """
+    Purpose:
+        Give each test a clean Aether singleton and frame registry.
+    Returns:
+        Iterator[None]: Control returns to the test between the two resets.
+    """
+    Aether._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+    yield
+    Aether._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+
+
+def _make_book() -> Spellbook:
+    """
+    Purpose:
+        A Spellbook in the dynamic posture the link and contract verbs require.
+    Returns:
+        Spellbook: The new Book.
+    """
+    configuration = SpellbookConfiguration()
+    apply_dynamic_defaults_for_spellbook_configuration(configuration)
+    configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
+    return Spellbook(configuration=configuration)
+
+
+def _conduit(name: str) -> Conduit:
+    """
+    Purpose:
+        Conjure an empty dynamic root.
+    Returns:
+        Conduit: The root.
+    """
+    return _make_book().conjure(dynamic=True, name=name)
+
+
+def _lend(borrower: Conduit, lender: Conduit, index) -> None:
+    """
+    Purpose:
+        Link the lender to the borrower and contract the lender's index to the borrower through an index link.
+    """
+    lender.link(borrower)
+    with borrower.transaction("link", conduits=[borrower, lender]):
+        assert borrower.add_index_to_contract(index=index, conduit=lender, permissions="create")
+
+
+def _run_on_other_thread(work: Callable[[], None]) -> None:
+    """
+    Purpose:
+        Run `work` to completion on another thread and fail the test if it does not finish, so the caller's own
+        locks (if any) are what the work meets, not this thread's identity.
+    Raises:
+        AssertionError: When the work did not finish within 30 seconds, or raised.
+    """
+    outcome: Dict[str, BaseException] = {}
+
+    def run() -> None:
+        try:
+            work()
+        except BaseException as exc:
+            outcome["error"] = exc
+
+    thread = threading.Thread(target=run, daemon=True)
+    thread.start()
+    thread.join(timeout=30)
+    assert not thread.is_alive(), "the concurrent operation never finished"
+    assert "error" not in outcome, outcome.get("error")
+
+
+def test_find_contracted_spell_finds_a_later_lender_while_a_peer_links_mid_walk(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    A peer links to the borrower while find_contracted_spell is between its first and second lender: the lookup
+    still reaches the second lender and returns its spell. Before 0.2.8232 the walk of the live contracted-peer map
+    raised RuntimeError "dictionary changed size during iteration".
+    """
+    borrower = _conduit("borrower")
+    borrower_book = borrower._spellbook
+    first_book, second_book = _make_book(), _make_book()
+    first_id = first_book.bind(spell=_LentFirst, existence=Existence.unique, permissions="create",
+                               binding_name="first")
+    second_id = second_book.bind(spell=_LentSecond, existence=Existence.unique, permissions="create",
+                                 binding_name="second")
+    first_lender = first_book.conjure(dynamic=True, name="first")
+    second_lender = second_book.conjure(dynamic=True, name="second")
+    _lend(borrower, first_lender, first_book.find_spell_by_spell_id(first_id).spell_index)
+    _lend(borrower, second_lender, second_book.find_spell_by_spell_id(second_id).spell_index)
+    newcomer = _conduit("newcomer")
+    assert list(borrower_book._contracted_spells) == [first_lender._id, second_lender._id]
+    real_find_by_id = Spellbook._find_contracted_spell_by_id
+    linked: List[bool] = []
+
+    def link_newcomer_once(self: Spellbook, spell_id: str, conduit_id: str) -> Optional[Spell]:
+        answer = real_find_by_id(self, spell_id, conduit_id)
+        if self is borrower_book and conduit_id == first_lender._id and not linked:
+            linked.append(True)
+            _run_on_other_thread(lambda: newcomer.link(borrower))
+        return answer
+
+    monkeypatch.setattr(Spellbook, "_find_contracted_spell_by_id", link_newcomer_once)
+
+    found = borrower.find_contracted_spell(second_id)
+
+    assert linked == [True]
+    assert newcomer._id in borrower_book._contracted_spells
+    assert found is not None
+    assert found.spell_id == second_id
+
+
+class _RegisteringSpellMap(dict):
+    """
+    A Book's `_spells` map that conjures a new root in the frame the first time `values()` is read, on another
+    thread, before answering - the moment inspect_spell's frame-wide walk reads that Book.
+    """
+
+    def __init__(self, live: Dict[object, Spell], register: Callable[[], None]) -> None:
+        """
+        Purpose:
+            Copy the Book's live map and keep the registration to run on the first read.
+        Args:
+            live (Dict[object, Spell]): The Book's `_spells` map (index -> spell), replaced by this one.
+            register (Callable[[], None]): Conjures a new root in the inspected frame.
+        """
+        super().__init__(live)
+        self._register: Optional[Callable[[], None]] = register
+
+    def values(self) -> ValuesView[Spell]:
+        """
+        Purpose:
+            Run the registration once, then answer as dict.values().
+        Returns:
+            ValuesView[Spell]: The dict's values view.
+        """
+        register = self._register
+        if register is not None:
+            self._register = None
+            _run_on_other_thread(register)
+        return super().values()
+
+
+def test_inspect_spell_finds_a_foreign_provider_while_a_root_registers_mid_walk() -> None:
+    """
+    A root registers in the frame while inspect_spell's frame-wide walk reads another Book: the walk still reaches the
+    provider's Book and returns its spell id. Before 0.2.8232 the walk of the live conduit map raised RuntimeError
+    "dictionary changed size during iteration", which inspect_spell turned into None.
+    """
+    inspector_book = _make_book()
+    inspector_book.conjure(dynamic=True, name="inspector")
+    filler = _conduit("filler")
+    provider_book = _make_book()
+    provider_id = provider_book.bind(spell=_Inspected, existence=Existence.unique, permissions="create",
+                                     binding_name="inspected")
+    provider_book.conjure(dynamic=True, name="provider")
+    assert inspector_book.inspect_spell(_Inspected) == provider_id
+    filler_book = filler._spellbook
+    filler_book._spells = _RegisteringSpellMap(filler_book._spells, lambda: _conduit("tenant"))
+
+    answer = inspector_book.inspect_spell(_Inspected)
+
+    assert filler_book._spells._register is None
+    assert Spellbook._aether.get_conduit_by_name("tenant") is not None
+    assert answer == provider_id
+
+
+def test_inspect_spell_holds_no_book_or_conduit_lock_while_it_asks_the_frames(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Every `Aether._check_for_spell` call inspect_spell makes - a local match, and a miss that reaches the fingerprint
+    fallback - runs with neither the inspecting Book's lock nor its conduit's lock held. The frame reads take frame
+    locks while frame teardown takes frame -> conduit -> Book, so holding either lock there could hang against a
+    racing frame teardown; before 0.2.8232 both were held.
+    """
+    book = _make_book()
+    bound_id = book.bind(spell=_Inspected, existence=Existence.unique, permissions="create", binding_name="local")
+    conduit = book.conjure(dynamic=True, name="inspector")
+    held: List[bool] = []
+    real_check_for_spell = Aether._check_for_spell
+
+    def recording(self: Aether, spell_id: str, aetheric_frame_name: str = "default"):
+        held.append(book._lock._is_owned() or conduit._lock._is_owned())
+        return real_check_for_spell(self, spell_id, aetheric_frame_name)
+
+    monkeypatch.setattr(Aether, "_check_for_spell", recording)
+
+    assert conduit.inspect_spell(_Inspected) == bound_id
+    assert book.inspect_spell(_Inspected) == bound_id
+    assert book.inspect_spell(_LentFirst) is None
+
+    assert len(held) == 3
+    assert held == [False, False, False]
+
+
+def _start_parked_disposal(
+        monkeypatch: pytest.MonkeyPatch,
+        method_owner: type,
+        method_name: str,
+        target: Spell,
+        dispose: Callable[[], None],
+) -> Callable[[], Dict[str, BaseException]]:
+    """
+    Purpose:
+        Start `dispose` on a daemon thread that parks in `method_owner.method_name` the first time that method runs
+        for `target` on it, wait until it is parked, and return a function that releases it and joins it.
+    Returns:
+        Callable[[], Dict[str, BaseException]]: Releases the parked disposal, joins it, and returns {"error": exc}
+            when it raised, else {}.
+    """
+    parked, release = threading.Event(), threading.Event()
+    outcome: Dict[str, BaseException] = {}
+    real = getattr(method_owner, method_name)
+
+    def parking(self, *args, **kwargs):
+        if self is target and threading.current_thread() is disposer and not parked.is_set():
+            parked.set()
+            assert release.wait(timeout=30)
+        return real(self, *args, **kwargs)
+
+    monkeypatch.setattr(method_owner, method_name, parking)
+
+    def run() -> None:
+        try:
+            dispose()
+        except BaseException as exc:
+            outcome["error"] = exc
+
+    disposer = threading.Thread(target=run, daemon=True)
+    disposer.start()
+    assert parked.wait(timeout=30), "the first disposal never reached its parking point"
+
+    def finish() -> Dict[str, BaseException]:
+        release.set()
+        disposer.join(timeout=30)
+        assert not disposer.is_alive(), "the first disposal never finished"
+        return outcome
+
+    return finish
+
+
+def test_second_cleanup_spell_of_an_active_spell_refuses_while_the_first_runs(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    A second cleanup_spell of an index's sole active member while the first is parked in its invalidation: the
+    second raises RuntimeError "is already being disposed by another call." and changes nothing, the first then
+    completes, the index-linked borrower is told of the destroyed index once, and a third call reports the spell as
+    disposed. Before 0.2.8232 the second call ran the whole disposal and the first then failed.
+    """
+    owner_book = _make_book()
+    id_a = owner_book.bind(spell=_HeadA, existence=Existence.unique, permissions="create", binding_name="a")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = _conduit("borrower")
+    spell_a = owner_book.find_spell_by_spell_id(id_a)
+    index_id = spell_a.spell_index.id
+    _lend(borrower, owner, spell_a.spell_index)
+    destroys: List[str] = []
+    real_emit_index_destroy = ConduitWard._emit_index_destroy
+
+    def counting(self: ConduitWard, destroyed_index_id: str, member_ids) -> None:
+        destroys.append(destroyed_index_id)
+        return real_emit_index_destroy(self, destroyed_index_id, member_ids)
+
+    monkeypatch.setattr(ConduitWard, "_emit_index_destroy", counting)
+    finish = _start_parked_disposal(monkeypatch, Spell, "invalidate_spell", spell_a,
+                                    lambda: owner.cleanup_spell(spell=spell_a))
+
+    with pytest.raises(RuntimeError, match=f"spell {id_a} is already being disposed by another call"):
+        owner.cleanup_spell(spell=spell_a)
+    assert owner_book.find_spell_by_spell_id(id_a) is spell_a
+
+    outcome = finish()
+
+    assert "error" not in outcome, outcome.get("error")
+    assert owner_book.find_spell_by_spell_id(id_a) is None
+    assert destroys == [index_id]
+    assert index_id not in borrower._spellbook._contracted_indexes
+    with pytest.raises(RuntimeError, match=f"spell {id_a} has already been disposed"):
+        owner.cleanup_spell(spell=spell_a)
+
+
+def test_second_cleanup_spell_of_a_parked_member_refuses_while_the_first_runs(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    A second cleanup_spell of a parked member while the first is parked after taking it off the Book's maps, just
+    before its teardown: the second raises RuntimeError "is already being disposed by another call." (before
+    0.2.8232 it raised "is not owned by this spellbook"), the first completes, and the index keeps its active head.
+    """
+    owner_book = _make_book()
+    id_a = owner_book.bind(spell=_HeadA, existence=Existence.unique, permissions="create", binding_name="a")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    index = owner_book.find_spell_by_spell_id(id_a).spell_index
+    id_b = owner.bind_inactive(spell=_MemberB, spell_index=index, existence=Existence.unique,
+                               permissions="create", binding_name="b")
+    spell_b = owner_book._get_owned_spell(id_b)
+    finish = _start_parked_disposal(monkeypatch, Spell, "cleanup", spell_b,
+                                    lambda: owner.cleanup_spell(spell=spell_b))
+    assert id_b not in owner_book._inactive_spells
+
+    with pytest.raises(RuntimeError, match=f"spell {id_b} is already being disposed by another call"):
+        owner.cleanup_spell(spell=spell_b)
+
+    outcome = finish()
+
+    assert "error" not in outcome, outcome.get("error")
+    assert owner_book.find_spell_by_spell_id(id_b) is None
+    assert owner_book.find_spell_by_spell_id(id_a).spell_index is index
+    assert index.is_sole_member(id_a)
+    with pytest.raises(RuntimeError, match=f"spell {id_b} has already been disposed"):
+        owner_book.cleanup_spell(spell=spell_b)

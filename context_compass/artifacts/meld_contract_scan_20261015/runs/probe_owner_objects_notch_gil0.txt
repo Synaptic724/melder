@@ -1,0 +1,37 @@
+== mode notch; melder 0.2.8251; gil_enabled=False
+  Banner: 'HELLO!'
+  -- registry objects (SpellSystemStates, one per frame): after Banner's first meld
+     state[Mark-index]: version=Bang validity=valid flags=[]
+        direct_dependencies=[] direct_dependents=['Greeter-index']
+        _binding_key_by_index[Mark-index]=('mark', 'mark')
+     state[Greeter-index]: version=English validity=valid flags=[]
+        direct_dependencies=['Bang'] direct_dependents=[]
+        _binding_key_by_index[Greeter-index]=('greeter', 'greeter')
+     state[Banner-index]: version=Banner validity=valid flags=[]
+        direct_dependencies=[] direct_dependents=[]
+        _binding_key_by_index[Banner-index]=('banner', '__default__')
+     _contract_dependents_by_spellbook[borrower_book][('greeter', 'greeter')]=['Banner-index']
+  -- registry objects (SpellSystemStates, one per frame): after the lender notches Mark-index from Bang to Dot
+     state[Mark-index]: version=Dot validity=valid flags=[]
+        direct_dependencies=[] direct_dependents=['Greeter-index']
+        _binding_key_by_index[Mark-index]=('mark', 'mark')
+     state[Greeter-index]: version=English validity=gated flags=['impacted_by_dependency']
+        direct_dependencies=['Bang'] direct_dependents=[]
+        _binding_key_by_index[Greeter-index]=('greeter', 'greeter')
+     state[Banner-index]: version=Banner validity=gated flags=['contract_unvalidated']
+        direct_dependencies=[] direct_dependents=[]
+        _binding_key_by_index[Banner-index]=('banner', '__default__')
+     _contract_dependents_by_spellbook[borrower_book][('greeter', 'greeter')]=['Banner-index']
+  Banner: 'HELLO.'
+  -- registry objects (SpellSystemStates, one per frame): after Banner's meld
+     state[Mark-index]: version=Dot validity=valid flags=[]
+        direct_dependencies=[] direct_dependents=['Greeter-index']
+        _binding_key_by_index[Mark-index]=('mark', 'mark')
+     state[Greeter-index]: version=English validity=valid flags=[]
+        direct_dependencies=['Dot'] direct_dependents=[]
+        _binding_key_by_index[Greeter-index]=('greeter', 'greeter')
+     state[Banner-index]: version=Banner validity=valid flags=[]
+        direct_dependencies=[] direct_dependents=[]
+        _binding_key_by_index[Banner-index]=('banner', '__default__')
+     _contract_dependents_by_spellbook[borrower_book][('greeter', 'greeter')]=['Banner-index']
+rc=0

@@ -276,7 +276,7 @@ anything earlier.
 | | Level | What it means | Who it's for | Runnable examples |
 |:--|:---|:---|:---|:---|
 | 🟢 | **Beginner** | The core runtime. Bind, resolve, categorize, scope, clean up. | Everyone. Start here. | [`01_beginner/`](https://github.com/Synaptic724/melder/tree/prod/UX_and_AIX_experiences/01_beginner) |
-| 🟡 | **Intermediate** | Connection — module registration, dynamic linking, late binding across subsystems. | When one scope isn't enough. | [`02_intermediate/`](https://github.com/Synaptic724/melder/tree/prod/UX_and_AIX_experiences/02_intermediate) |
+| 🟡 | **Intermediate** | Pooled resources, module registration, dynamic linking, late binding across subsystems. | When objects need reuse or subsystems need to connect. | [`02_intermediate/`](https://github.com/Synaptic724/melder/tree/prod/UX_and_AIX_experiences/02_intermediate) |
 | 🟠 | **Advanced** | Frame isolation, read-only introspection rooms, clusters, deep overrides. | Multi-tenant or multi-world systems. | [`03_advanced/`](https://github.com/Synaptic724/melder/tree/prod/UX_and_AIX_experiences/03_advanced) |
 | 🔵 | **Expert** | Agent rooms, transactions, checkpoints, governed mutation. Mostly machine-facing. | Building on Melder, or handing it to an AI. | [`04_expert/`](https://github.com/Synaptic724/melder/tree/prod/UX_and_AIX_experiences/04_expert) |
 
@@ -473,7 +473,7 @@ book.bind(spell=SmsHandler, existence="unique",
           spellframe=Handler, binding_name="sms")
 ```
 
-## 🟢 Six Lifetimes, Not Three
+## 🟢 Seven Lifetimes, Not Three
 <sub>**Beginner.** Pick how long things live.</sub>
 
 | | Existence | One instance per | Use it for |
@@ -483,12 +483,17 @@ book.bind(spell=SmsHandler, existence="unique",
 | 🟢 | `many` | Nothing — new every meld | Stateless workers, DTOs |
 | 🟡 | `unique_per_conduit_lineage` | A scope **and its children** | Shared context down a tree |
 | 🟡 | `unique_per_spell_space` | A request-local space | Ephemeral request scoping |
+| 🟡 | [`managed_spell_quantity`](https://github.com/Synaptic724/melder/blob/prod/README.md#-managed-spell-quantities) | Nothing — leased from a pool the root keeps | Costly objects reused across holders |
 | 🟠 | `unique_per_conduit_cluster` | A named group of scopes | Cross-scope coordination |
 
 **The first three are the beginner set** — they cover most systems and need
-nothing but a static conjure. The last three arrive with the features that give
-them meaning: lineage and spell spaces once you have nested scopes, clusters
-once conduits link into groups.
+nothing but a static conjure. The rest arrive with the need that gives them
+meaning: lineage and spell spaces once you have nested scopes, managed pools
+once an object costs more to build than to lend, clusters once conduits link
+into groups.
+
+For the intermediate leasing and release example, see
+[Managed Spell Quantities](https://github.com/Synaptic724/melder/blob/prod/README.md#-managed-spell-quantities).
 
 > Callables are always `unique`. Want a fresh object every time? Bind a **class**
 > as `many`.
@@ -533,9 +538,13 @@ block in either mode; spell-only names retain their own order. See the
 [configuration guide](https://github.com/Synaptic724/melder/blob/prod/docs/intermediate/configuration.md)
 for both arrangements.
 
-Cleanup retains its existing reverse key/bucket traversal within each store. A failing
-method stops that object's remaining method calls; cleanup continues with other
-objects and aggregates failures into an `ExceptionGroup`.
+Within each store, objects are disposed newest first, so a dependency outlives the
+objects built on it. A failing method does not stop the others: every declared
+method of every object runs, each failure is chained from what the method raised,
+and they are raised together as one `ExceptionGroup` once the scope has ended.
+A `managed_spell_quantity` return normally resets the object for reuse. Its
+disposal methods run when the pool destroys it — an `elastic` trim, a reset
+that raises, or the root's teardown.
 
 ## 🟢 Scopes That Nest
 <sub>**Beginner.** Child scopes, no configuration.</sub>
@@ -547,6 +556,119 @@ child = root.create_lesser_conduit()
 assert root.meld("Config") is child.meld("Config")      # shared
 assert root.meld("Session") is not child.meld("Session") # per-scope
 ```
+
+## 🟡 Managed Spell Quantities
+<sub>**Intermediate.** Lease, reset, and reuse objects across requests.</sub>
+
+Bind a class with `existence="managed_spell_quantity"` when its objects cost
+more to build than to lend. Each meld or constructor injection **leases** an
+idle object from the owning root's pool, or builds one when the mode allows.
+The holder returns it with `md.ReleaseManagedSpell().release(obj)`, or uses
+`managed_spell_meld(...)` to return it when a `with` block ends, even if the
+block raises.
+
+This complete example combines the intermediate lessons on reset methods,
+leases, and request-scoped injection:
+
+```python
+import melder as md
+
+
+class ReportBuffer:
+    """Reusable report state; reset on release, closed only when disposed."""
+
+    def __init__(self) -> None:
+        """Start empty and open; closed is a diagnostic flag for this example."""
+        self.lines: list[str] = []
+        self.closed: bool = False
+
+    def reset(self) -> None:
+        """Remove the previous request's data before the next lease."""
+        self.lines.clear()
+
+    def close(self) -> None:
+        """Dispose the buffer; retain closed so the example can check teardown."""
+        self.lines.clear()
+        self.closed = True
+
+
+class ReportJob:
+    """Hold one injected buffer until the request scope disposes this job."""
+
+    def __init__(self, buffer: ReportBuffer) -> None:
+        """Borrow one pooled buffer; this job must release it exactly once."""
+        self.buffer: ReportBuffer = buffer
+        self.finished: bool = False
+
+    def finish(self) -> None:
+        """Give the buffer back once; the job must stop using it afterwards."""
+        if self.finished:
+            return
+        self.finished = True
+        md.ReleaseManagedSpell().release(self.buffer)
+
+
+def main() -> None:
+    """Return a request's buffer, reuse it reset, then dispose the idle buffer."""
+    book = md.Spellbook()
+    try:
+        book.bind(
+            spell=ReportBuffer,
+            existence="managed_spell_quantity",
+            managed_spell_mode="limited_quantity",
+            managed_spell_limit=2,                  # at most two alive: idle + leased
+            managed_spell_reset_methods=["reset"],  # every return, before reuse
+            disposal_method_names=["close"],        # only when the pool destroys one
+        )
+        book.bind(spell=ReportJob, existence="many", disposal_method_names=["finish"])
+
+        with book.conjure() as root:
+            with root.enter_lesser_conduit() as request:
+                job: ReportJob = request.meld("ReportJob")
+                job.buffer.lines.append("Sales: 120")
+                previous = job.buffer  # retain identity only to demonstrate reuse
+            # Request exit called job.finish(): the buffer is reset and pooled.
+
+            with root.managed_spell_meld("ReportBuffer") as reused:
+                assert reused is previous
+                assert reused.lines == [] and not reused.closed
+                reused.lines.append("Sales: 240")
+            # The lease block returns and resets the buffer again.
+
+        assert previous.closed  # root exit disposed the idle buffer
+    finally:
+        book.cleanup()
+
+
+if __name__ == "__main__":
+    main()
+```
+
+Choose the mode at bind:
+
+| `managed_spell_mode` | What `managed_spell_limit` caps | When nothing is idle |
+|:---|:---|:---|
+| `elastic` (default) | Idle objects kept, 256 by default | Builds another; trims extras on return as demand falls |
+| `limited_quantity` | All objects alive, idle plus leased; required | Builds below the limit, otherwise raises `md.ManagedSpellExhaustedError` |
+| `queue` | All objects alive, idle plus leased; required | Builds below the limit, otherwise waits up to the required `managed_spell_timeout_seconds`, then raises `md.ManagedSpellExhaustedError` |
+
+Reset methods run in the declared order on every return. Disposal methods run
+when the pool destroys an object: an elastic trim, a reset that raises, or root
+teardown. Return each lease exactly once and stop using the object afterwards.
+Each injected parameter takes its own lease, so two live jobs hold two buffers.
+
+**End request scopes before the root.** The root owns the pool and disposes
+its idle objects at teardown; an object still leased stays its holder's to
+dispose. A job that releases from its disposal method belongs in a lesser
+scope, as above: the root's own disposal methods run after its pools are gone.
+
+Continue with the [managed spell guide](https://github.com/Synaptic724/melder/blob/prod/docs/intermediate/managed-spells.md)
+or run the intermediate examples:
+[limited quantity](https://github.com/Synaptic724/melder/blob/prod/UX_and_AIX_experiences/02_intermediate/43_managed_spell_limited_quantity.py),
+[reset methods](https://github.com/Synaptic724/melder/blob/prod/UX_and_AIX_experiences/02_intermediate/45_managed_spell_reset_methods.py),
+[leases](https://github.com/Synaptic724/melder/blob/prod/UX_and_AIX_experiences/02_intermediate/46_managed_spell_leases.py),
+and [injection and request scopes](https://github.com/Synaptic724/melder/blob/prod/UX_and_AIX_experiences/02_intermediate/47_managed_spell_injection_and_request_scopes.py).
+
 ## 🟡 Declarative Binding by Module
 <sub>**Intermediate.** Register where the class lives.</sub>
 
@@ -559,12 +681,12 @@ Prefer to declare registration where the class lives? Tag it with
 import melder as md
 
 
-@md.scan_bind(existence="unique")
+@md.scan_bind(existence="unique", permissions="create")
 class MetricsHub:
     pass
 
 
-@md.scan_bind(existence="many")
+@md.scan_bind(existence="many", permissions="create")
 class JobTicket:
     pass
 ```
@@ -588,6 +710,12 @@ container filling up behind your back, no import-order puzzle to debug. You
 still decide when binding happens, and where.
 
 Mix freely: scan a module, then `bind()` a few more by hand.
+
+`scan_bind` takes everything `bind()` takes for a target — `spellframe`,
+`binding_name`, `resolvable`, `disposal_method_names` and your own metadata
+keywords — and `permissions` is required. Only the decorated class or function
+itself is registered: its subclasses and instances are not, unless they are
+decorated too.
 
 
 ---
@@ -680,11 +808,15 @@ tenant_a = md.Spellbook(aetheric_frame="tenant-a")
 tenant_b = md.Spellbook(aetheric_frame="tenant-b")
 ```
 
-Use distinct `binding_name` or `spellframe` values when binding the same class
-in both worlds. Spell IDs are unique across the process: an identical binding
-fingerprint produces the same ID even in another frame and is refused.
-A `unique` spell is a singleton **per frame** — not per process. Two distinct
-bindings, two frames, two instances, one interpreter.
+Bind a distinct class in each world — a subclass per tenant is enough. A spell
+ID is the SHA256 of the registered object's code (its methods, constructor,
+class-level values and bases), with nothing from the bind call in it, and spell
+IDs are unique across the process: the same class bound in another frame is the
+same spell, and it is refused whatever `binding_name` or `spellframe` it gets.
+A `unique` spell is a singleton **per frame** — not per process. Two classes,
+two frames, two instances, one interpreter. To register one class in several
+worlds instead, turn `process_wide_unique_spell_ids` off in the Aether
+configuration before the first frame exists; spell IDs are then unique per frame.
 
 That makes frames the natural seam for multi-tenancy, plugin isolation, and test
 isolation (a fresh frame per test is a fresh world). Conduits link *within* a
@@ -1027,6 +1159,7 @@ meld**, on a running system, with the old version still sitting there:
 ```python
 # 1. STAGE — bind a new version as an INACTIVE member of the existing index.
 #    It is parked and unresolvable: nothing melds it, nothing sees it yet.
+id_v1 = index.selected_spell_id     # the version serving now
 id_v2 = conduit.bind_inactive(
     spell=ReportServiceV2,
     spell_index=index,          # the index the current version lives in
@@ -1036,7 +1169,7 @@ id_v2 = conduit.bind_inactive(
 
 # 2. NOTCH — promote v2 to ACTIVE. The outgoing version parks, the index
 #    pointer repoints, and dependents are marked for lazy recompile.
-conduit.notch_spell(spell_index=index, spell=spell_v2)
+conduit.notch_spell(spell_index=index, spell_id=id_v2)
 assert index.selected_spell_id == id_v2
 
 # 3. MELD — the very next resolution builds the NEW version.
@@ -1047,7 +1180,7 @@ And because the old member is **parked, not destroyed**, rollback is the same
 verb pointed the other way:
 
 ```python
-conduit.notch_spell(spell_index=index, spell=spell_v1)   # instant revert
+conduit.notch_spell(spell_index=index, spell_id=id_v1)   # instant revert
 ```
 
 > **The parked version is still in the ecosystem.** Notching does not dispose of

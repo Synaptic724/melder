@@ -116,7 +116,7 @@ def test_named_graduation_keeps_book_hooks_and_disposal_independent(
     cloud = world.root.get_conduit_cloud()
     assert cloud.get_conduit(promoted_name) is child
     assert child._spellbook is not world.book
-    assert child._spellbook.find_spell_by_id(world.parent_id) is None
+    assert child._spellbook.find_spell_by_spell_id(world.parent_id) is None
     if world.root._aetheric_frame.frame_configuration.shared_framewide_spellbook_configuration:
         assert child._configuration is world.configuration
     else:

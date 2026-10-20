@@ -224,7 +224,7 @@ def select_source() -> dict[str, object]:
     ref = os.environ.get("GITHUB_REF", "")
     sha, tree = checkout_identity()
     if event_name == "pull_request":
-        if validation_requirements(event_name, event, ref, repository) != (False, False, True, False):
+        if validation_requirements(event_name, event, ref, repository) != (False, False, True):
             raise ValueError("This PR does not use preprod source qualification.")
         head = object_value(object_value(event["pull_request"], "pull_request")["head"], "head")
         return select_for_commit(repository, commit_id(head.get("sha")), "preprod", tree)
@@ -240,7 +240,7 @@ def full_record() -> dict[str, object]:
     confusing the run API's head SHA with the actual merge checkout.
     Light profiles cannot emit this record, even if their other jobs are green.
     """
-    runtime, package, _, _ = require_ci_results()
+    runtime, package, _ = require_ci_results()
     if not runtime:
         raise ValueError("A light CI run cannot issue full runtime qualification.")
     sha, tree = checkout_identity()

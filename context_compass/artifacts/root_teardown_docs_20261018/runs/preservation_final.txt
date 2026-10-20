@@ -1,0 +1,8 @@
+src_architecture.md: baseline 5115 non-blank lines, now 5172; lines whose count fell: 6
+  -1 A root store cleans its managed pools first, newest first - their idle objects and the `many` children
+  -1 T[Root teardown] --> C[Pools cleaned before the store's registry]
+  -1 a scope teardown ends its stores, and a purge disposes what it retires. It does not police userland objects: it does
+  -1 composed at conjure, before the uniques its objects hold; their failures join the same group (0.2.8243).
+  -1 recorded with every pooled object, out ones included - before its disposable registry, because a pool is
+  -1 root teardown -> Creations.cleanup: pools first (idle objects + recorded children) -> unregistered
+src_components.md: baseline 11469 non-blank lines, now 11494; lines whose count fell: 0

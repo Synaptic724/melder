@@ -1,0 +1,24 @@
+........................................................................ [  6%]
+........................................................................ [ 12%]
+........................................................................ [ 19%]
+........................................................................ [ 25%]
+......................................................................x. [ 32%]
+............................x....x.....x...x............................ [ 38%]
+............................x................x.............s............ [ 45%]
+........s............................................................... [ 51%]
+........................................................................ [ 58%]
+........................................................................ [ 64%]
+........................................................................ [ 71%]
+........................................................................ [ 77%]
+........................s............................................... [ 84%]
+.................................................................F...... [ 90%]
+........................................................................ [ 97%]
+.................................                                        [100%]
+=================================== FAILURES ===================================
+E   AssertionError: assets stamped for the wrong version: {'_agent_documentation/manifest/agent_documentation_manifest.py': '0.2.8260', '_bind_guard/manifest/bind_guard_manifest.py': '0.2.8260', '_system_documents/manifest/graph_adjacency_manifest.py': '0.2.8260', '_system_documents/manifest/system_documents_index.py': '0.2.8260', '_system_documents/manifest/system_documents_manifest.py': '0.2.8260'} (package is 0.2.8262)
+    assert not {'_agent_documentation/manifest/agent_documentation_manifest.py': '0.2.8260', '_bind_guard/manifest/bind_guard_manifes...fest/graph_adjacency_manifest.py': '0.2.8260', '_system_documents/manifest/system_documents_index.py': '0.2.8260', ...}
+~/mnt/melder_private/tests/unit/melder/test_package_version_metadata.py:84: AssertionError: assets stamped for the wrong version: {'_agent_documentation/manifest/agent_documentation_manifest.py': '0.2.8260', '_bind_guard/manifest/bind_guard_manifest.py': '0.2.8260', '_system_documents/manifest/graph_adjacency_manifest.py': '0.2.8260', '_system_documents/manifest/system_documents_index.py': '0.2.8260', '_system_documents/manifest/system_documents_manifest.py': '0.2.8260'} (package is 0.2.8262)
+=========================== short test summary info ============================
+FAILED tests/unit/melder/test_package_version_metadata.py::test_generated_build_assets_are_stamped_for_the_live_version
+1 failed, 1102 passed, 3 skipped, 7 xfailed in 101.89s (0:01:41)
+<sys>:0: RuntimeWarning: coroutine 'coro' was never awaited

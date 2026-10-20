@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/utilities/custom_exceptions/spell_space_scope_error.py",
- "source_sha256": "43991dac01fe0de0d6c3c35c94d3b11be0ac701fd2f7843992c25094a8e15ebd",
+ "source_sha256": "f2a4f995c21670b4433166c7faa9b98c9fb53ca01824e045ae6b3c97175cfedb",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.utilities.custom_exceptions.spell_space_scope_error": {
@@ -37,7 +37,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "ee31aee1f0264c6591371e457ce737cd0797442adc5dbc51b04c24cc460c84e2",
+   "span_sha256": "415fc9c6c24c2d69d047a00c2c8b0368b2c56be6445e5b9e9af233760496bc85",
    "role": "Exception raised for missing spell-space scope.",
    "responsibilities": [
     "signals illegal spellspace-scoped execution without an active spell space"

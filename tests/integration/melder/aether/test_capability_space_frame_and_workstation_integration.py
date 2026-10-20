@@ -289,7 +289,7 @@ def _build_default_frame_harness() -> Dict[str, object]:
         kind_name="default_live",
         binding_name="default_live",
     )
-    spell = conduit.get_spell_by_id(spell_id, "default")
+    spell = conduit.get_spell_by_spell_id(spell_id, "default")
     nexus = _create_enabled_capability_nexus(allowed_target_frame_names=("default",))
     rift = _create_capability_rift(nexus, rift_name="default_capability_rift")
     rift.create_frame_link("default")
@@ -331,7 +331,7 @@ def _build_nexus_frame_harness(frame_name: str = "ops") -> Dict[str, object]:
         binding_name="nexus_live",
     )
     rift.create_frame_link(frame_name)
-    spell = conduit.get_spell_by_id(spell_id, frame_name)
+    spell = conduit.get_spell_by_spell_id(spell_id, frame_name)
     space = rift.space
     if not isinstance(space, CapabilityRiftSpace):
         raise RuntimeError("Capability harness did not create a capability room.")
@@ -376,8 +376,8 @@ def _build_dual_frame_harness() -> Dict[str, object]:
     space = rift.space
     if not isinstance(space, CapabilityRiftSpace):
         raise RuntimeError("Capability harness did not create a capability room.")
-    default_spell = default_conduit.get_spell_by_id(default_spell_id, "default")
-    ops_spell = nexus_conduit.get_spell_by_id(nexus_spell_id, "ops")
+    default_spell = default_conduit.get_spell_by_spell_id(default_spell_id, "default")
+    ops_spell = nexus_conduit.get_spell_by_spell_id(nexus_spell_id, "ops")
     return {
         "default_spellbook": default_spellbook,
         "default_conduit": default_conduit,

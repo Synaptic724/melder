@@ -1,0 +1,28 @@
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: Sweep A11, read whole and probed (identical with the GIL off and on): no story. A late `bind` stages its
+    spell on the bind transaction (`_stage_spell_for_structural_phases`) and the commit runs phases 1-4 for it; a
+    broken class fails there after the bind registered it, and `Spellbook.transaction` re-raises from its commit
+    with nothing unregistered. Probe B2: `bind(SelfMade)` raises SpellbookValidationError "Broken spells: SelfMade.",
+    and SelfMade stays active, holding its address, its lineage `invalid`, every meld refused - the documented
+    behaviour ("refused at that bind and at its melds", Failure Modes, 0.2.8224). Nothing is stuck: staging a fixed
+    class on its index and notching to it (B2), or `cleanup_spell` and a fresh bind (B3), gets the agent past it.
+    Two things for S8: a failed late bind keeps its spell - the precedent for S8's option (b) - but displaces
+    nothing, while a failed notch displaces a working version; and `_stage_spell_for_structural_phases` says notch
+    "does NOT stage" and runs the phases directly, which the validator, `_notch_spell` and probe N2 contradict - a
+    stale docstring for S8's fix to correct.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spellbook.py:5569-5896
+  - src/melder/aether/spellbook/spellbook.py:4788-4864
+  - src/melder/aether/spellbook/spellbook.py:4937-4958
+  - src/melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py:783-835
+  - context_compass/system_docs/src_architecture.md:2490-2502
+  - context_compass/artifacts/correctness_defects_20261017/probes/probe_broken_late_bind.py:1-187
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_broken_late_bind_gil0.txt:1-40
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_broken_late_bind_gil1.txt:1-40
+  IMPACT: A11 adds no story; it gives S8's open question its bind precedent and its fix a stale docstring to correct.
+  NEXT: Add the precedent to S8's Notes; then sweep A12 (graft of an index with parked versions).
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8

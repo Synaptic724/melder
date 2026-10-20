@@ -1,0 +1,38 @@
+--- /sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/src/melder/aether/spellbook/bind/bind.py	2026-10-18 00:54:49.169219700 +0000
++++ src/melder/aether/spellbook/bind/bind.py	2026-10-18 15:54:32.089119476 +0000
+@@ -792,15 +792,8 @@
+                 managed_spell_timeout_seconds,
+                 managed_spell_reset_methods,
+             )
+-            fingerprint: str = Bind.sha256_profile(
+-                binding_profile,
+-                spellframe=spellframe,
+-                spell_name=spell_name,
+-                binding_name=binding_name,
+-                existence=existence,
+-                disposal_method_names=resolved_disposal_method_names,
+-                resolvable=resolvable,
+-            )
++            import _br_digest  # BLAST-RADIUS MIRROR ONLY
++            fingerprint: str = _br_digest.SharedDigest.spell_id(spell)
+             spell_index = SpellIndex(initial_id=fingerprint)
+ 
+             # Check if this should be treated as an "existing creation"
+@@ -997,15 +990,8 @@
+             managed_spell_timeout_seconds,
+             managed_spell_reset_methods,
+         )
+-        return Bind.sha256_profile(
+-            profile.binding_profile,
+-            spellframe=spellframe,
+-            spell_name=spell_name,
+-            binding_name=binding_name,
+-            existence=existence,
+-            disposal_method_names=tuple(disposal_method_names),
+-            resolvable=resolvable,
+-        )
++        import _br_digest  # BLAST-RADIUS MIRROR ONLY
++        return _br_digest.BlastRadiusDigest().spell_id(spell)
+ 
+     @staticmethod
+     def sha256_profile(

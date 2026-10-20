@@ -1,0 +1,71 @@
+== t1: the borrower holds an index link; the lender transfers the provider to steward (force_unshare=True)
+  Banner before the transfer: 'HELLO'
+before the transfer:
+    from lender_t1: active=['English'] parked=[]; index link=True spell details=['English']
+    from steward_t1: active=[] parked=[]; no contract
+  transfer_spell_ownership: [('borrower_conduit_id', '<ulid>'), ('contract_id', '<ulid>'), ('type', 'contract')]
+after the transfer:
+    from lender_t1: active=['English'] parked=[]; index link=True spell details=['English']
+    from steward_t1: active=[] parked=[]; no contract
+  owner Book ids: English in steward._spell_ids=False, in lender._spell_ids=False; registry binding key=None
+  Banner after the transfer: 'HELLO'
+  steward meld English: 'English'
+  steward bind_inactive(French) on the transferred index: RuntimeError: add_to_spell_index: target index <ulid> is not owned by this spellbook; you can only add onto an index you own.
+  (the steward cannot stage on the index; the rest of the world is skipped)
+melder 0.2.8250
+rc=0
+== t2: the borrower holds an index link; the lender transfers the provider to steward (force_unshare=False)
+  Banner before the transfer: 'HELLO'
+before the transfer:
+    from lender_t2: active=['English'] parked=[]; index link=True spell details=['English']
+    from steward_t2: active=[] parked=[]; no contract
+  transfer_spell_ownership: [('borrower_conduit_id', '<ulid>'), ('contract_id', '<ulid>'), ('type', 'contract')]
+after the transfer:
+    from lender_t2: active=['English'] parked=[]; index link=True spell details=['English']
+    from steward_t2: active=[] parked=[]; index link=False spell details=[]
+  owner Book ids: English in steward._spell_ids=False, in lender._spell_ids=False; registry binding key=None
+  Banner after the transfer: 'HELLO'
+  steward meld English: 'English'
+  steward bind_inactive(French) on the transferred index: RuntimeError: add_to_spell_index: target index <ulid> is not owned by this spellbook; you can only add onto an index you own.
+  (the steward cannot stage on the index; the rest of the world is skipped)
+melder 0.2.8250
+rc=0
+== T3: the borrower transfers the consumer (Banner) to a root that borrows nothing
+  Banner on the borrower: 'HELLO'
+  transfer Banner to other: ['borrowers', 'creations', 'dependencies', 'op_id', 'options', 'snapshot', 'source', 'spell_id', 'spell_index', 'target']
+  Banner on other: SpellbookValidationError: Spellbook validation failed. Broken spells: Banner. | Banner: |   - Spell 'Banner' parameter 'greeter' has no provider for its SpellContract (frame_key='greeter', binding_key='greeter'): no active spell with that frame and binding
+  Banner on the borrower: KeyError: "[MELD] No spell found for frame='banner', binding='__default__'."
+melder 0.2.8250
+rc=0
+== t4a: the borrower holds a version grant; the lender transfers the provider to steward (force_unshare=True)
+  Banner before the transfer: 'HELLO'
+before the transfer:
+    from lender_t4a: active=['English'] parked=[]; index link=False spell details=['English']
+    from steward_t4a: active=[] parked=[]; no contract
+  transfer_spell_ownership: [('borrower_conduit_id', '<ulid>'), ('contract_id', '<ulid>'), ('type', 'contract')]
+after the transfer:
+    from lender_t4a: active=[] parked=[]; no contract
+    from steward_t4a: active=[] parked=[]; no contract
+  owner Book ids: English in steward._spell_ids=False, in lender._spell_ids=False; registry binding key=None
+  Banner after the transfer: SpellbookValidationError: Spellbook validation failed. Broken spells: Banner. | Banner: |   - Spell 'Banner' parameter 'greeter' has no provider for its SpellContract (frame_key='greeter', binding_key='greeter'): no active spell with that frame and binding
+  steward meld English: 'English'
+  steward bind_inactive(French) on the transferred index: RuntimeError: add_to_spell_index: target index <ulid> is not owned by this spellbook; you can only add onto an index you own.
+  (the steward cannot stage on the index; the rest of the world is skipped)
+melder 0.2.8250
+rc=0
+== t4b: the borrower holds a version grant; the lender transfers the provider to steward (force_unshare=False)
+  Banner before the transfer: 'HELLO'
+before the transfer:
+    from lender_t4b: active=['English'] parked=[]; index link=False spell details=['English']
+    from steward_t4b: active=[] parked=[]; no contract
+  transfer_spell_ownership: [('borrower_conduit_id', '<ulid>'), ('contract_id', '<ulid>'), ('type', 'contract')]
+after the transfer:
+    from lender_t4b: active=['English'] parked=[]; index link=False spell details=['English']
+    from steward_t4b: active=[] parked=[]; index link=False spell details=[]
+  owner Book ids: English in steward._spell_ids=False, in lender._spell_ids=False; registry binding key=None
+  Banner after the transfer: 'HELLO'
+  steward meld English: 'English'
+  steward bind_inactive(French) on the transferred index: RuntimeError: add_to_spell_index: target index <ulid> is not owned by this spellbook; you can only add onto an index you own.
+  (the steward cannot stage on the index; the rest of the world is skipped)
+melder 0.2.8250
+rc=0

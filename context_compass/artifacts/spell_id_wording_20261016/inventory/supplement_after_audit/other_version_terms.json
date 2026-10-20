@@ -1,0 +1,142 @@
+[
+ {
+  "hit": "STRING  free .github/scripts/verify_distributions.py:1 | \"\"\"Verify wheel/sdist boundaries and version identity without importing Melder.\"\"\"",
+  "meaning": "the distribution (package) version: a different version, kept"
+ },
+ {
+  "hit": "DOC     free agents/MELDER_AGENT_OPERATIONS.md:517 | - Class-version fingerprints do not cover every method-body edit. Do not assume a source edit creates a new Spell ID; verify IDs, selected membership, recorded source, and behavior. Use deliberate version identities. [C: Binding][C]",
+  "meaning": "distinct spell version identities (binding identity); a different phrase, not changed"
+ },
+ {
+  "hit": "DOC     free agents/MELDER_AGENT_OPERATIONS.md:572 | | Duplicate name/key/ID | Reuse existing registration or choose explicit distinct role/version identities; inspect both local and process-wide collisions. |",
+  "meaning": "distinct spell version identities (binding identity); a different phrase, not changed"
+ },
+ {
+  "hit": "DOC     free benchmarks/competitors/melder_implementation_plan/melder_system_maps/melder_override_codegen_supporting_notes.md:38 | - `plan_version_id` (changes if Phase 11 plan changes)",
+  "meaning": "a Phase-11 plan version id in old plan notes (history; not implemented under that name): a different id, kept"
+ },
+ {
+  "hit": "DOC     free benchmarks/competitors/melder_implementation_plan/melder_system_maps/melder_speed_improvement_plan_v2.md:99 | - Define override signature: stable hash of override payload keys + mutation signature + plan version id.",
+  "meaning": "a Phase-11 plan version id in old plan notes (history; not implemented under that name): a different id, kept"
+ },
+ {
+  "hit": "DOC     HELD context_compass/system_docs/graph/melder/aether/spellbook/spell_compiler/system/validation/identity_mixing_strategy.json:14 | \"role\": \"Phase 6 check: dependency edges use version ids, not lineage ids.\",",
+  "meaning": "the spell_id (a spell version's identity); a different phrase, not changed (owner's call)"
+ },
+ {
+  "hit": "DOC     HELD context_compass/system_docs/graph/melder/aether/spellbook/spell_compiler/system/validation/identity_mixing_strategy.json:44 | \"role\": \"Guard the version-id/lineage-id boundary: the system graph routes concrete VERSIONS, lineage ids are DevOps control-plane identity.\",",
+  "meaning": "the spell_id (a spell version's identity); a different phrase, not changed (owner's call)"
+ },
+ {
+  "hit": "DOC     HELD context_compass/system_docs/graph/melder/aether/spellbook/spell_compiler/system/validation/identity_mixing_strategy.json:46 | \"report dependency edges that point at lineage ids instead of version ids\",",
+  "meaning": "the spell_id (a spell version's identity); a different phrase, not changed (owner's call)"
+ },
+ {
+  "hit": "DOC     HELD context_compass/system_docs/graph/melder/mutation_research/diff/diff_engine.json:49 | \"resolves both version identities through the injected material_resolver (custody-backed at the root; fakes in tests)\",",
+  "meaning": "the spell_id (a spell version's identity); a different phrase, not changed (owner's call)"
+ },
+ {
+  "hit": "DOC     HELD context_compass/system_docs/src_components.md:840 | to v4-binding-non-resolvable. Method bodies remain outside existing class-version identity.",
+  "meaning": "the spell_id (a spell version's identity); a different phrase, not changed (owner's call)"
+ },
+ {
+  "hit": "DOC     HELD context_compass/system_docs/src_components.md:11718 | and version identity remain unchanged; this feature does not redesign supplied-object ownership.",
+  "meaning": "the spell_id (a spell version's identity); a different phrase, not changed (owner's call)"
+ },
+ {
+  "hit": "STRING  free src/melder/crystallizer/crystal_analysis/custody/site_package_custody_strategy.py:53 | name/version identity via importlib.metadata.",
+  "meaning": "the distribution (package) version: a different version, kept"
+ },
+ {
+  "hit": "STRING  free src/melder/crystallizer/crystals/spell_crystal.py:478 | Return the concrete spell version identity the manifest was built from.",
+  "meaning": "the spell_id (a spell version's identity); a different phrase, not changed (owner's call)"
+ },
+ {
+  "hit": "STRING  free src/melder/mutation_research/diff/diff_engine.py:275 | Compute one derived diff between two version identities.",
+  "meaning": "the spell_id (a spell version's identity); a different phrase, not changed (owner's call)"
+ },
+ {
+  "hit": "STRING  free src/melder/mutation_research/diff/diff_engine.py:279 | Left version identity (binding-signature SHA256).",
+  "meaning": "the spell_id (a spell version's identity); a different phrase, not changed (owner's call)"
+ },
+ {
+  "hit": "STRING  free src/melder/mutation_research/diff/diff_engine.py:281 | Right version identity.",
+  "meaning": "the spell_id (a spell version's identity); a different phrase, not changed (owner's call)"
+ },
+ {
+  "hit": "STRING  free src/melder/mutation_research/mutation_research.py:1588 | Compute one derived diff between two version identities.",
+  "meaning": "the spell_id (a spell version's identity); a different phrase, not changed (owner's call)"
+ },
+ {
+  "hit": "STRING  free src/melder/mutation_research/mutation_research.py:1604 | Left version identity (binding-signature SHA256).",
+  "meaning": "the spell_id (a spell version's identity); a different phrase, not changed (owner's call)"
+ },
+ {
+  "hit": "STRING  free src/melder/mutation_research/mutation_research.py:1606 | Right version identity.",
+  "meaning": "the spell_id (a spell version's identity); a different phrase, not changed (owner's call)"
+ },
+ {
+  "hit": "STRING  free src/melder/mutation_research/mutation_research.py:1699 | Version identity to resolve.",
+  "meaning": "the spell_id (a spell version's identity); a different phrase, not changed (owner's call)"
+ },
+ {
+  "hit": "STRING  free src/melder/mutation_research/mutation_research.py:2633 | Left version identity.",
+  "meaning": "the spell_id (a spell version's identity); a different phrase, not changed (owner's call)"
+ },
+ {
+  "hit": "STRING  free src/melder/mutation_research/mutation_research.py:2635 | Right version identity.",
+  "meaning": "the spell_id (a spell version's identity); a different phrase, not changed (owner's call)"
+ },
+ {
+  "hit": "STRING  free src/melder/mutation_research/mutation_research.py:2735 | Version identity to search.",
+  "meaning": "the spell_id (a spell version's identity); a different phrase, not changed (owner's call)"
+ },
+ {
+  "hit": "STRING  free src/melder/mutation_research/research_set/research_node.py:22 | - `spell_id` is REQUIRED and is both the version identity and the",
+  "meaning": "the spell_id (a spell version's identity); a different phrase, not changed (owner's call)"
+ },
+ {
+  "hit": "STRING  free src/melder/mutation_research/research_set/research_node.py:195 | Return the version identity (and custody-crystal id).",
+  "meaning": "the spell_id (a spell version's identity); a different phrase, not changed (owner's call)"
+ },
+ {
+  "hit": "STRING  free src/melder/nexus/rift/command_system/capability_command_system.py:1253 | left_spell_id: Left version identity.",
+  "meaning": "the spell_id (a spell version's identity); a different phrase, not changed (owner's call)"
+ },
+ {
+  "hit": "STRING  free src/melder/nexus/rift/command_system/capability_command_system.py:1254 | right_spell_id: Right version identity.",
+  "meaning": "the spell_id (a spell version's identity); a different phrase, not changed (owner's call)"
+ },
+ {
+  "hit": "STRING  free src/melder/nexus/rift/command_system/capability_command_system.py:1460 | left_spell_id: Left version identity.",
+  "meaning": "the spell_id (a spell version's identity); a different phrase, not changed (owner's call)"
+ },
+ {
+  "hit": "STRING  free src/melder/nexus/rift/command_system/capability_command_system.py:1461 | right_spell_id: Right version identity.",
+  "meaning": "the spell_id (a spell version's identity); a different phrase, not changed (owner's call)"
+ },
+ {
+  "hit": "STRING  free src/melder/nexus/rift/command_system/codegen_command_system.py:1005 | left_spell_id: Left version identity.",
+  "meaning": "the spell_id (a spell version's identity); a different phrase, not changed (owner's call)"
+ },
+ {
+  "hit": "STRING  free src/melder/nexus/rift/command_system/codegen_command_system.py:1006 | right_spell_id: Right version identity.",
+  "meaning": "the spell_id (a spell version's identity); a different phrase, not changed (owner's call)"
+ },
+ {
+  "hit": "STRING  free src/melder/nexus/rift/command_system/codegen_command_system.py:1422 | left_spell_id: Left version identity.",
+  "meaning": "the spell_id (a spell version's identity); a different phrase, not changed (owner's call)"
+ },
+ {
+  "hit": "STRING  free src/melder/nexus/rift/command_system/codegen_command_system.py:1423 | right_spell_id: Right version identity.",
+  "meaning": "the spell_id (a spell version's identity); a different phrase, not changed (owner's call)"
+ },
+ {
+  "hit": "STRING  free src/melder/nexus/rift/frame_viewer/frame_viewer.py:5279 | spell_source_id: Published book/version identity to navigate.",
+  "meaning": "Nexus's published source id 'spellbook_id:spell_id': a different id, kept"
+ },
+ {
+  "hit": "STRING  free src/melder/nexus/rift/frame_viewer/view_spell.py:288 | spell_source_id: Published book/version identity to navigate.",
+  "meaning": "Nexus's published source id 'spellbook_id:spell_id': a different id, kept"
+ }
+]

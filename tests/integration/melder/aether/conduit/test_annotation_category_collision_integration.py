@@ -23,6 +23,7 @@ import pytest
 from melder import Aether, Cleanable, Conduit, Spellbook
 from melder.utilities.custom_exceptions.spellbook_validation_error import SpellbookValidationError
 from melder.utilities.custom_exceptions.unresolved_input_error import UnresolvedInputError
+from tests._spell_identity_test_support import version_of
 
 
 @pytest.fixture(autouse=True)
@@ -368,15 +369,16 @@ def test_collection_annotations_gather_the_group_their_kind_names() -> None:
 
 def test_guard_two_providers_of_the_annotated_type_still_raise_ambiguity() -> None:
     """
-    GUARD: two spells of the annotated TYPE at distinct addresses are a real ambiguity. Since 2026-10-04 it is
-    refused through the readable validation report (AMBIGUOUS_PROVIDER) naming both addresses and the remedies,
-    at the late bind in a dynamic world.
+    GUARD: two spells of the annotated TYPE at distinct addresses are a real ambiguity - the second a version of
+    Spectrum (its name, other code), since one class is one spell. Since 2026-10-04 it is refused through the
+    readable validation report (AMBIGUOUS_PROVIDER) naming both addresses and the remedies, at the late bind in a
+    dynamic world.
     """
     root = _dynamic_root("annotation-category-type-ambiguity")
     try:
         root.bind(spell=Spectrum, existence="unique_per_conduit", spellframe="spectrum",
                   binding_name="primary", disposal_method_names=["cleanup"])
-        root.bind(spell=Spectrum, existence="unique_per_conduit", spellframe="mirror",
+        root.bind(spell=version_of(Spectrum, mirror=True), existence="unique_per_conduit", spellframe="mirror",
                   binding_name="secondary", disposal_method_names=["cleanup"])
         with pytest.raises(SpellbookValidationError) as excinfo:
             root.bind(spell=CenterWithClass, existence="many", spellframe="command_center",

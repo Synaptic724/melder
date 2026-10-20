@@ -1,0 +1,21 @@
+tree | unit_aether | rc=0 | secs=23 | 4512 passed in 21.32s
+tree | unit_sb | rc=0 | secs=7 | 2578 passed in 6.20s
+tree | unit_util | rc=0 | secs=10 | 831 passed, 2 skipped, 7 xfailed in 9.00s
+tree | comp_aether | rc=0 | secs=20 | 1386 passed, 1 xfailed in 19.61s
+tree | comp_sb | rc=0 | secs=26 | 819 passed in 24.72s
+tree | int_conduit | rc=0 | secs=11 | 350 passed, 1 xfailed in 9.96s
+tree | int_sb | rc=0 | secs=10 | 647 passed, 2 skipped, 2 xpassed in 8.64s
+tree | int_mt | rc=0 | secs=19 | 54 passed in 18.19s
+tree | int_aether | rc=0 | secs=22 | 795 passed, 5 xfailed in 21.01s
+tree | int_cryst | rc=0 | secs=77 | 276 passed, 3 xfailed in 75.99s (0:01:15)
+tree | unit_cryst | rc=0 | secs=7 | 607 passed in 6.30s
+tree | comp_cryst | rc=0 | secs=2 | 110 passed in 1.10s
+tree | unit_mr | rc=0 | secs=3 | 277 passed in 2.01s
+tree | comp_mr | rc=0 | secs=2 | 40 passed in 0.95s
+tree | int_mr | rc=0 | secs=2 | 67 passed in 1.42s
+tree | comp_util | rc=0 | secs=3 | 41 passed, 23 skipped in 1.96s
+tree | unit_top | rc=0 | secs=6 | 146 passed in 5.66s
+tree | unit_build | rc=0 | secs=4 | 116 passed in 2.83s
+tree | int_live | rc=0 | secs=2 | 1 passed, 1 xfailed in 0.28s
+tree | unit_arch | rc=0 | secs=1 | 18 passed in 0.11s
+tree | exper (without test_melder_creation_overrides_performance.py: no benchmarks/ package on the scratch tree) | 244 passed, 3 skipped in 12.47s

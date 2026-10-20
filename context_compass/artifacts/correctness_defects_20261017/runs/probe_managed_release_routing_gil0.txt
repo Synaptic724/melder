@@ -1,0 +1,64 @@
+Q1 control: one limited_quantity version (limit 1)
+    meld A -> Worker #1
+  [after the lease]
+    pool A: count 1, idle 0, active_version True
+  [after release(obj)]
+    pool A: count 1, idle 1, active_version True
+    meld A again -> Worker #1
+
+Q2 two versions of Worker on one index; the object leased from A released with no filter after a notch
+    meld A -> Worker #2
+  [A leased once, B staged and notched in]
+    pool A: count 1, idle 0, active_version False
+    pool B: count 0, idle 0, active_version True
+  [after release(obj)]
+    pool A: count 1, idle 0, active_version False
+    pool B: count 0, idle 1, active_version True
+    meld B -> Worker #2
+    B served the object leased from A: True
+  [after a notch back to A]
+    pool A: count 1, idle 0, active_version True
+    pool B: count 0, idle 0, active_version False
+    meld A raised ManagedSpellExhaustedError: [MELD] Execution failed for spell 'Worker' (1048b6e686cad4f09bcc0cc5de05a39ae3ff2485f2376732232cceae8d5de329): Managed spell 'Worker' (limited_quantity, limit 1) has all 
+
+Q3 Q2 with release(obj, spell_id=A)
+    meld A -> Worker #3
+  [A leased once, B staged and notched in]
+    pool A: count 1, idle 0, active_version False
+    pool B: count 0, idle 0, active_version True
+  [after release(obj, spell_id=A)]
+    pool A: count 1, idle 1, active_version False
+    pool B: count 0, idle 0, active_version True
+    meld A after a notch back -> Worker #3
+    A served its own object again: True
+
+Q4 Q2 with A disposed (cleanup_spell) after the notch away, before the release
+    meld A -> Worker #4
+  [A leased once, B staged and notched in]
+    pool A: count 1, idle 0, active_version False
+    pool B: count 0, idle 0, active_version True
+    A owned by the Book after cleanup_spell: False
+  [after cleanup_spell(A)]
+    pool A: count 1, idle 0, active_version False
+    pool B: count 0, idle 0, active_version True
+  [after release(obj)]
+    pool A: count 1, idle 0, active_version False
+    pool B: count 0, idle 1, active_version True
+
+Q5 cleanup_spell of the only version, then the same binding again (same content-stable spell_id)
+    meld A -> Worker #5
+  [after cleanup_spell(A)]
+    pool A: count 1, idle 1, active_version False
+    the same spell_id again: True
+  [after the same binding again]
+    pool A: count 1, idle 1, active_version True
+    meld A again -> Worker #5
+    served the object idle in the pool its earlier definition left: True
+
+Q6 control: A binds Worker, B binds WorkerV2 on the same index
+    meld A -> Worker #6
+  [Worker pools after the release]
+    pool A: count 1, idle 1, active_version False
+  [WorkerV2 pools]
+    pool B: count 0, idle 0, active_version True
+

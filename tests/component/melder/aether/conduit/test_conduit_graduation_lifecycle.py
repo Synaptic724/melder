@@ -75,7 +75,7 @@ def test_upgrade_new_lesser_uses_new_book_and_pool(graduation_world: GraduationW
         reused = world.child.create_lesser_conduit()
         assert reused is descendant
         assert isinstance(reused.meld(spell_id=spell_id), GraduatedService)
-        assert world.book.find_spell_by_id(spell_id) is None
+        assert world.book.find_spell_by_spell_id(spell_id) is None
     finally:
         descendant.cleanup()
 

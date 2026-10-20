@@ -9,6 +9,7 @@ import melder.aether.spellbook.spell_compiler.phases.compiler_phase_4 as compile
 from melder.aether.spellbook.spell_compiler.phases.compiler_phase_4 import (
     CompilerPhase4,
 )
+from melder.utilities.custom_exceptions.spellbook_validation_error import SpellbookValidationError
 from tests.unit.melder.spellbook.spell_compiler.support.compiler_test_support import (
     make_spell,
 )
@@ -208,6 +209,42 @@ def test_run_marks_lineage_gated_when_contract_provider_is_missing() -> None:
     assert state.set_validity_calls[-1]["flags_to_add"] == [
         compiler_phase_4_module.SpellState.contract_unvalidated
     ]
+
+
+def _phase4_validity_for_warning(monkeypatch: pytest.MonkeyPatch, code: str) -> Any:
+    """Run Phase 4 over a result carrying one warning with `code`; return the last validity it published."""
+    spell = make_spell("spell-1")
+    artifact = spell._compiler_artifact
+    _prime_structural_artifacts(artifact)
+    state = _StateStub(compiler_phase_4_module.SpellValidity.unknown)
+    result = SimpleNamespace(has_errors=False, issues=[SimpleNamespace(code=code, severity="warning")])
+    monkeypatch.setattr(
+        compiler_phase_4_module.SharedCompilerExecutions,
+        "capture_phase2_5_codegen_ir",
+        lambda _spell, _artifact: None,
+    )
+    CompilerPhase4().run(spell, artifact, _make_validator(result, []), _make_states(state))
+    return state.set_validity_calls[-1]["validity"]
+
+
+def test_run_gates_the_lineage_on_every_code_the_report_lists_as_a_reason(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Phase 4 gates a lineage on exactly the warnings SpellbookValidationError lists as a spell's reason, so a meld
+    refused for a gated lineage always names why.
+    """
+    assert SpellbookValidationError.GATING_WARNING_CODES
+    for code in sorted(SpellbookValidationError.GATING_WARNING_CODES):
+        assert _phase4_validity_for_warning(monkeypatch, code) is compiler_phase_4_module.SpellValidity.gated
+
+
+def test_run_marks_the_lineage_valid_on_a_warning_outside_the_reported_reasons(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A warning the report only counts leaves the lineage valid."""
+    assert "REQUIRED_HOLE" not in SpellbookValidationError.GATING_WARNING_CODES
+    assert _phase4_validity_for_warning(monkeypatch, "REQUIRED_HOLE") is compiler_phase_4_module.SpellValidity.valid
 
 
 def test_run_skips_revalidation_when_cached_and_still_valid() -> None:

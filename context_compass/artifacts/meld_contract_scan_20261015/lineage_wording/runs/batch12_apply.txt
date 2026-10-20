@@ -1,0 +1,274 @@
+--- src/melder/aether/conduit/conduit_ward/permissions/permissions.py
++++ src/melder/aether/conduit/conduit_ward/permissions/permissions.py
+@@ -4,3 +4,3 @@
+     """
+-    Capability ceiling for a spell lineage in ward-local and contracted views.
++    Capability ceiling for a spell in ward-local and contracted views.
+ 
+@@ -11,6 +11,6 @@
+     - on each contract detail, as the capability actually granted to a peer for
+-      that lineage
++      that spell
+ 
+     The values are ordered by how much downstream behavior they permit, and the
+-    ward logic deliberately never escalates a contracted lineage beyond the
++    ward logic deliberately never escalates a contracted spell beyond the
+     spell's own local permission.
+@@ -18,3 +18,3 @@
+     - `read`:
+-      the lineage may be resolved and inspected through a contract, but it
++      the spell may be resolved and inspected through a contract, but it
+       cannot be used as a creation-capable dependency when propagating work
+@@ -23,3 +23,3 @@
+     - `create`:
+-      the lineage may participate in creation-capable dependency resolution and
++      the spell may participate in creation-capable dependency resolution and
+       therefore also implies ordinary read/resolve access.
+@@ -27,3 +27,3 @@
+     - `block`:
+-      the lineage should not be contractable in normal flows. The ward treats
++      the spell should not be contractable in normal flows. The ward treats
+       this as a hard stop unless a broader override policy such as
+@@ -36,5 +36,5 @@
+     Subsystem Context:
+-        The PER-LINEAGE half of the ward vocabulary, paired with `Policies`
++        The PER-SPELL half of the ward vocabulary, paired with `Policies`
+         (the ward-level directional gate). The non-escalation rule stated above
+-        is the load-bearing invariant: a contracted lineage is never granted
++        is the load-bearing invariant: a contracted spell is never granted
+         MORE than the spell's own local permission, so a peer can only ever
+@@ -48,3 +48,3 @@
+         it is about DEPENDENCY PROPAGATION. `read` resolves and inspects, but
+-        the lineage cannot act as a creation-capable dependency when work
++        the spell cannot act as a creation-capable dependency when work
+         propagates into another conduit; `create` admits it into that
+@@ -53,3 +53,3 @@
+         a cluster exists precisely so members can construct from each other's
+-        lineages, and a `read`-only default would make the cluster inert.
++        spells, and a `read`-only default would make the cluster inert.
+ 
+@@ -58,3 +58,3 @@
+     AGENT_PURPOSE:
+-        access: public. Capability ceiling for a lineage: read (resolve/inspect only), create
++        access: public. Capability ceiling for a spell: read (resolve/inspect only), create
+         (creation-capable, implies read), block (hard stop). Pass to Spellbook.bind(...). A
+--- src/melder/aether/conduit/conduit_ward/policies/policies.py
++++ src/melder/aether/conduit/conduit_ward/policies/policies.py
+@@ -11,3 +11,3 @@
+     - whether this conduit may initiate outbound grants
+-    - whether it may accept inbound borrowed lineages
++    - whether it may accept inbound borrowed spells
+     - whether normal per-spell permission and whitelist checks are enforced or
+@@ -26,3 +26,3 @@
+         - `whitelist_all`:
+-          expose local lineages without requiring per-spell whitelist flags and
++          expose local spells without requiring per-spell whitelist flags and
+           allow otherwise blocked entries to pass the normal ward gate.
+@@ -46,3 +46,3 @@
+         (may a contract form at all, and in which direction), while
+-        `Permissions` is the PER-LINEAGE ceiling (what a peer may do with a
++        `Permissions` is the PER-SPELL ceiling (what a peer may do with a
+         spell once a contract exists). `ContractTypes` then labels each stored
+@@ -50,3 +50,3 @@
+         contract only grants when the ward policy admits the direction AND the
+-        lineage's own permission allows the capability.
++        spell's own permission allows the capability.
+ 
+@@ -59,3 +59,3 @@
+         `whitelist_all` is the one mode that can OVERRIDE a per-spell decision:
+-        it lets a lineage marked `Permissions.block` pass the ward gate. That
++        it lets a spell marked `Permissions.block` pass the ward gate. That
+         makes it the widest authority in the conduit layer and the value to
+--- src/melder/aether/conduit/conduit_ward/contract/contract.py
++++ src/melder/aether/conduit/conduit_ward/contract/contract.py
+@@ -23,3 +23,3 @@
+     A Contract is symmetric: both wards keep their own Detail maps describing
+-    which lineages are shared and with what permissions. Each side can grant
++    which spells and spell indexes are shared and with what permissions. Each side can grant
+     or revoke independently; the contract object simply tracks both views.
+@@ -29,3 +29,3 @@
+         - the relationship between the two participating wards
+-        - lineage-aware source tagging used by dependency-linked rollback
++        - root-spell source tagging used by dependency-linked rollback
+ 
+@@ -70,3 +70,3 @@
+         which is a point-in-time answer; an `IndexDetail` instead subscribes to
+-        a `SpellIndex`, so the borrower follows the lineage HEAD rather than a
++        a `SpellIndex`, so the borrower follows the index's selected spell rather than a
+         frozen version. That is what lets a notch repoint the active member of
+@@ -120,3 +120,3 @@
+ 
+-        # Index-link details: per-ward maps of index_id -> IndexDetail (lineage
++        # Index-link details: per-ward maps of index_id -> IndexDetail (SpellIndex
+         # subscriptions; the borrower follows the index, not a captured version).
+@@ -273,3 +273,3 @@
+         if existing is not None:
+-            # Merge sources if this lineage already exists with the same permissions.
++            # Merge sources if this spell_id already has a Detail with the same permissions.
+             if existing.permissions != contract_detail.permissions:
+--- src/melder/aether/conduit/conduit_ward/contract/contract_types/contract_types.py
++++ src/melder/aether/conduit/conduit_ward/contract/contract_types/contract_types.py
+@@ -8,3 +8,3 @@
+     single shared detail table. Each participating ward stores its own detail
+-    map describing which spell lineages it exposed or borrowed in that
++    map describing which spells it exposed or borrowed in that
+     relationship. `ContractTypes` marks the meaning of one detail entry from
+@@ -12,3 +12,3 @@
+ 
+-    This matters during reconciliation and rollback because the same lineage
++    This matters during reconciliation and rollback because the same spell
+     can appear with opposite labels across the two peers:
+@@ -16,3 +16,3 @@
+     - `initiated`:
+-      the owning ward is the source of the lineage. This detail records a
++      the owning ward is the source of the spell. This detail records a
+       spell the ward granted outward into the contract.
+@@ -20,3 +20,3 @@
+     - `received`:
+-      the owning ward is the borrower. This detail records a lineage that came
++      the owning ward is the borrower. This detail records a spell that came
+       from the peer and is now visible locally through the contract.
+@@ -38,3 +38,3 @@
+         at the PAIR level but each ward keeps its OWN detail map, so a single
+-        lineage appears as `initiated` on the granting side and `received` on
++        spell appears as `initiated` on the granting side and `received` on
+         the borrowing side. Two rows, one relationship. Reconciliation and
+--- src/melder/aether/conduit/conduit_ward/contract/detail_reason.py
++++ src/melder/aether/conduit/conduit_ward/contract/detail_reason.py
+@@ -6,3 +6,3 @@
+ 
+-    The ward uses this enum to distinguish directly shared lineages from
++    The ward uses this enum to distinguish directly shared spells from
+     transitive dependency-linked ones. That matters later when a root source is
+@@ -25,3 +25,3 @@
+         than the cause). Together they answer "who wrote this entry, and why
+-        does it exist" for every lineage inside a contract.
++        does it exist" for every Detail inside a contract.
+ 
+--- src/melder/crystallizer/crystals/contract_crystal.py
++++ src/melder/crystallizer/crystals/contract_crystal.py
+@@ -11,3 +11,3 @@
+         Links and contracts are the world's inter-conduit relationships -
+-        which conduits are linked, which spells/lineages are shared into
++        which conduits are linked, which spells and spell indexes are shared into
+         which peer, with what permissions and direction. This twin records
+@@ -20,3 +20,3 @@
+         understood. `details_a`/`details_b` describe what each ward borrows from
+-        its peer; index-detail rows describe lineage subscriptions. The two
++        its peer; index-detail rows describe SpellIndex subscriptions. The two
+         projections are intentionally retained together so inspection does not
+@@ -49,3 +49,3 @@
+         One member of the crystal-twin family, capturing an inter-conduit
+-        RELATIONSHIP: which conduits are linked and which spells/lineages are
++        RELATIONSHIP: which conduits are linked and which spells and spell indexes are
+         shared into which peer, with what permissions and direction. Unlike the
+@@ -111,5 +111,5 @@
+             index_details_a:
+-                Plain-dict projections of ward A's lineage subscriptions.
++                Plain-dict projections of ward A's SpellIndex subscriptions.
+             index_details_b:
+-                Plain-dict projections of ward B's lineage subscriptions.
++                Plain-dict projections of ward B's SpellIndex subscriptions.
+ 
+--- src/melder/crystallizer/crystals/spell_index_crystal.py
++++ src/melder/crystallizer/crystals/spell_index_crystal.py
+@@ -11,5 +11,5 @@
+         Custody crystals capture each spell's bind facts, but index GROUPING
+-        (which parked members ride which lineage, and which member is
++        (which parked members sit in which SpellIndex, and which member is
+         selected) is index-owned state. This twin records it so restore can
+-        regroup staged members onto the right lineage and transfer of
++        regroup staged members onto the right SpellIndex and transfer of
+         ownership can re-anchor a moved index under its new spellbook.
+@@ -47,5 +47,5 @@
+         crystals) capture each spell's bind facts, this twin captures the
+-        index-owned GROUPING state: which parked members ride which lineage and
++        index-owned GROUPING state: which parked members sit in which SpellIndex and
+         which member is selected. Restore reads it to regroup staged members onto
+-        the right lineage, and transfer-of-ownership uses it to re-anchor a moved
++        the right SpellIndex, and transfer-of-ownership uses it to re-anchor a moved
+         index under its new spellbook. It rides under its owning
+--- src/melder/crystallizer/crystals/cluster_crystal.py
++++ src/melder/crystallizer/crystals/cluster_crystal.py
+@@ -11,3 +11,3 @@
+         Clusters are the third inter-conduit relationship (after links and
+-        contracts): named member groups with shared lineage roots and an
++        contracts): named member groups with shared root spell indexes and an
+         optional elected leader. This twin records membership, shares, and
+@@ -46,4 +46,4 @@
+         relationship: after links (peer edges on `ConduitCrystal`) and contracts
+-        (`ContractCrystal`), clusters are named member groups with shared lineage
+-        roots and an optional elected leader. This twin records membership,
++        (`ContractCrystal`), clusters are named member groups with shared root spell
++        indexes and an optional elected leader. This twin records membership,
+         shares, and leadership per frame so restore can regroup a frame's cluster
+--- src/melder/crystallizer/crystallizer.py
++++ src/melder/crystallizer/crystallizer.py
+@@ -1224,3 +1224,3 @@
+             Project the contract's full truth - both conduit endpoints and
+-            both sides' spell Details and lineage subscriptions - into
++            both sides' spell Details and SpellIndex subscriptions - into
+             detached plain data. Callers emit the result so replace-on-emit
+--- src/melder/nexus/rift/frame_viewer/view_multiframe.py
++++ src/melder/nexus/rift/frame_viewer/view_multiframe.py
+@@ -1476,3 +1476,3 @@
+         Contract:
+-            - Groups by spell INDEX id, so each group is one version LINEAGE rather than
++            - Groups by spell INDEX id, so each group is one SpellIndex's versions rather than
+               one spell.
+@@ -2404,3 +2404,3 @@
+             - Index ids across the scope. Duplicates are EXPECTED, since many spells share
+-              one lineage.
++              one SpellIndex.
+             - DESCRIPTOR-LEVEL and CROSS-FRAME: scoped at FRAME granularity by the
+--- src/melder/nexus/rift/frame_viewer/view_frame.py
++++ src/melder/nexus/rift/frame_viewer/view_frame.py
+@@ -1433,3 +1433,3 @@
+               share one spell index, so the same index id repeats once per spell.
+-              Deduplicate yourself if you want distinct lineages.
++              Deduplicate yourself if you want distinct spell indexes.
+             - Positionally aligned with the visible spell links.
+--- src/melder/nexus/acl/frame_acl_compiled_access_surface.py
++++ src/melder/nexus/acl/frame_acl_compiled_access_surface.py
+@@ -482,3 +482,3 @@
+         Returns:
+-            Tuple[str, ...]: Visible stable spell lineage ids.
++            Tuple[str, ...]: Visible stable SpellIndex ids.
+         """
+@@ -504,3 +504,3 @@
+         Returns:
+-            Tuple[str, ...]: Enabled spell lineage ids.
++            Tuple[str, ...]: Enabled SpellIndex ids.
+         """
+--- src/melder/nexus/acl/frame_acl_compiler.py
++++ src/melder/nexus/acl/frame_acl_compiler.py
+@@ -407,3 +407,3 @@
+             - Also returns the visible stable `spell_index_id` set so later
+-              runtime consumers can target lineages directly.
++              runtime consumers can target spell indexes directly.
+             - Visibility is all-or-nothing per spell record in this first cut;
+--- src/melder/utilities/custom_exceptions/spellbook_validation_error.py
++++ src/melder/utilities/custom_exceptions/spellbook_validation_error.py
+@@ -36,3 +36,3 @@
+         them with the message. Warnings never block conjure and are only
+-        counted here, except one that holds a spell's lineage gated (a lost
++        counted here, except one that holds a spell's SpellIndex gated (a lost
+         SpellContract provider at meld): it is listed as that spell's reason,
+@@ -64,3 +64,3 @@
+           gating warnings of a spell that shows no error: they are why its
+-          lineage is gated, so they are its reason (2026-10-16).
++          SpellIndex is gated, so they are its reason (2026-10-16).
+         - Remains resilient when spell artifacts are partially unavailable or
+@@ -141,3 +141,3 @@
+ 
+-    # Phase-4 warnings that hold a lineage `gated` (`CompilerPhase4.run`): a spell refused only because of one lists
++    # Phase-4 warnings that hold a SpellIndex `gated` (`CompilerPhase4.run`): a spell refused only because of one lists
+     # it as its reason instead of "No validation error was recorded" (D1-B, 2026-10-16). A unit test pins this set
+--- src/melder/utilities/custom_exceptions/spell_space_scope_error.py
++++ src/melder/utilities/custom_exceptions/spell_space_scope_error.py
+@@ -22,3 +22,3 @@
+         satisfy request-local storage. The conduit front door deliberately
+-        REFUSES `unique_per_spell_space` lineages rather than inventing a scope,
++        REFUSES `unique_per_spell_space` spells rather than inventing a scope,
+         so this error means you resolved through the wrong door, not that the
+15 files, 51 edits applied and read back

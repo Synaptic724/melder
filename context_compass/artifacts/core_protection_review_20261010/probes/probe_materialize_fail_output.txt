@@ -1,0 +1,6 @@
+command: python -X gil=0 probe_materialize_fail.py (cwd: scratch copy of src and tests; PYTHONPATH=<copy>/src:<copy>)
+ran_at: 2026-10-10T13:33:16Z
+materialize raised: ZeroDivisionError
+csv still in sys.modules: False | original restored: False
+after cleanup of a successful replacement: json in sys.modules: False | original restored: False
+exit: 0

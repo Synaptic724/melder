@@ -1,3 +1,4 @@
+import hashlib
 import threading
 from types import SimpleNamespace
 from typing import Any, Dict, Iterable, Optional
@@ -67,6 +68,8 @@ class _RecordingSpell:
         self.spell_id = spell_id
         self.resolvable = True
         self.spell_name = spell_id
+        # The binding hash the world stamp and the structural key read (`Spell.binding_hash`, S2).
+        self.binding_hash = hashlib.sha256(("binding:" + spell_id).encode("utf-8")).hexdigest()
         self._caching_enabled = caching_enabled
         self._dynamic_environment = False
         self._creation_context = object()
