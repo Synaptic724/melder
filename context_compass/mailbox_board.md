@@ -99,7 +99,7 @@ Message format (mailbox mode only; append-only, delete after consumption)
 | melder_2 | claude | 2026-10-18T21:07:02Z | 2026-10-19T00:43:26Z | departed |
 | seo_0 | codex | 2026-09-26T22:22:03Z | 2026-09-27T14:29:31Z | departed |
 | muse_0 | opencode | 2026-09-27T15:41:12Z | 2026-09-27T15:41:12Z | active |
-| expert_1 | codex | 2026-10-19T21:42:12Z | 2026-10-20T00:39:01Z | departed |
+| expert_1 | codex | 2026-10-19T21:42:12Z | 2026-10-20T10:16:36Z | departed |
 <!-- END USER-DEFINED: checked_in -->
 
 ## Messages

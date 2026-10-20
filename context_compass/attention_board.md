@@ -103,40 +103,6 @@ Message alert rules
 - NEW MESSAGE for melder_1 (from expert_1, 2026-10-19T23:45:54Z)
 - NEW MESSAGE for melder_1 (from expert_1, 2026-10-19T23:09:08Z)
 - NEW MESSAGE for melder_1 (from expert_1, 2026-10-19T22:26:52Z)
-- NEW MESSAGE for muse_0 (from workflows_0, 2026-09-28T09:43:41Z)
-- NEW MESSAGE for muse_0 (from workflows_0, 2026-09-28T08:24:12Z)
-- NEW MESSAGE for muse_0 (from melder_0, 2026-09-27T20:29:26Z)
-- NEW MESSAGE for muse_0 (from melder_0, 2026-09-27T21:49:53Z)
-- NEW MESSAGE for muse_0 (from fable_0, 2026-09-27T22:06:50Z)
-- NEW MESSAGE for muse_0 (from melder_0, 2026-09-27T23:08:51Z)
-- NEW MESSAGE for muse_0 (from melder_0, 2026-09-28T00:15:29Z)
-- NEW MESSAGE for muse_0 (from melder_0, 2026-09-28T00:24:01Z)
-- NEW MESSAGE for muse_0 (from melder_0, 2026-09-28T00:37:34Z)
-- NEW MESSAGE for muse_0 (from melder_0, 2026-09-28T01:00:46Z)
-- NEW MESSAGE for muse_0 (from melder_0, 2026-09-28T01:10:20Z)
-- NEW MESSAGE for muse_0 (from melder_0, 2026-09-28T01:11:37Z)
-- NEW MESSAGE for muse_0 (from melder_0, 2026-09-28T08:40:12Z)
-- NEW MESSAGE for muse_0 (from melder_0, 2026-09-29T21:28:19Z)
-- NEW MESSAGE for muse_0 (from melder_0, 2026-09-29T21:34:35Z)
-- NEW MESSAGE for muse_0 (from melder_0, 2026-09-29T22:29:43Z)
-- NEW MESSAGE for muse_0 (from melder_0, 2026-09-29T23:41:45Z)
-- NEW MESSAGE for muse_0 (from melder_0, 2026-09-30T00:05:25Z)
-- NEW MESSAGE for muse_0 (from melder_0, 2026-09-30T00:24:49Z)
-- NEW MESSAGE for muse_0 (from melder_0, 2026-09-30T10:44:26Z)
-- NEW MESSAGE for muse_0 (from melder_0, 2026-09-30T15:49:07Z)
-- NEW MESSAGE for muse_0 (from melder_0, 2026-09-30T17:19:01Z)
-- NEW MESSAGE for muse_0 (from melder_0, 2026-09-30T18:23:27Z)
-- NEW MESSAGE for muse_0 (from melder_0, 2026-09-30T18:48:41Z)
-- NEW MESSAGE for muse_0 (from melder_0, 2026-09-30T18:58:51Z)
-- NEW MESSAGE for muse_0 (from melder_0, 2026-09-30T19:31:23Z)
-- NEW MESSAGE for muse_0 (from melder_0, 2026-09-30T19:46:23Z)
-- NEW MESSAGE for muse_0 (from melder_0, 2026-09-30T20:21:52Z)
-- NEW MESSAGE for muse_0 (from melder_0, 2026-09-30T21:18:29Z)
-- NEW MESSAGE for muse_0 (from melder_0, 2026-10-01T10:15:59Z)
-- NEW MESSAGE for muse_0 (from melder_0, 2026-10-01T10:47:49Z)
-- NEW MESSAGE for muse_0 (from melder_0, 2026-10-01T10:56:27Z)
-- NEW MESSAGE for muse_0 (from melder_0, 2026-10-01T11:10:44Z)
-- NEW MESSAGE for muse_0 (from melder_0, 2026-10-01T11:26:16Z)
 <!-- END USER-DEFINED: alerts -->
 
 ## Active Items
@@ -161,11 +127,11 @@ Message alert rules
 | work_item | status | agent_name | ticket | note | closed_at |
 | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: closed_anchors -->
+| frame_link_cleanup_guard | done | expert_1 | tickets/tasks/completed/2026-10-19_fix_frame_link_cleanup_guard_test_task.md | Deterministic guard check replaces timed workers; 14399 full-runtime passes without unhandled-thread warnings, 400 repeats and two rejected guard mutants. | 2026-10-20T10:16:36Z |
 | queue_deadline_wakeups | done | expert_1 | tickets/tasks/completed/2026-10-19_fix_queue_deadline_wakeup_test_task.md | Deterministic deadline regression: 14399 full-runtime passes, 400 repeated cases, three rejected mutants; test-only repair. | 2026-10-20T00:39:01Z |
 | cluster_duplicate_add | done | expert_1 | tickets/tasks/completed/2026-10-19_fix_cluster_duplicate_add_concurrency_task.md | Notched 0.2.8265: atomic admission, callback progress and retry verified; 272 cluster checks, 120 repeated cases and 14398 full-runtime passes. | 2026-10-19T23:41:23Z |
 | managed_spell_mode_failures | done | expert_1 | tickets/tasks/completed/2026-10-19_fix_managed_spell_mode_test_failures_task.md | Landed 0.2.8264: runtime enum import restores Spell constructor/mock reflection; all 51 reported cases pass, 14393 runtime passes and 274 post-notch passes; assets checked. | 2026-10-19T22:35:14Z |
 | spell_identity_is_the_code | done | melder_0 | tickets/epics/completed/2026-10-18_spell_identity_is_the_code_epic.md | Turned in on the owner's word: S1 (0.2.8257) and S2 (0.2.8258) landed; S3-S5 parked in the backlog with S6; the leftovers packaged by melder_1's 0.2.8259 rebuild. Next: S3-S6 on the owner's word. | 2026-10-19T00:49:20Z |
-| binding_manifest_hash | done | melder_0 | tickets/stories/completed/2026-10-18_binding_manifest_hash_story.md | Landed 0.2.8258 (S2: the binding manifest and its hash in the caches and the record). Next: S3-S5 under the epic. | 2026-10-18T23:31:15Z |
 | root_teardown_docs | done | melder_2 | tickets/tasks/completed/2026-10-18_document_root_teardown_cleans_only_what_it_holds_task.md | Documentation only, no src change: src_architecture and src_components state the owner's rule that a root's teardown cleans only what it holds and today's order (its "open with the owner" framing corrected by TASK-2026-10-19-correct_root_teardown_docs_wording). Next: none. | 2026-10-19T00:15:30Z |
 | minted_index_registry | done | melder_1 | tickets/stories/completed/2026-10-17_minted_index_missing_from_frame_registry_story.md | Landed 0.2.8259 (S4 of EPIC-2026-10-17-correctness_defects: the index remove_from_spell_index mints is registered with the frame as bind registers its new one, unregistered at the root's teardown; residency reads its version parked). Next: S7 with melder_1; spellbook.py and spell.py back to melder_0 (M1-42). | 2026-10-19T00:21:48Z |
 | root_teardown_wording | done | melder_2 | tickets/tasks/completed/2026-10-19_correct_root_teardown_docs_wording_task.md | Documentation only, no src change: after the owner's review both documents say a root's teardown cleans what it holds (the children of out objects included) and that a raising disposal method is reported; the "open with the owner" framing is gone. Next: none. | 2026-10-19T00:43:26Z |
