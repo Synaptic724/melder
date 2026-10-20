@@ -1222,7 +1222,7 @@ class Crystallizer(Cleanable):
 
         Purpose:
             Project the contract's full truth - both conduit endpoints and
-            both sides' spell Details and lineage subscriptions - into
+            both sides' spell Details and SpellIndex subscriptions - into
             detached plain data. Callers emit the result so replace-on-emit
             keeps exactly one snapshot per contract.
 

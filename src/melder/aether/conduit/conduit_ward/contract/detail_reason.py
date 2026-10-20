@@ -4,7 +4,7 @@ class DetailReason(Enum):
     """
     Why one `Detail` entry exists inside a contract.
 
-    The ward uses this enum to distinguish directly shared lineages from
+    The ward uses this enum to distinguish directly shared spells from
     transitive dependency-linked ones. That matters later when a root source is
     removed and the ward needs to know which contracted details should vanish
     with it and which ones were added independently.
@@ -23,7 +23,7 @@ class DetailReason(Enum):
         The PROVENANCE half of the detail vocabulary, paired with
         `ContractTypes` (which records the owning ward's perspective rather
         than the cause). Together they answer "who wrote this entry, and why
-        does it exist" for every lineage inside a contract.
+        does it exist" for every Detail inside a contract.
 
     System Context:
         This enum exists to make REMOVAL correct, not to describe creation. As

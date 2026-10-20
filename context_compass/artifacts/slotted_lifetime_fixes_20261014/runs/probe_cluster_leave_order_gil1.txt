@@ -1,0 +1,6 @@
+setup_leaver_root_recorded: True
+setup_peer_holds_leaver_root: True
+after_leave_leaver_in_members: False
+after_leave_peer_holds_leaver_root: True
+control_link_only_peer_holds_leaver_root: False
+control_handle_leave_first_peer_holds_leaver_root: False

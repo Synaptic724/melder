@@ -9,7 +9,7 @@ class Policies(Enum):
     about three different control surfaces:
 
     - whether this conduit may initiate outbound grants
-    - whether it may accept inbound borrowed lineages
+    - whether it may accept inbound borrowed spells
     - whether normal per-spell permission and whitelist checks are enforced or
       bypassed
 
@@ -24,7 +24,7 @@ class Policies(Enum):
           allowed, but every spell still has to satisfy its own permission and
           whitelist rules.
         - `whitelist_all`:
-          expose local lineages without requiring per-spell whitelist flags and
+          expose local spells without requiring per-spell whitelist flags and
           allow otherwise blocked entries to pass the normal ward gate.
         - `block_all`:
           reject dynamic contracting attempts from this ward surface entirely.
@@ -44,11 +44,11 @@ class Policies(Enum):
     Subsystem Context:
         One of the four ward vocabularies. This one is the WARD-LEVEL gate
         (may a contract form at all, and in which direction), while
-        `Permissions` is the PER-LINEAGE ceiling (what a peer may do with a
+        `Permissions` is the PER-SPELL ceiling (what a peer may do with a
         spell once a contract exists). `ContractTypes` then labels each stored
         `Detail` by perspective and `DetailReason` records why it exists. A
         contract only grants when the ward policy admits the direction AND the
-        lineage's own permission allows the capability.
+        spell's own permission allows the capability.
 
     System Context:
         Policy is only half-live: these modes "primarily matter in dynamic
@@ -57,7 +57,7 @@ class Policies(Enum):
         `sever_link(...)` raise outside dynamic mode - so in an automatic-mode
         world the other four values are unreachable rather than merely unused.
         `whitelist_all` is the one mode that can OVERRIDE a per-spell decision:
-        it lets a lineage marked `Permissions.block` pass the ward gate. That
+        it lets a spell marked `Permissions.block` pass the ward gate. That
         makes it the widest authority in the conduit layer and the value to
         reach for last, not first.
 

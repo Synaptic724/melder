@@ -353,6 +353,41 @@ def test_get_clusters_for_conduit_returns_empty_when_missing(conduit_cloud) -> N
     assert cloud.get_clusters_for_conduit("missing") == []
 
 
+def test_get_clusters_for_conduit_answers_from_the_membership_index(conduit_cloud, registry) -> None:
+    """
+    get_clusters_for_conduit names clusters from the frame's DevOps conduit->cluster index (0.2.8236).
+
+    The index edge alone decides the answer - no member set is walked, so an edge for a conduit the cluster's member
+    set lacks still names the cluster - and an edge naming a cluster this cloud does not map (deleted, or another
+    cloud's) names nothing.
+    """
+    cloud, _, _ = conduit_cloud
+    cloud.create_cluster("cluster-1")
+    cluster = cloud.get_cluster("cluster-1")
+    registry.register_cluster_membership(cluster_id=cluster.id, conduit_id="conduit-7")
+    registry.register_cluster_membership(cluster_id="unmapped-cluster", conduit_id="conduit-8")
+
+    assert cloud.get_clusters_for_conduit("conduit-7") == ["cluster-1"]
+    assert "conduit-7" not in cluster.get_members()
+    assert cloud.get_clusters_for_conduit("conduit-8") == []
+
+
+def test_delete_cluster_forgets_the_cluster_for_membership_lookups(conduit_cloud, mock_conduit) -> None:
+    """
+    A deleted cluster is named for no conduit, and its name is free for a new cluster that holds nobody.
+    """
+    cloud, _, _ = conduit_cloud
+    cloud.create_cluster("cluster-1")
+    cloud.add_conduit_to_cluster(mock_conduit, "cluster-1")
+    assert cloud.get_clusters_for_conduit("conduit-1") == ["cluster-1"]
+
+    cloud.delete_cluster("cluster-1")
+    assert cloud.get_clusters_for_conduit("conduit-1") == []
+
+    cloud.create_cluster("cluster-1")
+    assert cloud.get_clusters_for_conduit("conduit-1") == []
+
+
 def test_cluster_operations_require_dynamic_mode(conduit_cloud, mock_frame) -> None:
     """
     Verify public cluster operations reject automatic posture.
@@ -406,9 +441,80 @@ def test_add_conduit_to_cluster_delegates_to_cluster(conduit_cloud, mock_conduit
     cluster.handle_join.assert_called_once_with(mock_conduit)
 
 
+@pytest.mark.parametrize("callback_stage", ["membership_record", "sharing"])
+def test_cluster_join_does_not_hold_cloud_lock_during_sharing(
+        conduit_cloud, mock_conduit, callback_stage: str,
+) -> None:
+    """Allow another thread's Cloud lookup during registration or sharing callbacks.
+
+    Contract:
+        add_member may emit a recording callback, and handle_join opens the share
+        transaction. Neither boundary may retain the Cloud lock and block readers.
+        The observer always joins before fixture teardown, including on failure.
+    """
+    cloud, _, _ = conduit_cloud
+    cluster = MagicMock()
+    cloud._conduit_clusters["cluster-1"] = cluster
+    observed = threading.Event()
+
+    def observe_cloud() -> None:
+        """Signal only after a real Cloud lookup obtains its lock and returns."""
+        if cloud.has_cluster_name("cluster-1"):
+            observed.set()
+
+    observer = threading.Thread(target=observe_cloud)
+
+    def callback_after_admission(target: object) -> None:
+        """Require the recording/sharing collaborator's observer to make progress."""
+        observer.start()
+        assert observed.wait(5), f"Cloud lock was held across {callback_stage}."
+
+    if callback_stage == "membership_record":
+        cluster.add_member.side_effect = callback_after_admission
+    else:
+        cluster.handle_join.side_effect = callback_after_admission
+    try:
+        cloud.add_conduit_to_cluster(mock_conduit, "cluster-1")
+    finally:
+        if observer.ident is not None:
+            observer.join(timeout=5)
+
+    assert not observer.is_alive()
+    assert observed.is_set()
+    cluster.add_member.assert_called_once_with("conduit-1")
+
+
+def test_failed_cluster_registration_releases_admission_for_retry(conduit_cloud, mock_conduit) -> None:
+    """A registration that fails before publishing membership must not strand admission.
+
+    Contract:
+        The original error propagates, no sharing begins, and a later call can
+        register the same conduit. This checks reservation cleanup through behavior.
+    """
+    cloud, _, _ = conduit_cloud
+    cluster = MagicMock()
+    cloud._conduit_clusters["cluster-1"] = cluster
+    cluster.add_member.side_effect = RuntimeError("registration refused")
+
+    with pytest.raises(RuntimeError, match="registration refused"):
+        cloud.add_conduit_to_cluster(mock_conduit, "cluster-1")
+    cluster.handle_join.assert_not_called()
+
+    cluster.add_member.side_effect = None
+    cloud.add_conduit_to_cluster(mock_conduit, "cluster-1")
+
+    assert cluster.add_member.call_count == 2
+    cluster.handle_join.assert_called_once_with(mock_conduit)
+
+
 def test_remove_conduit_from_cluster_delegates_to_cluster(conduit_cloud, mock_conduit) -> None:
     """
-    Verify remove_conduit_from_cluster delegates membership removal and leave handling.
+    Verify remove_conduit_from_cluster runs the cluster's ordered exit.
+
+    Updated with 0.2.8236: the cloud used to call `remove_member` and then `handle_leave`, which popped the leaver's
+    share record before the leave read it, so the leaver's roots stayed contracted to every peer. The cloud now hands
+    the whole exit to `ConduitCluster.release_member` (leave first, membership record after) and calls neither step
+    itself.
     """
     cloud, _, _ = conduit_cloud
     cluster = MagicMock()
@@ -416,24 +522,32 @@ def test_remove_conduit_from_cluster_delegates_to_cluster(conduit_cloud, mock_co
 
     cloud.remove_conduit_from_cluster(mock_conduit, "cluster-1")
 
-    cluster.remove_member.assert_called_once_with("conduit-1")
-    cluster.handle_leave.assert_called_once_with(mock_conduit)
+    cluster.release_member.assert_called_once_with(mock_conduit)
+    cluster.remove_member.assert_not_called()
+    cluster.handle_leave.assert_not_called()
 
 
 def test_refresh_cluster_shares_for_conduit_only_hits_matching_clusters(
         conduit_cloud,
         mock_conduit,
+        registry,
 ) -> None:
     """
     Verify refresh_cluster_shares_for_conduit calls refresh only on matching clusters.
+
+    Updated with 0.2.8236: membership is read from the frame's DevOps conduit->cluster index (the cloud names a cluster
+    by its id), not from each cluster's member set, so the doubles are registered in the index instead of answering
+    `get_members`.
     """
     cloud, _, _ = conduit_cloud
     matching_cluster = MagicMock()
-    matching_cluster.get_members.return_value = {"conduit-1"}
     other_cluster = MagicMock()
-    other_cluster.get_members.return_value = {"other"}
     cloud._conduit_clusters["cluster-1"] = matching_cluster
     cloud._conduit_clusters["cluster-2"] = other_cluster
+    cloud._cluster_names_by_id["cluster-id-1"] = "cluster-1"
+    cloud._cluster_names_by_id["cluster-id-2"] = "cluster-2"
+    registry.register_cluster_membership(cluster_id="cluster-id-1", conduit_id="conduit-1")
+    registry.register_cluster_membership(cluster_id="cluster-id-2", conduit_id="other")
 
     cloud.refresh_cluster_shares_for_conduit(mock_conduit)
 

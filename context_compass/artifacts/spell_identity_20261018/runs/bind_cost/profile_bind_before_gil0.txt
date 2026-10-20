@@ -1,0 +1,55 @@
+tree /tmp/m0_mq/bench_before; cycles 20; gil_enabled=False
+         806980 function calls (805820 primitive calls) in 0.348 seconds
+
+   Ordered by: cumulative time
+   List reduced from 314 to 45 due to restriction <45>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+      580    0.010    0.000    0.350    0.001 melder/aether/spellbook/spellbook.py:5605(bind)
+      580    0.001    0.000    0.151    0.000 melder/aether/spellbook/bind/bind.py:466(bind)
+      580    0.007    0.000    0.150    0.000 melder/aether/spellbook/bind/bind.py:605(_bind_logic)
+     1160    0.001    0.000    0.135    0.000 {built-in method builtins.next}
+     1160    0.001    0.000    0.135    0.000 melder/aether/spellbook/spellbook.py:4824(transaction)
+      580    0.000    0.000    0.083    0.000 /sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/contextlib.py:136(__enter__)
+      580    0.002    0.000    0.082    0.000 melder/aether/spellbook/spellbook.py:4601(begin_transaction)
+      580    0.001    0.000    0.076    0.000 melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/transaction_mediator.py:672(start_transaction)
+      580    0.002    0.000    0.075    0.000 melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/transaction_mediator.py:1391(_start_strategy_transaction)
+      580    0.000    0.000    0.070    0.000 melder/aether/spellbook/spell_compiler/spell_examiner/spell_examiner.py:167(create_profile)
+      580    0.000    0.000    0.069    0.000 melder/aether/spellbook/spell_compiler/spell_examiner/spell_examiner.py:229(<lambda>)
+      580    0.001    0.000    0.069    0.000 melder/aether/spellbook/spell_compiler/spell_examiner/profiles/general_profile.py:79(create_from_target)
+      580    0.000    0.000    0.066    0.000 melder/aether/spellbook/spell_compiler/spell_examiner/strategies/binding_profile_strategy.py:45(build_profile)
+      580    0.006    0.000    0.065    0.000 melder/aether/spellbook/spell_compiler/spell_examiner/strategies/binding_profile_strategy.py:70(_build_class_profile)
+      580    0.004    0.000    0.059    0.000 melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/transaction_mediator.py:389(begin_transaction)
+      580    0.000    0.000    0.053    0.000 /sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/contextlib.py:145(__exit__)
+      580    0.001    0.000    0.051    0.000 melder/aether/spellbook/spellbook.py:4743(end_transaction)
+      580    0.001    0.000    0.043    0.000 melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/transaction_mediator.py:694(end_transaction_for_identity)
+      580    0.002    0.000    0.038    0.000 melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/transaction_mediator.py:819(end_transaction_by_request_id)
+      580    0.000    0.000    0.037    0.000 /sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/inspect.py:3329(signature)
+      580    0.000    0.000    0.037    0.000 /sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/inspect.py:3042(from_callable)
+ 1740/580    0.008    0.000    0.036    0.000 /sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/inspect.py:2418(_signature_from_callable)
+      580    0.001    0.000    0.035    0.000 melder/aether/spellbook/spell_compiler/spell_examiner/profiles/general_profile.py:118(complete_with_spell)
+      580    0.001    0.000    0.034    0.000 melder/aether/spellbook/spell_compiler/spell_examiner/strategies/resolution_profile_strategy.py:33(build_profile)
+      580    0.002    0.000    0.032    0.000 melder/aether/spellbook/spell_compiler/spell_requirements_finder/spell_requirements_finder.py:188(build_requirements)
+      580    0.006    0.000    0.029    0.000 melder/aether/spellbook/spell_compiler/spell_requirements_finder/spell_requirements_finder.py:975(_build_parameter_requirements)
+      580    0.001    0.000    0.028    0.000 melder/aether/spellbook/spellbook.py:4973(_stage_spell_for_structural_phases)
+      580    0.001    0.000    0.027    0.000 melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/transaction_mediator.py:1043(_finalize_root_session)
+      580    0.002    0.000    0.027    0.000 melder/aether/spellbook/spellbook.py:4996(_try_update_staged_binding_keys)
+      580    0.000    0.000    0.026    0.000 melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/transaction_mediator.py:1190(_admit_with_scope_wait)
+      580    0.001    0.000    0.026    0.000 melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py:944(admit_request)
+      580    0.003    0.000    0.025    0.000 melder/aether/aetheric_frame/dev_ops/change_control_manager/orchestrator/orchestrator.py:375(admit_request)
+     4060    0.006    0.000    0.018    0.000 melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/transaction_mediator.py:551(get_session_for_identity)
+      580    0.000    0.000    0.017    0.000 melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/transaction_mediator.py:611(update_transaction_for_identity)
+      580    0.003    0.000    0.016    0.000 melder/aether/spellbook/spell.py:310(__init__)
+      580    0.006    0.000    0.015    0.000 melder/aether/spellbook/spell_compiler/spell_requirements_finder/spell_requirements_finder.py:426(_resolve_parameter_annotations)
+      580    0.003    0.000    0.014    0.000 melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/transaction_manager.py:189(build_request)
+      580    0.004    0.000    0.013    0.000 melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py:336(register_index)
+   110680    0.011    0.000    0.013    0.000 {built-in method builtins.isinstance}
+      580    0.002    0.000    0.013    0.000 melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/transaction_mediator.py:1275(_update_active_staged_metadata)
+      580    0.004    0.000    0.012    0.000 /sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/inspect.py:2312(_signature_from_function)
+      580    0.006    0.000    0.012    0.000 melder/aether/aetheric_frame/dev_ops/change_control_manager/embargo_manager/embargo_manager.py:348(try_acquire)
+      580    0.002    0.000    0.012    0.000 melder/aether/aetheric_frame/dev_ops/change_control_manager/orchestrator/orchestrator.py:452(commit_request)
+      580    0.001    0.000    0.012    0.000 melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/transaction_strategy_builder.py:260(build_start_plan)
+     1160    0.002    0.000    0.011    0.000 melder/utilities/helpers/ulid_factory.py:58(new_ulid)
+
+
+

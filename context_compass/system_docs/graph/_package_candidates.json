@@ -50,14 +50,6 @@
    "cohesion": 1.0
   },
   {
-   "id": "src.melder.aether.conduit.creations",
-   "kind": "package",
-   "file": "src/melder/aether/conduit/creations/",
-   "member_count": 3,
-   "shared_suffix": "creations",
-   "cohesion": 0.67
-  },
-  {
    "id": "src.melder.aether.conduit.meld",
    "kind": "package",
    "file": "src/melder/aether/conduit/meld/",
@@ -269,7 +261,7 @@
    "id": "src.melder.utilities.custom_exceptions",
    "kind": "package",
    "file": "src/melder/utilities/custom_exceptions/",
-   "member_count": 12,
+   "member_count": 13,
    "shared_suffix": "error",
    "cohesion": 1.0
   }

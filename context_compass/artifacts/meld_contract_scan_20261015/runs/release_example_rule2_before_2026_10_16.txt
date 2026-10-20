@@ -1,0 +1,36 @@
+== tree=before (0.2.8249: the real tree without rule 2's seven files) gil=0
+Banner before the notch: 'HELLO'
+Banner after the notch: 'BONJOUR'
+melder 0.2.8249: warm meld of Banner, best of 5 x 2000: 1557.56 us
+Banner after sever_link: SpellbookValidationError: Spellbook validation failed. Broken spells: Banner. | Banner: |   - No validation error was recorded for this spell; its validity is invalid, gated or disabled. | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+Report before the notch: 'utc'
+Report after the notch: 'utc'
+Report again: 'utc'
+rc=0
+== tree=before (0.2.8249: the real tree without rule 2's seven files) gil=1
+Banner before the notch: 'HELLO'
+Banner after the notch: 'BONJOUR'
+melder 0.2.8249: warm meld of Banner, best of 5 x 2000: 1681.64 us
+Banner after sever_link: SpellbookValidationError: Spellbook validation failed. Broken spells: Banner. | Banner: |   - No validation error was recorded for this spell; its validity is invalid, gated or disabled. | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+Report before the notch: 'utc'
+Report after the notch: 'utc'
+Report again: 'utc'
+rc=0
+== control: tree=landed (0.2.8250) gil=0
+Banner before the notch: 'HELLO'
+Banner after the notch: 'BONJOUR'
+melder 0.2.8250: warm meld of Banner, best of 5 x 2000: 2.71 us
+Banner after sever_link: SpellbookValidationError: Spellbook validation failed. Broken spells: Banner. | Banner: |   - Spell 'Banner' parameter 'greeter' has no provider for its SpellContract (frame_key='greeter', binding_key='greeter'): no active spell with that frame and binding name is contracted to this Spellbook. Contract one from a linked conduit (add_index_to_contract, or add_spell_to_contract for one version) and meld again. [SPELL_CONTRACT_MISSING_PROVIDER]
+Report before the notch: 'utc'
+Report after the notch: 'local'
+Report again: 'local'
+rc=0
+== control: tree=landed (0.2.8250) gil=1
+Banner before the notch: 'HELLO'
+Banner after the notch: 'BONJOUR'
+melder 0.2.8250: warm meld of Banner, best of 5 x 2000: 2.64 us
+Banner after sever_link: SpellbookValidationError: Spellbook validation failed. Broken spells: Banner. | Banner: |   - Spell 'Banner' parameter 'greeter' has no provider for its SpellContract (frame_key='greeter', binding_key='greeter'): no active spell with that frame and binding name is contracted to this Spellbook. Contract one from a linked conduit (add_index_to_contract, or add_spell_to_contract for one version) and meld again. [SPELL_CONTRACT_MISSING_PROVIDER]
+Report before the notch: 'utc'
+Report after the notch: 'local'
+Report again: 'local'
+rc=0

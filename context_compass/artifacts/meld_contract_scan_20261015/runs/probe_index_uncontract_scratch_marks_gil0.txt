@@ -1,0 +1,11 @@
+first A
+before: lookup {'01M52HRRXK4YVTVM75J4Z5773W': {('iservice', 'svc'): <SpellIndex id=01M52HRRXHQ6TC95SCVG63HYQ9 current=c8b43f4a2a1c6d198dcf649eec39fe5081a4265213fbd659359f4ce8e4a78d66>}}
+remove returned None
+after: lookup {'01M52HRRXK4YVTVM75J4Z5773W': {}}
+after: contracted {'01M52HRRXK4YVTVM75J4Z5773W': {}}
+after: inactive {}
+consumer validity SpellValidity.gated flags {<SpellState.contract_unvalidated: 5>}
+raised SpellbookValidationError Spellbook validation failed. Broken spells: Consumer.
+Consumer:
+  - No validation error was recorded for this spell; its validity is invalid, gated or disabled.
+1 warning not shown (warnings never block conjure); conjure(validation_warnings

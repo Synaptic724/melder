@@ -1,0 +1,23 @@
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: src_architecture carries the managed member (scripts/s7_docs_architecture.py): the glossary, the boundary
+    list, the guardrails (628 bind-guard entries), the boot sequence (seven eager hosted roots, `ReleaseManagedSpell`
+    last), the meld, transfer and cleanup sequences, four operational invariants (pools, registry, leases in plans,
+    owner stamps through a transfer), five failure modes (refusals, release errors, bind refusals, the 0.2.8246 fix,
+    the open pre-conjure staging gap), the code map (five new modules; 21 extents remeasured - the lane's 20 files and
+    `spell_system_states.py`, three lines stale since 2026-10-04), the sources, a Managed Lease and Release diagram
+    and a handoff entry. Found while checking: 23 numeric citations into conduit.py, spellbook.py, aether.py and
+    bind.py no longer pointed at their symbols - most had already drifted before this lane (since 0.2.8235); they
+    are re-pointed at the code they name (scripts/s7_docs_architecture_citations.py). The index is regenerated (62
+    sections, 4473 lines) and the document's citation recipe reports 0 problems.
+  EVIDENCE:
+  - context_compass/system_docs/src_architecture.md:1-4473
+  - context_compass/system_docs/src_architecture_index.md:1-92
+  - context_compass/artifacts/managed_spell_quantity_20261015/scripts/s7_docs_architecture.py:1-420
+  - context_compass/artifacts/managed_spell_quantity_20261015/scripts/s7_docs_architecture_citations.py:1-75
+  IMPACT: The architecture document describes 0.2.8246; the component map is next.
+  NEXT: Promote the lane into src_components (the new component, the dated entries, flows, code map).
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8

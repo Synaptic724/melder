@@ -332,7 +332,7 @@ class CapabilityRiftJsonBench:
         Returns:
             Dict[str, object]: Harness manifest.
         """
-        left_spell = self.left_conduit.get_spell_by_id(
+        left_spell = self.left_conduit.get_spell_by_spell_id(
             self.left_spell_id,
             self.frame_name,
         )

@@ -99,7 +99,8 @@ def _bundle(book: Spellbook) -> CachingSystem:
 def test_conjure_end_captures_a_structural_payload_per_owned_spell() -> None:
     """
     Purpose: The bundle holds phase 3-4 rows for Engine and Car after a full-miss conjure.
-    Contract: Executor and structural tiers name the same ids; Car's rows point at Engine by id; both
+    Contract: Executor and structural tiers name the same ids; each key carries its spell's binding hash;
+        Car's rows point at Engine by id; both
         payloads share the world stamp and are replayable; the rows survive the emit on disk.
     """
     fragment = _fresh_cache_fragment("_cache_structural_capture_rows")
@@ -109,10 +110,16 @@ def test_conjure_end_captures_a_structural_payload_per_owned_spell() -> None:
     assert set(bundle.cached_structural_spell_ids) == {engine_id, car_id} == set(bundle.cached_spell_ids)
     engine_payload = bundle.get_structural_payload(engine_id)
     car_payload = bundle.get_structural_payload(car_id)
-    assert engine_payload["key"] == {"format": StructuralSnapshot.PAYLOAD_FORMAT, "spell_id": engine_id, "annotation_refs": []}
+    engine_hash = book.find_spell_by_spell_id(engine_id).binding_hash
+    car_hash = book.find_spell_by_spell_id(car_id).binding_hash
+    assert engine_payload["key"] == {
+        "format": StructuralSnapshot.PAYLOAD_FORMAT, "spell_id": engine_id, "binding_hash": engine_hash,
+        "annotation_refs": [],
+    }
     assert car_payload["key"] == {
         "format": StructuralSnapshot.PAYLOAD_FORMAT,
         "spell_id": car_id,
+        "binding_hash": car_hash,
         "annotation_refs": [(Engine.__module__, Engine.__qualname__)],
     }
     assert engine_payload["world_stamp"] == car_payload["world_stamp"] == StructuralSnapshot.world_stamp(book)

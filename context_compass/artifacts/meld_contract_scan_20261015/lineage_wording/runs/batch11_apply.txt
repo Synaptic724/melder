@@ -1,0 +1,337 @@
+--- src/melder/aether/spellbook/spell_compiler/system/spell_system_node.py
++++ src/melder/aether/spellbook/spell_compiler/system/spell_system_node.py
+@@ -15,3 +15,3 @@
+ 
+-    This does *not* replace SpellSystemStates (which are lineage/ DevOps-centric).
++    This does *not* replace SpellSystemStates (which hold DevOps state per SpellIndex).
+     Instead, it gives Phase 5+ a small, version-centric node type to hang
+@@ -20,3 +20,3 @@
+         * spell_id – the selected spell_id of its index (SpellIndex.selected_spell_id).
+-        * lineage_id – lineage ULID (SpellIndex.id).
++        * lineage_id – the ULID of its SpellIndex (SpellIndex.id).
+         * dependencies – direct dependency spell_ids.
+@@ -116,3 +116,3 @@
+     def lineage_id(self) -> str:
+-        """Return the lineage ULID associated with this system node."""
++        """Return the ULID of the SpellIndex this system node's spell sits in."""
+         self.check_cleaned()
+--- src/melder/aether/spellbook/spell_compiler/system/spell_system_root_blueprint_builder.py
++++ src/melder/aether/spellbook/spell_compiler/system/spell_system_root_blueprint_builder.py
+@@ -103,3 +103,3 @@
+                 root_spell_id=root_spell_id,
+-                root_lineage_id=None,          # lineages can be threaded later if needed
++                root_lineage_id=None,          # SpellIndex ids can be threaded later if needed
+                 dag=dag,
+@@ -164,3 +164,3 @@
+             root_spell_id=root_spell_id,
+-            root_lineage_id=None,          # lineages can be threaded later if needed
++            root_lineage_id=None,          # SpellIndex ids can be threaded later if needed
+             dag=dag,
+--- src/melder/aether/spellbook/spell_compiler/system/spell_system_validation_system.py
++++ src/melder/aether/spellbook/spell_compiler/system/spell_system_validation_system.py
+@@ -54,3 +54,3 @@
+     Purpose:
+-        Aggregate system-level validation diagnostics and update lineage validity
++        Aggregate system-level validation diagnostics and update per-conduit resolution validity
+         for all spells in the current frame.
+@@ -117,3 +117,3 @@
+         """
+-        Run system-level validation and update per-lineage validity.
++        Run system-level validation and record per-conduit resolution validity.
+ 
+--- src/melder/aether/spellbook/spell_compiler/blueprints/root_resolution_blueprint.py
++++ src/melder/aether/spellbook/spell_compiler/blueprints/root_resolution_blueprint.py
+@@ -26,3 +26,3 @@
+           blueprint-build time.
+-        - `root_lineage_id` is optional lineage metadata for DevOps/change-
++        - `root_lineage_id` is the root spell's optional SpellIndex id, for DevOps/change-
+           control use; graph semantics remain spell_id-based.
+@@ -57,3 +57,3 @@
+             root_lineage_id:
+-                Optional lineage id for DevOps/change-control consumers.
++                Optional SpellIndex id of the root spell, for DevOps/change-control consumers.
+             dag:
+@@ -147,3 +147,3 @@
+         """
+-        Return the optional lineage id for the root spell.
++        Return the optional SpellIndex id for the root spell.
+ 
+--- src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py
++++ src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py
+@@ -601,3 +601,3 @@
+         # Replicate the scan's dict semantics exactly: when one SpellIndex
+-        # matches through multiple pool entries (version lineages), the scan
++        # matches through multiple pool entries (several of its versions), the scan
+         # keeps the FIRST insertion position but the LAST matching spell
+--- src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_4.py
++++ src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_4.py
+@@ -152,3 +152,3 @@
+ 
+-        # Update global structural validity for this lineage.
++        # Update global structural validity for this spell's SpellIndex.
+         if spell_system_states is not None and spell.spell_index is not None:
+@@ -157,3 +157,3 @@
+                 if artifact._is_broken:
+-                    # First-fail semantics: validation errors make the lineage invalid.
++                    # First-fail semantics: validation errors make the SpellIndex state invalid.
+                     state.set_validity(
+--- src/melder/aether/spellbook/spell_compiler/structural_snapshot/structural_snapshot.py
++++ src/melder/aether/spellbook/spell_compiler/structural_snapshot/structural_snapshot.py
+@@ -56,3 +56,3 @@
+           before conjure end, so the rows come from `Spell.dependencies`, the
+-          registered `SpellLocalTopology`, the lineage `SpellSystemState`
++          registered `SpellLocalTopology`, the SpellIndex's `SpellSystemState`
+           (validity and the `contract_unvalidated` flag) and the bind-time
+@@ -364,3 +364,3 @@
+             - Requires the key (bind-time requirements), a bound SpellIndex,
+-              the lineage state and the registered local topology; returns
++              the SpellIndex's state and the registered local topology; returns
+               None when any is missing (the spell is then a structural miss).
+@@ -369,3 +369,3 @@
+               included); `phase3.sockets` are the topology descriptor rows.
+-            - `phase4.validity` is the lineage validity name and
++            - `phase4.validity` is the SpellIndex state's validity name and
+               `phase4.contract_unvalidated` the flag's presence.
+@@ -377,3 +377,3 @@
+             spell_system_states:
+-                Frame registry holding the lineage state and topology.
++                Frame registry holding the SpellIndex state and topology.
+             world_stamp:
+@@ -643,3 +643,3 @@
+               flags_to_add=[contract_unvalidated])` - the calls phase 4 makes.
+-            - A spell whose lineage state is missing raises RuntimeError (it
++            - A spell whose SpellIndex state is missing raises RuntimeError (it
+               exists from bind; its absence is a contract violation, not a
+@@ -661,3 +661,3 @@
+             RuntimeError:
+-                When an owned spell has no lineage state.
++                When an owned spell has no SpellIndex state.
+         """
+--- src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_no_overrides_compiler.py
++++ src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_no_overrides_compiler.py
+@@ -1277,3 +1277,3 @@
+         - Store-clear soundness is NOT guarded here by design: owner stores
+-          clear only on teardown paths already blocked by lineage/validity
++          clear only on teardown paths already blocked by SpellIndex-unregister/validity
+           gating before any executor runs (see patch lane architecture doc,
+--- src/melder/aether/spellbook/spell_compiler/validation/strategies/contract_provider_presence_strategy.py
++++ src/melder/aether/spellbook/spell_compiler/validation/strategies/contract_provider_presence_strategy.py
+@@ -36,3 +36,3 @@
+           warning names the contract and the remedy (D1-B, 2026-10-16): it is the
+-          one warning Phase 4 gates a lineage on, so SpellbookValidationError
++          one warning Phase 4 gates a SpellIndex on, so SpellbookValidationError
+           lists it as the reason a consumer is refused.
+--- src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_state.py
++++ src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_state.py
+@@ -66,3 +66,3 @@
+         One per spell index, created at `register_index(...)` and retired when
+-        the lineage is unregistered.
++        the SpellIndex is unregistered.
+ 
+@@ -72,3 +72,3 @@
+     Subsystem Context:
+-        The per-lineage row of the control tower. Its per-conduit counterpart
++        The per-SpellIndex row of the control tower. Its per-conduit counterpart
+         is `ConduitResolutionState`; the split is the structural-versus-
+@@ -88,3 +88,3 @@
+         write time is what lets `compute_impact_closure` dirty a bounded set at
+-        change time instead of revalidating every lineage in the frame.
++        change time instead of revalidating every SpellIndex in the frame.
+ 
+@@ -308,3 +308,3 @@
+             `SpellState.non_resolvable` through it to keep the registry's
+-            published set of flagged lineages (`non_resolvable_index_ids`) in
++            published set of flagged spell indexes (`non_resolvable_index_ids`) in
+             step with this state.
+@@ -514,6 +514,6 @@
+             (`SpellState.non_resolvable`) while this index is already `gated`,
+-            the gate publishes nothing, and the conduits holding the lineage would
++            the gate publishes nothing, and the conduits holding the SpellIndex would
+             keep a Book flag distilled from the old flag - a borrower whose copy
+             came back by reactivation is never re-registered with RiskManager.
+-            The registry calls this so every conduit holding the lineage
++            The registry calls this so every conduit holding the SpellIndex
+             refreshes.
+--- src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_state.py
++++ src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_state.py
+@@ -19,6 +19,6 @@
+     - `non_resolvable` is the capability flag. `SpellSystemStates.register_index`
+-      sets it when the lineage's selected version was bound resolvable=False and
++      sets it when the SpellIndex's selected version was bound resolvable=False and
+       clears it when a resolvable version (or, with no stated capability, another
+       version) is selected. Validation never clears it and it changes no
+-      validity; its one reader is RiskManager, which leaves a flagged lineage's
++      validity; its one reader is RiskManager, which leaves a flagged SpellIndex's
+       risk out of the Book's validation flag.
+@@ -41,3 +41,3 @@
+         that is why this is a flag SET rather than a status field: topology,
+-        contract, mutation, and ops concerns genuinely overlap on one lineage.
++        contract, mutation, and ops concerns genuinely overlap on one SpellIndex.
+         A spell can be dependency-dirty AND awaiting a contract provider at the
+--- src/melder/aether/aetheric_frame/dev_ops/spell_system_states/conduit_resolution_state.py
++++ src/melder/aether/aetheric_frame/dev_ops/spell_system_states/conduit_resolution_state.py
+@@ -104,3 +104,3 @@
+         property of a spell - it is a property of a (spell, conduit) pair. The
+-        same lineage can be perfectly resolvable in one conduit and gated in
++        same spell can be perfectly resolvable in one conduit and gated in
+         another, because the conduits differ in linked contracts, cluster
+@@ -577,3 +577,3 @@
+             - Does NOT notify the `RiskManager`. Forgetting is a change of
+-              scope, not of verdict: lineage membership in the risk model is
++              scope, not of verdict: SpellIndex membership in the risk model is
+               owned by `RiskManager.register_spell` / `unregister_spell`, which
+@@ -582,3 +582,3 @@
+               risky key behind in every conduit that never registers the
+-              lineage again (a peer that resolved the id through a contract).
++              SpellIndex again (a peer that resolved the id through a contract).
+ 
+--- src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_validity.py
++++ src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_validity.py
+@@ -65,3 +65,3 @@
+         That is what makes lazy validation possible at all. A newly registered
+-        lineage starts `unknown`, and `Meld._ensure_lineage_resolvable` reruns
++        SpellIndex starts `unknown`, and `Meld._ensure_lineage_resolvable` reruns
+         the structural phases on first resolution rather than requiring an
+--- src/melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py
++++ src/melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py
+@@ -65,3 +65,3 @@
+     Purpose:
+-        Provide DevOps-facing bookkeeping for spell lineages, dirty roots, and
++        Provide DevOps-facing bookkeeping for spell indexes, dirty roots, and
+         change-control admission helpers. This is the frame-level control-plane
+@@ -1126,12 +1126,12 @@
+         """
+-        Record a pending change for a spell lineage.
+-
+-        Purpose:
+-            Track DevOps/AI-visible metadata for a SpellIndex lineage.
++        Record a pending change for a SpellIndex.
++
++        Purpose:
++            Track DevOps/AI-visible metadata for a SpellIndex.
+         Contract:
+             - Stores metadata keyed by spell_index.id.
+-            - Last-write-wins for duplicate lineage ids.
++            - Last-write-wins for duplicate SpellIndex ids.
+         Args:
+             spell_index:
+-                The SpellIndex for the lineage being tracked.
++                The SpellIndex being tracked.
+             reason:
+@@ -1170,3 +1170,3 @@
+         """
+-        Return a snapshot of pending change metadata for a lineage.
++        Return a snapshot of pending change metadata for a SpellIndex.
+ 
+@@ -1178,3 +1178,3 @@
+             spell_index_id:
+-                SpellIndex id of the lineage to query.
++                Id of the SpellIndex to query.
+         Returns:
+@@ -1205,3 +1205,3 @@
+         Purpose:
+-            Provide a tooling-friendly snapshot of all pending lineage changes.
++            Provide a tooling-friendly snapshot of all pending SpellIndex changes.
+         Contract:
+@@ -1228,3 +1228,3 @@
+         """
+-        Clear pending-change metadata for a lineage.
++        Clear pending-change metadata for a SpellIndex.
+ 
+--- src/melder/aether/aetheric_frame/dev_ops/incident_manager/incident.py
++++ src/melder/aether/aetheric_frame/dev_ops/incident_manager/incident.py
+@@ -26,3 +26,3 @@
+     - `severity`: structured severity level
+-    - `spell_index_id`: optional lineage id primarily associated with the
++    - `spell_index_id`: optional SpellIndex id primarily associated with the
+       incident
+@@ -123,3 +123,3 @@
+             summary: Short human/AI-readable description.
+-            spell_index_id: Optional lineage id primarily associated with the
++            spell_index_id: Optional SpellIndex id primarily associated with the
+                 incident.
+@@ -229,5 +229,5 @@
+         """
+-        Return the lineage id primarily associated with the incident, if any.
+-
+-        This is the incident's main lineage anchor, not a derived search over
++        Return the SpellIndex id primarily associated with the incident, if any.
++
++        This is the incident's main SpellIndex anchor, not a derived search over
+         every impacted root.
+--- src/melder/aether/aetheric_frame/dev_ops/incident_manager/incident_manager.py
++++ src/melder/aether/aetheric_frame/dev_ops/incident_manager/incident_manager.py
+@@ -186,3 +186,3 @@
+             summary: Short description of the incident.
+-            spell_index_id: Optional lineage id the incident is tied to.
++            spell_index_id: Optional SpellIndex id the incident is tied to.
+             root_ids: Optional iterable of impacted root spell ids.
+@@ -243,3 +243,3 @@
+             status: Optional `IncidentStatus` filter.
+-            spell_index_id: Optional lineage-id filter.
++            spell_index_id: Optional SpellIndex-id filter.
+             kind: Optional incident-kind filter.
+--- src/melder/aether/aetheric_frame/aetheric_frame.py
++++ src/melder/aether/aetheric_frame/aetheric_frame.py
+@@ -40,3 +40,3 @@
+       - Owns a stable root-conduit name index for per-frame lookup.
+-      - Owns the version registry for all `SpellIndex` lineages in this frame.
++      - Owns the version registry for every `SpellIndex` in this frame.
+       - Owns one `DevOpsInformationRegistry` as the frame-local topology and
+@@ -83,3 +83,3 @@
+         work possible in one process. Two frames can hold identically named
+-        conduits, clusters, and spell lineages without collision, which is why
++        conduits, clusters, and spells without collision, which is why
+         Nexus can offer `single`, `indexed`, and `one_per_workspace` topologies
+@@ -196,3 +196,3 @@
+ 
+-        # Per-frame graph + dirtiness registry for all spell lineages.
++        # Per-frame graph + dirtiness registry for all spell indexes.
+         self._spell_system_states: SpellSystemStates = SpellSystemStates(
+@@ -488,3 +488,3 @@
+         This is the "control tower" for:
+-          - lineage graph topology,
++          - SpellIndex graph topology,
+           - dirty vs transitively dirty flags,
+@@ -948,3 +948,3 @@
+           - Scans the frame-owned `_spell_registry`.
+-          - Returns `None` for empty ids or when no matching lineage is found.
++          - Returns `None` for empty ids or when no matching SpellIndex is found.
+ 
+@@ -1017,3 +1017,3 @@
+         Returns:
+-            Optional[SpellIndex]: The index whose lineage holds `spell_id` while the
++            Optional[SpellIndex]: The index whose members hold `spell_id` while the
+                 frame is live; None when none does or the frame is cleaned.
+@@ -1293,3 +1293,3 @@
+         Returns:
+-            str | None: Owning conduit id, or `None` when no lineage in this
++            str | None: Owning conduit id, or `None` when no SpellIndex in this
+             frame advertises that version.
+--- src/melder/aether/aether.py
++++ src/melder/aether/aether.py
+@@ -2553,3 +2553,3 @@
+         using the frame's _selected_spell_registry cache (maintained per-conduit as
+-        conduits register and unregister their lineages).
++        conduits register and unregister their spell indexes).
+ 
+--- src/melder/aether/spellbook/spellbinder.py
++++ src/melder/aether/spellbook/spellbinder.py
+@@ -634,3 +634,3 @@
+                 `Permissions` member or its string name setting the capability
+-                ceiling for this lineage.
++                ceiling for this spell.
+         """
+--- src/melder/aether/conduit/meld/contracts/spell_contract.py
++++ src/melder/aether/conduit/meld/contracts/spell_contract.py
+@@ -55,3 +55,3 @@
+     explicitly declared. When a provider conduit is linked later, the linker
+-    can satisfy the contract and trigger revalidation of the reporting lineage.
++    can satisfy the contract and trigger revalidation of the reporting spell.
+ 
+@@ -97,3 +97,3 @@
+         `SpellSystemStates` marks contract dependents dirty and the consumer
+-        lineage re-runs its resolution phases against the now-satisfied edge.
++        spell re-runs its resolution phases against the now-satisfied edge.
+         A contract is therefore a REVALIDATION TRIGGER, not just a lookup key -
+20 files, 60 edits applied and read back

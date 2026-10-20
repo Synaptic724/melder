@@ -15,6 +15,7 @@ from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spell import Spell
 from melder.aether.spellbook.spellbinder import SpellBinder
 from melder.aether.spellbook.spellbook import Spellbook
+from tests.component.melder.spellbook.test_ordered_disposal_binding import second_version_of
 from melder.utilities.custom_exceptions.internal_registration_error import (
     InternalRegistrationError,
 )
@@ -22,6 +23,14 @@ from melder.utilities.custom_exceptions.internal_registration_error import (
 
 class RegistrationService:
     """Ordinary class whose registration needs no constructor execution."""
+
+
+class SecondRegistrationService:
+    """A second ordinary class: one object is one spell, so each registration of a case binds its own."""
+
+
+class ThirdRegistrationService:
+    """A third ordinary class, for the same reason."""
 
 
 class AbstractDefinition(ABC):
@@ -65,7 +74,7 @@ def book() -> Iterator[Spellbook]:
 
 def active_spell(book: Spellbook, spell_id: str) -> Spell:
     """Return the selected local record and fail if registration did not publish it."""
-    spell = book.find_spell_by_id(spell_id)
+    spell = book.find_spell_by_spell_id(spell_id)
     assert spell is not None
     assert spell.spell_id == spell_id
     return spell
@@ -88,17 +97,18 @@ def test_resolvable_is_native_and_described_without_metadata_leak(book: Spellboo
 
 
 @pytest.mark.parametrize("resolvable", [True, False])
-def test_inspector_and_real_bind_agree_on_effective_inputs(book: Spellbook, resolvable: bool) -> None:
-    """The inspector uses the same capability and effective naming inputs as a real bind."""
-    expected = Bind.spell_id_inspector(
-        RegistrationService, spell_name="RegistrationService", spellframe="services",
-        binding_name="sample", existence=Existence.unique, resolvable=resolvable,
-    )
+def test_inspector_and_real_bind_agree_whatever_the_binding(book: Spellbook, resolvable: bool) -> None:
+    """
+    The inspector, given the class alone, answers the id a real bind gives under any name, frame or capability:
+    the spell_id is the class's code, and the capability is recorded in the binding manifest (S1 of
+    EPIC-2026-10-18-spell_identity_is_the_code).
+    """
     actual = book.bind(
         spell=RegistrationService, spellframe="services", binding_name="sample",
         existence="unique", resolvable=resolvable,
     )
-    assert actual == expected
+    assert actual == Bind.spell_id_inspector(RegistrationService)
+    assert active_spell(book, actual).binding_manifest.resolvable is resolvable
 
 
 @pytest.mark.parametrize("invalid", [None, 0, 1, "false", [], {}])
@@ -109,9 +119,11 @@ def test_non_bool_capability_refuses_without_publishing(book: Spellbook, invalid
     assert book.describe_spells_in_spellbook() == []
 
 
-@pytest.mark.parametrize("inspector", [False, True])
-def test_invalid_capability_is_rejected_before_user_reflection(book: Spellbook, inspector: bool) -> None:
-    """Independent bind and inspection reject invalid policy before observing a user's object."""
+def test_invalid_capability_is_rejected_before_user_reflection(book: Spellbook) -> None:
+    """
+    Bind rejects an invalid policy before observing a user's object. The inspector takes only the target since S1
+    of EPIC-2026-10-18-spell_identity_is_the_code, so it has no policy to reject.
+    """
     observations: list[str] = []
 
     class ObservedInstance:
@@ -124,10 +136,7 @@ def test_invalid_capability_is_rejected_before_user_reflection(book: Spellbook, 
 
     target = ObservedInstance()
     with pytest.raises(TypeError, match="resolvable.*bool"):
-        if inspector:
-            Bind.spell_id_inspector(target, resolvable=0)
-        else:
-            book.bind(spell=target, existence="unique", resolvable=0)
+        book.bind(spell=target, existence="unique", resolvable=0)
     assert observations == []
 
 
@@ -169,11 +178,11 @@ def test_fluent_capability_does_not_leak_to_next_registration(book: Spellbook, t
             first_id = binder.bind(RegistrationService).named("first").with_kwargs(resolvable=False).finalize()
         else:
             first_id = binder.bind(RegistrationService, binding_name="first", resolvable=False).finalize()
-        second_id = binder.bind(RegistrationService, binding_name="second").finalize()
+        second_id = binder.bind(SecondRegistrationService, binding_name="second").finalize()
         assert active_spell(book, first_id).resolvable is False
         assert active_spell(book, second_id).resolvable is True
         binder.bind(RegistrationService, resolvable=False)
-        third_id = binder.bind(RegistrationService, binding_name="third").finalize()
+        third_id = binder.bind(ThirdRegistrationService, binding_name="third").finalize()
         assert active_spell(book, third_id).resolvable is True
     finally:
         binder.cleanup()
@@ -190,30 +199,35 @@ def test_parked_capability_is_per_version_and_does_not_change_selection(
     surface = conduit if through_conduit else book
     active_id = surface.bind(spell=RegistrationService, existence="unique", resolvable=active_mode)
     selected = active_spell(book, active_id)
+    # One object is one spell (S1 of EPIC-2026-10-18-spell_identity_is_the_code): the parked member is a second
+    # version of the class, not the class again.
     parked_id = surface.bind_inactive(
-        spell=RegistrationService, spell_index=selected.spell_index,
+        spell=second_version_of(RegistrationService), spell_index=selected.spell_index,
         existence="unique", resolvable=not active_mode,
     )
     assert parked_id != active_id
     assert selected.resolvable is active_mode
     assert selected.spell_index.selected_spell_id == active_id
-    # Public find_spell_by_id follows the selected member; use the exact parked record here.
+    # Read the exact parked record (until 0.2.8253 the public find_spell_by_id answered the selected member).
     parked = book._inactive_spells[parked_id]
     assert parked.resolvable is (not active_mode)
     assert parked.metadata == {}
     assert {row["spell_id"] for row in book.describe_spells_in_spellbook()} == {active_id}
 
 
-def test_false_does_not_create_another_active_binding_slot(book: Spellbook) -> None:
-    """Distinct capability fingerprints still obey the existing active signature claim."""
+def test_false_does_not_register_the_same_class_again(book: Spellbook) -> None:
+    """
+    One object is one spell (S1 of EPIC-2026-10-18-spell_identity_is_the_code): another capability, at the same
+    address or under another binding name, is the same spell_id and is refused as a collision. Until S1 the
+    capability changed the fingerprint and only the address claim refused the first case.
+    """
     original_id = book.bind(spell=RegistrationService, existence="unique")
-    with pytest.raises(RuntimeError, match="Binding signature already active"):
+    with pytest.raises(RuntimeError, match="already registered as spell_id " + original_id):
         book.bind(spell=RegistrationService, existence="unique", resolvable=False)
+    with pytest.raises(RuntimeError, match="already registered as spell_id " + original_id):
+        book.bind(spell=RegistrationService, existence="unique", binding_name="definition", resolvable=False)
     assert active_spell(book, original_id).resolvable is True
-    definition_id = book.bind(
-        spell=RegistrationService, existence="unique", binding_name="definition", resolvable=False,
-    )
-    assert {row["spell_id"] for row in book.describe_spells_in_spellbook()} == {original_id, definition_id}
+    assert {row["spell_id"] for row in book.describe_spells_in_spellbook()} == {original_id}
 
 
 @pytest.mark.parametrize("through_conduit", [False, True])
@@ -226,7 +240,7 @@ def test_inactive_bind_defaults_to_true_independently_of_selected_mode(
     active_id = surface.bind(spell=RegistrationService, existence="unique", resolvable=False)
     selected = active_spell(book, active_id)
     parked_id = surface.bind_inactive(
-        spell=RegistrationService, spell_index=selected.spell_index, existence="unique",
+        spell=second_version_of(RegistrationService), spell_index=selected.spell_index, existence="unique",
     )
     assert book._inactive_spells[parked_id].resolvable is True
     assert selected.resolvable is False

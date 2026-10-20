@@ -1,0 +1,20 @@
+# probe_parked_notch_owner.py on - `__version__` is the canonical package version string surfaced at import
+__version__ = "0.2.8244", python -X gil=1, 2026-10-15T16:17:08Z
+RuntimeError: Spell has no configured CreationContextFactory.
+RuntimeError: Spell has no configured CreationContextFactory.
+RuntimeError: Spell has no configured CreationContextFactory.
+unique/dynamic parked B owner store before conjure: None
+unique/dynamic parked B owner store after conjure: NoneType
+unique/dynamic meld A -> ServiceA
+unique/dynamic B owner store after notch: NoneType
+unique/dynamic meld B after notch FAILED: RuntimeError Spell has no configured CreationContextFactory.
+unique_per_conduit/dynamic parked B owner store before conjure: None
+unique_per_conduit/dynamic parked B owner store after conjure: NoneType
+unique_per_conduit/dynamic meld A -> ServiceA
+unique_per_conduit/dynamic B owner store after notch: NoneType
+unique_per_conduit/dynamic meld B after notch FAILED: RuntimeError Spell has no configured CreationContextFactory.
+many/dynamic parked B owner store before conjure: None
+many/dynamic parked B owner store after conjure: NoneType
+many/dynamic meld A -> ServiceA
+many/dynamic B owner store after notch: NoneType
+many/dynamic meld B after notch FAILED: RuntimeError Spell has no configured CreationContextFactory.

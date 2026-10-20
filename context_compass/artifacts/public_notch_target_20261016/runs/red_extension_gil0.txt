@@ -1,0 +1,713 @@
+FF..FFFFFFFFFFFF......F.FFF.....FFFFFFFFFF                               [100%]
+=================================== FAILURES ===================================
+__________ test_add_by_spell_id_resolves_the_owned_spell_and_moves_it __________
+
+moves = <test_conduit_index_move_target._Moves object at 0x3793c3f0490>
+
+    def test_add_by_spell_id_resolves_the_owned_spell_and_moves_it(moves: _Moves) -> None:
+        """
+        `spell_id=` names the parked spell: the Book resolves it, and the move, its metadata and its fan-out use it.
+    
+        Contract:
+            - `_get_owned_spell` is asked for the spell_id; the resolved Spell reaches `_add_to_spell_index`.
+            - The transaction metadata names it; the target gains the member and the source loses it.
+        """
+>       result = moves.conduit.add_to_spell_index(spell_id="v2", target_index=moves.other_index)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: Conduit.add_to_spell_index() got an unexpected keyword argument 'spell_id'
+
+tests/unit/melder/aether/conduit/test_conduit_index_move_target.py:130: TypeError
+______ test_remove_by_spell_id_resolves_the_owned_spell_and_separates_it _______
+
+moves = <test_conduit_index_move_target._Moves object at 0x3793bd03ad0>
+
+    def test_remove_by_spell_id_resolves_the_owned_spell_and_separates_it(moves: _Moves) -> None:
+        """
+        `spell_id=` names the parked spell to split out: the Book resolves it, and the split and its fan-out use it.
+        """
+>       result = moves.conduit.remove_from_spell_index(spell_id="v2", source_index=moves.index)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: Conduit.remove_from_spell_index() got an unexpected keyword argument 'spell_id'
+
+tests/unit/melder/aether/conduit/test_conduit_index_move_target.py:147: TypeError
+_____ test_index_move_refuses_both_spell_and_spell_id[add_to_spell_index] ______
+
+moves = <test_conduit_index_move_target._Moves object at 0x3793bd00510>
+verb = 'add_to_spell_index'
+
+    @pytest.mark.parametrize("verb", VERBS)
+    def test_index_move_refuses_both_spell_and_spell_id(moves: _Moves, verb: str) -> None:
+        """Both forms at once are refused, in the verb's own words, before the Book is asked or anything starts."""
+        with pytest.raises(ValueError, match=f"{verb} accepts either `spell` or `spell_id`, not both"):
+>           moves.call(verb, spell=moves.v2, spell_id="v2")
+
+tests/unit/melder/aether/conduit/test_conduit_index_move_target.py:172: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <test_conduit_index_move_target._Moves object at 0x3793bd00510>
+verb = 'add_to_spell_index'
+kwargs = {'spell': namespace(spell_id='v2', _key=('default', 'k-v2'), spell_index=namespace(_id='index-x', id='index-x', select...>.<lambda> at 0x3793b6b2a00>, spells_in_index=<function _index.<locals>.<lambda> at 0x3793b6b1ec0>)), 'spell_id': 'v2'}
+
+    def call(self, verb: str, **kwargs: Any) -> Any:
+        """
+        Call one of the two verbs with its own index keyword.
+    
+        Args:
+            verb: "add_to_spell_index" (onto `other_index`) or "remove_from_spell_index" (out of `index`).
+            **kwargs: `spell` and/or `spell_id`.
+    
+        Returns:
+            Any: What the verb returned.
+        """
+        if verb == "add_to_spell_index":
+>           return self.conduit.add_to_spell_index(target_index=self.other_index, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           TypeError: Conduit.add_to_spell_index() got an unexpected keyword argument 'spell_id'
+
+tests/unit/melder/aether/conduit/test_conduit_index_move_target.py:82: TypeError
+___ test_index_move_refuses_both_spell_and_spell_id[remove_from_spell_index] ___
+
+moves = <test_conduit_index_move_target._Moves object at 0x3793bd06190>
+verb = 'remove_from_spell_index'
+
+    @pytest.mark.parametrize("verb", VERBS)
+    def test_index_move_refuses_both_spell_and_spell_id(moves: _Moves, verb: str) -> None:
+        """Both forms at once are refused, in the verb's own words, before the Book is asked or anything starts."""
+        with pytest.raises(ValueError, match=f"{verb} accepts either `spell` or `spell_id`, not both"):
+>           moves.call(verb, spell=moves.v2, spell_id="v2")
+
+tests/unit/melder/aether/conduit/test_conduit_index_move_target.py:172: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <test_conduit_index_move_target._Moves object at 0x3793bd06190>
+verb = 'remove_from_spell_index'
+kwargs = {'spell': namespace(spell_id='v2', _key=('default', 'k-v2'), spell_index=namespace(_id='index-x', id='index-x', select...>.<lambda> at 0x3793b6b2d00>, spells_in_index=<function _index.<locals>.<lambda> at 0x3793b6b0180>)), 'spell_id': 'v2'}
+
+    def call(self, verb: str, **kwargs: Any) -> Any:
+        """
+        Call one of the two verbs with its own index keyword.
+    
+        Args:
+            verb: "add_to_spell_index" (onto `other_index`) or "remove_from_spell_index" (out of `index`).
+            **kwargs: `spell` and/or `spell_id`.
+    
+        Returns:
+            Any: What the verb returned.
+        """
+        if verb == "add_to_spell_index":
+            return self.conduit.add_to_spell_index(target_index=self.other_index, **kwargs)
+>       return self.conduit.remove_from_spell_index(source_index=self.index, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: Conduit.remove_from_spell_index() got an unexpected keyword argument 'spell_id'
+
+tests/unit/melder/aether/conduit/test_conduit_index_move_target.py:83: TypeError
+______ test_index_move_refuses_a_call_without_a_spell[add_to_spell_index] ______
+
+moves = <test_conduit_index_move_target._Moves object at 0x3793bd06a50>
+verb = 'add_to_spell_index'
+
+    @pytest.mark.parametrize("verb", VERBS)
+    def test_index_move_refuses_a_call_without_a_spell(moves: _Moves, verb: str) -> None:
+        """Neither form is refused, and the message says where a spell_id comes from."""
+        with pytest.raises(ValueError, match=f"{verb} needs a spell: pass spell_id=<the spell_id bind or bind_inactive"):
+>           moves.call(verb)
+
+tests/unit/melder/aether/conduit/test_conduit_index_move_target.py:182: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <test_conduit_index_move_target._Moves object at 0x3793bd06a50>
+verb = 'add_to_spell_index', kwargs = {}
+
+    def call(self, verb: str, **kwargs: Any) -> Any:
+        """
+        Call one of the two verbs with its own index keyword.
+    
+        Args:
+            verb: "add_to_spell_index" (onto `other_index`) or "remove_from_spell_index" (out of `index`).
+            **kwargs: `spell` and/or `spell_id`.
+    
+        Returns:
+            Any: What the verb returned.
+        """
+        if verb == "add_to_spell_index":
+>           return self.conduit.add_to_spell_index(target_index=self.other_index, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           TypeError: Conduit.add_to_spell_index() missing 1 required keyword-only argument: 'spell'
+
+tests/unit/melder/aether/conduit/test_conduit_index_move_target.py:82: TypeError
+___ test_index_move_refuses_a_call_without_a_spell[remove_from_spell_index] ____
+
+moves = <test_conduit_index_move_target._Moves object at 0x3793bd06f50>
+verb = 'remove_from_spell_index'
+
+    @pytest.mark.parametrize("verb", VERBS)
+    def test_index_move_refuses_a_call_without_a_spell(moves: _Moves, verb: str) -> None:
+        """Neither form is refused, and the message says where a spell_id comes from."""
+        with pytest.raises(ValueError, match=f"{verb} needs a spell: pass spell_id=<the spell_id bind or bind_inactive"):
+>           moves.call(verb)
+
+tests/unit/melder/aether/conduit/test_conduit_index_move_target.py:182: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <test_conduit_index_move_target._Moves object at 0x3793bd06f50>
+verb = 'remove_from_spell_index', kwargs = {}
+
+    def call(self, verb: str, **kwargs: Any) -> Any:
+        """
+        Call one of the two verbs with its own index keyword.
+    
+        Args:
+            verb: "add_to_spell_index" (onto `other_index`) or "remove_from_spell_index" (out of `index`).
+            **kwargs: `spell` and/or `spell_id`.
+    
+        Returns:
+            Any: What the verb returned.
+        """
+        if verb == "add_to_spell_index":
+            return self.conduit.add_to_spell_index(target_index=self.other_index, **kwargs)
+>       return self.conduit.remove_from_spell_index(source_index=self.index, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: Conduit.remove_from_spell_index() missing 1 required keyword-only argument: 'spell'
+
+tests/unit/melder/aether/conduit/test_conduit_index_move_target.py:83: TypeError
+_ test_index_move_refuses_a_spell_id_that_is_not_a_string[add_to_spell_index] __
+
+moves = <test_conduit_index_move_target._Moves object at 0x3793872a610>
+verb = 'add_to_spell_index'
+
+    @pytest.mark.parametrize("verb", VERBS)
+    def test_index_move_refuses_a_spell_id_that_is_not_a_string(moves: _Moves, verb: str) -> None:
+        """A non-str `spell_id` raises TypeError naming its type."""
+>       with pytest.raises(TypeError, match=f"{verb} `spell_id` must be a string; got int"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'add_to_spell_index `spell_id` must be a string; got int'
+E         Actual message: "Conduit.add_to_spell_index() got an unexpected keyword argument 'spell_id'"
+
+tests/unit/melder/aether/conduit/test_conduit_index_move_target.py:190: AssertionError
+_ test_index_move_refuses_a_spell_id_that_is_not_a_string[remove_from_spell_index] _
+
+moves = <test_conduit_index_move_target._Moves object at 0x3793872be10>
+verb = 'remove_from_spell_index'
+
+    @pytest.mark.parametrize("verb", VERBS)
+    def test_index_move_refuses_a_spell_id_that_is_not_a_string(moves: _Moves, verb: str) -> None:
+        """A non-str `spell_id` raises TypeError naming its type."""
+>       with pytest.raises(TypeError, match=f"{verb} `spell_id` must be a string; got int"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'remove_from_spell_index `spell_id` must be a string; got int'
+E         Actual message: "Conduit.remove_from_spell_index() got an unexpected keyword argument 'spell_id'"
+
+tests/unit/melder/aether/conduit/test_conduit_index_move_target.py:190: AssertionError
+____ test_index_move_refuses_a_spell_id_passed_as_spell[add_to_spell_index] ____
+
+moves = <test_conduit_index_move_target._Moves object at 0x37938727c10>
+verb = 'add_to_spell_index'
+
+    @pytest.mark.parametrize("verb", VERBS)
+    def test_index_move_refuses_a_spell_id_passed_as_spell(moves: _Moves, verb: str) -> None:
+        """A str given as `spell` is refused with the remedy: a spell_id goes in `spell_id=`."""
+        with pytest.raises(TypeError, match="pass spell_id='v2'"):
+>           moves.call(verb, spell="v2")
+
+tests/unit/melder/aether/conduit/test_conduit_index_move_target.py:201: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/unit/melder/aether/conduit/test_conduit_index_move_target.py:82: in call
+    return self.conduit.add_to_spell_index(target_index=self.other_index, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <Conduit name=None id=01M52MD8M8KVW271PY3THYMHT1>, spell = 'v2'
+target_index = namespace(_id='index-y', id='index-y', selected_spell_id='y1', is_sole_member=<function _index.<locals>.<lambda> at 0x3793b6b24c0>, spells_in_index=<function _index.<locals>.<lambda> at 0x3793b6b2400>)
+
+    def add_to_spell_index(self, *, spell: Any, target_index: Any) -> Any:
+        """
+        Public API
+    
+        Conduit facade for moving an owned spell onto another SpellIndex.
+        Delegates to the owning Spellbook, which admits the `add_to_index`
+        change-control transaction.
+    
+        Contract:
+            - DYNAMIC MODE ONLY; refused on an automatic frame with a logged
+              `RuntimeError`.
+            - Adds a version to the lineage WITHOUT making it active - selection is a
+              separate `notch_spell` step, so adding is safe to do ahead of a switch.
+    
+        Args:
+            spell: The owned, inactive spell to move.
+            target_index: The index to move it onto.
+    
+        Returns:
+            Any: The owning Spellbook's result.
+    
+        Raises:
+            RuntimeError: If the Conduit is cleaned or has no owning Spellbook.
+        """
+        self.check_cleaned()
+        if not self.__dynamic_environment__:
+            self._logger.error(
+                "add_to_spell_index called in non-dynamic env",
+                "add_to_spell_index",
+            )
+            raise RuntimeError(
+                "Dynamic environment is not enabled. add_to_spell_index requires dynamic mode."
+            )
+        if self._spellbook is None:
+            raise RuntimeError("[CONDUIT] No owning Spellbook for add_to_spell_index.")
+        mediator = self._get_required_transaction_mediator()
+        metadata: Dict[str, Any] = {
+            "origin_surface": "conduit.add_to_spell_index",
+            "spellbook_id": self._spellbook._id,
+            "source_spellbook_id": self._spellbook._id,
+            "target_spellbook_id": self._spellbook._id,
+            "owner_conduit_id": self._id,
+            "source_conduit_id": self._id,
+            "target_conduit_id": self._id,
+>           "spell_id": spell.spell_id,
+                        ^^^^^^^^^^^^^^
+            "spell_index_id": target_index._id,
+            "binding_key": spell._key,
+        }
+E       AttributeError: 'str' object has no attribute 'spell_id'
+
+src/melder/aether/conduit/conduit.py:5905: AttributeError
+_ test_index_move_refuses_a_spell_id_passed_as_spell[remove_from_spell_index] __
+
+moves = <test_conduit_index_move_target._Moves object at 0x3793872c010>
+verb = 'remove_from_spell_index'
+
+    @pytest.mark.parametrize("verb", VERBS)
+    def test_index_move_refuses_a_spell_id_passed_as_spell(moves: _Moves, verb: str) -> None:
+        """A str given as `spell` is refused with the remedy: a spell_id goes in `spell_id=`."""
+        with pytest.raises(TypeError, match="pass spell_id='v2'"):
+>           moves.call(verb, spell="v2")
+
+tests/unit/melder/aether/conduit/test_conduit_index_move_target.py:201: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/unit/melder/aether/conduit/test_conduit_index_move_target.py:83: in call
+    return self.conduit.remove_from_spell_index(source_index=self.index, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <Conduit name=None id=01M52MD8Q30ZKSVNQH7XCMW7TV>, spell = 'v2'
+source_index = namespace(_id='index-x', id='index-x', selected_spell_id='v1', is_sole_member=<function _index.<locals>.<lambda> at 0x3793b6b2280>, spells_in_index=<function _index.<locals>.<lambda> at 0x3793b6b12c0>)
+
+    def remove_from_spell_index(self, *, spell: Any, source_index: Any) -> Any:
+        """
+        Public API
+    
+        Conduit facade for separating an owned spell out of its index into a fresh
+        one. Delegates to the owning Spellbook, which admits the
+        `remove_from_index` change-control transaction.
+    
+        Contract:
+            - DYNAMIC MODE ONLY; refused on an automatic frame with a logged
+              `RuntimeError`.
+            - Removes a version from the lineage. Removal does NOT re-point the
+              selection, so retiring the currently active member leaves the index
+              selecting an id that is no longer a member - notch a new active member
+              first.
+    
+        Args:
+            spell: The owned, inactive spell to separate.
+            source_index: The index the spell currently belongs to.
+    
+        Returns:
+            Any: The owning Spellbook's result.
+    
+        Raises:
+            RuntimeError: If the Conduit is cleaned or has no owning Spellbook.
+        """
+        self.check_cleaned()
+        if not self.__dynamic_environment__:
+            self._logger.error(
+                "remove_from_spell_index called in non-dynamic env",
+                "remove_from_spell_index",
+            )
+            raise RuntimeError(
+                "Dynamic environment is not enabled. remove_from_spell_index requires dynamic mode."
+            )
+        if self._spellbook is None:
+            raise RuntimeError("[CONDUIT] No owning Spellbook for remove_from_spell_index.")
+        mediator = self._get_required_transaction_mediator()
+        metadata: Dict[str, Any] = {
+            "origin_surface": "conduit.remove_from_spell_index",
+            "spellbook_id": self._spellbook._id,
+            "source_spellbook_id": self._spellbook._id,
+            "owner_conduit_id": self._id,
+            "source_conduit_id": self._id,
+>           "spell_id": spell.spell_id,
+                        ^^^^^^^^^^^^^^
+            "spell_index_id": source_index._id,
+            "binding_key": spell._key,
+        }
+E       AttributeError: 'str' object has no attribute 'spell_id'
+
+src/melder/aether/conduit/conduit.py:5983: AttributeError
+_ test_index_move_refuses_a_spell_id_the_book_does_not_own[add_to_spell_index] _
+
+moves = <test_conduit_index_move_target._Moves object at 0x379387a5870>
+verb = 'add_to_spell_index'
+
+    @pytest.mark.parametrize("verb", VERBS)
+    def test_index_move_refuses_a_spell_id_the_book_does_not_own(moves: _Moves, verb: str) -> None:
+        """An unknown spell_id is refused with the spell_id in the message; nothing is started."""
+        with pytest.raises(ValueError, match=f"{verb}: spell_id 'nope' is not owned by this conduit's Spellbook"):
+>           moves.call(verb, spell_id="nope")
+
+tests/unit/melder/aether/conduit/test_conduit_index_move_target.py:210: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <test_conduit_index_move_target._Moves object at 0x379387a5870>
+verb = 'add_to_spell_index', kwargs = {'spell_id': 'nope'}
+
+    def call(self, verb: str, **kwargs: Any) -> Any:
+        """
+        Call one of the two verbs with its own index keyword.
+    
+        Args:
+            verb: "add_to_spell_index" (onto `other_index`) or "remove_from_spell_index" (out of `index`).
+            **kwargs: `spell` and/or `spell_id`.
+    
+        Returns:
+            Any: What the verb returned.
+        """
+        if verb == "add_to_spell_index":
+>           return self.conduit.add_to_spell_index(target_index=self.other_index, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           TypeError: Conduit.add_to_spell_index() got an unexpected keyword argument 'spell_id'
+
+tests/unit/melder/aether/conduit/test_conduit_index_move_target.py:82: TypeError
+_ test_index_move_refuses_a_spell_id_the_book_does_not_own[remove_from_spell_index] _
+
+moves = <test_conduit_index_move_target._Moves object at 0x379387a3b90>
+verb = 'remove_from_spell_index'
+
+    @pytest.mark.parametrize("verb", VERBS)
+    def test_index_move_refuses_a_spell_id_the_book_does_not_own(moves: _Moves, verb: str) -> None:
+        """An unknown spell_id is refused with the spell_id in the message; nothing is started."""
+        with pytest.raises(ValueError, match=f"{verb}: spell_id 'nope' is not owned by this conduit's Spellbook"):
+>           moves.call(verb, spell_id="nope")
+
+tests/unit/melder/aether/conduit/test_conduit_index_move_target.py:210: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <test_conduit_index_move_target._Moves object at 0x379387a3b90>
+verb = 'remove_from_spell_index', kwargs = {'spell_id': 'nope'}
+
+    def call(self, verb: str, **kwargs: Any) -> Any:
+        """
+        Call one of the two verbs with its own index keyword.
+    
+        Args:
+            verb: "add_to_spell_index" (onto `other_index`) or "remove_from_spell_index" (out of `index`).
+            **kwargs: `spell` and/or `spell_id`.
+    
+        Returns:
+            Any: What the verb returned.
+        """
+        if verb == "add_to_spell_index":
+            return self.conduit.add_to_spell_index(target_index=self.other_index, **kwargs)
+>       return self.conduit.remove_from_spell_index(source_index=self.index, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: Conduit.remove_from_spell_index() got an unexpected keyword argument 'spell_id'
+
+tests/unit/melder/aether/conduit/test_conduit_index_move_target.py:83: TypeError
+_ test_index_move_by_spell_id_on_an_automatic_conduit_raises_the_dynamic_mode_error[add_to_spell_index] _
+
+spellbook_stub = <MagicMock id='3819239973520'>
+conduit_normal = <Conduit name=None id=01M52MD8SF1JAQ7HHH30N0CDVT>
+verb = 'add_to_spell_index'
+
+    @pytest.mark.parametrize("verb", VERBS)
+    def test_index_move_by_spell_id_on_an_automatic_conduit_raises_the_dynamic_mode_error(
+        spellbook_stub: MagicMock,
+        conduit_normal: Conduit,
+        verb: str,
+    ) -> None:
+        """The dynamic gate still comes first: an automatic conduit refuses with RuntimeError before the Book is asked."""
+        spellbook_stub._get_owned_spell = MagicMock()
+        index = _index("i", "a", {"a"})
+    
+        with pytest.raises(RuntimeError, match="Dynamic environment is not enabled"):
+            if verb == "add_to_spell_index":
+>               conduit_normal.add_to_spell_index(spell_id="v2", target_index=index)
+E               TypeError: Conduit.add_to_spell_index() got an unexpected keyword argument 'spell_id'
+
+tests/unit/melder/aether/conduit/test_conduit_index_move_target.py:228: TypeError
+_ test_index_move_by_spell_id_on_an_automatic_conduit_raises_the_dynamic_mode_error[remove_from_spell_index] _
+
+spellbook_stub = <MagicMock id='3819239986192'>
+conduit_normal = <Conduit name=None id=01M52MD8SVNCPF0FJ3PNARM31Q>
+verb = 'remove_from_spell_index'
+
+    @pytest.mark.parametrize("verb", VERBS)
+    def test_index_move_by_spell_id_on_an_automatic_conduit_raises_the_dynamic_mode_error(
+        spellbook_stub: MagicMock,
+        conduit_normal: Conduit,
+        verb: str,
+    ) -> None:
+        """The dynamic gate still comes first: an automatic conduit refuses with RuntimeError before the Book is asked."""
+        spellbook_stub._get_owned_spell = MagicMock()
+        index = _index("i", "a", {"a"})
+    
+        with pytest.raises(RuntimeError, match="Dynamic environment is not enabled"):
+            if verb == "add_to_spell_index":
+                conduit_normal.add_to_spell_index(spell_id="v2", target_index=index)
+            else:
+>               conduit_normal.remove_from_spell_index(spell_id="v2", source_index=index)
+E               TypeError: Conduit.remove_from_spell_index() got an unexpected keyword argument 'spell_id'
+
+tests/unit/melder/aether/conduit/test_conduit_index_move_target.py:230: TypeError
+__________________ test_notch_refuses_a_call_without_a_target __________________
+
+lineage = <test_conduit_notch_target._Lineage object at 0x3793bd05290>
+
+    def test_notch_refuses_a_call_without_a_target(lineage: _Lineage) -> None:
+        """Neither form is refused, and the message says where a spell_id comes from."""
+>       with pytest.raises(ValueError, match="notch_spell needs a spell: pass spell_id=<the spell_id bind or bind_inac"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'notch_spell needs a spell: pass spell_id=<the spell_id bind or bind_inac'
+E         Actual message: 'notch_spell needs the version to make active: pass spell_id=<the id bind or bind_inactive returned>, or spell=<its Spell object>.'
+
+tests/unit/melder/aether/conduit/test_conduit_notch_target.py:155: AssertionError
+___________________ test_notch_refuses_an_id_passed_as_spell ___________________
+
+lineage = <test_conduit_notch_target._Lineage object at 0x37938727710>
+
+    def test_notch_refuses_an_id_passed_as_spell(lineage: _Lineage) -> None:
+        """A str given as `spell` is refused with the remedy: a spell_id goes in `spell_id=`."""
+>       with pytest.raises(TypeError, match="to name a spell by its spell_id, pass spell_id='v2'"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: "to name a spell by its spell_id, pass spell_id='v2'"
+E         Actual message: "notch_spell `spell` takes a Spell object; to name a version by its id, pass spell_id='v2'."
+
+tests/unit/melder/aether/conduit/test_conduit_notch_target.py:171: AssertionError
+________________ test_notch_refuses_an_id_the_book_does_not_own ________________
+
+lineage = <test_conduit_notch_target._Lineage object at 0x37938729110>
+
+    def test_notch_refuses_an_id_the_book_does_not_own(lineage: _Lineage) -> None:
+        """An unknown spell_id is refused with the spell_id in the message; nothing is started."""
+>       with pytest.raises(ValueError, match="notch_spell: spell_id 'nope' is not owned by this conduit's Spellbook"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: "notch_spell: spell_id 'nope' is not owned by this conduit's Spellbook"
+E         Actual message: "notch_spell: version 'nope' is not owned by this conduit's Spellbook. Notch it through the conduit of the Spellbook that owns it, or stage the class on this index with bind_inactive(spell_index=...), which returns the id to pass."
+
+tests/unit/melder/aether/conduit/test_conduit_notch_target.py:179: AssertionError
+_____________ test_notch_refuses_a_version_of_another_index_by_id ______________
+
+lineage = <test_conduit_notch_target._Lineage object at 0x3793872bf10>
+
+    def test_notch_refuses_a_version_of_another_index_by_id(lineage: _Lineage) -> None:
+        """An owned version of another index, named by spell_id, is refused before anything moves."""
+>       with pytest.raises(ValueError, match="notch_spell: spell_id 'y2' belongs to another SpellIndex"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: "notch_spell: spell_id 'y2' belongs to another SpellIndex"
+E         Actual message: "notch_spell: version 'y2' belongs to another SpellIndex, not the one passed. Pass that version's own index - conduit.get_spell_by_id('y2').spell_index - or move the version onto this index with add_to_spell_index first."
+
+tests/unit/melder/aether/conduit/test_conduit_notch_target.py:187: AssertionError
+_ test_add_to_spell_index_by_spell_id_moves_a_parked_spell_onto_another_index __
+
+    def test_add_to_spell_index_by_spell_id_moves_a_parked_spell_onto_another_index() -> None:
+        """
+        The spell_id `bind_inactive` returned is enough to move the parked spell; a notch to it then melds it.
+    
+        Contract:
+            - B leaves X and joins Y as a parked member; X keeps A active; the call returns B's Spell.
+        """
+        with _two_indexes() as (book, root, id_a, id_b, id_y, index_x, index_y):
+>           moved = root.add_to_spell_index(spell_id=id_b, target_index=index_y)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           TypeError: Conduit.add_to_spell_index() got an unexpected keyword argument 'spell_id'
+
+tests/integration/melder/aether/conduit/test_index_moves_by_spell_id_integration.py:136: TypeError
+_ test_remove_from_spell_index_by_spell_id_splits_a_parked_spell_into_a_fresh_index _
+
+    def test_remove_from_spell_index_by_spell_id_splits_a_parked_spell_into_a_fresh_index() -> None:
+        """
+        The spell_id is enough to split the parked spell out: it becomes the only member of a fresh index.
+    
+        Contract:
+            - X keeps A active and loses B; B's new index holds B alone; the call returns B's Spell.
+        """
+        with _two_indexes() as (book, root, id_a, id_b, id_y, index_x, index_y):
+>           separated = root.remove_from_spell_index(spell_id=id_b, source_index=index_x)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           TypeError: Conduit.remove_from_spell_index() got an unexpected keyword argument 'spell_id'
+
+tests/integration/melder/aether/conduit/test_index_moves_by_spell_id_integration.py:157: TypeError
+_ test_index_move_refuses_an_unknown_spell_id_and_changes_nothing[add_to_spell_index] _
+
+verb = 'add_to_spell_index'
+
+    @pytest.mark.parametrize("verb", ["add_to_spell_index", "remove_from_spell_index"])
+    def test_index_move_refuses_an_unknown_spell_id_and_changes_nothing(verb: str) -> None:
+        """A spell_id the Book does not own is refused with ValueError before anything moves."""
+        with _two_indexes() as (book, root, id_a, id_b, id_y, index_x, index_y):
+            with pytest.raises(ValueError, match=f"{verb}: spell_id 'no-such-spell-id' is not owned"):
+                if verb == "add_to_spell_index":
+>                   root.add_to_spell_index(spell_id="no-such-spell-id", target_index=index_y)
+E                   TypeError: Conduit.add_to_spell_index() got an unexpected keyword argument 'spell_id'
+
+tests/integration/melder/aether/conduit/test_index_moves_by_spell_id_integration.py:173: TypeError
+_ test_index_move_refuses_an_unknown_spell_id_and_changes_nothing[remove_from_spell_index] _
+
+verb = 'remove_from_spell_index'
+
+    @pytest.mark.parametrize("verb", ["add_to_spell_index", "remove_from_spell_index"])
+    def test_index_move_refuses_an_unknown_spell_id_and_changes_nothing(verb: str) -> None:
+        """A spell_id the Book does not own is refused with ValueError before anything moves."""
+        with _two_indexes() as (book, root, id_a, id_b, id_y, index_x, index_y):
+            with pytest.raises(ValueError, match=f"{verb}: spell_id 'no-such-spell-id' is not owned"):
+                if verb == "add_to_spell_index":
+                    root.add_to_spell_index(spell_id="no-such-spell-id", target_index=index_y)
+                else:
+>                   root.remove_from_spell_index(spell_id="no-such-spell-id", source_index=index_x)
+E                   TypeError: Conduit.remove_from_spell_index() got an unexpected keyword argument 'spell_id'
+
+tests/integration/melder/aether/conduit/test_index_moves_by_spell_id_integration.py:175: TypeError
+______ test_index_move_refuses_another_books_spell_id[add_to_spell_index] ______
+
+verb = 'add_to_spell_index'
+
+    @pytest.mark.parametrize("verb", ["add_to_spell_index", "remove_from_spell_index"])
+    def test_index_move_refuses_another_books_spell_id(verb: str) -> None:
+        """A spell_id another Book of the frame owns is not this conduit's Book's, so it is refused as not owned."""
+        with _two_indexes() as (book, root, id_a, id_b, id_y, index_x, index_y):
+            other_book = _make_spellbook()
+            id_other = other_book.bind(
+                spell=_ServiceB, existence=Existence.unique, permissions="create", binding_name="other_b",
+            )
+            with pytest.raises(ValueError, match="is not owned by this conduit's Spellbook"):
+                if verb == "add_to_spell_index":
+>                   root.add_to_spell_index(spell_id=id_other, target_index=index_y)
+E                   TypeError: Conduit.add_to_spell_index() got an unexpected keyword argument 'spell_id'
+
+tests/integration/melder/aether/conduit/test_index_moves_by_spell_id_integration.py:190: TypeError
+___ test_index_move_refuses_another_books_spell_id[remove_from_spell_index] ____
+
+verb = 'remove_from_spell_index'
+
+    @pytest.mark.parametrize("verb", ["add_to_spell_index", "remove_from_spell_index"])
+    def test_index_move_refuses_another_books_spell_id(verb: str) -> None:
+        """A spell_id another Book of the frame owns is not this conduit's Book's, so it is refused as not owned."""
+        with _two_indexes() as (book, root, id_a, id_b, id_y, index_x, index_y):
+            other_book = _make_spellbook()
+            id_other = other_book.bind(
+                spell=_ServiceB, existence=Existence.unique, permissions="create", binding_name="other_b",
+            )
+            with pytest.raises(ValueError, match="is not owned by this conduit's Spellbook"):
+                if verb == "add_to_spell_index":
+                    root.add_to_spell_index(spell_id=id_other, target_index=index_y)
+                else:
+>                   root.remove_from_spell_index(spell_id=id_other, source_index=index_x)
+E                   TypeError: Conduit.remove_from_spell_index() got an unexpected keyword argument 'spell_id'
+
+tests/integration/melder/aether/conduit/test_index_moves_by_spell_id_integration.py:192: TypeError
+_________ test_index_move_refuses_both_and_neither[add_to_spell_index] _________
+
+verb = 'add_to_spell_index'
+
+    @pytest.mark.parametrize("verb", ["add_to_spell_index", "remove_from_spell_index"])
+    def test_index_move_refuses_both_and_neither(verb: str) -> None:
+        """Both forms at once, and no spell at all, are refused with ValueError; nothing moves."""
+        with _two_indexes() as (book, root, id_a, id_b, id_y, index_x, index_y):
+            spell_b = book._get_owned_spell(id_b)
+            index_keyword = {"target_index": index_y} if verb == "add_to_spell_index" else {"source_index": index_x}
+            with pytest.raises(ValueError, match="not both"):
+>               getattr(root, verb)(spell=spell_b, spell_id=id_b, **index_keyword)
+E               TypeError: Conduit.add_to_spell_index() got an unexpected keyword argument 'spell_id'
+
+tests/integration/melder/aether/conduit/test_index_moves_by_spell_id_integration.py:204: TypeError
+______ test_index_move_refuses_both_and_neither[remove_from_spell_index] _______
+
+verb = 'remove_from_spell_index'
+
+    @pytest.mark.parametrize("verb", ["add_to_spell_index", "remove_from_spell_index"])
+    def test_index_move_refuses_both_and_neither(verb: str) -> None:
+        """Both forms at once, and no spell at all, are refused with ValueError; nothing moves."""
+        with _two_indexes() as (book, root, id_a, id_b, id_y, index_x, index_y):
+            spell_b = book._get_owned_spell(id_b)
+            index_keyword = {"target_index": index_y} if verb == "add_to_spell_index" else {"source_index": index_x}
+            with pytest.raises(ValueError, match="not both"):
+>               getattr(root, verb)(spell=spell_b, spell_id=id_b, **index_keyword)
+E               TypeError: Conduit.remove_from_spell_index() got an unexpected keyword argument 'spell_id'
+
+tests/integration/melder/aether/conduit/test_index_moves_by_spell_id_integration.py:204: TypeError
+_ test_index_move_by_spell_id_of_an_active_spell_is_refused_by_the_book[add_to_spell_index] _
+
+verb = 'add_to_spell_index'
+
+    @pytest.mark.parametrize("verb", ["add_to_spell_index", "remove_from_spell_index"])
+    def test_index_move_by_spell_id_of_an_active_spell_is_refused_by_the_book(verb: str) -> None:
+        """
+        An active spell's spell_id resolves, and the Book refuses to move it, as it refuses the Spell object.
+    
+        Contract:
+            - RuntimeError "... is active in its index; notch away from it before moving it."; nothing moves.
+        """
+        with _two_indexes() as (book, root, id_a, id_b, id_y, index_x, index_y):
+            with pytest.raises(RuntimeError, match="is active in its index; notch away from it before moving it"):
+                if verb == "add_to_spell_index":
+>                   root.add_to_spell_index(spell_id=id_a, target_index=index_y)
+E                   TypeError: Conduit.add_to_spell_index() got an unexpected keyword argument 'spell_id'
+
+tests/integration/melder/aether/conduit/test_index_moves_by_spell_id_integration.py:222: TypeError
+_ test_index_move_by_spell_id_of_an_active_spell_is_refused_by_the_book[remove_from_spell_index] _
+
+verb = 'remove_from_spell_index'
+
+    @pytest.mark.parametrize("verb", ["add_to_spell_index", "remove_from_spell_index"])
+    def test_index_move_by_spell_id_of_an_active_spell_is_refused_by_the_book(verb: str) -> None:
+        """
+        An active spell's spell_id resolves, and the Book refuses to move it, as it refuses the Spell object.
+    
+        Contract:
+            - RuntimeError "... is active in its index; notch away from it before moving it."; nothing moves.
+        """
+        with _two_indexes() as (book, root, id_a, id_b, id_y, index_x, index_y):
+            with pytest.raises(RuntimeError, match="is active in its index; notch away from it before moving it"):
+                if verb == "add_to_spell_index":
+                    root.add_to_spell_index(spell_id=id_a, target_index=index_y)
+                else:
+>                   root.remove_from_spell_index(spell_id=id_a, source_index=index_x)
+E                   TypeError: Conduit.remove_from_spell_index() got an unexpected keyword argument 'spell_id'
+
+tests/integration/melder/aether/conduit/test_index_moves_by_spell_id_integration.py:224: TypeError
+=========================== short test summary info ============================
+FAILED tests/unit/melder/aether/conduit/test_conduit_index_move_target.py::test_add_by_spell_id_resolves_the_owned_spell_and_moves_it
+FAILED tests/unit/melder/aether/conduit/test_conduit_index_move_target.py::test_remove_by_spell_id_resolves_the_owned_spell_and_separates_it
+FAILED tests/unit/melder/aether/conduit/test_conduit_index_move_target.py::test_index_move_refuses_both_spell_and_spell_id[add_to_spell_index]
+FAILED tests/unit/melder/aether/conduit/test_conduit_index_move_target.py::test_index_move_refuses_both_spell_and_spell_id[remove_from_spell_index]
+FAILED tests/unit/melder/aether/conduit/test_conduit_index_move_target.py::test_index_move_refuses_a_call_without_a_spell[add_to_spell_index]
+FAILED tests/unit/melder/aether/conduit/test_conduit_index_move_target.py::test_index_move_refuses_a_call_without_a_spell[remove_from_spell_index]
+FAILED tests/unit/melder/aether/conduit/test_conduit_index_move_target.py::test_index_move_refuses_a_spell_id_that_is_not_a_string[add_to_spell_index]
+FAILED tests/unit/melder/aether/conduit/test_conduit_index_move_target.py::test_index_move_refuses_a_spell_id_that_is_not_a_string[remove_from_spell_index]
+FAILED tests/unit/melder/aether/conduit/test_conduit_index_move_target.py::test_index_move_refuses_a_spell_id_passed_as_spell[add_to_spell_index]
+FAILED tests/unit/melder/aether/conduit/test_conduit_index_move_target.py::test_index_move_refuses_a_spell_id_passed_as_spell[remove_from_spell_index]
+FAILED tests/unit/melder/aether/conduit/test_conduit_index_move_target.py::test_index_move_refuses_a_spell_id_the_book_does_not_own[add_to_spell_index]
+FAILED tests/unit/melder/aether/conduit/test_conduit_index_move_target.py::test_index_move_refuses_a_spell_id_the_book_does_not_own[remove_from_spell_index]
+FAILED tests/unit/melder/aether/conduit/test_conduit_index_move_target.py::test_index_move_by_spell_id_on_an_automatic_conduit_raises_the_dynamic_mode_error[add_to_spell_index]
+FAILED tests/unit/melder/aether/conduit/test_conduit_index_move_target.py::test_index_move_by_spell_id_on_an_automatic_conduit_raises_the_dynamic_mode_error[remove_from_spell_index]
+FAILED tests/unit/melder/aether/conduit/test_conduit_notch_target.py::test_notch_refuses_a_call_without_a_target
+FAILED tests/unit/melder/aether/conduit/test_conduit_notch_target.py::test_notch_refuses_an_id_passed_as_spell
+FAILED tests/unit/melder/aether/conduit/test_conduit_notch_target.py::test_notch_refuses_an_id_the_book_does_not_own
+FAILED tests/unit/melder/aether/conduit/test_conduit_notch_target.py::test_notch_refuses_a_version_of_another_index_by_id
+FAILED tests/integration/melder/aether/conduit/test_index_moves_by_spell_id_integration.py::test_add_to_spell_index_by_spell_id_moves_a_parked_spell_onto_another_index
+FAILED tests/integration/melder/aether/conduit/test_index_moves_by_spell_id_integration.py::test_remove_from_spell_index_by_spell_id_splits_a_parked_spell_into_a_fresh_index
+FAILED tests/integration/melder/aether/conduit/test_index_moves_by_spell_id_integration.py::test_index_move_refuses_an_unknown_spell_id_and_changes_nothing[add_to_spell_index]
+FAILED tests/integration/melder/aether/conduit/test_index_moves_by_spell_id_integration.py::test_index_move_refuses_an_unknown_spell_id_and_changes_nothing[remove_from_spell_index]
+FAILED tests/integration/melder/aether/conduit/test_index_moves_by_spell_id_integration.py::test_index_move_refuses_another_books_spell_id[add_to_spell_index]
+FAILED tests/integration/melder/aether/conduit/test_index_moves_by_spell_id_integration.py::test_index_move_refuses_another_books_spell_id[remove_from_spell_index]
+FAILED tests/integration/melder/aether/conduit/test_index_moves_by_spell_id_integration.py::test_index_move_refuses_both_and_neither[add_to_spell_index]
+FAILED tests/integration/melder/aether/conduit/test_index_moves_by_spell_id_integration.py::test_index_move_refuses_both_and_neither[remove_from_spell_index]
+FAILED tests/integration/melder/aether/conduit/test_index_moves_by_spell_id_integration.py::test_index_move_by_spell_id_of_an_active_spell_is_refused_by_the_book[add_to_spell_index]
+FAILED tests/integration/melder/aether/conduit/test_index_moves_by_spell_id_integration.py::test_index_move_by_spell_id_of_an_active_spell_is_refused_by_the_book[remove_from_spell_index]
+28 failed, 14 passed in 3.87s

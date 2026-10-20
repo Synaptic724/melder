@@ -75,7 +75,7 @@ def test_notch_raises_in_non_dynamic_mode():
     spell_id = book.bind(spell=_ServiceA, existence=Existence.unique, permissions="create", binding_name="a")
     conduit = book.conjure(dynamic=False, name="static")
     try:
-        spell = book.find_spell_by_id(spell_id)
+        spell = book.find_spell_by_spell_id(spell_id)
         with pytest.raises(RuntimeError):
             conduit.notch_spell(spell_index=spell.spell_index, spell=spell)
     finally:
@@ -87,7 +87,7 @@ def test_add_to_spell_index_raises_in_non_dynamic_mode():
     spell_id = book.bind(spell=_ServiceA, existence=Existence.unique, permissions="create", binding_name="a")
     conduit = book.conjure(dynamic=False, name="static")
     try:
-        spell = book.find_spell_by_id(spell_id)
+        spell = book.find_spell_by_spell_id(spell_id)
         with pytest.raises(RuntimeError):
             conduit.add_to_spell_index(spell=spell, target_index=spell.spell_index)
     finally:
@@ -99,7 +99,7 @@ def test_remove_from_spell_index_raises_in_non_dynamic_mode():
     spell_id = book.bind(spell=_ServiceA, existence=Existence.unique, permissions="create", binding_name="a")
     conduit = book.conjure(dynamic=False, name="static")
     try:
-        spell = book.find_spell_by_id(spell_id)
+        spell = book.find_spell_by_spell_id(spell_id)
         with pytest.raises(RuntimeError):
             conduit.remove_from_spell_index(spell=spell, source_index=spell.spell_index)
     finally:
@@ -114,8 +114,8 @@ def test_add_to_spell_index_rejects_active_spell():
     id_b = book.bind(spell=_ServiceB, existence=Existence.unique, permissions="create", binding_name="b")
     conduit = book.conjure(dynamic=True, name="root")
     try:
-        active_a = book.find_spell_by_id(id_a)          # active -> not in _inactive_spells
-        target_index = book.find_spell_by_id(id_b).spell_index
+        active_a = book.find_spell_by_spell_id(id_a)          # active -> not in _inactive_spells
+        target_index = book.find_spell_by_spell_id(id_b).spell_index
         with pytest.raises(RuntimeError):
             conduit.add_to_spell_index(spell=active_a, target_index=target_index)
     finally:
@@ -127,7 +127,7 @@ def test_remove_from_spell_index_rejects_active_spell():
     id_a = book.bind(spell=_ServiceA, existence=Existence.unique, permissions="create", binding_name="a")
     conduit = book.conjure(dynamic=True, name="root")
     try:
-        active_a = book.find_spell_by_id(id_a)
+        active_a = book.find_spell_by_spell_id(id_a)
         with pytest.raises(RuntimeError):
             conduit.remove_from_spell_index(spell=active_a, source_index=active_a.spell_index)
     finally:
@@ -142,7 +142,7 @@ def test_remove_from_spell_index_rejects_sole_member():
     id_a = book.bind(spell=_ServiceA, existence=Existence.unique, permissions="create", binding_name="a")
     conduit = book.conjure(dynamic=True, name="root")
     try:
-        spell_a = book.find_spell_by_id(id_a)
+        spell_a = book.find_spell_by_spell_id(id_a)
         with pytest.raises(RuntimeError):
             conduit.remove_from_spell_index(spell=spell_a, source_index=spell_a.spell_index)
     finally:

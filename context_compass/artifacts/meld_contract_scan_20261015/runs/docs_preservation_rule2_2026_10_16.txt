@@ -1,0 +1,138 @@
+=== src_architecture.md: 4696 -> 4854 lines; baseline multiset entries changed or removed: 51; new or changed entries: 202
+<       1  (`non_resolvable_index_ids`, 0.2.8247).
+<       1  - src/melder/aether/conduit/conduit.py:5622, 5731 (`notch_spell`; starts the transaction)
+<       1  - src/melder/aether/conduit/conduit.py:5622-5751
+<       1  - src/melder/aether/conduit/conduit.py:5753-5969
+<       1  - src/melder/aether/conduit/conduit.py:5753-5969 (`_resolve_notch_target`, `_owned_notch_target`,
+<       1  - src/melder/aether/conduit/conduit.py:5971, 6061 (`add_to_spell_index`; starts it)
+<       1  - src/melder/aether/conduit/conduit.py:5971-6172
+<       1  - src/melder/aether/conduit/conduit.py:6084, 6159 (`remove_from_spell_index`; starts it)
+<       1  - src/melder/aether/conduit/conduit.py:6228-6257
+<       1  - src/melder/aether/conduit/conduit_ward/conduit_ward.py:2316-2380
+<       1  - src/melder/aether/spellbook/spellbook.py:3826-3967
+<       1  - src/melder/aether/spellbook/spellbook.py:3969 (`_add_to_spell_index` entry)
+<       1  - src/melder/aether/spellbook/spellbook.py:4002 (`_apply_add_to_index` seam)
+<       1  - src/melder/aether/spellbook/spellbook.py:4002-4096
+<       1  - src/melder/aether/spellbook/spellbook.py:4177-4262
+<       1  - src/melder/aether/spellbook/spellbook.py:6793-6836
+<       1  - src/melder/aether/spellbook/spellbook.py:7049
+<       1  and `add_to_spell_index` / `remove_from_spell_index` take `spell_id=` too (0.2.8249).
+<       1  and re-registers the index gated + dirty for lazy meld-time recompile;
+<       1  conjure holds since conjure stamps them (0.2.8248).
+<       1  contract's subscription to the new version, parking the old copy and activating the new one on
+<       1  contracted copy of the outgoing version, and `ConduitWard._emit_index_notch` moves each index-link
+<       1  end_line: 1886
+<       1  end_line: 2150
+<       1  end_line: 264
+<       1  end_line: 3957
+<       1  end_line: 7618
+<       1  end_line: 7784
+<       1  loc: 1886
+<       1  loc: 2150
+<       1  loc: 264
+<       1  loc: 3957
+<       1  loc: 7618
+<       1  loc: 7784
+<       1  lock, the listing resolved through the Book (0.2.8231).
+<       1  note: meld orchestration; the live probes' managed-pool answer (0.2.8243).
+<       1  same thing and are also wrong - see `src/melder/aether/spellbook/spellbook.py:3811-3813`, which states the
+<     160  start_line: 1
+<       1  the receiver. Borrowers build the new version at their next meld; objects built from older
+<       6  verified_at: 2026-10-14T23:59:35Z
+<      21  verified_at: 2026-10-15T21:20:35Z
+<       4  verified_at: 2026-10-16T01:12:19Z
+<       5  verified_at: 2026-10-16T11:03:50Z
+<       1  verified_at: 2026-10-16T15:44:44Z
+<       1  versions stay alive, so agents iterating on one object keep their work while it converges.
+<       1 EVIDENCE: src/melder/aether/spellbook/spellbook.py:3826-4262 (the three seams, remeasured 2026-10-16);
+<       1 `Conduit._resolve_spell_to_move` (the index moves' spell_id), `Conduit._deactivate_borrowed_spell` and
+<       1 `src/melder/aether/conduit/conduit_ward/conduit_ward.py:ConduitWard._emit_index_notch` (the borrowers).
+<       1 `src/melder/aether/spellbook/spellbook.py:3742` and `check_system_state` at 1253-1292. Citations
+<       1 index-link borrowers to the new one, which they build at their next meld. MutationResearch records
+<       1 window the conduit has every linked borrower park its copy of the outgoing version and moves
+=== src_components.md: 11695 -> 11848 lines; baseline multiset entries changed or removed: 57; new or changed entries: 201
+<       1  - `src/melder/aether/conduit/meld/meld.py:1134`
+<       1  - src/melder/aether/conduit/conduit.py:5622, 5971, 6084 (public verbs)
+<       1  - src/melder/aether/conduit/conduit.py:5708, 6041, 6148 (notch/add/remove
+<       1  - src/melder/aether/conduit/conduit.py:5753, 5791, 5846, 5897, 5932 (`_resolve_notch_target`,
+<       1  - src/melder/aether/conduit/meld/meld.py:1167-1175
+<       1  - src/melder/aether/conduit/meld/meld.py:24-27
+<       1  - src/melder/aether/spellbook/spellbook.py:3775, 3826 (`_notch_spell` -> `_apply_notch`)
+<       1  - src/melder/aether/spellbook/spellbook.py:3811-3813 (states the Conduit admits it)
+<       1  - src/melder/aether/spellbook/spellbook.py:3826, 4002, 4177 (applied seams)
+<       1  - src/melder/aether/spellbook/spellbook.py:3826-3967 (`_apply_notch`)
+<       1  - src/melder/aether/spellbook/spellbook.py:3969, 4002 (`_add_to_spell_index` -> `_apply_add_to_index`)
+<       1  - src/melder/aether/spellbook/spellbook.py:4002-4096 (`_apply_add_to_index`)
+<       1  - src/melder/aether/spellbook/spellbook.py:4145, 4177 (`_remove_from_spell_index` -> `_apply_remove_from_index`)
+<       1  - src/melder/aether/spellbook/spellbook.py:4177-4262 (`_apply_remove_from_index`)
+<       1  - src/melder/aether/spellbook/spellbook.py:5422-5438 (`Spellbook.bind
+<       1  - src/melder/aether/spellbook/spellbook.py:5893-5898 (`Spellbook._initialize_configuration`, the
+<       1  - src/melder/aether/spellbook/spellbook.py:7412-7433 (`_run_structural_phases`; the caller-held-lock
+<       1  EVIDENCE: src/melder/aether/conduit/conduit_ward/conduit_ward.py:2567-2621.
+<       1  EVIDENCE: src/melder/aether/conduit/meld/meld.py:276-377 and
+<       1  _force_resolution_revalidation helper accepts the reason; contract callers retain their default.
+<       1  `ConduitWard._emit_index_notch(spell_index, outgoing_id, spell.spell_id)`; returns the now-active Spell.
+<       1  `remove_from_index` at `src/melder/aether/conduit/conduit.py:6159`, then calls
+<       1  `src/melder/aether/conduit/conduit.py:6061`, then calls `Spellbook._add_to_spell_index(...)`, which
+<       1  `src/melder/aether/spellbook/spellbook.py:3811-3813` states it correctly.
+<       1  `src/melder/aether/spellbook/spellbook.py:6725`; the patch-lane copy cited
+<       1  end_line: 1886
+<       1  end_line: 2150
+<       2  end_line: 248
+<       2  end_line: 264
+<       1  end_line: 3957
+<       1  end_line: 448
+<       1  end_line: 493
+<       1  end_line: 7618
+<       1  end_line: 7784
+<       1  index and the framewide lookup, re-register the index gated). Any raise -> `end_transaction(success=False)`
+<       1  loc: 1886
+<       1  loc: 2150
+<       2  loc: 248
+<       2  loc: 264
+<       1  loc: 3957
+<       1  loc: 448
+<       1  loc: 493
+<       1  loc: 7618
+<       1  loc: 7784
+<       1  note: `SpellbookValidationError`: names the spells conjure cannot build (SpellCompiler).
+<       1  opens the `notch` transaction at `src/melder/aether/conduit/conduit.py:5731`, checks the target again inside
+<       1  src/melder/aether/conduit/meld/meld.py:1481-1679 (every `self._lock` site; remeasured 2026-09-30).
+<      20  verified_at: 2026-09-26T20:10:34Z
+<      12  verified_at: 2026-10-01T11:06:26Z
+<       5  verified_at: 2026-10-14T23:59:35Z
+<      25  verified_at: 2026-10-15T21:40:35Z
+<       4  verified_at: 2026-10-16T01:15:52Z
+<       4  verified_at: 2026-10-16T11:09:31Z
+<       1  verified_at: 2026-10-16T15:47:00Z
+<       2 - `src/melder/utilities/custom_exceptions/spellbook_validation_error.py`
+<       1 5. `end_transaction(success=True)`; when the version changed, `Conduit._deactivate_borrowed_spell(outgoing_id)` and
+<       1 `src/melder/aether/spellbook/spellbook.py:3742` twice, the occurrence analyzer's contract-default
+=== tests_architecture.md: 973 -> 988 lines; baseline multiset entries changed or removed: 3; new or changed entries: 17
+<       1 - `integration/`: 176 `.py` files, 169 of them `test_*.py` (149, 88)
+<       1 - `unit/`: 510 `.py` files, 507 of them `test_*.py` (465 on 2026-09-26, 334 on 2026-06-13)
+<       1 Recounted 2026-10-16 with `find tests/<tier> -name '*.py'` (pycache excluded); the three tiers' 842 `test_*.py`
+=== tests_components.md: 3584 -> 3697 lines; baseline multiset entries changed or removed: 23; new or changed entries: 130
+<       1  end_line: 1713
+<       1  end_line: 325
+<       1  end_line: 326
+<       1  end_line: 5288
+<       1  loc: 1713
+<       1  loc: 325
+<       1  loc: 326
+<       1  loc: 5288
+<       1  note: a contract mutation forced inside a meld's resolution pass (0.2.8227).
+<     256  start_line: 1
+<     153  verified_at: 2026-09-26T22:11:36Z
+<       2  verified_at: 2026-10-10T09:33:01Z
+<       5  verified_at: 2026-10-16T01:19:21Z
+<       1 - 169 `test_*.py` modules among 176 `.py` files (recounted 2026-10-16); the others are benches and the
+<       1 - No harness or support module of its own; the 43 test_*.py modules in
+<       1 - No harness or support module of its own; the 50 test_*.py modules in
+<       1 - The aether tree carries 206 `test_*.py` modules beneath these; they are the
+<       1 - The spellbook tree carries 157 `test_*.py` modules beneath these; they are the
+<       1 - `tests/unit/melder/spellbook/test_spellbook.py`
+<       1 - `tests/unit/melder/utilities/custom_exceptions/test_spellbook_validation_error.py`
+<       1 - the densest tier: 507 `test_*.py` modules among 510 `.py` files (recounted 2026-10-16)
+<       1 above - 252 paths (recounted 2026-10-16) - and nothing else. Change a component's key files and this set
+<       1 builders - not every `test_*.py` module beneath it. The 838 test modules of the

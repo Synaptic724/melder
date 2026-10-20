@@ -1,0 +1,18 @@
+== gil0: ran 14542; failed 126; baseline failed 25; new 101; baseline failures now passing 0
+    88  one object registered twice (bind/bind_inactive collision)
+     1  one object registered twice (conjure integrity, another Book/frame)
+   others:
+     tests/component/melder/spellbook/test_inherited_disposal_binding.py::test_unrequested_base_callable_does_not_change_binding_identity  ->  other: AssertionError: assert '210acfa1ed46...0037cca3023a6' == '51a09c822645...755dd541d70bd'
+     tests/component/melder/spellbook/test_ordered_disposal_binding.py::test_resolved_order_changes_sha_but_unmatched_names_do_not  ->  other: AssertionError: assert 'd8298d4757100d56b03c52c21fde157304faac245606db77099172aa2d1a4533' != 'd8298d4757100d56b03c52c21fde
+     tests/component/melder/spellbook/test_spellbook_component_resolvable_registration.py::test_false_does_not_create_another_active_binding_slot  ->  other: AssertionError: Regex pattern did not match.
+     tests/component/melder/spellbook/test_spellbook_component_structural_snapshot_capture.py::test_conjure_end_captures_a_structural_payload_per_owned_spell  ->  other: AssertionError: assert {'format': 1,...ion_refs': []} == {'format': 1,...ion_refs': []}
+     tests/integration/melder/crystallizer/test_ordered_disposal_replay.py::test_changed_id_restore_regrants_contract_details  ->  other: KeyError: '208f5508589783f494af934822aa8bcf2df9f096dd368ab645b14888a5cd641d'
+     tests/integration/melder/spellbook/test_managed_bind_options_integration.py::test_a_managed_binding_changes_the_spell_id_and_its_settings_do_not  ->  other: AssertionError: assert 'ea1de151ad47db237efa834b6d7cb686eb22ac1fabab433470c519e34129997c' != 'ea1de151a
+     tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py::test_managed_settings_do_not_change_the_spell_id  ->  other: AssertionError: assert {'c8f2867b12d...7bde79b3dd0e'} == {'1e7f54ba6ef...87c0ae5fa041'}
+     tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py::test_spell_id_inspector_matches_the_bind_fingerprint_for_a_managed_class  ->  other: AssertionError: assert '0a455531183c...3bb8a3457cdcb' == '161bc6c2fe8a...67a6191f41f4a'
+     tests/unit/melder/spellbook/spell_compiler/structural_snapshot/test_structural_snapshot.py::test_build_payload_renders_phase3_and_phase4_rows_from_durable_state  ->  other: AssertionError: assert {'key': {'for..., ...)]}, ...} == {'key': {'for..., ...)]}, ...}
+     tests/unit/melder/spellbook/spell_compiler/structural_snapshot/test_structural_snapshot.py::test_structural_key_holds_format_id_and_sorted_refs  ->  other: AssertionError: assert {'format': 1,...', '_Alpha')]} == {'format': 1,...', '_Alpha')]}
+     tests/unit/melder/spellbook/spell_compiler/structural_snapshot/test_structural_snapshot.py::test_world_stamp_changes_with_pool_posture_or_borrowed_set  ->  other: AssertionError: assert '4806fb2fae4f...01ef8e6b29255' == '19d811e8e972...d4eae05da476c'
+     tests/unit/melder/spellbook/spell_compiler/structural_snapshot/test_structural_snapshot.py::test_world_stamp_digests_sorted_pool_posture_and_borrowed_ids  ->  other: AssertionError: assert '83b58d53fc57...b51c850afb176' == 'fbb5fa298b8c...beaa87b0d9269'
+== gil1: ran 14542; failed 126; baseline failed 25; new 101; baseline failures now passing 0
+GIL 0 and GIL 1 new-failure sets identical: True

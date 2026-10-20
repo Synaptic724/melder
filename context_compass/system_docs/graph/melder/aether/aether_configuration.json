@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aether_configuration.py",
- "source_sha256": "4eb3c8bd77df5421714ed145465c7cbef11c55ca7a65f9f2626c14bb05930d00",
+ "source_sha256": "75c9856e7b7c0ecbbc01efc3d6746d3afcd948db070cdaa04d45aaf795254682",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aether_configuration": {
@@ -62,7 +62,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "d130cfb20c85498b302611514491bdb2555a2a92fc82132a60747853d7611303",
+   "span_sha256": "f5c61bded31ee0d602dd120e485847d93c764f0bbd09b15e3b52b94fe9531d66",
    "role": "Mutable-to-frozen root configuration surface for process-wide Aether policy.",
    "responsibilities": [
     "stores the root logger activation and resolver policy for AetherUtilitySystem",

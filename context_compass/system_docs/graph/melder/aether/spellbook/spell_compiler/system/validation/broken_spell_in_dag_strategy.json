@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/system/validation/broken_spell_in_dag_strategy.py",
- "source_sha256": "c46573177100f40a14964ddbf0a1c491e8456c8f9ae9fd25b290fe97b336ee3f",
+ "source_sha256": "0f24aa203d77495f222a53e75575e2a5dcf02a098354785e33615aa1263a306d",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.system.validation.broken_spell_in_dag_strategy": {
@@ -39,7 +39,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "dff5a2564c4305af14db907f2c622c3d95bf814154ac7e17ee08d54fa2b3474f",
+   "span_sha256": "def3ed7a4b347769344cd89f2c316b2de8b82b3ebc7358edd0a72674b80361d1",
    "include": true,
    "role": "Lift spell-local breakage into the rooted system view, so a spell already broken at Phase 4 cannot silently survive inside a root DAG.",
    "responsibilities": [

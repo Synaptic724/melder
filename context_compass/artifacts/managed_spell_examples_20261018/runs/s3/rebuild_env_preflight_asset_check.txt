@@ -1,0 +1,12 @@
+2026-10-18T22:44:17Z
+Python 3.14.7
+uv 0.12.13 (x86_64-unknown-linux-gnu)
+interpreter: uv python install 3.14 into /tmp/m2_uv/python (device VM session)
+STALE  _agent_documentation source key or version moved (expected v0.2.8256)
+STALE  _bind_guard          source key or version moved (expected v0.2.8256)
+STALE  _system_documents    source key or version moved (expected v0.2.8256)
+
+3 stale asset(s): _agent_documentation, _bind_guard, _system_documents
+Regenerate with:
+    python src/melder/_build_assets/_build_asset_runner.py
+asset check exit=1

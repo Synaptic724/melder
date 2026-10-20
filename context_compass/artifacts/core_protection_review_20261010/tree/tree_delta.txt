@@ -1,0 +1,162 @@
+head: 66939dfe84e41e51f41f4bc4461ad1690907e909 (codex_features2)
+HEAD files: 5889 | byte-identical: 4102 | line-ending-only differences: 1747 | content changes and additions listed below: 135
+
+summary (kind, area: count)
+  ADDED_IN_INDEX  release_docs: 1
+  MODIFIED        README.md: 1
+  MODIFIED        context_compass/artifact_board.md: 1
+  MODIFIED        context_compass/attention_board.md: 1
+  MODIFIED        context_compass/system_docs/graph: 10
+  MODIFIED        context_compass/system_docs/src_architecture.md: 1
+  MODIFIED        context_compass/system_docs/src_architecture_index.md: 1
+  MODIFIED        context_compass/system_docs/src_components.md: 1
+  MODIFIED        context_compass/system_docs/src_components_index.md: 1
+  MODIFIED        context_compass/system_docs/src_graph.md: 1
+  MODIFIED        context_compass/system_docs/src_graph_index.md: 1
+  MODIFIED        context_compass/system_docs/tests_components.md: 1
+  MODIFIED        context_compass/system_docs/tests_components_index.md: 1
+  MODIFIED        llm_support: 7
+  MODIFIED        release_docs: 1
+  MODIFIED        src: 11
+  UNTRACKED       context_compass/artifacts/core_protection_review_20261010: 70
+  UNTRACKED       context_compass/artifacts/scan_bind_option_parity_20261010: 9
+  UNTRACKED       context_compass/system_docs/patches: 3
+  UNTRACKED       context_compass/tickets/tasks: 5
+  UNTRACKED       tests: 7
+
+files (kind, path, sha256 of the working-tree bytes)
+MODIFIED        README.md 41e42126805fc93fce546f5f1dde511ae18b748055256004d2eb1a0eb3715cd0
+MODIFIED        context_compass/artifact_board.md live-state
+MODIFIED        context_compass/attention_board.md live-state
+MODIFIED        context_compass/system_docs/graph/melder/_build_assets/_agent_documentation/manifest/agent_documentation_manifest.json dd376b63f8843ccf9b26ae31c48b1bf64a6dfe30639b2795ec28e362f6bb8d00
+MODIFIED        context_compass/system_docs/graph/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.json e1e476b892cd6325954d66175f6d35a03a89f87ef154b8b59a136b26a9cf8312
+MODIFIED        context_compass/system_docs/graph/melder/_build_assets/_system_documents/manifest/graph_adjacency_manifest.json 6e728703f6c8e11d34821b55e6378e072903837de76ac38f66b4ea1f9619dba7
+MODIFIED        context_compass/system_docs/graph/melder/_build_assets/_system_documents/manifest/system_documents_index.json 2518acb5daffa8d5b9d44c1cd01a204dd3c991d55074e1caed303c1087cb1492
+MODIFIED        context_compass/system_docs/graph/melder/_build_assets/_system_documents/manifest/system_documents_manifest.json d1a5eeb9042d1b60ff4a22f524f71bda7cc57474e93f4eec80872c1bf3912881
+MODIFIED        context_compass/system_docs/graph/melder/_build_assets/_system_documents/payloads/src_architecture_payload.json 01a679566b362a5ce1deb68f1ccf21454f7527e01d96254b03f682fad498a8bd
+MODIFIED        context_compass/system_docs/graph/melder/_build_assets/_system_documents/payloads/src_components_payload.json 5ea543f3fd3e045e3af7f9a8b94be7803443545b6f7bc94fe4354ed72c978a5f
+MODIFIED        context_compass/system_docs/graph/melder/_build_assets/_system_documents/payloads/src_graph_payload.json 786206eb1d38fb25f5127337911264d44dff5bf9c5ce435a4d0747143972bf95
+MODIFIED        context_compass/system_docs/graph/melder/aether/spellbook/bind/scan.json 5ed8f99d0de922871a63ef32372576f79db9f3d1e04a6f0b713434cfd682269a
+MODIFIED        context_compass/system_docs/graph/melder/aether/spellbook/spellbook.json 3220783114ed42c8a4f500ed0f6cba40378f4fcccf67c486654b8920879c8d60
+MODIFIED        context_compass/system_docs/src_architecture.md 75aa6f132ab28685a41307daad9184b06fda6da28781d3d4357aa48a55fc4e4f
+MODIFIED        context_compass/system_docs/src_architecture_index.md 16e5b44cf869182a42e94a2b5f1c1e877b4100e7a149ae3e95cd69403a80b49b
+MODIFIED        context_compass/system_docs/src_components.md 9e9717337839a50d0d3339ce244b98bab6c779fa65ffd5618dac316be526ef91
+MODIFIED        context_compass/system_docs/src_components_index.md 4ee1b910d32e8034d84619640765d600a9dab226ba53d7deee03885e4dce2fdc
+MODIFIED        context_compass/system_docs/src_graph.md 862bb9aeffce946bb5da906d01751da6052a6e274dd7bf5df0e77f2a88a2d9b6
+MODIFIED        context_compass/system_docs/src_graph_index.md bc56f87d09ba08e414a9cb87f63175c3f964fc46e7a9366b7316a0353aa2e3d3
+MODIFIED        context_compass/system_docs/tests_components.md 12846f3f0d0861e591a20cf3826ee29452c1a0417f2920e99c57332211f0887a
+MODIFIED        context_compass/system_docs/tests_components_index.md 54d45f8cdb42829493ece071286a3cc1ef3ab6402b4d2d110d112d8ab3fac082
+MODIFIED        llm_support/llm_full_other.txt 4041fa3ffe8988ae78f8f56144d819e3394557ecc4ec0968771417030146a5d4
+MODIFIED        llm_support/llm_full_other_index.md 2f566ab4e977e381692eef7c4f10357492803ad59574606ea9f38336e2831843
+MODIFIED        llm_support/llm_full_src.txt d1ee3cfe771a3feda0c8fc34f7279acf39fd2bd2df5cfbb199df47caad6b34b5
+MODIFIED        llm_support/llm_full_src_index.md 524d4481e280a1455eca6e67299c49448d137cbc5b8977579d955165ba8d46da
+MODIFIED        llm_support/llm_full_tests.txt f1b483a8abb006c3e7c571d8641c3a610730d9e99cbd379197bfec3ca3714aed
+MODIFIED        llm_support/llm_full_tests_index.md f474e7cd1dbe5ed9efcfef680423b8e7ce753d46638738ea4bba2e4d83081bd4
+MODIFIED        llm_support/manifest.json 52b8da12a845cb739b429edd7eadb2314c66b8f8bf8bb4d0b5e4697d77e322fe
+MODIFIED        release_docs/next_version_release.md c26fc5b77400034dc37aaa31f278be6119e1b06ada9185c721ef4f3137d69f1c
+MODIFIED        src/melder/__version__.py 88328cca66b13ae461a66d2544c5034bd4f4df85dbd5d7b01d764552e87dd037
+MODIFIED        src/melder/_build_assets/_agent_documentation/manifest/agent_documentation_manifest.py 054c345622ec612dcc04b9feaf2e88f5d6dd774fb95dded939c8b1ba1ce0a5a1
+MODIFIED        src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py b1ac0d0b7490f433fa59d482478b7ddcf691c955729dfbd3d6fd5f7bae5d7a79
+MODIFIED        src/melder/_build_assets/_system_documents/manifest/graph_adjacency_manifest.py 8ace71045f8b7c3383e912a94f572144e31378b06073c68e6d243b6bc0926c70
+MODIFIED        src/melder/_build_assets/_system_documents/manifest/system_documents_index.py e78722b447831a6b8cfc72d5a085e1ef364edbc852a1bd9cdb966b8e20ad6fa5
+MODIFIED        src/melder/_build_assets/_system_documents/manifest/system_documents_manifest.py fc0cfc5144266b72dc34bc70b46c7c4b30438b1710e2123fb6bd9a74ef152450
+MODIFIED        src/melder/_build_assets/_system_documents/payloads/src_architecture_payload.py d98407072787cefc214ad15cc4043f896a198b9ec3e30b6fcd265575f92fa6ed
+MODIFIED        src/melder/_build_assets/_system_documents/payloads/src_components_payload.py a9ac16a688aee4dfecae17c160340201b2db01cadd1f8c75ca67118e554fc356
+MODIFIED        src/melder/_build_assets/_system_documents/payloads/src_graph_payload.py 5425efdaa79dd26c55ef2412fa2415641ee071f9aa77ff4b0a18726f5b36cc78
+MODIFIED        src/melder/aether/spellbook/bind/scan.py b04d454805ecb35fc17930cef41a7b4a58786168dd284daddb3ff393f486a139
+MODIFIED        src/melder/aether/spellbook/spellbook.py 13988deba96febe2ffb830b8cc0039463185f7443146e539df196d150c1580ae
+ADDED_IN_INDEX  release_docs/0.2.8227.md ee0ba4d09f03728700b8369d63ab7edeebc59a63072da95d79ea40bab7fa2c3d
+UNTRACKED       context_compass/artifacts/core_protection_review_20261010/README.md dc8a9488b9f1cd2a1825053d6706ccfea90e69ba286a802ef9cc7fdbdf9b4d39
+UNTRACKED       context_compass/artifacts/core_protection_review_20261010/diffs/review_authored.diff d2af288cabd4fbdbf18787e86cf01eb677b230acc5a37f7a45d69c93329e4c72
+UNTRACKED       context_compass/artifacts/core_protection_review_20261010/diffs/tests_components_review_part.diff 0b22839729323aeeec2346acbb76c7ee9850fc4b98f4035c9887677654936ffe
+UNTRACKED       context_compass/artifacts/core_protection_review_20261010/file_manifest.md a777179d75747a33974c981d78d1720e13d88f1de8e960fc2e554ce4e19d0cbf
+UNTRACKED       context_compass/artifacts/core_protection_review_20261010/probes/codegen_probe.py ce02ffe0cded9a1a6d1edccf5dc1a4cabab265f2b5890d61d406938891b79a95
+UNTRACKED       context_compass/artifacts/core_protection_review_20261010/probes/codegen_probe2.py ddc6dec2291b14ee83d52beb1799736e8d95311c86e0e4a127c4b782456d4d96
+UNTRACKED       context_compass/artifacts/core_protection_review_20261010/probes/codegen_probe2_output.txt 147654588b2f79e599514b5e303cc8f3a98afa2616fec8b0720e0f4afbecd878
+UNTRACKED       context_compass/artifacts/core_protection_review_20261010/probes/codegen_probe_output.txt d96eccc89df0e3da6e1bbceaa97ef0d9f1eeeb07ac0f137a924e1f2caf8f0172
+UNTRACKED       context_compass/artifacts/core_protection_review_20261010/probes/d3_probe.py 19ce244c88f91f27ffaf954f5a6772b87931d346186ddf42c2da1e436b7ff497
+UNTRACKED       context_compass/artifacts/core_protection_review_20261010/probes/d3_probe_output.txt 267ce42ab228b31fc3ad8fe489da67e5a6921e7f404c681bc966a56efc3df708
+UNTRACKED       context_compass/artifacts/core_protection_review_20261010/probes/d3_world/src/app_mod.py 83e5e26e8c4fd5ea68dd20e0e63ce0735ece089923857abb6e9ff76ec18fc4c6
+UNTRACKED       context_compass/artifacts/core_protection_review_20261010/probes/d3_world/venv_site_packages/probe_dep/__init__.py 466627a18b456612e348d1a47a5c3351061d0e133f56ca12feb14e3e235c7810
+UNTRACKED       context_compass/artifacts/core_protection_review_20261010/probes/d3_world/venv_site_packages/probe_pkg/__init__.py 76021b340ea3c2f4f356bb823920d106b138d58d1f49f85b818b11f48d9540ea
+UNTRACKED       context_compass/artifacts/core_protection_review_20261010/probes/probe_custody.py baf66b6738e050ef59044d4a94eee0d1bbbbd9bba832dd99a8c5346afd0b5659
+UNTRACKED       context_compass/artifacts/core_protection_review_20261010/probes/probe_custody_output.txt 6f6f07952a754b79d7548fb0a38a43788c6fca5bdbfb7f8c434ddbfef8dbbfed
+UNTRACKED       context_compass/artifacts/core_protection_review_20261010/probes/probe_materialize.py 002aa2cbf6eaab755b38b980faf1ca384d45e30a8ea1653c60d6f59fcaf4ac7f
+UNTRACKED       context_compass/artifacts/core_protection_review_20261010/probes/probe_materialize_fail.py 05900d5c135deb49bd37980e23d657381004ade248d07bebdf5ea1ba87fb0063
+UNTRACKED       context_compass/artifacts/core_protection_review_20261010/probes/probe_materialize_fail_output.txt f5b8db39bd7b42e820d557c2ecbef8ef6b87c74c55be1013978c9f9169542ff4
+UNTRACKED       context_compass/artifacts/core_protection_review_20261010/probes/probe_materialize_output.txt 57de848a543ffc12673c3559f480bac710e49d4ee4a4753d80a27cf87ff6d63d
+UNTRACKED       context_compass/artifacts/core_protection_review_20261010/runs/restore_ids_a.txt fa6a52911a7a9289449a418653d2bf43c5e3db987b6c5bd2ccb185bc46778dc6
+UNTRACKED       context_compass/artifacts/core_protection_review_20261010/runs/restore_ids_b.txt 34f322f5b4c0443e052df43f4db6e7b427daecedcddf03da5fca4946b435dc3c
+UNTRACKED       context_compass/artifacts/core_protection_review_20261010/runs/results_table.md 62c29bf067e9b251bda6516f505c45d5c990100b7a6d7b19c9f1ca08a080ee48
+UNTRACKED       context_compass/artifacts/core_protection_review_20261010/runs/run_final.sh 7975a15c292ab9df51f90519ca11760cf59b4ac90206c085c46b1531363d33f6
+UNTRACKED       context_compass/artifacts/core_protection_review_20261010/runs/run_one.sh 4cb9f8cbb73693f323d994dd633393016e5c841c887f2bcf2b999dd91495032c
+UNTRACKED       context_compass/artifacts/core_protection_review_20261010/runs/sc_ids_a.txt 47999ceea5ea5c1cec8af9c9d358f2963eb47fba9f5deb946ed6ea4778b34f5d
+UNTRACKED       context_compass/artifacts/core_protection_review_20261010/runs/sc_ids_b.txt 14bd1029a577e3a84ab55b6281e39e6ee9506e51d6af40410a7d3d5b3dbfd9f6
+UNTRACKED       context_compass/artifacts/core_protection_review_20261010/runs/skips_xfails.md 2c31cfb361525dcc8396209eb8fe6b63a38439059ddebf12bd4aea31a73a8f4d
+UNTRACKED       context_compass/artifacts/core_protection_review_20261010/runs/v10_integration_conduit.txt 281e1ae4e86cbc225bf4d8127dc516d252a3b59468020400d9af0bd9fa929f78
+UNTRACKED       context_compass/artifacts/core_protection_review_20261010/runs/v10_integration_conduit.xml 2a33906cbabea39c358b0cdeec9a4f1f0536eab2f22c8a71be1c9004882d4034
+UNTRACKED       context_compass/artifacts/core_protection_review_20261010/runs/v11_integration_live_sim_multithreading.txt 78bf565c26722fb29daec2e7a3518683da27446e07b9dcb10808a1df4c411579
+UNTRACKED       context_compass/artifacts/core_protection_review_20261010/runs/v11_integration_live_sim_multithreading.xml d5c16c49f6e7b12e41940393f1d561024cdebca7767f8acde4a1f5a54ca431ae
+UNTRACKED       context_compass/artifacts/core_protection_review_20261010/runs/v12_experimentation.txt eab857d69f83d860ae7c7f74c954373233f3851bbeab4b5986af04bae476bf86
+UNTRACKED       context_compass/artifacts/core_protection_review_20261010/runs/v12_experimentation.xml 01b3ce5ba760fbfe1c063239de99720680ed03860d64f95e09bd3180b5f4a5a8
+UNTRACKED       context_compass/artifacts/core_protection_review_20261010/runs/v13_post_rebuild.txt 2c9a42563cb53c6d38c1ac94ab9efb700b27de0f95867b5d076e40779068b23d
+UNTRACKED       context_compass/artifacts/core_protection_review_20261010/runs/v14_review_suite_post.txt ac592ebd8bc0910d14cb6303a05b7913040eb12449c14949f1878255b88978b4
+UNTRACKED       context_compass/artifacts/core_protection_review_20261010/runs/v15_scan_focused_post.txt a9ebfbfd177ded761e58b5cb7d031ee417e5b113343552268a299309b885c519
+UNTRACKED       context_compass/artifacts/core_protection_review_20261010/runs/v1_scan_focused.txt bf35bce949516d9af14d1d1e5156c067ab238a994e9e1ce5c523b0c3e3ad13ec
+UNTRACKED       context_compass/artifacts/core_protection_review_20261010/runs/v1_scan_focused.xml 665885dc608425e8b09ba89b66e959f80278df5715665f3fb7700e2bda5f99ce
+UNTRACKED       context_compass/artifacts/core_protection_review_20261010/runs/v2_review_suite.txt 2e185ab883ee566a90985c1f5c22081ffd6faafa700e0a77a291069beff239c9
+UNTRACKED       context_compass/artifacts/core_protection_review_20261010/runs/v2_review_suite.xml 45a0941acc7dcd7a63d588cdf7a1443ffea08e50902f645b4ed2cba736035ab0
+UNTRACKED       context_compass/artifacts/core_protection_review_20261010/runs/v3_unit_tier.txt d00bb6f5d3d3326ac9d1b95b376a1e2f86cac0d5b87060d56937bf67b87447bd
+UNTRACKED       context_compass/artifacts/core_protection_review_20261010/runs/v3_unit_tier.xml 87cc85524a36ccac9a0ba018af57166de660240980148f9a7ed0cfde556cce8a
+UNTRACKED       context_compass/artifacts/core_protection_review_20261010/runs/v3a_unit_spellbook.txt bbfb4f9edb171bdf5ba6bc10745f842fe69306528f4bb473ee8a104b9938b2dd
+UNTRACKED       context_compass/artifacts/core_protection_review_20261010/runs/v3a_unit_spellbook.xml 3231bfdd9c3e7c195441eb643bfefa18ce1888c914035f6ce733681c68e93284
+UNTRACKED       context_compass/artifacts/core_protection_review_20261010/runs/v4_component_spellbook.txt 654733ed6d529688cefe9d8f93e3cb483c834e9a0645693a3fd80fd280a0f733
+UNTRACKED       context_compass/artifacts/core_protection_review_20261010/runs/v4_component_spellbook.xml c46ab2a651cc322eacb7b5a52b6a623e8c06aef85f17c5891fbcc0ef3ba3ee15
+UNTRACKED       context_compass/artifacts/core_protection_review_20261010/runs/v5_integration_spellbook.txt af1d78dd3310e2a724c0702d8e49ab465ce42a7f6be41aa39af8a510117af3ec
+UNTRACKED       context_compass/artifacts/core_protection_review_20261010/runs/v5_integration_spellbook.xml 1f1ef56bb3ba54134e020f6652f787f8cadfb1e74588259eeb1cc37a2200c7c9
+UNTRACKED       context_compass/artifacts/core_protection_review_20261010/runs/v6a_integration_crystallizer.txt 15f63416023478910f01b9c414d51833f8d804a5efc93121b89e01a4fee09c67
+UNTRACKED       context_compass/artifacts/core_protection_review_20261010/runs/v6a_integration_crystallizer.xml d2bd4cb48bee1030258ce925735508742415102ec55e38099bdf6068282d99d8
+UNTRACKED       context_compass/artifacts/core_protection_review_20261010/runs/v6b1_integration_crystallizer_restore.txt c874e3fc85f7b94250da3b26da663c44b65b97d88a1b97744d14786db7cbd929
+UNTRACKED       context_compass/artifacts/core_protection_review_20261010/runs/v6b1_integration_crystallizer_restore.xml 711fa1fe2afbeced3849fd2d954868e198e91d546e3824eb8d8d763b02c83766
+UNTRACKED       context_compass/artifacts/core_protection_review_20261010/runs/v6b2_integration_crystallizer_restore.txt 4f7958fd801188fa71ae38285190964a2181e701c03fed3c5e6768eacb08ba11
+UNTRACKED       context_compass/artifacts/core_protection_review_20261010/runs/v6b2_integration_crystallizer_restore.xml f369fcff96f3beeb1bb9e7c9319b8d168500007d9c2d72243ae57eca2fb93110
+UNTRACKED       context_compass/artifacts/core_protection_review_20261010/runs/v6c_integration_crystallizer.txt c1195e973cc4d88bd9491e9931216cdd878d724263e3eb71a15eada0b92d0234
+UNTRACKED       context_compass/artifacts/core_protection_review_20261010/runs/v6c_integration_crystallizer.xml 774c994cb9150c406cca9e8c7bef6fdec5645cd31b610777ea041b5820429926
+UNTRACKED       context_compass/artifacts/core_protection_review_20261010/runs/v6d_integration_crystallizer.txt e95f992bd04065d16ef45459e466cf5a82993fcec7893d67f46f93a01ddddad2
+UNTRACKED       context_compass/artifacts/core_protection_review_20261010/runs/v6d_integration_crystallizer.xml b23a6b381c49a6a4c1550618439516716e651718661d8f735d24b0b3afcde289
+UNTRACKED       context_compass/artifacts/core_protection_review_20261010/runs/v6e1_integration_spell_crystal.txt 3227d8ac6f728b29c0bfeef943099ebb2e154e860bab6cba25c0fe883120d810
+UNTRACKED       context_compass/artifacts/core_protection_review_20261010/runs/v6e1_integration_spell_crystal.xml e451c78fc4b580a84cde4069a5a92c6b93bee1079e88ff0fe1d44fc57847f8b9
+UNTRACKED       context_compass/artifacts/core_protection_review_20261010/runs/v6e2_integration_spell_crystal.txt 474a3fb01a516287c06e805d77be0e45ed2578b5ca8433a8428aa145f366fd25
+UNTRACKED       context_compass/artifacts/core_protection_review_20261010/runs/v6e2_integration_spell_crystal.xml baf67c6623758879e1bcbf14e25edb3e359870572840a28faf93b72df32c704b
+UNTRACKED       context_compass/artifacts/core_protection_review_20261010/runs/v7_integration_mutation_research.txt f53295fab86677a01679a3e7c1047b57a5d621b78f112defcbd4dc86a1e1f922
+UNTRACKED       context_compass/artifacts/core_protection_review_20261010/runs/v7_integration_mutation_research.xml 7a3f4814e6d6f2c473b62e82d95f5ce35217e38e7e2c562ce8dc72254d1bd9e8
+UNTRACKED       context_compass/artifacts/core_protection_review_20261010/runs/v8_integration_aether.txt 2d4a15e1f934880b3d1752c70cba4fa10b0fb27377d2feb106ba3ac5e288bce7
+UNTRACKED       context_compass/artifacts/core_protection_review_20261010/runs/v8_integration_aether.xml 43700951a54a9614c5ea77e68649d7b7df9be81c02417f28332630732c536c84
+UNTRACKED       context_compass/artifacts/core_protection_review_20261010/runs/v9_component_other.txt 43af78c6696464b1bd3546408038b2f2a7b5dcf9d21755312e5ca01b747163b6
+UNTRACKED       context_compass/artifacts/core_protection_review_20261010/runs/v9_component_other.xml 0e409b83693f919b9091b14964c87ecdb7258d34318020cecbe13ebf9b35509e
+UNTRACKED       context_compass/artifacts/core_protection_review_20261010/tools/make_diffs.py be68bd243c49bf09e490e6496d63993f3f80b3fb53fff77d0afa4cc33598a33a
+UNTRACKED       context_compass/artifacts/core_protection_review_20261010/tools/tree_delta.py 4dff6cb84cb22cd6be56cb69bfc0ea66b325cad1338861633278c91bf3d42ede
+UNTRACKED       context_compass/artifacts/scan_bind_option_parity_20261010/README.md b6641f40b20bc6444a2aadb027bc75b9d29b583751c12b4f1161b64ce1a76776
+UNTRACKED       context_compass/artifacts/scan_bind_option_parity_20261010/diffs/scan_bind_authored.diff 27227ffd76b5ed197ff4aa038538636131bc400509c321eca0f17cbe930cd258
+UNTRACKED       context_compass/artifacts/scan_bind_option_parity_20261010/diffs/tests_components_scan_bind_part.diff fd064edcb61385cefd9dfc3298a9a72d00d5a8dda7920a13e1aac86edfa66b03
+UNTRACKED       context_compass/artifacts/scan_bind_option_parity_20261010/file_manifest.md c9fd54040008ee88bd95c52442bf1ed10b1de1d9c2702b54a7da27db7c3bab09
+UNTRACKED       context_compass/artifacts/scan_bind_option_parity_20261010/runs/v15_scan_focused_post.txt a9ebfbfd177ded761e58b5cb7d031ee417e5b113343552268a299309b885c519
+UNTRACKED       context_compass/artifacts/scan_bind_option_parity_20261010/runs/v1_scan_focused.txt bf35bce949516d9af14d1d1e5156c067ab238a994e9e1ce5c523b0c3e3ad13ec
+UNTRACKED       context_compass/artifacts/scan_bind_option_parity_20261010/runs/v3a_unit_spellbook.txt bbfb4f9edb171bdf5ba6bc10745f842fe69306528f4bb473ee8a104b9938b2dd
+UNTRACKED       context_compass/artifacts/scan_bind_option_parity_20261010/runs/v4_component_spellbook.txt 654733ed6d529688cefe9d8f93e3cb483c834e9a0645693a3fd80fd280a0f733
+UNTRACKED       context_compass/artifacts/scan_bind_option_parity_20261010/runs/v5_integration_spellbook.txt af1d78dd3310e2a724c0702d8e49ab465ce42a7f6be41aa39af8a510117af3ec
+UNTRACKED       context_compass/system_docs/patches/completed/scan_bind_option_parity_2026_10_10/architecture_patch.md 1db307a14c2ea64acfddb6d340e78e48177d6279bdf24d90ee105fdd961f08ec
+UNTRACKED       context_compass/system_docs/patches/completed/scan_bind_option_parity_2026_10_10/code_description_patch_scan_module.md 3ccbf139d370881348ef2081d6d33c114b5f8c743cc6a41ae55ff3a229aa0e71
+UNTRACKED       context_compass/system_docs/patches/completed/scan_bind_option_parity_2026_10_10/component_patch_scan_bind.md a343b566a318e3aac769b9e87e7ba6fd29f4052c22ae8f4b3627799e2fc5d322
+UNTRACKED       context_compass/tickets/tasks/backlog/2026-10-10_deny_file_access_under_safe_codegen_task.md live-state
+UNTRACKED       context_compass/tickets/tasks/backlog/2026-10-10_enforce_import_policy_on_dynamic_imports_task.md live-state
+UNTRACKED       context_compass/tickets/tasks/backlog/2026-10-10_refuse_materializing_over_live_modules_task.md live-state
+UNTRACKED       context_compass/tickets/tasks/completed/2026-10-08_restore_scan_bind_option_parity_task.md live-state
+UNTRACKED       context_compass/tickets/tasks/completed/2026-10-08_review_core_protection_fork_aware_updates_task.md live-state
+UNTRACKED       tests/component/melder/spellbook/test_scan_bind_parity_component.py eb7b64f8ff6c47391c9f3ea04625025a10b6e53a56bc250a507a63bd03bd8da8
+UNTRACKED       tests/integration/melder/aether/test_codegen_core_boundary_integration.py 89b7cdd9068e135b1bcbac294aef0ec7534878c798548aa2e800483f93aa6520
+UNTRACKED       tests/integration/melder/crystallizer/test_recorded_leaf_source_read_integration.py e9655b624539c358fa5a05922b023446eb6f38e44c4e0ee79280d521a51d22c5
+UNTRACKED       tests/integration/melder/mutation_research/test_research_lane_runtime_isolation_integration.py 36f407c2b87923c93369efdd5fa2000bffe3c174e4581241a04ac8d0a17b7c19
+UNTRACKED       tests/unit/melder/crystallizer/crystal_analysis/test_custody_boundary_characterization.py 161b05845b368c0fc7d13f92e56bf7f6bc6f6b5bb0d9b145c57f1b14124fd6c1
+UNTRACKED       tests/unit/melder/spellbook/bind/test_internal_registration_identity.py 8694a433583448c1d8e31fb8d85f1b6c37096be9eec33891d43c6ebb644e90bf
+UNTRACKED       tests/unit/melder/spellbook/test_scan_bind_option_parity.py 451da9967cb7c37d0870805b8b588d3049b8cd38dafe978c67fc67b90f70edaf

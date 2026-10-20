@@ -1,0 +1,8 @@
+# AbstractElasticPool at 0.2.8235 (unchanged by this task); python 3.14.7t, PYTHON_GIL=1, 100000 origins, 2026-10-14T18:18:51Z
+/sessions/rcw-01y9fvdxngfz65nliarhkobj/mnt/melder_private/src/melder/__init__.py:190: UserWarning: Python 3.14+ detected, but running in GIL-enabled mode.
+melder is optimized for Python built with --disable-gil (PEP 703).
+Performance may be degraded.
+  warnings.warn(
+real_two_adds: failing origins 155/100000 = 0.0015 {'at_settle_target_36': 155, 'at_settle_idle_36': 155, 'at_settle_destroyed_4': 155}
+real_one_add: failing origins 179/100000 = 0.0018 {'at_settle_target_36': 179, 'at_settle_idle_36': 179, 'at_settle_destroyed_4': 179}
+whole_two_adds: failing origins 0/100000 = 0.0000 {}

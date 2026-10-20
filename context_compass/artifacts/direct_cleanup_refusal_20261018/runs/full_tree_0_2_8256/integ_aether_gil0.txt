@@ -1,0 +1,71 @@
+........................................................................ [  8%]
+............FFFFFFFFFFF................................................. [ 17%]
+........................................................................ [ 25%]
+........................................................................ [ 34%]
+........................................................................ [ 42%]
+........................................................................ [ 51%]
+........................................................................ [ 60%]
+........................................................................ [ 68%]
+................................................................xxxxx... [ 77%]
+........................................................................ [ 85%]
+........................................................................ [ 94%]
+...............................................                          [100%]
+=================================== FAILURES ===================================
+E   AssertionError: assert 'b684b17cab68...54e141f88b722' == 'b7ddb0bd5765...1ae775ed57074'
+      
+      - b7ddb0bd5765cdf09238e6f8950d0481e5d04fb8ad0fb89c9391ae775ed57074
+      + b684b17cab68db6fa3ed6c9b297f85da17371c0078ff9136e6854e141f88b722
+tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py:267: AssertionError: assert 'b684b17cab68...54e141f88b722' == 'b7ddb0bd5765...1ae775ed57074'
+E   AssertionError: assert 'Spellbook va...ls: SelfMade.' == 'notch_spell ...of the index.'
+      
+      - notch_spell refused: 'SelfMade' (spell_id b684b17cab68db6fa3ed6c9b297f85da17371c0078ff9136e6854e141f88b722) failed its structural check, so the notch did not happen; 'English' (spell_id b7ddb0bd5765cdf09238e6f8950d0481e5d04fb8ad0fb89c9391ae775ed57074) is still the active version of the index.
+      + Spellbook validation failed. Broken spells: SelfMade.
+tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py:305: AssertionError: assert 'Spellbook va...ls: SelfMade.' == 'notch_spell ...of the index.'
+E   Failed: DID NOT RAISE SpellbookValidationError
+tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py:252: Failed: DID NOT RAISE SpellbookValidationError
+E   AssertionError: assert '43eccf08528814c38baae4c3d6bb07e77122dd7f54218d66941bf61940c7cab6' is None
+     +  where '43eccf08528814c38baae4c3d6bb07e77122dd7f54218d66941bf61940c7cab6' = frame_claim(('greeter', 'greeter_v2'))
+     +    where frame_claim = <test_notch_refused_at_commit_integration._World object at 0x22c9e3803d0>.frame_claim
+tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py:339: AssertionError: assert '43eccf08528814c38baae4c3d6bb07e77122dd7f54218d66941bf61940c7cab6' is None
+E   melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed. Broken spells: Speaker.
+    Speaker:
+      - Spell 'Speaker' depends on spell id b684b17cab68, which this Spellbook does not hold. Bind that dependency in this Spellbook, or remove the parameter that needs it. [DANGLING_DEPENDENCY]
+src/melder/aether/conduit/meld/meld.py:1010: melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed. Broken spells: Speaker.
+E   AssertionError: assert <melder.aether.spellbook.spell_compiler.validation.spell_validation_result.SpellValidationResult object at 0x22ca08f9a60> is None
+     +  where <melder.aether.spellbook.spell_compiler.validation.spell_validation_result.SpellValidationResult object at 0x22ca08f9a60> = Spell(name=SelfMade, binding=greeter, frame=Greeter, SHA256=b684b17cab68db6fa3ed6c9b297f85da17371c0078ff9136e6854e141f88b722).validation_result_phase4
+     +    where Spell(name=SelfMade, binding=greeter, frame=Greeter, SHA256=b684b17cab68db6fa3ed6c9b297f85da17371c0078ff9136e6854e141f88b722) = find_spell_by_spell_id('b684b17cab68db6fa3ed6c9b297f85da17371c0078ff9136e6854e141f88b722')
+     +      where find_spell_by_spell_id = <melder.aether.spellbook.spellbook.Spellbook object at 0x22ca0682d10>.find_spell_by_spell_id
+     +        where <melder.aether.spellbook.spellbook.Spellbook object at 0x22ca0682d10> = <test_notch_refused_at_commit_integration._World object at 0x22c9e384d90>.book
+tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py:274: AssertionError: assert <melder.aether.spellbook.spell_compiler.validation.spell_validation_result.SpellValidationResult object at 0x22ca08f9a60> is None
+E   AssertionError: assert {'4b63a88c271...ae775ed57074'} == {'4b63a88c271...8664c62c549c'}
+      
+      Extra items in the left set:
+      'b7ddb0bd5765cdf09238e6f8950d0481e5d04fb8ad0fb89c9391ae775ed57074'
+      Use -v to get more diff
+tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py:389: AssertionError: assert {'4b63a88c271...ae775ed57074'} == {'4b63a88c271...8664c62c549c'}
+E   AssertionError: assert ('01M57WNCC1Z41H3NY7098B21F7', 'b7ddb0bd5765cdf09238e6f8950d0481e5d04fb8ad0fb89c9391ae775ed57074') in {('01M57WNCC1Z41H3NY7098B21F7', 'b684b17cab68db6fa3ed6c9b297f85da17371c0078ff9136e6854e141f88b722')}
+tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py:402: AssertionError: assert ('01M57WNCC1Z41H3NY7098B21F7', 'b7ddb0bd5765cdf09238e6f8950d0481e5d04fb8ad0fb89c9391ae775ed57074') in {('01M57WNCC1Z41H3NY7098B21F7', 'b684b17cab68db6fa3ed6c9b297f85da17371c0078ff9136e6854e141f88b722')}
+E   assert <SpellIndex id=01M57WNCCE40WS652M2RABR0PN current=43eccf08528814c38baae4c3d6bb07e77122dd7f54218d66941bf61940c7cab6> not in {<SpellIndex id=01M57WNCCBPBYMPZ1TQDMEEGYR current=b7ddb0bd5765cdf09238e6f8950d0481e5d04fb8ad0fb89c9391ae775ed57074>: ...=SelfMade, binding=greeter_v2, frame=Greeter, SHA256=43eccf08528814c38baae4c3d6bb07e77122dd7f54218d66941bf61940c7cab6)}
+     +  where {<SpellIndex id=01M57WNCCBPBYMPZ1TQDMEEGYR current=b7ddb0bd5765cdf09238e6f8950d0481e5d04fb8ad0fb89c9391ae775ed57074>: ...=SelfMade, binding=greeter_v2, frame=Greeter, SHA256=43eccf08528814c38baae4c3d6bb07e77122dd7f54218d66941bf61940c7cab6)} = <melder.aether.spellbook.spellbook.Spellbook object at 0x22ca0683c10>._spells
+     +    where <melder.aether.spellbook.spellbook.Spellbook object at 0x22ca0683c10> = <test_notch_refused_at_commit_integration._World object at 0x22ca03f8f10>.book
+tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py:422: assert <SpellIndex id=01M57WNCCE40WS652M2RABR0PN current=43eccf08528814c38baae4c3d6bb07e77122dd7f54218d66941bf61940c7cab6> not in {<SpellIndex id=01M57WNCCBPBYMPZ1TQDMEEGYR current=b7ddb0bd5765cdf09238e6f8950d0481e5d04fb8ad0fb89c9391ae775ed57074>: ...=SelfMade, binding=greeter_v2, frame=Greeter, SHA256=43eccf08528814c38baae4c3d6bb07e77122dd7f54218d66941bf61940c7cab6)}
+E   KeyError: '[MELD] No spell found with spell_id: b7ddb0bd5765cdf09238e6f8950d0481e5d04fb8ad0fb89c9391ae775ed57074'
+src/melder/aether/conduit/meld/meld.py:2186: KeyError: '[MELD] No spell found with spell_id: b7ddb0bd5765cdf09238e6f8950d0481e5d04fb8ad0fb89c9391ae775ed57074'
+E   AssertionError: assert (['staged', '..., 'promoted']) == (['staged'], ['registered'])
+      
+      At index 0 diff: ['staged', 'promoted'] != ['staged']
+      Use -v to get more diff
+tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py:491: AssertionError: assert (['staged', '..., 'promoted']) == (['staged'], ['registered'])
+=========================== short test summary info ============================
+FAILED tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py::test_a_notch_refused_at_commit_leaves_the_old_version_active
+FAILED tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py::test_a_notch_refused_at_commit_says_it_did_not_happen
+FAILED tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py::test_a_refused_notch_is_checked_again_when_retried
+FAILED tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py::test_a_refused_notch_releases_the_claim_it_took_for_the_broken_versions_address
+FAILED tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py::test_a_notch_refused_at_commit_leaves_borrowers_on_the_lenders_version
+FAILED tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py::test_a_notch_back_after_a_refusal_changes_nothing
+FAILED tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py::test_a_sound_notch_after_a_refusal_moves_owner_and_borrower
+FAILED tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py::test_a_refused_notch_leaves_the_nexus_record_on_the_old_version
+FAILED tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py::test_a_refused_activation_of_a_minted_index_leaves_it_parked_and_unregistered
+FAILED tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py::test_after_a_refusal_the_book_flag_falls_once_english_melds
+FAILED tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py::test_a_refused_notch_journals_no_promotion
+11 failed, 823 passed, 5 xfailed in 17.98s

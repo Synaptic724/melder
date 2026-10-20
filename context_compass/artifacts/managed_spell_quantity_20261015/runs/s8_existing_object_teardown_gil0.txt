@@ -1,0 +1,2 @@
+notch=False: meld -> v1; v2 in store before notch=False, after meld=False; closed at teardown=[]
+notch=True: meld -> v2; v2 in store before notch=False, after meld=False; closed at teardown=[]

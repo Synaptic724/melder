@@ -1,0 +1,21 @@
+Fair matrix, 3d184cac and candidates, CPython 3.14.7t, -X gil=0 and gil=1, 3 repetitions each.
+Cell: P = passed in all 6 runs, F = failed in all 6 runs, MIX = differs between runs.
+
+test                                                              3d184cac       R1       R4      R4'       R5      NC1      NC2      NC3
+a1_bind_during_the_walk                                                  F        P        P        P        P        F        P        P
+a2_removal_during_the_walk                                               F        P        P        P        P        F        P        P
+a3_bind_past_its_earlier_locking_publishes_during_the_walk               F        P        P        P        P        F        P        F
+b_cleanup_as_the_probe_requests_the_index_lock                           F        P        P        P        P        F        F        P
+c_cleanup_before_the_probe                                               F        P        P        P        P        F        F        P
+d_removal_and_bind_resize_during_the_walk                                F        P        P        P        P        F        P        P
+g1_lookup_inside_a_notch_between_pop_and_insert                          F        F        P        P        F        F        F        P
+h1_post_bind_callback_waits_on_a_foreign_thread_lookup                   P        P        P        P        P        P        P        P
+h2_conduit_lifecycle_hook_waits_on_a_foreign_thread_lookup               P        P        F        F        P        P        P        F
+l1_book_locked_index_id_walk_survives_a_bind                             F        F        P        P        P        P        P        F
+m1_membership_move_after_the_probe_passed_the_target_index               F        F        P        P        F        F        F        P
+n1_notch_of_another_index_during_the_walk                                P        P        P        P        P        P        P        P
+n2_notch_of_a_visited_index_resizes_the_dict                             F        P        P        P        P        F        P        P
+p_public_lookup_with_a_late_bind_on_a_dynamic_root                       F        P        P        P        P        F        P        P
+self_removal_answers_the_spell_or_none                                   F        P        P        P        P        F        F        P
+t1_transfer_of_another_spell_during_the_walk                             F        P        P        P        P        F        P        P
+t2_transfer_with_forced_rollback_resizes_the_dict                        F        P        P        P        P        F        P        P

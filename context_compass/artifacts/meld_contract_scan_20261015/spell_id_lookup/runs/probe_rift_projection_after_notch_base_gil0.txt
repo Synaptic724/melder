@@ -1,0 +1,9 @@
+v1 90702852 v2 f5659de9 index 01M55WQ4
+records before notch: [('90702852', '01M55WQ4')]
+records after notch (no refresh): [('f5659de9', '01M55WQ4')]
+get_spell_by_id(v1) raised ValueError Spell id '90702852d15989aa2b37d877e6b0992fac3640bad0869c074485be7ce06ca366' was not found in frame '
+get_spell_by_source_id(v1) raised ValueError Spell '01M55WQ4YVM47YZZ4JQXCWP903:90702852d15989aa2b37d877e6b0992fac3640bad0869c074485be7ce06ca366' 
+get_spell_by_id(v2) -> f5659de9 PricingV2
+get_spell_by_source_id(v2) -> f5659de9 PricingV2
+get_spell_by_index_id -> f5659de9 PricingV2
+records after refresh: [('f5659de9', '01M55WQ4')]

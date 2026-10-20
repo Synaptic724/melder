@@ -108,7 +108,7 @@ def compiler_book() -> Iterator[Spellbook]:
 
 def _selected(book: Spellbook, spell_id: str) -> Spell:
     """Return the exact selected record produced by this test's bind."""
-    spell = book.find_spell_by_id(spell_id)
+    spell = book.find_spell_by_spell_id(spell_id)
     assert spell is not None and spell.spell_id == spell_id
     return spell
 

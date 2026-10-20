@@ -1,0 +1,8 @@
+first A
+before: lookup {'01M52GMTRZPK3Y3Y5TTY93N17F': {('iservice', 'svc'): <SpellIndex id=01M52GMTRWFEJDZ0J1MYAC96W7 current=c8b43f4a2a1c6d198dcf649eec39fe5081a4265213fbd659359f4ce8e4a78d66>}}
+remove returned None
+after: lookup {'01M52GMTRZPK3Y3Y5TTY93N17F': {}}
+after: contracted {'01M52GMTRZPK3Y3Y5TTY93N17F': {}}
+after: inactive {}
+consumer validity SpellValidity.valid flags set()
+meld returned service ImplA

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/conduit_ward/permissions/permissions.py",
- "source_sha256": "dbc26db2381a1f6e0d1910b75bfef73a77534119d039d75af6ee3dee2a558426",
+ "source_sha256": "600d09dc6aad57c22fc891e6886cdb7547a873f164edf45312b642327540c342",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.conduit_ward.permissions.permissions": {
@@ -36,7 +36,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "3e742a2e0c1631b2b9f15af70bbf15258a52c46a4d02be39f5b38f2fde85e47f",
+   "span_sha256": "20430eabc3510497c97f984228294515360b9a70b532491150c9d378f17ff9e0",
    "role": "Capability ceiling enum for spell lineage exposure.",
    "responsibilities": [
     "labels read, create, and block capability levels for local and contracted lineages"

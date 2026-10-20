@@ -1,0 +1,18 @@
+......................F...............                                   [100%]
+=================================== FAILURES ===================================
+E   AssertionError: assert 'active' == 'parked'
+      
+      - parked
+      + active
+tests/unit/melder/mutation_research/test_mutation_research_root.py:551: AssertionError: assert 'active' == 'parked'
+=============================== warnings summary ===============================
+src/melder/__init__.py:199
+  src/melder/__init__.py:199: UserWarning: Python 3.14+ detected, but running in GIL-enabled mode.
+  melder is optimized for Python built with --disable-gil (PEP 703).
+  Performance may be degraded.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/unit/melder/mutation_research/test_mutation_research_root.py::test_residency_view_reads_a_selected_version_no_lineage_tracks_as_parked
+1 failed, 37 passed, 1 warning in 5.82s

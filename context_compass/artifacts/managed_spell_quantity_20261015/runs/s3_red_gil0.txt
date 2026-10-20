@@ -1,0 +1,60 @@
+
+==================================== ERRORS ====================================
+_ ERROR collecting tests/unit/melder/aether/conduit/creations/test_managed_spell_quantity.py _
+ImportError while importing test module '/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/unit/melder/aether/conduit/creations/test_managed_spell_quantity.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/unit/melder/aether/conduit/creations/test_managed_spell_quantity.py:18: in <module>
+    from melder.aether.conduit.creations.managed_spell_quantity import ManagedSpellQuantity
+E   ModuleNotFoundError: No module named 'melder.aether.conduit.creations.managed_spell_quantity'
+_ ERROR collecting tests/unit/melder/aether/conduit/creations/test_managed_spell_quantity_multithreaded.py _
+ImportError while importing test module '/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/unit/melder/aether/conduit/creations/test_managed_spell_quantity_multithreaded.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/unit/melder/aether/conduit/creations/test_managed_spell_quantity_multithreaded.py:14: in <module>
+    from melder.aether.conduit.creations.managed_spell_quantity import ManagedSpellQuantity
+E   ModuleNotFoundError: No module named 'melder.aether.conduit.creations.managed_spell_quantity'
+_ ERROR collecting tests/unit/melder/aether/conduit/creations/test_creations_managed_quantities.py _
+ImportError while importing test module '/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/unit/melder/aether/conduit/creations/test_creations_managed_quantities.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/unit/melder/aether/conduit/creations/test_creations_managed_quantities.py:17: in <module>
+    from melder.aether.conduit.creations.managed_spell_quantity import ManagedSpellQuantity
+E   ModuleNotFoundError: No module named 'melder.aether.conduit.creations.managed_spell_quantity'
+_ ERROR collecting tests/unit/melder/utilities/custom_exceptions/test_managed_spell_exhausted_error.py _
+ImportError while importing test module '/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/unit/melder/utilities/custom_exceptions/test_managed_spell_exhausted_error.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/unit/melder/utilities/custom_exceptions/test_managed_spell_exhausted_error.py:9: in <module>
+    from melder.utilities.custom_exceptions.managed_spell_exhausted_error import ManagedSpellExhaustedError
+E   ModuleNotFoundError: No module named 'melder.utilities.custom_exceptions.managed_spell_exhausted_error'
+_ ERROR collecting tests/integration/melder/conduit/test_conduit_integration_managed_quantity_pool.py _
+ImportError while importing test module '/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/integration/melder/conduit/test_conduit_integration_managed_quantity_pool.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/integration/melder/conduit/test_conduit_integration_managed_quantity_pool.py:18: in <module>
+    from melder.aether.conduit.creations.managed_spell_quantity import ManagedSpellQuantity
+E   ModuleNotFoundError: No module named 'melder.aether.conduit.creations.managed_spell_quantity'
+=========================== short test summary info ============================
+ERROR tests/unit/melder/aether/conduit/creations/test_managed_spell_quantity.py
+ERROR tests/unit/melder/aether/conduit/creations/test_managed_spell_quantity_multithreaded.py
+ERROR tests/unit/melder/aether/conduit/creations/test_creations_managed_quantities.py
+ERROR tests/unit/melder/utilities/custom_exceptions/test_managed_spell_exhausted_error.py
+ERROR tests/integration/melder/conduit/test_conduit_integration_managed_quantity_pool.py
+!!!!!!!!!!!!!!!!!!! Interrupted: 5 errors during collection !!!!!!!!!!!!!!!!!!!!
+5 errors in 4.49s

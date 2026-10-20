@@ -375,6 +375,11 @@ def test_root_residency_view_reports_runtime_and_custody_join() -> None:
     frame.find_index_for_spell.side_effect = (
         lambda sha: index if sha in ("sha-active", "sha-parked") else None
     )
+    # The lineage registry tracks the index's selected version, as bind and
+    # a notch register it.
+    frame.spell_system_states.get_by_index_id.return_value.current_spell_id = (
+        "sha-active"
+    )
     aether._aetheric_frames = {"default": frame}
     root = MutationResearch(aether=aether)
     root.record_world_entry("sha-active")
@@ -436,7 +441,12 @@ def test_root_cleanup_cascades_into_sets() -> None:
         root.research_set()
 
 
-def _fake_frame(index_id: str, selected_spell_id: str) -> MagicMock:
+def _fake_frame(
+        index_id: str,
+        selected_spell_id: str,
+        *,
+        lineage_tracks_selected: bool = True,
+) -> MagicMock:
     """
     Build one live frame double whose index scan answers a fixed index.
 
@@ -445,6 +455,12 @@ def _fake_frame(index_id: str, selected_spell_id: str) -> MagicMock:
             Index id the frame reports for any queried spell.
         selected_spell_id:
             The index's currently selected member.
+        lineage_tracks_selected:
+            When True the frame's lineage registry tracks the selected
+            member as the index's current version, as `bind` and a notch
+            register it; when False no lineage is registered for the
+            index, as for the index `remove_from_spell_index` mints before
+            a notch.
 
     Returns:
         MagicMock: Frame double for `_locate_live_membership` scans.
@@ -456,6 +472,11 @@ def _fake_frame(index_id: str, selected_spell_id: str) -> MagicMock:
     frame = MagicMock()
     frame.cleaned = False
     frame.find_index_for_spell.return_value = index
+    lineages = frame.spell_system_states.get_by_index_id
+    if lineage_tracks_selected:
+        lineages.return_value.current_spell_id = selected_spell_id
+    else:
+        lineages.return_value = None
     return frame
 
 
@@ -501,6 +522,35 @@ def test_residency_view_still_reports_parked_when_nothing_selects() -> None:
     assert view["runtime"] == "parked"
     assert view["frame_name"] == "frame_one"
     assert view["index_id"] == "idx-one"
+
+
+def test_residency_view_reads_a_selected_version_no_lineage_tracks_as_parked(
+) -> None:
+    """
+    Regression (minted_index_registry, probe V2): the index
+    `remove_from_spell_index` mints selects its parked member - activation
+    takes a notch - so once that index is registered with the frame, the
+    index's selection alone read the parked version as active. Corrected
+    behavior: a selected version reads active only while the frame's
+    lineage registry tracks it as the index's current version.
+    """
+    spell_id = "s" * 64
+    aether = _mock_aether(recording=True)
+    aether.cleaned = False
+    aether._aetheric_frames = {
+        "frame_minted": _fake_frame(
+            "idx-minted",
+            selected_spell_id=spell_id,
+            lineage_tracks_selected=False,
+        ),
+    }
+    root = MutationResearch(aether=aether)
+
+    view = root.residency_view(spell_id)
+
+    assert view["runtime"] == "parked"
+    assert view["frame_name"] == "frame_minted"
+    assert view["index_id"] == "idx-minted"
 
 
 class _GatedRecordingCrystallizer:

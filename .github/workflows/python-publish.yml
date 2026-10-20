@@ -20,7 +20,7 @@ jobs:
     name: Require current prod HEAD
     # Publishing an RC on GitHub must not publish a final package automatically.
     if: github.event_name != 'release' || !github.event.release.prerelease
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
       contents: read
@@ -42,7 +42,7 @@ jobs:
   hygiene:
     name: Release / repository-hygiene
     needs: release-gate
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v7
@@ -78,7 +78,7 @@ jobs:
   pypi-publish:
     name: Publish to PyPI
     needs: [release-gate, hygiene, source-assets, repo-assets, tests, release-build]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
       contents: read

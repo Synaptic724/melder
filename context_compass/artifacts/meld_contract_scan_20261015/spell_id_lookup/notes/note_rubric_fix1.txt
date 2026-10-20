@@ -1,0 +1,32 @@
+- DATETIME: {ts}
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: Rubric scores at fix #1, from disk after the index rebuilds (self-scored; no independent reviewer):
+    src_architecture 83 (B) - fidelity 4, contract 5, depth 4, addressability 4, join 4, mirror 4; src_components 83
+    (B) - 4, 5, 4, 4, 4, 4; tests_architecture 83 (B) - 4, 5, 4, 4, 4, 4; tests_components 74 (C) - 4, 4, 3, 4, 3,
+    4. Basis: src_architecture was read whole after the 23:46Z compaction; in the other three the sections fix #1
+    wrote were re-read from disk. The measurable half (the rule 2 script, rerun): one H1 each, no duplicate indexed
+    name, no unclosed heading, contracts complete and in order, no portability or absolute-path hit, 162 / 36 / 234
+    / 263 code-map records complete, every Key Files path resolving; one extent drifts. Why not 5, as at rule 2:
+    fidelity - both meld-flow diagrams still name "Phase12 Compiled Executors"; depth - thin fields in four
+    src_components entries (PhaseScheduler) and in tests_components' Mock Fixture Corpus; addressability - container
+    H2s that hold only sub-headings; join - verified_at stamps carried forward; mirror - each pair adds different
+    non-contract sections; tests_components contract 4 - a Table of Contents and a Component Template among its
+    sections. New: tests_components' join drops to 3 because the stamp test's record says 152 lines and the file
+    has 185 (left for TASK-2026-10-16-stamp_test_boots_its_own_aether's successor), which takes it to band C.
+  EVIDENCE:
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/rubric_checks_fix1.txt:1-52
+  - context_compass/system_docs/src_architecture.md:4274-4274
+  - context_compass/system_docs/src_components.md:11191-11191
+  - context_compass/system_docs/src_architecture.md:762-763
+  - context_compass/system_docs/src_components.md:5928-6001
+  - context_compass/system_docs/tests_components.md:156-189
+  - context_compass/system_docs/tests_components.md:662-739
+  - context_compass/system_docs/tests_components.md:3254-3259
+  - context_compass/agent_onboarding/default/design_engineer/policies/system_document_quality_rubric.md:158-187
+  IMPACT: The source pair and tests_architecture stay band B; tests_components is band C (usable, refresh before
+    high-risk suite work) until that record is remeasured - one line, the owner's call whether it rides this lane.
+  NEXT: Rewrite the handoff summary, then the board row, the artifact rows and the attention-board notch notice.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8

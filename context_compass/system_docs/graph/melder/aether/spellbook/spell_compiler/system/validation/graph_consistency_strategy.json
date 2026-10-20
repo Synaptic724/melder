@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/system/validation/graph_consistency_strategy.py",
- "source_sha256": "998067aafeff5e2d967e4926247bdac36d1c8a945e05023cca29f58f3aa87d5d",
+ "source_sha256": "f8309527b02c34d512eaf4cf819f10b940ee2d112eb02456b36ecd3a5e082c43",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.system.validation.graph_consistency_strategy": {
@@ -39,7 +39,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "855285d6166e09dabf5c7eb4da8873ce71a7ed2d7403d208bcaf6c57dde91c4c",
+   "span_sha256": "a287d08b1791458d1a3d4047de321817a75c1fa688816819e1bbb3af229d61cf",
    "include": true,
    "role": "Guard that Phase 5's two structural views agree: the rooted DAG blueprints used by planning and the SpellSystemIndex used by system validation.",
    "responsibilities": [

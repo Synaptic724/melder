@@ -143,6 +143,10 @@ class SpellArtifactProcessor(Cleanable):
                 route_family = "cluster"
             elif existence is Existence.unique:
                 route_family = "unique"
+            elif existence is Existence.managed_spell_quantity:
+                # Leased from the owning root's pool; the "managed" doors call the
+                # site plan, which dispenses the object (pop, or reserve and build).
+                route_family = "managed"
             else:
                 raise RuntimeError(
                     f"Unsupported existence for route family: {existence!r}."

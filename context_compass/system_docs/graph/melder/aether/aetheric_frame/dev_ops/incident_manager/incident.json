@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_frame/dev_ops/incident_manager/incident.py",
- "source_sha256": "d652283b9e6620a2f73d6eb66a12395a398a0b745bece253026031a494b99166",
+ "source_sha256": "6bf08241718cd1080f371496f249ce7cb210e7e09cb5289b6b7ac3d507e67c53",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_frame.dev_ops.incident_manager.incident": {
@@ -43,7 +43,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "b5b459b4e38a04ab421cadd8c63830b5923b57325511bd9546b220a9fdca7e23",
+   "span_sha256": "bac1ed5beabc67a84f8647263210159f8bbbaee2e01ea6e34bbe3c38c0e73a8d",
    "role": "Mutable incident record owned by IncidentManager.",
    "responsibilities": [
     "stores one incident payload plus controlled lifecycle status",

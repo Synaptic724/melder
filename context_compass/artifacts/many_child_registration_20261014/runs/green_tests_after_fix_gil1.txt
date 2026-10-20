@@ -1,0 +1,36 @@
+============================= test session starts ==============================
+platform linux -- Python 3.14.7, pytest-9.1.1, pluggy-1.6.0 -- /sessions/rcw-01y9fvdxngfz65nliarhkobj/v314t/bin/python
+rootdir: /sessions/rcw-01y9fvdxngfz65nliarhkobj/mnt/melder_private
+configfile: pyproject.toml
+collecting ... collected 76 items / 48 deselected / 28 selected
+
+tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_scope_end_disposes_the_many_child_of_a_holder_that_outlives_it[unique-through-lesser] PASSED [  3%]
+tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_scope_end_disposes_the_many_child_of_a_holder_that_outlives_it[unique-in-root-spellspace] PASSED [  7%]
+tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_scope_end_disposes_the_many_child_of_a_holder_that_outlives_it[unique-in-lesser-spellspace] PASSED [ 10%]
+tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_scope_end_disposes_the_many_child_of_a_holder_that_outlives_it[per-conduit-in-root-spellspace] PASSED [ 14%]
+tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_scope_end_disposes_the_many_child_of_a_holder_that_outlives_it[per-conduit-in-lesser-spellspace] PASSED [ 17%]
+tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_scope_end_disposes_the_many_child_of_a_holder_that_outlives_it[lineage-through-lesser] PASSED [ 21%]
+tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_scope_end_disposes_the_many_child_of_a_holder_that_outlives_it[lineage-in-root-spellspace] PASSED [ 25%]
+tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_many_child_is_recorded_in_the_store_of_its_holders_owner[unique-through-lesser] PASSED [ 28%]
+tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_many_child_is_recorded_in_the_store_of_its_holders_owner[unique-in-root-spellspace] PASSED [ 32%]
+tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_many_child_is_recorded_in_the_store_of_its_holders_owner[unique-in-lesser-spellspace] PASSED [ 35%]
+tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_many_child_is_recorded_in_the_store_of_its_holders_owner[per-conduit-in-root-spellspace] PASSED [ 39%]
+tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_many_child_is_recorded_in_the_store_of_its_holders_owner[per-conduit-in-lesser-spellspace] PASSED [ 42%]
+tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_many_child_is_recorded_in_the_store_of_its_holders_owner[per-conduit-at-lesser] PASSED [ 46%]
+tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_many_child_is_recorded_in_the_store_of_its_holders_owner[lineage-through-lesser] PASSED [ 50%]
+tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_many_child_is_recorded_in_the_store_of_its_holders_owner[lineage-in-root-spellspace] PASSED [ 53%]
+tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_many_child_is_recorded_in_the_store_of_its_holders_owner[spellspace-holder-in-root-spellspace] PASSED [ 57%]
+tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_lesser_return_disposes_the_many_child_of_a_unique_built_for_a_per_conduit_consumer PASSED [ 60%]
+tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_lesser_return_disposes_the_many_child_of_a_unique_first_built_by_an_override_meld PASSED [ 64%]
+tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_specializer_builds_and_records_a_new_many_child_on_every_warm_meld_of_a_captured_unique PASSED [ 67%]
+tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_control_holder_built_at_its_owner_keeps_its_many_child_through_scope_cycles[unique] PASSED [ 71%]
+tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_control_holder_built_at_its_owner_keeps_its_many_child_through_scope_cycles[per-conduit] PASSED [ 75%]
+tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_control_holder_built_at_its_owner_keeps_its_many_child_through_scope_cycles[lineage] PASSED [ 78%]
+tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_control_per_conduit_holder_at_a_lesser_takes_its_many_child_with_it PASSED [ 82%]
+tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_control_spellspace_holder_takes_its_many_child_with_it PASSED [ 85%]
+tests/integration/melder/conduit/test_conduit_integration_many_child_disposed_with_its_holder.py::test_borrower_teardown_disposes_the_many_child_of_a_contracted_unique_it_first_melded PASSED [ 89%]
+tests/integration/melder/conduit/test_conduit_integration_many_child_disposed_with_its_holder.py::test_member_teardown_disposes_the_many_child_of_a_cluster_holder_it_first_melded PASSED [ 92%]
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering.py::test_disposal_bearing_many_step_registers_in_the_innermost_scope PASSED [ 96%]
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering.py::test_disposal_bearing_many_inside_a_miss_registers_in_the_store_its_holder_publishes_to PASSED [100%]
+
+====================== 28 passed, 48 deselected in 6.90s =======================

@@ -101,7 +101,7 @@ class SpellRecord(Cleanable):
             owner_conduit_id:
                 Owning conduit id when known.
             spell_id:
-                Current spell/version id.
+                Current spell_id.
             spell_index_id:
                 Stable SpellIndex id.
             spell_name:
@@ -168,7 +168,7 @@ class SpellRecord(Cleanable):
 
         Contract:
             - Keys the record by originating spellbook plus current spell id.
-            - Uses the published spell/version id, not the stable SpellIndex id.
+            - Uses the published spell_id, not the stable SpellIndex id.
         """
         self.check_cleaned()
         return self.origin_spellbook_id, self.spell_id

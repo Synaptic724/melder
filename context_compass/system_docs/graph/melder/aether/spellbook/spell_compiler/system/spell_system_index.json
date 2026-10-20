@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/system/spell_system_index.py",
- "source_sha256": "dbe83451516f9e1bdb3ecf5301b2d9b5f0d11a84c0f1ca8336f11fef8932a779",
+ "source_sha256": "693ab4eddc7099ca4cd4950515a945a9be1e9052836eff6f6fa1eb32efba14fc",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.system.spell_system_index": {
@@ -37,7 +37,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "d77f0518f46e8e99a00783af731d1279f49d0a57422a2daa2e96c9635feb34d2",
+   "span_sha256": "099e0bcd1cb995479c743a3db1f1de14389ebfca3d3b5efbb076eff255e3cb78",
    "role": "Frame-level Phase 5+ system index keyed by spell version id.",
    "responsibilities": [
     "stores spell-system nodes for a rooted frame view",

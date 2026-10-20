@@ -1,0 +1,29 @@
+work | unit_aether | rc=0 | secs=19 | 4540 passed in 18.85s
+work | unit_sb | rc=0 | secs=6 | 2582 passed in 4.85s
+work | unit_util | rc=0 | secs=11 | 831 passed, 2 skipped, 7 xfailed in 9.72s
+work | unit_mr | rc=0 | secs=2 | 277 passed in 1.99s
+work | unit_cryst | rc=0 | secs=7 | 607 passed in 6.15s
+work | comp_aether | rc=0 | secs=19 | 1386 passed, 1 xfailed in 17.55s
+work | comp_sb | rc=0 | secs=23 | 819 passed in 21.72s
+work | comp_util | rc=0 | secs=2 | 21 passed, 43 skipped in 1.72s
+work | comp_mr | rc=0 | secs=1 | 40 passed in 0.80s
+work | comp_cryst | rc=0 | secs=2 | 110 passed in 1.02s
+work | int_conduit | rc=0 | secs=9 | 350 passed, 1 xpassed in 8.36s
+work | int_mr | rc=0 | secs=3 | 67 passed in 1.38s
+work | int_sb | rc=0 | secs=10 | 647 passed, 2 skipped, 2 xpassed in 8.97s
+work | int_mt | rc=0 | secs=19 | 54 passed in 18.70s
+work | int_live | rc=0 | secs=2 | 1 passed, 1 xfailed in 0.25s
+work | int_aether | rc=0 | secs=24 | 822 passed, 5 xfailed in 22.73s
+work | int_cryst | rc=0 | secs=94 | 276 passed, 3 xfailed in 93.54s (0:01:33)
+work | unit_arch | rc=1 | secs=1 | 18 failed in 0.17s
+work | unit_gh | rc=1 | secs=5 | 52 failed, 1 passed, 438 errors in 3.38s
+work | unit_llm | rc=2 | secs=0 | 1 error in 0.09s
+work | unit_build | rc=1 | secs=4 | 2 failed, 114 passed in 2.56s
+work | unit_top | rc=1 | secs=5 | 1 failed, 145 passed in 4.86s
+work | exper | rc=2 | secs=2 | 1 error in 1.21s
+base | unit_arch | rc=1 | secs=1 | 18 failed in 0.16s
+base | unit_gh | rc=1 | secs=4 | 52 failed, 1 passed, 438 errors in 3.45s
+base | unit_llm | rc=2 | secs=1 | 1 error in 0.08s
+base | unit_build | rc=1 | secs=3 | 2 failed, 114 passed in 2.30s
+base | unit_top | rc=1 | secs=6 | 1 failed, 145 passed in 4.87s
+base | exper | rc=2 | secs=2 | 1 error in 1.26s

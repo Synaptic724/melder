@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/utilities/helpers/general_helpers.py",
- "source_sha256": "e30145e0ff2e151c8726559e5abf145d2f608a0163a612cdea7b38e21c6703b3",
+ "source_sha256": "dfcad5ec2937d9d77dada5310eb8502589ed6fe574d52b2c87655fcebd7961e3",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.utilities.helpers.general_helpers": {
@@ -71,7 +71,7 @@
     "has_bases": false,
     "trivial": false
    },
-   "span_sha256": "16c4561acb2558276d8d3ab0a36ff9443b6414aadf1448bcf5ecf681272ca307",
+   "span_sha256": "7f0913749d4096f8246b1d1012b2eaf3de2ef3b71e20b2d1b3fb531f24ca3de6",
    "role": "Canonical spell-key normalization helper.",
    "responsibilities": [
     "normalizes frame keys and binding names into canonical lowercase lookup keys",

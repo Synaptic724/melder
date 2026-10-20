@@ -1,0 +1,1725 @@
+====================================================================================================
+NODE melder.aether.conduit.conduit.Conduit
+  descriptor: context_compass/system_docs/graph/melder/aether/conduit/conduit.json
+  file: src/melder/aether/conduit/conduit.py  lineno: 83  kind: class
+  role: "Runtime execution scope for spell resolution."
+  responsibilities: ["hosts meld execution", "forwards instance or explicit purge selectors and single/all mode to ConduitMeld while keeping conduit and registration lifetimes intact", "forwards per-version resolvable policy through both binding facades without changing conduit state", "owns concrete conduit-facing runtime helpers and pooled spellspace state", "creates lesser conduits", "promotes childless lessers into independent normal roots through a fresh Book and its private existing-conduit conjure route", "drains creation admission before graduation and restores lesser topology on pre-attachment failure", "supports dynamic linking and ownership transfer in dynamic mode", "facades bind-hook add and clear on the owning Book for live normal conduits; lessers cannot edit borrowed Bind policy", "owns stable root runtime hook maps copied from configuration and exposes validated local or explicit root-shared updates", "restores temporary lesser and prewarmed Space hooks after disposal and before publishing ready shells to their pools", "assigns creation-only names to fresh/pooled lessers and retires named discovery before idle publication", "emits dynamic named structural ancestry and publishes named Nexus lifecycle under existing scope locks", "reserves promotion names and exchanges aliases without changing the live conduit identity", "serves warm automatic melds by id, by registered name and by class (plain or with a non-empty dict override payload) straight from Meld's fast-door entries (_fast_meld_doors, _fast_input_doors) with ConduitMeld's guard ladder, returning an existing object's bound object without the door call", "is a dispose scope in `with`: __enter__ takes no lock and __exit__ runs cleanup(), so a lesser returns to its pool and a root is torn down at block exit (0.2.8203)", "creates a lesser for a `with` block through enter_lesser_conduit, which returns create_lesser_conduit's result unchanged", "returns a lesser to its pool descendants first, then SpellSpaces, then its own store, and raises the collected disposal failures after the shell is pooled; soft cleanup of a pooled lesser is a no-op", "finishes permanent teardown when a disposal method fails and then raises the collected disposal groups", "returns the Spellbook it resolves through, borrowed (spellbook): the conjuring Book for a root, the root's Book for a lesser, the new Book after upgrade_to_normal", "emits an index destroy to index-link borrowers exactly when the Book's disposal reports the index it destroyed (cleanup_spell, 0.2.8231)", "looks up contracted spells over a one-call copy of the Book's contracted peer ids and inspects objects, both with no conduit lock held (find_contracted_spell, inspect_spell, 0.2.8232)", "builds its SpellSpacePool and, as a normal root, its ConduitPool elastic: 20 idle always kept, up to 256 after a burst, decaying when quiet (0.2.8234)", "leaves its cluster as the first step of a root's teardown (_leave_cluster_for_teardown, 0.2.8236): the cluster's ordered exit while the frame is live, drop_member during frame teardown or after a failed exit"]
+  owns_state: ["_meld", "_creations", "_conduit_ward", "_creation_gate", "_spellspace_stack", "_spellspace_pool", "_conduit_pool", "_transaction_identity"]
+  phases: ["init", "runtime", "cleanup"]
+  edge: owns_lifecycle_of -> melder.aether.spellbook.spellbook.Spellbook [one_to_one; ['runtime', 'cleanup']] why: Normal conduits clean their own Book. Lessers borrow the root Book until graduation installs a new empty Book, resets runtime hook/lookup references and detaches former parent ownership.
+  edge: borrows -> melder.aether.aether.Aether [many_to_one; ['runtime']] why: Conduit uses the global Aether substrate for frame, registry, and cloud interactions without owning the singleton lifecycle.
+  edge: owns_lifecycle_of -> melder.aether.aetheric_frame.dev_ops.devops_identity.DevopsIdentity [one_to_one; ['init', 'runtime', 'cleanup']] why: Normal conduits create and own one DevopsIdentity for transaction and topology reporting.
+  edge: borrows -> melder.aether.aetheric_frame.dev_ops.devops_information_registry.DevopsInformationRegistry [one_to_one; ['runtime']] why: Conduit borrows the frame dev-ops information registry to attach and refresh its transaction identity.
+  edge: owns_lifecycle_of -> melder.aether.conduit.conduit_pool.ConduitPool [one_to_one; ['init', 'runtime', 'cleanup']] why: Normal conduits own ConduitPool as the reusable lesser-conduit shell pool.
+  edge: uses -> melder.aether.conduit.conduit_state.conduit_state.ConduitState [many_to_one; ['runtime', 'cleanup']] why: Conduit uses ConduitState to distinguish normal, lesser, and cleaned conduit lifecycles.
+  edge: owns_lifecycle_of -> melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard [one_to_one; ['init', 'runtime', 'cleanup']] why: Conduit owns ConduitWard as its contract and lineage manager.
+  edge: owns_lifecycle_of -> melder.aether.conduit.creations.conduit_creations.ConduitCreations [one_to_one; ['init', 'runtime', 'cleanup']] why: Conduit owns ConduitCreations as its conduit/root live creation registry.
+  edge: owns_lifecycle_of -> melder.aether.conduit.meld.conduit_meld.ConduitMeld [one_to_one; ['init', 'runtime', 'cleanup']] why: Conduit owns ConduitMeld as its conduit-facing resolution runtime component.
+  edge: creates -> melder.aether.conduit.spell_space.spell_space.SpellSpace [one_to_many; ['runtime', 'cleanup']] why: Conduit creates and owns spellspace scopes for unique_per_spell_space execution windows.
+  edge: owns_lifecycle_of -> melder.aether.conduit.spell_space.spell_space_pool.SpellSpacePool [one_to_one; ['init', 'runtime', 'cleanup']] why: Conduit owns SpellSpacePool as the reusable spellspace scope pool.
+  edge: owns_lifecycle_of -> melder.aether.conduit.spell_space.spell_space_thread_state.SpellSpaceThreadState [one_to_one; ['init', 'runtime', 'cleanup']] why: Conduit owns the per-thread spellspace stack holder used by managed spellspace entry and exit.
+  edge: borrows -> melder.utilities.synchronization.creation_gate_controller.CreationGateController [many_to_one; ['runtime']] why: Conduit resolves and reuses the frame-owned CreationGateController for meld admission and lineage gate management.
+  span lines: HEAD 7218 -> now 7377; diff lines 228
+  | --- HEAD
+  | +++ now
+  | @@ -3811,6 +3811,10 @@
+  |              binding_name: Optional[str] = None,
+  |              profile: str = "general",
+  |              resolvable: bool = True,
+  | +            managed_spell_mode: Optional[Union[ManagedSpellMode, str]] = None,
+  | +            managed_spell_limit: Optional[int] = None,
+  | +            managed_spell_timeout_seconds: Optional[float] = None,
+  | +            managed_spell_reset_methods: Optional[Sequence[str]] = None,
+  |              **kwargs: Any,
+  |      ) -> str:
+  |          """
+  | @@ -3862,6 +3866,17 @@
+  |              resolvable (bool):
+  |                  Native per-version resolution capability, forwarded unchanged to Spellbook.
+  |                  Defaults to True; False retains existing binding and lifetime rules.
+  | +            managed_spell_mode (Optional[Union[ManagedSpellMode, str]]):
+  | +                Pool policy of an `Existence.managed_spell_quantity` binding (elastic by default),
+  | +                forwarded unchanged to Spellbook, which validates it with the other three.
+  | +            managed_spell_limit (Optional[int]):
+  | +                elastic: the most idle objects kept (default 256); limited_quantity and queue: the
+  | +                most objects alive at once (required).
+  | +            managed_spell_timeout_seconds (Optional[float]):
+  | +                queue only, required there: how long a lease waits for a release.
+  | +            managed_spell_reset_methods (Optional[Sequence[str]]):
+  | +                Zero-argument methods of the class run, in order, on every release. The four managed
+  | +                options must stay None on any other existence.
+  |              **kwargs:
+  |                  Optional lifecycle hooks and related bind-time metadata.
+  |  
+  | @@ -3874,7 +3889,10 @@
+  |                  If the conduit is cleaned, is not normal, no binding transaction is
+  |                  active, or the spell collides with an existing registry entry.
+  |              TypeError:
+  | -                If invalid hook types or a non-bool resolvable value are provided.
+  | +                If invalid hook types or a non-bool resolvable value are provided, a managed
+  | +                option has the wrong type, or a managed binding targets a non-class.
+  | +            ValueError:
+  | +                If a managed option is malformed or set on another existence.
+  |  
+  |          """
+  |          self.check_cleaned()
+  | @@ -3900,6 +3918,10 @@
+  |              profile=profile,
+  |              resolvable=resolvable,
+  |              permissions=permissions,
+  | +            managed_spell_mode=managed_spell_mode,
+  | +            managed_spell_limit=managed_spell_limit,
+  | +            managed_spell_timeout_seconds=managed_spell_timeout_seconds,
+  | +            managed_spell_reset_methods=managed_spell_reset_methods,
+  |              **kwargs,
+  |          )
+  |  
+  | @@ -3914,6 +3936,10 @@
+  |              binding_name: Optional[str] = None,
+  |              profile: str = "general",
+  |              resolvable: bool = True,
+  | +            managed_spell_mode: Optional[Union[ManagedSpellMode, str]] = None,
+  | +            managed_spell_limit: Optional[int] = None,
+  | +            managed_spell_timeout_seconds: Optional[float] = None,
+  | +            managed_spell_reset_methods: Optional[Sequence[str]] = None,
+  |              **kwargs: Any,
+  |      ) -> str:
+  |          """
+  | @@ -3955,6 +3981,18 @@
+  |              resolvable (bool):
+  |                  Native capability of this parked version, forwarded unchanged to Spellbook.
+  |                  Defaults to True and is independent of active index selection.
+  | +            managed_spell_mode (Optional[Union[ManagedSpellMode, str]]):
+  | +                Pool policy of an `Existence.managed_spell_quantity` binding (elastic by default),
+  | +                forwarded unchanged to Spellbook, which validates it with the other three.
+  | +            managed_spell_limit (Optional[int]):
+  | +                elastic: the most idle objects kept (default 256); limited_quantity and queue: the
+  | +                most objects alive at once (required).
+  | +            managed_spell_timeout_seconds (Optional[float]):
+  | +                queue only, required there: how long a lease waits for a release.
+  | +            managed_spell_reset_methods (Optional[Sequence[str]]):
+  | +                Zero-argument methods of the class run, in order, on every release. The four managed
+  | +                options must stay None on any other existence.
+  | +                A parked managed version keeps its own options.
+  |              **kwargs:
+  |                  Optional lifecycle hooks (pre/activation/post).
+  |  
+  | @@ -3967,7 +4005,10 @@
+  |                  If the conduit is cleaned, is not normal, the dynamic environment
+  |                  is not enabled, or there is no owning Spellbook.
+  |              TypeError:
+  | -                If resolvable is not a bool or Bind rejects the target.
+  | +                If resolvable is not a bool or Bind rejects the target (a managed option of
+  | +                the wrong type or a managed non-class included).
+  | +            ValueError:
+  | +                If a managed option is malformed or set on another existence.
+  |          """
+  |          self.check_cleaned()
+  |          if self._conduit_state is not ConduitState.normal:
+  | @@ -3989,6 +4030,10 @@
+  |              binding_name=binding_name,
+  |              profile=profile,
+  |              resolvable=resolvable,
+  | +            managed_spell_mode=managed_spell_mode,
+  | +            managed_spell_limit=managed_spell_limit,
+  | +            managed_spell_timeout_seconds=managed_spell_timeout_seconds,
+  | +            managed_spell_reset_methods=managed_spell_reset_methods,
+  |              **kwargs,
+  |          )
+  |          # The new inactive member joined `spell_index`; if that index is shared
+  | @@ -4937,6 +4982,120 @@
+  |      # Machine identity remains explicit at the public boundary via `spell_id=`;
+  |      # this facade forwards it positionally into the internal ID fast lane.
+  |  
+  | +    def managed_spell_meld(
+  | +            self,
+  | +            spell: Optional[Union[str, object]] = None,
+  | +            *,
+  | +            spell_id: Optional[str] = None,
+  | +            spellframe: Optional[Union[str, object]] = None,
+  | +            binding_name: Optional[str] = None,
+  | +            override: Optional[Union[dict, list, tuple]] = None,
+  | +    ) -> ManagedSpellLease[Any]:
+  | +        """
+  | +        Public API
+  | +
+  | +        Meld one managed spell and return its object as a lease that gives it back.
+  | +
+  | +        Purpose:
+  | +            The meld-plus-release form of `Existence.managed_spell_quantity`
+  | +            (managed_spell_quantity S5, 2026-10-15):
+  | +            `with conduit.managed_spell_meld(Logger) as logger:` leases a pooled
+  | +            object and puts it back when the block exits, as
+  | +            `ReleaseManagedSpell().release(logger)` would.
+  | +
+  | +        Contract:
+  | +            - Takes `meld`'s inputs - a SpellName string, a class, `spell_id=`,
+  | +              or a spellframe/binding address - and resolves the target as
+  | +              `meld` does. A target of any other existence is refused before
+  | +              anything is melded or leased.
+  | +            - The pool is the resolved version's pool in its owner root's store,
+  | +              read before the meld; a version with no owner store, or a store
+  | +              without that pool, is refused with the missing-pool error.
+  | +            - The object comes from a meld of the resolved version by id: an
+  | +              idle object, else one built into a place the pool reserves
+  | +              (limited_quantity and queue apply their mode there).
+  | +            - The lease releases once (`release()`, or the end of the `with`
+  | +              block, which never suppresses the block's exception). Nothing
+  | +              releases it otherwise: an object never released holds its place
+  | +              until its root is torn down.
+  | +            - With `override`, keys on the managed spell's own parameters build
+  | +              a fresh object the pool never counted; the lease still puts it
+  | +              into the pool when released, as releasing any object of the class
+  | +              does.
+  | +
+  | +        Args:
+  | +            spell:
+  | +                A SpellName string, or the managed class.
+  | +            spell_id:
+  | +                The managed version id; exclusive with `spell`.
+  | +            spellframe:
+  | +                Optional spellframe used for resolution.
+  | +            binding_name:
+  | +                Optional binding name used for resolution.
+  | +            override:
+  | +                Optional override payload passed to the meld.
+  | +
+  | +        Returns:
+  | +            ManagedSpellLease:
+  | +                The leased object (`.object`, or the `with` target) and its pool.
+  | +
+  | +        Raises:
+  | +            ValueError:
+  | +                When both `spell` and `spell_id` are given, no identity is
+  | +                given, or the target is not `Existence.managed_spell_quantity`.
+  | +            TypeError:
+  | +                When `spell_id` is not a string.
+  | +            KeyError:
+  | +                When no spell resolves.
+  | +            MeldExecutionError:
+  | +                When the version has no pool to lease from; the pool's
+  | +                ManagedSpellExhaustedError (limited_quantity at its limit, queue
+  | +                at its timeout); anything the meld raises.
+  | +            RuntimeError:
+  | +                When the conduit is cleaned, or the pool was torn down with its
+  | +                root.
+  | +        """
+  | +        if self._cleaned:
+  | +            self.check_cleaned()
+  | +        if spell is not None and spell_id is not None:
+  | +            raise ValueError("managed_spell_meld accepts either `spell` or `spell_id`, not both.")
+  | +        if spell_id is not None and type(spell_id) is not str:
+  | +            raise TypeError(f"managed_spell_meld `spell_id` must be a string; got {type(spell_id).__name__}.")
+  | +        internal_spell = spell
+  | +        internal_spell_name = None
+  | +        if spell_id is not None:
+  | +            internal_spell = spell_id
+  | +        elif isinstance(spell, str):
+  | +            internal_spell = None
+  | +            internal_spell_name = spell
+  | +        target = self._meld._resolve_spell(
+  | +            spell=internal_spell,
+  | +            spell_name=internal_spell_name,
+  | +            spellframe=spellframe,
+  | +            binding_name=binding_name,
+  | +        )
+  | +        existence = target.existence
+  | +        if existence is not Existence.managed_spell_quantity:
+  | +            raise ValueError(
+  | +                f"managed_spell_meld leases a managed spell; '{target.spell_name}' is {existence.name}. "
+  | +                "Meld it with meld(), or bind it with existence=Existence.managed_spell_quantity."
+  | +            )
+  | +        try:
+  | +            pool = target._owner_creations.get_managed_quantity(target.spell_id)
+  | +        except AttributeError:
+  | +            # No owner store (the version was never stamped), or a store retired with its root.
+  | +            pool = None
+  | +        if pool is None:
+  | +            # Imported here, as the other cold-path imports of this module are:
+  | +            # the lowering's helpers own the one missing-pool message.
+  | +            from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering import (
+  | +                SitePlanRuntimeHelpers,
+  | +            )
+  | +
+  | +            SitePlanRuntimeHelpers.raise_missing_managed_pool(target)
+  | +        obj = self.meld(spell_id=target.spell_id, override=override)
+  | +        return ManagedSpellLease(obj, pool)
+  | +
+  |      def purge(
+  |              self,
+  |              spell: Optional[Union[str, object]] = None,
+====================================================================================================
+NODE melder.aether.conduit.conduit_ward.transfer.transfer_of_ownership.TransferOfOwnership
+  descriptor: context_compass/system_docs/graph/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.json
+  file: src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py  lineno: 40  kind: class
+  role: "Control-plane helper that migrates a spell lineage between conduit owners."
+  responsibilities: ["preflights and executes dynamic spell ownership transfer between conduits", "owns rollback bookkeeping, change-intent registration, and incident reporting for transfer operations", "sweeps ROOT conduits only (Aether root-named lookups) for impacted lineages; lessers own nothing but the lifecycle of what they create", "reads other Books' owned and contracted spell maps in its impact sweep through one-call snapshots, holding no foreign Book lock", "moves the source root store's entries of every index member to the target's store when move_creations is True (the public verbs' default since 0.2.8239; a holder's row carries its adopted children) or takes the active member's out when False; disposes nothing, and hands over stewardship, not a working setup"]
+  owns_state: ["source_conduit", "target_conduit", "spell", "_preflight_summary", "_change_control_manager", "_incident_manager", "_rollback_actions"]
+  phases: ["runtime"]
+  edge: borrows -> melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager.ChangeControlManager [many_to_one; ['runtime']] why: TransferOfOwnership records and clears change intent through the frame change-control manager.
+  edge: borrows -> melder.aether.aetheric_frame.dev_ops.incident_manager.incident_manager.IncidentManager [many_to_one; ['runtime']] why: TransferOfOwnership uses the frame incident manager to report failed moves.
+  edge: uses -> melder.aether.aetheric_frame.dev_ops.incident_manager.incident_severity.IncidentSeverity [many_to_one; ['runtime']] why: TransferOfOwnership uses IncidentSeverity when reporting failed transfer incidents.
+  edge: uses -> melder.aether.conduit.conduit.Conduit [many_to_one; ['runtime']] why: TransferOfOwnership coordinates ownership migration between source and target conduits.
+  edge: uses -> melder.aether.spellbook.bind.spell_index.SpellIndex [many_to_one; ['runtime']] why: TransferOfOwnership resolves and migrates one spell lineage identified by SpellIndex.
+  span lines: HEAD 1978 -> now 2115; diff lines 185
+  | --- HEAD
+  | +++ now
+  | @@ -1453,15 +1453,11 @@
+  |              # SpellIndex no longer records an owner; the spell's _spellbook
+  |              # (set above) and _owner_conduit_id (set here) are the record.
+  |              spell_obj._owner_conduit_id = self.target_conduit._id
+  | -            caching_enabled = tgt_book._resolve_system_caching_enabled()
+  | -            spell_obj._add_owned_conduit(
+  | -                self.target_conduit._id,
+  | -                self.target_conduit._name,
+  | -                self.target_conduit._creations,
+  | -                dynamic_environment=self.target_conduit.__dynamic_environment__,
+  | -                creation_gate_controller=self.target_conduit._creation_gate_controller,
+  | -                caching_enabled=caching_enabled,
+  | -            )
+  | +            # The full owner stamp (store, factory, caching posture; a managed
+  | +            # version's pool in the target store), with its rollback: a failed
+  | +            # transfer stamps the member back onto the source and discards a
+  | +            # pool this stamp composed (2026-10-15).
+  | +            self._restamp(spell_obj)
+  |              # Same contract as the source-side rollback path: eager compilation
+  |              # everywhere, recompile driven by resolution_complete=False.
+  |              spell_obj.resolution_required = False
+  | @@ -1563,6 +1559,16 @@
+  |          / `_owner_conduit_id` repointed to the target. The active map, `_spell_id_pool`,
+  |          and risk manager are intentionally untouched -- inactive members stay off
+  |          resolution. A single rollback handler reverses the whole batch on failure.
+  | +
+  | +        Then, outside the Book locks, every moved member that carries an owner
+  | +        stamp (its `_owner_creations` is set) is stamped onto the target through
+  | +        `_restamp`, exactly as the flip stamps the active member (2026-10-15): it
+  | +        names the target root's store, so a notch on the target builds or leases
+  | +        from the target's store, and a managed version gets its pool there (a
+  | +        moving transfer then replaces that pool with the moved one). Each stamp
+  | +        registers its own stamp-back and, for a pool it composed, its discard. A
+  | +        member never stamped - a version staged with `bind_inactive` before
+  | +        conjure - keeps no store and is moved as before.
+  |  
+  |          Args:
+  |              spell_obj: The active spell whose index is changing owners.
+  | @@ -1594,6 +1600,13 @@
+  |              self._register_rollback(
+  |                  partial(self._rollback_inactive_members, moved, src_book, tgt_book)
+  |              )
+  | +        # Outside the Book locks, under the conduit locks `execute` holds - where
+  | +        # the flip stamps the active member. A member never stamped (a version
+  | +        # staged with bind_inactive before conjure) carries no store and is moved
+  | +        # as before; every other member gets the target's stamp (2026-10-15).
+  | +        for inactive_spell, _member_id in moved:
+  | +            if inactive_spell._owner_creations is not None:
+  | +                self._restamp(inactive_spell)
+  |  
+  |      def _rollback_inactive_members(
+  |              self,
+  | @@ -1624,6 +1637,130 @@
+  |                      inactive_spell._owner_conduit_id = source_conduit_id
+  |          except Exception:
+  |              pass
+  | +
+  | +    def _stamp_owner(self, spell: Any, conduit: Any, spellbook: Any) -> None:
+  | +        """
+  | +        Stamp `conduit` as `spell`'s owner, the way conjure and bind stamp.
+  | +
+  | +        Purpose:
+  | +            One owner stamp for every transfer step that moves a member's owner:
+  | +            the root's id, name and creations store, its dynamic flag and the
+  | +            frame's CreationGateController, and the caching posture of the Book
+  | +            that owns the member (`SpellbookCreationSystem.define_conduit_into_spells`
+  | +            and the post-conjure bind paths write the same values).
+  | +
+  | +        Contract:
+  | +            - Delegates to `Spell._add_owned_conduit`, which clears the spell's
+  | +              CreationContext, rebuilds its CreationContextFactory and, for an
+  | +              `Existence.managed_spell_quantity` version, ensures its pool in the
+  | +              stamped store (composed when the store holds none).
+  | +            - Registers nothing: `_restamp` owns the rollback bookkeeping, and a
+  | +              rollback calls this to stamp a member back.
+  | +
+  | +        Args:
+  | +            spell: The member to stamp.
+  | +            conduit: The root conduit that owns the member after the stamp.
+  | +            spellbook: That root's Book (its caching posture is stamped).
+  | +
+  | +        Returns:
+  | +            None.
+  | +
+  | +        Raises:
+  | +            Exception: Whatever `_add_owned_conduit` raises (a cleaned store, no
+  | +                live `ReleaseManagedSpell` for a managed version).
+  | +
+  | +        Threading:
+  | +            Takes the spell's lock, then the store's leaf lock, then the
+  | +            registry's leaf lock (inside `_add_owned_conduit`). The forward stamps
+  | +            run under both conduit locks and outside the Book locks, as the flip's
+  | +            stamp always has; rollbacks run with no conduit lock.
+  | +        """
+  | +        self.check_cleaned()
+  | +        spell._add_owned_conduit(
+  | +            conduit._id,
+  | +            conduit._name,
+  | +            conduit._creations,
+  | +            dynamic_environment=conduit.__dynamic_environment__,
+  | +            creation_gate_controller=conduit._creation_gate_controller,
+  | +            caching_enabled=spellbook._resolve_system_caching_enabled(),
+  | +        )
+  | +
+  | +    def _restamp(self, spell: Any) -> None:
+  | +        """
+  | +        Stamp a member onto the target root, registering the rollback that undoes it.
+  | +
+  | +        Purpose:
+  | +            Make the owner stamp follow the lineage both ways (2026-10-15): the
+  | +            flip stamps the active member through this, and
+  | +            `_migrate_inactive_members` every parked member that carries a stamp,
+  | +            so after a transfer each names the target's store, and after a failed
+  | +            one the store it named before.
+  | +
+  | +        Contract:
+  | +            - Before stamping, registers `_stamp_owner(spell, source, source Book)`,
+  | +              so a stamp that raises midway is still stamped back.
+  | +            - Stamps the member onto the target (`_stamp_owner`).
+  | +            - For an `Existence.managed_spell_quantity` member whose version had no
+  | +              pool in the target store before the stamp, registers - even when the
+  | +              stamp raised - `_discard_composed_pool` for the pool the stamp
+  | +              composed there. A pool the target store already held is never
+  | +              registered for discard, so a rollback never touches it.
+  | +            - Rollback runs newest first, so for one member the discard runs
+  | +              before the stamp-back, and both run after the row rollbacks, which
+  | +              are registered later.
+  | +
+  | +        Args:
+  | +            spell: The member whose owner moves to the target root.
+  | +
+  | +        Returns:
+  | +            None.
+  | +
+  | +        Raises:
+  | +            Exception: Whatever the stamp raises, after the rollback bookkeeping
+  | +                above; the caller's transfer then rolls back.
+  | +        """
+  | +        self.check_cleaned()
+  | +        target_creations = self.target_conduit._creations
+  | +        managed = spell.existence is Existence.managed_spell_quantity
+  | +        held_pool = managed and target_creations.get_managed_quantity(spell.spell_id) is not None
+  | +        self._register_rollback(
+  | +            partial(self._stamp_owner, spell, self.source_conduit, self._source_spellbook)
+  | +        )
+  | +        try:
+  | +            self._stamp_owner(spell, self.target_conduit, self._target_spellbook)
+  | +        finally:
+  | +            if managed and not held_pool:
+  | +                composed = target_creations.get_managed_quantity(spell.spell_id)
+  | +                if composed is not None:
+  | +                    self._register_rollback(
+  | +                        partial(self._discard_composed_pool, target_creations, spell.spell_id, composed)
+  | +                    )
+  | +
+  | +    def _discard_composed_pool(self, creations: Any, spell_id: str, pool: Any) -> None:
+  | +        """
+  | +        Rollback step: take back the pool a stamp of this transfer composed, and clean it.
+  | +
+  | +        Contract:
+  | +            - `creations.discard_managed_quantity(spell_id, pool)` removes the pool
+  | +              only while it is still that store's pool under the id, and
+  | +              unregisters it. When the store no longer holds it - a moving
+  | +              transfer replaced it with the moved pool, which the row rollback
+  | +              already took back to the source - nothing happens.
+  | +            - A removed pool is cleaned. It is empty: the lineage is disabled for
+  | +              the whole transfer, so nothing was ever leased from it, and the
+  | +              cleanup disposes nothing ("a transfer disposes nothing").
+  | +
+  | +        Args:
+  | +            creations: The target store the stamp composed the pool in.
+  | +            spell_id: The managed version id.
+  | +            pool: The pool the stamp composed.
+  | +
+  | +        Returns:
+  | +            None.
+  | +        """
+  | +        self.check_cleaned()
+  | +        if creations.discard_managed_quantity(spell_id, pool):
+  | +            pool.cleanup()
+  |  
+  |      def _unshare_everywhere(self, borrowers: List[Dict[str, Any]], spell_obj: Any) -> None:
+  |          """
+====================================================================================================
+NODE melder.aether.conduit.creations.creations.Creations
+  descriptor: context_compass/system_docs/graph/melder/aether/conduit/creations/creations.json
+  file: src/melder/aether/conduit/creations/creations.py  lineno: 120  kind: class
+  role: "Generic scoped live-object registry with disposal metadata kept beside it: a (object, methods) tuple per unique key, a ManyDisposalBucket per disposal-bearing many key, a HolderDisposalEntry per slotted holder that adopted many children."
+  responsibilities: ["stores raw objects in one scoped live registry and cleanup records in a separate registry: unique keys hold (object, methods), disposal-bearing many keys hold a ManyDisposalBucket that aliases the live bucket and records the key's method list once", "register_many(spell_id, instance, disposal_methods) is the hot verb emitted plans and executors call (0.2.8216): explicit store-lock acquire/release, cleaned check, one dict read, first use creates the bucket and its record, one append; add_many_creations keeps its signature, writes the same shape and refuses a non-list slot or a disposal declaration that disagrees with the key's entries", "retains established Spell disposal lists through registration and in-memory transfer", "invokes every declared method in list order even after one fails; collects one RuntimeError per failing method, chained from the raised exception, and never lets one failing object strand the rest", "supports reusable clear/reset and terminal cleanup without clearing borrowed method lists", "owns one re-entrant build guard per slot (slot_guard) so generated code builds each slotted object once without holding the store lock", "keeps the store lock a leaf around dict work; refuses (and disposes) publication into a store cleaned during the build", "purges a whole selected target or one supplied creation under the slot's build lock then the store lock, with paired registry removal and shared disposal helpers; no scope discovery or authorization", "records a just-published slotted holder's disposal-bearing many children with the holder (adopt_children, 0.2.8238): moves them out of their spells' buckets into the holder's HolderDisposalEntry, so purge, extract/restore and whole-store disposal reach them through the holder's key with one dict read; a many purge or live-creation probe of a child's spell counts only children no holder adopted"]
+  owns_state: ["_creations", "_disposable_creations", "_slot_guards", "_owner_conduit_id", "_id", "_lock"]
+  phases: ["init", "runtime", "cleanup"]
+  span lines: HEAD 1475 -> now 1752; diff lines 423
+  | --- HEAD
+  | +++ now
+  | @@ -29,6 +29,18 @@
+  |              possibly none - and its children with theirs) in place of the
+  |              tuple. Adopted children leave their spell's bucket, so a `many`
+  |              key holds only objects that no holder owns.
+  | +        - Managed pools (2026-10-15, managed_spell_quantity): a root store keeps one
+  | +          `ManagedSpellQuantity` per `Existence.managed_spell_quantity` version it
+  | +          owns in `_managed_quantities[spell_id]`, a map of its own: `_creations`
+  | +          never holds a pool, so lookups, live probes and purge never meet one.
+  | +          `ensure_managed_quantity` composes it at owner stamping; cleanup cleans
+  | +          the pools before the disposable registry; extract/restore move a pool
+  | +          as a `managed` row; an ownership transfer's rollback takes back a pool
+  | +          its stamp composed (`discard_managed_quantity`, identity-checked);
+  | +          purge returns 0 for a managed spell. The store registers every pool it
+  | +          takes with `ReleaseManagedSpell` and unregisters every pool it gives up
+  | +          (S4), outside the store lock, so the registry holds exactly the pools
+  | +          live stores hold.
+  |          - Cleanup and reusable clearing are explicit, idempotent, and aggregate
+  |            disposal failures.
+  |          - Disposal names are the established Spell-owned list, retained directly
+  | @@ -37,8 +49,9 @@
+  |  
+  |      Owned State:
+  |          `_owner_conduit_id`, a stable `_id`, one store `RLock`, the two
+  | -        registries (`_creations`, `_disposable_creations`) and the per-slot
+  | -        build-guard table (`_slot_guards`).
+  | +        registries (`_creations`, `_disposable_creations`), the per-slot
+  | +        build-guard table (`_slot_guards`) and the managed pools
+  | +        (`_managed_quantities`, spell id -> `ManagedSpellQuantity`, 2026-10-15).
+  |  
+  |      Threading:
+  |          Two lock roles, and keeping them apart is what makes resolution
+  | @@ -126,6 +139,7 @@
+  |          "_creations",
+  |          "_disposable_creations",
+  |          "_slot_guards",
+  | +        "_managed_quantities",
+  |      ]
+  |  
+  |      def __init__(
+  | @@ -177,6 +191,10 @@
+  |          # One build guard per slot, created on first use and kept for this
+  |          # store's lifetime (bounded by the number of spell ids built here).
+  |          self._slot_guards: Dict[str, RLock] = {}
+  | +        # One pool per managed spell version this (root) store owns, composed at
+  | +        # owner stamping (`ensure_managed_quantity`). Kept apart from `_creations`:
+  | +        # a pool is not an object, and no resolution path may read one as such.
+  | +        self._managed_quantities: Dict[str, ManagedSpellQuantity] = {}
+  |          # Note: resolution-store selection for broad-lived existences
+  |          # (`unique_per_conduit_lineage` lineage root, `unique_per_conduit_cluster`
+  |          # cluster team store) lives on the meld front doors
+  | @@ -192,9 +210,17 @@
+  |  
+  |          Contract:
+  |              - Idempotent.
+  | -            - Detaches live and disposable registries before disposal work.
+  | +            - Detaches live and disposable registries, and the managed pools,
+  | +              before disposal work.
+  | +            - Unregisters the managed pools from `ReleaseManagedSpell`, then
+  | +              cleans them FIRST, newest first (2026-10-15): a pool is
+  | +              composed at conjure, before the uniques its objects hold, so the
+  | +              registry's newest-first walk would close those uniques under live
+  | +              pooled objects. A pool's cleanup disposes its idle objects and every
+  | +              child recorded for its objects; objects out stay their holders'.
+  |              - Uses `_disposable_creations` only for explicit teardown work.
+  | -            - Raises `ExceptionGroup` after best-effort disposal attempts.
+  | +            - Raises `ExceptionGroup` after best-effort disposal attempts; a
+  | +              pool's failures join it as their own chained `RuntimeError`s.
+  |              - Drops the live field surface after cleanup so later use fails
+  |                honestly instead of reading stale state.
+  |              - Keeps `_lock` as a deliberate post-cleanup tombstone: a build
+  | @@ -224,18 +250,26 @@
+  |              self._cleaned = True
+  |              disposable_creations = self._disposable_creations
+  |              creations = self._creations
+  | +            managed_quantities = self._managed_quantities
+  |              self._creations = {}
+  |              self._disposable_creations = {}
+  | -
+  | +            self._managed_quantities = {}
+  | +
+  | +        pools = list(reversed(managed_quantities.values()))
+  | +        # Outside the store lock (a leaf): no release can be routed to a pool this store is about to retire.
+  | +        self._unregister_managed_quantities(pools)
+  | +        errors = self._cleanup_managed_quantities(pools)
+  | +        managed_quantities.clear()
+  |          try:
+  | -            errors = self._dispose_disposable_registry(disposable_creations)
+  | +            errors.extend(self._dispose_disposable_registry(disposable_creations))
+  |          except Exception as exc:
+  | -            errors = [exc]
+  | +            errors.append(exc)
+  |          disposable_creations.clear()
+  |          creations.clear()
+  |  
+  |          del self._creations
+  |          del self._disposable_creations
+  | +        del self._managed_quantities
+  |          del self._slot_guards
+  |          del self._owner_conduit_id
+  |          del self._id
+  | @@ -962,6 +996,192 @@
+  |          """
+  |          return self._creations.get(spell_id)
+  |  
+  | +    def ensure_managed_quantity(self, spell: Spell) -> ManagedSpellQuantity:
+  | +        """
+  | +        Return the pool of one managed spell version in this store, composing it on first use.
+  | +
+  | +        Purpose:
+  | +            Give every `Existence.managed_spell_quantity` version a pool in its
+  | +            owner root's store the moment the owner is stamped
+  | +            (`Spell._add_owned_conduit`: conjure, a post-conjure bind or
+  | +            bind_inactive, the transfer flip), so a lease always finds one.
+  | +
+  | +        Contract:
+  | +            - Idempotent: one pool per (store, spell id); a second call returns
+  | +              the same pool. A rebind under the same content-stable id meets the
+  | +              pool its earlier definition left (as a slotted replacement meets
+  | +              its slot, 0.2.8219), which is re-pointed at the new Spell object.
+  | +            - A new pool is composed from the Spell's options and owned by this
+  | +              store's conduit (`owner_conduit_id`); it holds no object yet.
+  | +            - Registers the pool with `ReleaseManagedSpell` under this store's
+  | +              root (idempotent; a rebind that brought another class object
+  | +              re-keys it), so a release of its class reaches it.
+  | +            - Never touches `_creations` or `_disposable_creations`.
+  | +
+  | +        Args:
+  | +            spell:
+  | +                A Spell bound with `Existence.managed_spell_quantity`.
+  | +
+  | +        Returns:
+  | +            ManagedSpellQuantity: The version's pool in this store.
+  | +
+  | +        Raises:
+  | +            RuntimeError:
+  | +                If this store has been permanently cleaned, or no live
+  | +                `ReleaseManagedSpell` exists to register with.
+  | +            ValueError:
+  | +                If the spell is not `Existence.managed_spell_quantity` (the pool
+  | +                refuses it; nothing is stored), or no Aether built the registry.
+  | +
+  | +        Threading:
+  | +            The map read and write run under the store lock, a leaf; composing a
+  | +            pool runs no user code. Called under the Spell's lock by owner
+  | +            stamping, the established build-lock-then-store-lock order. The pool
+  | +            is registered with `ReleaseManagedSpell` after this lock is released
+  | +            (its own lock is a leaf held only to publish), so the order is Spell
+  | +            lock -> registry lock and the store lock stays a leaf.
+  | +        """
+  | +        with self._lock:
+  | +            self.check_cleaned()
+  | +            spell_id = spell.spell_id
+  | +            pool = self._managed_quantities.get(spell_id)
+  | +            if pool is None:
+  | +                pool = ManagedSpellQuantity(spell=spell, owner_conduit_id=self._owner_conduit_id)
+  | +                self._managed_quantities[spell_id] = pool
+  | +            else:
+  | +                pool._rebind_spell(spell)
+  | +            owner_conduit_id = self._owner_conduit_id
+  | +        ReleaseManagedSpell().register(pool, root_conduit_id=owner_conduit_id)
+  | +        return pool
+  | +
+  | +    def get_managed_quantity(self, spell_id: str) -> Optional[ManagedSpellQuantity]:
+  | +        """
+  | +        Return the pool this store holds for one managed spell version, if any.
+  | +
+  | +        Contract:
+  | +            - One lock-free dict read of `_managed_quantities`; None when the
+  | +              store holds no pool under the id (not managed, not stamped here, or
+  | +              moved away by an ownership transfer).
+  | +            - Never builds a pool.
+  | +
+  | +        Args:
+  | +            spell_id:
+  | +                The managed version id.
+  | +
+  | +        Returns:
+  | +            Optional[ManagedSpellQuantity]: The pool, or None.
+  | +
+  | +        Raises:
+  | +            AttributeError:
+  | +                After `cleanup()`, like every other live-surface read of a
+  | +                retired store.
+  | +        """
+  | +        return self._managed_quantities.get(spell_id)
+  | +
+  | +    def discard_managed_quantity(self, spell_id: str, pool: ManagedSpellQuantity) -> bool:
+  | +        """
+  | +        Give up one pool this store holds, when it is still the pool under the id.
+  | +
+  | +        Purpose:
+  | +            Take back a pool an owner stamp composed in this store. An ownership
+  | +            transfer's rollback uses it to remove the empty pool its stamp of the
+  | +            target root composed (`TransferOfOwnership._discard_composed_pool`,
+  | +            2026-10-15), so a failed transfer leaves the target store as it was.
+  | +
+  | +        Contract:
+  | +            - Removes `pool` only when it is the pool this store holds under
+  | +              `spell_id` (identity). Any other pool under the id, or none, is left
+  | +              as it is and the call answers False, so a pool the store held before
+  | +              the stamp, or one an extract already took, is never touched.
+  | +            - Unregisters the removed pool from `ReleaseManagedSpell` after the
+  | +              store lock, as every store verb that gives a pool up does (S4).
+  | +            - Never cleans the pool and never touches `_creations` or
+  | +              `_disposable_creations`: the removed pool is the caller's, who
+  | +              decides its end (the transfer's rollback cleans it).
+  | +            - Idempotent for one pool: a second call answers False.
+  | +
+  | +        Args:
+  | +            spell_id:
+  | +                The managed version id the pool is held under.
+  | +            pool:
+  | +                The pool to give up.
+  | +
+  | +        Returns:
+  | +            bool: True when the pool was removed; False when this store does not
+  | +            hold it under `spell_id`.
+  | +
+  | +        Raises:
+  | +            RuntimeError:
+  | +                If this store has been permanently cleaned (its cleanup already
+  | +                gave its pools up), as `ensure_managed_quantity` refuses.
+  | +
+  | +        Threading:
+  | +            The identity check and the removal run under the store lock, a leaf,
+  | +            so of two racing calls exactly one removes the pool; the unregister
+  | +            runs after the lock, so the registry's leaf lock is never taken under
+  | +            the store lock.
+  | +        """
+  | +        with self._lock:
+  | +            self.check_cleaned()
+  | +            if self._managed_quantities.get(spell_id) is not pool:
+  | +                return False
+  | +            del self._managed_quantities[spell_id]
+  | +        self._unregister_managed_quantities([pool])
+  | +        return True
+  | +
+  | +    @staticmethod
+  | +    def _unregister_managed_quantities(pools: List[ManagedSpellQuantity]) -> None:
+  | +        """
+  | +        Unregister pools this store gives up from `ReleaseManagedSpell`.
+  | +
+  | +        Contract:
+  | +            - Unregisters each pool from the live registry (idempotent there).
+  | +            - Does nothing when no live registry exists: Aether cleans the registry only after its frames, so a store
+  | +              torn down later (or after a test reset the registry) has nothing to unregister from.
+  | +            - Takes no store lock: the caller detached the pools first.
+  | +
+  | +        Args:
+  | +            pools:
+  | +                The pools to unregister.
+  | +
+  | +        Returns:
+  | +            None.
+  | +        """
+  | +        registry = ReleaseManagedSpell._live_instance()
+  | +        if registry is None:
+  | +            return
+  | +        for pool in pools:
+  | +            registry.unregister(pool)
+  | +
+  | +    @staticmethod
+  | +    def _cleanup_managed_quantities(pools: List[ManagedSpellQuantity]) -> List[Exception]:
+  | +        """
+  | +        Clean detached pools in the given order and collect their failures.
+  | +
+  | +        Contract:
+  | +            - Every pool is cleaned even after one fails.
+  | +            - A pool's `ExceptionGroup` is flattened into its chained
+  | +              `RuntimeError`s, so the store's own group keeps one error per failing
+  | +              disposal method; any other exception is kept as raised.
+  | +            - Takes no lock: the caller detached the pools first.
+  | +
+  | +        Args:
+  | +            pools:
+  | +                The pools to clean, in cleaning order.
+  | +
+  | +        Returns:
+  | +            List[Exception]: The collected failures, in attempt order.
+  | +        """
+  | +        errors: List[Exception] = []
+  | +        for pool in pools:
+  | +            try:
+  | +                pool.cleanup()
+  | +            except ExceptionGroup as group:
+  | +                errors.extend(group.exceptions)
+  | +            except Exception as exc:
+  | +                errors.append(exc)
+  | +        return errors
+  | +
+  |      def purge(
+  |              self,
+  |              spell: Spell,
+  | @@ -997,6 +1217,9 @@
+  |                collected and other selected objects are still attempted, matching
+  |                cleanup.
+  |              - Unrelated keys, the registration and this reusable store survive.
+  | +            - A managed spell (`Existence.managed_spell_quantity`) returns 0 and
+  | +              touches nothing: purge is not part of the managed design (owner,
+  | +              2026-10-15), and its objects live in a pool, never in `_creations`.
+  |  
+  |          Args:
+  |              spell:
+  | @@ -1045,6 +1268,8 @@
+  |          if not purge_all and creation is None:
+  |              raise ValueError("Single-object purge requires a creation reference.")
+  |          existence = spell.existence
+  | +        if existence is Existence.managed_spell_quantity:
+  | +            return 0
+  |          if existence is Existence.unique:
+  |              with spell._lock:
+  |                  count, retired, disposal = self._detach_purge_entries(
+  | @@ -1204,6 +1429,11 @@
+  |                `disposable` with an empty `disposal_methods` list, so a restore
+  |                (an ownership transfer's move or its rollback) takes the children
+  |                wherever the holder goes.
+  | +            - A managed spell's pool travels as one row (2026-10-15):
+  | +              `{"scope": "managed", "disposable": False, "stored": pool}` - the
+  | +              same `ManagedSpellQuantity` object with its idle objects, count and
+  | +              children records - and this store gives the pool up, unregistering
+  | +              it from `ReleaseManagedSpell` after the store lock (S4).
+  |  
+  |          Threading:
+  |              - Performs extraction under `_lock` so the local slot shape stays
+  | @@ -1211,6 +1441,9 @@
+  |          """
+  |          extracted: List[Dict[str, Any]] = []
+  |          with self._lock:
+  | +            pool = self._managed_quantities.pop(spell_id, None)
+  | +            if pool is not None:
+  | +                extracted.append({"scope": "managed", "disposable": False, "stored": pool})
+  |              live_value = self._creations.get(spell_id)
+  |              disposable_value = self._disposable_creations.get(spell_id)
+  |  
+  | @@ -1255,6 +1488,9 @@
+  |                      entry["disposal_methods"] = disposable_entry[1]
+  |                  extracted.append(entry)
+  |  
+  | +        if pool is not None:
+  | +            # A pool in flight between stores is not routable until a restore registers it again.
+  | +            self._unregister_managed_quantities([pool])
+  |          return extracted
+  |  
+  |      def restore_spell_creations(
+  | @@ -1279,6 +1515,22 @@
+  |              - A unique row with `children` rebuilds the holder's
+  |                `HolderDisposalEntry` (0.2.8238); rows without it restore exactly
+  |                as before.
+  | +            - A `managed` row installs its pool under the spell id (2026-10-15).
+  | +              A different pool already there - the empty one an ownership
+  | +              transfer's flip composed at the target's stamp - is replaced and
+  | +              cleaned after the lock is released; the store's own pool is kept.
+  | +            - After the lock, in this order (S4): the replaced pool is
+  | +              unregistered from `ReleaseManagedSpell`, the installed pool is
+  | +              registered under this store's root, then the replaced pool is
+  | +              cleaned - so the moved pool is routable even when that cleanup
+  | +              fails.
+  | +
+  | +        Raises:
+  | +            RuntimeError:
+  | +                For a row that does not fit the local slot shape.
+  | +            ExceptionGroup:
+  | +                When cleaning a replaced pool failed; raised after the restore
+  | +                completed, with the moved pool in place.
+  |  
+  |          Returns:
+  |              None.
+  | @@ -1286,7 +1538,10 @@
+  |          if not creations:
+  |              return
+  |  
+  | +        replaced_pools: List[ManagedSpellQuantity] = []
+  | +        installed_pools: List[ManagedSpellQuantity] = []
+  |          with self._lock:
+  | +            owner_conduit_id = self._owner_conduit_id
+  |              live_value = self._creations.get(spell_id)
+  |              if live_value is not None:
+  |                  self._creations.pop(spell_id)
+  | @@ -1297,6 +1552,14 @@
+  |                  is_disposable = entry["disposable"]
+  |                  stored_value = entry["stored"]
+  |                  disposal_methods = entry.get("disposal_methods")
+  | +
+  | +                if scope == "managed":
+  | +                    replaced = self._managed_quantities.get(spell_id)
+  | +                    if replaced is not None and replaced is not stored_value:
+  | +                        replaced_pools.append(replaced)
+  | +                    self._managed_quantities[spell_id] = stored_value
+  | +                    installed_pools.append(stored_value)
+  | +                    continue
+  |  
+  |                  if scope == "unique":
+  |                      existing = self._creations.get(spell_id)
+  | @@ -1356,6 +1619,17 @@
+  |                      f"Unknown creation scope '{scope}' while restoring spell '{spell_id}'."
+  |                  )
+  |  
+  | +        self._unregister_managed_quantities(replaced_pools)
+  | +        for installed in installed_pools:
+  | +            ReleaseManagedSpell().register(installed, root_conduit_id=owner_conduit_id)
+  | +        if replaced_pools:
+  | +            errors = self._cleanup_managed_quantities(replaced_pools)
+  | +            if errors:
+  | +                raise ExceptionGroup(
+  | +                    f"Errors occurred cleaning the managed pool replaced while restoring spell '{spell_id}'",
+  | +                    errors,
+  | +                )
+  | +
+  |      def clear_all(self) -> None:
+  |          """
+  |          Dispose and remove all scoped entries without destroying this object.
+  | @@ -1367,6 +1641,9 @@
+  |              - Leaves this `Creations` instance reusable after the clear
+  |                completes. Slot guards are kept (they are per spell id, not per
+  |                generation).
+  | +            - Leaves the managed pools untouched: only root stores hold pools,
+  | +              and the reusable clears run on lesser and spellspace stores only (a
+  | +              lesser's pool return, a spellspace's exit), never on a root's.
+  |  
+  |          Threading:
+  |              The swap runs under the leaf store lock. In-flight builds hold slot
+====================================================================================================
+NODE melder.aether.conduit.meld.conduit_meld.ConduitMeld
+  descriptor: context_compass/system_docs/graph/melder/aether/conduit/meld/conduit_meld.json
+  file: src/melder/aether/conduit/meld/conduit_meld.py  lineno: 14  kind: class
+  role: "Conduit-facing meld front door."
+  responsibilities: ["routes conduit-local unique_per_conduit and many storage through ConduitCreations", "rejects spellspace-request spells on the conduit entry path", "provides reuse-only and live-creation status probes over the store each lifetime uses through this door: the conduit store for many and unique_per_conduit, the Spell owner's store for unique, the lineage root for unique_per_conduit_lineage and the elected leader for unique_per_conduit_cluster", "authorizes conduit-local, spell-owner, lineage-root and cluster-leader purge before delegating single or all retirement to Creations", "refuses immutable non-resolvable registrations before normal resolution and reuse-only access", "admits a dynamic spell through its spell-index gate before reading the context (both lanes, via Meld._execute_admitted); automatic spells keep the unticketed lane and fast-door memo", "serves warm automatic id melds from the fast-door entry: plain melds (an existing object's bound object directly) and non-empty dict override payloads through the live override executor slot", "mints the name/class warm entries (Meld._fast_input_doors) on the same success arms as the id entry for meld('Name') and meld(Cls) shapes; it never reads them - the public front doors do", "grants purge of a unique_per_conduit_cluster instance to the elected leader recorded on its cluster facade, since the team store's owner id is the cluster's (0.2.8237)"]
+  owns_state: []
+  phases: ["init", "runtime", "cleanup"]
+  edge: borrows -> melder.aether.conduit.creations.conduit_creations.ConduitCreations [one_to_one; ['runtime']] why: ConduitMeld borrows the conduit-owned creation registry for caller-local lifetimes.
+  edge: specializes -> melder.aether.conduit.meld.meld.Meld [one_to_one; ['init', 'runtime', 'cleanup']] why: ConduitMeld specializes Meld with conduit-facing storage semantics.
+  span lines: HEAD 1091 -> now 1103; diff lines 44
+  | --- HEAD
+  | +++ now
+  | @@ -210,6 +210,10 @@
+  |                cluster's, 0.2.8237). A lesser's `_resolution_conduit_id` grants no
+  |                authority.
+  |              - SpellSpace lifetime is refused even when a space is active.
+  | +            - A managed spell (`Existence.managed_spell_quantity`) uses this
+  | +              caller's own store, where `Creations.purge` returns 0 for it: its
+  | +              objects live in a pool, and purge is not part of the managed design
+  | +              (2026-10-15), so there is nothing to authorize.
+  |              - Does not remove entries, take creation locks, or invoke callbacks.
+  |  
+  |          Args:
+  | @@ -229,7 +233,7 @@
+  |              coordination requirements; this helper does not cache authority.
+  |          """
+  |          existence = spell.existence
+  | -        if existence in (Existence.many, Existence.unique_per_conduit):
+  | +        if existence in (Existence.many, Existence.unique_per_conduit, Existence.managed_spell_quantity):
+  |              return self._conduit_creations
+  |          if existence is Existence.unique_per_spell_space:
+  |              raise RuntimeError(
+  | @@ -985,6 +989,11 @@
+  |                `unique_per_conduit_lineage` the lineage-root store;
+  |                `unique_per_conduit_cluster` the cluster's team store, and is
+  |                not live while no leader is elected.
+  | +            - `managed_spell_quantity` reads the pool in the Spell owner's store
+  | +              (2026-10-15): live while the pool's count (objects alive, idle plus
+  | +              out) is above 0, `creation_count` that count, storage scope
+  | +              `"managed_pool"`; a version with no owner store or no pool yet is
+  | +              not live.
+  |              - spellspace-request spells never reach this helper because the
+  |                conduit-facing door rejects them earlier.
+  |          """
+  | @@ -1084,6 +1093,9 @@
+  |                  "creation_count": 1 if creation is not None else 0,
+  |              }
+  |  
+  | +        if existence is Existence.managed_spell_quantity:
+  | +            return self._describe_managed_pool_status(spell, query_conduit_id)
+  | +
+  |          raise RuntimeError(
+  |              "Unsupported existence '{0}' for live creation probe.".format(
+  |                  existence,
+====================================================================================================
+NODE melder.aether.conduit.meld.meld.Meld
+  descriptor: context_compass/system_docs/graph/melder/aether/conduit/meld/meld.json
+  file: src/melder/aether/conduit/meld/meld.py  lineno: 49  kind: abstract
+  role: "Resolution runtime orchestrator."
+  responsibilities: ["resolves target spells", "discovers purge bindings through inspected instance classes or explicit selectors; concrete doors own scope authority", "enforces validity and dirty-root gates", "chooses reuse versus construction", "dispatches execution into CreationContext", "reads contract-default signatures without forcing evaluation of unavailable annotation names", "gates conduit-local resolution after structural recompilation so changed selection rebuilds its executor", "provides the common non-resolvable-registration error without restricting observational lookup", "validates local or root-shared hook updates separately from trusted reference installation", "restores temporary map references at lease boundaries without adding work to ordinary concrete Meld execution", "runs a dynamic spell's structural, resolution and deferred rebuilds inside a CreationContextRebuild window entered before the spell lock (_rebuild_window)", "executes a dynamic meld under one spell-index ticket held from before the context read until the executor returns (_execute_admitted)", "keeps the fast-door registry of (spell, captured context, door epoch, existing-object flag) entries, filled only after a successful full-lane meld; its four readers share one guard ladder", "routes a spell flagged resolution_required through the deferred lane: phases 8-11 for an existing creation or its current Phase 5 root, otherwise the full target pass 5-11 followed by a resolution-validity check for the conduit (_requires_own_target_pass, _raise_unless_resolution_valid)"]
+  owns_state: ["_input_resolution_cache", "_change_control_manager_by_frame", "_spell_compiler_system", "_fast_meld_doors", "_meld_hooks", "_baseline_meld_hooks", "_meld_hooks_modified"]
+  phases: ["runtime", "cleanup"]
+  edge: borrows -> melder.aether.conduit.creations.creations.Creations [one_to_one; ['runtime']] why: Meld borrows the conduit-owned Creations manager to check reuse and register live instances.
+  edge: creates -> melder.aether.conduit.meld.creation_context.creation_context.CreationContext [one_to_many; ['runtime']] why: Meld creates or retrieves per-spell CreationContext objects to execute spell resolution.
+  edge: uses -> melder.aether.spellbook.existence.existence.Existence [many_to_one; ['runtime']] why: Meld interprets Existence to decide reuse versus construction routes.
+  edge: creates -> melder.aether.spellbook.spell_compiler.spell_compiler_system.SpellCompilerSystem [one_to_many; ['runtime']] why: Meld instantiates SpellCompilerSystem when lazy validation or resolution-phase reruns are required at meld time.
+  edge: borrows -> melder.aether.spellbook.spellbook.Spellbook [one_to_one; ['runtime']] why: Meld borrows Spellbook lookup maps and spell metadata for resolution.
+  edge: uses -> melder.aether.conduit.meld.creation_context.creation_context_rebuild.CreationContextRebuild [one_to_many; ['runtime']] why: Meld creates one short-lived CreationContextRebuild per conduit-local rebuild of a dynamic spell so admitted melds drain before phases replace the shared plan and context.
+  span lines: HEAD 2062 -> now 2102; diff lines 49
+  | --- HEAD
+  | +++ now
+  | @@ -722,6 +722,46 @@
+  |          )
+  |  
+  |      @staticmethod
+  | +    def _describe_managed_pool_status(spell: Spell, query_conduit_id: str) -> Dict[str, object]:
+  | +        """
+  | +        Return the live-creation status of a managed spell from its owner store's pool.
+  | +
+  | +        Purpose:
+  | +            One answer for both doors (2026-10-15): a managed object is leased
+  | +            from a pool in its owner root's store and is never conduit- or
+  | +            space-local, so `ConduitMeld` and `SpellSpaceMeld` report the same
+  | +            pool.
+  | +
+  | +        Contract:
+  | +            - Reads `spell._owner_creations.get_managed_quantity(spell_id)`; a
+  | +              version with no owner store (not stamped yet) or no pool reports 0.
+  | +            - `is_live` when the pool's count is above 0; `creation_count` is the
+  | +              count (objects built and alive, idle plus out), read without a lock.
+  | +            - Never creates, leases or mutates anything.
+  | +
+  | +        Args:
+  | +            spell: The resolved managed spell.
+  | +            query_conduit_id: The conduit the probe was asked through.
+  | +
+  | +        Returns:
+  | +            Dict[str, object]: The status payload, storage scope `"managed_pool"`.
+  | +        """
+  | +        store = spell._owner_creations
+  | +        pool = store.get_managed_quantity(spell.spell_id) if store is not None else None
+  | +        count = pool.count if pool is not None else 0
+  | +        return {
+  | +            "is_live": count > 0,
+  | +            "spell_id": spell.spell_id,
+  | +            "spell_name": spell.spell_name,
+  | +            "existence": spell.existence.name,
+  | +            "query_conduit_id": query_conduit_id,
+  | +            "storage_scope_kind": "managed_pool",
+  | +            "storage_owner_conduit_id": spell._owner_conduit_id,
+  | +            "active_spellspace_id": None,
+  | +            "creation_count": count,
+  | +        }
+  | +
+  | +    @staticmethod
+  |      def _raise_non_resolvable_registration(spell: Spell) -> NoReturn:
+  |          """
+  |          Refuse direct resolution of one explicitly non-resolvable registration.
+====================================================================================================
+NODE melder.aether.conduit.meld.spellspace_meld.SpellSpaceMeld
+  descriptor: context_compass/system_docs/graph/melder/aether/conduit/meld/spellspace_meld.json
+  file: src/melder/aether/conduit/meld/spellspace_meld.py  lineno: 15  kind: class
+  role: "Spellspace-facing meld front door."
+  responsibilities: ["routes unique_per_spell_space storage through spellspace-local Creations, which also hold the disposal-bearing many objects melded through this door (the innermost scope)", "routes conduit-owned lifetimes through owner-conduit ConduitCreations", "reports live-creation status from the store each lifetime uses through this door: many and unique_per_spell_space from spellspace-local Creations, unique_per_conduit from the owner conduit's, unique, lineage and cluster from their shared stores", "restricts purge to this space's many and unique_per_spell_space entries before delegating single or all retirement to Creations", "refuses immutable non-resolvable registrations before normal resolution and reuse-only access", "admits a dynamic spell through its spell-index gate before reading the context (both lanes, via Meld._execute_admitted); automatic spells keep the unticketed lane and fast-door memo", "serves warm automatic id melds from the fast-door entry with ConduitMeld's guard ladder and both arms (plain and dict override payloads), and mints the name/class entries (_fast_input_doors) its space reads"]
+  owns_state: ["_spellspace", "_spellspace_id", "_owner_conduit_id"]
+  phases: ["init", "runtime", "cleanup"]
+  edge: borrows -> melder.aether.conduit.creations.conduit_creations.ConduitCreations [one_to_one; ['runtime']] why: SpellSpaceMeld borrows owner-conduit ConduitCreations for conduit-scoped lifetimes beneath the spellspace door.
+  edge: borrows -> melder.aether.conduit.creations.creations.Creations [one_to_one; ['runtime']] why: SpellSpaceMeld borrows spellspace-local Creations for unique_per_spell_space storage.
+  edge: specializes -> melder.aether.conduit.meld.meld.Meld [one_to_one; ['init', 'runtime', 'cleanup']] why: SpellSpaceMeld specializes Meld with spellspace-local storage routing.
+  edge: borrows -> melder.aether.conduit.spell_space.spell_space.SpellSpace [one_to_one; ['runtime']] why: SpellSpaceMeld keeps a direct reference to the owning spellspace for spellspace-local diagnostics and routing.
+  span lines: HEAD 1031 -> now 1037; diff lines 22
+  | --- HEAD
+  | +++ now
+  | @@ -899,6 +899,9 @@
+  |                `unique_per_conduit_lineage` the owner conduit's lineage-root
+  |                store; `unique_per_conduit_cluster` the cluster's team store,
+  |                and is not live while no leader is elected.
+  | +            - `managed_spell_quantity` reads the pool in the Spell owner's root
+  | +              store, as the conduit door does (2026-10-15): a managed object is
+  | +              never space-local, so `active_spellspace_id` is None.
+  |              - Reports both `query_conduit_id` and `active_spellspace_id` so the
+  |                caller can distinguish request-local versus broader scope state.
+  |  
+  | @@ -1024,6 +1027,9 @@
+  |                  "creation_count": 1 if creation is not None else 0,
+  |              }
+  |  
+  | +        if existence is Existence.managed_spell_quantity:
+  | +            return self._describe_managed_pool_status(spell, query_conduit_id)
+  | +
+  |          raise RuntimeError(
+  |              "Unsupported existence '{0}' for live creation probe.".format(
+  |                  existence,
+====================================================================================================
+NODE melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanEmission
+  descriptor: context_compass/system_docs/graph/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.json
+  file: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py  lineno: 859  kind: class
+  include: true
+  role: "Per-plan emission state: places steps at top level or inside shared-site misses and renders the plan source."
+  responsibilities: ["places many sites with their consumer and shared sites at their consumers' common context", "emits hit reads with out-of-line misses that build children before taking the build guard", "chooses a direct call or generic construction per step and builds call arguments", "emits conflict guards and unresolved-input refusals at context tops", "leaves out the root miss's guard in a normal plan whose calling route door already holds it (unique_per_conduit and spellspace roots, 0.2.73)", "emits a dict literal of exactly the dependency values a generic construction reads, where it runs (lazy instance_results, 2026-10-03): no dict at the plan top, no per-step stores, no dict parameter on misses; _place passes a generic member's providers into its miss like a direct member's operands", "binds an automatic world's unique-site owner store as a plan constant (owner-store constants, 2026-10-03): _owner_store_constant admits a unique site whose provider spell is owned by an automatic conduit and has an owner store; _emit_shared_hit then binds c{i} in the namespace and emits no alias line, while dynamic, unowned and meld.<store> sites keep the per-creation read and the miss keeps its c{i} parameter", "registers a disposal-bearing many site in the store that owns its context (holder-owned many children, 0.2.8235): many_store, the meld's innermost scope, at the top level; c{i} inside shared site i's miss, so a slotted holder's many children are recorded and disposed with the holder's owner; a miss emits no innermost-scope prologue", "emits c{i}.adopt_children(sid{i}, v{i}, ((sidK, vK), ...)) right after holder i's publication in its miss, naming exactly the disposal-bearing many children registered in c{i} for it (holder records, 0.2.8238); warm _site_plan_executor bodies are unchanged"]
+  owns_state: ["_lines", "_miss_lines", "_masked", "_direct", "_shared", "_home", "_children", "_miss_value_params", "_root_index", "_context_params", "_root_guard_held_by_door", "_index_by_key"]
+  phases: ["runtime", "cleanup"]
+  edge: uses -> melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanRuntimeHelpers [one_to_one; ['runtime']] why: Binds the helpers into every plan namespace for generic construction and the plans' refusals.
+  edge: borrows -> melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_site_graph_analysis.SpellSiteGraphAnalysis [many_to_one; ['runtime']] why: Reads sites, parameter rows and socket kinds for placement, operands and unresolved-input checks.
+  span lines: HEAD 936 -> now 1261; diff lines 594
+  | --- HEAD
+  | +++ now
+  | @@ -90,6 +90,35 @@
+  |            meanwhile is returned. The children's constructors run under the
+  |            door's root guard, as they did when the plan re-entered it. Every
+  |            other site, root and key-set plan keeps its guard.
+  | +        - Managed sites (managed_spell_quantity S5, 2026-10-15): a
+  | +          `managed_spell_quantity` step is LEASING unless a winning key targets
+  | +          one of its own parameters, which makes it FRESH: constructed where a
+  | +          many step would be, never pooled, counted, registered or adopted (the
+  | +          caller's object). A leasing site has its own `_miss{i}` (like a shared
+  | +          site) and exactly one consumer, per path; it is not emitted where it
+  | +          is placed but in its consumer's lease group, right before the
+  | +          consumer's construction region (inside the consumer's miss, after its
+  | +          children, when the consumer has one). The lease is an inline
+  | +          `pp{i}()` - the pool and its `_idle.pop` bound as plan constants under
+  | +          the owner-store rule (automatic owner, owner store set, pool present
+  | +          at emission) - or, per creation, a read of
+  | +          `spells[i]._owner_creations._managed_quantities[sid{i}]` (a missing
+  | +          store or pool raises the named MeldExecutionError) and
+  | +          `h{i}._idle.pop()`; an empty pool calls `_miss{i}(meld, [ov,] h{i},
+  | +          ...)`. The miss checks unresolved inputs, then `reserve()` (an object
+  | +          served returns at once), then builds its children, its own lease group
+  | +          and its construction inside `try`, whose handler calls
+  | +          `h{i}.abandon(kids{i} or [], exc)` and re-raises. Disposal-bearing many
+  | +          children placed in the miss are appended to `kids{i}` as `(v, dm)` and
+  | +          adopted with the object (`h{i}.adopt`), never registered in a store. A
+  | +          lease group takes its first lease, sets the others to None, then runs
+  | +          the rest and the consumer's construction region inside `try`; on any
+  | +          exception `_return_leases` puts back what was taken and the error is
+  | +          re-raised. For a shared consumer the region is its guard block, which
+  | +          returns from inside; a recheck that finds the holder published (a lost
+  | +          race) falls through to `_return_unused_leases`. A plan with no managed
+  | +          step takes none of these branches and binds none of the three helpers,
+  | +          so its source and namespace are unchanged.
+  |  
+  |      Lifecycle / Cleanup:
+  |          Created and cleaned inside one `emit` call. The namespace and masked
+  | @@ -145,6 +174,10 @@
+  |          "_miss_lines",
+  |          "_context_params",
+  |          "_root_guard_held_by_door",
+  | +        "_leasing",
+  | +        "_fresh",
+  | +        "_has_miss",
+  | +        "_leases_by_consumer",
+  |      ]
+  |  
+  |      def __init__(
+  | @@ -207,7 +240,29 @@
+  |          # Placement state; filled by `render` (`_place`).
+  |          self._direct: List[bool] = []
+  |          self._index_by_key: Dict[SiteInstanceKey, int] = {}
+  | -        self._shared: List[bool] = [step.existence is not Existence.many for step in steps]
+  | +        # Site kinds (managed_spell_quantity S5): shared (slotted existences),
+  | +        # many, leasing managed (its own miss, leased per path) and fresh managed
+  | +        # (a winning key on its own parameters: built like many, never pooled).
+  | +        self._shared: List[bool] = []
+  | +        self._leasing: List[bool] = []
+  | +        self._fresh: List[bool] = []
+  | +        for step in steps:
+  | +            existence = step.existence
+  | +            managed = existence is Existence.managed_spell_quantity
+  | +            fresh = managed and bool(self._supplied_names(step))
+  | +            self._shared.append(existence is not Existence.many and not managed)
+  | +            self._leasing.append(managed and not fresh)
+  | +            self._fresh.append(fresh)
+  | +        # Sites built in an out-of-line `_miss{i}`: shared and leasing managed.
+  | +        self._has_miss: List[bool] = [
+  | +            shared or leasing for shared, leasing in zip(self._shared, self._leasing)
+  | +        ]
+  | +        self._leases_by_consumer: Dict[int, Tuple[int, ...]] = {}
+  | +        if any(self._leasing):
+  | +            # Bound only into plans that lease, so every other namespace is unchanged.
+  | +            self._namespace["_return_leases"] = SitePlanRuntimeHelpers.return_leases
+  | +            self._namespace["_return_unused_leases"] = SitePlanRuntimeHelpers.return_unused_leases
+  | +            self._namespace["_raise_missing_managed_pool"] = SitePlanRuntimeHelpers.raise_missing_managed_pool
+  |          self._home: Dict[int, Optional[int]] = {}
+  |          self._children: Dict[Optional[int], List[int]] = {}
+  |          self._miss_value_params: Dict[int, Tuple[int, ...]] = {}
+  | @@ -253,6 +308,10 @@
+  |          del self._direct
+  |          del self._index_by_key
+  |          del self._shared
+  | +        del self._leasing
+  | +        del self._fresh
+  | +        del self._has_miss
+  | +        del self._leases_by_consumer
+  |          del self._home
+  |          del self._children
+  |          del self._miss_value_params
+  | @@ -389,7 +448,7 @@
+  |          Emit the plan and return `(source, namespace, masked steps)`.
+  |  
+  |          Contract:
+  | -            The source defines one `_miss{i}` per kept shared site, then the plan
+  | +            The source defines one `_miss{i}` per kept shared or leasing managed site, then the plan
+  |              `def _site_plan_executor(meld, ov)` (`(meld)` in normal mode); all
+  |              of it is exec'd into the returned namespace. Placement is computed
+  |              first (see `_place`).
+  | @@ -443,11 +502,18 @@
+  |              - Then each shared site's outer values are computed bottom-up: the
+  |                operands - call operands or dict-literal values - of the steps built
+  |                inside its miss (and of its own construction) that live outside it,
+  | -              plus what its nested misses need.
+  | +              plus what its nested misses need. A leasing managed site has a miss
+  | +              too and is placed by the same rule: with its one consumer, its home
+  | +              is that consumer's miss when the consumer has one, else the
+  | +              consumer's home. A fresh managed site is placed like a many step.
+  | +            - Leases by consumer: each consumer's leasing providers in operand
+  | +              order, without repeats (`_leases_by_consumer`).
+  |  
+  |          Raises:
+  | -            RuntimeError: When a dependency key has no kept step, or a provider
+  | -                does not precede its consumer (the family order is providers-first).
+  | +            RuntimeError: When a dependency key has no kept step, a provider
+  | +                does not precede its consumer (the family order is providers-first),
+  | +                or a leasing managed step has other than one consumer (managed
+  | +                sites are per path).
+  |  
+  |          Returns:
+  |              None.
+  | @@ -472,8 +538,13 @@
+  |              if index == root_index or (self._shared[index] and self._supplied_names(steps[index])):
+  |                  home[index] = None
+  |                  continue
+  | +            if self._leasing[index] and len(set(consumers[index])) != 1:
+  | +                raise RuntimeError(
+  | +                    f"Key-set plan managed step {index} has {len(set(consumers[index]))} consumers; "
+  | +                    "a managed site is per path and feeds exactly one."
+  | +                )
+  |              contexts = [
+  | -                consumer if self._shared[consumer] else home[consumer] for consumer in consumers[index]
+  | +                consumer if self._has_miss[consumer] else home[consumer] for consumer in consumers[index]
+  |              ]
+  |              home[index] = self._common_context(contexts, home)
+  |          children: Dict[Optional[int], List[int]] = {}
+  | @@ -481,16 +552,16 @@
+  |              children.setdefault(home[index], []).append(index)
+  |          value_params: Dict[int, Tuple[int, ...]] = {}
+  |          for index in range(len(steps)):
+  | -            if not self._shared[index]:
+  | +            if not self._has_miss[index]:
+  |                  continue
+  |              inside = children.get(index, [])
+  |              needed = set()
+  |              for member in inside:
+  | -                # A nested shared site builds inside its own miss: only what that
+  | -                # miss needs from outside passes through here. A generic member
+  | -                # reads its providers through its dict literal, so they pass
+  | +                # A nested shared or leasing site builds inside its own miss: only
+  | +                # what that miss needs from outside passes through here. A generic
+  | +                # member reads its providers through its dict literal, so they pass
+  |                  # through exactly like a direct member's call operands.
+  | -                if self._shared[member]:
+  | +                if self._has_miss[member]:
+  |                      needed.update(value_params[member])
+  |                  else:
+  |                      needed.update(providers_by_consumer[member])
+  | @@ -498,10 +569,19 @@
+  |              needed.difference_update(inside)
+  |              needed.discard(index)
+  |              value_params[index] = tuple(sorted(needed))
+  | +        leases_by_consumer: Dict[int, Tuple[int, ...]] = {}
+  | +        for consumer, providers in enumerate(providers_by_consumer):
+  | +            leased: List[int] = []
+  | +            for provider in providers:
+  | +                if self._leasing[provider] and provider not in leased:
+  | +                    leased.append(provider)
+  | +            if leased:
+  | +                leases_by_consumer[consumer] = tuple(leased)
+  |          self._home = home
+  |          self._children = children
+  |          self._miss_value_params = value_params
+  |          self._root_index = root_index
+  | +        self._leases_by_consumer = leases_by_consumer
+  |  
+  |      def _direct_providers(self, step: SitePlanStep, index_by_key: Dict[SiteInstanceKey, int]) -> List[int]:
+  |          """
+  | @@ -554,7 +634,7 @@
+  |  
+  |      def _miss_arguments(self, index: int) -> List[str]:
+  |          """
+  | -        Return the parameter/argument names after `(meld, ov, c{i})` for one miss.
+  | +        Return the parameter/argument names after `(meld, ov, c{i})` (`h{i}` for a leasing site) for one miss.
+  |  
+  |          Contract:
+  |              `args` for the root when `__args__` is supplied, then the outer
+  | @@ -587,9 +667,11 @@
+  |              (in step order) and, for a miss, the shared site itself (after
+  |              them, as providers precede consumers). The first with unsupplied
+  |              unresolved inputs gets one unconditional raise at the context top,
+  | -            before any construction; shared children check in their own miss.
+  | -        """
+  | -        candidates = [child for child in self._children.get(context, []) if not self._shared[child]]
+  | +            before any construction; shared and leasing managed children check
+  | +            in their own miss. A leasing miss checks before `reserve`, so a
+  | +            refusal takes no place from the pool.
+  | +        """
+  | +        candidates = [child for child in self._children.get(context, []) if not self._has_miss[child]]
+  |          if context is not None:
+  |              candidates.append(context)
+  |          for index in candidates:
+  | @@ -608,37 +690,58 @@
+  |              top level (`context` None) registers through `many_store`, which the
+  |              plan prologue points at the meld's innermost scope; shared site i's
+  |              miss registers through `c{i}`, the store that site publishes to.
+  | +            Inside leasing managed site i's miss it is appended to `kids{i}`
+  | +            instead, to be adopted with the object (managed_spell_quantity S5).
+  | +            A leasing site is emitted by its consumer's lease group, not where
+  | +            it is placed; only a leasing root leases here.
+  |  
+  |          Args:
+  | -            context: None for the plan's top level, else the shared site whose
+  | -                miss body is being emitted.
+  | +            context: None for the plan's top level, else the shared or leasing
+  | +                site whose miss body is being emitted.
+  |              indent: Indentation of the emitted lines.
+  |              lines: Target line list, appended in place.
+  |  
+  |          Returns:
+  |              bool: True when a disposal-bearing many step at the top level reads
+  |              `many_store` (the caller then emits the prologue); always False
+  | -            for a miss, whose children use its `c{i}` parameter.
+  | +            for a miss, whose children use its `c{i}` parameter or `kids{i}`.
+  |          """
+  |          store = "many_store" if context is None else f"c{context}"
+  | +        kids_name = self._kids_name(context) if context is not None and self._leasing[context] else None
+  |          uses_many_store = False
+  |          for index in self._children.get(context, []):
+  |              step = self._steps[index]
+  |              if self._shared[index]:
+  |                  self._emit_shared_hit(index, step, indent, lines)
+  | -            elif self._emit_many(index, step, indent, lines, store) and context is None:
+  | +            elif self._leasing[index]:
+  | +                if index == self._root_index:
+  | +                    self._emit_root_lease(index, indent, lines)
+  | +            elif self._emit_many(index, step, indent, lines, store, kids_name) and context is None:
+  |                  uses_many_store = True
+  |          return uses_many_store
+  |  
+  | -    def _emit_many(self, index: int, step: SitePlanStep, indent: str, lines: List[str], store: str) -> bool:
+  | -        """
+  | -        Emit one many step: construction, then its disposal registration in `store`.
+  | +    def _emit_many(
+  | +            self,
+  | +            index: int,
+  | +            step: SitePlanStep,
+  | +            indent: str,
+  | +            lines: List[str],
+  | +            store: str,
+  | +            kids_name: Optional[str] = None,
+  | +    ) -> bool:
+  | +        """
+  | +        Emit one many (or fresh managed) step: construction, then its disposal registration in `store`.
+  |  
+  |          Contract:
+  |              A step without disposal methods is constructed and not recorded
+  |              anywhere. A disposal-bearing step is recorded through
+  |              `<store>.register_many(sidN, vN, dmN)` right after construction,
+  | -            before any build lock of the context is taken.
+  | +            before any build lock of the context is taken - or, inside a leasing
+  | +            managed miss, appended as `(vN, dmN)` to `kids_name`. A fresh
+  | +            managed step (a winning key on its own parameters) is recorded
+  | +            nowhere: it is the caller's object. The construction runs inside
+  | +            the step's lease group when it reads leasing managed sites
+  | +            (managed_spell_quantity S5).
+  |  
+  |          Args:
+  |              index: Kept step index.
+  | @@ -648,12 +751,17 @@
+  |              store: The store expression the registration targets - `many_store`
+  |                  (the meld's innermost scope) at the top level, `c{i}` inside
+  |                  shared site i's miss (the store the holder belongs to).
+  | +            kids_name: `kids{i}` inside leasing managed site i's miss, else None.
+  |  
+  |          Returns:
+  | -            bool: True when the step registers (it declares disposal methods).
+  | -        """
+  | -        self._emit_construct(index, step, self._direct[index], self._supplied_names(step), indent, lines)
+  | -        if not step.spell.has_disposal_methods:
+  | +            bool: True when the step registers in `store`.
+  | +        """
+  | +        self._emit_leased_region(index, indent, lines, self._construct_region(index, step))
+  | +        if self._fresh[index] or not step.spell.has_disposal_methods:
+  | +            return False
+  | +        if kids_name is not None:
+  | +            kids_disposal_name = self._bind(f"dm{index}", step.spell.disposal_method_names)
+  | +            lines.append(f"{indent}{kids_name}.append((v{index}, {kids_disposal_name}))")
+  |              return False
+  |          sid_name = self._bind(f"sid{index}", step.spell.spell_id)
+  |          disposal_name = self._bind(f"dm{index}", step.spell.disposal_method_names)
+  | @@ -738,6 +846,13 @@
+  |              miss branch, `c{index}.adopt_children(...)` hands exactly those
+  |              registered children to the holder's disposal record (see the class
+  |              contract); a miss without disposal-bearing children emits no call.
+  | +            Leases (managed_spell_quantity S5): when this site reads leasing
+  | +            managed sites they are leased after its children and before the
+  | +            guard, and the guard block runs inside the lease group's `try`. It
+  | +            returns the site from inside once published; any exception puts the
+  | +            leases back; a recheck that finds the site already published falls
+  | +            out of the block to `_return_unused_leases` and returns that site.
+  | +            Without leases the emitted miss is unchanged.
+  |          """
+  |          spell_name = f"spells[{index}]"
+  |          store = f"c{index}"
+  | @@ -745,42 +860,252 @@
+  |          children: List[str] = []
+  |          self._emit_context(index, "    ", children)
+  |          guarded = not (index == self._root_index and self._root_guard_held_by_door)
+  | -        body_indent = "        " if guarded else "    "
+  | -        inner_indent = body_indent + "    "
+  | -        inner: List[str] = []
+  | -        self._emit_construct(index, step, self._direct[index], supplied, inner_indent, inner)
+  | -        if step.spell.has_disposal_methods:
+  | -            disposal_name = self._bind(f"dm{index}", step.spell.disposal_method_names)
+  | -            inner.append(
+  | -                f"{inner_indent}{store}.add_creation({sid_name}, v{index}, "
+  | -                f"has_disposal_methods=True, disposal_methods={disposal_name})"
+  | -            )
+  | -        else:
+  | -            inner.append(f"{inner_indent}{store}._creations[{sid_name}] = v{index}")
+  | -        adopted = [
+  | -            child for child in self._children.get(index, [])
+  | -            if not self._shared[child] and self._steps[child].spell.has_disposal_methods
+  | -        ]
+  | -        if adopted:
+  | -            # The children `_emit_many` registered in this store move into the
+  | -            # holder's disposal record once it is published (0.2.8238).
+  | -            pairs = ", ".join(f"(sid{child}, v{child})" for child in adopted)
+  | -            trailing = "," if len(adopted) == 1 else ""
+  | -            inner.append(f"{inner_indent}{store}.adopt_children({sid_name}, v{index}, ({pairs}{trailing}))")
+  | +        leases = self._leases_by_consumer.get(index, ())
+  | +
+  | +        def guard_region(region_indent: str, target: List[str]) -> None:
+  | +            # Guard, recheck (P2 when pinned), construction, publication, adoption.
+  | +            body_indent = region_indent + "    " if guarded else region_indent
+  | +            inner_indent = body_indent + "    "
+  | +            inner: List[str] = []
+  | +            self._emit_construct(index, step, self._direct[index], supplied, inner_indent, inner)
+  | +            if step.spell.has_disposal_methods:
+  | +                disposal_name = self._bind(f"dm{index}", step.spell.disposal_method_names)
+  | +                inner.append(
+  | +                    f"{inner_indent}{store}.add_creation({sid_name}, v{index}, "
+  | +                    f"has_disposal_methods=True, disposal_methods={disposal_name})"
+  | +                )
+  | +            else:
+  | +                inner.append(f"{inner_indent}{store}._creations[{sid_name}] = v{index}")
+  | +            adopted = [
+  | +                child for child in self._children.get(index, [])
+  | +                if self._is_plain_many(child) and self._steps[child].spell.has_disposal_methods
+  | +            ]
+  | +            if adopted:
+  | +                # The children `_emit_many` registered in this store move into the
+  | +                # holder's disposal record once it is published (0.2.8238).
+  | +                pairs = ", ".join(f"(sid{child}, v{child})" for child in adopted)
+  | +                trailing = "," if len(adopted) == 1 else ""
+  | +                inner.append(f"{inner_indent}{store}.adopt_children({sid_name}, v{index}, ({pairs}{trailing}))")
+  | +            if leases:
+  | +                # Return from inside: falling out of the block means another meld
+  | +                # published this site first (a lost cold race).
+  | +                inner.append(f"{inner_indent}return v{index}")
+  | +            if guarded:
+  | +                target.append(f"{region_indent}with {self._guard(step, store, sid_name, spell_name)}:")
+  | +            target.append(f"{body_indent}v{index} = {store}._creations.get({sid_name})")
+  | +            if supplied:
+  | +                target.append(f"{body_indent}if v{index} is not None:")
+  | +                target.append(f"{body_indent}    _raise_existing_override({spell_name}, root_spell_id)")
+  | +            target.append(f"{body_indent}if v{index} is None:")
+  | +            target.extend(inner)
+  | +            if not leases:
+  | +                target.append(f"{body_indent}return v{index}")
+  | +
+  | +        body: List[str] = self._unresolved_check_lines(index, "    ")
+  | +        body.extend(children)
+  | +        if self._emit_leased_region(index, "    ", body, guard_region):
+  | +            body.append(f"    _return_unused_leases({self._lease_pairs(leases)})")
+  | +            body.append(f"    return v{index}")
+  |          parameters = ", ".join(list(self._context_params) + [store] + self._miss_arguments(index))
+  | -        lines = self._miss_lines
+  | -        lines.append(f"def _miss{index}({parameters}):")
+  | -        lines.extend(self._unresolved_check_lines(index, "    "))
+  | -        lines.extend(children)
+  | -        if guarded:
+  | -            lines.append(f"    with {self._guard(step, store, sid_name, spell_name)}:")
+  | -        lines.append(f"{body_indent}v{index} = {store}._creations.get({sid_name})")
+  | -        if supplied:
+  | -            lines.append(f"{body_indent}if v{index} is not None:")
+  | -            lines.append(f"{body_indent}    _raise_existing_override({spell_name}, root_spell_id)")
+  | -        lines.append(f"{body_indent}if v{index} is None:")
+  | -        lines.extend(inner)
+  | -        lines.append(f"{body_indent}return v{index}")
+  | +        self._miss_lines.append(f"def _miss{index}({parameters}):")
+  | +        self._miss_lines.extend(body)
+  | +
+  | +    def _is_plain_many(self, index: int) -> bool:
+  | +        """
+  | +        Return True for a kept `many` step (not shared, and not a managed site of either kind).
+  | +        """
+  | +        return not (self._shared[index] or self._leasing[index] or self._fresh[index])
+  | +
+  | +    def _kids_name(self, index: int) -> Optional[str]:
+  | +        """
+  | +        Return `kids{index}` when leasing site `index`'s miss builds a disposal-bearing many child, else None.
+  | +        """
+  | +        for child in self._children.get(index, []):
+  | +            if self._is_plain_many(child) and self._steps[child].spell.has_disposal_methods:
+  | +                return f"kids{index}"
+  | +        return None
+  | +
+  | +    def _construct_region(self, index: int, step: SitePlanStep) -> Callable[[str, List[str]], None]:
+  | +        """
+  | +        Return the emitter of one step's construction (`v{index} = ...`) at the indentation it is given.
+  | +        """
+  | +
+  | +        def region(indent: str, lines: List[str]) -> None:
+  | +            self._emit_construct(index, step, self._direct[index], self._supplied_names(step), indent, lines)
+  | +
+  | +        return region
+  | +
+  | +    def _emit_leased_region(
+  | +            self,
+  | +            consumer: int,
+  | +            indent: str,
+  | +            lines: List[str],
+  | +            region: Callable[[str, List[str]], None],
+  | +    ) -> bool:
+  | +        """
+  | +        Emit a consumer's construction region, inside its lease group when it reads leasing sites.
+  | +
+  | +        Contract:
+  | +            - Without leases the region is emitted as is (every non-managed plan).
+  | +            - With leases m1..mn (operand order): the per-creation pool reads,
+  | +              the lease of m1, `v{m2..mn} = None`, then `try:` the remaining
+  | +              leases and the region, `except BaseException as exc:
+  | +              _return_leases(exc, ((h{m}, v{m}), ...))` and `raise`. Nothing but
+  | +              the consumer's other leases runs between a lease and the region,
+  | +              and a pool read that raises does so before anything is leased.
+  | +
+  | +        Args:
+  | +            consumer: Kept index of the step whose region is emitted.
+  | +            indent: Indentation of the group; the region is one level deeper
+  | +                inside the `try`.
+  | +            lines: Target line list, appended in place.
+  | +            region: Emits the region at the indentation it is given.
+  | +
+  | +        Returns:
+  | +            bool: True when a lease group was emitted.
+  | +        """
+  | +        leases = self._leases_by_consumer.get(consumer)
+  | +        if not leases:
+  | +            region(indent, lines)
+  | +            return False
+  | +        constant = {lease: self._bind_lease_pool(lease) for lease in leases}
+  | +        for lease in leases:
+  | +            if not constant[lease]:
+  | +                self._emit_pool_read(lease, indent, lines)
+  | +        first = leases[0]
+  | +        self._emit_lease(first, constant[first], indent, lines)
+  | +        for lease in leases[1:]:
+  | +            lines.append(f"{indent}v{lease} = None")
+  | +        inner = indent + "    "
+  | +        lines.append(f"{indent}try:")
+  | +        for lease in leases[1:]:
+  | +            self._emit_lease(lease, constant[lease], inner, lines)
+  | +        region(inner, lines)
+  | +        lines.append(f"{indent}except BaseException as exc:")
+  | +        lines.append(f"{indent}    _return_leases(exc, {self._lease_pairs(leases)})")
+  | +        lines.append(f"{indent}    raise")
+  | +        return True
+  | +
+  | +    @staticmethod
+  | +    def _managed_pool_constant(step: SitePlanStep) -> Optional[ManagedSpellQuantity]:
+  | +        """
+  | +        Return the pool bound as a plan constant for one leasing site, or None for the per-creation read.
+  | +
+  | +        Contract:
+  | +            The owner-store rule of `_owner_store_constant` (S9): only a provider
+  | +            owned by an automatic conduit (`_dynamic_environment` False) whose
+  | +            owner store already holds the pool. Such a store cannot move, and a
+  | +            pool is replaced under its id only by an ownership transfer's
+  | +            restore, which needs a dynamic world. The pool's `_idle` deque is
+  | +            assigned once and drained, never swapped, so its bound `pop` stays
+  | +            valid; a pool torn down with its root has a drained deque, so a
+  | +            constant lease misses and `reserve` raises the pool's own error.
+  | +
+  | +        Args:
+  | +            step: The leasing managed step.
+  | +
+  | +        Returns:
+  | +            Optional[ManagedSpellQuantity]: The pool, or None.
+  | +        """
+  | +        spell = step.spell
+  | +        if spell._dynamic_environment:
+  | +            return None
+  | +        owner = spell._owner_creations
+  | +        if owner is None:
+  | +            return None
+  | +        return owner.get_managed_quantity(spell.spell_id)
+  | +
+  | +    def _bind_lease_pool(self, index: int) -> bool:
+  | +        """
+  | +        Bind one leasing site's version id, and its pool and pop when they are plan constants.
+  | +
+  | +        Returns:
+  | +            bool: True when `h{index}` and `pp{index}` are bound (the constant shape).
+  | +        """
+  | +        step = self._steps[index]
+  | +        self._bind(f"sid{index}", step.spell.spell_id)
+  | +        pool = self._managed_pool_constant(step)
+  | +        if pool is None:
+  | +            return False
+  | +        self._bind(f"h{index}", pool)
+  | +        self._bind(f"pp{index}", pool._idle.pop)
+  | +        return True
+  | +
+  | +    @staticmethod
+  | +    def _emit_pool_read(index: int, indent: str, lines: List[str]) -> None:
+  | +        """
+  | +        Emit the per-creation pool read of one leasing site: `h{index}`, or the named missing-pool error.
+  | +        """
+  | +        lines.append(f"{indent}try:")
+  | +        lines.append(f"{indent}    h{index} = spells[{index}]._owner_creations._managed_quantities[sid{index}]")
+  | +        lines.append(f"{indent}except (AttributeError, KeyError):")
+  | +        lines.append(f"{indent}    _raise_missing_managed_pool(spells[{index}])")
+  | +
+  | +    def _emit_lease(self, index: int, constant: bool, indent: str, lines: List[str]) -> None:
+  | +        """
+  | +        Emit one lease - the inline pop, else the miss call - and define the site's miss.
+  | +        """
+  | +        pop = f"pp{index}()" if constant else f"h{index}._idle.pop()"
+  | +        arguments = ", ".join(list(self._context_params) + [f"h{index}"] + self._miss_arguments(index))
+  | +        lines.append(f"{indent}try:")
+  | +        lines.append(f"{indent}    v{index} = {pop}")
+  | +        lines.append(f"{indent}except IndexError:")
+  | +        lines.append(f"{indent}    v{index} = _miss{index}({arguments})")
+  | +        self._emit_leasing_miss(index, self._steps[index])
+  | +
+  | +    def _emit_root_lease(self, index: int, indent: str, lines: List[str]) -> None:
+  | +        """
+  | +        Emit a leasing root's pool read and lease at the plan top; the plan returns the leased object.
+  | +        """
+  | +        constant = self._bind_lease_pool(index)
+  | +        if not constant:
+  | +            self._emit_pool_read(index, indent, lines)
+  | +        self._emit_lease(index, constant, indent, lines)
+  | +
+  | +    def _emit_leasing_miss(self, index: int, step: SitePlanStep) -> None:
+  | +        """
+  | +        Emit `_miss{index}` of one leasing managed site.
+  | +
+  | +        Contract:
+  | +            `def _miss{i}(meld, [ov,] h{i}, <outer values>)`: the unresolved-input
+  | +            check (before anything is reserved); `v = h.reserve()` and an early
+  | +            return of an object it serves; `kids{i} = []` when disposal-bearing
+  | +            many children are built inside; then `try:` the children, the site's
+  | +            own lease group and its construction, `except BaseException as exc:
+  | +            h.abandon(kids or [], exc)` and `raise` (an inner lease group has
+  | +            already put its leases back); then `h.adopt(v, kids)` when kids
+  | +            exist, and `return v`. `adopt` on a pool torn down meanwhile disposes
+  | +            the object and its kids and raises the pool's error.
+  | +        """
+  | +        pool = f"h{index}"
+  | +        kids = self._kids_name(index)
+  | +        body: List[str] = self._unresolved_check_lines(index, "    ")
+  | +        body.append(f"    v{index} = {pool}.reserve()")
+  | +        body.append(f"    if v{index} is not None:")
+  | +        body.append(f"        return v{index}")
+  | +        if kids is not None:
+  | +            body.append(f"    {kids} = []")
+  | +        body.append("    try:")
+  | +        self._emit_context(index, "        ", body)
+  | +        self._emit_leased_region(index, "        ", body, self._construct_region(index, step))
+  | +        body.append("    except BaseException as exc:")
+  | +        body.append(f"        {pool}.abandon({kids if kids is not None else '[]'}, exc)")
+  | +        body.append("        raise")
+  | +        if kids is not None:
+  | +            body.append(f"    {pool}.adopt(v{index}, {kids})")
+  | +        body.append(f"    return v{index}")
+  | +        parameters = ", ".join(list(self._context_params) + [pool] + self._miss_arguments(index))
+  | +        self._miss_lines.append(f"def _miss{index}({parameters}):")
+  | +        self._miss_lines.extend(body)
+  | +
+  | +    @staticmethod
+  | +    def _lease_pairs(leases: Tuple[int, ...]) -> str:
+  | +        """
+  | +        Return the `((h{m}, v{m}), ...)` tuple literal of one lease group.
+  | +        """
+  | +        pairs = ", ".join(f"(h{lease}, v{lease})" for lease in leases)
+  | +        trailing = "," if len(leases) == 1 else ""
+  | +        return f"({pairs}{trailing})"
+  |  
+  |      @staticmethod
+  |      def _many_store_prologue(indent: str) -> List[str]:
+====================================================================================================
+NODE melder.aether.spellbook.spellbinder.SpellBinder
+  descriptor: context_compass/system_docs/graph/melder/aether/spellbook/spellbinder.json
+  file: src/melder/aether/spellbook/spellbinder.py  lineno: 16  kind: class
+  role: "Fluent registration helper for Spellbook bind operations."
+  responsibilities: ["accumulates bind-time choices for one pending registration and delegates them to Spellbook.bind on finalize"]
+  owns_state: ["_weak_spellbook", "_default_existence", "_default_permissions", "_default_profile", "_spell", "_existence", "_permissions", "_profile", "_spellframe", "_binding_name", "_kwargs"]
+  phases: ["runtime", "cleanup"]
+  edge: borrows -> melder.aether.spellbook.spellbook.Spellbook [many_to_one; ['runtime']] why: SpellBinder keeps a weak non-owning pointer to the target Spellbook and delegates final registration into it.
+  span lines: HEAD 857 -> now 913; diff lines 74
+  | --- HEAD
+  | +++ now
+  | @@ -312,7 +312,9 @@
+  |              binding_name (str, optional):
+  |                  Secondary key used to disambiguate this binding.
+  |              **kwargs:
+  | -                Passthrough bind-time keyword arguments, including lifecycle hooks.
+  | +                Passthrough bind-time keyword arguments, including lifecycle hooks and
+  | +                the managed options (`managed_spell_mode`, `managed_spell_limit`,
+  | +                `managed_spell_timeout_seconds`, `managed_spell_reset_methods`).
+  |  
+  |          Returns:
+  |              SpellBinder:
+  | @@ -530,6 +532,60 @@
+  |              self._existence = Existence.unique_per_spell_space
+  |          return self
+  |  
+  | +    def as_managed_spell_quantity(
+  | +            self,
+  | +            mode: Optional[Union[ManagedSpellMode, str]] = None,
+  | +            *,
+  | +            limit: Optional[int] = None,
+  | +            timeout_seconds: Optional[float] = None,
+  | +            reset_methods: Optional[Sequence[str]] = None,
+  | +    ) -> SpellBinder:
+  | +        """
+  | +        Configures the spell as **Managed** (objects leased from a pool the root owns).
+  | +
+  | +        **Behaviour:**
+  | +        - A meld, or an injection into a constructor, takes an idle object from the spell's pool or builds
+  | +          one when the mode allows; the holder gives it back with `ReleaseManagedSpell.release(obj)`.
+  | +        - `mode`: elastic (default; always builds, keeps up to `limit` idle objects, default 256),
+  | +          limited_quantity (at most `limit` alive, refuses at the limit) or queue (at most `limit` alive,
+  | +          waits up to `timeout_seconds` for a release, then refuses).
+  | +
+  | +        **Use Case:**
+  | +        - Objects that are expensive to build and cheap to reset (loggers, buffers, connections).
+  | +
+  | +        Contract:
+  | +            - Sets the existence to `Existence.managed_spell_quantity` and stages the four options under
+  | +              their bind names (`managed_spell_mode`, `managed_spell_limit`,
+  | +              `managed_spell_timeout_seconds`, `managed_spell_reset_methods`) in the passthrough payload,
+  | +              replacing any staged earlier; `finalize()` sends them to `Spellbook.bind`, where Bind
+  | +              validates them. Values are staged as given.
+  | +            - A later `as_unique()` (or any other existence) keeps the staged options, so `finalize()`
+  | +              refuses them through Bind unless every option is None.
+  | +
+  | +        Args:
+  | +            mode: A `ManagedSpellMode` member or its name; None means elastic.
+  | +            limit: elastic: the most idle objects kept; limited_quantity and queue: the most objects
+  | +                alive at once (required there).
+  | +            timeout_seconds: queue only, required there: how long a lease waits for a release.
+  | +            reset_methods: Names of zero-argument methods of the class run, in order, on every release.
+  | +
+  | +        Raises:
+  | +            RuntimeError: If the binder has been cleaned or its Spellbook weak reference is dead.
+  | +
+  | +        Returns:
+  | +            SpellBinder: This binder, for fluent chaining. Call finalize() to submit the
+  | +                assembled registration to the Spellbook.
+  | +        """
+  | +        self.check_cleaned()
+  | +        with self._lock:
+  | +            self._require_spellbook()
+  | +            self._existence = Existence.managed_spell_quantity
+  | +            self._kwargs["managed_spell_mode"] = mode
+  | +            self._kwargs["managed_spell_limit"] = limit
+  | +            self._kwargs["managed_spell_timeout_seconds"] = timeout_seconds
+  | +            self._kwargs["managed_spell_reset_methods"] = reset_methods
+  | +        return self
+  | +
+  |      # ------------------------------------------------------------------
+  |      # Fluent Modifiers - Identity & Permissions
+  |      # ------------------------------------------------------------------

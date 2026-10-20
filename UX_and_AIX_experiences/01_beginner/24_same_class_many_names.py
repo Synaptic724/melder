@@ -1,11 +1,12 @@
 """
 TIER: beginner (24)
-GOAL: One spell name, one visible spell - CURRENT RUNTIME TRUTH (probe-
-      proven): conjure refuses ANY two spells sharing a name, even
-      across frames, even with different internals. The working pattern
-      for one shape in many roles: tiny subclasses, one name each.
-      (The probe suite flags the intended SHA-content semantics as an
-      open runtime question - the lesson here is what works TODAY.)
+GOAL: One class, one spell - a spell_id is the SHA256 of the class's
+      code, so the SAME class registers once, whatever binding name or
+      lifecycle you give it (beginner 30). The working pattern for one
+      shape in many roles: tiny subclasses, one per role - each is a new
+      class, so its own spell, at its own address. (Same-NAMED classes
+      with different code may also coexist at different addresses since
+      0.2.8206; the contract probes pin both rules.)
 SURFACE EXERCISED: subclass-per-role registration, mixed lifecycles
 """
 import melder as md

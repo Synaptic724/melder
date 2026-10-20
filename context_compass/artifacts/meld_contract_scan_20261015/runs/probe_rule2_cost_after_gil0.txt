@@ -1,0 +1,8 @@
+tree=/tmp/cc_res/rule2/tree gil_enabled=False
+first meld: A
+W warm consumer: 200000 melds, 2.57 us/meld, passes=0 reruns=0
+N notch to B, then one meld: built B in 2523 us; passes=1 reruns=2
+  warm after: 200000 melds, 2.62 us/meld, passes=0 reruns=0
+N notch back to A, then one meld: built A in 2485 us; passes=1 reruns=2
+F notch to P2 with 200 dependents: 1.17 ms
+F notch back to P with 200 dependents: 0.47 ms

@@ -93,6 +93,13 @@ sources = [
   "39_purge_unneeded_objects.py",
   "40_bind_lifecycle_hooks.py",
   "41_named_lesser_conduits.py",
+  "42_managed_spell_elastic_pool.py",
+  "43_managed_spell_limited_quantity.py",
+  "44_managed_spell_queue.py",
+  "45_managed_spell_reset_methods.py",
+  "46_managed_spell_leases.py",
+  "47_managed_spell_injection_and_request_scopes.py",
+  "48_managed_spell_settings_and_transfer.py",
 ]
 
 [[level]]

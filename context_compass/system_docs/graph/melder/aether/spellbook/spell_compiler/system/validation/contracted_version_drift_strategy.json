@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/system/validation/contracted_version_drift_strategy.py",
- "source_sha256": "df1107848966a546a963a1377692688a35bdb82cbfbbcb8185bf9bc42f5cd383",
+ "source_sha256": "6b7d2ebab8af577864c019e873fa691a6a43b75d3449cd210539e4fdd8a00e9f",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.system.validation.contracted_version_drift_strategy": {
@@ -39,7 +39,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "d26b29d0b48cf7059acdc94e4f215736b0bde7dddcc781ae23e593cfd3320563",
+   "span_sha256": "2d802485db19a858646f7c99cd6bdacfa77d28d569727c607bf97214c028b6b6",
    "include": true,
    "role": "Guard that the visible system index has not drifted onto stale lineage versions, aimed at contracted spells.",
    "responsibilities": [

@@ -74,7 +74,7 @@ def _multi_member_transfer_ready():
     target_book = Spellbook(configuration=config)
     owner = owner_book.conjure(dynamic=True, name="owner")
     target = target_book.conjure(dynamic=True, name="target")
-    index = owner_book.find_spell_by_id(id_a).spell_index
+    index = owner_book.find_spell_by_spell_id(id_a).spell_index
     id_b = owner.bind_inactive(  # index = {A, B}
         spell=_ServiceB, spell_index=index, existence=Existence.unique,
         permissions="create", binding_name="b",

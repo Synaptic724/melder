@@ -451,7 +451,7 @@ Campaigns (`set_active_campaign` / `clear_active_campaign`) and staged ancestry 
 
 **Public verbs:** `root.bind_inactive(...)`, `root.notch_spell(spell_index=..., spell=...)`, `root.add_to_spell_index(...)`, `root.remove_from_spell_index(...)`. The Conduit owns admission; do not call private Book mutation seams. [CONDUIT]
 
-**Critical lookup trap:** `get_spell_by_id()` / `find_spell_by_id()` can resolve a parked lineage ID to the **currently selected** member. They are not a reliable exact parked-object lookup. `notch_spell` requires the actual candidate `Spell`, not its ID or the application class. Never fabricate it or read `_inactive_spells` to obtain it. [NOTCH]
+**Exact lookup by spell_id:** `get_spell_by_spell_id()` / `find_spell_by_spell_id()` return the version a spell_id names, active or parked, or nothing - never the **currently selected** member in its place (since 0.2.8253; the former `get_spell_by_id()` / `find_spell_by_id()` answered a parked lineage ID with the selected member and are gone). A lookup by the index's id (`get_spell_by_index_id`) is the one that answers the selected member. `notch_spell` takes the candidate's spell_id (`spell_id=`) or its `Spell` (`spell=`) (since 0.2.8249). Never fabricate a `Spell` or read `_inactive_spells` to obtain one. [NOTCH]
 
 ### Host-controlled exact-handle pattern
 

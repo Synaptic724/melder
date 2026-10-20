@@ -69,7 +69,7 @@ def _two_member_conduit():
     book = _make_spellbook()
     id_a = book.bind(spell=_ServiceA, existence=Existence.unique, permissions="create", binding_name="a")
     conduit = book.conjure(dynamic=True, name="root")
-    index = book.find_spell_by_id(id_a).spell_index
+    index = book.find_spell_by_spell_id(id_a).spell_index
     # bind_inactive stages B off the resolution surface AND attaches it to A's
     # index as an inactive member in one call (it requires an existing target
     # index; it cannot stand alone).
@@ -89,7 +89,7 @@ def _linked_pair(permission: str = "create") -> Iterator[tuple]:
     owner = owner_book.conjure(dynamic=True, name="owner")
     borrower = borrower_book.conjure(dynamic=True, name="borrower")
     owner.link(borrower)
-    index = owner_book.find_spell_by_id(id_a).spell_index
+    index = owner_book.find_spell_by_spell_id(id_a).spell_index
     with borrower.transaction("link", conduits=[borrower, owner]):
         borrower.add_index_to_contract(index=index, conduit=owner, permissions=permission)
     try:
@@ -142,8 +142,8 @@ def test_cleanup_active_sole_member_destroys_index():
     id_a = book.bind(spell=_ServiceA, existence=Existence.unique, permissions="create", binding_name="a")
     conduit = book.conjure(dynamic=True, name="root")
     try:
-        conduit.cleanup_spell(spell=book.find_spell_by_id(id_a))
-        assert book.find_spell_by_id(id_a) is None   # index + spell gone
+        conduit.cleanup_spell(spell=book.find_spell_by_spell_id(id_a))
+        assert book.find_spell_by_spell_id(id_a) is None   # index + spell gone
     finally:
         conduit.cleanup()
 
@@ -188,7 +188,7 @@ def test_two_indexes_linked_are_isolated():
     with _linked_pair("create") as (ob, bb, owner, borrower, id_a, index):
         # Link a second, distinct index to the same borrower.
         id_c = ob.bind(spell=_ServiceC, existence=Existence.unique, permissions="create", binding_name="c")
-        index_c = ob.find_spell_by_id(id_c).spell_index
+        index_c = ob.find_spell_by_spell_id(id_c).spell_index
         with borrower.transaction("link", conduits=[borrower, owner]):
             borrower.add_index_to_contract(index=index_c, conduit=owner, permissions="create")
         with borrower.transaction("link", conduits=[borrower, owner]):
@@ -206,7 +206,7 @@ def test_borrower_cleanup_leaves_owner_index_resolvable():
     owner = owner_book.conjure(dynamic=True, name="owner")
     borrower = borrower_book.conjure(dynamic=True, name="borrower")
     owner.link(borrower)
-    index = owner_book.find_spell_by_id(id_a).spell_index
+    index = owner_book.find_spell_by_spell_id(id_a).spell_index
     with borrower.transaction("link", conduits=[borrower, owner]):
         borrower.add_index_to_contract(index=index, conduit=owner, permissions="create")
     try:

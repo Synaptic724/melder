@@ -55,9 +55,9 @@ lessons = ["intermediate:15", "beginner:16"]
 [[chapter]]
 id = "beginner/lifetimes"
 title = "Choose an instance lifetime"
-description = "Choose among Melder's six object lifetimes and follow examples of shared, scoped, and freshly constructed Python objects."
+description = "Choose among Melder's seven object lifetimes and follow examples of shared, scoped, and freshly constructed Python objects."
 level = "beginner"
-readme = "🟢 Six Lifetimes, Not Three"
+readme = "🟢 Seven Lifetimes, Not Three"
 lessons = ["beginner:02", "beginner:13", "beginner:14", "beginner:15", "beginner:29"]
 
 [[chapter]]
@@ -173,6 +173,14 @@ title = "Named conduits, transfer, and sever"
 level = "intermediate"
 source = "intermediate/ownership.md"
 lessons = ["intermediate:23", "intermediate:24", "intermediate:27", "intermediate:37"]
+show_steps = true
+
+[[chapter]]
+id = "intermediate/managed-spells"
+title = "Managed spell pools"
+level = "intermediate"
+source = "intermediate/managed-spells.md"
+lessons = ["intermediate:42", "intermediate:43", "intermediate:44", "intermediate:45", "intermediate:46", "intermediate:47", "intermediate:48"]
 show_steps = true
 
 [[chapter]]

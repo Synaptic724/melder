@@ -25,6 +25,7 @@ if TYPE_CHECKING:
     from melder.aether.spellbook.bind.spell_index import SpellIndex
 
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.crystallizer.crystals.spell_crystal import SpellCrystal
 from melder.crystallizer.persistence.record_version import RecordVersion
 
 
@@ -380,7 +381,8 @@ class GraftRunner(Cleanable):
         """
         Bind the selected member ACTIVE - the fresh index's anchor.
 
-        Recorded resolution capability is preserved; legacy absence defaults to True.
+        Recorded resolution capability is preserved; legacy absence defaults to True. A managed
+        member's recorded options (record 4.2.0) are replayed with it.
 
         Args:
             selected_id:
@@ -392,8 +394,9 @@ class GraftRunner(Cleanable):
 
         Returns:
             Tuple[Optional[SpellIndex], int]: Newly bound index (borrowed) and
-                member count. Parking uses this actual result because receiving
-                book policy can change the bound member's SHA.
+                member count. Parking uses this actual result because the bound
+                member's spell_id follows its code, which may have moved since the
+                record; the receiving Book's policy decides only its binding.
 
         Raises:
             ValueError: If the selected member's target cannot hydrate
@@ -419,8 +422,9 @@ class GraftRunner(Cleanable):
             ) or None,
             profile=str(crystal.get("profile_family", "general")),
             resolvable=crystal.get("resolvable", True),
+            **SpellCrystal.managed_bind_options(crystal),
         )
-        live_spell = self._host_book.find_spell_by_id(new_spell_id)
+        live_spell = self._host_book.find_spell_by_spell_id(new_spell_id)
         live_index = (
             live_spell.spell_index if live_spell is not None else None
         )
@@ -437,7 +441,8 @@ class GraftRunner(Cleanable):
         """
         Park every non-selected member onto the fresh live index.
 
-        Every member retains its own recorded resolution capability.
+        Every member retains its own recorded resolution capability and, when managed, its own
+        recorded options (record 4.2.0).
 
         Args:
             selected_id:
@@ -449,8 +454,8 @@ class GraftRunner(Cleanable):
             shortfalls:
                 Collector for honest rows.
             anchor_index:
-                Actual index returned by the selected bind, borrowed for this call.
-                No recorded-SHA lookup is needed after receiving-book composition.
+                Actual index returned by the selected bind, borrowed for this call;
+                no lookup by recorded spell_id is needed.
 
         Returns:
             int: Members parked.
@@ -479,6 +484,7 @@ class GraftRunner(Cleanable):
                 disposal_method_names=list(crystal.get("disposal_method_names", [])) or None,
                 profile=str(crystal.get("profile_family", "general")),
                 resolvable=crystal.get("resolvable", True),
+                **SpellCrystal.managed_bind_options(crystal),
             )
             parked += 1
         return parked
@@ -501,12 +507,14 @@ class GraftRunner(Cleanable):
             selection. Index internals stay untouched.
 
         Contract:
-            - Receiving-book policy applies at each bind. Selection adoption
-              follows the live ID returned by the selected member's bind,
-              which may differ from its recorded SHA.
+            - Receiving-book policy applies at each bind and decides the binding,
+              not the spell_id. Selection adoption follows the live spell_id the
+              selected member's bind returned, which differs from the recorded one
+              only when the member's code moved since the record.
             - Adoption is honest: requested-but-ungrafted selection
               lands a shortfall instead of a silent no-op.
-            - Each parked member retains its recorded resolution capability.
+            - Each parked member retains its recorded resolution capability and, when
+              managed, its recorded options (record 4.2.0).
 
         Args:
             selected_id:
@@ -538,6 +546,7 @@ class GraftRunner(Cleanable):
                 disposal_method_names=list(crystal.get("disposal_method_names", [])) or None,
                 profile=str(crystal.get("profile_family", "general")),
                 resolvable=crystal.get("resolvable", True),
+                **SpellCrystal.managed_bind_options(crystal),
             )
             if spell_id == str(selected_id):
                 live_selected_id = new_spell_id
@@ -545,14 +554,17 @@ class GraftRunner(Cleanable):
         selection_adopted = False
         if self._adopt_recorded_selection:
             # TRIAGE (2026-07-12): the first cut resolved the adoptee via
-            # find_spell_by_id, which returns the index's ACTIVE spell
-            # for ANY member id (spellbook.py:1852-1855) - so adoption
-            # notched the target's own current selection (a self-notch)
-            # and the selection never moved. _get_owned_spell is the
-            # member-resolution seam the notch harness itself uses: it
-            # returns the owned spell active OR PARKED (the merged
-            # member is parked by construction). Read-only seam; the
-            # mediated write remains the public notch verb below.
+            # find_spell_by_id, which then returned the index's ACTIVE
+            # spell for ANY member id - so adoption notched the target's
+            # own current selection (a self-notch) and the selection never
+            # moved. _get_owned_spell is the member-resolution seam the
+            # notch harness itself uses: it returns the owned spell active
+            # OR PARKED (the merged member is parked by construction).
+            # Read-only seam; the mediated write remains the public notch
+            # verb below. Since 0.2.8253 the lookup is exact - renamed
+            # find_spell_by_spell_id, it answers the spell that owns the
+            # spell_id, active or parked - so it would find this member
+            # too; the owned seam stays.
             adopted_spell = (
                 self._host_book._get_owned_spell(live_selected_id)
                 if live_selected_id is not None

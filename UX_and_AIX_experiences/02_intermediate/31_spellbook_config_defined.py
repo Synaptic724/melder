@@ -45,6 +45,10 @@ class Service:
     pass
 
 
+class BareService:
+    """LAW 4's book's own spell - Service already belongs to the first book."""
+
+
 def main() -> None:
     # NOTE the absent with_defaults() call. This configuration states every
     # value it needs, so asking for the standard set first would only fight
@@ -83,8 +87,10 @@ def main() -> None:
 
     # LAW 4 - completion: a bare config you never finished refuses at
     # the conjure gate, naming what is missing.
+    # It binds its own class: one class registers once (a spell_id is the
+    # SHA256 of its code), and Service is the first book's.
     bare_book = md.Spellbook(configuration=md.SpellbookConfiguration())
-    bare_book.bind(spell=Service, existence="unique", binding_name="bare")
+    bare_book.bind(spell=BareService, existence="unique")
     try:
         bare_book.conjure()
         print("bare configuration unexpectedly conjured")

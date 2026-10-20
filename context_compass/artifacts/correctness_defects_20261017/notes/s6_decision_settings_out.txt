@@ -1,0 +1,37 @@
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: The owner's ruling (chat 2026-10-17): "yeah so the bind call itself shouldn't impact the actual SHA256 thats
+    absurd" and "this means you gotta notch the version for the cache because this is a bug". S6 takes option 2 as a
+    bug fix: the four managed settings (mode, limit, timeout, reset names) leave the spell_id, so Q2's two bindings of
+    one class at one address are one spell with one pool. bind and bind_inactive hash alike; only arguments enter the
+    SHA (`sha256_profile`: resolvable as the domain, spellframe, binding_name, existence, the resolved disposal names
+    and, for a managed binding, the settings part). With the settings out: re-staging a settings-only version meets
+    the existing collision refusal (probe S1); changing a managed spell's settings is `cleanup_spell` then `bind`,
+    which keeps the spell_id (probe S2 shows a new id today), so `Creations.ensure_managed_quantity` meets the same
+    pool and `ManagedSpellQuantity._rebind_spell` must re-compose its settings from the new Spell (today it assumes
+    them equal, "hence the same options"). No emitted plan reads a managed setting (only the pool and the record do),
+    so plans are unaffected; the cache admits only bundles stamped with the running release, so the notch retires
+    every bundle, and a cache generation bump records it. Scope put to the owner for confirmation: the address stays
+    in the spell_id (one class under two names is two spells); existence, disposal names and resolvable stay (they
+    shape the plan the creation cache stores under the spell_id, whose full hit is keyed by spell ids and the world
+    stamp). Residual: one class staged in one index at another address (or with other disposal names) still makes
+    two pools; proposed refusal at staging, in spellbook.py after melder_1's release.
+  EVIDENCE:
+  - src/melder/aether/spellbook/bind/bind.py:1019-1150
+  - src/melder/aether/spellbook/bind/bind.py:1217-1250
+  - src/melder/aether/spellbook/bind/bind.py:774-805
+  - src/melder/aether/conduit/creations/managed_spell_quantity.py:130-196
+  - src/melder/aether/conduit/creations/managed_spell_quantity.py:835-857
+  - src/melder/aether/conduit/creations/creations.py:1118-1174
+  - src/melder/utilities/caching_system/caching_system.py:773-830
+  - src/melder/aether/spellbook/spellbook_creation_system.py:616-708
+  - context_compass/artifacts/correctness_defects_20261017/probes/probe_same_id_staging.py:1-79
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_same_id_staging_gil0.txt:1-6
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_same_id_staging_gil1.txt:1-6
+  IMPACT: S6 has its direction; the fix sits in free files (bind.py, managed_spell_quantity.py, creations.py,
+    caching_system.py); only the residual refusal waits for spellbook.py. Every managed spell_id moves once.
+  NEXT: The owner's confirmation of the scope; patch docs for the Binding Pipeline and Managed Spell Pools meanwhile.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9

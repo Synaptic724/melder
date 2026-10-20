@@ -1,0 +1,7 @@
+__version__ 0.2.8258 notch 0.2.8259
+disk counts: {'unit': (517, 514), 'component': (169, 167), 'integration': (183, 176), 'spellbook': (53, 53), 'total': 857}
+src_architecture.md: 5306 -> 5360 lines
+src_components.md: 12275 -> 12298 lines
+tests_components.md: 4018 -> 4045 lines
+tests_architecture.md: 1045 -> 1051 lines
+applied at 2026-10-19T00:01:11Z

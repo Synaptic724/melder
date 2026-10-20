@@ -1,0 +1,31 @@
+- DATETIME: {ts}
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: Notched 0.2.8253 (`__version__` read at 0.2.8252 at 23:55Z, LF kept) and wrote the running release note's
+    entry: header `# Melder 0.2.8253`; a new section after the 0.2.8229-0.2.8230 lookup section, "A spell_id lookup
+    answers the spell it names", leading with **Breaking change:** (the renames with no alias, the exact answer, a
+    lookup by the index for what it has active), one example, the per-version permissions, the split-off version,
+    grants and releases by a parked spell_id, the transfer refusal, the Rift rooms and what stays the same; the
+    older sections put in the past where they described the old answer (0.2.8229's "What stays the same", the
+    0.2.8249 notch section's intro, its no-op bullet and its "What stays the same") and renamed in four examples and
+    the notch refusal's message; two Packaging bullets and the rebuild line at 0.2.8253. Content Preservation Gate
+    PASS (33 lines rewritten, all on lines the anchors touch; 98 added). The new example and the four renamed ones
+    run as written on the landed tree with the GIL off and on (5 of 5 each); the old names raise AttributeError and
+    `get_spell_permissions` answers per version (create, read).
+  EVIDENCE:
+  - src/melder/__version__.py:12-12
+  - release_docs/next_version_release.md:40-71
+  - release_docs/next_version_release.md:72-136
+  - release_docs/next_version_release.md:874-966
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/scripts/docs_release_note_fix1.py:1-236
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/scripts/gate_release_note_fix1.py:1-51
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/docs_gate_release_note.txt:1-3
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/release_note_examples_gil0.txt:1-6
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/release_note_examples_gil1.txt:1-6
+  IMPACT: The version and the note match the landed change; the graph is the last document before the ticket and
+    the rebuild.
+  NEXT: Extract the graph on 3.14 with --strict into scratch and diff fix #1's eleven descriptors and
+    `__version__.json` against the repo's.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8

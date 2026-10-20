@@ -11,4 +11,5 @@ required_descriptions = [
   "expert/codegen.html",
   "examples/hello-melder.html",
   "examples/intermediate/15-constructor-di-by-annotation.html",
+  "intermediate/managed-spells.html",
 ]

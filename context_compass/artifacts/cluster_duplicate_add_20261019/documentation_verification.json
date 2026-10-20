@@ -1,0 +1,36 @@
+{
+  "src_architecture.md": {
+    "lines": 5645,
+    "sha256": "ed033ee4d15efb63236fd11e029db82bcb2017d97c24ab958cf6394eb7293ce9",
+    "accounted_replacements": {
+      "verified_at: 2026-10-14T23:59:35Z": 1,
+      "end_line: 1103": 1,
+      "loc: 1103": 1
+    }
+  },
+  "src_components.md": {
+    "lines": 12508,
+    "sha256": "03c25cd009c1c62c4b8835dd44786a2e2cd1a374a370c2ff3e32094a66d05aec",
+    "accounted_replacements": {
+      "verified_at: 2026-10-14T23:59:35Z": 1,
+      "end_line: 1103": 1,
+      "loc: 1103": 1
+    }
+  },
+  "tests_architecture.md": {
+    "lines": 1085,
+    "sha256": "cb42fcd4e289444b2e363a310e20109e157856a66b3579b6a42b78c41bd39ac0",
+    "accounted_replacements": {
+      "them in the core set of `tests_components` (the deduplicated union of its `Key Files (C1)` lists, 272 paths on": 1,
+      "2026-10-18; corrected 2026-10-15 - this paragraph called this map that union). Every range below was MEASURED": 1
+    }
+  },
+  "tests_components.md": {
+    "lines": 4212,
+    "sha256": "451422b23a4ee3c69589b7bff2b1717edca0fa3de3e131562fb515895926173a",
+    "accounted_replacements": {
+      "above - 280 paths (recounted 2026-10-19) - and nothing else. Change a component's key files and this set": 1
+    }
+  },
+  "test_core_paths": 282
+}

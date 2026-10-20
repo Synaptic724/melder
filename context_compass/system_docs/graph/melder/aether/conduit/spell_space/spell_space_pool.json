@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/spell_space/spell_space_pool.py",
- "source_sha256": "a94d43b51830e427f0dad45ee9cd23e2a27636b499579941956547d432851339",
+ "source_sha256": "29df107fa7447da60ea3c3c406d8aafba5f9a73659ce707e3357bc94e539ff09",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.spell_space.spell_space_pool": {
@@ -44,12 +44,12 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "cac8d073fa80b820e7aa365aedb90bb18d5ec14141670e7974ee53a164aa9624",
+   "span_sha256": "256413f99d3d8f31dcb0291ba029716fead624bd1d8844dbce386a8389e8dea3",
    "role": "Conduit-local elastic pool for reusable spellspace scopes.",
    "responsibilities": [
     "creates pooled SpellSpace instances for one owner conduit",
     "reactivates or acquires spellspaces for managed and manual paths",
-    "returns or destroys spellspaces according to fixed-capacity idle policy",
+    "keeps returned spellspaces up to the elastic target and destroys the oldest surplus; records a miss when it builds one (0.2.8234)",
     "adopts the immediate owner's current local hook map at acquisition only when its divergence bool is set",
     "sets a space's released flag on release and clears it on every acquisition"
    ],
@@ -65,7 +65,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "cac8d073fa80b820e7aa365aedb90bb18d5ec14141670e7974ee53a164aa9624"
+   "semantics_authored_against": "256413f99d3d8f31dcb0291ba029716fead624bd1d8844dbce386a8389e8dea3"
   }
  },
  "edges_out": [

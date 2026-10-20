@@ -1,0 +1,29 @@
+/tmp/cc_res/fixes/tree/src/melder/__init__.py:190: UserWarning: Python 3.14+ detected, but running in GIL-enabled mode.
+melder is optimized for Python built with --disable-gil (PEP 703).
+Performance may be degraded.
+  warnings.warn(
+c1.setup_leaf_in_leader_store = False
+c1.after_leader_teardown_leaf_closes = 0
+c1.after_member_holder_still_served = True
+c1.after_member_holder_dep_is_disposed_leaf = False
+c1.after_member_meld_cluster_spell = KeyError: '[MELD] No spell found with spell_id: 0979b52aca503385bbbe348b3fe42895ecba1c6a90f917f7dca8affd4bd3cf6b'
+c1.after_cluster_master_conduit_id_is_dead_leader = False
+c1.after_cluster_members_still_list_leader = False
+c1.final_parent_closes = 1
+c1.final_leaf_closes = 0
+t3.setup_holder_in_source_store = True
+t3.after_transfer_holder_closes = 0
+t3.after_transfer_holder_in_source_store = False
+t3.after_transfer_holder_in_target_store = False
+t3.after_transfer_target_meld = new holder
+t3.after_source_teardown_holder_closes = 0
+t3.final_holder_closes = 0
+b7.setup_contracts_valid = {'01M4Y424C83NVHAX6E1JPB0RAJ': True}
+b7.setup_resource_is_lenders = True
+b7.after_lender_teardown_resource_closes = 1
+b7.after_lender_teardown_holder_in_borrower_store = False
+b7.after_lender_teardown_borrower_meld_holder = SpellbookValidationError: Spellbook validation failed. Broken spells: B7Holder.
+b7.after_lender_teardown_holder_closes = 0
+b7.borrower_cleanup = ok
+b7.final_holder_closes = 0
+b7.final_resource_closes = 1

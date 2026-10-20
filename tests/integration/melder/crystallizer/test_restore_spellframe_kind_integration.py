@@ -178,7 +178,7 @@ def test_protocol_frame_restores_as_a_contract_and_its_consumer_resolves(cache_r
     client = root.meld(spell=RestoreServiceClient)
     assert client.svc is rebuilt
     kinds = {entry["spell_name"]: entry for entry in root.spellbook.describe_spells_in_spellbook()}
-    provider_spell = root.spellbook.find_spell_by_id(kinds["RestoreServiceImpl"]["spell_id"])
+    provider_spell = root.spellbook.find_spell_by_spell_id(kinds["RestoreServiceImpl"]["spell_id"])
     assert provider_spell.spellframe_kind is SpellframeKind.contract
     assert provider_spell.implemented_protocols == (IRestoreService,)
 
@@ -228,7 +228,7 @@ def test_unimportable_protocol_frame_degrades_to_a_category_with_a_shortfall(cac
     rebuilt = root.meld(spellframe="IVanishing")
     assert isinstance(rebuilt, RestoreServiceImpl)
     kinds = {entry["spell_name"]: entry for entry in root.spellbook.describe_spells_in_spellbook()}
-    provider_spell = root.spellbook.find_spell_by_id(kinds["RestoreServiceImpl"]["spell_id"])
+    provider_spell = root.spellbook.find_spell_by_spell_id(kinds["RestoreServiceImpl"]["spell_id"])
     assert provider_spell.spellframe_kind is SpellframeKind.category
     assert provider_spell.implemented_protocols == ()
 
@@ -251,7 +251,7 @@ def test_index_graft_carries_the_protocol_frame_kind_into_the_host_book(cache_ro
         spell=RestoreServiceImpl, existence=Existence.unique, permissions="create", spellframe=IRestoreService,
     )
     source_root = source_book.conjure(dynamic=True, name="graft-source")
-    recorded_index_id = source_book.find_spell_by_id(provider_id).spell_index.id
+    recorded_index_id = source_book.find_spell_by_spell_id(provider_id).spell_index.id
     record = crystallizer.capture_index_graft(recorded_index_id)
     assert record["graft_kind"] == "spell_index"
     assert record["members"][provider_id]["payload"]["spellframe_kind"] == "contract"
@@ -272,7 +272,7 @@ def test_index_graft_carries_the_protocol_frame_kind_into_the_host_book(cache_ro
     assert report["members_bound"] == 1
     assert report["shortfalls"] == []
     assert report["live_index_id"] not in (None, recorded_index_id)
-    grafted = host_book.find_spell_by_id(provider_id)
+    grafted = host_book.find_spell_by_spell_id(provider_id)
     assert grafted is not None
     assert grafted.spellframe_kind is SpellframeKind.contract
     assert grafted.implemented_protocols == (IRestoreService,)

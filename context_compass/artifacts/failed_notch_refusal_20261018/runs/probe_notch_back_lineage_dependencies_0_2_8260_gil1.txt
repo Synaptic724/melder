@@ -1,0 +1,71 @@
+===== GIL=1 case=H1 (0.2.8260)
+/tmp/cc_res/pristine_8260/src/melder/__init__.py:199: UserWarning: Python 3.14+ detected, but running in GIL-enabled mode.
+melder is optimized for Python built with --disable-gil (PEP 703).
+Performance may be degraded.
+  warnings.warn(
+case H1
+  lender meld English -> 'hello'
+  borrower meld Speaker -> 'hello'
+  lineage: deps [], index topology [], validity valid
+  notch to French -> 'French'
+  lender meld French -> 'bonjour!'
+  lineage: deps ['Accent'], index topology ["accent->['Accent']"], validity valid
+  notch back to English -> 'English'
+  lineage after the notch back: deps ['Accent'], index topology [], validity gated
+  borrower meld Speaker (first) -> 'hello'
+  lender meld English -> 'hello'
+  lineage: deps [], index topology [], validity valid
+  borrower meld Speaker (again) -> 'hello'
+  borrower meld Speaker (third) -> 'hello'
+===== GIL=1 case=H2 (0.2.8260)
+/tmp/cc_res/pristine_8260/src/melder/__init__.py:199: UserWarning: Python 3.14+ detected, but running in GIL-enabled mode.
+melder is optimized for Python built with --disable-gil (PEP 703).
+Performance may be degraded.
+  warnings.warn(
+case H2
+  lender meld English -> 'hello'
+  borrower meld Speaker -> 'hello'
+  lineage: deps [], index topology [], validity valid
+  notch to French -> 'French'
+  lender meld French -> 'bonjour!'
+  lineage: deps ['Accent'], index topology ["accent->['Accent']"], validity valid
+  notch back to English -> 'English'
+  lineage after the notch back: deps ['Accent'], index topology [], validity gated
+  lender meld English (first) -> 'hello'
+  lineage: deps [], index topology [], validity valid
+  borrower meld Speaker -> 'hello'
+===== GIL=1 case=H3 (0.2.8260)
+/tmp/cc_res/pristine_8260/src/melder/__init__.py:199: UserWarning: Python 3.14+ detected, but running in GIL-enabled mode.
+melder is optimized for Python built with --disable-gil (PEP 703).
+Performance may be degraded.
+  warnings.warn(
+case H3
+  lender meld English -> 'hello'
+  lineage: deps [], index topology [], validity valid
+  notch to French -> 'French'
+  lender meld French -> 'bonjour!'
+  lineage: deps ['Accent'], index topology ["accent->['Accent']"], validity valid
+  notch back to English -> 'English'
+  lineage after the notch back: deps ['Accent'], index topology [], validity gated
+  borrower meld Speaker (first) -> raises SpellbookValidationError: Spellbook validation failed. The dependency graph has errors. | Whole-graph errors: | - Spell 'English' depends on spells this Spellbook cannot see (spell id 6e9578a406c6). Bind them in this Spellbook, or give this conduit access to them. [visibility_gap_dependency_filtered]
+  lender meld English -> 'hello'
+  lineage: deps [], index topology [], validity valid
+  borrower meld Speaker (again) -> raises SpellbookValidationError: Spellbook validation failed. Broken spells: Speaker. | Speaker: | - No validation error was recorded for this spell; its validity is invalid, gated or disabled.
+  borrower meld Speaker (third) -> raises SpellbookValidationError: Spellbook validation failed. Broken spells: Speaker. | Speaker: | - No validation error was recorded for this spell; its validity is invalid, gated or disabled.
+===== GIL=1 case=H4 (0.2.8260)
+/tmp/cc_res/pristine_8260/src/melder/__init__.py:199: UserWarning: Python 3.14+ detected, but running in GIL-enabled mode.
+melder is optimized for Python built with --disable-gil (PEP 703).
+Performance may be degraded.
+  warnings.warn(
+case H4
+  lender meld English -> 'hello'
+  lineage: deps [], index topology [], validity valid
+  notch to French -> 'French'
+  lineage: deps ['Accent'], index topology ["accent->['Accent']"], validity valid
+  notch back to English -> 'English'
+  lineage after the notch back: deps ['Accent'], index topology [], validity gated
+  borrower meld Speaker (first) -> raises SpellbookValidationError: Spellbook validation failed. The dependency graph has errors. | Whole-graph errors: | - Spell 'English' depends on spells this Spellbook cannot see (spell id 6e9578a406c6). Bind them in this Spellbook, or give this conduit access to them. [visibility_gap_dependency_filtered]
+  lender meld English -> 'hello'
+  lineage: deps [], index topology [], validity valid
+  borrower meld Speaker (again) -> raises SpellbookValidationError: Spellbook validation failed. Broken spells: Speaker. | Speaker: | - No validation error was recorded for this spell; its validity is invalid, gated or disabled.
+  borrower meld Speaker (third) -> raises SpellbookValidationError: Spellbook validation failed. Broken spells: Speaker. | Speaker: | - No validation error was recorded for this spell; its validity is invalid, gated or disabled.

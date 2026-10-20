@@ -1,0 +1,1043 @@
+--- /dev/null
++++ b/tests/unit/melder/crystallizer/crystal_analysis/test_custody_boundary_characterization.py
+@@ -0,0 +1,345 @@
++"""
++Characterization tests for the Crystallizer's custody boundary (core-protection review, 2026-10-10).
++
++Purpose:
++    Pin how the analyzer decides which modules are the user's own source and which are installed
++    packages, and how far it walks into each, so that a change made after the owner's answer to the
++    review's open question on root precedence (is a virtual environment inside the user root meant to
++    count as user source?) has to update these tests on purpose. They describe today's behaviour; they
++    do not claim it is the intended policy.
++
++Contract pinned here:
++    - The custody chain tries user roots before site roots, so an environment nested inside a user root
++      classifies as user source, is walked and is fingerprinted, whatever the descent setting says.
++    - With a user root that excludes the environment, an installed package is a site-package leaf:
++      recorded, never fingerprinted, and walked into only when descent is on.
++    - Retained user source text follows the same classification.
++    - User roots classify modules; they never make a module importable.
++    - `CrystallizerConfiguration.with_defaults()` takes the working directory as the user root and
++      turns descent off.
++
++Runs only on 3.14t (melder package root import chain).
++"""
++import sys
++from pathlib import Path
++from typing import Iterator, Tuple
++
++import pytest
++
++from melder.crystallizer.configuration.crystallizer_configuration import (
++    CrystallizerConfiguration,
++)
++from melder.crystallizer.crystal_analysis.crystal_analysis_result import (
++    CrystalAnalysisResult,
++)
++from melder.crystallizer.crystal_analysis.crystal_analyzer import CrystalAnalyzer
++
++
++class CustodyNames:
++    """
++    Module names used by the scratch project, unique to this file.
++
++    Contract:
++        - `APP` is the project's own module under `src/`; it imports `PACKAGE`.
++        - `PACKAGE` is installed in the project's `.venv` site-packages and imports `DEPENDENCY` from
++          the same site-packages.
++        - The names are distinct from every other test module so `sys.modules` and the analyzer memo
++          never see them from another test.
++    """
++
++    APP: str = "cpb_custody_app"
++    PACKAGE: str = "cpb_custody_venv_pkg"
++    DEPENDENCY: str = "cpb_custody_venv_dep"
++    HIDDEN: str = "cpb_custody_hidden"
++    HIDDEN_CONSUMER: str = "cpb_custody_hidden_consumer"
++
++    @staticmethod
++    def all_names() -> Tuple[str, ...]:
++        """
++        Return every module name the scratch projects create.
++
++        Returns:
++            Tuple[str, ...]: Names to evict from `sys.modules` around each test.
++        """
++        return (
++            CustodyNames.APP,
++            CustodyNames.PACKAGE,
++            CustodyNames.DEPENDENCY,
++            CustodyNames.HIDDEN,
++            CustodyNames.HIDDEN_CONSUMER,
++        )
++
++
++@pytest.fixture()
++def nested_venv_project(
++        tmp_path: Path,
++        monkeypatch: pytest.MonkeyPatch,
++) -> Iterator[Tuple[Path, Path, Path]]:
++    """
++    Build a project whose virtual environment sits inside the project directory.
++
++    Purpose:
++        Reproduce the layout of a checkout with a local `.venv` at its root, without pip: the
++        installed package is two plain files under `.venv/lib/python3.14t/site-packages`.
++
++    Contract:
++        - The site-packages directory and `src/` are prepended to `sys.path` for the test only.
++        - The scratch modules are evicted from `sys.modules` before and after the test.
++
++    Yields:
++        Tuple[Path, Path, Path]: Resolved project root, source root and site-packages root.
++    """
++    project_root = tmp_path / "project"
++    source_root = project_root / "src"
++    site_root = project_root / ".venv" / "lib" / "python3.14t" / "site-packages"
++    package_dir = site_root / CustodyNames.PACKAGE
++    package_dir.mkdir(parents=True)
++    source_root.mkdir(parents=True)
++    (package_dir / "__init__.py").write_text(
++        "import {0}\n"
++        "VALUE = {0}.VALUE\n".format(CustodyNames.DEPENDENCY),
++        encoding="utf-8",
++    )
++    (site_root / "{0}.py".format(CustodyNames.DEPENDENCY)).write_text(
++        "VALUE = 7\n",
++        encoding="utf-8",
++    )
++    (source_root / "{0}.py".format(CustodyNames.APP)).write_text(
++        "import {0}\n"
++        "\n"
++        "class AppService:\n"
++        "    pass\n".format(CustodyNames.PACKAGE),
++        encoding="utf-8",
++    )
++    monkeypatch.syspath_prepend(str(site_root))
++    monkeypatch.syspath_prepend(str(source_root))
++    for module_name in CustodyNames.all_names():
++        sys.modules.pop(module_name, None)
++    yield project_root.resolve(), source_root.resolve(), site_root.resolve()
++    for module_name in CustodyNames.all_names():
++        sys.modules.pop(module_name, None)
++
++
++def _analyze_app(
++        source_root: Path,
++        site_root: Path,
++        user_roots: Tuple[Path, ...],
++        *,
++        descent: bool,
++        retain: bool = False,
++) -> CrystalAnalysisResult:
++    """
++    Analyze the project's own module the way a SpellCrystal does at bind.
++
++    Args:
++        source_root: Directory holding the app module.
++        site_root: The environment's site-packages, passed as the interpreter's site root.
++        user_roots: Roots that define user-source authority.
++        descent: The site-package descent policy under test.
++        retain: Whether user-source text is retained.
++
++    Returns:
++        CrystalAnalysisResult: The analysis; the caller cleans it.
++    """
++    analyzer = CrystalAnalyzer(
++        user_source_root_paths=user_roots,
++        site_package_root_paths=(site_root,),
++        retain_user_sources=retain,
++        site_package_dependency_descent=descent,
++    )
++    try:
++        return analyzer.analyze_spell_root(
++            root_module_name=CustodyNames.APP,
++            root_module_obj=None,
++            root_module_path=source_root / "{0}.py".format(CustodyNames.APP),
++        )
++    finally:
++        analyzer.cleanup()
++
++
++@pytest.mark.parametrize("descent", [False, True])
++def test_environment_nested_in_the_user_root_is_user_source_whatever_the_descent_setting(
++        nested_venv_project: Tuple[Path, Path, Path],
++        descent: bool,
++) -> None:
++    """
++    Contract: with the project directory as the user root, the installed package and its own
++    dependency classify as user source, the walk enters the package, and both get physical
++    fingerprints - the descent setting never applies because nothing reaches the site-package rung.
++    """
++    project_root, source_root, site_root = nested_venv_project
++
++    result = _analyze_app(source_root, site_root, (project_root,), descent=descent)
++    try:
++        kinds = dict(result.module_to_kind)
++        assert kinds[CustodyNames.PACKAGE] == "user_source"
++        assert kinds[CustodyNames.DEPENDENCY] == "user_source"
++        dependencies = dict(result.module_to_direct_dependencies)
++        assert CustodyNames.DEPENDENCY in dependencies[CustodyNames.PACKAGE]
++        fingerprints = dict(result.physical_module_fingerprints)
++        assert CustodyNames.PACKAGE in fingerprints
++        assert CustodyNames.DEPENDENCY in fingerprints
++    finally:
++        result.cleanup()
++
++
++def test_user_root_excluding_the_environment_records_the_package_as_a_site_leaf(
++        nested_venv_project: Tuple[Path, Path, Path],
++) -> None:
++    """
++    Contract: with only `src/` as the user root and descent off (the configuration default), the
++    installed package is a site-package leaf with no dependency edges, its own import is never
++    walked, and no site module is fingerprinted, while the project's module still is.
++    """
++    _project_root, source_root, site_root = nested_venv_project
++
++    result = _analyze_app(source_root, site_root, (source_root,), descent=False)
++    try:
++        kinds = dict(result.module_to_kind)
++        assert kinds[CustodyNames.APP] == "user_source"
++        assert kinds[CustodyNames.PACKAGE] == "site_package"
++        assert dict(result.module_to_direct_dependencies)[CustodyNames.PACKAGE] == []
++        assert CustodyNames.DEPENDENCY not in kinds
++        fingerprints = dict(result.physical_module_fingerprints)
++        assert CustodyNames.APP in fingerprints
++        assert CustodyNames.PACKAGE not in fingerprints
++    finally:
++        result.cleanup()
++
++
++def test_descent_walks_the_excluded_environment_as_site_packages_without_fingerprints(
++        nested_venv_project: Tuple[Path, Path, Path],
++) -> None:
++    """
++    Contract: with only `src/` as the user root and descent on, the walk enters the installed
++    package and records its dependency, both as site packages, and neither is fingerprinted.
++    """
++    _project_root, source_root, site_root = nested_venv_project
++
++    result = _analyze_app(source_root, site_root, (source_root,), descent=True)
++    try:
++        kinds = dict(result.module_to_kind)
++        assert kinds[CustodyNames.PACKAGE] == "site_package"
++        assert kinds[CustodyNames.DEPENDENCY] == "site_package"
++        fingerprints = dict(result.physical_module_fingerprints)
++        assert CustodyNames.PACKAGE not in fingerprints
++        assert CustodyNames.DEPENDENCY not in fingerprints
++    finally:
++        result.cleanup()
++
++
++@pytest.mark.parametrize(
++    ("root_choice", "package_text_retained"),
++    [
++        ("project", True),
++        ("source", False),
++    ],
++)
++def test_retained_user_source_follows_the_root_classification(
++        nested_venv_project: Tuple[Path, Path, Path],
++        root_choice: str,
++        package_text_retained: bool,
++) -> None:
++    """
++    Contract: with retention on, the record keeps the text of every module classified as user
++    source - the installed package's text too when the environment is inside the user root, and
++    only the project's own module when it is not.
++    """
++    project_root, source_root, site_root = nested_venv_project
++    user_root = project_root if root_choice == "project" else source_root
++
++    result = _analyze_app(source_root, site_root, (user_root,), descent=False, retain=True)
++    try:
++        retained = result.user_module_sources
++        assert "class AppService" in str(retained[CustodyNames.APP]["source_text"])
++        assert (CustodyNames.PACKAGE in retained) is package_text_retained
++        if package_text_retained:
++            package_text = str(retained[CustodyNames.PACKAGE]["source_text"])
++            assert "import {0}".format(CustodyNames.DEPENDENCY) in package_text
++    finally:
++        result.cleanup()
++
++
++def test_user_roots_classify_modules_but_never_make_them_importable(tmp_path: Path) -> None:
++    """
++    Contract: a module that sits inside the user root but on no `sys.path` entry is an unknown,
++    unwalked leaf, and analysis leaves `sys.path` and `sys.modules` untouched - a user root grants
++    ownership, never access.
++    """
++    user_root = tmp_path / "owned"
++    user_root.mkdir()
++    (user_root / "{0}.py".format(CustodyNames.HIDDEN)).write_text(
++        "VALUE = 1\n",
++        encoding="utf-8",
++    )
++    consumer_path = user_root / "{0}.py".format(CustodyNames.HIDDEN_CONSUMER)
++    consumer_path.write_text(
++        "import {0}\n".format(CustodyNames.HIDDEN),
++        encoding="utf-8",
++    )
++    path_before = list(sys.path)
++    analyzer = CrystalAnalyzer(
++        user_source_root_paths=(user_root.resolve(),),
++        site_package_root_paths=(),
++    )
++    try:
++        result = analyzer.analyze_spell_root(
++            root_module_name=CustodyNames.HIDDEN_CONSUMER,
++            root_module_obj=None,
++            root_module_path=consumer_path,
++        )
++    finally:
++        analyzer.cleanup()
++    try:
++        assert list(sys.path) == path_before
++        assert CustodyNames.HIDDEN not in sys.modules
++        assert dict(result.module_to_kind)[CustodyNames.HIDDEN] == "unknown"
++        assert dict(result.module_to_direct_dependencies)[CustodyNames.HIDDEN] == []
++        assert CustodyNames.HIDDEN not in dict(result.physical_module_fingerprints)
++    finally:
++        result.cleanup()
++
++
++def test_with_defaults_takes_the_working_directory_as_the_user_root_and_turns_descent_off(
++        tmp_path: Path,
++        monkeypatch: pytest.MonkeyPatch,
++) -> None:
++    """
++    Contract: the default configuration's user root is the resolved working directory - so a
++    `.venv` inside it is user source under the defaults - with descent off and no text retained.
++    """
++    monkeypatch.chdir(tmp_path)
++
++    configuration = CrystallizerConfiguration().with_defaults()
++    try:
++        assert configuration.user_source_root_paths == (tmp_path.resolve(),)
++        assert configuration.site_package_dependency_descent is False
++        assert configuration.retain_user_sources is False
++    finally:
++        configuration.cleanup()
++
++
++def test_default_configuration_classifies_a_working_directory_venv_as_user_source(
++        nested_venv_project: Tuple[Path, Path, Path],
++        monkeypatch: pytest.MonkeyPatch,
++) -> None:
++    """
++    Contract: run from the project directory, the policy `with_defaults()` produces - working
++    directory as user root, descent off - classifies the nested environment's package as user
++    source and fingerprints it, which is the case the review's root-precedence question is about.
++    """
++    project_root, source_root, site_root = nested_venv_project
++    monkeypatch.chdir(project_root)
++    configuration = CrystallizerConfiguration().with_defaults()
++    try:
++        user_roots = configuration.user_source_root_paths
++        descent = configuration.site_package_dependency_descent
++    finally:
++        configuration.cleanup()
++
++    result = _analyze_app(source_root, site_root, user_roots, descent=descent)
++    try:
++        assert dict(result.module_to_kind)[CustodyNames.PACKAGE] == "user_source"
++        assert CustodyNames.PACKAGE in dict(result.physical_module_fingerprints)
++    finally:
++        result.cleanup()
+--- /dev/null
++++ b/tests/unit/melder/spellbook/bind/test_internal_registration_identity.py
+@@ -0,0 +1,141 @@
++"""
++Characterization tests for the internal-registration guard's identity rule (core-protection review,
++2026-10-10).
++
++Purpose:
++    The guard refuses to register Melder's own classes as spells. A protected core or a fork of it
++    depends on what that guard actually keys on, so these tests pin it: the identity is the exact
++    `(module, qualname)` string pair of the class (an instance answers through its type), with no
++    inheritance and no object identity, and every entry the build asset records is rooted at the
++    `melder` package. A fork published under another top-level package name is therefore outside the
++    guard, and a user class that claims a Melder identity is refused. These describe today's rule;
++    they do not decide the review's fork questions.
++
++Runs only on 3.14t (melder package root import chain).
++"""
++from typing import Iterator
++
++import pytest
++
++from melder._build_assets._bind_guard.bind_guard import INTERNAL_MANIFEST
++from melder.aether.aether import Aether
++from melder.aether.aether_utility_system import AetherUtilitySystem
++from melder.aether.spellbook.bind.bind import assert_allowed
++from melder.aether.spellbook.spellbook import Spellbook
++from melder.nexus.nexus import Nexus
++from melder.utilities.custom_exceptions.internal_registration_error import InternalRegistrationError
++
++
++def _boot_fresh_aether() -> None:
++    """
++    Reset the runtime singletons and bind a freshly booted Aether to `Spellbook._aether`.
++
++    Returns:
++        None.
++    """
++    AetherUtilitySystem._reset_singleton_for_tests()
++    Nexus._reset_singleton_for_tests()
++    Aether._reset_singleton_for_tests()
++    Spellbook._aether = Aether()
++
++
++@pytest.fixture(autouse=True)
++def live_aether() -> Iterator[None]:
++    """
++    Run each test against a freshly booted Aether, and leave one behind.
++
++    Yields:
++        None.
++    """
++    _boot_fresh_aether()
++    yield
++    _boot_fresh_aether()
++
++
++@pytest.fixture()
++def spellbook() -> Iterator[Spellbook]:
++    """
++    Provide one default Spellbook and clean it after the test.
++
++    Yields:
++        Spellbook: A fresh book on the default frame.
++    """
++    book = Spellbook()
++    try:
++        yield book
++    finally:
++        book.cleanup()
++
++
++def test_a_user_subclass_of_an_internal_class_registers_normally(spellbook: Spellbook) -> None:
++    """
++    Contract: the guard does not walk the MRO - a user subclass of a guarded Melder class carries
++    its own module and qualname and registers like any user class.
++    """
++    base_identity = (InternalRegistrationError.__module__, InternalRegistrationError.__qualname__)
++    assert base_identity in INTERNAL_MANIFEST
++
++    class UserRefusal(InternalRegistrationError):
++        """A user-owned subclass of a guarded Melder exception."""
++
++    spell_id = spellbook.bind(spell=UserRefusal, existence="unique")
++
++    assert spellbook.find_spell_by_id(spell_id).spell is UserRefusal
++
++
++def test_an_instance_of_an_internal_class_is_refused_like_the_class(spellbook: Spellbook) -> None:
++    """
++    Contract: an instance answers through its type, so registering an existing object of a guarded
++    class is refused with the same error as the class - while the object itself stays usable
++    (the guard restricts registration, never use).
++    """
++    guarded_instance = InternalRegistrationError("constructed and usable")
++
++    with pytest.raises(InternalRegistrationError, match="type=InternalRegistrationError"):
++        spellbook.bind(spell=guarded_instance, existence="unique")
++
++    assert str(guarded_instance) == "constructed and usable"
++    assert len(spellbook.spells) == 0
++
++
++def test_a_forked_identity_outside_the_melder_package_is_not_guarded(spellbook: Spellbook) -> None:
++    """
++    Contract: the guard compares strings, not objects. A class named like `Aether` but defined in
++    another top-level package (how a renamed fork would publish it) is absent from the manifest,
++    passes the guard and registers.
++    """
++    forked_aether = type("Aether", (), {"__module__": "melder_fork.aether.aether"})
++    assert (forked_aether.__module__, forked_aether.__qualname__) not in INTERNAL_MANIFEST
++
++    assert_allowed(forked_aether, context="bind")
++    spell_id = spellbook.bind(spell=forked_aether, existence="unique")
++
++    assert spellbook.find_spell_by_id(spell_id).spell is forked_aether
++
++
++def test_a_user_class_claiming_a_melder_identity_is_refused(spellbook: Spellbook) -> None:
++    """
++    Contract: the converse of the forked identity - a user class whose module and qualname match a
++    manifest entry is refused although it is not Melder's class.
++    """
++    impostor = type("Aether", (), {"__module__": Aether.__module__})
++    assert impostor is not Aether
++
++    with pytest.raises(InternalRegistrationError, match="type=Aether"):
++        spellbook.bind(spell=impostor, existence="unique")
++
++    assert len(spellbook.spells) == 0
++
++
++def test_every_manifest_entry_is_rooted_at_the_melder_package() -> None:
++    """
++    Contract: the build asset names every guarded class under the `melder` package, so the guard
++    covers exactly the classes importable as `melder.*` when the manifest was last rebuilt.
++    """
++    modules = {module_name for module_name, _qualname in INTERNAL_MANIFEST}
++
++    assert modules
++    assert all(
++        module_name == "melder" or module_name.startswith("melder.")
++        for module_name in modules
++    )
+--- /dev/null
++++ b/tests/integration/melder/crystallizer/test_recorded_leaf_source_read_integration.py
+@@ -0,0 +1,221 @@
++"""
++Characterization tests: recorded installed-package leaves stay readable (core-protection review,
++2026-10-10).
++
++Purpose:
++    The Crystallizer's default descent policy stops its walk at installed packages, recording them
++    as leaves. That is an analysis-depth policy, not a read barrier: MutationResearch.source_view
++    and a codegen room's research_source read a recorded leaf's text from the live disk, without a
++    frame ACL check and under the most restrictive codegen profile. These tests pin that, together
++    with the two limits of the read: only modules the spell's recorded world carries can be read,
++    and an installed leaf carries no fingerprint, so an on-disk edit after recording reads back with
++    no drift verdict. They describe today's behaviour for the owner's decisions on the review's
++    read and protection questions; they do not claim it is the intended policy.
++
++Runs only on 3.14t (melder package root import chain).
++"""
++import importlib
++import sys
++from pathlib import Path
++from typing import Iterator, Tuple
++
++import pytest
++
++from melder.aether.aether import Aether
++from melder.aether.conduit.conduit import Conduit
++from melder.crystallizer.asset_management.crystallizer_cache import CrystallizerCache
++from melder.crystallizer.configuration.crystallizer_configuration import (
++    CrystallizerConfiguration,
++)
++from melder.crystallizer.crystallizer import Crystallizer
++from melder.nexus.nexus import Nexus
++from melder.nexus.rift.rift import Rift
++from tests._codegen_system_support import (
++    create_codegen_rift,
++    create_enabled_nexus,
++    reset_runtime_singletons,
++)
++
++
++class LeafNames:
++    """
++    Module names of the scratch project, unique to this file.
++
++    Contract:
++        - `APP` lives under the project's `src/` and imports `DIST`.
++        - `DIST` is an installed package under a `site-packages` directory; it imports `INTERIOR`.
++    """
++
++    APP: str = "cpb_leaf_app"
++    DIST: str = "cpb_leaf_dist"
++    INTERIOR: str = "cpb_leaf_dist.interior"
++
++
++@pytest.fixture(autouse=True)
++def clean_world(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Iterator[None]:
++    """
++    Isolate each test behind fresh runtime singletons and a per-test crystallizer cache.
++
++    Yields:
++        None.
++    """
++    monkeypatch.setattr(
++        CrystallizerCache,
++        "resolve_cache_root_path",
++        staticmethod(lambda: tmp_path / "__crystallizer_cache__"),
++    )
++    reset_runtime_singletons()
++    try:
++        yield
++    finally:
++        reset_runtime_singletons()
++
++
++@pytest.fixture()
++def leaf_project(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[Tuple[Path, Path]]:
++    """
++    Build a project module that imports an installed package with an interior module.
++
++    Contract:
++        - `src/` and the `site-packages` directory are on `sys.path` for the test only.
++        - The scratch modules are evicted from `sys.modules` before and after the test.
++
++    Yields:
++        Tuple[Path, Path]: Resolved source root and site-packages root.
++    """
++    source_root = tmp_path / "leafproject" / "src"
++    site_root = tmp_path / "leafproject" / "env" / "lib" / "site-packages"
++    dist_dir = site_root / LeafNames.DIST
++    dist_dir.mkdir(parents=True)
++    source_root.mkdir(parents=True)
++    (dist_dir / "__init__.py").write_text(
++        "from {0} import interior\n"
++        "INSTALLED_MARKER = 'installed leaf text'\n".format(LeafNames.DIST),
++        encoding="utf-8",
++    )
++    (dist_dir / "interior.py").write_text("DEEP = True\n", encoding="utf-8")
++    (source_root / "{0}.py".format(LeafNames.APP)).write_text(
++        "import {0}\n"
++        "\n"
++        "class LeafReaderService:\n"
++        "    pass\n".format(LeafNames.DIST),
++        encoding="utf-8",
++    )
++    monkeypatch.syspath_prepend(str(site_root))
++    monkeypatch.syspath_prepend(str(source_root))
++    for module_name in (LeafNames.APP, LeafNames.DIST, LeafNames.INTERIOR):
++        sys.modules.pop(module_name, None)
++    yield source_root.resolve(), site_root.resolve()
++    for module_name in (LeafNames.APP, LeafNames.DIST, LeafNames.INTERIOR):
++        sys.modules.pop(module_name, None)
++
++
++def _recorded_world(source_root: Path) -> Tuple[Nexus, Rift, Conduit, str]:
++    """
++    Record one bound spell whose module imports the installed package.
++
++    Purpose:
++        Activate recording with `src/` as the only user root and the default descent policy (off),
++        open a codegen room whose frame uses the `safe` codegen profile, activate MutationResearch
++        and bind the project's class.
++
++    Args:
++        source_root: The project's `src/` directory.
++
++    Returns:
++        Tuple[Nexus, Rift, Conduit, str]: The live Nexus, the codegen Rift, the frame's root
++            conduit and the bound spell id.
++    """
++    configuration = CrystallizerConfiguration().with_defaults()
++    configuration.with_user_source_root_paths((source_root,))
++    configuration.activate()
++    Crystallizer().activate(configuration)
++    nexus = create_enabled_nexus()
++    rift = create_codegen_rift(nexus)
++    conduit = rift.create_nexus_frame(frame_name="ops")
++    research = Aether().mutation_research
++    research.configure(research.create_configuration().with_defaults().activate())
++    research.activate(hydrate_from_record=False)
++    codegen_change = nexus.get_frame_acl_builder("ops").begin_codegen_change(
++        reason="recorded_leaf_source_read",
++    )
++    codegen_change.use_profile("safe")
++    codegen_change.commit_change()
++    rift.create_frame_link("ops")
++    app_module = importlib.import_module(LeafNames.APP)
++    spell_id = conduit.bind(spell=app_module.LeafReaderService, existence="unique")
++    return nexus, rift, conduit, spell_id
++
++
++def test_descent_off_leaf_is_recorded_unwalked_and_read_from_the_live_disk(
++        leaf_project: Tuple[Path, Path],
++) -> None:
++    """
++    Contract: with descent off the installed package is recorded as a site-package leaf and its
++    interior is not; source_view still returns the leaf's file text from the live disk (no drift
++    verdict, since leaves are not fingerprinted); the unwalked interior answers unknown_module
++    instead of being read; and a codegen room under the `safe` profile reads the same text through
++    research_source.
++    """
++    source_root, site_root = leaf_project
++    _nexus, rift, conduit, spell_id = _recorded_world(source_root)
++    try:
++        crystal = Crystallizer().get_spell_crystal(spell_id)
++        assert LeafNames.DIST in crystal.site_package_targets
++        assert LeafNames.INTERIOR not in crystal.module_targets
++        leaf_text = (site_root / LeafNames.DIST / "__init__.py").read_text(encoding="utf-8")
++
++        view = Aether().mutation_research.source_view(spell_id, module_name=LeafNames.DIST)
++        row = view["modules"][LeafNames.DIST]
++        assert row["origin"] == "live_disk"
++        assert row["source"] == leaf_text
++        assert row["drifted"] is None
++
++        interior = Aether().mutation_research.source_view(
++            spell_id,
++            module_name=LeafNames.INTERIOR,
++        )
++        assert interior["unknown_module"] is True
++        assert interior["modules"] == {}
++
++        room_view = rift.space.command_system.research_source(
++            spell_id,
++            module_name=LeafNames.DIST,
++        )
++        assert room_view["modules"][LeafNames.DIST]["source"] == leaf_text
++    finally:
++        conduit.cleanup()
++
++
++def test_an_installed_leaf_edited_after_recording_reads_back_without_a_drift_verdict(
++        leaf_project: Tuple[Path, Path],
++) -> None:
++    """
++    Contract: a recorded installed leaf carries no fingerprint, so after its file is edited on disk
++    source_view returns the edited text with `drifted` None - while the project's own module, which
++    is fingerprinted, reports the same kind of edit as drift.
++    """
++    source_root, site_root = leaf_project
++    _nexus, _rift, conduit, spell_id = _recorded_world(source_root)
++    try:
++        leaf_path = site_root / LeafNames.DIST / "__init__.py"
++        app_path = source_root / "{0}.py".format(LeafNames.APP)
++        leaf_path.write_text(
++            leaf_path.read_text(encoding="utf-8") + "EDITED_AFTER_RECORDING = True\n",
++            encoding="utf-8",
++        )
++        app_path.write_text(
++            app_path.read_text(encoding="utf-8") + "EDITED_AFTER_RECORDING = True\n",
++            encoding="utf-8",
++        )
++
++        research = Aether().mutation_research
++        leaf_row = research.source_view(spell_id, module_name=LeafNames.DIST)["modules"][LeafNames.DIST]
++        app_row = research.source_view(spell_id, module_name=LeafNames.APP)["modules"][LeafNames.APP]
++
++        assert "EDITED_AFTER_RECORDING" in str(leaf_row["source"])
++        assert leaf_row["drifted"] is None
++        assert app_row["origin"] == "live_disk"
++        assert app_row["drifted"] is True
++    finally:
++        conduit.cleanup()
+--- /dev/null
++++ b/tests/integration/melder/mutation_research/test_research_lane_runtime_isolation_integration.py
+@@ -0,0 +1,115 @@
++"""
++Characterization test: a research lane is not a runtime fork (core-protection review, 2026-10-10).
++
++Purpose:
++    The review asks whether a deliberate core "fork" or "research branch" could be Melder's native
++    research lane. This pins what a lane does today in a live, bound world: anchoring a lane onto a
++    running spell's node records ancestry only, a version registered into that lane is research
++    material only, and neither changes which version is selected, where the running version
++    resides, or what a meld returns. Lanes have zero runtime footprint; selection is moved only by
++    the Spellbook and Conduit verbs. It describes today's behaviour; it does not decide the review's
++    fork mapping.
++
++Runs only on 3.14t (melder package root import chain).
++"""
++from typing import Iterator
++
++import pytest
++
++from melder.aether.aether import Aether
++from melder.aether.conduit.conduit import Conduit
++from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
++from melder.aether.spellbook.existence.existence import Existence
++from melder.aether.spellbook.spellbook import Spellbook
++from tests._frame_posture_test_support import (
++    apply_dynamic_defaults_for_spellbook_configuration,
++)
++from tests.mocks.spellbook.core_classes import BasicService
++
++
++@pytest.fixture(autouse=True)
++def fresh_runtime() -> Iterator[None]:
++    """
++    Reset the runtime singletons around the test and rebind the static Aether references.
++
++    Yields:
++        None.
++    """
++    Aether._reset_singleton_for_tests()
++    aether = Aether()
++    Spellbook._aether = aether
++    Conduit._aether = aether
++    yield
++    Aether._reset_singleton_for_tests()
++    aether = Aether()
++    Spellbook._aether = aether
++    Conduit._aether = aether
++
++
++def _dynamic_spellbook(frame_name: str) -> Spellbook:
++    """
++    Build one dynamic-posture Spellbook on its own frame.
++
++    Args:
++        frame_name: Aether frame the book binds into.
++
++    Returns:
++        Spellbook: The configured book.
++    """
++    configuration = SpellbookConfiguration(aether_frame=frame_name)
++    apply_dynamic_defaults_for_spellbook_configuration(configuration)
++    configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
++    return Spellbook(aetheric_frame=frame_name, configuration=configuration)
++
++
++def test_an_anchored_lane_and_its_versions_leave_the_running_world_unchanged() -> None:
++    """
++    Contract: with MutationResearch active, a bind declares the spell into the default lane. A lane
++    anchored at that spell starts empty and names its anchor; registering a candidate version into
++    it adds research material only. Throughout, the bound spell stays in the default lane, reads
++    `active` at runtime, and its unique instance is the one a meld returns; the candidate is never
++    active.
++    """
++    root = Aether().mutation_research
++    root.configure(root.create_configuration().with_defaults().activate())
++    root.activate(hydrate_from_record=False)
++    spellbook = _dynamic_spellbook("lane-isolation")
++    spell_id = spellbook.bind(
++        spell=BasicService,
++        existence=Existence.unique,
++        permissions="create",
++    )
++    conduit = spellbook.conjure(dynamic=True, name="lane-isolation-root")
++    try:
++        running = conduit.meld(spell_id=spell_id)
++        research_set = root.research_set()
++        default_lane_id = research_set.default_lane.lane_id
++        assert research_set.residence_of(spell_id) == default_lane_id
++        assert root.residency_view(spell_id)["runtime"] == "active"
++
++        lane = research_set.create_lane(
++            "fork-candidate",
++            attach_to="default",
++            attach_at_spell_id=spell_id,
++        )
++        assert lane.node_count == 0
++        assert lane.anchor_lane_id == default_lane_id
++        assert lane.anchor_spell_id == spell_id
++
++        research_set.register_spell(
++            "sha-fork-candidate",
++            lane="fork-candidate",
++            parent_spell_ids=[spell_id],
++        )
++        assert lane.node_count == 1
++        assert root.residency_view("sha-fork-candidate")["runtime"] != "active"
++
++        assert research_set.residence_of(spell_id) == default_lane_id
++        assert research_set.default_lane.has_node(spell_id)
++        residency = root.residency_view(spell_id)
++        assert residency["runtime"] == "active"
++        assert residency["lane_name"] == "default"
++        assert conduit.meld(spell_id=spell_id) is running
++    finally:
++        conduit.cleanup()
++        root.deactivate()
+--- /dev/null
++++ b/tests/integration/melder/aether/test_codegen_core_boundary_integration.py
+@@ -0,0 +1,206 @@
++"""
++What the codegen room's profiles stop around Melder's core today (core-protection review, 2026-10-10).
++
++Purpose:
++    Agent code reaches the runtime through a codegen room, whose frame's codegen ACL profile decides
++    what the code may import and call. The review's protected-core question depends on what those
++    profiles stop today, so this file pins it in two kinds of test:
++    - Characterization tests pin what works: no profile names `melder` in a deny list, so an import of
++      it is refused only by the imports-off rule (safe) or by an import allowlist that leaves it out
++      (hybrid, precision, permissive) and full_access accepts it; and the hybrid profile refuses
++      import statements of the roots its deny list names.
++    - Two known gaps are written as the contract their profiles document, under xfail(strict=True):
++      the safe profile documents that it denies writes, yet agent code writes files with the `open`
++      builtin; the hybrid profile denies subprocess, socket and importlib, yet `__import__` loads them,
++      also with the precision overlay. STRICT ON PURPOSE: when a gap is closed its test starts
++      passing, strict turns that into a failure, and whoever closed it must delete the marker. Do not
++      loosen these assertions to make them pass.
++    Characterization, not protection: the profiles run in the same process as the code they check, so
++    they are policy and defence in depth, not a security boundary, and a green run here does not mean
++    the core is protected.
++
++Runs only on 3.14t (melder package root import chain).
++"""
++from pathlib import Path
++from typing import TYPE_CHECKING, Iterator, Optional, Tuple
++
++import pytest
++
++from tests._codegen_system_support import (
++    create_codegen_rift,
++    create_enabled_nexus,
++    reset_runtime_singletons,
++)
++
++if TYPE_CHECKING:
++    from melder.aether.conduit.conduit import Conduit
++    from melder.nexus.rift.command_system.codegen_command_system import CodegenCommandSystem
++
++
++@pytest.fixture(autouse=True)
++def isolated_runtime() -> Iterator[None]:
++    """
++    Run each test against fresh runtime singletons.
++
++    Yields:
++        None.
++    """
++    reset_runtime_singletons()
++    yield
++    reset_runtime_singletons()
++
++
++def _codegen_room(
++        profile_name: str,
++        precision_profile_name: Optional[str] = None,
++) -> Tuple[Conduit, CodegenCommandSystem]:
++    """
++    Open a codegen room on frame "ops" governed by one standard codegen profile.
++
++    Args:
++        profile_name: Standard codegen profile (safe, hybrid, permissive or full_access).
++        precision_profile_name: Optional precision overlay applied on top of the profile.
++
++    Returns:
++        Tuple[Conduit, CodegenCommandSystem]: The frame's root conduit (the caller cleans it) and the
++            room's command system.
++    """
++    nexus = create_enabled_nexus()
++    rift = create_codegen_rift(nexus)
++    conduit = rift.create_nexus_frame(frame_name="ops")
++    codegen_change = nexus.get_frame_acl_builder("ops").begin_codegen_change(
++        reason="core_boundary",
++    )
++    codegen_change.use_profile(profile_name)
++    if precision_profile_name is not None:
++        codegen_change.use_precision_profile(precision_profile_name)
++    codegen_change.commit_change()
++    rift.create_frame_link("ops")
++    return conduit, rift.space.command_system
++
++
++@pytest.mark.parametrize(
++    ("profile_name", "precision_profile_name", "accepted", "message_fragment"),
++    [
++        ("safe", None, False, "Import statements are not allowed"),
++        ("hybrid", None, False, "Import root 'melder' is not allowed"),
++        ("hybrid", "precision", False, "Import root 'melder' is not allowed"),
++        ("permissive", None, False, "Import root 'melder' is not allowed"),
++        ("full_access", None, True, None),
++    ],
++)
++def test_importing_melder_is_refused_unless_the_profile_is_full_access(
++        profile_name: str,
++        precision_profile_name: Optional[str],
++        accepted: bool,
++        message_fragment: Optional[str],
++) -> None:
++    """
++    Contract: an `import melder` statement is refused by the import gate under every standard
++    profile but full_access - by the imports-off rule under safe and by the import allowlists
++    elsewhere, since no profile lists `melder` as a denied root.
++    """
++    conduit, command_system = _codegen_room(profile_name, precision_profile_name)
++    try:
++        result = command_system.validate_codegen("import melder\nresult = 1", frame_name="ops")
++    finally:
++        conduit.cleanup()
++
++    assert result["accepted"] is accepted
++    if message_fragment is not None:
++        assert message_fragment in result["validation_issues"][0]
++
++
++@pytest.mark.parametrize(
++    "module_name",
++    ["subprocess", "socket", "importlib", "ctypes", "asyncio", "builtins"],
++)
++def test_hybrid_refuses_import_statements_of_its_denied_roots(module_name: str) -> None:
++    """
++    Contract: the hybrid profile's import gate refuses an import statement of each root on its
++    deny list, naming the root.
++    """
++    conduit, command_system = _codegen_room("hybrid")
++    try:
++        result = command_system.validate_codegen(
++            "import {0}\nresult = 1".format(module_name),
++            frame_name="ops",
++        )
++    finally:
++        conduit.cleanup()
++
++    assert result["accepted"] is False
++    assert "Import root '{0}' is not allowed".format(module_name) in result["validation_issues"][0]
++
++
++@pytest.mark.xfail(
++    strict=True,
++    raises=AssertionError,
++    reason=(
++        "OPEN: no codegen profile denies the open builtin - the runtime __builtins__ is the full "
++        "builtins dict minus the profile's deny list, and no validator strategy inspects open or "
++        "non-dunder method calls - so agent code in a safe room writes any file the process can "
++        "write, although the safe profile documents that it denies writes. Core-protection review, "
++        "Note 10. STRICT ON PURPOSE: when the gap is closed this test passes, strict turns that "
++        "into a failure, and whoever closed it deletes this marker."
++    ),
++)
++def test_safe_profile_refuses_writing_files(tmp_path: Path) -> None:
++    """
++    Contract (documented, not yet met): code run in a room under the safe profile cannot write a
++    file - the request is refused and nothing is written.
++    """
++    target = tmp_path / "written_by_codegen.txt"
++    conduit, command_system = _codegen_room("safe")
++    try:
++        result = command_system.execute_codegen(
++            "handle = open({0!r}, 'w')\nhandle.write('x')\nhandle.close()\nresult = 1".format(
++                str(target)
++            ),
++            frame_name="ops",
++        )
++    finally:
++        conduit.cleanup()
++
++    assert result["accepted"] is False
++    assert not target.exists()
++
++
++@pytest.mark.xfail(
++    strict=True,
++    raises=AssertionError,
++    reason=(
++        "OPEN: the import gate reads import statements only, and the compiler denies __import__ only "
++        "when imports are off, so __import__ loads the roots the hybrid profile (and the precision "
++        "overlay) deny. Core-protection review, Note 11. STRICT ON PURPOSE: when the gap is closed "
++        "this test passes, strict turns that into a failure, and whoever closed it deletes this "
++        "marker."
++    ),
++)
++@pytest.mark.parametrize(
++    ("precision_profile_name", "module_name"),
++    [
++        (None, "subprocess"),
++        (None, "socket"),
++        (None, "importlib"),
++        ("precision", "subprocess"),
++    ],
++)
++def test_hybrid_refuses_dynamic_imports_of_its_denied_roots(
++        precision_profile_name: Optional[str],
++        module_name: str,
++) -> None:
++    """
++    Contract (documented, not yet met): a root the hybrid profile denies cannot be loaded by a
++    `__import__` call either - the request is refused at validation.
++    """
++    conduit, command_system = _codegen_room("hybrid", precision_profile_name)
++    try:
++        result = command_system.validate_codegen(
++            "loaded = __import__({0!r})\nresult = 1".format(module_name),
++            frame_name="ops",
++        )
++    finally:
++        conduit.cleanup()
++
++    assert result["accepted"] is False

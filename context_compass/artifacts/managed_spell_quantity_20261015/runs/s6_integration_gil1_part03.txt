@@ -1,0 +1,16 @@
+============================= test session starts ==============================
+platform linux -- Python 3.14.7, pytest-9.1.1, pluggy-1.6.0 -- /sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/.venv314t/bin/python
+rootdir: /sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private
+configfile: pyproject.toml
+collecting ... collected 943 items
+
+tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py::test_restored_world_recheckpoints_and_restores_again PASSED [  0%]
+tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py::test_cluster_world_parallel_restore_rebuilds_membership PASSED [  0%]
+tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py::test_staged_member_world_restores_identically_on_both_drivers PASSED [  0%]
+tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py::test_recorded_policy_twin_drives_driver_selection_on_reload PASSED [  0%]
+tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py::test_formation_restore_under_the_pool_carries_a_plan PASSED [  0%]
+tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py::test_skip_existing_formation_composes_over_a_live_world PASSED [  0%]
+tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py::test_wide_pool_chaos_tears_down_three_book_world PASSED [  0%]
+tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py::test_restored_borrower_melds_the_granted_spell PASSED [  0%]
+tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py::test_identity_map_covers_every_recorded_structural_id PASSED [  0%]
+tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py::test_full_vocabulary_world_restores_identically_on_both_drivers 

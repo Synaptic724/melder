@@ -1,0 +1,8 @@
+[
+  {"path": "src/melder/aether/conduit/conduit.py",
+   "old": "        # Resolve the target - by id or by object - and check it before anything starts.\n",
+   "new": "        # Resolve the target - by spell_id or by object - and check it before anything starts.\n", "count": 1},
+  {"path": "src/melder/aether/conduit/conduit.py",
+   "old": "            spell: The Spell object the caller gave, or None when it named the id.\n",
+   "new": "            spell: The Spell object the caller gave, or None when it named its spell_id.\n", "count": 1}
+]

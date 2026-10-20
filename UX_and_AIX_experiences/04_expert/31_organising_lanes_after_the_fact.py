@@ -140,7 +140,7 @@ def main() -> None:
     # detached lane joins only as an explicit supersede.
     v2 = conduit.bind_inactive(
         spell=RuleV2,
-        spell_index=conduit.get_spell_by_id(v1).spell_index,
+        spell_index=conduit.get_spell_by_spell_id(v1).spell_index,
         existence="unique", permissions="create",
     )
     print("default moved on:", v2[:12], "...")

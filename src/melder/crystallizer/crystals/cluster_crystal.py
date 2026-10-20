@@ -9,7 +9,7 @@ class ClusterCrystal(Cleanable):
 
     Purpose:
         Clusters are the third inter-conduit relationship (after links and
-        contracts): named member groups with shared lineage roots and an
+        contracts): named member groups with shared root spell indexes and an
         optional elected leader. This twin records membership, shares, and
         leadership so restore can regroup a frame's cluster topology.
 
@@ -44,8 +44,8 @@ class ClusterCrystal(Cleanable):
     Subsystem Context:
         One member of the crystal-twin family, capturing the THIRD inter-conduit
         relationship: after links (peer edges on `ConduitCrystal`) and contracts
-        (`ContractCrystal`), clusters are named member groups with shared lineage
-        roots and an optional elected leader. This twin records membership,
+        (`ContractCrystal`), clusters are named member groups with shared root spell
+        indexes and an optional elected leader. This twin records membership,
         shares, and leadership per frame so restore can regroup a frame's cluster
         topology; member/leader conduit ids correlate through the conduit twins'
         translation map.

@@ -1,0 +1,23 @@
+fresh | unit_aether | rc=0 | secs=21 | 4528 passed in 20.42s
+fresh | unit_sb | rc=0 | secs=7 | 2578 passed in 5.61s
+fresh | unit_util | rc=0 | secs=10 | 831 passed, 2 skipped, 7 xfailed in 9.17s
+fresh | comp_aether | rc=0 | secs=18 | 1386 passed, 1 xfailed in 17.64s
+fresh | comp_sb | rc=0 | secs=23 | 819 passed in 21.92s
+fresh | int_conduit | rc=0 | secs=10 | 350 passed, 1 xpassed in 8.72s
+fresh | int_sb | rc=0 | secs=8 | 647 passed, 2 skipped, 2 xpassed in 7.43s
+fresh | int_mt | rc=0 | secs=17 | 54 passed in 16.08s
+fresh | int_aether | rc=0 | secs=20 | 805 passed, 5 xfailed in 19.44s
+fresh | int_cryst | rc=0 | secs=86 | 276 passed, 3 xfailed in 84.59s (0:01:24)
+fresh | unit_cryst | rc=0 | secs=6 | 607 passed in 5.61s
+fresh | comp_cryst | rc=0 | secs=2 | 110 passed in 1.08s
+fresh | unit_mr | rc=0 | secs=3 | 277 passed in 1.85s
+fresh | comp_mr | rc=0 | secs=1 | 40 passed in 0.83s
+fresh | int_mr | rc=0 | secs=2 | 67 passed in 1.08s
+fresh | comp_util | rc=0 | secs=3 | 41 passed, 23 skipped in 1.85s
+fresh | unit_top | rc=0 | secs=5 | 146 passed in 5.08s
+fresh | unit_build | rc=0 | secs=3 | 116 passed in 2.46s
+fresh | int_live | rc=0 | secs=1 | 1 passed, 1 xfailed in 0.24s
+fresh | unit_arch | rc=0 | secs=1 | 18 passed in 0.09s
+fresh | exper | rc=0 | secs=13 | 250 passed, 4 skipped in 11.68s
+fresh | unit_gh | rc=0 | secs=3 | 491 passed in 2.44s
+fresh | unit_llm | rc=0 | secs=1 | 28 passed in 0.08s

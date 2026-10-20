@@ -205,11 +205,15 @@ class SpellSpacePool(AbstractElasticPool[SpellSpace]):
               divergence bool is set. Construction handles the fresh path.
             - Clears a reused space's released flag: the lease starts here. A new
               space starts unreleased.
+            - A miss records pressure for the elastic retention target
+              (`_note_miss`), after the new space is built.
         """
         try:
             space = self._idle.pop()
         except IndexError:
-            return self.create_object(*args, **kwargs)
+            space = self.create_object(*args, **kwargs)
+            self._note_miss()
+            return space
         space._released = False
         if self._conduit_meld._meld_hooks_modified:
             space._meld._inherit_meld_hooks(self._conduit_meld)
@@ -222,13 +226,13 @@ class SpellSpacePool(AbstractElasticPool[SpellSpace]):
             **kwargs: Any,
     ) -> SpellSpace:
         """
-        Acquire one spellspace with conduit-local fixed-capacity fast-path rules.
+        Acquire one spellspace through the conduit-local fast path.
 
         Purpose:
-            SpellSpace pools are created with fixed `baseline_idle == max_idle`,
-            so the generic elastic-pool synchronization work does not add value
-            on the hot path. This override keeps the same external acquire
-            contract while making the direct deque pop the first operation.
+            Keep the base acquire contract while making the direct deque pop
+            the first operation and skipping the base's advisory in-use
+            counter. (Through 0.2.8233 this said the pools were built with a
+            fixed `baseline_idle == max_idle`; their retention is elastic now.)
 
         Contract:
             - Reuses one idle spellspace when available.
@@ -238,11 +242,14 @@ class SpellSpacePool(AbstractElasticPool[SpellSpace]):
               `track_registry=False`.
             - Uses one direct deque pop miss path instead of pre-checking idle
               state under an outer Python lock.
+            - A miss records pressure for the elastic retention target
+              (`_note_miss`), after the new space is built.
         """
         try:
             pooled_space = self._idle.pop()
         except IndexError:
             pooled_space = self.create_object(*args, **kwargs)
+            self._note_miss()
         return self.prepare_object(
             pooled_space,
             *args,
@@ -272,30 +279,29 @@ class SpellSpacePool(AbstractElasticPool[SpellSpace]):
         Return one spellspace to idle storage or destroy it.
 
         Contract:
-            - Uses a conduit-local fixed-capacity fast path.
+            - Uses the conduit-local fast path: when at most `baseline_idle`
+              spellspaces are idle after the append, the return ends there.
             - Marks the space released first; it refuses `meld` and `purge` until
               its next acquisition.
             - Assumes trusted private callers do not double-return the same
               spellspace shell; SpellSpace cleanup and recycle return early for a
               space that is already released.
             - Appends the returned spellspace first.
-            - Retains returned spellspaces while idle capacity remains at or
-              below the current target.
-            - Evicts one cold idle spellspace with `popleft()` when retained
-              capacity is exceeded.
+            - Above `baseline_idle`, `_rebalance_after_return()` keeps it while
+              the idle set is within the elastic target, stretches the target
+              under recent pressure, applies a due decay step, and destroys
+              the oldest surplus spellspaces (through 0.2.8233: one overflow
+              eviction against a target fixed at 20).
 
         Returns:
             None.
         """
         obj._released = True
         # Hot path (one release per managed scope): one read of the idle deque
-        # serves the append, the capacity check and the overflow eviction.
+        # serves the append and the baseline check; only a return into the
+        # elastic band (more than `baseline_idle` idle) reads the clock.
         idle = self._idle
         idle.append(obj)
-        if len(idle) <= self._target_idle:
+        if len(idle) <= self._baseline_idle:
             return
-        try:
-            overflow_space = idle.popleft()
-        except IndexError:
-            return
-        self.destroy_object(overflow_space)
+        self._rebalance_after_return()

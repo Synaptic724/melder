@@ -1,0 +1,20 @@
+- DATETIME: {ts}
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: Lineage sweep batch 02 applied: 40 hand-written line edits, 13 in spell.py and 27 in spellbook.py (both
+    held by this lane). Every "lineage" there meant the SpellIndex, none the scope tree: the Spell's index ("lineage/
+    version record"), SpellSystemStates' per-index state (`system_state`, `invalidate_spell`, the notch's downstream
+    walk), `get_spell_permissions` and `find_spell_index`, the contracted-copy reads and `cleanup_spell`. One
+    neighbouring comment line (spellbook.py 4030) changed with its sentence so "its stale CreationContext" names the
+    spell. Line counts unchanged (1968, 7771); both files parse; no "lineage" left in either. Behaviour text is
+    unchanged - `_find_contracted_spell_by_id` still says what it does today (the owner's open finding).
+  EVIDENCE:
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/edits/batch02_spell_spellbook.py:1-150
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/runs/batch02_apply.txt:1-187
+  - src/melder/aether/spellbook/spell.py:77-1780
+  - src/melder/aether/spellbook/spellbook.py:174-4515
+  IMPACT: The Spell and Spellbook docstrings stop teaching that a SpellIndex is a lineage.
+  NEXT: Classify conduit_ward.py, conduit.py and transfer_of_ownership.py occurrence by occurrence (both meanings).
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7

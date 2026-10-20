@@ -1,0 +1,30 @@
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: Sweep A8, read whole and proven (identical with the GIL off and on). No new seam; one wider impact of
+    STORY-2026-10-17-minted_index_missing_from_frame_registry. `MutationResearch.residency_view` takes runtime truth
+    from the frames (`_locate_live_membership` -> `AethericFrame.find_index_for_spell`, the registry the minted index
+    is missing from), so a version in the index `remove_from_spell_index` mints reads "declared_only" with no index:
+    probe V2 (French parked there) and V3 (French notched active there, under its own binding name) both answer
+    `declared_only in none` while the Book holds it parked, then active; V1 and V4 (members of a registered index)
+    read right. Nexus holds: it publishes active versions only, each with the index the Spell names
+    (`FrameDescriptorManager._publish_spell_record`), a notch inside a minted index publishes the incoming version
+    plainly, and its relationships read the Book's active pool; parked versions are never published. Seen on the way,
+    to be swept next: with French under English's binding name, the notch inside the minted index raised
+    SpellbookValidationError [DUPLICATE_SPELL_NAME] from its commit validation after the seam had run - what such a
+    failed notch leaves behind is unchecked.
+  EVIDENCE:
+  - src/melder/mutation_research/mutation_research.py:1374-1483
+  - src/melder/mutation_research/mutation_research.py:1485-1525
+  - src/melder/nexus/frame_descriptor_manager.py:512-584
+  - src/melder/aether/spellbook/spellbook.py:6533-6582
+  - context_compass/artifacts/correctness_defects_20261017/probes/probe_research_residency_moves.py:1-110
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_research_residency_moves_gil0.txt:1-13
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_research_residency_moves_gil1.txt:1-13
+  IMPACT: MutationResearch, the record agents read to see where their versions live, loses every version in a
+    minted index, active or parked; the S4 fix restores it. A failed notch commit may be a new seam (A9).
+  NEXT: Add V2-V3 to S4's Notes and Artifact Links; then sweep A9: what a notch whose commit validation fails
+    leaves behind.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8

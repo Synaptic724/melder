@@ -1,0 +1,13 @@
+command: python -X gil=0 -m pytest -q -p no:cacheprovider -rsxX tests/experimentation
+started: 2026-10-10T13:23:28Z
+............................sss......................................... [ 28%]
+........................................................................ [ 56%]
+...............................s........................................ [ 85%]
+......................................                                   [100%]
+=========================== short test summary info ============================
+SKIPPED [1] tests/experimentation/test_dynamic_bind_conjure_order_cache_speed_experiment.py:180: Opt-in cache timing: set MELDER_BIND_ORDER_CACHE_SPEEDTEST=1 and run alone.
+SKIPPED [1] tests/experimentation/test_dynamic_bind_conjure_order_cache_speed_experiment.py:269: Separate opt-in reproduction of the old interpreter profiling stall.
+SKIPPED [1] tests/experimentation/test_dynamic_bind_conjure_order_speed_experiment.py:293: Opt-in timing experiment: set MELDER_BIND_ORDER_SPEEDTEST=1 and run this file alone.
+SKIPPED [1] tests/experimentation/test_melder_creation_overrides_performance.py:434: Opt-in performance experiment
+250 passed, 4 skipped in 18.74s
+exit: 0 finished: 2026-10-10T13:23:47Z

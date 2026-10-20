@@ -1,0 +1,13 @@
+  [V1 French parked on English's index]
+    English: Book says active in index1; residency_view says active in index1
+    French: Book says parked in index1; residency_view says parked in index1
+  [V2 French separated into a minted index]
+    English: Book says active in index1; residency_view says active in index1
+    French: Book says parked in index2; residency_view says active in index2
+  [V3 French notched active inside the minted index]
+    English: Book says active in index1; residency_view says active in index1
+    French: Book says active in index2; residency_view says active in index2
+  [V4 German parked on English's index]
+    English: Book says active in index1; residency_view says active in index1
+    French: Book says active in index2; residency_view says active in index2
+    German: Book says parked in index1; residency_view says parked in index1

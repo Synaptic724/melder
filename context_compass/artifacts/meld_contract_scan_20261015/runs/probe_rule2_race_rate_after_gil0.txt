@@ -1,0 +1,26 @@
+tree=/tmp/cc_res/rule2/tree runs=20 gil_enabled=False
+run  1: {'A': 301, 'refused': 2} unexpected=0 final=A 0.10s
+run  2: {'A': 318, 'refused': 5} unexpected=0 final=A 0.02s
+run  3: {'A': 305, 'refused': 3} unexpected=0 final=A 0.02s
+run  4: {'A': 262} unexpected=1 final=A 0.02s
+run  5: {'A': 267, 'refused': 5} unexpected=0 final=A 0.02s
+run  6: {'A': 258, 'refused': 5} unexpected=0 final=A 0.02s
+run  7: {'A': 289, 'refused': 2} unexpected=0 final=A 0.02s
+run  8: {'A': 258, 'refused': 4} unexpected=1 final=A 0.02s
+run  9: {'A': 295, 'refused': 7} unexpected=0 final=A 0.02s
+run 10: {'A': 337} unexpected=2 final=A 0.02s
+run 11: {'A': 278, 'refused': 3} unexpected=0 final=A 0.02s
+run 12: {'A': 279, 'refused': 3} unexpected=0 final=A 0.02s
+run 13: {'A': 233} unexpected=2 final=A 0.02s
+run 14: {'A': 1638} unexpected=0 final=A 0.03s
+run 15: {'A': 238, 'refused': 2} unexpected=0 final=A 0.02s
+run 16: {'A': 288, 'refused': 3} unexpected=0 final=A 0.02s
+run 17: {'A': 262} unexpected=0 final=A 0.02s
+run 18: {'A': 281, 'refused': 6} unexpected=2 final=A 0.02s
+run 19: {'A': 287, 'refused': 7} unexpected=1 final=A 0.02s
+run 20: {'A': 1014} unexpected=2 final=A 0.02s
+runs with an unexpected exception: 7 of 20
+  9 x AttributeError: 'SpellContract' object has no attribute 'ping'
+  2 x RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -> process
+melds: {'A': 7688, 'refused': 57}
+first meld after the race: {'A': 20}

@@ -1,0 +1,21 @@
+world.meld(English) -> hello
+  before the notch:
+    index state: valid (tracks English)
+    English verdict in world: valid
+    TimedGreeter verdict in world: unknown
+    TimedGreeter check result kept: False
+    English check result kept: False
+world.notch_spell(TimedGreeter) -> raises SpellbookValidationError: notch_spell refused: 'TimedGreeter' (spell_id df1a0bfcf4fc45
+  after the refused notch:
+    index state: gated (tracks English)
+    English verdict in world: gated
+    TimedGreeter verdict in world: gated
+    TimedGreeter check result kept: False
+    English check result kept: False
+world.meld(English) -> hello
+  after one meld of English:
+    index state: valid (tracks English)
+    English verdict in world: valid
+    TimedGreeter verdict in world: gated
+    TimedGreeter check result kept: False
+    English check result kept: False

@@ -1,0 +1,11 @@
+command: python -X gil=0 -m pytest -q -p no:cacheprovider -rsxX tests/unit/llm_support tests/unit/melder/build_assets tests/unit/melder/test_melder_registration_guard.py tests/unit/melder/test_package_public_surface.py tests/unit/melder/test_package_version_metadata.py tests/unit/melder/test_system_document_view.py tests/unit/melder/test_system_documents.py tests/integration/melder/multithreading/test_multithreading_system_document_view.py
+started: 2026-10-10T13:49:02Z
+.................................................................s...... [ 24%]
+........................................................................ [ 49%]
+........................................................................ [ 73%]
+........................................................................ [ 98%]
+....                                                                     [100%]
+=========================== short test summary info ============================
+SKIPPED [1] tests/unit/melder/build_assets/test_build_asset_runner.py:455: melder already imported by another test in this session
+291 passed, 1 skipped in 59.44s
+exit: 0 finished: 2026-10-10T13:50:02Z

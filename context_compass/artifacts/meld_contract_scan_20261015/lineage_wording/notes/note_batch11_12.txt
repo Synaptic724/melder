@@ -1,0 +1,40 @@
+- DATETIME: {ts}
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: Lineage sweep batches 11-12 applied: 111 hand edits in 35 files; the src docstring and comment pass over the
+    free files is done (546 edits in 70 files since 01:29Z). 11: a SpellSystemNode's `lineage_id` and a blueprint's
+    `root_lineage_id` are SpellIndex ids; SpellSystemState, SpellState, the structural snapshot, change control's
+    pending changes, incidents and Phase 4's gate are per SpellIndex; the frame's registries hold spell indexes;
+    SpellSystemValidationSystem's "lineage validity" lines now say per-conduit resolution validity, which is what
+    it records; a SpellContract's consumer spell revalidates. 12: the ward vocabulary (permissions, policies,
+    contract, contract types, detail reason) names the shared thing a spell, a Detail per spell_id or an IndexDetail
+    per SpellIndex; the contract crystal's index rows, the SpellIndexCrystal's grouping and a cluster's shares are
+    SpellIndexes; the Nexus views and the ACL's `spell_index_id` sets say SpellIndex; SpellbookValidationError's
+    gating warning holds a SpellIndex gated. The 422 string and comment lines left in 74 src files are the kept
+    kinds: the conduit scope tree, identifiers, slot and parameter names, diagnostic codes and data keys, runtime
+    messages, two other meanings (the ACL configuration chain's revision lineage and IDBuilder's dotted
+    ownership-chain ids), melder_0's held creations.py (6 lines, all scope tree), and three files with mixed line
+    endings, not edited: compiler_phase_5.py 280, frame_viewer.py 3637 and 6486, view_spell.py 854, 1731-1732 (all
+    SpellIndex meaning). Every edited file parses, keeps its HEAD line count and its line endings, and has no new
+    line over 120 characters.
+  EVIDENCE:
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/edits/batch11_compiler_control_plane.py:1-249
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/edits/batch12_contracts_crystals_views.py:1-211
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/runs/batch11_apply.txt:1-337
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/runs/batch12_apply.txt:1-274
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/runs/remaining_text_after_batch12.txt:1-500
+  - src/melder/aether/spellbook/spell_compiler/system/spell_system_validation_system.py:50-268
+  - src/melder/aether/spellbook/spell_compiler/system/validation/lineage_alignment_strategy.py:84-116
+  - src/melder/aether/spellbook/spell_compiler/structural_snapshot/structural_snapshot.py:353-400
+  - src/melder/aether/aetheric_frame/aetheric_frame.py:163-180
+  - src/melder/aether/conduit/conduit_ward/contract/details.py:14-246
+  - src/melder/crystallizer/crystals/cluster_crystal.py:6-115
+  - context_compass/system_docs/patches/active/generalized_singleton_specialization_2026_07_01/architecture_patch.md:55-72
+  IMPACT: No src docstring or comment in the free files calls a SpellIndex a lineage any more. Left for the owner:
+    the identifiers, codes and runtime messages; the three mixed-ending files; then, after melder_0's M0-192, the
+    system documents, the graph's authored prose and the agent guides, with the notch, release-note line and
+    rebuild last.
+  NEXT: Report the src pass to the owner with the kept lists and the scope question for tests, UX and docs.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_frame/lookup_container.py",
- "source_sha256": "65c82840423ad9cd10a762ef3660a60e9ca0f38759714b35b0c36f9456a26004",
+ "source_sha256": "3400c96ff542e653380ba2d6fd21c31144dc376cbfd220092d8f1de922205232",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_frame.lookup_container": {
@@ -38,7 +38,7 @@
     "has_bases": false,
     "trivial": false
    },
-   "span_sha256": "ba357498c03a3111318c75067dba0db5029a519417e69fdd9038be109ee3637d",
+   "span_sha256": "03a127540f0c6558765b74c406e164c4a0d7b3bb55c76d5dfbb36cc8a51bb86f",
    "include": true,
    "role": "The frame-wide binding-signature uniqueness surface: one active spell per (frame_key, bind_key), replacing per-spellbook signature checks.",
    "responsibilities": [

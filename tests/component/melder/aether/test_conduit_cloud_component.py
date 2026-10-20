@@ -75,14 +75,14 @@ def _get_local_spell_by_version_id(
 ) -> Optional[object]:
     """
     Purpose:
-        Resolve one locally owned spell by its current version id.
+        Resolve one locally owned spell by its current spell_id.
     Contract:
         - Returns the first local spell whose SpellIndex.selected_spell_id matches the
-          supplied version id.
+          supplied spell_id.
         - Returns None when no local spell matches.
     Args:
         spellbook: Spellbook whose local spell map should be searched.
-        spell_id: Current version id to resolve.
+        spell_id: The current spell_id to resolve.
     Returns:
         Optional[object]: Matching local spell object, or None when absent.
     """

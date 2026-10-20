@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/rift/command_system/static_command_system.py",
- "source_sha256": "d2bd5af6ef4f7024abb09a9d6d5fa039c866770c0d006b68188f674a0d4c0e0c",
+ "source_sha256": "32512bd76e281a0e7fae716c721826a33f27341869cc5c70ed360a015fa86a47",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.rift.command_system.static_command_system": {
@@ -31,29 +31,31 @@
     "get_conduit_by_id",
     "get_conduit_by_name",
     "get_conduit_cloud",
-    "get_spell_by_id",
     "get_spell_by_index_id",
     "get_spell_by_source_id",
+    "get_spell_by_spell_id",
     "list_supported_command_methods",
     "meld_existing_spell"
    ],
    "shape": {
-    "method_count": 14,
+    "method_count": 15,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "68ef2412ff3c69392debbb1e674a26b543960aece1b192dcd4858f8264041ee5",
+   "span_sha256": "889f90cf26f7ea32f87e74a41fe623004c30765ce054820f0767fa8faaac3d2c",
    "role": "Static-room command specialization.",
    "responsibilities": [
     "preserves the shared command API while denying topology mutation and direct create-path spell activation",
     "restricts spell retrieval to already-live static-compatible spell lifecycles",
-    "resolves spell owners through Aether's root lookup (owners are roots)"
+    "resolves spell owners through Aether's root lookup (owners are roots)",
+    "treats many, unique_per_spell_space and managed_spell_quantity spells as having no single stored object to hand out - a managed spell's objects are leased from a pool (0.2.8243)",
+    "answers get_spell_by_spell_id (renamed from get_spell_by_id, 0.2.8253) and get_spell_by_source_id with the live object of only the version named - the records published for that spell_id, or the one record the source id names - each melded by its own spell_id through _meld_live_spell_from_records_locked, the reuse-only loop the index path shares, whose refusals name what was asked (Spell id '<id>', Spell '<source_id>', Spell index '<id>')"
    ],
    "phases": [
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "68ef2412ff3c69392debbb1e674a26b543960aece1b192dcd4858f8264041ee5"
+   "semantics_authored_against": "889f90cf26f7ea32f87e74a41fe623004c30765ce054820f0767fa8faaac3d2c"
   }
  },
  "edges_out": [

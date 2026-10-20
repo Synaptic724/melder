@@ -1,0 +1,30 @@
+M4 another Book of the same frame binds French
+  [a control: French parked in English's index]
+    unconjured Book (a): bind refused - RuntimeError: Spell ID collision detected. spell_id is computed from the spell's bind-time 
+    conjured Book (a): bind refused - RuntimeError: Spell ID collision detected. spell_id is computed from the spell's bind-time 
+  [b French alone in the minted index]
+    unconjured Book (b): bind refused - RuntimeError: Spell ID collision detected. spell_id is computed from the spell's bind-time 
+    conjured Book (b): bind refused - RuntimeError: Spell ID collision detected. spell_id is computed from the spell's bind-time 
+
+M5 a Book of another frame binds French (process-wide spell ids)
+  [a control: French parked in English's index]
+    process-wide spell ids: True
+    unconjured Book (a): bind refused - RuntimeError: Spell ID collision detected. spell_id is computed from the spell's bind-time 
+    conjured Book (a): bind refused - RuntimeError: Spell ID collision detected. spell_id is computed from the spell's bind-time 
+  [b French alone in the minted index]
+    process-wide spell ids: True
+    unconjured Book (b): bind refused - RuntimeError: Spell ID collision detected. spell_id is computed from the spell's bind-time 
+    conjured Book (b): bind refused - RuntimeError: Spell ID collision detected. spell_id is computed from the spell's bind-time 
+
+M6 root 'lender' torn down with French parked alone in the minted index
+    before: the minted index registered under 'lender': True
+    after: frame cleaned: False
+    after: the dead root keeps a spell-registry entry: True (indexes: 1)
+    after: the dead root keeps an id-set entry: True
+    after: find_index_for_spell(French) -> an index
+    after: find_conduit_id_for_spell(French) is the dead root: True
+    a new Book of the frame: bind ACCEPTED (spell_id equal to French's: True)
+
+M7 transfer by spell_id of French notched active in the minted index
+    transfer ACCEPTED; French owned by the target Book: True; find_conduit_id_for_spell(French) is the target: True
+

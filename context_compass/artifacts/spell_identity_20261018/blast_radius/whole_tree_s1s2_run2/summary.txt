@@ -1,0 +1,14 @@
+# Whole tree on the /tmp mirror: 0.2.8256 + S1 + S2 src + every test batch (doubles .. one_object_b), run 2
+# python 3.14.7t; resumable_pytest_shard.py; TMPDIR=/tmp/m0_mq/tmp
+unit gil0: ============ 7 failed, 9690 passed, 3 skipped, 7 xfailed in 51.61s =============
+unit gil1: ======= 7 failed, 9690 passed, 3 skipped, 7 xfailed, 1 warning in 53.15s =======
+component gil0: ================= 2403 passed, 23 skipped, 1 xfailed in 33.70s =================
+component gil1: =========== 2403 passed, 23 skipped, 1 xfailed, 1 warning in 31.29s ============
+integration gil0: = 11 failed, 2232 passed, 2 skipped, 10 xfailed, 2 xpassed in 111.24s (0:01:51) =
+integration gil1: = 11 failed, 2232 passed, 2 skipped, 9 xfailed, 3 xpassed, 1 warning in 125.22s (0:02:05) =
+experimentation gil0: ======================== 250 passed, 4 skipped in 9.62s ========================
+experimentation gil1: ================== 250 passed, 4 skipped, 1 warning in 10.03s ==================
+# failed ids: 18 with the GIL off, 18 with it on, the same set
+# all 18 are melder_1's S8 baseline (tests/unit/.../test_spellbook_validation_error_preface.py 7, tests/integration/.../test_notch_refused_at_commit_integration.py 11), red on the 0.2.8255 baseline (../whole_tree_s1s2/base_8255_failed.txt)
+# the baseline's other 7 (S9's test_direct_cleanup_refuses_active_member_with_parked_versions_integration.py) pass at 0.2.8256
+# xpassed: test_spellbook_integration_di_validation_faults.py::test_fault_b_* (2, both modes, known); test_conduit_integration_notch_revalidation.py::test_melds_racing_notches_* (GIL on, the non-strict race xfail of TASK-2026-10-16-order_inflight_borrower_melds_against_notch_fanout)

@@ -1,0 +1,4 @@
+WROTE     src   585 files (source fingerprint moved)
+UNCHANGED tests fingerprint and output proofs match
+UNCHANGED other fingerprint and output proofs match
+WROTE manifest.json

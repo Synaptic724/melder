@@ -23,7 +23,7 @@ class CircularDependencyStrategy(SpellValidationStrategy):
     and looks for cycles reachable from the spell being validated.
 
     Contract:
-    - Traverses the spellbook-wide dependency graph by spell/version id.
+    - Traverses the spellbook-wide dependency graph by spell_id.
     - Reports only cycles reachable from the spell currently under validation.
     - Emits validation issues into the supplied context; it does not mutate the
       graph or try to break cycles automatically.

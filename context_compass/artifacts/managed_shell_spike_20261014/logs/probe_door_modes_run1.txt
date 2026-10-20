@@ -1,0 +1,4 @@
+elastic, no reset: acquire+shell put_back 407 ns; acquire+ReleaseManagedSpell.release 505 ns; acquire+with managed() 1104 ns; {'mode': 'elastic', 'count': 1, 'idle': 1, 'out': 0, 'dead_pending': 0}
+elastic, reset(): acquire+shell put_back 478 ns; acquire+ReleaseManagedSpell.release 599 ns; acquire+with managed() 1172 ns; {'mode': 'elastic', 'count': 1, 'idle': 1, 'out': 0, 'dead_pending': 0}
+limited_quantity(4), no reset: acquire+shell put_back 389 ns; acquire+ReleaseManagedSpell.release 484 ns; acquire+with managed() 1067 ns; {'mode': 'limited_quantity', 'count': 1, 'idle': 1, 'out': 0, 'dead_pending': 0}
+queue(4, 1.0s), no reset: acquire+shell put_back 470 ns; acquire+ReleaseManagedSpell.release 567 ns; acquire+with managed() 1172 ns; {'mode': 'queue', 'count': 1, 'idle': 1, 'out': 0, 'dead_pending': 0}

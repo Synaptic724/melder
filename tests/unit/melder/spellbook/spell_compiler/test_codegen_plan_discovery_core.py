@@ -280,3 +280,49 @@ def test_codegen_plan_discovery_system_cleanup_cleans_builder() -> None:
 
     assert builder.cleanup_called is True
     assert not hasattr(system, "_strategy_builder")
+
+
+def _managed_shape(*rows: Existence) -> SpellExistenceOccurrenceAnalysis:
+    """Build an occurrence shape whose last row is the root (managed_spell_quantity S5)."""
+    counts: dict = {}
+    for existence in rows:
+        counts[existence] = counts.get(existence, 0) + 1
+    return SpellExistenceOccurrenceAnalysis(
+        root_existence=rows[-1],
+        total_spell_count=len(rows),
+        spell_existence_rows=tuple(
+            SpellExistenceOccurrence(spell_id=f"s{index}", existence=existence, has_disposal_methods=False)
+            for index, existence in enumerate(rows)
+        ),
+        existence_counts=tuple(counts.items()),
+        disposal_enabled_spell_count=0,
+        existence_disposal_counts=tuple(((existence, False), count) for existence, count in counts.items()),
+    )
+
+
+def test_solo_codegen_plan_discovery_strategy_declines_a_managed_spell() -> None:
+    """A lone managed spell is left to the generalized family, whose site plan dispenses leases."""
+    model = _ModelProbe("model")
+    model.existence_occurrence_shape = _managed_shape(Existence.managed_spell_quantity)
+
+    assert SoloCodegenPlanDiscoveryStrategy().discover(model) is None
+    discovery = GeneralizedCodegenPlanDiscoveryStrategy().discover(model)
+    assert discovery is not None and discovery.plan_family_id == "generalized"
+
+
+def test_solo_codegen_plan_discovery_strategy_still_claims_a_lone_spell_of_another_member() -> None:
+    """The managed decline leaves every other lone spell with the solo family."""
+    model = _ModelProbe("model")
+    model.existence_occurrence_shape = _managed_shape(Existence.unique_per_conduit)
+
+    discovery = SoloCodegenPlanDiscoveryStrategy().discover(model)
+
+    assert discovery is not None and discovery.plan_family_id == "solo"
+
+
+def test_many_only_codegen_plan_discovery_strategy_declines_a_graph_with_a_managed_spell() -> None:
+    """A managed member breaks all-many: the many_only family never sees a managed site."""
+    model = _ModelProbe("model")
+    model.existence_occurrence_shape = _managed_shape(Existence.managed_spell_quantity, Existence.many)
+
+    assert ManyOnlyCodegenPlanDiscoveryStrategy().discover(model) is None

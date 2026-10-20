@@ -1,0 +1,46 @@
+== mode contract; melder 0.2.8251; gil_enabled=True
+  Banner: 'HELLO!'
+== before the notch
+  -- Contract between borrower and lender: index links (Greeter-index, Mark-index)
+     Detail under lender: spell_id=English spell_index=Greeter-index permissions=create type=received reason=manual sources=[]
+     Detail under lender: spell_id=French spell_index=Greeter-index permissions=create type=received reason=manual sources=[]
+     Detail under lender: spell_id=Bang spell_index=Mark-index permissions=create type=received reason=manual sources=[]
+     IndexDetail under lender: index=Greeter-index selected_spell_id=English permissions=create type=received reason=manual
+     IndexDetail under lender: index=Mark-index selected_spell_id=Bang permissions=create type=received reason=manual
+  -- borrower_book copies borrowed from lender: 
+     _contracted_spells (index -> active copy)=[('Greeter-index', 'English'), ('Mark-index', 'Bang')]
+     _contracted_spells_by_id=['Bang', 'English']
+     _lookup_contracted_spells (key -> index)=[(('greeter', 'greeter'), 'Greeter-index'), (('mark', 'mark'), 'Mark-index')]
+     _inactive_contracted_spells (parked)=['French']
+     _contracted_spell_ids=['Bang', 'English', 'French']
+  -- Contract between borrower2 and lender: one version grant (English)
+     Detail under lender: spell_id=English spell_index=Greeter-index permissions=create type=received reason=manual sources=['English']
+  -- borrower2_book copies borrowed from lender: 
+     _contracted_spells (index -> active copy)=[('Greeter-index', 'English')]
+     _contracted_spells_by_id=['English']
+     _lookup_contracted_spells (key -> index)=[(('greeter', 'greeter'), 'Greeter-index')]
+     _inactive_contracted_spells (parked)=[]
+     _contracted_spell_ids=['English', 'French']
+  Banner: 'BONJOUR!'
+== after the lender notches Greeter-index to French
+  -- Contract between borrower and lender: index links (Greeter-index, Mark-index)
+     Detail under lender: spell_id=English spell_index=Greeter-index permissions=create type=received reason=manual sources=[]
+     Detail under lender: spell_id=French spell_index=Greeter-index permissions=create type=received reason=manual sources=[]
+     Detail under lender: spell_id=Bang spell_index=Mark-index permissions=create type=received reason=manual sources=[]
+     IndexDetail under lender: index=Greeter-index selected_spell_id=French permissions=create type=received reason=manual
+     IndexDetail under lender: index=Mark-index selected_spell_id=Bang permissions=create type=received reason=manual
+  -- borrower_book copies borrowed from lender: 
+     _contracted_spells (index -> active copy)=[('Mark-index', 'Bang'), ('Greeter-index', 'French')]
+     _contracted_spells_by_id=['Bang', 'French']
+     _lookup_contracted_spells (key -> index)=[(('mark', 'mark'), 'Mark-index'), (('greeter', 'greeter'), 'Greeter-index')]
+     _inactive_contracted_spells (parked)=['English']
+     _contracted_spell_ids=['Bang', 'English', 'French']
+  -- Contract between borrower2 and lender: one version grant (English)
+     Detail under lender: spell_id=English spell_index=Greeter-index permissions=create type=received reason=manual sources=['English']
+  -- borrower2_book copies borrowed from lender: 
+     _contracted_spells (index -> active copy)=[]
+     _contracted_spells_by_id=[]
+     _lookup_contracted_spells (key -> index)=[]
+     _inactive_contracted_spells (parked)=['English']
+     _contracted_spell_ids=['English', 'French']
+rc=0

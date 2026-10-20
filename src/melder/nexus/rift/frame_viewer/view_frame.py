@@ -1431,7 +1431,7 @@ class ViewFrame(Cleanable):
         Contract:
             - NOT deduplicated, and duplicates are EXPECTED: several spells can
               share one spell index, so the same index id repeats once per spell.
-              Deduplicate yourself if you want distinct lineages.
+              Deduplicate yourself if you want distinct spell indexes.
             - Positionally aligned with the visible spell links.
             - VISIBILITY-FILTERED PROJECTION. Everything here is derived from the
               ACL-filtered target set, so absence means "not visible to this rift"

@@ -1,0 +1,7 @@
+Built 6 pages: /tmp/claude-0/-home-claude/77c834ea-90c9-51e1-b1fc-38e3859bedc3/scratchpad/mirror3/docs/_build/test-workspaces/153b6da491cd4457acf63955c6f14f89/docs/_build/html
+Built 6 pages: /tmp/claude-0/-home-claude/77c834ea-90c9-51e1-b1fc-38e3859bedc3/scratchpad/mirror3/docs/_build/test-workspaces/153b6da491cd4457acf63955c6f14f89/docs/_build/html
+----------------------------------------------------------------------
+Ran 60 tests in 4.260s
+
+OK
+unittest exit=0

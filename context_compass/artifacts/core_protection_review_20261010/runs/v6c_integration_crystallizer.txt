@@ -1,0 +1,5 @@
+command: python -X gil=0 -m pytest -q -p no:cacheprovider -rsxX tests/integration/melder/crystallizer/test_named_lesser_persistence.py tests/integration/melder/crystallizer/test_restore_per_frame_spell_worlds_integration.py tests/integration/melder/crystallizer/test_restore_spellframe_kind_integration.py tests/integration/melder/crystallizer/test_restore_over_active_nexus_integration.py tests/integration/melder/crystallizer/test_recorded_leaf_source_read_integration.py tests/integration/melder/crystallizer/test_restore_sealed_aether_regime_integration.py
+started: 2026-10-10T13:14:53Z
+.........................................                                [100%]
+41 passed in 99.70s (0:01:39)
+exit: 0 finished: 2026-10-10T13:16:33Z

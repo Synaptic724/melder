@@ -10,6 +10,7 @@ from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spellbook import Spellbook
 from melder.utilities.custom_exceptions.phase_execution_error import PhaseExecutionError
 from melder.utilities.custom_exceptions.spellbook_validation_error import SpellbookValidationError
+from tests._spell_identity_test_support import version_of
 
 
 @pytest.fixture(autouse=True)
@@ -1295,9 +1296,9 @@ def test_type_hint_di_ambiguous_concrete_class_raises() -> None:
     Purpose:
         Validate ambiguous type-hint DI for one concrete class fails at build.
     Contract:
-        - The spell fingerprint composes bind-time facts including the lookup
-          signature, so the same class under two binding names registers as
-          two distinct spells; binding no longer collides.
+        - One class is one spell (S1 of EPIC-2026-10-18-spell_identity_is_the_code):
+          binding _Repo again under another binding name is refused, so the second
+          provider is a version of _Repo - its name, other code - under 'secondary'.
         - A consumer whose constructor type-hints the concrete class then has
           two single-DI candidates, and Phase 3 rejects the ambiguity at
           conjure with disambiguation guidance.
@@ -1357,7 +1358,7 @@ def test_type_hint_di_ambiguous_concrete_class_raises() -> None:
         binding_name="primary",
     )
     spellbook.bind(
-        spell=_Repo,
+        spell=version_of(_Repo, provider="secondary"),
         existence=Existence.unique,
         permissions="create",
         binding_name="secondary",

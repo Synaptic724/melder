@@ -1,0 +1,28 @@
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: PLAN
+  CLAIM: Patch docs written for the owner's approval (system_docs/patches/active/managed_settings_spell_id_2026_10_17:
+    the architecture patch, three component patches for part A, the pool's code description, and part B's component
+    patch). Mapping, patch section -> implementation -> validation: (1) Binding Pipeline -> `Bind.sha256_profile`
+    loses the managed part and its four keywords, `_managed_fingerprint_part` retires, `_bind_logic` and
+    `spell_id_inspector` hash without the settings -> the moved fingerprint unit tests, probe S1-S2; (2) Managed Spell
+    Pools and the code description -> `ManagedSpellQuantity._rebind_spell` re-composes (equal settings: a pure
+    re-point), `Creations.ensure_managed_quantity` calls it after the store lock -> pool and Creations unit tests (per
+    mode change, waiters, a lock probe), a multithreaded rebind test, probe R1-R3 as integration tests; (3)
+    CachingSystem -> generation 22 "managed_settings_leave_spell_id" -> a generation unit test; (4) the docstrings
+    that state the old rule (ManagedSpellMode, SpellCrystal now; Spell and RestoreEngine after melder_1's landing);
+    (5) the 13 integration tests that built a second version from one class's settings move to versions of two
+    classes; (6) part B after melder_1 releases spellbook.py. Two decisions are the owner's: the scope, and a legacy
+    record holding two settings-only versions in one index (recommended: the restore refuses it whole).
+  EVIDENCE:
+  - context_compass/system_docs/patches/active/managed_settings_spell_id_2026_10_17/architecture_patch.md:1-103
+  - context_compass/system_docs/patches/active/managed_settings_spell_id_2026_10_17/component_patch_binding_fingerprint.md:1-76
+  - context_compass/system_docs/patches/active/managed_settings_spell_id_2026_10_17/component_patch_managed_pool_rebind.md:1-78
+  - context_compass/system_docs/patches/active/managed_settings_spell_id_2026_10_17/code_description_patch_managed_pool_rebind.md:1-56
+  - context_compass/system_docs/patches/active/managed_settings_spell_id_2026_10_17/component_patch_creation_cache_generation.md:1-45
+  - context_compass/system_docs/patches/active/managed_settings_spell_id_2026_10_17/component_patch_staging_refusal.md:1-60
+  IMPACT: The entry gate needs only the owner's approval and melder_1's landing; no src/ edit before both.
+  NEXT: The owner's approval of the patch docs and his answers on the scope and the legacy record.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9

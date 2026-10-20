@@ -1,0 +1,112 @@
+FF..FFFFFFFFFF                                                           [100%]
+=================================== FAILURES ===================================
+_ test_contract_consumer_follows_notch_notch_back_and_repeat_notch_with_one_rebuild_each _
+tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py:298: in test_contract_consumer_follows_notch_notch_back_and_repeat_notch_with_one_rebuild_each
+    assert resolution_passes == []
+E   AssertionError: assert ['Consumer', ...', 'Consumer'] == []
+E     
+E     Left contains 5 more items, first extra item: 'Consumer'
+E     Use -v to get more diff
+_________ test_a_notch_marks_the_contract_consumer_and_builds_nothing __________
+tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py:332: in test_a_notch_marks_the_contract_consumer_and_builds_nothing
+    assert state.validity is SpellValidity.gated
+E   assert <SpellValidity.valid: 2> is <SpellValidity.gated: 3>
+E    +  where <SpellValidity.valid: 2> = <melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_state.SpellSystemState object at 0x488ef34d8e0>.validity
+E    +  and   <SpellValidity.gated: 3> = SpellValidity.gated
+_ test_destroying_the_providers_index_fails_the_consumer_naming_the_lost_contract _
+tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py:380: in test_destroying_the_providers_index_fails_the_consumer_naming_the_lost_contract
+    world.meld_ping()
+tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py:201: in meld_ping
+    return self.borrower.meld(spell=Consumer).service.ping()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/melder/aether/conduit/conduit.py:5044: in meld
+    return meld_component.meld(
+src/melder/aether/conduit/meld/conduit_meld.py:578: in meld
+    self._ensure_lineage_resolvable(target_spell)
+src/melder/aether/conduit/meld/meld.py:984: in _ensure_lineage_resolvable
+    self._check_contracts_and_force_revalidation(spell)
+src/melder/aether/conduit/meld/meld.py:1365: in _check_contracts_and_force_revalidation
+    raise MeldExecutionError(
+E   melder.utilities.custom_exceptions.meld_execution_error.MeldExecutionError: [MELD] Execution failed for spell 'Consumer' (664d2d52ce83597c8996474ea1b5014c0aa483bfa615609c18afd823038821ba) at node 664d2d52ce83597c8996474ea1b5014c0aa483bfa615609c18afd823038821ba (parameter 'service'): SpellContract could not be resolved. Missing contracted provider for key (frame_key='iservice', binding_key='svc') on param 'service' for spell 'Consumer'. Contract=<SpellContract spell=None spellframe=<class 'test_conduit_integration_notch_revalidation.IService'> binding_name='svc' override=None>.
+__ test_releasing_the_index_link_fails_the_consumer_naming_the_lost_contract ___
+tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py:395: in test_releasing_the_index_link_fails_the_consumer_naming_the_lost_contract
+    with pytest.raises(SpellbookValidationError) as raised:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE SpellbookValidationError
+__ test_releasing_a_version_grant_fails_the_consumer_naming_the_lost_contract __
+tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py:414: in test_releasing_a_version_grant_fails_the_consumer_naming_the_lost_contract
+    _assert_lost_contract_reported(raised.value)
+tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py:279: in _assert_lost_contract_reported
+    assert "has no provider for its SpellContract" in message
+E   AssertionError: assert 'has no provider for its SpellContract' in 'Spellbook validation failed. Broken spells: Consumer.\nConsumer:\n  - No validation error was recorded for this spell..., gated or disabled.\n1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.'
+_________ test_c1_a_dependent_two_hops_away_follows_a_dependency_notch _________
+tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py:452: in test_c1_a_dependent_two_hops_away_follows_a_dependency_notch
+    assert root.meld(spell=q_cls).p.dep.tag() == "d2"
+E   AssertionError: assert 'd1' == 'd2'
+E     
+E     - d2
+E     + d1
+_ test_c2_a_chain_never_melded_before_a_dependency_notch_builds_the_new_version _
+tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py:465: in test_c2_a_chain_never_melded_before_a_dependency_notch_builds_the_new_version
+    assert root.meld(spell=q_cls).p.dep.tag() == "d2"
+           ^^^^^^^^^^^^^^^^^^^^^^
+src/melder/aether/conduit/conduit.py:5044: in meld
+    return meld_component.meld(
+src/melder/aether/conduit/meld/conduit_meld.py:611: in meld
+    instance = self._execute_admitted(
+src/melder/aether/conduit/meld/meld.py:928: in _execute_admitted
+    return creation_context._no_overrides_instance_executor(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/hydration/many_only_hydrator.py:178: in _cold_no_overrides_instance_door
+    hydrated = _hydrate_once()
+               ^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/hydration/many_only_hydrator.py:152: in _hydrate_once
+    hydrated = hydrate_many_only_creation_executors(
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/hydration/many_only_hydrator.py:217: in hydrate_many_only_creation_executors
+    spell_lookup = _resolve_spell_lookup(
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/hydration/many_only_hydrator.py:338: in _resolve_spell_lookup
+    raise RuntimeError(
+E   RuntimeError: many_only manifest references unknown spell_id '1d9fb2abee2f19aad20ce3168b320df8706fb54d31c8575fee21a9faac96dcf7'.
+_ test_c3_a_chain_melded_before_a_dependency_notch_follows_it_from_either_end __
+tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py:479: in test_c3_a_chain_melded_before_a_dependency_notch_follows_it_from_either_end
+    assert root.meld(spell=q_cls).p.dep.tag() == "d2"
+E   AssertionError: assert 'd1' == 'd2'
+E     
+E     - d2
+E     + d1
+_ test_c4_a_notch_to_a_version_the_annotation_does_not_select_raises_the_first_melds_error _
+tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py:492: in test_c4_a_notch_to_a_version_the_annotation_does_not_select_raises_the_first_melds_error
+    with pytest.raises(UnresolvedInputError, match="PClass.dep expects Dep"):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE UnresolvedInputError
+_ test_a_contract_consumers_dependent_resolves_the_provider_linked_after_conjure _
+tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py:528: in test_a_contract_consumers_dependent_resolves_the_provider_linked_after_conjure
+    assert borrower.meld(spell=User).c.service.ping() == "P+d1"
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'SpellContract' object has no attribute 'ping'
+_ test_x1_a_dependency_notch_in_the_lending_book_reaches_the_borrowers_dependents _
+tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py:538: in test_x1_a_dependency_notch_in_the_lending_book_reaches_the_borrowers_dependents
+    assert borrower.meld(spell=User).c.service.ping() == "P+d1"
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'SpellContract' object has no attribute 'ping'
+_ test_melds_racing_notches_get_a_version_or_the_lost_provider_refusal_and_end_on_the_last_version _
+tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py:586: in test_melds_racing_notches_get_a_version_or_the_lost_provider_refusal_and_end_on_the_last_version
+    assert unexpected == []
+E   assert [AttributeErr...bute 'ping'")] == []
+E     
+E     Left contains 4 more items, first extra item: AttributeError("'SpellContract' object has no attribute 'ping'")
+E     Use -v to get more diff
+=========================== short test summary info ============================
+FAILED tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py::test_contract_consumer_follows_notch_notch_back_and_repeat_notch_with_one_rebuild_each
+FAILED tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py::test_a_notch_marks_the_contract_consumer_and_builds_nothing
+FAILED tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py::test_destroying_the_providers_index_fails_the_consumer_naming_the_lost_contract
+FAILED tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py::test_releasing_the_index_link_fails_the_consumer_naming_the_lost_contract
+FAILED tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py::test_releasing_a_version_grant_fails_the_consumer_naming_the_lost_contract
+FAILED tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py::test_c1_a_dependent_two_hops_away_follows_a_dependency_notch
+FAILED tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py::test_c2_a_chain_never_melded_before_a_dependency_notch_builds_the_new_version
+FAILED tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py::test_c3_a_chain_melded_before_a_dependency_notch_follows_it_from_either_end
+FAILED tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py::test_c4_a_notch_to_a_version_the_annotation_does_not_select_raises_the_first_melds_error
+FAILED tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py::test_a_contract_consumers_dependent_resolves_the_provider_linked_after_conjure
+FAILED tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py::test_x1_a_dependency_notch_in_the_lending_book_reaches_the_borrowers_dependents
+FAILED tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py::test_melds_racing_notches_get_a_version_or_the_lost_provider_refusal_and_end_on_the_last_version
+12 failed, 2 passed in 1.33s

@@ -1,0 +1,213 @@
+........................................................................ [ 11%]
+........................................................F............... [ 22%]
+........................................................................ [ 34%]
+........................................................................ [ 45%]
+........................................................................ [ 57%]
+......................................................................F. [ 68%]
+........................................................................ [ 80%]
+..........F...........................................................F. [ 91%]
+...................................................                      [100%]
+=================================== FAILURES ===================================
+_________ test_beginner_example_runs_green[39_agent_inventory_pattern] _________
+
+path = PosixPath('/tmp/m0_mq/wt/UX_and_AIX_experiences/01_beginner/39_agent_inventory_pattern.py')
+capsys = <_pytest.capture.CaptureFixture object at 0x2efe08e4210>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x2efe4597e10>
+
+    @pytest.mark.parametrize("path", EXAMPLES, ids=[p.stem for p in EXAMPLES])
+    def test_beginner_example_runs_green(
+        path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Execute each script with its sibling imports, matching direct Python script execution."""
+        monkeypatch.syspath_prepend(str(path.parent))
+        module = _load(path)
+>       module.main()
+
+UX_and_AIX_experiences/pytest_examples/test_beginner_examples.py:38: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def main() -> None:
+        groups: dict[str, list[str]] = {
+            "errors": [], "enums": [], "classes": [], "functions": [],
+            "metadata": [],
+        }
+        for name in md.__all__:
+            obj = getattr(md, name)
+            if name.startswith("__"):
+                groups["metadata"].append(name)
+            elif isinstance(obj, type) and issubclass(obj, BaseException):
+                groups["errors"].append(name)
+            elif isinstance(obj, type) and hasattr(obj, "__members__"):
+                groups["enums"].append(name)
+            elif isinstance(obj, type):
+                groups["classes"].append(name)
+            else:
+                groups["functions"].append(name)
+    
+        for group, names in groups.items():
+            print(f"{group:10s} ({len(names):2d}):", ", ".join(sorted(names)[:6]),
+                  "..." if len(names) > 6 else "")
+>       assert len(groups["errors"]) == 9
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError
+
+UX_and_AIX_experiences/01_beginner/39_agent_inventory_pattern.py:33: AssertionError
+----------------------------- Captured stdout call -----------------------------
+errors     (11): DeadReferenceError, HookExecutionError, InternalRegistrationError, ManagedSpellExhaustedError, MeldExecutionError, PhaseExecutionError ...
+enums      ( 9): Existence, LaneState, LaneType, ManagedSpellMode, NexusFrameMode, Permissions ...
+classes    (43): Aether, AetherConfiguration, AetherConfigurationBuilder, AethericFrameConfiguration, Cleanable, Conduit ...
+functions  ( 2): new_ulid, scan_bind 
+metadata   ( 8): __architecture__, __author__, __components__, __description__, __graph_details__, __graph_network__ ...
+_________ test_example_declares_its_surface[37_review_agent_bindings] __________
+
+path = PosixPath('/tmp/m0_mq/wt/UX_and_AIX_experiences/04_expert/37_review_agent_bindings.py')
+
+    @pytest.mark.parametrize("path", EXAMPLES, ids=[p.stem for p in EXAMPLES])
+    def test_example_declares_its_surface(path: Path) -> None:
+        """Every example must declare what it covers.
+    
+        `SURFACE EXERCISED` is the line a reader trusts to know what a lesson
+        touches, and it is the one that silently rots when a lesson is
+        restructured - so its PRESENCE is enforced here even though its
+        accuracy cannot be. Expert additionally carries `VERIFY`, which records
+        whether the lesson has actually been run.
+        """
+        tree = ast.parse(path.read_text(encoding="utf-8", errors="replace"))
+        docstring = ast.get_docstring(tree, clean=False) or ""
+        required = UNIVERSAL_KEYS
+        if path.parent.name == "04_expert":
+            required = UNIVERSAL_KEYS + EXPERT_ONLY_KEYS
+        missing = [key for key in required if key not in docstring]
+>       assert not missing, f"{path.name} header is missing {missing}"
+E       AssertionError: 37_review_agent_bindings.py header is missing ['VERIFY:']
+E       assert not ['VERIFY:']
+
+UX_and_AIX_experiences/pytest_examples/test_example_contract.py:98: AssertionError
+______________ test_probe_two_visible_spells_may_not_share_a_name ______________
+
+    def test_probe_two_visible_spells_may_not_share_a_name():
+        """Lesson 30 claim: a distinct `binding_name` does NOT settle a
+        duplicate spell name.
+    
+        Two INDEPENDENT binds make both spells visible at once, so a shared
+        class name makes `meld(spell_name=...)` ambiguous and the post-conjure
+        structural validator refuses. This is why 30's two generated modules
+        declare ReportBase and ReportDonor rather than Report twice."""
+        frame_name = "probe-dupname-frame"
+        book = _frame(frame_name)
+    
+        class Alpha:
+            def __init__(self) -> None:
+                self.tag = "a"
+    
+        Beta = type("Alpha", (), {"__init__": lambda self: None})
+    
+        # Same order the failing run took: bind, conjure, then the SECOND bind
+        # is what trips the post-conjure structural validator.
+        book.bind(spell=Alpha, existence="unique", permissions="create",
+                  binding_name="probe-dup-one")
+        book.conjure(name="probe-dup-root")
+    
+>       with pytest.raises(Exception) as collision:
+             ^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE Exception
+
+UX_and_AIX_experiences/pytest_examples/test_expert_probes.py:1015: Failed
+__________ test_probe_upgrade_to_normal_keeps_creations_and_registers __________
+
+    def test_probe_upgrade_to_normal_keeps_creations_and_registers():
+        """Lesson 28 contract (mirrors the validated component test
+        test_component_conduit_upgrade_transfers_lesser_creations_and_
+        reuses_unique): a promoted lesser keeps its per-conduit creations
+        and becomes name-discoverable in the cloud."""
+        import sys
+        from pathlib import Path as _P
+        sys.path.insert(0, str(_P(__file__).parent.parent / "02_intermediate"))
+        from _dynamic_world import dynamic_spellbook
+    
+        book = dynamic_spellbook()
+        book.bind(spell=Payload, existence="unique_per_conduit")
+        root = book.conjure(dynamic=True, name="factory-floor")
+    
+        worker = root.create_lesser_conduit()
+        before = worker.meld(spell=Payload)
+    
+        worker.upgrade_to_normal(name="worker")
+    
+>       after = worker.meld(spell=Payload)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+UX_and_AIX_experiences/pytest_examples/test_intermediate_probes.py:327: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/melder/aether/conduit/conduit.py:5072: in meld
+    return meld_component.meld(
+src/melder/aether/conduit/meld/conduit_meld.py:546: in meld
+    target_spell = self._resolve_spell(
+src/melder/aether/conduit/meld/meld.py:2148: in _resolve_spell
+    resolved = self._resolve_spell_by_lookup_key(lookup_key)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <melder.aether.conduit.meld.conduit_meld.ConduitMeld object at 0x2f0b218a900>
+lookup_key = ('payload', '__default__')
+
+    def _resolve_spell_by_lookup_key(
+            self,
+            lookup_key: tuple[str, str],
+    ) -> Spell:
+        """
+        Resolve a spell by normalized logical identity key.
+    
+        The lookup order is:
+    
+        1. local Spellbook maps
+        2. contracted-conduit maps
+    
+        This method is the orchestration point for that two-layer search and is
+        responsible for turning "not found anywhere" into one stable `KeyError`
+        contract.
+    
+        Args:
+            lookup_key:
+                A tuple (frame_key, binding_name) produced by
+                SpellInputUtils.normalize_spell_key or
+                SpellInputUtils.make_spell_key_from_parts.
+    
+        Returns:
+            Spell:
+                The resolved spell configuration object.
+    
+        Raises:
+            KeyError:
+                If no spell can be resolved for the given key in either
+                the local or contracted spell maps.
+            RuntimeError:
+                If a SpellIndex is found for the key, but the
+                associated spell object is missing from the expected map.
+        """
+        frame_key, bind_key = lookup_key
+    
+        # 1) Local lookup
+        local_spell = self._resolve_local_by_lookup_key(lookup_key)
+        if local_spell is not None:
+            return local_spell
+    
+        # 2) Contracted lookup
+        contracted_spell = self._resolve_contracted_by_lookup_key(lookup_key)
+        if contracted_spell is not None:
+            return contracted_spell
+    
+        # 3) Not found anywhere
+>       raise KeyError(
+            f"[MELD] No spell found for frame='{frame_key}', binding='{bind_key}'."
+        )
+E       KeyError: "[MELD] No spell found for frame='payload', binding='__default__'."
+
+src/melder/aether/conduit/meld/meld.py:2235: KeyError
+=========================== short test summary info ============================
+FAILED UX_and_AIX_experiences/pytest_examples/test_beginner_examples.py::test_beginner_example_runs_green[39_agent_inventory_pattern]
+FAILED UX_and_AIX_experiences/pytest_examples/test_example_contract.py::test_example_declares_its_surface[37_review_agent_bindings]
+FAILED UX_and_AIX_experiences/pytest_examples/test_expert_probes.py::test_probe_two_visible_spells_may_not_share_a_name
+FAILED UX_and_AIX_experiences/pytest_examples/test_intermediate_probes.py::test_probe_upgrade_to_normal_keeps_creations_and_registers
+4 failed, 623 passed in 12.77s
+EXIT 1

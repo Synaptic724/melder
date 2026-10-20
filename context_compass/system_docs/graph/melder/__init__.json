@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/__init__.py",
- "source_sha256": "7b3a95753a785e242f26ca0b2a61fffcdc44ca85b53ecb78e6cd4f47535d29b0",
+ "source_sha256": "cd330fbbdd22e76f3402351efe8e8845f30f1771a3895e9b8af8863585f5e730",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder": {
@@ -34,6 +34,8 @@
   "AetherConfigurationBuilder": "melder.aether.aether_configuration_builder.AetherConfigurationBuilder",
   "AethericFrameConfiguration": "melder.aether.aetheric_frame.aetheric_frame_configuration.AethericFrameConfiguration",
   "Conduit": "melder.aether.conduit.conduit.Conduit",
+  "ManagedSpellLease": "melder.aether.conduit.creations.managed_spell_lease.ManagedSpellLease",
+  "ReleaseManagedSpell": "melder.aether.conduit.creations.release_managed_spell.ReleaseManagedSpell",
   "Permissions": "melder.aether.conduit.conduit_ward.permissions.permissions.Permissions",
   "Policies": "melder.aether.conduit.conduit_ward.policies.policies.Policies",
   "SpellContract": "melder.aether.conduit.meld.contracts.spell_contract.SpellContract",
@@ -44,6 +46,7 @@
   "SpellbookConfiguration": "melder.aether.spellbook.configuration.spellbook_configuration.SpellbookConfiguration",
   "SystemState": "melder.aether.spellbook.configuration.system_state.SystemState",
   "Existence": "melder.aether.spellbook.existence.existence.Existence",
+  "ManagedSpellMode": "melder.aether.spellbook.existence.managed_spell_mode.ManagedSpellMode",
   "Spell": "melder.aether.spellbook.spell.Spell",
   "SpellBinder": "melder.aether.spellbook.spellbinder.SpellBinder",
   "Spellbook": "melder.aether.spellbook.spellbook.Spellbook",
@@ -83,6 +86,7 @@
   "DeadReferenceError": "melder.utilities.custom_exceptions.dead_reference_error.DeadReferenceError",
   "HookExecutionError": "melder.utilities.custom_exceptions.hook_execution_error.HookExecutionError",
   "InternalRegistrationError": "melder.utilities.custom_exceptions.internal_registration_error.InternalRegistrationError",
+  "ManagedSpellExhaustedError": "melder.utilities.custom_exceptions.managed_spell_exhausted_error.ManagedSpellExhaustedError",
   "MeldExecutionError": "melder.utilities.custom_exceptions.meld_execution_error.MeldExecutionError",
   "PhaseExecutionError": "melder.utilities.custom_exceptions.phase_execution_error.PhaseExecutionError",
   "PhaseSchedulerError": "melder.utilities.custom_exceptions.phase_scheduler_error.PhaseSchedulerError",

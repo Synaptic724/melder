@@ -165,7 +165,7 @@ def main() -> None:
                    permissions="create", binding_name="well-pricing")
     v2 = conduit.bind_inactive(
         spell=second.Pricing,
-        spell_index=conduit.get_spell_by_id(v1).spell_index,
+        spell_index=conduit.get_spell_by_spell_id(v1).spell_index,
         existence="unique", permissions="create",
     )
     module_name = MODULE_V1

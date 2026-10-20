@@ -52,13 +52,20 @@ class _Linkable:
         pass
 
 
-def _conduit(frame_name: str, *, dynamic: bool) -> Conduit:
-    """Conjure one root conduit on its own frame."""
+class _SecondLinkable:
+    """The class a second conduit binds while the first is alive: one class is one spell."""
+
+    def __init__(self) -> None:
+        pass
+
+
+def _conduit(frame_name: str, *, dynamic: bool, spell: type = _Linkable) -> Conduit:
+    """Conjure one root conduit on its own frame, binding `spell` there."""
     book = Spellbook(frame_name)
-    # binding_name keeps each frame's spell_id distinct. The frame is NOT in the
-    # bind-time fingerprint, so under process-wide uniqueness two frames binding
-    # the same class with the same parameters mint the SAME id and collide.
-    book.bind(spell=_Linkable, existence="unique", binding_name=frame_name)
+    # A spell_id is the SHA256 of the class's code (S1 of EPIC-2026-10-18-spell_identity_is_the_code), not of
+    # how it is bound: under process-wide uniqueness a class bound in one frame is refused in another whatever
+    # its binding name, so a test that holds two conduits at once binds `_SecondLinkable` in the second.
+    book.bind(spell=spell, existence="unique", binding_name=frame_name)
     if dynamic:
         return book.conjure(dynamic=True, name=f"{frame_name}-root")
     return book.conjure(name=f"{frame_name}-root")
@@ -148,7 +155,7 @@ def test_the_member_the_reader_returns_is_accepted_by_the_writer() -> None:
     """
     source = _conduit("policy-round-a", dynamic=True)
     source.set_new_policy("block_all")
-    target = _conduit("policy-round-b", dynamic=True)
+    target = _conduit("policy-round-b", dynamic=True, spell=_SecondLinkable)
     target.set_new_policy(source.policy)
     assert target.policy is source.policy
 

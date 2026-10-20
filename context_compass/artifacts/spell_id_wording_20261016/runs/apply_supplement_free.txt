@@ -1,0 +1,3 @@
+APPLIED free: files 5 decisions applied 10 kept 2
+KEEP V341 tests/component/melder/spellbook/test_spellbook_component_conduit_definition.py 261 names the stub's parameter `version_id` (a code name, kept by the owner's ruling); its text must match the code
+KEEP V342 tests/component/melder/spellbook/test_spellbook_component_conduit_definition.py 310 names the stub's parameter `_version_id` (a code name, kept by the owner's ruling); its text must match the code

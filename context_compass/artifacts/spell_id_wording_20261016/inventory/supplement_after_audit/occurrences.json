@@ -1,0 +1,121 @@
+[
+ {
+  "id": "V331",
+  "path": "src/melder/aether/spellbook/spell_compiler/system/spell_system_adjacency_snapshot.py",
+  "line": 84,
+  "text": "        Outgoing edges for each spell version_id:",
+  "held": false
+ },
+ {
+  "id": "V332",
+  "path": "src/melder/aether/spellbook/spell_compiler/system/spell_system_adjacency_snapshot.py",
+  "line": 96,
+  "text": "        Incoming edges for each spell version_id:",
+  "held": false
+ },
+ {
+  "id": "V333",
+  "path": "src/melder/aether/spellbook/spell_compiler/system/spell_system_adjacency_snapshot.py",
+  "line": 108,
+  "text": "        All known spell version_ids participating in this frame.",
+  "held": false
+ },
+ {
+  "id": "V334",
+  "path": "src/melder/aether/spellbook/spell_compiler/system/spell_system_root_blueprint_builder.py",
+  "line": 74,
+  "text": "                    Dict[version_id, Set[version_id]]",
+  "held": false
+ },
+ {
+  "id": "V335",
+  "path": "src/melder/aether/spellbook/spell_compiler/system/spell_system_root_blueprint_builder.py",
+  "line": 75,
+  "text": "                    (spell_id -> direct dependency version_ids; consumer -> providers)",
+  "held": false
+ },
+ {
+  "id": "V336",
+  "path": "src/melder/aether/spellbook/spell_compiler/system/spell_system_root_blueprint_builder.py",
+  "line": 77,
+  "text": "                    Set[version_id] of structural roots for this frame.",
+  "held": false
+ },
+ {
+  "id": "V337",
+  "path": "src/melder/aether/spellbook/spell_compiler/system/spell_system_root_blueprint_builder.py",
+  "line": 81,
+  "text": "                Mapping from root version_id -> RootResolutionBlueprint.",
+  "held": false
+ },
+ {
+  "id": "V338",
+  "path": "src/melder/aether/spellbook/spell_compiler/system/spell_system_root_blueprint_builder.py",
+  "line": 334,
+  "text": "            * Nodes: all version_ids reachable from ``root_spell_id``",
+  "held": false
+ },
+ {
+  "id": "V339",
+  "path": "src/melder/utilities/custom_exceptions/meld_execution_error.py",
+  "line": 117,
+  "text": "                The root spell's version identifier (typically SHA256).",
+  "held": false
+ },
+ {
+  "id": "V340",
+  "path": "tests/unit/melder/aether/conduit/test_conduit_facade.py",
+  "line": 24,
+  "text": "        spell_id (str): Version identifier to attach to the spell.",
+  "held": false
+ },
+ {
+  "id": "V341",
+  "path": "tests/component/melder/spellbook/test_spellbook_component_conduit_definition.py",
+  "line": 261,
+  "text": "                version_id: The spell_id being checked.",
+  "held": false
+ },
+ {
+  "id": "V342",
+  "path": "tests/component/melder/spellbook/test_spellbook_component_conduit_definition.py",
+  "line": 310,
+  "text": "                _version_id: The spell_id being checked.",
+  "held": false
+ },
+ {
+  "id": "V343",
+  "path": "src/melder/aether/conduit/conduit.py",
+  "line": 3197,
+  "text": "        Retrieves a spell object by its unique version identifier (spell_id) from the",
+  "held": true
+ },
+ {
+  "id": "V344",
+  "path": "src/melder/aether/conduit/conduit.py",
+  "line": 3214,
+  "text": "            spell_id (str): The unique version identifier of the spell (SHA256).",
+  "held": true
+ },
+ {
+  "id": "V345",
+  "path": "tests/unit/melder/spellbook/test_spellbook.py",
+  "line": 382,
+  "text": "            Returns True when version_id is present in _spells_in_index.",
+  "held": true
+ },
+ {
+  "id": "V346",
+  "path": "tests/unit/melder/spellbook/test_spellbook.py",
+  "line": 386,
+  "text": "            bool: True when version_id is registered.",
+  "held": true
+ },
+ {
+  "id": "V347",
+  "path": "tests/unit/melder/spellbook/test_spellbook.py",
+  "line": 399,
+  "text": "            bool: True when the live stub registers version_id.",
+  "held": true
+ }
+]

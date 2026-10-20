@@ -1,0 +1,36 @@
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: HYPOTHESIS
+  CLAIM: Sweep A1, read whole: staging a version can strip the binding signature of the active spell that shares
+    its key. `bind_inactive` lets Bind mint a throwaway index for the new version, then folds the version onto the
+    caller's index with `_apply_add_to_index`, which destroys the emptied throwaway through `_destroy_spell_index`
+    with the staged version's key. That seam pops `_lookup_spells[key]` and calls `release_lookup(key)`, both by
+    key, whoever holds it - and a parked version shares its key with its active sibling (the comment in
+    `cleanup_and_remove_spell` says so, and releases by spell_id for that reason). Same seam, same key: an index
+    move that empties a parked-only index (one `remove_from_spell_index` minted) and `cleanup_spell` of a parked
+    version whose index empties. Expected effect: the frame's one-active-spell-per-signature claim is gone while
+    the active version still serves, so another bind of the signature anywhere in the frame is accepted, and the
+    Book's address lookups (`meld(spellframe=..., binding_name=...)`, `find_spell_index`) miss the active version.
+    Second seam: `_apply_notch` repoints only the incoming version's key (`update_lookup`, unconditional), so
+    versions with different keys leave the outgoing key claimed by a parked spell, and the incoming key is taken
+    even when another active spell holds it. To be proven on the running code before anything is filed.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spellbook.py:5243-5498
+  - src/melder/aether/spellbook/spellbook.py:4096-4237
+  - src/melder/aether/spellbook/spellbook.py:4422-4563
+  - src/melder/aether/spellbook/spellbook.py:716-729
+  - src/melder/aether/spellbook/spellbook.py:1500-1621
+  - src/melder/aether/spellbook/spellbook.py:3906-4061
+  - src/melder/aether/spellbook/spellbook.py:5766-5782
+  - src/melder/aether/aetheric_frame/lookup_container.py:5-274
+  - src/melder/aether/aetheric_frame/aetheric_frame.py:1064-1112
+  - src/melder/aether/conduit/meld/meld.py:303-303
+  - src/melder/aether/conduit/meld/meld.py:2188-2270
+  - src/melder/aether/spellbook/spellbook.py:2334-2384
+  IMPACT: If it holds, it is structure wrong - a signature claim lost, or kept by a parked spell - on the loop the
+    owner describes: stage a version, try it, notch.
+  NEXT: Probe it in fresh worlds with the GIL off and on: the claim and the address lookups before and after
+    bind_inactive (after and before conjure), an index move, a parked cleanup_spell and a notch across keys.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8

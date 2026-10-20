@@ -19,7 +19,7 @@ class SpellSymbolicGraph(Cleanable):
 
     Identity
     --------
-    "spell_id" is again the spell's **version ID**:
+    "spell_id" is again the selected spell_id of the spell's index:
 
         "spell.spell_index.selected_spell_id"
 
@@ -84,7 +84,7 @@ class SpellSymbolicGraph(Cleanable):
             raise ValueError("spell_id must be a non-empty string.")
 
         self._lock: threading.RLock = threading.RLock()
-        # Same story: stored as _spell_id, semantics = version id.
+        # Same story: stored as _spell_id, semantics = the selected spell_id.
         self._spell_id: str = spell_id
         self._dependencies: List['SpellSymbolicDependency'] = dependencies or []
 

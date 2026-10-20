@@ -1,0 +1,35 @@
+FFFFFFF..                                                                [100%]
+=================================== FAILURES ===================================
+E   Failed: DID NOT RAISE RuntimeError
+tests/integration/melder/spellbook/test_direct_cleanup_refuses_active_member_with_parked_versions_integration.py:209: Failed: DID NOT RAISE RuntimeError
+E   Failed: DID NOT RAISE RuntimeError
+tests/integration/melder/spellbook/test_direct_cleanup_refuses_active_member_with_parked_versions_integration.py:225: Failed: DID NOT RAISE RuntimeError
+E   Failed: DID NOT RAISE RuntimeError
+tests/integration/melder/spellbook/test_direct_cleanup_refuses_active_member_with_parked_versions_integration.py:225: Failed: DID NOT RAISE RuntimeError
+E   AssertionError: Regex pattern did not match.
+      Expected regex: "^cleanup_spell: spell df94fb49994702ff427c80597f71d2323a9ddeb1af2c4ea0f5972888543f0001 is\\ the\\ active\\ member\\ of\\ a\\ multi\\-member\\ index,\\ and\\ disposing\\ it\\ would\\ leave\\ the\\ index's\\ parked\\ versions\\ without\\ an\\ active\\ one\\.\\ Notch\\ the\\ index\\ to\\ one\\ of\\ them,\\ dispose\\ them\\ with\\ cleanup_spell,\\ or\\ move\\ them\\ out\\ with\\ remove_from_spell_index\\ first\\."
+      Actual message: 'cleanup_spell: spell df94fb49994702ff427c80597f71d2323a9ddeb1af2c4ea0f5972888543f0001 is the active member of a multi-member index; notch away from it before disposing it.'
+tests/integration/melder/spellbook/test_direct_cleanup_refuses_active_member_with_parked_versions_integration.py:240: AssertionError: Regex pattern did not match.
+E   Failed: DID NOT RAISE RuntimeError
+tests/integration/melder/spellbook/test_direct_cleanup_refuses_active_member_with_parked_versions_integration.py:250: Failed: DID NOT RAISE RuntimeError
+E   Failed: DID NOT RAISE RuntimeError
+tests/integration/melder/spellbook/test_direct_cleanup_refuses_active_member_with_parked_versions_integration.py:266: Failed: DID NOT RAISE RuntimeError
+E   Failed: DID NOT RAISE RuntimeError
+tests/integration/melder/spellbook/test_direct_cleanup_refuses_active_member_with_parked_versions_integration.py:285: Failed: DID NOT RAISE RuntimeError
+=============================== warnings summary ===============================
+src/melder/__init__.py:199
+  src/melder/__init__.py:199: UserWarning: Python 3.14+ detected, but running in GIL-enabled mode.
+  melder is optimized for Python built with --disable-gil (PEP 703).
+  Performance may be degraded.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/integration/melder/spellbook/test_direct_cleanup_refuses_active_member_with_parked_versions_integration.py::test_direct_cleanup_of_an_active_member_with_parked_siblings_refuses
+FAILED tests/integration/melder/spellbook/test_direct_cleanup_refuses_active_member_with_parked_versions_integration.py::test_cleanup_and_remove_spell_refuses_a_member_with_parked_siblings[by_spell]
+FAILED tests/integration/melder/spellbook/test_direct_cleanup_refuses_active_member_with_parked_versions_integration.py::test_cleanup_and_remove_spell_refuses_a_member_with_parked_siblings[by_spell_id]
+FAILED tests/integration/melder/spellbook/test_direct_cleanup_refuses_active_member_with_parked_versions_integration.py::test_cleanup_spell_refusal_names_the_remedies
+FAILED tests/integration/melder/spellbook/test_direct_cleanup_refuses_active_member_with_parked_versions_integration.py::test_after_the_refusal_a_notch_away_lets_the_old_version_go
+FAILED tests/integration/melder/spellbook/test_direct_cleanup_refuses_active_member_with_parked_versions_integration.py::test_after_the_refusal_disposing_the_parked_version_lets_the_member_go
+FAILED tests/integration/melder/spellbook/test_direct_cleanup_refuses_active_member_with_parked_versions_integration.py::test_after_the_refusal_moving_the_parked_version_out_lets_the_member_go
+7 failed, 2 passed, 1 warning in 5.47s

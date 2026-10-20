@@ -292,6 +292,9 @@ def test_internal_depths_stay_off_the_root():
         # contract, nothing is none). Users never pass or construct it, so it was
         # never meant for the root; `spell.spellframe_kind` still reads it.
         "SpellframeKind",
+        # STORY-2026-10-15-release_managed_spell: the pool behind a managed spell is kernel machinery owned by its
+        # root's store; users give objects back through ReleaseManagedSpell or a lease, never the pool.
+        "ManagedSpellQuantity",
     ):
         assert name not in melder.__all__
         assert name not in vars(melder)
@@ -340,7 +343,7 @@ def test_pass_four_domain_nouns_are_loaded():
     Purpose:
         Workflow iteration (owner: think how a user/agent uses this):
         the public read surfaces hand out the system's two domain nouns -
-        spells (find_spell_by_id -> Spell) and the index keys of the
+        spells (find_spell_by_spell_id -> Spell) and the index keys of the
         spells mapping (SpellIndex) - so both types reach the root.
     Contract:
         Identity with the concrete-path classes; the init docstring
@@ -355,3 +358,29 @@ def test_pass_four_domain_nouns_are_loaded():
     assert melder.SpellIndex is SpellIndex
     assert "Workflow map" in melder.__doc__
     assert "__architecture__" in melder.__doc__
+
+
+def test_managed_spell_quantity_surface_is_loaded():
+    """
+    Purpose:
+        The managed lifetime's user-facing names reach the root (STORY-2026-10-15-release_managed_spell): the
+        mode enum a binding names, the registry users release through, the lease they hold, and the error a lease
+        raises when a pool refuses.
+    Contract:
+        Identity with the concrete-path objects; every name is in __all__.
+    """
+    from melder.aether.conduit.creations.managed_spell_lease import ManagedSpellLease
+    from melder.aether.conduit.creations.release_managed_spell import ReleaseManagedSpell
+    from melder.aether.spellbook.existence.managed_spell_mode import ManagedSpellMode
+    from melder.utilities.custom_exceptions.managed_spell_exhausted_error import (
+        ManagedSpellExhaustedError,
+    )
+
+    import melder
+
+    assert melder.ManagedSpellMode is ManagedSpellMode
+    assert melder.ReleaseManagedSpell is ReleaseManagedSpell
+    assert melder.ManagedSpellLease is ManagedSpellLease
+    assert melder.ManagedSpellExhaustedError is ManagedSpellExhaustedError
+    for name in ("ManagedSpellMode", "ReleaseManagedSpell", "ManagedSpellLease", "ManagedSpellExhaustedError"):
+        assert name in melder.__all__

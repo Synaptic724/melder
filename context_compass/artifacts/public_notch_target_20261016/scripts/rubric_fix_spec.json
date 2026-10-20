@@ -1,0 +1,10 @@
+[
+  {"path": "system_docs/src_architecture.md",
+   "old": "spellbook_creation_system.py:1253-1292",
+   "new": "spellbook_creation_system.py:1282-1329",
+   "count": 2},
+  {"path": "system_docs/src_architecture.md",
+   "old": "per-component contract. Open for the owner: whether `add_to_spell_index` and `remove_from_spell_index` take the\nsame keyword.\n",
+   "new": "per-component contract. The rubric pass repointed the two `check_system_state` citations, which had drifted 29\nlines above the method since earlier lanes (it is at spellbook_creation_system.py:1282-1329). Open for the owner:\nwhether `add_to_spell_index` and `remove_from_spell_index` take the same keyword.\n",
+   "count": 1}
+]

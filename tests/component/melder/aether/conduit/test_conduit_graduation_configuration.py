@@ -83,7 +83,7 @@ def test_upgrade_accepts_local_configuration_and_runs_all_configured_hooks() -> 
         assert bind_calls[0] is GraduatedService
         assert bind_calls[1] is bind_calls[2]
         assert bind_calls[1]._spellbook is world.child._spellbook
-        assert world.book.find_spell_by_id(bind_calls[1].spell_id) is None
+        assert world.book.find_spell_by_spell_id(bind_calls[1].spell_id) is None
     finally:
         world.cleanup()
 

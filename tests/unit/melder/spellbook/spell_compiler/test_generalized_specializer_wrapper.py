@@ -372,3 +372,23 @@ class TestBuilderDeclineContract:
             spell_lookup={},
             generic_inner_executor=lambda meld: meld,
         ) is None
+
+
+def test_managed_row_keeps_the_plain_door() -> None:
+    """A graph with a managed row is served by the site plan: the specializer keeps the plain door (S5)."""
+    def plain_door(caller: Any) -> Any:
+        return ("plain", caller)
+
+    rows = (
+        _row("u1", "unique"),
+        _row("m1", "managed_spell_quantity"),
+        _row("root", "many", [("dep", ["u1"]), ("pooled", ["m1"])]),
+    )
+    result = _install(
+        rows=rows,
+        route_key="many",
+        plain_door=plain_door,
+        spell_lookup={"u1": _stub_spell()},
+        root_spell=_stub_root_spell(),
+    )
+    assert result is plain_door

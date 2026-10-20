@@ -1,0 +1,31 @@
+- DATETIME: {ts}
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: The graph at 0.2.8253, extracted on 3.14 with --strict (nothing skipped) into a scratch copy of the repo's
+    descriptors: fix #1's eleven descriptors and `__version__.json` differ from the repo's only in the mechanical
+    tier (source and span hashes, the renamed public methods, two TYPE_CHECKING imports and one method more in each
+    command system, one line move), never in an authored field. Eight class nodes carry stamps equal to their spans
+    at 0.2.8252, so fix #1's diff of each file, read whole, is all that separates their prose from today's source:
+    Spellbook, Conduit, ConduitWard, Spell, GraftRunner, RestoreEngine, StaticCommandSystem and
+    AmbiguousProviderStrategy. CommandSystem's stamp predates 0.2.8252; its role, six responsibilities, state and
+    two edges were read against today's source (init and cleanup, the two conduit resolvers, the result binding)
+    and hold. TransferOfOwnership's stamp predates 0.2.8252 and SpellIndex's matches neither span, so both stay
+    SEMANTICS_STALE; SpellIndex keeps only its ULID, lock, selected spell_id and member set, so its authored edges
+    "holds Spell" and "borrows Spellbook" (attachments it would update) describe nothing it keeps - pre-existing,
+    for the owner. 69 other descriptors drift from source through other lanes (the 0.2.8252 wording lane's files,
+    the build-asset manifests) and are left alone; the walker counts melder.__version__ as AUTHORED.
+  EVIDENCE:
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/graph_fix1_extract_scratch.txt:1-46
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/graph_fix1_descriptor_diffs.txt:1-43
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/graph_fix1_stamp_states.txt:1-13
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/graph_fix1_walker_scratch.txt:1-238
+  - src/melder/nexus/rift/command_system/command_system.py:102-294
+  - src/melder/aether/spellbook/bind/spell_index.py:83-116
+  IMPACT: Fix #1's prose goes in as one responsibility each on Spellbook (and its r16 says spell_id), Conduit,
+    ConduitWard, CommandSystem, StaticCommandSystem and TransferOfOwnership; nine nodes are accepted, two stay
+    stale, and only these twelve descriptors are installed before the graph is reassembled.
+  NEXT: Author the six responsibilities in the scratch descriptors, accept the nine nodes there, re-serialize with
+    indent=1, install the twelve files and reassemble.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8

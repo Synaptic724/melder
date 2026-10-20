@@ -13,8 +13,8 @@ Prerequisites: [world boundaries](worlds.md), [Nexus setup](nexus.md), and
 
 Follow the complete linked examples in this order:
 
-1. Build two isolated cache worlds with distinct binding identities. Compare the
-   instances and verify each world's reuse.
+1. Build two isolated cache worlds, each binding its own cache class at one
+   address. Compare the instances and verify each world's reuse.
 2. Open a static Rift and inspect its initial state. No assigned frames is a valid
    starting state, not an instruction to substitute the default frame.
 3. Use the target-attachment example to opt a frame into observation and attach

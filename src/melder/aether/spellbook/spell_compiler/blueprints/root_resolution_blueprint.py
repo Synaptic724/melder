@@ -24,8 +24,8 @@ class RootResolutionBlueprint(Cleanable):
     Contract:
         - `root_spell_id` is the versioned identity of the root spell at
           blueprint-build time.
-        - `root_lineage_id` is optional lineage metadata for DevOps/change-
-          control use; graph semantics remain version-id-based.
+        - `root_lineage_id` is the root spell's optional SpellIndex id, for DevOps/change-
+          control use; graph semantics remain spell_id-based.
         - The blueprint owns its DAG and its PathRegistry.
         - Consumers should treat exposed list/index data as read-only, even
           when accessors return copies.
@@ -55,7 +55,7 @@ class RootResolutionBlueprint(Cleanable):
             root_spell_id:
                 Versioned spell id for the root node this blueprint represents.
             root_lineage_id:
-                Optional lineage id for DevOps/change-control consumers.
+                Optional SpellIndex id of the root spell, for DevOps/change-control consumers.
             dag:
                 Owned deep DAG for the root spell's reachable dependency
                 closure.
@@ -145,7 +145,7 @@ class RootResolutionBlueprint(Cleanable):
     @property
     def root_lineage_id(self) -> Optional[str]:
         """
-        Return the optional lineage id for the root spell.
+        Return the optional SpellIndex id for the root spell.
 
         This value is metadata for DevOps/change-control consumers; execution
         and targeting are still key off `root_spell_id`.
@@ -158,7 +158,7 @@ class RootResolutionBlueprint(Cleanable):
         """
         Return the owned deep DAG for this root.
 
-        The DAG nodes are keyed by spell version id and represent the full
+        The DAG nodes are keyed by spell_id and represent the full
         reachable dependency closure rooted at `root_spell_id`.
         """
         self.check_cleaned()

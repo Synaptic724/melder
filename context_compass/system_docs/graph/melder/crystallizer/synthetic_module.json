@@ -211,8 +211,6 @@
  "imports": {
   "hashlib": "hashlib",
   "importlib": "importlib",
-  "importlib.abc": "importlib.abc",
-  "importlib.util": "importlib.util",
   "linecache": "linecache",
   "sys": "sys",
   "threading": "threading",

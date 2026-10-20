@@ -1,0 +1,5 @@
+python 3.14.7 gil_enabled=False melder=0.2.8256
+tree /tmp/m0_mq/wt; classes 29; repeats 20
+bind lane: median 7.780 ms, mean 7.851 ms, min 7.344 ms (20 cycles)
+conjure lane: median 12.616 ms, mean 12.593 ms, min 12.041 ms (20 cycles)
+one bind: median 248.9 us over 580 binds

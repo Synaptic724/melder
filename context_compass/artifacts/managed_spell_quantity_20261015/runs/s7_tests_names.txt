@@ -1,0 +1,511 @@
+== NEW ==
+tests/unit/melder/aether/conduit/conduit_ward/transfer/test_transfer_of_ownership_owner_stamps.py lines=483 tests=19 classes=-
+  doc: Unit tests: the owner stamp follows a lineage through an ownership transfer (STORY-2026-10-15-managed_ownership_transfer).
+    test_the_flip_stamps_the_active_member_onto_the_target_store -- Owner id, name and store are the target's, and the target store holds the version's pool.
+    test_the_stamp_carries_the_owner_root_gate_controller_and_its_books_caching_posture -- The flip stamps with the target's gate controller and caching posture; the rollback with the source's.
+    test_a_rollback_after_the_flip_stamps_the_active_member_back_onto_the_source -- The member names the source's store again, and the source's pool is the one it had.
+    test_a_rollback_after_the_flip_discards_and_cleans_the_pool_the_stamp_composed -- The pool the target's stamp composed leaves the target store and is cleaned.
+    test_a_rollback_after_the_flip_keeps_a_pool_the_target_already_held -- A pool the target held before the stamp is never discarded or cleaned.
+    test_a_rollback_after_the_flip_stamps_back_a_non_managed_member_without_a_discard -- A `unique` member is stamped back onto the source; no pool is composed or discarded.
+    test_a_stamp_that_raises_is_still_stamped_back_and_its_pool_discarded -- The stamp-back is registered before the stamp and the discard after it even when it raised.
+    test_migrate_restamps_a_stamped_parked_member_onto_the_target -- The parked member names the target's store, and the target store holds its version's pool.
+    test_migrate_leaves_a_parked_member_staged_before_conjure_unstamped -- A member that never carried a stamp moves as before: maps and owner id, no store, no pool.
+    test_migrate_restamps_parked_members_of_every_existence -- `unique` parked members are stamped onto the target's store too; nothing composes a pool for them.
+    test_a_rollback_after_migrate_stamps_parked_members_back_onto_the_source -- Every re-stamped parked member names the source's store again and is back in the source Book.
+    test_a_rollback_after_migrate_discards_the_parked_pools_the_stamps_composed -- The composed target pools are discarded and cleaned; the source's parked pools are untouched.
+    test_a_rollback_after_migrate_keeps_a_parked_pool_the_target_already_held -- A parked version's pool the target held before the stamp stays in the target, uncleaned.
+    test_a_parked_stamp_that_raises_is_rolled_back_with_the_members_before_it -- The second member's stamp raises: both members are stamped back and both composed pools discarded.
+    test_a_successful_move_leaves_every_stamp_and_pool_on_the_target -- After a move every stamped member names the target's store, which holds the source's pools.
+    test_a_successful_transfer_without_a_move_gives_the_parked_member_a_fresh_target_pool -- No move: the parked member names the target's store and its fresh pool; the source keeps its old one.
+    test_a_failed_move_leaves_every_stamp_and_pool_with_the_source -- Rows and stamps go back: the source holds its own pool objects, uncleaned; the target holds none.
+    test_a_failed_transfer_without_a_move_discards_the_composed_pools -- No move: the composed target pools (active and parked) are discarded and cleaned; the source's stay.
+    test_a_failed_move_puts_the_rows_back_before_stamping_back -- Rollback order: each member's rows return to the source before its stamp-back runs.
+tests/unit/melder/aether/conduit/creations/test_creations_discard_managed_quantity.py lines=152 tests=11 classes=-
+  doc: Unit tests of `Creations.discard_managed_quantity` (STORY-2026-10-15-managed_ownership_transfer, S6).
+    test_discard_removes_the_pool_it_is_given -- The pool under the id leaves the store and the call answers True.
+    test_discard_unregisters_the_pool -- A discarded pool is no longer routable: the registry lists nothing for the class and a release refuses.
+    test_discard_leaves_the_pool_to_the_caller -- The pool is not cleaned: its idle object is not disposed and it still takes an object back.
+    test_discard_refuses_another_pool_under_the_id -- A pool that is not the one the store holds under the id is refused; the store's pool stays registered.
+    test_discard_answers_false_when_the_store_holds_no_pool -- Nothing under the id: nothing to discard.
+    test_discard_answers_false_for_a_pool_held_under_another_id -- The pool is matched under the id the caller names, not wherever it sits.
+    test_a_second_discard_answers_false -- Discarding is once: the second call finds no pool under the id.
+    test_discard_touches_no_object_or_other_pool -- Objects, disposal records and the pools of other ids are untouched.
+    test_ensure_after_a_discard_composes_a_new_pool -- The id is free again: the next stamp composes and registers a fresh pool.
+    test_discard_on_a_cleaned_store_raises -- A retired store refuses the call, as ensure does; its cleanup already gave its pools up.
+    test_concurrent_discards_remove_the_pool_once -- Racing callers: exactly one removes the pool; the others answer False.
+tests/unit/melder/aether/conduit/creations/test_creations_managed_quantities.py lines=393 tests=26 classes=-
+  doc: Unit tests of the managed pools in a Creations store (STORY-2026-10-15-managed_quantity_pool, S3).
+    test_ensure_builds_one_pool_owned_by_the_store -- The pool is composed from the Spell and owned by the store's conduit.
+    test_ensure_is_idempotent -- A second stamp of the same version keeps its pool.
+    test_ensure_points_a_kept_pool_at_the_newest_spell_object -- A rebind under the same content-stable id meets the old pool, which then describes the new Spell.
+    test_ensure_refuses_a_non_managed_spell -- No pool for another Existence; the map stays empty.
+    test_ensure_refuses_a_cleaned_store -- A torn-down store takes no pool.
+    test_a_pool_is_never_a_creation -- Resolution reads `_creations` only, and a pool never lands there.
+    test_get_managed_quantity_answers_none_for_an_unknown_id -- No pool, no answer.
+    test_purge_of_a_managed_spell_returns_zero_and_touches_nothing -- Purge is not part of the managed design: the pool and its idle objects stay.
+    test_cleanup_cleans_pools_before_the_disposable_registry -- Pooled objects may hold the store's uniques, so the pools go first.
+    test_cleanup_cleans_the_newest_pool_first -- Pools follow the store's newest-first teardown.
+    test_cleanup_raises_pool_failures_in_the_stores_group -- A failing pooled object is one chained RuntimeError in the store's group, beside the registry's.
+    test_extract_hands_the_pool_over_as_a_managed_row -- The row carries the same pool object; the store gives it up.
+    test_restore_installs_the_moved_pool_with_its_idle_objects -- The target store takes the same pool object; its idle objects and count travel with it.
+    test_restore_cleans_the_pool_it_replaces -- The empty pool a transfer flip composed is retired when the moved pool arrives.
+    test_restore_of_the_pool_already_held_cleans_nothing -- A row carrying the store's own pool is a no-op for that pool.
+    test_restore_raises_the_replaced_pools_failures_after_installing -- The moved pool is in place even when retiring the replaced one failed.
+    test_reusable_clears_never_touch_a_pool -- Only root stores hold pools and roots never clear their store this way; a clear leaves pools alone.
+    test_ensure_registers_the_pool_under_its_class_and_the_stores_root -- A store that takes a pool registers it, so a release of its class reaches it.
+    test_a_second_stamp_registers_nothing_new -- Ensure is idempotent, and so is its registration.
+    test_a_rebind_bringing_another_class_moves_the_registration -- The kept pool is re-keyed under the new class object.
+    test_extract_unregisters_the_pool_it_gives_up -- A pool in flight between stores is not routable.
+    test_restore_registers_the_moved_pool_under_the_restoring_root -- The pool is routable again, held by the store that took it.
+    test_restore_unregisters_the_pool_it_replaces -- The composed pool leaves the registry; releases reach the moved one.
+    test_restore_of_a_pool_the_store_already_holds_keeps_it_registered -- A row carrying the store's own pool changes nothing in the registry.
+    test_cleanup_unregisters_every_pool -- A torn-down root leaves no routable pool behind.
+    test_a_store_cleaned_after_the_registry_is_gone_still_cleans -- Teardown does not need the registry: with it gone, there is nothing to unregister from.
+tests/unit/melder/aether/conduit/creations/test_managed_spell_lease.py lines=197 tests=10 classes=-
+  doc: Unit tests of ManagedSpellLease, one leased object and the pool it goes back to (STORY-2026-10-15-release_managed_spell).
+    test_the_lease_carries_its_object_until_released -- `object` is the leased object; a fresh lease is not released.
+    test_release_puts_the_object_back_once -- The first release pools the object; the lease reports it.
+    test_a_second_release_does_nothing -- Releasing twice never pools the object twice.
+    test_the_object_is_refused_after_release -- A released lease no longer hands out the pooled object.
+    test_the_with_block_gets_the_object_and_releases_it_on_exit -- `__enter__` returns the object; leaving the block releases it.
+    test_the_with_block_releases_when_it_raises_and_lets_the_error_through -- An error in the block still gives the object back, and is never suppressed.
+    test_exit_never_suppresses -- `__exit__` answers a falsy value even for an error.
+    test_a_release_whose_reset_raises_still_ends_the_lease -- The pool destroys the object and the error propagates; a second release does nothing.
+    test_a_release_into_a_torn_down_pool_ends_the_lease_and_raises -- The pool's torn-down error reaches the holder; the object stays the holder's.
+    test_a_with_block_over_an_already_released_lease_does_not_release_again -- Entering a released lease refuses, so nothing is pooled twice.
+tests/unit/melder/aether/conduit/creations/test_managed_spell_quantity.py lines=913 tests=62 classes=-
+  doc: Unit tests of ManagedSpellQuantity, the pool of one managed spell version (STORY-2026-10-15-managed_quantity_pool, S3).
+    test_elastic_default_keeps_twenty_and_stretches_to_its_limit -- Elastic: the baseline is min(20, limit), the ceiling the limit, like the kernel pools' 20 / 256.
+    test_elastic_with_a_small_limit_is_a_fixed_capacity_pool -- Elastic with a limit at or below 20 keeps exactly `limit` idle objects.
+    test_limited_quantity_is_fixed_at_its_limit -- limited_quantity holds at most `limit` objects, so its idle band is fixed at the limit.
+    test_queue_is_fixed_at_its_limit -- queue is fixed at its limit too.
+    test_a_non_managed_spell_is_refused -- Only a managed spell has a pool.
+    test_the_pool_describes_its_spell_and_owner -- Identity, options and the disposal names come from the Spell; the owner from the store.
+    test_elastic_reserve_counts_a_place_and_returns_none -- Each elastic miss reserves one place for the plan to build into.
+    test_elastic_never_refuses -- Elastic builds past its limit: the limit caps idle objects, not live ones.
+    test_elastic_reserve_records_pressure_so_a_burst_is_kept -- A miss within the settle time stretches the target: a burst of 25 is kept up to the limit of 30.
+    test_elastic_trim_above_the_limit_disposes_the_oldest -- Under pressure only idle objects above the limit are trimmed, oldest first, one per return here.
+    test_elastic_decay_after_settling_trims_back_toward_twenty -- Once no miss has happened for the settle time, a return decays the target by 10% and trims the surplus.
+    test_fixed_capacity_elastic_evicts_the_oldest_on_overflow -- An elastic pool with limit 2 destroys the oldest idle object when a third comes back.
+    test_limited_reserve_counts_places_up_to_the_limit -- Below the limit a miss reserves a place.
+    test_limited_refuses_at_the_limit_with_nothing_idle -- At the limit with every object out, a miss raises before anything is built.
+    test_limited_at_the_limit_serves_an_object_returned_meanwhile -- A release racing the plan's empty pop is served by reserve instead of a refusal.
+    test_limited_never_trims_its_idle_objects -- Idle objects of a fixed-capacity mode never exceed the count, so nothing is evicted.
+    test_queue_reserve_counts_places_below_the_limit -- Below the limit a queue miss reserves a place without waiting.
+    test_queue_at_the_limit_takes_an_idle_object_at_once -- At the limit an idle object is handed out with no wait.
+    test_queue_raises_at_its_timeout_with_nothing_free -- A waiter that is never served raises once its timeout has passed, and the count does not move.
+    test_queue_waiter_is_served_by_a_release -- A release hands the object to a waiting lease: the same object, no build.
+    test_queue_waiter_gets_a_place_when_an_object_is_destroyed -- Destroying an object frees its place; the waiter then builds into it.
+    test_queue_waiter_gets_a_place_when_a_build_is_abandoned -- A failed build gives its place back and wakes a waiter.
+    test_queue_waiter_is_woken_by_cleanup_and_raises -- A teardown wakes every waiter; each raises the torn-down error instead of hanging.
+    test_reserve_after_cleanup_raises_the_torn_down_error -- Every mode refuses a lease from a torn-down pool.
+    test_put_back_makes_the_object_the_next_lease -- A release appends; the next lease pops the newest (warmest) object, with no build.
+    test_put_back_runs_the_reset_names_in_order -- Each reset name runs once, in the bound order, before the object is idle again.
+    test_put_back_without_reset_names_calls_nothing -- A pool without resets returns objects as they are.
+    test_put_back_never_disposes -- Disposal runs only when the pool destroys an object, never on a release.
+    test_a_raising_reset_destroys_the_object_and_propagates -- The object is disposed, its place freed, the reset error raised as is; later resets do not run.
+    test_a_raising_reset_with_a_raising_disposal_raises_both -- When the disposal fails too, one ExceptionGroup carries the reset error and the chained disposal error.
+    test_a_raising_reset_disposes_the_children_recorded_for_the_object -- The destroyed object's recorded children are disposed with it, newest first.
+    test_put_back_after_cleanup_raises_and_leaves_the_object_alone -- A release into a torn-down pool raises; no reset or disposal runs on the caller's object.
+    test_release_is_put_back -- The base pool's `release` verb is the same release.
+    test_the_pool_never_builds -- The plan builds on a miss; the pool's own factory refuses.
+    test_the_base_acquire_is_refused -- Leasing goes through the plan (an idle pop, else reserve), never the base acquire.
+    test_destroy_disposes_the_object_then_its_children_newest_first -- destroy_object runs the object's disposal methods, then its recorded children's, newest child first.
+    test_adopt_with_no_children_records_nothing -- Only objects with disposal-bearing children get a record.
+    test_adopt_keeps_an_earlier_record_under_a_reused_id_for_teardown -- An older record under the same id belonged to an object dropped while out; teardown still disposes it.
+    test_destroy_failures_raise_one_group_and_every_method_runs -- A failing disposal method does not stop the others: one chained RuntimeError per failing method.
+    test_destroy_of_an_uncounted_object_never_takes_the_count_below_zero -- Identity is not tracked; a stray object only floors the count at zero.
+    test_abandon_frees_the_place_and_disposes_the_children -- A failed build gives its place back and disposes the children it built, newest first.
+    test_abandon_turns_disposal_failures_into_notes_on_the_build_error -- The build error stays the error; a child that fails to dispose adds a note to it.
+    test_abandon_never_takes_the_count_below_zero -- An abandon without a reservation floors the count at zero.
+    test_adopt_into_a_torn_down_pool_disposes_and_raises -- A build that finishes after teardown: its object and children are disposed and the meld learns why.
+    test_cleanup_disposes_idle_objects_then_the_children_of_objects_out_then_orphans -- Idle objects newest first, each with its children; then the records of objects out; then orphans.
+    test_cleanup_aggregates_every_failure_into_one_group -- Every method of every object runs; each failure is one chained RuntimeError in the group.
+    test_cleanup_is_idempotent -- A second cleanup disposes nothing again.
+    test_cleanup_leaves_objects_that_are_out_to_their_holders -- An object out is the agent's: teardown does not dispose it.
+    test_after_cleanup_describe_and_the_spell_refuse_but_identity_stays_readable -- The live surface refuses; identity and policy scalars remain for the torn-down errors.
+    test_the_pool_keeps_no_reference_to_an_object_out -- Identity is not tracked: an object out is referenced only by its holder (a children record keys by id).
+    test_describe_reports_the_mode_the_numbers_and_the_identity -- One detached snapshot per pool: what an agent reads to see what is out and what is idle.
+    test_queue_deadline_is_taken_once_across_wakeups -- Wake-ups that free nothing do not restart the wait: the waiter raises at its original deadline.
+    test_a_raising_reset_in_a_queue_pool_raises_for_the_releaser_and_frees_a_place_for_a_waiter -- The releaser gets the reset error; the waiter builds into the place the destroyed object freed.
+    test_a_raising_reset_in_a_limited_pool_frees_the_place -- After the failed object is destroyed, the next lease at the limit builds instead of being refused.
+    test_an_elastic_miss_after_a_quiet_period_stretches_again -- Decay lowers the target; the next burst's misses open a new pressure window and the burst is kept.
+    test_an_elastic_eviction_disposes_the_evicted_objects_children -- A trim destroys the object with its recorded children, newest child first.
+    test_an_eviction_that_fails_raises_from_the_release_and_keeps_the_returned_object -- A destroy failure during a trim surfaces from that release; the object just released stays idle.
+    test_destroyed_children_are_not_disposed_again_at_teardown -- A record leaves with its object: teardown does not dispose those children a second time.
+    test_children_of_an_object_out_die_once_at_teardown_and_its_late_release_raises -- Teardown disposes the out object's children; its later release raises and disposes nothing more.
+    test_cleanup_of_an_empty_pool_retires_it_quietly -- Nothing to dispose: no error, the pool is retired, and leases are refused.
+    test_managed_class_is_the_bound_class_and_survives_cleanup -- The pool keeps the class the registry keys on, readable after teardown.
+    test_a_rebind_moves_the_managed_class -- A rebind under the same id that brings another class object re-points the key.
+tests/unit/melder/aether/conduit/creations/test_managed_spell_quantity_multithreaded.py lines=238 tests=5 classes=-
+  doc: Multithreaded tests of ManagedSpellQuantity (STORY-2026-10-15-managed_quantity_pool, S3).
+    test_limited_quantity_never_exceeds_its_limit_under_eight_threads -- Objects alive and objects out stay at or below the limit; refusals are the only failures.
+    test_queue_never_hangs_and_never_exceeds_its_limit -- With a generous timeout every lease is served by a build below the limit or by a release.
+    test_elastic_count_matches_its_idle_objects_once_everything_is_back -- Elastic never refuses; with at most eight out at once nothing is trimmed and every object comes back.
+    test_cleanup_wakes_every_queue_waiter -- Six waiters blocked on a full queue pool all raise the torn-down error when the root tears it down.
+    test_releases_racing_a_queue_waiter_hand_over_each_object_once -- Concurrent releases and waiting leases: every lease gets an object no other lease holds at the same time.
+tests/unit/melder/aether/conduit/creations/test_release_managed_spell.py lines=544 tests=42 classes=-
+  doc: Unit tests of ReleaseManagedSpell, the class-keyed registry of managed pools (STORY-2026-10-15-release_managed_spell, S4).
+    test_the_registry_is_one_process_singleton_owned_by_aether -- Every construction returns the instance Aether built and holds.
+    test_a_bare_first_construction_without_aether_is_refused -- Only Aether creates the registry; a refused construction leaves a later proper one possible.
+    test_aether_teardown_cleans_the_registry_and_the_next_aether_builds_a_fresh_one -- Aether cleans what it hosts; the next boot hosts a new registry.
+    test_the_reset_hook_cleans_the_instance_and_clears_the_singleton -- The test reset cleans the live registry; the next bare construction no longer finds it.
+    test_the_reset_hook_without_an_instance_does_nothing -- Resetting twice is harmless.
+    test_cleanup_is_idempotent_and_clears_the_singleton -- A second cleanup does nothing; the cleaned instance is never handed out again.
+    test_live_instance_answers_the_aether_owned_registry_and_none_once_cleaned -- The stores' lookup finds the live registry, and nothing once it is gone.
+    test_a_cleaned_registry_refuses_every_verb_but_unregister -- Use after cleanup raises the cleaned error; unregister, part of teardown, does nothing.
+    test_cleanup_never_cleans_a_registered_pool -- Pools belong to their stores; the registry only forgets them.
+    test_a_registered_pool_takes_releases_of_its_class -- One dict get by class reaches the pool.
+    test_register_is_idempotent -- Registering a pool twice lists it once.
+    test_register_records_the_root_that_holds_the_pool_now -- A restore into another root re-registers the same pool under that root.
+    test_register_rekeys_a_pool_whose_class_changed -- A rebind under the same id that brings another class object moves the pool to that class.
+    test_register_refuses_a_pool_torn_down_with_its_root -- A store never hands the registry a retired pool.
+    test_unregister_forgets_the_pool -- After a store gives the pool up, its class is no longer managed anywhere.
+    test_unregister_is_idempotent_and_ignores_an_unknown_pool -- Unregistering twice, or a pool never registered, does nothing.
+    test_unregister_keeps_the_other_pools_of_the_class -- Two versions of one class: giving one up leaves the other routable.
+    test_release_runs_the_pools_resets_and_pools_the_object -- The fast path is the pool's own put_back: resets in order, then idle.
+    test_release_of_an_unmanaged_class_names_the_remedy -- No pool for the class: bind it as managed, or its root is gone.
+    test_release_never_routes_a_subclass_to_its_bases_pool -- The key is the exact class object.
+    test_release_propagates_a_raising_reset -- The pool destroys the object and the reset's error reaches the caller.
+    test_release_into_a_pool_torn_down_while_registered_raises_the_pools_error -- A release racing teardown reaches the retired pool, which says the object is the caller's.
+    test_release_with_a_matching_spell_id_takes_the_one_pool -- A filter on a one-pool class still releases.
+    test_release_picks_a_pool_by_spell_id -- Two versions: the spell id says which pool.
+    test_release_with_a_spell_id_no_pool_carries_names_the_pools -- A filter that matches nothing lists what is there.
+    test_release_refuses_a_spell_id_that_is_not_a_string -- The filter must be a version id.
+    test_release_refuses_a_conduit_that_is_not_a_conduit -- The filter must be a root conduit or one of its lessers.
+    test_release_prefers_the_selected_version_of_an_index -- Two versions of one index, no filter: the release goes to the version its index selects.
+    test_a_notch_moves_the_preference -- The preference follows the index's selection.
+    test_two_selected_versions_are_ambiguous_and_the_error_names_each_pool -- Two binding names, each selected in its own index: the caller must pick.
+    test_no_selected_version_among_several_is_ambiguous -- Versions whose spells were cleaned select nothing; the caller must pick.
+    test_a_default_binding_is_named_default_in_the_error -- A pool of the default binding reads binding=default.
+    test_managed_returns_a_lease_on_the_resolved_pool -- The lease releases into the pool the registry resolved.
+    test_managed_resolves_with_the_filters -- The same resolver: a spell id picks the pool.
+    test_managed_refuses_an_unmanaged_class_before_any_lease_exists -- Resolution happens when the lease is made.
+    test_release_all_releases_every_object -- Each object goes back.
+    test_release_all_releases_the_rest_and_raises_the_failures_together -- A failing object does not stop the others; one group carries every failure.
+    test_release_all_of_nothing_does_nothing -- An empty iterable releases nothing and raises nothing.
+    test_release_all_passes_the_filters_through -- Every object is resolved with the same keywords.
+    test_describe_answers_one_snapshot_per_pool_with_where_it_lives_and_whether_it_is_selected -- The pool's own snapshot, plus the holding root and the selected-version flag.
+    test_describe_of_a_class_with_no_pool_is_empty -- No pool is not an error for a read.
+    test_describe_refuses_what_is_not_a_class -- The key is a class object.
+tests/unit/melder/aether/conduit/creations/test_release_managed_spell_multithreaded.py lines=238 tests=5 classes=-
+  doc: Concurrency tests of ReleaseManagedSpell (STORY-2026-10-15-release_managed_spell, S4).
+    test_eight_threads_releasing_into_one_pool_lose_nothing -- Every released object is idle afterwards.
+    test_releases_keep_routing_while_another_class_churns_registrations -- Republishing the maps for one class never hides another class's pool from a release.
+    test_concurrent_registrations_of_one_class_are_all_kept -- No registration is lost when eight threads publish at once.
+    test_concurrent_unregistrations_leave_nothing_behind -- Every pool removed by eight threads at once is gone, and nothing else.
+    test_register_racing_the_registrys_cleanup_either_lands_or_raises_the_cleaned_error -- A registration that loses the race to teardown raises plainly; nothing hangs.
+tests/unit/melder/aether/conduit/meld/test_meld_doors_managed_spell_quantity.py lines=174 tests=8 classes=-
+  doc: Unit tests of the meld doors' store readers for a managed spell (STORY-2026-10-15-managed_quantity_pool, S3).
+    test_conduit_purge_of_a_managed_spell_returns_zero_from_the_callers_store -- No authority check and no disposal: purge has nothing to retire for a managed spell.
+    test_spellspace_purge_keeps_refusing_a_managed_spell -- The SpellSpace door purges only its own lifetimes.
+    test_meld_existing_spell_refuses_a_managed_spell -- There is no single stored object to return for a pool.
+    test_conduit_probe_reports_the_owner_pool -- Live while the pool's objects are alive; the count is idle plus out.
+    test_conduit_probe_reports_an_empty_pool_as_not_live -- A pool that built nothing yet is not live.
+    test_conduit_probe_of_an_unstamped_managed_spell_is_not_live -- A version with no owner store yet (parked before conjure) has no pool to read.
+    test_spellspace_probe_reports_the_owner_pool -- The SpellSpace door reads the same pool: managed objects are root-owned, never space-local.
+    test_spellspace_probe_of_an_empty_pool_is_not_live -- No object built, not live, from the SpellSpace door too.
+tests/unit/melder/aether/test_static_rooms_managed_spell_quantity.py lines=100 tests=3 classes=-
+  doc: Unit tests: the static rooms treat a managed spell like `many` (STORY-2026-10-15-managed_quantity_pool, S3).
+    test_static_access_to_a_managed_spell_is_an_unsupported_static_existence -- Asking a static room for a managed spell's object names the existence instead of probing a store.
+    test_static_status_of_a_managed_spell_reports_it_unsupported -- The status payload says why a managed spell is never available statically.
+    test_a_managed_spell_is_never_a_live_static_spell -- The static viewer lists only spells with one stored object; a live managed pool does not make one.
+tests/unit/melder/crystallizer/test_spell_crystal_managed_options.py lines=150 tests=8 classes=-
+  doc: Unit: the spell crystal records a managed spell's options (STORY-2026-10-15-managed_bind_options, S2; record 4.2.0).
+    test_a_managed_crystal_records_the_options_as_plain_values -- describe() carries the mode's name, the limit, the timeout and the reset names in order.
+    test_other_crystals_carry_no_managed_keys -- A non-managed spell's payload is unchanged: none of the four keys, and no options.
+    test_managed_spell_options_is_a_detached_copy -- The property returns the recorded options; changing the returned list does not reach the crystal.
+    test_managed_spell_options_refuses_a_cleaned_crystal -- Like every focused read, the property raises once the crystal is cleaned.
+    test_managed_bind_options_replays_a_recorded_payload -- A managed payload becomes the four bind keywords; the mode stays a name for bind to convert.
+    test_managed_bind_options_passes_no_resets_as_none -- An empty recorded reset list replays as None (no resets), like disposal names.
+    test_managed_bind_options_is_empty_without_a_recorded_mode -- A payload of another existence, or a 4.1 record, replays no managed keyword at all.
+    test_record_version_is_4_2_and_reads_4_1_records -- 4.2.0 adds keys (a minor); 4.1 and 4.2 payloads stay readable.
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py lines=590 tests=35 classes=-
+  doc: Unit: the four managed bind options at the Bind seam (STORY-2026-10-15-managed_bind_options, S2).
+    test_managed_spell_mode_has_three_members_whose_str_is_the_bare_name -- The mode vocabulary is elastic, limited_quantity and queue; str() round-trips through the enum by name.
+    test_managed_binding_without_options_is_elastic_with_256_idle_objects -- A managed binding with no options gets the elastic mode, the 256 idle cap, no timeout and no resets.
+    test_mode_is_accepted_as_member_or_name_in_any_case -- The member and its name (any case) select the same mode.
+    test_elastic_limit_is_the_idle_cap_when_given -- An explicit elastic limit replaces the 256 default.
+    test_queue_mode_keeps_limit_and_stores_the_timeout_as_float -- A queue binding keeps its limit and its timeout in seconds as a float.
+    test_reset_methods_keep_their_order_as_a_tuple -- Reset names are kept in the order given, as a tuple, whether a list or a tuple was passed.
+    test_other_existences_carry_no_managed_options -- A binding of any other existence hands the Spell None, None, None and an empty reset tuple.
+    test_an_option_on_another_existence_is_refused -- Any managed option on a non-managed binding raises ValueError naming the option and the remedy.
+    test_managed_refuses_a_function_or_method -- A callable target cannot be managed: TypeError says classes only, before the callable rules run.
+    test_managed_refuses_an_existing_object -- An existing object cannot be managed: TypeError says classes only.
+    test_unknown_mode_name_is_refused_with_the_three_names -- An unknown mode name raises ValueError listing the valid names.
+    test_mode_of_another_type_is_refused -- A mode that is neither a ManagedSpellMode member nor a string raises TypeError.
+    test_limited_and_queue_modes_require_a_limit -- limited_quantity and queue have no default limit.
+    test_limit_must_be_an_int -- A bool, a string or a float limit raises TypeError.
+    test_limit_must_be_at_least_one -- A limit below 1 raises ValueError naming it.
+    test_a_timeout_outside_the_queue_mode_is_refused -- Only a queue waits, so only a queue takes a timeout.
+    test_queue_requires_a_timeout -- A queue binding without a timeout raises ValueError.
+    test_queue_timeout_must_be_a_number -- A bool or string timeout raises TypeError.
+    test_queue_timeout_must_be_finite_and_positive -- Zero, negative, infinite and NaN timeouts raise ValueError.
+    test_reset_methods_must_be_a_list_or_tuple -- A bare string (it would be read per character) or a set raises TypeError with the list remedy.
+    test_reset_method_names_must_be_strings -- A non-string element raises TypeError naming its type.
+    test_reset_method_name_must_not_be_empty -- An empty name raises ValueError.
+    test_reset_method_must_name_a_method_of_the_class -- A missing name, a plain attribute and a property are not reset methods.
+    test_existing_member_ids_are_byte_identical_to_0_2_8241 -- Every existing member keeps its 0.2.8241 spell id, resolvable or not.
+    test_frame_name_and_disposal_ids_are_byte_identical_to_0_2_8241 -- A spellframe, a binding name and disposal names hash exactly as before.
+    test_callable_and_existing_object_ids_are_byte_identical_to_0_2_8241 -- Callable and existing-object profiles hash exactly as before.
+    test_the_managed_part_is_appended_after_the_existence_in_its_documented_form -- `managed:<mode>:<limit>:<timeout>:<names>` closes the hash input of a managed binding.
+    test_without_a_mode_no_managed_part_is_hashed -- The part needs a mode: limit, timeout and names alone leave the id as it was.
+    test_each_managed_option_changes_the_spell_id -- Mode, limit, timeout and reset names (and their order) each move the id; the default differs from 0.2.8241.
+    test_equal_timeouts_hash_alike -- 2 and 2.0 seconds normalize to one value, so they give one id.
+    test_spell_index_is_minted_with_the_managed_id -- The fresh SpellIndex and the Spell share the managed fingerprint.
+    test_decorator_form_forwards_the_options -- Bind.bind used as a decorator hands the same normalized options to the Spell.
+    test_leftover_keywords_still_flow_beside_the_options -- The options are named Spell keywords; leftover bind keywords still reach the Spell's metadata channel.
+    test_spell_id_inspector_matches_the_bind_fingerprint_for_a_managed_class -- The read-only inspector normalizes the options exactly as bind does.
+    test_spell_id_inspector_refuses_what_bind_refuses -- The inspector applies the same refusals: an option on another existence.
+tests/unit/melder/spellbook/bind/test_spell_index_selected_probe.py lines=64 tests=5 classes=-
+  doc: Unit tests - SpellIndex's selected-version probe (STORY-2026-10-15-release_managed_spell).
+    test_the_selected_version_answers_true -- The index's current selection.
+    test_a_member_that_is_not_selected_answers_false_until_selected -- Membership is not selection; a notch moves the answer.
+    test_an_id_outside_the_lineage_answers_false -- A stranger is never selected.
+    test_a_cleaned_index_answers_false -- A cleaned index selects nothing, and the probe does not raise.
+    test_the_probe_racing_cleanup_never_raises -- Probes from another thread across a cleanup answer True or False, never AttributeError.
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py lines=880 tests=51 classes=-
+  doc: Unit contracts for the managed site of key-set plans (managed_spell_quantity S5, 2026-10-15).
+    test_root_lease_pops_the_pool_bound_as_a_plan_constant -- An automatic owner's pool is bound at emission: the warm lease is `pp0()` and no store is read.
+    test_dynamic_owner_reads_its_pool_on_every_creation -- In a dynamic environment a transfer can move the pool, so the plan reads it per creation.
+    test_unowned_version_raises_the_missing_pool_error -- A version with no owner store has no pool: the named error, nothing built.
+    test_owner_store_without_the_pool_raises_the_missing_pool_error -- An owner store holding no pool under the id reads per creation and raises the named error.
+    test_plan_without_a_managed_site_binds_no_managed_helper -- A plan with no managed step keeps today's namespace and source.
+    test_managed_plan_binds_the_three_runtime_helpers -- A plan with a leasing site binds the return helpers and the missing-pool error.
+    test_lease_is_taken_right_before_its_consumer_is_built -- R(m: M, b: B): B is built first, then M is leased, then R - nothing runs between lease and use.
+    test_leasing_site_with_two_consumers_is_refused_at_emission -- A managed site is per path; one key feeding two consumers is an emission error.
+    test_override_plan_passes_ov_through_the_managed_miss -- An override plan's managed miss takes `ov` like every miss.
+    test_root_lease_builds_into_a_reserved_place_on_an_empty_pool -- An empty pool misses: one place reserved, the object built and handed out.
+    test_released_object_is_leased_again_without_a_build -- A put-back object is the next lease.
+    test_limited_pool_at_its_limit_refuses_before_building -- limited_quantity at its limit raises the exhaustion error and builds nothing.
+    test_constant_pool_torn_down_with_its_root_fails_at_reserve -- A retired pool's drained deque misses and `reserve` raises the pool's own error.
+    test_miss_returns_an_object_reserve_serves_without_building -- When `reserve` serves an idle object the miss returns it unbuilt.
+    test_queue_lease_waits_and_is_served_by_a_release -- A queue lease at its limit waits; the release serves it the same object, no build.
+    test_many_consumer_receives_a_leased_object -- R(m: M): R is built with the pool's object; a released object is injected again.
+    test_each_injection_path_takes_its_own_lease -- Two parameters fed by one managed spell get two objects (one site per path).
+    test_raising_consumer_returns_its_lease_to_the_pool -- A holder whose constructor raises gives its lease back; the object stays alive and idle.
+    test_failed_sibling_build_returns_the_lease_taken_before_it -- R(a: M1, b: M2): M2's build raises, M1's lease goes back, M2's place is freed.
+    test_exhausted_sibling_returns_the_lease_taken_before_it -- R(a: M1, b: M2): M2 refuses at its limit, M1's lease goes back.
+    test_failed_return_is_a_note_on_the_propagating_error -- A put-back that fails while the holder's error propagates becomes a note on that error.
+    test_shared_consumer_is_built_with_a_lease_and_stored -- U(m: M) per conduit: U is built with M's object and published.
+    test_stored_shared_consumer_takes_no_new_lease -- A stored holder is reused without touching the pool.
+    test_shared_consumer_losing_its_cold_race_returns_its_lease -- Another meld publishes U first: the plan returns that U and puts its unused lease back.
+    test_lost_race_return_failures_raise_one_group -- After a lost race every unused lease is tried, then the failures are raised as one group.
+    test_pinned_shared_consumer_refusal_returns_its_lease -- A pinned holder found stored at its recheck refuses (P2) and its lease goes back.
+    test_door_held_root_leases_inside_its_unguarded_miss -- A door-held per-conduit root takes no guard of its own; its lease group is unchanged.
+    test_unique_holder_leases_inside_its_spell_lock_guard -- R(u: U(m: M)), U `unique` with the lock hint: U leases once and is reused.
+    test_managed_holder_leases_its_managed_dependency_on_a_miss -- M1(m2: M2): a missed M1 leases M2 inside its own miss.
+    test_raising_managed_holder_returns_its_lease_and_its_place -- M1's constructor raises: M2's object goes back, M1's place is freed.
+    test_pooled_managed_holder_is_leased_without_leasing_its_dependency_again -- A released M1 keeps its M2: the next lease touches only M1's pool.
+    test_managed_miss_records_disposal_bearing_children_with_the_object -- M(x: X): X is recorded with M's object (never registered in a store) and disposed with it.
+    test_raising_managed_constructor_disposes_the_children_built_for_it -- M's constructor raises: the place is freed and X is disposed.
+    test_raising_child_gives_the_reserved_place_back -- X raises: M is never built and its place is freed.
+    test_child_disposal_failure_becomes_a_note_on_the_build_error -- A child that fails to dispose during the abandon adds a note to the build's error.
+    test_children_without_disposal_methods_are_not_recorded -- A child without disposal methods needs no record: no kids list, an empty abandon.
+    test_shared_child_of_a_managed_object_publishes_to_its_own_store -- M(u: U) per conduit: U is published to its store, not recorded with M.
+    test_supplied_consumer_parameter_takes_no_lease -- A winning key on R's parameter removes the managed site: no lease, the pool untouched.
+    test_keys_on_the_managed_sites_own_parameters_build_a_fresh_unpooled_object -- A winning key on M's own parameter builds M fresh each meld; it is never pooled or counted.
+    test_fresh_managed_root_built_from_a_positional_payload_is_not_pooled -- `__args__` supplies the managed root's parameter: built fresh, never pooled.
+    test_deeper_key_under_a_leasing_site_applies_only_when_it_misses -- R(m: M(y: Y(x))) with `m>y>x`: a pooled M is reused whatever x is supplied.
+    test_unresolved_input_of_a_leasing_site_raises_before_taking_a_place -- M(work) unsupplied: the miss raises before `reserve`.
+    test_supplying_a_leasing_sites_unresolved_input_builds_it_fresh -- A key on M's unresolved input is a key on its own parameter: M is built fresh with it.
+    test_unresolved_input_of_a_child_raises_in_the_managed_miss_before_reserve -- M(x: X(work)): the miss raises for X before reserving or building anything.
+    test_collection_parameter_leases_each_managed_member -- R(items: [M, M]): two leases, one list.
+    test_failed_collection_member_returns_the_members_leased_before_it -- R(items: [M1, M2]): M2's build raises and M1's lease goes back.
+    test_return_leases_puts_back_taken_leases_and_skips_the_rest -- Taken leases go back; a lease never taken (None) is skipped; no note on success.
+    test_return_leases_records_each_failed_return_as_a_note -- A failing put-back becomes one note naming the spell and the failure; the others still run.
+    test_return_unused_leases_tries_every_return_then_raises_one_group -- After a lost race every lease is tried; the failures are raised together.
+    test_return_unused_leases_without_failures_returns_quietly -- Every lease goes back and nothing is raised.
+    test_raise_missing_managed_pool_names_the_spell_and_the_remedy -- The named error says what has no pool, why, and what to do.
+tests/unit/melder/spellbook/spell_compiler/test_managed_dispense_seams.py lines=101 tests=9 classes=-
+  doc: Unit contracts for the phase 9-11 seams a managed spell passes through (managed_spell_quantity S5, 2026-10-15).
+    test_instance_processor_gives_one_shared_key_only_to_slotted_existences -- `many` and managed sites get one instance key per path; every slotted existence shares one.
+    test_occurrence_analyzer_collapses_only_slotted_existences -- The occurrence walk keeps one occurrence per path for `many` and managed spells.
+    test_manifest_route_key_accepts_the_managed_family -- A class spell of route family "managed" gets route key "managed".
+    test_manifest_route_key_still_refuses_an_unknown_family -- Families outside the whitelist keep their refusal.
+    test_managed_overrides_doors_reuse_the_many_templates -- Both overrides tables map "managed" onto the `many` template objects.
+    test_managed_no_overrides_doors_reuse_the_non_fast_many_templates -- Both fast bits of "managed" select the non-fast `many` templates (no fast-transient managed door).
+    test_rows_contain_managed_step_finds_a_managed_row -- One managed row anywhere is enough.
+    test_rows_contain_managed_step_is_false_without_a_managed_row -- Graphs of the six other members, and an empty lane, have none.
+    test_many_child_of_a_managed_row_counts_as_feeding_a_holder -- A `many` row feeding a managed row is a holder's child, as for any non-`many` row.
+tests/unit/melder/spellbook/test_existence_managed_spell_quantity.py lines=50 tests=3 classes=-
+  doc: Unit tests for the seventh Existence member, `managed_spell_quantity` (STORY-2026-10-15-managed_existence_member).
+    test_managed_spell_quantity_is_a_member_named_by_its_bare_name -- Purpose:
+    test_managed_spell_quantity_is_appended_after_the_six_existing_members -- Purpose:
+    test_existing_member_values_are_unchanged_by_the_seventh_member -- Purpose:
+tests/unit/melder/spellbook/test_scan_bind_managed_options.py lines=205 tests=10 classes=-
+  doc: Unit: scan_bind declares the managed options and a scan replays them (STORY-2026-10-15-managed_bind_options, S2).
+    test_scan_bind_stores_the_options_as_given -- Mode, limit and timeout are stored unchanged; reset names become a tuple.
+    test_scan_bind_without_options_stores_none -- An undeclared option is None, so the replay passes bind's defaults.
+    test_reset_names_must_be_a_list_or_tuple_at_decoration -- A bare string or a set is refused when the decorator is built, not at scan time.
+    test_reset_names_must_be_strings_at_decoration -- A non-string element is refused at decoration.
+    test_the_option_names_are_reserved_metadata_keys -- Each option is native to the bind chain, so the metadata check refuses it like every native name.
+    test_repr_names_the_options -- The declaration's repr shows the four options for diagnostics.
+    test_scan_replays_the_options_into_spellbook_bind -- scan_module passes the four options to Spellbook.bind explicitly.
+    test_scan_without_options_replays_none -- A non-managed declaration replays None for every option.
+    test_a_scan_binds_a_managed_class_with_its_options_through_a_real_book -- End to end: the scanned Spell carries the normalized options.
+    test_bind_validates_scanned_options_at_scan_time -- Mode, limit and timeout are checked by Bind when the module is scanned.
+tests/unit/melder/spellbook/test_spell_managed_quantity_stamp.py lines=152 tests=4 classes=-
+  doc: Unit tests: stamping an owner gives a managed spell its pool (STORY-2026-10-15-managed_quantity_pool, S3).
+    test_stamping_a_managed_spell_ensures_its_pool -- The owner store is asked once per stamp for the version's pool.
+    test_stamping_into_a_real_root_store_creates_the_pool_there -- The pool lands in the owner root's store under the version id, composed from the Spell.
+    test_stamping_a_non_managed_spell_asks_for_no_pool -- Every other existence is stamped as before.
+    test_stamping_without_a_store_asks_for_no_pool -- A stamp that carries no store (no owner scope to hold a pool) composes nothing.
+tests/unit/melder/spellbook/test_spell_managed_spell_options.py lines=121 tests=5 classes=-
+  doc: Unit: a Spell carries the managed options Bind normalized (STORY-2026-10-15-managed_bind_options, S2).
+    test_a_managed_spell_exposes_its_options -- The four properties return the values the Spell was built with.
+    test_a_spell_built_without_options_reports_none_and_no_resets -- A Spell of any other existence reads None, None, None and an empty tuple.
+    test_the_options_are_native_keywords_not_metadata -- Passing the options does not put them in `metadata`; other keywords still do.
+    test_the_options_refuse_a_cleaned_spell -- Each property raises the cleaned RuntimeError once the Spell is cleaned, like `resolvable`.
+    test_the_options_are_read_only -- There is no setter: changing a managed option takes another binding.
+tests/unit/melder/spellbook/test_spellbinder_managed_options.py lines=106 tests=5 classes=-
+  doc: Unit: SpellBinder stages a managed binding (STORY-2026-10-15-managed_bind_options, S2).
+    test_as_managed_spell_quantity_selects_the_member_and_sends_the_options -- finalize() sends the managed existence and the four staged options.
+    test_as_managed_spell_quantity_defaults_send_none -- With no arguments every option is None, so Bind applies the elastic defaults.
+    test_the_next_registration_does_not_inherit_the_options -- finalize() resets the binder: a later bind carries no managed options.
+    test_bind_passthrough_keywords_carry_the_options -- bind(..., managed_spell_mode=...) stages the options through the passthrough payload.
+    test_as_managed_spell_quantity_refuses_a_cleaned_binder -- A cleaned binder raises RuntimeError like every fluent method.
+tests/unit/melder/utilities/custom_exceptions/test_managed_spell_exhausted_error.py lines=52 tests=5 classes=-
+  doc: Unit tests of ManagedSpellExhaustedError (STORY-2026-10-15-managed_quantity_pool, S3).
+    test_limited_names_the_spell_its_limit_and_the_two_ways_out -- The limited text says every object is out and how to get one back or allow more.
+    test_queue_names_the_timeout_it_waited -- The queue text names the limit and the timeout, printed without trailing zeros.
+    test_queue_keeps_a_fractional_timeout -- A fractional timeout is printed as written.
+    test_the_error_is_caught_as_a_meld_failure -- `except MeldExecutionError` catches an exhausted pool.
+    test_the_error_carries_no_inner_cause -- Nothing was called when it is raised: no node, parameter or inner exception.
+tests/component/melder/aether/conduit/test_conduit_component_managed_spell_quantity.py lines=491 tests=23 classes=-
+  doc: Component: melds dispense managed objects through emitted plans (STORY-2026-10-15-managed_dispense_codegen).
+    test_direct_meld_reuses_a_released_object -- A released object is the next meld's object; nothing new is built.
+    test_meld_by_name_and_by_id_lease_from_the_same_pool -- Every meld door of the spell leases from its one pool.
+    test_many_holder_gets_its_own_lease_on_every_meld -- Two Requests, two leases.
+    test_unique_holder_keeps_its_lease_for_its_life -- The stored Service is reused; its connection is leased once.
+    test_released_object_is_injected_into_the_next_holder -- A release by any holder feeds the next injection.
+    test_limited_quantity_refuses_through_meld_at_its_limit_until_a_release -- limited_quantity 1: the second meld refuses; after a release it is served.
+    test_queue_meld_waits_and_is_served_by_a_release -- queue 1: a second meld waits; the release serves it the same object.
+    test_queue_meld_raises_the_exhaustion_error_at_its_timeout -- queue 1 with a short timeout: the second meld raises; nothing was built.
+    test_failed_holder_gives_its_lease_back -- Refusing raises after its lease: the connection is idle again and serves the next meld unbuilt.
+    test_override_of_the_holders_parameter_takes_no_lease -- Supplying Request's connection removes the managed site.
+    test_override_of_the_managed_spells_own_parameter_builds_a_fresh_object -- A key on Connection's own parameter builds it fresh with that value: not pooled, not counted.
+    test_trim_disposes_the_object_and_its_recorded_children -- Elastic with limit 1: the second idle object is evicted with its child.
+    test_activation_hooks_run_on_every_lease -- The managed door reports `created=True`: a reused object passes the activation hooks again.
+    test_managed_spell_meld_with_block_gives_the_object_back -- The lease's `with` releases on exit; the next meld gets the same object.
+    test_managed_spell_meld_with_block_releases_when_the_block_raises -- The block's exception propagates and the object is back in the pool.
+    test_managed_spell_meld_without_with_releases_once -- `release()` gives the object back once; a second call does nothing.
+    test_managed_spell_meld_by_spell_id -- `spell_id=` resolves the managed version directly.
+    test_managed_spell_meld_refuses_a_spell_of_another_existence_before_melding -- A `many` target is refused with the remedy; nothing is built.
+    test_managed_spell_meld_refuses_spell_and_spell_id_together -- The two identities are exclusive, as for meld.
+    test_managed_spell_meld_raises_the_exhaustion_error_at_the_limit -- limited_quantity 1 with its object out: the lease is refused.
+    test_lesser_conduit_and_spellspace_lease_from_the_roots_pool -- A lesser's and a spellspace's melds lease from the owning root's pool.
+    test_root_teardown_disposes_idle_objects_and_leaves_objects_that_are_out -- Teardown closes what is idle; an object still out is its holder's.
+    test_dynamic_root_leases_through_the_per_creation_pool_read -- In a dynamic world the plan reads the pool per creation; leases and reuse behave the same.
+tests/integration/melder/conduit/test_conduit_integration_managed_quantity_pool.py lines=261 tests=7 classes=-
+  doc: Integration: managed pools live in the owning root's store (STORY-2026-10-15-managed_quantity_pool, S3).
+    test_conjure_gives_the_active_managed_version_a_pool_in_the_root_store -- The pool is composed from the Spell's options, owned by the root, beside no stored object.
+    test_a_dynamic_conjure_gives_the_pool_too -- The dynamic posture stamps owners the same way.
+    test_a_post_conjure_bind_and_bind_inactive_each_get_their_pool -- Stamping a version after conjure composes its pool in the root's store, active or parked.
+    test_root_teardown_disposes_idle_objects_and_recorded_children_but_not_objects_out -- Teardown disposes what the pool holds; an object out is its holder's, though its recorded child dies.
+    test_conduit_purge_of_a_managed_spell_returns_zero_and_keeps_the_pool -- Purge is not part of the managed design: nothing is retired.
+    test_live_creation_probes_answer_from_the_pool_from_the_root_and_a_lesser -- Live once the pool built an object; a lesser reads its root's pool.
+    test_disposing_the_managed_spell_leaves_its_pool_in_place -- cleanup_spell destroys nothing a pool holds: the old version's pool stays until the root ends.
+tests/integration/melder/conduit/test_conduit_integration_managed_spell_quantity.py lines=282 tests=7 classes=-
+  doc: Integration: managed objects dispensed through real worlds (STORY-2026-10-15-managed_dispense_codegen).
+    test_roots_in_two_frames_dispense_from_their_own_pools -- Each root leases from its own pool; a release names the root to pick the pool.
+    test_two_binding_names_in_one_root_dispense_from_two_pools -- One class bound twice: two versions, two pools, a release picks one by spell id.
+    test_post_conjure_bind_in_a_dynamic_world_dispenses -- A managed spell bound on a live dynamic root gets its pool at the bind and leases through holders.
+    test_a_notch_dispenses_from_the_new_versions_pool -- Versions coexist: after a notch melds lease from the active version's pool; the old pool keeps its objects.
+    test_a_borrower_leases_from_the_owners_pool -- Through a link and a contract the borrower's melds lease from the owner root's pool.
+    test_a_lessers_managed_spell_meld_returns_the_object_to_the_roots_pool -- `managed_spell_meld` on a lesser leases from, and gives back to, its root's pool.
+    test_a_restored_world_dispenses_from_an_empty_pool -- After a restart the rebuilt root's pool starts empty and leases, reuses and injects as before.
+tests/integration/melder/conduit/test_conduit_integration_managed_transfer.py lines=346 tests=12 classes=-
+  doc: Integration: managed pools and owner stamps through ownership transfers (STORY-2026-10-15-managed_ownership_transfer).
+    test_a_move_carries_the_pool_its_idle_objects_and_the_stamp_to_the_target -- The same pool object moves; the target's meld reuses an idle object; the registry names the target.
+    test_releases_after_a_move_reach_the_moved_pool -- A release by class after the move puts the object back into the pool the target now holds.
+    test_a_parked_version_moved_and_notched_in_leases_from_its_moved_pool -- The parked version's pool and its stamp both move, so after a notch on the target it leases from that pool.
+    test_a_move_leaves_no_pool_registered_under_the_owner -- Every version's pool is registered under the target after a move; none under the owner.
+    test_no_move_gives_the_target_a_fresh_pool_and_disposes_nothing -- The target builds from its own empty pool; the objects the owner pooled stay undisposed.
+    test_no_move_with_a_parked_version_leases_from_the_target_after_a_notch -- The parked version is stamped onto the target, which composes its pool; the owner keeps its old one.
+    test_a_failed_move_leaves_the_pool_and_the_stamp_with_the_owner -- After the rollback the owner leases its own idle objects and a release by class reaches its pool.
+    test_a_failed_transfer_without_a_move_leaves_no_pool_in_the_target -- The pool the target's stamp composed is discarded; the owner keeps leasing and releasing its own pool.
+    test_a_failed_move_leaves_a_parked_version_with_the_owner -- The parked version's pool and stamp go back too: notched in on the owner, it leases from its own pool.
+    test_a_failed_transfer_without_a_move_leaves_a_parked_version_with_the_owner -- The parked version's composed target pool is discarded and its stamp goes back to the owner.
+    test_a_failed_transfer_leaves_a_unique_object_with_the_owner -- After the rollback the owner's meld returns the object it built before; the target stores none.
+    test_a_parked_unique_version_moved_and_notched_in_stores_its_object_in_the_target -- The moved parked version names the target's store, so its first meld there stores the object there.
+tests/integration/melder/conduit/test_conduit_integration_release_managed_spell.py lines=309 tests=8 classes=-
+  doc: Integration: ReleaseManagedSpell routes objects back to the pools of live roots (STORY-2026-10-15-release_managed_spell).
+    test_conjure_registers_the_pool_and_a_release_by_class_reaches_it -- The class is all a release needs: reset, then idle for the next lease.
+    test_root_teardown_unregisters_its_pools -- After the root ends, the class is managed nowhere.
+    test_a_post_conjure_bind_registers_and_a_notch_moves_the_releases -- Two versions of one index: the active one takes a same-class release; a notch moves it.
+    test_two_binding_names_in_one_root_need_a_spell_id -- Both versions are selected in their own index; the conduit alone cannot pick, the spell id can.
+    test_two_roots_are_told_apart_by_conduit_including_a_lesser -- The conduit names the root that holds the pool; a lesser names its root.
+    test_a_cleaned_conduit_filter_is_refused -- A torn-down conduit names no root.
+    test_a_lease_with_block_gives_the_object_back -- `managed(obj)` returns a lease whose block releases on exit.
+    test_aether_teardown_with_a_live_root_leaves_a_fresh_empty_registry -- The frames unregister their pools before Aether cleans the registry; the next boot starts empty.
+tests/integration/melder/crystallizer/test_managed_spell_options_record_integration.py lines=177 tests=3 classes=-
+  doc: Integration: a managed spell's options survive a crystallizer record and restore, and a spell-index graft (STORY-2026-10-15-managed_bind_options, S2; record 4.2.0).
+    test_the_crystal_records_both_versions_options -- The active and the parked versions each carry their own recorded options.
+    test_a_restore_rebinds_both_versions_with_their_options -- After a restart the rebuilt active and parked versions keep their options and their spell ids.
+    test_a_graft_rebinds_the_selected_and_parked_versions_with_their_options -- The spell-index graft carries the options of both members into a host Book in another frame.
+tests/integration/melder/spellbook/test_managed_bind_options_integration.py lines=169 tests=6 classes=-
+  doc: Integration: managed bind options through a real Spellbook and its root conduit (STORY-2026-10-15-managed_bind_options, S2).
+    test_spellbook_bind_puts_the_options_on_the_spell -- A managed bind stores the normalized options on the Spell, not in its metadata.
+    test_a_managed_binding_and_its_options_each_change_the_spell_id -- The same class bound unique, managed by default, and managed with a limit gets three ids.
+    test_a_refused_binding_leaves_the_book_unchanged -- A managed option on a unique binding raises before anything is registered.
+    test_a_managed_function_is_refused -- Functions cannot be managed: TypeError, nothing registered.
+    test_conduit_bind_and_bind_inactive_forward_the_options -- A root binds a managed class after conjure, then parks a second version with other options.
+    test_spellbinder_binds_a_managed_class_into_a_real_book -- The fluent path ends in the same Spell as a direct bind.
+== CHANGED ==
+tests/component/melder/aether/conduit/test_conduit_component_purge.py lines=1260 tests=27 classes=-
+  doc: Contracts for scoped purge, native disposal and creation-writer synchronization.
+  tests_components: not cited; tests_architecture: not cited
+tests/unit/melder/aether/conduit/test_conduit_facade.py lines=1015 tests=38 classes=-
+  doc: 
+  tests_components: not cited; tests_architecture: not cited
+tests/unit/melder/spellbook/spell_compiler/test_codegen_plan_discovery_core.py lines=328 tests=12 classes=-
+  doc: Direct unit tests for the phase-10 discovery seam.
+  tests_components: not cited; tests_architecture: not cited
+tests/unit/melder/spellbook/spell_compiler/test_generalized_specializer_wrapper.py lines=394 tests=11 classes=TestWrapperInstallRules(3) TestWrapperRetryAndPin(3) TestBuilderDeclineContract(4)
+  doc: Wrapper-mechanics tests for the one-shot singleton specializer.
+  tests_components: not cited; tests_architecture: not cited
+tests/unit/melder/spellbook/spell_compiler/test_spell_artifact_processor_core.py lines=310 tests=7 classes=-
+  doc: Direct unit tests for the artifact processor facade, builder, and model.
+  tests_components: not cited; tests_architecture: not cited
+tests/unit/melder/spellbook/spell_crafter/system/validation/test_scope_ordering_strategy.py lines=307 tests=9 classes=-
+  doc: 
+  tests_components: not cited; tests_architecture: not cited
+tests/unit/melder/spellbook/test_resolution_style_matrix.py lines=224 tests=12 classes=-
+  doc: 
+  tests_components: not cited; tests_architecture: not cited
+tests/unit/melder/spellbook/test_scan_bind_option_parity.py lines=770 tests=28 classes=-
+  doc: scan_bind option parity and own-declaration discovery.
+  tests_components: cited; C1 end_line=768; tests_architecture: not cited
+tests/unit/melder/test_package_public_surface.py lines=386 tests=14 classes=-
+  doc: Unit tests for the LOADED package-root surface (owner ruling 2026-07-19): every __all__ name resolves, and each curated export IS the concrete-path object - identity, not equality.
+  tests_components: cited; C1 end_line=352; tests_architecture: not cited
+== COUNTS ==
+tier unit: test_*.py=502 .py=505
+tier component: test_*.py=165 .py=167
+tier integration: test_*.py=166 .py=173
+  unit/melder/aether: test_*.py=202
+  unit/melder/aether/conduit: test_*.py=66
+  unit/melder/crystallizer: test_*.py=48
+  unit/melder/mutation_research: test_*.py=20
+  unit/melder/spellbook: test_*.py=157
+  unit/melder/utilities: test_*.py=53
+  unit/melder/build_assets: test_*.py=3
+  unit/github_workflows: test_*.py=8
+  unit/llm_support: test_*.py=1
+  unit/architecture_and_design: test_*.py=1
+  component/melder/aether: test_*.py=76
+  component/melder/crystallizer: test_*.py=7
+  component/melder/mutation_research: test_*.py=1
+  component/melder/spellbook: test_*.py=77
+  component/melder/utilities: test_*.py=4
+  integration/melder/aether: test_*.py=44
+  integration/melder/aether/rift: test_*.py=3
+  integration/melder/conduit: test_*.py=43
+  integration/melder/crystallizer: test_*.py=18
+  integration/melder/live_sim: test_*.py=2
+  integration/melder/multithreading: test_*.py=6
+  integration/melder/mutation_research: test_*.py=3
+  integration/melder/spellbook: test_*.py=50
+  unit/melder top-level test_*.py=9
+three tiers test_*.py total=833

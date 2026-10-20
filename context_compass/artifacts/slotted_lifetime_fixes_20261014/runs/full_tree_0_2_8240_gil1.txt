@@ -1,0 +1,25 @@
+# Full tree on the scratch tree synced from the repository at 0.2.8240 (rsync, caches excluded; diff -rq clean); benchmarks/ copied in for exper. unit_arch and unit_gh run on the repository ('melder_private' rows); unit_llm, unit_build, unit_top and comp_util run on the repository after the docs and the rebuild.
+melder_private | unit_arch | rc=0 | secs=1 | 18 passed in 0.18s
+melder_private | unit_gh | rc=0 | secs=3 | 491 passed in 3.60s
+tree | unit_mr | rc=0 | secs=2 | 277 passed in 1.33s
+tree | unit_aether | rc=0 | secs=15 | 4228 passed in 14.33s
+tree | unit_sb | rc=0 | secs=3 | 2355 passed in 3.40s
+tree | unit_util | rc=0 | secs=8 | 821 passed, 2 skipped, 7 xfailed in 7.67s
+tree | unit_cryst | rc=0 | secs=4 | 599 passed in 3.59s
+tree | comp_aether | rc=0 | secs=14 | 1352 passed, 1 xfailed in 13.49s
+tree | comp_sb | rc=0 | secs=9 | 819 passed in 8.92s
+tree | comp_mr | rc=0 | secs=1 | 40 passed in 0.31s
+tree | comp_cryst | rc=0 | secs=0 | 110 passed in 0.57s
+tree | int_aether | rc=0 | secs=16 | 785 passed, 5 xfailed in 15.83s
+tree | int_conduit | rc=0 | secs=3 | 301 passed in 3.07s
+tree | int_sb | rc=0 | secs=5 | 613 passed, 2 skipped, 2 xpassed in 4.47s
+tree | int_mr | rc=0 | secs=1 | 67 passed in 0.51s
+tree | int_cryst | rc=0 | secs=69 | 273 passed, 3 xfailed in 68.61s (0:01:08)
+tree | int_mt | rc=0 | secs=4 | 54 passed in 3.90s
+tree | int_live | rc=0 | secs=0 | 1 passed, 1 xfailed in 0.16s
+tree | exper | rc=0 | secs=10 | 250 passed, 4 skipped in 9.32s
+# asset-dependent chunks on the repository after the 0.2.8240 rebuild (2026-10-15, assets and bundles checked OK)
+melder_private | unit_llm | rc=0 | secs=0 | 28 passed in 0.24s
+melder_private | unit_build | rc=0 | secs=62 | 116 passed in 61.75s (0:01:01)
+melder_private | unit_top | rc=0 | secs=53 | 145 passed in 52.96s
+melder_private | comp_util | rc=0 | secs=7 | 41 passed, 23 skipped in 7.14s

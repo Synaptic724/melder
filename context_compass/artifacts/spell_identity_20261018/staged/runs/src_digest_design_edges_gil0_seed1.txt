@@ -1,0 +1,13 @@
+D1 dataclass default_factory list -> dict                      expect=different got=different ok       36cd75cbb175/446fc449d540
+D2 decorator's wrapper body changed, function the same         expect=different got=different ok       9759922bb18f/6ce67160199e
+D3 decorated function body changed, decorator the same         expect=different got=different ok       9759922bb18f/b3008127db4e
+D4 the same decorated source executed twice                    expect=same      got=same      ok       9759922bb18f/9759922bb18f
+D5 two packaging Version objects (Python-visible state)        expect=different got=different ok       6aee68dcb71f/4f11d0d7e5a6
+D6 two yaml C Mark objects: has __dict__?                      False
+D6a prototype: two C objects without Python-visible state      expect=different got=same      MISMATCH 43c24b304b99/43c24b304b99
+D6b repr fallback (today's rule) for the same two              expect=different got=same      MISMATCH 97da50465131/97da50465131
+D7 a class-level reference's class body changed (named)        expect=same      got=same      ok       2807c801bc86/2807c801bc86
+D8 a module-level helper a method calls changed (named)        expect=same      got=same      ok       209ed9864e24/209ed9864e24
+D9 class over pygments PythonLexer                             cold_ms=   0.652 warm_ms=   0.015 mro=5
+D9b plain one-method class                                     cold_ms=   0.036 warm_ms=   0.010 mro=2
+D10 two existing objects with equal data (one spell)           expect=same      got=same      ok       566c9174ffc0/566c9174ffc0

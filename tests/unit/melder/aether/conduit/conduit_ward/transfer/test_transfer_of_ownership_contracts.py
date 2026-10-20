@@ -117,13 +117,20 @@ class FakeSpellStatesSystem:
         """
         return self._states.get(index_id)
 
-    def register_index(self, spell_index: SpellIndex, owner_spellbook_id: Optional[str] = None) -> None:
+    def register_index(
+            self,
+            spell_index: SpellIndex,
+            owner_spellbook_id: Optional[str] = None,
+            *,
+            resolvable: Optional[bool] = None,
+    ) -> None:
         """
         Register a lineage state for the given spell index.
 
         Args:
             spell_index: SpellIndex identifying the lineage.
-            spell: Spell object associated with the lineage.
+            owner_spellbook_id: Owning Spellbook id (ignored here).
+            resolvable: The moved version's capability, as the transfer passes it (ignored here).
         """
         if spell_index.id in self._states:
             return
@@ -759,7 +766,7 @@ class FakeSpellbook:
         Remove owned spell_id mappings for the given spell.
 
         Args:
-            spell_id: Current version id for the spell.
+            spell_id: The spell's current spell_id.
             spell_obj: Owned spell instance being removed.
         Raises:
             RuntimeError: If the owned map or pool map references a different spell.
@@ -881,7 +888,7 @@ class FakeConduit:
     Minimal conduit implementation for transfer tests.
 
     Contract:
-    - get_spell_by_id returns spells stored in the spellbook.
+    - get_spell_by_spell_id returns spells stored in the spellbook.
     """
 
     _aether: Optional[FakeAether] = None
@@ -932,7 +939,7 @@ class FakeConduit:
         """
         return self._conduit_cloud
 
-    def get_spell_by_id(self, spell_id: str, frame_name: str) -> Optional[Any]:
+    def get_spell_by_spell_id(self, spell_id: str, frame_name: str) -> Optional[Any]:
         """
         Return a spell by id from this conduit.
 
@@ -1056,6 +1063,7 @@ def build_spell(
         dependencies=list(dependencies),
         existence=existence,
         permissions=permissions,
+        resolvable=True,
     )
 
     def _add_owned_conduit(
@@ -1083,7 +1091,17 @@ def build_spell(
         spell._dynamic_environment = dynamic_environment
         spell._creation_gate_controller = creation_gate_controller
 
+    def _spell_index_unless_cleaned() -> Optional[SpellIndex]:
+        """
+        Return the spell's current index, as `Spell._spell_index_unless_cleaned` does for a live spell.
+
+        Returns:
+            Optional[SpellIndex]: The index the spell belongs to now.
+        """
+        return spell.spell_index
+
     spell._add_owned_conduit = _add_owned_conduit
+    spell._spell_index_unless_cleaned = _spell_index_unless_cleaned
     return spell
 
 

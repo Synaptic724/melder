@@ -1,0 +1,36 @@
+- DATETIME: {ts}
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: The tests pair carries fix #1 (each new module read whole before its entry was written).
+    tests_components: Protects bullets and key files in four C2 clusters - Aether/Nexus/Rift Unit (the room
+    lookups, 12 tests), Spellbook Runtime And Binding Component (the exact Book lookup, 10), Aether Integration
+    (a capability room, 4) and Spellbook Integration (a lender and borrower world, 10) - with the Unit, Component
+    and Integration suites naming the protection; four new code-map records, the two codemod records remeasured
+    (310, 673), the recounted tier and tree counts, the core set 263 (key-file union equal to the code map), the
+    information sources, Metadata and a handoff entry; the stamp record stays stale on purpose, as the entry says.
+    tests_architecture: the recount, the race test's evidence moved to 624-673, Metadata and a handoff entry.
+    Both indexes regenerated (69 sections over 3820 lines; 32 over 996), --check OK. Content Preservation Gate
+    PASS for both: 16 and 5 lines rewritten, all on lines the edit anchors touch (the gate now takes an anchor's
+    whole lines, since one anchor sits inside a line), 110 and 12 added. Portability and absolute-path checks
+    empty; the documents' own citation recipe finds no missing path and nothing out of bounds, and only the stamp
+    record as a stale range.
+  EVIDENCE:
+  - context_compass/system_docs/tests_components.md:918-957
+  - context_compass/system_docs/tests_components.md:1494-1539
+  - context_compass/system_docs/tests_components.md:1580-1617
+  - context_compass/system_docs/tests_components.md:1667-1735
+  - context_compass/system_docs/tests_components.md:3358-3385
+  - context_compass/system_docs/tests_components.md:3570-3586
+  - context_compass/system_docs/tests_architecture.md:460-467
+  - context_compass/system_docs/tests_architecture.md:592-598
+  - context_compass/system_docs/tests_architecture.md:892-898
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/scripts/docs_tests_components_fix1.py:1-252
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/scripts/docs_tests_architecture_fix1.py:1-67
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/docs_gate_tests_components.txt:1-4
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/docs_gate_tests_architecture.txt:1-4
+  IMPACT: The four system documents describe fix #1; the graph is next, then the release note, the notch, the
+    ticket and the rebuild.
+  NEXT: Extract the graph on 3.14 with --strict, then read the walker's report for the changed files' nodes.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8

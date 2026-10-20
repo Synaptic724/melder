@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/system/validation/missing_phase4_strategy.py",
- "source_sha256": "74df75e450abc29d7e81575488b45143f7a4d9ea8d1d47868ca3c9d26037333c",
+ "source_sha256": "fedb0a776792da0c79b561169c0306aa9c5ac98df0c7ae14b8350b42d9b17277",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.system.validation.missing_phase4_strategy": {
@@ -39,7 +39,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "1e0d9820ee12e858228fe8ff2727452f03f367ccf1003817fd4d97391959fec1",
+   "span_sha256": "2a96d6e45fd0fe081db197117b4eeb63f8ff51a0f546926e82b327eac262d4b3",
    "include": true,
    "role": "The bridge between spell-local and system-level validation: every node reachable through a root DAG must already carry a Phase 4 result.",
    "responsibilities": [

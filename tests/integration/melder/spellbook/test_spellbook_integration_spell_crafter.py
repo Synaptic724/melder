@@ -217,7 +217,7 @@ def test_spell_crafter_run_all_phases_builds_dependencies_and_state() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        root_spell = conduit.get_spell_by_id(root_id)
+        root_spell = conduit.get_spell_by_spell_id(root_id)
         assert root_spell is not None
         artifact = _run_all_phases_via_compiler(root_spell, "cid")
 
@@ -308,7 +308,7 @@ def test_spell_crafter_collection_di_resolves_multiple_dependencies() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        consumer_spell = conduit.get_spell_by_id(consumer_id)
+        consumer_spell = conduit.get_spell_by_spell_id(consumer_id)
         assert consumer_spell is not None
         compiler_test_helpers.run_phase_requirements(consumer_spell)
         compiler_test_helpers.run_phase_symbolic_graph(consumer_spell)
@@ -370,7 +370,7 @@ def test_spell_crafter_spellmap_default_resolves_dependency() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        consumer_spell = conduit.get_spell_by_id(consumer_id)
+        consumer_spell = conduit.get_spell_by_spell_id(consumer_id)
         assert consumer_spell is not None
         compiler_test_helpers.run_phase_requirements(consumer_spell)
         compiler_test_helpers.run_phase_symbolic_graph(consumer_spell)
@@ -604,7 +604,7 @@ def test_spell_crafter_spellmap_frame_only_resolves_dependency() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        consumer_spell = conduit.get_spell_by_id(consumer_id)
+        consumer_spell = conduit.get_spell_by_spell_id(consumer_id)
         assert consumer_spell is not None
         compiler_test_helpers.run_phase_requirements(consumer_spell)
         compiler_test_helpers.run_phase_symbolic_graph(consumer_spell)
@@ -719,7 +719,7 @@ def test_spell_crafter_local_topology_records_plain_and_collection_sockets() -> 
 
     conduit = spellbook.conjure(name="root")
     try:
-        consumer_spell = conduit.get_spell_by_id(consumer_id)
+        consumer_spell = conduit.get_spell_by_spell_id(consumer_id)
         assert consumer_spell is not None
         compiler_test_helpers.run_phase_requirements(consumer_spell)
         compiler_test_helpers.run_phase_symbolic_graph(consumer_spell)
@@ -797,7 +797,7 @@ def test_spell_crafter_validation_sets_flags_and_result() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        spell = conduit.get_spell_by_id(spell_id)
+        spell = conduit.get_spell_by_spell_id(spell_id)
         assert spell is not None
         artifact = _run_structural_phases_via_compiler(spell)
 
@@ -865,7 +865,7 @@ def test_spell_crafter_run_all_phases_records_phase6_state() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        root_spell = conduit.get_spell_by_id(root_id)
+        root_spell = conduit.get_spell_by_spell_id(root_id)
         assert root_spell is not None
         artifact = _run_all_phases_via_compiler(root_spell, "cid")
 
@@ -935,7 +935,7 @@ def test_spell_cleanup_after_run_all_phases_clears_phase_artifacts() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        root_spell = conduit.get_spell_by_id(root_id)
+        root_spell = conduit.get_spell_by_spell_id(root_id)
         assert root_spell is not None
         artifact = _run_all_phases_via_compiler(root_spell, "cid")
 

@@ -1,0 +1,8 @@
+crystallizer integration gil0 (tests/integration/melder/crystallizer, collected ids /tmp/m0_mq/s4_crys_all_ids.txt):
+COMPLETE: 279 ids; outcomes {'PASSED': 276, 'XFAIL': 3}
+crystallizer integration gil1:
+COMPLETE: 279 ids; outcomes {'PASSED': 276, 'XFAIL': 3}
+experimentation + experiments + tests/tests gil0:
+COMPLETE: 254 ids; outcomes {'PASSED': 250, 'SKIPPED': 4}
+experimentation + experiments + tests/tests gil1:
+COMPLETE: 254 ids; outcomes {'PASSED': 250, 'SKIPPED': 4}

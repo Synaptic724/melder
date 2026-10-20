@@ -1,0 +1,7 @@
+[
+  {
+    "path": "release_docs/next_version_release.md",
+    "old": "- Until its notch a staged version stays off resolution, as before: a meld of its id raises `KeyError` (\"No spell\n  found with spell_id ...\"), and a staged existing object is not stored in the root's creations.\n",
+    "new": "- Until its notch a staged version stays off resolution, as before: a meld of its id raises `KeyError` (\"[MELD] No\n  spell found with spell_id: ...\"), and a staged existing object is not stored in the root's creations.\n"
+  }
+]

@@ -437,6 +437,38 @@ def test_contract_provider_presence_missing_spell_contract_warns() -> None:
     assert issues[0].code == "SPELL_CONTRACT_MISSING_PROVIDER"
 
 
+def test_contract_provider_presence_missing_provider_names_the_contract_and_the_remedy() -> None:
+    """
+    Purpose:
+        A lost provider is reported with the contract it belongs to and how to restore it (D1-B): this warning
+        is the reason the validation report gives for a consumer the missing provider gates.
+    """
+    contract = SpellContract(spellframe="service", binding_name="primary")
+    context, issues = _make_context(
+        requirements=_RequirementsStub([
+            _ParamStub(name="service", di_shape=ParameterDIShape.SPELL_CONTRACT, default_value=contract),
+        ]),
+        contracted_spells=[],
+        system_state=SystemState.dynamic,
+    )
+    strategy = ContractProviderPresenceStrategy()
+    try:
+        strategy.validate(context)
+
+        assert [(issue.severity, issue.code) for issue in issues] == [("warning", "SPELL_CONTRACT_MISSING_PROVIDER")]
+        assert issues[0].message == (
+            "Spell 'spell-name' parameter 'service' has no provider for its SpellContract "
+            "(frame_key='service', binding_key='primary'): no active spell with that frame and binding name is "
+            "contracted to this Spellbook. Contract one from a linked conduit (add_index_to_contract, or "
+            "add_spell_to_contract for one version) and meld again."
+        )
+        assert issues[0].details == {"parameter_name": "service", "contract_key": ("service", "primary")}
+    finally:
+        strategy.cleanup()
+        context.cleanup()
+        contract.cleanup()
+
+
 def test_contract_provider_presence_automatic_mode_errors() -> None:
     """
     Purpose:

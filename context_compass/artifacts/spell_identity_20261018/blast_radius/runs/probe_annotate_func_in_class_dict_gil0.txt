@@ -1,0 +1,7 @@
+A1 Plain before: []
+A1 Plain after:  ['__annotate_func__', '__annotations_cache__'] | __annotate_func__ = None
+A2 Annotated before: ['__annotate_func__'] | type: function
+A2 Annotated after:  ['__annotate_func__', '__annotations_cache__']
+A3 prototype id before == after the read: False
+A3 with __annotate_func__=None skipped, id before == after: True
+3.14.7 free-threaded

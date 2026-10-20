@@ -1,0 +1,78 @@
+........................................................................ [ 10%]
+........................................................................ [ 21%]
+........................................................................ [ 31%]
+........................................................................ [ 42%]
+........................................................................ [ 53%]
+........................................................................ [ 63%]
+........................................................................ [ 74%]
+........................................................................ [ 84%]
+........................................................................ [ 95%]
+..................F...........                                           [100%]
+=================================== FAILURES ===================================
+_________ test_stamping_into_a_real_root_store_creates_the_pool_there __________
+
+    def test_stamping_into_a_real_root_store_creates_the_pool_there() -> None:
+        """The pool lands in the owner root's store under the spell_id, composed from the Spell."""
+        spell = _spell(managed_spell_mode=ManagedSpellMode.limited_quantity, managed_spell_limit=5)
+        store = ConduitCreations(conduit_id="root-1")
+        try:
+>           _stamp(spell, store)
+
+tests/unit/melder/spellbook/test_spell_managed_quantity_stamp.py:122: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/unit/melder/spellbook/test_spell_managed_quantity_stamp.py:95: in _stamp
+    spell._add_owned_conduit(
+src/melder/aether/spellbook/spell.py:1717: in _add_owned_conduit
+    creations.ensure_managed_quantity(self)
+src/melder/aether/conduit/creations/creations.py:1173: in ensure_managed_quantity
+    ReleaseManagedSpell().register(pool, root_conduit_id=owner_conduit_id)
+    ^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <melder.aether.conduit.creations.release_managed_spell.ReleaseManagedSpell object at 0x2afa5f3abe0>
+aether = None
+
+    def __init__(self, *, aether: Optional[Aether] = None) -> None:
+        """
+        Initialize the registry once, for the Aether that hosts it.
+    
+        Contract:
+            - Once-only: the `_initialized` check and the whole body run under `_singleton_lock`, so concurrent
+              first callers build one registry; every later call returns at the unlocked fast path.
+            - The first construction requires the hosting `Aether` (`Aether.__init__` passes `aether=self`). Without
+              it the construction is refused and the singleton bookkeeping reset, so a later proper one succeeds;
+              `import melder` boots Aether, so user code always finds the hosted instance.
+            - The registry keeps no reference to its host: Aether owns it, not the other way round.
+            - Starts empty: stores register their pools as they take them.
+    
+        Args:
+            aether:
+                The hosting Aether; required on the first construction, ignored afterwards.
+    
+        Raises:
+            ValueError: On a first construction without the hosting Aether.
+    
+        Returns:
+            None.
+        """
+        if ReleaseManagedSpell._initialized:
+            return
+        with ReleaseManagedSpell._singleton_lock:
+            if ReleaseManagedSpell._initialized:
+                return
+            if aether is None:
+                # Already under the singleton lock: drop the half-built instance so a later first construction by
+                # Aether starts clean.
+                if ReleaseManagedSpell._instance is self:
+                    ReleaseManagedSpell._instance = None
+                ReleaseManagedSpell._initialized = False
+>               raise ValueError(
+                    "ReleaseManagedSpell is created by Aether at boot; construct Aether() first (import melder "
+                    "does), then ReleaseManagedSpell() returns it."
+                )
+E               ValueError: ReleaseManagedSpell is created by Aether at boot; construct Aether() first (import melder does), then ReleaseManagedSpell() returns it.
+
+src/melder/aether/conduit/creations/release_managed_spell.py:161: ValueError
+=========================== short test summary info ============================
+FAILED tests/unit/melder/spellbook/test_spell_managed_quantity_stamp.py::test_stamping_into_a_real_root_store_creates_the_pool_there
+1 failed, 677 passed in 10.21s

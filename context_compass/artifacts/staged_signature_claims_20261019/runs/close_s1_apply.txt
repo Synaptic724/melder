@@ -1,0 +1,3 @@
+anchor dropped: | managed_spell_lifecycle_map
+ready: 2026-10-19T14:25:39Z
+applied

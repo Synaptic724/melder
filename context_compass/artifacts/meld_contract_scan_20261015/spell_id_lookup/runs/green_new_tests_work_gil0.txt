@@ -1,0 +1,40 @@
+....................................                                     [100%]
+==================================== PASSES ====================================
+=========================== short test summary info ============================
+PASSED tests/component/melder/spellbook/test_spellbook_component_find_spell_by_spell_id.py::test_active_spell_id_returns_its_active_spell
+PASSED tests/component/melder/spellbook/test_spellbook_component_find_spell_by_spell_id.py::test_parked_spell_id_returns_the_parked_spell_itself
+PASSED tests/component/melder/spellbook/test_spellbook_component_find_spell_by_spell_id.py::test_after_a_notch_each_spell_id_returns_its_own_spell
+PASSED tests/component/melder/spellbook/test_spellbook_component_find_spell_by_spell_id.py::test_parked_spell_moved_to_another_index_returns_itself
+PASSED tests/component/melder/spellbook/test_spellbook_component_find_spell_by_spell_id.py::test_parked_spell_split_off_to_a_fresh_index_returns_itself
+PASSED tests/component/melder/spellbook/test_spellbook_component_find_spell_by_spell_id.py::test_disposed_parked_spell_returns_none
+PASSED tests/component/melder/spellbook/test_spellbook_component_find_spell_by_spell_id.py::test_transfer_moves_both_spell_ids_to_the_target_book
+PASSED tests/component/melder/spellbook/test_spellbook_component_find_spell_by_spell_id.py::test_unknown_and_foreign_spell_ids_return_none
+PASSED tests/component/melder/spellbook/test_spellbook_component_find_spell_by_spell_id.py::test_lookup_never_iterates_the_live_active_index_map
+PASSED tests/component/melder/spellbook/test_spellbook_component_find_spell_by_spell_id.py::test_parked_spell_disposed_mid_lookup_never_makes_it_raise
+PASSED tests/integration/melder/aether/conduit/test_spell_id_lookup_returns_that_spell_integration.py::test_get_spell_by_spell_id_with_a_parked_spell_id_returns_that_parked_spell
+PASSED tests/integration/melder/aether/conduit/test_spell_id_lookup_returns_that_spell_integration.py::test_after_a_notch_each_spell_id_still_returns_its_own_spell
+PASSED tests/integration/melder/aether/conduit/test_spell_id_lookup_returns_that_spell_integration.py::test_get_spell_permissions_returns_the_permissions_that_spell_was_bound_with
+PASSED tests/integration/melder/aether/conduit/test_spell_id_lookup_returns_that_spell_integration.py::test_an_unknown_spell_id_still_raises_value_error
+PASSED tests/integration/melder/aether/conduit/test_spell_id_lookup_returns_that_spell_integration.py::test_the_old_lookup_names_are_gone
+PASSED tests/integration/melder/aether/conduit/test_spell_id_lookup_returns_that_spell_integration.py::test_add_spell_to_contract_by_the_parked_spell_id_grants_that_spell_parked
+PASSED tests/integration/melder/aether/conduit/test_spell_id_lookup_returns_that_spell_integration.py::test_remove_spell_from_contract_by_the_parked_spell_id_removes_that_grant
+PASSED tests/integration/melder/aether/conduit/test_spell_id_lookup_returns_that_spell_integration.py::test_guard_a_transfer_by_the_parked_spell_id_moves_the_whole_index_unchanged
+PASSED tests/integration/melder/aether/conduit/test_spell_id_lookup_returns_that_spell_integration.py::test_guard_a_dependency_grant_after_the_notch_contracts_the_version_now_active
+PASSED tests/integration/melder/aether/conduit/test_spell_id_lookup_returns_that_spell_integration.py::test_guard_a_transfer_with_dependencies_after_the_notch_moves_the_dependency_index
+PASSED tests/unit/melder/aether/test_command_system_spell_id_lookups.py::test_get_spell_by_source_id_returns_the_spell_its_record_names_not_the_index_active_spell
+PASSED tests/unit/melder/aether/test_command_system_spell_id_lookups.py::test_get_spell_by_spell_id_returns_the_spell_that_owns_it
+PASSED tests/unit/melder/aether/test_command_system_spell_id_lookups.py::test_get_spell_by_source_id_refuses_an_ownerless_record
+PASSED tests/unit/melder/aether/test_command_system_spell_id_lookups.py::test_get_spell_by_source_id_refuses_a_spell_id_the_owner_book_no_longer_holds
+PASSED tests/unit/melder/aether/test_command_system_spell_id_lookups.py::test_get_spell_by_source_id_still_enforces_the_spell_index_acl
+PASSED tests/unit/melder/aether/test_command_system_spell_id_lookups.py::test_static_get_spell_by_spell_id_melds_only_the_named_spell_id
+PASSED tests/unit/melder/aether/test_command_system_spell_id_lookups.py::test_static_get_spell_by_source_id_melds_only_the_named_record
+PASSED tests/unit/melder/aether/test_command_system_spell_id_lookups.py::test_static_lookups_by_spell_id_and_source_id_never_answer_another_version
+PASSED tests/unit/melder/aether/test_command_system_spell_id_lookups.py::test_static_lookup_by_spell_id_names_the_spell_id_for_an_unsupported_existence
+PASSED tests/unit/melder/aether/test_command_system_spell_id_lookups.py::test_static_index_path_keeps_answering_the_live_object_of_a_record_of_the_index
+PASSED tests/unit/melder/aether/test_command_system_spell_id_lookups.py::test_rooms_advertise_get_spell_by_spell_id_and_keep_no_old_name[CapabilityCommandSystem]
+PASSED tests/unit/melder/aether/test_command_system_spell_id_lookups.py::test_rooms_advertise_get_spell_by_spell_id_and_keep_no_old_name[StaticCommandSystem]
+PASSED tests/integration/melder/aether/rift/test_rift_spell_id_lookups_return_that_spell_integration.py::test_the_room_answers_the_active_version_by_spell_id_source_id_and_index
+PASSED tests/integration/melder/aether/rift/test_rift_spell_id_lookups_return_that_spell_integration.py::test_after_a_notch_the_room_answers_the_version_now_active
+PASSED tests/integration/melder/aether/rift/test_rift_spell_id_lookups_return_that_spell_integration.py::test_a_parked_version_is_refused_never_answered_with_the_active_one[False]
+PASSED tests/integration/melder/aether/rift/test_rift_spell_id_lookups_return_that_spell_integration.py::test_a_parked_version_is_refused_never_answered_with_the_active_one[True]
+36 passed in 0.94s

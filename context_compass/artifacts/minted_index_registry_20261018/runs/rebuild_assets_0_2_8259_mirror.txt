@@ -1,0 +1,13 @@
+WROTE  _agent_documentation agent_documentation_manifest.py (470 entries, v0.2.8259)
+WROTE  _bind_guard          bind_guard_manifest.py (630 entries, v0.2.8259)
+WROTE  _system_documents    system_documents_manifest.py (4 entries, v0.2.8259)
+
+copied src/melder/_build_assets/_agent_documentation/manifest/agent_documentation_manifest.py (byte-equal)
+copied src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py (byte-equal)
+copied src/melder/_build_assets/_system_documents/manifest/graph_adjacency_manifest.py (byte-equal)
+copied src/melder/_build_assets/_system_documents/manifest/system_documents_index.py (byte-equal)
+copied src/melder/_build_assets/_system_documents/manifest/system_documents_manifest.py (byte-equal)
+copied src/melder/_build_assets/_system_documents/payloads/src_architecture_payload.py (byte-equal)
+copied src/melder/_build_assets/_system_documents/payloads/src_components_payload.py (byte-equal)
+copied src/melder/_build_assets/_system_documents/payloads/src_graph_payload.py (byte-equal)
+mirror src/ and the runner's system documents equal the repository's

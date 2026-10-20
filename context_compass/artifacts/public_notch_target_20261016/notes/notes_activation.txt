@@ -1,0 +1,109 @@
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: The owner chose option A (chat 2026-10-16: "just use the private version if its inside the public call thats
+    reasonable"): `Conduit.notch_spell` takes `spell_id=` beside `spell=`, exactly one of the two, and resolves the id
+    inside the public call through the Book's internal `_get_owned_spell` (the active or a parked version) before the
+    transaction starts. `find_spell_by_id` keeps its live-spell answer and no public lookup is added. The same message
+    accepted EPIC-2026-10-14-managed_spell_quantity and directed this task next ("continue onto the next stuff
+    please").
+  EVIDENCE:
+  - context_compass/tickets/tasks/2026-10-16_public_notch_target_for_staged_versions_task.md:164-180
+  - src/melder/aether/spellbook/spellbook.py:3290-3309
+  IMPACT: The public shape is settled; the build follows the patch lane and the mapping note.
+  NEXT: Probe what today's notch does with each way a caller can name its target.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: Today's notch checks nothing about its target before it mutates (probe on the 0.2.8248 tree, Python 3.14.7t,
+    GIL off and on, same results; no monkeypatches). C1: `find_spell_by_id(x2)` returns index X's live x1, so a notch
+    to it is a silent no-op and `meld(spell_id=x2)` still raises KeyError. C2: the private `_get_owned_spell(x2)`
+    notches both ways. C3: notching X to y2, a version parked in another index Y of the same Book, RETURNS and
+    corrupts both indexes - X selects y2 with no active-map entry (a meld of x1 raises KeyError), Y keeps selecting y1
+    while its active-map entry is y2, and a meld of y2 raises RuntimeError "Cannot build CreationContext before
+    spell_codegen_creation exists". C4 (Y's active y1) and C5 (another Book's parked version) raise RuntimeError
+    "Owned spell_id not parked for reactivation" after X's active version was already parked, so X has no active
+    version (a meld of x1 raises KeyError) until a notch back to x1. Cause: `_apply_notch` parks the outgoing version
+    first, and `_reactivate_owned_spell` files the incoming one under its own `spell.spell_index`, not the index
+    passed.
+  EVIDENCE:
+  - context_compass/artifacts/public_notch_target_20261016/probes/probe_notch_target_today.py:1-132
+  - context_compass/artifacts/public_notch_target_20261016/runs/probe_notch_target_today_gil0.txt:1-6
+  - context_compass/artifacts/public_notch_target_20261016/runs/probe_notch_target_today_gil1.txt:5-10
+  - src/melder/aether/conduit/conduit.py:5622-5710
+  - src/melder/aether/spellbook/spellbook.py:3826-3967
+  - src/melder/aether/spellbook/spellbook.py:1563-1621
+  IMPACT: A `spell_id=` can name any version of the Book, so the id path must check its target before the
+    transaction; the same checks close C3-C5 for `spell=`, which today corrupt the Book or leave an index without an
+    active version.
+  NEXT: Record the target-check decision.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: `notch_spell` resolves and checks its target before it starts the transaction, for both forms: (1) exactly one
+    of `spell` and `spell_id` (ValueError otherwise, in the words `meld` and `managed_spell_meld` use) and a string id
+    (TypeError); (2) the target is a version the conduit's Book owns - `spell_id` resolves through `_get_owned_spell`,
+    and a `spell` must be the object `_get_owned_spell(spell.spell_id)` returns - else ValueError; (3) the target
+    belongs to the index passed (`target.spell_index is spell_index`, the check `_apply_remove_from_index` makes),
+    else ValueError naming the version and the remedy. A refused notch mutates nothing. Valid calls behave as before;
+    the failing forms of C3-C5 raise ValueError up front instead of corrupting the Book or raising RuntimeError
+    half-way.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spellbook.py:4177-4262
+  - src/melder/aether/conduit/conduit.py:5020-5021
+  - src/melder/aether/conduit/conduit.py:5142-5145
+  - context_compass/artifacts/public_notch_target_20261016/runs/probe_notch_target_today_gil0.txt:1-6
+  IMPACT: The target is safe to name by id; the release note lists the new ValueErrors as a change for calls that were
+    already broken.
+  NEXT: Write the patch lane (architecture and Conduit component patch) and the mapping note.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: File custody. EPIC-2026-10-14-managed_spell_quantity closed at 2026-10-16T12:17:31Z, so spellbook.py and
+    transfer_of_ownership.py are released to melder_1 now (its TASK-2026-10-16-recheck_contract_consumers_when_provider_
+    changes waits on that handoff); this task edits neither. conduit.py is held by this task until it lands: melder_1's
+    D3 also edits `Conduit.notch_spell` (after the notch window), and its build has not started (it waits on the
+    owner's approval). The change leaves the window and the fan-out lines of `notch_spell` as they are (the resolved
+    target is rebound to `spell`), so melder_1's planned diff applies with at most a context shift; conduit.py is
+    released at this task's closure. The Codex bridge does not connect (list_threads: "Cannot connect to Codex
+    desktop") and melder_1 is a Claude session, so the owner relays this handoff.
+  EVIDENCE:
+  - context_compass/tickets/tasks/2026-10-16_recheck_contract_consumers_when_provider_changes_task.md:25-34
+  - context_compass/system_docs/patches/active/contract_recheck_on_notch_2026_10_16/architecture_patch.md:58-69
+  - context_compass/system_docs/patches/active/contract_recheck_on_notch_2026_10_16/architecture_patch.md:144-150
+  IMPACT: melder_1's wait on spellbook.py is over; conduit.py keeps one writer.
+  NEXT: The owner relays the handoff to melder_1.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION_REQUEST
+  CLAIM: Should `add_to_spell_index` and `remove_from_spell_index` take the same `spell_id=` keyword? Both move only a
+    parked version (their seams refuse an active one), so with no public call returning a parked Spell neither can be
+    called on public objects today - the gap this task closes for the notch. The keyword would resolve the id the
+    same way (one shared resolver); their seams already check ownership and membership before they mutate.
+    Recommended: yes, in this landing; without an answer by the landing they get a backlog task instead.
+  EVIDENCE:
+  - src/melder/aether/conduit/conduit.py:5712-5788
+  - src/melder/aether/conduit/conduit.py:5790-5851
+  - src/melder/aether/spellbook/spellbook.py:4002-4096
+  - src/melder/aether/spellbook/spellbook.py:4177-4262
+  IMPACT: The owner ruled on the notch; extending another public surface waits for his word.
+  NEXT: Ask the owner in the report; build the notch meanwhile.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8

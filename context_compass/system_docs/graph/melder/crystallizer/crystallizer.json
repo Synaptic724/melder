@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/crystallizer.py",
- "source_sha256": "88364c444c26585e53c8a423843b0807f3d521a024457d429ddcfe0513947c1a",
+ "source_sha256": "e90c5026bd5fac4e26ee430f920753faea161bab4336614cebc1a5374226fedc",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.crystallizer": {
@@ -106,7 +106,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "b8ac3b89c248f6655eb892e798a82c5e1e2f4884eb54d6470a2237449136e972",
+   "span_sha256": "50a3e4cf95fdac61e5f71f351993dd6e692214baa9bf672fcc64740ca05b86f1",
    "role": "Hosted singleton crystallizer root.",
    "responsibilities": [
     "owns installed crystallizer configuration and activation state",

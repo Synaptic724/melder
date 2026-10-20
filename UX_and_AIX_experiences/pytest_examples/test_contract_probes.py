@@ -49,11 +49,16 @@ def test_probe_spell_override_delivers_ctor_kwargs():
 
 def test_probe_with_book_is_lock_only_not_cleanup():
     """__exit__ releases the lock; the book must remain USABLE after."""
+    class AfterWith:
+        """A second spell for the book. Probe again would be refused
+        whether or not the book was cleaned: one class registers once,
+        because its spell_id is the SHA256 of its code (0.2.8257)."""
+
     book = md.Spellbook()
     with book:
         book.bind(spell=Probe, existence="unique")
     # if the with-block had cleaned the book, this second bind would raise
-    second = book.bind(spell=Probe, existence="many", binding_name="again")
+    second = book.bind(spell=AfterWith, existence="many", binding_name="again")
     assert isinstance(second, str)
 
 
@@ -133,52 +138,64 @@ def _make_potato(marker: str):
     return Potato
 
 
-def test_probe_same_name_different_internals_currently_refused():
+def test_probe_same_name_different_internals_are_two_spells():
     """
-    DIVERGENCE FLAG (runs 1-2): owner design intent says spells are
-    SHA256 content-matched and same-name/different-internals passes WITH
-    binding names. The runtime REFUSES it: DuplicateSpellNameStrategy
-    keys on the bare name and ignores the binding_name/spellframe
-    disambiguation its own error message recommends. This probe pins
-    CURRENT behavior; flip it to the pass-assertion when the strategy is
-    fixed (tracked on the UX/AIX beginner epic as a runtime bug).
+    FLIPPED (0.2.8206, 0.2.8257): two classes NAMED Potato with different
+    internals are two spells, each at its own address. A spell_id is the
+    SHA256 of each class's code - here a different class-level value and
+    a different closure value - so the ids differ, and since 0.2.8206
+    Phase 4 checks the full (spellframe, binding_name) address instead of
+    the bare name, so conjure accepts both.
+
+    This row used to pin the refusal under a DIVERGENCE FLAG: owner design
+    intent said spells are SHA256 content-matched and same-name/different-
+    internals passes WITH binding names, while DuplicateSpellNameStrategy
+    keyed on the bare name. The intent is the behavior now; the flag is
+    closed.
     """
     book = md.Spellbook()
     book.bind(spell=_make_potato("russet"), existence="unique",
               binding_name="russet")
     book.bind(spell=_make_potato("yukon"), existence="many",
               binding_name="yukon")
-    with pytest.raises(md.SpellbookValidationError):
-        book.conjure()
-    print("same-name diff-SHA with binding names: REFUSED (intent: pass)")
+    conduit = book.conjure()
+    russet = conduit.meld(spell="Potato", binding_name="russet")
+    yukon = conduit.meld(spell="Potato", binding_name="yukon")
+    assert russet.describe() == "potato:russet"
+    assert yukon.describe() == "potato:yukon"
+    print("same-name diff-SHA with binding names: two spells (the intent)")
 
 
-def test_probe_same_class_rebind_without_frames_fails_conjure():
+def test_probe_same_class_rebind_is_refused_at_bind():
     """
-    The observed run truth: the SAME class (same SHA) bound twice with
-    only binding_names to tell them apart dies at conjure with
+    The SAME class bound twice in one book, told apart only by
+    binding_name, is refused at the second BIND (0.2.8257): a spell_id is
+    the SHA256 of the class's code and of nothing from the bind call, so
+    both binds name one spell, and one object registers once. This row
+    used to pin the observed run truth before that - the binding_name made
+    a second spell_id and conjure refused the pair with
     DUPLICATE_SPELL_NAME.
     """
     book = md.Spellbook()
     book.bind(spell=Probe, existence="unique", binding_name="first")
-    book.bind(spell=Probe, existence="many", binding_name="second")
-    with pytest.raises(md.SpellbookValidationError):
-        book.conjure()
-    print("same-SHA rebind without frames: conjure refused (as observed)")
+    with pytest.raises(RuntimeError, match="Spell ID collision"):
+        book.bind(spell=Probe, existence="many", binding_name="second")
+    print("same class rebound by binding_name: refused at bind")
 
 
-def test_probe_same_class_rebind_with_distinct_frames():
+def test_probe_same_class_rebind_across_spellframes_is_refused_at_bind():
     """
-    ANSWERED (run 2): frame separation does NOT legalize same-name
-    rebinds - the name strategy ignores frames entirely. Part of the
-    same divergence flag as the potato probe.
+    ANSWERED (0.2.8257): another spellframe does not make the same class
+    a second spell either. The spell_id is the class's code, so the
+    second bind is refused whatever spellframe or binding_name it names.
+    This row used to pin a conjure refusal from the name strategy, which
+    ignored frames (run 2) - part of the potato row's divergence flag,
+    now closed.
     """
     book = md.Spellbook()
     book.bind(spell=Probe, existence="unique",
               spellframe="pool-a", binding_name="first")
-    book.bind(spell=Probe, existence="many",
-              spellframe="pool-b", binding_name="second")
-    with pytest.raises(md.SpellbookValidationError):
-        book.conjure()
-    print("same-SHA rebind across frames: REFUSED (frames do not "
-          "disambiguate the name strategy either - same divergence flag)")
+    with pytest.raises(RuntimeError, match="Spell ID collision"):
+        book.bind(spell=Probe, existence="many",
+                  spellframe="pool-b", binding_name="second")
+    print("same class rebound in another spellframe: refused at bind")

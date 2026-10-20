@@ -1,0 +1,16 @@
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: This lane carries one system-doc item for TASK-2026-10-16-stamp_test_boots_its_own_aether (closed,
+    tests only): after melder_1 releases tests_components.md, its code-map entry for
+    tests/unit/melder/spellbook/test_spell_managed_quantity_stamp.py moves to end_line and loc 185 (the file gained
+    the 33-line fresh-Aether fixture) and its note names the fixture; the document's index is regenerated with the
+    wording edits, in the same pass.
+  EVIDENCE:
+  - context_compass/system_docs/tests_components.md:3194-3199
+  - context_compass/tickets/tasks/completed/2026-10-16_stamp_test_boots_its_own_aether_task.md:1-8
+  IMPACT: One more held edit, in a document this lane edits anyway; no notch of its own (tests only).
+  NEXT: Hold for melder_1's release NOTICE.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 7

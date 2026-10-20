@@ -1,0 +1,12 @@
+captured_at: 2026-10-10T18:17:52Z
+branch: codex_features2
+head: 3d184cac699dfb5981449e8b841624e2eea59276
+head_commit: 2026-10-10T12:11:19-06:00 | Add scan_bind option parity and update version to 0.2.8228
+upstream: origin/codex_features2 at 3d184cac699dfb5981449e8b841624e2eea59276 (local ref, no fetch); ahead/behind: 0/0
+package_version: __version__ = "0.2.8228"
+working_tree_vs_head (content, line endings normalized): HEAD files: 5985 | byte-identical: 4232 | line-ending-only differences: 1753 | content changes and additions listed below: 0
+uncommitted source changes: none (no modified, added or untracked non-ignored file)
+sha256 13988deba96febe2ffb830b8cc0039463185f7443146e539df196d150c1580ae src/melder/aether/spellbook/spellbook.py (working tree); head blob 04b9701bfde68e5e6ec0023ccfb792db816e28f5
+sha256 b77b5ba0916c17f8185a6960f12201a4db9e7d00d7ab6c8219e4032927e72659 src/melder/aether/spellbook/bind/spell_index.py (working tree); head blob 86c926587879465f3b6700c34ab8dc7c6961510f
+sha256 ca1c16d6089bb39f029d9e3d230189578590363554108deb8206e935959dcf81 src/melder/utilities/general_base/cleanable.py (working tree); head blob 99cdcfcd8533920bff35a2f16619e1096119a72e
+find_spell_by_id: src/melder/aether/spellbook/spellbook.py:1990-2041

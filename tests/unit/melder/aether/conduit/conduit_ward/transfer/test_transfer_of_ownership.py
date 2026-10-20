@@ -119,13 +119,20 @@ class FakeSpellStatesSystem:
         """
         return self._states.get(index_id)
 
-    def register_index(self, spell_index: SpellIndex, owner_spellbook_id: Optional[str] = None) -> None:
+    def register_index(
+            self,
+            spell_index: SpellIndex,
+            owner_spellbook_id: Optional[str] = None,
+            *,
+            resolvable: Optional[bool] = None,
+    ) -> None:
         """
         Register a lineage state for the provided spell index.
 
         Args:
             spell_index: SpellIndex whose state should be created.
-            spell: Spell object used to seed state metadata.
+            owner_spellbook_id: Owning Spellbook id (ignored here).
+            resolvable: The moved version's capability, as the transfer passes it (ignored here).
         """
         if spell_index.id in self._states:
             return
@@ -784,7 +791,7 @@ class FakeSpellbook:
         Remove owned spell_id mappings for the given spell.
 
         Args:
-            spell_id: Current version id for the spell.
+            spell_id: The spell's current spell_id.
             spell_obj: Owned spell instance being removed.
         Raises:
             RuntimeError: If the owned map or pool map references a different spell.
@@ -926,7 +933,7 @@ class FakeConduit:
     Minimal conduit stub exposing attributes required by TransferOfOwnership.
 
     Contract:
-    - get_spell_by_id returns the first matching spell by id.
+    - get_spell_by_spell_id returns the first matching spell by id.
     """
 
     _aether: Optional[FakeAether] = None
@@ -977,7 +984,7 @@ class FakeConduit:
         """
         return self._conduit_cloud
 
-    def get_spell_by_id(self, spell_id: str, frame_name: str) -> Optional[Any]:
+    def get_spell_by_spell_id(self, spell_id: str, frame_name: str) -> Optional[Any]:
         """
         Return a spell by id from this conduit.
 
@@ -1105,6 +1112,7 @@ def build_spell(
         dependencies=list(dependencies),
         existence=existence,
         permissions=permissions,
+        resolvable=True,
     )
 
     def _add_owned_conduit(
@@ -1132,7 +1140,17 @@ def build_spell(
         spell._dynamic_environment = dynamic_environment
         spell._creation_gate_controller = creation_gate_controller
 
+    def _spell_index_unless_cleaned() -> Optional[SpellIndex]:
+        """
+        Return the spell's current index, as `Spell._spell_index_unless_cleaned` does for a live spell.
+
+        Returns:
+            Optional[SpellIndex]: The index the spell belongs to now.
+        """
+        return spell.spell_index
+
     spell._add_owned_conduit = _add_owned_conduit
+    spell._spell_index_unless_cleaned = _spell_index_unless_cleaned
     return spell
 
 
@@ -1462,7 +1480,7 @@ def test_resolve_spell_uses_spell_id_string() -> None:
     Verify _resolve_spell resolves by spell id when given a string.
 
     Contract:
-    - String input uses conduit.get_spell_by_id.
+    - String input uses conduit.get_spell_by_spell_id.
     """
     env = build_environment()
     transfer = TransferOfOwnership(
@@ -1916,7 +1934,7 @@ def test_deps_resolvable_on_target_false_when_error() -> None:
         """
         raise RuntimeError("boom")
 
-    env.target.get_spell_by_id = boom
+    env.target.get_spell_by_spell_id = boom
     transfer = TransferOfOwnership(
         source_conduit=env.source,
         target_conduit=env.target,
@@ -4160,7 +4178,7 @@ def test_transfer_owned_dependencies_continues_after_exception(monkeypatch: pyte
 
     monkeypatch.setattr(transfer_module, "TransferOfOwnership", FakeTransfer)
 
-    original_lookup = env.source.get_spell_by_id
+    original_lookup = env.source.get_spell_by_spell_id
 
     def lookup_with_failure(spell_id: str, frame_name: str) -> Optional[Any]:
         """
@@ -4178,7 +4196,7 @@ def test_transfer_owned_dependencies_continues_after_exception(monkeypatch: pyte
             raise RuntimeError("boom")
         return original_lookup(spell_id, frame_name)
 
-    env.source.get_spell_by_id = lookup_with_failure
+    env.source.get_spell_by_spell_id = lookup_with_failure
     transfer = TransferOfOwnership(
         source_conduit=env.source,
         target_conduit=env.target,

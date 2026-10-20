@@ -1,0 +1,35 @@
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: The spell_id wording and the release note carry the owner's extension. Reworded to spell_id and nothing
+    else: UX expert 17 (docstring, comments and prints; two paragraphs rewrapped) and 26 (one comment), both rerun
+    green with the GIL off and on; the expert concept map's lesson-17 entry, and its "DOCSTRINGS THAT LIE" block
+    marked RESOLVED in 0.2.8249 with its history kept; the docstrings of the two notch test files (the 52 targeted
+    tests still pass in both modes); two comment lines in conduit.py (no line moved). The release-note section is
+    retitled "`notch_spell`, `add_to_spell_index` and `remove_from_spell_index` take a `spell_id`; a notch checks
+    its target": its example also moves the parked version out and back by spell_id, new bullets give the index
+    moves' refusals and the corrected docstrings, the quoted notch messages carry the spell_id text; the S8
+    comment and two packaging bullets say spell_id. A new probe runs both note examples as written and compares
+    the three quoted messages with what the calls raise: all three match, eleven refusals leave both indexes
+    intact, the moves by spell_id work, GIL off and on. Left as written: "version id" in another lane's sections
+    (the 0.2.8229 lookup, lines 46 and 656) and the docstrings of `_deactivate_borrowed_spell` and
+    `Spellbook._get_owned_spell` ("Version id of ..."), code this lane does not change.
+  EVIDENCE:
+  - UX_and_AIX_experiences/04_expert/17_notch_swapping_a_live_object.py:1-171
+  - UX_and_AIX_experiences/04_expert/26_codegen_create_modify_iterate.py:230-233
+  - UX_and_AIX_experiences/04_expert/_concept_map.txt:348-388
+  - UX_and_AIX_experiences/04_expert/_concept_map.txt:865-883
+  - tests/integration/melder/aether/conduit/test_notch_spell_by_id_integration.py:1-10
+  - release_docs/next_version_release.md:580-648
+  - release_docs/next_version_release.md:714-721
+  - context_compass/artifacts/public_notch_target_20261016/probes/probe_release_note_examples_ext.py:1-194
+  - context_compass/artifacts/public_notch_target_20261016/runs/probe_release_note_ext_gil0.txt:1-20
+  - context_compass/artifacts/public_notch_target_20261016/runs/probe_release_note_ext_gil1.txt:1-20
+  - context_compass/artifacts/public_notch_target_20261016/runs/ux17_spell_id_gil0.txt:1-18
+  - context_compass/artifacts/public_notch_target_20261016/runs/green_wording_gil1.txt:1-2
+  IMPACT: The lane's user-facing text names spells by spell_id and the note's examples and messages are checked
+    against the code; the system docs, their indexes, the graph and the tests docs remain.
+  NEXT: Bring src_architecture and src_components to the extension, with remeasured conduit.py citations.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8

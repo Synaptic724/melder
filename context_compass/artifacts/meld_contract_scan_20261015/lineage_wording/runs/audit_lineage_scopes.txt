@@ -1,0 +1,83 @@
+== src/melder/aether/conduit/conduit.py:4290 [FunctionDef transfer_spell_ownership 4273-4382]
+   - - The whole lineage moves: the spell's index, with its active and
+   + - The spell's whole SpellIndex moves: the index, with its active and
+     LC 4335: Either way, `unique_per_conduit_lineage` instances stay where
+== src/melder/aether/conduit/conduit.py:4344 [FunctionDef transfer_spell_ownership 4273-4382]
+   - invalidate_after_transfer: If True, mark lineage dirty after transfer.
+   + invalidate_after_transfer: If True, mark the moved SpellIndex dirty after transfer.
+     LC 4335: Either way, `unique_per_conduit_lineage` instances stay where
+== src/melder/aether/conduit/conduit.py:4345 [FunctionDef transfer_spell_ownership 4273-4382]
+   - mark_dependencies_dirty: If True, mark dependency lineages dirty (even if not moved).
+   + mark_dependencies_dirty: If True, mark the dependencies' indexes dirty (even if not moved).
+     LC 4335: Either way, `unique_per_conduit_lineage` instances stay where
+== src/melder/aether/conduit/conduit.py:5682 [FunctionDef notch_spell 5650-5787]
+   - remove anything. The previous member stays in the lineage, parked, and a
+   + remove anything. The previous member stays in the index, parked, and a
+     LC 5752: "conduit_lineage_gate_ops": (
+     LC 5753: self._aetheric_frame.dev_ops_manager.conduit_lineage_gate_ops
+== src/melder/aether/conduit/conduit.py:5784 [FunctionDef notch_spell 5650-5787]
+   - # Index-link receivers follow the lineage: move their subscription head
+   + # Index-link receivers follow the index's selected spell: move their subscription head
+     LC 5752: "conduit_lineage_gate_ops": (
+     LC 5753: self._aetheric_frame.dev_ops_manager.conduit_lineage_gate_ops
+== src/melder/aether/conduit/conduit_ward/conduit_ward.py:114 [ClassDef ConduitWard 55-143]
+   - `Permissions` bounds what each granted lineage allows, and
+   + `Permissions` bounds what each granted spell or SpellIndex allows, and
+     LC 69: - Root pointer: the **normal conduit** at the top of this lineage tree.
+== src/melder/aether/conduit/conduit_ward/conduit_ward.py:117 [ClassDef ConduitWard 55-143]
+   - operation wards cannot express - changing who OWNS a lineage rather
+   + operation wards cannot express - changing who OWNS a SpellIndex rather
+     LC 69: - Root pointer: the **normal conduit** at the top of this lineage tree.
+== src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py:374 [FunctionDef execute 367-507]
+   - 1. disable the lineage so callers cannot resolve it mid-transfer
+   + 1. disable the SpellIndex so callers cannot resolve it mid-transfer
+     LC 416: # Creations. unique_per_conduit_lineage instances are resolver-relative:
+     LC 418: # (`caller_creations._root_creations`), never the binding owner's. They
+     LC 424: if spell_obj.existence is Existence.unique_per_conduit_lineage:
+== src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py:379 [FunctionDef execute 367-507]
+   - 5. leave the lineage gated/dirty or simply re-enable it according to
+   + 5. leave the SpellIndex gated/dirty or simply re-enable it according to
+     LC 416: # Creations. unique_per_conduit_lineage instances are resolver-relative:
+     LC 418: # (`caller_creations._root_creations`), never the binding owner's. They
+     LC 424: if spell_obj.existence is Existence.unique_per_conduit_lineage:
+== src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py:388 [FunctionDef execute 367-507]
+   - runtime view, the lineage is lifted back to a safe gated state, and the
+   + runtime view, the SpellIndex is lifted back to a safe gated state, and the
+     LC 416: # Creations. unique_per_conduit_lineage instances are resolver-relative:
+     LC 418: # (`caller_creations._root_creations`), never the binding owner's. They
+     LC 424: if spell_obj.existence is Existence.unique_per_conduit_lineage:
+== src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py:443 [FunctionDef execute 367-507]
+   - # After successful transfer, move lineage back to gated/dirty so validation can clear it.
+   + # After successful transfer, move the SpellIndex back to gated/dirty so validation can clear it.
+     LC 416: # Creations. unique_per_conduit_lineage instances are resolver-relative:
+     LC 418: # (`caller_creations._root_creations`), never the binding owner's. They
+     LC 424: if spell_obj.existence is Existence.unique_per_conduit_lineage:
+== src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py:820 [FunctionDef _collect_impacted_conduit_ids 804-868]
+   - of the impacted lineages
+   + of the impacted indexes
+     LC 852: # impacted-index sweep never needs the lesser lineage (owner ruling, 2026-09-27).
+     LC 853: for conduit_id in self._aether.list_root_conduit_ids(self._frame_name):
+== src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py:852 [FunctionDef _collect_impacted_conduit_ids 804-868]
+   - # lineage sweep never needs the lesser lineage (owner ruling, 2026-09-27).
+   + # impacted-index sweep never needs the lesser lineage (owner ruling, 2026-09-27).
+     LC 852: # impacted-index sweep never needs the lesser lineage (owner ruling, 2026-09-27).
+     LC 853: for conduit_id in self._aether.list_root_conduit_ids(self._frame_name):
+== src/melder/aether/conduit/meld/conduit_meld.py:755 [FunctionDef meld_existing_spell 733-890]
+   - - Rejects spellspace-request lineages on the conduit-facing door.
+   + - Rejects spellspace-scoped spells on the conduit-facing door.
+     LC 758: `unique_per_conduit_lineage` and the cluster's team store for
+     LC 857: Existence.unique_per_conduit_lineage,
+     LC 864: elif existence is Existence.unique_per_conduit_lineage:
+     LC 865: store = self._root_creations
+== src/melder/aether/conduit/meld/meld.py:176 [ClassDef Meld 49-189]
+   - lazy phases when a lineage's validity is UNKNOWN or GATED. Contract
+   + lazy phases when a SpellIndex's validity is UNKNOWN or GATED. Contract
+     LC 166: and `unique_per_conduit_lineage` resolve against broader spell-owned or
+== src/melder/aether/spellbook/spell_compiler/system/validation/scope_ordering_strategy.py:70 [FunctionDef run 43-149]
+   - spell_system_states: SpellSystemStates registry for topology and lineage data.
+   + spell_system_states: SpellSystemStates registry for topology and SpellIndex state data.
+     LC 87: Existence.unique_per_conduit_lineage: 2,
+== src/melder/utilities/custom_exceptions/spell_space_scope_error.py:23 [ClassDef SpellSpaceScopeError 5-56]
+   - REFUSES `unique_per_spell_space` lineages rather than inventing a scope,
+   + REFUSES `unique_per_spell_space` spells rather than inventing a scope,
+     LC 47: `unique_per_conduit_cluster`, `unique_per_conduit_lineage`) resolve

@@ -1,4 +1,8 @@
 import threading
+from types import TracebackType
+from typing import Optional, Type
+
+import pytest
 
 from melder.nexus.rift.frame_link.frame_link import FrameLink
 
@@ -139,24 +143,38 @@ def test_frame_link_metadata_property_and_clone_detach_state() -> None:
 
 
 def test_frame_link_cleanup_rechecks_cleaned_inside_lock() -> None:
-    class _CoordinatedLock:
-        def __init__(self, link: FrameLink) -> None:
-            self._link = link
-            self._entered_first = threading.Event()
-            self._second_attempted = threading.Event()
-            self._lock = threading.RLock()
+    """
+    A cleanup completed before lock acquisition makes the outer cleanup return without touching retired state.
 
-        def __enter__(self):
-            if self._entered_first.is_set():
-                self._second_attempted.set()
+    Contract:
+        Complete a real cleanup at the acquisition boundary, after the outer live-state check.
+        The outer call must recheck under the lock, preserve the cleaned-state refusal, and allow
+        another cleanup call. Coordination is synchronous: no worker can time out or remain alive.
+    """
+    class _CoordinatedLock:
+        """Borrow the link and complete one cleanup before the first acquisition of an owned RLock."""
+
+        def __init__(self, link: FrameLink) -> None:
+            """Keep the borrowed link, one RLock, and a one-shot cleanup trigger."""
+            self._link = link
+            self._lock = threading.RLock()
+            self._cleanup_before_entry = True
+
+        def __enter__(self) -> _CoordinatedLock:
+            """Let a real cleanup finish once, then acquire; nested entry skips that trigger."""
+            if self._cleanup_before_entry:
+                self._cleanup_before_entry = False
+                self._link.cleanup()
             self._lock.acquire()
-            if not self._entered_first.is_set():
-                self._entered_first.set()
-                assert self._second_attempted.wait(timeout=1.0)
-                self._link._cleaned = True
             return self
 
-        def __exit__(self, exc_type, exc, tb):
+        def __exit__(
+                self,
+                exc_type: Optional[Type[BaseException]],
+                exc: Optional[BaseException],
+                tb: Optional[TracebackType],
+        ) -> None:
+            """Release the matching acquisition, including when the cleanup body raises."""
             self._lock.release()
 
     link = FrameLink(
@@ -166,11 +184,8 @@ def test_frame_link_cleanup_rechecks_cleaned_inside_lock() -> None:
     )
     link._lock = _CoordinatedLock(link)
 
-    first = threading.Thread(target=link.cleanup)
-    second = threading.Thread(target=link.cleanup)
-    first.start()
-    second.start()
-    first.join(timeout=1.0)
-    second.join(timeout=1.0)
-
+    link.cleanup()
     assert link.cleaned is True
+    with pytest.raises(RuntimeError, match="already been cleaned"):
+        link.metadata
+    link.cleanup()

@@ -1,0 +1,7 @@
+UX experts 09 and 27 against the local crystallizer cache, 2026-10-17T22:35:45Z, melder_1, GIL off.
+The repo's src/melder/__melder_cache__/__crystallizer_cache__/default holds 100 checkpoint files (at the cache's cap).
+Full-repo copy with fix #1 (landed), that cache as copied:      09 and 27 FAIL (09: a flushed checkpoint is not in list_cached_checkpoint_ids())
+landed, the same folder moved aside (empty cache):           09 and 27 pass
+untouched src (base) given the same 100 files:                09 and 27 FAIL the same way
+untouched src (base) with its own 16 files:                   09 and 27 pass (earlier harness runs)
+So the two failures follow the cache's state, not fix #1.

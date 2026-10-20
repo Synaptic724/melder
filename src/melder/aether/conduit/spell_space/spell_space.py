@@ -193,11 +193,11 @@ class SpellSpace(Cleanable):
         # store (`conduit_meld._root_creations`) and uses it for those melds.
         # Likewise a spellspace is not a cluster member: a
         # `unique_per_conduit_cluster` spell resolved from within it stores in
-        # the owner conduit's elected-leader store, so the spellspace meld
+        # the owner conduit's cluster team store, so the spellspace meld
         # references the owner conduit's cluster facade
         # (`conduit_meld._cluster_creations`) rather than owning its own. The
         # facade is filled on election by ConduitCluster, so a spellspace built
-        # after election still resolves into the same leader store.
+        # after election still resolves into the same team store.
         self._meld: SpellSpaceMeld = SpellSpaceMeld(
             spellspace=self,
             spellspace_creations=self._creations,
@@ -725,7 +725,7 @@ class SpellSpace(Cleanable):
         Contract:
             - SpellSpaceMeld authorizes only many and unique_per_spell_space.
             - The target store is always this space's own Creations. No conduit,
-              Spell owner, lineage-root or cluster-leader store can be selected.
+              Spell owner, lineage-root or cluster team store can be selected.
             - Identity normalization follows meld's name/type/frame/id rules.
             - Purge does not exit the scope, pop its stack or return it to a pool.
 

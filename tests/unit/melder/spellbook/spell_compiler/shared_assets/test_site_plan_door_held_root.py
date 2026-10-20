@@ -81,6 +81,7 @@ class RecordingStore:
         self._events: List[Event] = events
         self._creations: Dict[str, Any] = {}
         self._slot_guards: Dict[str, RecordingLock] = {}
+        self.adoptions: List[Tuple[str, Any, Tuple[Tuple[str, Any], ...]]] = []
 
     def slot_guard(self, spell_id: str) -> RecordingLock:
         """Return one recording lock per slot, created on first use."""
@@ -91,6 +92,15 @@ class RecordingStore:
         """Publish one singleton and record the disposal-bearing registration."""
         self._creations[key] = item
         self._events.append(("add_creation", key))
+
+    def register_many(self, key: str, item: Any, disposal_methods: List[str]) -> None:
+        """Record one disposal-bearing many registration (the hot verb emitted plans call)."""
+        self._events.append(("register_many", key))
+
+    def adopt_children(self, holder_key: str, holder: Any, children: Tuple[Tuple[str, Any], ...]) -> None:
+        """Record one adoption an emitted miss made right after publishing its holder (0.2.8238)."""
+        self._events.append(("adopt_children", holder_key))
+        self.adoptions.append((holder_key, holder, children))
 
 
 class ClusterFacade:
@@ -342,6 +352,40 @@ def test_door_held_disposal_bearing_root_still_registers_through_add_creation() 
     result = world.normal_plan("unique_per_conduit")(world.meld())
     assert world.events == CHILD_EVENTS + [("build", "root"), ("add_creation", "root")]
     assert world.conduit_store._creations["root"] is result
+
+
+def test_door_held_root_adopts_its_many_child_after_publishing_without_a_guard() -> None:
+    """
+    The door-held root's miss takes no guard, and its disposal-bearing many child is registered before the root is
+    built and adopted right after the root is published (slotted_lifetime_ownership, 0.2.8238).
+    """
+    events: List[Event] = []
+    store = RecordingStore(events)
+    child = logging_spell("d", events, Existence.many, disposal=("close",))
+    root = logging_spell("root", events, Existence.unique_per_conduit, disposal=("close",))
+    steps = (plan_step(("d", 1), child), plan_step(("root", None), root, ("d", (("d", 1),))))
+    topologies = {"root": SpellLocalTopology("root", (socket("root", "d", 0),))}
+    graph = SitePlanLowering.build_site_graph(
+        root_spell_id="root", root_instance_key=("root", None), steps=steps, topology_for=topologies.get,
+    )
+    source, namespace, _ = SitePlanLowering.emit(
+        steps=steps, site_graph=graph, resolution=OverrideKeyResolver.resolve(graph, ()),
+        root_instance_key=("root", None), root_spell_id="root", root_spell_name="root", arity=0,
+        normal_mode=True, door_route_key="unique_per_conduit",
+    )
+    graph.cleanup()
+    assert "with " not in source.split(f"def {SitePlanLowering.PLAN_FUNCTION_NAME}(")[0]
+    exec(compile(source, "<test>", "exec"), namespace)
+    plan = namespace[SitePlanLowering.PLAN_FUNCTION_NAME]
+
+    result = plan(SimpleNamespace(_conduit_creations=store, _spellspace_creations=None))
+
+    assert events == [
+        ("build", "d"), ("register_many", "d"), ("build", "root"), ("add_creation", "root"),
+        ("adopt_children", "root"),
+    ]
+    built_child = next(value for value in list(result.args) + list(result.kwargs.values()) if value.name == "d")
+    assert store.adoptions == [("root", result, (("d", built_child),))]
 
 
 def test_eligible_routes_are_exactly_the_per_scope_ones() -> None:

@@ -1,0 +1,69 @@
+== mode transfer; melder 0.2.8251; gil_enabled=False
+  Banner: 'HELLO!'
+  -- registry objects (SpellSystemStates, one per frame): after Banner's first meld
+     state[Mark-index]: version=Bang validity=valid flags=[]
+        direct_dependencies=[] direct_dependents=['Greeter-index']
+        _binding_key_by_index[Mark-index]=('mark', 'mark')
+     state[Greeter-index]: version=English validity=valid flags=[]
+        direct_dependencies=['Bang'] direct_dependents=[]
+        _binding_key_by_index[Greeter-index]=('greeter', 'greeter')
+     state[Banner-index]: version=Banner validity=valid flags=[]
+        direct_dependencies=[] direct_dependents=[]
+        _binding_key_by_index[Banner-index]=('banner', '__default__')
+     _contract_dependents_by_spellbook[borrower_book][('greeter', 'greeter')]=['Banner-index']
+  lender.transfer_spell_ownership(spell=English, target_conduit=steward) borrowers: [{'type': 'contract', 'contract_id': '01M53F78T57AJ83HFRRD2RBE5Q', 'borrower_conduit_id': '01M53F78S2J6CKC49VY0G1X8RK'}]
+  -- registry objects (SpellSystemStates, one per frame): after the transfer
+     state[Mark-index]: version=Bang validity=valid flags=[]
+        direct_dependencies=[] direct_dependents=[]
+        _binding_key_by_index[Mark-index]=('mark', 'mark')
+     state[Greeter-index]: version=English validity=gated flags=['new_index', 'structure_changed']
+        direct_dependencies=[] direct_dependents=[]
+        _binding_key_by_index[Greeter-index]=None
+     state[Banner-index]: version=Banner validity=valid flags=[]
+        direct_dependencies=[] direct_dependents=[]
+        _binding_key_by_index[Banner-index]=('banner', '__default__')
+     _contract_dependents_by_spellbook[borrower_book][('greeter', 'greeter')]=['Banner-index']
+  -- Contract between borrower and lender: after the transfer
+     Detail under lender: spell_id=English spell_index=Greeter-index permissions=create type=received reason=manual sources=[]
+     Detail under lender: spell_id=Dot spell_index=Mark-index permissions=create type=received reason=manual sources=[]
+     Detail under lender: spell_id=Bang spell_index=Mark-index permissions=create type=received reason=manual sources=[]
+     IndexDetail under lender: index=Greeter-index selected_spell_id=English permissions=create type=received reason=manual
+     IndexDetail under lender: index=Mark-index selected_spell_id=Bang permissions=create type=received reason=manual
+  -- borrower_book copies borrowed from lender: after the transfer
+     _contracted_spells (index -> active copy)=[('Greeter-index', 'English'), ('Mark-index', 'Bang')]
+     _contracted_spells_by_id=['Bang', 'English']
+     _lookup_contracted_spells (key -> index)=[(('greeter', 'greeter'), 'Greeter-index'), (('mark', 'mark'), 'Mark-index')]
+     _inactive_contracted_spells (parked)=['Dot']
+     _contracted_spell_ids=['Bang', 'Dot', 'English']
+  -- lender_book owned maps: after the transfer
+     _spells (index -> active)=[('Mark-index', 'Bang')]
+     _spells_by_id=['Bang'] _inactive_spells=['Dot'] _spell_ids=['Bang', 'Dot']
+  -- steward_book owned maps: after the transfer
+     _spells (index -> active)=[('01M53F78', '77ab27e3'), ('Greeter-index', 'English')]
+     _spells_by_id=['77ab27e3', 'English'] _inactive_spells=[] _spell_ids=['77ab27e3']
+  Banner: 'HELLO!'
+  steward.bind_inactive(French) on Greeter-index: RuntimeError: add_to_spell_index: target index Greeter-index is not owned by this spellbook; you can only add onto an index you own.
+  -- registry objects (SpellSystemStates, one per frame): after the lender notches Mark-index from Bang to Dot
+     state[Mark-index]: version=Dot validity=valid flags=[]
+        direct_dependencies=[] direct_dependents=[]
+        _binding_key_by_index[Mark-index]=('mark', 'mark')
+     state[Greeter-index]: version=English validity=gated flags=['new_index', 'structure_changed']
+        direct_dependencies=[] direct_dependents=[]
+        _binding_key_by_index[Greeter-index]=None
+     state[Banner-index]: version=Banner validity=valid flags=[]
+        direct_dependencies=[] direct_dependents=[]
+        _binding_key_by_index[Banner-index]=('banner', '__default__')
+     _contract_dependents_by_spellbook[borrower_book][('greeter', 'greeter')]=['Banner-index']
+  Banner: 'HELLO!'
+  -- registry objects (SpellSystemStates, one per frame): after Banner's meld
+     state[Mark-index]: version=Dot validity=valid flags=[]
+        direct_dependencies=[] direct_dependents=[]
+        _binding_key_by_index[Mark-index]=('mark', 'mark')
+     state[Greeter-index]: version=English validity=gated flags=['new_index', 'structure_changed']
+        direct_dependencies=[] direct_dependents=[]
+        _binding_key_by_index[Greeter-index]=None
+     state[Banner-index]: version=Banner validity=valid flags=[]
+        direct_dependencies=[] direct_dependents=[]
+        _binding_key_by_index[Banner-index]=('banner', '__default__')
+     _contract_dependents_by_spellbook[borrower_book][('greeter', 'greeter')]=['Banner-index']
+rc=0

@@ -1,0 +1,40 @@
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: Part A is in the tree (on 0.2.8253, notch next) and the whole tree is green with the GIL off and on. src
+    (scripts/s6_part_a_src.py): `Bind.sha256_profile` takes no managed keyword and `_managed_fingerprint_part` is
+    gone, so `_bind_logic` and `spell_id_inspector` hash the class profile, name, spellframe, binding name,
+    existence, disposal names and resolvable only (the inspector still checks the options as bind does);
+    `ManagedSpellQuantity._rebind_spell` re-composes mode, limit, timeout, reset names and the retention sizes under
+    the pool lock (equal settings: a re-point) and wakes waiters; `Creations.ensure_managed_quantity` calls it after
+    the store lock is released; creation cache generation 22 "managed_settings_leave_spell_id" (the schema-history
+    test pins it: a 21 bundle is cold, a 22 bundle loads); ManagedSpellMode and SpellCrystal say the settings are not
+    identity. Tests: 182 new and changed pass (15 were red before); the managed suites 737; the 13 integration tests
+    that made a second version from one class's settings now make it differ in identity (scripts/
+    s6_part_a_move_tests.py). Whole tree in a /tmp mirror (the connected folder refuses the tests' temp-dir deletes):
+    unit 7134 + 2513 passed (3 skipped, 7 xfailed), component 2396 (23 skipped, 1 xfailed), integration 2221
+    (2 skipped, 9 xfailed, 3 xpassed - the two DI fault tests and melder_1's notch race), experimentation 250
+    (4 skipped); identical per mode, every collected id accounted for. Probes after the fix: R1 one spell_id and one
+    pool, limit 2, counts true; R2 refused "Spell ID collision detected", pool unchanged; R3 limited 1 keeps three
+    objects alive and counted, two after a release; S1 refused as before and S2's rebind keeps the spell_id; Q2-Q4
+    now stop at staging (the settings-only version is the same spell); Q1, Q5 and Q6 unchanged.
+  EVIDENCE:
+  - src/melder/aether/spellbook/bind/bind.py:1011-1129
+  - src/melder/aether/spellbook/bind/bind.py:931-1008
+  - src/melder/aether/conduit/creations/managed_spell_quantity.py:840-914
+  - src/melder/aether/conduit/creations/creations.py:1118-1183
+  - src/melder/utilities/caching_system/caching_system.py:197-228
+  - tests/integration/melder/spellbook/test_cache_schema_version_integration.py:12-35
+  - context_compass/artifacts/correctness_defects_20261017/runs/s6_validation_index.md:1-37
+  - context_compass/artifacts/correctness_defects_20261017/scripts/s6_part_a_src.py:1-347
+  - context_compass/artifacts/correctness_defects_20261017/scripts/s6_part_a_move_tests.py:1-157
+  - context_compass/artifacts/correctness_defects_20261017/scripts/s6_part_a_cache_test.py:1-32
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_settings_rebind_after_gil0.txt:1-34
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_same_id_staging_after_gil0.txt:1-7
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_managed_release_routing_after_gil0.txt:1-49
+  IMPACT: The exit gate's behaviour and test items hold; left are the notch, the release note, the system documents
+    and the graph, and the rebuild last.
+  NEXT: Notch to 0.2.8254 with the release-note section; NOTICE melder_1.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9

@@ -9,7 +9,7 @@ surface, and denied operation can mean different things.
 | Import warns about Python or the GIL | The interpreter selected by your shell or environment | [Install and first run](../beginner/install.md) |
 | A meld cannot find a named registration | Spellframe, binding name, and whether the target is a human name or explicit ID | [Address law](../beginner/addresses.md) |
 | A second bind or conjure is refused | Existing registration and the one-root-per-book rule | [Errors](../beginner/errors.md) |
-| Identical bindings collide across worlds | Process-wide spell identity; the frame is not part of that distinction | [World boundaries](../advanced/worlds.md) |
+| One class is refused in a second world or under a second name | One object is one spell: its spell ID is its code, unique across the process, with no frame or binding name in it | [World boundaries](../advanced/worlds.md) |
 | Constructor configuration seems ignored | Bind parameters versus meld overrides or a configured factory | [Flat overrides](../intermediate/overrides.md) |
 | Configuration edits fail | Defaults/set-once properties and whether conjure froze the object | [Configuration](../intermediate/configuration.md) |
 | A child scope retains memory | The actual owner and whether its cleanup ran | [Scopes that end](../intermediate/scopes.md) |

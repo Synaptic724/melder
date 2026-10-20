@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/bind/spell_index.py",
- "source_sha256": "b77b5ba0916c17f8185a6960f12201a4db9e7d00d7ab6c8219e4032927e72659",
+ "source_sha256": "0fae4148f2b9c36c68307b72fef21c14e6974b011f7622bc09ffbb3d294fd65f",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.bind.spell_index": {
@@ -37,31 +37,31 @@
     "update"
    ],
    "shape": {
-    "method_count": 10,
+    "method_count": 12,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "55f5436affce929f462f8383ba0c2218bcaf9bd2783d829238636192e8c4c82d",
-   "role": "Stable index identity with a mutable selected-spell pointer.",
+   "span_sha256": "98d6966800489aaf0e8779a692d083379898eb00335fec220e419d1bbf329439",
+   "role": "Stable lineage identity (an immutable ULID) with a mutable selected-spell pointer and the lineage's member set.",
    "responsibilities": [
-    "provides hash-stable index identity for spell registries",
-    "tracks selected and historical spell ids for one spell index",
-    "propagates selected-spell changes into owner and contracted spellbooks",
-    "stores owner and contract attachment metadata for one index"
+    "provides hash- and equality-stable index identity (the ULID) for spell registries",
+    "holds the selected spell id and the lineage's member set; selecting an id adds it as a member and never retires the previous one",
+    "answers lineage membership: has_spell re-checks cleaned under its lock and raises RuntimeError for a cleaned index; _has_spell_unless_cleaned answers False for one, for walks over indexes the caller neither owns nor locks",
+    "leaves lookup-map propagation on a notch to the Spellbook (the notch seam), not the index",
+    "answers whether it selects a version without ever raising (_is_selected_unless_cleaned, under its lock; False once cleaned) for ReleaseManagedSpell's cold resolver (0.2.8244)"
    ],
    "owns_state": [
     "_id",
     "_selected_spell_id",
     "_spells_in_index",
-    "_owner_spellbook",
-    "_contracted_spellbooks"
+    "_lock"
    ],
    "phases": [
     "init",
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "55f5436affce929f462f8383ba0c2218bcaf9bd2783d829238636192e8c4c82d"
+   "semantics_authored_against": "c03e0ce1aad455ae6e5f30382be9887b79017052dad7ac8cfde07116943e3a1a"
   }
  },
  "edges_out": [

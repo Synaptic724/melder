@@ -124,9 +124,9 @@ class SpellSpaceMeld(Meld):
             - References the owner conduit's cluster facade (owned by the
               conduit meld, not by this spellspace) so
               `unique_per_conduit_cluster` melds resolved from inside the
-              spellspace resolve into the same elected-leader store the owner
-              conduit's cluster elected; a spellspace created after election
-              still sees the filled facade through this shared reference.
+              spellspace resolve into the same team store the owner conduit's
+              cluster serves; a spellspace created after election still sees
+              the filled facade through this shared reference.
             - Caches the owning spellspace id and owner conduit id for later
               live-creation diagnostics.
             - Reuses the shared spellbook/lookup surfaces owned by `Meld`.
@@ -191,7 +191,7 @@ class SpellSpaceMeld(Meld):
             - Uses shared discovery to find the registered definition.
             - Accepts only many and unique_per_spell_space lifetimes.
             - Always delegates to `_spellspace_creations`; never to the owner
-              conduit, Spell owner, lineage root, or cluster leader store.
+              conduit, Spell owner, lineage root, or cluster team store.
             - Creations owns locking, paired-map removal and recorded disposal.
             - Does not pop the managed stack, recycle this scope or recompile.
 
@@ -263,8 +263,8 @@ class SpellSpaceMeld(Meld):
         Args:
             spell (str | object | None):
                 The primary spell identifier (first positional parameter).
-                - If a **string**, treated as the unique `spell_id` (typically the
-                  SHA256 structural fingerprint for the SpellIndex).
+                - If a **string**, treated as the unique `spell_id` (the SHA256 of
+                  the registered object's code that `bind` returned).
                 - If an **object** (e.g., a class or function), used together with
                   `spellframe` and `binding_name` to form the DI identity key via the
                   `SpellInputUtils` normalization helpers.
@@ -801,8 +801,8 @@ class SpellSpaceMeld(Meld):
             Existence.unique_per_conduit_lineage,
         }:
             # Only `unique` resolves into the binding owner's _owner_creations.
-            # cluster/lineage live in the meld-supplied store (elected leader /
-            # lineage-root), mirroring the front-door store selection.
+            # cluster/lineage live in the meld-supplied store (cluster team store
+            # / lineage root), mirroring the front-door store selection.
             if existence is Existence.unique:
                 store = target_spell._owner_creations
             elif existence is Existence.unique_per_conduit_lineage:
@@ -911,8 +911,11 @@ class SpellSpaceMeld(Meld):
             - `unique_per_conduit` reads from owner-conduit storage.
             - `unique` reads the Spell owner's `owner_creations`;
               `unique_per_conduit_lineage` the owner conduit's lineage-root
-              store; `unique_per_conduit_cluster` the elected leader's store,
+              store; `unique_per_conduit_cluster` the cluster's team store,
               and is not live while no leader is elected.
+            - `managed_spell_quantity` reads the pool in the Spell owner's root
+              store, as the conduit door does (2026-10-15): a managed object is
+              never space-local, so `active_spellspace_id` is None.
             - Reports both `query_conduit_id` and `active_spellspace_id` so the
               caller can distinguish request-local versus broader scope state.
 
@@ -1002,8 +1005,8 @@ class SpellSpaceMeld(Meld):
             Existence.unique_per_conduit_lineage,
         }:
             # Only `unique` lives in the binding owner's _owner_creations.
-            # cluster/lineage live in the meld-supplied store (elected leader /
-            # lineage-root); a cluster with no elected leader is simply not live.
+            # cluster/lineage live in the meld-supplied store (cluster team store
+            # / lineage root); a cluster with no elected leader is simply not live.
             if existence is Existence.unique:
                 store = spell._owner_creations
                 storage_scope_kind = "owner_creations"
@@ -1037,6 +1040,9 @@ class SpellSpaceMeld(Meld):
                 "active_spellspace_id": None,
                 "creation_count": 1 if creation is not None else 0,
             }
+
+        if existence is Existence.managed_spell_quantity:
+            return self._describe_managed_pool_status(spell, query_conduit_id)
 
         raise RuntimeError(
             "Unsupported existence '{0}' for live creation probe.".format(

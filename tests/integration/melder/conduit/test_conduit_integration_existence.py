@@ -235,13 +235,13 @@ def test_conduit_unique_per_conduit_cluster_shares_across_cluster() -> None:
     borrower_book = Spellbook()
     borrower = borrower_book.conjure(dynamic=True, name="borrower")
 
-    owner_spell = owner.get_spell_by_id(spell_id)
+    owner_spell = owner.get_spell_by_spell_id(spell_id)
     assert owner_spell is not None
     assert owner_spell.spell_id == spell_id
     assert isinstance(owner_spell, Spell)
     assert any(spell_index.has_spell(spell_id) for spell_index in owner_book.spells.keys())
 
-    borrower_spell = borrower.get_spell_by_id(spell_id)
+    borrower_spell = borrower.get_spell_by_spell_id(spell_id)
     assert borrower_spell is not None
     assert borrower_spell.spell_id == spell_id
     assert isinstance(borrower_spell, Spell)
@@ -369,7 +369,7 @@ def test_conduit_contract_by_spell_object_dynamic_link() -> None:
     borrower_book = Spellbook()
     borrower = borrower_book.conjure(dynamic=True, name="borrower")
 
-    owner_spell = owner.get_spell_by_id(spell_id)
+    owner_spell = owner.get_spell_by_spell_id(spell_id)
     assert owner_spell is not None
     assert isinstance(owner_spell, Spell)
     inspected_wrapper_id = borrower.inspect_spell(owner_spell)

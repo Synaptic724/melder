@@ -1,0 +1,5 @@
+..ss..ss..ss..ss..ss..ss..ssss..ss..sss..ss                              [100%]
+=========================== short test summary info ============================
+SKIPPED [11] tests/component/melder/utilities/test_agent_text_reader_component.py:83: readable_src_graph.json not present in this checkout
+SKIPPED [12] tests/component/melder/utilities/test_agent_text_reader_component.py:83: src_graph.json not present in this checkout
+20 passed, 23 skipped in 0.28s

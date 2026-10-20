@@ -1,0 +1,40 @@
+- DATETIME: {ts}
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: The audit of the 552 applied wording edits is done (owner's order, DECISION 11:11Z). Method, read-only: each
+    edit found in its file and its innermost def or class (audit_edits.py; the 200 flagged ones read in their
+    method); then every edit whose def or class also holds conduit-lineage code - `unique_per_conduit_lineage`, the
+    lineage-root store `_root_creations`, `_root_conduit_id`, `conduit_lineage_gate_ops`, the ward's lineage tree -
+    listed and read (audit_lineage_scopes.py: 17 edits in 6 files); then every old line with scope-tree words (20).
+    Result: no edit touches code that keeps unique_per_conduit_lineage correct. The lineage stores and their purge
+    (ConduitMeld, SpellSpaceMeld, Creations), the codegen routes, Phase 6's scope ranks (ScopeOrderingStrategy: only
+    its shared Args line for `spell_system_states` changed), the lineage skip in TransferOfOwnership.execute, the
+    conduit lineage gates and the ward's lineage tree are as they were. The Phase 6 checks named lineage
+    (`lineage_conduit_conflict`, `root_lineage_conflict`, `lineage_version_conflict`, `root_lineage_mismatch`) key
+    on SpellSystemNode.lineage_id, which Phase 5 fills with the SpellIndex id; RiskManager's `_lineage_conduits`
+    maps a SpellIndex id (`spell.spell_index.id`) to the conduits that see it. Three applied lines were wrong and
+    are corrected, one line for one line (fix14_audit_corrections.py): conduit_meld.py 755 and 915 said the conduit
+    door rejects "spellspace-scoped spells" - it rejects every `requires_spellspace_request` spell, a spell that
+    only depends on a spellspace-scoped one included; transfer_of_ownership.py 1131 said the rollback drains "the
+    index's members" - it handles one spell_id per call. They take the wording the code supports, not the original
+    text, which also called a spell a lineage. The 552 edits are already in the owner's commit 80e4bdcca (02:18Z);
+    the three corrections are not committed. Both files parse with their line counts unchanged.
+  EVIDENCE:
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/runs/audit_edits.txt:1-1730
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/runs/audit_lineage_scopes.txt:1-83
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/edits/fix14_audit_corrections.py:1-27
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/runs/fix14_apply.txt:1-20
+  - src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py:266-317
+  - src/melder/aether/spellbook/spell_compiler/system/validation/ownership_consistency_strategy.py:30-126
+  - src/melder/aether/spellbook/spell_compiler/system/validation/scope_ordering_strategy.py:43-149
+  - src/melder/aether/aetheric_frame/dev_ops/risk_manager/risk_manager.py:466-565
+  - src/melder/aether/conduit/meld/conduit_meld.py:733-890
+  - src/melder/aether/spellbook/spell_compiler/system/spell_system_root_blueprint_builder.py:274-296
+  - src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py:367-507
+  - src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py:1125-1151
+  IMPACT: The wording sweep ends here, on the owner's word. What remains in the lane is his: landing the wording
+    edits (one notch above 0.2.8254, a release-note line, the rebuild last), the open borrower-side items, closure.
+  NEXT: Report the audit result and the three corrections to the owner; wait for his word on the landing.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
