@@ -1,0 +1,16 @@
+{
+  "checked_at": "2026-10-20T00:41:33.319028+00:00",
+  "mode": "check",
+  "qualified_inputs": "unchanged",
+  "preserved_claims": true,
+  "intentional_metadata_replacements": {
+    "- Updated: 2026-10-19T14:19:12Z": 1,
+    "end_line: 1040": 1,
+    "loc: 1040": 1,
+    "verified_at: 2026-10-18T01:46:13Z": 1
+  },
+  "test_loc": 1070,
+  "document_sha256": "3ca836920ce50e065a910614d9de70cfcc34ad9ad2d6adfbe22f53c44a14266f",
+  "original_control_matches_base_ast": true,
+  "line_ending": "lf"
+}

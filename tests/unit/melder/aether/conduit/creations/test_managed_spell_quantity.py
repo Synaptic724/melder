@@ -11,6 +11,7 @@ import gc
 import threading
 import time
 import weakref
+from types import SimpleNamespace
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import pytest
@@ -772,27 +773,56 @@ def test_describe_reports_the_mode_the_numbers_and_the_identity() -> None:
 
 # --- more lifecycle and contention edges -----------------------------------------------------------------------------
 
-def test_queue_deadline_is_taken_once_across_wakeups() -> None:
-    """Wake-ups that free nothing do not restart the wait: the waiter raises at its original deadline."""
-    pool = _pool(mode=ManagedSpellMode.queue, limit=1, timeout=0.3)
+@pytest.mark.parametrize(
+    ("wake_intervals", "expected_waits"),
+    [
+        ((0.125, 0.125, 0.125, 0.125), (0.5, 0.375, 0.25, 0.125)),
+        ((0.125, 0.25, 0.25), (0.5, 0.375, 0.125)),
+    ],
+    ids=("at-deadline", "past-deadline"),
+)
+def test_queue_deadline_is_taken_once_across_wakeups(
+        monkeypatch: pytest.MonkeyPatch,
+        wake_intervals: Tuple[float, ...],
+        expected_waits: Tuple[float, ...],
+) -> None:
+    """
+    Wake-ups that free nothing do not restart the wait: reserve raises at its original deadline.
+
+    Contract:
+        Run the real reserve loop with a controlled monotonic clock and condition wake-ups, so
+        thread scheduling cannot cause false failures. Every wait uses the original deadline's
+        remaining budget; waking at or beyond it raises without another wait or changing capacity.
+        The finite wake sequence also makes a restarted deadline fail promptly instead of hanging.
+    """
+    pool = _pool(mode=ManagedSpellMode.queue, limit=1, timeout=0.5)
     pool.reserve()
-    started = time.monotonic()
-    finished: Dict[str, float] = {}
+    clock = _Clock(1024.0)
+    waits: List[float] = []
 
-    def _wait() -> None:
-        try:
+    def _wake_without_capacity(timeout: Optional[float] = None) -> bool:
+        """Advance time for one wake-up without releasing an object or freeing a reservation."""
+        assert timeout is not None
+        assert len(waits) < len(wake_intervals), "reserve waited again after its original deadline"
+        waits.append(timeout)
+        clock.value += wake_intervals[len(waits) - 1]
+        return True
+
+    # Patch only this module's time binding; the process-wide time.monotonic stays real.
+    monkeypatch.setattr(
+        "melder.aether.conduit.creations.managed_spell_quantity.time", SimpleNamespace(monotonic=clock),
+    )
+    monkeypatch.setattr(pool._condition, "wait", _wake_without_capacity)
+    try:
+        with pytest.raises(ManagedSpellExhaustedError) as excinfo:
             pool.reserve()
-        finally:
-            finished["at"] = time.monotonic()
-
-    thread, outcome = _run_in_thread(_wait)
-    while thread.is_alive() and time.monotonic() - started < 0.9:
-        with pool._condition:
-            pool._condition.notify_all()
-        time.sleep(0.02)
-    thread.join(5.0)
-    assert isinstance(outcome["error"], ManagedSpellExhaustedError)
-    assert finished["at"] - started < 0.75
+        # Binary-exact intervals keep these budgets exact even with a nonzero clock origin.
+        assert waits == list(expected_waits)
+        assert clock.value == 1024.0 + sum(wake_intervals)
+        assert (excinfo.value.mode, excinfo.value.timeout_seconds) == ("queue", 0.5)
+        assert (pool.count, pool.idle_count) == (1, 0)
+    finally:
+        pool.cleanup()
 
 
 def test_a_raising_reset_in_a_queue_pool_raises_for_the_releaser_and_frees_a_place_for_a_waiter() -> None:

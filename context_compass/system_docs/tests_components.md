@@ -5,7 +5,7 @@
 - Status: in_progress
 - Owner:
 - Created: 2026-01-22
-- Updated: 2026-10-19T14:19:12Z
+- Updated: 2026-10-20T00:13:14Z
 
 ## Scope
 This document defines C3 components, C2 subcomponents, and C1 code references
@@ -1035,6 +1035,10 @@ Protects:
   releases), resizes the band from elastic to limited_quantity and back like a fresh pool, wakes a queue waiter
   into a raised limit, makes a limited pool turned queue wait, describes the new settings and leaves a torn-down
   pool alone
+- the queue deadline across wake-ups (`test_queue_deadline_is_taken_once_across_wakeups`): the real reserve
+  loop uses a controlled module-local monotonic clock and condition wake-ups. The remaining wait budgets
+  decrease to the original deadline, and waking at or beyond it raises exhaustion with capacity unchanged;
+  a finite wake sequence rejects restarted deadlines without depending on thread scheduling or wall time
 - the pool under eight threads (`test_managed_spell_quantity_multithreaded.py`): limited_quantity 3 never has
   more than 3 objects alive or out; queue 2 never hangs and never exceeds 2; elastic ends with its count equal to
   its idle objects; six waiters on a full queue all wake with the torn-down error; a queue of 1 never hands one
@@ -3350,11 +3354,12 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
 
 - path: `tests/unit/melder/aether/conduit/creations/test_managed_spell_quantity.py`
   start_line: 1
-  end_line: 1040
-  loc: 1040
-  verified_at: 2026-10-18T01:46:13Z
+  end_line: 1070
+  loc: 1070
+  verified_at: 2026-10-20T00:13:14Z
   note: the managed pool per mode: reserve, waits, put_back and resets, destroy, adopt, abandon, cleanup (0.2.8243);
     the rebind under the same spell_id (0.2.8254).
+    The deadline-across-wakeups regression controls clock/wait boundaries and checks remaining budgets (2026-10-19).
 - path: `tests/unit/melder/aether/conduit/creations/test_managed_spell_quantity_multithreaded.py`
   start_line: 1
   end_line: 311
@@ -3876,6 +3881,10 @@ graph TD
   scan/bind coverage grows.
 
 ## Context / Handoff Summary
+
+2026-10-19 queue deadline regression (test-only): the managed-pool unit entry describes its controlled clock
+and wake-ups, replacing a scheduling-sensitive elapsed-time assertion. Its C1 extent was remeasured; the
+production timeout contract and the existing real-thread tests are unchanged.
 
 2026-10-19 cluster admission (0.2.8265): the Aether unit and integration clusters describe callback progress,
 retry after failed registration, and deterministic same/two-cluster competition. The original natural
