@@ -2,13 +2,13 @@
   "corpora": {
     "other": {
       "bundle": {
-        "bytes": 3384321,
-        "lines": 79019,
+        "bytes": 3388579,
+        "lines": 79108,
         "path": "llm_support/llm_full_other.txt",
-        "sha256": "475b7355f5bd54a1960a60ca656b4442fc8f37dc40092e788aafe9c4ff634a5d"
+        "sha256": "77d56da4caab11f3995f234ed5cfcc22f59ab4bdd0d587006398df39a61ac4aa"
       },
-      "content_bytes": 3156821,
-      "content_lines": 75741,
+      "content_bytes": 3161079,
+      "content_lines": 75830,
       "file_count": 409,
       "files": {
         ".gitattributes": {
@@ -312,9 +312,9 @@
           "source_encoding": "utf-8"
         },
         "README.md": {
-          "content_bytes": 53854,
-          "content_lines": 1201,
-          "content_sha256": "bb95a65fdf993abe87166765cb7b0d37ae6bc119c0537952f08558b460b0881a",
+          "content_bytes": 57891,
+          "content_lines": 1288,
+          "content_sha256": "c1ad60d0476ff540339babe22afc54fb82e7e528ce99cd2f12e228f79efea797",
           "source_encoding": "utf-8"
         },
         "UX_and_AIX_experiences/01_beginner/01_hello_meld.py": {
@@ -2436,9 +2436,9 @@
           "source_encoding": "utf-8"
         },
         "release_docs/next_version_release.md": {
-          "content_bytes": 96766,
-          "content_lines": 1427,
-          "content_sha256": "6e9c1da079a7337a59de7a632d0c1f8bb50be078feea049e9c8e60f5b2666fbe",
+          "content_bytes": 96987,
+          "content_lines": 1429,
+          "content_sha256": "07277834260d8ce49a7976478d04528ac858cfda9d2a2e6fce23c4c58889ff61",
           "source_encoding": "utf-8"
         },
         "requirements.txt": {
@@ -2467,12 +2467,12 @@
         }
       },
       "index": {
-        "bytes": 68524,
+        "bytes": 68532,
         "lines": 431,
         "path": "llm_support/llm_full_other_index.md",
-        "sha256": "407a8b4c46e2588534aa680ae76f2662b54b0c8d0ea657ff422fa761279d6f60"
+        "sha256": "da6aa55c60a04bcd0cf69f68fc59093b31ec2a2db62db17370eea54d92c67d75"
       },
-      "source_fingerprint": "2f6e11be9dbf0d73713a5af2183c7db3e11b799f0a2e70b423aa2839f2d122a4"
+      "source_fingerprint": "0761bccbd3e476cf8c4d05363897b6fc85116cea2648f2d3adbfce0431f2d59d"
     },
     "src": {
       "bundle": {

@@ -1,0 +1,33 @@
+{
+  "author": "expert_1",
+  "role": "synaptic_python_developer",
+  "review": "Distinct intentional author self-review; not independent review",
+  "reviewed_at": "2026-10-20T10:44:20Z",
+  "base": "33a6dc78edf49fb1bc928aad4372d4114345c557",
+  "readme_sha256": "c61f2b464a207efe53faf0963379cbb258385e7d4b1b24513c0f0fb49a4bb7fb",
+  "release_note_sha256": "07277834260d8ce49a7976478d04528ac858cfda9d2a2e6fce23c4c58889ff61",
+  "extracted_example_sha256": "862ad0d9f87da583b897045120c2a26061628a6275a93384f38cc8786a13f8b8",
+  "tested_example_equals_current_readme": true,
+  "linked_sources_exist": true,
+  "intermediate_level": true,
+  "constructor_injection": true,
+  "explicit_release_in_lesser_scope": true,
+  "lease_block_reuse_and_reset_asserted": true,
+  "root_disposes_idle_buffer_asserted": true,
+  "review_scope": "README and release-note diff, example and existing lessons, lifecycle ownership and public name lookup",
+  "checks": [
+    "README example exits 0",
+    "41 managed probes and lessons pass",
+    "60 documentation unit tests pass",
+    "313-page input validation and build pass"
+  ],
+  "remaining": [
+    "Local site link check",
+    "Close records and refresh generated assets as the last step"
+  ],
+  "limits": [
+    "No runtime source change",
+    "Full runtime suite and coverage not run for this documentation-only change",
+    "Hosted CI and publication not run"
+  ]
+}
